@@ -31,6 +31,6 @@ export function PoweredByFooter({ light }: Props) {
 
 const getStyles = (colors: any) => StyleSheet.create({
   container: { paddingVertical: 20, alignItems: 'center' },
-  text: { fontSize: 11, color: colors.borderLight, letterSpacing: 0.5 },
+  text: { fontSize: 13, color: colors.borderLight, letterSpacing: 0.5 },
   textLight: { color: colors.textSecondary },
 });

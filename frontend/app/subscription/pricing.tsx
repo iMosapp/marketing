@@ -471,7 +471,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 40,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -490,7 +490,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   heroSubtitle: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textSecondary,
     textAlign: 'center',
     maxWidth: 300,
@@ -523,7 +523,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   badgeText: {
     color: colors.text,
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
   },
   planHeader: {
@@ -536,14 +536,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 4,
   },
   planDescription: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
   },
   priceContainer: {
     marginBottom: 16,
   },
   originalPrice: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textSecondary,
     textDecorationLine: 'line-through',
     marginBottom: 4,
@@ -558,12 +558,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   interval: {
-    fontSize: 18,
+    fontSize: 19,
     color: colors.textSecondary,
     marginLeft: 4,
   },
   discountLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#34C759',
     fontWeight: '600',
     marginTop: 4,
@@ -580,7 +580,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 6,
   },
   trialText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#34C759',
   },
@@ -594,12 +594,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 10,
   },
   featureText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.text,
     flex: 1,
   },
   planTerms: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     fontStyle: 'italic',
     marginBottom: 16,
@@ -617,7 +617,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     opacity: 0.6,
   },
   selectButtonText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -628,7 +628,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 8,
   },
   termsTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 16,
@@ -640,7 +640,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 12,
   },
   termText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     flex: 1,
   },
@@ -652,7 +652,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 12,
   },
   footerLink: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#007AFF',
   },
   footerDivider: {
@@ -680,7 +680,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   tabText: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '500',
     color: colors.textSecondary,
   },
@@ -699,7 +699,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   userCountLabel: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 16,
@@ -727,12 +727,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   userCountText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: -4,
   },
   minUsersWarning: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#FF3B30',
     marginTop: 12,
   },
@@ -744,7 +744,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   totalLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginBottom: 4,
   },
@@ -766,13 +766,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   volumeInfoTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 6,
   },
   volumeInfoText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     lineHeight: 20,
   },

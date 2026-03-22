@@ -305,7 +305,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 40,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -331,7 +331,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   filterText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
     color: colors.textSecondary,
   },
@@ -348,13 +348,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 60,
   },
   emptyText: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
     marginTop: 16,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 8,
   },
@@ -369,7 +369,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   createButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -386,13 +386,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   quoteNumber: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '700',
     color: colors.text,
     fontFamily: 'monospace',
   },
   quoteDate: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -402,7 +402,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
   },
   statusText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
   },
   customerInfo: {
@@ -415,7 +415,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   customerName: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
     fontWeight: '500',
   },
@@ -427,12 +427,12 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   detailItem: {},
   detailLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginBottom: 2,
   },
   detailValue: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
     fontWeight: '500',
   },
@@ -448,7 +448,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   userCountText: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#007AFF',
     fontWeight: '500',
   },
@@ -472,7 +472,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   validUntil: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   validUntilExpired: {

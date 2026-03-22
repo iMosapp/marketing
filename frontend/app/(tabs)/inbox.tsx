@@ -1708,7 +1708,7 @@ export default function InboxScreen() {
               New Task
             </Text>
             <TouchableOpacity onPress={handleSubmitTask} disabled={taskSaving} data-testid="task-modal-save">
-              <Text style={{ fontSize: 17, fontWeight: '600', color: taskSaving ? colors.textTertiary : '#007AFF' }}>
+              <Text style={{ fontSize: 18, fontWeight: '600', color: taskSaving ? colors.textTertiary : '#007AFF' }}>
                 {taskSaving ? 'Saving...' : 'Save'}
               </Text>
             </TouchableOpacity>
@@ -1803,7 +1803,7 @@ export default function InboxScreen() {
                 );
               })}
             </View>
-            <Text style={{ fontSize: 12, color: colors.textTertiary, marginTop: 4, marginBottom: 12 }}>
+            <Text style={{ fontSize: 14, color: colors.textTertiary, marginTop: 4, marginBottom: 12 }}>
               Due: {format(taskDueDate, 'EEE, MMM d \'at\' h:mm a')}
             </Text>
 
@@ -1868,7 +1868,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#007AFF30',
   },
   modeIndicatorText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '500',
     color: '#007AFF',
   },
@@ -1911,7 +1911,7 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS_DARK.border,
   },
   selectionCount: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: COLORS_DARK.textPrimary,
     letterSpacing: -0.2,
@@ -1921,7 +1921,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   selectAllText: {
-    fontSize: 15,
+    fontSize: 17,
     color: COLORS.accent,
     fontWeight: '600',
   },
@@ -1944,7 +1944,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 17,
     color: COLORS.textPrimary,
     letterSpacing: -0.1,
     paddingVertical: 0,
@@ -1985,7 +1985,7 @@ const styles = StyleSheet.create({
   },
   filterText: {
     color: COLORS.textSecondary,
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     letterSpacing: 0.2,
   },
@@ -2099,7 +2099,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     letterSpacing: 0.3,
   },
@@ -2134,7 +2134,7 @@ const styles = StyleSheet.create({
   },
   unreadBubbleText: {
     color: '#FFFFFF',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
   },
   aiOutcomeBadge: {
@@ -2173,7 +2173,7 @@ const styles = StyleSheet.create({
     minWidth: 0, // Important for text truncation
   },
   contactName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: COLORS.textPrimary,
     letterSpacing: -0.2,
@@ -2219,7 +2219,7 @@ const styles = StyleSheet.create({
   
   // Timestamp & Message
   timestamp: {
-    fontSize: 13,
+    fontSize: 15,
     color: COLORS.textSecondary,
     fontWeight: '500',
     flexShrink: 0,
@@ -2230,7 +2230,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   messageText: {
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.textSecondary,
     letterSpacing: -0.1,
   },
@@ -2281,7 +2281,7 @@ const styles = StyleSheet.create({
     backgroundColor: `${COLORS.danger}20`,
   },
   bulkActionText: {
-    fontSize: 11,
+    fontSize: 13,
     color: COLORS.textSecondary,
     fontWeight: '600',
   },
@@ -2319,14 +2319,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '700',
     color: COLORS.textPrimary,
     marginBottom: 8,
     letterSpacing: -0.3,
   },
   emptySubtext: {
-    fontSize: 15,
+    fontSize: 17,
     color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
@@ -2342,7 +2342,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#FFFFFF',
     letterSpacing: -0.1,
@@ -2363,12 +2363,12 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
   },
   modalCancel: {
-    fontSize: 17,
+    fontSize: 18,
     color: COLORS.accent,
     fontWeight: '500',
   },
   modalTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: COLORS.textPrimary,
     letterSpacing: -0.2,
@@ -2390,7 +2390,7 @@ const styles = StyleSheet.create({
   modalSearchInput: {
     flex: 1,
     paddingVertical: 12,
-    fontSize: 16,
+    fontSize: 18,
     color: COLORS.textPrimary,
   },
   modalSeparator: {
@@ -2422,7 +2422,7 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   contactAvatarText: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: COLORS.textPrimary,
   },
@@ -2430,13 +2430,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contactNameModal: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: COLORS.textPrimary,
     letterSpacing: -0.2,
   },
   contactPhone: {
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
@@ -2472,13 +2472,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   phoneNumberLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: COLORS.textSecondary,
     fontWeight: '500',
     letterSpacing: 0.2,
   },
   phoneNumberValue: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: COLORS.success,
     letterSpacing: -0.2,
@@ -2507,7 +2507,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   restrictedText: {
-    fontSize: 16,
+    fontSize: 18,
     color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
@@ -2527,7 +2527,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   restrictedButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -2557,7 +2557,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS_DARK.accent,
   },
   inboxToggleText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: COLORS_DARK.textSecondary,
   },
@@ -2607,7 +2607,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   teamBadgeText: {
-    fontSize: 11,
+    fontSize: 13,
     color: COLORS_DARK.textSecondary,
   },
   claimedBadge: {
@@ -2620,7 +2620,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   claimedBadgeText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '500',
     color: '#34C759',
   },
@@ -2634,7 +2634,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   unclaimedBadgeText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
     color: '#FF9500',
   },
@@ -2656,11 +2656,11 @@ const styles = StyleSheet.create({
     width: 36, height: 36, borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginRight: 12,
   },
   swipeTagName: {
-    flex: 1, fontSize: 16, fontWeight: '500', color: '#000000',
+    flex: 1, fontSize: 18, fontWeight: '500', color: '#000000',
   },
   // Quick Task modal styles
   taskLabel: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -2672,7 +2672,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 13,
-    fontSize: 16,
+    fontSize: 18,
     marginBottom: 16,
   },
   taskTypeRow: {
@@ -2691,7 +2691,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   taskTypeText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: '#8E8E93',
   },

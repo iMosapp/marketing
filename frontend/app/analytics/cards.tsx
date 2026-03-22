@@ -384,7 +384,7 @@ function HeroKPI({ colors, label, value, trend, icon, color }: any) {
       {trend !== undefined && (
         <View style={[s.heroTrendBadge, { backgroundColor: trendUp ? '#34C75920' : '#FF3B3020' }]}>
           <Ionicons name={trendUp ? 'trending-up' : 'trending-down'} size={10} color={trendUp ? '#34C759' : '#FF3B30'} />
-          <Text style={{ fontSize: 10, fontWeight: '700', color: trendUp ? '#34C759' : '#FF3B30' }}>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: trendUp ? '#34C759' : '#FF3B30' }}>
             {trend > 0 ? '+' : ''}{trend}%
           </Text>
         </View>
@@ -397,7 +397,7 @@ function StatBadge({ icon, value, color, colors }: any) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
       <Ionicons name={icon} size={11} color={color} />
-      <Text style={{ fontSize: 11, color: colors.textSecondary, fontWeight: '600' }}>{value}</Text>
+      <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '600' }}>{value}</Text>
     </View>
   );
 }
@@ -406,7 +406,7 @@ function StatBadge({ icon, value, color, colors }: any) {
 const getStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
-  loadingText: { color: colors.textSecondary, fontSize: 14 },
+  loadingText: { color: colors.textSecondary, fontSize: 16 },
   header: {
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16,
     paddingVertical: 12, gap: 12,
@@ -415,15 +415,15 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 36, height: 36, borderRadius: 10, backgroundColor: colors.card,
     alignItems: 'center', justifyContent: 'center',
   },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: colors.text },
-  headerSub: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
+  headerTitle: { fontSize: 21, fontWeight: '700', color: colors.text },
+  headerSub: { fontSize: 14, color: colors.textSecondary, marginTop: 1 },
   periodBar: { flexDirection: 'row', paddingHorizontal: 16, paddingBottom: 12, gap: 8 },
   periodChip: {
     paddingHorizontal: 16, paddingVertical: 7, borderRadius: 18,
     backgroundColor: colors.card,
   },
   periodChipActive: { backgroundColor: '#C9A962' },
-  periodText: { fontSize: 13, color: colors.textSecondary, fontWeight: '600' },
+  periodText: { fontSize: 15, color: colors.textSecondary, fontWeight: '600' },
   periodTextActive: { color: '#000' },
   content: { flex: 1 },
 
@@ -441,7 +441,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   heroKPIValue: { fontSize: 26, fontWeight: '800', color: colors.text },
-  heroKPILabel: { fontSize: 11, color: colors.textSecondary, marginTop: 2, textAlign: 'center' },
+  heroKPILabel: { fontSize: 13, color: colors.textSecondary, marginTop: 2, textAlign: 'center' },
   heroTrendBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 6,
     paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10,
@@ -454,11 +454,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderWidth: 1, borderColor: colors.surface, borderLeftWidth: 3,
   },
   avgValue: { fontSize: 22, fontWeight: '700', color: colors.text },
-  avgLabel: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+  avgLabel: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
 
   // Sections
   section: { marginTop: 20, paddingHorizontal: 16 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 10 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 10 },
 
   // Type Breakdown
   breakdownCard: {
@@ -468,8 +468,8 @@ const getStyles = (colors: any) => StyleSheet.create({
   typeRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   typeLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, width: 130 },
   typeIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  typeLabel: { fontSize: 13, fontWeight: '600', color: colors.text },
-  typeCount: { fontSize: 10, color: colors.textSecondary },
+  typeLabel: { fontSize: 15, fontWeight: '600', color: colors.text },
+  typeCount: { fontSize: 12, color: colors.textSecondary },
   typeRight: { flex: 1, gap: 6 },
   typeBarWrap: { height: 10, backgroundColor: colors.surface, borderRadius: 5, overflow: 'hidden' },
   typeBar: { height: '100%', borderRadius: 5 },
@@ -488,7 +488,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   chartLegend: { flexDirection: 'row', gap: 16, marginTop: 12, justifyContent: 'center' },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendText: { fontSize: 11, color: colors.textSecondary },
+  legendText: { fontSize: 13, color: colors.textSecondary },
 
   // Tables
   tableCard: {
@@ -499,22 +499,22 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row', backgroundColor: colors.surface, paddingHorizontal: 8,
     paddingVertical: 10,
   },
-  tableHeaderCell: { flex: 1, fontSize: 10, fontWeight: '700', color: colors.textSecondary, textAlign: 'center' },
+  tableHeaderCell: { flex: 1, fontSize: 12, fontWeight: '700', color: colors.textSecondary, textAlign: 'center' },
   tableRow: { flexDirection: 'row', paddingHorizontal: 8, paddingVertical: 10 },
   tableRowAlt: { backgroundColor: colors.surface + '40' },
   tableCell: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  tableCellText: { fontSize: 12, color: colors.border, textAlign: 'center' },
+  tableCellText: { fontSize: 14, color: colors.border, textAlign: 'center' },
   rankBadge: {
     width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
   },
-  rankText: { fontSize: 10, fontWeight: '800' },
+  rankText: { fontSize: 12, fontWeight: '800' },
 
   // vs Average badge
   vsAvgBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 2,
     paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8,
   },
-  vsAvgText: { fontSize: 10, fontWeight: '700' },
+  vsAvgText: { fontSize: 12, fontWeight: '700' },
 
   // Personal Card Mix
   mixCard: {
@@ -523,7 +523,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   mixRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   mixDot: { width: 8, height: 8, borderRadius: 4 },
-  mixLabel: { fontSize: 13, fontWeight: '500', color: colors.text },
-  mixCount: { fontSize: 14, fontWeight: '700', color: colors.text, minWidth: 30, textAlign: 'right' },
-  mixPct: { fontSize: 12, fontWeight: '600', minWidth: 36, textAlign: 'right' },
+  mixLabel: { fontSize: 15, fontWeight: '500', color: colors.text },
+  mixCount: { fontSize: 16, fontWeight: '700', color: colors.text, minWidth: 30, textAlign: 'right' },
+  mixPct: { fontSize: 14, fontWeight: '600', minWidth: 36, textAlign: 'right' },
 });

@@ -367,7 +367,7 @@ export default function NDASignPage() {
                 />
                 <TouchableOpacity onPress={clearSig} style={styles.clearSigBtn}>
                   <Ionicons name="refresh" size={14} color="#FF3B30" />
-                  <Text style={{ fontSize: 13, color: '#FF3B30' }}>Clear</Text>
+                  <Text style={{ fontSize: 15, color: '#FF3B30' }}>Clear</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -426,51 +426,51 @@ export default function NDASignPage() {
 
 const styles = StyleSheet.create({
   centerContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8F9FA', padding: 40 },
-  loadingText: { fontSize: 16, color: '#666', marginTop: 16 },
+  loadingText: { fontSize: 18, color: '#666', marginTop: 16 },
   errorTitle: { fontSize: 22, fontWeight: '700', color: '#1a1a1a', marginTop: 16 },
-  errorSub: { fontSize: 15, color: '#666', marginTop: 8, textAlign: 'center' },
+  errorSub: { fontSize: 17, color: '#666', marginTop: 8, textAlign: 'center' },
   pageContainer: { flex: 1, backgroundColor: '#F8F9FA' },
   formContainer: { padding: 20, paddingBottom: 60 },
   logoArea: { alignItems: 'center', paddingVertical: 32 },
   pageTitle: { fontSize: 22, fontWeight: '700', color: '#1a1a1a', marginTop: 12 },
-  pageSub: { fontSize: 14, color: '#666', marginTop: 4 },
+  pageSub: { fontSize: 16, color: '#666', marginTop: 4 },
   card: { backgroundColor: '#FFF', borderRadius: 16, padding: 24, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
-  cardTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a', marginBottom: 4 },
-  cardSub: { fontSize: 14, color: '#666', lineHeight: 20, marginBottom: 20 },
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: '#555', marginTop: 16, marginBottom: 6 },
-  fieldInput: { backgroundColor: '#F5F5F5', borderRadius: 12, padding: 14, fontSize: 16, color: '#1a1a1a', borderWidth: 1, borderColor: '#E5E5E5' },
-  errorText: { fontSize: 14, color: '#FF3B30', marginTop: 12, textAlign: 'center' },
+  cardTitle: { fontSize: 19, fontWeight: '700', color: '#1a1a1a', marginBottom: 4 },
+  cardSub: { fontSize: 16, color: '#666', lineHeight: 20, marginBottom: 20 },
+  fieldLabel: { fontSize: 15, fontWeight: '600', color: '#555', marginTop: 16, marginBottom: 6 },
+  fieldInput: { backgroundColor: '#F5F5F5', borderRadius: 12, padding: 14, fontSize: 18, color: '#1a1a1a', borderWidth: 1, borderColor: '#E5E5E5' },
+  errorText: { fontSize: 16, color: '#FF3B30', marginTop: 12, textAlign: 'center' },
   submitBtn: { backgroundColor: '#007AFF', paddingVertical: 16, borderRadius: 12, alignItems: 'center', marginTop: 24, flexDirection: 'row', justifyContent: 'center', gap: 8 },
-  submitBtnText: { fontSize: 16, fontWeight: '600', color: '#FFF' },
-  footer: { textAlign: 'center', fontSize: 12, color: '#999', marginTop: 32 },
+  submitBtnText: { fontSize: 18, fontWeight: '600', color: '#FFF' },
+  footer: { textAlign: 'center', fontSize: 14, color: '#999', marginTop: 32 },
 
   // Read phase
   readHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#E5E5E5', backgroundColor: '#FFF' },
-  readHeaderTitle: { fontSize: 17, fontWeight: '600', color: '#1a1a1a' },
+  readHeaderTitle: { fontSize: 18, fontWeight: '600', color: '#1a1a1a' },
   readContent: { padding: 20, paddingBottom: 60 },
   readCard: { backgroundColor: '#FFF', borderRadius: 16, padding: 24, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 3, marginBottom: 20 },
-  readDocTitle: { fontSize: 20, fontWeight: '800', color: '#1a1a1a', textAlign: 'center', marginBottom: 16 },
+  readDocTitle: { fontSize: 21, fontWeight: '800', color: '#1a1a1a', textAlign: 'center', marginBottom: 16 },
   readParties: { backgroundColor: '#F5F5F5', borderRadius: 12, padding: 16, marginBottom: 20 },
-  readParty: { fontSize: 14, color: '#333', marginBottom: 6, lineHeight: 20 },
+  readParty: { fontSize: 16, color: '#333', marginBottom: 6, lineHeight: 20 },
   readPartyLabel: { fontWeight: '700' },
   readSection: { marginBottom: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
-  readSectionTitle: { fontSize: 16, fontWeight: '700', color: '#1a1a1a', marginBottom: 8 },
-  readSectionBody: { fontSize: 14, color: '#444', lineHeight: 22 },
+  readSectionTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a', marginBottom: 8 },
+  readSectionBody: { fontSize: 16, color: '#444', lineHeight: 22 },
   readSigBlock: { marginTop: 20, padding: 16, backgroundColor: '#F8F9FA', borderRadius: 12, borderWidth: 1, borderColor: '#E5E5E5' },
-  readSigTitle: { fontSize: 12, fontWeight: '600', color: '#888', textTransform: 'uppercase', marginBottom: 8 },
-  readSigName: { fontSize: 15, fontWeight: '600', color: '#1a1a1a', marginBottom: 8 },
+  readSigTitle: { fontSize: 14, fontWeight: '600', color: '#888', textTransform: 'uppercase', marginBottom: 8 },
+  readSigName: { fontSize: 17, fontWeight: '600', color: '#1a1a1a', marginBottom: 8 },
   readSigImage: { width: '100%', height: 60 },
-  readSigDate: { fontSize: 12, color: '#888', marginTop: 8, textAlign: 'right' },
+  readSigDate: { fontSize: 14, color: '#888', marginTop: 8, textAlign: 'right' },
 
   // Sign phase
-  sigHint: { fontSize: 13, color: '#888', marginBottom: 8 },
+  sigHint: { fontSize: 15, color: '#888', marginBottom: 8 },
   clearSigBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end', marginTop: 8, padding: 6 },
   signSubmitBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#34C759', paddingVertical: 16, borderRadius: 12, marginTop: 24 },
 
   // Done phase
   doneContainer: { alignItems: 'center', padding: 40, paddingTop: 80 },
   doneTitle: { fontSize: 26, fontWeight: '700', color: '#1a1a1a', marginTop: 16 },
-  doneSub: { fontSize: 15, color: '#666', textAlign: 'center', lineHeight: 22, marginTop: 8 },
+  doneSub: { fontSize: 17, color: '#666', textAlign: 'center', lineHeight: 22, marginTop: 8 },
   doneDetails: { backgroundColor: '#FFF', borderRadius: 16, padding: 20, width: '100%', marginTop: 24, shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 12, shadowOffset: { width: 0, height: 4 } },
-  doneDetail: { fontSize: 14, color: '#333', marginBottom: 8, lineHeight: 20 },
+  doneDetail: { fontSize: 16, color: '#333', marginBottom: 8, lineHeight: 20 },
 });

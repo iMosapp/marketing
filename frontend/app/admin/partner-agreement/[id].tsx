@@ -242,7 +242,7 @@ export default function PartnerAgreementDetailScreen() {
           {agreement.is_white_label && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, backgroundColor: '#C9A96218', paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, alignSelf: 'flex-start' }}>
               <Ionicons name="layers" size={16} color="#C9A962" />
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#C9A962' }}>White Label Partner</Text>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#C9A962' }}>White Label Partner</Text>
             </View>
           )}
         </View>
@@ -317,8 +317,8 @@ export default function PartnerAgreementDetailScreen() {
             )}
             {agreement.custom_commission_notes && (
               <View style={[styles.commissionCard, { marginTop: agreement.commission_tier ? 10 : 0, borderLeftWidth: 3, borderLeftColor: '#C9A962' }]}>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: '#C9A962', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Custom Terms</Text>
-                <Text style={{ fontSize: 14, color: colors.text, lineHeight: 20 }}>{agreement.custom_commission_notes}</Text>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#C9A962', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Custom Terms</Text>
+                <Text style={{ fontSize: 16, color: colors.text, lineHeight: 20 }}>{agreement.custom_commission_notes}</Text>
               </View>
             )}
           </View>
@@ -471,7 +471,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   errorText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textSecondary,
     marginTop: 16,
   },
@@ -487,7 +487,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
   },
@@ -503,7 +503,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.card,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 12,
@@ -526,11 +526,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 12,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
   },
   typeText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
   },
   infoCard: {
@@ -544,7 +544,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   infoText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     marginLeft: 12,
     flex: 1,
@@ -559,12 +559,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   signedBadgeText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#34C759',
     fontWeight: '600',
   },
   notSignedText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     fontStyle: 'italic',
   },
@@ -579,7 +579,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   commissionTier: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
   },
@@ -589,7 +589,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: '#34C759',
   },
   commissionLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 4,
   },
@@ -604,16 +604,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   paymentLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
   },
   paymentAmount: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '700',
     color: '#FF9500',
   },
   paymentNote: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 8,
   },
@@ -628,11 +628,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   timelineLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
   },
   timelineValue: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.text,
   },
   actionSection: {
@@ -651,7 +651,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#007AFF',
   },
   copyLinkButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -665,7 +665,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   resendButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -681,7 +681,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#FF3B30',
   },
   deleteButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#FF3B30',
   },
@@ -699,16 +699,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.card,
   },
   modalCancel: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#007AFF',
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
   },
   modalSave: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -716,7 +716,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 16,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 8,
@@ -727,6 +727,6 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     color: colors.text,
-    fontSize: 16,
+    fontSize: 18,
   },
 });

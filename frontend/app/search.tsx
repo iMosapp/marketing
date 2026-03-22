@@ -384,7 +384,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 18,
     color: undefined,
   },
   loadingContainer: {
@@ -394,7 +394,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 12,
   },
   loadingText: {
-    fontSize: 14,
+    fontSize: 16,
     color: undefined,
   },
   listContent: {
@@ -418,7 +418,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   filterChipText: {
-    fontSize: 13,
+    fontSize: 15,
     color: undefined,
     fontWeight: '500',
   },
@@ -426,7 +426,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: undefined,
   },
   filterCount: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#6E6E73',
     backgroundColor: colors.surface,
     paddingHorizontal: 6,
@@ -474,7 +474,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 6,
   },
   resultTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: undefined,
     flex: 1,
@@ -488,17 +488,17 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 3,
   },
   aiTagText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: '#34C759',
   },
   resultSubtitle: {
-    fontSize: 14,
+    fontSize: 16,
     color: undefined,
     marginTop: 2,
   },
   matchField: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#6E6E73',
     marginTop: 4,
     fontStyle: 'italic',
@@ -515,7 +515,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
   },
   tagChipText: {
-    fontSize: 10,
+    fontSize: 12,
     color: undefined,
   },
   resultType: {
@@ -525,7 +525,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 6,
   },
   resultTypeText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
   },
   emptyContainer: {
@@ -533,13 +533,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingTop: 60,
   },
   emptyText: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: undefined,
     marginTop: 16,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: 16,
     color: undefined,
     marginTop: 4,
   },
@@ -548,7 +548,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 16,
   },
   footerText: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#6E6E73',
   },
   recentSection: {
@@ -561,12 +561,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   recentTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: undefined,
   },
   clearButton: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#007AFF',
   },
   recentItem: {
@@ -576,14 +576,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 12,
   },
   recentText: {
-    fontSize: 16,
+    fontSize: 18,
     color: undefined,
   },
   suggestionsSection: {
     marginBottom: 24,
   },
   suggestionsTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: undefined,
     marginBottom: 12,
@@ -605,7 +605,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   quickText: {
-    fontSize: 12,
+    fontSize: 14,
     color: undefined,
     textAlign: 'center',
   },

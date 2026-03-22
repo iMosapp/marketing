@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     color: '#8E8E93',
-    fontSize: 15,
+    fontSize: 17,
     marginTop: 16,
   },
   // Error State
@@ -504,14 +504,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   errorMessage: {
-    fontSize: 16,
+    fontSize: 18,
     color: 'rgba(255,255,255,0.8)',
     textAlign: 'center',
     marginBottom: 16,
     lineHeight: 24,
   },
   errorHint: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#8E8E93',
     textAlign: 'center',
   },
@@ -549,12 +549,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   storeName: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     marginBottom: 4,
   },
   orgName: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#8E8E93',
   },
   // Form
@@ -564,13 +564,13 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   formTitle: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '600',
     color: '#FFF',
     marginBottom: 4,
   },
   formSubtitle: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#8E8E93',
     marginBottom: 20,
   },
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
     color: '#FFF',
     marginBottom: 8,
@@ -597,7 +597,7 @@ const styles = StyleSheet.create({
   textInput: {
     flex: 1,
     padding: 14,
-    fontSize: 16,
+    fontSize: 18,
     color: '#FFF',
   },
   textInputDisabled: {
@@ -608,7 +608,7 @@ const styles = StyleSheet.create({
     borderColor: '#2C2C2E',
   },
   inputHint: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#8E8E93',
     marginTop: 4,
     marginLeft: 4,
@@ -624,11 +624,11 @@ const styles = StyleSheet.create({
   },
   loginLinkText: {
     color: '#8E8E93',
-    fontSize: 14,
+    fontSize: 16,
   },
   loginLink: {
     color: '#007AFF',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
   errorBox: {
@@ -642,7 +642,7 @@ const styles = StyleSheet.create({
   },
   errorBoxText: {
     color: '#FF3B30',
-    fontSize: 14,
+    fontSize: 16,
     flex: 1,
   },
   submitButton: {
@@ -655,12 +655,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   submitButtonText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: '#000',
   },
   privacyNote: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6E6E73',
     textAlign: 'center',
     marginTop: 16,
@@ -684,13 +684,13 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   successSubtitle: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#34C759',
     textAlign: 'center',
     marginBottom: 16,
   },
   successMessage: {
-    fontSize: 15,
+    fontSize: 17,
     color: 'rgba(255,255,255,0.8)',
     textAlign: 'center',
     marginBottom: 32,
@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   stepNumberText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: '#000',
   },
@@ -720,13 +720,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   stepTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#FFF',
     marginBottom: 4,
   },
   stepDescription: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#8E8E93',
     marginBottom: 12,
   },
@@ -745,7 +745,7 @@ const styles = StyleSheet.create({
   },
   appButtonText: {
     color: '#FFF',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
   },
   trainingButton: {
@@ -760,7 +760,7 @@ const styles = StyleSheet.create({
   },
   trainingButtonText: {
     color: '#000',
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
   },
   smsNotice: {
@@ -774,7 +774,7 @@ const styles = StyleSheet.create({
   },
   smsNoticeText: {
     color: '#007AFF',
-    fontSize: 14,
+    fontSize: 16,
     flex: 1,
   },
 });

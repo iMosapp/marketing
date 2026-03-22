@@ -200,7 +200,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'flex-start',
   },
   title: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
   },
@@ -231,7 +231,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 8,
   },
   headerStatLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 4,
   },
@@ -265,22 +265,22 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   customerName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 2,
   },
   salesmanName: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#C9A962',
     marginBottom: 2,
   },
   storeName: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
   },
   date: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#6E6E73',
     marginTop: 4,
   },
@@ -295,7 +295,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   statText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   emptyContainer: {
@@ -303,13 +303,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 60,
   },
   emptyText: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
     marginTop: 16,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',

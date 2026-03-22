@@ -79,12 +79,12 @@ export default function ImosHome() {
 
           {/* ========== HERO ========== */}
           <View style={[s.hero, isDesktop && s.heroDesktop]}>
-            <Text style={[s.heroLabel, isDesktop && { fontSize: 14 }]}>i'M ON SOCIAL</Text>
+            <Text style={[s.heroLabel, isDesktop && { fontSize: 16 }]}>i'M ON SOCIAL</Text>
             <Text style={[s.heroTitle, isDesktop && { fontSize: 52, lineHeight: 58 }]}>
               Meet the New Way{'\n'}
               <Text style={{ color: '#007AFF' }}>to Be On Social.</Text>
             </Text>
-            <Text style={[s.heroSub, isDesktop && { fontSize: 18, maxWidth: 560 }]}>
+            <Text style={[s.heroSub, isDesktop && { fontSize: 19, maxWidth: 560 }]}>
               In a world where companies automate everything, i'M On Social protects the relationship. Give organizations, teams, and individuals control of their digital presence, reviews, and customer connections.
             </Text>
 
@@ -308,25 +308,25 @@ const s = StyleSheet.create({
   /* HERO */
   hero: { alignItems: 'center', paddingTop: 48, paddingBottom: 40, paddingHorizontal: 20 },
   heroDesktop: { paddingTop: 72, paddingBottom: 56 },
-  heroLabel: { fontSize: 11, fontWeight: '700', color: '#007AFF', letterSpacing: 2, marginBottom: 16 },
+  heroLabel: { fontSize: 13, fontWeight: '700', color: '#007AFF', letterSpacing: 2, marginBottom: 16 },
   heroTitle: { fontSize: 32, fontWeight: '900', color: '#1D1D1F', textAlign: 'center', lineHeight: 40, marginBottom: 20 },
-  heroSub: { fontSize: 16, color: '#6E6E73', textAlign: 'center', lineHeight: 24, maxWidth: 480, marginBottom: 32 },
+  heroSub: { fontSize: 18, color: '#6E6E73', textAlign: 'center', lineHeight: 24, maxWidth: 480, marginBottom: 32 },
   heroIcons: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 16, marginBottom: 36 },
   heroIconItem: { alignItems: 'center', gap: 6, width: 90 },
   heroIconCircle: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  heroIconLabel: { fontSize: 11, color: '#86868B', textAlign: 'center', fontWeight: '500' },
+  heroIconLabel: { fontSize: 13, color: '#86868B', textAlign: 'center', fontWeight: '500' },
   heroCTAs: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12 },
   primaryBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     backgroundColor: '#007AFF', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 980,
   },
-  primaryBtnText: { fontSize: 15, fontWeight: '700', color: '#FFF' },
+  primaryBtnText: { fontSize: 17, fontWeight: '700', color: '#FFF' },
   secondaryBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingVertical: 14, paddingHorizontal: 24, borderRadius: 28,
     borderWidth: 1, borderColor: 'rgba(0,122,255,0.15)',
   },
-  secondaryBtnText: { fontSize: 15, fontWeight: '600', color: '#007AFF' },
+  secondaryBtnText: { fontSize: 17, fontWeight: '600', color: '#007AFF' },
 
   /* STATS */
   statsSection: {
@@ -340,11 +340,11 @@ const s = StyleSheet.create({
     alignItems: 'center', borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)',
   },
   statValue: { fontSize: 40, fontWeight: '900', color: '#007AFF', marginBottom: 6 },
-  statLabel: { fontSize: 14, color: '#6E6E73', textAlign: 'center', lineHeight: 20 },
+  statLabel: { fontSize: 16, color: '#6E6E73', textAlign: 'center', lineHeight: 20 },
 
   /* HOW IT WORKS */
   howSection: { alignItems: 'center', paddingTop: 48, paddingBottom: 16, paddingHorizontal: 20 },
-  sectionLabel: { fontSize: 11, fontWeight: '700', color: '#007AFF', letterSpacing: 2, marginBottom: 12 },
+  sectionLabel: { fontSize: 13, fontWeight: '700', color: '#007AFF', letterSpacing: 2, marginBottom: 12 },
   sectionTitle: { fontSize: 28, fontWeight: '800', color: '#1D1D1F', textAlign: 'center', lineHeight: 36 },
 
   featureRow: { paddingHorizontal: 20, paddingVertical: 32, gap: 24 },
@@ -355,12 +355,12 @@ const s = StyleSheet.create({
     borderWidth: 1,
   },
   featureText: {},
-  featureTag: { fontSize: 11, fontWeight: '700', letterSpacing: 2, marginBottom: 8 },
+  featureTag: { fontSize: 13, fontWeight: '700', letterSpacing: 2, marginBottom: 8 },
   featureTitle: { fontSize: 22, fontWeight: '800', color: '#1D1D1F', lineHeight: 30, marginBottom: 12 },
-  featureDesc: { fontSize: 15, color: '#6E6E73', lineHeight: 23, marginBottom: 16 },
+  featureDesc: { fontSize: 17, color: '#6E6E73', lineHeight: 23, marginBottom: 16 },
   bulletList: { gap: 8 },
   bulletRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  bulletText: { fontSize: 14, color: '#3A3A3C', fontWeight: '500' },
+  bulletText: { fontSize: 16, color: '#3A3A3C', fontWeight: '500' },
 
   /* BOTTOM CTA */
   bottomCTA: {
@@ -368,7 +368,7 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(201,169,98,0.04)', borderTopWidth: 1, borderColor: 'rgba(0,122,255,0.06)',
   },
   bottomCTATitle: { fontSize: 28, fontWeight: '800', color: '#1D1D1F', textAlign: 'center', marginBottom: 12, lineHeight: 36 },
-  bottomCTASub: { fontSize: 15, color: '#6E6E73', textAlign: 'center', lineHeight: 22, maxWidth: 400, marginBottom: 28 },
+  bottomCTASub: { fontSize: 17, color: '#6E6E73', textAlign: 'center', lineHeight: 22, maxWidth: 400, marginBottom: 28 },
   bottomCTABtns: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12 },
 
   /* NARRATIVE SECTIONS */
@@ -381,27 +381,27 @@ const s = StyleSheet.create({
     width: 56, height: 56, borderRadius: 16,
     alignItems: 'center', justifyContent: 'center', marginBottom: 16,
   },
-  narrativeTag: { fontSize: 11, fontWeight: '700', letterSpacing: 2, marginBottom: 10 },
+  narrativeTag: { fontSize: 13, fontWeight: '700', letterSpacing: 2, marginBottom: 10 },
   narrativeTitle: { fontSize: 22, fontWeight: '800', color: '#1D1D1F', lineHeight: 30, marginBottom: 16 },
   narrativeDivider: { height: 1, backgroundColor: 'rgba(0,0,0,0.06)', marginBottom: 16 },
   narrativeLines: { gap: 8, marginBottom: 16 },
-  narrativeLine: { fontSize: 15, color: '#6E6E73', lineHeight: 23 },
+  narrativeLine: { fontSize: 17, color: '#6E6E73', lineHeight: 23 },
   narrativeHighlight: {
     borderRadius: 12, padding: 16, marginTop: 4,
   },
-  narrativeHighlightText: { fontSize: 15, fontWeight: '600', lineHeight: 22, textAlign: 'center' },
+  narrativeHighlightText: { fontSize: 17, fontWeight: '600', lineHeight: 22, textAlign: 'center' },
   narrativeColumnsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 8, marginBottom: 8 },
   narrativeCol: {
     flex: 1, minWidth: 150, backgroundColor: '#F5F5F7', borderRadius: 14, padding: 16,
     borderWidth: 1, borderColor: 'rgba(0,0,0,0.04)',
   },
   narrativeColIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  narrativeColLabel: { fontSize: 14, fontWeight: '700', color: '#1D1D1F', marginBottom: 4 },
-  narrativeColDesc: { fontSize: 13, color: '#86868B', lineHeight: 18 },
+  narrativeColLabel: { fontSize: 16, fontWeight: '700', color: '#1D1D1F', marginBottom: 4 },
+  narrativeColDesc: { fontSize: 15, color: '#86868B', lineHeight: 18 },
   narrativeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 12 },
   narrativeGridItem: {
     width: '46%', flexDirection: 'row', alignItems: 'center', gap: 10,
     backgroundColor: '#F5F5F7', borderRadius: 12, padding: 14,
   },
-  narrativeGridText: { fontSize: 15, fontWeight: '600', color: '#1D1D1F' },
+  narrativeGridText: { fontSize: 17, fontWeight: '600', color: '#1D1D1F' },
 });

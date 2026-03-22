@@ -183,7 +183,7 @@ export default function PersonalIntelSection({ contactId, userId, colors }: { co
           data-testid="add-personal-intel-btn"
         >
           <Ionicons name="sparkles" size={16} color="#AF52DE" />
-          <Text style={{ color: '#AF52DE', fontSize: 13, fontWeight: '600' }}>Add Personal Intelligence</Text>
+          <Text style={{ color: '#AF52DE', fontSize: 15, fontWeight: '600' }}>Add Personal Intelligence</Text>
           <Ionicons name="add-circle-outline" size={16} color="#AF52DE" style={{ marginLeft: 'auto' }} />
         </TouchableOpacity>
       </View>
@@ -197,15 +197,15 @@ export default function PersonalIntelSection({ contactId, userId, colors }: { co
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Ionicons name="sparkles" size={14} color="#AF52DE" />
-            <Text style={{ color: '#AF52DE', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 }}>Edit Personal Intelligence</Text>
+            <Text style={{ color: '#AF52DE', fontSize: 14, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 }}>Edit Personal Intelligence</Text>
           </View>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <TouchableOpacity onPress={cancelEdit} disabled={saving} style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: colors.border }} data-testid="cancel-edit-intel-btn">
-              <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600' }}>Cancel</Text>
+              <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={save} disabled={saving} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#AF52DE' }} data-testid="save-intel-btn">
               {saving ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="checkmark" size={14} color="#fff" />}
-              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>{saving ? 'Saving...' : 'Save'}</Text>
+              <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>{saving ? 'Saving...' : 'Save'}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -214,7 +214,7 @@ export default function PersonalIntelSection({ contactId, userId, colors }: { co
           <View key={f.key} style={{ marginBottom: 10 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
               <Ionicons name={f.icon as any} size={13} color="#C9A962" />
-              <Text style={{ color: '#8E8E93', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5 }}>{f.label}</Text>
+              <Text style={{ color: '#8E8E93', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>{f.label}</Text>
             </View>
             <TextInput
               value={form[f.key] || ''}
@@ -226,7 +226,7 @@ export default function PersonalIntelSection({ contactId, userId, colors }: { co
               style={{
                 backgroundColor: colors.card,
                 color: colors.text,
-                fontSize: 13,
+                fontSize: 15,
                 paddingHorizontal: 12,
                 paddingVertical: 8,
                 borderRadius: 6,
@@ -252,20 +252,20 @@ export default function PersonalIntelSection({ contactId, userId, colors }: { co
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Ionicons name="sparkles" size={14} color="#AF52DE" />
-          <Text style={{ color: '#AF52DE', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 }}>Personal Intelligence</Text>
-          <Text style={{ color: '#555', fontSize: 10, fontStyle: 'italic', marginLeft: 4 }}>from voice memos</Text>
+          <Text style={{ color: '#AF52DE', fontSize: 14, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 }}>Personal Intelligence</Text>
+          <Text style={{ color: '#555', fontSize: 12, fontStyle: 'italic', marginLeft: 4 }}>from voice memos</Text>
         </View>
         <TouchableOpacity onPress={startEdit} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, backgroundColor: '#AF52DE18' }} data-testid="edit-intel-btn">
           <Ionicons name="create-outline" size={13} color="#AF52DE" />
-          <Text style={{ color: '#AF52DE', fontSize: 11, fontWeight: '600' }}>Edit</Text>
+          <Text style={{ color: '#AF52DE', fontSize: 13, fontWeight: '600' }}>Edit</Text>
         </TouchableOpacity>
       </View>
       {items.map((item, i) => (
         <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, paddingVertical: 6, borderBottomWidth: i < items.length - 1 ? 1 : 0, borderBottomColor: colors.border }} data-testid={`personal-detail-${item.label.toLowerCase().replace(/\s/g, '-')}`}>
           <Ionicons name={item.icon as any} size={15} color="#C9A962" style={{ marginTop: 2, width: 18 }} />
           <View style={{ flex: 1 }}>
-            <Text style={{ color: '#8E8E93', fontSize: 10, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>{item.label}</Text>
-            <Text style={{ color: colors.text, fontSize: 13, lineHeight: 18 }}>{item.value}</Text>
+            <Text style={{ color: '#8E8E93', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>{item.label}</Text>
+            <Text style={{ color: colors.text, fontSize: 15, lineHeight: 18 }}>{item.value}</Text>
           </View>
         </View>
       ))}

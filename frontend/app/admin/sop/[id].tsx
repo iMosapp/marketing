@@ -331,7 +331,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 40,
   },
   errorText: {
-    fontSize: 18,
+    fontSize: 19,
     color: colors.textSecondary,
     marginTop: 16,
     marginBottom: 24,
@@ -344,7 +344,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   backButtonText: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
   header: {
@@ -365,12 +365,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   headerSubtitle: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -404,7 +404,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 12,
   },
   stepNumberText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: colors.text,
   },
@@ -415,7 +415,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   stepDescription: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#E5E5E7',
     lineHeight: 26,
     marginBottom: 20,
@@ -430,7 +430,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#FFD60A30',
   },
   tipText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#FFD60A',
     marginLeft: 12,
     flex: 1,
@@ -446,7 +446,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#FF3B3030',
   },
   warningText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#FF3B30',
     marginLeft: 12,
     flex: 1,
@@ -463,7 +463,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 16,
   },
   linkButtonText: {
-    fontSize: 15,
+    fontSize: 17,
     color: '#007AFF',
     fontWeight: '600',
     marginLeft: 8,
@@ -475,7 +475,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderTopColor: colors.card,
   },
   relatedTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
     textTransform: 'uppercase',
@@ -491,7 +491,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   relatedText: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
     flex: 1,
     marginLeft: 12,
@@ -510,7 +510,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 16,
   },
   completionText: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
     marginTop: 8,
   },
@@ -540,12 +540,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     opacity: 0.5,
   },
   navButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   navButtonTextPrimary: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },

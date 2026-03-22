@@ -149,7 +149,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -160,7 +160,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 20,
   },
   lastUpdated: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginBottom: 20,
   },
@@ -179,14 +179,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   h3: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
     marginTop: 16,
     marginBottom: 8,
   },
   bold: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
     marginVertical: 8,
@@ -195,7 +195,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontWeight: '600',
   },
   paragraph: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
     lineHeight: 24,
     marginBottom: 4,
@@ -206,14 +206,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   bullet: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
     marginRight: 10,
     lineHeight: 24,
   },
   listText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
     lineHeight: 24,
   },
@@ -234,7 +234,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   footerLinkText: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#007AFF',
   },
 });

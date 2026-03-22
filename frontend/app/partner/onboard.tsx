@@ -208,7 +208,7 @@ export default function PartnerOnboardScreen() {
   const BtnRow = ({ onBack, onSkip, onNext, nextLabel, nextDisabled }: any) => (
     <View style={s.btnRow}>
       {onBack && <TouchableOpacity style={s.btnSec} onPress={onBack}><Ionicons name="arrow-back" size={18} color={colors.textSecondary} /><Text style={s.btnSecText}>Back</Text></TouchableOpacity>}
-      {onSkip && <TouchableOpacity style={s.btnSkip} onPress={onSkip}><Text style={{ fontSize: 15, color: '#FF9500', fontWeight: '600' }}>Skip</Text></TouchableOpacity>}
+      {onSkip && <TouchableOpacity style={s.btnSkip} onPress={onSkip}><Text style={{ fontSize: 17, color: '#FF9500', fontWeight: '600' }}>Skip</Text></TouchableOpacity>}
       <TouchableOpacity style={[s.btnPrimary, nextDisabled && { opacity: 0.4 }]} onPress={onNext} disabled={saving || nextDisabled}>
         {saving ? <ActivityIndicator size="small" color="#000" /> : <><Text style={s.btnPrimaryText}>{nextLabel || 'Continue'}</Text><Ionicons name="arrow-forward" size={18} color="#000" /></>}
       </TouchableOpacity>
@@ -224,7 +224,7 @@ export default function PartnerOnboardScreen() {
           return (
             <TouchableOpacity key={st.num} style={{ alignItems: 'center', width: 64 }} onPress={() => st.num < step && go(st.num)}>
               <View style={[s.dot, done && { backgroundColor: '#34C759', borderColor: '#34C759' }, active && { backgroundColor: '#C9A962', borderColor: '#C9A962' }]}>
-                {done ? <Ionicons name="checkmark" size={14} color="#FFF" /> : active ? <Ionicons name={st.icon as any} size={14} color="#000" /> : <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textTertiary }}>{st.num}</Text>}
+                {done ? <Ionicons name="checkmark" size={14} color="#FFF" /> : active ? <Ionicons name={st.icon as any} size={14} color="#000" /> : <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textTertiary }}>{st.num}</Text>}
               </View>
               <Text style={[s.dotLabel, active && { color: '#C9A962', fontWeight: '700' }, done && { color: '#34C759' }]}>{st.title}</Text>
             </TouchableOpacity>
@@ -247,7 +247,7 @@ export default function PartnerOnboardScreen() {
       <SectionCard>
         <Label text="Organization" required />
         {orgs.length === 0 ? (
-          <Text style={{ fontSize: 14, color: colors.textTertiary }}>No organizations assigned.</Text>
+          <Text style={{ fontSize: 16, color: colors.textTertiary }}>No organizations assigned.</Text>
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
             {orgs.map(o => (
@@ -262,7 +262,7 @@ export default function PartnerOnboardScreen() {
         {selectedOrgName ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, padding: 10, backgroundColor: '#34C75910', borderRadius: 8, marginTop: 4 }}>
             <Ionicons name="checkmark-circle" size={16} color="#34C759" />
-            <Text style={{ fontSize: 13, color: '#34C759', fontWeight: '600' }}>Adding to: {selectedOrgName}</Text>
+            <Text style={{ fontSize: 15, color: '#34C759', fontWeight: '600' }}>Adding to: {selectedOrgName}</Text>
           </View>
         ) : null}
       </SectionCard>
@@ -297,7 +297,7 @@ export default function PartnerOnboardScreen() {
         <TouchableOpacity style={s.logoBox} onPress={uploadLogo}>
           {logoUploading ? <ActivityIndicator size="large" color="#C9A962" /> :
            logoUrl ? <Image source={{ uri: logoUrl }} style={{ width: 120, height: 120, borderRadius: 16 }} resizeMode="contain" /> :
-           <View style={{ alignItems: 'center' }}><Ionicons name="cloud-upload-outline" size={28} color="#C9A962" /><Text style={{ color: colors.textSecondary, marginTop: 8, fontSize: 14 }}>Tap to upload logo</Text></View>}
+           <View style={{ alignItems: 'center' }}><Ionicons name="cloud-upload-outline" size={28} color="#C9A962" /><Text style={{ color: colors.textSecondary, marginTop: 8, fontSize: 16 }}>Tap to upload logo</Text></View>}
         </TouchableOpacity>
       </SectionCard>
       <SectionCard>
@@ -323,14 +323,14 @@ export default function PartnerOnboardScreen() {
       <SectionCard style={{ marginTop: 20, padding: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
           <Ionicons name="information-circle-outline" size={18} color="#007AFF" />
-          <Text style={{ flex: 1, fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>Each user will be prompted to upload photo, title, bio, and reset password on first login.</Text>
+          <Text style={{ flex: 1, fontSize: 15, color: colors.textSecondary, lineHeight: 18 }}>Each user will be prompted to upload photo, title, bio, and reset password on first login.</Text>
         </View>
       </SectionCard>
 
       {teamMembers.map((m, idx) => (
         <SectionCard key={idx} style={m.createdId ? { borderColor: '#34C759', borderWidth: 1.5 } : m.error ? { borderColor: '#FF3B30', borderWidth: 1.5 } : undefined}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-            <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>
+            <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>
               {m.createdId ? `${m.firstName} ${m.lastName}` : `Team Member ${idx + 1}`}
             </Text>
             {!m.createdId && teamMembers.length > 1 && (
@@ -340,11 +340,11 @@ export default function PartnerOnboardScreen() {
           {m.createdId ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 8, backgroundColor: '#34C75910', borderRadius: 8 }}>
               <Ionicons name="checkmark" size={16} color="#34C759" />
-              <Text style={{ fontSize: 13, color: '#34C759' }}>Created! Password: <Text style={{ fontWeight: '700', fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>{m.tempPassword}</Text></Text>
+              <Text style={{ fontSize: 15, color: '#34C759' }}>Created! Password: <Text style={{ fontWeight: '700', fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>{m.tempPassword}</Text></Text>
             </View>
           ) : (
             <View>
-              {m.error && <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8, backgroundColor: '#FF3B3015', padding: 8, borderRadius: 8 }}><Ionicons name="alert-circle" size={16} color="#FF3B30" /><Text style={{ fontSize: 12, color: '#FF3B30' }}>{m.error}</Text></View>}
+              {m.error && <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8, backgroundColor: '#FF3B3015', padding: 8, borderRadius: 8 }}><Ionicons name="alert-circle" size={16} color="#FF3B30" /><Text style={{ fontSize: 14, color: '#FF3B30' }}>{m.error}</Text></View>}
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <TextInput style={[s.input, { flex: 1 }]} placeholder="First name *" placeholderTextColor={colors.textTertiary} value={m.firstName} onChangeText={v => updateMember(idx, 'firstName', v)} />
                 <TextInput style={[s.input, { flex: 1 }]} placeholder="Last name" placeholderTextColor={colors.textTertiary} value={m.lastName} onChangeText={v => updateMember(idx, 'lastName', v)} />
@@ -356,7 +356,7 @@ export default function PartnerOnboardScreen() {
                   {(['user', 'manager'] as const).map(r => (
                     <TouchableOpacity key={r} onPress={() => updateMember(idx, 'role', r)}
                       style={[s.roleChip, m.role === r && { backgroundColor: '#C9A962', borderColor: '#C9A962' }]}>
-                      <Text style={[{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }, m.role === r && { color: '#000' }]}>{r === 'user' ? 'Sales' : 'Manager'}</Text>
+                      <Text style={[{ fontSize: 14, fontWeight: '600', color: colors.textSecondary }, m.role === r && { color: '#000' }]}>{r === 'user' ? 'Sales' : 'Manager'}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -369,7 +369,7 @@ export default function PartnerOnboardScreen() {
       {!bulkCreated && (
         <TouchableOpacity style={s.addBtn} onPress={addMember}>
           <Ionicons name="add-circle-outline" size={20} color="#C9A962" />
-          <Text style={{ fontSize: 14, fontWeight: '600', color: '#C9A962' }}>Add Another</Text>
+          <Text style={{ fontSize: 16, fontWeight: '600', color: '#C9A962' }}>Add Another</Text>
         </TouchableOpacity>
       )}
       {bulkCreating && <ActivityIndicator size="large" color="#C9A962" style={{ marginVertical: 16 }} />}
@@ -424,14 +424,14 @@ export default function PartnerOnboardScreen() {
         {created.length > 0 && (
           <SectionCard style={{ borderColor: '#C9A962', borderWidth: 2, marginTop: 20 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Team Credentials ({created.length})</Text>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>Team Credentials ({created.length})</Text>
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <TouchableOpacity style={s.actionChip} onPress={() => { if (Platform.OS === 'web') { navigator.clipboard?.writeText(getCredsText()); alert('Copied!'); } }}>
-                  <Ionicons name="copy-outline" size={14} color="#007AFF" /><Text style={{ fontSize: 12, color: '#007AFF', fontWeight: '600' }}>Copy</Text>
+                  <Ionicons name="copy-outline" size={14} color="#007AFF" /><Text style={{ fontSize: 14, color: '#007AFF', fontWeight: '600' }}>Copy</Text>
                 </TouchableOpacity>
                 {Platform.OS === 'web' && (
                   <TouchableOpacity style={s.actionChip} onPress={downloadCSV}>
-                    <Ionicons name="download-outline" size={14} color="#007AFF" /><Text style={{ fontSize: 12, color: '#007AFF', fontWeight: '600' }}>CSV</Text>
+                    <Ionicons name="download-outline" size={14} color="#007AFF" /><Text style={{ fontSize: 14, color: '#007AFF', fontWeight: '600' }}>CSV</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -439,15 +439,15 @@ export default function PartnerOnboardScreen() {
             {created.map((m, i) => (
               <View key={i} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border }}>
                 <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: '#C9A96220', alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#C9A962' }}>{m.firstName[0]}{m.lastName?.[0]}</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#C9A962' }}>{m.firstName[0]}{m.lastName?.[0]}</Text>
                 </View>
                 <View style={{ flex: 1, marginLeft: 10 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>{m.firstName} {m.lastName}</Text>
-                  <Text style={{ fontSize: 12, color: colors.textSecondary }}>{m.email}</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>{m.firstName} {m.lastName}</Text>
+                  <Text style={{ fontSize: 14, color: colors.textSecondary }}>{m.email}</Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={{ fontSize: 11, fontWeight: '600', color: '#C9A962', textTransform: 'uppercase' }}>{m.role === 'user' ? 'sales' : m.role}</Text>
-                  <Text style={{ fontSize: 12, color: colors.textTertiary, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>{m.tempPassword}</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: '#C9A962', textTransform: 'uppercase' }}>{m.role === 'user' ? 'sales' : m.role}</Text>
+                  <Text style={{ fontSize: 14, color: colors.textTertiary, fontFamily: Platform.OS === 'web' ? 'monospace' : undefined }}>{m.tempPassword}</Text>
                 </View>
               </View>
             ))}
@@ -458,7 +458,7 @@ export default function PartnerOnboardScreen() {
           {items.map((item, i) => (
             <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border }}>
               <Ionicons name={item.done ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={item.done ? '#34C759' : '#FF9500'} />
-              <Text style={{ flex: 1, fontSize: 14, color: item.done ? colors.text : colors.textSecondary }}>{item.label}</Text>
+              <Text style={{ flex: 1, fontSize: 16, color: item.done ? colors.text : colors.textSecondary }}>{item.label}</Text>
             </View>
           ))}
         </SectionCard>
@@ -467,12 +467,12 @@ export default function PartnerOnboardScreen() {
           <SectionCard style={{ borderColor: '#FF9500', borderWidth: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
               <Ionicons name="alert-circle" size={18} color="#FF9500" />
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#FF9500' }}>Remaining Items</Text>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#FF9500' }}>Remaining Items</Text>
             </View>
             {todos.map((t, i) => (
               <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 }}>
                 <View style={{ width: 18, height: 18, borderRadius: 3, borderWidth: 2, borderColor: '#FF9500' }} />
-                <Text style={{ fontSize: 13, color: colors.text }}>{t.action}</Text>
+                <Text style={{ fontSize: 15, color: colors.text }}>{t.action}</Text>
               </View>
             ))}
           </SectionCard>
@@ -517,29 +517,29 @@ const getS = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   closeBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
-  headerSub: { fontSize: 12, color: colors.textTertiary },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
+  headerSub: { fontSize: 14, color: colors.textTertiary },
   scrollContent: { padding: 20, paddingBottom: 80, maxWidth: 700, alignSelf: 'center', width: '100%' },
   dot: { width: 30, height: 30, borderRadius: 15, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card },
-  dotLabel: { fontSize: 10, color: colors.textTertiary, marginTop: 4, textAlign: 'center', fontWeight: '500' },
+  dotLabel: { fontSize: 12, color: colors.textTertiary, marginTop: 4, textAlign: 'center', fontWeight: '500' },
   progressTrack: { height: 3, backgroundColor: colors.border, marginHorizontal: 16, borderRadius: 2 },
   progressFill: { height: 3, backgroundColor: '#C9A962', borderRadius: 2 },
   stepTitle: { fontSize: 22, fontWeight: '800', color: colors.text, marginBottom: 6 },
-  stepDesc: { fontSize: 14, color: colors.textSecondary, lineHeight: 20 },
+  stepDesc: { fontSize: 16, color: colors.textSecondary, lineHeight: 20 },
   card: { backgroundColor: colors.card, borderRadius: 14, padding: 18, marginBottom: 16, borderWidth: 1, borderColor: colors.border },
-  label: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 6, marginTop: 6 },
-  input: { backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, color: colors.text, marginBottom: 12 },
+  label: { fontSize: 15, fontWeight: '600', color: colors.textSecondary, marginBottom: 6, marginTop: 6 },
+  input: { backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 18, color: colors.text, marginBottom: 12 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.card, marginRight: 8 },
   chipActive: { backgroundColor: '#C9A962', borderColor: '#C9A962' },
-  chipText: { fontSize: 13, fontWeight: '600', color: colors.text },
+  chipText: { fontSize: 15, fontWeight: '600', color: colors.text },
   logoBox: { width: '100%', height: 140, borderRadius: 14, borderWidth: 2, borderColor: colors.border, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
   roleChip: { flex: 1, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: colors.border, alignItems: 'center', backgroundColor: colors.bg },
   addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 12, borderWidth: 2, borderColor: '#C9A96240', borderStyle: 'dashed', marginBottom: 16 },
   actionChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 1, borderColor: '#007AFF30', backgroundColor: '#007AFF10' },
   btnRow: { flexDirection: 'row', gap: 10, marginTop: 16, marginBottom: 20 },
   btnPrimary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#C9A962', paddingVertical: 14, paddingHorizontal: 24, borderRadius: 12 },
-  btnPrimaryText: { fontSize: 16, fontWeight: '700', color: '#000' },
+  btnPrimaryText: { fontSize: 18, fontWeight: '700', color: '#000' },
   btnSec: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 14, paddingHorizontal: 18, borderRadius: 12, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
-  btnSecText: { fontSize: 15, fontWeight: '600', color: colors.textSecondary },
+  btnSecText: { fontSize: 17, fontWeight: '600', color: colors.textSecondary },
   btnSkip: { paddingVertical: 14, paddingHorizontal: 14 },
 });

@@ -756,7 +756,7 @@ const styles = StyleSheet.create({
   loadingText: {
     color: '#FFF',
     marginTop: 16,
-    fontSize: 16,
+    fontSize: 18,
   },
   errorContainer: {
     flex: 1,
@@ -767,7 +767,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#FF3B30',
-    fontSize: 18,
+    fontSize: 19,
     marginTop: 16,
     textAlign: 'center',
   },
@@ -780,7 +780,7 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     color: '#FFF',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
   heroSection: {
@@ -818,13 +818,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   userTitle: {
-    fontSize: 18,
+    fontSize: 19,
     color: '#FFF',
     opacity: 0.9,
     marginTop: 4,
   },
   storeName: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#FFF',
     opacity: 0.8,
     marginTop: 8,
@@ -846,7 +846,7 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     color: '#FFF',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
   },
   section: {
@@ -855,13 +855,13 @@ const styles = StyleSheet.create({
     borderBottomColor: '#2C2C2E',
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '700',
     color: '#FFF',
     marginBottom: 16,
   },
   bioText: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#CCC',
     lineHeight: 24,
   },
@@ -872,7 +872,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   funFactText: {
-    fontSize: 15,
+    fontSize: 17,
     color: '#CCC',
     flex: 1,
   },
@@ -901,7 +901,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   testimonialName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#FFF',
   },
@@ -910,7 +910,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   testimonialText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#CCC',
     fontStyle: 'italic',
     lineHeight: 20,
@@ -935,7 +935,7 @@ const styles = StyleSheet.create({
   },
   ctaButtonText: {
     color: '#FFF',
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
   },
   // Quick Links (Showroom, Save Contact)
@@ -964,7 +964,7 @@ const styles = StyleSheet.create({
   quickLinkText: {
     flex: 1,
     color: '#FFF',
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
   },
   reviewLinksContainer: {
@@ -983,7 +983,7 @@ const styles = StyleSheet.create({
   },
   reviewLinkText: {
     color: '#FFF',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
   },
   footer: {
@@ -992,7 +992,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     color: '#666',
-    fontSize: 12,
+    fontSize: 14,
   },
   // Modal styles
   modalOverlay: {
@@ -1015,7 +1015,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#2C2C2E',
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '700',
     color: '#FFF',
   },
@@ -1023,14 +1023,14 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   subHeader: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#C9A962',
     marginTop: 16,
     marginBottom: 12,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#AAA',
     marginBottom: 8,
   },
@@ -1039,7 +1039,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 14,
     color: '#FFF',
-    fontSize: 16,
+    fontSize: 18,
     marginBottom: 16,
   },
   textArea: {
@@ -1066,7 +1066,7 @@ const styles = StyleSheet.create({
   },
   photoPlaceholderText: {
     color: '#666',
-    fontSize: 14,
+    fontSize: 16,
   },
   uploadedPhoto: {
     width: '100%',
@@ -1081,7 +1081,7 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     color: '#FFF',
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
   },
 });

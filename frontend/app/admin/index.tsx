@@ -148,12 +148,12 @@ const tickerStyles = StyleSheet.create({
   },
   tickerText: {
     color: '#FFFFFF',
-    fontSize: 13,
+    fontSize: 15,
     flex: 1,
   },
   tickerTime: {
     color: '#8E8E93',
-    fontSize: 11,
+    fontSize: 13,
   },
   emptyTicker: {
     flexDirection: 'row',
@@ -164,7 +164,7 @@ const tickerStyles = StyleSheet.create({
   },
   emptyText: {
     color: '#8E8E93',
-    fontSize: 13,
+    fontSize: 15,
   },
 });
 
@@ -890,7 +890,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   loadingText: {
     color: colors.textSecondary,
-    fontSize: 14,
+    fontSize: 16,
   },
   header: {
     flexDirection: 'row',
@@ -908,7 +908,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -923,7 +923,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
   },
   roleText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     color: '#34C759',
   },
@@ -937,7 +937,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 16,
   },
   filterLabel: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
   },
@@ -955,7 +955,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   timeFilterText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.textSecondary,
   },
@@ -967,7 +967,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 20,
   },
   quickStatsTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 12,
@@ -1001,13 +1001,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 2,
   },
   quickStatLabel: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 2,
   },
   quickStatSubtext: {
-    fontSize: 10,
+    fontSize: 12,
     color: colors.textSecondary,
   },
   // Collapsible Section Styles
@@ -1034,12 +1034,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   sectionTitleText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   sectionCount: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6E6E73',
     marginTop: 1,
   },
@@ -1069,17 +1069,17 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   menuTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '500',
     color: colors.text,
     marginBottom: 1,
   },
   menuSubtitle: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
   },
   menuValue: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '700',
     marginRight: 10,
   },
@@ -1098,7 +1098,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   badgeText: {
     color: colors.text,
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
   },
   emptyState: {
@@ -1107,14 +1107,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 32,
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '600',
     color: colors.text,
     marginTop: 16,
     marginBottom: 8,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 20,

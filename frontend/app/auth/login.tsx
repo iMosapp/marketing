@@ -525,7 +525,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     aspectRatio: 1,
   },
   tagline: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     letterSpacing: 2,
     textTransform: 'uppercase',
@@ -539,7 +539,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.border,
@@ -555,7 +555,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   passwordInput: {
     flex: 1,
     padding: 16,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   eyeButton: {
@@ -588,12 +588,12 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   rememberMeText: {
     color: colors.textSecondary,
-    fontSize: 14,
+    fontSize: 16,
   },
   forgotButton: {},
   forgotText: {
     color: '#007AFF',
-    fontSize: 14,
+    fontSize: 16,
   },
   buttonDisabled: {
     opacity: 0.5,
@@ -611,7 +611,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   biometricButtonText: {
     color: '#007AFF',
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
   },
   signupContainer: {
@@ -620,7 +620,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   signupText: {
     color: colors.textSecondary,
-    fontSize: 15,
+    fontSize: 17,
     marginBottom: 8,
   },
   refreshButton: {
@@ -633,7 +633,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   refreshButtonText: {
     color: colors.textSecondary,
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
   },
   errorContainer: {
@@ -647,7 +647,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   errorText: {
     color: '#FF3B30',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
     flex: 1,
   },
@@ -683,7 +683,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   modalDescription: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
@@ -703,7 +703,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   modalButtonSecondaryText: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
   modalButtonPrimary: {
@@ -715,7 +715,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   modalButtonPrimaryText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
 });

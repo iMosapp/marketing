@@ -397,7 +397,7 @@ const { showToast } = useToast();
           </TouchableOpacity>
           <Text style={styles.headerTitle}>New Campaign</Text>
           <TouchableOpacity onPress={() => setShowTemplates(false)} data-testid="skip-templates-btn">
-            <Text style={{ color: '#007AFF', fontSize: 15, fontWeight: '600' }}>Build Custom</Text>
+            <Text style={{ color: '#007AFF', fontSize: 17, fontWeight: '600' }}>Build Custom</Text>
           </TouchableOpacity>
         </View>
 
@@ -405,7 +405,7 @@ const { showToast } = useToast();
           <Text style={{ fontSize: 22, fontWeight: '800', color: colors.text, marginBottom: 4 }}>
             Start with a Template
           </Text>
-          <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 20, lineHeight: 20 }}>
+          <Text style={{ fontSize: 16, color: colors.textSecondary, marginBottom: 20, lineHeight: 20 }}>
             Choose a proven campaign sequence or build your own from scratch. Templates come pre-loaded with timing, AI-powered personalization, and messages that sound like a real conversation.
           </Text>
 
@@ -583,8 +583,8 @@ const { showToast } = useToast();
                     <Ionicons name={dt.icon as any} size={22} color={dt.color} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, fontWeight: '600', color: campaign.dateType === dt.id ? dt.color : colors.text }}>{dt.name}</Text>
-                    <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>{dt.description}</Text>
+                    <Text style={{ fontSize: 17, fontWeight: '600', color: campaign.dateType === dt.id ? dt.color : colors.text }}>{dt.name}</Text>
+                    <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 2 }}>{dt.description}</Text>
                   </View>
                   {campaign.dateType === dt.id && (
                     <Ionicons name="checkmark-circle" size={22} color={dt.color} />
@@ -595,7 +595,7 @@ const { showToast } = useToast();
             {campaign.dateType && (
               <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: '#34C75910', borderRadius: 10, padding: 10, marginTop: 10, borderWidth: 1, borderColor: '#34C75920' }}>
                 <Ionicons name="flash" size={16} color="#34C759" />
-                <Text style={{ fontSize: 12, color: '#34C759', flex: 1, lineHeight: 17 }}>
+                <Text style={{ fontSize: 14, color: '#34C759', flex: 1, lineHeight: 17 }}>
                   Contacts with a {DATE_TYPES.find(d => d.id === campaign.dateType)?.name || 'date'} on file will be automatically enrolled in this campaign.
                 </Text>
               </View>
@@ -787,7 +787,7 @@ const { showToast } = useToast();
                     onPress={() => updateSequenceStep(step.id, 'channel', ch)}
                   >
                     <Ionicons name={ch === 'sms' ? 'chatbubble' : 'mail'} size={14} color={step.channel === ch ? '#FFF' : colors.textSecondary} />
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: step.channel === ch ? '#FFF' : colors.textSecondary }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: step.channel === ch ? '#FFF' : colors.textSecondary }}>
                       {ch === 'sms' ? 'SMS' : 'Email'}
                     </Text>
                   </TouchableOpacity>
@@ -802,7 +802,7 @@ const { showToast } = useToast();
                     onPress={() => updateSequenceStep(step.id, 'ai_generated', !step.ai_generated)}
                   >
                     <Ionicons name="sparkles" size={14} color={step.ai_generated ? '#FFD60A' : colors.textSecondary} />
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: step.ai_generated ? '#FFD60A' : colors.textSecondary }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: step.ai_generated ? '#FFD60A' : colors.textSecondary }}>
                       {step.ai_generated ? 'AI On' : 'AI Off'}
                     </Text>
                   </TouchableOpacity>
@@ -1013,7 +1013,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -1027,7 +1027,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   saveButtonText: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '700',
     color: '#FFF',
   },
@@ -1044,7 +1044,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
     color: colors.textSecondary,
     marginBottom: 8,
@@ -1052,7 +1052,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     letterSpacing: 0.5,
   },
   sectionDescription: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginBottom: 12,
   },
@@ -1060,7 +1060,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.surface,
@@ -1087,13 +1087,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   typeName: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 4,
   },
   typeDesc: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     lineHeight: 16,
   },
@@ -1118,7 +1118,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#007AFF',
   },
   tagButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     fontWeight: '600',
   },
@@ -1131,7 +1131,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   addStepText: {
-    fontSize: 15,
+    fontSize: 17,
     color: '#007AFF',
     fontWeight: '600',
   },
@@ -1158,13 +1158,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 10,
   },
   stepNumber: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '700',
     color: colors.text,
   },
   stepDelay: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     fontWeight: '500',
   },
@@ -1180,7 +1180,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   delayLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginBottom: 6,
     textAlign: 'center',
@@ -1202,7 +1202,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   delayValue: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
     width: 40,
@@ -1212,12 +1212,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 8,
     padding: 12,
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
     minHeight: 80,
   },
   charCount: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
     textAlign: 'right',
     marginTop: 4,
@@ -1229,7 +1229,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 8,
   },
   variableHintText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   timePickerButton: {
@@ -1244,12 +1244,12 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   timeText: {
     flex: 1,
-    fontSize: 17,
+    fontSize: 18,
     color: colors.text,
     fontWeight: '500',
   },
   timeHint: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 8,
   },
@@ -1273,16 +1273,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   pickerCancel: {
-    fontSize: 17,
+    fontSize: 18,
     color: colors.textSecondary,
   },
   pickerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   pickerDone: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -1302,20 +1302,20 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 16,
   },
   toggleLabel: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 4,
   },
   toggleDescription: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   previewSection: {
     marginBottom: 24,
   },
   previewTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
     color: colors.textSecondary,
     marginBottom: 16,
@@ -1350,13 +1350,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingBottom: 20,
   },
   timelineTime: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: '#007AFF',
     marginBottom: 4,
   },
   timelineMessage: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     lineHeight: 18,
   },
@@ -1370,7 +1370,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   complianceText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 15,
     color: '#34C759',
     lineHeight: 18,
   },
@@ -1382,7 +1382,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderTopColor: colors.surface,
   },
   mediaLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginBottom: 8,
     fontWeight: '600',
@@ -1422,7 +1422,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   addMediaText: {
-    fontSize: 10,
+    fontSize: 12,
     color: '#007AFF',
     marginTop: 2,
     fontWeight: '600',
@@ -1443,12 +1443,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF08',
   },
   modeTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '700',
     color: colors.text,
   },
   modeDesc: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 15,
@@ -1487,7 +1487,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#FFD60A20',
   },
   aiInfoText: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.border,
     flex: 1,
     lineHeight: 17,
@@ -1509,7 +1509,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#007AFF',
   },
   levelChipText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
   },
@@ -1530,12 +1530,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   templateName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: colors.text,
   },
   templateDesc: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     lineHeight: 18,
     marginTop: 3,
@@ -1556,7 +1556,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
   },
   templateMetaText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     color: colors.textSecondary,
   },

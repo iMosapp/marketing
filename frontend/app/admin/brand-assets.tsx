@@ -352,7 +352,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 12,
     borderBottomWidth: 1, borderBottomColor: COLORS.border,
   },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: COLORS.text },
+  headerTitle: { fontSize: 19, fontWeight: '700', color: COLORS.text },
   scroll: { flex: 1, paddingHorizontal: 16 },
 
   // Upload card
@@ -367,13 +367,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: 'rgba(0,122,255,0.15)',
     justifyContent: 'center', alignItems: 'center', marginBottom: 10,
   },
-  uploadTitle: { color: COLORS.text, fontSize: 16, fontWeight: '600', marginBottom: 4 },
-  uploadDesc: { color: COLORS.sub, fontSize: 13, textAlign: 'center' },
+  uploadTitle: { color: COLORS.text, fontSize: 18, fontWeight: '600', marginBottom: 4 },
+  uploadDesc: { color: COLORS.sub, fontSize: 15, textAlign: 'center' },
 
   // Sections
   section: { marginTop: 24 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-  sectionTitle: { color: COLORS.text, fontSize: 15, fontWeight: '700' },
+  sectionTitle: { color: COLORS.text, fontSize: 17, fontWeight: '700' },
 
   // Asset card
   assetCard: {
@@ -388,9 +388,9 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   assetImage: { width: 48, height: 48 },
   assetInfo: { flex: 1 },
-  assetLabel: { color: COLORS.text, fontSize: 14, fontWeight: '600', marginBottom: 2 },
-  assetDesc: { color: COLORS.sub, fontSize: 12, marginBottom: 1 },
-  assetSize: { color: '#6E6E73', fontSize: 11, fontWeight: '500' },
+  assetLabel: { color: COLORS.text, fontSize: 16, fontWeight: '600', marginBottom: 2 },
+  assetDesc: { color: COLORS.sub, fontSize: 14, marginBottom: 1 },
+  assetSize: { color: '#6E6E73', fontSize: 13, fontWeight: '500' },
   assetActions: { flexDirection: 'row', gap: 4 },
   assetBtn: {
     width: 36, height: 36, borderRadius: 10,
@@ -408,6 +408,6 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   quickLinkContent: { flex: 1 },
-  quickLinkLabel: { color: COLORS.text, fontSize: 14, fontWeight: '600', marginBottom: 2 },
-  quickLinkDesc: { color: COLORS.sub, fontSize: 12 },
+  quickLinkLabel: { color: COLORS.text, fontSize: 16, fontWeight: '600', marginBottom: 2 },
+  quickLinkDesc: { color: COLORS.sub, fontSize: 14 },
 });

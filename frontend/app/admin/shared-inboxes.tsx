@@ -494,7 +494,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 40,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -510,7 +510,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   infoText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   content: {
@@ -541,17 +541,17 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   inboxName: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
   },
   inboxPhone: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#007AFF',
     marginTop: 2,
   },
   inboxDescription: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 4,
   },
@@ -570,7 +570,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   assignedTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
   },
@@ -580,11 +580,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   addUserText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#007AFF',
   },
   noUsers: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     fontStyle: 'italic',
   },
@@ -603,7 +603,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 6,
   },
   userChipText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.text,
   },
   emptyState: {
@@ -611,13 +611,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 60,
   },
   emptyText: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
     marginTop: 16,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
@@ -634,7 +634,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   createButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -658,7 +658,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
   },
@@ -666,7 +666,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 16,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginBottom: 8,
     marginTop: 12,
@@ -675,7 +675,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 14,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   textArea: {
@@ -693,7 +693,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   submitButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -714,7 +714,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 12,
   },
   userAvatarText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -722,12 +722,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   userSelectName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '500',
     color: colors.text,
   },
   userSelectEmail: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
 });

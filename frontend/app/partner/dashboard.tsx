@@ -178,7 +178,7 @@ export default function PartnerDashboard() {
                       ) : users.map(u => (
                         <View key={u._id} style={s.subItem}>
                           <View style={s.userAvatar}>
-                            <Text style={{ fontSize: 11, fontWeight: '700', color: '#C9A962' }}>{(u.name || '?')[0]}</Text>
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#C9A962' }}>{(u.name || '?')[0]}</Text>
                           </View>
                           <View style={{ flex: 1, marginLeft: 8 }}>
                             <Text style={s.subItemTitle}>{u.name}</Text>
@@ -200,7 +200,7 @@ export default function PartnerDashboard() {
                       data-testid={`add-to-org-${org._id}`}
                     >
                       <Ionicons name="add-circle-outline" size={18} color="#C9A962" />
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: '#C9A962' }}>Add Location & Team</Text>
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: '#C9A962' }}>Add Location & Team</Text>
                     </TouchableOpacity>
                   </View>
                 )}
@@ -217,34 +217,34 @@ const getS = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   backBtn: { width: 36, height: 36, borderRadius: 12, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
+  headerTitle: { fontSize: 19, fontWeight: '700', color: colors.text },
   content: { padding: 16, paddingBottom: 40, maxWidth: 700, alignSelf: 'center', width: '100%' },
   onboardBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#C9A962', borderRadius: 16, padding: 18, gap: 14, marginBottom: 16 },
   onboardIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.15)', alignItems: 'center', justifyContent: 'center' },
-  onboardTitle: { fontSize: 17, fontWeight: '700', color: '#000' },
-  onboardSub: { fontSize: 13, color: 'rgba(0,0,0,0.6)', marginTop: 2 },
+  onboardTitle: { fontSize: 18, fontWeight: '700', color: '#000' },
+  onboardSub: { fontSize: 15, color: 'rgba(0,0,0,0.6)', marginTop: 2 },
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   statCard: { flex: 1, backgroundColor: colors.card, borderRadius: 12, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
   statNum: { fontSize: 24, fontWeight: '800', color: colors.text },
-  statLabel: { fontSize: 11, color: colors.textSecondary, marginTop: 2, fontWeight: '500' },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 12 },
+  statLabel: { fontSize: 13, color: colors.textSecondary, marginTop: 2, fontWeight: '500' },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 12 },
   emptyState: { alignItems: 'center', paddingVertical: 40, gap: 8 },
-  emptyText: { fontSize: 16, fontWeight: '600', color: colors.textSecondary },
-  emptySubtext: { fontSize: 13, color: colors.textTertiary, textAlign: 'center', maxWidth: 280 },
+  emptyText: { fontSize: 18, fontWeight: '600', color: colors.textSecondary },
+  emptySubtext: { fontSize: 15, color: colors.textTertiary, textAlign: 'center', maxWidth: 280 },
   orgCard: { backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, marginBottom: 12, overflow: 'hidden' },
   orgHeader: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
   orgIconBox: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#C9A96218', alignItems: 'center', justifyContent: 'center' },
-  orgName: { fontSize: 16, fontWeight: '700', color: colors.text },
-  orgMeta: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  orgName: { fontSize: 18, fontWeight: '700', color: colors.text },
+  orgMeta: { fontSize: 14, color: colors.textSecondary, marginTop: 2 },
   orgBody: { borderTopWidth: 1, borderTopColor: colors.border, paddingHorizontal: 16, paddingBottom: 12 },
   subSection: { paddingTop: 12 },
-  subLabel: { fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
-  noDataText: { fontSize: 13, color: colors.textTertiary, fontStyle: 'italic', paddingVertical: 4 },
+  subLabel: { fontSize: 15, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 },
+  noDataText: { fontSize: 15, color: colors.textTertiary, fontStyle: 'italic', paddingVertical: 4 },
   subItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border },
-  subItemTitle: { fontSize: 14, fontWeight: '600', color: colors.text },
-  subItemMeta: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
+  subItemTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
+  subItemMeta: { fontSize: 14, color: colors.textSecondary, marginTop: 1 },
   userAvatar: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#C9A96218', alignItems: 'center', justifyContent: 'center' },
   roleBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.border },
-  roleBadgeText: { fontSize: 10, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase' },
+  roleBadgeText: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase' },
   quickAddBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, marginTop: 12, borderRadius: 10, borderWidth: 2, borderColor: '#C9A96240', borderStyle: 'dashed' },
 });

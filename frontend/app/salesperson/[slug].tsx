@@ -57,6 +57,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#999',
-    fontSize: 16,
+    fontSize: 18,
   },
 });

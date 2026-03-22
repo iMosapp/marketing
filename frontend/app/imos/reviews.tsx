@@ -75,7 +75,7 @@ export default function ImosReviews() {
               Turn Happy Customers Into{'\n'}
               <Text style={{ color: '#007AFF' }}>5-Star Reviews.</Text>
             </Text>
-            <Text style={[s.heroSub, isDesktop && { fontSize: 18, maxWidth: 560 }]}>
+            <Text style={[s.heroSub, isDesktop && { fontSize: 19, maxWidth: 560 }]}>
               One branded link. Every review site. Full tracking. Approval control. Built right into your digital cards and customer workflows.
             </Text>
             <View style={s.heroCTAs}>
@@ -164,23 +164,23 @@ const s = StyleSheet.create({
     width: 72, height: 72, borderRadius: 20, backgroundColor: 'rgba(255,214,10,0.1)',
     alignItems: 'center', justifyContent: 'center', marginBottom: 20, borderWidth: 1, borderColor: 'rgba(255,214,10,0.2)',
   },
-  heroLabel: { fontSize: 11, fontWeight: '700', color: '#007AFF', letterSpacing: 2, marginBottom: 16 },
+  heroLabel: { fontSize: 13, fontWeight: '700', color: '#007AFF', letterSpacing: 2, marginBottom: 16 },
   heroTitle: { fontSize: 32, fontWeight: '900', color: '#1D1D1F', textAlign: 'center', lineHeight: 40, marginBottom: 20 },
-  heroSub: { fontSize: 16, color: '#6E6E73', textAlign: 'center', lineHeight: 24, maxWidth: 480, marginBottom: 32 },
+  heroSub: { fontSize: 18, color: '#6E6E73', textAlign: 'center', lineHeight: 24, maxWidth: 480, marginBottom: 32 },
   heroCTAs: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 12 },
   primaryBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     backgroundColor: '#007AFF', paddingVertical: 14, paddingHorizontal: 28, borderRadius: 980,
   },
-  primaryBtnText: { fontSize: 15, fontWeight: '700', color: '#FFF' },
+  primaryBtnText: { fontSize: 17, fontWeight: '700', color: '#FFF' },
   outlineBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     paddingVertical: 14, paddingHorizontal: 24, borderRadius: 28,
     borderWidth: 1, borderColor: 'rgba(0,122,255,0.2)',
   },
-  outlineBtnText: { fontSize: 15, fontWeight: '600', color: '#007AFF' },
+  outlineBtnText: { fontSize: 17, fontWeight: '600', color: '#007AFF' },
 
-  sectionLabel: { fontSize: 11, fontWeight: '700', color: '#007AFF', letterSpacing: 2, marginBottom: 12 },
+  sectionLabel: { fontSize: 13, fontWeight: '700', color: '#007AFF', letterSpacing: 2, marginBottom: 12 },
   sectionTitle: { fontSize: 28, fontWeight: '800', color: '#1D1D1F', textAlign: 'center', lineHeight: 36, marginBottom: 32 },
 
   featuresSection: { alignItems: 'center', paddingTop: 48, paddingHorizontal: 20 },
@@ -190,8 +190,8 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)',
   },
   featureIconWrap: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
-  featureCardTitle: { fontSize: 17, fontWeight: '700', color: '#1D1D1F', marginBottom: 6 },
-  featureCardDesc: { fontSize: 14, color: '#6E6E73', lineHeight: 21 },
+  featureCardTitle: { fontSize: 18, fontWeight: '700', color: '#1D1D1F', marginBottom: 6 },
+  featureCardDesc: { fontSize: 16, color: '#6E6E73', lineHeight: 21 },
 
   howSection: { alignItems: 'center', paddingTop: 56, paddingHorizontal: 20 },
   stepsContainer: { gap: 16, width: '100%' },
@@ -203,14 +203,14 @@ const s = StyleSheet.create({
     width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,122,255,0.1)',
     alignItems: 'center', justifyContent: 'center', marginBottom: 12,
   },
-  stepNumberText: { fontSize: 16, fontWeight: '800', color: '#007AFF' },
-  stepTitle: { fontSize: 16, fontWeight: '700', color: '#1D1D1F', textAlign: 'center', marginBottom: 6 },
-  stepDesc: { fontSize: 13, color: '#86868B', textAlign: 'center', lineHeight: 19 },
+  stepNumberText: { fontSize: 18, fontWeight: '800', color: '#007AFF' },
+  stepTitle: { fontSize: 18, fontWeight: '700', color: '#1D1D1F', textAlign: 'center', marginBottom: 6 },
+  stepDesc: { fontSize: 15, color: '#86868B', textAlign: 'center', lineHeight: 19 },
 
   bottomCTA: {
     alignItems: 'center', paddingVertical: 56, paddingHorizontal: 20, marginTop: 32,
     backgroundColor: 'rgba(0,122,255,0.03)', borderTopWidth: 1, borderColor: 'rgba(0,122,255,0.06)',
   },
   bottomTitle: { fontSize: 28, fontWeight: '800', color: '#1D1D1F', textAlign: 'center', marginBottom: 12, lineHeight: 36 },
-  bottomSub: { fontSize: 15, color: '#6E6E73', textAlign: 'center', lineHeight: 22, maxWidth: 400, marginBottom: 28 },
+  bottomSub: { fontSize: 17, color: '#6E6E73', textAlign: 'center', lineHeight: 22, maxWidth: 400, marginBottom: 28 },
 });

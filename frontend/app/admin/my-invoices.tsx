@@ -178,7 +178,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -193,13 +193,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 80,
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
     marginTop: 16,
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
@@ -215,7 +215,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   supportButtonText: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -232,7 +232,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   invoiceNumber: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
   },
@@ -242,7 +242,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 10,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.text,
     textTransform: 'capitalize',
@@ -254,7 +254,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 4,
   },
   invoiceDate: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
 });

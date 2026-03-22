@@ -195,7 +195,7 @@ const s = StyleSheet.create({
   // Header
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 56, paddingBottom: 16 },
   backBtn: { width: 32, height: 32, justifyContent: 'center' },
-  title: { fontSize: 20, fontWeight: '800', color: colors.text, letterSpacing: 0.5 },
+  title: { fontSize: 21, fontWeight: '800', color: colors.text, letterSpacing: 0.5 },
 
   // Overall Card
   overallCard: { marginHorizontal: 16, backgroundColor: colors.card, borderRadius: 16, padding: 20, marginBottom: 20 },
@@ -204,43 +204,43 @@ const s = StyleSheet.create({
   overallCenter: { alignItems: 'center', flex: 1 },
   overallNum: { fontSize: 28, fontWeight: '800', color: colors.text },
   overallPct: { fontSize: 36, fontWeight: '900', color: colors.gold },
-  overallLabel: { fontSize: 12, color: colors.textSecondary, marginTop: 2, fontWeight: '600' },
+  overallLabel: { fontSize: 14, color: colors.textSecondary, marginTop: 2, fontWeight: '600' },
   progressTrack: { height: 8, backgroundColor: colors.surface, borderRadius: 4, overflow: 'hidden' as const },
   progressFill: { height: '100%' as any, backgroundColor: colors.gold, borderRadius: 4 },
-  progressSubtext: { fontSize: 12, color: colors.textSecondary, textAlign: 'center' as const, marginTop: 8 },
+  progressSubtext: { fontSize: 14, color: colors.textSecondary, textAlign: 'center' as const, marginTop: 8 },
 
   // Section
   section: { marginHorizontal: 16, marginBottom: 20 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 12, letterSpacing: 0.5 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 12, letterSpacing: 0.5 },
 
   // Member Row
   memberRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.card, borderRadius: 12, padding: 14, marginBottom: 8 },
   memberLeft: { flexDirection: 'row', alignItems: 'center', flex: 1, gap: 10 },
   rankBadge: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' },
-  rankText: { fontSize: 11, fontWeight: '700', color: colors.textSecondary },
+  rankText: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
   memberAvatar: { width: 36, height: 36, borderRadius: 18 },
   memberAvatarPlaceholder: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surface, justifyContent: 'center', alignItems: 'center' },
-  memberInitials: { fontSize: 14, fontWeight: '700', color: colors.textSecondary },
+  memberInitials: { fontSize: 16, fontWeight: '700', color: colors.textSecondary },
   memberInfo: { flex: 1 },
-  memberName: { fontSize: 14, fontWeight: '700', color: colors.text },
-  memberTitle: { fontSize: 11, color: colors.textSecondary },
+  memberName: { fontSize: 16, fontWeight: '700', color: colors.text },
+  memberTitle: { fontSize: 13, color: colors.textSecondary },
   memberRight: { alignItems: 'flex-end', minWidth: 100 },
   memberProgressWrap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   memberProgressTrack: { width: 60, height: 6, backgroundColor: colors.surface, borderRadius: 3, overflow: 'hidden' as const },
   memberProgressFill: { height: '100%' as any, borderRadius: 3 },
-  memberPct: { fontSize: 13, fontWeight: '800', minWidth: 36, textAlign: 'right' as const },
-  memberStats: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+  memberPct: { fontSize: 15, fontWeight: '800', minWidth: 36, textAlign: 'right' as const },
+  memberStats: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
 
   // Recent Activity
   recentRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.surface },
   recentDot: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#C9A96215', justifyContent: 'center', alignItems: 'center' },
   recentContent: { flex: 1 },
-  recentName: { fontSize: 14, fontWeight: '600', color: colors.text },
-  recentSub: { fontSize: 12, color: colors.textSecondary },
-  recentTime: { fontSize: 11, color: colors.textSecondary },
+  recentName: { fontSize: 16, fontWeight: '600', color: colors.text },
+  recentSub: { fontSize: 14, color: colors.textSecondary },
+  recentTime: { fontSize: 13, color: colors.textSecondary },
 
   // Empty
   emptyCard: { alignItems: 'center', paddingVertical: 32, gap: 8, backgroundColor: colors.card, borderRadius: 12 },
-  emptyText: { fontSize: 14, color: '#666' },
-  emptySubtext: { fontSize: 12, color: '#444', textAlign: 'center' as const },
+  emptyText: { fontSize: 16, color: '#666' },
+  emptySubtext: { fontSize: 14, color: '#444', textAlign: 'center' as const },
 });

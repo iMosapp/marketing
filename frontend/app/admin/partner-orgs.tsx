@@ -375,8 +375,8 @@ const getS = (colors: any) => StyleSheet.create({
     paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.card,
   },
   headerBtn: { padding: 4, minWidth: 44 },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
-  headerSubtitle: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
+  headerSubtitle: { fontSize: 14, color: colors.textSecondary, marginTop: 2 },
   scroll: { padding: 16 },
 
   // Link panel
@@ -384,27 +384,27 @@ const getS = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card, borderRadius: 14, padding: 16, marginBottom: 16,
     borderWidth: 1, borderColor: colors.surface,
   },
-  linkTitle: { fontSize: 15, fontWeight: '600', color: colors.text, marginBottom: 10 },
+  linkTitle: { fontSize: 17, fontWeight: '600', color: colors.text, marginBottom: 10 },
   linkSearch: {
-    backgroundColor: colors.surface, borderRadius: 10, padding: 12, fontSize: 15,
+    backgroundColor: colors.surface, borderRadius: 10, padding: 12, fontSize: 17,
     color: colors.text, marginBottom: 10, borderWidth: 1, borderColor: colors.borderLight,
   },
-  linkEmpty: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', padding: 16 },
+  linkEmpty: { fontSize: 16, color: colors.textSecondary, textAlign: 'center', padding: 16 },
   linkItem: {
     flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10,
     borderTopWidth: 1, borderTopColor: colors.surface,
   },
-  linkItemName: { flex: 1, fontSize: 15, color: colors.text, fontWeight: '500' },
+  linkItemName: { flex: 1, fontSize: 17, color: colors.text, fontWeight: '500' },
 
   // Empty state
   empty: { alignItems: 'center', paddingVertical: 60 },
-  emptyText: { fontSize: 18, color: '#8E8E93', marginTop: 12 },
-  emptySub: { fontSize: 14, color: colors.textSecondary, marginTop: 4, textAlign: 'center', paddingHorizontal: 40 },
+  emptyText: { fontSize: 19, color: '#8E8E93', marginTop: 12 },
+  emptySub: { fontSize: 16, color: colors.textSecondary, marginTop: 4, textAlign: 'center', paddingHorizontal: 40 },
   emptyBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#C9A962',
     paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12, marginTop: 20,
   },
-  emptyBtnText: { fontSize: 15, fontWeight: '600', color: '#000' },
+  emptyBtnText: { fontSize: 17, fontWeight: '600', color: '#000' },
 
   // Org card
   orgCard: {
@@ -419,16 +419,16 @@ const getS = (colors: any) => StyleSheet.create({
     width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
     backgroundColor: '#C9A96215',
   },
-  orgName: { fontSize: 16, fontWeight: '600', color: colors.text },
-  orgSub: { fontSize: 13, color: colors.textSecondary, marginTop: 1 },
+  orgName: { fontSize: 18, fontWeight: '600', color: colors.text },
+  orgSub: { fontSize: 15, color: colors.textSecondary, marginTop: 1 },
 
   // Store rows
   storeRow: {
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10,
     borderBottomWidth: 1, borderBottomColor: colors.surface,
   },
-  storeName: { fontSize: 14, fontWeight: '500', color: colors.text },
-  storeLoc: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
+  storeName: { fontSize: 16, fontWeight: '500', color: colors.text },
+  storeLoc: { fontSize: 14, color: colors.textSecondary, marginTop: 1 },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
 
   // Org actions
@@ -440,12 +440,12 @@ const getS = (colors: any) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: '#007AFF15', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8,
   },
-  createAccountText: { fontSize: 13, fontWeight: '600', color: '#007AFF' },
+  createAccountText: { fontSize: 15, fontWeight: '600', color: '#007AFF' },
   unlinkBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     paddingHorizontal: 10, paddingVertical: 8,
   },
-  unlinkText: { fontSize: 12, color: '#FF3B30', fontWeight: '500' },
+  unlinkText: { fontSize: 14, color: '#FF3B30', fontWeight: '500' },
 
   // Modal
   modalContainer: { flex: 1, backgroundColor: colors.bg },
@@ -453,13 +453,13 @@ const getS = (colors: any) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     padding: 16, borderBottomWidth: 1, borderBottomColor: colors.surface,
   },
-  modalCancel: { fontSize: 17, color: '#007AFF' },
-  modalTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
-  modalSave: { fontSize: 17, fontWeight: '600', color: '#C9A962' },
+  modalCancel: { fontSize: 18, color: '#007AFF' },
+  modalTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
+  modalSave: { fontSize: 18, fontWeight: '600', color: '#C9A962' },
   modalContent: { padding: 16 },
-  inputLabel: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 6, marginTop: 14 },
+  inputLabel: { fontSize: 15, fontWeight: '600', color: colors.textSecondary, marginBottom: 6, marginTop: 14 },
   input: {
-    backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16,
+    backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 18,
     color: colors.text, borderWidth: 1, borderColor: colors.surface,
   },
 });

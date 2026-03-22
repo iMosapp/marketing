@@ -499,7 +499,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 40,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -519,7 +519,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   infoText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   pendingSection: {
@@ -533,7 +533,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   pendingTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: '#FF9500',
   },
@@ -552,7 +552,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   pendingCreator: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#FF9500',
     marginTop: 2,
   },
@@ -601,12 +601,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   tagName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   tagCount: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -631,7 +631,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 4,
   },
   createText: {
-    fontSize: 15,
+    fontSize: 17,
     color: '#007AFF',
     marginTop: 8,
     fontWeight: '500',
@@ -651,16 +651,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.card,
   },
   modalTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   cancelButton: {
-    fontSize: 17,
+    fontSize: 18,
     color: '#007AFF',
   },
   saveButton: {
-    fontSize: 17,
+    fontSize: 18,
     color: '#007AFF',
     fontWeight: '600',
   },
@@ -684,11 +684,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   previewText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
   inputLabel: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginBottom: 8,
     marginTop: 16,
@@ -697,7 +697,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   colorGrid: {
@@ -736,7 +736,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF20',
   },
   iconLabel: {
-    fontSize: 10,
+    fontSize: 12,
     color: colors.textSecondary,
     marginTop: 4,
   },
@@ -756,7 +756,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   modalSaveBtnText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
   },
   modalCancelBtn: {
@@ -766,7 +766,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   modalCancelBtnText: {
     color: colors.textSecondary,
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
   },
 });

@@ -190,7 +190,7 @@ export default function PendingSendPage() {
           <Text style={styles.headerSub}>{allPending.length} pending</Text>
         </View>
         <TouchableOpacity onPress={handleSkip} data-testid="pending-send-skip">
-          <Text style={{ color: '#FF9500', fontSize: 14, fontWeight: '600' }}>Skip</Text>
+          <Text style={{ color: '#FF9500', fontSize: 16, fontWeight: '600' }}>Skip</Text>
         </TouchableOpacity>
       </View>
 
@@ -224,10 +224,10 @@ export default function PendingSendPage() {
               <View style={{ width: 64, height: 64, borderRadius: 18, backgroundColor: `${cardColors[pendingSend.card_type] || '#C9A962'}20`, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
                 <Ionicons name="gift" size={32} color={cardColors[pendingSend.card_type] || '#C9A962'} />
               </View>
-              <Text style={{ color: colors.text, fontSize: 17, fontWeight: '700', marginBottom: 4 }}>
+              <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700', marginBottom: 4 }}>
                 {cardLabels[pendingSend.card_type] || 'Card'}
               </Text>
-              <Text style={{ color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 15, textAlign: 'center' }}>
                 Create and send this card to {pendingSend.contact_name || 'your contact'}
               </Text>
             </View>
@@ -316,12 +316,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 36, height: 36, borderRadius: 10, backgroundColor: colors.card,
     alignItems: 'center', justifyContent: 'center',
   },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
-  headerSub: { fontSize: 12, color: colors.textSecondary },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
+  headerSub: { fontSize: 14, color: colors.textSecondary },
   content: { flex: 1, padding: 16 },
   emptyWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
-  emptyTitle: { fontSize: 20, fontWeight: '700', color: colors.text },
-  emptySubtitle: { fontSize: 14, color: colors.textSecondary },
+  emptyTitle: { fontSize: 21, fontWeight: '700', color: colors.text },
+  emptySubtitle: { fontSize: 16, color: colors.textSecondary },
   infoCard: {
     backgroundColor: colors.card, borderRadius: 14, padding: 14,
     borderWidth: 1, borderColor: colors.surface, marginBottom: 12,
@@ -329,23 +329,23 @@ const getStyles = (colors: any) => StyleSheet.create({
   channelBadge: {
     width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
   },
-  campaignName: { fontSize: 15, fontWeight: '700', color: colors.text },
-  stepInfo: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
+  campaignName: { fontSize: 17, fontWeight: '700', color: colors.text },
+  stepInfo: { fontSize: 14, color: colors.textSecondary, marginTop: 1 },
   recipientCard: {
     backgroundColor: colors.card, borderRadius: 14, padding: 14,
     borderWidth: 1, borderColor: colors.surface, marginBottom: 12,
   },
-  recipientLabel: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
-  recipientName: { fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 2 },
-  recipientDetail: { fontSize: 13, color: '#007AFF', marginTop: 1 },
+  recipientLabel: { fontSize: 13, color: colors.textSecondary, fontWeight: '600' },
+  recipientName: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 2 },
+  recipientDetail: { fontSize: 15, color: '#007AFF', marginTop: 1 },
   messageSection: { marginBottom: 12 },
-  messageLabel: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 },
+  messageLabel: { fontSize: 15, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 },
   messageInput: {
     backgroundColor: colors.card, borderRadius: 14, padding: 14,
-    color: colors.text, fontSize: 15, lineHeight: 22, minHeight: 120,
+    color: colors.text, fontSize: 17, lineHeight: 22, minHeight: 120,
     borderWidth: 1, borderColor: colors.surface,
   },
-  charCount: { fontSize: 11, color: '#6E6E73', marginTop: 4, textAlign: 'right' },
+  charCount: { fontSize: 13, color: '#6E6E73', marginTop: 4, textAlign: 'right' },
   mediaSection: { marginBottom: 12 },
   mediaThumb: { width: 80, height: 80, borderRadius: 10, marginRight: 8 },
   actions: { gap: 10, marginTop: 8 },
@@ -353,11 +353,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     backgroundColor: '#007AFF', borderRadius: 14, paddingVertical: 16,
   },
-  sendButtonText: { fontSize: 16, fontWeight: '700', color: colors.text },
+  sendButtonText: { fontSize: 18, fontWeight: '700', color: colors.text },
   markSentButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
     backgroundColor: colors.card, borderRadius: 14, paddingVertical: 14,
     borderWidth: 1, borderColor: '#34C75940',
   },
-  markSentText: { fontSize: 14, fontWeight: '600', color: '#34C759' },
+  markSentText: { fontSize: 16, fontWeight: '600', color: '#34C759' },
 });

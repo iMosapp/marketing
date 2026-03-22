@@ -375,7 +375,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   errorText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textSecondary,
     marginTop: 16,
   },
@@ -391,7 +391,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
   },
@@ -407,7 +407,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.card,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 12,
@@ -430,16 +430,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 12,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
   },
   dateText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginBottom: 4,
   },
   validText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
   },
   infoCard: {
@@ -453,7 +453,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   infoText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     marginLeft: 12,
   },
@@ -468,11 +468,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   pricingLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
   },
   pricingValue: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.text,
     fontWeight: '500',
   },
@@ -484,12 +484,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 0,
   },
   totalLabel: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   totalValue: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '700',
     color: '#007AFF',
   },
@@ -499,7 +499,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 16,
   },
   notesText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.text,
     lineHeight: 20,
   },
@@ -517,7 +517,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   resendButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -533,7 +533,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#FF3B30',
   },
   deleteButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#FF3B30',
   },
@@ -552,16 +552,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.card,
   },
   modalCancel: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#007AFF',
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
   },
   modalSave: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -569,7 +569,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 16,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 8,
@@ -579,7 +579,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     color: colors.text,
-    fontSize: 16,
+    fontSize: 18,
     minHeight: 150,
     textAlignVertical: 'top',
   },

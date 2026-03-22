@@ -151,7 +151,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -163,7 +163,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   countText: {
     color: '#34C759',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
   },
   listContent: {
@@ -193,17 +193,17 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   contactName: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
   duration: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
     color: '#34C759',
   },
   userName: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -214,12 +214,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 6,
   },
   status: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '500',
     textTransform: 'capitalize',
   },
   date: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
   },
   emptyContainer: {
@@ -229,7 +229,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingTop: 100,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textSecondary,
     marginTop: 12,
   },

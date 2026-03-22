@@ -122,8 +122,8 @@ export default function TrainingHubScreen() {
         return (
           <View style={s.overallProgress}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary }}>Overall Progress</Text>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: '#C9A962' }}>{totalDone}/{totalLessons} lessons ({pct}%)</Text>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.textSecondary }}>Overall Progress</Text>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#C9A962' }}>{totalDone}/{totalLessons} lessons ({pct}%)</Text>
             </View>
             <View style={s.progressBar}><View style={[s.progressFill, { width: `${pct}%` }]} /></View>
           </View>
@@ -146,9 +146,9 @@ export default function TrainingHubScreen() {
                 </View>
                 <Text style={s.trackDesc} numberOfLines={2}>{track.description}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8 }}>
-                  <Text style={{ fontSize: 12, color: colors.textTertiary }}>{track.lesson_count} lessons</Text>
+                  <Text style={{ fontSize: 14, color: colors.textTertiary }}>{track.lesson_count} lessons</Text>
                   <View style={[s.progressBar, { flex: 1, height: 4 }]}><View style={[s.progressFill, { width: `${pct}%`, backgroundColor: track.color }]} /></View>
-                  <Text style={{ fontSize: 12, fontWeight: '600', color: track.color }}>{pct}%</Text>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: track.color }}>{pct}%</Text>
                 </View>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
@@ -167,10 +167,10 @@ export default function TrainingHubScreen() {
       <View>
         <TouchableOpacity onPress={() => setSelectedTrack(null)} style={s.breadcrumb}>
           <Ionicons name="arrow-back" size={18} color="#C9A962" />
-          <Text style={{ fontSize: 14, color: '#C9A962', fontWeight: '600' }}>All Tracks</Text>
+          <Text style={{ fontSize: 16, color: '#C9A962', fontWeight: '600' }}>All Tracks</Text>
         </TouchableOpacity>
         <Text style={s.sectionTitle}>{selectedTrack.title}</Text>
-        <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 16 }}>{completedCount}/{selectedTrack.lessons.length} lessons completed</Text>
+        <Text style={{ fontSize: 15, color: colors.textSecondary, marginBottom: 16 }}>{completedCount}/{selectedTrack.lessons.length} lessons completed</Text>
         {selectedTrack.lessons.map((lesson, idx) => {
           const done = progress[lesson.id] || false;
           return (
@@ -178,14 +178,14 @@ export default function TrainingHubScreen() {
               onPress={() => setSelectedLesson(lesson)} activeOpacity={0.7} data-testid={`lesson-${lesson.slug}`}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <View style={[s.lessonNum, done && { backgroundColor: '#34C759', borderColor: '#34C759' }]}>
-                  {done ? <Ionicons name="checkmark" size={14} color="#FFF" /> : <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textTertiary }}>{idx + 1}</Text>}
+                  {done ? <Ionicons name="checkmark" size={14} color="#FFF" /> : <Text style={{ fontSize: 15, fontWeight: '700', color: colors.textTertiary }}>{idx + 1}</Text>}
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[s.lessonTitle, done && { color: colors.textSecondary }]}>{lesson.title}</Text>
                   <Text style={s.lessonMeta}>{lesson.description}</Text>
                 </View>
                 <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                  <Text style={{ fontSize: 11, color: colors.textTertiary }}>{lesson.duration}</Text>
+                  <Text style={{ fontSize: 13, color: colors.textTertiary }}>{lesson.duration}</Text>
                   <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
                 </View>
               </View>
@@ -206,15 +206,15 @@ export default function TrainingHubScreen() {
       <View>
         <TouchableOpacity onPress={() => setSelectedLesson(null)} style={s.breadcrumb}>
           <Ionicons name="arrow-back" size={18} color="#C9A962" />
-          <Text style={{ fontSize: 14, color: '#C9A962', fontWeight: '600' }}>{selectedTrack.title}</Text>
+          <Text style={{ fontSize: 16, color: '#C9A962', fontWeight: '600' }}>{selectedTrack.title}</Text>
         </TouchableOpacity>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
           <View style={[s.lessonNum, { width: 32, height: 32, borderRadius: 8, backgroundColor: selectedTrack.color + '18', borderColor: selectedTrack.color }]}>
-            <Text style={{ fontSize: 14, fontWeight: '800', color: selectedTrack.color }}>{currIdx + 1}</Text>
+            <Text style={{ fontSize: 16, fontWeight: '800', color: selectedTrack.color }}>{currIdx + 1}</Text>
           </View>
           <Text style={s.lessonDetailTitle}>{selectedLesson.title}</Text>
         </View>
-        <Text style={{ fontSize: 12, color: colors.textTertiary, marginBottom: 20 }}>{selectedLesson.duration} read</Text>
+        <Text style={{ fontSize: 14, color: colors.textTertiary, marginBottom: 20 }}>{selectedLesson.duration} read</Text>
 
         {/* Content */}
         <View style={s.contentCard}>
@@ -226,11 +226,11 @@ export default function TrainingHubScreen() {
           <View style={[s.contentCard, { marginTop: 12 }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
               <Ionicons name="play-circle" size={20} color={selectedTrack.color} />
-              <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>Watch the Video</Text>
+              <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>Watch the Video</Text>
             </View>
             <TouchableOpacity style={s.videoPlaceholder}>
               <Ionicons name="play" size={32} color="#FFF" />
-              <Text style={{ color: '#FFF', fontSize: 13, marginTop: 4 }}>Open Video</Text>
+              <Text style={{ color: '#FFF', fontSize: 15, marginTop: 4 }}>Open Video</Text>
             </TouchableOpacity>
           </View>
         ) : null}
@@ -240,14 +240,14 @@ export default function TrainingHubScreen() {
           <View style={[s.contentCard, { marginTop: 12, borderColor: selectedTrack.color, borderWidth: 1 }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
               <Ionicons name="list" size={18} color={selectedTrack.color} />
-              <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>Action Steps</Text>
+              <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>Action Steps</Text>
             </View>
             {selectedLesson.steps.map((step, i) => (
               <View key={i} style={{ flexDirection: 'row', gap: 10, paddingVertical: 6 }}>
                 <View style={[s.stepCheck, { borderColor: selectedTrack.color }]}>
-                  <Text style={{ fontSize: 10, fontWeight: '700', color: selectedTrack.color }}>{i + 1}</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: selectedTrack.color }}>{i + 1}</Text>
                 </View>
-                <Text style={{ flex: 1, fontSize: 14, color: colors.text, lineHeight: 20 }}>{step}</Text>
+                <Text style={{ flex: 1, fontSize: 16, color: colors.text, lineHeight: 20 }}>{step}</Text>
               </View>
             ))}
           </View>
@@ -263,7 +263,7 @@ export default function TrainingHubScreen() {
           </TouchableOpacity>
           {nextLesson && (
             <TouchableOpacity style={s.nextBtn} onPress={() => { setSelectedLesson(nextLesson); scrollRef?.current?.scrollTo({ y: 0, animated: true }); }}>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.textSecondary }}>Next: {nextLesson.title}</Text>
+              <Text style={{ fontSize: 17, fontWeight: '600', color: colors.textSecondary }}>Next: {nextLesson.title}</Text>
               <Ionicons name="arrow-forward" size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
@@ -306,40 +306,40 @@ const getS = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   headerBackBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' },
   content: { padding: 20, paddingBottom: 60, maxWidth: 700, alignSelf: 'center', width: '100%' },
   heroSection: { alignItems: 'center', paddingVertical: 24 },
   heroIcon: { width: 64, height: 64, borderRadius: 20, backgroundColor: '#C9A96218', alignItems: 'center', justifyContent: 'center', marginBottom: 14 },
   heroTitle: { fontSize: 26, fontWeight: '800', color: colors.text, marginBottom: 8 },
-  heroDesc: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 20, maxWidth: 400 },
+  heroDesc: { fontSize: 16, color: colors.textSecondary, textAlign: 'center', lineHeight: 20, maxWidth: 400 },
   overallProgress: { backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: colors.border },
   progressBar: { height: 6, backgroundColor: colors.border, borderRadius: 3, overflow: 'hidden' },
   progressFill: { height: '100%', backgroundColor: '#C9A962', borderRadius: 3 },
   trackCard: { backgroundColor: colors.card, borderRadius: 14, padding: 18, marginBottom: 12, borderWidth: 1, borderColor: colors.border },
   trackIconBox: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  trackTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
-  trackDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
+  trackTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
+  trackDesc: { fontSize: 15, color: colors.textSecondary, marginTop: 2 },
   breadcrumb: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16, paddingVertical: 4 },
   sectionTitle: { fontSize: 22, fontWeight: '800', color: colors.text, marginBottom: 4 },
   lessonCard: { backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 8, borderWidth: 1, borderColor: colors.border },
   lessonNum: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  lessonTitle: { fontSize: 15, fontWeight: '600', color: colors.text },
-  lessonMeta: { fontSize: 12, color: colors.textTertiary, marginTop: 2 },
+  lessonTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
+  lessonMeta: { fontSize: 14, color: colors.textTertiary, marginTop: 2 },
   lessonDetailTitle: { fontSize: 22, fontWeight: '800', color: colors.text, flex: 1 },
   contentCard: { backgroundColor: colors.card, borderRadius: 14, padding: 20, borderWidth: 1, borderColor: colors.border },
-  mdH2: { fontSize: 20, fontWeight: '800', color: colors.text, marginTop: 16, marginBottom: 8 },
-  mdH3: { fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 12, marginBottom: 6 },
-  mdParagraph: { fontSize: 15, color: colors.text, lineHeight: 22, marginBottom: 4 },
+  mdH2: { fontSize: 21, fontWeight: '800', color: colors.text, marginTop: 16, marginBottom: 8 },
+  mdH3: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: 12, marginBottom: 6 },
+  mdParagraph: { fontSize: 17, color: colors.text, lineHeight: 22, marginBottom: 4 },
   mdQuote: { borderLeftWidth: 3, borderLeftColor: '#C9A962', paddingLeft: 14, paddingVertical: 8, marginVertical: 8, backgroundColor: '#C9A96210', borderRadius: 4 },
-  mdQuoteText: { fontSize: 15, color: colors.text, fontStyle: 'italic', lineHeight: 22 },
+  mdQuoteText: { fontSize: 17, color: colors.text, fontStyle: 'italic', lineHeight: 22 },
   mdListItem: { flexDirection: 'row', gap: 8, paddingVertical: 2, paddingLeft: 4 },
-  mdBullet: { fontSize: 15, color: '#C9A962', fontWeight: '700', width: 16 },
-  mdListText: { flex: 1, fontSize: 15, color: colors.text, lineHeight: 22 },
-  mdItalic: { fontSize: 14, color: colors.textSecondary, fontStyle: 'italic', marginVertical: 4 },
+  mdBullet: { fontSize: 17, color: '#C9A962', fontWeight: '700', width: 16 },
+  mdListText: { flex: 1, fontSize: 17, color: colors.text, lineHeight: 22 },
+  mdItalic: { fontSize: 16, color: colors.textSecondary, fontStyle: 'italic', marginVertical: 4 },
   videoPlaceholder: { height: 120, borderRadius: 10, backgroundColor: '#333', alignItems: 'center', justifyContent: 'center' },
   stepCheck: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
   markBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 16, borderRadius: 14, borderWidth: 2, borderColor: '#C9A962' },
   markBtnDone: { backgroundColor: '#34C759', borderColor: '#34C759' },
-  markBtnText: { fontSize: 16, fontWeight: '700', color: '#C9A962' },
+  markBtnText: { fontSize: 18, fontWeight: '700', color: '#C9A962' },
   nextBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
 });

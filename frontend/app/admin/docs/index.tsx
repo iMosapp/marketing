@@ -452,7 +452,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.card,
   },
   backButton: { padding: 4, width: 40 },
-  headerTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
+  headerTitle: { fontSize: 19, fontWeight: '600', color: colors.text },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -466,7 +466,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     paddingHorizontal: 8,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   filterScrollContainer: {
@@ -493,7 +493,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 8,
   },
   filterChipActive: {},
-  filterChipText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+  filterChipText: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
   filterChipTextActive: { color: colors.text },
   listContent: { paddingHorizontal: 12, paddingBottom: 32 },
   // Modern category card header
@@ -520,14 +520,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   categoryCardTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: colors.text,
     marginBottom: 3,
     letterSpacing: 0.1,
   },
   categoryCardDescription: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     lineHeight: 16,
   },
@@ -540,7 +540,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 8,
   },
   categoryCardBadgeText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
   },
   // Legacy category header styles (kept for signed docs section)
@@ -558,14 +558,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   categoryTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
     marginLeft: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  categoryCount: { fontSize: 13, color: '#6E6E73', marginLeft: 'auto' },
+  categoryCount: { fontSize: 15, color: '#6E6E73', marginLeft: 'auto' },
   docCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -583,8 +583,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 14,
   },
   docContent: { flex: 1 },
-  docTitle: { fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 4 },
-  docSummary: { fontSize: 13, color: colors.textSecondary, lineHeight: 18, marginBottom: 8 },
+  docTitle: { fontSize: 18, fontWeight: '600', color: colors.text, marginBottom: 4 },
+  docSummary: { fontSize: 15, color: colors.textSecondary, lineHeight: 18, marginBottom: 8 },
   docMeta: { flexDirection: 'row', alignItems: 'center' },
   versionBadge: {
     backgroundColor: '#007AFF20',
@@ -593,11 +593,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 4,
     marginRight: 8,
   },
-  versionText: { fontSize: 10, fontWeight: '600', color: '#007AFF' },
-  metaText: { fontSize: 12, color: '#6E6E73' },
+  versionText: { fontSize: 12, fontWeight: '600', color: '#007AFF' },
+  metaText: { fontSize: 14, color: '#6E6E73' },
   emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 60 },
-  emptyText: { color: colors.textSecondary, fontSize: 18, fontWeight: '600', marginTop: 16 },
-  emptySubtext: { color: '#6E6E73', fontSize: 14, marginTop: 6 },
+  emptyText: { color: colors.textSecondary, fontSize: 19, fontWeight: '600', marginTop: 16 },
+  emptySubtext: { color: '#6E6E73', fontSize: 16, marginTop: 6 },
   seedButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -608,5 +608,5 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 20,
     gap: 8,
   },
-  seedButtonText: { color: colors.text, fontSize: 16, fontWeight: '600' },
+  seedButtonText: { color: colors.text, fontSize: 18, fontWeight: '600' },
 });

@@ -408,7 +408,7 @@ const { showToast } = useToast();
           data-testid="crm-dashboard-link"
         >
           <Ionicons name="stats-chart" size={14} color="#C9A962" />
-          <Text style={{ color: '#C9A962', fontSize: 13, fontWeight: '700' }}>Dashboard</Text>
+          <Text style={{ color: '#C9A962', fontSize: 15, fontWeight: '700' }}>Dashboard</Text>
         </TouchableOpacity>
       </View>
       <Text style={styles.sectionSubtitle}>
@@ -418,7 +418,7 @@ const { showToast } = useToast();
       <View style={[styles.connectionCard, { marginTop: 16 }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.connectionName, { fontSize: 15 }]}>PIN Protection</Text>
+            <Text style={[styles.connectionName, { fontSize: 17 }]}>PIN Protection</Text>
             <Text style={[styles.sectionSubtitle, { marginTop: 2, marginBottom: 0 }]}>
               Require a store PIN to view timeline links
             </Text>
@@ -459,7 +459,7 @@ const { showToast } = useToast();
         {crmPinEnabled && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4 }}>
             <TextInput
-              style={[styles.input, { flex: 1, letterSpacing: 4, fontSize: 18, textAlign: 'center' }]}
+              style={[styles.input, { flex: 1, letterSpacing: 4, fontSize: 19, textAlign: 'center' }]}
               value={crmPin}
               onChangeText={(t: string) => setCrmPin(t.replace(/\D/g, '').slice(0, 8))}
               placeholder="4-8 digit PIN"
@@ -491,7 +491,7 @@ const { showToast } = useToast();
               disabled={savingPin}
               data-testid="crm-pin-save"
             >
-              <Text style={{ color: '#000', fontWeight: '700', fontSize: 14 }}>
+              <Text style={{ color: '#000', fontWeight: '700', fontSize: 16 }}>
                 {savingPin ? 'Saving...' : 'Save'}
               </Text>
             </TouchableOpacity>
@@ -726,7 +726,7 @@ const { showToast } = useToast();
             </Text>
           </View>
 
-          <Text style={[styles.docSectionTitle, { fontSize: 16, marginTop: 16 }]}>All Events ({WEBHOOK_EVENTS.length})</Text>
+          <Text style={[styles.docSectionTitle, { fontSize: 18, marginTop: 16 }]}>All Events ({WEBHOOK_EVENTS.length})</Text>
           {WEBHOOK_EVENTS.map((evt, i) => (
             <View key={i} style={styles.webhookEventRow}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -1113,7 +1113,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -1134,7 +1134,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: '#007AFF',
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
   },
   activeTabText: {
@@ -1154,12 +1154,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '600',
     color: colors.text,
   },
   sectionSubtitle: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 4,
   },
@@ -1176,12 +1176,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 40,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     marginTop: 12,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 4,
     textAlign: 'center',
@@ -1198,7 +1198,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   keyName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -1214,18 +1214,18 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#FF3B3020',
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: '#34C759',
   },
   keyPrefix: {
-    fontSize: 13,
+    fontSize: 15,
     fontFamily: 'monospace',
     color: colors.textSecondary,
     marginTop: 8,
   },
   keyMeta: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6E6E73',
     marginTop: 4,
   },
@@ -1236,11 +1236,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 12,
   },
   keyRequests: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   revokeButton: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#FF3B30',
     fontWeight: '600',
   },
@@ -1256,12 +1256,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   webhookName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   webhookUrl: {
-    fontSize: 13,
+    fontSize: 15,
     fontFamily: 'monospace',
     color: colors.textSecondary,
     marginTop: 8,
@@ -1279,11 +1279,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 6,
   },
   eventChipText: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
   },
   moreEvents: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
     alignSelf: 'center',
   },
@@ -1294,11 +1294,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 12,
   },
   webhookStats: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6E6E73',
   },
   testButton: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#007AFF',
     fontWeight: '600',
   },
@@ -1309,7 +1309,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 8,
   },
   subsectionTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 12,
@@ -1326,7 +1326,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   connectionName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -1345,12 +1345,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#FF950020',
   },
   syncText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.textSecondary,
   },
   lastSync: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6E6E73',
     marginTop: 8,
   },
@@ -1366,12 +1366,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   providerName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   providerDesc: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 4,
   },
@@ -1382,13 +1382,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   docCardTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 8,
   },
   docCardText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     lineHeight: 20,
   },
@@ -1407,11 +1407,11 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   codeText: {
     fontFamily: 'monospace',
-    fontSize: 14,
+    fontSize: 16,
     color: '#34C759',
   },
   endpointsTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginTop: 16,
@@ -1429,7 +1429,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   endpointName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -1456,18 +1456,18 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#FF3B3030',
   },
   methodText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
     color: colors.textSecondary,
   },
   endpointPath: {
-    fontSize: 13,
+    fontSize: 15,
     fontFamily: 'monospace',
     color: colors.textSecondary,
     marginTop: 8,
   },
   endpointDesc: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#6E6E73',
     marginTop: 4,
   },
@@ -1483,7 +1483,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   fullDocsText: {
-    fontSize: 15,
+    fontSize: 17,
     color: '#007AFF',
     fontWeight: '500',
   },
@@ -1500,7 +1500,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#007AFF',
   },
   docNavText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
   },
@@ -1508,13 +1508,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   docSectionTitle: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '700',
     color: colors.text,
     marginBottom: 12,
   },
   docParagraph: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     lineHeight: 20,
     marginBottom: 12,
@@ -1528,7 +1528,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   codeComment: {
     fontFamily: 'monospace',
-    fontSize: 12,
+    fontSize: 14,
     color: '#6E7681',
     marginBottom: 4,
   },
@@ -1555,28 +1555,28 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   methodTagText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
     fontFamily: 'monospace',
   },
   endpointPathText: {
-    fontSize: 13,
+    fontSize: 15,
     fontFamily: 'monospace',
     color: colors.borderLight,
   },
   endpointDescText: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 2,
   },
   endpointParams: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#6E6E73',
     fontStyle: 'italic',
     marginTop: 4,
   },
   endpointBody: {
-    fontSize: 11,
+    fontSize: 13,
     fontFamily: 'monospace',
     color: '#FF9500',
     marginTop: 4,
@@ -1593,19 +1593,19 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 4,
   },
   webhookEventName: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
     fontFamily: 'monospace',
   },
   webhookEventDesc: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 4,
     marginLeft: 16,
   },
   webhookEventPayload: {
-    fontSize: 11,
+    fontSize: 13,
     fontFamily: 'monospace',
     color: '#6E6E73',
     marginTop: 4,
@@ -1615,7 +1615,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   stepItem: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#C7C7CC',
     lineHeight: 20,
     paddingLeft: 4,
@@ -1633,14 +1633,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     maxHeight: '80%',
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 20,
     textAlign: 'center',
   },
   modalLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginBottom: 8,
   },
@@ -1648,7 +1648,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 14,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     marginBottom: 16,
   },
@@ -1665,7 +1665,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   modalCancelText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     fontWeight: '600',
   },
@@ -1680,7 +1680,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#3C3C3E',
   },
   modalButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     fontWeight: '600',
   },
@@ -1689,13 +1689,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 20,
   },
   keyCreatedTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
     marginTop: 12,
   },
   keyCreatedWarning: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#FF9500',
     marginTop: 8,
     textAlign: 'center',
@@ -1712,7 +1712,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   keyText: {
     flex: 1,
     fontFamily: 'monospace',
-    fontSize: 12,
+    fontSize: 14,
     color: '#34C759',
   },
   eventsScrollView: {
@@ -1745,12 +1745,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   eventName: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
   },
   eventDesc: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 2,
   },

@@ -77,8 +77,8 @@ export default function PublicLinkPage() {
   if (loading) return <View style={[s.center, { backgroundColor: bg }]}><ActivityIndicator size="large" color={accent} /></View>;
   if (notFound || !data) return (
     <View style={[s.center, { backgroundColor: bg }]}>
-      <Text style={{ fontSize: 20, fontWeight: '700', color: textColor, marginBottom: 8 }}>Page Not Found</Text>
-      <Text style={{ fontSize: 14, color: subColor }}>This link page doesn't exist yet.</Text>
+      <Text style={{ fontSize: 21, fontWeight: '700', color: textColor, marginBottom: 8 }}>Page Not Found</Text>
+      <Text style={{ fontSize: 16, color: subColor }}>This link page doesn't exist yet.</Text>
       <View style={s.footer}><Text style={[s.footerText, { color: subColor }]}>powered by <Text style={s.footerBrand}>i'MOnsocial</Text></Text></View>
     </View>
   );
@@ -114,7 +114,7 @@ export default function PublicLinkPage() {
               <Ionicons name={(ICON_MAP[link.icon] || 'link') as any} size={18} color={link.color} />
             </View>
             <Text style={[s.linkLabel, { color: textColor }]}>{link.label}</Text>
-            <Text style={{ color: subColor, fontSize: 14 }}>&rsaquo;</Text>
+            <Text style={{ color: subColor, fontSize: 16 }}>&rsaquo;</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -129,7 +129,7 @@ export default function PublicLinkPage() {
                 <Ionicons name={(ICON_MAP[link.icon] || 'link') as any} size={18} color={link.color} />
               </View>
               <Text style={[s.linkLabel, { color: textColor }]}>{link.label}</Text>
-              <Text style={{ color: subColor, fontSize: 14 }}>&rsaquo;</Text>
+              <Text style={{ color: subColor, fontSize: 16 }}>&rsaquo;</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -144,7 +144,7 @@ export default function PublicLinkPage() {
                 <Ionicons name={(ICON_MAP[link.icon] || 'globe-outline') as any} size={18} color={link.color} />
               </View>
               <Text style={[s.linkLabel, { color: textColor }]}>{link.label}</Text>
-              <Text style={{ color: subColor, fontSize: 14 }}>&rsaquo;</Text>
+              <Text style={{ color: subColor, fontSize: 16 }}>&rsaquo;</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -166,14 +166,14 @@ const s = StyleSheet.create({
   avatar: { width: 96, height: 96, borderRadius: 48, borderWidth: 3, marginBottom: 14 },
   avatarPlaceholder: { width: 96, height: 96, borderRadius: 48, borderWidth: 3, marginBottom: 14, alignItems: 'center', justifyContent: 'center' },
   name: { fontSize: 22, fontWeight: '800', letterSpacing: -0.3 },
-  company: { fontSize: 13, fontWeight: '600', marginTop: 2, opacity: 0.5 },
-  bio: { fontSize: 14, marginTop: 8, lineHeight: 21, opacity: 0.7, textAlign: 'center', maxWidth: 320 },
+  company: { fontSize: 15, fontWeight: '600', marginTop: 2, opacity: 0.5 },
+  bio: { fontSize: 16, marginTop: 8, lineHeight: 21, opacity: 0.7, textAlign: 'center', maxWidth: 320 },
   links: { gap: 10, marginBottom: 8 },
   linkBtn: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 14, borderWidth: 1 },
   linkIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  linkLabel: { flex: 1, fontSize: 15, fontWeight: '600' },
-  sectionLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: '700', marginTop: 10, marginBottom: -2, marginLeft: 4, opacity: 0.5 },
+  linkLabel: { flex: 1, fontSize: 17, fontWeight: '600' },
+  sectionLabel: { fontSize: 13, textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: '700', marginTop: 10, marginBottom: -2, marginLeft: 4, opacity: 0.5 },
   footer: { alignItems: 'center', marginTop: 36, paddingTop: 20, borderTopWidth: 1, borderTopColor: 'rgba(128,128,128,0.15)' },
-  footerText: { fontSize: 12, fontWeight: '600', opacity: 0.4 },
+  footerText: { fontSize: 14, fontWeight: '600', opacity: 0.4 },
   footerBrand: { fontWeight: '800' },
 });

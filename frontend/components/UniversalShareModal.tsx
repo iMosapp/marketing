@@ -471,14 +471,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 20,
   },
   shareModalTitle: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '700',
     color: colors.text,
     textAlign: 'center',
     marginBottom: 4,
   },
   shareModalSubtitle: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 24,
@@ -488,7 +488,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   recipientLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: '#6E6E73',
     letterSpacing: 1,
@@ -499,7 +499,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    fontSize: 14,
+    fontSize: 16,
     color: colors.text,
     borderWidth: 1.5,
     borderColor: colors.borderLight,
@@ -536,17 +536,17 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   suggestionAvatarText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '700',
     color: '#C9A962',
   },
   suggestionName: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
   },
   suggestionDetail: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
   },
   shareOptionsGrid: {
@@ -568,7 +568,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   shareOptionText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '500',
     color: colors.text,
     textAlign: 'center',
@@ -580,7 +580,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 12,
   },
   shareModalCancelText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#FF3B30',
     textAlign: 'center',
@@ -600,7 +600,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 16,
   },
   qrUrl: {
-    fontSize: 12,
+    fontSize: 14,
     textAlign: 'center',
     paddingHorizontal: 20,
   },

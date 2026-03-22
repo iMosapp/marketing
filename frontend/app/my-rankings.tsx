@@ -370,7 +370,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: 'bold',
     color: colors.text,
   },
@@ -401,12 +401,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 12,
   },
   settingTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   settingDescription: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 4,
   },
@@ -414,7 +414,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
     color: colors.textSecondary,
     textTransform: 'uppercase',
@@ -439,7 +439,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#34C759',
   },
   scopeText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
   },
@@ -460,7 +460,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   metricText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
   },
@@ -490,7 +490,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   yourRankLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#FFD60A',
     fontWeight: '500',
   },
@@ -500,7 +500,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   yourRankTotal: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
   },
   leaderboardItem: {
@@ -524,7 +524,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 12,
   },
   rankText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   userAvatar: {
@@ -543,7 +543,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 10,
   },
   avatarText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.text,
   },
@@ -551,17 +551,17 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   userName: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
   userState: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 2,
   },
   scoreValue: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: 'bold',
     color: colors.text,
   },
@@ -572,13 +572,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 12,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginTop: 12,
   },
   emptySubtext: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 4,
     textAlign: 'center',
@@ -596,7 +596,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   optInDescription: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
     textAlign: 'center',
     paddingHorizontal: 24,

@@ -188,7 +188,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 32,
@@ -202,7 +202,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 32,
   },
   benefitsTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 16,
@@ -214,7 +214,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   benefitText: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
   },
   primaryButton: {
@@ -227,7 +227,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   primaryButtonText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -238,7 +238,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   secondaryButtonText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '500',
     color: '#007AFF',
   },

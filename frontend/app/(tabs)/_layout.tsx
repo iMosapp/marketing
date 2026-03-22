@@ -77,7 +77,7 @@ export default function TabLayout() {
           minWidth: 18, height: 18,
           justifyContent: 'center', alignItems: 'center', paddingHorizontal: 4,
         }}>
-          <Text style={{ fontSize: 10, fontWeight: '700', color: colors.text }}>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: colors.text }}>
             {count > 99 ? '99+' : count}
           </Text>
         </View>
@@ -101,7 +101,7 @@ export default function TabLayout() {
         tabBarShowLabel: true,
         tabBarActiveTintColor: partnerBranding?.primary_color || '#C9A962',
         tabBarInactiveTintColor: colors.textSecondary,
-        tabBarLabelStyle: { fontSize: 10, fontWeight: '600' },
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
       }}
     >
       <Tabs.Screen

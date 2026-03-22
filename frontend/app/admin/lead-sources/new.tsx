@@ -412,7 +412,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
   },
@@ -420,7 +420,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   saveButtonText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -434,14 +434,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 24,
   },
   label: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 8,
     letterSpacing: 0.5,
   },
   sublabel: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#6E6E73',
     marginBottom: 12,
   },
@@ -449,7 +449,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.surface,
@@ -476,7 +476,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF10',
   },
   teamOptionText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   teamOptionTextSelected: {
@@ -489,12 +489,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   noTeamsText: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
     marginBottom: 8,
   },
   createTeamLink: {
-    fontSize: 15,
+    fontSize: 17,
     color: '#007AFF',
     fontWeight: '600',
   },
@@ -525,13 +525,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   methodName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 2,
   },
   methodDescription: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   infoBox: {
@@ -544,7 +544,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   infoText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 15,
     color: '#007AFF',
     lineHeight: 18,
   },

@@ -208,7 +208,7 @@ export default function DocViewerScreen() {
             data-testid="doc-download-pdf-btn"
           >
             {pdfLoading ? <ActivityIndicator size="small" color="#007AFF" /> : <Ionicons name="download-outline" size={18} color="#007AFF" />}
-            <Text style={{ fontSize: 15, color: colors.text, fontWeight: '500' }}>Download PDF</Text>
+            <Text style={{ fontSize: 17, color: colors.text, fontWeight: '500' }}>Download PDF</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleEmailPDF}
@@ -217,7 +217,7 @@ export default function DocViewerScreen() {
             data-testid="doc-email-pdf-btn"
           >
             {emailSending ? <ActivityIndicator size="small" color="#34C759" /> : <Ionicons name="mail-outline" size={18} color="#34C759" />}
-            <Text style={{ fontSize: 15, color: colors.text, fontWeight: '500' }}>Send PDF via Email</Text>
+            <Text style={{ fontSize: 17, color: colors.text, fontWeight: '500' }}>Send PDF via Email</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -337,7 +337,7 @@ export default function DocViewerScreen() {
                     data-testid="nda-prepare-send-btn"
                   >
                     <Ionicons name="send" size={18} color={colors.text} />
-                    <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>Prepare & Send NDA</Text>
+                    <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text }}>Prepare & Send NDA</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -383,9 +383,9 @@ const getStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 },
-  errorText: { fontSize: 18, color: colors.textSecondary, marginTop: 16, marginBottom: 24 },
+  errorText: { fontSize: 19, color: colors.textSecondary, marginTop: 16, marginBottom: 24 },
   errorButton: { paddingHorizontal: 24, paddingVertical: 12, backgroundColor: '#007AFF', borderRadius: 8 },
-  errorButtonText: { color: colors.text, fontSize: 16, fontWeight: '600' },
+  errorButtonText: { color: colors.text, fontSize: 18, fontWeight: '600' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -397,8 +397,8 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   backButton: { padding: 4, width: 40 },
   headerCenter: { flex: 1, alignItems: 'center' },
-  headerTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
-  headerSubtitle: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
+  headerSubtitle: { fontSize: 14, color: colors.textSecondary, marginTop: 2 },
   progressContainer: { height: 3, backgroundColor: colors.card },
   progressBar: { height: 3 },
   dotsContainer: {
@@ -425,12 +425,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
   },
-  slideNumberText: { fontSize: 16, fontWeight: '700', color: colors.text },
+  slideNumberText: { fontSize: 18, fontWeight: '700', color: colors.text },
   slideTitle: { fontSize: 22, fontWeight: '700', color: colors.text, flex: 1 },
   slideDescriptionContainer: { marginBottom: 20 },
-  slideDescription: { fontSize: 16, color: colors.text, lineHeight: 26, opacity: 0.85 },
+  slideDescription: { fontSize: 18, color: colors.text, lineHeight: 26, opacity: 0.85 },
   boldText: { fontWeight: '700', color: colors.text, opacity: 1 },
-  codeText: { fontFamily: 'monospace', backgroundColor: colors.card, color: '#FF9500', fontSize: 13, paddingHorizontal: 4 },
+  codeText: { fontFamily: 'monospace', backgroundColor: colors.card, color: '#FF9500', fontSize: 15, paddingHorizontal: 4 },
   tipBox: {
     flexDirection: 'row',
     backgroundColor: '#FFD60A15',
@@ -440,7 +440,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderWidth: 1,
     borderColor: '#FFD60A30',
   },
-  tipText: { fontSize: 14, color: colors.textSecondary, marginLeft: 12, flex: 1, lineHeight: 22 },
+  tipText: { fontSize: 16, color: colors.textSecondary, marginLeft: 12, flex: 1, lineHeight: 22 },
   warningBox: {
     flexDirection: 'row',
     backgroundColor: '#FF3B3015',
@@ -450,7 +450,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderWidth: 1,
     borderColor: '#FF3B3030',
   },
-  warningText: { fontSize: 14, color: '#FF3B30', marginLeft: 12, flex: 1, lineHeight: 22 },
+  warningText: { fontSize: 16, color: '#FF3B30', marginLeft: 12, flex: 1, lineHeight: 22 },
   linkButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -461,7 +461,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignSelf: 'flex-start',
     marginBottom: 16,
   },
-  linkButtonText: { fontSize: 15, color: '#007AFF', fontWeight: '600', marginLeft: 8 },
+  linkButtonText: { fontSize: 17, color: '#007AFF', fontWeight: '600', marginLeft: 8 },
   endBox: {
     alignItems: 'center',
     marginTop: 32,
@@ -469,8 +469,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.card,
   },
-  endTitle: { fontSize: 20, fontWeight: '700', color: colors.text, marginTop: 12 },
-  endMeta: { fontSize: 13, color: colors.textSecondary, marginTop: 4 },
+  endTitle: { fontSize: 21, fontWeight: '700', color: colors.text, marginTop: 12 },
+  endMeta: { fontSize: 15, color: colors.textSecondary, marginTop: 4 },
   navigation: {
     flexDirection: 'row',
     padding: 16,
@@ -489,7 +489,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   navButtonSecondary: { backgroundColor: colors.card },
   navButtonDisabled: { opacity: 0.5 },
-  navButtonText: { fontSize: 16, fontWeight: '600', color: colors.text },
-  navButtonTextPrimary: { fontSize: 16, fontWeight: '600', color: colors.text },
+  navButtonText: { fontSize: 18, fontWeight: '600', color: colors.text },
+  navButtonTextPrimary: { fontSize: 18, fontWeight: '600', color: colors.text },
   navButtonTextDisabled: { color: colors.borderLight },
 });

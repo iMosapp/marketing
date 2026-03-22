@@ -209,7 +209,7 @@ export default function OnboardingHub() {
             {recentAccounts.map((u: any, i: number) => (
               <View key={i} style={[styles.recentRow, { backgroundColor: colors.card, borderColor: colors.surface }]}>
                 <View style={[styles.recentAvatar, { backgroundColor: '#007AFF20' }]}>
-                  <Text style={{ color: '#007AFF', fontWeight: '700', fontSize: 13 }}>
+                  <Text style={{ color: '#007AFF', fontWeight: '700', fontSize: 15 }}>
                     {(u.name || u.email || '?')[0].toUpperCase()}
                   </Text>
                 </View>
@@ -218,7 +218,7 @@ export default function OnboardingHub() {
                   <Text style={[styles.recentMeta, { color: colors.textSecondary }]}>{u.role} {u.store_name ? `at ${u.store_name}` : ''}</Text>
                 </View>
                 <View style={[styles.statusPill, { backgroundColor: u.is_active ? '#34C75920' : '#FF3B3020' }]}>
-                  <Text style={{ fontSize: 10, fontWeight: '600', color: u.is_active ? '#34C759' : '#FF3B30' }}>
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: u.is_active ? '#34C759' : '#FF3B30' }}>
                     {u.is_active ? 'Active' : 'Inactive'}
                   </Text>
                 </View>
@@ -240,30 +240,30 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
   backBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 22, fontWeight: '700' },
-  subtitle: { fontSize: 13, marginTop: 2 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 12 },
+  subtitle: { fontSize: 15, marginTop: 2 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12 },
   actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
   actionCard: { width: '48%' as any, minWidth: 160, borderRadius: 14, borderWidth: 1, padding: 16, position: 'relative' as any },
   actionIconWrap: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  actionTitle: { fontSize: 14, fontWeight: '700', marginBottom: 4 },
-  actionDesc: { fontSize: 11, lineHeight: 16 },
+  actionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  actionDesc: { fontSize: 13, lineHeight: 16 },
   actionArrow: { position: 'absolute' as any, top: 14, right: 14, width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
   guideToggle: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 8 },
-  guideToggleText: { fontSize: 14, fontWeight: '600', flex: 1 },
+  guideToggleText: { fontSize: 16, fontWeight: '600', flex: 1 },
   guideContent: { marginBottom: 12 },
-  guideSectionTitle: { fontSize: 14, fontWeight: '700', marginBottom: 8 },
+  guideSectionTitle: { fontSize: 16, fontWeight: '700', marginBottom: 8 },
   guideStep: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 10, borderWidth: 1, marginBottom: 6 },
   guideStepNum: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  guideStepNumText: { fontSize: 12, fontWeight: '800' },
-  guideStepTitle: { fontSize: 13, fontWeight: '600' },
-  guideStepDesc: { fontSize: 11, marginTop: 1 },
+  guideStepNumText: { fontSize: 14, fontWeight: '800' },
+  guideStepTitle: { fontSize: 15, fontWeight: '600' },
+  guideStepDesc: { fontSize: 13, marginTop: 1 },
   afterBox: { borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
   afterRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12 },
   afterDot: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  afterText: { fontSize: 12, flex: 1, lineHeight: 17 },
+  afterText: { fontSize: 14, flex: 1, lineHeight: 17 },
   recentRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 10, borderWidth: 1, marginBottom: 6 },
   recentAvatar: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
-  recentName: { fontSize: 13, fontWeight: '600' },
-  recentMeta: { fontSize: 11, marginTop: 1 },
+  recentName: { fontSize: 15, fontWeight: '600' },
+  recentMeta: { fontSize: 13, marginTop: 1 },
   statusPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
 });

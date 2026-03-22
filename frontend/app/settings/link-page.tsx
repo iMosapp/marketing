@@ -142,7 +142,7 @@ export default function EditLinkPage() {
         </TouchableOpacity>
         <Text style={[s.headerTitle, { color: colors.text }]}>My Link Page</Text>
         <TouchableOpacity onPress={handleSave} disabled={saving} data-testid="linkpage-save">
-          {saving ? <ActivityIndicator size="small" color={colors.accent} /> : <Text style={{ color: colors.accent, fontSize: 16, fontWeight: '700' }}>Save</Text>}
+          {saving ? <ActivityIndicator size="small" color={colors.accent} /> : <Text style={{ color: colors.accent, fontSize: 18, fontWeight: '700' }}>Save</Text>}
         </TouchableOpacity>
       </View>
 
@@ -150,12 +150,12 @@ export default function EditLinkPage() {
         {/* URL Preview + Copy */}
         <TouchableOpacity style={[s.urlCard, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={copyLink} data-testid="linkpage-copy-url">
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 11, color: colors.textSecondary, fontWeight: '600', marginBottom: 2 }}>YOUR LINK</Text>
-            <Text style={{ fontSize: 15, color: colors.accent, fontWeight: '700' }}>app.imonsocial.com/l/{username}</Text>
+            <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '600', marginBottom: 2 }}>YOUR LINK</Text>
+            <Text style={{ fontSize: 17, color: colors.accent, fontWeight: '700' }}>app.imonsocial.com/l/{username}</Text>
           </View>
           <View style={[s.copyBadge, { backgroundColor: `${colors.accent}20` }]}>
             <Ionicons name="copy-outline" size={16} color={colors.accent} />
-            <Text style={{ color: colors.accent, fontSize: 12, fontWeight: '700' }}>Copy</Text>
+            <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '700' }}>Copy</Text>
           </View>
         </TouchableOpacity>
         <Text style={[s.statsText, { color: colors.textSecondary }]}>{views} page views</Text>
@@ -206,7 +206,7 @@ export default function EditLinkPage() {
                 <View style={[s.themePreviewBar, { backgroundColor: t === 'dark' ? colors.card : '#fff' }]} />
                 <View style={[s.themePreviewBar, { backgroundColor: t === 'dark' ? colors.card : '#fff', width: '70%' }]} />
               </View>
-              <Text style={{ color: colors.text, fontSize: 12, fontWeight: '600', marginTop: 4 }}>{t === 'dark' ? 'Dark' : 'Light'}</Text>
+              <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', marginTop: 4 }}>{t === 'dark' ? 'Dark' : 'Light'}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -221,7 +221,7 @@ export default function EditLinkPage() {
 
         {/* Social Links  - prefix + username input (like My Profile) */}
         <Text style={[s.sectionTitle, { color: colors.textSecondary }]}>SOCIAL LINKS</Text>
-        <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 12, opacity: 0.7 }}>
+        <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 12, opacity: 0.7 }}>
           Just enter your username  - the URL is built automatically.
         </Text>
         {SOCIAL_PLATFORMS.map(platform => {
@@ -308,7 +308,7 @@ export default function EditLinkPage() {
         ))}
         <TouchableOpacity style={[s.addBtn, { borderColor: colors.accent }]} onPress={addCustomLink} data-testid="linkpage-add-custom">
           <Ionicons name="add-circle-outline" size={18} color={colors.accent} />
-          <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>Add Custom Link</Text>
+          <Text style={{ color: colors.accent, fontSize: 16, fontWeight: '600' }}>Add Custom Link</Text>
         </TouchableOpacity>
 
         <View style={{ height: 60 }} />
@@ -321,13 +321,13 @@ const s = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5 },
   backBtn: { padding: 4 },
-  headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', textAlign: 'center' },
+  headerTitle: { flex: 1, fontSize: 19, fontWeight: '700', textAlign: 'center' },
   content: { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
   urlCard: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 14, borderWidth: 1, gap: 12 },
   copyBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
-  statsText: { fontSize: 12, textAlign: 'center', marginTop: 8, marginBottom: 16 },
-  sectionTitle: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, marginTop: 20, marginBottom: 8 },
-  input: { padding: 12, borderRadius: 10, fontSize: 15, borderWidth: 1, marginBottom: 8 },
+  statsText: { fontSize: 14, textAlign: 'center', marginTop: 8, marginBottom: 16 },
+  sectionTitle: { fontSize: 13, fontWeight: '700', letterSpacing: 1.5, marginTop: 20, marginBottom: 8 },
+  input: { padding: 12, borderRadius: 10, fontSize: 17, borderWidth: 1, marginBottom: 8 },
   multiline: { minHeight: 70, textAlignVertical: 'top' },
   themeRow: { flexDirection: 'row', gap: 12 },
   themeBtn: { flex: 1, borderRadius: 12, borderWidth: 1.5, borderColor: 'transparent', padding: 8, alignItems: 'center' },
@@ -339,17 +339,17 @@ const s = StyleSheet.create({
   // Social links
   socialRow: { borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 8 },
   socialHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
-  socialLabel: { flex: 1, fontSize: 14, fontWeight: '600' },
+  socialLabel: { flex: 1, fontSize: 16, fontWeight: '600' },
   socialInputRow: { flexDirection: 'row', alignItems: 'center' },
   socialPrefix: { paddingHorizontal: 10, paddingVertical: 10, borderTopLeftRadius: 8, borderBottomLeftRadius: 8 },
-  socialPrefixText: { fontSize: 13, fontWeight: '500' },
-  socialInput: { flex: 1, padding: 10, fontSize: 14, borderWidth: 1, borderTopRightRadius: 8, borderBottomRightRadius: 8 },
+  socialPrefixText: { fontSize: 15, fontWeight: '500' },
+  socialInput: { flex: 1, padding: 10, fontSize: 16, borderWidth: 1, borderTopRightRadius: 8, borderBottomRightRadius: 8 },
   // Contact links
   linkRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, borderWidth: 1, marginBottom: 6 },
   linkIconBox: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  linkLabel: { flex: 1, fontSize: 14, fontWeight: '600' },
+  linkLabel: { flex: 1, fontSize: 16, fontWeight: '600' },
   // Custom links
   customLinkCard: { padding: 12, borderRadius: 12, borderWidth: 1, marginBottom: 8 },
-  customInput: { padding: 10, borderRadius: 8, fontSize: 14, borderWidth: 1 },
+  customInput: { padding: 10, borderRadius: 8, fontSize: 16, borderWidth: 1 },
   addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 12, borderRadius: 12, borderWidth: 1.5, borderStyle: 'dashed' },
 });

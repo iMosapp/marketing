@@ -471,8 +471,8 @@ const { showToast } = useToast();
           </Text>
           
           {/* Bio */}
-          <Text style={[styles.sectionTitle, { marginTop: 16, fontSize: 12 }]}>ABOUT YOU</Text>
-          <Text style={[styles.sectionDesc, { fontSize: 12 }]}>
+          <Text style={[styles.sectionTitle, { marginTop: 16, fontSize: 14 }]}>ABOUT YOU</Text>
+          <Text style={[styles.sectionDesc, { fontSize: 14 }]}>
             Write your story in your own words. Who are you? What drives you? This bio powers your AI messages and is displayed on your digital card, showcase page, landing page, and all personal profiles.
           </Text>
           <View style={[styles.voiceInputRow, { alignItems: 'stretch' }]}>
@@ -494,7 +494,7 @@ const { showToast } = useToast();
           </View>
           
           {/* Years Experience */}
-          <Text style={[styles.sectionTitle, { fontSize: 12 }]}>YEARS IN THE BUSINESS</Text>
+          <Text style={[styles.sectionTitle, { fontSize: 14 }]}>YEARS IN THE BUSINESS</Text>
           <TextInput
             style={[styles.addInput, { marginBottom: 16 }]}
             value={settings.years_experience}
@@ -504,7 +504,7 @@ const { showToast } = useToast();
           />
           
           {/* Hometown */}
-          <Text style={[styles.sectionTitle, { fontSize: 12 }]}>HOMETOWN / WHERE YOU'RE FROM</Text>
+          <Text style={[styles.sectionTitle, { fontSize: 14 }]}>HOMETOWN / WHERE YOU'RE FROM</Text>
           <View style={styles.voiceInputRow}>
             <TextInput
               style={[styles.addInput, { flex: 1 }]}
@@ -520,7 +520,7 @@ const { showToast } = useToast();
           </View>
           
           {/* Family Info */}
-          <Text style={[styles.sectionTitle, { fontSize: 12 }]}>FAMILY</Text>
+          <Text style={[styles.sectionTitle, { fontSize: 14 }]}>FAMILY</Text>
           <View style={styles.voiceInputRow}>
             <TextInput
               style={[styles.addInput, { flex: 1 }]}
@@ -536,7 +536,7 @@ const { showToast } = useToast();
           </View>
           
           {/* Personal Motto */}
-          <Text style={[styles.sectionTitle, { fontSize: 12 }]}>YOUR MOTTO / CATCHPHRASE</Text>
+          <Text style={[styles.sectionTitle, { fontSize: 14 }]}>YOUR MOTTO / CATCHPHRASE</Text>
           <View style={styles.voiceInputRow}>
             <TextInput
               style={[styles.addInput, { flex: 1 }]}
@@ -552,8 +552,8 @@ const { showToast } = useToast();
           </View>
           
           {/* Hobbies */}
-          <Text style={[styles.sectionTitle, { fontSize: 12 }]}>HOBBIES & INTERESTS</Text>
-          <Text style={[styles.sectionDesc, { fontSize: 12 }]}>
+          <Text style={[styles.sectionTitle, { fontSize: 14 }]}>HOBBIES & INTERESTS</Text>
+          <Text style={[styles.sectionDesc, { fontSize: 14 }]}>
             What do you do outside of work? This helps build rapport.
           </Text>
           <View style={styles.chipContainer}>
@@ -594,8 +594,8 @@ const { showToast } = useToast();
           </View>
           
           {/* Fun Facts */}
-          <Text style={[styles.sectionTitle, { fontSize: 12, marginTop: 16 }]}>FUN FACTS ABOUT YOU</Text>
-          <Text style={[styles.sectionDesc, { fontSize: 12 }]}>
+          <Text style={[styles.sectionTitle, { fontSize: 14, marginTop: 16 }]}>FUN FACTS ABOUT YOU</Text>
+          <Text style={[styles.sectionDesc, { fontSize: 14 }]}>
             Unique things that make you memorable
           </Text>
           <View style={styles.chipContainer}>
@@ -653,7 +653,7 @@ const { showToast } = useToast();
         {/* AI Generated Bio Preview */}
         {generatedBio ? (
           <View style={{ backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#34C759' }}>
-            <Text style={{ fontSize: 12, fontWeight: '600', color: '#34C759', marginBottom: 10 }}>AI-GENERATED BIO (PREVIEW)</Text>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: '#34C759', marginBottom: 10 }}>AI-GENERATED BIO (PREVIEW)</Text>
             <TextInput
               style={[styles.addInput, { height: 200, textAlignVertical: 'top', marginBottom: 12, lineHeight: 22, paddingTop: 14 }]}
               value={generatedBio}
@@ -667,13 +667,13 @@ const { showToast } = useToast();
                 style={{ flex: 1, backgroundColor: '#34C759', borderRadius: 10, padding: 12, alignItems: 'center' }}
                 onPress={handleAcceptBio}
               >
-                <Text style={{ color: '#fff', fontWeight: '600', fontSize: 15 }}>Use This Bio</Text>
+                <Text style={{ color: '#fff', fontWeight: '600', fontSize: 17 }}>Use This Bio</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={{ flex: 1, backgroundColor: colors.card, borderRadius: 10, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.textSecondary }}
                 onPress={() => setGeneratedBio('')}
               >
-                <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 15 }}>Dismiss</Text>
+                <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 17 }}>Dismiss</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -711,7 +711,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 60,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -720,7 +720,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'flex-end',
   },
   saveButtonText: {
-    fontSize: 17,
+    fontSize: 18,
     color: '#007AFF',
     fontWeight: '600',
   },
@@ -735,7 +735,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 24,
   },
   previewLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginBottom: 12,
   },
@@ -747,20 +747,20 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   previewText: {
     color: colors.text,
-    fontSize: 14,
+    fontSize: 16,
     lineHeight: 20,
   },
   section: {
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 12,
   },
   sectionDesc: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#6E6E73',
     marginBottom: 12,
   },
@@ -782,7 +782,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF15',
   },
   toneLabel: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
     marginTop: 8,
@@ -791,7 +791,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: '#007AFF',
   },
   toneDesc: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -813,7 +813,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF15',
   },
   emojiLabel: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.text,
     fontWeight: '500',
   },
@@ -834,7 +834,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF15',
   },
   humorLabel: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.text,
     fontWeight: '600',
   },
@@ -842,7 +842,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: '#007AFF',
   },
   humorDesc: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
     marginTop: 4,
     textAlign: 'center',
@@ -861,7 +861,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF15',
   },
   lengthLabel: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.text,
     fontWeight: '500',
   },
@@ -872,7 +872,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginBottom: 8,
   },
@@ -880,11 +880,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   inputHint: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6E6E73',
     marginTop: 6,
   },
@@ -898,13 +898,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     minHeight: 70,
   },
   switchLabel: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
     fontWeight: '500',
     flex: 1,
   },
   switchHint: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 2,
     paddingRight: 60,
@@ -928,7 +928,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#34C75920',
   },
   chipText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.text,
   },
   addRow: {
@@ -946,7 +946,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 10,
     padding: 12,
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
   },
   bioInput: {
@@ -972,7 +972,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   saveButtonLargeText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },

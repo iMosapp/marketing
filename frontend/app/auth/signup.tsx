@@ -240,7 +240,7 @@ export default function SignupScreen() {
                 resizeMode="contain"
               />
             </View>
-            <Text style={{ fontSize: 13, color: '#6E6E73', textAlign: 'center', marginTop: 8, lineHeight: 18 }}>
+            <Text style={{ fontSize: 15, color: '#6E6E73', textAlign: 'center', marginTop: 8, lineHeight: 18 }}>
               No charge for 14 days. Cancel anytime before your trial ends and you won't be billed. After your trial, your plan auto-renews monthly until you cancel.
             </Text>
           </View>
@@ -517,7 +517,7 @@ export default function SignupScreen() {
               </TouchableOpacity>
             )}
             
-            <Text style={{ fontSize: 11, color: '#AEAEB2', textAlign: 'center', marginTop: 8, lineHeight: 16 }}>
+            <Text style={{ fontSize: 13, color: '#AEAEB2', textAlign: 'center', marginTop: 8, lineHeight: 16 }}>
               By starting your trial, you agree to our Terms of Service. Your plan will auto-renew at the selected rate after 14 days unless you cancel.
             </Text>
             
@@ -645,7 +645,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 19,
     color: colors.textSecondary,
   },
   subtitleContainer: {
@@ -664,7 +664,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.1)',
@@ -680,7 +680,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: 'rgba(0,0,0,0.1)',
   },
   pickerText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   pickerPlaceholder: {
@@ -697,7 +697,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   passwordInput: {
     flex: 1,
     padding: 16,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   eyeButton: {
@@ -719,7 +719,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   infoText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     lineHeight: 18,
   },
@@ -735,7 +735,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   buttonText: {
     color: '#FFFFFF',
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
   },
   linkButton: {
@@ -744,7 +744,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   linkText: {
     color: colors.textSecondary,
-    fontSize: 15,
+    fontSize: 17,
   },
   linkTextBold: {
     color: '#007AFF',
@@ -762,7 +762,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   termsText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     lineHeight: 22,
   },
@@ -791,7 +791,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
   },
@@ -804,12 +804,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textSecondary,
     marginTop: 12,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textTertiary,
     marginTop: 4,
   },
@@ -835,7 +835,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   independentDesc: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -854,7 +854,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   orgName: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     fontWeight: '500',
   },
@@ -872,7 +872,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   dividerText: {
     color: colors.textSecondary,
-    fontSize: 12,
+    fontSize: 14,
   },
   // Optional Fields Styles
   optionalToggle: {
@@ -890,7 +890,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 10,
   },
   optionalToggleText: {
-    fontSize: 15,
+    fontSize: 17,
     color: '#007AFF',
     fontWeight: '500',
   },
@@ -923,12 +923,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   photoLabel: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
   photoHint: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -938,7 +938,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     textAlignVertical: 'top',
   },
   socialLabel: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 8,
     marginBottom: 4,
@@ -954,11 +954,11 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   socialInput: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
   },
   optionalHint: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6E6E73',
     textAlign: 'center',
     fontStyle: 'italic',

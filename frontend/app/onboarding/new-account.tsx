@@ -199,7 +199,7 @@ export default function NewAccountScreen() {
         >
           <Ionicons name={step === 'success' ? 'close' : 'chevron-back'} size={24} color={colors.accent} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, flex: 1 }}>
+        <Text style={{ fontSize: 19, fontWeight: '700', color: colors.text, flex: 1 }}>
           {step === 'success' ? 'Account Created' : 'Sign Up New Account'}
         </Text>
       </View>
@@ -210,12 +210,12 @@ export default function NewAccountScreen() {
             {/* Search */}
             <View style={{ paddingHorizontal: 16, paddingTop: 20 }}>
               <Text style={{ fontSize: 22, fontWeight: '800', color: colors.text, marginBottom: 4 }}>Find the Business</Text>
-              <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 16 }}>Search by name to auto-fill their info</Text>
+              <Text style={{ fontSize: 16, color: colors.textSecondary, marginBottom: 16 }}>Search by name to auto-fill their info</Text>
 
               <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 14, gap: 10 }}>
                 <Ionicons name="search" size={20} color={colors.textSecondary} />
                 <TextInput
-                  style={{ flex: 1, paddingVertical: 14, fontSize: 16, color: colors.text }}
+                  style={{ flex: 1, paddingVertical: 14, fontSize: 18, color: colors.text }}
                   placeholder="Type business name or address..."
                   placeholderTextColor="#48484A"
                   value={searchQuery}
@@ -244,8 +244,8 @@ export default function NewAccountScreen() {
                       <Ionicons name="location" size={20} color="#007AFF" />
                     </View>
                     <View style={{ flex: 1, minWidth: 0 }}>
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }} numberOfLines={1}>{place.name}</Text>
-                      <Text style={{ fontSize: 12, color: colors.textSecondary }} numberOfLines={1}>
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }} numberOfLines={1}>{place.name}</Text>
+                      <Text style={{ fontSize: 14, color: colors.textSecondary }} numberOfLines={1}>
                         {[place.address, place.city, place.state].filter(Boolean).join(', ')}
                       </Text>
                     </View>
@@ -263,14 +263,14 @@ export default function NewAccountScreen() {
                 data-testid="manual-entry-btn"
               >
                 <Ionicons name="create-outline" size={20} color={colors.accent} />
-                <Text style={{ fontSize: 14, color: colors.accent, fontWeight: '600' }}>Enter details manually for "{searchQuery}"</Text>
+                <Text style={{ fontSize: 16, color: colors.accent, fontWeight: '600' }}>Enter details manually for "{searchQuery}"</Text>
               </TouchableOpacity>
             )}
 
             {searchQuery.length < 3 && (
               <View style={{ alignItems: 'center', paddingVertical: 40, paddingHorizontal: 32 }}>
                 <Ionicons name="storefront-outline" size={48} color={colors.textTertiary} />
-                <Text style={{ fontSize: 14, color: colors.textTertiary, textAlign: 'center', marginTop: 12 }}>
+                <Text style={{ fontSize: 16, color: colors.textTertiary, textAlign: 'center', marginTop: 12 }}>
                   Start typing a business name to search. We'll auto-fill their address and details.
                 </Text>
               </View>
@@ -282,12 +282,12 @@ export default function NewAccountScreen() {
             {selectedPlace && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 4 }}>
                 <Ionicons name="checkmark-circle" size={16} color="#34C759" />
-                <Text style={{ fontSize: 12, color: '#34C759', fontWeight: '600' }}>Address verified via map data</Text>
+                <Text style={{ fontSize: 14, color: '#34C759', fontWeight: '600' }}>Address verified via map data</Text>
               </View>
             )}
 
             {/* Business Details */}
-            <Text style={{ fontSize: 11, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>BUSINESS DETAILS</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>BUSINESS DETAILS</Text>
             <View style={{ marginHorizontal: 16, backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
               <Field label="Business Name" value={businessName} onChange={setBusinessName} colors={colors} testId="biz-name" />
               <Field label="Street Address" value={address} onChange={setAddress} colors={colors} testId="biz-address" />
@@ -301,7 +301,7 @@ export default function NewAccountScreen() {
             </View>
 
             {/* Industry */}
-            <Text style={{ fontSize: 11, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 }}>INDUSTRY</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 }}>INDUSTRY</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 6 }}>
               {INDUSTRIES.map(ind => (
                 <TouchableOpacity
@@ -314,13 +314,13 @@ export default function NewAccountScreen() {
                   }}
                   data-testid={`industry-${ind.toLowerCase().replace(/\s+/g, '-')}`}
                 >
-                  <Text style={{ fontSize: 13, fontWeight: '600', color: industry === ind ? colors.accent : colors.textSecondary }}>{ind}</Text>
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: industry === ind ? colors.accent : colors.textSecondary }}>{ind}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
 
             {/* Contact Person */}
-            <Text style={{ fontSize: 11, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 }}>CONTACT PERSON</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 }}>CONTACT PERSON</Text>
             <View style={{ marginHorizontal: 16, backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
               <Field label="Full Name" value={contactName} onChange={setContactName} colors={colors} testId="contact-name" />
               <Field label="Phone" value={contactPhone} onChange={setContactPhone} colors={colors} keyboard="phone-pad" testId="contact-phone" />
@@ -328,7 +328,7 @@ export default function NewAccountScreen() {
             </View>
 
             {/* Plan */}
-            <Text style={{ fontSize: 11, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 }}>PLAN</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 }}>PLAN</Text>
             <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16 }}>
               {PLANS.map(p => {
                 const sel = plan === p.id;
@@ -343,9 +343,9 @@ export default function NewAccountScreen() {
                     }}
                     data-testid={`plan-${p.id}`}
                   >
-                    <Text style={{ fontSize: 14, fontWeight: '700', color: sel ? p.color : colors.textSecondary }}>{p.name}</Text>
-                    <Text style={{ fontSize: 16, fontWeight: '800', color: sel ? p.color : colors.text, marginTop: 2 }}>{p.price}</Text>
-                    <Text style={{ fontSize: 11, color: colors.textTertiary, marginTop: 1 }}>{p.desc}</Text>
+                    <Text style={{ fontSize: 16, fontWeight: '700', color: sel ? p.color : colors.textSecondary }}>{p.name}</Text>
+                    <Text style={{ fontSize: 18, fontWeight: '800', color: sel ? p.color : colors.text, marginTop: 2 }}>{p.price}</Text>
+                    <Text style={{ fontSize: 13, color: colors.textTertiary, marginTop: 1 }}>{p.desc}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -359,9 +359,9 @@ export default function NewAccountScreen() {
               activeOpacity={0.8}
               data-testid="start-onboarding-btn"
             >
-              {submitting ? <ActivityIndicator color="#000" /> : <Text style={{ fontSize: 17, fontWeight: '700', color: '#000' }}>Start Onboarding</Text>}
+              {submitting ? <ActivityIndicator color="#000" /> : <Text style={{ fontSize: 18, fontWeight: '700', color: '#000' }}>Start Onboarding</Text>}
             </TouchableOpacity>
-            <Text style={{ fontSize: 12, color: '#48484A', textAlign: 'center', padding: 8 }}>This will create the account and start the onboarding checklist</Text>
+            <Text style={{ fontSize: 14, color: '#48484A', textAlign: 'center', padding: 8 }}>This will create the account and start the onboarding checklist</Text>
           </>
         ) : (
           /* ── Success Screen ── */
@@ -370,27 +370,27 @@ export default function NewAccountScreen() {
               <Ionicons name="checkmark-circle" size={48} color="#34C759" />
             </View>
             <Text style={{ fontSize: 24, fontWeight: '800', color: colors.text, textAlign: 'center' }}>Account Created!</Text>
-            <Text style={{ fontSize: 15, color: colors.textSecondary, textAlign: 'center', marginTop: 8, paddingHorizontal: 16 }}>
+            <Text style={{ fontSize: 17, color: colors.textSecondary, textAlign: 'center', marginTop: 8, paddingHorizontal: 16 }}>
               {successData?.business_name} has been set up and is ready to go.
             </Text>
 
             {/* Credentials Card */}
             <View style={{ width: '100%', marginTop: 24, backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
               <View style={{ padding: 16, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
-                <Text style={{ fontSize: 11, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, marginBottom: 12 }}>LOGIN CREDENTIALS</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, marginBottom: 12 }}>LOGIN CREDENTIALS</Text>
                 <View style={{ gap: 10 }}>
                   <View>
-                    <Text style={{ fontSize: 12, color: colors.textSecondary }}>Name</Text>
-                    <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text, marginTop: 2 }} data-testid="success-contact-name">{successData?.contact_name}</Text>
+                    <Text style={{ fontSize: 14, color: colors.textSecondary }}>Name</Text>
+                    <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text, marginTop: 2 }} data-testid="success-contact-name">{successData?.contact_name}</Text>
                   </View>
                   <View>
-                    <Text style={{ fontSize: 12, color: colors.textSecondary }}>Email</Text>
-                    <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text, marginTop: 2 }} data-testid="success-contact-email">{successData?.contact_email || 'Not provided'}</Text>
+                    <Text style={{ fontSize: 14, color: colors.textSecondary }}>Email</Text>
+                    <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text, marginTop: 2 }} data-testid="success-contact-email">{successData?.contact_email || 'Not provided'}</Text>
                   </View>
                   <View>
-                    <Text style={{ fontSize: 12, color: colors.textSecondary }}>Temporary Password</Text>
+                    <Text style={{ fontSize: 14, color: colors.textSecondary }}>Temporary Password</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 }}>
-                      <Text style={{ fontSize: 15, fontWeight: '700', color: '#C9A962', fontFamily: 'monospace' }} data-testid="success-temp-password">{successData?.temp_password}</Text>
+                      <Text style={{ fontSize: 17, fontWeight: '700', color: '#C9A962', fontFamily: 'monospace' }} data-testid="success-temp-password">{successData?.temp_password}</Text>
                       <TouchableOpacity onPress={copyPassword} data-testid="copy-password-btn">
                         <Ionicons name={copiedPassword ? 'checkmark' : 'copy-outline'} size={18} color={copiedPassword ? '#34C759' : colors.accent} />
                       </TouchableOpacity>
@@ -401,7 +401,7 @@ export default function NewAccountScreen() {
               <View style={{ padding: 16, backgroundColor: 'rgba(255,149,0,0.06)' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                   <Ionicons name="information-circle" size={16} color="#FF9500" />
-                  <Text style={{ fontSize: 12, color: '#FF9500', fontWeight: '600' }}>Share these credentials with the account owner</Text>
+                  <Text style={{ fontSize: 14, color: '#FF9500', fontWeight: '600' }}>Share these credentials with the account owner</Text>
                 </View>
               </View>
             </View>
@@ -413,7 +413,7 @@ export default function NewAccountScreen() {
               activeOpacity={0.8}
               data-testid="success-done-btn"
             >
-              <Text style={{ fontSize: 17, fontWeight: '700', color: '#000' }}>Done</Text>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: '#000' }}>Done</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -428,7 +428,7 @@ function Field({ label, value, onChange, colors, keyboard, last, testId }: {
   return (
     <View style={{ borderBottomWidth: last ? 0 : 0.5, borderBottomColor: colors.border }}>
       <TextInput
-        style={{ padding: 14, paddingHorizontal: 16, fontSize: 16, color: colors.text }}
+        style={{ padding: 14, paddingHorizontal: 16, fontSize: 18, color: colors.text }}
         placeholder={label}
         placeholderTextColor="#48484A"
         value={value}

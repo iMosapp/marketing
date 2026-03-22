@@ -114,40 +114,40 @@ export default function AddTaskScreen() {
         <TouchableOpacity onPress={() => router.back()} style={{ padding: 4, marginRight: 8 }} data-testid="add-task-back-btn">
           <Ionicons name="chevron-back" size={24} color={colors.accent} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, flex: 1 }}>Add Task</Text>
+        <Text style={{ fontSize: 19, fontWeight: '700', color: colors.text, flex: 1 }}>Add Task</Text>
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         {/* Contact */}
-        <Text style={{ fontSize: 11, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 }}>CONTACT</Text>
+        <Text style={{ fontSize: 13, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 }}>CONTACT</Text>
         <View style={{ marginHorizontal: 16, backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
           {contact ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, paddingHorizontal: 16 }}>
               <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: 'rgba(201,169,98,0.12)', alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ fontWeight: '700', fontSize: 14, color: colors.accent }}>{getInitials(contact.name)}</Text>
+                <Text style={{ fontWeight: '700', fontSize: 16, color: colors.accent }}>{getInitials(contact.name)}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>{contact.name}</Text>
-                {contact.phone ? <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }}>{contact.phone}</Text> : null}
+                <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text }}>{contact.name}</Text>
+                {contact.phone ? <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 1 }}>{contact.phone}</Text> : null}
               </View>
               <TouchableOpacity onPress={() => { setShowContactPicker(true); loadContacts(); }} data-testid="change-contact-btn">
-                <Text style={{ fontSize: 13, color: colors.accent, fontWeight: '600' }}>Change</Text>
+                <Text style={{ fontSize: 15, color: colors.accent, fontWeight: '600' }}>Change</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <TouchableOpacity onPress={() => { setShowContactPicker(true); loadContacts(); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, paddingHorizontal: 16 }} data-testid="select-contact-btn">
               <Ionicons name="person-add-outline" size={20} color={colors.accent} />
-              <Text style={{ flex: 1, fontSize: 16, color: '#48484A' }}>Select a contact</Text>
-              <Text style={{ fontSize: 13, color: colors.accent, fontWeight: '600' }}>Choose</Text>
+              <Text style={{ flex: 1, fontSize: 18, color: '#48484A' }}>Select a contact</Text>
+              <Text style={{ fontSize: 15, color: colors.accent, fontWeight: '600' }}>Choose</Text>
             </TouchableOpacity>
           )}
         </View>
 
         {/* Task Details */}
-        <Text style={{ fontSize: 11, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 }}>TASK DETAILS</Text>
+        <Text style={{ fontSize: 13, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 }}>TASK DETAILS</Text>
         <View style={{ marginHorizontal: 16, backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
           <TextInput
-            style={{ padding: 14, paddingHorizontal: 16, fontSize: 16, color: colors.text }}
+            style={{ padding: 14, paddingHorizontal: 16, fontSize: 18, color: colors.text }}
             placeholder="What needs to be done?"
             placeholderTextColor="#48484A"
             value={title}
@@ -156,7 +156,7 @@ export default function AddTaskScreen() {
           />
           <View style={{ height: 1, backgroundColor: colors.border, marginLeft: 16 }} />
           <TextInput
-            style={{ padding: 14, paddingHorizontal: 16, fontSize: 14, color: colors.text }}
+            style={{ padding: 14, paddingHorizontal: 16, fontSize: 16, color: colors.text }}
             placeholder="Notes (optional)"
             placeholderTextColor="#48484A"
             value={notes}
@@ -166,35 +166,35 @@ export default function AddTaskScreen() {
         </View>
 
         {/* When */}
-        <Text style={{ fontSize: 11, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 }}>WHEN</Text>
+        <Text style={{ fontSize: 13, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 }}>WHEN</Text>
         <View style={{ marginHorizontal: 16, backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', padding: 12, paddingHorizontal: 16, gap: 10 }}>
             <Ionicons name="calendar-outline" size={20} color={colors.accent} />
-            <Text style={{ flex: 1, fontSize: 16, color: colors.text }}>{formatDate(dueDate)}</Text>
+            <Text style={{ flex: 1, fontSize: 18, color: colors.text }}>{formatDate(dueDate)}</Text>
             <TouchableOpacity onPress={() => {
               const next = new Date(dueDate);
               next.setDate(next.getDate() + 1);
               setDueDate(next);
             }} data-testid="change-date-btn">
-              <Text style={{ fontSize: 13, color: colors.accent, fontWeight: '600' }}>Change</Text>
+              <Text style={{ fontSize: 15, color: colors.accent, fontWeight: '600' }}>Change</Text>
             </TouchableOpacity>
           </View>
           <View style={{ height: 1, backgroundColor: colors.border, marginLeft: 16 }} />
           <View style={{ flexDirection: 'row', alignItems: 'center', padding: 12, paddingHorizontal: 16, gap: 10 }}>
             <Ionicons name="time-outline" size={20} color={colors.accent} />
-            <Text style={{ flex: 1, fontSize: 16, color: colors.text }}>{formatTime(dueDate)}</Text>
+            <Text style={{ flex: 1, fontSize: 18, color: colors.text }}>{formatTime(dueDate)}</Text>
             <TouchableOpacity onPress={() => {
               const next = new Date(dueDate);
               next.setHours(next.getHours() + 1);
               setDueDate(next);
             }} data-testid="change-time-btn">
-              <Text style={{ fontSize: 13, color: colors.accent, fontWeight: '600' }}>Change</Text>
+              <Text style={{ fontSize: 15, color: colors.accent, fontWeight: '600' }}>Change</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Priority */}
-        <Text style={{ fontSize: 11, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 }}>PRIORITY</Text>
+        <Text style={{ fontSize: 13, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 }}>PRIORITY</Text>
         <View style={{ marginHorizontal: 16, backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
           <View style={{ flexDirection: 'row', gap: 8, padding: 12, paddingHorizontal: 16 }}>
             {PRIORITIES.map(p => {
@@ -210,7 +210,7 @@ export default function AddTaskScreen() {
                   }}
                   data-testid={`priority-${p.key}`}
                 >
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: sel ? p.selColor : '#636366' }}>{p.label}</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: sel ? p.selColor : '#636366' }}>{p.label}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -218,7 +218,7 @@ export default function AddTaskScreen() {
         </View>
 
         {/* Action Type */}
-        <Text style={{ fontSize: 11, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 }}>PRIMARY ACTION</Text>
+        <Text style={{ fontSize: 13, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, paddingHorizontal: 16, paddingTop: 20, paddingBottom: 8 }}>PRIMARY ACTION</Text>
         <View style={{ marginHorizontal: 16, backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
           <View style={{ flexDirection: 'row', gap: 8, padding: 12, paddingHorizontal: 16 }}>
             {ACTIONS.map(a => {
@@ -235,7 +235,7 @@ export default function AddTaskScreen() {
                   data-testid={`action-${a.key}`}
                 >
                   <Ionicons name={a.icon as any} size={20} color={sel ? colors.accent : '#636366'} style={{ marginBottom: 3 }} />
-                  <Text style={{ fontSize: 11, fontWeight: '600', color: sel ? colors.accent : '#636366' }}>{a.label}</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: sel ? colors.accent : '#636366' }}>{a.label}</Text>
                 </TouchableOpacity>
               );
             })}
@@ -250,9 +250,9 @@ export default function AddTaskScreen() {
           activeOpacity={0.8}
           data-testid="save-task-btn"
         >
-          {saving ? <ActivityIndicator color="#000" /> : <Text style={{ fontSize: 17, fontWeight: '700', color: '#000' }}>Save Task</Text>}
+          {saving ? <ActivityIndicator color="#000" /> : <Text style={{ fontSize: 18, fontWeight: '700', color: '#000' }}>Save Task</Text>}
         </TouchableOpacity>
-        <Text style={{ fontSize: 12, color: '#48484A', textAlign: 'center', padding: 8, paddingHorizontal: 16 }}>Task will appear in Today's Touchpoints on the due date</Text>
+        <Text style={{ fontSize: 14, color: '#48484A', textAlign: 'center', padding: 8, paddingHorizontal: 16 }}>Task will appear in Today's Touchpoints on the due date</Text>
       </ScrollView>
 
       {/* Contact Picker Modal */}
@@ -262,12 +262,12 @@ export default function AddTaskScreen() {
             <TouchableOpacity onPress={() => setShowContactPicker(false)} style={{ padding: 4 }} data-testid="contact-picker-back">
               <Ionicons name="chevron-back" size={24} color={colors.text} />
             </TouchableOpacity>
-            <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' }}>Select Contact</Text>
+            <Text style={{ fontSize: 19, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' }}>Select Contact</Text>
             <View style={{ width: 32 }} />
           </View>
           <View style={{ paddingHorizontal: 16, paddingVertical: 8 }}>
             <TextInput
-              style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, color: colors.text }}
+              style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontSize: 17, color: colors.text }}
               placeholder="Search contacts..."
               placeholderTextColor={colors.textTertiary}
               value={contactSearch}
@@ -294,17 +294,17 @@ export default function AddTaskScreen() {
                     data-testid={`pick-contact-${item._id}`}
                   >
                     <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: `${colors.accent}20`, alignItems: 'center', justifyContent: 'center' }}>
-                      <Text style={{ color: colors.accent, fontWeight: '700', fontSize: 14 }}>{getInitials(name)}</Text>
+                      <Text style={{ color: colors.accent, fontWeight: '700', fontSize: 16 }}>{getInitials(name)}</Text>
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>{name}</Text>
-                      {item.phone ? <Text style={{ fontSize: 12, color: colors.textSecondary }}>{item.phone}</Text> : null}
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>{name}</Text>
+                      {item.phone ? <Text style={{ fontSize: 14, color: colors.textSecondary }}>{item.phone}</Text> : null}
                     </View>
                     <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
                   </TouchableOpacity>
                 );
               }}
-              ListEmptyComponent={<Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: 24, fontSize: 14 }}>{contactSearch ? 'No contacts found' : 'No contacts yet'}</Text>}
+              ListEmptyComponent={<Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: 24, fontSize: 16 }}>{contactSearch ? 'No contacts found' : 'No contacts yet'}</Text>}
             />
           )}
         </SafeAreaView>

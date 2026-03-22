@@ -341,7 +341,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: 'bold',
     color: colors.text,
   },
@@ -374,7 +374,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   pendingLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 4,
   },
@@ -382,7 +382,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   tapToSend: {
-    fontSize: 12,
+    fontSize: 14,
     color: 'rgba(255,255,255,0.7)',
     marginTop: 8,
     fontWeight: '500',
@@ -404,7 +404,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   statCardLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 4,
   },
@@ -417,7 +417,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 16,
   },
   sectionHeader: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
     color: colors.textSecondary,
     textTransform: 'uppercase',
@@ -452,17 +452,17 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  contactName: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
   },
+  contactName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text,
+  },
   contactPhone: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   statusBadge: {
@@ -471,7 +471,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 12,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     textTransform: 'capitalize',
   },
@@ -482,7 +482,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   campaignName: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
   },
   progressSection: {
@@ -499,7 +499,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 2,
   },
   progressText: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
   },
   statsRow: {
@@ -512,7 +512,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   statText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   emptyContainer: {
@@ -520,14 +520,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 48,
   },
   emptyText: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '600',
     color: colors.text,
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtext: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 24,
@@ -539,7 +539,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 12,
   },
   createButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },

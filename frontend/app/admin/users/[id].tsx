@@ -937,7 +937,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   errorText: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: 18,
     marginTop: 12,
   },
   header: {
@@ -953,7 +953,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     flex: 1,
@@ -1001,7 +1001,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   userTitle: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -1016,7 +1016,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 12,
   },
   roleBadgeText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
   },
   changeRoleButton: {
@@ -1032,7 +1032,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderTopColor: colors.surface,
   },
   statusLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
   },
   statusBadge: {
@@ -1049,7 +1049,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 6,
   },
   statusText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
   },
   pendingBanner: {
@@ -1063,7 +1063,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   pendingText: {
     color: '#FF9500',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
     marginLeft: 8,
   },
@@ -1082,7 +1082,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   inactiveBannerTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#FF9500',
     marginLeft: 10,
@@ -1094,12 +1094,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   deletionSource: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
     color: '#FF9500',
   },
   deletionDate: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 4,
   },
@@ -1114,7 +1114,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   reactivateButtonText: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
   },
   impersonateButton: {
@@ -1129,7 +1129,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   impersonateButtonText: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
   // Sections
@@ -1145,7 +1145,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginLeft: 8,
@@ -1161,7 +1161,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 12,
   },
   percentText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
   },
   progressBar: {
@@ -1186,7 +1186,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   completenessLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.text,
     marginLeft: 10,
     flex: 1,
@@ -1201,7 +1201,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 6,
   },
   missingText: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#FF3B30',
     fontWeight: '500',
   },
@@ -1214,7 +1214,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   infoText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.text,
     marginLeft: 10,
     flex: 1,
@@ -1226,7 +1226,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 4,
   },
   twilioTagText: {
-    fontSize: 10,
+    fontSize: 12,
     color: '#007AFF',
     fontWeight: '600',
   },
@@ -1248,7 +1248,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   orgName: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '500',
     color: colors.text,
     marginLeft: 12,
@@ -1260,7 +1260,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   emptyText: {
     color: colors.textSecondary,
-    fontSize: 14,
+    fontSize: 16,
     marginTop: 8,
   },
   assignButton: {
@@ -1272,7 +1272,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   assignButtonText: {
     color: colors.text,
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
   storeCard: {
@@ -1296,12 +1296,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginLeft: 12,
   },
   storeName: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '500',
     color: colors.text,
   },
   storeLocation: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -1318,7 +1318,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   actionText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
     marginLeft: 12,
   },
@@ -1337,11 +1337,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.card,
   },
   cancelText: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#007AFF',
   },
   modalTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -1364,13 +1364,13 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   emptyModalText: {
     color: colors.text,
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     marginTop: 16,
   },
   emptyModalSubtext: {
     color: colors.textSecondary,
-    fontSize: 14,
+    fontSize: 16,
     textAlign: 'center',
     marginTop: 8,
   },
@@ -1403,12 +1403,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginLeft: 12,
   },
   roleLabel: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   roleDescription: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -1423,7 +1423,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   changeOrgText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -1449,12 +1449,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginLeft: 12,
   },
   orgOptionName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   currentOrgLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#34C759',
     marginTop: 2,
   },
@@ -1475,12 +1475,12 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   deleteButtonText: {
     color: '#FF3B30',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
   dangerWarning: {
     color: colors.textSecondary,
-    fontSize: 12,
+    fontSize: 14,
     textAlign: 'center',
     marginTop: 12,
     lineHeight: 18,

@@ -122,7 +122,7 @@ export default function CustomerPerformanceScreen() {
         <TouchableOpacity onPress={() => router.back()} style={{ padding: 4, marginRight: 8 }} data-testid="back-btn">
           <Ionicons name="chevron-back" size={24} color={colors.accent} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, flex: 1 }}>Customer Performance</Text>
+        <Text style={{ fontSize: 19, fontWeight: '700', color: colors.text, flex: 1 }}>Customer Performance</Text>
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
@@ -139,7 +139,7 @@ export default function CustomerPerformanceScreen() {
               }}
               data-testid={`period-${p.key}`}
             >
-              <Text style={{ fontSize: 13, fontWeight: '600', color: period === p.key ? '#000' : colors.textSecondary }}>{p.label}</Text>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: period === p.key ? '#000' : colors.textSecondary }}>{p.label}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -157,7 +157,7 @@ export default function CustomerPerformanceScreen() {
               }}
               data-testid={`scope-${s.key}`}
             >
-              <Text style={{ fontSize: 13, fontWeight: '600', color: scope === s.key ? '#000' : colors.textSecondary }}>{s.label}</Text>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: scope === s.key ? '#000' : colors.textSecondary }}>{s.label}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -165,8 +165,8 @@ export default function CustomerPerformanceScreen() {
         {/* Summary Stats */}
         {!loading && rankings.length > 0 && (
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginHorizontal: 16, marginBottom: 12, paddingHorizontal: 4 }}>
-            <Text style={{ fontSize: 12, color: colors.textSecondary }}>{rankings.length} active customers</Text>
-            <Text style={{ fontSize: 12, color: colors.textSecondary }}>Top score: {maxScore}</Text>
+            <Text style={{ fontSize: 14, color: colors.textSecondary }}>{rankings.length} active customers</Text>
+            <Text style={{ fontSize: 14, color: colors.textSecondary }}>Top score: {maxScore}</Text>
           </View>
         )}
 
@@ -176,8 +176,8 @@ export default function CustomerPerformanceScreen() {
         ) : rankings.length === 0 ? (
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40, paddingTop: 60 }}>
             <Ionicons name="people-outline" size={48} color="#48484A" />
-            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginTop: 12, textAlign: 'center' }}>No Customer Activity</Text>
-            <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 6, textAlign: 'center' }}>
+            <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text, marginTop: 12, textAlign: 'center' }}>No Customer Activity</Text>
+            <Text style={{ fontSize: 15, color: colors.textSecondary, marginTop: 6, textAlign: 'center' }}>
               When customers interact with your shared cards and links, their engagement will show up here.
             </Text>
           </View>
@@ -206,7 +206,7 @@ export default function CustomerPerformanceScreen() {
                     backgroundColor: idx < 3 ? heatColor : '#2C2C2E',
                     alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: idx < 3 ? '#FFF' : colors.textSecondary }}>
+                    <Text style={{ fontSize: 15, fontWeight: '700', color: idx < 3 ? '#FFF' : colors.textSecondary }}>
                       {idx + 1}
                     </Text>
                   </View>
@@ -214,8 +214,8 @@ export default function CustomerPerformanceScreen() {
                   {/* Contact Info */}
                   <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text, flexShrink: 1 }} numberOfLines={1}>{contact.name}</Text>
-                      <Text style={{ fontSize: 10, fontWeight: '700', color: heatColor, backgroundColor: `${heatColor}18`, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, overflow: 'hidden' }}>
+                      <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text, flexShrink: 1 }} numberOfLines={1}>{contact.name}</Text>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: heatColor, backgroundColor: `${heatColor}18`, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, overflow: 'hidden' }}>
                         {heatLabel}
                       </Text>
                     </View>
@@ -225,13 +225,13 @@ export default function CustomerPerformanceScreen() {
                         <View style={{ height: '100%', width: `${barWidth}%`, backgroundColor: heatColor, borderRadius: 2 }} />
                       </View>
                     </View>
-                    <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4 }}>
+                    <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>
                       {contact.event_count} interactions{contact.last_activity ? `  -  ${formatTimeAgo(contact.last_activity)}` : ''}
                     </Text>
                   </View>
 
                   {/* Score */}
-                  <Text style={{ fontSize: 18, fontWeight: '700', color: heatColor, minWidth: 36, textAlign: 'right' }}>{contact.score}</Text>
+                  <Text style={{ fontSize: 19, fontWeight: '700', color: heatColor, minWidth: 36, textAlign: 'right' }}>{contact.score}</Text>
                   <Ionicons name="chevron-forward" size={16} color="#48484A" />
                 </TouchableOpacity>
               );
@@ -254,8 +254,8 @@ export default function CustomerPerformanceScreen() {
                 {/* Header */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: colors.border }}>
                   <View>
-                    <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>{selectedContact.name}</Text>
-                    <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
+                    <Text style={{ fontSize: 19, fontWeight: '700', color: colors.text }}>{selectedContact.name}</Text>
+                    <Text style={{ fontSize: 15, color: colors.textSecondary, marginTop: 2 }}>
                       Score: {selectedContact.score} - {selectedContact.event_count} interactions
                     </Text>
                   </View>
@@ -266,16 +266,16 @@ export default function CustomerPerformanceScreen() {
 
                 {/* Breakdown */}
                 <ScrollView contentContainerStyle={{ padding: 20 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 12 }}>Activity Breakdown</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 12 }}>Activity Breakdown</Text>
                   {Object.entries(selectedContact.breakdown)
                     .sort((a, b) => b[1] - a[1])
                     .map(([eventType, count]) => (
                       <View key={eventType} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-                        <Text style={{ fontSize: 13, color: colors.text, flex: 1 }}>
+                        <Text style={{ fontSize: 15, color: colors.text, flex: 1 }}>
                           {EVENT_LABELS[eventType] || eventType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
                         </Text>
                         <View style={{ backgroundColor: 'rgba(201,169,98,0.12)', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10 }}>
-                          <Text style={{ fontSize: 12, fontWeight: '700', color: colors.accent }}>{count}</Text>
+                          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.accent }}>{count}</Text>
                         </View>
                       </View>
                     ))
@@ -293,7 +293,7 @@ export default function CustomerPerformanceScreen() {
                     }}
                     data-testid="view-contact-btn"
                   >
-                    <Text style={{ fontSize: 15, fontWeight: '600', color: '#000' }}>View Contact</Text>
+                    <Text style={{ fontSize: 17, fontWeight: '600', color: '#000' }}>View Contact</Text>
                   </TouchableOpacity>
                 </ScrollView>
               </>

@@ -203,7 +203,7 @@ const IntelRenderer = ({ text }: { text: string }) => {
 
     if (isHeader) {
       elements.push(
-        <Text key={i} style={{ color: colors.text, fontSize: 14, fontWeight: '700', marginTop: i > 0 ? 14 : 0, marginBottom: 4 }}>
+        <Text key={i} style={{ color: colors.text, fontSize: 16, fontWeight: '700', marginTop: i > 0 ? 14 : 0, marginBottom: 4 }}>
           {trimmed.replace(/:$/, '')}
         </Text>
       );
@@ -211,13 +211,13 @@ const IntelRenderer = ({ text }: { text: string }) => {
       const bulletText = trimmed.replace(/^[-•]\s*/, '');
       elements.push(
         <View key={i} style={{ flexDirection: 'row', paddingLeft: 4, marginBottom: 3 }}>
-          <Text style={{ color: colors.textTertiary, fontSize: 13, marginRight: 6 }}>{'\u2022'}</Text>
-          <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 19, flex: 1 }}>{bulletText}</Text>
+          <Text style={{ color: colors.textTertiary, fontSize: 15, marginRight: 6 }}>{'\u2022'}</Text>
+          <Text style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 19, flex: 1 }}>{bulletText}</Text>
         </View>
       );
     } else {
       elements.push(
-        <Text key={i} style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 19, marginBottom: 4 }}>
+        <Text key={i} style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 19, marginBottom: 4 }}>
           {trimmed}
         </Text>
       );
@@ -244,7 +244,7 @@ export default function ContactDetailScreen() {
       overflow: 'hidden' as const,
     },
     cardInput: {
-      fontSize: 16,
+      fontSize: 18,
       color: colors.text,
       paddingVertical: 14,
       paddingHorizontal: 16,
@@ -2058,7 +2058,7 @@ export default function ContactDetailScreen() {
           {/* Header: Cancel / Done */}
           <View style={[s.header, { borderBottomColor: colors.border }]} data-testid="new-contact-header">
             <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} data-testid="new-contact-cancel">
-              <Text style={{ fontSize: 17, color: '#007AFF' }}>Cancel</Text>
+              <Text style={{ fontSize: 18, color: '#007AFF' }}>Cancel</Text>
             </TouchableOpacity>
             <Text style={[s.headerTitle, { color: colors.text }]}>New Contact</Text>
             <TouchableOpacity
@@ -2068,7 +2068,7 @@ export default function ContactDetailScreen() {
               data-testid="new-contact-done"
             >
               {saving ? <ActivityIndicator size="small" color="#000" /> : (
-                <Text style={{ fontSize: 16, fontWeight: '700', color: (contact.first_name && (contact.phone || contact.email)) ? '#000' : colors.textTertiary }}>Done</Text>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: (contact.first_name && (contact.phone || contact.email)) ? '#000' : colors.textTertiary }}>Done</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -2086,7 +2086,7 @@ export default function ContactDetailScreen() {
                 )}
               </TouchableOpacity>
               <TouchableOpacity onPress={pickImage} style={{ marginTop: 8 }}>
-                <Text style={{ fontSize: 13, color: '#007AFF', fontWeight: '600' }}>{contact.photo ? 'Change Photo' : 'Add Photo'}</Text>
+                <Text style={{ fontSize: 15, color: '#007AFF', fontWeight: '600' }}>{contact.photo ? 'Change Photo' : 'Add Photo'}</Text>
               </TouchableOpacity>
             </View>
 
@@ -2103,7 +2103,7 @@ export default function ContactDetailScreen() {
               ) : (
                 <Ionicons name="person-add-outline" size={18} color="#C9A962" />
               )}
-              <Text style={{ fontSize: 14, fontWeight: '600', color: '#C9A962' }}>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: '#C9A962' }}>
                 Import from Phone Contacts
               </Text>
             </TouchableOpacity>
@@ -2116,18 +2116,18 @@ export default function ContactDetailScreen() {
                   <TouchableOpacity onPress={() => { setShowDeviceContacts(false); setDeviceContactSearch(''); setSelectedDeviceIds(new Set()); }} data-testid="device-contacts-close">
                     <Ionicons name="close" size={24} color={colors.text} />
                   </TouchableOpacity>
-                  <Text style={{ flex: 1, fontSize: 17, fontWeight: '700', color: colors.text, textAlign: 'center' }}>Phone Contacts</Text>
+                  <Text style={{ flex: 1, fontSize: 18, fontWeight: '700', color: colors.text, textAlign: 'center' }}>Phone Contacts</Text>
                   {selectedDeviceIds.size === 0 ? (
                     <View style={{ width: 24 }} />
                   ) : (
-                    <Text style={{ fontSize: 13, color: '#C9A962', fontWeight: '600' }}>{selectedDeviceIds.size} selected</Text>
+                    <Text style={{ fontSize: 15, color: '#C9A962', fontWeight: '600' }}>{selectedDeviceIds.size} selected</Text>
                   )}
                 </View>
                 <View style={{ paddingHorizontal: 16, paddingVertical: 10 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 10, paddingHorizontal: 12 }}>
                     <Ionicons name="search" size={18} color={colors.textTertiary} />
                     <TextInput
-                      style={{ flex: 1, paddingVertical: 10, paddingLeft: 8, fontSize: 15, color: colors.text }}
+                      style={{ flex: 1, paddingVertical: 10, paddingLeft: 8, fontSize: 17, color: colors.text }}
                       placeholder="Search by name or phone..."
                       placeholderTextColor={colors.textTertiary}
                       value={deviceContactSearch}
@@ -2153,7 +2153,7 @@ export default function ContactDetailScreen() {
                     size={22}
                     color="#C9A962"
                   />
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#C9A962', marginLeft: 10 }}>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#C9A962', marginLeft: 10 }}>
                     Select All ({filteredDeviceContactsList.length})
                   </Text>
                 </TouchableOpacity>
@@ -2187,17 +2187,17 @@ export default function ContactDetailScreen() {
                           <Image source={{ uri: dc.image.uri }} style={{ width: 40, height: 40, borderRadius: 20 }} />
                         ) : (
                           <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' }}>
-                            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textTertiary }}>
+                            <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textTertiary }}>
                               {(dc.firstName?.[0] || '') + (dc.lastName?.[0] || '')}
                             </Text>
                           </View>
                         )}
                         <View style={{ flex: 1, marginLeft: 12 }}>
-                          <Text style={{ fontSize: 15, fontWeight: '500', color: colors.text }}>
+                          <Text style={{ fontSize: 17, fontWeight: '500', color: colors.text }}>
                             {dc.firstName || ''} {dc.lastName || ''}
                           </Text>
                           {dc.phoneNumbers?.[0]?.number ? (
-                            <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 1 }}>{dc.phoneNumbers[0].number}</Text>
+                            <Text style={{ fontSize: 15, color: colors.textSecondary, marginTop: 1 }}>{dc.phoneNumbers[0].number}</Text>
                           ) : null}
                         </View>
                         {selectedDeviceIds.size === 0 && (
@@ -2208,7 +2208,7 @@ export default function ContactDetailScreen() {
                   }}
                   ListEmptyComponent={
                     <View style={{ padding: 32, alignItems: 'center' }}>
-                      <Text style={{ fontSize: 14, color: colors.textSecondary }}>
+                      <Text style={{ fontSize: 16, color: colors.textSecondary }}>
                         {deviceContactSearch ? 'No contacts match your search' : 'No contacts found'}
                       </Text>
                     </View>
@@ -2228,7 +2228,7 @@ export default function ContactDetailScreen() {
                       ) : (
                         <Ionicons name="download-outline" size={18} color="#fff" />
                       )}
-                      <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>
+                      <Text style={{ fontSize: 17, fontWeight: '700', color: '#fff' }}>
                         {bulkImporting ? 'Importing...' : `Import ${selectedDeviceIds.size} Contact${selectedDeviceIds.size !== 1 ? 's' : ''}`}
                       </Text>
                     </TouchableOpacity>
@@ -2297,7 +2297,7 @@ export default function ContactDetailScreen() {
             {duplicateMatches.length > 0 && (
               <View style={{ marginHorizontal: 16, marginBottom: 12, borderRadius: 12, backgroundColor: '#FF9500' + '20', borderWidth: 1, borderColor: '#FF9500', overflow: 'hidden' }} data-testid="duplicate-match-banner">
                 <View style={{ padding: 12 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#FF9500', marginBottom: 6 }}>Existing Contact Found</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: '#FF9500', marginBottom: 6 }}>Existing Contact Found</Text>
                   {duplicateMatches.map((m: any) => (
                     <TouchableOpacity
                       key={m.id}
@@ -2306,11 +2306,11 @@ export default function ContactDetailScreen() {
                       data-testid={`duplicate-match-${m.id}`}
                     >
                       <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
-                        <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>{(m.first_name || '?')[0]}</Text>
+                        <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{(m.first_name || '?')[0]}</Text>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>{m.first_name} {m.last_name}</Text>
-                        <Text style={{ fontSize: 13, color: colors.textSecondary }}>{m.phone || m.email}</Text>
+                        <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text }}>{m.first_name} {m.last_name}</Text>
+                        <Text style={{ fontSize: 15, color: colors.textSecondary }}>{m.phone || m.email}</Text>
                       </View>
                       <Ionicons name="chevron-forward" size={18} color="#FF9500" />
                     </TouchableOpacity>
@@ -2344,9 +2344,9 @@ export default function ContactDetailScreen() {
                 <Ionicons name="people-outline" size={20} color="#AF52DE" style={ncs.cardRowIcon} />
                 <View style={{ flex: 1 }}>
                   {contact.referred_by_name ? (
-                    <Text style={{ fontSize: 16, color: colors.text }}>{contact.referred_by_name}</Text>
+                    <Text style={{ fontSize: 18, color: colors.text }}>{contact.referred_by_name}</Text>
                   ) : (
-                    <Text style={{ fontSize: 16, color: colors.textTertiary }}>Referred by</Text>
+                    <Text style={{ fontSize: 18, color: colors.textTertiary }}>Referred by</Text>
                   )}
                 </View>
                 <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
@@ -2380,21 +2380,21 @@ export default function ContactDetailScreen() {
                 {ncVoiceTranscribing ? (
                   <>
                     <ActivityIndicator size="small" color="#C9A962" style={{ marginRight: 8 }} />
-                    <Text style={{ fontSize: 15, fontWeight: '600', color: '#C9A962' }}>Transcribing...</Text>
+                    <Text style={{ fontSize: 17, fontWeight: '600', color: '#C9A962' }}>Transcribing...</Text>
                   </>
                 ) : ncVoiceRecording ? (
                   <>
                     <Ionicons name="stop-circle" size={22} color="#FF3B30" style={{ marginRight: 8 }} />
-                    <Text style={{ fontSize: 15, fontWeight: '600', color: '#FF3B30' }}>Stop Recording</Text>
+                    <Text style={{ fontSize: 17, fontWeight: '600', color: '#FF3B30' }}>Stop Recording</Text>
                   </>
                 ) : (
                   <>
                     <Ionicons name="mic" size={22} color="#34C759" style={{ marginRight: 8 }} />
-                    <Text style={{ fontSize: 15, fontWeight: '600', color: '#34C759' }}>Record Voice Note</Text>
+                    <Text style={{ fontSize: 17, fontWeight: '600', color: '#34C759' }}>Record Voice Note</Text>
                   </>
                 )}
               </TouchableOpacity>
-              <Text style={{ fontSize: 12, color: colors.textTertiary, marginTop: 6, textAlign: 'center' }}>Record a voice memo — it will be transcribed and added to notes</Text>
+              <Text style={{ fontSize: 14, color: colors.textTertiary, marginTop: 6, textAlign: 'center' }}>Record a voice memo — it will be transcribed and added to notes</Text>
             </View>
 
             {/* Tags Card */}
@@ -2419,7 +2419,7 @@ export default function ContactDetailScreen() {
                   data-testid="new-contact-add-tag"
                 >
                   <Ionicons name="add" size={16} color="#007AFF" />
-                  <Text style={{ fontSize: 13, color: '#007AFF', fontWeight: '600', marginLeft: 2 }}>Tag</Text>
+                  <Text style={{ fontSize: 15, color: '#007AFF', fontWeight: '600', marginLeft: 2 }}>Tag</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -2432,7 +2432,7 @@ export default function ContactDetailScreen() {
                 data-testid="new-contact-more-details"
               >
                 <Ionicons name="add-circle-outline" size={18} color="#007AFF" style={{ marginRight: 6 }} />
-                <Text style={{ fontSize: 15, color: '#007AFF', fontWeight: '500' }}>Add Address & Dates</Text>
+                <Text style={{ fontSize: 17, color: '#007AFF', fontWeight: '500' }}>Add Address & Dates</Text>
               </TouchableOpacity>
             ) : (
               <>
@@ -2493,7 +2493,7 @@ export default function ContactDetailScreen() {
                         <View style={[{ width: 28, height: 28, borderRadius: 7, alignItems: 'center', justifyContent: 'center', marginRight: 12, backgroundColor: `${d.color}20` }]}>
                           <Ionicons name={d.icon as any} size={16} color={d.color} />
                         </View>
-                        <Text style={{ flex: 1, fontSize: 16, color: (contact as any)[d.field] ? colors.text : colors.textTertiary }}>
+                        <Text style={{ flex: 1, fontSize: 18, color: (contact as any)[d.field] ? colors.text : colors.textTertiary }}>
                           {(contact as any)[d.field] ? new Date((contact as any)[d.field]).toLocaleDateString() : d.label}
                         </Text>
                       </TouchableOpacity>
@@ -2512,7 +2512,7 @@ export default function ContactDetailScreen() {
             <View style={s.actionSheetContainer} onStartShouldSetResponder={() => true}>
               <View style={s.actionSheetGroup}>
                 <View style={{ padding: 16 }}>
-                  <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text, marginBottom: 12 }}>Add Tag</Text>
+                  <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text, marginBottom: 12 }}>Add Tag</Text>
                   <TextInput
                     style={[s.input, { marginBottom: 12 }]}
                     placeholder="Search or create a tag..."
@@ -2541,7 +2541,7 @@ export default function ContactDetailScreen() {
                         data-testid="create-new-tag-btn"
                       >
                         <Ionicons name="add-circle" size={22} color="#007AFF" />
-                        <Text style={{ fontSize: 16, fontWeight: '600', color: '#007AFF' }}>Create "{tagSearch.trim()}"</Text>
+                        <Text style={{ fontSize: 18, fontWeight: '600', color: '#007AFF' }}>Create "{tagSearch.trim()}"</Text>
                       </TouchableOpacity>
                     )}
                     {availableTags.filter(t => !contact.tags.includes(t.name) && (!tagSearch || t.name.toLowerCase().includes(tagSearch.toLowerCase()))).map(tag => (
@@ -2565,7 +2565,7 @@ export default function ContactDetailScreen() {
           <TouchableOpacity style={s.actionSheetOverlay} activeOpacity={1} onPress={() => setShowDatePicker(false)}>
             <View style={s.actionSheetContainer} onStartShouldSetResponder={() => true}>
               <View style={[s.actionSheetGroup, { padding: 16 }]}>
-                <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text, marginBottom: 12 }}>{activeDateLabel}</Text>
+                <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text, marginBottom: 12 }}>{activeDateLabel}</Text>
                 {Platform.OS === 'web' ? (
                   <input
                     type="date"
@@ -2579,14 +2579,14 @@ export default function ContactDetailScreen() {
                         setWebDay(d.getDate());
                       }
                     }}
-                    style={{ fontSize: 18, padding: 12, borderRadius: 8, border: `1px solid ${colors.border}`, backgroundColor: colors.card, color: colors.text, width: '100%' }}
+                    style={{ fontSize: 19, padding: 12, borderRadius: 8, border: `1px solid ${colors.border}`, backgroundColor: colors.card, color: colors.text, width: '100%' }}
                   />
                 ) : null}
                 <TouchableOpacity
                   style={{ marginTop: 16, alignItems: 'center', padding: 14, backgroundColor: '#007AFF', borderRadius: 10 }}
                   onPress={confirmDateSelection}
                 >
-                  <Text style={{ fontSize: 17, fontWeight: '600', color: '#FFF' }}>Done</Text>
+                  <Text style={{ fontSize: 18, fontWeight: '600', color: '#FFF' }}>Done</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -2598,9 +2598,9 @@ export default function ContactDetailScreen() {
           <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-                <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text }}>Select Referrer</Text>
+                <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text }}>Select Referrer</Text>
                 <TouchableOpacity onPress={() => { setShowReferralPicker(false); setContactSearch(''); }}>
-                  <Text style={{ fontSize: 17, color: '#007AFF' }}>Cancel</Text>
+                  <Text style={{ fontSize: 18, color: '#007AFF' }}>Cancel</Text>
                 </TouchableOpacity>
               </View>
               <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
@@ -2627,9 +2627,9 @@ export default function ContactDetailScreen() {
                     data-testid={`referral-option-${c._id}`}
                   >
                     <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                      <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>{(c.first_name || '?')[0]}</Text>
+                      <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{(c.first_name || '?')[0]}</Text>
                     </View>
-                    <Text style={{ fontSize: 16, color: colors.text }}>{c.first_name} {c.last_name || ''}</Text>
+                    <Text style={{ fontSize: 18, color: colors.text }}>{c.first_name} {c.last_name || ''}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -2676,10 +2676,10 @@ export default function ContactDetailScreen() {
                 <Ionicons name="checkbox-outline" size={18} color="#007AFF" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 12, fontWeight: '600', color: '#007AFF', textTransform: 'uppercase', letterSpacing: 0.5 }}>Task</Text>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text, marginTop: 1 }}>{taskTitle}</Text>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#007AFF', textTransform: 'uppercase', letterSpacing: 0.5 }}>Task</Text>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginTop: 1 }}>{taskTitle}</Text>
               </View>
-              <Text style={{ fontSize: 11, color: colors.textTertiary }}>Send below</Text>
+              <Text style={{ fontSize: 13, color: colors.textTertiary }}>Send below</Text>
               <Ionicons name="arrow-down" size={14} color={colors.textTertiary} />
             </View>
           )}
@@ -2873,7 +2873,7 @@ export default function ContactDetailScreen() {
                         <Ionicons name={e.status === 'completed' ? 'checkmark-circle' : 'play-circle'} size={13} color={chipColor} />
                         <Text style={[s.heroTagChipText, { color: chipColor }]} numberOfLines={1}>{e.campaign_name}</Text>
                         {e.status !== 'completed' && (
-                          <Text style={{ fontSize: 10, color: chipColor, fontWeight: '600' }}>{e.current_step}/{e.total_steps}</Text>
+                          <Text style={{ fontSize: 12, color: chipColor, fontWeight: '600' }}>{e.current_step}/{e.total_steps}</Text>
                         )}
                       </View>
                     );
@@ -2943,7 +2943,7 @@ export default function ContactDetailScreen() {
             <>
               {/* Quick Add - Essential Fields */}
               <View style={s.section}>
-                {isNewContact && <Text style={[s.sectionHeader, { fontSize: 18, marginBottom: 12 }]}>Quick Add</Text>}
+                {isNewContact && <Text style={[s.sectionHeader, { fontSize: 19, marginBottom: 12 }]}>Quick Add</Text>}
                 {!isNewContact && <Text style={s.sectionHeader}>Basic Info</Text>}
                 <View style={s.inputGroup}>
                   <Text style={s.inputLabel}>First Name *</Text>
@@ -2975,7 +2975,7 @@ export default function ContactDetailScreen() {
                   data-testid="show-more-details-btn"
                 >
                   <Ionicons name="add-circle-outline" size={20} color="#007AFF" style={{ marginRight: 8 }} />
-                  <Text style={{ fontSize: 15, fontWeight: '600', color: '#007AFF' }}>More Details (optional)</Text>
+                  <Text style={{ fontSize: 17, fontWeight: '600', color: '#007AFF' }}>More Details (optional)</Text>
                 </TouchableOpacity>
               )}
 
@@ -2988,7 +2988,7 @@ export default function ContactDetailScreen() {
                       data-testid="hide-more-details-btn"
                     >
                       <Ionicons name="chevron-up" size={18} color={colors.textSecondary} style={{ marginRight: 6 }} />
-                      <Text style={{ fontSize: 14, color: colors.textSecondary }}>Hide Details</Text>
+                      <Text style={{ fontSize: 16, color: colors.textSecondary }}>Hide Details</Text>
                     </TouchableOpacity>
                   )}
 
@@ -3326,7 +3326,7 @@ export default function ContactDetailScreen() {
                           '#FF3B30'
                         }
                       />
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
                         Sold Workflow: {contact.sold_workflow_status.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
                       </Text>
                     </View>
@@ -3350,14 +3350,14 @@ export default function ContactDetailScreen() {
                         style={{ backgroundColor: '#FF950020', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}
                         data-testid="sold-workflow-retry-btn"
                       >
-                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#FF9500' }}>
+                        <Text style={{ fontSize: 14, fontWeight: '600', color: '#FF9500' }}>
                           {contact.sold_workflow_status === 'validation_failed' ? 'Fix & Complete' : 'Retry'}
                         </Text>
                       </TouchableOpacity>
                     )}
                   </View>
                   {contact.sold_workflow_last_error && (
-                    <Text style={{ fontSize: 12, color: '#FF3B30', marginTop: 6 }}>
+                    <Text style={{ fontSize: 14, color: '#FF3B30', marginTop: 6 }}>
                       {contact.sold_workflow_last_error}
                     </Text>
                   )}
@@ -3702,7 +3702,7 @@ export default function ContactDetailScreen() {
                             )}
                             {note.transcript && note.transcript.length > 120 && (
                               <TouchableOpacity onPress={() => setExpandedEvents(prev => ({ ...prev, [1000 + i]: !prev[1000 + i] }))}>
-                                <Text style={{ color: '#007AFF', fontSize: 12, marginTop: 4 }}>
+                                <Text style={{ color: '#007AFF', fontSize: 14, marginTop: 4 }}>
                                   {expandedEvents[1000 + i] ? 'Show less' : 'Read full transcript'}
                                 </Text>
                               </TouchableOpacity>
@@ -3958,8 +3958,8 @@ export default function ContactDetailScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingTop: 10, gap: 8 }} data-testid="composer-photo-preview">
                   <Image source={{ uri: selectedMedia.uri }} style={{ width: 60, height: 60, borderRadius: 8 }} />
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '600', color: colors.text }}>Photo attached</Text>
-                    <Text style={{ fontSize: 11, color: colors.textTertiary }}>Will be sent with your message</Text>
+                    <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>Photo attached</Text>
+                    <Text style={{ fontSize: 13, color: colors.textTertiary }}>Will be sent with your message</Text>
                   </View>
                   <TouchableOpacity onPress={() => setSelectedMedia(null)} style={{ padding: 4 }} data-testid="remove-photo-btn">
                     <Ionicons name="close-circle" size={22} color="#FF3B30" />
@@ -4148,7 +4148,7 @@ export default function ContactDetailScreen() {
                   <View style={s.actionSheetDivider} />
                   <TouchableOpacity style={s.actionSheetButton} onPress={() => { setShowReviewLinks(false); router.push('/settings/review-links' as any); }}>
                     <Ionicons name="settings-outline" size={22} color={colors.textSecondary} />
-                    <Text style={[s.actionSheetButtonText, { color: colors.textSecondary, fontSize: 16 }]}>Manage Review Links</Text>
+                    <Text style={[s.actionSheetButtonText, { color: colors.textSecondary, fontSize: 18 }]}>Manage Review Links</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -4314,7 +4314,7 @@ export default function ContactDetailScreen() {
                     }}
                     data-testid="copy-crm-link-btn"
                   >
-                    <Text style={{ color: '#000', fontWeight: '700', fontSize: 13 }}>Copy</Text>
+                    <Text style={{ color: '#000', fontWeight: '700', fontSize: 15 }}>Copy</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -4374,7 +4374,7 @@ export default function ContactDetailScreen() {
               </TouchableOpacity>
               <View style={s.actionSheetDivider} />
               <View style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
-                <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '600', marginBottom: 10, textAlign: 'center' }}>CREATE A CARD</Text>
+                <Text style={{ fontSize: 15, color: colors.textSecondary, fontWeight: '600', marginBottom: 10, textAlign: 'center' }}>CREATE A CARD</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 4 }}>
                   {[
                     { type: 'congrats', label: 'Congrats', color: '#C9A962', icon: 'trophy' },
@@ -4391,7 +4391,7 @@ export default function ContactDetailScreen() {
                       data-testid={`card-template-${item.type}`}
                     >
                       <Ionicons name={item.icon as any} size={24} color={item.color} />
-                      <Text style={{ fontSize: 12, fontWeight: '600', color: item.color, marginTop: 6 }}>{item.label}</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: item.color, marginTop: 6 }}>{item.label}</Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
@@ -4410,7 +4410,7 @@ export default function ContactDetailScreen() {
           <View style={s.actionSheetContainer} onStartShouldSetResponder={() => true}>
             <View style={s.actionSheetGroup}>
               <View style={{ paddingVertical: 14, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.border }}>
-                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary }}>{webActionSheet.title}</Text>
+                <Text style={{ fontSize: 15, fontWeight: '600', color: colors.textSecondary }}>{webActionSheet.title}</Text>
               </View>
               {webActionSheet.options.map((option, idx) => (
                 <React.Fragment key={idx}>
@@ -4571,7 +4571,7 @@ export default function ContactDetailScreen() {
                   style={{
                     width: '100%', padding: 12, borderRadius: 10,
                     backgroundColor: colors.surface, color: colors.text, border: '1px solid #3A3A3C',
-                    fontSize: 16, marginBottom: 12, marginTop: 8,
+                    fontSize: 18, marginBottom: 12, marginTop: 8,
                   }}
                   data-testid="automation-date-input"
                 />
@@ -4592,14 +4592,14 @@ export default function ContactDetailScreen() {
                   onPress={() => handleClearAutomation(editingAutomation.field)}
                   data-testid="automation-clear-btn"
                 >
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: '#FF3B30' }}>Clear Date</Text>
+                  <Text style={{ fontSize: 18, fontWeight: '600', color: '#FF3B30' }}>Clear Date</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[s.labelBtn, { backgroundColor: editingAutomation.color || '#007AFF' }]}
                   onPress={() => handleUpdateAutomationDate(editingAutomation.field, automationPickerDate)}
                   data-testid="automation-save-btn"
                 >
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>Save Date</Text>
+                  <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text }}>Save Date</Text>
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
@@ -4615,11 +4615,11 @@ export default function ContactDetailScreen() {
             <View style={[s.dateModal, IS_WEB && { minHeight: 400 }]}>
               <View style={s.dateModalHeader}>
                 <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <Text style={{ fontSize: 17, color: '#FF3B30' }}>Cancel</Text>
+                  <Text style={{ fontSize: 18, color: '#FF3B30' }}>Cancel</Text>
                 </TouchableOpacity>
-                <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text }}>{activeDateLabel}</Text>
+                <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text }}>{activeDateLabel}</Text>
                 <TouchableOpacity onPress={confirmDateSelection}>
-                  <Text style={{ fontSize: 17, fontWeight: '600', color: '#007AFF' }}>Done</Text>
+                  <Text style={{ fontSize: 18, fontWeight: '600', color: '#007AFF' }}>Done</Text>
                 </TouchableOpacity>
               </View>
               {IS_WEB ? (
@@ -4669,7 +4669,7 @@ export default function ContactDetailScreen() {
               {(Platform.OS === 'ios' || IS_WEB) && (
                 <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16 }}>
                   <TouchableOpacity style={s.dateConfirmBtn} onPress={confirmDateSelection}>
-                    <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text }}>
+                    <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text }}>
                       Select {IS_WEB ? format(new Date(webYear, webMonth, webDay), 'MMM d, yyyy') : format(tempDate, 'MMM d, yyyy')}
                     </Text>
                   </TouchableOpacity>
@@ -4690,10 +4690,10 @@ export default function ContactDetailScreen() {
               value={newCustomDateName} onChangeText={setNewCustomDateName} returnKeyType="done" onSubmitEditing={confirmCustomDateWithLabel} />
             <View style={{ flexDirection: 'row', gap: 12 }}>
               <TouchableOpacity style={[s.labelBtn, { backgroundColor: colors.surface }]} onPress={() => setShowCustomDateLabel(false)}>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: '#FF3B30' }}>Cancel</Text>
+                <Text style={{ fontSize: 18, fontWeight: '600', color: '#FF3B30' }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[s.labelBtn, { backgroundColor: '#007AFF' }]} onPress={confirmCustomDateWithLabel}>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>Save</Text>
+                <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text }}>Save</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
@@ -4878,13 +4878,13 @@ export default function ContactDetailScreen() {
             /* === EMPTY STATE === */
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 }}>
               <Ionicons name="images-outline" size={48} color="rgba(255,255,255,0.15)" />
-              <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 16, marginTop: 12, textAlign: 'center' }}>No photos yet</Text>
+              <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 18, marginTop: 12, textAlign: 'center' }}>No photos yet</Text>
               <TouchableOpacity
                 style={{ marginTop: 20, backgroundColor: '#C9A962', borderRadius: 20, paddingHorizontal: 24, paddingVertical: 10 }}
                 onPress={() => { setShowPhotoViewer(false); pickImage(); }}
                 data-testid="gallery-empty-upload"
               >
-                <Text style={{ color: '#000', fontWeight: '700', fontSize: 14 }}>Add Photo</Text>
+                <Text style={{ color: '#000', fontWeight: '700', fontSize: 16 }}>Add Photo</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -4927,8 +4927,8 @@ const getS = (colors: any) => StyleSheet.create({
     borderBottomWidth: 1,
   },
   headerBtn: { padding: 4, minWidth: 50 },
-  headerTitle: { fontSize: 17, fontWeight: '600', flex: 1, textAlign: 'center', color: colors.text },
-  headerAction: { fontSize: 17, fontWeight: '600', color: '#C9A962' },
+  headerTitle: { fontSize: 18, fontWeight: '600', flex: 1, textAlign: 'center', color: colors.text },
+  headerAction: { fontSize: 18, fontWeight: '600', color: '#C9A962' },
   scroll: { paddingBottom: 32 },
 
   // Hero section  - compact left-aligned
@@ -4958,9 +4958,9 @@ const getS = (colors: any) => StyleSheet.create({
     minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center',
     paddingHorizontal: 5, borderWidth: 2, borderColor: colors.border,
   },
-  touchpointBadgeText: { fontSize: 10, fontWeight: '800', color: colors.text },
+  touchpointBadgeText: { fontSize: 12, fontWeight: '800', color: colors.text },
   heroInfo: { flex: 1, paddingTop: 2 },
-  heroName: { fontSize: 20, fontWeight: '700', marginBottom: 4, color: colors.text },
+  heroName: { fontSize: 21, fontWeight: '700', marginBottom: 4, color: colors.text },
   heroTagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 6 },
   heroTag: {
     flexDirection: 'row', alignItems: 'center', gap: 3,
@@ -4968,8 +4968,8 @@ const getS = (colors: any) => StyleSheet.create({
     borderRadius: 10, borderWidth: 1, borderColor: colors.border,
     backgroundColor: colors.card,
   },
-  heroTagText: { fontSize: 10, fontWeight: '600', color: colors.textSecondary },
-  heroTagMore: { fontSize: 10, fontWeight: '600', color: colors.textTertiary, alignSelf: 'center' },
+  heroTagText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+  heroTagMore: { fontSize: 12, fontWeight: '600', color: colors.textTertiary, alignSelf: 'center' },
   heroTagAdd: {
     width: 20, height: 20, borderRadius: 10,
     backgroundColor: '#007AFF20', borderWidth: 1, borderColor: '#007AFF40',
@@ -4979,10 +4979,10 @@ const getS = (colors: any) => StyleSheet.create({
   heroHighlight: {
     flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4,
   },
-  heroHighlightText: { fontSize: 13, color: '#C9A962', fontWeight: '600' },
+  heroHighlightText: { fontSize: 15, color: '#C9A962', fontWeight: '600' },
   heroMetaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   heroMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  heroMetaText: { fontSize: 12, color: colors.textTertiary },
+  heroMetaText: { fontSize: 14, color: colors.textTertiary },
   // Compact stats line
   heroStatsLine: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap',
@@ -4990,9 +4990,9 @@ const getS = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   heroStatChip: { flexDirection: 'row', alignItems: 'baseline', gap: 2 },
-  heroStatVal: { fontSize: 13, fontWeight: '700', color: colors.text },
-  heroStatLbl: { fontSize: 11, color: colors.textTertiary },
-  heroStatDot: { fontSize: 11, color: colors.textTertiary, marginHorizontal: 1 },
+  heroStatVal: { fontSize: 15, fontWeight: '700', color: colors.text },
+  heroStatLbl: { fontSize: 13, color: colors.textTertiary },
+  heroStatDot: { fontSize: 13, color: colors.textTertiary, marginHorizontal: 1 },
 
   // Hero tags strip
   heroTagsStrip: {
@@ -5002,7 +5002,7 @@ const getS = (colors: any) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8,
   },
   heroTagsStripTitle: {
-    fontSize: 11, fontWeight: '700', color: '#FF9500', textTransform: 'uppercase', letterSpacing: 0.5, flex: 1,
+    fontSize: 13, fontWeight: '700', color: '#FF9500', textTransform: 'uppercase', letterSpacing: 0.5, flex: 1,
   },
   heroTagsStripAdd: {
     width: 22, height: 22, borderRadius: 11, backgroundColor: '#007AFF15',
@@ -5014,10 +5014,10 @@ const getS = (colors: any) => StyleSheet.create({
     borderWidth: 1,
   },
   heroTagChipText: {
-    fontSize: 12, fontWeight: '600', maxWidth: 120, color: colors.text,
+    fontSize: 14, fontWeight: '600', maxWidth: 120, color: colors.text,
   },
   heroTagsEmpty: {
-    fontSize: 12, color: colors.textTertiary, fontStyle: 'italic', paddingBottom: 4,
+    fontSize: 14, color: colors.textTertiary, fontStyle: 'italic', paddingBottom: 4,
   },
 
   // Hero campaigns strip
@@ -5029,7 +5029,7 @@ const getS = (colors: any) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8,
   },
   heroCampaignsTitle: {
-    fontSize: 11, fontWeight: '700', color: '#AF52DE', textTransform: 'uppercase', letterSpacing: 0.5, flex: 1,
+    fontSize: 13, fontWeight: '700', color: '#AF52DE', textTransform: 'uppercase', letterSpacing: 0.5, flex: 1,
   },
   heroCampaignsAdd: {
     width: 22, height: 22, borderRadius: 11, backgroundColor: '#007AFF15',
@@ -5041,14 +5041,14 @@ const getS = (colors: any) => StyleSheet.create({
     borderWidth: 1,
   },
   heroCampaignChipText: {
-    fontSize: 12, fontWeight: '600', maxWidth: 120, color: colors.text,
+    fontSize: 14, fontWeight: '600', maxWidth: 120, color: colors.text,
   },
   heroCampaignStep: {
-    fontSize: 10, fontWeight: '700', color: colors.text,
+    fontSize: 12, fontWeight: '700', color: colors.text,
     paddingHorizontal: 4, paddingVertical: 1, borderRadius: 6,
   },
   heroCampaignDate: {
-    fontSize: 10, fontWeight: '700', color: colors.text,
+    fontSize: 12, fontWeight: '700', color: colors.text,
     paddingHorizontal: 5, paddingVertical: 1, borderRadius: 6,
   },
 
@@ -5073,7 +5073,7 @@ const getS = (colors: any) => StyleSheet.create({
     backgroundColor: '#C9A962',
   },
   tabBtnText: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '700',
     color: '#888',
   },
@@ -5094,7 +5094,7 @@ const getS = (colors: any) => StyleSheet.create({
   },
   pinnedNoteText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     lineHeight: 20,
   },
@@ -5116,20 +5116,20 @@ const getS = (colors: any) => StyleSheet.create({
     marginTop: 2,
   },
   taskBannerLabel: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
     color: '#FF9500',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   taskBannerTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
     marginTop: 2,
   },
   taskBannerDesc: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 2,
     lineHeight: 18,
@@ -5171,7 +5171,7 @@ const getS = (colors: any) => StyleSheet.create({
   composerModeBtnActive: {
   },
   composerModeBtnText: {
-    fontSize: 12, fontWeight: '600', color: colors.text,
+    fontSize: 14, fontWeight: '600', color: colors.text,
   },
   composerCallBtn: {
     width: 32, height: 32, borderRadius: 16, backgroundColor: '#32ADE615',
@@ -5182,7 +5182,7 @@ const getS = (colors: any) => StyleSheet.create({
     borderWidth: 1, overflow: 'hidden',
   },
   composerInput: {
-    fontSize: 16, color: colors.text,
+    fontSize: 18, color: colors.text,
     paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10,
     textAlignVertical: 'top',
   },
@@ -5211,10 +5211,10 @@ const getS = (colors: any) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8,
   },
   aiSuggestionLabel: {
-    fontSize: 12, fontWeight: '700', color: '#34C759', flex: 1, textTransform: 'uppercase', letterSpacing: 0.5,
+    fontSize: 14, fontWeight: '700', color: '#34C759', flex: 1, textTransform: 'uppercase', letterSpacing: 0.5,
   },
   aiSuggestionText: {
-    fontSize: 14, color: colors.text, lineHeight: 20, marginBottom: 10,
+    fontSize: 16, color: colors.text, lineHeight: 20, marginBottom: 10,
   },
   aiSuggestionActions: {
     flexDirection: 'row', gap: 8, justifyContent: 'flex-end',
@@ -5228,7 +5228,7 @@ const getS = (colors: any) => StyleSheet.create({
     backgroundColor: '#34C759', borderColor: '#34C759',
   },
   aiActionBtnText: {
-    fontSize: 13, fontWeight: '600', color: '#007AFF',
+    fontSize: 15, fontWeight: '600', color: '#007AFF',
   },
   // Toolbar Modals
   toolbarModalOverlay: {
@@ -5247,7 +5247,7 @@ const getS = (colors: any) => StyleSheet.create({
     alignSelf: 'center', marginBottom: 16,
   },
   toolbarModalTitle: {
-    fontSize: 20, fontWeight: '700', color: colors.text, textAlign: 'center',
+    fontSize: 21, fontWeight: '700', color: colors.text, textAlign: 'center',
   },
   toolbarTemplatesList: { flex: 1 },
   toolbarTemplatesListContent: { padding: 16, paddingBottom: 8 },
@@ -5257,7 +5257,7 @@ const getS = (colors: any) => StyleSheet.create({
   toolbarModalCloseBtn: {
     backgroundColor: colors.card, borderRadius: 12, padding: 16, alignItems: 'center',
   },
-  toolbarModalCloseBtnText: { fontSize: 17, fontWeight: '600', color: '#FF3B30' },
+  toolbarModalCloseBtnText: { fontSize: 18, fontWeight: '600', color: '#FF3B30' },
   toolbarModalFooter: { paddingHorizontal: 16, paddingBottom: 16, paddingTop: 8 },
   toolbarTemplateItem: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
@@ -5268,21 +5268,21 @@ const getS = (colors: any) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginRight: 12,
   },
   toolbarTemplateContent: { flex: 1 },
-  toolbarTemplateName: { fontSize: 16, fontWeight: '600', color: colors.text },
-  toolbarTemplatePreview: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
+  toolbarTemplateName: { fontSize: 18, fontWeight: '600', color: colors.text },
+  toolbarTemplatePreview: { fontSize: 15, color: colors.textSecondary, marginTop: 2 },
   toolbarEmptyTemplates: { alignItems: 'center', paddingVertical: 40 },
-  toolbarEmptyTemplatesText: { fontSize: 16, color: colors.textSecondary, marginTop: 12 },
+  toolbarEmptyTemplatesText: { fontSize: 18, color: colors.textSecondary, marginTop: 12 },
   toolbarEmptyReviews: { alignItems: 'center', paddingVertical: 32 },
-  toolbarEmptyReviewsText: { fontSize: 16, color: colors.textSecondary, marginTop: 12, marginBottom: 20 },
+  toolbarEmptyReviewsText: { fontSize: 18, color: colors.textSecondary, marginTop: 12, marginBottom: 20 },
   toolbarSetupBtn: { backgroundColor: '#007AFF', paddingHorizontal: 24, paddingVertical: 12, borderRadius: 20 },
-  toolbarSetupBtnText: { fontSize: 16, fontWeight: '600', color: '#FFF' },
+  toolbarSetupBtnText: { fontSize: 18, fontWeight: '600', color: '#FFF' },
   // Business Card Modal
   cardModalContent: { padding: 20 },
   cardPreview: {
     alignItems: 'center', backgroundColor: colors.card, borderRadius: 16, padding: 24, marginBottom: 20,
   },
-  cardPreviewTitle: { fontSize: 18, fontWeight: '600', color: colors.text, marginTop: 12 },
-  cardPreviewDesc: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginTop: 8, lineHeight: 20 },
+  cardPreviewTitle: { fontSize: 19, fontWeight: '600', color: colors.text, marginTop: 12 },
+  cardPreviewDesc: { fontSize: 16, color: colors.textSecondary, textAlign: 'center', marginTop: 8, lineHeight: 20 },
   shareOptionsContainer: { marginTop: 20, gap: 12 },
   shareOptionCard: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 14, padding: 16,
@@ -5292,12 +5292,12 @@ const getS = (colors: any) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', marginRight: 14,
   },
   shareOptionContent: { flex: 1 },
-  shareOptionTitle: { fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 4 },
-  shareOptionDesc: { fontSize: 13, color: colors.textSecondary, lineHeight: 18 },
+  shareOptionTitle: { fontSize: 18, fontWeight: '600', color: colors.text, marginBottom: 4 },
+  shareOptionDesc: { fontSize: 15, color: colors.textSecondary, lineHeight: 18 },
   landingPageOptions: { marginTop: 16, paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.border },
   landingPageOptionsHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 12 },
-  landingPageOptionsTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
-  campaignPickerLabel: { fontSize: 15, fontWeight: '500', color: colors.text, marginBottom: 12 },
+  landingPageOptionsTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
+  campaignPickerLabel: { fontSize: 17, fontWeight: '500', color: colors.text, marginBottom: 12 },
   campaignScroller: { maxHeight: 50, marginBottom: 20 },
   campaignScrollerContent: { paddingRight: 20 },
   campaignChip: {
@@ -5305,16 +5305,16 @@ const getS = (colors: any) => StyleSheet.create({
     borderRadius: 20, marginRight: 10, borderWidth: 2, borderColor: 'transparent',
   },
   campaignChipSelected: { backgroundColor: '#007AFF20', borderColor: '#007AFF' },
-  campaignChipText: { fontSize: 14, color: colors.textSecondary, fontWeight: '500' },
+  campaignChipText: { fontSize: 16, color: colors.textSecondary, fontWeight: '500' },
   campaignChipTextSelected: { color: '#007AFF' },
   noCampaigns: { alignItems: 'center', paddingVertical: 20 },
-  noCampaignsText: { fontSize: 15, color: colors.textSecondary },
-  noCampaignsSubtext: { fontSize: 13, color: colors.textTertiary, marginTop: 4 },
+  noCampaignsText: { fontSize: 17, color: colors.textSecondary },
+  noCampaignsSubtext: { fontSize: 15, color: colors.textTertiary, marginTop: 4 },
   sendCardButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     backgroundColor: '#007AFF', borderRadius: 12, padding: 16, gap: 8,
   },
-  sendCardButtonText: { fontSize: 16, fontWeight: '600', color: '#FFF' },
+  sendCardButtonText: { fontSize: 18, fontWeight: '600', color: '#FFF' },
   // Photo Options (native action sheet style for PWA)
   actionSheetOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   actionSheetContainer: { paddingHorizontal: 8, paddingBottom: 8 },
@@ -5325,12 +5325,12 @@ const getS = (colors: any) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     paddingVertical: 18, gap: 10,
   },
-  actionSheetButtonText: { fontSize: 20, color: '#007AFF', fontWeight: '400' },
+  actionSheetButtonText: { fontSize: 21, color: '#007AFF', fontWeight: '400' },
   actionSheetDivider: { height: 1, backgroundColor: colors.border },
   actionSheetCancel: {
     backgroundColor: colors.card, borderRadius: 14, paddingVertical: 18, alignItems: 'center',
   },
-  actionSheetCancelText: { fontSize: 20, fontWeight: '600', color: '#007AFF' },
+  actionSheetCancelText: { fontSize: 21, fontWeight: '600', color: '#007AFF' },
   // Send Something Picker Modal (legacy)
   sendPickerOverlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.6)',
@@ -5345,7 +5345,7 @@ const getS = (colors: any) => StyleSheet.create({
     alignSelf: 'center', marginBottom: 16,
   },
   sendPickerTitle: {
-    fontSize: 18, fontWeight: '700', marginBottom: 16, color: colors.text,
+    fontSize: 19, fontWeight: '700', marginBottom: 16, color: colors.text,
   },
   sendPickerItem: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
@@ -5356,10 +5356,10 @@ const getS = (colors: any) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   sendPickerLabel: {
-    fontSize: 16, fontWeight: '600', color: colors.text,
+    fontSize: 18, fontWeight: '600', color: colors.text,
   },
   sendPickerSub: {
-    fontSize: 12, color: colors.textSecondary, marginTop: 2,
+    fontSize: 14, color: colors.textSecondary, marginTop: 2,
   },
   // Feed date group header (collapsible)
   feedDateHeader: {
@@ -5370,11 +5370,11 @@ const getS = (colors: any) => StyleSheet.create({
     flex: 1, height: 1, backgroundColor: colors.border,
   },
   feedDateText: {
-    fontSize: 11, fontWeight: '700', color: colors.textSecondary,
+    fontSize: 13, fontWeight: '700', color: colors.textSecondary,
     textTransform: 'uppercase', letterSpacing: 0.8,
   },
   feedDateCount: {
-    fontSize: 10, fontWeight: '700', color: colors.textSecondary,
+    fontSize: 12, fontWeight: '700', color: colors.textSecondary,
     paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8,
     backgroundColor: colors.surface,
   },
@@ -5387,7 +5387,7 @@ const getS = (colors: any) => StyleSheet.create({
   progressHeader: {
     flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10,
   },
-  progressLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
+  progressLabel: { fontSize: 14, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
   progressBarBg: { flex: 1, height: 4, backgroundColor: colors.surface, borderRadius: 2, overflow: 'hidden' },
   progressBarFill: { height: 4, backgroundColor: '#C9A962', borderRadius: 2 },
   progressRow: { flexDirection: 'row', gap: 8 },
@@ -5403,11 +5403,11 @@ const getS = (colors: any) => StyleSheet.create({
   // Section
   section: { marginHorizontal: 16, marginBottom: 16 },
   sectionHeader: {
-    fontSize: 13, fontWeight: '600', color: colors.textSecondary,
+    fontSize: 15, fontWeight: '600', color: colors.textSecondary,
     textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10,
   },
   sectionHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  sectionHeaderCount: { fontSize: 12, color: colors.textTertiary },
+  sectionHeaderCount: { fontSize: 14, color: colors.textTertiary },
 
   // Tags
   tagsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -5417,19 +5417,19 @@ const getS = (colors: any) => StyleSheet.create({
     paddingVertical: 6, paddingHorizontal: 12,
     borderWidth: 1, borderColor: colors.border,
   },
-  tagPillText: { fontSize: 13, fontWeight: '500', color: colors.text },
+  tagPillText: { fontSize: 15, fontWeight: '500', color: colors.text },
   addTagChip: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     backgroundColor: '#007AFF15', borderRadius: 16,
     paddingVertical: 6, paddingHorizontal: 12,
     borderWidth: 1, borderColor: '#007AFF30', borderStyle: 'dashed',
   },
-  addTagChipText: { fontSize: 13, fontWeight: '600', color: '#007AFF' },
+  addTagChipText: { fontSize: 15, fontWeight: '600', color: '#007AFF' },
 
   // Activity feed
   emptyFeed: { alignItems: 'center', paddingVertical: 32 },
-  emptyFeedText: { fontSize: 16, color: colors.textSecondary, marginTop: 8 },
-  emptyFeedSub: { fontSize: 14, color: colors.textTertiary, marginTop: 4, textAlign: 'center' },
+  emptyFeedText: { fontSize: 18, color: colors.textSecondary, marginTop: 8 },
+  emptyFeedSub: { fontSize: 16, color: colors.textTertiary, marginTop: 4, textAlign: 'center' },
   feedTimeline: { gap: 0 },
   feedItem: {
     flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 10,
@@ -5448,20 +5448,20 @@ const getS = (colors: any) => StyleSheet.create({
     marginRight: 12,
   },
   feedContent: { flex: 1 },
-  feedTitle: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 2 },
-  feedDesc: { fontSize: 14, color: colors.textSecondary, marginBottom: 4 },
+  feedTitle: { fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 2 },
+  feedDesc: { fontSize: 16, color: colors.textSecondary, marginBottom: 4 },
   feedExpandedPreview: { marginTop: 8, marginBottom: 4, gap: 6 },
   feedChannelBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  feedChannelText: { fontSize: 10, fontWeight: '600', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
-  feedSubject: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
+  feedChannelText: { fontSize: 12, fontWeight: '600', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
+  feedSubject: { fontSize: 16, fontWeight: '600', color: colors.textSecondary },
   feedMessageBubble: { borderRadius: 10, padding: 12, borderWidth: 1, borderColor: colors.border },
   feedMessageBubbleInbound: { backgroundColor: '#30D15812', borderColor: '#30D15830' },
-  feedMessageText: { fontSize: 14, lineHeight: 20, color: colors.text },
+  feedMessageText: { fontSize: 16, lineHeight: 20, color: colors.text },
   feedViewLink: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start', paddingVertical: 4 },
-  feedViewLinkText: { fontSize: 13, color: '#007AFF', fontWeight: '500' },
-  feedTime: { fontSize: 13, color: colors.textTertiary },
+  feedViewLinkText: { fontSize: 15, color: '#007AFF', fontWeight: '500' },
+  feedTime: { fontSize: 15, color: colors.textTertiary },
   feedPhotoIndicator: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4 },
-  feedPhotoText: { fontSize: 12, color: '#30D158', fontWeight: '500' },
+  feedPhotoText: { fontSize: 14, color: '#30D158', fontWeight: '500' },
 
   // Inbound / Customer badges
   inboundBadge: { backgroundColor: '#30D15820', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
@@ -5476,13 +5476,13 @@ const getS = (colors: any) => StyleSheet.create({
     backgroundColor: '#30D15815', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12,
     borderWidth: 1, borderColor: '#30D15830',
   },
-  logReplyBtnText: { fontSize: 13, fontWeight: '600', color: '#30D158' },
+  logReplyBtnText: { fontSize: 15, fontWeight: '600', color: '#30D158' },
   feedSearchRowCompact: {
     flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingVertical: 8, paddingHorizontal: 10, borderRadius: 10,
     borderWidth: 1, borderColor: colors.border,
   },
-  feedSearchInputCompact: { flex: 1, fontSize: 13, padding: 0, color: colors.text },
+  feedSearchInputCompact: { flex: 1, fontSize: 15, padding: 0, color: colors.text },
 
   // Log Reply  - Chat Bubble Style
   logReplyBubble: {
@@ -5499,14 +5499,14 @@ const getS = (colors: any) => StyleSheet.create({
   bubbleHeader: {
     flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12,
   },
-  bubbleHeaderText: { fontSize: 14, fontWeight: '700', color: '#30D158', flex: 1 },
+  bubbleHeaderText: { fontSize: 16, fontWeight: '700', color: '#30D158', flex: 1 },
   bubbleClose: { padding: 2 },
   bubbleInputWrap: {
     backgroundColor: '#0D1A0D', borderRadius: 16, borderWidth: 1, borderColor: '#30D15830',
     marginBottom: 10,
   },
   bubbleInput: {
-    fontSize: 15, color: colors.text, padding: 14, minHeight: 80, textAlignVertical: 'top',
+    fontSize: 17, color: colors.text, padding: 14, minHeight: 80, textAlignVertical: 'top',
     lineHeight: 22,
   },
   bubblePhotoPreview: {
@@ -5526,28 +5526,28 @@ const getS = (colors: any) => StyleSheet.create({
     backgroundColor: '#30D158', borderRadius: 24,
     paddingVertical: 12, paddingHorizontal: 20,
   },
-  bubbleSaveText: { fontSize: 15, fontWeight: '800', color: colors.text },
+  bubbleSaveText: { fontSize: 17, fontWeight: '800', color: colors.text },
 
   // Suggested Actions
   actionBadge: { backgroundColor: '#FF9500', borderRadius: 10, minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
-  actionBadgeText: { fontSize: 11, fontWeight: '800', color: colors.text },
+  actionBadgeText: { fontSize: 13, fontWeight: '800', color: colors.text },
   suggestedCard: {
     flexDirection: 'row', alignItems: 'center', padding: 14,
     borderRadius: 14, marginBottom: 8,
     borderWidth: 1,
   },
   suggestedIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  suggestedTitle: { fontSize: 15, fontWeight: '700', marginBottom: 2, color: colors.text },
-  suggestedDesc: { fontSize: 14, color: colors.textSecondary },
+  suggestedTitle: { fontSize: 17, fontWeight: '700', marginBottom: 2, color: colors.text },
+  suggestedDesc: { fontSize: 16, color: colors.textSecondary },
   suggestedMsgPreview: { marginTop: 6, borderRadius: 8, padding: 8, borderWidth: 1 },
-  suggestedMsgText: { fontSize: 12, fontStyle: 'italic', lineHeight: 16, color: colors.textSecondary },
+  suggestedMsgText: { fontSize: 14, fontStyle: 'italic', lineHeight: 16, color: colors.textSecondary },
   suggestedArrow: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
   showMoreBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
     marginTop: 12, paddingVertical: 10, borderRadius: 10,
     borderWidth: 1,
   },
-  showMoreText: { fontSize: 14, fontWeight: '600', color: '#007AFF' },
+  showMoreText: { fontSize: 16, fontWeight: '600', color: '#007AFF' },
   // Photo viewer
   // Photo Gallery — new modern layout
   galleryRoot: {
@@ -5566,7 +5566,7 @@ const getS = (colors: any) => StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   galleryTopTitle: {
-    color: '#FFF', fontSize: 15, fontWeight: '600', letterSpacing: 0.3,
+    color: '#FFF', fontSize: 17, fontWeight: '600', letterSpacing: 0.3,
   },
   galleryUploadBtn: {
     width: 36, height: 36, borderRadius: 18,
@@ -5579,10 +5579,10 @@ const getS = (colors: any) => StyleSheet.create({
     backgroundColor: '#000', gap: 12,
   },
   viewerLabel: {
-    color: '#FFF', fontSize: 15, fontWeight: '600',
+    color: '#FFF', fontSize: 17, fontWeight: '600',
   },
   viewerDate: {
-    color: 'rgba(255,255,255,0.4)', fontSize: 12, marginTop: 2,
+    color: 'rgba(255,255,255,0.4)', fontSize: 14, marginTop: 2,
   },
   viewerActionBtn: {
     width: 40, height: 40, borderRadius: 20,
@@ -5624,7 +5624,7 @@ const getS = (colors: any) => StyleSheet.create({
     paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12,
     backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border,
   },
-  vnRecordText: { fontSize: 15, fontWeight: '600', color: colors.textSecondary },
+  vnRecordText: { fontSize: 17, fontWeight: '600', color: colors.textSecondary },
   vnRecording: {
     flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8,
     paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12,
@@ -5633,13 +5633,13 @@ const getS = (colors: any) => StyleSheet.create({
   vnRecordingDot: {
     width: 10, height: 10, borderRadius: 5, backgroundColor: '#FF3B30',
   },
-  vnRecordingTime: { fontSize: 20, fontWeight: '700', color: '#FF3B30', fontVariant: ['tabular-nums'] as any },
-  vnRecordingLimit: { fontSize: 14, color: colors.textTertiary },
+  vnRecordingTime: { fontSize: 21, fontWeight: '700', color: '#FF3B30', fontVariant: ['tabular-nums'] as any },
+  vnRecordingLimit: { fontSize: 16, color: colors.textTertiary },
   vnStopBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 'auto',
     paddingVertical: 6, paddingHorizontal: 14, borderRadius: 8, backgroundColor: '#FF3B30',
   },
-  vnStopText: { fontSize: 14, fontWeight: '600', color: colors.text },
+  vnStopText: { fontSize: 16, fontWeight: '600', color: colors.text },
   vnCard: {
     borderRadius: 12, padding: 12, marginBottom: 8,
     borderWidth: 1,
@@ -5650,9 +5650,9 @@ const getS = (colors: any) => StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
   },
   vnPlayBtnActive: { backgroundColor: '#34C759' },
-  vnCardDate: { fontSize: 14, fontWeight: '600', color: colors.text },
-  vnCardDuration: { fontSize: 13, color: colors.textTertiary },
-  vnTranscript: { fontSize: 14, color: colors.textSecondary, lineHeight: 20, marginTop: 8 },
+  vnCardDate: { fontSize: 16, fontWeight: '600', color: colors.text },
+  vnCardDuration: { fontSize: 15, color: colors.textTertiary },
+  vnTranscript: { fontSize: 16, color: colors.textSecondary, lineHeight: 20, marginTop: 8 },
   // Relationship Intel
   intelBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
@@ -5664,14 +5664,14 @@ const getS = (colors: any) => StyleSheet.create({
     width: 34, height: 34, borderRadius: 10, backgroundColor: '#C9A96220',
     justifyContent: 'center', alignItems: 'center',
   },
-  intelBtnTitle: { fontSize: 15, fontWeight: '700', color: '#C9A962' },
-  intelBtnSub: { fontSize: 12, color: colors.textTertiary, marginTop: 1 },
+  intelBtnTitle: { fontSize: 17, fontWeight: '700', color: '#C9A962' },
+  intelBtnSub: { fontSize: 14, color: colors.textTertiary, marginTop: 1 },
   intelUpdateBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     paddingHorizontal: 10, paddingVertical: 4,
     backgroundColor: '#C9A96215', borderRadius: 8, borderWidth: 1, borderColor: '#C9A96230',
   },
-  intelUpdateBtnText: { fontSize: 11, fontWeight: '700', color: '#C9A962' },
+  intelUpdateBtnText: { fontSize: 13, fontWeight: '700', color: '#C9A962' },
   intelCard: {
     marginTop: 8, padding: 14, borderRadius: 12,
     backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border,
@@ -5680,16 +5680,16 @@ const getS = (colors: any) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 20,
     justifyContent: 'center',
   },
-  intelLoadingText: { fontSize: 14, color: '#C9A962', fontStyle: 'italic' },
-  intelSummary: { fontSize: 13.5, color: colors.textSecondary, lineHeight: 20 },
+  intelLoadingText: { fontSize: 16, color: '#C9A962', fontStyle: 'italic' },
+  intelSummary: { fontSize: 15.5, color: colors.textSecondary, lineHeight: 20 },
   intelMeta: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border,
   },
-  intelMetaText: { fontSize: 11, color: colors.textTertiary, flex: 1 },
+  intelMetaText: { fontSize: 13, color: colors.textTertiary, flex: 1 },
   intelRefresh: { flexDirection: 'row', alignItems: 'center', gap: 4, padding: 4 },
-  intelRefreshText: { fontSize: 12, fontWeight: '600', color: '#007AFF' },
-  intelEmpty: { fontSize: 14, color: colors.textTertiary, textAlign: 'center', paddingVertical: 16 },
+  intelRefreshText: { fontSize: 14, fontWeight: '600', color: '#007AFF' },
+  intelEmpty: { fontSize: 16, color: colors.textTertiary, textAlign: 'center', paddingVertical: 16 },
 
   // Conversation link
   conversationLink: {
@@ -5697,15 +5697,15 @@ const getS = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card, borderRadius: 12, padding: 14,
     borderWidth: 1, borderColor: colors.border,
   },
-  conversationLinkTitle: { fontSize: 15, fontWeight: '600', color: colors.text },
-  conversationLinkSub: { fontSize: 13, color: colors.textSecondary, marginTop: 1 },
+  conversationLinkTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
+  conversationLinkSub: { fontSize: 15, color: colors.textSecondary, marginTop: 1 },
 
   // Input group
   inputGroup: { marginBottom: 12 },
-  inputLabel: { fontSize: 12, fontWeight: '500', color: colors.textSecondary, marginBottom: 4, marginLeft: 2 },
+  inputLabel: { fontSize: 14, fontWeight: '500', color: colors.textSecondary, marginBottom: 4, marginLeft: 2 },
   input: {
     backgroundColor: colors.card, borderRadius: 10, padding: 14,
-    fontSize: 16, color: colors.text, borderWidth: 1, borderColor: colors.border,
+    fontSize: 18, color: colors.text, borderWidth: 1, borderColor: colors.border,
   },
 
   // Date row
@@ -5715,8 +5715,8 @@ const getS = (colors: any) => StyleSheet.create({
     borderWidth: 1, borderColor: colors.border,
   },
   dateRowIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  dateRowLabel: { fontSize: 12, color: colors.textSecondary, marginBottom: 1 },
-  dateRowValue: { fontSize: 15, fontWeight: '600', color: colors.text },
+  dateRowLabel: { fontSize: 14, color: colors.textSecondary, marginBottom: 1 },
+  dateRowValue: { fontSize: 17, fontWeight: '600', color: colors.text },
 
   // Add button
   addBtn: {
@@ -5724,7 +5724,7 @@ const getS = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF15', borderRadius: 10, padding: 12, marginTop: 4,
     borderWidth: 1, borderColor: '#007AFF30', borderStyle: 'dashed',
   },
-  addBtnText: { fontSize: 15, fontWeight: '600', color: '#007AFF' },
+  addBtnText: { fontSize: 17, fontWeight: '600', color: '#007AFF' },
 
   // Delete
   deleteBtn: {
@@ -5732,16 +5732,16 @@ const getS = (colors: any) => StyleSheet.create({
     marginHorizontal: 16, marginTop: 8, paddingVertical: 14, borderRadius: 12,
     backgroundColor: colors.card, borderWidth: 1, borderColor: '#FF3B3040',
   },
-  deleteBtnText: { fontSize: 16, fontWeight: '600', color: '#FF3B30' },
+  deleteBtnText: { fontSize: 18, fontWeight: '600', color: '#FF3B30' },
 
   // View-only rows
-  viewText: { fontSize: 15, color: colors.text, lineHeight: 22 },
+  viewText: { fontSize: 17, color: colors.text, lineHeight: 22 },
   viewRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border,
   },
-  viewRowLabel: { fontSize: 14, color: colors.textSecondary, flex: 1 },
-  viewRowValue: { fontSize: 14, fontWeight: '600', color: colors.text },
+  viewRowLabel: { fontSize: 16, color: colors.textSecondary, flex: 1 },
+  viewRowValue: { fontSize: 16, fontWeight: '600', color: colors.text },
 
   // Referral items
   referralItem: {
@@ -5752,8 +5752,8 @@ const getS = (colors: any) => StyleSheet.create({
     width: 32, height: 32, borderRadius: 16, backgroundColor: colors.surface,
     alignItems: 'center', justifyContent: 'center',
   },
-  referralAvatarText: { fontSize: 12, fontWeight: '600', color: colors.text },
-  referralName: { flex: 1, fontSize: 14, fontWeight: '500', color: colors.text },
+  referralAvatarText: { fontSize: 14, fontWeight: '600', color: colors.text },
+  referralName: { flex: 1, fontSize: 16, fontWeight: '500', color: colors.text },
 
   // Campaign cards
   campaignCard: {
@@ -5761,8 +5761,8 @@ const getS = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card, borderRadius: 10, padding: 12, marginBottom: 8,
     borderWidth: 1, borderColor: colors.border,
   },
-  campaignName: { fontSize: 15, fontWeight: '600', color: colors.text },
-  campaignSub: { fontSize: 13, color: colors.textSecondary, marginTop: 1 },
+  campaignName: { fontSize: 17, fontWeight: '600', color: colors.text },
+  campaignSub: { fontSize: 15, color: colors.textSecondary, marginTop: 1 },
 
   // Modals
   modalContainer: { flex: 1, backgroundColor: colors.bg },
@@ -5770,28 +5770,28 @@ const getS = (colors: any) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border,
   },
-  modalCancel: { fontSize: 17, color: '#007AFF' },
-  modalTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
-  modalAction: { fontSize: 17, color: '#007AFF' },
+  modalCancel: { fontSize: 18, color: '#007AFF' },
+  modalTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
+  modalAction: { fontSize: 18, color: '#007AFF' },
   modalSearch: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: colors.card, borderRadius: 10, margin: 16, paddingHorizontal: 12, gap: 8,
   },
-  modalSearchInput: { flex: 1, padding: 12, fontSize: 16, color: colors.text },
+  modalSearchInput: { flex: 1, padding: 12, fontSize: 18, color: colors.text },
   pickerItem: {
     flexDirection: 'row', alignItems: 'center', padding: 14,
     borderBottomWidth: 1, borderBottomColor: colors.border, gap: 10,
   },
-  pickerItemText: { fontSize: 16, fontWeight: '500', color: colors.text },
+  pickerItemText: { fontSize: 18, fontWeight: '500', color: colors.text },
   pickerAvatar: {
     width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface,
     alignItems: 'center', justifyContent: 'center', marginRight: 12,
   },
-  pickerAvatarText: { fontSize: 15, fontWeight: '600', color: colors.text },
-  pickerName: { fontSize: 16, fontWeight: '500', color: colors.text },
-  pickerSub: { fontSize: 14, color: colors.textSecondary, marginTop: 1 },
+  pickerAvatarText: { fontSize: 17, fontWeight: '600', color: colors.text },
+  pickerName: { fontSize: 18, fontWeight: '500', color: colors.text },
+  pickerSub: { fontSize: 16, color: colors.textSecondary, marginTop: 1 },
   emptyPicker: { padding: 32, alignItems: 'center' },
-  emptyPickerText: { fontSize: 16, color: colors.textSecondary },
+  emptyPickerText: { fontSize: 18, color: colors.textSecondary },
 
   // Date picker modal
   dateOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
@@ -5803,18 +5803,18 @@ const getS = (colors: any) => StyleSheet.create({
   dateConfirmBtn: { backgroundColor: '#007AFF', borderRadius: 12, padding: 16, alignItems: 'center' },
 
   // Web picker
-  webPickerLabel: { fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase' },
+  webPickerLabel: { fontSize: 14, fontWeight: '600', color: colors.textSecondary, marginBottom: 8, textTransform: 'uppercase' },
   webPickerScroll: { maxHeight: 200, width: '100%', backgroundColor: colors.surface, borderRadius: 8 },
   webPickerItem: { paddingVertical: 10, paddingHorizontal: 12, alignItems: 'center' },
   webPickerItemSel: { backgroundColor: '#007AFF', borderRadius: 6, marginHorizontal: 4 },
-  webPickerText: { fontSize: 16, color: colors.textSecondary },
+  webPickerText: { fontSize: 18, color: colors.textSecondary },
   webPickerTextSel: { color: colors.text, fontWeight: '600' },
 
   // Label modal
   labelOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-start', paddingTop: 150 },
   labelModal: { backgroundColor: colors.card, borderRadius: 16, marginHorizontal: 20, padding: 24 },
-  labelTitle: { fontSize: 20, fontWeight: '700', color: colors.text, textAlign: 'center', marginBottom: 8 },
-  labelSub: { fontSize: 15, color: '#007AFF', textAlign: 'center', marginBottom: 20, fontWeight: '600' },
-  labelInput: { backgroundColor: colors.surface, borderRadius: 12, padding: 16, fontSize: 16, color: colors.text, marginBottom: 24 },
+  labelTitle: { fontSize: 21, fontWeight: '700', color: colors.text, textAlign: 'center', marginBottom: 8 },
+  labelSub: { fontSize: 17, color: '#007AFF', textAlign: 'center', marginBottom: 20, fontWeight: '600' },
+  labelInput: { backgroundColor: colors.surface, borderRadius: 12, padding: 16, fontSize: 18, color: colors.text, marginBottom: 24 },
   labelBtn: { flex: 1, borderRadius: 12, padding: 16, alignItems: 'center' },
 });

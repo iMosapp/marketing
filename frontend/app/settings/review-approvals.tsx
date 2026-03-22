@@ -275,7 +275,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -287,7 +287,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 16,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
     textTransform: 'uppercase',
@@ -300,13 +300,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 60,
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '600',
     color: colors.text,
     marginTop: 16,
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 8,
@@ -325,12 +325,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   customerName: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   dateText: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -339,7 +339,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 2,
   },
   reviewText: {
-    fontSize: 15,
+    fontSize: 17,
     color: '#CCC',
     fontStyle: 'italic',
     lineHeight: 22,
@@ -364,7 +364,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 4,
   },
   contactText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   actionButtons: {
@@ -382,7 +382,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 6,
   },
   rejectButtonText: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: '#FF3B30',
   },
@@ -397,7 +397,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 6,
   },
   approveButtonText: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },

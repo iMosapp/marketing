@@ -621,8 +621,8 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   backBtn: { padding: 4 },
   headerCenter: { flex: 1, alignItems: 'center' },
-  title: { fontSize: 17, fontWeight: '600', color: colors.text },
-  subtitle: { fontSize: 12, color: '#6E6E73', marginTop: 2 },
+  title: { fontSize: 18, fontWeight: '600', color: colors.text },
+  subtitle: { fontSize: 14, color: '#6E6E73', marginTop: 2 },
   searchWrap: { paddingHorizontal: 16, paddingVertical: 10 },
   searchBar: {
     flexDirection: 'row',
@@ -633,7 +633,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 10,
     gap: 8,
   },
-  searchInput: { flex: 1, fontSize: 15, color: colors.text },
+  searchInput: { flex: 1, fontSize: 17, color: colors.text },
   scrollContent: { paddingBottom: 32 },
   // Category
   catWrapper: { marginHorizontal: 16, marginBottom: 8 },
@@ -646,9 +646,9 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   catIcon: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  catTitle: { fontSize: 16, fontWeight: '600', color: colors.text, flex: 1 },
+  catTitle: { fontSize: 18, fontWeight: '600', color: colors.text, flex: 1 },
   catBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginRight: 8 },
-  catBadgeText: { fontSize: 14, fontWeight: '600' },
+  catBadgeText: { fontSize: 16, fontWeight: '600' },
   // Page card
   pageCard: {
     backgroundColor: colors.card,
@@ -662,15 +662,15 @@ const getStyles = (colors: any) => StyleSheet.create({
   pageTop: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   pageIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
   pageInfo: { flex: 1 },
-  pageName: { fontSize: 15, fontWeight: '600', color: colors.text },
-  pageDesc: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  pageName: { fontSize: 17, fontWeight: '600', color: colors.text },
+  pageDesc: { fontSize: 14, color: colors.textSecondary, marginTop: 2 },
   publicBadge: {
     backgroundColor: '#34C75920',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
   },
-  publicBadgeText: { fontSize: 10, fontWeight: '600', color: '#34C759' },
+  publicBadgeText: { fontSize: 12, fontWeight: '600', color: '#34C759' },
   pageMeta: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -678,8 +678,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 10,
     paddingHorizontal: 2,
   },
-  pagePath: { fontSize: 11, color: '#6E6E73', fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', flex: 1 },
-  pageAudience: { fontSize: 11, color: '#5856D6', marginLeft: 8 },
+  pagePath: { fontSize: 13, color: '#6E6E73', fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', flex: 1 },
+  pageAudience: { fontSize: 13, color: '#5856D6', marginLeft: 8 },
   // Actions
   pageActions: { flexDirection: 'row', gap: 8 },
   actionBtn: {
@@ -693,11 +693,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
   },
   shareBtn: { backgroundColor: '#C9A96215' },
-  actionText: { fontSize: 12, fontWeight: '500', color: colors.text },
+  actionText: { fontSize: 14, fontWeight: '500', color: colors.text },
   // Empty state
   emptyState: { alignItems: 'center', paddingVertical: 60 },
-  emptyText: { color: colors.textSecondary, fontSize: 16, marginTop: 12 },
-  emptySubtext: { color: '#6E6E73', fontSize: 13, marginTop: 4 },
+  emptyText: { color: colors.textSecondary, fontSize: 18, marginTop: 12 },
+  emptySubtext: { color: '#6E6E73', fontSize: 15, marginTop: 4 },
   // Modal
   modalContainer: { flex: 1, backgroundColor: colors.bg },
   modalHeader: {
@@ -709,9 +709,9 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.surface,
   },
-  modalCancel: { fontSize: 16, color: '#007AFF' },
-  modalTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
-  modalSend: { fontSize: 16, fontWeight: '600', color: '#C9A962' },
+  modalCancel: { fontSize: 18, color: '#007AFF' },
+  modalTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
+  modalSend: { fontSize: 18, fontWeight: '600', color: '#C9A962' },
   modalBody: { padding: 16 },
   sharePageInfo: {
     flexDirection: 'row',
@@ -723,14 +723,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 12,
   },
   sharePageIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  sharePageName: { fontSize: 16, fontWeight: '600', color: colors.text },
-  sharePagePath: { fontSize: 12, color: '#6E6E73', marginTop: 4 },
-  inputLabel: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 8, marginTop: 16, marginLeft: 4 },
+  sharePageName: { fontSize: 18, fontWeight: '600', color: colors.text },
+  sharePagePath: { fontSize: 14, color: '#6E6E73', marginTop: 4 },
+  inputLabel: { fontSize: 15, fontWeight: '600', color: colors.textSecondary, marginBottom: 8, marginTop: 16, marginLeft: 4 },
   modalInput: {
     backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.surface,
@@ -749,7 +749,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: colors.surface,
   },
   channelBtnActive: { backgroundColor: '#C9A96215', borderColor: '#C9A962' },
-  channelText: { fontSize: 15, fontWeight: '500', color: colors.textSecondary },
+  channelText: { fontSize: 17, fontWeight: '500', color: colors.textSecondary },
   channelTextActive: { color: '#C9A962' },
   publicNote: {
     flexDirection: 'row',
@@ -760,7 +760,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#34C75910',
     borderRadius: 10,
   },
-  publicNoteText: { fontSize: 13, color: '#34C759', flex: 1 },
+  publicNoteText: { fontSize: 15, color: '#34C759', flex: 1 },
   authNote: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -770,5 +770,5 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#FF950010',
     borderRadius: 10,
   },
-  authNoteText: { fontSize: 13, color: '#FF9500', flex: 1 },
+  authNoteText: { fontSize: 15, color: '#FF9500', flex: 1 },
 });

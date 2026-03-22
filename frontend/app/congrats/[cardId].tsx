@@ -713,7 +713,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 4,
     alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 4, marginBottom: 8,
   },
-  backBtnText: { fontSize: 16, fontWeight: '600', color: '#FFF' },
+  backBtnText: { fontSize: 18, fontWeight: '600', color: '#FFF' },
   loadingContainer: {
     flex: 1,
     backgroundColor: '#000',
@@ -723,7 +723,7 @@ const styles = StyleSheet.create({
   loadingText: {
     color: '#8E8E93',
     marginTop: 16,
-    fontSize: 16,
+    fontSize: 18,
   },
   errorContainer: {
     flex: 1,
@@ -740,7 +740,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#8E8E93',
-    fontSize: 16,
+    fontSize: 18,
     textAlign: 'center',
     marginTop: 8,
   },
@@ -785,14 +785,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   message: {
-    fontSize: 18,
+    fontSize: 19,
     textAlign: 'center',
     lineHeight: 28,
     paddingHorizontal: 20,
     marginBottom: 16,
   },
   customMessage: {
-    fontSize: 16,
+    fontSize: 18,
     fontStyle: 'italic',
     textAlign: 'center',
     opacity: 0.9,
@@ -820,19 +820,19 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   salesmanName: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
   },
   salesmanTitle: {
-    fontSize: 14,
+    fontSize: 16,
     marginTop: 2,
   },
   storeName: {
-    fontSize: 13,
+    fontSize: 15,
     marginTop: 2,
   },
   footerText: {
-    fontSize: 14,
+    fontSize: 16,
     textAlign: 'center',
     marginTop: 24,
   },
@@ -846,7 +846,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionsTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: '#FFF',
     marginBottom: 20,
@@ -863,7 +863,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   downloadButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#000',
   },
@@ -881,7 +881,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   originalPhotoText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
   socialButtons: {
@@ -904,7 +904,7 @@ const styles = StyleSheet.create({
   },
   moreShareText: {
     color: '#8E8E93',
-    fontSize: 14,
+    fontSize: 16,
   },
   // Quick links section (under salesman info)
   quickLinksSection: {
@@ -925,8 +925,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#1C1C1E',
     gap: 14,
   },
-  reviewCTATitle: { fontSize: 14, color: '#E5E5EA', fontWeight: '500', marginBottom: 2 },
-  reviewCTASubtitle: { fontSize: 16, fontWeight: '700' },
+  reviewCTATitle: { fontSize: 16, color: '#E5E5EA', fontWeight: '500', marginBottom: 2 },
+  reviewCTASubtitle: { fontSize: 18, fontWeight: '700' },
   reviewFormCard: {
     backgroundColor: '#1C1C1E',
     borderRadius: 14,
@@ -935,14 +935,14 @@ const styles = StyleSheet.create({
     width: '100%',
     borderWidth: 1,
   },
-  reviewFormLabel: { color: '#E5E5EA', fontSize: 15, fontWeight: '600', textAlign: 'center', marginBottom: 12 },
+  reviewFormLabel: { color: '#E5E5EA', fontSize: 17, fontWeight: '600', textAlign: 'center', marginBottom: 12 },
   starRow: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 16 },
   reviewInput: {
     backgroundColor: '#2A2A2C',
     borderRadius: 10,
     padding: 14,
     color: '#FFF',
-    fontSize: 15,
+    fontSize: 17,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: '#3A3A3C',
@@ -953,13 +953,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 4,
   },
-  reviewSubmitText: { color: '#000', fontSize: 16, fontWeight: '700' },
+  reviewSubmitText: { color: '#000', fontSize: 18, fontWeight: '700' },
   referralBanner: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C1E',
     borderRadius: 14, padding: 16, width: '100%', borderWidth: 1, marginTop: 16,
   },
-  referralTitle: { color: '#FFF', fontSize: 15, fontWeight: '700' },
-  referralSub: { color: '#34C759', fontSize: 13, marginTop: 2, fontWeight: '500' },
+  referralTitle: { color: '#FFF', fontSize: 17, fontWeight: '700' },
+  referralSub: { color: '#34C759', fontSize: 15, marginTop: 2, fontWeight: '500' },
   quickLinksRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -968,6 +968,6 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   quickLinkItem: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 6, paddingHorizontal: 4 },
-  quickLinkText: { fontSize: 12, fontWeight: '600' },
+  quickLinkText: { fontSize: 14, fontWeight: '600' },
   quickLinkDivider: { width: 1, height: 18, backgroundColor: '#2C2C2E' },
 });

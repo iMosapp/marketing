@@ -130,7 +130,7 @@ export default function LeadTrackingDashboard() {
               <Text style={[s.cardValue, { color: colors.text }]}>{data.summary.total_period}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
                 <Ionicons name={pctChange >= 0 ? 'trending-up' : 'trending-down'} size={14} color={pctChange >= 0 ? '#34C759' : '#FF3B30'} />
-                <Text style={{ fontSize: 12, color: pctChange >= 0 ? '#34C759' : '#FF3B30', fontWeight: '600' }}>
+                <Text style={{ fontSize: 14, color: pctChange >= 0 ? '#34C759' : '#FF3B30', fontWeight: '600' }}>
                   {pctChange >= 0 ? '+' : ''}{pctChange}% vs prev
                 </Text>
               </View>
@@ -138,19 +138,19 @@ export default function LeadTrackingDashboard() {
             <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Text style={[s.cardLabel, { color: colors.textSecondary }]}>All Time</Text>
               <Text style={[s.cardValue, { color: colors.text }]}>{data.summary.total_all_time}</Text>
-              <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4 }}>{data.summary.total_new} awaiting response</Text>
+              <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 4 }}>{data.summary.total_new} awaiting response</Text>
             </View>
             <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Text style={[s.cardLabel, { color: colors.textSecondary }]}>Top Page</Text>
-              <Text style={[s.cardValue, { color: colors.text, fontSize: 18 }]}>{topPage ? formatPage(topPage.page) : '-'}</Text>
-              <Text style={{ fontSize: 12, color: '#007AFF', fontWeight: '600', marginTop: 4 }}>{topPage?.count || 0} requests</Text>
+              <Text style={[s.cardValue, { color: colors.text, fontSize: 19 }]}>{topPage ? formatPage(topPage.page) : '-'}</Text>
+              <Text style={{ fontSize: 14, color: '#007AFF', fontWeight: '600', marginTop: 4 }}>{topPage?.count || 0} requests</Text>
             </View>
             <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Text style={[s.cardLabel, { color: colors.textSecondary }]}>Top Channel</Text>
-              <Text style={[s.cardValue, { color: colors.text, fontSize: 18 }]}>
+              <Text style={[s.cardValue, { color: colors.text, fontSize: 19 }]}>
                 {topChannel ? (CHANNEL_LABELS[topChannel.channel]?.label || topChannel.channel) : '-'}
               </Text>
-              <Text style={{ fontSize: 12, color: '#007AFF', fontWeight: '600', marginTop: 4 }}>{topChannel?.count || 0} requests</Text>
+              <Text style={{ fontSize: 14, color: '#007AFF', fontWeight: '600', marginTop: 4 }}>{topChannel?.count || 0} requests</Text>
             </View>
           </View>
 
@@ -159,7 +159,7 @@ export default function LeadTrackingDashboard() {
             <Text style={[s.sectionTitle, { color: colors.text }]}>By Channel</Text>
             <Text style={[s.sectionSub, { color: colors.textSecondary }]}>Where your leads are coming from</Text>
             {data.by_channel.length === 0 ? (
-              <Text style={{ color: colors.textSecondary, fontSize: 14, textAlign: 'center', paddingVertical: 20 }}>No data yet. Leads will appear here as demo requests come in.</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 16, textAlign: 'center', paddingVertical: 20 }}>No data yet. Leads will appear here as demo requests come in.</Text>
             ) : data.by_channel.map((ch, i) => {
               const info = CHANNEL_LABELS[ch.channel] || { label: ch.channel, icon: 'ellipse', color: '#8E8E93' };
               const pct = data.summary.total_period > 0 ? Math.round((ch.count / data.summary.total_period) * 100) : 0;
@@ -173,7 +173,7 @@ export default function LeadTrackingDashboard() {
                     <View style={[s.channelBarFill, { width: `${pct}%`, backgroundColor: info.color }]} />
                   </View>
                   <Text style={[s.channelCount, { color: colors.text }]}>{ch.count}</Text>
-                  <Text style={{ fontSize: 12, color: colors.textSecondary, width: 40, textAlign: 'right' }}>{pct}%</Text>
+                  <Text style={{ fontSize: 14, color: colors.textSecondary, width: 40, textAlign: 'right' }}>{pct}%</Text>
                 </View>
               );
             })}
@@ -184,7 +184,7 @@ export default function LeadTrackingDashboard() {
             <Text style={[s.sectionTitle, { color: colors.text }]}>By Page</Text>
             <Text style={[s.sectionSub, { color: colors.textSecondary }]}>Which pages drive demo requests</Text>
             {data.by_page.length === 0 ? (
-              <Text style={{ color: colors.textSecondary, fontSize: 14, textAlign: 'center', paddingVertical: 20 }}>No data yet.</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 16, textAlign: 'center', paddingVertical: 20 }}>No data yet.</Text>
             ) : data.by_page.slice(0, 12).map((pg, i) => (
               <View key={i} style={s.pageRow}>
                 <Text style={[s.pageRank, { color: colors.textSecondary }]}>{i + 1}</Text>
@@ -204,7 +204,7 @@ export default function LeadTrackingDashboard() {
             <Text style={[s.sectionTitle, { color: colors.text }]}>By CTA Position</Text>
             <Text style={[s.sectionSub, { color: colors.textSecondary }]}>Where on the page they click</Text>
             {data.by_position.length === 0 ? (
-              <Text style={{ color: colors.textSecondary, fontSize: 14, textAlign: 'center', paddingVertical: 20 }}>No data yet.</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 16, textAlign: 'center', paddingVertical: 20 }}>No data yet.</Text>
             ) : (
               <View style={[s.posGrid, isWide && { flexDirection: 'row' }]}>
                 {data.by_position.map((pos, i) => {
@@ -228,7 +228,7 @@ export default function LeadTrackingDashboard() {
               <Text style={[s.sectionTitle, { color: colors.text }]}>Ad Campaigns</Text>
               {data.by_campaign.length === 0 && (
                 <View style={{ backgroundColor: '#FF950020', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 }}>
-                  <Text style={{ fontSize: 10, fontWeight: '700', color: '#FF9500' }}>READY</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#FF9500' }}>READY</Text>
                 </View>
               )}
             </View>
@@ -239,9 +239,9 @@ export default function LeadTrackingDashboard() {
             </Text>
             {data.by_campaign.length === 0 ? (
               <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginTop: 12, borderWidth: 1, borderColor: colors.border }}>
-                <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 20 }}>
+                <Text style={{ fontSize: 15, color: colors.textSecondary, lineHeight: 20 }}>
                   Example ad link:{'\n'}
-                  <Text style={{ fontFamily: Platform.OS === 'web' ? 'monospace' : undefined, color: '#007AFF', fontSize: 12 }}>
+                  <Text style={{ fontFamily: Platform.OS === 'web' ? 'monospace' : undefined, color: '#007AFF', fontSize: 14 }}>
                     imonsocial.com/demo/?utm_source=facebook&utm_medium=paid_social&utm_campaign=spring_launch
                   </Text>
                 </Text>
@@ -250,7 +250,7 @@ export default function LeadTrackingDashboard() {
               <View key={i} style={[s.campaignRow, { borderBottomColor: colors.border }]}>
                 <View style={{ flex: 1 }}>
                   <Text style={[s.campaignName, { color: colors.text }]}>{c.campaign}</Text>
-                  <Text style={{ fontSize: 12, color: colors.textSecondary }}>{c.utm_source} / {c.utm_medium}</Text>
+                  <Text style={{ fontSize: 14, color: colors.textSecondary }}>{c.utm_source} / {c.utm_medium}</Text>
                 </View>
                 <Text style={[s.campaignCount, { color: '#007AFF' }]}>{c.count}</Text>
               </View>
@@ -263,7 +263,7 @@ export default function LeadTrackingDashboard() {
               <Text style={[s.sectionTitle, { color: colors.text }]}>Referrals</Text>
               {(!data.by_referrer || data.by_referrer.length === 0) && (
                 <View style={{ backgroundColor: '#34C75920', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 }}>
-                  <Text style={{ fontSize: 10, fontWeight: '700', color: '#34C759' }}>TRACKING</Text>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: '#34C759' }}>TRACKING</Text>
                 </View>
               )}
             </View>
@@ -278,11 +278,11 @@ export default function LeadTrackingDashboard() {
                 <View key={i} style={[s.requestRow, { borderBottomColor: colors.border }]}>
                   <View style={{ flex: 1 }}>
                     <Text style={[s.requestName, { color: colors.text }]}>{ref.name || ref.ref_code}</Text>
-                    <Text style={{ fontSize: 12, color: colors.textSecondary }}>Ref: {ref.ref_code}</Text>
+                    <Text style={{ fontSize: 14, color: colors.textSecondary }}>Ref: {ref.ref_code}</Text>
                   </View>
                   <View style={{ alignItems: 'flex-end', gap: 4 }}>
                     <View style={[s.statusBadge, { backgroundColor: (typeColors[ref.type] || '#8E8E93') + '18' }]}>
-                      <Text style={{ fontSize: 10, fontWeight: '700', color: typeColors[ref.type] || '#8E8E93' }}>{(ref.type || 'user').toUpperCase()}</Text>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: typeColors[ref.type] || '#8E8E93' }}>{(ref.type || 'user').toUpperCase()}</Text>
                     </View>
                     <Text style={[s.campaignCount, { color: '#007AFF' }]}>{ref.count}</Text>
                   </View>
@@ -290,7 +290,7 @@ export default function LeadTrackingDashboard() {
               );
             }) : (
               <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginTop: 12, borderWidth: 1, borderColor: colors.border }}>
-                <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 20 }}>
+                <Text style={{ fontSize: 15, color: colors.textSecondary, lineHeight: 20 }}>
                   Every shared link now includes a ref code. When someone clicks a salesperson's digital card, review link, or showcase and then schedules a demo, the lead traces back to that person.
                 </Text>
               </View>
@@ -301,21 +301,21 @@ export default function LeadTrackingDashboard() {
           <View style={[s.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[s.sectionTitle, { color: colors.text }]}>Recent Requests</Text>
             {data.recent_requests.length === 0 ? (
-              <Text style={{ color: colors.textSecondary, fontSize: 14, textAlign: 'center', paddingVertical: 20 }}>No requests yet.</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 16, textAlign: 'center', paddingVertical: 20 }}>No requests yet.</Text>
             ) : data.recent_requests.map((req, i) => (
               <View key={i} style={[s.requestRow, { borderBottomColor: colors.border }]}>
                 <View style={{ flex: 1 }}>
                   <Text style={[s.requestName, { color: colors.text }]}>{req.name}</Text>
-                  <Text style={{ fontSize: 12, color: colors.textSecondary }}>{req.email}{req.company ? ` - ${req.company}` : ''}</Text>
-                  <Text style={{ fontSize: 11, color: colors.textTertiary, marginTop: 2 }}>{formatSource(req.source)}</Text>
+                  <Text style={{ fontSize: 14, color: colors.textSecondary }}>{req.email}{req.company ? ` - ${req.company}` : ''}</Text>
+                  <Text style={{ fontSize: 13, color: colors.textTertiary, marginTop: 2 }}>{formatSource(req.source)}</Text>
                 </View>
                 <View style={{ alignItems: 'flex-end' }}>
                   <View style={[s.statusBadge, { backgroundColor: (STATUS_COLORS[req.status] || '#8E8E93') + '18' }]}>
-                    <Text style={{ fontSize: 11, fontWeight: '700', color: STATUS_COLORS[req.status] || '#8E8E93' }}>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: STATUS_COLORS[req.status] || '#8E8E93' }}>
                       {(req.status || 'new').toUpperCase()}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 11, color: colors.textTertiary, marginTop: 4 }}>
+                  <Text style={{ fontSize: 13, color: colors.textTertiary, marginTop: 4 }}>
                     {req.created_at ? new Date(req.created_at).toLocaleDateString() : ''}
                   </Text>
                 </View>
@@ -335,42 +335,42 @@ const s = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingTop: Platform.OS === 'web' ? 20 : 56, paddingBottom: 12 },
   backBtn: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 22, fontWeight: '800' },
-  subtitle: { fontSize: 13, marginTop: 2 },
+  subtitle: { fontSize: 15, marginTop: 2 },
   refreshBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#007AFF12', alignItems: 'center', justifyContent: 'center' },
   periodRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 16 },
   periodTab: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
   periodTabActive: { backgroundColor: '#007AFF' },
-  periodText: { fontSize: 13, fontWeight: '600' },
+  periodText: { fontSize: 15, fontWeight: '600' },
   periodTextActive: { color: '#FFF' },
   loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scroll: { paddingHorizontal: 16, paddingBottom: 40 },
   cardRow: { gap: 12, marginBottom: 20 },
   card: { flex: 1, borderRadius: 16, padding: 16, borderWidth: 1, minWidth: 140 },
-  cardLabel: { fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
+  cardLabel: { fontSize: 14, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
   cardValue: { fontSize: 32, fontWeight: '900', marginTop: 4 },
   section: { borderRadius: 16, padding: 20, borderWidth: 1, marginBottom: 16 },
-  sectionTitle: { fontSize: 17, fontWeight: '700' },
-  sectionSub: { fontSize: 13, marginTop: 2, marginBottom: 16 },
+  sectionTitle: { fontSize: 18, fontWeight: '700' },
+  sectionSub: { fontSize: 15, marginTop: 2, marginBottom: 16 },
   channelRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
   channelIcon: { width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  channelLabel: { fontSize: 14, fontWeight: '500', width: 140 },
+  channelLabel: { fontSize: 16, fontWeight: '500', width: 140 },
   channelBar: { flex: 1, height: 6, borderRadius: 3, backgroundColor: '#F0F0F5', overflow: 'hidden' },
   channelBarFill: { height: '100%', borderRadius: 3 },
-  channelCount: { fontSize: 15, fontWeight: '700', width: 36, textAlign: 'right' },
+  channelCount: { fontSize: 17, fontWeight: '700', width: 36, textAlign: 'right' },
   pageRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
-  pageRank: { fontSize: 14, fontWeight: '700', width: 20, textAlign: 'center' },
-  pageLabel: { fontSize: 14, fontWeight: '500', marginBottom: 4 },
+  pageRank: { fontSize: 16, fontWeight: '700', width: 20, textAlign: 'center' },
+  pageLabel: { fontSize: 16, fontWeight: '500', marginBottom: 4 },
   pageBarTrack: { height: 4, borderRadius: 2, backgroundColor: '#F0F0F5', overflow: 'hidden' },
   pageBarFill: { height: '100%', borderRadius: 2, backgroundColor: '#007AFF' },
-  pageCount: { fontSize: 15, fontWeight: '700', width: 36, textAlign: 'right' },
+  pageCount: { fontSize: 17, fontWeight: '700', width: 36, textAlign: 'right' },
   posGrid: { gap: 10, flexWrap: 'wrap' },
   posCard: { flex: 1, minWidth: 100, alignItems: 'center', padding: 16, borderRadius: 14, borderWidth: 1, gap: 6 },
-  posLabel: { fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
+  posLabel: { fontSize: 14, fontWeight: '700', letterSpacing: 0.5 },
   posCount: { fontSize: 24, fontWeight: '900' },
   campaignRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F0F0F5' },
-  campaignName: { fontSize: 14, fontWeight: '600' },
-  campaignCount: { fontSize: 18, fontWeight: '800' },
+  campaignName: { fontSize: 16, fontWeight: '600' },
+  campaignCount: { fontSize: 19, fontWeight: '800' },
   requestRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1 },
-  requestName: { fontSize: 14, fontWeight: '600' },
+  requestName: { fontSize: 16, fontWeight: '600' },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
 });

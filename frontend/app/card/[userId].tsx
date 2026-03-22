@@ -1046,17 +1046,17 @@ export default function DigitalCardPage() {
             <Text style={[styles.matchTitle, { color: theme.text }]}>Contact Already Exists</Text>
             <Text style={[styles.matchSubtitle, { color: theme.textMuted }]}>A contact with this number already exists:</Text>
             <View style={[styles.matchCard, { backgroundColor: theme.surface }]}>
-              <Text style={{ fontSize: 10, fontWeight: '700', color: theme.textMuted, letterSpacing: 1, marginBottom: 6 }}>EXISTING CONTACT</Text>
-              <Text style={{ fontSize: 17, fontWeight: '600', color: theme.text }}>{matchInfo.existing_name}</Text>
-              {matchInfo.phone ? <Text style={{ fontSize: 13, color: theme.textMuted, marginTop: 2 }}>{matchInfo.phone}</Text> : null}
+              <Text style={{ fontSize: 12, fontWeight: '700', color: theme.textMuted, letterSpacing: 1, marginBottom: 6 }}>EXISTING CONTACT</Text>
+              <Text style={{ fontSize: 18, fontWeight: '600', color: theme.text }}>{matchInfo.existing_name}</Text>
+              {matchInfo.phone ? <Text style={{ fontSize: 15, color: theme.textMuted, marginTop: 2 }}>{matchInfo.phone}</Text> : null}
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 12 }}>
               <View style={{ flex: 1, height: 1, backgroundColor: theme.cardBorder }} />
-              <Text style={{ fontSize: 12, color: theme.textMuted, marginHorizontal: 12 }}>You entered</Text>
+              <Text style={{ fontSize: 14, color: theme.textMuted, marginHorizontal: 12 }}>You entered</Text>
               <View style={{ flex: 1, height: 1, backgroundColor: theme.cardBorder }} />
             </View>
             <View style={[styles.matchCard, { backgroundColor: theme.surface, marginBottom: 20 }]}>
-              <Text style={{ fontSize: 17, fontWeight: '600', color: '#FF9500' }}>{matchInfo.provided_name}</Text>
+              <Text style={{ fontSize: 18, fontWeight: '600', color: '#FF9500' }}>{matchInfo.provided_name}</Text>
             </View>
             <TouchableOpacity style={[styles.matchActionBtn, { backgroundColor: theme.surface }]} onPress={() => resolveMatchAction('use_existing')} data-testid="match-use-existing">
               <Ionicons name="checkmark-circle" size={20} color="#34C759" />
@@ -1071,7 +1071,7 @@ export default function DigitalCardPage() {
               <Text style={[styles.matchActionText, { color: theme.text }]}>Create New Contact</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => { setMatchModalVisible(false); setMatchInfo(null); }} style={{ marginTop: 12, padding: 12, alignItems: 'center' }}>
-              <Text style={{ fontSize: 15, color: theme.textMuted }}>Cancel</Text>
+              <Text style={{ fontSize: 17, color: theme.textMuted }}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1097,7 +1097,7 @@ const getDynamicStyles = (theme: ThemePalette) => StyleSheet.create({
   },
   saveButtonText: {
     color: theme.bg === '#0D0D0D' ? '#1A1A1A' : '#FFF',
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
@@ -1146,7 +1146,7 @@ const getDynamicStyles = (theme: ThemePalette) => StyleSheet.create({
     backgroundColor: theme.inputBg,
     borderRadius: 10,
     padding: 14,
-    fontSize: 15,
+    fontSize: 17,
     color: theme.text,
     borderWidth: 1,
     borderColor: theme.inputBorder,
@@ -1160,7 +1160,7 @@ const getDynamicStyles = (theme: ThemePalette) => StyleSheet.create({
     marginTop: 4,
   },
   feedbackSubmitText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: theme.bg === '#0D0D0D' ? '#000' : '#FFF',
   },
@@ -1190,7 +1190,7 @@ const getDynamicStyles = (theme: ThemePalette) => StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    fontSize: 14,
+    fontSize: 16,
     color: theme.text,
     borderWidth: 1.5,
     borderColor: theme.cardBorder,
@@ -1213,7 +1213,7 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
   },
   loadingContainer: {
@@ -1224,7 +1224,7 @@ const styles = StyleSheet.create({
   loadingText: {
     color: '#FFF',
     marginTop: 16,
-    fontSize: 16,
+    fontSize: 18,
   },
   errorContainer: {
     flex: 1,
@@ -1234,13 +1234,13 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     color: '#FFF',
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '600',
     marginTop: 16,
   },
   errorText: {
     color: '#8E8E93',
-    fontSize: 16,
+    fontSize: 18,
     marginTop: 8,
   },
   scrollView: {
@@ -1315,7 +1315,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 12,
     color: '#666',
-    fontSize: 11,
+    fontSize: 13,
     fontStyle: 'italic',
   },
   // Card content
@@ -1349,14 +1349,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   userTitle: {
-    fontSize: 14,
+    fontSize: 16,
     marginTop: 4,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     fontWeight: '500',
   },
   storeName: {
-    fontSize: 13,
+    fontSize: 15,
     marginTop: 6,
   },
   divider: {
@@ -1376,7 +1376,7 @@ const styles = StyleSheet.create({
   },
   contactText: {
     color: '#CCC',
-    fontSize: 13,
+    fontSize: 15,
     marginLeft: 8,
   },
   socialRow: {
@@ -1394,7 +1394,7 @@ const styles = StyleSheet.create({
   },
   // QR Code Back
   qrTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     marginBottom: 20,
     textTransform: 'uppercase',
@@ -1420,7 +1420,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   qrActionText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
   // Save Button (static parts only)
@@ -1443,7 +1443,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   quickActionLabel: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '500',
   },
   // Sections
@@ -1451,7 +1451,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     marginBottom: 12,
     textTransform: 'uppercase',
@@ -1469,7 +1469,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   infoText: {
-    fontSize: 14,
+    fontSize: 16,
     marginLeft: 12,
     flex: 1,
   },
@@ -1477,7 +1477,7 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   bioText: {
-    fontSize: 14,
+    fontSize: 16,
     lineHeight: 22,
   },
   // Testimonials
@@ -1494,14 +1494,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   testimonialName: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
   starsRow: {
     flexDirection: 'row',
   },
   testimonialText: {
-    fontSize: 13,
+    fontSize: 15,
     fontStyle: 'italic',
     lineHeight: 20,
   },
@@ -1512,7 +1512,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     color: '#333',
-    fontSize: 11,
+    fontSize: 13,
     textTransform: 'uppercase',
     letterSpacing: 2,
   },
@@ -1524,8 +1524,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
   },
-  reviewCTABannerTitle: { fontSize: 16, fontWeight: '700' },
-  reviewCTABannerSub: { fontSize: 13, marginTop: 2, fontWeight: '500' },
+  reviewCTABannerTitle: { fontSize: 18, fontWeight: '700' },
+  reviewCTABannerSub: { fontSize: 15, marginTop: 2, fontWeight: '500' },
   referralBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1533,8 +1533,8 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
   },
-  referralBannerTitle: { fontSize: 16, fontWeight: '700' },
-  referralBannerSub: { color: '#34C759', fontSize: 13, marginTop: 2, fontWeight: '500' },
+  referralBannerTitle: { fontSize: 18, fontWeight: '700' },
+  referralBannerSub: { color: '#34C759', fontSize: 15, marginTop: 2, fontWeight: '500' },
   feedbackCard: {
     borderRadius: 12,
     padding: 20,
@@ -1542,7 +1542,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   feedbackLabel: {
-    fontSize: 15,
+    fontSize: 17,
     textAlign: 'center',
     marginBottom: 14,
   },
@@ -1555,7 +1555,7 @@ const styles = StyleSheet.create({
   feedbackInput: {
     borderRadius: 10,
     padding: 14,
-    fontSize: 15,
+    fontSize: 17,
     borderWidth: 1,
     marginBottom: 10,
   },
@@ -1571,7 +1571,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   feedbackSubmitText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
   feedbackSuccess: {
@@ -1579,13 +1579,13 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   feedbackSuccessTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '700',
     color: '#FFF',
     marginTop: 10,
   },
   feedbackSuccessText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#8E8E93',
     marginTop: 4,
   },
@@ -1608,13 +1608,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   shareModalTitle: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '700',
     textAlign: 'center',
     marginBottom: 4,
   },
   shareModalSubtitle: {
-    fontSize: 14,
+    fontSize: 16,
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -1637,7 +1637,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   shareOptionText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '500',
     textAlign: 'center',
   },
@@ -1647,7 +1647,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   shareModalCancelText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#FF3B30',
     textAlign: 'center',
@@ -1657,7 +1657,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   recipientLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: '#6E6E73',
     letterSpacing: 1,
@@ -1668,7 +1668,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    fontSize: 14,
+    fontSize: 16,
     borderWidth: 1.5,
     minWidth: 0,
   },
@@ -1691,9 +1691,9 @@ const styles = StyleSheet.create({
     width: '90%',
     maxWidth: 380,
   },
-  matchTitle: { fontSize: 18, fontWeight: '700' as any, textAlign: 'center' as any, marginBottom: 8 },
-  matchSubtitle: { fontSize: 14, textAlign: 'center' as any, marginBottom: 16 },
+  matchTitle: { fontSize: 19, fontWeight: '700' as any, textAlign: 'center' as any, marginBottom: 8 },
+  matchSubtitle: { fontSize: 16, textAlign: 'center' as any, marginBottom: 16 },
   matchCard: { borderRadius: 10, padding: 14, alignItems: 'center' as any },
   matchActionBtn: { flexDirection: 'row' as any, alignItems: 'center' as any, padding: 14, borderRadius: 10, gap: 10, marginBottom: 8 },
-  matchActionText: { fontSize: 15, fontWeight: '500' as any, flex: 1 },
+  matchActionText: { fontSize: 17, fontWeight: '500' as any, flex: 1 },
 });

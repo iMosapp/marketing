@@ -525,7 +525,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
   },
@@ -574,7 +574,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     textAlign: 'center',
   },
   promptText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
@@ -584,14 +584,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: '100%',
   },
   examplesLabel: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: '#6E6E73',
     textTransform: 'uppercase',
     marginBottom: 8,
   },
   exampleText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     fontStyle: 'italic',
     marginBottom: 4,
@@ -607,7 +607,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   transcriptText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
     lineHeight: 22,
   },
@@ -633,7 +633,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     shadowColor: '#FF3B30',
   },
   recordHint: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 16,
   },
@@ -642,7 +642,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 16,
   },
   processingText: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#007AFF',
     fontWeight: '500',
   },
@@ -659,7 +659,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   nextButtonText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -668,7 +668,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 20,
   },
   skipLinkText: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
   },
   // Results Screen
@@ -691,7 +691,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   successSubtitle: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 24,
@@ -709,13 +709,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 10,
   },
   resultLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
     textTransform: 'uppercase',
   },
   resultValue: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
     lineHeight: 22,
   },
@@ -731,11 +731,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 16,
   },
   tagText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.text,
   },
   funFact: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
     lineHeight: 22,
     marginBottom: 4,
@@ -751,7 +751,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 24,
   },
   saveButtonText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -761,7 +761,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 12,
   },
   skipButtonText: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
   },
 });

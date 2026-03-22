@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '700',
     color: '#FFFFFF',
   },
@@ -349,12 +349,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sourceTagText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: '#5856D6',
   },
   message: {
-    fontSize: 15,
+    fontSize: 17,
     color: '#8E8E93',
     textAlign: 'center',
     lineHeight: 22,
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   jumpBallText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: '#FF9500',
   },
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   contactText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#FFFFFF',
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
@@ -417,7 +417,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#5856D6',
   },
   actionButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#FFFFFF',
   },
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   dismissText: {
-    fontSize: 15,
+    fontSize: 17,
     color: '#8E8E93',
     fontWeight: '500',
   },

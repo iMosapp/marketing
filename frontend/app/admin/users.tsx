@@ -633,7 +633,7 @@ export default function UsersScreen() {
               testID="close-success"
               style={{ marginTop: 16 }}
             >
-              <Text style={{ color: '#007AFF', fontSize: 16, fontWeight: '600' }}>Done</Text>
+              <Text style={{ color: '#007AFF', fontSize: 18, fontWeight: '600' }}>Done</Text>
             </WebSafeButton>
           </View>
         </View>
@@ -701,7 +701,7 @@ export default function UsersScreen() {
                 testID="close-success"
                 style={{ marginTop: 16 }}
               >
-                <Text style={{ color: '#007AFF', fontSize: 16, fontWeight: '600' }}>Done</Text>
+                <Text style={{ color: '#007AFF', fontSize: 18, fontWeight: '600' }}>Done</Text>
               </WebSafeButton>
             </View>
           </View>
@@ -729,7 +729,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -750,7 +750,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   loadingContainer: {
@@ -779,7 +779,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 12,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     flex: 1,
@@ -791,7 +791,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 8,
   },
   countText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
   userCard: {
@@ -816,7 +816,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 20,
   },
   userAvatarText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
   userInfo: {
@@ -824,12 +824,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginLeft: 12,
   },
   userName: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '500',
     color: colors.text,
   },
   userEmail: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -845,12 +845,12 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   emptyText: {
     color: colors.textSecondary,
-    fontSize: 16,
+    fontSize: 18,
     marginTop: 16,
   },
   emptySubtext: {
     color: '#6E6E73',
-    fontSize: 14,
+    fontSize: 16,
     marginTop: 4,
   },
   inactiveCard: {
@@ -861,7 +861,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.textSecondary,
   },
   deletionSource: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#FF9500',
     marginTop: 2,
     fontStyle: 'italic',
@@ -889,16 +889,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   modalCancel: {
-    fontSize: 17,
+    fontSize: 18,
     color: '#007AFF',
   },
   modalTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   modalSave: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -906,7 +906,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 16,
   },
   inputLabel: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 8,
@@ -917,7 +917,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.surface,
@@ -936,7 +936,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: colors.surface,
   },
   roleOptionText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
     color: colors.textSecondary,
   },
@@ -966,12 +966,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   inviteToggleTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '500',
     color: colors.text,
   },
   inviteToggleSubtitle: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -986,7 +986,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   warningText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 15,
     color: '#FF9500',
     lineHeight: 18,
   },
@@ -1009,7 +1009,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#007AFF',
   },
   pickerOptionText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
   },
   pickerOptionTextSelected: {
@@ -1042,7 +1042,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   successSubtitle: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 20,
@@ -1059,12 +1059,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   credentialLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     width: 80,
   },
   credentialValue: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.text,
     fontWeight: '600',
     flex: 1,

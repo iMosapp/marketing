@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   poweredText: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#999999',
     fontWeight: '500',
     marginTop: 8,
@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F4F6FA',
     borderRadius: 12,
     padding: 16,
-    fontSize: 16,
+    fontSize: 18,
     color: NAVY,
     borderWidth: 1,
     borderColor: 'rgba(16,32,80,0.1)',
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   passwordInput: {
     flex: 1,
     padding: 16,
-    fontSize: 16,
+    fontSize: 18,
     color: NAVY,
   },
   eyeBtn: {
@@ -344,11 +344,11 @@ const styles = StyleSheet.create({
   },
   rememberText: {
     color: '#666666',
-    fontSize: 14,
+    fontSize: 16,
   },
   forgotText: {
     color: ORANGE,
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
   },
   loginBtn: {
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
   },
   loginBtnText: {
     color: '#FFFFFF',
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '700',
   },
   errorBox: {
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#FF3B30',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
     flex: 1,
   },
@@ -394,7 +394,7 @@ const styles = StyleSheet.create({
   },
   biometricText: {
     color: ORANGE,
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
   },
   installBtn: {
@@ -407,7 +407,7 @@ const styles = StyleSheet.create({
   },
   installText: {
     color: '#888888',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
   },
 });

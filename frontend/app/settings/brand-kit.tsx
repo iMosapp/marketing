@@ -485,7 +485,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -493,7 +493,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   saveText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -529,12 +529,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   previewCompany: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '700',
     color: colors.text,
   },
   previewTagline: {
-    fontSize: 14,
+    fontSize: 16,
     color: 'rgba(255,255,255,0.8)',
     marginTop: 4,
   },
@@ -543,7 +543,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
   },
   previewBodyText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#666',
     textAlign: 'center',
   },
@@ -553,7 +553,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   previewFooterText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#999',
   },
 
@@ -562,7 +562,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 20,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 8,
@@ -571,7 +571,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.surface,
@@ -588,11 +588,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   uploadButtonText: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
   },
   inputHelper: {
-    fontSize: 12,
+    fontSize: 14,
     marginBottom: 6,
   },
   
@@ -601,7 +601,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 20,
   },
   colorPickerLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 12,
@@ -631,7 +631,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    fontSize: 14,
+    fontSize: 16,
     color: colors.text,
     borderWidth: 2,
     width: 90,
@@ -639,7 +639,7 @@ const getStyles = (colors: any) => StyleSheet.create({
 
   // Section
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
     color: colors.textSecondary,
     textTransform: 'uppercase',
@@ -668,7 +668,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.surface,
@@ -686,7 +686,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   infoText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     lineHeight: 20,
   },
@@ -709,7 +709,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderWidth: 2,
   },
   themeToggleLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
     color: colors.textSecondary,
     marginTop: 8,

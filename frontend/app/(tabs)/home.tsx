@@ -173,7 +173,7 @@ function ContactActionModal({
           <TouchableOpacity onPress={onClose} style={{ padding: 4 }} data-testid="close-action-modal">
             <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' }}>{initialMode === 'keypad' ? 'Keypad' : 'Add Contact'}</Text>
+          <Text style={{ fontSize: 19, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' }}>{initialMode === 'keypad' ? 'Keypad' : 'Add Contact'}</Text>
           <View style={{ width: 32 }} />
         </View>
 
@@ -187,11 +187,11 @@ function ContactActionModal({
               <View style={{ gap: 8, marginBottom: 8 }}>
                 <TouchableOpacity style={[styles.manualAddBtn, { backgroundColor: colors.accent }]} onPress={() => { onClose(); router.push('/contact/new' as any); }} data-testid="manual-add-contact">
                   <Ionicons name="person-add" size={18} color={colors.text} />
-                  <Text style={{ color: colors.text, fontSize: 14, fontWeight: '700' }}>Create New Contact</Text>
+                  <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700' }}>Create New Contact</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.importPhoneBtn, { borderColor: colors.border }]} onPress={handleVcfUpload} data-testid="import-vcf">
                   <Ionicons name="document-outline" size={18} color={colors.accent} />
-                  <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>Upload Contact File (.vcf)</Text>
+                  <Text style={{ color: colors.accent, fontSize: 16, fontWeight: '600' }}>Upload Contact File (.vcf)</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -206,11 +206,11 @@ function ContactActionModal({
                     data-testid={`contact-row-${item._id}`}
                   >
                     <View style={[styles.contactAvatar, { backgroundColor: `${colors.accent}20` }]}>
-                      <Text style={{ color: colors.accent, fontWeight: '700', fontSize: 16 }}>{(item.first_name || '?')[0].toUpperCase()}</Text>
+                      <Text style={{ color: colors.accent, fontWeight: '700', fontSize: 18 }}>{(item.first_name || '?')[0].toUpperCase()}</Text>
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.contactName, { color: colors.text }]}>{item.first_name} {item.last_name || ''}</Text>
-                      <Text style={{ color: colors.textTertiary, fontSize: 12 }}>{item.phone || item.email || ''}</Text>
+                      <Text style={{ color: colors.textTertiary, fontSize: 14 }}>{item.phone || item.email || ''}</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
                   </TouchableOpacity>
@@ -218,8 +218,8 @@ function ContactActionModal({
                 ListEmptyComponent={
                   <View style={{ alignItems: 'center', marginTop: 30 }}>
                     <Ionicons name="person-outline" size={40} color={colors.textTertiary} style={{ marginBottom: 8 }} />
-                    <Text style={{ color: colors.textSecondary, fontSize: 15, fontWeight: '600', marginBottom: 4 }}>No matches found</Text>
-                    <Text style={{ color: colors.textTertiary, fontSize: 13 }}>Create a new contact or import from a file</Text>
+                    <Text style={{ color: colors.textSecondary, fontSize: 17, fontWeight: '600', marginBottom: 4 }}>No matches found</Text>
+                    <Text style={{ color: colors.textTertiary, fontSize: 15 }}>Create a new contact or import from a file</Text>
                   </View>
                 }
               />
@@ -228,15 +228,15 @@ function ContactActionModal({
               <View style={{ flex: 1 }}>
                 <TouchableOpacity style={[styles.manualAddBtn, { backgroundColor: colors.accent, marginTop: 8 }]} onPress={() => { onClose(); router.push('/contact/new' as any); }} data-testid="manual-add-contact-main">
                   <Ionicons name="add-circle" size={20} color={colors.text} />
-                  <Text style={{ color: colors.text, fontSize: 15, fontWeight: '700' }}>New Contact</Text>
+                  <Text style={{ color: colors.text, fontSize: 17, fontWeight: '700' }}>New Contact</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.importPhoneBtn, { borderColor: colors.border, marginTop: 8 }]} onPress={handleVcfUpload} data-testid="import-vcf-main">
                   <Ionicons name="document-outline" size={18} color={colors.accent} />
-                  <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>Upload Contact File (.vcf)</Text>
+                  <Text style={{ color: colors.accent, fontSize: 16, fontWeight: '600' }}>Upload Contact File (.vcf)</Text>
                 </TouchableOpacity>
 
                 {/* Recent contacts */}
-                <Text style={{ color: colors.textTertiary, fontSize: 11, fontWeight: '600', letterSpacing: 1, marginTop: 20, marginBottom: 8 }}>RECENT CONTACTS</Text>
+                <Text style={{ color: colors.textTertiary, fontSize: 13, fontWeight: '600', letterSpacing: 1, marginTop: 20, marginBottom: 8 }}>RECENT CONTACTS</Text>
                 <FlatList data={contacts.slice(0, 10)} keyExtractor={(item) => item._id} style={{ flex: 1 }}
                   renderItem={({ item }) => (
                     <TouchableOpacity
@@ -244,11 +244,11 @@ function ContactActionModal({
                       onPress={() => { onClose(); router.push(`/contact/${item._id}` as any); }}
                     >
                       <View style={[styles.contactAvatar, { backgroundColor: `${colors.accent}20` }]}>
-                        <Text style={{ color: colors.accent, fontWeight: '700', fontSize: 16 }}>{(item.first_name || '?')[0].toUpperCase()}</Text>
+                        <Text style={{ color: colors.accent, fontWeight: '700', fontSize: 18 }}>{(item.first_name || '?')[0].toUpperCase()}</Text>
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={[styles.contactName, { color: colors.text }]}>{item.first_name} {item.last_name || ''}</Text>
-                        <Text style={{ color: colors.textTertiary, fontSize: 12 }}>{item.phone || item.email || ''}</Text>
+                        <Text style={{ color: colors.textTertiary, fontSize: 14 }}>{item.phone || item.email || ''}</Text>
                       </View>
                       <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
                     </TouchableOpacity>
@@ -286,10 +286,10 @@ function ContactActionModal({
                     {matches.map((item: any, i: number) => (
                       <TouchableOpacity key={item._id} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, height: 40, borderTopWidth: i > 0 ? 0.5 : 0, borderTopColor: colors.border }} onPress={() => logAndDial(item.phone, item)}>
                         <Ionicons name="person-circle" size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
-                        <Text style={{ fontSize: 14, fontWeight: '400', color: colors.text, marginRight: 6 }} numberOfLines={1}>
+                        <Text style={{ fontSize: 16, fontWeight: '400', color: colors.text, marginRight: 6 }} numberOfLines={1}>
                           {`${item.first_name || ''} ${item.last_name || ''}`.trim().length > 14 ? `${item.first_name || ''} ${item.last_name || ''}`.trim().slice(0,12)+'...' : `${item.first_name || ''} ${item.last_name || ''}`.trim()}
                         </Text>
-                        <Text style={{ fontSize: 14, color: colors.textSecondary, flex: 1 }} numberOfLines={1}>{fmtPhone(item.phone)}</Text>
+                        <Text style={{ fontSize: 16, color: colors.textSecondary, flex: 1 }} numberOfLines={1}>{fmtPhone(item.phone)}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -304,7 +304,7 @@ function ContactActionModal({
                   {[0, 2, 4].map(ci => (
                     <TouchableOpacity key={row[ci]} style={{ width: 76, height: 76, borderRadius: 38, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' }} onPress={() => setDialNumber(d => d + row[ci])}>
                       <Text style={{ fontSize: 30, fontWeight: '400', color: colors.text, lineHeight: 34 }}>{row[ci]}</Text>
-                      {row[ci+1] ? <Text style={{ fontSize: 10, fontWeight: '700', color: colors.textSecondary, letterSpacing: 1.5, marginTop: -1 }}>{row[ci+1]}</Text> : null}
+                      {row[ci+1] ? <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textSecondary, letterSpacing: 1.5, marginTop: -1 }}>{row[ci+1]}</Text> : null}
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -659,10 +659,10 @@ export default function HomeScreen() {
                 <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(201,169,98,0.12)', alignItems: 'center', justifyContent: 'center' }}>
                   <Ionicons name="checkbox-outline" size={22} color={colors.accent} />
                 </View>
-                <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Today's Touchpoints</Text>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>Today's Touchpoints</Text>
               </View>
               <View style={{ backgroundColor: 'rgba(201,169,98,0.12)', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 8 }}>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: colors.accent }}>{taskSummary?.pending_today || pendingTasks.length} pending</Text>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.accent }}>{taskSummary?.pending_today || pendingTasks.length} pending</Text>
               </View>
             </View>
 
@@ -677,7 +677,7 @@ export default function HomeScreen() {
                 { label: 'LEADS', color: '#32ADE6', val: taskSummary?.activity?.new_leads || 0 },
               ].map(s => (
                 <View key={s.label} style={{ flex: 1, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 2 }}>
-                  <Text style={{ fontSize: 20, fontWeight: '700', color: s.color }}>{s.val}</Text>
+                  <Text style={{ fontSize: 21, fontWeight: '700', color: s.color }}>{s.val}</Text>
                   <Text style={{ fontSize: 9, color: colors.textSecondary, fontWeight: '600', letterSpacing: 0.5, marginTop: 1 }}>{s.label}</Text>
                 </View>
               ))}
@@ -687,11 +687,11 @@ export default function HomeScreen() {
             <View style={{ backgroundColor: colors.border, borderRadius: 5, height: 6, overflow: 'hidden', marginBottom: 6 }}>
               <View style={{ height: '100%', backgroundColor: colors.accent, borderRadius: 5, width: `${taskSummary?.progress_pct || 0}%` }} />
             </View>
-            <Text style={{ fontSize: 12, color: colors.textSecondary, textAlign: 'center', marginBottom: 4 }}>
+            <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginBottom: 4 }}>
               {taskSummary?.completed_today || 0} of {taskSummary?.total_today || 0} today's touchpoints
             </Text>
             {(taskSummary?.overdue || 0) > 0 && (
-              <Text style={{ fontSize: 11, color: '#FF9500', textAlign: 'center', marginBottom: 12, fontWeight: '600' }}>
+              <Text style={{ fontSize: 13, color: '#FF9500', textAlign: 'center', marginBottom: 12, fontWeight: '600' }}>
                 + {taskSummary.overdue} overdue from past days
               </Text>
             )}
@@ -709,17 +709,17 @@ export default function HomeScreen() {
                   <View style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: `${ti.color}18`, alignItems: 'center', justifyContent: 'center' }}>
                     <Ionicons name={ti.icon as any} size={14} color={ti.color} />
                   </View>
-                  <Text style={{ fontSize: 13, color: '#ccc', flex: 1 }} numberOfLines={1}>{task.title}</Text>
+                  <Text style={{ fontSize: 15, color: '#ccc', flex: 1 }} numberOfLines={1}>{task.title}</Text>
                   {badgeLabel ? (
                     <View style={{ backgroundColor: `${badgeColor}18`, paddingVertical: 2, paddingHorizontal: 6, borderRadius: 4 }}>
-                      <Text style={{ fontSize: 10, fontWeight: '600', color: badgeColor }}>{badgeLabel}</Text>
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: badgeColor }}>{badgeLabel}</Text>
                     </View>
                   ) : null}
                 </View>
               );
             })}
             {pendingTasks.length === 0 && !loadingTasks && (
-              <Text style={{ fontSize: 13, color: colors.textTertiary, textAlign: 'center', paddingVertical: 8 }}>No touchpoints for today</Text>
+              <Text style={{ fontSize: 15, color: colors.textTertiary, textAlign: 'center', paddingVertical: 8 }}>No touchpoints for today</Text>
             )}
             {loadingTasks && pendingTasks.length === 0 && (
               <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 4 }} />
@@ -737,11 +737,11 @@ export default function HomeScreen() {
               data-testid="seo-health-widget"
             >
               <View style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 3, borderColor: seoScore.grade_color, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ fontSize: 16, fontWeight: '900', color: seoScore.grade_color }}>{seoScore.total_score}</Text>
+                <Text style={{ fontSize: 18, fontWeight: '900', color: seoScore.grade_color }}>{seoScore.total_score}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>SEO Health</Text>
-                <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }}>{seoScore.grade}{seoScore.tips?.length > 0 ? ` \u00B7 ${seoScore.tips.length} tips to improve` : ''}</Text>
+                <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text }}>SEO Health</Text>
+                <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 1 }}>{seoScore.grade}{seoScore.tips?.length > 0 ? ` \u00B7 ${seoScore.tips.length} tips to improve` : ''}</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#48484A" />
             </TouchableOpacity>
@@ -778,16 +778,16 @@ export default function HomeScreen() {
             <TouchableOpacity onPress={() => setShowActionPicker(false)} style={{ padding: 4 }} data-testid="action-picker-back-btn">
               <Ionicons name="chevron-back" size={24} color={colors.text} />
             </TouchableOpacity>
-            <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' }}>
+            <Text style={{ fontSize: 19, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' }}>
               {actionPickerTitle}
             </Text>
             <View style={{ width: 32 }} />
           </View>
 
-          <Text style={{ color: colors.textSecondary, fontSize: 13, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>Select a contact to send to</Text>
+          <Text style={{ color: colors.textSecondary, fontSize: 15, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>Select a contact to send to</Text>
           <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
             <TextInput
-              style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontSize: 15, color: colors.text }}
+              style={{ backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, fontSize: 17, color: colors.text }}
               placeholder="Search contacts..."
               placeholderTextColor={colors.textTertiary}
               value={actionSearch}
@@ -813,18 +813,18 @@ export default function HomeScreen() {
                     data-testid={`action-contact-${item._id}`}
                   >
                     <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: `${colors.accent}20`, alignItems: 'center', justifyContent: 'center' }}>
-                      <Text style={{ color: colors.accent, fontWeight: '700', fontSize: 14 }}>{initials}</Text>
+                      <Text style={{ color: colors.accent, fontWeight: '700', fontSize: 16 }}>{initials}</Text>
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>{name}</Text>
-                      {item.phone ? <Text style={{ fontSize: 12, color: colors.textSecondary }}>{item.phone}</Text> : null}
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>{name}</Text>
+                      {item.phone ? <Text style={{ fontSize: 14, color: colors.textSecondary }}>{item.phone}</Text> : null}
                     </View>
                     <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
                   </TouchableOpacity>
                 );
               }}
               ListEmptyComponent={
-                <Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: 24, fontSize: 14 }}>
+                <Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: 24, fontSize: 16 }}>
                   {actionSearch ? 'No contacts found' : 'No contacts yet'}
                 </Text>
               }
@@ -840,7 +840,7 @@ export default function HomeScreen() {
             <TouchableOpacity onPress={() => { if (sendCardStep === 'contact') { setSendCardStep('type'); } else { setShowSendCard(false); } }} style={{ padding: 4 }} data-testid="send-card-back-btn">
               <Ionicons name="chevron-back" size={24} color={colors.text} />
             </TouchableOpacity>
-            <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' }}>
+            <Text style={{ fontSize: 19, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' }}>
               {sendCardStep === 'type' ? 'Send a Card' : 'Select Contact'}
             </Text>
             <View style={{ width: 32 }} />
@@ -848,7 +848,7 @@ export default function HomeScreen() {
 
           {sendCardStep === 'type' ? (
             <>
-              <Text style={{ color: colors.textSecondary, fontSize: 13, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>Choose a card type to create and send</Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 15, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>Choose a card type to create and send</Text>
               <ScrollView style={{ flex: 1, paddingHorizontal: 16 }}>
                 {[
                   { key: 'congrats', label: 'Congrats Card', icon: 'gift', color: '#C9A962' },
@@ -867,7 +867,7 @@ export default function HomeScreen() {
                     <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: `${card.color}18`, alignItems: 'center', justifyContent: 'center' }}>
                       <Ionicons name={card.icon as any} size={24} color={card.color} />
                     </View>
-                    <Text style={{ flex: 1, fontSize: 16, fontWeight: '600', color: colors.text }}>{card.label}</Text>
+                    <Text style={{ flex: 1, fontSize: 18, fontWeight: '600', color: colors.text }}>{card.label}</Text>
                     <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
                   </TouchableOpacity>
                 ))}
@@ -877,7 +877,7 @@ export default function HomeScreen() {
             <>
               <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
                 <TextInput
-                  style={{ backgroundColor: colors.card, borderRadius: 12, padding: 12, fontSize: 15, color: colors.text, borderWidth: 1, borderColor: colors.border }}
+                  style={{ backgroundColor: colors.card, borderRadius: 12, padding: 12, fontSize: 17, color: colors.text, borderWidth: 1, borderColor: colors.border }}
                   placeholder="Search by name, phone, or email..."
                   placeholderTextColor={colors.textTertiary}
                   value={cardSearch}
@@ -892,7 +892,7 @@ export default function HomeScreen() {
                 data-testid="send-card-skip-contact"
               >
                 <Ionicons name="arrow-forward-circle-outline" size={20} color={colors.accent} />
-                <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>Skip  - create without selecting a contact</Text>
+                <Text style={{ color: colors.accent, fontSize: 16, fontWeight: '600' }}>Skip  - create without selecting a contact</Text>
               </TouchableOpacity>
               {cardContactsLoading ? (
                 <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 20 }} />
@@ -911,18 +911,18 @@ export default function HomeScreen() {
                         data-testid={`card-contact-${item._id}`}
                       >
                         <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: `${colors.accent}20`, alignItems: 'center', justifyContent: 'center' }}>
-                          <Text style={{ color: colors.accent, fontWeight: '700', fontSize: 14 }}>{initials}</Text>
+                          <Text style={{ color: colors.accent, fontWeight: '700', fontSize: 16 }}>{initials}</Text>
                         </View>
                         <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>{name}</Text>
-                          {item.phone ? <Text style={{ fontSize: 12, color: colors.textSecondary }}>{item.phone}</Text> : null}
+                          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>{name}</Text>
+                          {item.phone ? <Text style={{ fontSize: 14, color: colors.textSecondary }}>{item.phone}</Text> : null}
                         </View>
                         <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
                       </TouchableOpacity>
                     );
                   }}
                   ListEmptyComponent={
-                    <Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: 24, fontSize: 14 }}>
+                    <Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: 24, fontSize: 16 }}>
                       {cardSearch ? 'No contacts found' : 'No contacts yet'}
                     </Text>
                   }
@@ -939,36 +939,36 @@ export default function HomeScreen() {
 const getStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, zIndex: 10000, position: 'relative' },
-  userName: { fontSize: 18, fontWeight: '700' },
+  userName: { fontSize: 19, fontWeight: '700' },
   scroll: { flex: 1, zIndex: 1 },
   scrollContent: { padding: 16, paddingBottom: 0 },
   tilesGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   tile: { width: '48%', flexBasis: '47%', flexGrow: 1, borderRadius: 14, padding: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1, minHeight: 88 },
   tileIconWrap: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
-  tileLabel: { fontSize: 12, fontWeight: '700', textAlign: 'center' },
+  tileLabel: { fontSize: 14, fontWeight: '700', textAlign: 'center' },
   activitySection: { marginTop: 16 },
   activityHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  sectionTitle: { fontSize: 18, fontWeight: '700' },
-  viewAll: { fontSize: 13, fontWeight: '600' },
+  sectionTitle: { fontSize: 19, fontWeight: '700' },
+  viewAll: { fontSize: 15, fontWeight: '600' },
   emptyActivity: { borderRadius: 14, padding: 24, alignItems: 'center', borderWidth: 1 },
-  emptyText: { fontSize: 13, marginTop: 10, textAlign: 'center', lineHeight: 20 },
+  emptyText: { fontSize: 15, marginTop: 10, textAlign: 'center', lineHeight: 20 },
   activityItem: { flexDirection: 'row', alignItems: 'center', padding: 18, borderRadius: 14, marginBottom: 10, borderWidth: 1 },
   activityIconWrap: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 14 },
   activityContent: { flex: 1 },
-  activityMsg: { fontSize: 15, fontWeight: '600', lineHeight: 20 },
-  activityTime: { fontSize: 13, marginTop: 3 },
+  activityMsg: { fontSize: 17, fontWeight: '600', lineHeight: 20 },
+  activityTime: { fontSize: 15, marginTop: 3 },
   taskItem: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 14, marginBottom: 8, borderWidth: 1 },
   taskDoneBtn: { padding: 4, marginLeft: 8 },
   // Modal shared
   modalOverlay: { flex: 1, justifyContent: 'flex-end' },
   modalContent: { borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 34, maxHeight: '75%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  modalTitle: { fontSize: 20, fontWeight: '700' },
-  searchInput: { borderRadius: 12, padding: 12, fontSize: 15, marginBottom: 8, borderWidth: 1 },
+  modalTitle: { fontSize: 21, fontWeight: '700' },
+  searchInput: { borderRadius: 12, padding: 12, fontSize: 17, marginBottom: 8, borderWidth: 1 },
   importPhoneBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 8, borderRadius: 10, borderWidth: 1, borderStyle: 'dashed' },
   contactRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 0.5, gap: 10 },
   contactAvatar: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  contactName: { fontSize: 14, fontWeight: '600' },
+  contactName: { fontSize: 16, fontWeight: '600' },
   actionBtns: { flexDirection: 'row', gap: 6 },
   actionBtn: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   manualAddBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 12, marginTop: 12 },

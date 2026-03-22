@@ -112,7 +112,7 @@ export default function DialerScreen() {
             <Ionicons name="lock-closed" size={48} color="#FF9500" />
           </View>
           <Text style={{ fontSize: 24, fontWeight: '700', color: colors.text, marginBottom: 12 }}>Access Pending</Text>
-          <Text style={{ fontSize: 16, color: colors.textSecondary, textAlign: 'center', lineHeight: 24 }}>
+          <Text style={{ fontSize: 18, color: colors.textSecondary, textAlign: 'center', lineHeight: 24 }}>
             Your account is being reviewed. You'll have full access once configured.
           </Text>
         </View>
@@ -190,10 +190,10 @@ export default function DialerScreen() {
                 data-testid={`dialer-match-${i}`}
               >
                 <Ionicons name="person-circle" size={20} color={colors.textSecondary} style={{ marginRight: 8 }} />
-                <Text style={{ fontSize: 15, fontWeight: '400', color: colors.text, marginRight: 6 }} numberOfLines={1}>
+                <Text style={{ fontSize: 17, fontWeight: '400', color: colors.text, marginRight: 6 }} numberOfLines={1}>
                   {truncName(c)}
                 </Text>
-                <Text style={{ fontSize: 15, color: colors.textSecondary, flex: 1 }} numberOfLines={1}>
+                <Text style={{ fontSize: 17, color: colors.textSecondary, flex: 1 }} numberOfLines={1}>
                   {formatPhone(c.phone)}
                 </Text>
               </TouchableOpacity>
@@ -205,7 +205,7 @@ export default function DialerScreen() {
                 borderTopWidth: 0.5, borderTopColor: colors.border,
               }}>
                 <Ionicons name="search" size={16} color={colors.textSecondary} style={{ marginRight: 8 }} />
-                <Text style={{ fontSize: 14, color: colors.textSecondary }}>
+                <Text style={{ fontSize: 16, color: colors.textSecondary }}>
                   {moreCount} More Result{moreCount > 1 ? 's' : ''}
                 </Text>
               </View>
@@ -233,7 +233,7 @@ export default function DialerScreen() {
                     {key.num}
                   </Text>
                   {key.letters ? (
-                    <Text style={{ fontSize: 10, fontWeight: '700', color: colors.textSecondary, letterSpacing: 1.5, marginTop: -1 }}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textSecondary, letterSpacing: 1.5, marginTop: -1 }}>
                       {key.letters}
                     </Text>
                   ) : null}

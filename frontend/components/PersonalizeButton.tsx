@@ -80,7 +80,7 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, borderWidth: 1,
   },
-  btnText: { fontSize: 13, fontWeight: '600', color: '#C9A962' },
+  btnText: { fontSize: 15, fontWeight: '600', color: '#C9A962' },
   compactBtn: { padding: 4 },
   overlay: {
     flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end',
@@ -93,8 +93,8 @@ const s = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8,
   },
-  sheetTitle: { fontSize: 17, fontWeight: '700' },
-  sheetSub: { fontSize: 12, paddingHorizontal: 16, paddingBottom: 12 },
+  sheetTitle: { fontSize: 18, fontWeight: '700' },
+  sheetSub: { fontSize: 14, paddingHorizontal: 16, paddingBottom: 12 },
   tagRow: {
     flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -103,11 +103,11 @@ const s = StyleSheet.create({
     width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(201,169,98,0.15)',
     alignItems: 'center', justifyContent: 'center', marginRight: 12,
   },
-  tagLabel: { fontSize: 15, fontWeight: '500' },
-  tagKey: { fontSize: 12, marginTop: 1 },
+  tagLabel: { fontSize: 17, fontWeight: '500' },
+  tagKey: { fontSize: 14, marginTop: 1 },
   pill: {
     backgroundColor: 'rgba(201,169,98,0.2)', borderRadius: 6,
     paddingHorizontal: 8, paddingVertical: 3,
   },
-  pillText: { fontSize: 11, fontWeight: '600', color: '#C9A962' },
+  pillText: { fontSize: 13, fontWeight: '600', color: '#C9A962' },
 });

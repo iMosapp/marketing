@@ -152,7 +152,7 @@ export default function SEOHealthScreen() {
         </View>
         <View style={styles.loadingWrap}>
           <Ionicons name="warning-outline" size={48} color={textSecondary} />
-          <Text style={{ color: textSecondary, fontSize: 15, marginTop: 12, textAlign: 'center' }}>
+          <Text style={{ color: textSecondary, fontSize: 17, marginTop: 12, textAlign: 'center' }}>
             {error ? 'Unable to load SEO score. Pull down to retry.' : 'No data available'}
           </Text>
           <TouchableOpacity onPress={() => { setLoading(true); fetchData(); }} style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#007AFF', borderRadius: 10 }} data-testid="seo-retry-btn">
@@ -396,64 +396,64 @@ export default function SEOHealthScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  headerTitle: { fontSize: 18, fontWeight: '700' },
+  headerTitle: { fontSize: 19, fontWeight: '700' },
   loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   tabRow: { flexDirection: 'row', borderBottomWidth: 1, marginHorizontal: 16 },
   tabBtn: { flex: 1, alignItems: 'center', paddingVertical: 10 },
   tabActive: { borderBottomWidth: 2, borderBottomColor: '#007AFF' },
-  tabText: { fontSize: 15, fontWeight: '600' },
+  tabText: { fontSize: 17, fontWeight: '600' },
   scroll: { padding: 16 },
   // Score Card
   scoreCard: { borderRadius: 20, padding: 28, alignItems: 'center', marginBottom: 20 },
   scoreCircleWrap: { marginBottom: 12 },
   scoreCircle: { width: 120, height: 120, borderRadius: 60, borderWidth: 6, justifyContent: 'center', alignItems: 'center' },
   scoreNum: { fontSize: 40, fontWeight: '900' },
-  scoreOf: { fontSize: 14, fontWeight: '500', marginTop: -4 },
-  gradeText: { fontSize: 20, fontWeight: '800', marginBottom: 4 },
-  gradeSubtext: { fontSize: 14, textAlign: 'center', lineHeight: 20 },
+  scoreOf: { fontSize: 16, fontWeight: '500', marginTop: -4 },
+  gradeText: { fontSize: 21, fontWeight: '800', marginBottom: 4 },
+  gradeSubtext: { fontSize: 16, textAlign: 'center', lineHeight: 20 },
   shareBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 16, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, borderWidth: 1.5 },
-  shareBtnText: { fontSize: 14, fontWeight: '700' },
+  shareBtnText: { fontSize: 16, fontWeight: '700' },
   // Factors
-  sectionTitle: { fontSize: 17, fontWeight: '700', marginBottom: 12, marginTop: 4 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12, marginTop: 4 },
   factorCard: { borderRadius: 14, padding: 16, marginBottom: 10 },
   factorHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   factorIcon: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
   factorInfo: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  factorLabel: { fontSize: 15, fontWeight: '600' },
-  factorScore: { fontSize: 14, fontWeight: '600' },
+  factorLabel: { fontSize: 17, fontWeight: '600' },
+  factorScore: { fontSize: 16, fontWeight: '600' },
   progressBg: { height: 6, borderRadius: 3, overflow: 'hidden' },
   progressFill: { height: 6, borderRadius: 3 },
   // Checklist
   checklist: { marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   checkRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingRight: 12 },
-  checkLabel: { fontSize: 12 },
+  checkLabel: { fontSize: 14 },
   // Details
   detailsRow: { marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   detailChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
-  detailValue: { fontSize: 14, fontWeight: '700' },
-  detailText: { fontSize: 11 },
+  detailValue: { fontSize: 16, fontWeight: '700' },
+  detailText: { fontSize: 13 },
   // Tips
   tipsCard: { borderRadius: 14, overflow: 'hidden' },
   tipRow: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
   tipBadge: { backgroundColor: '#34C75920', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, minWidth: 38, alignItems: 'center' },
-  tipBadgeText: { color: '#34C759', fontWeight: '800', fontSize: 13 },
-  tipText: { fontSize: 14, flex: 1, lineHeight: 19 },
+  tipBadgeText: { color: '#34C759', fontWeight: '800', fontSize: 15 },
+  tipText: { fontSize: 16, flex: 1, lineHeight: 19 },
   fixBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, backgroundColor: '#007AFF12', alignSelf: 'flex-start', marginTop: 6 },
-  fixBtnText: { fontSize: 12, fontWeight: '700', color: '#007AFF' },
+  fixBtnText: { fontSize: 14, fontWeight: '700', color: '#007AFF' },
   // Guide button
   guideBtn: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 14, borderWidth: 1, marginBottom: 16 },
   guideBtnIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  guideBtnTitle: { fontSize: 15, fontWeight: '600' },
-  guideBtnSub: { fontSize: 12, marginTop: 1 },
+  guideBtnTitle: { fontSize: 17, fontWeight: '600' },
+  guideBtnSub: { fontSize: 14, marginTop: 1 },
   // Team
   teamRow: { borderRadius: 14, padding: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
   teamRank: { width: 36, alignItems: 'center' },
-  teamRankNum: { fontSize: 16, fontWeight: '800' },
+  teamRankNum: { fontSize: 18, fontWeight: '800' },
   teamInfo: { flex: 1, marginLeft: 8 },
-  teamName: { fontSize: 15, fontWeight: '600' },
-  teamTitle: { fontSize: 12, marginTop: 1 },
+  teamName: { fontSize: 17, fontWeight: '600' },
+  teamTitle: { fontSize: 14, marginTop: 1 },
   teamScoreWrap: { alignItems: 'flex-end' },
   teamScoreNum: { fontSize: 22, fontWeight: '900' },
-  teamGrade: { fontSize: 11 },
+  teamGrade: { fontSize: 13 },
   emptyCard: { borderRadius: 14, padding: 24, alignItems: 'center' },
 });

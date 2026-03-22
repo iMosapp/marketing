@@ -603,7 +603,7 @@ export default function PermissionTemplatesPage() {
           <View style={s.centerLoader}>
             <Ionicons name="document-text-outline" size={48} color={colors.textSecondary} />
             <Text style={[s.emptyText, { marginTop: 12 }]}>No activity yet</Text>
-            <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginTop: 4, paddingHorizontal: 40 }}>
+            <Text style={{ fontSize: 15, color: colors.textSecondary, textAlign: 'center', marginTop: 4, paddingHorizontal: 40 }}>
               Activity will appear here when templates are created, edited, deleted, or applied to users.
             </Text>
           </View>
@@ -772,30 +772,30 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   backBtn: { padding: 4 },
   addBtn: { padding: 4 },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
   list: { padding: 16, paddingBottom: 40 },
-  sectionLabel: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
+  sectionLabel: { fontSize: 15, fontWeight: '600', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
   card: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
     borderRadius: 12, padding: 14, marginBottom: 10, gap: 12,
   },
   cardIcon: { width: 40, height: 40, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  cardName: { fontSize: 15, fontWeight: '600', color: colors.text },
-  cardDesc: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  cardName: { fontSize: 17, fontWeight: '600', color: colors.text },
+  cardDesc: { fontSize: 14, color: colors.textSecondary, marginTop: 2 },
   roleBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  roleBadgeText: { fontSize: 11, fontWeight: '600' },
+  roleBadgeText: { fontSize: 13, fontWeight: '600' },
   applyBtn: { padding: 6 },
   deleteBtn: { padding: 6 },
   emptyCard: {
     alignItems: 'center', paddingVertical: 40, backgroundColor: colors.card,
     borderRadius: 12, borderWidth: 1, borderColor: colors.surface, borderStyle: 'dashed',
   },
-  emptyCardText: { fontSize: 15, color: colors.textSecondary, marginTop: 12 },
+  emptyCardText: { fontSize: 17, color: colors.textSecondary, marginTop: 12 },
   emptyCardBtn: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#007AFF',
     paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, marginTop: 16, gap: 6,
   },
-  emptyCardBtnText: { color: '#FFF', fontWeight: '600', fontSize: 14 },
+  emptyCardBtnText: { color: '#FFF', fontWeight: '600', fontSize: 16 },
 
   // Modal shared
   modal: { flex: 1, backgroundColor: colors.bg },
@@ -804,29 +804,29 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 12,
     borderBottomWidth: 1, borderBottomColor: colors.surface,
   },
-  modalTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
+  modalTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
   modalBody: { flex: 1, padding: 16 },
-  cancelText: { fontSize: 16, color: colors.textSecondary },
-  saveText: { fontSize: 16, fontWeight: '600', color: '#007AFF' },
+  cancelText: { fontSize: 18, color: colors.textSecondary },
+  saveText: { fontSize: 18, fontWeight: '600', color: '#007AFF' },
 
   // Detail
   detailBanner: { flexDirection: 'row', alignItems: 'center', padding: 16, borderRadius: 12, gap: 16, marginBottom: 20 },
   detailIcon: { width: 56, height: 56, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
-  detailName: { fontSize: 20, fontWeight: '700', color: colors.text },
-  detailDesc: { fontSize: 14, color: colors.textSecondary, marginTop: 4 },
+  detailName: { fontSize: 21, fontWeight: '700', color: colors.text },
+  detailDesc: { fontSize: 16, color: colors.textSecondary, marginTop: 4 },
   prebuiltNotice: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 },
-  prebuiltText: { fontSize: 12, color: colors.textSecondary, fontStyle: 'italic' },
+  prebuiltText: { fontSize: 14, color: colors.textSecondary, fontStyle: 'italic' },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
   permSection: { backgroundColor: colors.card, borderRadius: 12, padding: 14, marginBottom: 12 },
   permSectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  permSectionTitle: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
+  permSectionTitle: { flex: 1, fontSize: 17, fontWeight: '600', color: colors.text },
   permItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6, paddingLeft: 26 },
-  permItemLabel: { fontSize: 14, color: colors.text },
+  permItemLabel: { fontSize: 16, color: colors.text },
 
   // Editor
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 8, marginTop: 16 },
+  fieldLabel: { fontSize: 15, fontWeight: '600', color: colors.textSecondary, marginBottom: 8, marginTop: 16 },
   input: {
-    backgroundColor: colors.card, borderRadius: 10, padding: 14, fontSize: 16,
+    backgroundColor: colors.card, borderRadius: 10, padding: 14, fontSize: 18,
     color: colors.text, borderWidth: 1, borderColor: colors.surface,
   },
   roleRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
@@ -834,7 +834,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8,
     borderRadius: 20, borderWidth: 1.5, borderColor: colors.surface, gap: 6, backgroundColor: colors.card,
   },
-  roleChipText: { fontSize: 13, fontWeight: '600', color: colors.text },
+  roleChipText: { fontSize: 15, fontWeight: '600', color: colors.text },
   iconColorRow: { flexDirection: 'row', gap: 6, marginBottom: 8 },
   iconPick: {
     width: 36, height: 36, borderRadius: 8, borderWidth: 1.5, borderColor: colors.surface,
@@ -845,27 +845,27 @@ const getStyles = (colors: any) => StyleSheet.create({
   colorPickActive: { borderWidth: 3, borderColor: colors.text },
   editorPermSection: { backgroundColor: colors.card, borderRadius: 12, padding: 12, marginBottom: 10 },
   editorPermHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  editorPermTitle: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
+  editorPermTitle: { flex: 1, fontSize: 17, fontWeight: '600', color: colors.text },
   editorPermItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6, paddingLeft: 26 },
-  editorPermItemLabel: { fontSize: 14, color: colors.text },
+  editorPermItemLabel: { fontSize: 16, color: colors.text },
 
   // Apply modal
   applyBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 10, marginHorizontal: 16, marginTop: 8, borderRadius: 10 },
-  applyBannerText: { fontSize: 15, fontWeight: '600' },
+  applyBannerText: { fontSize: 17, fontWeight: '600' },
   searchRow: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
     borderRadius: 10, marginHorizontal: 16, marginVertical: 12, paddingHorizontal: 12, paddingVertical: 8, gap: 8,
   },
-  searchInput: { flex: 1, fontSize: 15, color: colors.text, padding: 4 },
+  searchInput: { flex: 1, fontSize: 17, color: colors.text, padding: 4 },
   userRow: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
     borderRadius: 12, padding: 14, marginBottom: 8, gap: 12,
   },
   userAvatar: { width: 40, height: 40, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
-  userName: { fontSize: 15, fontWeight: '600', color: colors.text },
-  userEmail: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
-  userCurrentTemplate: { fontSize: 11, color: '#C9A962', marginTop: 2, fontStyle: 'italic' },
-  emptyText: { textAlign: 'center', color: colors.textSecondary, marginTop: 40, fontSize: 15 },
+  userName: { fontSize: 17, fontWeight: '600', color: colors.text },
+  userEmail: { fontSize: 14, color: colors.textSecondary, marginTop: 2 },
+  userCurrentTemplate: { fontSize: 13, color: '#C9A962', marginTop: 2, fontStyle: 'italic' },
+  emptyText: { textAlign: 'center', color: colors.textSecondary, marginTop: 40, fontSize: 17 },
 
   // Audit log button
   auditLogBtn: {
@@ -873,7 +873,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 12, padding: 14, marginTop: 24, gap: 10,
     borderWidth: 1, borderColor: 'rgba(201,169,98,0.2)',
   },
-  auditLogBtnText: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.text },
+  auditLogBtnText: { flex: 1, fontSize: 17, fontWeight: '600', color: colors.text },
 
   // Audit log entries
   auditEntry: {
@@ -881,8 +881,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 12, padding: 12, marginBottom: 8, gap: 10,
   },
   auditIconWrap: { width: 34, height: 34, borderRadius: 9, justifyContent: 'center', alignItems: 'center' },
-  auditDesc: { fontSize: 13, color: colors.text, lineHeight: 18 },
-  auditTime: { fontSize: 11, color: colors.textSecondary, marginTop: 3 },
+  auditDesc: { fontSize: 15, color: colors.text, lineHeight: 18 },
+  auditTime: { fontSize: 13, color: colors.textSecondary, marginTop: 3 },
   auditActionBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
-  auditActionText: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
+  auditActionText: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
 });

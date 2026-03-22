@@ -357,7 +357,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 40,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -372,7 +372,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 16,
   },
   formTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 16,
@@ -381,12 +381,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 14,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     marginBottom: 12,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginBottom: 8,
   },
@@ -413,7 +413,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   discountOptionText: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
     fontWeight: '600',
   },
@@ -430,7 +430,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   switchLabel: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   createButton: {
@@ -447,7 +447,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     opacity: 0.6,
   },
   createButtonText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -456,7 +456,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 12,
@@ -466,12 +466,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 40,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     marginTop: 12,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 4,
   },
@@ -496,7 +496,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   codeText: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '700',
     color: colors.text,
     fontFamily: 'monospace',
@@ -507,11 +507,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
   },
   discountBadgeText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '700',
   },
   codeDescription: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginBottom: 12,
   },
@@ -526,7 +526,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   codeDetailText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   codePlanTypes: {
@@ -543,7 +543,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 6,
   },
   planTypeText: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     textTransform: 'capitalize',
   },
@@ -553,7 +553,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   deactivateButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#FF3B30',
     fontWeight: '500',
   },
@@ -562,7 +562,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   inactiveBadgeText: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     fontWeight: '600',
   },

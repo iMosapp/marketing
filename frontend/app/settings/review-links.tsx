@@ -298,7 +298,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 60,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -307,7 +307,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'flex-end',
   },
   saveButtonText: {
-    fontSize: 17,
+    fontSize: 18,
     color: '#007AFF',
     fontWeight: '600',
   },
@@ -325,12 +325,12 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   infoText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     lineHeight: 20,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 12,
@@ -356,13 +356,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   platformName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 4,
   },
   linkInput: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.text,
     backgroundColor: colors.surface,
     borderRadius: 8,
@@ -370,7 +370,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 4,
   },
   linkUrl: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   linkActions: {
@@ -392,7 +392,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 8,
   },
   addCustomLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 12,
@@ -401,7 +401,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 14,
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
     marginBottom: 12,
   },
@@ -415,7 +415,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   addButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },

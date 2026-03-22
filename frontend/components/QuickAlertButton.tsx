@@ -419,7 +419,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 4,
   },
   countText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
     color: colors.text,
   },
@@ -449,7 +449,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '700',
     color: COLORS.textPrimary,
   },
@@ -472,7 +472,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: COLORS.accent,
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: COLORS.textSecondary,
   },
@@ -492,13 +492,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: COLORS.textPrimary,
     marginTop: 12,
   },
   emptySubtext: {
-    fontSize: 13,
+    fontSize: 15,
     color: COLORS.textSecondary,
     marginTop: 4,
   },
@@ -534,7 +534,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 8,
   },
   senderInitials: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: COLORS.textPrimary,
   },
@@ -542,20 +542,20 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   senderName: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: COLORS.textPrimary,
   },
   channelName: {
-    fontSize: 11,
+    fontSize: 13,
     color: COLORS.textSecondary,
   },
   messageTime: {
-    fontSize: 11,
+    fontSize: 13,
     color: COLORS.textSecondary,
   },
   messageContent: {
-    fontSize: 13,
+    fontSize: 15,
     color: COLORS.textSecondary,
     lineHeight: 18,
   },
@@ -569,7 +569,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 6,
   },
   openChatText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: COLORS.accent,
   },
@@ -578,7 +578,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 12,
   },
   sendLabel: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: COLORS.textSecondary,
     marginBottom: 12,
@@ -606,7 +606,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   presetText: {
     flex: 1,
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '500',
     color: COLORS.textPrimary,
   },
@@ -617,7 +617,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderTopColor: colors.surface,
   },
   customLabel: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: COLORS.textSecondary,
     marginBottom: 8,
@@ -634,7 +634,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     color: COLORS.textPrimary,
-    fontSize: 14,
+    fontSize: 16,
   },
   customSendButton: {
     width: 36,
@@ -653,13 +653,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   successText: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '700',
     color: COLORS.success,
     marginTop: 12,
   },
   successSubtext: {
-    fontSize: 13,
+    fontSize: 15,
     color: COLORS.textSecondary,
     textAlign: 'center',
     marginTop: 4,

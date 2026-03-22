@@ -163,7 +163,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -175,7 +175,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   countText: {
     color: '#FF3B30',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
   },
   listContent: {
@@ -206,7 +206,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   campaignName: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
     flex: 1,
@@ -218,17 +218,17 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 4,
   },
   statusText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '500',
     textTransform: 'capitalize',
   },
   typeText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#FF3B30',
     marginTop: 2,
   },
   storeName: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -244,11 +244,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   statText: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
   },
   date: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6E6E73',
     marginLeft: 'auto',
   },
@@ -259,7 +259,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingTop: 100,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textSecondary,
     marginTop: 12,
   },

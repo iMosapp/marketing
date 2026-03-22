@@ -184,7 +184,7 @@ export default function AccountHealthDashboard() {
             {[30, 90].map(p => (
               <TouchableOpacity key={p} onPress={() => setPeriod(p)}
                 style={[styles.periodBtn, period === p && { backgroundColor: '#007AFF', borderColor: '#007AFF' }, { borderColor: colors.surface, backgroundColor: colors.card }]}>
-                <Text style={{ fontSize: 11, fontWeight: '600', color: period === p ? '#FFF' : colors.textSecondary }}>{p}d</Text>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: period === p ? '#FFF' : colors.textSecondary }}>{p}d</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -194,14 +194,14 @@ export default function AccountHealthDashboard() {
         <View style={[styles.tabBar, { borderColor: colors.surface }]}>
           <TouchableOpacity onPress={() => setTab('overview')} style={[styles.tabItem, tab === 'overview' && styles.tabItemActive]} data-testid="tab-overview">
             <Ionicons name="pulse" size={14} color={tab === 'overview' ? '#007AFF' : colors.textSecondary} />
-            <Text style={{ fontSize: 13, fontWeight: '600', color: tab === 'overview' ? '#007AFF' : colors.textSecondary }}>Overview</Text>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: tab === 'overview' ? '#007AFF' : colors.textSecondary }}>Overview</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setTab('scheduled')} style={[styles.tabItem, tab === 'scheduled' && styles.tabItemActive]} data-testid="tab-scheduled">
             <Ionicons name="calendar" size={14} color={tab === 'scheduled' ? '#C9A962' : colors.textSecondary} />
-            <Text style={{ fontSize: 13, fontWeight: '600', color: tab === 'scheduled' ? '#C9A962' : colors.textSecondary }}>Scheduled Reports</Text>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: tab === 'scheduled' ? '#C9A962' : colors.textSecondary }}>Scheduled Reports</Text>
             {schedules.filter(s => s.active).length > 0 && (
               <View style={{ backgroundColor: '#C9A962', borderRadius: 8, paddingHorizontal: 5, paddingVertical: 1 }}>
-                <Text style={{ color: '#FFF', fontSize: 10, fontWeight: '700' }}>{schedules.filter(s => s.active).length}</Text>
+                <Text style={{ color: '#FFF', fontSize: 12, fontWeight: '700' }}>{schedules.filter(s => s.active).length}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -247,7 +247,7 @@ export default function AccountHealthDashboard() {
           {FILTERS.map(f => (
             <TouchableOpacity key={f} onPress={() => setFilter(f)}
               style={[styles.filterPill, { backgroundColor: filter === f ? '#007AFF' : colors.card, borderColor: filter === f ? '#007AFF' : colors.surface }]}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: filter === f ? '#FFF' : colors.textSecondary }}>{f}</Text>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: filter === f ? '#FFF' : colors.textSecondary }}>{f}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -281,7 +281,7 @@ export default function AccountHealthDashboard() {
                   backgroundColor: a.days_since_login <= 3 ? '#34C75915' : a.days_since_login <= 14 ? '#FF950015' : '#FF3B3015',
                 }]}>
                   <Text style={{
-                    fontSize: 10, fontWeight: '600',
+                    fontSize: 12, fontWeight: '600',
                     color: a.days_since_login <= 3 ? '#34C759' : a.days_since_login <= 14 ? '#FF9500' : '#FF3B30',
                   }}>
                     {a.days_since_login <= 0 ? 'Today' : a.days_since_login >= 999 ? 'Never' : `${a.days_since_login}d ago`}
@@ -340,7 +340,7 @@ export default function AccountHealthDashboard() {
               data-testid="new-schedule-btn"
             >
               <Ionicons name="add-circle" size={18} color="#C9A962" />
-              <Text style={{ color: '#C9A962', fontSize: 14, fontWeight: '600' }}>New Monthly Schedule</Text>
+              <Text style={{ color: '#C9A962', fontSize: 16, fontWeight: '600' }}>New Monthly Schedule</Text>
             </TouchableOpacity>
 
             <Text style={[styles.schedInfo, { color: colors.textSecondary }]}>
@@ -359,7 +359,7 @@ export default function AccountHealthDashboard() {
                       data-testid={`scope-${s}-btn`}
                     >
                       <Ionicons name={s === 'user' ? 'person' : 'business'} size={14} color={schedScope === s ? '#FFF' : colors.textSecondary} />
-                      <Text style={{ color: schedScope === s ? '#FFF' : colors.textSecondary, fontSize: 12, fontWeight: '600' }}>{s === 'user' ? 'Individual' : 'Organization'}</Text>
+                      <Text style={{ color: schedScope === s ? '#FFF' : colors.textSecondary, fontSize: 14, fontWeight: '600' }}>{s === 'user' ? 'Individual' : 'Organization'}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -385,7 +385,7 @@ export default function AccountHealthDashboard() {
                         <View style={[styles.miniDot, { backgroundColor: a.health.color }]}>
                           <Text style={{ color: '#FFF', fontSize: 8, fontWeight: '800' }}>{a.health.score}</Text>
                         </View>
-                        <Text style={{ color: colors.text, fontSize: 11 }} numberOfLines={1}>{a.name}</Text>
+                        <Text style={{ color: colors.text, fontSize: 13 }} numberOfLines={1}>{a.name}</Text>
                       </TouchableOpacity>
                     ))}
                   </ScrollView>
@@ -415,11 +415,11 @@ export default function AccountHealthDashboard() {
 
                 <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
                   <TouchableOpacity onPress={() => setShowNewSched(false)} style={[styles.cancelBtn, { borderColor: colors.surface }]} data-testid="cancel-new-sched-btn">
-                    <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 14 }}>Cancel</Text>
+                    <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 16 }}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={createSchedule} disabled={creatingSched} style={[styles.sendReportBtn, creatingSched && { opacity: 0.6 }]} data-testid="create-schedule-btn">
                     {creatingSched ? <ActivityIndicator size="small" color="#FFF" /> : <Ionicons name="calendar-outline" size={14} color="#FFF" />}
-                    <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 14 }}>{creatingSched ? 'Creating...' : 'Schedule'}</Text>
+                    <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 16 }}>{creatingSched ? 'Creating...' : 'Schedule'}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -432,7 +432,7 @@ export default function AccountHealthDashboard() {
               <View style={styles.emptyState}>
                 <Ionicons name="calendar-outline" size={40} color={colors.textSecondary} />
                 <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No scheduled reports yet</Text>
-                <Text style={{ color: colors.textSecondary, fontSize: 12, textAlign: 'center', lineHeight: 18 }}>
+                <Text style={{ color: colors.textSecondary, fontSize: 14, textAlign: 'center', lineHeight: 18 }}>
                   Create a monthly schedule to automatically send health snapshots to account contacts on the last day of each month.
                 </Text>
               </View>
@@ -444,10 +444,10 @@ export default function AccountHealthDashboard() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.accountName, { color: colors.text }]}>{s.target_name || s.target_id}</Text>
-                    <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
+                    <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
                       {s.recipient_email} {s.note ? `— "${s.note}"` : ''}
                     </Text>
-                    <Text style={{ fontSize: 10, color: '#888', marginTop: 2 }}>
+                    <Text style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
                       Monthly &bull; {s.last_sent_at ? `Last sent: ${new Date(s.last_sent_at).toLocaleDateString()}` : 'Not yet sent'}
                     </Text>
                   </View>
@@ -509,11 +509,11 @@ export default function AccountHealthDashboard() {
 
               <View style={styles.modalActions}>
                 <TouchableOpacity onPress={() => setSendModal(null)} style={[styles.cancelBtn, { borderColor: colors.surface }]} data-testid="cancel-send-report-btn">
-                  <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 14 }}>Cancel</Text>
+                  <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 16 }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handleSendReport} disabled={sending} style={[styles.sendReportBtn, sending && { opacity: 0.6 }]} data-testid="confirm-send-report-btn">
                   {sending ? <ActivityIndicator size="small" color="#FFF" /> : <Ionicons name="paper-plane" size={14} color="#FFF" />}
-                  <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 14 }}>{sending ? 'Sending...' : 'Send Report'}</Text>
+                  <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 16 }}>{sending ? 'Sending...' : 'Send Report'}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -531,31 +531,31 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
   backBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 22, fontWeight: '700' },
-  subtitle: { fontSize: 13, marginTop: 2 },
+  subtitle: { fontSize: 15, marginTop: 2 },
   periodRow: { flexDirection: 'row', gap: 6 },
   periodBtn: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 1 },
   summaryRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
   summaryCard: { flex: 1, alignItems: 'center', padding: 14, borderRadius: 14, borderWidth: 1.5, gap: 4 },
   summaryValue: { fontSize: 22, fontWeight: '800' },
-  summaryLabel: { fontSize: 11, fontWeight: '600' },
+  summaryLabel: { fontSize: 13, fontWeight: '600' },
   searchBox: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 10, borderWidth: 1, marginBottom: 10 },
-  searchInput: { flex: 1, fontSize: 14 },
+  searchInput: { flex: 1, fontSize: 16 },
   filterRow: { flexDirection: 'row', gap: 6, marginBottom: 14 },
   filterPill: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
   emptyState: { alignItems: 'center', paddingVertical: 40, gap: 10 },
-  emptyText: { fontSize: 14 },
+  emptyText: { fontSize: 16 },
   accountRow: { padding: 12, borderRadius: 12, borderWidth: 1, marginBottom: 6 },
   accountTopRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   accountInfo: { flex: 1, minWidth: 0 },
   accountBottomRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: 'rgba(255,255,255,0.08)' },
   accountActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   healthDot: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
-  healthScore: { color: '#FFF', fontSize: 12, fontWeight: '800' },
-  accountName: { fontSize: 14, fontWeight: '600' },
-  accountMeta: { fontSize: 11, marginTop: 2 },
+  healthScore: { color: '#FFF', fontSize: 14, fontWeight: '800' },
+  accountName: { fontSize: 16, fontWeight: '600' },
+  accountMeta: { fontSize: 13, marginTop: 2 },
   metricsRow: { flexDirection: 'row', gap: 12 },
   metricItem: { alignItems: 'center' },
-  metricValue: { fontSize: 14, fontWeight: '700' },
+  metricValue: { fontSize: 16, fontWeight: '700' },
   metricLabel: { fontSize: 9, marginTop: 1 },
   loginBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
   quickSendBtn: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
@@ -563,10 +563,10 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   modalContent: { width: '100%', maxWidth: 460, borderRadius: 16, borderWidth: 1, padding: 24 },
   modalHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  modalTitle: { flex: 1, fontSize: 18, fontWeight: '700' },
-  modalDesc: { fontSize: 13, marginBottom: 16, lineHeight: 18 },
-  inputLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4, marginTop: 8 },
-  modalInput: { fontSize: 14, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, borderWidth: 1 },
+  modalTitle: { flex: 1, fontSize: 19, fontWeight: '700' },
+  modalDesc: { fontSize: 15, marginBottom: 16, lineHeight: 18 },
+  inputLabel: { fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4, marginTop: 8 },
+  modalInput: { fontSize: 16, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, borderWidth: 1 },
   textarea: { minHeight: 70, textAlignVertical: 'top' },
   modalActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
   cancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, borderWidth: 1, alignItems: 'center' },
@@ -577,9 +577,9 @@ const styles = StyleSheet.create({
   tabItemActive: { borderBottomColor: '#007AFF' },
   // Scheduled reports
   newSchedBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 10, borderWidth: 1, borderStyle: 'dashed', marginBottom: 10 },
-  schedInfo: { fontSize: 12, marginBottom: 14, lineHeight: 17 },
+  schedInfo: { fontSize: 14, marginBottom: 14, lineHeight: 17 },
   schedForm: { borderRadius: 12, borderWidth: 1, padding: 16, marginBottom: 14 },
-  schedFormTitle: { fontSize: 15, fontWeight: '700', marginBottom: 12 },
+  schedFormTitle: { fontSize: 17, fontWeight: '700', marginBottom: 12 },
   scopeRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
   scopeBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, borderWidth: 1 },
   quickPick: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, marginRight: 6 },

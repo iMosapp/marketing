@@ -372,7 +372,7 @@ export default function ManageTrainingPage() {
               {isExpanded && (
                 <View style={s.lessonsContainer}>
                   {lessons.length === 0 && (
-                    <Text style={{ color: colors.textTertiary, fontSize: 13, textAlign: 'center', paddingVertical: 12 }}>No lessons yet. Add one below.</Text>
+                    <Text style={{ color: colors.textTertiary, fontSize: 15, textAlign: 'center', paddingVertical: 12 }}>No lessons yet. Add one below.</Text>
                   )}
                   {lessons.map((lesson, idx) => (
                     <View key={lesson.id} style={s.lessonRow}>
@@ -381,7 +381,7 @@ export default function ManageTrainingPage() {
                         <Text style={s.lessonTitle}>{lesson.title}</Text>
                         <Text style={s.lessonDesc}>{lesson.description || 'No description'}</Text>
                       </View>
-                      <Text style={{ fontSize: 11, color: colors.textTertiary, marginRight: 8 }}>{lesson.duration}</Text>
+                      <Text style={{ fontSize: 13, color: colors.textTertiary, marginRight: 8 }}>{lesson.duration}</Text>
                       <TouchableOpacity onPress={() => startEditLesson(lesson)} style={s.iconBtn} data-testid={`edit-lesson-${lesson.slug}`}>
                         <Ionicons name="pencil" size={14} color={colors.textSecondary} />
                       </TouchableOpacity>
@@ -408,7 +408,7 @@ export default function ManageTrainingPage() {
                   ) : (
                     <TouchableOpacity onPress={() => setAddingLessonTo(track.id)} style={s.addLessonBtn} data-testid={`add-lesson-to-${track.slug}`}>
                       <Ionicons name="add-circle" size={18} color={track.color || '#C9A962'} />
-                      <Text style={{ color: track.color || '#C9A962', fontWeight: '600', fontSize: 14 }}>Add Lesson</Text>
+                      <Text style={{ color: track.color || '#C9A962', fontWeight: '600', fontSize: 16 }}>Add Lesson</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -420,8 +420,8 @@ export default function ManageTrainingPage() {
         {tracks.length === 0 && (
           <View style={s.emptyState}>
             <Ionicons name="school-outline" size={48} color={colors.textTertiary} />
-            <Text style={{ color: colors.textSecondary, fontSize: 16, marginTop: 12 }}>No training tracks yet</Text>
-            <Text style={{ color: colors.textTertiary, fontSize: 13, marginTop: 4 }}>Tap + to create your first track</Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 18, marginTop: 12 }}>No training tracks yet</Text>
+            <Text style={{ color: colors.textTertiary, fontSize: 15, marginTop: 4 }}>Tap + to create your first track</Text>
           </View>
         )}
       </ScrollView>
@@ -432,36 +432,36 @@ export default function ManageTrainingPage() {
 const getS = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' },
   backBtn: { width: 36, height: 36, borderRadius: 12, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
   addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#C9A96218', alignItems: 'center', justifyContent: 'center' },
   saveBtn: { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#C9A962', borderRadius: 8 },
-  saveBtnText: { color: '#000', fontWeight: '700', fontSize: 14 },
+  saveBtnText: { color: '#000', fontWeight: '700', fontSize: 16 },
   content: { padding: 16, paddingBottom: 60 },
   formContent: { padding: 20, paddingBottom: 60 },
   infoBanner: { flexDirection: 'row', gap: 10, alignItems: 'flex-start', backgroundColor: '#C9A96210', borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: '#C9A96230' },
-  infoText: { flex: 1, fontSize: 13, color: colors.textSecondary, lineHeight: 19 },
+  infoText: { flex: 1, fontSize: 15, color: colors.textSecondary, lineHeight: 19 },
   trackCard: { backgroundColor: colors.card, borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border },
   trackDot: { width: 12, height: 12, borderRadius: 6 },
-  trackTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
-  trackMeta: { fontSize: 12, color: colors.textTertiary, marginTop: 2 },
+  trackTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
+  trackMeta: { fontSize: 14, color: colors.textTertiary, marginTop: 2 },
   iconBtn: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   rolePill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
-  rolePillText: { fontSize: 11, fontWeight: '600' },
+  rolePillText: { fontSize: 13, fontWeight: '600' },
   lessonsContainer: { marginTop: 14, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.border },
   lessonRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
   lessonNumBadge: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  lessonNumText: { fontSize: 11, fontWeight: '700', color: colors.textSecondary },
-  lessonTitle: { fontSize: 14, fontWeight: '600', color: colors.text },
-  lessonDesc: { fontSize: 12, color: colors.textTertiary, marginTop: 1 },
+  lessonNumText: { fontSize: 13, fontWeight: '700', color: colors.textSecondary },
+  lessonTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
+  lessonDesc: { fontSize: 14, color: colors.textTertiary, marginTop: 1 },
   addLessonBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12, marginTop: 4 },
   addLessonForm: { marginTop: 10, gap: 10, padding: 12, backgroundColor: colors.bg, borderRadius: 10 },
   actionBtn: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 8 },
-  label: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 6, marginTop: 12 },
-  input: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: colors.text },
+  label: { fontSize: 15, fontWeight: '600', color: colors.textSecondary, marginBottom: 6, marginTop: 12 },
+  input: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 17, color: colors.text },
   textArea: { minHeight: 200, textAlignVertical: 'top' },
   colorDot: { width: 32, height: 32, borderRadius: 16 },
   roleChip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.card },
-  roleChipText: { fontSize: 13, fontWeight: '600', color: colors.text },
+  roleChipText: { fontSize: 15, fontWeight: '600', color: colors.text },
   emptyState: { alignItems: 'center', paddingVertical: 60 },
 });

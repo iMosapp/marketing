@@ -643,7 +643,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 32,
   },
   errorText: {
-    fontSize: 18,
+    fontSize: 19,
     color: colors.text,
     marginTop: 16,
     marginBottom: 24,
@@ -653,7 +653,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   backLinkText: {
     color: '#007AFF',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
   header: {
@@ -672,7 +672,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   title: {
     flex: 1,
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
     textAlign: 'center',
@@ -682,7 +682,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   saveButtonText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -690,7 +690,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   editButtonText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -720,7 +720,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 4,
   },
   statusText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
   },
   methodBadge: {
@@ -729,7 +729,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 16,
   },
   methodText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
   },
   statsGrid: {
@@ -751,7 +751,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     fontWeight: '500',
   },
@@ -765,7 +765,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   credentialTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
   },
@@ -780,12 +780,12 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   credentialValue: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 15,
     color: colors.text,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
   credentialHint: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6E6E73',
     marginTop: 6,
     marginLeft: 4,
@@ -804,7 +804,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 12,
@@ -815,7 +815,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 14,
   },
   codeText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#34C759',
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
     lineHeight: 18,
@@ -829,7 +829,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 8,
   },
   copyExampleText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#007AFF',
     fontWeight: '500',
   },
@@ -837,7 +837,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 20,
   },
   descriptionText: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
     lineHeight: 22,
   },
@@ -852,7 +852,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 20,
   },
   deleteButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#FF3B30',
   },
@@ -861,7 +861,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 24,
   },
   label: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 8,
@@ -871,7 +871,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.surface,
@@ -898,7 +898,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF10',
   },
   teamOptionText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   teamOptionTextSelected: {
@@ -922,7 +922,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
   },
   methodOptionText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
   },
   toggleRow: {
@@ -934,7 +934,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 14,
   },
   toggleLabel: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   toggle: {
@@ -962,7 +962,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 8,
   },
   cancelButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textSecondary,
     fontWeight: '500',
   },
@@ -986,14 +986,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '700',
     color: colors.text,
     marginBottom: 8,
     textAlign: 'center',
   },
   modalMessage: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
@@ -1012,7 +1012,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   modalCancelText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -1024,7 +1024,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   modalDeleteText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },

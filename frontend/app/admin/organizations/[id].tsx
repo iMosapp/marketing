@@ -661,7 +661,7 @@ export default function OrganizationDetailScreen() {
               <View style={styles.toggleRow}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.inputLabel}>Full-Resolution Photos</Text>
-                  <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>
+                  <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 2 }}>
                     Preserves uncompressed originals for print (calendars, etc.)
                   </Text>
                 </View>
@@ -737,7 +737,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 12,
   },
   errorText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textSecondary,
   },
   header: {
@@ -753,18 +753,18 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 40,
   },
   title: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     flex: 1,
     textAlign: 'center',
   },
   editButton: {
-    fontSize: 17,
+    fontSize: 18,
     color: '#007AFF',
   },
   saveButton: {
-    fontSize: 17,
+    fontSize: 18,
     color: '#007AFF',
     fontWeight: '600',
   },
@@ -785,7 +785,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 16,
   },
   statusLabel: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
   },
   statusBadge: {
@@ -802,7 +802,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 4,
   },
   statusText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
   statsRow: {
@@ -819,7 +819,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
   },
   section: {
@@ -829,14 +829,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
     textTransform: 'uppercase',
     marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginBottom: 6,
     marginTop: 12,
@@ -845,11 +845,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 8,
     padding: 12,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   fieldValue: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     paddingVertical: 8,
   },
@@ -870,7 +870,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   actionText: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   cancelButton: {
@@ -879,7 +879,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 8,
   },
   cancelButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#FF3B30',
   },
   // Section Header
@@ -916,19 +916,19 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   userBadgeInitials: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
   },
   userBadgeInfo: {
     flex: 1,
   },
   userBadgeName: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
   },
   userBadgeRole: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
     marginTop: 1,
   },
@@ -962,12 +962,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   storeName: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
   storeLocation: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -981,7 +981,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   userCountText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     fontWeight: '600',
   },
@@ -991,7 +991,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
   },
   storeStatusText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
   },
   storeUsers: {
@@ -1001,7 +1001,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   noUsersText: {
     color: colors.textSecondary,
-    fontSize: 13,
+    fontSize: 15,
     fontStyle: 'italic',
     textAlign: 'center',
     paddingVertical: 8,
@@ -1016,7 +1016,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   manageStoreButtonText: {
     color: '#007AFF',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
   // Empty section
@@ -1026,7 +1026,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   emptyText: {
     color: colors.textSecondary,
-    fontSize: 14,
+    fontSize: 16,
     marginBottom: 12,
   },
   createButton: {
@@ -1037,11 +1037,11 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   createButtonText: {
     color: colors.text,
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
   hintText: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     fontStyle: 'italic',
     marginTop: 8,
@@ -1060,7 +1060,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 8,
   },
   linkButtonText: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#007AFF',
     fontWeight: '600',
   },
@@ -1072,13 +1072,13 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   linkSearchInput: {
     padding: 12,
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
     borderBottomWidth: 1,
     borderBottomColor: colors.surface,
   },
   linkEmptyText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     textAlign: 'center',
     padding: 20,
@@ -1091,12 +1091,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   linkItemName: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '500',
     color: colors.text,
   },
   linkItemSub: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -1121,7 +1121,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#C9A962',
   },
   toggleBtnText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
     color: colors.textSecondary,
   },

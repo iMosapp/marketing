@@ -148,7 +148,7 @@ export default function ChannelPicker({ message, phone, email, link, onSent, vis
           </View>
 
           <TouchableOpacity onPress={onClose} style={[styles.cancelRow, { borderColor: colors.surface }]} data-testid="cancel-channel-picker">
-            <Text style={{ color: colors.textSecondary, fontSize: 14, fontWeight: '600' }}>Cancel</Text>
+            <Text style={{ color: colors.textSecondary, fontSize: 16, fontWeight: '600' }}>Cancel</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -177,10 +177,10 @@ const styles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   sheet: { borderTopLeftRadius: 20, borderTopRightRadius: 20, borderWidth: 1, borderBottomWidth: 0, padding: 20, paddingBottom: 30 },
   handle: { width: 36, height: 4, borderRadius: 2, backgroundColor: '#666', alignSelf: 'center', marginBottom: 16 },
-  sheetTitle: { fontSize: 17, fontWeight: '700', textAlign: 'center', marginBottom: 16 },
+  sheetTitle: { fontSize: 18, fontWeight: '700', textAlign: 'center', marginBottom: 16 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 16 },
   channelBtn: { alignItems: 'center', width: 72, gap: 6 },
   channelCircle: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
-  channelLabel: { fontSize: 11, fontWeight: '600', textAlign: 'center' },
+  channelLabel: { fontSize: 13, fontWeight: '600', textAlign: 'center' },
   cancelRow: { marginTop: 16, paddingTop: 14, borderTopWidth: 1, alignItems: 'center' },
 });

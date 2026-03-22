@@ -596,7 +596,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: undefined,
     textTransform: 'uppercase',
   },
@@ -617,7 +617,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   filterText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: undefined,
   },
@@ -667,7 +667,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   taskTitle: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: undefined,
   },
@@ -681,7 +681,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 4,
   },
   taskDescription: {
-    fontSize: 14,
+    fontSize: 16,
     color: undefined,
     marginBottom: 12,
     lineHeight: 20,
@@ -700,7 +700,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 6,
   },
   dueDate: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
   },
   overdue: {
@@ -716,7 +716,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   contactName: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#007AFF',
     fontWeight: '600',
   },
@@ -734,7 +734,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 6,
   },
   actionHintText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
   },
   loadingContainer: {
@@ -748,14 +748,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 64,
   },
   emptyText: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '600',
     color: undefined,
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtext: {
-    fontSize: 15,
+    fontSize: 17,
     color: undefined,
   },
 });

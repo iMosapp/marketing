@@ -179,7 +179,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   actionText: {
     color: colors.text,
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '500',
   },
   readButton: {

@@ -321,7 +321,7 @@ export default function ContactsScreen() {
           {item.first_name} {item.last_name || ''}
         </Text>
         {isTeamView && item.salesperson_name && !isOwnContact ? (
-          <Text style={{ fontSize: 12, color: '#C9A962', fontWeight: '500', marginBottom: 1 }} data-testid="team-contact-salesperson">
+          <Text style={{ fontSize: 14, color: '#C9A962', fontWeight: '500', marginBottom: 1 }} data-testid="team-contact-salesperson">
             {item.salesperson_name}
           </Text>
         ) : null}
@@ -516,7 +516,7 @@ export default function ContactsScreen() {
             onPress={() => { setViewMode('mine'); setSelectMode(false); setSelectedIds(new Set()); }}
             data-testid="view-mode-mine"
           >
-            <Text style={{ fontSize: 12, fontWeight: '600', color: viewMode === 'mine' ? '#000' : colors.textSecondary }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: viewMode === 'mine' ? '#000' : colors.textSecondary }}>
               My Contacts
             </Text>
           </TouchableOpacity>
@@ -528,7 +528,7 @@ export default function ContactsScreen() {
             onPress={() => { setViewMode('team'); setSelectMode(false); setSelectedIds(new Set()); }}
             data-testid="view-mode-team"
           >
-            <Text style={{ fontSize: 12, fontWeight: '600', color: viewMode === 'team' ? '#000' : colors.textSecondary }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: viewMode === 'team' ? '#000' : colors.textSecondary }}>
               Team Contacts
             </Text>
           </TouchableOpacity>
@@ -546,7 +546,7 @@ export default function ContactsScreen() {
           data-testid="sort-mode-recent"
         >
           <Ionicons name="time-outline" size={13} color={sortMode === 'recent' ? '#000' : colors.textSecondary} />
-          <Text style={{ fontSize: 12, fontWeight: '600', color: sortMode === 'recent' ? '#000' : colors.textSecondary }}>Recent</Text>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: sortMode === 'recent' ? '#000' : colors.textSecondary }}>Recent</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={{
@@ -557,7 +557,7 @@ export default function ContactsScreen() {
           data-testid="sort-mode-alpha"
         >
           <Ionicons name="text-outline" size={13} color={sortMode === 'alpha' ? '#000' : colors.textSecondary} />
-          <Text style={{ fontSize: 12, fontWeight: '600', color: sortMode === 'alpha' ? '#000' : colors.textSecondary }}>A - Z</Text>
+          <Text style={{ fontSize: 14, fontWeight: '600', color: sortMode === 'alpha' ? '#000' : colors.textSecondary }}>A - Z</Text>
         </TouchableOpacity>
       </View>
 
@@ -699,7 +699,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   selectHeaderTitle: {
     flex: 1,
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
   },
   checkbox: {
@@ -743,7 +743,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   searchInput: {
     flex: 1,
     paddingVertical: 8,
-    fontSize: 15,
+    fontSize: 17,
   },
   listContent: {
     paddingBottom: 16,
@@ -771,19 +771,19 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   avatarText: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
   contactInfo: {
     flex: 1,
   },
   contactName: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     marginBottom: 2,
   },
   contactPhone: {
-    fontSize: 14,
+    fontSize: 16,
     marginBottom: 4,
     textDecorationLine: 'none',
   },
@@ -798,7 +798,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
   },
   tagText: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#007AFF',
     fontWeight: '600',
   },
@@ -825,13 +825,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 64,
   },
   emptyText: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '600',
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtext: {
-    fontSize: 15,
+    fontSize: 17,
     textAlign: 'center',
   },
   importButton: {
@@ -845,7 +845,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   importButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -869,7 +869,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   tagFilterText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     fontWeight: '500',
   },
@@ -877,7 +877,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   tagFilterCount: {
-    fontSize: 11,
+    fontSize: 13,
     marginLeft: 4,
     paddingHorizontal: 6,
     paddingVertical: 1,
@@ -910,7 +910,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   restrictedText: {
-    fontSize: 16,
+    fontSize: 18,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 32,
@@ -926,7 +926,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   restrictedButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -953,14 +953,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 8,
     paddingHorizontal: 16, paddingVertical: 10,
   },
-  feedSectionTitle: { fontSize: 15, fontWeight: '700', color: colors.text, flex: 1 },
-  feedSectionCount: { fontSize: 12, color: colors.textTertiary },
+  feedSectionTitle: { fontSize: 17, fontWeight: '700', color: colors.text, flex: 1 },
+  feedSectionCount: { fontSize: 14, color: colors.textTertiary },
   feedBadge: {
     backgroundColor: '#FF9500', borderRadius: 10,
     minWidth: 20, height: 20, alignItems: 'center', justifyContent: 'center',
     paddingHorizontal: 6,
   },
-  feedBadgeText: { fontSize: 11, fontWeight: '800', color: colors.text },
+  feedBadgeText: { fontSize: 13, fontWeight: '800', color: colors.text },
 
   // Suggested action cards
   feedSuggestedCard: {
@@ -972,9 +972,9 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 40, height: 40, borderRadius: 20,
     alignItems: 'center', justifyContent: 'center', marginRight: 10,
   },
-  feedSuggestedTitle: { fontSize: 14, fontWeight: '700', color: colors.text },
-  feedSuggestedDesc: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
-  feedSuggestedMsg: { fontSize: 11, color: colors.textTertiary, fontStyle: 'italic', marginTop: 4 },
+  feedSuggestedTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
+  feedSuggestedDesc: { fontSize: 14, color: colors.textSecondary, marginTop: 2 },
+  feedSuggestedMsg: { fontSize: 13, color: colors.textTertiary, fontStyle: 'italic', marginTop: 4 },
 
   // Mini avatars
   feedMiniAvatar: { width: 22, height: 22, borderRadius: 6, borderWidth: 1, borderColor: colors.surface },
@@ -982,7 +982,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 22, height: 22, borderRadius: 6,
     backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center',
   },
-  feedMiniAvatarText: { fontSize: 10, fontWeight: '700', color: colors.textTertiary },
+  feedMiniAvatarText: { fontSize: 12, fontWeight: '700', color: colors.textTertiary },
 
   // Upcoming campaign cards
   feedUpcomingCard: {
@@ -990,12 +990,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card, borderRadius: 14, padding: 12,
     borderWidth: 1, borderColor: '#AF52DE30',
   },
-  feedUpcomingTitle: { fontSize: 14, fontWeight: '600', color: colors.text },
-  feedUpcomingDesc: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
+  feedUpcomingTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
+  feedUpcomingDesc: { fontSize: 14, color: colors.textSecondary, marginTop: 1 },
   feedCampaignBadge: {
     backgroundColor: '#AF52DE20', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6,
   },
-  feedCampaignBadgeText: { fontSize: 10, fontWeight: '600', color: '#AF52DE' },
+  feedCampaignBadgeText: { fontSize: 12, fontWeight: '600', color: '#AF52DE' },
 
   // Event cards
   feedEventCard: {
@@ -1008,7 +1008,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 44, height: 44, borderRadius: 12,
     backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center',
   },
-  feedEventAvatarText: { fontSize: 16, fontWeight: '700', color: colors.textTertiary },
+  feedEventAvatarText: { fontSize: 18, fontWeight: '700', color: colors.textTertiary },
   feedEventIconBadge: {
     position: 'absolute', bottom: -3, right: -3,
     width: 20, height: 20, borderRadius: 10,
@@ -1016,10 +1016,10 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderWidth: 2, borderColor: colors.card,
   },
   feedEventContent: { flex: 1 },
-  feedEventName: { fontSize: 14, fontWeight: '700', color: colors.text },
-  feedEventTitle: { fontSize: 13, color: colors.textSecondary, marginTop: 1 },
-  feedEventDesc: { fontSize: 12, color: colors.textTertiary, marginTop: 1 },
-  feedEventTime: { fontSize: 11, color: colors.borderLight, fontWeight: '500', marginLeft: 6 },
+  feedEventName: { fontSize: 16, fontWeight: '700', color: colors.text },
+  feedEventTitle: { fontSize: 15, color: colors.textSecondary, marginTop: 1 },
+  feedEventDesc: { fontSize: 14, color: colors.textTertiary, marginTop: 1 },
+  feedEventTime: { fontSize: 13, color: colors.borderLight, fontWeight: '500', marginLeft: 6 },
   feedInboundBadge: { backgroundColor: '#30D15820', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 },
   feedInboundBadgeText: { fontSize: 8, fontWeight: '700', color: '#30D158' },
   feedMiniTag: { backgroundColor: colors.surface, paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 },
@@ -1027,6 +1027,6 @@ const getStyles = (colors: any) => StyleSheet.create({
 
   // Feed empty state
   feedEmpty: { alignItems: 'center', paddingVertical: 40 },
-  feedEmptyText: { fontSize: 16, color: colors.textSecondary, marginTop: 8 },
-  feedEmptySubtext: { fontSize: 13, color: colors.textTertiary, marginTop: 4 },
+  feedEmptyText: { fontSize: 18, color: colors.textSecondary, marginTop: 8 },
+  feedEmptySubtext: { fontSize: 15, color: colors.textTertiary, marginTop: 4 },
 });

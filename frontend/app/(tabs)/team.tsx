@@ -993,18 +993,18 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 4,
   },
   channelName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: COLORS.textPrimary,
     flex: 1,
   },
   channelTime: {
-    fontSize: 12,
+    fontSize: 14,
     color: COLORS.textSecondary,
     marginLeft: 8,
   },
   channelPreview: {
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.textSecondary,
   },
   senderName: {
@@ -1021,7 +1021,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginLeft: 8,
   },
   unreadText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.text,
   },
@@ -1048,7 +1048,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   channelSearchInput: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 17,
     color: COLORS.textPrimary,
     padding: 0,
   },
@@ -1056,13 +1056,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   emptyText: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: COLORS.textPrimary,
     marginTop: 16,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.textSecondary,
     textAlign: 'center',
     marginTop: 8,
@@ -1081,16 +1081,16 @@ const getStyles = (colors: any) => StyleSheet.create({
   
   // Create Modal
   modalCancel: {
-    fontSize: 16,
+    fontSize: 18,
     color: COLORS.accent,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: COLORS.textPrimary,
   },
   modalCreate: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: COLORS.accent,
   },
@@ -1104,7 +1104,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 24,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: COLORS.textSecondary,
     marginBottom: 8,
@@ -1114,7 +1114,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     color: COLORS.textPrimary,
-    fontSize: 16,
+    fontSize: 18,
   },
   typeButtons: {
     flexDirection: 'row',
@@ -1133,7 +1133,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: COLORS.accent,
   },
   typeButtonText: {
-    fontSize: 12,
+    fontSize: 14,
     color: COLORS.textSecondary,
   },
   typeButtonTextActive: {
@@ -1158,7 +1158,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   selectedMemberName: {
     color: colors.text,
-    fontSize: 14,
+    fontSize: 16,
   },
   memberList: {
     maxHeight: 200,
@@ -1188,7 +1188,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 12,
   },
   memberInitials: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: COLORS.textPrimary,
   },
@@ -1196,12 +1196,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   memberName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '500',
     color: COLORS.textPrimary,
   },
   memberRole: {
-    fontSize: 12,
+    fontSize: 14,
     color: COLORS.textSecondary,
   },
   
@@ -1221,12 +1221,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginLeft: 8,
   },
   chatHeaderName: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: COLORS.textPrimary,
   },
   chatHeaderMembers: {
-    fontSize: 12,
+    fontSize: 14,
     color: COLORS.textSecondary,
   },
   chatHeaderAction: {
@@ -1272,12 +1272,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 6,
   },
   senderInitials: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
     color: COLORS.textPrimary,
   },
   senderNameText: {
-    fontSize: 12,
+    fontSize: 14,
     color: COLORS.textSecondary,
   },
   messageBubble: {
@@ -1302,17 +1302,17 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   broadcastLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
     color: colors.text,
   },
   messageText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     lineHeight: 22,
   },
   messageTime: {
-    fontSize: 10,
+    fontSize: 12,
     color: 'rgba(255,255,255,0.6)',
     marginTop: 4,
     alignSelf: 'flex-end',
@@ -1326,13 +1326,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 32,
   },
   emptyMessagesText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: COLORS.textPrimary,
     marginTop: 12,
   },
   emptyMessagesSubtext: {
-    fontSize: 14,
+    fontSize: 16,
     color: COLORS.textSecondary,
     marginTop: 4,
   },
@@ -1357,7 +1357,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     color: COLORS.textPrimary,
-    fontSize: 16,
+    fontSize: 18,
     maxHeight: 100,
   },
   sendButton: {
@@ -1387,7 +1387,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 10,
   },
   channelDropdownText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.text,
     fontWeight: '500',
   },

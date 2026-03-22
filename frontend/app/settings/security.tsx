@@ -422,7 +422,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: 'bold',
     color: colors.text,
   },
@@ -433,7 +433,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 32,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 12,
@@ -459,12 +459,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   settingTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   settingDescription: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -476,7 +476,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 12,
   },
   unavailableText: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
     textAlign: 'center',
   },
@@ -491,7 +491,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   infoText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     lineHeight: 20,
   },
@@ -509,16 +509,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   modalCancel: {
-    fontSize: 17,
+    fontSize: 18,
     color: '#007AFF',
   },
   modalTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   modalSave: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -526,7 +526,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 16,
   },
   modalSectionTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 8,
@@ -543,7 +543,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   passwordInput: {
     flex: 1,
     padding: 16,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   eyeButton: {
@@ -553,13 +553,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.surface,
   },
   passwordHint: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 12,
     marginLeft: 4,

@@ -382,7 +382,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -394,7 +394,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 8,
@@ -420,17 +420,17 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   cardTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   cardSubtitle: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 2,
   },
   cardDescription: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 4,
   },
@@ -447,7 +447,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#FF3B30',
   },
   actionButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
   },
@@ -460,7 +460,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   infoText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     lineHeight: 20,
   },
@@ -488,11 +488,11 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   calendarName: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   primaryBadge: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginRight: 8,
     backgroundColor: '#3C3C3E',

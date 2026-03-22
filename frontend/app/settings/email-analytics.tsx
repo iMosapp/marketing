@@ -339,7 +339,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -371,7 +371,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   timeRangeText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
     color: colors.textSecondary,
   },
@@ -413,7 +413,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -423,7 +423,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
   },
   percentageText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
   },
 
@@ -432,7 +432,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
     color: colors.textSecondary,
     textTransform: 'uppercase',
@@ -446,7 +446,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   rateTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 12,
@@ -479,13 +479,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   emptyActivityText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginTop: 16,
   },
   emptyActivitySubtext: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
@@ -510,12 +510,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   activityRecipient: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
   activitySubject: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -523,11 +523,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'flex-end',
   },
   activityStatus: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
   },
   activityTime: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#6E6E73',
     marginTop: 2,
   },
@@ -556,13 +556,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   tipTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 4,
   },
   tipText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     lineHeight: 18,
   },

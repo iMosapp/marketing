@@ -349,7 +349,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 40,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
   },
@@ -371,12 +371,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginLeft: 12,
   },
   requiredTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   requiredProgress: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -404,7 +404,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     paddingHorizontal: 8,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   filterContainer: {
@@ -430,7 +430,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   filterChipText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
     color: colors.textSecondary,
     textAlign: 'center',
@@ -456,7 +456,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   categoryTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
     marginLeft: 8,
@@ -464,7 +464,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     letterSpacing: 0.5,
   },
   categoryCount: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#6E6E73',
     marginLeft: 'auto',
   },
@@ -495,7 +495,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 4,
   },
   sopTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     flex: 1,
@@ -508,13 +508,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginLeft: 8,
   },
   requiredText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
     color: '#FF9500',
     textTransform: 'uppercase',
   },
   sopSummary: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     lineHeight: 18,
     marginBottom: 8,
@@ -529,7 +529,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 12,
   },
   metaText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6E6E73',
     marginLeft: 4,
   },
@@ -539,7 +539,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginLeft: 'auto',
   },
   completedText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#34C759',
     marginLeft: 4,
   },
@@ -549,7 +549,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   emptyText: {
     color: colors.textSecondary,
-    fontSize: 16,
+    fontSize: 18,
     marginTop: 16,
   },
 });

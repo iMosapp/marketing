@@ -101,7 +101,7 @@ export default function QuickSendPage() {
     overflow: 'hidden' as const,
   };
   const inputStyle = {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     paddingVertical: 14,
     paddingHorizontal: 16,
@@ -346,7 +346,7 @@ export default function QuickSendPage() {
 
   const renderCardTypePicker = () => (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }}>
-      <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+      <Text style={{ fontSize: 15, color: colors.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
         What type of card?
       </Text>
       {CARD_TYPES.map(ct => (
@@ -365,7 +365,7 @@ export default function QuickSendPage() {
           <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: `${ct.color}20`, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name={ct.icon as any} size={22} color={ct.color} />
           </View>
-          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, flex: 1 }}>{ct.label}</Text>
+          <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text, flex: 1 }}>{ct.label}</Text>
           <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
         </TouchableOpacity>
       ))}
@@ -375,7 +375,7 @@ export default function QuickSendPage() {
   const renderInfoStep = () => (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
-        <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
+        <Text style={{ fontSize: 15, color: colors.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
           Who are you sending to?
         </Text>
 
@@ -442,16 +442,16 @@ export default function QuickSendPage() {
             backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border,
           }} data-testid="qs-match-banner">
             <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: `${colors.accent}20`, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ fontWeight: '700', fontSize: 14, color: colors.accent }}>
+              <Text style={{ fontWeight: '700', fontSize: 16, color: colors.accent }}>
                 {(matchedContact.first_name || '?')[0]}{(matchedContact.last_name || '')[0] || ''}
               </Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>{matchedContact.first_name} {matchedContact.last_name}</Text>
-              <Text style={{ fontSize: 13, color: colors.textSecondary }}>Existing contact</Text>
+              <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text }}>{matchedContact.first_name} {matchedContact.last_name}</Text>
+              <Text style={{ fontSize: 15, color: colors.textSecondary }}>Existing contact</Text>
             </View>
             <View style={{ backgroundColor: 'rgba(52,199,89,0.15)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: '#34C759' }}>Matched</Text>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: '#34C759' }}>Matched</Text>
             </View>
           </View>
         )}
@@ -466,13 +466,13 @@ export default function QuickSendPage() {
           disabled={!firstName.trim() || !phone.trim()}
           data-testid="qs-next-btn"
         >
-          <Text style={{ fontSize: 17, fontWeight: '700', color: (firstName.trim() && phone.trim()) ? '#000' : colors.textTertiary }}>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: (firstName.trim() && phone.trim()) ? '#000' : colors.textTertiary }}>
             {actionKey === 'congrats' ? 'Create Card' : 'Preview'}
           </Text>
         </TouchableOpacity>
 
         {!matchedContact && firstName.trim() && phone.trim() && (
-          <Text style={{ fontSize: 13, color: colors.textTertiary, textAlign: 'center', marginTop: 10 }}>
+          <Text style={{ fontSize: 15, color: colors.textTertiary, textAlign: 'center', marginTop: 10 }}>
             New contact will be auto-created when you send
           </Text>
         )}
@@ -488,27 +488,27 @@ export default function QuickSendPage() {
         backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, marginBottom: 16,
       }}>
         <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: `${colors.accent}20`, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontWeight: '700', fontSize: 16, color: colors.accent }}>{(firstName || '?')[0].toUpperCase()}</Text>
+          <Text style={{ fontWeight: '700', fontSize: 18, color: colors.accent }}>{(firstName || '?')[0].toUpperCase()}</Text>
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{fullName}</Text>
-          <Text style={{ fontSize: 13, color: colors.textSecondary }}>{phone}</Text>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>{fullName}</Text>
+          <Text style={{ fontSize: 15, color: colors.textSecondary }}>{phone}</Text>
         </View>
         {matchedContact && (
           <View style={{ backgroundColor: 'rgba(52,199,89,0.12)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 }}>
-            <Text style={{ fontSize: 11, fontWeight: '600', color: '#34C759' }}>Existing</Text>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: '#34C759' }}>Existing</Text>
           </View>
         )}
       </View>
 
       {/* What you're sending */}
-      <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+      <Text style={{ fontSize: 15, color: colors.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
         What you're sending
       </Text>
       <View style={{ backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, overflow: 'hidden', marginBottom: 16 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
           <Ionicons name={config.icon as any} size={20} color={config.color} />
-          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text, flex: 1 }}>{config.previewTitle}</Text>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, flex: 1 }}>{config.previewTitle}</Text>
           {shareUrl ? (
             <TouchableOpacity
               style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: 10, backgroundColor: `${config.color}18`, borderRadius: 8 }}
@@ -516,24 +516,24 @@ export default function QuickSendPage() {
               data-testid="qs-preview-link"
             >
               <Ionicons name="eye-outline" size={16} color={config.color} />
-              <Text style={{ fontSize: 13, fontWeight: '600', color: config.color }}>Preview</Text>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: config.color }}>Preview</Text>
             </TouchableOpacity>
           ) : null}
         </View>
         <View style={{ padding: 16 }}>
           <View style={{ backgroundColor: colors.bg, borderRadius: 10, padding: 14 }}>
-            <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 22 }}>{messageText}</Text>
+            <Text style={{ fontSize: 16, color: colors.textSecondary, lineHeight: 22 }}>{messageText}</Text>
           </View>
           {shareUrl ? (
             <TouchableOpacity style={{ marginTop: 8 }} onPress={() => Linking.openURL(shareUrl)}>
-              <Text style={{ fontSize: 13, color: '#007AFF' }} numberOfLines={1}>{shareUrl}</Text>
+              <Text style={{ fontSize: 15, color: '#007AFF' }} numberOfLines={1}>{shareUrl}</Text>
             </TouchableOpacity>
           ) : null}
         </View>
       </View>
 
       {/* Send options */}
-      <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
+      <Text style={{ fontSize: 15, color: colors.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
         How do you want to send it?
       </Text>
       <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
@@ -556,7 +556,7 @@ export default function QuickSendPage() {
             data-testid={`qs-method-${opt.key}`}
           >
             <Ionicons name={opt.icon as any} size={22} color={sendMethod === opt.key ? '#C9A962' : colors.textTertiary} />
-            <Text style={{ fontSize: 12, fontWeight: '600', color: sendMethod === opt.key ? '#C9A962' : colors.textTertiary, marginTop: 4 }}>{opt.label}</Text>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: sendMethod === opt.key ? '#C9A962' : colors.textTertiary, marginTop: 4 }}>{opt.label}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -567,13 +567,13 @@ export default function QuickSendPage() {
         onPress={handleSend}
         data-testid="qs-send-btn"
       >
-        <Text style={{ fontSize: 17, fontWeight: '700', color: '#000' }}>
+        <Text style={{ fontSize: 18, fontWeight: '700', color: '#000' }}>
           {sendMethod === 'copy' ? 'Copy Link' : sendMethod === 'email' ? 'Send Email' : 'Send via SMS'}
         </Text>
       </TouchableOpacity>
 
       {sendMethod === 'sms' && (
-        <Text style={{ fontSize: 12, color: colors.textTertiary, textAlign: 'center', marginTop: 8 }}>
+        <Text style={{ fontSize: 14, color: colors.textTertiary, textAlign: 'center', marginTop: 8 }}>
           This will open your phone's messaging app
         </Text>
       )}
@@ -583,7 +583,7 @@ export default function QuickSendPage() {
   const renderSending = () => (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 }}>
       <ActivityIndicator size="large" color="#C9A962" />
-      <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text, marginTop: 16 }}>Sending...</Text>
+      <Text style={{ fontSize: 19, fontWeight: '600', color: colors.text, marginTop: 16 }}>Sending...</Text>
     </View>
   );
 
@@ -593,12 +593,12 @@ export default function QuickSendPage() {
         <Ionicons name="checkmark" size={40} color="#34C759" />
       </View>
       <Text style={{ fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 8 }}>Sent!</Text>
-      <Text style={{ fontSize: 15, color: colors.textSecondary, textAlign: 'center', lineHeight: 22 }}>
+      <Text style={{ fontSize: 17, color: colors.textSecondary, textAlign: 'center', lineHeight: 22 }}>
         {config.previewTitle} sent to{'\n'}<Text style={{ fontWeight: '700', color: colors.text }}>{fullName}</Text>
       </Text>
 
       <View style={{ backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, padding: 14, width: '100%', marginTop: 20 }}>
-        <Text style={{ fontSize: 12, color: colors.textTertiary, fontWeight: '600', marginBottom: 8 }}>AUTOMATICALLY LOGGED</Text>
+        <Text style={{ fontSize: 14, color: colors.textTertiary, fontWeight: '600', marginBottom: 8 }}>AUTOMATICALLY LOGGED</Text>
         {[
           { icon: 'checkmark-circle', text: `${config.previewTitle} shared`, color: '#34C759' },
           { icon: 'chatbubble', text: `${sendMethod === 'email' ? 'Email' : sendMethod === 'copy' ? 'Link copied' : 'SMS'} sent`, color: '#007AFF' },
@@ -607,13 +607,13 @@ export default function QuickSendPage() {
         ].map((item, i) => (
           <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 }}>
             <Ionicons name={item.icon as any} size={16} color={item.color} />
-            <Text style={{ fontSize: 14, color: colors.textSecondary, flex: 1 }}>{item.text}</Text>
+            <Text style={{ fontSize: 16, color: colors.textSecondary, flex: 1 }}>{item.text}</Text>
             <Ionicons name="checkmark" size={16} color="#34C759" />
           </View>
         ))}
       </View>
 
-      <Text style={{ fontSize: 13, color: colors.textTertiary, marginTop: 16 }}>Redirecting to contact...</Text>
+      <Text style={{ fontSize: 15, color: colors.textTertiary, marginTop: 16 }}>Redirecting to contact...</Text>
     </View>
   );
 
@@ -628,7 +628,7 @@ export default function QuickSendPage() {
         }} style={{ padding: 4 }} data-testid="qs-back">
           <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={{ flex: 1, textAlign: 'center', fontSize: 18, fontWeight: '700', color: colors.text }}>
+        <Text style={{ flex: 1, textAlign: 'center', fontSize: 19, fontWeight: '700', color: colors.text }}>
           {config.title}
         </Text>
         <View style={{ width: 32 }} />

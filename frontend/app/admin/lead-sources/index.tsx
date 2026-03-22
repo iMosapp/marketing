@@ -266,13 +266,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   sourceName: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 2,
   },
   sourceDescription: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   statusBadge: {
@@ -281,7 +281,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
   },
   sourceStats: {
@@ -296,7 +296,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   statText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   methodBadge: {
@@ -305,7 +305,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
   },
   methodText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
   },
   webhookSection: {
@@ -314,7 +314,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 10,
   },
   webhookLabel: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
     marginBottom: 4,
     textTransform: 'uppercase',
@@ -325,7 +325,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'space-between',
   },
   webhookText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#007AFF',
     flex: 1,
     marginRight: 8,
@@ -337,14 +337,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 64,
   },
   emptyText: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '600',
     color: colors.text,
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtext: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 24,
@@ -361,7 +361,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   createButtonText: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
 });

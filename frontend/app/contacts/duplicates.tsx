@@ -338,12 +338,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  title: { fontSize: 18, fontWeight: '700', color: colors.text },
-  subtitle: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
+  title: { fontSize: 19, fontWeight: '700', color: colors.text },
+  subtitle: { fontSize: 14, color: colors.textSecondary, marginTop: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 },
-  loadingText: { color: colors.textSecondary, marginTop: 12, fontSize: 14 },
-  emptyTitle: { fontSize: 18, fontWeight: '600', color: colors.text, marginTop: 16 },
-  emptySubtitle: { fontSize: 14, color: colors.textSecondary, marginTop: 6, textAlign: 'center' },
+  loadingText: { color: colors.textSecondary, marginTop: 12, fontSize: 16 },
+  emptyTitle: { fontSize: 19, fontWeight: '600', color: colors.text, marginTop: 16 },
+  emptySubtitle: { fontSize: 16, color: colors.textSecondary, marginTop: 6, textAlign: 'center' },
   list: { padding: 16, paddingBottom: 40 },
 
   setCard: {
@@ -360,7 +360,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   setPhone: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
     marginLeft: 8,
@@ -372,7 +372,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 10,
   },
-  countText: { fontSize: 11, color: colors.primary, fontWeight: '600' },
+  countText: { fontSize: 13, color: colors.primary, fontWeight: '600' },
 
   contactCard: {
     backgroundColor: colors.background,
@@ -392,12 +392,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 6,
     gap: 4,
   },
-  suggestedText: { fontSize: 10, color: '#C9A962', fontWeight: '700', textTransform: 'uppercase' },
-  contactName: { fontSize: 15, fontWeight: '600', color: colors.text, marginBottom: 2 },
-  contactDetail: { fontSize: 12, color: colors.textSecondary, marginBottom: 6 },
+  suggestedText: { fontSize: 12, color: '#C9A962', fontWeight: '700', textTransform: 'uppercase' },
+  contactName: { fontSize: 17, fontWeight: '600', color: colors.text, marginBottom: 2 },
+  contactDetail: { fontSize: 14, color: colors.textSecondary, marginBottom: 6 },
   statsRow: { flexDirection: 'row', gap: 12, marginBottom: 6 },
   stat: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  statText: { fontSize: 11, color: colors.textSecondary },
+  statText: { fontSize: 13, color: colors.textSecondary },
   tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 6 },
   tagChip: {
     backgroundColor: colors.primary + '15',
@@ -405,9 +405,9 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 6,
   },
-  tagText: { fontSize: 10, color: colors.primary, fontWeight: '600' },
-  moreTagsText: { fontSize: 10, color: colors.textSecondary, alignSelf: 'center' },
-  contactMeta: { fontSize: 10, color: colors.textSecondary },
+  tagText: { fontSize: 12, color: colors.primary, fontWeight: '600' },
+  moreTagsText: { fontSize: 12, color: colors.textSecondary, alignSelf: 'center' },
+  contactMeta: { fontSize: 12, color: colors.textSecondary },
 
   mergeButton: {
     flexDirection: 'row',
@@ -419,7 +419,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
     marginBottom: 8,
   },
-  mergeButtonText: { fontSize: 13, fontWeight: '600', color: '#fff' },
+  mergeButtonText: { fontSize: 15, fontWeight: '600', color: '#fff' },
 
   sectionHeader: {
     flexDirection: 'row',
@@ -428,7 +428,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 10,
     marginTop: 4,
   },
-  sectionHeaderText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  sectionHeaderText: { fontSize: 15, fontWeight: '600', color: colors.textSecondary },
   repairCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -449,5 +449,5 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 8,
   },
-  repairButtonText: { fontSize: 12, fontWeight: '600', color: '#C9A962' },
+  repairButtonText: { fontSize: 14, fontWeight: '600', color: '#C9A962' },
 });

@@ -340,7 +340,7 @@ export default function AnalyticsDashboard() {
 const getStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
-  loadingText: { color: colors.textSecondary, fontSize: 14 },
+  loadingText: { color: colors.textSecondary, fontSize: 16 },
   header: {
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16,
     paddingVertical: 12, gap: 12,
@@ -349,8 +349,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 36, height: 36, borderRadius: 10, backgroundColor: colors.card,
     alignItems: 'center', justifyContent: 'center',
   },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: colors.text },
-  headerSub: { fontSize: 12, color: colors.textSecondary, marginTop: 1 },
+  headerTitle: { fontSize: 21, fontWeight: '700', color: colors.text },
+  headerSub: { fontSize: 14, color: colors.textSecondary, marginTop: 1 },
   periodBar: {
     flexDirection: 'row', paddingHorizontal: 16, paddingBottom: 12, gap: 8,
   },
@@ -359,7 +359,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
   },
   periodChipActive: { backgroundColor: '#007AFF' },
-  periodText: { fontSize: 13, color: colors.textSecondary, fontWeight: '600' },
+  periodText: { fontSize: 15, color: colors.textSecondary, fontWeight: '600' },
   periodTextActive: { color: colors.text },
   content: { flex: 1 },
 
@@ -369,14 +369,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card, borderWidth: 1, borderColor: colors.surface,
   },
   heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  heroLabel: { fontSize: 14, color: colors.textSecondary, fontWeight: '500' },
+  heroLabel: { fontSize: 16, color: colors.textSecondary, fontWeight: '500' },
   trendBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: 12,
   },
-  trendText: { fontSize: 12, fontWeight: '700' },
+  trendText: { fontSize: 14, fontWeight: '700' },
   heroValue: { fontSize: 42, fontWeight: '800', color: colors.text, marginTop: 4 },
-  heroSub: { fontSize: 12, color: '#6E6E73', marginTop: 2 },
+  heroSub: { fontSize: 14, color: '#6E6E73', marginTop: 2 },
 
   // KPI Grid
   kpiGrid: {
@@ -392,12 +392,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
     marginBottom: 6,
   },
-  kpiValue: { fontSize: 18, fontWeight: '700', color: colors.text },
-  kpiLabel: { fontSize: 10, color: colors.textSecondary, marginTop: 2, textAlign: 'center' },
+  kpiValue: { fontSize: 19, fontWeight: '700', color: colors.text },
+  kpiLabel: { fontSize: 12, color: colors.textSecondary, marginTop: 2, textAlign: 'center' },
 
   // Section
   section: { marginTop: 16, paddingHorizontal: 16 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 10 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 10 },
 
   // Chart
   chartCard: {
@@ -412,7 +412,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   chartLegend: { flexDirection: 'row', gap: 16, marginTop: 12, justifyContent: 'center' },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendText: { fontSize: 11, color: colors.textSecondary },
+  legendText: { fontSize: 13, color: colors.textSecondary },
 
   // Channel Breakdown
   channelCard: {
@@ -422,10 +422,10 @@ const getStyles = (colors: any) => StyleSheet.create({
   channelRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   channelLeft: { flexDirection: 'row', alignItems: 'center', gap: 6, width: 120 },
   channelIcon: { width: 26, height: 26, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  channelLabel: { fontSize: 12, color: colors.border, fontWeight: '500' },
+  channelLabel: { fontSize: 14, color: colors.border, fontWeight: '500' },
   channelBarWrap: { flex: 1, height: 18, backgroundColor: colors.surface, borderRadius: 9, overflow: 'hidden' },
   channelBar: { height: '100%', borderRadius: 9 },
-  channelValue: { fontSize: 13, fontWeight: '700', color: colors.text, width: 40, textAlign: 'right' },
+  channelValue: { fontSize: 15, fontWeight: '700', color: colors.text, width: 40, textAlign: 'right' },
 
   // Tables
   tableCard: {
@@ -436,15 +436,15 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row', backgroundColor: colors.surface, paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  tableHeaderCell: { flex: 1, fontSize: 10, fontWeight: '700', color: colors.textSecondary, textAlign: 'center' },
+  tableHeaderCell: { flex: 1, fontSize: 12, fontWeight: '700', color: colors.textSecondary, textAlign: 'center' },
   tableRow: { flexDirection: 'row', paddingHorizontal: 12, paddingVertical: 10 },
   tableRowAlt: { backgroundColor: '#1A1A1C' },
   tableCell: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  tableCellText: { fontSize: 12, color: colors.border, textAlign: 'center' },
+  tableCellText: { fontSize: 14, color: colors.border, textAlign: 'center' },
   rankBadge: {
     width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
   },
-  rankText: { fontSize: 10, fontWeight: '800' },
+  rankText: { fontSize: 12, fontWeight: '800' },
 
   // Link Grid
   linkGrid: { gap: 8 },
@@ -454,5 +454,5 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderWidth: 1, borderColor: colors.surface,
   },
   linkIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  linkTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.text },
+  linkTitle: { flex: 1, fontSize: 16, fontWeight: '600', color: colors.text },
 });

@@ -139,7 +139,7 @@ export default function WhiteLabelPartnersScreen() {
             <View style={{ borderTopWidth: 1, borderTopColor: colors.surface, paddingTop: 16, marginTop: 8, marginBottom: 12 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 <Ionicons name="pricetag" size={18} color="#FF9500" />
-                <Text style={[s.inputLabel, { marginBottom: 0, fontSize: 15, fontWeight: '700' }]}>Sold Workflow</Text>
+                <Text style={[s.inputLabel, { marginBottom: 0, fontSize: 17, fontWeight: '700' }]}>Sold Workflow</Text>
               </View>
               <TouchableOpacity
                 onPress={() => setForm({ ...form, sold_workflow_enabled: !form.sold_workflow_enabled } as any)}
@@ -147,11 +147,11 @@ export default function WhiteLabelPartnersScreen() {
                 data-testid="sold-workflow-toggle"
               >
                 <Ionicons name={(form as any).sold_workflow_enabled ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={(form as any).sold_workflow_enabled ? '#34C759' : colors.textSecondary} />
-                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>Enable Sold Workflow</Text>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>Enable Sold Workflow</Text>
               </TouchableOpacity>
               {(form as any).sold_workflow_enabled && (
                 <>
-                  <Text style={[s.inputLabel, { fontSize: 12, color: colors.textSecondary }]}>Required Fields</Text>
+                  <Text style={[s.inputLabel, { fontSize: 14, color: colors.textSecondary }]}>Required Fields</Text>
                   {[
                     { id: 'customer_name', label: 'Customer Name' },
                     { id: 'phone_number', label: 'Phone Number' },
@@ -169,7 +169,7 @@ export default function WhiteLabelPartnersScreen() {
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, paddingHorizontal: 10 }}
                       >
                         <Ionicons name={isOn ? 'checkbox' : 'square-outline'} size={20} color={isOn ? '#34C759' : colors.textSecondary} />
-                        <Text style={{ fontSize: 13, color: colors.text }}>{f.label}</Text>
+                        <Text style={{ fontSize: 15, color: colors.text }}>{f.label}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -178,13 +178,13 @@ export default function WhiteLabelPartnersScreen() {
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, paddingHorizontal: 10, marginBottom: 12 }}
                   >
                     <Ionicons name={(form as any).external_account_id_required ? 'checkbox' : 'square-outline'} size={20} color={(form as any).external_account_id_required ? '#34C759' : colors.textSecondary} />
-                    <Text style={{ fontSize: 13, color: colors.text }}>Require External Account ID</Text>
+                    <Text style={{ fontSize: 15, color: colors.text }}>Require External Account ID</Text>
                   </TouchableOpacity>
 
                   <View style={{ borderTopWidth: 1, borderTopColor: colors.surface, paddingTop: 12, marginBottom: 8 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                       <Ionicons name="send" size={16} color="#007AFF" />
-                      <Text style={[s.inputLabel, { marginBottom: 0, fontSize: 13, fontWeight: '600' }]}>External Endpoint</Text>
+                      <Text style={[s.inputLabel, { marginBottom: 0, fontSize: 15, fontWeight: '600' }]}>External Endpoint</Text>
                     </View>
                     <TouchableOpacity
                       onPress={() => {
@@ -194,12 +194,12 @@ export default function WhiteLabelPartnersScreen() {
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8, padding: 8 }}
                     >
                       <Ionicons name={((form as any).event_delivery?.enabled) ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={((form as any).event_delivery?.enabled) ? '#34C759' : colors.textSecondary} />
-                      <Text style={{ fontSize: 13, color: colors.text }}>Enable Endpoint Delivery</Text>
+                      <Text style={{ fontSize: 15, color: colors.text }}>Enable Endpoint Delivery</Text>
                     </TouchableOpacity>
                     {((form as any).event_delivery?.enabled) && (
                       <>
                         <View style={s.inputGroup}>
-                          <Text style={[s.inputLabel, { fontSize: 12 }]}>Endpoint URL</Text>
+                          <Text style={[s.inputLabel, { fontSize: 14 }]}>Endpoint URL</Text>
                           <TextInput style={s.input} placeholder="https://api.partner.com/sold-events"
                             placeholderTextColor={colors.textTertiary}
                             value={(form as any).event_delivery?.endpoint_url || ''}
@@ -223,9 +223,9 @@ export default function WhiteLabelPartnersScreen() {
                 <View key={c.key} style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                     <View style={{ width: 16, height: 16, borderRadius: 4, backgroundColor: (form as any)[c.key] }} />
-                    <Text style={{ fontSize: 11, color: colors.textSecondary }}>{c.label}</Text>
+                    <Text style={{ fontSize: 13, color: colors.textSecondary }}>{c.label}</Text>
                   </View>
-                  <TextInput style={[s.input, { fontSize: 13, padding: 10 }]} placeholder="#000000" placeholderTextColor={colors.textTertiary}
+                  <TextInput style={[s.input, { fontSize: 15, padding: 10 }]} placeholder="#000000" placeholderTextColor={colors.textTertiary}
                     value={(form as any)[c.key]} onChangeText={t => setForm({ ...form, [c.key]: t })} />
                 </View>
               ))}
@@ -285,16 +285,16 @@ export default function WhiteLabelPartnersScreen() {
                   <Text style={s.partnerName}>{p.name}</Text>
                   <Text style={s.partnerSlug}>/{p.slug}</Text>
                   {p.commission_notes && (
-                    <Text style={{ fontSize: 12, color: '#C9A962', marginTop: 3, fontStyle: 'italic' }} numberOfLines={1}>{p.commission_notes}</Text>
+                    <Text style={{ fontSize: 14, color: '#C9A962', marginTop: 3, fontStyle: 'italic' }} numberOfLines={1}>{p.commission_notes}</Text>
                   )}
                   {p.sold_workflow_enabled && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
                       <Ionicons name="pricetag" size={12} color="#34C759" />
-                      <Text style={{ fontSize: 11, color: '#34C759', fontWeight: '600' }}>Sold Workflow Active</Text>
+                      <Text style={{ fontSize: 13, color: '#34C759', fontWeight: '600' }}>Sold Workflow Active</Text>
                       {p.event_delivery?.enabled && (
                         <>
                           <Ionicons name="send" size={10} color="#007AFF" style={{ marginLeft: 6 }} />
-                          <Text style={{ fontSize: 11, color: '#007AFF' }}>Endpoint On</Text>
+                          <Text style={{ fontSize: 13, color: '#007AFF' }}>Endpoint On</Text>
                         </>
                       )}
                     </View>
@@ -334,27 +334,27 @@ const getS = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.card },
   headerBtn: { padding: 4, minWidth: 50 },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: colors.text, flex: 1, textAlign: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: colors.text, flex: 1, textAlign: 'center' },
   scroll: { padding: 16 },
   formCard: { backgroundColor: colors.card, borderRadius: 14, padding: 20, marginBottom: 20, borderWidth: 1, borderColor: colors.surface },
-  formTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 16 },
+  formTitle: { fontSize: 19, fontWeight: '700', color: colors.text, marginBottom: 16 },
   inputGroup: { marginBottom: 12 },
-  inputLabel: { fontSize: 12, fontWeight: '500', color: '#8E8E93', marginBottom: 4, marginLeft: 2 },
-  input: { backgroundColor: colors.surface, borderRadius: 10, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1, borderColor: colors.borderLight },
+  inputLabel: { fontSize: 14, fontWeight: '500', color: '#8E8E93', marginBottom: 4, marginLeft: 2 },
+  input: { backgroundColor: colors.surface, borderRadius: 10, padding: 14, fontSize: 18, color: colors.text, borderWidth: 1, borderColor: colors.borderLight },
   saveBtn: { backgroundColor: '#C9A962', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 8 },
-  saveBtnText: { fontSize: 16, fontWeight: '700', color: colors.text },
+  saveBtnText: { fontSize: 18, fontWeight: '700', color: colors.text },
   empty: { alignItems: 'center', paddingVertical: 60 },
-  emptyText: { fontSize: 18, color: '#8E8E93', marginTop: 12 },
-  emptySub: { fontSize: 14, color: colors.textSecondary, marginTop: 4 },
+  emptyText: { fontSize: 19, color: '#8E8E93', marginTop: 12 },
+  emptySub: { fontSize: 16, color: colors.textSecondary, marginTop: 4 },
   partnerCard: { backgroundColor: colors.card, borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.surface },
   partnerIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  partnerIconText: { fontSize: 16, fontWeight: '800' },
-  partnerName: { fontSize: 16, fontWeight: '600', color: colors.text },
-  partnerSlug: { fontSize: 13, color: colors.textSecondary, marginTop: 1 },
+  partnerIconText: { fontSize: 18, fontWeight: '800' },
+  partnerName: { fontSize: 18, fontWeight: '600', color: colors.text },
+  partnerSlug: { fontSize: 15, color: colors.textSecondary, marginTop: 1 },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: colors.surface },
   statusActive: { backgroundColor: '#34C75920' },
-  statusText: { fontSize: 11, fontWeight: '600', color: '#8E8E93' },
+  statusText: { fontSize: 13, fontWeight: '600', color: '#8E8E93' },
   partnerActions: { flexDirection: 'row', gap: 16, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.surface },
   actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  actionText: { fontSize: 13, fontWeight: '600' },
+  actionText: { fontSize: 15, fontWeight: '600' },
 });

@@ -392,7 +392,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 32,
   },
   errorText: {
-    fontSize: 18,
+    fontSize: 19,
     color: colors.textSecondary,
     marginBottom: 16,
   },
@@ -419,7 +419,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
   },
@@ -442,11 +442,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   statusLabel: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
   statusSubtext: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -457,7 +457,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   cardLabel: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 8,
@@ -465,12 +465,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     letterSpacing: 0.5,
   },
   broadcastName: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
   },
   messageText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     lineHeight: 24,
   },
@@ -501,7 +501,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: '#007AFF',
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 4,
   },
@@ -519,17 +519,17 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   filterText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.text,
     flex: 1,
   },
   noFiltersText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     fontStyle: 'italic',
   },
   dateText: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
   },
   actionButtons: {
@@ -548,7 +548,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 14,
   },
   sendButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -564,7 +564,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#FF3B30',
   },
   deleteButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#FF3B30',
   },

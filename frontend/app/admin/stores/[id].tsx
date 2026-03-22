@@ -779,19 +779,19 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   title: {
     flex: 1,
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     textAlign: 'center',
   },
   saveButton: {
     color: '#007AFF',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
   editButton: {
     color: '#007AFF',
-    fontSize: 16,
+    fontSize: 18,
   },
   loadingContainer: {
     flex: 1,
@@ -804,7 +804,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   errorText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textSecondary,
     marginTop: 12,
   },
@@ -831,7 +831,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   orgBadgeText: {
     color: '#007AFF',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
   },
   statusRow: {
@@ -841,7 +841,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 16,
   },
   statusLabel: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
   },
   statusBadge: {
@@ -863,7 +863,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 3,
   },
   statusText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
   statsRow: {
@@ -883,7 +883,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
   },
   section: {
@@ -900,7 +900,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   sectionTitle: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -913,7 +913,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   emptyText: {
     color: colors.textSecondary,
-    fontSize: 14,
+    fontSize: 16,
     marginBottom: 12,
   },
   createButton: {
@@ -924,7 +924,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   createButtonText: {
     color: colors.text,
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
   userCard: {
@@ -944,19 +944,19 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   userAvatarText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '700',
   },
   userInfo: {
     flex: 1,
   },
   userName: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
   userEmail: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -970,7 +970,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 6,
   },
   roleBadgeText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
   },
   userActionButtons: {
@@ -997,11 +997,11 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   infoText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
   },
   inputLabel: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 8,
@@ -1011,7 +1011,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 14,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   row: {
@@ -1027,7 +1027,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 16,
   },
   cancelButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#FF3B30',
   },
   // Modal styles
@@ -1051,7 +1051,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
   },
@@ -1074,13 +1074,13 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   emptyModalText: {
     color: colors.textSecondary,
-    fontSize: 15,
+    fontSize: 17,
     marginTop: 12,
     textAlign: 'center',
   },
   emptyModalSubtext: {
     color: colors.textTertiary,
-    fontSize: 13,
+    fontSize: 15,
     marginTop: 4,
     textAlign: 'center',
   },
@@ -1092,7 +1092,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 12,
   },
   congratsPreviewHeadline: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '700',
     marginBottom: 12,
   },
@@ -1106,7 +1106,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   congratsPreviewText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
   },
   congratsEditorContainer: {
@@ -1116,14 +1116,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderTopColor: colors.surface,
   },
   congratsEditorLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 8,
     marginTop: 12,
   },
   congratsEditorHint: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: -4,
     marginBottom: 8,
@@ -1132,7 +1132,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 12,
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
   },
   congratsEditorTextArea: {
@@ -1160,7 +1160,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 6,
   },
   themePresetName: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '500',
   },
   congratsSaveButton: {
@@ -1174,7 +1174,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   congratsSaveButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -1193,12 +1193,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 12,
   },
   permissionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   permissionDesc: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -1224,7 +1224,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   saveCampaignSettingsButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },

@@ -287,12 +287,12 @@ export default function CompleteProfileScreen() {
                   <View style={s.photoEmpty}>
                     {photoUploading ? <ActivityIndicator size="large" color="#007AFF" /> : <>
                       <Ionicons name="camera" size={36} color={colors.textTertiary} />
-                      <Text style={{ color: colors.textSecondary, marginTop: 6, fontSize: 13 }}>Tap to upload headshot</Text>
+                      <Text style={{ color: colors.textSecondary, marginTop: 6, fontSize: 15 }}>Tap to upload headshot</Text>
                     </>}
                   </View>
                 )}
               </TouchableOpacity>
-              {photoUrl ? <TouchableOpacity onPress={uploadPhoto} style={{ alignSelf: 'center', marginTop: 6, marginBottom: 12 }}><Text style={{ color: '#007AFF', fontWeight: '600', fontSize: 13 }}>Change Photo</Text></TouchableOpacity> : null}
+              {photoUrl ? <TouchableOpacity onPress={uploadPhoto} style={{ alignSelf: 'center', marginTop: 6, marginBottom: 12 }}><Text style={{ color: '#007AFF', fontWeight: '600', fontSize: 15 }}>Change Photo</Text></TouchableOpacity> : null}
 
               <Text style={s.label}>Job Title</Text>
               <TextInput style={s.input} placeholder="e.g., Sales Manager" placeholderTextColor={colors.textTertiary} value={title} onChangeText={setTitle} data-testid="profile-title" />
@@ -316,7 +316,7 @@ export default function CompleteProfileScreen() {
               <TextInput style={s.input} placeholder="e.g., Ran a marathon, love 80s music" placeholderTextColor={colors.textTertiary} value={funFacts} onChangeText={setFunFacts} data-testid="profile-funfacts" />
 
               <Text style={[s.label, { marginTop: 8 }]}>AI Persona Tone</Text>
-              <Text style={{ fontSize: 12, color: colors.textTertiary, marginBottom: 8 }}>How should AI write on your behalf?</Text>
+              <Text style={{ fontSize: 14, color: colors.textTertiary, marginBottom: 8 }}>How should AI write on your behalf?</Text>
               <View style={s.toneRow}>
                 {TONES.map(t => (
                   <TouchableOpacity key={t.key} style={[s.toneChip, tonePref === t.key && s.toneActive]} onPress={() => setTonePref(t.key)} data-testid={`tone-${t.key}`}>
@@ -381,9 +381,9 @@ export default function CompleteProfileScreen() {
                   <TextInput style={[s.input, { minHeight: 100, textAlignVertical: 'top' }]}
                     value={bio} onChangeText={setBio} multiline data-testid="bio-input" />
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: -8, marginBottom: 12 }}>
-                    <Text style={{ fontSize: 12, color: colors.textTertiary }}>{bio.length}/300</Text>
+                    <Text style={{ fontSize: 14, color: colors.textTertiary }}>{bio.length}/300</Text>
                     <TouchableOpacity onPress={generateBio} disabled={generatingBio}>
-                      <Text style={{ fontSize: 12, color: '#007AFF', fontWeight: '600' }}>{generatingBio ? 'Generating...' : 'Regenerate'}</Text>
+                      <Text style={{ fontSize: 14, color: '#007AFF', fontWeight: '600' }}>{generatingBio ? 'Generating...' : 'Regenerate'}</Text>
                     </TouchableOpacity>
                   </View>
                 </>
@@ -444,45 +444,45 @@ export default function CompleteProfileScreen() {
 const getS = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14 },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
-  headerSub: { fontSize: 13, color: colors.textTertiary, marginTop: 2 },
+  headerTitle: { fontSize: 19, fontWeight: '700', color: colors.text },
+  headerSub: { fontSize: 15, color: colors.textTertiary, marginTop: 2 },
   skipBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
-  skipText: { fontSize: 13, fontWeight: '600', color: '#FF9500' },
+  skipText: { fontSize: 15, fontWeight: '600', color: '#FF9500' },
   track: { height: 4, backgroundColor: colors.border, marginHorizontal: 20, borderRadius: 2 },
   fill: { height: 4, backgroundColor: '#007AFF', borderRadius: 2 },
   content: { padding: 24, paddingBottom: 120, maxWidth: 500, alignSelf: 'center' as const, width: '100%' },
   iconRow: { alignItems: 'center' as const, marginTop: 12, marginBottom: 12 },
   iconCircle: { width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(0,122,255,0.1)', alignItems: 'center' as const, justifyContent: 'center' as const },
   stepTitle: { fontSize: 22, fontWeight: '800', color: colors.text, textAlign: 'center' as const, marginBottom: 6 },
-  stepDesc: { fontSize: 14, color: colors.textSecondary, textAlign: 'center' as const, lineHeight: 20, marginBottom: 20 },
+  stepDesc: { fontSize: 16, color: colors.textSecondary, textAlign: 'center' as const, lineHeight: 20, marginBottom: 20 },
   body: { gap: 4 },
-  label: { fontSize: 13, fontWeight: '600', color: colors.text, marginBottom: 4, marginTop: 2 },
-  input: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13, fontSize: 16, color: colors.text, marginBottom: 10 },
+  label: { fontSize: 15, fontWeight: '600', color: colors.text, marginBottom: 4, marginTop: 2 },
+  input: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 16, paddingVertical: 13, fontSize: 18, color: colors.text, marginBottom: 10 },
   errRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6, marginTop: -4, marginBottom: 4 },
-  errText: { fontSize: 12, color: '#FF3B30' },
+  errText: { fontSize: 14, color: '#FF3B30' },
   photoArea: { alignSelf: 'center' as const, marginBottom: 4 },
   photoImg: { width: 120, height: 120, borderRadius: 60, borderWidth: 3, borderColor: '#007AFF' },
   photoEmpty: { width: 120, height: 120, borderRadius: 60, borderWidth: 2, borderColor: colors.border, borderStyle: 'dashed' as const, alignItems: 'center' as const, justifyContent: 'center' as const, backgroundColor: colors.card },
   toneRow: { flexDirection: 'row' as const, flexWrap: 'wrap' as const, gap: 8, marginBottom: 8 },
   toneChip: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
   toneActive: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
-  toneText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  toneText: { fontSize: 15, fontWeight: '600', color: colors.textSecondary },
   linkRow: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 10, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 14, marginBottom: 10 },
-  linkInput: { flex: 1, paddingVertical: 13, fontSize: 16, color: colors.text },
+  linkInput: { flex: 1, paddingVertical: 13, fontSize: 18, color: colors.text },
   tip: { flexDirection: 'row' as const, alignItems: 'flex-start' as const, gap: 8, padding: 12, backgroundColor: 'rgba(0,122,255,0.06)', borderRadius: 10, marginTop: 8 },
-  tipText: { flex: 1, fontSize: 12, color: colors.textSecondary, lineHeight: 16 },
+  tipText: { flex: 1, fontSize: 14, color: colors.textSecondary, lineHeight: 16 },
   genBtn: { flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'center' as const, gap: 8, backgroundColor: '#007AFF', paddingVertical: 16, borderRadius: 14, marginBottom: 16 },
-  genBtnText: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  genBtnText: { fontSize: 18, fontWeight: '700', color: '#fff' },
   previewCard: { marginTop: 20, backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' as const },
-  previewTitle: { fontSize: 12, fontWeight: '700', color: colors.textTertiary, textTransform: 'uppercase' as const, letterSpacing: 1, padding: 12, paddingBottom: 0 },
+  previewTitle: { fontSize: 14, fontWeight: '700', color: colors.textTertiary, textTransform: 'uppercase' as const, letterSpacing: 1, padding: 12, paddingBottom: 0 },
   previewBody: { alignItems: 'center' as const, padding: 20 },
   previewPhoto: { width: 72, height: 72, borderRadius: 36, marginBottom: 10 },
-  previewName: { fontSize: 18, fontWeight: '700', color: colors.text },
-  previewRole: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
-  previewBio: { fontSize: 13, color: colors.text, textAlign: 'center' as const, lineHeight: 18, marginTop: 10, paddingHorizontal: 12 },
+  previewName: { fontSize: 19, fontWeight: '700', color: colors.text },
+  previewRole: { fontSize: 15, color: colors.textSecondary, marginTop: 2 },
+  previewBio: { fontSize: 15, color: colors.text, textAlign: 'center' as const, lineHeight: 18, marginTop: 10, paddingHorizontal: 12 },
   previewIcons: { flexDirection: 'row' as const, gap: 12, marginTop: 12 },
   bottom: { flexDirection: 'row' as const, gap: 10, paddingHorizontal: 20, paddingVertical: 14, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.bg },
   backBtn: { width: 50, height: 50, borderRadius: 14, borderWidth: 1, borderColor: colors.border, alignItems: 'center' as const, justifyContent: 'center' as const, backgroundColor: colors.card },
   nextBtn: { flex: 1, flexDirection: 'row' as const, alignItems: 'center' as const, justifyContent: 'center' as const, gap: 8, backgroundColor: '#007AFF', paddingVertical: 16, borderRadius: 14 },
-  nextText: { fontSize: 17, fontWeight: '700', color: '#fff' },
+  nextText: { fontSize: 18, fontWeight: '700', color: '#fff' },
 });

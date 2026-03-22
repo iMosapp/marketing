@@ -177,7 +177,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   backButton: { padding: 4 },
-  title: { fontSize: 18, fontWeight: 'bold', color: colors.text },
+  title: { fontSize: 19, fontWeight: 'bold', color: colors.text },
   periodSelector: { flexDirection: 'row', padding: 16, gap: 8 },
   periodButton: {
     paddingHorizontal: 16,
@@ -198,8 +198,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   totalValue: { fontSize: 22, fontWeight: '700', color: colors.text, marginTop: 8 },
-  totalLabel: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 12 },
+  totalLabel: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 12 },
   memberCard: {
     backgroundColor: colors.card,
     borderRadius: 12,
@@ -213,7 +213,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   rankText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '700',
     color: colors.textSecondary,
   },
@@ -226,14 +226,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 12,
   },
   avatarText: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '700',
   },
   memberInfo: {
     flex: 1,
   },
   memberName: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
@@ -249,11 +249,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 4,
   },
   roleText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
   },
   lastActive: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
   },
   memberStats: {
@@ -264,12 +264,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   statValue: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: colors.text,
   },
   statLabel: {
-    fontSize: 10,
+    fontSize: 12,
     color: colors.textSecondary,
   },
 });

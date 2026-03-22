@@ -97,7 +97,7 @@ export default function DemoScreen() {
             {sourceLabel ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#007AFF12', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 8, marginBottom: 12 }}>
                 <Ionicons name="location" size={14} color="#007AFF" />
-                <Text style={{ fontSize: 12, fontWeight: '600', color: '#007AFF' }}>From: {sourceLabel}</Text>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#007AFF' }}>From: {sourceLabel}</Text>
               </View>
             ) : null}
             <Text style={s.label}>SCHEDULE A DEMO</Text>
@@ -198,14 +198,14 @@ const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
   scroll: { paddingBottom: 0 },
   titleSection: { alignItems: 'center', paddingTop: 40, paddingBottom: 24, paddingHorizontal: 20 },
-  label: { fontSize: 11, fontWeight: '700', color: '#007AFF', letterSpacing: 2, marginBottom: 12 },
+  label: { fontSize: 13, fontWeight: '700', color: '#007AFF', letterSpacing: 2, marginBottom: 12 },
   title: { fontSize: 28, fontWeight: '800', color: '#1D1D1F', marginBottom: 8, textAlign: 'center' },
-  subtitle: { fontSize: 15, color: '#6E6E73', textAlign: 'center', lineHeight: 22, maxWidth: 420 },
+  subtitle: { fontSize: 17, color: '#6E6E73', textAlign: 'center', lineHeight: 22, maxWidth: 420 },
   form: { paddingHorizontal: 20, gap: 16 },
   row: { flexDirection: 'row', gap: 12 },
   field: {},
   fieldHalf: { flex: 1 },
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: '#6E6E73', marginBottom: 6, marginLeft: 2 },
+  fieldLabel: { fontSize: 15, fontWeight: '600', color: '#6E6E73', marginBottom: 6, marginLeft: 2 },
   input: {
     backgroundColor: '#F5F5F7',
     borderWidth: 1,
@@ -213,7 +213,7 @@ const s = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    fontSize: 15,
+    fontSize: 17,
     color: '#1D1D1F',
   },
   submitBtn: {
@@ -226,16 +226,16 @@ const s = StyleSheet.create({
     borderRadius: 28,
     marginTop: 8,
   },
-  submitBtnText: { fontSize: 17, fontWeight: '700', color: '#FFF' },
-  hint: { fontSize: 13, color: '#86868B', textAlign: 'center', marginTop: 12 },
+  submitBtnText: { fontSize: 18, fontWeight: '700', color: '#FFF' },
+  hint: { fontSize: 15, color: '#86868B', textAlign: 'center', marginTop: 12 },
   hintLink: { color: '#007AFF', fontWeight: '600' },
   trustRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 20, paddingVertical: 40, paddingHorizontal: 20 },
   trustItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  trustText: { fontSize: 13, color: '#6E6E73' },
+  trustText: { fontSize: 15, color: '#6E6E73' },
   successWrap: { alignItems: 'center', paddingTop: 80, paddingBottom: 60, paddingHorizontal: 20 },
   successIcon: { marginBottom: 20 },
   successTitle: { fontSize: 28, fontWeight: '800', color: '#1D1D1F', marginBottom: 12 },
-  successDesc: { fontSize: 16, color: '#6E6E73', textAlign: 'center', lineHeight: 24, maxWidth: 400, marginBottom: 32 },
+  successDesc: { fontSize: 18, color: '#6E6E73', textAlign: 'center', lineHeight: 24, maxWidth: 400, marginBottom: 32 },
   backBtn: { paddingVertical: 14, paddingHorizontal: 28, borderRadius: 24, borderWidth: 1, borderColor: '#007AFF' },
-  backBtnText: { fontSize: 16, fontWeight: '600', color: '#007AFF' },
+  backBtnText: { fontSize: 18, fontWeight: '600', color: '#007AFF' },
 });

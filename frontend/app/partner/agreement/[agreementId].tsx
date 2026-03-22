@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
   loadingText: {
     color: '#FFF',
     marginTop: 16,
-    fontSize: 16,
+    fontSize: 18,
   },
   errorContainer: {
     flex: 1,
@@ -566,13 +566,13 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   errorTitle: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '600',
     color: '#FFF',
     marginTop: 16,
   },
   errorText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#8E8E93',
     marginTop: 8,
     textAlign: 'center',
@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
   signedHeaderTitle: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: '#FFF',
   },
@@ -609,7 +609,7 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
   signedSubtitle: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#8E8E93',
     marginTop: 8,
   },
@@ -628,16 +628,16 @@ const styles = StyleSheet.create({
     borderBottomColor: '#2C2C2E',
   },
   signedDetailLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#8E8E93',
   },
   signedDetailValue: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#FFF',
     fontWeight: '600',
   },
   nextStepsTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: '#FFF',
     marginTop: 32,
@@ -655,7 +655,7 @@ const styles = StyleSheet.create({
   },
   nextStepText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
     color: '#FFF',
     marginLeft: 12,
   },
@@ -673,7 +673,7 @@ const styles = StyleSheet.create({
   paymentHeaderTitle: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: '#FFF',
   },
@@ -690,7 +690,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   paymentSubtitle: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#8E8E93',
     marginTop: 8,
     textAlign: 'center',
@@ -704,7 +704,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   paymentAmountLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#8E8E93',
   },
   paymentAmountValue: {
@@ -725,7 +725,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   payButtonText: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: '#FFF',
   },
@@ -745,7 +745,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: '#FFF',
   },
@@ -757,7 +757,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   tierBadgeText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#34C759',
     fontWeight: '600',
   },
@@ -768,7 +768,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: '#FFF',
     marginBottom: 16,
@@ -785,14 +785,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   mdH2: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: '#FFF',
     marginTop: 20,
     marginBottom: 12,
   },
   mdText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#CCC',
     lineHeight: 22,
   },
@@ -802,7 +802,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   mdBullet: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#8E8E93',
     marginRight: 8,
   },
@@ -816,7 +816,7 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   formLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#8E8E93',
     marginBottom: 8,
     marginTop: 12,
@@ -825,7 +825,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1C1C1E',
     borderRadius: 10,
     padding: 14,
-    fontSize: 16,
+    fontSize: 18,
     color: '#FFF',
   },
   addressRow: {
@@ -855,7 +855,7 @@ const styles = StyleSheet.create({
     borderColor: '#007AFF',
   },
   signatureTypeText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#8E8E93',
   },
   signatureTypeTextActive: {
@@ -866,7 +866,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1C1C1E',
     borderRadius: 10,
     padding: 14,
-    fontSize: 16,
+    fontSize: 18,
     color: '#FFF',
     marginBottom: 16,
   },
@@ -904,7 +904,7 @@ const styles = StyleSheet.create({
   },
   agreeText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
     color: '#FFF',
   },
   paymentNote: {
@@ -918,7 +918,7 @@ const styles = StyleSheet.create({
   },
   paymentNoteText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 15,
     color: '#FF9500',
   },
   signButton: {
@@ -934,7 +934,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#3C3C3E',
   },
   signButtonText: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: '#FFF',
   },

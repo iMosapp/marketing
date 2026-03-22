@@ -196,7 +196,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: 'bold',
     color: colors.text,
   },
@@ -211,7 +211,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   roleBadgeText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     fontWeight: '500',
   },
@@ -238,12 +238,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   activityMessage: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
     lineHeight: 20,
   },
   activityTime: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 4,
   },
@@ -252,14 +252,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 64,
   },
   emptyText: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '600',
     color: colors.text,
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     textAlign: 'center',
     paddingHorizontal: 32,

@@ -358,13 +358,13 @@ const styles = StyleSheet.create({
     }),
   },
   errorTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: '#1E293B',
     marginTop: 16,
   },
   errorText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#94A3B8',
     marginTop: 6,
     textAlign: 'center',
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: 17,
     color: '#64748B',
     textAlign: 'center',
     marginTop: 8,
@@ -442,7 +442,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   salespersonText: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#64748B',
   },
   divider: {
@@ -476,7 +476,7 @@ const styles = StyleSheet.create({
   },
   linkText: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#1E293B',
     marginLeft: 14,
@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#94A3B8',
     marginTop: 10,
   },
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   storeInfoText: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#94A3B8',
   },
   feedbackCard: {
@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
     }),
   },
   feedbackHeading: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: '#334155',
     textAlign: 'center',
@@ -541,7 +541,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderRadius: 10,
     padding: 14,
-    fontSize: 15,
+    fontSize: 17,
     color: '#1E293B',
     borderWidth: 1,
     borderColor: '#E2E8F0',
@@ -559,7 +559,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   feedbackSubmitText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#FFF',
   },
@@ -568,13 +568,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   feedbackSuccessTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '700',
     color: '#1E293B',
     marginTop: 10,
   },
   feedbackSuccessText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#64748B',
     marginTop: 4,
   },
@@ -584,7 +584,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#CBD5E1',
   },
   footerBrand: {
@@ -592,7 +592,7 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
   },
   footerUrl: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#94A3B8',
   },
 });

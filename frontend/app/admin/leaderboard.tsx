@@ -77,11 +77,11 @@ export default function LeaderboardScreen() {
         <TouchableOpacity onPress={() => router.back()} style={{ padding: 4, marginRight: 8 }} data-testid="leaderboard-back-btn">
           <Ionicons name="chevron-back" size={24} color={colors.accent} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, flex: 1 }}>Leaderboard</Text>
+        <Text style={{ fontSize: 19, fontWeight: '700', color: colors.text, flex: 1 }}>Leaderboard</Text>
         {isAdmin && (
           <TouchableOpacity onPress={sendPowerRankings} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 5, paddingHorizontal: 10, borderRadius: 8, backgroundColor: 'rgba(201,169,98,0.12)' }} data-testid="send-rankings-btn">
             <Ionicons name="mail-outline" size={16} color={colors.accent} />
-            <Text style={{ fontSize: 12, fontWeight: '600', color: colors.accent }}>Send Rankings</Text>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.accent }}>Send Rankings</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -102,7 +102,7 @@ export default function LeaderboardScreen() {
               data-testid={`tier-${t.key}`}
             >
               <Ionicons name={t.icon as any} size={16} color={tier === t.key ? '#000' : colors.textSecondary} />
-              <Text style={{ fontSize: 13, fontWeight: '600', color: tier === t.key ? '#000' : colors.textSecondary }}>{t.label}</Text>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: tier === t.key ? '#000' : colors.textSecondary }}>{t.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -120,7 +120,7 @@ export default function LeaderboardScreen() {
               }}
               data-testid={`period-${p.key}`}
             >
-              <Text style={{ fontSize: 12, fontWeight: '600', color: period === p.key ? colors.accent : colors.textSecondary }}>{p.label}</Text>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: period === p.key ? colors.accent : colors.textSecondary }}>{p.label}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -136,10 +136,10 @@ export default function LeaderboardScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                     <Text style={{ fontSize: 28, fontWeight: '800', color: colors.accent }}>#{yourStats.rank}</Text>
                     <View>
-                      <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>Your Rank</Text>
+                      <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>Your Rank</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
                         <Ionicons name={level.icon as any || 'shield-outline'} size={14} color={level.color || colors.accent} />
-                        <Text style={{ fontSize: 13, fontWeight: '700', color: level.color || colors.accent }}>{level.title || 'Rookie'}</Text>
+                        <Text style={{ fontSize: 15, fontWeight: '700', color: level.color || colors.accent }}>{level.title || 'Rookie'}</Text>
                       </View>
                     </View>
                   </View>
@@ -147,11 +147,11 @@ export default function LeaderboardScreen() {
                     {yourStats.streak > 0 && (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(255,150,0,0.12)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 }}>
                         <Ionicons name="flame" size={14} color="#FF9500" />
-                        <Text style={{ fontSize: 12, fontWeight: '700', color: '#FF9500' }}>{yourStats.streak}d streak</Text>
+                        <Text style={{ fontSize: 14, fontWeight: '700', color: '#FF9500' }}>{yourStats.streak}d streak</Text>
                       </View>
                     )}
-                    <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, marginTop: 2 }}>{yourStats.scores?.total || 0}</Text>
-                    <Text style={{ fontSize: 11, color: colors.textSecondary }}>total pts</Text>
+                    <Text style={{ fontSize: 21, fontWeight: '800', color: colors.text, marginTop: 2 }}>{yourStats.scores?.total || 0}</Text>
+                    <Text style={{ fontSize: 13, color: colors.textSecondary }}>total pts</Text>
                   </View>
                 </View>
 
@@ -161,7 +161,7 @@ export default function LeaderboardScreen() {
                     <View style={{ height: '100%', backgroundColor: level.color || colors.accent, borderRadius: 4, width: `${level.progress_pct || 0}%` }} />
                   </View>
                   {level.next_level && (
-                    <Text style={{ fontSize: 10, color: colors.textTertiary, marginTop: 3, textAlign: 'right' }}>
+                    <Text style={{ fontSize: 12, color: colors.textTertiary, marginTop: 3, textAlign: 'right' }}>
                       {level.next_at ? level.next_at - (yourStats.scores?.total || 0) : 0} pts to {level.next_level}
                     </Text>
                   )}
@@ -170,7 +170,7 @@ export default function LeaderboardScreen() {
                 {/* You vs Average */}
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingTop: 6, borderTopWidth: 0.5, borderTopColor: colors.border }}>
                   <Ionicons name={yourStats.vs_avg >= 0 ? 'trending-up' : 'trending-down'} size={16} color={yourStats.vs_avg >= 0 ? '#34C759' : '#FF3B30'} />
-                  <Text style={{ fontSize: 13, color: yourStats.vs_avg >= 0 ? '#34C759' : '#FF3B30', fontWeight: '600' }}>
+                  <Text style={{ fontSize: 15, color: yourStats.vs_avg >= 0 ? '#34C759' : '#FF3B30', fontWeight: '600' }}>
                     {yourStats.vs_avg >= 0 ? '+' : ''}{yourStats.vs_avg} vs team avg ({yourStats.team_avg})
                   </Text>
                 </View>
@@ -193,7 +193,7 @@ export default function LeaderboardScreen() {
                     }}
                     data-testid={`cat-${k}`}
                   >
-                    <Text style={{ fontSize: 12, fontWeight: '600', color: active ? colors.accent : colors.textSecondary }}>{label}</Text>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: active ? colors.accent : colors.textSecondary }}>{label}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -215,15 +215,15 @@ export default function LeaderboardScreen() {
                         {entry.photo ? (
                           <Image source={{ uri: entry.photo }} style={{ width: 44, height: 44, borderRadius: 12 }} />
                         ) : (
-                          <Text style={{ fontWeight: '800', fontSize: 16, color: badgeColor }}>{getInitials(displayName)}</Text>
+                          <Text style={{ fontWeight: '800', fontSize: 18, color: badgeColor }}>{getInitials(displayName)}</Text>
                         )}
                       </View>
-                      <Text style={{ fontSize: 11, fontWeight: '700', color: isYou ? colors.accent : colors.text, textAlign: 'center' }} numberOfLines={1}>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: isYou ? colors.accent : colors.text, textAlign: 'center' }} numberOfLines={1}>
                         {isYou ? 'You' : displayName}
                       </Text>
-                      <Text style={{ fontSize: 16, fontWeight: '800', color: badgeColor }}>{entry.sort_score || entry.scores?.total || 0}</Text>
+                      <Text style={{ fontSize: 18, fontWeight: '800', color: badgeColor }}>{entry.sort_score || entry.scores?.total || 0}</Text>
                       <View style={{ width: '90%', height, backgroundColor: `${badgeColor}18`, borderTopLeftRadius: 10, borderTopRightRadius: 10, alignItems: 'center', justifyContent: 'flex-start', paddingTop: 6, marginTop: 4 }}>
-                        <Text style={{ fontSize: 20, fontWeight: '800', color: badgeColor }}>#{podiumOrder}</Text>
+                        <Text style={{ fontSize: 21, fontWeight: '800', color: badgeColor }}>#{podiumOrder}</Text>
                       </View>
                     </View>
                   );
@@ -248,23 +248,23 @@ export default function LeaderboardScreen() {
                   }}
                   data-testid={`rank-${rank}`}
                 >
-                  <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textSecondary, width: 28, textAlign: 'center' }}>#{rank}</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textSecondary, width: 28, textAlign: 'center' }}>#{rank}</Text>
                   <View style={{ width: 38, height: 38, borderRadius: 10, backgroundColor: isYou ? 'rgba(201,169,98,0.12)' : 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' }}>
                     {entry.photo ? (
                       <Image source={{ uri: entry.photo }} style={{ width: 34, height: 34, borderRadius: 8 }} />
                     ) : (
-                      <Text style={{ fontWeight: '700', fontSize: 13, color: isYou ? colors.accent : colors.textSecondary }}>{getInitials(displayName)}</Text>
+                      <Text style={{ fontWeight: '700', fontSize: 15, color: isYou ? colors.accent : colors.textSecondary }}>{getInitials(displayName)}</Text>
                     )}
                   </View>
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: isYou ? colors.accent : colors.text }} numberOfLines={1}>
+                    <Text style={{ fontSize: 16, fontWeight: '600', color: isYou ? colors.accent : colors.text }} numberOfLines={1}>
                       {isYou ? `${displayName} (You)` : displayName}
                     </Text>
                     {tier === 'org' && entry.members && (
-                      <Text style={{ fontSize: 11, color: colors.textSecondary }}>{entry.members} members</Text>
+                      <Text style={{ fontSize: 13, color: colors.textSecondary }}>{entry.members} members</Text>
                     )}
                   </View>
-                  <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{entry.sort_score || entry.scores?.total || 0}</Text>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>{entry.sort_score || entry.scores?.total || 0}</Text>
                 </View>
               );
             })}
@@ -272,8 +272,8 @@ export default function LeaderboardScreen() {
             {leaderboard.length === 0 && (
               <View style={{ alignItems: 'center', paddingVertical: 40 }}>
                 <Ionicons name="trophy-outline" size={48} color={colors.textTertiary} />
-                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textSecondary, marginTop: 12 }}>No data yet</Text>
-                <Text style={{ fontSize: 13, color: colors.textTertiary, marginTop: 4 }}>Start completing tasks to climb the ranks!</Text>
+                <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textSecondary, marginTop: 12 }}>No data yet</Text>
+                <Text style={{ fontSize: 15, color: colors.textTertiary, marginTop: 4 }}>Start completing tasks to climb the ranks!</Text>
               </View>
             )}
           </>

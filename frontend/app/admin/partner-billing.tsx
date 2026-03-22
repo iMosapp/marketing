@@ -247,7 +247,7 @@ export default function PartnerBillingScreen() {
                         style={{ backgroundColor: '#C9A962', borderRadius: 10, padding: 12, border: 'none', cursor: 'pointer', marginTop: 8, width: '100%' }}
                         data-testid="save-platform-billing-btn"
                       >
-                        {savingPlatform ? <ActivityIndicator size="small" color="#000" /> : <Text style={{ color: '#000', fontWeight: '600', fontSize: 15, textAlign: 'center' }}>Save Billing Config</Text>}
+                        {savingPlatform ? <ActivityIndicator size="small" color="#000" /> : <Text style={{ color: '#000', fontWeight: '600', fontSize: 17, textAlign: 'center' }}>Save Billing Config</Text>}
                       </button>
                     ) : (
                       <TouchableOpacity style={s.saveBtn} onPress={handleSavePlatformBilling} disabled={savingPlatform}>
@@ -295,7 +295,7 @@ export default function PartnerBillingScreen() {
               {clientRecords.length === 0 ? (
                 <View style={s.infoBlock}>
                   <Text style={s.emptyText}>No billing records yet</Text>
-                  <Text style={[s.emptyText, { fontSize: 12, marginTop: 4 }]}>
+                  <Text style={[s.emptyText, { fontSize: 14, marginTop: 4 }]}>
                     Add billing when onboarding new orgs or stores
                   </Text>
                 </View>
@@ -328,7 +328,7 @@ export default function PartnerBillingScreen() {
         <SafeAreaView style={s.modalContainer}>
           <View style={s.modalHeader}>
             <TouchableOpacity onPress={() => setShowAddRecord(false)} data-testid="modal-cancel">
-              <Text style={{ fontSize: 17, color: '#007AFF' }}>Cancel</Text>
+              <Text style={{ fontSize: 18, color: '#007AFF' }}>Cancel</Text>
             </TouchableOpacity>
             <Text style={s.modalTitle}>New Billing Record</Text>
             {Platform.OS === 'web' ? (
@@ -339,11 +339,11 @@ export default function PartnerBillingScreen() {
                 style={{ background: 'none', border: 'none', cursor: 'pointer' }}
                 data-testid="modal-save"
               >
-                {savingRecord ? <ActivityIndicator size="small" color="#C9A962" /> : <Text style={{ fontSize: 17, fontWeight: '600', color: '#C9A962' }}>Save</Text>}
+                {savingRecord ? <ActivityIndicator size="small" color="#C9A962" /> : <Text style={{ fontSize: 18, fontWeight: '600', color: '#C9A962' }}>Save</Text>}
               </button>
             ) : (
               <TouchableOpacity onPress={handleAddClientRecord} disabled={savingRecord} data-testid="modal-save">
-                {savingRecord ? <ActivityIndicator size="small" color="#C9A962" /> : <Text style={{ fontSize: 17, fontWeight: '600', color: '#C9A962' }}>Save</Text>}
+                {savingRecord ? <ActivityIndicator size="small" color="#C9A962" /> : <Text style={{ fontSize: 18, fontWeight: '600', color: '#C9A962' }}>Save</Text>}
               </TouchableOpacity>
             )}
           </View>
@@ -394,50 +394,50 @@ const getS = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.card },
   headerBtn: { padding: 4, minWidth: 44 },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
-  headerSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
+  headerSub: { fontSize: 14, color: colors.textSecondary, marginTop: 2 },
   scroll: { padding: 16 },
 
   summaryCard: { backgroundColor: colors.card, borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.surface },
   summaryGrid: { flexDirection: 'row', gap: 16, marginTop: 12 },
   summaryItem: { alignItems: 'center', flex: 1 },
   summaryNum: { fontSize: 24, fontWeight: '700', color: colors.text },
-  summaryLabel: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+  summaryLabel: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
 
   section: { backgroundColor: colors.card, borderRadius: 14, marginBottom: 16, borderWidth: 1, borderColor: colors.surface, overflow: 'hidden' },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 14, borderBottomWidth: 1, borderBottomColor: colors.surface },
-  sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.text, flex: 1 },
+  sectionTitle: { fontSize: 17, fontWeight: '700', color: colors.text, flex: 1 },
 
   formBlock: { padding: 14 },
   infoBlock: { padding: 14 },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
-  infoLabel: { fontSize: 14, color: colors.textSecondary },
-  infoValue: { fontSize: 14, fontWeight: '600', color: colors.text },
-  notesText: { fontSize: 13, color: colors.textSecondary, fontStyle: 'italic', marginTop: 8 },
-  emptyText: { fontSize: 14, color: colors.textSecondary, textAlign: 'center' },
+  infoLabel: { fontSize: 16, color: colors.textSecondary },
+  infoValue: { fontSize: 16, fontWeight: '600', color: colors.text },
+  notesText: { fontSize: 15, color: colors.textSecondary, fontStyle: 'italic', marginTop: 8 },
+  emptyText: { fontSize: 16, color: colors.textSecondary, textAlign: 'center' },
 
-  inputLabel: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 6, marginTop: 12 },
-  input: { backgroundColor: colors.surface, borderRadius: 10, padding: 12, fontSize: 15, color: colors.text, borderWidth: 1, borderColor: colors.borderLight || colors.surface },
+  inputLabel: { fontSize: 15, fontWeight: '600', color: colors.textSecondary, marginBottom: 6, marginTop: 12 },
+  input: { backgroundColor: colors.surface, borderRadius: 10, padding: 12, fontSize: 17, color: colors.text, borderWidth: 1, borderColor: colors.borderLight || colors.surface },
 
   modelPicker: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   modelOption: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.surface },
   modelOptionActive: { backgroundColor: '#C9A96220', borderColor: '#C9A962' },
-  modelText: { fontSize: 13, color: colors.textSecondary },
+  modelText: { fontSize: 15, color: colors.textSecondary },
   modelTextActive: { color: '#C9A962', fontWeight: '600' },
 
   toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
-  toggleLabel: { fontSize: 14, color: colors.text },
+  toggleLabel: { fontSize: 16, color: colors.text },
 
   saveBtn: { backgroundColor: '#C9A962', borderRadius: 10, padding: 12, alignItems: 'center', marginTop: 8 },
-  saveBtnText: { color: '#000', fontWeight: '600', fontSize: 15 },
+  saveBtnText: { color: '#000', fontWeight: '600', fontSize: 17 },
 
   recordCard: { padding: 14, borderBottomWidth: 1, borderBottomColor: colors.surface },
-  recordName: { fontSize: 15, fontWeight: '600', color: colors.text },
-  recordMeta: { fontSize: 12, color: colors.textSecondary, marginTop: 3 },
-  recordContact: { fontSize: 12, color: '#007AFF', marginTop: 2 },
-  recordNotes: { fontSize: 12, color: colors.textSecondary, fontStyle: 'italic', marginTop: 2 },
+  recordName: { fontSize: 17, fontWeight: '600', color: colors.text },
+  recordMeta: { fontSize: 14, color: colors.textSecondary, marginTop: 3 },
+  recordContact: { fontSize: 14, color: '#007AFF', marginTop: 2 },
+  recordNotes: { fontSize: 14, color: colors.textSecondary, fontStyle: 'italic', marginTop: 2 },
 
   modalContainer: { flex: 1, backgroundColor: colors.bg },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.surface },
-  modalTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
+  modalTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
 });

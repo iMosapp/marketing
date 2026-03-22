@@ -421,7 +421,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -453,7 +453,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   emptySubtitle: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
@@ -469,7 +469,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   createButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -495,13 +495,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   campaignName: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 2,
   },
   campaignSubject: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   statusToggle: {
@@ -514,7 +514,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#34C75920',
   },
   statusText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
   },
@@ -522,7 +522,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: '#34C759',
   },
   campaignDescription: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 12,
     lineHeight: 20,
@@ -541,12 +541,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 6,
   },
   statValue: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
   statLabel: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
 
@@ -565,16 +565,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   modalCancel: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textSecondary,
   },
   modalTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   modalSave: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -586,7 +586,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 20,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 8,
@@ -595,7 +595,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.surface,
@@ -619,7 +619,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF10',
   },
   triggerOptionName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginTop: 8,
@@ -628,7 +628,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: '#007AFF',
   },
   triggerOptionDesc: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 4,
   },
@@ -640,13 +640,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 40,
   },
   placeholdersTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 12,
   },
   placeholder: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginBottom: 6,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',

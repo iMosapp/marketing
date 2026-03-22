@@ -83,7 +83,7 @@ const inputStyles = StyleSheet.create({
     flex: 1,
   },
   inputLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#8E8E93',
     marginBottom: 6,
   },
@@ -98,12 +98,12 @@ const inputStyles = StyleSheet.create({
   input: {
     flex: 1,
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
   inputSuffix: {
     color: '#8E8E93',
-    fontSize: 14,
+    fontSize: 16,
     marginLeft: 4,
   },
 });
@@ -620,7 +620,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -631,7 +631,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
     letterSpacing: 0.5,
@@ -656,16 +656,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 14,
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
     marginBottom: 4,
   },
   statValue: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '700',
   },
   statSubtext: {
-    fontSize: 10,
+    fontSize: 12,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -678,7 +678,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#34C759',
   },
   yearEndLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
   },
   yearEndValue: {
@@ -688,7 +688,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 4,
   },
   yearEndSubtext: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 4,
   },
@@ -709,7 +709,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
     color: colors.textSecondary,
   },
@@ -725,7 +725,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 4,
   },
   tableHeaderCell: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     color: colors.textSecondary,
     textAlign: 'center',
@@ -738,7 +738,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.card,
   },
   tableCell: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.text,
     textAlign: 'center',
   },
@@ -767,12 +767,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   repSummaryLabel: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
     marginBottom: 4,
   },
   repSummaryValue: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '700',
     color: '#34C759',
   },
@@ -786,13 +786,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#AF52DE',
   },
   bonusSummaryText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 12,
   },
   bonusTotalLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
   },
   bonusTotalValue: {
@@ -802,7 +802,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 4,
   },
   bonusPerRep: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 8,
   },
@@ -824,7 +824,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#C9A962',
   },
   periodButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
   },
@@ -845,7 +845,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   yearBreakdownTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: colors.text,
     flex: 1,
@@ -857,7 +857,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 12,
   },
   yearMRRText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: '#34C759',
   },
@@ -871,12 +871,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     minWidth: '45%',
   },
   yearStatLabel: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
     marginBottom: 2,
   },
   yearStatValue: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
   },
 });

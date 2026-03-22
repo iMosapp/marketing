@@ -460,7 +460,7 @@ export default function AppointmentModal({
                     }
                   }}
                   style={{
-                    fontSize: 18,
+                    fontSize: 19,
                     padding: 12,
                     borderRadius: 8,
                     border: '1px solid #3C3C3E',
@@ -505,7 +505,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 40,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -514,7 +514,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'flex-end',
   },
   saveButtonText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -533,7 +533,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   mvpBannerText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 17,
     color: '#34C759',
     fontWeight: '500',
   },
@@ -541,7 +541,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 20,
   },
   inputLabel: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 8,
@@ -551,7 +551,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   notesInput: {
@@ -580,7 +580,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 10,
   },
   dateButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   durationRow: {
@@ -598,7 +598,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   durationButtonText: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.textSecondary,
   },
@@ -621,12 +621,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   calendarToggleText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     fontWeight: '500',
   },
   calendarToggleSubtext: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -663,12 +663,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   contactName: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   contactPhone: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -678,7 +678,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 40,
   },
   skipButtonText: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
   },
   pickerModal: {
@@ -699,7 +699,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   pickerDone: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -717,7 +717,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     minWidth: 280,
   },
   webPickerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 20,
@@ -729,7 +729,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 40,
   },
   webPickerButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },

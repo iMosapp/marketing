@@ -524,7 +524,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 100,
-    fontSize: 16,
+    fontSize: 18,
   },
   header: {
     flexDirection: 'row',
@@ -539,7 +539,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 60,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -548,7 +548,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'flex-end',
   },
   saveButtonText: {
-    fontSize: 17,
+    fontSize: 18,
     color: '#007AFF',
     fontWeight: '600',
   },
@@ -557,7 +557,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 16,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 8,
@@ -565,7 +565,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     letterSpacing: 0.5,
   },
   sectionDesc: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginBottom: 12,
   },
@@ -604,13 +604,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   logoUploadTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 4,
   },
   logoUploadHint: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6E6E73',
     lineHeight: 17,
     marginBottom: 10,
@@ -626,7 +626,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignSelf: 'flex-start',
   },
   logoUploadBtnText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -645,11 +645,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
   },
   avatarPreviewLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6E6E73',
   },
   label: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginBottom: 6,
     marginTop: 12,
@@ -658,7 +658,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 14,
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
   },
   row: {
@@ -672,7 +672,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   dayName: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
     width: 100,
   },
@@ -687,7 +687,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#FF3B3020',
   },
   closedText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: '#34C759',
   },
@@ -695,7 +695,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: '#FF3B30',
   },
   closedLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#FF3B30',
     marginLeft: 'auto',
   },
@@ -708,7 +708,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 8,
     padding: 8,
-    fontSize: 14,
+    fontSize: 16,
     color: colors.text,
     width: 65,
     textAlign: 'center',
@@ -735,11 +735,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 12,
-    fontSize: 14,
+    fontSize: 16,
     color: colors.text,
   },
   reviewLinkLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginBottom: 12,
   },
@@ -753,19 +753,19 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: colors.surface,
   },
   slugPrefix: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6E6E73',
   },
   slugInput: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
     fontWeight: '600',
     paddingVertical: 12,
     paddingHorizontal: 4,
   },
   slugHint: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#6E6E73',
     marginTop: 6,
     marginBottom: 4,
@@ -779,7 +779,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   reviewLinkUrl: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
     color: '#007AFF',
   },
   copyButton: {
@@ -796,7 +796,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   previewButtonText: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     marginLeft: 8,
   },
@@ -805,13 +805,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 20,
   },
   gmbTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginTop: 12,
   },
   gmbDesc: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 8,
@@ -829,7 +829,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   gmbButtonText: {
     color: '#4285F4',
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
   },
 });

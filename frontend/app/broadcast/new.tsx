@@ -671,7 +671,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
   },
@@ -683,7 +683,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 20,
   },
   label: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 8,
@@ -692,7 +692,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.surface,
@@ -702,7 +702,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingTop: 14,
   },
   charCount: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6E6E73',
     textAlign: 'right',
     marginTop: 4,
@@ -740,7 +740,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   addMediaText: {
-    fontSize: 10,
+    fontSize: 12,
     color: '#007AFF',
     marginTop: 4,
   },
@@ -762,7 +762,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 10,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -771,7 +771,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingTop: 0,
   },
   filterLabel: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginBottom: 10,
   },
@@ -793,14 +793,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#FF3B30',
   },
   tagChipText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.text,
   },
   tagChipTextSelected: {
     fontWeight: '600',
   },
   noTagsText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#6E6E73',
     fontStyle: 'italic',
   },
@@ -819,7 +819,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   presetText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   presetTextActive: {
@@ -840,7 +840,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   monthText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
   },
   monthTextActive: {
@@ -858,7 +858,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 12,
     padding: 12,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   scheduleOptions: {
@@ -876,7 +876,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: 'rgba(0, 122, 255, 0.15)',
   },
   scheduleOptionText: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
   },
   scheduleOptionTextActive: {
@@ -898,7 +898,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 12,
   },
   dateTimeText: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
   },
   previewCard: {
@@ -914,12 +914,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 10,
   },
   previewTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   previewCount: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
@@ -941,7 +941,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#007AFF',
   },
   saveButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -959,7 +959,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.borderLight,
   },
   sendButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },

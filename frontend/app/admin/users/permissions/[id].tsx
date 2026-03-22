@@ -126,11 +126,11 @@ export default function UserPermissionsScreen() {
           <Ionicons name="chevron-back" size={24} color={colors.accent} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>Feature Permissions</Text>
-          {userName ? <Text style={{ fontSize: 12, color: colors.textSecondary }}>{userName} ({roleLabel})</Text> : null}
+          <Text style={{ fontSize: 19, fontWeight: '700', color: colors.text }}>Feature Permissions</Text>
+          {userName ? <Text style={{ fontSize: 14, color: colors.textSecondary }}>{userName} ({roleLabel})</Text> : null}
         </View>
         <TouchableOpacity onPress={savePerms} disabled={saving} style={{ paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8, backgroundColor: colors.accent }} data-testid="save-perms-btn">
-          {saving ? <ActivityIndicator size="small" color="#000" /> : <Text style={{ fontSize: 14, fontWeight: '700', color: '#000' }}>Save</Text>}
+          {saving ? <ActivityIndicator size="small" color="#000" /> : <Text style={{ fontSize: 16, fontWeight: '700', color: '#000' }}>Save</Text>}
         </TouchableOpacity>
       </View>
 
@@ -141,7 +141,7 @@ export default function UserPermissionsScreen() {
           {/* Enable All shortcut */}
           <TouchableOpacity onPress={enableAll} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10 }} data-testid="enable-all-btn">
             <Ionicons name="toggle" size={18} color={colors.accent} />
-            <Text style={{ fontSize: 13, fontWeight: '600', color: colors.accent }}>Enable All Features</Text>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: colors.accent }}>Enable All Features</Text>
           </TouchableOpacity>
 
           {SECTIONS.map(section => {
@@ -162,8 +162,8 @@ export default function UserPermissionsScreen() {
                     <Ionicons name={section.icon as any} size={18} color={section.color} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>{section.title}</Text>
-                    <Text style={{ fontSize: 11, color: colors.textSecondary }}>{enabledCount}/{section.items.length} features enabled</Text>
+                    <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>{section.title}</Text>
+                    <Text style={{ fontSize: 13, color: colors.textSecondary }}>{enabledCount}/{section.items.length} features enabled</Text>
                   </View>
                   <Switch
                     value={sectionEnabled}
@@ -182,7 +182,7 @@ export default function UserPermissionsScreen() {
                         borderBottomWidth: idx < section.items.length - 1 ? 0.5 : 0, borderBottomColor: colors.border,
                       }}>
                         <Ionicons name={item.icon as any} size={18} color={sectionPerms[item.key] ? section.color : '#48484A'} />
-                        <Text style={{ flex: 1, fontSize: 14, color: sectionPerms[item.key] ? colors.text : '#636366' }}>{item.label}</Text>
+                        <Text style={{ flex: 1, fontSize: 16, color: sectionPerms[item.key] ? colors.text : '#636366' }}>{item.label}</Text>
                         <Switch
                           value={!!sectionPerms[item.key]}
                           onValueChange={() => toggleItem(section.key, item.key)}
@@ -197,7 +197,7 @@ export default function UserPermissionsScreen() {
             );
           })}
 
-          <Text style={{ fontSize: 12, color: '#48484A', textAlign: 'center', paddingHorizontal: 32, paddingTop: 8 }}>
+          <Text style={{ fontSize: 14, color: '#48484A', textAlign: 'center', paddingHorizontal: 32, paddingTop: 8 }}>
             Admin section is always visible for admin/manager roles and cannot be toggled here.
           </Text>
         </ScrollView>

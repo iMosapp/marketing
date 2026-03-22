@@ -439,7 +439,7 @@ export default function OrganizationsScreen() {
                     data-testid="partner-dropdown-toggle"
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <Text style={{ fontSize: 16, color: newOrg.partner_id ? colors.text : colors.textSecondary }}>
+                      <Text style={{ fontSize: 18, color: newOrg.partner_id ? colors.text : colors.textSecondary }}>
                         {newOrg.partner_id
                           ? partners.find(p => p._id === newOrg.partner_id)?.name || 'Select Partner'
                           : 'None (No Partner)'}
@@ -506,7 +506,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: 'bold',
     color: colors.text,
   },
@@ -538,17 +538,17 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   searchResultCount: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 8,
     marginLeft: 4,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#6E6E73',
     marginTop: 8,
   },
@@ -580,12 +580,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   orgName: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   orgType: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -603,7 +603,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   statText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   orgFooter: {
@@ -616,7 +616,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
   },
   emptyContainer: {
@@ -624,7 +624,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 48,
   },
   emptyText: {
-    fontSize: 18,
+    fontSize: 19,
     color: colors.textSecondary,
     marginTop: 16,
     marginBottom: 24,
@@ -636,7 +636,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 12,
   },
   createButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -654,16 +654,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   modalCancel: {
-    fontSize: 17,
+    fontSize: 18,
     color: '#007AFF',
   },
   modalTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   modalSave: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -671,7 +671,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 16,
   },
   inputLabel: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 8,
@@ -681,7 +681,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.surface,
@@ -707,7 +707,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#007AFF',
   },
   typeText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
   },
@@ -739,7 +739,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF10',
   },
   partnerPickerText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
 });

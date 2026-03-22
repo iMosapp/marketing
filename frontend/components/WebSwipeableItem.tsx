@@ -267,7 +267,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   actionLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
     letterSpacing: 0.2,
   },

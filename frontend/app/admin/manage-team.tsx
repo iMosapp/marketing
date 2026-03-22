@@ -510,7 +510,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -533,11 +533,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 8,
   },
   billingLabel: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
   },
   billingValue: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
@@ -548,12 +548,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingTop: 16,
   },
   billingTotalLabel: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   billingTotalValue: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '700',
     color: '#C9A962',
   },
@@ -578,12 +578,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   addCTATitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   addCTASubtitle: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -591,7 +591,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 12,
@@ -604,7 +604,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 15,
+    fontSize: 17,
     color: '#6E6E73',
   },
   memberCard: {
@@ -631,7 +631,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
   },
   memberInitials: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -639,7 +639,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   memberName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -647,7 +647,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.textSecondary,
   },
   memberEmail: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -666,7 +666,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: 'rgba(201,169,98,0.2)',
   },
   roleBadgeText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     color: colors.text,
   },
@@ -680,7 +680,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   pendingBadgeText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     color: '#FF9500',
   },
@@ -710,16 +710,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.card,
   },
   modalCancel: {
-    fontSize: 17,
+    fontSize: 18,
     color: '#007AFF',
   },
   modalTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   modalSave: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -738,7 +738,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   costNoticeText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
     color: '#007AFF',
     lineHeight: 20,
   },
@@ -749,7 +749,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 20,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
     color: colors.text,
     marginBottom: 8,
@@ -758,7 +758,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     borderWidth: 1,
     borderColor: '#3C3C3E',
@@ -784,7 +784,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#C9A962',
   },
   roleOptionText: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '500',
     color: colors.textSecondary,
   },
@@ -798,7 +798,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 8,
   },
   infoBoxTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 14,
@@ -818,13 +818,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 12,
   },
   infoStepNumText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
     color: colors.text,
   },
   infoStepText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
   },
 });

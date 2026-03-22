@@ -517,7 +517,7 @@ export default function InviteTeamScreen() {
               <Ionicons name="chatbubble-outline" size={18} color={sendSms ? '#34C759' : colors.textSecondary} />
               <View>
                 <Text style={[styles.inputLabel, { marginBottom: 0 }]}>Send SMS with login info</Text>
-                <Text style={{ fontSize: 12, color: colors.textSecondary }}>App links + temp password via text</Text>
+                <Text style={{ fontSize: 14, color: colors.textSecondary }}>App links + temp password via text</Text>
               </View>
             </View>
             <View style={[styles.toggle, sendSms && styles.toggleActive]}>
@@ -608,7 +608,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -628,12 +628,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   sectionDescription: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginBottom: 16,
   },
@@ -649,14 +649,14 @@ const getStyles = (colors: any) => StyleSheet.create({
   successText: {
     flex: 1,
     color: '#34C759',
-    fontSize: 14,
+    fontSize: 16,
     lineHeight: 20,
   },
   formGroup: {
     marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
     color: colors.text,
     marginBottom: 8,
@@ -671,7 +671,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     paddingVertical: 14,
   },
@@ -704,7 +704,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   roleOptionText: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.textSecondary,
   },
@@ -712,7 +712,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   roleDesc: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6E6E73',
     marginTop: 1,
   },
@@ -745,12 +745,12 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   sendButtonText: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
   emptyText: {
     color: '#6E6E73',
-    fontSize: 14,
+    fontSize: 16,
     textAlign: 'center',
     paddingVertical: 20,
   },
@@ -772,7 +772,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   memberAvatarText: {
     color: colors.text,
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
   memberInfo: {
@@ -780,12 +780,12 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   memberName: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '500',
   },
   memberEmail: {
     color: colors.textSecondary,
-    fontSize: 13,
+    fontSize: 15,
     marginTop: 2,
   },
   roleBadge: {
@@ -794,7 +794,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
   },
   roleBadgeText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
   },
   deleteButton: {
@@ -812,7 +812,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   inviteResultTitle: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: '#34C759',
   },
@@ -829,11 +829,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 14,
   },
   credLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
   },
   credValue: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
   },
@@ -858,7 +858,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   copyButtonText: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
   newInviteButton: {
@@ -870,7 +870,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   newInviteButtonText: {
     color: '#007AFF',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
   },
   extrasToggle: {
@@ -881,7 +881,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   extrasToggleText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#007AFF',
     fontWeight: '500',
   },

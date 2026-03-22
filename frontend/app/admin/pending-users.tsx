@@ -443,7 +443,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   title: {
     flex: 1,
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -457,7 +457,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   countText: {
     color: colors.text,
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '700',
   },
   loadingContainer: {
@@ -490,7 +490,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 12,
   },
   avatarText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: '#FF9500',
   },
@@ -498,17 +498,17 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   userName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   userEmail: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 2,
   },
   userPhone: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   pendingBadge: {
@@ -519,7 +519,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   pendingBadgeText: {
     color: '#FF9500',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
   },
   userDetails: {
@@ -536,12 +536,12 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   detailLabel: {
     color: colors.textSecondary,
-    fontSize: 13,
+    fontSize: 15,
   },
   detailValue: {
     flex: 1,
     color: colors.text,
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '500',
     textAlign: 'right',
   },
@@ -561,7 +561,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   rejectButtonText: {
     color: '#FF3B30',
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
   },
   approveButton: {
@@ -576,7 +576,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   approveButtonText: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
   },
   emptyContainer: {
@@ -584,13 +584,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 60,
   },
   emptyTitle: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '600',
     color: colors.text,
     marginTop: 16,
   },
   emptyText: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
     marginTop: 6,
   },
@@ -615,7 +615,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
   },
@@ -631,23 +631,23 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   userSummaryName: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
   },
   userSummaryEmail: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 4,
   },
   userSummaryRole: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#FF9500',
     marginTop: 8,
     fontWeight: '500',
   },
   fieldLabel: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
     textTransform: 'uppercase',
@@ -671,7 +671,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   roleOptionText: {
     color: colors.textSecondary,
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
   },
   pickerWrapper: {
@@ -692,7 +692,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   orgOptionText: {
     color: colors.text,
-    fontSize: 15,
+    fontSize: 17,
   },
   orgOptionTextSelected: {
     color: '#007AFF',
@@ -702,11 +702,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 14,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   hint: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textTertiary,
     marginTop: 6,
   },
@@ -726,7 +726,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   cancelModalButtonText: {
     color: colors.textSecondary,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
   approveModalButton: {
@@ -741,7 +741,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   approveModalButtonText: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
 });

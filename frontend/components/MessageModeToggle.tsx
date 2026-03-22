@@ -212,7 +212,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#1C1C1E',
   },
   pillText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#8E8E93',
   },
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   tabOptionActive: {},
   tabOptionActiveEmail: {},
   tabText: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: '#8E8E93',
   },
@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   segmentedText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#8E8E93',
   },

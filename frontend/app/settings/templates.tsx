@@ -279,7 +279,7 @@ export default function TemplatesSettings() {
           <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
             {/* Ask Jessi bar — stays visible in the modal */}
             <View style={[styles.jessiBar, { backgroundColor: colors.surface || '#F2F2F7' }]}>
-              <Text style={{ fontSize: 12, color: colors.textSecondary }}>Have questions? Ask Jessi</Text>
+              <Text style={{ fontSize: 14, color: colors.textSecondary }}>Have questions? Ask Jessi</Text>
             </View>
 
             <View style={styles.modalHeader}>
@@ -406,7 +406,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 40,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -426,7 +426,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   infoText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   content: {
@@ -458,12 +458,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   templateName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   templateCategory: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -479,7 +479,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 6,
   },
   defaultBadgeText: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
     fontWeight: '500',
   },
@@ -487,12 +487,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   templateContent: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     lineHeight: 20,
   },
   usageCount: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6E6E73',
     marginTop: 8,
   },
@@ -507,7 +507,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderStyle: 'dashed',
   },
   createText: {
-    fontSize: 15,
+    fontSize: 17,
     color: '#007AFF',
     marginTop: 8,
     fontWeight: '500',
@@ -534,16 +534,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.card,
   },
   modalTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   cancelButton: {
-    fontSize: 17,
+    fontSize: 18,
     color: '#007AFF',
   },
   saveButton: {
-    fontSize: 17,
+    fontSize: 18,
     color: '#007AFF',
     fontWeight: '600',
   },
@@ -552,7 +552,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 16,
   },
   inputLabel: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginBottom: 8,
     marginTop: 16,
@@ -568,7 +568,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   contentInput: {
@@ -595,7 +595,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#007AFF',
   },
   categoryChipText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   categoryChipTextActive: {
@@ -608,7 +608,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   variableLabel: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   variableChip: {
@@ -618,7 +618,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 6,
   },
   variableChipText: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#007AFF',
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },

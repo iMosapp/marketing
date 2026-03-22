@@ -363,7 +363,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   stepDescription: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textSecondary,
     marginBottom: 24,
     lineHeight: 22,
@@ -372,7 +372,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.surface,
@@ -394,7 +394,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   passwordInput: {
     flex: 1,
     padding: 16,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   eyeButton: {
@@ -412,7 +412,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   buttonText: {
     color: '#FFFFFF',
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
   },
   linkButton: {
@@ -421,7 +421,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   linkText: {
     color: '#007AFF',
-    fontSize: 15,
+    fontSize: 17,
   },
   cancelButton: {
     marginTop: 32,
@@ -429,7 +429,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   cancelText: {
     color: colors.textSecondary,
-    fontSize: 15,
+    fontSize: 17,
   },
   devCodeBox: {
     backgroundColor: colors.card,
@@ -440,7 +440,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   devCodeLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#FF9500',
     marginBottom: 4,
     textTransform: 'uppercase',

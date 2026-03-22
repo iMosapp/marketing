@@ -77,7 +77,7 @@ export default function OptInPage() {
     return (
       <View style={{ flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
         <Ionicons name="alert-circle-outline" size={56} color="#FF453A" />
-        <Text style={{ color: '#FFF', fontSize: 18, fontWeight: '600', marginTop: 16 }}>{error}</Text>
+        <Text style={{ color: '#FFF', fontSize: 19, fontWeight: '600', marginTop: 16 }}>{error}</Text>
       </View>
     );
   }
@@ -95,18 +95,18 @@ export default function OptInPage() {
         <Text style={{ color: '#FFF', fontSize: 24, fontWeight: '700', textAlign: 'center', marginBottom: 8 }}>
           You're All Set!
         </Text>
-        <Text style={{ color: '#8E8E93', fontSize: 16, textAlign: 'center', lineHeight: 24, marginBottom: 24, maxWidth: 340 }}>
+        <Text style={{ color: '#8E8E93', fontSize: 18, textAlign: 'center', lineHeight: 24, marginBottom: 24, maxWidth: 340 }}>
           Thank you for letting us share your experience. {firstName} and the team at {storeName} truly appreciate your support.
         </Text>
 
         <View style={{ backgroundColor: '#1C1C1E', borderRadius: 16, padding: 20, width: '100%', maxWidth: 400, marginBottom: 24 }}>
-          <Text style={{ color: '#8E8E93', fontSize: 12, fontWeight: '700', letterSpacing: 1, marginBottom: 12 }}>YOUR PERMISSIONS</Text>
+          <Text style={{ color: '#8E8E93', fontSize: 14, fontWeight: '700', letterSpacing: 1, marginBottom: 12 }}>YOUR PERMISSIONS</Text>
           <ConsentRow label="Featured on Showcase" active={showcase} accent={accent} />
           <ConsentRow label="Shared on Social Media" active={socialMedia} accent={accent} />
           <ConsentRow label="Photo Included" active={includePhoto} accent={accent} />
         </View>
 
-        <Text style={{ color: '#3A3A3C', fontSize: 13, textAlign: 'center', lineHeight: 20, maxWidth: 340 }}>
+        <Text style={{ color: '#3A3A3C', fontSize: 15, textAlign: 'center', lineHeight: 20, maxWidth: 340 }}>
           You can change your preferences anytime by revisiting this page or contacting {firstName} directly.
         </Text>
 
@@ -139,17 +139,17 @@ export default function OptInPage() {
       <Text style={{ color: '#FFF', fontSize: 26, fontWeight: '700', textAlign: 'center', marginBottom: 6 }}>
         {context?.customer_name ? `Hey ${context.customer_name.split(' ')[0]}!` : 'Hey there!'}
       </Text>
-      <Text style={{ color: '#8E8E93', fontSize: 16, textAlign: 'center', lineHeight: 24, maxWidth: 360, marginBottom: 28 }}>
+      <Text style={{ color: '#8E8E93', fontSize: 18, textAlign: 'center', lineHeight: 24, maxWidth: 360, marginBottom: 28 }}>
         {firstName} at <Text style={{ color: accent, fontWeight: '600' }}>{storeName}</Text> would love to feature your experience. Here's what that means:
       </Text>
 
       {/* --- What You're Agreeing To --- */}
       <View style={{ backgroundColor: '#1C1C1E', borderRadius: 16, width: '100%', maxWidth: 420, overflow: 'hidden', marginBottom: 20 }}>
         <View style={{ padding: 20, paddingBottom: 16 }}>
-          <Text style={{ color: '#FFF', fontSize: 17, fontWeight: '700', marginBottom: 4 }}>
+          <Text style={{ color: '#FFF', fontSize: 18, fontWeight: '700', marginBottom: 4 }}>
             Share Your Experience
           </Text>
-          <Text style={{ color: '#8E8E93', fontSize: 14, lineHeight: 21 }}>
+          <Text style={{ color: '#8E8E93', fontSize: 16, lineHeight: 21 }}>
             Choose how you'd like to be featured. You can change this anytime.
           </Text>
         </View>
@@ -194,7 +194,7 @@ export default function OptInPage() {
       <View style={{ backgroundColor: '#1C1C1E', borderRadius: 12, padding: 16, width: '100%', maxWidth: 420, marginBottom: 24 }}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
           <Ionicons name="shield-checkmark-outline" size={18} color="#8E8E93" style={{ marginTop: 2 }} />
-          <Text style={{ color: '#6E6E73', fontSize: 13, lineHeight: 20, flex: 1 }}>
+          <Text style={{ color: '#6E6E73', fontSize: 15, lineHeight: 20, flex: 1 }}>
             By tapping "I Agree," you grant <Text style={{ color: '#8E8E93' }}>{storeName}</Text> permission to use your name{context?.photo_url ? ', photo,' : ''} and experience for promotional purposes on the selected platforms. You may withdraw consent at any time by contacting {firstName} or revisiting this page. Your personal contact information (phone, email) will never be publicly displayed.
           </Text>
         </View>
@@ -215,7 +215,7 @@ export default function OptInPage() {
         {submitting ? (
           <ActivityIndicator size="small" color="#000" />
         ) : (
-          <Text style={{ color: '#000', fontSize: 17, fontWeight: '700' }}>
+          <Text style={{ color: '#000', fontSize: 18, fontWeight: '700' }}>
             I Agree — Feature My Experience
           </Text>
         )}
@@ -223,7 +223,7 @@ export default function OptInPage() {
 
       {/* Decline */}
       <TouchableOpacity style={{ marginTop: 16, paddingVertical: 12 }} onPress={() => router.back()}>
-        <Text style={{ color: '#6E6E73', fontSize: 15 }}>No thanks, maybe later</Text>
+        <Text style={{ color: '#6E6E73', fontSize: 17 }}>No thanks, maybe later</Text>
       </TouchableOpacity>
 
       <View style={{ marginTop: 24, marginBottom: 16 }}>
@@ -251,8 +251,8 @@ function ToggleRow({ icon, iconColor, title, description, value, onToggle, accen
         <Ionicons name={icon as any} size={20} color={iconColor} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={{ color: '#FFF', fontSize: 15, fontWeight: '600', marginBottom: 4 }}>{title}</Text>
-        <Text style={{ color: '#8E8E93', fontSize: 13, lineHeight: 19 }}>{description}</Text>
+        <Text style={{ color: '#FFF', fontSize: 17, fontWeight: '600', marginBottom: 4 }}>{title}</Text>
+        <Text style={{ color: '#8E8E93', fontSize: 15, lineHeight: 19 }}>{description}</Text>
       </View>
       <Switch
         value={value}
@@ -274,7 +274,7 @@ function ConsentRow({ label, active, accent }: { label: string; active: boolean;
         color={active ? '#34C759' : '#48484A'}
         style={{ marginRight: 10 }}
       />
-      <Text style={{ color: active ? '#FFF' : '#6E6E73', fontSize: 15 }}>{label}</Text>
+      <Text style={{ color: active ? '#FFF' : '#6E6E73', fontSize: 17 }}>{label}</Text>
     </View>
   );
 }

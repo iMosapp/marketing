@@ -352,7 +352,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   recordingText: {
     color: '#FF3B30',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
   },
   playbackIndicator: {
@@ -363,7 +363,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   playbackText: {
     color: '#007AFF',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
   },
   hasRecordingInfo: {
@@ -374,7 +374,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   hasRecordingText: {
     color: '#34C759',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
   },
   controls: {
@@ -418,7 +418,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   saveButtonText: {
     color: colors.text,
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
   deleteButton: {
@@ -430,7 +430,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   hint: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
   },

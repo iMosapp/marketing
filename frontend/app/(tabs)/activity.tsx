@@ -255,16 +255,16 @@ const s = StyleSheet.create({
   container: { flex: 1 },
   header: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
   headerTitle: { fontSize: 28, fontWeight: '800' },
-  headerSubtitle: { fontSize: 13, marginTop: 2 },
+  headerSubtitle: { fontSize: 15, marginTop: 2 },
   scrollContainer: { flex: 1 },
   scroll: { paddingBottom: 0 },
 
   // Date groups
   dateLabelRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, gap: 12 },
   dateLine: { flex: 1, height: 1 },
-  dateLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
+  dateLabel: { fontSize: 14, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
   dateBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, borderWidth: 1 },
-  dateBadgeText: { fontSize: 10, fontWeight: '700' },
+  dateBadgeText: { fontSize: 12, fontWeight: '700' },
 
   // Event cards — LARGER tiles
   eventCard: {
@@ -274,26 +274,26 @@ const s = StyleSheet.create({
   avatarGroup: { position: 'relative', marginRight: 14 },
   eventAvatar: { width: 52, height: 52, borderRadius: 14, borderWidth: 1 },
   eventAvatarPlaceholder: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  eventAvatarText: { fontSize: 18, fontWeight: '700' },
+  eventAvatarText: { fontSize: 19, fontWeight: '700' },
   eventIconBadge: {
     position: 'absolute', bottom: -3, right: -3,
     width: 22, height: 22, borderRadius: 11,
     alignItems: 'center', justifyContent: 'center', borderWidth: 2,
   },
   eventContent: { flex: 1 },
-  eventName: { fontSize: 16, fontWeight: '700' },
-  eventTitle: { fontSize: 14, marginTop: 2, fontWeight: '500' },
-  eventDesc: { fontSize: 13, marginTop: 2, lineHeight: 18 },
-  eventTime: { fontSize: 12, fontWeight: '500' },
+  eventName: { fontSize: 18, fontWeight: '700' },
+  eventTitle: { fontSize: 16, marginTop: 2, fontWeight: '500' },
+  eventDesc: { fontSize: 15, marginTop: 2, lineHeight: 18 },
+  eventTime: { fontSize: 14, fontWeight: '500' },
   inboundBadge: { backgroundColor: '#30D15820', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 },
   inboundText: { fontSize: 9, fontWeight: '700', color: '#30D158' },
   miniTag: { paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 },
   miniTagText: { fontSize: 9, fontWeight: '600' },
   channelBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
-  channelBadgeText: { fontSize: 10, fontWeight: '700' },
+  channelBadgeText: { fontSize: 12, fontWeight: '700' },
 
   // Empty
   empty: { alignItems: 'center', paddingVertical: 60 },
-  emptyText: { fontSize: 18, marginTop: 10, fontWeight: '600' },
-  emptySubtext: { fontSize: 13, marginTop: 4 },
+  emptyText: { fontSize: 19, marginTop: 10, fontWeight: '600' },
+  emptySubtext: { fontSize: 15, marginTop: 4 },
 });

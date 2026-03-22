@@ -468,7 +468,7 @@ export default function ShowcasePage() {
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 }}
                   >
                     <Ionicons name="person-outline" size={12} color="#8E8E93" />
-                    <Text style={{ fontSize: 12, color: accent, fontWeight: '500' }}>{entry.salesman_name}</Text>
+                    <Text style={{ fontSize: 14, color: accent, fontWeight: '500' }}>{entry.salesman_name}</Text>
                   </TouchableOpacity>
                 )}
 
@@ -572,11 +572,11 @@ const styles = StyleSheet.create({
     borderBottomColor: '#1C1C1E',
   },
   backBtn: { padding: 4 },
-  topBarTitle: { fontSize: 17, fontWeight: '700', color: '#FFF' },
+  topBarTitle: { fontSize: 18, fontWeight: '700', color: '#FFF' },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 40 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  errorText: { color: '#FF3B30', fontSize: 16, marginTop: 12 },
+  errorText: { color: '#FF3B30', fontSize: 18, marginTop: 12 },
 
   // Header
   header: { alignItems: 'center', paddingTop: 20, paddingHorizontal: 20 },
@@ -600,8 +600,8 @@ const styles = StyleSheet.create({
   },
   heroAvatarText: { color: '#000', fontSize: 28, fontWeight: '700' },
   heroName: { fontSize: 24, fontWeight: '800', color: '#FFF', letterSpacing: -0.5, marginBottom: 2 },
-  heroTitle: { fontSize: 14, color: '#8E8E93', marginBottom: 4 },
-  heroStore: { fontSize: 13, fontWeight: '600', letterSpacing: 0.3 },
+  heroTitle: { fontSize: 16, color: '#8E8E93', marginBottom: 4 },
+  heroStore: { fontSize: 15, fontWeight: '600', letterSpacing: 0.3 },
 
   // Stats
   statsBar: {
@@ -616,7 +616,7 @@ const styles = StyleSheet.create({
   },
   statItem: { flex: 1, alignItems: 'center' },
   statNumber: { fontSize: 22, fontWeight: '800', marginBottom: 2 },
-  statLabel: { fontSize: 11, color: '#6E6E73', fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.3 },
+  statLabel: { fontSize: 13, color: '#6E6E73', fontWeight: '500', textTransform: 'uppercase', letterSpacing: 0.3 },
   statDivider: { width: 1, height: '80%', alignSelf: 'center' },
 
   // Quick links under profile
@@ -640,17 +640,17 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderWidth: 1,
   },
-  quickLinkText: { fontSize: 12, fontWeight: '600' },
+  quickLinkText: { fontSize: 14, fontWeight: '600' },
 
   // Title
   titleSection: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 24, width: '100%', maxWidth: 600 },
   titleAccent: { width: 4, height: 24, borderRadius: 2 },
-  titleText: { fontSize: 20, fontWeight: '700', color: '#FFF', letterSpacing: -0.3 },
+  titleText: { fontSize: 21, fontWeight: '700', color: '#FFF', letterSpacing: -0.3 },
 
   // Empty
   emptyState: { alignItems: 'center', paddingVertical: 60, paddingHorizontal: 20 },
-  emptyTitle: { fontSize: 18, fontWeight: '600', color: '#8E8E93', marginTop: 16 },
-  emptySubtitle: { fontSize: 14, color: '#6E6E73', marginTop: 6 },
+  emptyTitle: { fontSize: 19, fontWeight: '600', color: '#8E8E93', marginTop: 16 },
+  emptySubtitle: { fontSize: 16, color: '#6E6E73', marginTop: 6 },
 
   // Entry card
   entryCard: {
@@ -678,12 +678,12 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 20,
   },
-  photoBadgeText: { fontSize: 12, fontWeight: '700', color: '#000' },
+  photoBadgeText: { fontSize: 14, fontWeight: '700', color: '#000' },
 
   entryContent: { paddingHorizontal: 4, marginBottom: 8 },
   entryHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  customerName: { fontSize: 16, fontWeight: '700', color: '#FFF' },
-  entryDate: { fontSize: 12, color: '#6E6E73' },
+  customerName: { fontSize: 18, fontWeight: '700', color: '#FFF' },
+  entryDate: { fontSize: 14, color: '#6E6E73' },
 
   // Review
   reviewSection: {
@@ -699,11 +699,11 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: 8,
   },
-  reviewLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  reviewDate: { fontSize: 11, color: '#6E6E73', marginLeft: 'auto' },
+  reviewLabel: { fontSize: 14, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  reviewDate: { fontSize: 13, color: '#6E6E73', marginLeft: 'auto' },
   starRow: { flexDirection: 'row', gap: 2, marginBottom: 6 },
-  reviewText: { fontSize: 14, color: '#E5E5EA', lineHeight: 20, fontStyle: 'italic', marginBottom: 6 },
-  reviewAttribution: { fontSize: 12, color: '#8E8E93', fontWeight: '500', marginTop: 4 },
+  reviewText: { fontSize: 16, color: '#E5E5EA', lineHeight: 20, fontStyle: 'italic', marginBottom: 6 },
+  reviewAttribution: { fontSize: 14, color: '#8E8E93', fontWeight: '500', marginTop: 4 },
   reviewOnlyIcon: { position: 'absolute', top: 0, right: 0 },
 
   // Feedback photo from customer
@@ -732,7 +732,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
   },
-  feedbackPhotoBadgeText: { fontSize: 10, fontWeight: '600', color: '#FFF' },
+  feedbackPhotoBadgeText: { fontSize: 12, fontWeight: '600', color: '#FFF' },
 
   entryDivider: { height: 1, backgroundColor: '#1C1C1E', marginVertical: 20 },
 
@@ -749,8 +749,8 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   reviewCTAContent: { flex: 1 },
-  reviewCTATitle: { fontSize: 14, color: '#E5E5EA', fontWeight: '500', marginBottom: 2 },
-  reviewCTASubtitle: { fontSize: 16, fontWeight: '700' },
+  reviewCTATitle: { fontSize: 16, color: '#E5E5EA', fontWeight: '500', marginBottom: 2 },
+  reviewCTASubtitle: { fontSize: 18, fontWeight: '700' },
   reviewFormCard: {
     backgroundColor: '#1C1C1E',
     borderRadius: 14,
@@ -758,33 +758,33 @@ const styles = StyleSheet.create({
     marginTop: 10,
     borderWidth: 1,
   },
-  reviewFormLabel: { color: '#E5E5EA', fontSize: 15, fontWeight: '600', textAlign: 'center', marginBottom: 12 },
+  reviewFormLabel: { color: '#E5E5EA', fontSize: 17, fontWeight: '600', textAlign: 'center', marginBottom: 12 },
   reviewStarRow: { flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 16 },
   reviewInput: {
     backgroundColor: '#2A2A2C',
     borderRadius: 10,
     padding: 14,
     color: '#FFF',
-    fontSize: 15,
+    fontSize: 17,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: '#3A3A3C',
   },
   reviewSubmitBtn: { paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 4 },
-  reviewSubmitText: { color: '#000', fontSize: 16, fontWeight: '700' },
+  reviewSubmitText: { color: '#000', fontSize: 18, fontWeight: '700' },
   referralBanner: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C1E',
     borderRadius: 14, padding: 16, borderWidth: 1,
   },
-  referralTitle: { color: '#FFF', fontSize: 15, fontWeight: '700' },
-  referralSub: { color: '#34C759', fontSize: 13, marginTop: 2, fontWeight: '500' },
+  referralTitle: { color: '#FFF', fontSize: 17, fontWeight: '700' },
+  referralSub: { color: '#34C759', fontSize: 15, marginTop: 2, fontWeight: '500' },
 
   // QR
   qrContainer: { alignItems: 'center', marginTop: 4, padding: 16, backgroundColor: '#111', borderRadius: 16 },
   qrImage: { width: 180, height: 180, borderRadius: 8 },
-  qrHint: { fontSize: 12, color: '#6E6E73', marginTop: 10 },
+  qrHint: { fontSize: 14, color: '#6E6E73', marginTop: 10 },
 
   // Footer
   footer: { alignItems: 'center', paddingVertical: 20, paddingBottom: 40 },
-  footerText: { fontSize: 11, color: '#3A3A3C', letterSpacing: 0.5 },
+  footerText: { fontSize: 13, color: '#3A3A3C', letterSpacing: 0.5 },
 });

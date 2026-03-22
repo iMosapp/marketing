@@ -193,31 +193,31 @@ const getST = (colors: any) => StyleSheet.create({
   topSection: { alignItems: 'center', paddingTop: 60, flex: 1, justifyContent: 'center' },
   statusPill: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FF3B3020', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, marginBottom: 24 },
   liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF3B30' },
-  statusText: { fontSize: 13, fontWeight: '700', color: '#FF3B30' },
+  statusText: { fontSize: 15, fontWeight: '700', color: '#FF3B30' },
   avatarCircle: { width: 96, height: 96, borderRadius: 48, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', marginBottom: 16, borderWidth: 3, borderColor: colors.surface },
   avatarLetter: { fontSize: 36, fontWeight: '800', color: '#C9A962' },
   contactName: { fontSize: 26, fontWeight: '800', color: colors.text, marginBottom: 4 },
-  contactPhone: { fontSize: 16, color: '#8E8E93', marginBottom: 16 },
+  contactPhone: { fontSize: 18, color: '#8E8E93', marginBottom: 16 },
   timer: { fontSize: 48, fontWeight: '300', color: colors.text, fontVariant: ['tabular-nums'], letterSpacing: 2 },
-  readyHint: { fontSize: 14, color: '#555', marginTop: 8 },
+  readyHint: { fontSize: 16, color: '#555', marginTop: 8 },
 
   bottomSection: { alignItems: 'center', paddingBottom: 50, paddingHorizontal: 20 },
 
   // Ready state
   callBtn: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#34C759', alignItems: 'center', justifyContent: 'center', marginBottom: 10, shadowColor: '#34C759', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 20 },
-  callBtnLabel: { fontSize: 14, color: '#8E8E93', marginBottom: 16 },
+  callBtnLabel: { fontSize: 16, color: '#8E8E93', marginBottom: 16 },
   cancelBtn: { paddingVertical: 10, paddingHorizontal: 30 },
-  cancelBtnText: { fontSize: 16, fontWeight: '600', color: '#FF3B30' },
+  cancelBtnText: { fontSize: 18, fontWeight: '600', color: '#FF3B30' },
 
   // Calling state
   endBtn: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#FF3B30', alignItems: 'center', justifyContent: 'center', shadowColor: '#FF3B30', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 20 },
-  endLabel: { fontSize: 14, color: '#8E8E93', marginTop: 10 },
+  endLabel: { fontSize: 16, color: '#8E8E93', marginTop: 10 },
 
   // Ended state
   loggedCard: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#34C75910', borderRadius: 14, padding: 16, width: '100%' as any, marginBottom: 16, borderWidth: 1, borderColor: '#34C75930' },
   loggedInfo: { flex: 1 },
-  loggedTitle: { fontSize: 15, fontWeight: '700', color: '#34C759', marginBottom: 2 },
-  loggedDetail: { fontSize: 12, color: '#8E8E93' },
+  loggedTitle: { fontSize: 17, fontWeight: '700', color: '#34C759', marginBottom: 2 },
+  loggedDetail: { fontSize: 14, color: '#8E8E93' },
   doneBtn: { backgroundColor: '#C9A962', paddingVertical: 16, paddingHorizontal: 40, borderRadius: 50, width: '100%' as any, alignItems: 'center' },
-  doneBtnText: { fontSize: 16, fontWeight: '800', color: colors.text },
+  doneBtnText: { fontSize: 18, fontWeight: '800', color: colors.text },
 });

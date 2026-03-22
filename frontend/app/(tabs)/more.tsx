@@ -961,7 +961,7 @@ export default function MoreScreen() {
               {partnerBranding.logo ? (
                 <Image source={{ uri: partnerBranding.logo }} style={styles.versionLogo} resizeMode="contain" />
               ) : (
-                <Text style={[styles.version, { fontSize: 14, fontWeight: '700', color: partnerBranding.primary_color }]}>{partnerBranding.name}</Text>
+                <Text style={[styles.version, { fontSize: 16, fontWeight: '700', color: partnerBranding.primary_color }]}>{partnerBranding.name}</Text>
               )}
               <Text style={[styles.version, { marginTop: 4 }]}>{partnerBranding.powered_by_text}</Text>
             </>
@@ -987,7 +987,7 @@ export default function MoreScreen() {
 
           {!storeSlug && (
             <TouchableOpacity onPress={() => { setShowShareModal(false); router.push('/settings/store-profile' as any); }}>
-              <Text style={{ color: '#FF9500', fontSize: 13, textAlign: 'center', marginTop: 12, paddingHorizontal: 16, textDecorationLine: 'underline' }}>
+              <Text style={{ color: '#FF9500', fontSize: 15, textAlign: 'center', marginTop: 12, paddingHorizontal: 16, textDecorationLine: 'underline' }}>
                 Store slug not set. Tap here to configure in Store Profile.
               </Text>
             </TouchableOpacity>
@@ -1180,35 +1180,35 @@ export default function MoreScreen() {
                 <Ionicons name="person-circle" size={44} color="#FF9500" />
               </View>
             </View>
-            <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text, textAlign: 'center', marginBottom: 8 }}>Contact Already Exists</Text>
-            <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginBottom: 16 }}>A contact with this info already exists:</Text>
+            <Text style={{ fontSize: 19, fontWeight: '700', color: colors.text, textAlign: 'center', marginBottom: 8 }}>Contact Already Exists</Text>
+            <Text style={{ fontSize: 16, color: colors.textSecondary, textAlign: 'center', marginBottom: 16 }}>A contact with this info already exists:</Text>
             <View style={{ backgroundColor: colors.surface, borderRadius: 10, padding: 14, alignItems: 'center' }}>
-              <Text style={{ fontSize: 10, fontWeight: '700', color: '#6E6E73', letterSpacing: 1, marginBottom: 6 }}>EXISTING CONTACT</Text>
-              <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text }}>{matchInfo.existing_name}</Text>
-              {matchInfo.phone ? <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>{matchInfo.phone}</Text> : null}
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#6E6E73', letterSpacing: 1, marginBottom: 6 }}>EXISTING CONTACT</Text>
+              <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text }}>{matchInfo.existing_name}</Text>
+              {matchInfo.phone ? <Text style={{ fontSize: 15, color: colors.textSecondary, marginTop: 2 }}>{matchInfo.phone}</Text> : null}
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 12 }}>
               <View style={{ flex: 1, height: 1, backgroundColor: colors.surface }} />
-              <Text style={{ fontSize: 12, color: '#6E6E73', marginHorizontal: 12 }}>You entered</Text>
+              <Text style={{ fontSize: 14, color: '#6E6E73', marginHorizontal: 12 }}>You entered</Text>
               <View style={{ flex: 1, height: 1, backgroundColor: colors.surface }} />
             </View>
             <View style={{ backgroundColor: colors.surface, borderRadius: 10, padding: 14, alignItems: 'center', marginBottom: 20 }}>
-              <Text style={{ fontSize: 17, fontWeight: '600', color: '#FF9500' }}>{matchInfo.provided_name}</Text>
+              <Text style={{ fontSize: 18, fontWeight: '600', color: '#FF9500' }}>{matchInfo.provided_name}</Text>
             </View>
             <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 14, borderRadius: 10, gap: 10, marginBottom: 8 }} onPress={() => resolveReviewMatch('use_existing')}>
               <Ionicons name="checkmark-circle" size={20} color="#34C759" />
-              <Text style={{ fontSize: 15, color: colors.text, fontWeight: '500', flex: 1 }}>Use Existing Contact</Text>
+              <Text style={{ fontSize: 17, color: colors.text, fontWeight: '500', flex: 1 }}>Use Existing Contact</Text>
             </TouchableOpacity>
             <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 14, borderRadius: 10, gap: 10, marginBottom: 8 }} onPress={() => resolveReviewMatch('update_name')}>
               <Ionicons name="create" size={20} color="#007AFF" />
-              <Text style={{ fontSize: 15, color: colors.text, fontWeight: '500', flex: 1 }}>Update to "{matchInfo.provided_name}"</Text>
+              <Text style={{ fontSize: 17, color: colors.text, fontWeight: '500', flex: 1 }}>Update to "{matchInfo.provided_name}"</Text>
             </TouchableOpacity>
             <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 14, borderRadius: 10, gap: 10, marginBottom: 8 }} onPress={() => resolveReviewMatch('create_new')}>
               <Ionicons name="person-add" size={20} color="#FF9500" />
-              <Text style={{ fontSize: 15, color: colors.text, fontWeight: '500', flex: 1 }}>Create New Contact</Text>
+              <Text style={{ fontSize: 17, color: colors.text, fontWeight: '500', flex: 1 }}>Create New Contact</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => { setMatchModalVisible(false); setMatchInfo(null); }} style={{ marginTop: 4, padding: 12, alignItems: 'center' }}>
-              <Text style={{ fontSize: 15, color: colors.textSecondary }}>Cancel</Text>
+              <Text style={{ fontSize: 17, color: colors.textSecondary }}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1252,15 +1252,15 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   partnerLogoText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '800',
   },
   partnerName: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '700',
   },
   partnerPowered: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textTertiary,
     marginTop: 1,
   },
@@ -1301,12 +1301,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   impersonationTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
   impersonationSubtitle: {
-    fontSize: 13,
+    fontSize: 15,
     color: 'rgba(255,255,255,0.8)',
     marginTop: 2,
   },
@@ -1346,7 +1346,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 6,
   },
   profileCardHintText: {
-    fontSize: 11,
+    fontSize: 13,
   },
   profileAvatarContainer: {
     position: 'relative',
@@ -1395,7 +1395,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   quickSettingsLabel: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     color: colors.textSecondary,
     textAlign: 'center',
@@ -1404,14 +1404,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   profileName: {
-    fontSize: 19,
+    fontSize: 20,
     fontWeight: '700',
     color: colors.text,
     marginBottom: 2,
     letterSpacing: 0.2,
   },
   profileTitle: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#C9A962',
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -1419,11 +1419,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 4,
   },
   profileEmail: {
-    fontSize: 12,
+    fontSize: 14,
     marginBottom: 1,
   },
   profilePhone: {
-    fontSize: 12,
+    fontSize: 14,
   },
   // Recently Visited
   recentSection: {
@@ -1431,7 +1431,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   recentLabel: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     textTransform: 'uppercase' as const,
     letterSpacing: 0.8,
@@ -1461,7 +1461,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center' as const,
   },
   recentChipText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '500' as const,
     flex: 1,
   },
@@ -1491,7 +1491,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 12,
   },
   sectionTitleText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     flex: 1,
   },
@@ -1516,12 +1516,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   menuTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '500',
     marginBottom: 1,
   },
   menuSubtitle: {
-    fontSize: 12,
+    fontSize: 14,
   },
   notificationBadge: {
     backgroundColor: '#FF3B30',
@@ -1534,7 +1534,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   notificationBadgeText: {
     color: colors.text,
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
   },
   // Legal Section
@@ -1553,11 +1553,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 6,
   },
   legalText: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#6E6E73',
   },
   legalDivider: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.borderLight,
   },
   versionContainer: {
@@ -1573,7 +1573,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     height: 14,
   },
   version: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6E6E73',
   },
   themeToggleCard: {
@@ -1591,11 +1591,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 12,
   },
   themeToggleTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
   },
   themeToggleSub: {
-    fontSize: 12,
+    fontSize: 14,
     marginTop: 1,
   },
   // Quick Actions
@@ -1610,7 +1610,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 10,
   },
   quickActionsTitle: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
     letterSpacing: 1.2,
   },
@@ -1636,7 +1636,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   quickActionLabel: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     textAlign: 'center',
     paddingHorizontal: 4,
@@ -1689,7 +1689,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   editActionLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',
     paddingHorizontal: 2,
@@ -1712,7 +1712,7 @@ const shareStyles = StyleSheet.create({
     borderBottomColor: '#1C1C1E',
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
   },
   linkBox: {
@@ -1727,7 +1727,7 @@ const shareStyles = StyleSheet.create({
   },
   linkText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: Platform.OS === 'web' ? 'monospace' : undefined,
   },
   actions: {
@@ -1748,7 +1748,7 @@ const shareStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   actionLabel: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: '#8E8E93',
   },
@@ -1764,12 +1764,12 @@ const shareStyles = StyleSheet.create({
     borderRadius: 10,
   },
   manageLinkText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
     color: '#8E8E93',
   },
   hint: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#6E6E73',
     textAlign: 'center',
     marginTop: 20,
@@ -1782,7 +1782,7 @@ const shareStyles = StyleSheet.create({
     gap: 8,
   },
   recipientLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: '#6E6E73',
     letterSpacing: 1,
@@ -1800,7 +1800,7 @@ const shareStyles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    fontSize: 14,
+    fontSize: 16,
     color: '#FFFFFF',
     borderWidth: 1.5,
     borderColor: '#3A3A3C',

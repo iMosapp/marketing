@@ -224,12 +224,12 @@ export default function IndividualsScreen() {
         <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 24, zIndex: 100 }}>
           <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 20 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>Add Individual</Text>
+              <Text style={{ fontSize: 19, fontWeight: '700', color: colors.text }}>Add Individual</Text>
               <TouchableOpacity onPress={() => setShowAddModal(false)} data-testid="close-add-modal">
                 <Ionicons name="close-circle" size={28} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
-            <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 16 }}>
+            <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 16 }}>
               Create an independent user account (not under any organization). This is for salespeople who pay for the tool themselves.
             </Text>
             {[
@@ -239,9 +239,9 @@ export default function IndividualsScreen() {
               { key: 'title', label: 'Title', placeholder: 'Sales Associate' },
             ].map(({ key, label, placeholder, keyboardType }) => (
               <View key={key} style={{ marginBottom: 12 }}>
-                <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 4 }}>{label}</Text>
+                <Text style={{ fontSize: 15, fontWeight: '600', color: colors.textSecondary, marginBottom: 4 }}>{label}</Text>
                 <TextInput
-                  style={{ backgroundColor: colors.bg, color: colors.text, borderRadius: 10, paddingHorizontal: 14, height: 44, fontSize: 15 }}
+                  style={{ backgroundColor: colors.bg, color: colors.text, borderRadius: 10, paddingHorizontal: 14, height: 44, fontSize: 17 }}
                   placeholder={placeholder}
                   placeholderTextColor={colors.textSecondary}
                   value={(newIndividual as any)[key]}
@@ -252,7 +252,7 @@ export default function IndividualsScreen() {
                 />
               </View>
             ))}
-            <Text style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 16 }}>
+            <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 16 }}>
               A temporary password will be generated. Share it with the user so they can log in.
             </Text>
             <TouchableOpacity
@@ -261,7 +261,7 @@ export default function IndividualsScreen() {
               disabled={!newIndividual.name.trim() || !newIndividual.email.trim() || creating}
               data-testid="create-individual-submit"
             >
-              <Text style={{ color: '#fff', fontSize: 16, fontWeight: '600' }}>
+              <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600' }}>
                 {creating ? 'Creating...' : 'Create Individual'}
               </Text>
             </TouchableOpacity>
@@ -295,7 +295,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -313,7 +313,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   searchInput: {
     flex: 1,
     color: colors.text,
-    fontSize: 15,
+    fontSize: 17,
   },
   filterContainer: {
     flexDirection: 'row',
@@ -332,7 +332,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#AF52DE',
   },
   filterText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '500',
     color: colors.textSecondary,
   },
@@ -347,7 +347,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 10,
   },
   countText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: '#AF52DE',
   },
@@ -371,7 +371,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
   },
@@ -380,17 +380,17 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginLeft: 12,
   },
   individualName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   individualEmail: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 2,
   },
   individualTitle: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#AF52DE',
     marginTop: 2,
   },
@@ -410,7 +410,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#FF3B3030',
   },
   statusText: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
   },
   activeText: {
@@ -420,7 +420,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: '#FF3B30',
   },
   subscriptionText: {
-    fontSize: 10,
+    fontSize: 12,
     color: colors.textSecondary,
     marginTop: 4,
   },
@@ -429,13 +429,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 60,
   },
   emptyText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginTop: 16,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',

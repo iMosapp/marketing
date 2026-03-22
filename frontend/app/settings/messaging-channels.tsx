@@ -132,7 +132,7 @@ export default function MessagingChannelsSettings() {
                 {ch.requires_phone && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
                     <Ionicons name="call-outline" size={10} color="#888" />
-                    <Text style={{ fontSize: 10, color: '#888' }}>Requires contact phone number</Text>
+                    <Text style={{ fontSize: 12, color: '#888' }}>Requires contact phone number</Text>
                   </View>
                 )}
               </View>
@@ -156,7 +156,7 @@ export default function MessagingChannelsSettings() {
               <Text style={[styles.previewText, { color: colors.text }]}>
                 Messages open directly in {available.find(c => c.id === enabled[0])?.name || 'SMS'}
               </Text>
-              <Text style={{ fontSize: 11, color: colors.textSecondary }}>Zero extra taps for your team</Text>
+              <Text style={{ fontSize: 13, color: colors.textSecondary }}>Zero extra taps for your team</Text>
             </View>
           ) : (
             <View>
@@ -168,7 +168,7 @@ export default function MessagingChannelsSettings() {
                   return (
                     <View key={chId} style={[styles.previewOption, { backgroundColor: `${ch.color}15`, borderColor: `${ch.color}30` }]}>
                       <Ionicons name={ch.icon as any} size={18} color={ch.color} />
-                      <Text style={{ fontSize: 11, color: ch.color, fontWeight: '600' }}>{ch.name}</Text>
+                      <Text style={{ fontSize: 13, color: ch.color, fontWeight: '600' }}>{ch.name}</Text>
                     </View>
                   );
                 })}
@@ -189,19 +189,19 @@ const styles = StyleSheet.create({
   content: { padding: 16, maxWidth: 700, alignSelf: 'center' as any, width: '100%' },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
   backBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 20, fontWeight: '700' },
-  subtitle: { fontSize: 12, marginTop: 2 },
+  title: { fontSize: 21, fontWeight: '700' },
+  subtitle: { fontSize: 14, marginTop: 2 },
   infoBanner: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, padding: 12, borderRadius: 10, borderWidth: 1, marginBottom: 16 },
-  infoText: { flex: 1, fontSize: 12, lineHeight: 17 },
+  infoText: { flex: 1, fontSize: 14, lineHeight: 17 },
   channelCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 12, borderWidth: 1.5, borderLeftWidth: 4, marginBottom: 8 },
   channelIcon: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  channelName: { fontSize: 15, fontWeight: '700' },
-  channelDesc: { fontSize: 12, marginTop: 2, lineHeight: 16 },
-  sectionTitle: { fontSize: 15, fontWeight: '700', marginTop: 20, marginBottom: 10 },
+  channelName: { fontSize: 17, fontWeight: '700' },
+  channelDesc: { fontSize: 14, marginTop: 2, lineHeight: 16 },
+  sectionTitle: { fontSize: 17, fontWeight: '700', marginTop: 20, marginBottom: 10 },
   previewCard: { borderRadius: 12, borderWidth: 1, padding: 16 },
   previewSingle: { alignItems: 'center', gap: 6, paddingVertical: 10 },
-  previewText: { fontSize: 14, fontWeight: '600' },
-  previewLabel: { fontSize: 12, marginBottom: 10 },
+  previewText: { fontSize: 16, fontWeight: '600' },
+  previewLabel: { fontSize: 14, marginBottom: 10 },
   previewPicker: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   previewOption: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1 },
 });

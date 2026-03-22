@@ -261,7 +261,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -276,13 +276,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 80,
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
     marginTop: 16,
   },
   emptySubtitle: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
@@ -299,7 +299,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   supportButtonText: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -323,7 +323,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 6,
   },
   statusText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.text,
   },
@@ -340,11 +340,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   infoLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
   },
   infoValue: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.text,
     fontWeight: '500',
   },
@@ -355,7 +355,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 16,
   },
   detailsTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 16,
@@ -369,11 +369,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   termLabel: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
   },
   termValue: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: '#C9A962',
   },
@@ -388,7 +388,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 16,
   },
   downloadButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -399,17 +399,17 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   signerLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginBottom: 4,
   },
   signerName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   signerEmail: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 2,
   },

@@ -308,12 +308,12 @@ const BirthdayCardDemo = () => (
           <View key={i} style={{ width: 6 + (i%2)*2, height: 6 + (i%2)*2, borderRadius: 10, backgroundColor: c }} />
         ))}
       </View>
-      <Text style={{ color: '#FF6B8A', fontSize: 18, fontWeight: '800', marginBottom: 10 }}>Happy Birthday!</Text>
+      <Text style={{ color: '#FF6B8A', fontSize: 19, fontWeight: '800', marginBottom: 10 }}>Happy Birthday!</Text>
       <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,107,138,0.2)', borderWidth: 2, borderColor: '#FF6B8A', justifyContent: 'center', alignItems: 'center', marginBottom: 8 }}>
         <Ionicons name="person" size={28} color="#FF6B8A" />
       </View>
-      <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '700', marginBottom: 4 }}>Sarah Johnson</Text>
-      <Text style={{ color: '#6E6E73', fontSize: 12, textAlign: 'center', marginBottom: 10 }}>Wishing you a wonderful birthday!</Text>
+      <Text style={{ color: '#FFFFFF', fontSize: 17, fontWeight: '700', marginBottom: 4 }}>Sarah Johnson</Text>
+      <Text style={{ color: '#6E6E73', fontSize: 14, textAlign: 'center', marginBottom: 10 }}>Wishing you a wonderful birthday!</Text>
       <View style={{ flexDirection: 'row', gap: 12 }}>
         <Ionicons name="chatbubble" size={16} color="#34C759" />
         <Ionicons name="mail" size={16} color="#007AFF" />
@@ -328,7 +328,7 @@ const ReviewPageDemo = () => (
   <View style={demoStyles.phoneFrame}>
     <View style={{ padding: 12 }}>
       <View style={{ alignItems: 'center', marginBottom: 10 }}>
-        <Text style={{ color: '#007AFF', fontSize: 14, fontWeight: '700', marginBottom: 6 }}>Leave a Review</Text>
+        <Text style={{ color: '#007AFF', fontSize: 16, fontWeight: '700', marginBottom: 6 }}>Leave a Review</Text>
         <View style={{ flexDirection: 'row', gap: 4, marginBottom: 8 }}>
           {[1,2,3,4,5].map(i => (
             <Ionicons key={i} name="star" size={20} color="#FFD60A" />
@@ -343,7 +343,7 @@ const ReviewPageDemo = () => (
         ].map(r => (
           <View key={r.name} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F7', borderRadius: 8, padding: 10, gap: 10 }}>
             <Ionicons name={r.icon} size={18} color={r.color} />
-            <Text style={{ color: '#FFFFFF', fontSize: 13, flex: 1 }}>Leave a {r.name} Review</Text>
+            <Text style={{ color: '#FFFFFF', fontSize: 15, flex: 1 }}>Leave a {r.name} Review</Text>
             <Ionicons name="chevron-forward" size={14} color="#8E8E93" />
           </View>
         ))}
@@ -356,7 +356,7 @@ const ReviewPageDemo = () => (
 const ShowroomDemo = () => (
   <View style={demoStyles.phoneFrame}>
     <View style={{ padding: 10 }}>
-      <Text style={{ color: '#007AFF', fontSize: 13, fontWeight: '700', textAlign: 'center', marginBottom: 10 }}>My Showcase</Text>
+      <Text style={{ color: '#007AFF', fontSize: 15, fontWeight: '700', textAlign: 'center', marginBottom: 10 }}>My Showcase</Text>
       <View style={{ flexDirection: 'row', gap: 6 }}>
         {[{ color: '#007AFF', label: 'Congrats' }, { color: '#FF6B8A', label: 'Birthday' }, { color: '#5856D6', label: 'Featured' }].map(card => (
           <View key={card.label} style={{ flex: 1, backgroundColor: '#F5F5F7', borderRadius: 8, padding: 8, alignItems: 'center' }}>
@@ -389,7 +389,7 @@ const ShowroomDemo = () => (
 const QuickActionsDemo = () => (
   <View style={demoStyles.phoneFrame}>
     <View style={{ padding: 10 }}>
-      <Text style={{ color: '#FF9500', fontSize: 13, fontWeight: '700', textAlign: 'center', marginBottom: 10 }}>Quick Actions</Text>
+      <Text style={{ color: '#FF9500', fontSize: 15, fontWeight: '700', textAlign: 'center', marginBottom: 10 }}>Quick Actions</Text>
       <View style={{ gap: 6 }}>
         {[
           { icon: 'chatbubble' as const, label: 'Send SMS', color: '#34C759' },
@@ -402,7 +402,7 @@ const QuickActionsDemo = () => (
             <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: `${a.color}20`, justifyContent: 'center', alignItems: 'center' }}>
               <Ionicons name={a.icon} size={14} color={a.color} />
             </View>
-            <Text style={{ color: '#FFFFFF', fontSize: 13, flex: 1 }}>{a.label}</Text>
+            <Text style={{ color: '#FFFFFF', fontSize: 15, flex: 1 }}>{a.label}</Text>
             <Ionicons name="chevron-forward" size={14} color="#8E8E93" />
           </View>
         ))}
@@ -1048,7 +1048,7 @@ const demoStyles = StyleSheet.create({
   },
   customerText: {
     color: '#1D1D1F',
-    fontSize: 14,
+    fontSize: 16,
     lineHeight: 20,
   },
   aiBubble: {
@@ -1061,7 +1061,7 @@ const demoStyles = StyleSheet.create({
   },
   aiText: {
     color: '#1D1D1F',
-    fontSize: 14,
+    fontSize: 16,
     lineHeight: 20,
   },
   aiIndicator: {
@@ -1072,7 +1072,7 @@ const demoStyles = StyleSheet.create({
   },
   aiIndicatorText: {
     color: '#AF52DE',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
   },
   typingIndicator: {
@@ -1103,12 +1103,12 @@ const demoStyles = StyleSheet.create({
   },
   aiLabel: {
     color: '#AF52DE',
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
   },
   aiSuggestionText: {
     color: '#1D1D1F',
-    fontSize: 13,
+    fontSize: 15,
     lineHeight: 19,
     marginBottom: 10,
   },
@@ -1124,7 +1124,7 @@ const demoStyles = StyleSheet.create({
   },
   sendButtonText: {
     color: '#1D1D1F',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
   },
   editButton: {
@@ -1135,7 +1135,7 @@ const demoStyles = StyleSheet.create({
   },
   editButtonText: {
     color: '#3A3A3C',
-    fontSize: 13,
+    fontSize: 15,
   },
   // Congrats Card
   congratsCard: {
@@ -1145,7 +1145,7 @@ const demoStyles = StyleSheet.create({
   },
   congratsHeadline: {
     color: '#007AFF',
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '800',
     letterSpacing: 2,
     marginBottom: 12,
@@ -1163,13 +1163,13 @@ const demoStyles = StyleSheet.create({
   },
   customerName: {
     color: '#1D1D1F',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     marginBottom: 4,
   },
   congratsMessage: {
     color: '#6E6E73',
-    fontSize: 13,
+    fontSize: 15,
     textAlign: 'center',
     marginBottom: 12,
   },
@@ -1179,12 +1179,12 @@ const demoStyles = StyleSheet.create({
   },
   salesmanName: {
     color: '#007AFF',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
   },
   dealership: {
     color: '#AEAEB2',
-    fontSize: 11,
+    fontSize: 13,
   },
   shareIcons: {
     flexDirection: 'row',
@@ -1212,12 +1212,12 @@ const demoStyles = StyleSheet.create({
   },
   cardName: {
     color: '#1D1D1F',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
   cardTitle: {
     color: '#8E8E93',
-    fontSize: 13,
+    fontSize: 15,
   },
   qrContainer: {
     alignItems: 'center',
@@ -1234,7 +1234,7 @@ const demoStyles = StyleSheet.create({
   },
   qrLabel: {
     color: '#8E8E93',
-    fontSize: 11,
+    fontSize: 13,
   },
   cardActions: {
     flexDirection: 'row',
@@ -1246,7 +1246,7 @@ const demoStyles = StyleSheet.create({
   },
   cardActionText: {
     color: '#8E8E93',
-    fontSize: 11,
+    fontSize: 13,
   },
   // Voice to Text
   voiceContainer: {
@@ -1264,7 +1264,7 @@ const demoStyles = StyleSheet.create({
   },
   voiceStatus: {
     color: '#FF3B30',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     marginBottom: 12,
   },
@@ -1276,7 +1276,7 @@ const demoStyles = StyleSheet.create({
   },
   transcriptText: {
     color: '#1D1D1F',
-    fontSize: 13,
+    fontSize: 15,
     lineHeight: 19,
     fontStyle: 'italic',
   },
@@ -1297,7 +1297,7 @@ const demoStyles = StyleSheet.create({
   },
   campaignTitle: {
     color: '#1D1D1F',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     marginBottom: 12,
     textAlign: 'center',
@@ -1320,12 +1320,12 @@ const demoStyles = StyleSheet.create({
   },
   timelineDay: {
     color: '#8E8E93',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
   },
   timelineText: {
     color: '#1D1D1F',
-    fontSize: 12,
+    fontSize: 14,
   },
   timelineLine: {
     width: 2,
@@ -1339,7 +1339,7 @@ const demoStyles = StyleSheet.create({
   },
   analyticsTitle: {
     color: '#1D1D1F',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     marginBottom: 12,
     textAlign: 'center',
@@ -1358,13 +1358,13 @@ const demoStyles = StyleSheet.create({
   },
   statNumber: {
     color: '#1D1D1F',
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '700',
     marginTop: 4,
   },
   statLabel: {
     color: '#8E8E93',
-    fontSize: 10,
+    fontSize: 12,
     marginTop: 2,
   },
   insightBox: {
@@ -1378,7 +1378,7 @@ const demoStyles = StyleSheet.create({
   },
   insightText: {
     color: '#34C759',
-    fontSize: 11,
+    fontSize: 13,
     flex: 1,
   },
 });
@@ -1416,7 +1416,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   progressText: {
     color: '#8E8E93',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '500',
   },
   skipButton: {
@@ -1430,7 +1430,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   skipText: {
     color: '#6E6E73',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '500',
   },
   scrollContent: {
@@ -1480,13 +1480,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     height: 20,
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: 12,
   },
   description: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#3A3A3C',
     textAlign: 'center',
     lineHeight: 21,
@@ -1505,7 +1505,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 10,
   },
   benefitText: {
-    fontSize: 15,
+    fontSize: 17,
     color: '#1D1D1F',
     fontWeight: '500',
   },
@@ -1540,13 +1540,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   choiceLabel: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#1D1D1F',
     marginBottom: 2,
   },
   choiceDescription: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#8E8E93',
   },
   inputsContainer: {
@@ -1558,7 +1558,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#1D1D1F',
     marginBottom: 8,
@@ -1567,7 +1567,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#F5F5F7',
     borderRadius: 12,
     padding: 14,
-    fontSize: 15,
+    fontSize: 17,
     color: '#1D1D1F',
     borderWidth: 1,
     borderColor: '#F0F0F5',
@@ -1577,7 +1577,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     textAlignVertical: 'top',
   },
   inputHint: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#AEAEB2',
     textAlign: 'center',
     marginTop: 8,
@@ -1603,7 +1603,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   actionButtonText: {
     color: '#FFFFFF',
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
   },
   skipLink: {
@@ -1611,7 +1611,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   skipLinkText: {
     color: '#8E8E93',
-    fontSize: 14,
+    fontSize: 16,
   },
   navContainer: {
     paddingHorizontal: 20,
@@ -1633,7 +1633,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   backButtonText: {
     color: '#1D1D1F',
-    fontSize: 16,
+    fontSize: 18,
     marginLeft: 4,
   },
   nextButton: {
@@ -1651,7 +1651,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   nextButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
   completeButton: {
@@ -1698,7 +1698,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   quickWinBadgeText: {
     color: '#007AFF',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
@@ -1717,7 +1717,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   tryItButtonText: {
     color: '#FFFFFF',
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
   },
   // Checklist styles
@@ -1747,13 +1747,13 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   checklistLabel: {
     color: '#1D1D1F',
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     marginBottom: 2,
   },
   checklistDescription: {
     color: '#8E8E93',
-    fontSize: 12,
+    fontSize: 14,
   },
   checklistArrow: {
     paddingLeft: 4,
@@ -1763,13 +1763,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 20,
   },
   teamInviteTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '700',
     color: '#1D1D1F',
     marginTop: 12,
   },
   teamInviteSubtitle: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#6E6E73',
     marginTop: 4,
     textAlign: 'center',
@@ -1789,7 +1789,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   teamMemberNumber: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -1797,7 +1797,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
     padding: 12,
-    fontSize: 15,
+    fontSize: 17,
     color: '#1D1D1F',
     marginBottom: 10,
     borderWidth: 1,
@@ -1817,7 +1817,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   addMemberText: {
     color: '#007AFF',
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '500',
   },
   inviteSuccessMessage: {
@@ -1832,7 +1832,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   inviteSuccessText: {
     color: '#34C759',
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
   },
   skipInviteLink: {
@@ -1842,7 +1842,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   skipInviteLinkText: {
     color: '#AEAEB2',
-    fontSize: 14,
+    fontSize: 16,
     textDecorationLine: 'underline',
   },
   sendInvitesButton: {

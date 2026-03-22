@@ -74,7 +74,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 32,
@@ -91,7 +91,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   infoText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     lineHeight: 20,
   },
@@ -105,7 +105,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   primaryButtonText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -116,7 +116,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   secondaryButtonText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '500',
     color: colors.textSecondary,
   },

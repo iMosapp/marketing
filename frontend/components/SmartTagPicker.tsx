@@ -104,7 +104,7 @@ export function SmartTagPicker({ tags, selectedTag, onSelect, onTagCreated, user
           );
         })}
         {filtered.length === 0 && !canCreate && (
-          <Text style={{ color: colors.textSecondary, fontSize: 13, padding: 8 }}>No tags found</Text>
+          <Text style={{ color: colors.textSecondary, fontSize: 15, padding: 8 }}>No tags found</Text>
         )}
       </View>
     </View>
@@ -116,19 +116,19 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'flex-start', gap: 8,
     padding: 10, borderRadius: 8, borderWidth: 1, marginBottom: 10,
   },
-  helperText: { flex: 1, fontSize: 12, lineHeight: 16 },
+  helperText: { flex: 1, fontSize: 14, lineHeight: 16 },
   searchBox: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, marginBottom: 10,
   },
-  searchInput: { flex: 1, fontSize: 14, paddingVertical: 4 },
+  searchInput: { flex: 1, fontSize: 16, paddingVertical: 4 },
   createRow: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     paddingHorizontal: 12, paddingVertical: 10, borderRadius: 10,
     borderWidth: 1, borderStyle: 'dashed', marginBottom: 10,
     backgroundColor: 'rgba(201,169,98,0.08)',
   },
-  createText: { fontSize: 14, color: '#C9A962' },
+  createText: { fontSize: 16, color: '#C9A962' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   tag: {
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
@@ -136,6 +136,6 @@ const s = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 4,
   },
   tagActive: { backgroundColor: '#C9A962', borderColor: '#C9A962' },
-  tagText: { fontSize: 13, fontWeight: '500', color: '#aaa' },
+  tagText: { fontSize: 15, fontWeight: '500', color: '#aaa' },
   tagTextActive: { color: '#000', fontWeight: '600' },
 });

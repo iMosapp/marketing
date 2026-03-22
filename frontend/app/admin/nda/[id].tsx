@@ -185,8 +185,8 @@ function TimelineItem({ label, date, icon, done }: { label: string; date?: strin
         <Ionicons name={icon as any} size={16} color={done ? '#34C759' : '#666'} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 15, color: done ? '#FFF' : '#666', fontWeight: '500' }}>{label}</Text>
-        {date && <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>{fmt(date)}</Text>}
+        <Text style={{ fontSize: 17, color: done ? '#FFF' : '#666', fontWeight: '500' }}>{label}</Text>
+        {date && <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 2 }}>{fmt(date)}</Text>}
       </View>
       {done && <Ionicons name="checkmark" size={16} color="#34C759" />}
     </View>
@@ -196,21 +196,21 @@ function TimelineItem({ label, date, icon, done }: { label: string; date?: strin
 const getStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.card },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
+  headerTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
   content: { flex: 1, paddingHorizontal: 20 },
   statusBanner: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 16, borderRadius: 12, marginTop: 16 },
-  statusText: { fontSize: 15, fontWeight: '600' },
+  statusText: { fontSize: 17, fontWeight: '600' },
   section: { marginTop: 24, backgroundColor: colors.card, borderRadius: 16, padding: 16 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 12 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 12 },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.surface },
-  infoLabel: { fontSize: 14, color: colors.textSecondary },
-  infoValue: { fontSize: 14, color: colors.text, fontWeight: '500' },
+  infoLabel: { fontSize: 16, color: colors.textSecondary },
+  infoValue: { fontSize: 16, color: colors.text, fontWeight: '500' },
   sigBox: { marginTop: 12, padding: 12, backgroundColor: '#0D0D0D', borderRadius: 12, borderWidth: 1, borderColor: colors.surface },
-  sigLabel: { fontSize: 12, color: colors.textSecondary, marginBottom: 8 },
+  sigLabel: { fontSize: 14, color: colors.textSecondary, marginBottom: 8 },
   sigImage: { width: '100%', height: 80 },
-  sigDate: { fontSize: 11, color: '#666', marginTop: 8, textAlign: 'right' },
-  pendingText: { fontSize: 14, color: '#FF9500', fontStyle: 'italic', marginTop: 12 },
+  sigDate: { fontSize: 13, color: '#666', marginTop: 8, textAlign: 'right' },
+  pendingText: { fontSize: 16, color: '#FF9500', fontStyle: 'italic', marginTop: 12 },
   timeline: { marginTop: 4 },
   actionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#007AFF', paddingVertical: 16, borderRadius: 12 },
-  actionText: { fontSize: 16, fontWeight: '600', color: colors.text },
+  actionText: { fontSize: 18, fontWeight: '600', color: colors.text },
 });

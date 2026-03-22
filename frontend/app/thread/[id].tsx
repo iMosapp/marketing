@@ -1852,7 +1852,7 @@ export default function ThreadScreen() {
             data-testid="email-prompt-close"
           >
             <Ionicons name="chatbubble-outline" size={14} color="#007AFF" />
-            <Text style={{ color: '#007AFF', fontSize: 13, fontWeight: '600' }}>SMS</Text>
+            <Text style={{ color: '#007AFF', fontSize: 15, fontWeight: '600' }}>SMS</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -2199,7 +2199,7 @@ export default function ThreadScreen() {
                   <View style={styles.actionSheetDivider} />
                   <TouchableOpacity style={styles.actionSheetButton} onPress={() => { setShowReviewLinks(false); router.push('/settings/review-links' as any); }}>
                     <Ionicons name="settings-outline" size={22} color={colors.textSecondary} />
-                    <Text style={[styles.actionSheetButtonText, { color: colors.textSecondary, fontSize: 16 }]}>Manage Review Links</Text>
+                    <Text style={[styles.actionSheetButtonText, { color: colors.textSecondary, fontSize: 18 }]}>Manage Review Links</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -2475,7 +2475,7 @@ export default function ThreadScreen() {
               </TouchableOpacity>
               <View style={styles.actionSheetDivider} />
               <View style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
-                <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '600', marginBottom: 10, textAlign: 'center' }}>CREATE A CARD</Text>
+                <Text style={{ fontSize: 15, color: colors.textSecondary, fontWeight: '600', marginBottom: 10, textAlign: 'center' }}>CREATE A CARD</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 4 }}>
                   {[
                     { type: 'congrats', label: 'Congrats', color: '#C9A962', icon: 'trophy' },
@@ -2502,7 +2502,7 @@ export default function ThreadScreen() {
                       data-testid={`card-template-${item.type}`}
                     >
                       <Ionicons name={item.icon as any} size={24} color={item.color} />
-                      <Text style={{ fontSize: 12, fontWeight: '600', color: item.color, marginTop: 6 }}>{item.label}</Text>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: item.color, marginTop: 6 }}>{item.label}</Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
@@ -2864,7 +2864,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   headerAvatarText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textPrimary,
   },
@@ -2873,12 +2873,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginLeft: 8,
   },
   headerName: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.textPrimary,
   },
   headerPhone: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   settingsButton: {
@@ -2898,7 +2898,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   modeBannerText: {
     color: colors.textSecondary,
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     flex: 1,
   },
@@ -2913,7 +2913,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   modeSwitchText: {
     color: colors.textSecondary,
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
   },
   // Relationship Intel bar
@@ -2936,12 +2936,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   intelBarTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600' as const,
     color: '#C9A962',
   },
   intelBarMeta: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textTertiary,
   },
   intelContent: {
@@ -2958,11 +2958,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 8,
   },
   intelLoadingText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   intelSummaryText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     lineHeight: 20,
     marginBottom: 8,
@@ -2973,7 +2973,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'space-between' as const,
   },
   intelMetaText: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textTertiary,
   },
   intelRefreshBtn: {
@@ -2982,12 +2982,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   intelRefreshText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#007AFF',
     fontWeight: '600' as const,
   },
   intelEmptyText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textTertiary,
     paddingVertical: 4,
   },
@@ -3004,7 +3004,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   emailPromptInput: {
     flex: 1,
     color: colors.textPrimary,
-    fontSize: 15,
+    fontSize: 17,
     backgroundColor: colors.surface,
     borderRadius: 8,
     paddingHorizontal: 12,
@@ -3021,7 +3021,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   emailPromptSaveText: {
     color: colors.textPrimary,
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 16,
   },
   loadingContainer: {
     flex: 1,
@@ -3040,13 +3040,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 64,
   },
   emptyText: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.textPrimary,
     marginTop: 16,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 4,
   },
@@ -3061,7 +3061,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'flex-start',
   },
   senderLabel: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#6E6E73',
     fontWeight: '500',
     marginBottom: 4,
@@ -3112,7 +3112,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   richContentLabel: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '700',
     letterSpacing: 0.3,
     textTransform: 'uppercase',
@@ -3127,12 +3127,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: '#34C75920',
   },
   aiIndicatorText: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#34C759',
     fontWeight: '600',
   },
   messageText: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
     lineHeight: 21,
   },
@@ -3151,7 +3151,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignSelf: 'flex-start',
   },
   intentText: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#FF9500',
     fontWeight: '600',
   },
@@ -3163,7 +3163,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignSelf: 'flex-end',
   },
   personalSmsText: {
-    fontSize: 10,
+    fontSize: 12,
     color: colors.textSecondary,
   },
   personalSmsHint: {
@@ -3178,12 +3178,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderTopColor: '#FF950030',
   },
   personalSmsHintText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#FF9500',
     fontWeight: '500',
   },
   messageTime: {
-    fontSize: 11,
+    fontSize: 13,
     marginTop: 4,
   },
   userMessageTime: {
@@ -3201,7 +3201,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   aiLoadingText: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#34C759',
     fontWeight: '500',
   },
@@ -3220,7 +3220,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   attachOptionText: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
   },
   attachButton: {
@@ -3260,7 +3260,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   inputField: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textPrimary,
     maxHeight: 100,
     paddingTop: 0,
@@ -3299,7 +3299,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textPrimary,
     maxHeight: 100,
   },
@@ -3348,7 +3348,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     right: 8,
   },
   mediaPreviewText: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
   },
   // MMS Image styles in message bubbles
@@ -3374,7 +3374,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   mediaErrorText: {
     color: colors.textSecondary,
-    fontSize: 12,
+    fontSize: 14,
     marginTop: 4,
   },
   mediaOnlyIndicator: {
@@ -3384,11 +3384,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 4,
   },
   mediaOnlyText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
   },
   composerInput: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textPrimary,
     paddingHorizontal: 16,
     paddingTop: 10,
@@ -3461,7 +3461,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '700',
     color: colors.textPrimary,
     textAlign: 'center',
@@ -3486,7 +3486,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   modalCloseButtonText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: '#FF3B30',
   },
@@ -3495,12 +3495,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 40,
   },
   emptyTemplatesText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textSecondary,
     marginTop: 12,
   },
   modalSectionTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 12,
@@ -3529,12 +3529,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   modeName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.textPrimary,
   },
   modeDesc: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -3553,7 +3553,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   closeModalText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.textPrimary,
   },
@@ -3586,12 +3586,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   templateName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.textPrimary,
   },
   templatePreview: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -3600,7 +3600,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 32,
   },
   emptyReviewsText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textSecondary,
     marginTop: 12,
     marginBottom: 20,
@@ -3612,7 +3612,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 20,
   },
   setupReviewsButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.textPrimary,
   },
@@ -3628,20 +3628,20 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 20,
   },
   cardPreviewTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.textPrimary,
     marginTop: 12,
   },
   cardPreviewDesc: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 8,
     lineHeight: 20,
   },
   campaignPickerLabel: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '500',
     color: colors.textPrimary,
     marginBottom: 12,
@@ -3667,7 +3667,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#007AFF',
   },
   campaignChipText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     fontWeight: '500',
   },
@@ -3679,11 +3679,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 20,
   },
   noCampaignsText: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
   },
   noCampaignsSubtext: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#6E6E73',
     marginTop: 4,
   },
@@ -3697,7 +3697,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   sendCardButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.textPrimary,
   },
@@ -3726,13 +3726,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   shareOptionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: 4,
   },
   shareOptionDesc: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     lineHeight: 18,
   },
@@ -3749,7 +3749,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 12,
   },
   landingPageOptionsTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.textPrimary,
   },
@@ -3764,12 +3764,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     paddingVertical: 18, gap: 10,
   },
-  actionSheetButtonText: { fontSize: 20, color: '#007AFF', fontWeight: '400' },
+  actionSheetButtonText: { fontSize: 21, color: '#007AFF', fontWeight: '400' },
   actionSheetDivider: { height: 1, backgroundColor: colors.border },
   actionSheetCancel: {
     backgroundColor: colors.surface, borderRadius: 14, paddingVertical: 18, alignItems: 'center',
   },
-  actionSheetCancelText: { fontSize: 20, fontWeight: '600', color: '#007AFF' },
+  actionSheetCancelText: { fontSize: 21, fontWeight: '600', color: '#007AFF' },
   // Congrats Card Modal Styles
   congratsModalOverlay: {
     flex: 1,
@@ -3824,14 +3824,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   congratsPhotoText: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
     paddingHorizontal: 10,
   },
   congratsLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: 8,
@@ -3849,7 +3849,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.elevated,
   },
   cardTypeChipText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textPrimary,
   },
@@ -3857,7 +3857,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.elevated,
     borderRadius: 12,
     padding: 14,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textPrimary,
     marginBottom: 12,
   },
@@ -3876,7 +3876,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   congratsPreviewText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 15,
     color: '#C9A962',
     lineHeight: 20,
   },
@@ -3894,7 +3894,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     opacity: 0.5,
   },
   congratsCreateButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.textPrimary,
   },
@@ -3904,7 +3904,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   congratsTagEmpty: {
     color: '#6E6E73',
-    fontSize: 13,
+    fontSize: 15,
     textAlign: 'center',
     paddingVertical: 12,
   },
@@ -3925,7 +3925,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: colors.border,
   },
   congratsTagText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '500',
     color: colors.textSecondary,
   },
@@ -3947,7 +3947,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 10,
   },
   congratsCampaignNoteText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#FF9500',
     flex: 1,
   },
@@ -3966,7 +3966,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   quickContactTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.textPrimary,
   },
@@ -4016,7 +4016,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textPrimary,
   },
   quickContactTagsSection: {
@@ -4026,7 +4026,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   quickContactTagsLabel: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   quickContactTagsScroll: {
@@ -4042,7 +4042,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   quickContactTagText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.textPrimary,
   },
@@ -4056,7 +4056,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   quickContactAddTagText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#007AFF',
     fontWeight: '500',
   },
@@ -4079,12 +4079,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   quickContactActionText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textPrimary,
   },
   quickContactHint: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#6E6E73',
     textAlign: 'center',
     marginTop: 10,
@@ -4102,7 +4102,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   quickContactCollapsedText: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#007AFF',
     fontWeight: '500',
   },
@@ -4127,7 +4127,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.border,
   },
   tagPickerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.textPrimary,
   },
@@ -4152,11 +4152,11 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   tagPickerItemText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textPrimary,
   },
   tagPickerEmpty: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     textAlign: 'center',
     padding: 20,
@@ -4169,7 +4169,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   tagPickerDoneText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.textPrimary,
   },
@@ -4204,12 +4204,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#34C759',
   },
   createUserToggleText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textPrimary,
   },
   createUserToggleHint: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
     marginTop: 1,
   },
@@ -4228,7 +4228,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   createUserInput: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textPrimary,
   },
   createUserRoleContainer: {
@@ -4237,7 +4237,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 10,
   },
   createUserRoleLabel: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   createUserRoleOptions: {
@@ -4257,7 +4257,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   createUserRoleBtnText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '500',
     color: colors.textSecondary,
   },

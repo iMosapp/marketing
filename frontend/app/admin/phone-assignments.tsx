@@ -462,7 +462,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 8,
   },
   title: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -477,7 +477,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   infoText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 15,
     color: '#007AFF',
     lineHeight: 18,
   },
@@ -502,7 +502,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#E8F4FD',
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     fontWeight: '500',
   },
@@ -543,12 +543,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   userName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   userEmail: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -564,7 +564,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 6,
   },
   phoneNumber: {
-    fontSize: 15,
+    fontSize: 17,
     color: '#34C759',
     fontWeight: '500',
     fontFamily: 'monospace',
@@ -575,7 +575,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 6,
   },
   noPhone: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     fontStyle: 'italic',
   },
@@ -589,7 +589,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 4,
   },
   roleText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
     color: colors.text,
   },
@@ -608,7 +608,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   emptyText: {
     marginTop: 12,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textSecondary,
   },
   // Modal styles
@@ -632,7 +632,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.borderLight,
   },
   modalTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -643,13 +643,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     maxHeight: 300,
   },
   editingName: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '700',
     color: colors.text,
     marginBottom: 20,
   },
   inputLabel: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 8,
@@ -659,12 +659,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.bg,
     borderRadius: 10,
     padding: 14,
-    fontSize: 18,
+    fontSize: 19,
     fontFamily: 'monospace',
     color: colors.text,
   },
   inputHint: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 8,
   },
@@ -679,7 +679,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   routingText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 15,
     color: '#996600',
     lineHeight: 18,
   },
@@ -697,7 +697,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   clearButtonText: {
     color: '#FF3B30',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
   saveButton: {
@@ -712,7 +712,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   saveButtonText: {
     color: colors.text,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
   },
 });

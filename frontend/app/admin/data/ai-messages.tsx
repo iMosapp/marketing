@@ -144,7 +144,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -156,7 +156,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   countText: {
     color: '#AF52DE',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
   },
   listContent: {
@@ -187,16 +187,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   contactName: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
   date: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
   },
   userName: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -209,17 +209,17 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 6,
   },
   typeText: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#AF52DE',
     fontWeight: '500',
   },
   promptText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textTertiary,
     marginTop: 6,
   },
   responseText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 4,
     fontStyle: 'italic',
@@ -231,7 +231,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingTop: 100,
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textSecondary,
     marginTop: 12,
   },

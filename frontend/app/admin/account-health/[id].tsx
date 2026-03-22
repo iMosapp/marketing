@@ -41,8 +41,8 @@ const MetricTile = ({ icon, label, value, sub, color }: any) => {
 const tileStyles = StyleSheet.create({
   tile: { flex: 1, minWidth: 100, alignItems: 'center', padding: 14, borderRadius: 12, borderWidth: 1, gap: 2 },
   value: { fontSize: 22, fontWeight: '800', marginTop: 4 },
-  label: { fontSize: 11, fontWeight: '600' },
-  sub: { fontSize: 10, fontWeight: '600', marginTop: 2 },
+  label: { fontSize: 13, fontWeight: '600' },
+  sub: { fontSize: 12, fontWeight: '600', marginTop: 2 },
 });
 
 export default function AccountHealthDetail() {
@@ -141,13 +141,13 @@ export default function AccountHealthDetail() {
               data-testid="send-report-btn"
             >
               <Ionicons name="paper-plane" size={14} color="#C9A962" />
-              <Text style={{ fontSize: 12, fontWeight: '600', color: '#C9A962' }}>Send Report</Text>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: '#C9A962' }}>Send Report</Text>
             </TouchableOpacity>
             <View style={styles.periodRow}>
               {[30, 90].map(p => (
                 <TouchableOpacity key={p} onPress={() => setPeriod(p)}
                   style={[styles.periodBtn, { backgroundColor: period === p ? '#007AFF' : colors.card, borderColor: period === p ? '#007AFF' : colors.surface }]}>
-                  <Text style={{ fontSize: 11, fontWeight: '600', color: period === p ? '#FFF' : colors.textSecondary }}>{p}d</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: period === p ? '#FFF' : colors.textSecondary }}>{p}d</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -312,7 +312,7 @@ export default function AccountHealthDetail() {
                 style={[styles.cancelBtn, { borderColor: colors.surface }]}
                 data-testid="cancel-send-report-btn"
               >
-                <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 14 }}>Cancel</Text>
+                <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 16 }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={handleSendReport}
@@ -325,7 +325,7 @@ export default function AccountHealthDetail() {
                 ) : (
                   <Ionicons name="paper-plane" size={14} color="#FFF" />
                 )}
-                <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 14 }}>{sending ? 'Sending...' : 'Send Report'}</Text>
+                <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 16 }}>{sending ? 'Sending...' : 'Send Report'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -343,43 +343,43 @@ const styles = StyleSheet.create({
   headerTopRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12, marginLeft: 48 },
   backBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 20, fontWeight: '700' },
-  subtitle: { fontSize: 12, marginTop: 2 },
+  title: { fontSize: 21, fontWeight: '700' },
+  subtitle: { fontSize: 14, marginTop: 2 },
   sendBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, borderWidth: 1 },
   periodRow: { flexDirection: 'row', gap: 6 },
   periodBtn: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, borderWidth: 1 },
   healthBanner: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderRadius: 16, borderWidth: 1.5, marginBottom: 20 },
   healthCircle: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center' },
-  healthScoreText: { color: '#FFF', fontSize: 18, fontWeight: '900' },
-  healthGrade: { fontSize: 18, fontWeight: '800' },
-  healthSub: { fontSize: 12, marginTop: 2, lineHeight: 17 },
-  loginLabel: { fontSize: 10 },
-  loginValue: { fontSize: 14, fontWeight: '700', marginTop: 2 },
-  sectionTitle: { fontSize: 15, fontWeight: '700', marginBottom: 10 },
+  healthScoreText: { color: '#FFF', fontSize: 19, fontWeight: '900' },
+  healthGrade: { fontSize: 19, fontWeight: '800' },
+  healthSub: { fontSize: 14, marginTop: 2, lineHeight: 17 },
+  loginLabel: { fontSize: 12 },
+  loginValue: { fontSize: 16, fontWeight: '700', marginTop: 2 },
+  sectionTitle: { fontSize: 17, fontWeight: '700', marginBottom: 10 },
   metricsGrid: { flexDirection: 'row', gap: 8 },
   breakdownCard: { borderRadius: 12, borderWidth: 1, padding: 12 },
   breakdownRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderBottomWidth: 1 },
-  breakdownType: { width: 120, fontSize: 12, fontWeight: '600', textTransform: 'capitalize' },
+  breakdownType: { width: 120, fontSize: 14, fontWeight: '600', textTransform: 'capitalize' },
   breakdownBar: { flex: 1, height: 8, borderRadius: 4, overflow: 'hidden' },
   breakdownFill: { height: '100%', borderRadius: 4 },
-  breakdownCount: { fontSize: 13, fontWeight: '700', width: 40, textAlign: 'right' },
+  breakdownCount: { fontSize: 15, fontWeight: '700', width: 40, textAlign: 'right' },
   timelineCard: { borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
   timelineRow: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12 },
   timelineDot: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
-  timelineType: { fontSize: 13, fontWeight: '600', textTransform: 'capitalize' },
-  timelineDetail: { fontSize: 11, marginTop: 1 },
+  timelineType: { fontSize: 15, fontWeight: '600', textTransform: 'capitalize' },
+  timelineDetail: { fontSize: 13, marginTop: 1 },
   infoCard: { borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
   infoRow: { flexDirection: 'row', justifyContent: 'space-between', padding: 12 },
-  infoLabel: { fontSize: 13 },
-  infoValue: { fontSize: 13, fontWeight: '600' },
+  infoLabel: { fontSize: 15 },
+  infoValue: { fontSize: 15, fontWeight: '600' },
   // Modal styles
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   modalContent: { width: '100%', maxWidth: 460, borderRadius: 16, borderWidth: 1, padding: 24 },
   modalHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  modalTitle: { flex: 1, fontSize: 18, fontWeight: '700' },
-  modalDesc: { fontSize: 13, marginBottom: 16, lineHeight: 18 },
-  inputLabel: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4, marginTop: 8 },
-  input: { fontSize: 14, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, borderWidth: 1 },
+  modalTitle: { flex: 1, fontSize: 19, fontWeight: '700' },
+  modalDesc: { fontSize: 15, marginBottom: 16, lineHeight: 18 },
+  inputLabel: { fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4, marginTop: 8 },
+  input: { fontSize: 16, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, borderWidth: 1 },
   textarea: { minHeight: 70, textAlignVertical: 'top' },
   modalActions: { flexDirection: 'row', gap: 10, marginTop: 20 },
   cancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, borderWidth: 1, alignItems: 'center' },

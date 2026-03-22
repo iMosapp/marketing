@@ -182,7 +182,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   backButton: { padding: 4 },
-  title: { fontSize: 18, fontWeight: 'bold', color: colors.text },
+  title: { fontSize: 19, fontWeight: 'bold', color: colors.text },
   periodSelector: { flexDirection: 'row', padding: 16, gap: 8 },
   periodButton: {
     paddingHorizontal: 16,
@@ -217,12 +217,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: '#007AFF',
   },
   userName: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '700',
     color: colors.text,
   },
   userRole: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     textTransform: 'capitalize',
     marginTop: 2,
@@ -248,12 +248,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 8,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 4,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: colors.text,
     marginBottom: 12,
@@ -285,7 +285,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   breakdownLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 4,
   },
@@ -314,7 +314,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 4,
   },
   chartLabel: {
-    fontSize: 10,
+    fontSize: 12,
     color: colors.textSecondary,
     marginTop: 6,
   },
@@ -326,7 +326,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   chartFooterText: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
   },
 });

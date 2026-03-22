@@ -547,7 +547,7 @@ export default function MyAccountScreen() {
         {/* ====== MY PRESENCE — Everything you send out ====== */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>My Presence</Text>
-          <Text style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 14, marginTop: -6, paddingHorizontal: 2 }}>
+          <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 14, marginTop: -6, paddingHorizontal: 2 }}>
             Everything that represents you to customers
           </Text>
 
@@ -571,11 +571,11 @@ export default function MyAccountScreen() {
                   {photoUrl ? (
                     <Image source={{ uri: photoUrl }} style={{ width: 52, height: 52, borderRadius: 26 }} />
                   ) : (
-                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: 20 }}>{getInitials()}</Text>
+                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: 21 }}>{getInitials()}</Text>
                   )}
                 </View>
-                <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>{user?.name || 'Your Name'}</Text>
-                <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>Sales Professional</Text>
+                <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>{user?.name || 'Your Name'}</Text>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>Sales Professional</Text>
                 <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
                   {[
                     { icon: 'call', color: '#34C759' },
@@ -660,7 +660,7 @@ export default function MyAccountScreen() {
                     </View>
                   ))}
                 </View>
-                <Text style={{ fontSize: 10, color: colors.textSecondary, marginTop: 8 }}>Your public portfolio</Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 8 }}>Your public portfolio</Text>
               </View>
             </TouchableOpacity>
             <View style={styles.presenceHeader}>
@@ -721,16 +721,16 @@ export default function MyAccountScreen() {
                     <Ionicons key={i} name="star" size={22} color="#FFD60A" />
                   ))}
                 </View>
-                <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>Rate Your Experience</Text>
+                <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text }}>Rate Your Experience</Text>
                 <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
                   <View style={{ paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8, backgroundColor: '#4285F415' }}>
-                    <Text style={{ fontSize: 11, fontWeight: '600', color: '#4285F4' }}>Google</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#4285F4' }}>Google</Text>
                   </View>
                   <View style={{ paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8, backgroundColor: '#1877F215' }}>
-                    <Text style={{ fontSize: 11, fontWeight: '600', color: '#1877F2' }}>Facebook</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#1877F2' }}>Facebook</Text>
                   </View>
                   <View style={{ paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8, backgroundColor: '#AF281415' }}>
-                    <Text style={{ fontSize: 11, fontWeight: '600', color: '#AF2814' }}>Yelp</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#AF2814' }}>Yelp</Text>
                   </View>
                 </View>
               </View>
@@ -786,7 +786,7 @@ export default function MyAccountScreen() {
                 </View>
                 {['Website', 'Instagram', 'Facebook'].map((label, i) => (
                   <View key={i} style={{ width: '100%', paddingVertical: 7, borderRadius: 20, backgroundColor: colors.bg, marginBottom: 4, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 11, fontWeight: '600', color: colors.textSecondary }}>{label}</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary }}>{label}</Text>
                   </View>
                 ))}
               </View>
@@ -846,10 +846,10 @@ export default function MyAccountScreen() {
             >
               <View style={{ alignItems: 'center' }}>
                 <Ionicons name="globe-outline" size={30} color="#AF52DE" style={{ marginBottom: 6 }} />
-                <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Welcome</Text>
-                <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2, marginBottom: 10 }}>{user?.name || 'Your Name'}</Text>
+                <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>Welcome</Text>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2, marginBottom: 10 }}>{user?.name || 'Your Name'}</Text>
                 <View style={{ paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20, backgroundColor: '#AF52DE' }}>
-                  <Text style={{ fontSize: 11, fontWeight: '600', color: '#fff' }}>Get in Touch</Text>
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: '#fff' }}>Get in Touch</Text>
                 </View>
               </View>
             </TouchableOpacity>
@@ -1091,7 +1091,7 @@ export default function MyAccountScreen() {
 
           {!storeSlug && (
             <TouchableOpacity onPress={() => { setShowShareModal(false); router.push('/settings/store-profile' as any); }}>
-              <Text style={{ color: '#FF9500', fontSize: 13, textAlign: 'center', marginTop: 12, paddingHorizontal: 16, textDecorationLine: 'underline' }}>
+              <Text style={{ color: '#FF9500', fontSize: 15, textAlign: 'center', marginTop: 12, paddingHorizontal: 16, textDecorationLine: 'underline' }}>
                 Store slug not set. Tap here to configure in Store Profile.
               </Text>
             </TouchableOpacity>
@@ -1155,7 +1155,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: undefined,
   },
@@ -1183,7 +1183,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   toggleBtnActive: {},
   toggleBtnText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
     color: colors.textSecondary,
   },
@@ -1239,7 +1239,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 4,
   },
   userEmail: {
-    fontSize: 16,
+    fontSize: 18,
     color: undefined,
     marginBottom: 8,
   },
@@ -1254,7 +1254,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 4,
   },
   roleText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: '#34C759',
   },
@@ -1273,7 +1273,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 20,
   },
   photoActionText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -1282,7 +1282,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 16,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
     color: undefined,
     textTransform: 'uppercase',
@@ -1309,7 +1309,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   tileLabel: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     color: undefined,
     textAlign: 'center',
@@ -1327,7 +1327,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#FFD60A30',
   },
   shareReviewBtnText: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: '#FFD60A',
   },
@@ -1355,13 +1355,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   menuTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: undefined,
     marginBottom: 2,
   },
   menuSubtitle: {
-    fontSize: 13,
+    fontSize: 15,
     color: undefined,
   },
   accountInfo: {
@@ -1377,11 +1377,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: undefined,
   },
   infoLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: undefined,
   },
   infoValue: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: undefined,
   },
@@ -1433,7 +1433,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   editLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '600',
     textAlign: 'center' as const,
     paddingHorizontal: 2,
@@ -1473,11 +1473,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center' as const,
   },
   presenceTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600' as const,
   },
   presenceUrl: {
-    fontSize: 11,
+    fontSize: 13,
     marginTop: 2,
   },
   presenceActions: {
@@ -1497,7 +1497,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 20,
   },
   presenceBtnText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600' as const,
   },
 });
@@ -1524,7 +1524,7 @@ const actStyles = StyleSheet.create({
     color: undefined,
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '600',
     color: undefined,
     textAlign: 'center',
@@ -1548,7 +1548,7 @@ const shareStyles = StyleSheet.create({
     borderBottomColor: '#1C1C1E',
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: undefined,
   },
@@ -1566,7 +1566,7 @@ const shareStyles = StyleSheet.create({
   },
   linkText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
     color: undefined,
     fontFamily: Platform.OS === 'web' ? 'monospace' : undefined,
   },
@@ -1588,12 +1588,12 @@ const shareStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   actionLabel: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: undefined,
   },
   hint: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#6E6E73',
     textAlign: 'center',
     marginTop: 32,

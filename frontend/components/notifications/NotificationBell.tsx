@@ -296,7 +296,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: colors.border,
   },
   badgeText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.text,
   },
@@ -336,12 +336,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   dropdownTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: colors.text,
   },
   markAll: {
-    fontSize: 13,
+    fontSize: 15,
     color: '#007AFF',
     fontWeight: '500',
   },
@@ -366,7 +366,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   categoryChipText: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     fontWeight: '500',
   },
@@ -384,7 +384,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   empty: {
     textAlign: 'center',
     color: '#6E6E73',
-    fontSize: 14,
+    fontSize: 16,
   },
   item: {
     flexDirection: 'row',
@@ -416,13 +416,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   itemTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
     flex: 1,
   },
   itemBody: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     lineHeight: 18,
     marginTop: 1,
@@ -430,7 +430,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexWrap: 'wrap',
   },
   itemTime: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#6E6E73',
     marginTop: 3,
   },

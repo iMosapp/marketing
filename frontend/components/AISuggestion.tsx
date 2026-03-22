@@ -86,7 +86,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 6,
   },
   headerText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
     color: '#34C759',
   },
@@ -102,7 +102,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignSelf: 'flex-start',
   },
   intentText: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#FF9500',
     fontWeight: '600',
     textTransform: 'capitalize',
@@ -114,7 +114,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   suggestionText: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
     lineHeight: 21,
   },
@@ -130,7 +130,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   dismissButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
   },
@@ -145,7 +145,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   editButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -160,7 +160,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   acceptButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
   },

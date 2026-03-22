@@ -306,7 +306,7 @@ export default function ChangePasswordScreen() {
                   style={styles.privacyLink}
                 >
                   <Ionicons name="shield-checkmark-outline" size={16} color={colors.textSecondary} />
-                  <Text style={[styles.tosLinkText, { color: colors.textSecondary, fontSize: 13 }]}>View Privacy Policy</Text>
+                  <Text style={[styles.tosLinkText, { color: colors.textSecondary, fontSize: 15 }]}>View Privacy Policy</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -367,7 +367,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 18,
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
@@ -379,7 +379,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignSelf: 'center',
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 8,
@@ -396,7 +396,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   input: {
     flex: 1,
     padding: 16,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   eyeButton: {
@@ -413,7 +413,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   errorText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
     color: '#FF3B30',
   },
   submitButton: {
@@ -421,7 +421,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 16,
   },
   submitButtonText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -432,7 +432,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 12,
   },
   requirementsTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 12,
@@ -444,7 +444,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   requirementText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
   },
   requirementMet: {
@@ -465,12 +465,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#007AFF20',
   },
   tosTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '700',
     color: colors.text,
   },
   tosDesc: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -489,7 +489,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#34C75908',
   },
   tosLinkText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     flex: 1,
   },
@@ -525,13 +525,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#007AFF',
   },
   tosCheckText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     flex: 1,
     lineHeight: 19,
   },
   tosHint: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#FF9500',
     textAlign: 'center',
     fontStyle: 'italic',

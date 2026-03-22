@@ -250,13 +250,13 @@ export default function BirthdayCardPage() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#1A1A1A' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  errorText: { color: '#FF3B30', fontSize: 16, marginTop: 12 },
+  errorText: { color: '#FF3B30', fontSize: 18, marginTop: 12 },
   scrollContent: { alignItems: 'center', paddingVertical: 30, paddingHorizontal: 24, maxWidth: 480, width: '100%', alignSelf: 'center' },
   backBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     alignSelf: 'flex-start', paddingVertical: 8, paddingHorizontal: 4, marginBottom: 8,
   },
-  backBtnText: { fontSize: 16, fontWeight: '600', color: '#FFF' },
+  backBtnText: { fontSize: 18, fontWeight: '600', color: '#FFF' },
 
   confettiRow: { flexDirection: 'row', justifyContent: 'space-around', width: '100%', marginBottom: 20, paddingHorizontal: 20 },
   confettiDot: { borderRadius: 20 },
@@ -270,28 +270,28 @@ const styles = StyleSheet.create({
   initials: { fontSize: 48, fontWeight: '800' },
 
   customerName: { fontSize: 28, fontWeight: '700', textAlign: 'center', marginBottom: 16, letterSpacing: -0.3 },
-  message: { fontSize: 16, lineHeight: 24, textAlign: 'center', marginBottom: 20, paddingHorizontal: 10 },
+  message: { fontSize: 18, lineHeight: 24, textAlign: 'center', marginBottom: 20, paddingHorizontal: 10 },
 
   customMsgBox: { borderLeftWidth: 3, paddingLeft: 16, paddingVertical: 8, marginBottom: 24, width: '100%' },
-  customMsg: { fontSize: 15, fontStyle: 'italic', lineHeight: 22 },
+  customMsg: { fontSize: 17, fontStyle: 'italic', lineHeight: 22 },
 
   divider: { width: 60, height: 4, borderRadius: 2, marginVertical: 24 },
 
   salesmanSection: { alignItems: 'center', marginBottom: 16 },
   salesmanPhoto: { width: 56, height: 56, borderRadius: 28, borderWidth: 2, marginBottom: 10 },
-  salesmanName: { fontSize: 18, fontWeight: '700', marginBottom: 2 },
-  salesmanTitle: { fontSize: 14, fontWeight: '500', marginBottom: 2 },
-  storeName: { fontSize: 13, color: '#8E8E93', marginTop: 2 },
+  salesmanName: { fontSize: 19, fontWeight: '700', marginBottom: 2 },
+  salesmanTitle: { fontSize: 16, fontWeight: '500', marginBottom: 2 },
+  storeName: { fontSize: 15, color: '#8E8E93', marginTop: 2 },
   storeLogo: { width: 100, height: 36, marginBottom: 20, opacity: 0.7, backgroundColor: 'transparent' },
 
   actions: { flexDirection: 'row', gap: 12, marginBottom: 20 },
   actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 },
-  actionBtnText: { fontSize: 14, fontWeight: '700', color: '#000' },
+  actionBtnText: { fontSize: 16, fontWeight: '700', color: '#000' },
 
   connectSection: { flexDirection: 'row', gap: 20, marginBottom: 24 },
   connectBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8 },
-  connectText: { fontSize: 14, fontWeight: '600' },
+  connectText: { fontSize: 16, fontWeight: '600' },
 
   footer: { marginTop: 16, paddingTop: 16 },
-  footerText: { fontSize: 11, color: '#3A3A3C', letterSpacing: 0.5 },
+  footerText: { fontSize: 13, color: '#3A3A3C', letterSpacing: 0.5 },
 });

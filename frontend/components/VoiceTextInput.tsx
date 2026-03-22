@@ -86,7 +86,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 16,
   },
   label: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 8,
@@ -100,7 +100,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 10,
     padding: 14,
     paddingRight: 50,
-    fontSize: 16,
+    fontSize: 18,
     color: colors.text,
   },
   inputWithVoice: {
@@ -118,7 +118,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   hint: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 4,
   },

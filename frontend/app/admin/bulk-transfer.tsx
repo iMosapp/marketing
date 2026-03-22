@@ -470,7 +470,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 40,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -490,13 +490,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginLeft: 12,
   },
   infoTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 4,
   },
   infoText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     lineHeight: 18,
   },
@@ -511,7 +511,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 10,
   },
   startButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -519,7 +519,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 8,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 16,
@@ -529,7 +529,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 40,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 12,
   },
@@ -551,7 +551,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   historyUser: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
     color: colors.text,
   },
@@ -568,7 +568,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#FF950020',
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.textSecondary,
   },
@@ -579,7 +579,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   historyStatItem: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     backgroundColor: colors.surface,
     paddingHorizontal: 8,
@@ -591,11 +591,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'space-between',
   },
   historyDate: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
   },
   historyInitiator: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
   },
   modalOverlay: {
@@ -618,7 +618,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
   },
@@ -630,7 +630,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 20,
   },
   selectorLabel: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 12,
@@ -665,7 +665,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 12,
   },
   userAvatarText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -673,12 +673,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   userName: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '500',
     color: colors.text,
   },
   userEmail: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
   },
   previewCard: {
@@ -688,7 +688,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 20,
   },
   previewTitle: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 12,
@@ -704,11 +704,11 @@ const getStyles = (colors: any) => StyleSheet.create({
   optionRowEnabled: {},
   optionInfo: {},
   optionLabel: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
   },
   optionCount: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -735,12 +735,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderTopColor: '#3C3C3E',
   },
   totalLabel: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
   totalValue: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '700',
     color: '#FF9500',
   },
@@ -758,7 +758,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     opacity: 0.5,
   },
   executeButtonText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },

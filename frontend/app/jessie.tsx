@@ -734,7 +734,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 60,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
   },
   placeholder: {
@@ -747,7 +747,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   cancelText: {
     color: '#FF3B30',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '500',
   },
   content: {
@@ -767,7 +767,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   introText: {
-    fontSize: 17,
+    fontSize: 18,
     textAlign: 'center',
     lineHeight: 26,
   },
@@ -788,14 +788,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   transcriptText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     fontStyle: 'italic',
     marginBottom: 12,
     textAlign: 'center',
   },
   responseText: {
-    fontSize: 17,
+    fontSize: 18,
     textAlign: 'left',
     lineHeight: 26,
   },
@@ -825,14 +825,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     elevation: 10,
   },
   stateText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     marginTop: 24,
     textAlign: 'center',
     paddingHorizontal: 20,
   },
   hintText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#6E6E73',
     marginTop: 8,
   },
@@ -864,7 +864,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    fontSize: 16,
+    fontSize: 18,
     marginRight: 10,
   },
   sendButton: {

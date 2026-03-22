@@ -481,7 +481,7 @@ const { showToast } = useToast();
               data-testid="edit-trigger-type-tag"
             >
               <Ionicons name="pricetag" size={16} color={triggerType === 'tag' ? '#007AFF' : colors.textSecondary} />
-              <Text style={{ fontSize: 13, fontWeight: '600', color: triggerType === 'tag' ? '#007AFF' : colors.textSecondary }}>Tag-Based</Text>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: triggerType === 'tag' ? '#007AFF' : colors.textSecondary }}>Tag-Based</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
@@ -492,7 +492,7 @@ const { showToast } = useToast();
               data-testid="edit-trigger-type-date"
             >
               <Ionicons name="calendar" size={16} color={triggerType === 'date' ? '#FF9500' : colors.textSecondary} />
-              <Text style={{ fontSize: 13, fontWeight: '600', color: triggerType === 'date' ? '#FF9500' : colors.textSecondary }}>Date-Based</Text>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: triggerType === 'date' ? '#FF9500' : colors.textSecondary }}>Date-Based</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -534,7 +534,7 @@ const { showToast } = useToast();
                   <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${dt.color}20`, alignItems: 'center', justifyContent: 'center' }}>
                     <Ionicons name={dt.icon as any} size={18} color={dt.color} />
                   </View>
-                  <Text style={{ flex: 1, fontSize: 14, fontWeight: '600', color: dateType === dt.id ? dt.color : colors.text }}>{dt.name}</Text>
+                  <Text style={{ flex: 1, fontSize: 16, fontWeight: '600', color: dateType === dt.id ? dt.color : colors.text }}>{dt.name}</Text>
                   {dateType === dt.id && <Ionicons name="checkmark-circle" size={20} color={dt.color} />}
                 </TouchableOpacity>
               ))}
@@ -923,7 +923,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '600',
     color: colors.text,
     flex: 1,
@@ -936,7 +936,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'flex-end',
   },
   saveText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -955,7 +955,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 20,
   },
   errorText: {
-    fontSize: 18,
+    fontSize: 19,
     color: colors.text,
     marginTop: 16,
     marginBottom: 24,
@@ -964,7 +964,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 12,
   },
   backLinkText: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#007AFF',
   },
   content: {
@@ -984,7 +984,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   typeBadgeText: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
   },
   section: {
@@ -997,7 +997,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   sectionLabel: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
     color: colors.textSecondary,
     textTransform: 'uppercase',
@@ -1008,7 +1008,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
-    fontSize: 17,
+    fontSize: 18,
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.surface,
@@ -1026,13 +1026,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   toggleLabel: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '500',
     color: colors.text,
     marginBottom: 4,
   },
   toggleSubtext: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   timeButton: {
@@ -1045,7 +1045,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   timeText: {
     flex: 1,
-    fontSize: 17,
+    fontSize: 18,
     color: colors.text,
   },
   addButton: {
@@ -1074,13 +1074,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   stepNumber: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '700',
     color: colors.text,
   },
   delayLabel: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     fontWeight: '500',
   },
@@ -1096,7 +1096,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   delayInputLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginBottom: 8,
   },
@@ -1114,7 +1114,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   stepperValue: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
@@ -1122,13 +1122,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 8,
     padding: 12,
-    fontSize: 15,
+    fontSize: 17,
     color: colors.text,
     minHeight: 100,
     textAlignVertical: 'top',
   },
   charCount: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#6E6E73',
     textAlign: 'right',
     marginTop: 8,
@@ -1140,7 +1140,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 12,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     marginTop: 8,
   },
@@ -1158,12 +1158,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   enrollmentName: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '500',
     color: colors.text,
   },
   enrollmentPhone: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   statusDot: {
@@ -1178,7 +1178,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 10,
   },
   viewAllText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#007AFF',
     fontWeight: '500',
   },
@@ -1194,7 +1194,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 16,
   },
   duplicateText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '500',
     color: '#007AFF',
   },
@@ -1210,7 +1210,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 16,
   },
   deleteText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '500',
     color: '#FF3B30',
   },
@@ -1225,7 +1225,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderTopColor: colors.surface,
   },
   mediaLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginBottom: 8,
     fontWeight: '600',
@@ -1265,7 +1265,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   addMediaText: {
-    fontSize: 10,
+    fontSize: 12,
     color: '#007AFF',
     marginTop: 2,
     fontWeight: '600',
@@ -1290,7 +1290,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF',
   },
   actionTypeBtnText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
   },
@@ -1302,7 +1302,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 4,
   },
   cardPickerLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginBottom: 10,
     fontWeight: '600',
@@ -1332,7 +1332,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   cardPickerItemText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.text,
     flex: 1,
@@ -1348,7 +1348,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
   },
   previewCardBtnText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -1389,13 +1389,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 12,
   },
   previewCardMessage: {
-    fontSize: 15,
+    fontSize: 17,
     lineHeight: 22,
     color: '#E0E0E0',
     textAlign: 'center',
   },
   previewCardPlaceholder: {
-    fontSize: 14,
+    fontSize: 16,
     color: colors.textSecondary,
     textAlign: 'center',
     fontStyle: 'italic',
@@ -1407,7 +1407,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   previewCardFooterText: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#6E6E73',
   },
 });

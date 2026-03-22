@@ -48,7 +48,7 @@ function MarkdownRenderer({ content, colors }: { content: string; colors: any })
     if (trimmed.startsWith('## ')) {
       elements.push(
         <Text key={i} style={{
-          fontSize: 18, fontWeight: '700', color: colors.text,
+          fontSize: 19, fontWeight: '700', color: colors.text,
           marginTop: 20, marginBottom: 6,
         }}>
           {trimmed.replace(/^## /, '')}
@@ -61,7 +61,7 @@ function MarkdownRenderer({ content, colors }: { content: string; colors: any })
     if (trimmed.startsWith('### ')) {
       elements.push(
         <Text key={i} style={{
-          fontSize: 15, fontWeight: '700', color: '#AF52DE',
+          fontSize: 17, fontWeight: '700', color: '#AF52DE',
           marginTop: 16, marginBottom: 4,
         }}>
           {trimmed.replace(/^### /, '')}
@@ -86,8 +86,8 @@ function MarkdownRenderer({ content, colors }: { content: string; colors: any })
       const bulletText = trimmed.replace(/^- /, '');
       elements.push(
         <View key={i} style={{ flexDirection: 'row', paddingLeft: 8, marginBottom: 4 }}>
-          <Text style={{ fontSize: 14, color: '#AF52DE', marginRight: 8, marginTop: 1 }}>*</Text>
-          <Text style={{ fontSize: 14, color: colors.text, opacity: 0.85, lineHeight: 22, flex: 1 }}>
+          <Text style={{ fontSize: 16, color: '#AF52DE', marginRight: 8, marginTop: 1 }}>*</Text>
+          <Text style={{ fontSize: 16, color: colors.text, opacity: 0.85, lineHeight: 22, flex: 1 }}>
             {renderInlineMarkdown(bulletText, colors)}
           </Text>
         </View>
@@ -100,8 +100,8 @@ function MarkdownRenderer({ content, colors }: { content: string; colors: any })
       const bulletText = trimmed.replace(/^\s+- /, '');
       elements.push(
         <View key={i} style={{ flexDirection: 'row', paddingLeft: 24, marginBottom: 3 }}>
-          <Text style={{ fontSize: 12, color: colors.textSecondary, marginRight: 8 }}>-</Text>
-          <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 20, flex: 1 }}>
+          <Text style={{ fontSize: 14, color: colors.textSecondary, marginRight: 8 }}>-</Text>
+          <Text style={{ fontSize: 15, color: colors.textSecondary, lineHeight: 20, flex: 1 }}>
             {renderInlineMarkdown(bulletText, colors)}
           </Text>
         </View>
@@ -113,7 +113,7 @@ function MarkdownRenderer({ content, colors }: { content: string; colors: any })
     // Regular paragraph
     elements.push(
       <Text key={i} style={{
-        fontSize: 14, color: colors.text, opacity: 0.85,
+        fontSize: 16, color: colors.text, opacity: 0.85,
         lineHeight: 22, marginBottom: 4,
       }}>
         {renderInlineMarkdown(trimmed, colors)}
@@ -137,7 +137,7 @@ function renderInlineMarkdown(text: string, colors: any): React.ReactNode[] {
           fontFamily: Platform.OS === 'web' ? 'monospace' : 'Courier',
           backgroundColor: colors.card,
           color: '#FF9500',
-          fontSize: 12,
+          fontSize: 14,
           paddingHorizontal: 4,
           borderRadius: 3,
         }}>
@@ -368,8 +368,8 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   backButton: { padding: 4, width: 40 },
   headerCenter: { flex: 1, alignItems: 'center' },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
-  headerSubtitle: { fontSize: 11, color: colors.textSecondary, marginTop: 2 },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
+  headerSubtitle: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
   editButton: {
     width: 40,
     height: 40,
@@ -394,7 +394,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#FF3B3020',
   },
-  cancelButtonText: { fontSize: 14, fontWeight: '600', color: '#FF3B30' },
+  cancelButtonText: { fontSize: 16, fontWeight: '600', color: '#FF3B30' },
   editingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -407,7 +407,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#34C759',
   },
   editingText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     color: '#34C759',
   },
@@ -420,12 +420,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#AF52DE',
   },
-  saveButtonText: { fontSize: 14, fontWeight: '700', color: '#FFF' },
+  saveButtonText: { fontSize: 16, fontWeight: '700', color: '#FFF' },
   editorScroll: { flex: 1 },
   editor: {
     flex: 1,
     padding: 16,
-    fontSize: 14,
+    fontSize: 16,
     fontFamily: Platform.OS === 'web' ? 'monospace' : 'Courier',
     color: colors.text,
     lineHeight: 22,

@@ -277,7 +277,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -315,7 +315,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   campaignName: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
     flex: 1,
@@ -333,7 +333,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
   },
   miniTagText: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
     fontWeight: '600',
   },
@@ -347,7 +347,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   statText: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
   },
   loadingContainer: {
@@ -362,14 +362,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 64,
   },
   emptyText: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '600',
     color: colors.text,
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtext: {
-    fontSize: 15,
+    fontSize: 17,
     color: colors.textSecondary,
     textAlign: 'center',
   },

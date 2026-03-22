@@ -158,8 +158,8 @@ export default function ReportsScreen() {
                 <Ionicons name="bar-chart" size={22} color="#007AFF" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>Comprehensive Analytics</Text>
-                <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>KPIs, trends, charts, team & store breakdown</Text>
+                <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>Comprehensive Analytics</Text>
+                <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 2 }}>KPIs, trends, charts, team & store breakdown</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color="#007AFF" />
             </TouchableOpacity>
@@ -330,13 +330,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: 'bold',
     color: colors.text,
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
   },
@@ -365,7 +365,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 16,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '700',
     color: colors.text,
     marginBottom: 12,
@@ -398,17 +398,17 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '700',
     color: colors.text,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginTop: 2,
   },
   statSubValue: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -432,13 +432,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
   },
   breakdownValue: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '700',
     color: colors.text,
     marginTop: 8,
   },
   breakdownLabel: {
-    fontSize: 11,
+    fontSize: 13,
     color: colors.textSecondary,
     marginTop: 4,
   },
@@ -462,12 +462,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   reportTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text,
   },
   reportDescription: {
-    fontSize: 13,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -477,7 +477,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   errorText: {
     color: colors.textSecondary,
-    fontSize: 16,
+    fontSize: 18,
     marginTop: 16,
   },
   retryButton: {
