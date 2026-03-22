@@ -2019,9 +2019,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     alignItems: 'center',
     backgroundColor: '#1C1C1E',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#2A2A2A',
+    borderBottomWidth: 1,
+    borderBottomColor: '#2A2A2A',
   },
   conversationItemClosed: {
     opacity: 0.5,

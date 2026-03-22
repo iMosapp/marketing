@@ -1,9 +1,9 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
 import { useThemeStore } from '../store/themeStore';
-interface SwipeAction {
+
+export interface SwipeAction {
   key: string;
   icon: string;
   label: string;
@@ -12,39 +12,35 @@ interface SwipeAction {
   onPress: () => void;
 }
 
-interface WebSwipeableItemProps {
+interface Props {
   children: React.ReactNode;
   leftActions?: SwipeAction[];
   rightActions?: SwipeAction[];
 }
 
-export default function WebSwipeableItem({
+const BUTTON_WIDTH = 72;
+const SWIPE_THRESHOLD = 40;
+
+export const WebSwipeableItem: React.FC<Props> = ({
   children,
   leftActions = [],
   rightActions = [],
-}: WebSwipeableItemProps) {
+}) => {
   const { colors } = useThemeStore();
-  const styles = getStyles(colors);
   const [translateX, setTranslateX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [swipeJustEnded, setSwipeJustEnded] = useState(false);
   const startX = useRef(0);
   const startY = useRef(0);
   const startTranslate = useRef(0);
   const isHorizontal = useRef<boolean | null>(null);
   const hasMoved = useRef(false);
-  // Track if we should block the next click (after a swipe gesture)
-  const blockNextClick = useRef(false);
 
-  const ACTION_WIDTH = 72;
-  const leftMax = leftActions.length * ACTION_WIDTH;
-  const rightMax = rightActions.length * ACTION_WIDTH;
+  const leftMax = leftActions.length * BUTTON_WIDTH;
+  const rightMax = rightActions.length * BUTTON_WIDTH;
 
   const handlePointerDown = useCallback((e: any) => {
-    const clientX = e.nativeEvent?.pageX ?? e.pageX ?? 0;
-    const clientY = e.nativeEvent?.pageY ?? e.pageY ?? 0;
-    startX.current = clientX;
-    startY.current = clientY;
+    startX.current = e.clientX || e.nativeEvent?.pageX || 0;
+    startY.current = e.clientY || e.nativeEvent?.pageY || 0;
     startTranslate.current = translateX;
     isHorizontal.current = null;
     hasMoved.current = false;
@@ -53,104 +49,60 @@ export default function WebSwipeableItem({
 
   const handlePointerMove = useCallback((e: any) => {
     if (!isDragging) return;
-    const clientX = e.nativeEvent?.pageX ?? e.pageX ?? 0;
-    const clientY = e.nativeEvent?.pageY ?? e.pageY ?? 0;
-    const dx = clientX - startX.current;
-    const dy = clientY - startY.current;
+    const currentX = e.clientX || e.nativeEvent?.pageX || 0;
+    const currentY = e.clientY || e.nativeEvent?.pageY || 0;
+    const dx = currentX - startX.current;
+    const dy = currentY - startY.current;
 
-    // Determine direction lock
+    // Determine direction on first significant move
     if (isHorizontal.current === null && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
       isHorizontal.current = Math.abs(dx) > Math.abs(dy);
     }
     if (!isHorizontal.current) return;
-    hasMoved.current = true;
 
-    let next = startTranslate.current + dx;
-    // Clamp with rubber-band on edges
-    if (next > 0 && leftActions.length > 0) next = Math.min(next, leftMax + 20);
-    else if (next > 0) next = next * 0.15;
-    if (next < 0 && rightActions.length > 0) next = Math.max(next, -(rightMax + 20));
-    else if (next < 0) next = next * 0.15;
+    hasMoved.current = Math.abs(dx) > 8;
+    let newX = startTranslate.current + dx;
+    // Clamp: don't over-swipe
+    newX = Math.max(-rightMax, Math.min(leftMax, newX));
+    setTranslateX(newX);
+  }, [isDragging, leftMax, rightMax]);
 
-    setTranslateX(next);
-  }, [isDragging, leftMax, rightMax, leftActions.length, rightActions.length]);
-
-  const handlePointerUp = useCallback((e: any) => {
+  const handlePointerUp = useCallback(() => {
     if (!isDragging) return;
-    
-    // Set the block flag BEFORE setting isDragging to false
-    // This ensures the flag is set before any click events can fire
-    if (hasMoved.current) {
-      blockNextClick.current = true;
-    }
-    
     setIsDragging(false);
+    isHorizontal.current = null;
 
-    // If user barely moved, treat it as a tap → close if open
-    if (!hasMoved.current && translateX !== 0) {
-      setTranslateX(0);
-      return;
-    }
-
-    // If user swiped (moved), prevent the click from propagating to children
-    if (hasMoved.current) {
-      e?.stopPropagation?.();
-      e?.preventDefault?.();
-      setSwipeJustEnded(true);
-      // Reset the flags after a short delay
-      setTimeout(() => { 
-        blockNextClick.current = false; 
-        setSwipeJustEnded(false);
-      }, 300);
-    }
-
-    const snapThreshold = ACTION_WIDTH * 0.4;
-    const velocity = translateX - startTranslate.current; // direction of this gesture
-
-    // Snap logic: consider both position and swipe direction
-    if (translateX > snapThreshold && leftActions.length > 0 && velocity > 0) {
+    // Snap logic
+    if (translateX > SWIPE_THRESHOLD && leftActions.length > 0) {
       setTranslateX(leftMax);
-    } else if (translateX < -snapThreshold && rightActions.length > 0 && velocity < 0) {
+    } else if (translateX < -SWIPE_THRESHOLD && rightActions.length > 0) {
       setTranslateX(-rightMax);
     } else {
-      // Snap closed — either didn't reach threshold or swiped back
       setTranslateX(0);
     }
   }, [isDragging, translateX, leftMax, rightMax, leftActions.length, rightActions.length]);
 
   const handleActionPress = useCallback((action: SwipeAction) => {
     setTranslateX(0);
-    setTimeout(() => action.onPress(), 200);
+    setTimeout(() => action.onPress(), 150);
   }, []);
 
-  // Prevent click events on content when swiped or just finished swiping
-  const handleContentClick = useCallback((e: any) => {
-    // If swiped open, clicking content should close it, not navigate
-    if (translateX !== 0) {
-      e?.stopPropagation?.();
-      e?.preventDefault?.();
-      setTranslateX(0);
-      return;
-    }
-    // If we just finished a swipe gesture, prevent the click
-    if (blockNextClick.current) {
-      e?.stopPropagation?.();
-      e?.preventDefault?.();
-      blockNextClick.current = false;
-    }
-  }, [translateX]);
-
-  // When swiped open, action layers must be above content
   const isOpen = translateX !== 0 && !isDragging;
+
+  const styles = useMemo(() => getStyles(colors), [colors]);
 
   return (
     <View
       style={styles.container}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
       data-testid="web-swipeable-item"
     >
-      {/* Left actions (revealed when swiping right) */}
+      {/* Left actions */}
       {leftActions.length > 0 && (
-        <View style={[styles.actionsLeft, { width: leftMax }, isOpen && { zIndex: 3 }]}>
+        <View style={[styles.actionsLayer, styles.actionsLeft, { width: leftMax }]}>
           {leftActions.map((action) => (
             <TouchableOpacity
               key={action.key}
@@ -166,9 +118,9 @@ export default function WebSwipeableItem({
         </View>
       )}
 
-      {/* Right actions (revealed when swiping left) */}
+      {/* Right actions */}
       {rightActions.length > 0 && (
-        <View style={[styles.actionsRight, { width: rightMax }, isOpen && { zIndex: 3 }]}>
+        <View style={[styles.actionsLayer, styles.actionsRight, { width: rightMax }]}>
           {rightActions.map((action) => (
             <TouchableOpacity
               key={action.key}
@@ -184,81 +136,51 @@ export default function WebSwipeableItem({
         </View>
       )}
 
-      {/* Content layer — handles all swiping */}
+      {/* Content layer */}
       <View
         style={[
           styles.content,
           {
             transform: [{ translateX }],
-            transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(.25,.8,.25,1)',
-            // When swiped open, lower z-index so action buttons can be clicked
-            zIndex: isOpen ? 1 : 2,
+            transition: isDragging ? 'none' : 'transform 0.25s ease-out',
           } as any,
         ]}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        onClick={handleContentClick}
       >
-        {/* Children wrapper - disable pointer events when swiped open or during swipe */}
-        <View style={{ pointerEvents: (isOpen || isDragging || swipeJustEnded) ? 'none' : 'auto' } as any}>
+        {/* Disable child pointer events during swipe or when open */}
+        <View style={{ pointerEvents: (isOpen || isDragging || hasMoved.current) ? 'none' : 'auto' } as any}>
           {children}
         </View>
-        {/* Transparent overlay to capture clicks when swiped open - prevents navigation */}
-        {isOpen && (
-          <View
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 10,
-              backgroundColor: 'transparent',
-            } as any}
-            onTouchEnd={(e: any) => {
-              e?.stopPropagation?.();
-              setTranslateX(0);
-            }}
-            onClick={(e: any) => {
-              e?.stopPropagation?.();
-              e?.preventDefault?.();
-              setTranslateX(0);
-            }}
-          />
-        )}
       </View>
     </View>
   );
-}
+};
+
+export default WebSwipeableItem;
 
 const getStyles = (colors: any) => StyleSheet.create({
   container: {
     position: 'relative',
     overflow: 'hidden',
-    borderRadius: 12,
-  },
+    cursor: 'grab',
+    userSelect: 'none',
+  } as any,
   content: {
     position: 'relative',
     zIndex: 2,
-    backgroundColor: colors.background || '#fff',
+    backgroundColor: colors.surface || '#1C1C1E',
+  },
+  actionsLayer: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    zIndex: 1,
   },
   actionsLeft: {
-    position: 'absolute',
     left: 0,
-    top: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    zIndex: 1,
   },
   actionsRight: {
-    position: 'absolute',
     right: 0,
-    top: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    zIndex: 1,
   },
   actionBtn: {
     width: 72,
