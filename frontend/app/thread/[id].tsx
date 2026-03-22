@@ -492,6 +492,9 @@ export default function ThreadScreen() {
       setMessages(data || []);
       setActualConversationId(id as string);
       
+      // Auto-mark as read when opening a conversation
+      try { await messagesAPI.markAsRead(id as string); } catch {}
+      
       if (data && data.length > 0 && data[data.length - 1].sender === 'contact' && aiMode !== 'off') {
         loadAISuggestion();
       }
@@ -510,6 +513,9 @@ export default function ThreadScreen() {
         if (!contactIdForNav) {
           setContactIdForNav(id as string);
         }
+        
+        // Auto-mark as read when opening a conversation
+        try { await messagesAPI.markAsRead(convId); } catch {}
         
         // Load messages for the conversation
         const msgs = await messagesAPI.getThread(convId);
@@ -844,6 +850,10 @@ export default function ThreadScreen() {
       // Clear template info after sending
       setSelectedTemplateInfo(null);
       setPendingEventType(null);
+      
+      // Mark conversation as read after sending (we just responded)
+      const convId = actualConversationId || id as string;
+      try { await messagesAPI.markAsRead(convId); } catch {}
       
       // Reload messages to get the real one from backend
       await loadMessages();
@@ -1510,9 +1520,18 @@ export default function ThreadScreen() {
     setSelectedMedia(null);
   };
   
-  const toggleConversationStatus = () => {
+  const toggleConversationStatus = async () => {
     const newStatus = conversationStatus === 'active' ? 'closed' : 'active';
+    const convId = actualConversationId || id as string;
     setConversationStatus(newStatus);
+    
+    // Persist to database
+    try {
+      await api.put(`/messages/conversations/${user._id}/${convId}`, { status: newStatus });
+    } catch (error) {
+      console.error('Failed to update conversation status:', error);
+    }
+    
     Alert.alert(
       'Conversation ' + (newStatus === 'closed' ? 'Closed' : 'Reopened'),
       newStatus === 'closed'
