@@ -356,8 +356,9 @@ async def get_task_summary(user_id: str):
     """Daily summary for scoreboard + progress bar."""
     db = get_db()
 
-    # Catch-up: create tasks for overdue campaign steps that the scheduler missed
-    await _catchup_overdue_campaign_tasks(user_id)
+    # Catch-up: fire and forget (don't block the summary response)
+    import asyncio
+    asyncio.create_task(_catchup_overdue_campaign_tasks(user_id))
 
     today_start, today_end = await get_user_day_bounds(user_id, "today")
     now = datetime.now(timezone.utc)
