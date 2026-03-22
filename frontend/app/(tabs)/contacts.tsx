@@ -54,6 +54,9 @@ export default function ContactsScreen() {
   const [deleting, setDeleting] = useState(false);
   const deletingRef = useRef(false);
   
+  // Expandable quick-action button state
+  const [expandedContactId, setExpandedContactId] = useState<string | null>(null);
+  
   // Check if running on web platform
   const isWeb = Platform.OS === 'web';
   
@@ -317,7 +320,7 @@ export default function ContactsScreen() {
       )}
       
       <View style={styles.contactInfo}>
-        <Text style={[styles.contactName, { color: colors.text }]}>
+        <Text style={[styles.contactName, { color: colors.text }]} numberOfLines={1}>
           {item.first_name} {item.last_name || ''}
         </Text>
         {isTeamView && item.salesperson_name && !isOwnContact ? (
@@ -340,69 +343,90 @@ export default function ContactsScreen() {
       {/* Action buttons: hidden in team view for other users' contacts */}
       {(!isTeamView || isOwnContact) && (
       <View style={styles.actions}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={async (e) => {
-            e.stopPropagation();
-            if (item.phone) {
-              // Log call event before opening dialer
-              if (userId && item._id) {
-                try {
-                  await contactsAPI.logEvent(userId, item._id, {
-                    event_type: 'call_placed', title: 'Outbound Call',
-                    description: `Called ${item.first_name || ''} ${item.last_name || ''}`.trim(),
-                    channel: 'call', category: 'message', icon: 'call', color: '#32ADE6',
+        {expandedContactId === item._id ? (
+          <>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: '#007AFF18' }]}
+              onPress={async (e) => {
+                e.stopPropagation();
+                setExpandedContactId(null);
+                if (item.phone) {
+                  if (userId && item._id) {
+                    try {
+                      await contactsAPI.logEvent(userId, item._id, {
+                        event_type: 'call_placed', title: 'Outbound Call',
+                        description: `Called ${item.first_name || ''} ${item.last_name || ''}`.trim(),
+                        channel: 'call', category: 'message', icon: 'call', color: '#32ADE6',
+                      });
+                    } catch {}
+                  }
+                  Linking.openURL(`tel:${item.phone}`).catch(() => {
+                    showSimpleAlert('Call', `Calling ${item.phone}`);
                   });
-                } catch {}
-              }
-              const phoneUrl = `tel:${item.phone}`;
-              Linking.openURL(phoneUrl).catch(() => {
-                showSimpleAlert('Call', `Calling ${item.phone}`);
-              });
-            }
-          }}
-        >
-          <Ionicons name="call" size={20} color="#007AFF" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={(e) => {
-            e.stopPropagation();
-            // Navigate to thread in SMS mode
-            router.push({
-              pathname: `/thread/${item._id}`,
-              params: {
-                contact_name: `${item.first_name} ${item.last_name || ''}`.trim(),
-                contact_phone: item.phone,
-                mode: 'sms'
-              }
-            });
-          }}
-        >
-          <Ionicons name="chatbubble" size={20} color="#007AFF" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={(e) => {
-            e.stopPropagation();
-            if (item.email) {
-              // Navigate to thread in email mode
-              router.push({
-                pathname: `/thread/${item._id}`,
-                params: {
-                  contact_name: `${item.first_name} ${item.last_name || ''}`.trim(),
-                  contact_phone: item.phone,
-                  contact_email: item.email,
-                  mode: 'email'
                 }
-              });
-            } else {
-              showSimpleAlert('No Email', 'This contact does not have an email address');
-            }
-          }}
-        >
-          <Ionicons name="mail" size={20} color="#34C759" />
-        </TouchableOpacity>
+              }}
+              data-testid={`action-call-${item._id}`}
+            >
+              <Ionicons name="call" size={20} color="#007AFF" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: '#007AFF18' }]}
+              onPress={(e) => {
+                e.stopPropagation();
+                setExpandedContactId(null);
+                router.push({
+                  pathname: `/thread/${item._id}`,
+                  params: {
+                    contact_name: `${item.first_name} ${item.last_name || ''}`.trim(),
+                    contact_phone: item.phone,
+                    mode: 'sms'
+                  }
+                });
+              }}
+              data-testid={`action-text-${item._id}`}
+            >
+              <Ionicons name="chatbubble" size={20} color="#007AFF" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: '#34C75918' }]}
+              onPress={(e) => {
+                e.stopPropagation();
+                setExpandedContactId(null);
+                if (item.email) {
+                  router.push({
+                    pathname: `/thread/${item._id}`,
+                    params: {
+                      contact_name: `${item.first_name} ${item.last_name || ''}`.trim(),
+                      contact_phone: item.phone,
+                      contact_email: item.email,
+                      mode: 'email'
+                    }
+                  });
+                } else {
+                  showSimpleAlert('No Email', 'This contact does not have an email address');
+                }
+              }}
+              data-testid={`action-email-${item._id}`}
+            >
+              <Ionicons name="mail" size={20} color="#34C759" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionCollapseBtn}
+              onPress={(e) => { e.stopPropagation(); setExpandedContactId(null); }}
+              data-testid={`action-collapse-${item._id}`}
+            >
+              <Ionicons name="close" size={16} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </>
+        ) : (
+          <TouchableOpacity
+            style={styles.actionExpandBtn}
+            onPress={(e) => { e.stopPropagation(); setExpandedContactId(item._id); }}
+            data-testid={`action-expand-${item._id}`}
+          >
+            <Ionicons name="paper-plane" size={20} color="#007AFF" />
+          </TouchableOpacity>
+        )}
       </View>
       )}
 
@@ -414,7 +438,7 @@ export default function ContactsScreen() {
       )}
     </TouchableOpacity>
     );
-  }, [tagMap, router, user, selectMode, selectedIds, viewMode, userId]);
+  }, [tagMap, router, user, selectMode, selectedIds, viewMode, userId, expandedContactId]);
   
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
@@ -804,10 +828,29 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 6,
+    alignItems: 'center',
   },
   actionButton: {
     padding: 8,
+    borderRadius: 20,
+  },
+  actionExpandBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#007AFF15',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionCollapseBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.surface || '#2C2C2E',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 2,
   },
   separator: {
     height: 1,
