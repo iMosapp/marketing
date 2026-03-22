@@ -61,6 +61,9 @@ async def get_profile(user_id: str):
             "email": user.get("email", ""),
             "phone": user.get("phone", ""),
             "title": user.get("title", "Sales Professional"),
+            "company": user.get("company", ""),
+            "website": user.get("website", ""),
+            "review_url": user.get("review_url", ""),
             "photo_url": resolve_user_photo(user),
             "bio": user.get("persona", {}).get("bio", ""),
             "hobbies": user.get("persona", {}).get("hobbies", []),
@@ -69,7 +72,9 @@ async def get_profile(user_id: str):
             "years_experience": user.get("persona", {}).get("years_experience", ""),
             "fun_facts": user.get("persona", {}).get("fun_facts", []),
             "personal_motto": user.get("persona", {}).get("personal_motto", ""),
+            "tone_preference": user.get("persona", {}).get("tone_preference", "friendly"),
             "social_links": user.get("social_links", {}),
+            "needs_password_change": user.get("needs_password_change", False),
         },
         "store": {
             "id": str(store["_id"]) if store else None,
@@ -108,22 +113,41 @@ async def update_profile(user_id: str, data: dict):
     db = get_db()
     
     allowed_fields = [
-        'name', 'phone', 'title', 'photo_url', 'social_links', 'onboarding_complete',
-        'social_instagram', 'social_facebook', 'social_linkedin'
+        'name', 'phone', 'title', 'company', 'website', 'review_url',
+        'photo_url', 'social_links', 'onboarding_complete',
+        'social_instagram', 'social_facebook', 'social_linkedin',
+        'social_twitter', 'social_tiktok'
     ]
     
     # Handle persona fields separately
     persona_fields = [
         'bio', 'hobbies', 'family_info', 'hometown', 
-        'years_experience', 'fun_facts', 'personal_motto'
+        'years_experience', 'fun_facts', 'personal_motto', 'tone_preference'
     ]
     
     update_dict = {}
     
+    # Map social_* flat fields to social_links.* nested fields
+    social_map = {
+        'social_instagram': 'social_links.instagram',
+        'social_facebook': 'social_links.facebook',
+        'social_linkedin': 'social_links.linkedin',
+        'social_twitter': 'social_links.twitter',
+        'social_tiktok': 'social_links.tiktok',
+    }
+    
     # Update regular fields
     for field in allowed_fields:
         if field in data:
-            update_dict[field] = data[field]
+            if field in social_map:
+                update_dict[social_map[field]] = data[field]
+            else:
+                update_dict[field] = data[field]
+    
+    # Also handle social_links as a nested dict if passed directly
+    if 'social_links' in data and isinstance(data['social_links'], dict):
+        for k, v in data['social_links'].items():
+            update_dict[f"social_links.{k}"] = v
     
     # Update persona fields with dot notation
     for field in persona_fields:

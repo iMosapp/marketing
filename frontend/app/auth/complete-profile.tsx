@@ -67,12 +67,13 @@ export default function CompleteProfileScreen() {
   useEffect(() => {
     if (!userId) return;
     api.get(`/profile/${userId}`).then(res => {
-      const p = res.data;
-      if (p.title) setTitle(p.title);
+      const p = res.data?.user || res.data;
+      if (p.title && p.title !== 'Sales Professional') setTitle(p.title);
       if (p.company) setCompany(p.company);
       if (p.website) setWebsite(p.website);
       if (p.bio) setBio(p.bio);
       if (p.photo_url) setPhotoUrl(p.photo_url);
+      if (p.review_url) setReviewUrl(p.review_url);
       const sl = p.social_links || {};
       if (sl.instagram) setInstagram(sl.instagram);
       if (sl.facebook) setFacebook(sl.facebook);
@@ -82,7 +83,7 @@ export default function CompleteProfileScreen() {
       if (p.hobbies) setHobbies(Array.isArray(p.hobbies) ? p.hobbies.join(', ') : p.hobbies);
       if (p.hometown) setHometown(p.hometown);
       if (p.family_info) setFamilyInfo(p.family_info);
-      if (p.tone_preference) setTonePref(p.tone_preference);
+      if (p.tone_preference && p.tone_preference !== 'friendly') setTonePref(p.tone_preference);
       // If password was already changed, skip step 0
       if (!p.needs_password_change) { setPasswordDone(true); setStep(1); }
     }).catch(() => {});

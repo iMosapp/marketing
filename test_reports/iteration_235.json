@@ -1,0 +1,109 @@
+{
+  "summary": "Tested Multi-Step Onboarding Flow for CRM/RMS app. Backend: 16/16 tests passed (100%). Frontend: All 4 steps verified with correct UI elements. AI bio generation works via API. Note: Frontend page requires authentication - when accessed without login, userId is empty and API calls fail (expected behavior).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_onboarding_flow.py",
+    "/app/test_reports/pytest/pytest_onboarding_flow.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "GET /api/profile/{user_id} correctly returns all pre-filled fields: title, company, website, social_links, needs_password_change, tone_preference, review_url (lines 22-107 in profile.py)",
+    "PUT /api/profile/{user_id} correctly saves all fields including company, website, review_url, social_twitter, social_tiktok, tone_preference (lines 110-167 in profile.py)",
+    "PUT /api/profile/{user_id} correctly maps social_instagram/social_facebook etc to social_links.instagram/social_links.facebook in DB via social_map (lines 131-144 in profile.py)",
+    "POST /api/auth/change-password works and clears needs_password_change flag (lines 691-736 in auth.py)",
+    "POST /api/profile/{user_id}/generate-bio generates AI bio using Emergent LLM Key GPT-5.2 (lines 215-297 in profile.py)",
+    "PUT /api/profile/{user_id} with onboarding_complete=true marks onboarding done (line 117 in profile.py)",
+    "Frontend complete-profile.tsx renders 4-step wizard with progress bar (line 240), step indicators (line 233), skip button (line 235), back button (line 428), continue button (line 432)",
+    "Frontend Step 0 (Password) shows temp password, new password, confirm password fields with validation (lines 252-278)",
+    "Frontend Step 1 (About You) shows photo upload area, title, company, hometown, years of experience, hobbies, family, fun facts, and AI tone picker (lines 281-328)",
+    "Frontend Step 2 (Links) shows website, instagram, facebook, linkedin, twitter, tiktok, review URL inputs with icons (lines 332-363)",
+    "Frontend Step 3 (Bio + Preview) shows Generate Bio button, bio text area, mini digital card preview with photo, name, title, bio, social icons (lines 367-423)",
+    "Frontend pre-fill works - data from profile API populates the form fields on load (lines 67-90)",
+    "Frontend Skip button advances to next step or finishes onboarding on last step (lines 213-216)"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_onboarding_flow.py"
+  ],
+  "success_rate": {
+    "backend": "100% (16/16 tests passed)",
+    "frontend": "100% (all 4 steps verified with correct UI elements)"
+  },
+  "test_credentials": {
+    "super_admin": "forest@imosapp.com / Admin123!",
+    "test_new_user": "onboard_flow_test@test.com / DwQR2dUxOt0y (user_id: 69bf845d9135c4567c2bc614)"
+  },
+  "seed_data_creation": "Test user 'onboard_flow_test@test.com' was pre-created by main agent with pre-filled data (title: Senior Sales Rep, company: FlowTest Motors, website: https://flowtest.com, socials: instagram/facebook/linkedin)",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Multi-step onboarding flow fully tested. Backend tests in /app/backend/tests/test_onboarding_flow.py cover: GET /api/profile/{user_id} returns pre-filled fields, PUT /api/profile/{user_id} saves all fields including social mapping, POST /api/auth/change-password clears needs_password_change, POST /api/profile/{user_id}/generate-bio generates AI bio. Frontend verified: 4-step wizard with progress bar, all form fields present, skip/back/continue buttons work, card preview shows.",
+  "features_tested": {
+    "backend_api_tests": {
+      "GET /api/profile/{user_id} returns user data": "PASS",
+      "GET /api/profile/{user_id} returns pre-filled fields (title, company, website, social_links)": "PASS",
+      "GET /api/profile/{invalid_id} returns 404": "PASS",
+      "PUT /api/profile/{user_id} saves basic fields (title, company, website, review_url)": "PASS",
+      "PUT /api/profile/{user_id} maps social_* to social_links.*": "PASS",
+      "PUT /api/profile/{user_id} saves persona fields (bio, hobbies, tone_preference)": "PASS",
+      "PUT /api/profile/{user_id} with onboarding_complete=true": "PASS",
+      "POST /api/auth/change-password success": "PASS",
+      "POST /api/auth/change-password wrong current password returns 401": "PASS",
+      "POST /api/auth/change-password short new password returns 400": "PASS",
+      "POST /api/auth/change-password missing fields returns 400": "PASS",
+      "POST /api/profile/{user_id}/generate-bio success": "PASS",
+      "POST /api/profile/{user_id}/generate-bio minimal data": "PASS",
+      "POST /api/profile/{user_id}/generate-bio no data uses profile": "PASS",
+      "POST /api/profile/{invalid_id}/generate-bio returns 404": "PASS",
+      "Login returns onboarding flags": "PASS"
+    },
+    "frontend_ui_tests": {
+      "Step 1 of 4 indicator": "FOUND",
+      "Secure Your Account title": "FOUND",
+      "Temporary Password field": "FOUND",
+      "New Password field": "FOUND",
+      "Confirm Password field": "FOUND",
+      "Skip button": "FOUND",
+      "Continue button": "FOUND",
+      "Step 2 of 4 indicator": "FOUND",
+      "About You title": "FOUND",
+      "Job Title field": "FOUND",
+      "Company field": "FOUND",
+      "Hometown field": "FOUND",
+      "Years of Experience field": "FOUND",
+      "Interests & Hobbies field": "FOUND",
+      "Family / Personal field": "FOUND",
+      "Fun Facts field": "FOUND",
+      "AI Persona Tone picker": "FOUND",
+      "Tone options (Friendly/Professional/Casual/Witty)": "ALL FOUND",
+      "Step 3 of 4 indicator": "FOUND",
+      "Your Links title": "FOUND",
+      "Website field": "FOUND",
+      "Instagram field": "FOUND (with icon)",
+      "Facebook field": "FOUND (with icon)",
+      "LinkedIn field": "FOUND (with icon)",
+      "Twitter/X field": "FOUND (with icon)",
+      "TikTok field": "FOUND (with icon)",
+      "Review Page URL field": "FOUND",
+      "Step 4 of 4 indicator": "FOUND",
+      "Your Bio & Card title": "FOUND",
+      "Generate My Bio with AI button": "FOUND",
+      "Manual bio input": "FOUND",
+      "Your Digital Card Preview": "FOUND",
+      "Finish & Go button": "FOUND",
+      "Skip & Finish button": "FOUND",
+      "Back button": "FOUND"
+    }
+  },
+  "mocked_apis": {
+    "has_mocked_apis": true,
+    "mocked_apis_list": ["Twilio SMS"],
+    "note": "Twilio SMS is in MOCK mode. AI bio generation uses real Emergent LLM Key (GPT-5.2)."
+  }
+}
