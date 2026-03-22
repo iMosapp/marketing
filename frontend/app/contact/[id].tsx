@@ -4652,7 +4652,7 @@ export default function ContactDetailScreen() {
                   <View style={{ flex: 1, alignItems: 'center' }}>
                     <Text style={s.webPickerLabel}>YEAR</Text>
                     <ScrollView style={s.webPickerScroll} showsVerticalScrollIndicator={false}>
-                      {Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - 50 + i).map(y => (
+                      {Array.from({ length: 126 }, (_, i) => 1920 + i).map(y => (
                         <TouchableOpacity key={y} style={[s.webPickerItem, webYear === y && s.webPickerItemSel]}
                           onPress={() => { setWebYear(y); const max = getDaysInMonth(webMonth, y); if (webDay > max) setWebDay(max); }}>
                           <Text style={[s.webPickerText, webYear === y && s.webPickerTextSel]}>{y}</Text>
