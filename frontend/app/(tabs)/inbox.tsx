@@ -150,7 +150,7 @@ export default function InboxScreen() {
   const { showToast } = useToast();
   
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<'all' | 'unread' | 'active' | 'closed' | 'ai'>('active');
+  const [filter, setFilter] = useState<'all' | 'unread' | 'active' | 'closed' | 'ai' | 'flagged' | 'archived'>('active');
   const [conversations, setConversations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -190,6 +190,16 @@ export default function InboxScreen() {
   // Appointment modal state
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   const [appointmentConversation, setAppointmentConversation] = useState<any>(null);
+  
+  // Quick Task modal state
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [taskTarget, setTaskTarget] = useState<any>(null);
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskType, setTaskType] = useState('follow_up');
+  const [taskNote, setTaskNote] = useState('');
+  const [taskPriority, setTaskPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [taskDueDate, setTaskDueDate] = useState(() => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); return d; });
+  const [taskSaving, setTaskSaving] = useState(false);
   
   // Load user preferences for toggle style and default mode
   useEffect(() => {
@@ -530,6 +540,8 @@ export default function InboxScreen() {
       if (filter === 'ai') return matchesSearch && conv.ai_handled && conv.ai_outcome;
       if (filter === 'active') return matchesSearch && conv.status === 'active';
       if (filter === 'closed') return matchesSearch && conv.status === 'closed';
+      if (filter === 'flagged') return matchesSearch && conv.flagged === true;
+      if (filter === 'archived') return matchesSearch && conv.status === 'archived';
       return matchesSearch;
     })
     .sort((a, b) => {
@@ -663,26 +675,43 @@ export default function InboxScreen() {
   };
 
   const handleCreateTaskFromConversation = async (conversationId: string) => {
-    if (!user) return;
-    const conv = conversations.find(c => c._id === conversationId);
-    const contactName = conv?.contact?.name || 'Unknown';
+    const conv = conversations.find(c => c._id === conversationId) || 
+                 teamConversations.find(c => c.id === conversationId || c._id === conversationId);
+    const contactName = conv?.contact?.name || conv?.contact_name || 'Unknown';
     const contactId = conv?.contact_id || '';
+    // Open task modal pre-filled
+    setTaskTarget({ conversationId, contactName, contactId });
+    setTaskTitle(`Follow up with ${contactName}`);
+    setTaskType('follow_up');
+    setTaskNote('');
+    setTaskPriority('medium');
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(9, 0, 0, 0);
+    setTaskDueDate(tomorrow);
+    setShowTaskModal(true);
+  };
+
+  const handleSubmitTask = async () => {
+    if (!user || !taskTarget) return;
+    setTaskSaving(true);
     try {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      tomorrow.setHours(9, 0, 0, 0);
       await tasksAPI.create(user._id, {
-        contact_id: contactId,
-        type: 'follow_up',
-        title: `Follow up with ${contactName}`,
-        description: '',
-        due_date: tomorrow.toISOString(),
-        priority: 'medium',
+        contact_id: taskTarget.contactId,
+        type: taskType,
+        title: taskTitle || `Follow up with ${taskTarget.contactName}`,
+        description: taskNote,
+        due_date: taskDueDate.toISOString(),
+        priority: taskPriority,
       });
-      showToast(`Task created for ${contactName}`, 'success', 2500);
+      showToast(`Task created for ${taskTarget.contactName}`, 'success', 2500);
+      setShowTaskModal(false);
+      setTaskTarget(null);
     } catch (error) {
       console.error('Error creating task:', error);
       showToast('Failed to create task', 'error', 2500);
+    } finally {
+      setTaskSaving(false);
     }
   };
 
@@ -693,8 +722,12 @@ export default function InboxScreen() {
 
   const handleOpenTagPicker = async (conversationId: string) => {
     if (!user) return;
-    const conv = conversations.find(c => c._id === conversationId);
-    setSwipeTagTarget(conv);
+    const conv = conversations.find(c => c._id === conversationId) ||
+                 teamConversations.find(c => c.id === conversationId || c._id === conversationId);
+    if (!conv) return;
+    // Normalize for team conversations
+    const normalizedConv = conv.contact_id ? conv : { ...conv, contact_id: conv.contact_id || '', contact: { name: conv.contact_name || 'Unknown' } };
+    setSwipeTagTarget(normalizedConv);
     try {
       const tags = await tagsAPI.getAll(user._id);
       setSwipeAvailableTags(tags);
@@ -1028,8 +1061,8 @@ export default function InboxScreen() {
         showToast('Failed to claim lead', 'error', 2500);
       }
     };
-    
-    return (
+
+    const teamItemContent = (
       <TouchableOpacity
         style={[
           styles.conversationItem,
@@ -1105,19 +1138,51 @@ export default function InboxScreen() {
             )}
           </View>
         </View>
-        
-        {!isClaimed && (
-          <TouchableOpacity
-            style={styles.claimButton}
-            onPress={handleClaim}
-            activeOpacity={0.7}
-            data-testid={`claim-btn-${item.id}`}
-          >
-            <Ionicons name="hand-right" size={18} color="#FF9500" />
-          </TouchableOpacity>
-        )}
       </TouchableOpacity>
     );
+
+    // Web: wrap with swipe actions
+    if (IS_WEB) {
+      const leftActions = [];
+      if (!isClaimed) {
+        leftActions.push({
+          key: 'claim',
+          icon: 'hand-right-outline',
+          label: 'Claim',
+          color: '#34C759',
+          bgColor: '#34C75920',
+          onPress: handleClaim,
+        });
+      }
+      leftActions.push({
+        key: 'task',
+        icon: 'checkbox-outline',
+        label: 'Task',
+        color: '#007AFF',
+        bgColor: '#007AFF20',
+        onPress: () => handleCreateTaskFromConversation(item.id),
+      });
+
+      return (
+        <WebSwipeableItem
+          leftActions={leftActions}
+          rightActions={[
+            {
+              key: 'tag',
+              icon: 'pricetag-outline',
+              label: 'Tag',
+              color: '#AF52DE',
+              bgColor: '#AF52DE20',
+              onPress: () => handleOpenTagPicker(item.id),
+            },
+          ]}
+        >
+          {teamItemContent}
+        </WebSwipeableItem>
+      );
+    }
+
+    return teamItemContent;
   };
 
   // Render header with glassmorphism on native
@@ -1289,7 +1354,7 @@ export default function InboxScreen() {
         style={styles.filterScroll}
         contentContainerStyle={styles.filterContainer}
       >
-        {(['active', 'unread', 'ai', 'closed', 'all'] as const).map((f) => (
+        {(['active', 'unread', 'flagged', 'ai', 'archived', 'closed', 'all'] as const).map((f) => (
           <TouchableOpacity
             key={f}
             style={[
@@ -1297,6 +1362,8 @@ export default function InboxScreen() {
               { backgroundColor: colors.surface, borderColor: colors.border },
               filter === f && styles.filterButtonActive,
               f === 'ai' && filter === f && styles.filterButtonAI,
+              f === 'flagged' && filter === f && { backgroundColor: '#FF9500' },
+              f === 'archived' && filter === f && { backgroundColor: '#8E8E93' },
             ]}
             onPress={() => handleFilterPress(f)}
             activeOpacity={0.7}
@@ -1309,6 +1376,24 @@ export default function InboxScreen() {
                   { color: colors.textSecondary },
                   filter === f && styles.filterTextActive,
                 ]}>AI</Text>
+              </View>
+            ) : f === 'flagged' ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Ionicons name="flag" size={13} color={filter === f ? '#FFFFFF' : '#FF9500'} />
+                <Text style={[
+                  styles.filterText,
+                  { color: colors.textSecondary },
+                  filter === f && styles.filterTextActive,
+                ]}>Flagged</Text>
+              </View>
+            ) : f === 'archived' ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Ionicons name="archive" size={13} color={filter === f ? '#FFFFFF' : colors.textSecondary} />
+                <Text style={[
+                  styles.filterText,
+                  { color: colors.textSecondary },
+                  filter === f && styles.filterTextActive,
+                ]}>Archived</Text>
               </View>
             ) : (
               <Text
@@ -1608,6 +1693,131 @@ export default function InboxScreen() {
                 <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Create tags in Settings to use this feature</Text>
               </View>
             )}
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Quick Task Modal */}
+      <Modal visible={showTaskModal} animationType="slide" presentationStyle="pageSheet">
+        <SafeAreaView style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+            <TouchableOpacity onPress={() => { setShowTaskModal(false); setTaskTarget(null); }}>
+              <Text style={[styles.modalCancel, { color: colors.accent }]}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
+              New Task
+            </Text>
+            <TouchableOpacity onPress={handleSubmitTask} disabled={taskSaving} data-testid="task-modal-save">
+              <Text style={{ fontSize: 17, fontWeight: '600', color: taskSaving ? colors.textTertiary : '#007AFF' }}>
+                {taskSaving ? 'Saving...' : 'Save'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20 }} keyboardShouldPersistTaps="handled">
+            {/* Task Title */}
+            <Text style={[styles.taskLabel, { color: colors.textSecondary }]}>Title</Text>
+            <TextInput
+              style={[styles.taskInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.textPrimary }]}
+              value={taskTitle}
+              onChangeText={setTaskTitle}
+              placeholder="What needs to be done?"
+              placeholderTextColor={colors.textTertiary}
+              data-testid="task-modal-title"
+            />
+
+            {/* Task Type */}
+            <Text style={[styles.taskLabel, { color: colors.textSecondary }]}>Type</Text>
+            <View style={styles.taskTypeRow}>
+              {[
+                { key: 'follow_up', label: 'Follow Up', icon: 'arrow-redo' },
+                { key: 'call', label: 'Call', icon: 'call' },
+                { key: 'text', label: 'Text', icon: 'chatbubble' },
+                { key: 'email', label: 'Email', icon: 'mail' },
+                { key: 'meeting', label: 'Meeting', icon: 'people' },
+              ].map(t => (
+                <TouchableOpacity
+                  key={t.key}
+                  style={[
+                    styles.taskTypeChip,
+                    { backgroundColor: colors.surface, borderColor: colors.border },
+                    taskType === t.key && { backgroundColor: '#007AFF', borderColor: '#007AFF' },
+                  ]}
+                  onPress={() => setTaskType(t.key)}
+                  data-testid={`task-type-${t.key}`}
+                >
+                  <Ionicons name={t.icon as any} size={14} color={taskType === t.key ? '#fff' : colors.textSecondary} />
+                  <Text style={[styles.taskTypeText, taskType === t.key && { color: '#fff' }]}>{t.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Priority */}
+            <Text style={[styles.taskLabel, { color: colors.textSecondary }]}>Priority</Text>
+            <View style={styles.taskTypeRow}>
+              {[
+                { key: 'low', label: 'Low', color: '#8E8E93' },
+                { key: 'medium', label: 'Medium', color: '#FF9500' },
+                { key: 'high', label: 'High', color: '#FF3B30' },
+              ].map(p => (
+                <TouchableOpacity
+                  key={p.key}
+                  style={[
+                    styles.taskTypeChip,
+                    { backgroundColor: colors.surface, borderColor: colors.border },
+                    taskPriority === p.key && { backgroundColor: p.color, borderColor: p.color },
+                  ]}
+                  onPress={() => setTaskPriority(p.key as any)}
+                  data-testid={`task-priority-${p.key}`}
+                >
+                  <Text style={[styles.taskTypeText, taskPriority === p.key && { color: '#fff' }]}>{p.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Due Date Quick Picks */}
+            <Text style={[styles.taskLabel, { color: colors.textSecondary }]}>Due</Text>
+            <View style={styles.taskTypeRow}>
+              {[
+                { label: 'Today', hours: 0 },
+                { label: 'Tomorrow', hours: 24 },
+                { label: 'In 3 Days', hours: 72 },
+                { label: 'Next Week', hours: 168 },
+              ].map(dp => {
+                const dueVal = new Date();
+                if (dp.hours === 0) { dueVal.setHours(17, 0, 0, 0); }
+                else { dueVal.setTime(dueVal.getTime() + dp.hours * 3600000); dueVal.setHours(9, 0, 0, 0); }
+                const isSelected = Math.abs(taskDueDate.getTime() - dueVal.getTime()) < 3600000;
+                return (
+                  <TouchableOpacity
+                    key={dp.label}
+                    style={[
+                      styles.taskTypeChip,
+                      { backgroundColor: colors.surface, borderColor: colors.border },
+                      isSelected && { backgroundColor: '#007AFF', borderColor: '#007AFF' },
+                    ]}
+                    onPress={() => setTaskDueDate(dueVal)}
+                    data-testid={`task-due-${dp.label.toLowerCase().replace(/\s/g, '-')}`}
+                  >
+                    <Text style={[styles.taskTypeText, isSelected && { color: '#fff' }]}>{dp.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <Text style={{ fontSize: 12, color: colors.textTertiary, marginTop: 4, marginBottom: 12 }}>
+              Due: {format(taskDueDate, 'EEE, MMM d \'at\' h:mm a')}
+            </Text>
+
+            {/* Note */}
+            <Text style={[styles.taskLabel, { color: colors.textSecondary }]}>Note (optional)</Text>
+            <TextInput
+              style={[styles.taskInput, { backgroundColor: colors.surface, borderColor: colors.border, color: colors.textPrimary, minHeight: 80, textAlignVertical: 'top' }]}
+              value={taskNote}
+              onChangeText={setTaskNote}
+              placeholder="Add context or reminders..."
+              placeholderTextColor={colors.textTertiary}
+              multiline
+              data-testid="task-modal-note"
+            />
           </ScrollView>
         </SafeAreaView>
       </Modal>
@@ -2447,5 +2657,42 @@ const styles = StyleSheet.create({
   },
   swipeTagName: {
     flex: 1, fontSize: 16, fontWeight: '500', color: '#000000',
+  },
+  // Quick Task modal styles
+  taskLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  taskInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  taskTypeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  taskTypeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  taskTypeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#8E8E93',
   },
 });
