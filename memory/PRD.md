@@ -37,7 +37,16 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Bug Fix:** Route ordering — moved static `/scheduler/*` routes before `/{user_id}` to prevent FastAPI matching "scheduler" as a user_id.
 - **Testing:** 12/12 backend, 100% frontend pass. Dashboard now shows 2 Active, 11 Upcoming, 22 Completed.
 
-### Enhanced User Creation + Auto-Contact (Mar 21, 2026) -- LATEST
+### New User Onboarding Multi-Step Flow (Mar 22, 2026) -- LATEST
+- **Feature:** 4-step guided onboarding for new salesperson accounts (/auth/complete-profile)
+- **Steps:** 1) Change temp password, 2) About You (photo, title, company, hometown, hobbies, tone), 3) Social Links (website, Instagram, Facebook, LinkedIn, Twitter, TikTok, review URL), 4) AI Bio generation + Digital Card preview
+- **Pre-fill:** Creator-provided data (title, company, socials) auto-populates form fields
+- **AI Bio:** Generates professional bio via GPT-5.2 using Emergent LLM Key
+- **Skip/Back:** Users can skip any step or go back; finishing marks `onboarding_complete: true`
+- **Backend Fixes:** Added missing allowed fields (company, website, review_url, social_twitter, social_tiktok, tone_preference) to PUT /api/profile endpoint; fixed social field mapping to store under social_links.*; added needs_password_change/company/website/review_url/tone_preference to GET profile response
+- **Testing:** 16/16 backend, 100% frontend pass
+
+### Enhanced User Creation + Auto-Contact (Mar 21, 2026)
 - **Mandatory fields:** First name, last name, email, phone
 - **Optional enrichment:** Title, company, website, Instagram/Facebook/LinkedIn/Twitter URLs — saved to user profile for onboarding pre-fill
 - **SMS option:** Toggle to send login info + App Store/Google Play links + temp password via text
