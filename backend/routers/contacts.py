@@ -717,14 +717,20 @@ async def set_profile_photo(user_id: str, contact_id: str, data: dict = Body(...
                 old_url = old_contact["photo"]
                 old_thumb = old_contact.get("photo_thumbnail") or old_url
             if old_url and old_url != photo_url:
-                await db.contacts.update_one(
-                    {"_id": ObjectId(contact_id)},
-                    {"$push": {"photo_history": {
-                        "url": old_url, "thumbnail_url": old_thumb or old_url,
-                        "replaced_at": datetime.now(timezone.utc).isoformat(),
-                        "type": "profile"
-                    }}}
+                # Check if this URL already exists in photo_history before pushing
+                existing_history = await db.contacts.find_one(
+                    {"_id": ObjectId(contact_id), "photo_history.url": old_url},
+                    {"_id": 1}
                 )
+                if not existing_history:
+                    await db.contacts.update_one(
+                        {"_id": ObjectId(contact_id)},
+                        {"$push": {"photo_history": {
+                            "url": old_url, "thumbnail_url": old_thumb or old_url,
+                            "replaced_at": datetime.now(timezone.utc).isoformat(),
+                            "type": "profile"
+                        }}}
+                    )
     except Exception as e:
         logger.warning(f"Failed to save photo history on profile-photo set: {e}")
 
@@ -1262,7 +1268,16 @@ async def get_all_contact_photos(user_id: str, contact_id: str):
             "date": bc["created_at"].isoformat() if bc.get("created_at") else None,
         })
 
-    return {"photos": photos, "total": len(photos)}
+    # Deduplicate by URL — keep first occurrence (profile > history > congrats > birthday)
+    seen_urls = set()
+    unique_photos = []
+    for p in photos:
+        url = p.get("url", "")
+        if url and url not in seen_urls:
+            seen_urls.add(url)
+            unique_photos.append(p)
+    
+    return {"photos": unique_photos, "total": len(unique_photos)}
 
 
 @router.post("/admin/backfill-ownership")

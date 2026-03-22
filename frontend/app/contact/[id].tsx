@@ -4811,7 +4811,9 @@ export default function ContactDetailScreen() {
                           await api.patch(`/contacts/${user._id}/${id}/profile-photo`, { photo_url: photoUrl });
                           setContact((prev: any) => ({ ...prev, photo: photoUrl, photo_url: photoUrl, photo_thumbnail: photoUrl }));
                           showToast('Profile photo updated!', 'success');
-                          setShowPhotoViewer(false); setFullPhoto(null); setSelectedPhotoIndex(-1);
+                          // Refresh gallery and go back to grid
+                          setSelectedPhotoIndex(-1); setFullPhoto(null);
+                          preloadGalleryPhotos();
                         } catch { showSimpleAlert('Error', 'Failed to update profile photo'); }
                       }}
                       data-testid="set-as-profile-btn"
@@ -4861,6 +4863,8 @@ export default function ContactDetailScreen() {
                               await api.patch(`/contacts/${user._id}/${id}/profile-photo`, { photo_url: photo.url });
                               setContact((prev: any) => ({ ...prev, photo: photo.url, photo_url: photo.url, photo_thumbnail: photo.url }));
                               showToast('Profile photo updated!', 'success');
+                              // Refresh gallery to get correct deduped state
+                              preloadGalleryPhotos();
                             } catch { showSimpleAlert('Error', 'Failed to update'); }
                           }}
                           data-testid={`set-profile-${idx}`}
