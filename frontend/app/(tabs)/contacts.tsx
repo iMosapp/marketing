@@ -438,7 +438,7 @@ export default function ContactsScreen() {
       )}
     </TouchableOpacity>
     );
-  }, [tagMap, router, user, selectMode, selectedIds, viewMode, userId, expandedContactId]);
+  }, [tagMap, router, user, selectMode, selectedIds, viewMode, userId, expandedContactId, colors]);
   
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>

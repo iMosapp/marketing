@@ -852,8 +852,7 @@ export default function ThreadScreen() {
       setPendingEventType(null);
       
       // Mark conversation as read after sending (we just responded)
-      const convId = actualConversationId || id as string;
-      try { await messagesAPI.markAsRead(convId); } catch {}
+      try { await messagesAPI.markAsRead(actualConversationId || id as string); } catch {}
       
       // Reload messages to get the real one from backend
       await loadMessages();
