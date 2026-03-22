@@ -23,6 +23,70 @@ logger = logging.getLogger(__name__)
 # Import centralized event type resolution
 from utils.event_types import resolve_event_type, LINK_TYPE_TO_EVENT
 
+
+async def substitute_template_vars(content: str, user_id: str, contact_id: str = None) -> str:
+    """Replace template variables like {first_name}, {review_link}, etc. in message content."""
+    if '{' not in content:
+        return content
+    
+    db = get_db()
+    
+    # Load contact data
+    contact = None
+    if contact_id:
+        try:
+            contact = await db.contacts.find_one({"_id": ObjectId(contact_id)})
+        except Exception:
+            pass
+    
+    first_name = contact.get('first_name', '') if contact else ''
+    last_name = contact.get('last_name', '') if contact else ''
+    full_name = f"{first_name} {last_name}".strip()
+    phone = contact.get('phone', '') if contact else ''
+    
+    # Load sender (user) data for their profile fields
+    user_doc = None
+    try:
+        user_doc = await db.users.find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        pass
+    
+    review_url = ''
+    company = ''
+    sender_name = ''
+    if user_doc:
+        review_url = user_doc.get('review_url', '') or ''
+        company = user_doc.get('company', '') or ''
+        sender_name = user_doc.get('name', '') or ''
+        # Also check store-level review links
+        if not review_url:
+            store_id = user_doc.get('store_id')
+            if store_id:
+                store = await db.stores.find_one({"_id": ObjectId(store_id)})
+                if store:
+                    review_links = store.get('review_links', {})
+                    review_url = review_links.get('google', '') or review_links.get('yelp', '') or ''
+    
+    # Perform substitutions
+    replacements = {
+        '{first_name}': first_name,
+        '{last_name}': last_name,
+        '{name}': full_name,
+        '{phone}': phone,
+        '{review_link}': review_url,
+        '{review_url}': review_url,
+        '{company}': company,
+        '{sender_name}': sender_name,
+        '{sender}': sender_name,
+    }
+    
+    result = content
+    for placeholder, value in replacements.items():
+        result = result.replace(placeholder, value)
+    
+    return result
+
+
 # Email validation  - reject "None", "null", empty strings, and non-email values
 _EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 
@@ -262,10 +326,14 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
         if contact:
             to_phone = contact.get('phone')
     
+    # Substitute template variables ({review_link}, {first_name}, etc.)
+    contact_id = conv.get('contact_id', '')
+    resolved_content = await substitute_template_vars(message_data.content, user_id, contact_id)
+    
     # Create message record
     message = {
         "conversation_id": conversation_id,
-        "content": message_data.content,
+        "content": resolved_content,
         "sender": "user",
         "sender_id": user_id,
         "user_id": user_id,
@@ -969,6 +1037,14 @@ async def send_message_simple(user_id: str, message_data: dict):
     
     if not conversation_id or not content:
         raise HTTPException(status_code=400, detail="conversation_id (or contact_id) and content required")
+    
+    # Substitute template variables ({review_link}, {first_name}, etc.)
+    resolved_contact_id = contact_id or ''
+    if not resolved_contact_id:
+        conv_check = await db.conversations.find_one({"_id": ObjectId(conversation_id)})
+        if conv_check:
+            resolved_contact_id = conv_check.get('contact_id', '')
+    content = await substitute_template_vars(content, user_id, resolved_contact_id)
     
     # Verify conversation exists and belongs to this user
     conv = await db.conversations.find_one({

@@ -146,7 +146,21 @@ async def _catchup_overdue_campaign_tasks(user_id: str):
 
                 # Replace template variables
                 contact_first = enrollment.get("contact_name", "").split()[0] if enrollment.get("contact_name") else "there"
-                clean_message = message_content.replace("{name}", contact_first).replace("{first_name}", contact_first)
+                contact_last = " ".join(enrollment.get("contact_name", "").split()[1:]) if enrollment.get("contact_name") else ""
+                clean_message = message_content.replace("{name}", contact_first).replace("{first_name}", contact_first).replace("{last_name}", contact_last)
+                
+                # Replace {review_link} with sender's review URL
+                if "{review_link}" in clean_message or "{review_url}" in clean_message:
+                    user_doc = await db.users.find_one({"_id": ObjectId(user_id)})
+                    review_url = (user_doc.get("review_url", "") or "") if user_doc else ""
+                    if not review_url and user_doc:
+                        store_id = user_doc.get("store_id")
+                        if store_id:
+                            store = await db.stores.find_one({"_id": ObjectId(store_id)})
+                            if store:
+                                rl = store.get("review_links", {})
+                                review_url = rl.get("google", "") or rl.get("yelp", "") or ""
+                    clean_message = clean_message.replace("{review_link}", review_url).replace("{review_url}", review_url)
 
                 try:
                     await db.tasks.insert_one({
