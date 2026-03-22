@@ -37,7 +37,14 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Bug Fix:** Route ordering — moved static `/scheduler/*` routes before `/{user_id}` to prevent FastAPI matching "scheduler" as a user_id.
 - **Testing:** 12/12 backend, 100% frontend pass. Dashboard now shows 2 Active, 11 Upcoming, 22 Completed.
 
-### New User Onboarding Multi-Step Flow (Mar 22, 2026) -- LATEST
+### Inbox Swipe Actions, Task Modal & Filters (Mar 22, 2026) -- LATEST
+- **Quick Task Modal:** Swiping Task on any inbox item now opens a customizable form (title, type: Call/Text/Email/Meeting/Follow Up, priority: Low/Medium/High, due date quick picks: Today/Tomorrow/3 Days/Next Week, optional note) instead of silently auto-creating a generic task
+- **Flagged & Archived Filters:** Added Flagged (orange flag icon) and Archived (archive icon) filter pills to inbox filter bar, so flagged/archived conversations are actually accessible
+- **Team Inbox Swipe Actions:** Team inbox items now support swipe gestures — swipe right for Claim (green, unclaimed only) + Task (blue), swipe left for Tag (purple)
+- **WebSwipeableItem z-index Fix:** Fixed click interception bug where action buttons weren't clickable after swiping. Content layer now dynamically lowers z-index when swiped open, with overlay to prevent accidental navigation
+- **Testing:** 100% frontend pass across all swipe actions, filters, and task modal
+
+### New User Onboarding Multi-Step Flow (Mar 22, 2026)
 - **Feature:** 4-step guided onboarding for new salesperson accounts (/auth/complete-profile)
 - **Steps:** 1) Change temp password, 2) About You (photo, title, company, hometown, hobbies, tone), 3) Social Links (website, Instagram, Facebook, LinkedIn, Twitter, TikTok, review URL), 4) AI Bio generation + Digital Card preview
 - **Pre-fill:** Creator-provided data (title, company, socials) auto-populates form fields
