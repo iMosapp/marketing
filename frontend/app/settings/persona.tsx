@@ -638,7 +638,7 @@ const { showToast } = useToast();
 
         {/* Retrain Button */}
         <TouchableOpacity 
-          style={[styles.saveButtonLarge, { backgroundColor: '#34C759', marginBottom: 16, opacity: retraining ? 0.6 : 1 }]}
+          style={[styles.saveButtonLarge, { backgroundColor: '#34C759', marginBottom: 12, opacity: retraining ? 0.6 : 1 }]}
           onPress={handleRetrain}
           disabled={retraining}
         >
@@ -648,6 +648,21 @@ const { showToast } = useToast();
             <Ionicons name="refresh" size={20} color={colors.text} style={{ marginRight: 8 }} />
           )}
           <Text style={styles.saveButtonLargeText}>{retraining ? 'Generating...' : 'Retrain My AI'}</Text>
+        </TouchableOpacity>
+
+        {/* Save Button (bottom) */}
+        <TouchableOpacity 
+          style={[styles.saveButtonLarge, { backgroundColor: '#007AFF', marginBottom: 16, opacity: saving ? 0.6 : 1 }]}
+          onPress={handleSave}
+          disabled={saving}
+          data-testid="save-persona-bottom"
+        >
+          {saving ? (
+            <ActivityIndicator size="small" color="#FFF" style={{ marginRight: 8 }} />
+          ) : (
+            <Ionicons name="checkmark-circle" size={20} color="#FFF" style={{ marginRight: 8 }} />
+          )}
+          <Text style={[styles.saveButtonLargeText, { color: '#FFF' }]}>{saving ? 'Saving...' : 'Save Changes'}</Text>
         </TouchableOpacity>
 
         {/* AI Generated Bio Preview */}
@@ -700,7 +715,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'ios' ? 60 : 20,
+    paddingTop: Platform.OS === 'ios' ? 82 : 40,
     paddingHorizontal: 16,
     paddingBottom: 16,
     backgroundColor: colors.bg,

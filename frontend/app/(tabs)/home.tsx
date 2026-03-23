@@ -654,16 +654,21 @@ export default function HomeScreen() {
             data-testid="touchpoints-tile"
           >
             {/* Title row */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
                 <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: 'rgba(201,169,98,0.12)', alignItems: 'center', justifyContent: 'center' }}>
                   <Ionicons name="checkbox-outline" size={22} color={colors.accent} />
                 </View>
-                <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>Today's Touchpoints</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>Today's Touchpoints</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 3 }}>
+                    <View style={{ backgroundColor: 'rgba(201,169,98,0.12)', paddingVertical: 2, paddingHorizontal: 8, borderRadius: 6 }}>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: colors.accent }}>{taskSummary?.pending_today || pendingTasks.length} pending</Text>
+                    </View>
+                  </View>
+                </View>
               </View>
-              <View style={{ backgroundColor: 'rgba(201,169,98,0.12)', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 8 }}>
-                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.accent }}>{taskSummary?.pending_today || pendingTasks.length} pending</Text>
-              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
             </View>
 
             {/* Mini Scoreboard */}
