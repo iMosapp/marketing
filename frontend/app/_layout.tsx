@@ -7,6 +7,7 @@ import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { ToastProvider } from '../components/common/Toast';
 import JessieFloatingChat, { JESSI_BAR_HEIGHT } from '../components/JessieFloatingChat';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 
 function usePWAMetaTags() {
   useEffect(() => {
@@ -107,29 +108,31 @@ export default function RootLayout() {
   const bgColor = mounted ? colors.bg : '#F2F2F7';
   
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: bgColor }}>
-      <SafeAreaProvider>
-        <ToastProvider>
-          <View style={{ flex: 1, paddingTop: showJessi ? JESSI_BAR_HEIGHT : 0 }}>
-            <Stack screenOptions={{ headerShown: false, animation: 'none' }}>
-              <Stack.Screen name="index" options={{ animation: 'none' }} />
-              <Stack.Screen name="auth/login" options={{ animation: 'none' }} />
-              <Stack.Screen name="cs-login" options={{ animation: 'none' }} />
-              <Stack.Screen name="auth/signup" />
-              <Stack.Screen name="auth/forgot-password" />
-              <Stack.Screen name="onboarding/index" />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="settings" />
-              <Stack.Screen name="card/[userId]" />
-              <Stack.Screen name="thread/[id]" />
-              <Stack.Screen name="contact/[id]" />
-              <Stack.Screen name="review/[storeSlug]" />
-              <Stack.Screen name="l/[username]" />
-            </Stack>
-          </View>
-          {showJessi && <JessieFloatingChat />}
-        </ToastProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: bgColor }}>
+        <SafeAreaProvider>
+          <ToastProvider>
+            <View style={{ flex: 1, paddingTop: showJessi ? JESSI_BAR_HEIGHT : 0 }}>
+              <Stack screenOptions={{ headerShown: false, animation: 'none' }}>
+                <Stack.Screen name="index" options={{ animation: 'none' }} />
+                <Stack.Screen name="auth/login" options={{ animation: 'none' }} />
+                <Stack.Screen name="cs-login" options={{ animation: 'none' }} />
+                <Stack.Screen name="auth/signup" />
+                <Stack.Screen name="auth/forgot-password" />
+                <Stack.Screen name="onboarding/index" />
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="settings" />
+                <Stack.Screen name="card/[userId]" />
+                <Stack.Screen name="thread/[id]" />
+                <Stack.Screen name="contact/[id]" />
+                <Stack.Screen name="review/[storeSlug]" />
+                <Stack.Screen name="l/[username]" />
+              </Stack>
+            </View>
+            {showJessi && <JessieFloatingChat />}
+          </ToastProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }

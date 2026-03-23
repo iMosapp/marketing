@@ -315,6 +315,22 @@ async def update_persona_settings(user_id: str, data: dict):
     return {"message": "Persona settings saved"}
 
 
+@api_router.get("/users/{user_id}")
+async def get_user_profile(user_id: str):
+    """Get user profile data"""
+    db = get_db()
+    user = await db.users.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user["_id"] = str(user["_id"])
+    user.pop("password", None)
+    # Convert any ObjectId fields to strings
+    for key in ["organization_id", "org_id", "store_id", "partner_id"]:
+        if user.get(key):
+            user[key] = str(user[key])
+    return user
+
+
 @api_router.patch("/users/{user_id}")
 async def patch_user_profile(user_id: str, data: dict):
     """Update user profile fields including photo"""
