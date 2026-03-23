@@ -13,7 +13,11 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### Training Hub + Video Quick-Send Templates (Mar 23, 2026) -- LATEST
+### Production Crash Fix + ErrorBoundary (Mar 24, 2026) -- LATEST
+- **Critical Bug Fix:** Added missing `GET /api/users/{user_id}` endpoint. Previously only `PATCH` existed, causing **405 Method Not Allowed** when My Account page tried to refresh user data. This was a likely contributor to the "everything crashing" reports.
+- **ErrorBoundary:** Added a global React ErrorBoundary component wrapping the entire app. Any uncaught rendering error now shows a "Try Again" recovery screen instead of crashing the whole app to a white/blank screen. Critical for production stability with 50-60 users.
+
+### Training Hub + Video Quick-Send Templates (Mar 23, 2026)
 - **Training Hub:** Populated "Onboarding Videos" track with 8 YouTube tutorial videos (Saving The App, Setting Up Your Profile, Home Screen, Contacts, Inbox, Best Practices, The 30 Second Workflow, Tags & Campaigns). Videos play inline via embedded YouTube player on web, or open in browser on native.
 - **Quick-Send Templates:** Added 8 video message templates (category: "training_video") to the template system. Auto-seeded for existing users when they open templates. Each has a friendly message + YouTube link with {name} variable.
 - **Template Categories:** Added training_video, referral, sold, review categories to the frontend category picker.
@@ -40,6 +44,8 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## Key API Endpoints
 - `POST /api/auth/login` — user authentication
+- `GET /api/users/{user_id}` — **NEW** user profile data (was 405 before fix)
+- `PATCH /api/users/{user_id}` — update user profile fields
 - `GET /api/contacts/{user_id}` — contacts with sort, search, team view
 - `GET /api/training/tracks` — all training tracks with lesson counts
 - `GET /api/training/tracks/{track_id}` — track detail with lessons
