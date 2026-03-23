@@ -124,22 +124,12 @@ export default function CreateCardPage() {
       const shareUrl = res.data?.short_url || `${BASE_URL}/congrats/${cardId}${user?.ref_code ? `?ref=${user.ref_code}` : ''}`;
       setShowPreview(false);
 
-      // Auto-save original photo to camera roll
-      if (photo?.uri) {
+      // Auto-save original photo to camera roll (native only - web doesn't need this)
+      if (photo?.uri && !IS_WEB) {
         try {
-          if (!IS_WEB) {
-            const { status } = await MediaLibrary.requestPermissionsAsync();
-            if (status === 'granted') {
-              await MediaLibrary.saveToLibraryAsync(photo.uri);
-            }
-          } else {
-            // Web: trigger a background download so the image is saved
-            const a = document.createElement('a');
-            a.href = photo.uri;
-            a.download = `delivery-photo-${customerName.trim().replace(/\s+/g, '-')}.jpg`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+          const { status } = await MediaLibrary.requestPermissionsAsync();
+          if (status === 'granted') {
+            await MediaLibrary.saveToLibraryAsync(photo.uri);
           }
         } catch (saveErr) {
           console.log('Auto-save photo to library failed:', saveErr);

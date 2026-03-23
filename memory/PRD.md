@@ -37,7 +37,16 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Bug Fix:** Route ordering — moved static `/scheduler/*` routes before `/{user_id}` to prevent FastAPI matching "scheduler" as a user_id.
 - **Testing:** 12/12 backend, 100% frontend pass. Dashboard now shows 2 Active, 11 Upcoming, 22 Completed.
 
-### Contact List Expandable Actions + Name Fix (Mar 22, 2026) -- LATEST
+### Card Send Download Bug Fix + Session Fixes (Mar 22, 2026) -- LATEST
+- **Card "Create & Send" Download Bug:** Removed web-specific auto-download code from `create-card.tsx` that was triggering iOS download dialog instead of sending the card. The card image is already server-hosted; no client download needed.
+- **CS-Login Redirect Fix:** Fixed `index.tsx` and `+html.tsx` — localStorage `pwa_brand` flag was permanently sticking, redirecting normal login to `/cs-login`. Now only triggers on actual CS paths and auto-clears otherwise.
+- **Touchpoints Count Mismatch Fix:** Changed `_catchup_overdue_campaign_tasks()` in summary endpoint from `await` to `asyncio.create_task()` (fire-and-forget), preventing timeout on production with many enrollments.
+- **Contacts Light Mode Fix:** Added `colors` to `renderContact` useCallback dependency array so theme changes propagate to memoized contact list items.
+- **Photo Duplication Fix:** Backend `get_all_contact_photos` now deduplicates by URL; `set_profile_photo` checks for existing history entry before pushing; gallery refreshes after profile photo change.
+- **Inbox Mark-as-Read:** Thread page now auto-marks conversations as read on open and after sending. "Mark as Complete" now persists to DB.
+- **Template Variable Substitution:** Added `substitute_template_vars()` to message send endpoints — `{review_link}`, `{first_name}`, `{last_name}`, `{company}`, `{sender_name}` now resolve correctly.
+
+### Contact List Expandable Actions + Name Fix (Mar 22, 2026)
 - **Expandable Action Button:** Replaced 3 always-visible call/text/email icons with single paper-plane "reach out" button that fans out on tap, collapsed back with X button
 - **Name Wrapping Fix:** `numberOfLines={1}` prevents long names from wrapping to second line
 - **Emergency Password Reset:** Added `/api/auth/emergency-reset` endpoint (secret-protected) for production lockout recovery

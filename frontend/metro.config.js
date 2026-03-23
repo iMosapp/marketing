@@ -1,23 +1,32 @@
-// metro.config.js
 const { getDefaultConfig } = require("expo/metro-config");
 const path = require('path');
 const { FileStore } = require('metro-cache');
 
 const config = getDefaultConfig(__dirname);
 
-// Use a stable on-disk store (shared across web/android)
 const root = process.env.METRO_CACHE_ROOT || path.join(__dirname, '.metro-cache');
 config.cacheStores = [
   new FileStore({ root: path.join(root, 'cache') }),
 ];
 
-// Use polling-based watcher to avoid inotify limits in containers
 config.watcher = {
   watchman: { enabled: false },
   healthCheck: { enabled: false },
 };
 
-// Reduce the number of workers to decrease resource usage
+// Heavily reduce watched dirs - skip native code
+config.resolver = {
+  ...config.resolver,
+  blockList: [
+    /node_modules\/.*\/android\/.*/,
+    /node_modules\/.*\/ios\/.*/,
+    /node_modules\/.*\/__tests__\/.*/,
+    /node_modules\/.*\/__fixtures__\/.*/,
+    /node_modules\/react-native\/types_generated\/.*/,
+    /\.git\/.*/,
+  ],
+};
+
 config.maxWorkers = 2;
 
 module.exports = config;
