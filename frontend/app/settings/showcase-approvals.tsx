@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView, Image,
-  ActivityIndicator, RefreshControl,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView,
+  ActivityIndicator, RefreshControl, Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -10,6 +11,14 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import api from '../../services/api';
 import { showAlert, showSimpleAlert } from '../../services/alert';
+
+const IS_WEB = Platform.OS === 'web';
+const PHOTO_BASE = IS_WEB ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '');
+function resolveUrl(url?: string | null): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;
+  return `${PHOTO_BASE}${url}`;
+}
 
 interface PendingEntry {
   card_id: string;
@@ -140,8 +149,12 @@ export default function ShowcaseApprovalsScreen() {
               const isProcessing = processingId === entry.card_id;
               return (
                 <View key={entry.card_id} style={styles.entryCard} data-testid={`pending-entry-${entry.card_id}`}>
-                  {entry.customer_photo && (
-                    <Image source={{ uri: entry.customer_photo }} style={styles.entryPhoto} resizeMode="cover" />
+                  {entry.customer_photo ? (
+                    <Image source={{ uri: resolveUrl(entry.customer_photo) }} style={styles.entryPhoto} contentFit="cover" transition={200} cachePolicy="memory-disk" />
+                  ) : (
+                    <View style={[styles.entryPhoto, { justifyContent: 'center', alignItems: 'center' }]}>
+                      <Ionicons name="image-outline" size={40} color={colors.textTertiary || '#666'} />
+                    </View>
                   )}
                   <View style={styles.entryInfo}>
                     <Text style={styles.customerName}>{entry.customer_name}</Text>
