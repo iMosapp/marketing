@@ -215,7 +215,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   loadingContainer: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.card,
+    paddingHorizontal: 16, paddingTop: 28, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.card,
   },
   backButton: { padding: 4 },
   headerTitle: { fontSize: 18, fontWeight: '600', color: colors.text },

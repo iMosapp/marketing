@@ -16,7 +16,7 @@ const SOCIAL_PLATFORMS = [
   { key: 'instagram', label: 'Instagram', icon: 'logo-instagram', color: '#E4405F', prefix: 'instagram.com/', placeholder: 'yourhandle' },
   { key: 'linkedin', label: 'LinkedIn', icon: 'logo-linkedin', color: '#0A66C2', prefix: 'linkedin.com/in/', placeholder: 'yourprofile' },
   { key: 'twitter', label: 'Twitter/X', icon: 'logo-twitter', color: '#1DA1F2', prefix: 'x.com/', placeholder: 'yourhandle' },
-  { key: 'tiktok', label: 'TikTok', icon: 'logo-tiktok', color: '#FFFFFF', prefix: 'tiktok.com/@', placeholder: 'yourhandle' },
+  { key: 'tiktok', label: 'TikTok', icon: 'logo-tiktok', color: '#69C9D0', prefix: 'tiktok.com/@', placeholder: 'yourhandle' },
   { key: 'youtube', label: 'YouTube', icon: 'logo-youtube', color: '#FF0000', prefix: 'youtube.com/@', placeholder: 'yourchannel' },
 ];
 
@@ -319,7 +319,7 @@ export default function EditLinkPage() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 28, paddingBottom: 12, borderBottomWidth: 0.5 },
   backBtn: { padding: 4 },
   headerTitle: { flex: 1, fontSize: 19, fontWeight: '700', textAlign: 'center' },
   content: { flex: 1, paddingHorizontal: 16, paddingTop: 16 },

@@ -152,7 +152,7 @@ export default function ManageCardTemplatesPage() {
 const getS = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   loading: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.card },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 28, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.card },
   headerTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
   content: { flex: 1, padding: 16 },
   sectionNote: { fontSize: 15, color: '#8E8E93', marginBottom: 20, lineHeight: 18 },

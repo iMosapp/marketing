@@ -342,7 +342,7 @@ export default function CompleteProfileScreen() {
                 { icon: 'logo-facebook', color: '#1877F2', val: facebook, set: setFacebook, ph: 'Facebook profile URL', tid: 'link-fb' },
                 { icon: 'logo-linkedin', color: '#0A66C2', val: linkedin, set: setLinkedin, ph: 'LinkedIn profile URL', tid: 'link-li' },
                 { icon: 'logo-twitter', color: '#1DA1F2', val: twitter, set: setTwitter, ph: 'Twitter/X profile URL', tid: 'link-tw' },
-                { icon: 'logo-tiktok', color: '#000', val: tiktok, set: setTiktok, ph: 'TikTok profile URL', tid: 'link-tt' },
+                { icon: 'logo-tiktok', color: '#69C9D0', val: tiktok, set: setTiktok, ph: 'TikTok profile URL', tid: 'link-tt' },
               ].map(soc => (
                 <View key={soc.tid} style={s.linkRow}>
                   <Ionicons name={soc.icon as any} size={18} color={soc.color} />

@@ -893,6 +893,69 @@ export default function MyAccountScreen() {
           </View>
 
           {/* --- AI Persona & Voice — moved to My Profile section above --- */}
+
+          {/* --- My Templates (quick-send messages) --- */}
+          <View style={[styles.presenceCard, { backgroundColor: colors.card }]} data-testid="presence-templates">
+            <View style={styles.presenceHeader}>
+              <View style={[styles.presenceIcon, { backgroundColor: '#FFD60A20' }]}>
+                <Ionicons name="document-text" size={20} color="#FFD60A" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.presenceTitle, { color: colors.text }]}>My Templates</Text>
+                <Text style={[styles.presenceUrl, { color: colors.textTertiary }]} numberOfLines={1}>
+                  Quick-send messages for texts & emails
+                </Text>
+              </View>
+            </View>
+            <View style={styles.presenceActions}>
+              <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#FFD60A15' }]} onPress={() => router.push('/settings/templates' as any)} data-testid="templates-manage-btn">
+                <Ionicons name="create-outline" size={16} color="#FFD60A" />
+                <Text style={[styles.presenceBtnText, { color: '#FFD60A' }]}>Manage</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* --- Card Templates (congrats/birthday cards) --- */}
+          <View style={[styles.presenceCard, { backgroundColor: colors.card }]} data-testid="presence-card-templates">
+            <View style={styles.presenceHeader}>
+              <View style={[styles.presenceIcon, { backgroundColor: '#FF2D5520' }]}>
+                <Ionicons name="gift" size={20} color="#FF2D55" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.presenceTitle, { color: colors.text }]}>Card Templates</Text>
+                <Text style={[styles.presenceUrl, { color: colors.textTertiary }]} numberOfLines={1}>
+                  Congrats & birthday card designs
+                </Text>
+              </View>
+            </View>
+            <View style={styles.presenceActions}>
+              <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#FF2D5515' }]} onPress={() => router.push('/settings/card-templates' as any)} data-testid="card-templates-manage-btn">
+                <Ionicons name="create-outline" size={16} color="#FF2D55" />
+                <Text style={[styles.presenceBtnText, { color: '#FF2D55' }]}>Manage</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* --- Email Signature --- */}
+          <View style={[styles.presenceCard, { backgroundColor: colors.card }]} data-testid="presence-email-sig">
+            <View style={styles.presenceHeader}>
+              <View style={[styles.presenceIcon, { backgroundColor: '#5856D620' }]}>
+                <Ionicons name="at" size={20} color="#5856D6" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.presenceTitle, { color: colors.text }]}>Email Signature</Text>
+                <Text style={[styles.presenceUrl, { color: colors.textTertiary }]} numberOfLines={1}>
+                  Your branded email sign-off
+                </Text>
+              </View>
+            </View>
+            <View style={styles.presenceActions}>
+              <TouchableOpacity style={[styles.presenceBtn, { backgroundColor: '#5856D615' }]} onPress={() => router.push('/email-signature' as any)} data-testid="email-sig-manage-btn">
+                <Ionicons name="create-outline" size={16} color="#5856D6" />
+                <Text style={[styles.presenceBtnText, { color: '#5856D6' }]}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
 
         {/* Close personal view conditional */}

@@ -109,7 +109,7 @@ const SOCIAL_PLATFORMS = [
   { key: 'twitter', icon: 'logo-twitter', color: '#1DA1F2', baseUrl: 'https://x.com/' },
   { key: 'linkedin', icon: 'logo-linkedin', color: '#0A66C2', baseUrl: 'https://linkedin.com/in/' },
   { key: 'youtube', icon: 'logo-youtube', color: '#FF0000', baseUrl: 'https://youtube.com/@' },
-  { key: 'tiktok', icon: 'logo-tiktok', color: '#000000', baseUrl: 'https://tiktok.com/@' },
+  { key: 'tiktok', icon: 'logo-tiktok', color: '#69C9D0', baseUrl: 'https://tiktok.com/@' },
 ];
 
 export default function DigitalCardPage() {
