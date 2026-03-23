@@ -68,23 +68,30 @@ export default function ContactsScreen() {
   const userId = user?._id;
   const searchTimer = useRef<any>(null);
   const initialLoadDone = useRef(false);
-  
-  useEffect(() => {
-    if (!isPending && userId) {
-      loadContacts();
-      loadTags();
-      initialLoadDone.current = true;
-    }
-  }, [userId, isPending, viewMode, sortMode]);
+  const requestSeq = useRef(0); // Track latest request to prevent stale responses
 
-  // Auto-refresh when tab gains focus (e.g. after adding a new contact)
-  useFocusEffect(
-    useCallback(() => {
-      if (initialLoadDone.current && userId && !isPending && !deletingRef.current) {
-        loadContacts();
+  // Define loadContacts BEFORE it's used in hooks
+  const loadContacts = useCallback(async () => {
+    if (!userId) return;
+    
+    // Increment sequence counter - only the latest request should update state
+    const seq = ++requestSeq.current;
+    
+    try {
+      if (!initialLoadDone.current) setLoading(true);
+      const data = await contactsAPI.getAll(userId, search || undefined, viewMode === 'team' ? 'team' : undefined, sortMode);
+      // Only apply if this is still the latest request (prevents stale overwrites)
+      if (seq === requestSeq.current) {
+        setContacts(data);
       }
-    }, [userId, isPending])
-  );
+    } catch (error) {
+      console.error('Failed to load contacts:', error);
+    } finally {
+      if (seq === requestSeq.current) {
+        setLoading(false);
+      }
+    }
+  }, [userId, search, viewMode, sortMode]);
 
   const loadTags = async () => {
     if (!user?._id) return;
@@ -95,6 +102,23 @@ export default function ContactsScreen() {
       console.error('Failed to load tags:', error);
     }
   };
+  
+  useEffect(() => {
+    if (!isPending && userId) {
+      loadContacts();
+      loadTags();
+      initialLoadDone.current = true;
+    }
+  }, [userId, isPending, viewMode, sortMode, loadContacts]);
+
+  // Auto-refresh when tab gains focus (e.g. after adding a new contact)
+  useFocusEffect(
+    useCallback(() => {
+      if (initialLoadDone.current && userId && !isPending && !deletingRef.current) {
+        loadContacts();
+      }
+    }, [userId, isPending, loadContacts])
+  );
   
   // Show restricted access screen for pending users
   if (isPending) {
@@ -120,20 +144,6 @@ export default function ContactsScreen() {
     );
   }
   
-  const loadContacts = useCallback(async () => {
-    if (!userId) return;
-    
-    try {
-      if (!initialLoadDone.current) setLoading(true);
-      const data = await contactsAPI.getAll(userId, search || undefined, viewMode === 'team' ? 'team' : undefined, sortMode);
-      setContacts(data);
-    } catch (error) {
-      console.error('Failed to load contacts:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [userId, search, viewMode, sortMode]);
-  
   const onRefresh = async () => {
     setRefreshing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -146,9 +156,12 @@ export default function ContactsScreen() {
     if (searchTimer.current) clearTimeout(searchTimer.current);
     searchTimer.current = setTimeout(async () => {
       if (text.length > 2 || text.length === 0) {
+        const seq = ++requestSeq.current;
         try {
           const data = await contactsAPI.getAll(userId || '', text || undefined, viewMode === 'team' ? 'team' : undefined, sortMode);
-          setContacts(data);
+          if (seq === requestSeq.current) {
+            setContacts(data);
+          }
         } catch (error) {
           console.error('Search failed:', error);
         }

@@ -621,20 +621,43 @@ async def startup_event():
             # Give index creation 15 seconds max, don't block startup
             try:
                 await asyncio.wait_for(asyncio.gather(
+                    # Contacts - core queries
                     db.contacts.create_index("user_id"),
                     db.contacts.create_index([("first_name", 1)]),
                     db.contacts.create_index([("user_id", 1), ("first_name", 1)]),
+                    db.contacts.create_index([("user_id", 1), ("status", 1)]),
+                    db.contacts.create_index([("user_id", 1), ("ownership_type", 1), ("status", 1)]),
+                    db.contacts.create_index([("user_id", 1), ("updated_at", -1)]),
+                    # Users
                     db.users.create_index("email", unique=True, sparse=True),
                     db.users.create_index("role"),
+                    db.users.create_index([("store_id", 1)]),
+                    # Conversations - inbox queries
+                    db.conversations.create_index([("user_id", 1), ("last_message_at", -1)]),
+                    db.conversations.create_index([("contact_id", 1)]),
+                    db.conversations.create_index([("user_id", 1), ("status", 1)]),
+                    # Messages - thread loading
+                    db.messages.create_index([("conversation_id", 1), ("timestamp", -1)]),
+                    # Contact events & photos
                     db.contact_photos.create_index("contact_id", unique=True),
-                    db.date_trigger_configs.create_index([("user_id", 1), ("trigger_type", 1)]),
                     db.contact_events.create_index([("user_id", 1), ("timestamp", -1)]),
                     db.contact_events.create_index([("contact_id", 1), ("timestamp", -1)]),
                     db.contact_events.create_index([("contact_id", 1), ("event_type", 1)]),
+                    # Campaign system
+                    db.campaign_enrollments.create_index([("campaign_id", 1), ("contact_id", 1), ("status", 1)]),
+                    db.campaign_enrollments.create_index([("user_id", 1), ("status", 1)]),
+                    db.campaign_enrollments.create_index([("contact_id", 1)]),
+                    db.campaign_pending_sends.create_index([("user_id", 1), ("status", 1)]),
+                    # Tasks
                     db.tasks.create_index([("user_id", 1), ("status", 1), ("due_date", 1)]),
                     db.tasks.create_index("idempotency_key", unique=True, partialFilterExpression={"idempotency_key": {"$type": "string"}}),
+                    # Date triggers & notifications
+                    db.date_trigger_configs.create_index([("user_id", 1), ("trigger_type", 1)]),
+                    db.notifications.create_index([("user_id", 1), ("read", 1), ("created_at", -1)]),
+                    # Tags
+                    db.tags.create_index([("user_id", 1)]),
                 ), timeout=15)
-                logger.info("Database indexes created/verified")
+                logger.info("Database indexes created/verified (production-ready)")
             except asyncio.TimeoutError:
                 logger.warning("Index creation timed out - will retry on first request")
     except Exception as e:

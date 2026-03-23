@@ -16,6 +16,11 @@ async def get_brand_context(db, user_id: str) -> dict:
         "primary_color": "#007AFF",
         "accent_color": "#C9A962",
         "sender_name": "",
+        "sender_title": "",
+        "sender_phone": "",
+        "sender_email": "",
+        "sender_photo": "",
+        "card_url": "",
         "social_links": {},
         "footer_text": "",
         "powered_by": "i'M On Social",
@@ -28,6 +33,20 @@ async def get_brand_context(db, user_id: str) -> dict:
             return brand
 
         brand["sender_name"] = user.get("name", "")
+        brand["sender_title"] = user.get("title", "")
+        brand["sender_phone"] = user.get("phone", "")
+        brand["sender_email"] = user.get("email", "")
+        
+        # Build user photo URL
+        import os
+        app_url = os.environ.get("APP_URL", "https://app.imonsocial.com").rstrip("/")
+        photo = user.get("photo_thumbnail_url") or user.get("photo_url") or ""
+        if photo and photo.startswith("/"):
+            photo = f"{app_url}{photo}"
+        brand["sender_photo"] = photo
+        
+        # Build digital card URL
+        brand["card_url"] = f"{app_url}/card/{user_id}"
 
         # Get store branding
         store_id = user.get("store_id")
@@ -110,7 +129,7 @@ async def get_brand_context(db, user_id: str) -> dict:
 
 
 def build_branded_email(content: str, brand: dict, contact_name: str = "") -> str:
-    """Build a white-label HTML email with full branding."""
+    """Build a white-label HTML email with full branding and personal signature."""
     import os
     app_url = os.environ.get("APP_URL", "https://app.imonsocial.com").rstrip("/")
     
@@ -122,6 +141,11 @@ def build_branded_email(content: str, brand: dict, contact_name: str = "") -> st
         logo = f"{app_url}{logo}"
     store = brand.get("store_name", "")
     sender = brand.get("sender_name", "")
+    sender_title = brand.get("sender_title", "")
+    sender_phone = brand.get("sender_phone", "")
+    sender_email = brand.get("sender_email", "")
+    sender_photo = brand.get("sender_photo", "")
+    card_url = brand.get("card_url", "")
     social = brand.get("social_links", {})
     footer = brand.get("footer_text", "")
     powered_by = brand.get("powered_by", "IM On Social")
@@ -156,6 +180,41 @@ def build_branded_email(content: str, brand: dict, contact_name: str = "") -> st
             <h2 style="margin:0;font-size:22px;color:{pc};font-weight:700;">{store}</h2>
         </div>'''
 
+    # Personal signature block with photo, name, title, phone, email, card link
+    photo_cell = ""
+    if sender_photo:
+        photo_cell = f'''
+            <td style="vertical-align:top;padding-right:14px;">
+                <img src="{sender_photo}" alt="{sender}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;" />
+            </td>'''
+    
+    sig_details = f'<p style="margin:0;font-size:15px;color:#1C1C1E;font-weight:600;">{sender}</p>'
+    if sender_title:
+        sig_details += f'<p style="margin:2px 0 0;font-size:13px;color:#8E8E93;">{sender_title} &middot; {store}</p>'
+    else:
+        sig_details += f'<p style="margin:2px 0 0;font-size:13px;color:#8E8E93;">{store}</p>'
+    
+    contact_lines = []
+    if sender_phone:
+        contact_lines.append(f'<a href="tel:{sender_phone}" style="color:{pc};text-decoration:none;font-size:13px;">{sender_phone}</a>')
+    if sender_email:
+        contact_lines.append(f'<a href="mailto:{sender_email}" style="color:{pc};text-decoration:none;font-size:13px;">{sender_email}</a>')
+    if contact_lines:
+        sig_details += f'<p style="margin:4px 0 0;">{" &nbsp;|&nbsp; ".join(contact_lines)}</p>'
+    
+    if card_url:
+        sig_details += f'<p style="margin:6px 0 0;"><a href="{card_url}" style="color:{pc};text-decoration:none;font-size:12px;font-weight:500;">View My Digital Card</a></p>'
+
+    signature_html = f'''
+        <div style="padding:0 28px 20px;border-top:1px solid #F0F0F0;padding-top:16px;">
+            <table cellpadding="0" cellspacing="0" border="0"><tr>
+                {photo_cell}
+                <td style="vertical-align:top;">
+                    {sig_details}
+                </td>
+            </tr></table>
+        </div>'''
+
     # CTA button
     cta_html = f'''
     <div style="text-align:center;margin:24px 0 8px;">
@@ -184,11 +243,8 @@ def build_branded_email(content: str, brand: dict, contact_name: str = "") -> st
             </div>
         </div>
 
-        <!-- Sender info -->
-        <div style="padding:0 28px 20px;border-top:1px solid #F0F0F0;padding-top:16px;">
-            <p style="margin:0;font-size:14px;color:#3A3A3C;font-weight:600;">{sender}</p>
-            <p style="margin:2px 0 0;font-size:13px;color:#8E8E93;">{store}</p>
-        </div>
+        <!-- Personal Signature -->
+        {signature_html}
 
         {cta_html}
 

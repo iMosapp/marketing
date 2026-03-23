@@ -461,40 +461,37 @@ async def get_contacts(user_id: str, search: Optional[str] = None, view_mode: Op
             salesperson_map = {str(d["_id"]): d.get("name", "Unknown") for d in sp_docs}
     
     # Auto-backfill: find contacts missing thumbnails but having a photo in DB
+    # Run as background task to not block the response
     needs_backfill = [c for c in contacts if not c.get('photo_thumbnail') and not c.get('photo_url')]
     if needs_backfill:
-        ids = [c['_id'] for c in needs_backfill]
-        # Fetch only the photo field for these contacts
-        photo_docs = await db.contacts.find(
-            {"_id": {"$in": ids}, "photo": {"$exists": True, "$nin": [None, "", "None"]}},
-            {"_id": 1, "photo": 1}
-        ).to_list(len(ids))
-        
-        for pdoc in photo_docs:
-            photo_data = pdoc.get('photo', '')
-            if photo_data and len(photo_data) > 100:
-                try:
-                    thumbnail, high_res = await _process_photo(photo_data)
-                    await db.contacts.update_one(
-                        {"_id": pdoc['_id']},
-                        {"$set": {"photo_thumbnail": thumbnail, "photo_url": thumbnail}}
-                    )
-                    # Also store high-res separately
-                    cid = str(pdoc['_id'])
-                    await db.contact_photos.update_one(
-                        {"contact_id": cid},
-                        {"$set": {"contact_id": cid, "photo_full": high_res, "updated_at": datetime.utcnow()}},
-                        upsert=True
-                    )
-                    # Update the in-memory contact for this response
-                    for c in contacts:
-                        if c['_id'] == pdoc['_id']:
-                            c['photo_thumbnail'] = thumbnail
-                            c['photo_url'] = thumbnail
-                            break
-                    logger.info(f"Backfilled thumbnail for contact {cid}")
-                except Exception as e:
-                    logger.error(f"Failed to backfill thumbnail for {pdoc['_id']}: {e}")
+        import asyncio
+        async def _backfill_photos(ids_to_backfill):
+            try:
+                photo_docs = await db.contacts.find(
+                    {"_id": {"$in": ids_to_backfill}, "photo": {"$exists": True, "$nin": [None, "", "None"]}},
+                    {"_id": 1, "photo": 1}
+                ).to_list(len(ids_to_backfill))
+                for pdoc in photo_docs:
+                    photo_data = pdoc.get('photo', '')
+                    if photo_data and len(photo_data) > 100:
+                        try:
+                            thumbnail, high_res = await _process_photo(photo_data)
+                            await db.contacts.update_one(
+                                {"_id": pdoc['_id']},
+                                {"$set": {"photo_thumbnail": thumbnail, "photo_url": thumbnail}}
+                            )
+                            cid = str(pdoc['_id'])
+                            await db.contact_photos.update_one(
+                                {"contact_id": cid},
+                                {"$set": {"contact_id": cid, "photo_full": high_res, "updated_at": datetime.utcnow()}},
+                                upsert=True
+                            )
+                            logger.info(f"Backfilled thumbnail for contact {cid}")
+                        except Exception as e:
+                            logger.error(f"Failed to backfill thumbnail for {pdoc['_id']}: {e}")
+            except Exception as e:
+                logger.error(f"Photo backfill batch failed: {e}")
+        asyncio.create_task(_backfill_photos([c['_id'] for c in needs_backfill]))
     
     results = []
     for c in contacts:
