@@ -4765,14 +4765,13 @@ export default function ContactDetailScreen() {
                 }}
                 keyExtractor={(item, index) => `photo-reel-${item.type}-${index}`}
                 renderItem={({ item }) => {
-                  const screenW = galleryWidth || screenWidth;
                   const screenH = Dimensions.get('window').height;
                   const imgH = screenH - 200;
                   return (
-                    <View style={{ width: screenW, height: imgH, justifyContent: 'center', alignItems: 'center' }}>
+                    <View style={{ width: screenWidth, height: imgH, justifyContent: 'center', alignItems: 'center' }}>
                       <Image
                         source={{ uri: item.url }}
-                        style={{ width: screenW, height: imgH }}
+                        style={{ width: screenWidth, height: imgH }}
                         contentFit="contain"
                         transition={200}
                         cachePolicy="memory-disk"
@@ -4800,6 +4799,35 @@ export default function ContactDetailScreen() {
                     data-testid="back-to-gallery-grid"
                   >
                     <Ionicons name="grid-outline" size={18} color="#FFF" />
+                  </TouchableOpacity>
+                  {/* Delete photo button */}
+                  <TouchableOpacity
+                    style={[s.viewerActionBtn, { backgroundColor: '#FF3B30' }]}
+                    onPress={() => {
+                      const photo = allPhotos[selectedPhotoIndex];
+                      if (!photo) return;
+                      const isProfile = photo.type === 'profile';
+                      showConfirm(
+                        isProfile ? 'Remove Profile Photo' : 'Delete Photo',
+                        isProfile
+                          ? 'This will remove the profile photo. The next photo in history will become the new profile photo.'
+                          : 'Are you sure you want to delete this photo? This cannot be undone.',
+                        async () => {
+                          try {
+                            await api.delete(`/contacts/${user?._id}/${id}/photos`, { data: { photo_url: photo.url, photo_type: photo.type } });
+                            if (isProfile) {
+                              setContact((prev: any) => ({ ...prev, photo: null, photo_url: null, photo_thumbnail: null, photo_path: null }));
+                            }
+                            showToast('Photo deleted', 'success');
+                            setSelectedPhotoIndex(-1); setFullPhoto(null);
+                            preloadGalleryPhotos();
+                          } catch { showSimpleAlert('Error', 'Failed to delete photo'); }
+                        }
+                      );
+                    }}
+                    data-testid="delete-photo-btn"
+                  >
+                    <Ionicons name="trash" size={18} color="#FFF" />
                   </TouchableOpacity>
                   {allPhotos[selectedPhotoIndex]?.type !== 'profile' && (
                     <TouchableOpacity

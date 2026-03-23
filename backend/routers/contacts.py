@@ -754,6 +754,89 @@ async def set_profile_photo(user_id: str, contact_id: str, data: dict = Body(...
     return {"message": "Profile photo updated"}
 
 
+
+@router.delete("/{user_id}/{contact_id}/photos")
+async def delete_contact_photo(user_id: str, contact_id: str, data: dict = Body(...)):
+    """Delete a photo from a contact's gallery. Handles profile, history, congrats, and birthday photos."""
+    db = get_db()
+    photo_url = data.get("photo_url", "")
+    photo_type = data.get("photo_type", "")
+    if not photo_url:
+        raise HTTPException(status_code=400, detail="photo_url is required")
+
+    try:
+        oid = ObjectId(contact_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid contact_id")
+
+    if photo_type == "profile":
+        # Remove current profile photo; promote most recent history photo if available
+        contact = await db.contacts.find_one({"_id": oid}, {"photo_history": 1})
+        history = contact.get("photo_history", []) if contact else []
+
+        if history:
+            # Pop last history entry as new profile
+            new_profile = history[-1]
+            await db.contacts.update_one(
+                {"_id": oid},
+                {
+                    "$set": {
+                        "photo": new_profile["url"],
+                        "photo_url": new_profile["url"],
+                        "photo_thumbnail": new_profile.get("thumbnail_url", new_profile["url"]),
+                        "updated_at": datetime.utcnow(),
+                    },
+                    "$pop": {"photo_history": 1},
+                    "$unset": {"photo_path": "", "photo_thumb_path": "", "photo_avatar_path": ""},
+                }
+            )
+        else:
+            # No history — just clear the profile photo
+            await db.contacts.update_one(
+                {"_id": oid},
+                {
+                    "$set": {"updated_at": datetime.utcnow()},
+                    "$unset": {
+                        "photo": "", "photo_url": "", "photo_thumbnail": "",
+                        "photo_path": "", "photo_thumb_path": "", "photo_avatar_path": "",
+                    },
+                }
+            )
+        # Also remove from contact_photos collection
+        await db.contact_photos.delete_one({"contact_id": contact_id})
+
+    elif photo_type == "history":
+        # Remove from photo_history array
+        await db.contacts.update_one(
+            {"_id": oid},
+            {"$pull": {"photo_history": {"url": photo_url}}}
+        )
+
+    elif photo_type == "congrats":
+        # Remove from congrats_cards (match by photo URL)
+        await db.congrats_cards.update_one(
+            {"$or": [
+                {"photo_url": photo_url},
+                {"customer_photo": photo_url},
+            ]},
+            {"$unset": {"photo_url": "", "photo_thumbnail_url": "", "photo_path": "", "photo_thumb_path": "", "customer_photo": ""}}
+        )
+
+    elif photo_type == "birthday":
+        await db.birthday_cards.update_one(
+            {"$or": [
+                {"photo_url": photo_url},
+                {"customer_photo": photo_url},
+            ]},
+            {"$unset": {"photo_url": "", "photo_thumbnail_url": "", "photo_path": "", "photo_thumb_path": "", "customer_photo": ""}}
+        )
+    else:
+        raise HTTPException(status_code=400, detail="Invalid photo_type")
+
+    return {"message": "Photo deleted"}
+
+
+
 @router.patch("/{user_id}/{contact_id}/toggle-automation")
 async def toggle_automation(user_id: str, contact_id: str, data: dict = Body(...)):
     """Toggle a specific automation (birthday/anniversary/sold_date) on or off for a contact."""
