@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  ActivityIndicator, RefreshControl,
+  ActivityIndicator, RefreshControl, Platform, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,13 @@ import { useRouter } from 'expo-router';
 import api from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
+
+const IS_WEB = Platform.OS === 'web';
+
+function getYouTubeEmbedUrl(url: string): string | null {
+  const match = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return match ? `https://www.youtube.com/embed/${match[1]}?rel=0&modestbranding=1` : null;
+}
 
 interface Track {
   id: string; slug: string; title: string; description: string;
@@ -224,14 +231,29 @@ export default function TrainingHubScreen() {
         {/* Video */}
         {selectedLesson.video_url ? (
           <View style={[s.contentCard, { marginTop: 12 }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
               <Ionicons name="play-circle" size={20} color={selectedTrack.color} />
               <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>Watch the Video</Text>
             </View>
-            <TouchableOpacity style={s.videoPlaceholder}>
-              <Ionicons name="play" size={32} color="#FFF" />
-              <Text style={{ color: '#FFF', fontSize: 15, marginTop: 4 }}>Open Video</Text>
-            </TouchableOpacity>
+            {IS_WEB && getYouTubeEmbedUrl(selectedLesson.video_url) ? (
+              <View style={{ borderRadius: 12, overflow: 'hidden', aspectRatio: 16/9, width: '100%', backgroundColor: '#000' }}>
+                <iframe
+                  src={getYouTubeEmbedUrl(selectedLesson.video_url)!}
+                  style={{ width: '100%', height: '100%', border: 'none' } as any}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={s.videoPlaceholder}
+                onPress={() => Linking.openURL(selectedLesson.video_url)}
+                data-testid="open-video-btn"
+              >
+                <Ionicons name="play" size={32} color="#FFF" />
+                <Text style={{ color: '#FFF', fontSize: 15, marginTop: 4 }}>Open Video</Text>
+              </TouchableOpacity>
+            )}
           </View>
         ) : null}
 

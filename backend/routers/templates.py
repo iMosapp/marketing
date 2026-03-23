@@ -57,6 +57,55 @@ DEFAULT_TEMPLATES = [
         "category": "sold",
         "is_default": True
     },
+    # ── Onboarding Video Templates ──
+    {
+        "name": "Video: Saving The App",
+        "content": "Hey {name}! Here's a quick 2-min video on how to save the app to your phone so it's always one tap away: https://www.youtube.com/watch?v=Vj_JBS5UXrQ",
+        "category": "training_video",
+        "is_default": True
+    },
+    {
+        "name": "Video: Setting Up Your Profile",
+        "content": "Hey {name}! Check out this quick video on setting up your profile — your photo, bio, and brand: https://www.youtube.com/watch?v=dT7ybKZembI",
+        "category": "training_video",
+        "is_default": True
+    },
+    {
+        "name": "Video: Home Screen Tour",
+        "content": "Hey {name}! Here's a quick walkthrough of your Home screen — touchpoints, quick actions, and more: https://www.youtube.com/watch?v=nsTC9IVEmNY",
+        "category": "training_video",
+        "is_default": True
+    },
+    {
+        "name": "Video: Managing Contacts",
+        "content": "Hey {name}! This video shows you how to add, search, and manage your contacts: https://www.youtube.com/watch?v=in5K_-TRKlM",
+        "category": "training_video",
+        "is_default": True
+    },
+    {
+        "name": "Video: Using Your Inbox",
+        "content": "Hey {name}! Learn how to use your Inbox to send texts, emails, and stay on top of every conversation: https://www.youtube.com/watch?v=Dccm4yhkapM",
+        "category": "training_video",
+        "is_default": True
+    },
+    {
+        "name": "Video: Best Practices",
+        "content": "Hey {name}! Check out these tips and best practices from top performers: https://www.youtube.com/watch?v=KfCXQEzLKTA",
+        "category": "training_video",
+        "is_default": True
+    },
+    {
+        "name": "Video: The 30 Second Workflow",
+        "content": "Hey {name}! This is the secret weapon — the 30-second daily workflow that keeps every relationship warm: https://www.youtube.com/watch?v=5YpvvDChBOY",
+        "category": "training_video",
+        "is_default": True
+    },
+    {
+        "name": "Video: Tags & Campaigns",
+        "content": "Hey {name}! Learn how tags and campaigns turn one-time buyers into lifelong customers: https://www.youtube.com/watch?v=Uss8ziGL120",
+        "category": "training_video",
+        "is_default": True
+    },
 ]
 
 
@@ -113,7 +162,8 @@ async def get_templates(user_id: str):
             t["is_org_template"] = True
             templates.append(t)
     
-    # If user has no templates at all, create defaults
+    # If user has no templates at all, create ALL defaults
+    # Otherwise, check for missing video templates and add them
     if not templates:
         for default in DEFAULT_TEMPLATES:
             template = {
@@ -126,6 +176,25 @@ async def get_templates(user_id: str):
             result = await db.templates.insert_one(template)
             template["_id"] = str(result.inserted_id)
             templates.append(template)
+    else:
+        # Auto-add any missing default templates (e.g., new video templates)
+        existing_names = {t.get("name", "").lower() for t in templates}
+        added = 0
+        for default in DEFAULT_TEMPLATES:
+            if default["name"].lower() not in existing_names:
+                template = {
+                    "user_id": user_id,
+                    **default,
+                    "usage_count": 0,
+                    "created_at": datetime.utcnow(),
+                    "updated_at": datetime.utcnow()
+                }
+                result = await db.templates.insert_one(template)
+                template["_id"] = str(result.inserted_id)
+                templates.append(template)
+                added += 1
+        if added:
+            logger.info(f"Auto-added {added} new default templates for user {user_id}")
     
     return templates
 

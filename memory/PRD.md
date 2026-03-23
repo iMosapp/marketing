@@ -11,73 +11,56 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ---
 
-## CRITICAL RULES
-
-### Image Pipeline
-- ALL images -> `utils/image_storage.py` -> WebP -> `/api/images/`
-- NEVER add base64 fallbacks. NEVER serve base64 in responses.
-- Photo deletion removes DB references only; object storage cleanup deferred.
-- **Backend returns RELATIVE URLs** (`/api/images/...`). Frontend resolves against page origin (web) or prepends EXPO_PUBLIC_BACKEND_URL (native).
-
-### Role System
-- DB may have legacy roles: `admin` (= `org_admin`), `manager` (= `store_manager`)
-- Backend `permissions.py` maps both legacy and canonical role names
-- Frontend `authStore.ts` normalizes roles via `normalizeUser()` on every user load
-
-### Auth Persistence (iOS PWA)
-- 3-layer: AsyncStorage -> IndexedDB -> Cookie (`imonsocial_session`)
-- Logout clears BOTH `imonsocial_session` and `imonsocial_uid` cookies
-
----
-
 ## What's Been Implemented
 
-### Showcase Approvals Photo Fix + Gallery Delete (Mar 23, 2026) -- LATEST
-- **Bug Fix:** Showcase Approvals photos not loading — root cause: used `Image` from react-native (poor WebP support) instead of `Image` from expo-image. Added `resolveUrl()` for native URL resolution.
-- **Root Cause Note:** Supervisor env overrides `APP_URL` with internal preview domain that 404s on images. Absolute URL approach abandoned in favor of relative URLs + frontend resolution.
-- **Feature:** Added photo delete button (red trash icon) in gallery full-screen viewer with confirmation dialog
-- **Backend:** New `DELETE /api/contacts/{user_id}/{contact_id}/photos` — profile deletion promotes latest history photo
-- **Bug Fix:** Gallery FlatList wrong photo selection — `renderItem` width now consistently uses `screenWidth` to match `getItemLayout`
-- **Testing:** 100% pass (13/13 backend, all frontend verified)
+### Training Hub + Video Quick-Send Templates (Mar 23, 2026) -- LATEST
+- **Training Hub:** Populated "Onboarding Videos" track with 8 YouTube tutorial videos (Saving The App, Setting Up Your Profile, Home Screen, Contacts, Inbox, Best Practices, The 30 Second Workflow, Tags & Campaigns). Videos play inline via embedded YouTube player on web, or open in browser on native.
+- **Quick-Send Templates:** Added 8 video message templates (category: "training_video") to the template system. Auto-seeded for existing users when they open templates. Each has a friendly message + YouTube link with {name} variable.
+- **Template Categories:** Added training_video, referral, sold, review categories to the frontend category picker.
+- **YouTube Embed:** Enhanced training-hub.tsx to embed YouTube videos inline (16:9 aspect ratio iframe) with fallback to Linking.openURL on native.
+
+### UI Fixes (Mar 23, 2026)
+- **Persona page:** Pushed header below Ask Jessi bar (paddingTop 60→82 iOS, 20→40 Android). Added "Save Changes" button at bottom next to "Retrain My AI".
+- **Touchpoints badge:** Moved "X pending" from title row overflow position to subtitle line below "Today's Touchpoints".
+- **Root route:** Removed static public/index.html that was intercepting Expo Router and showing marketing page instead of login redirect.
+
+### Showcase Approvals Photo Fix + Gallery Delete (Mar 23, 2026)
+- Fixed showcase photos not loading (switched from react-native Image to expo-image, kept relative URLs)
+- Added photo delete button in gallery viewer
+- Fixed gallery wrong-photo selection (consistent screenWidth in FlatList)
 
 ### Production Readiness Audit (Mar 23, 2026)
-- Removed `/api/auth/emergency-reset` security endpoint
+- Removed emergency-reset security endpoint
 - Added 20+ production MongoDB indexes
-- Fixed "vanishing contacts" race condition (`requestSeq` counter)
-- Moved photo backfill to async background task
+- Fixed "vanishing contacts" race condition
+- Moved photo backfill to async background
 - Enhanced email template with personal signature block
-
-### Prior Session Work (Mar 22, 2026)
-- New User Onboarding Fix, Date Picker Fix, Inbox Swipe Enhancements
-- Bcrypt Auth Fallback, App-wide Font Bump, Contacts UI Polish
-- Template Variables fix, Inbox Unread Logic Fix, Photo Deduplication
-- Sticky Redirect Loop Fix, Touchpoints Mismatch Fix, Card "Create & Send" Fix
 
 ---
 
 ## Key API Endpoints
 - `POST /api/auth/login` — user authentication
 - `GET /api/contacts/{user_id}` — contacts with sort, search, team view
+- `GET /api/training/tracks` — all training tracks with lesson counts
+- `GET /api/training/tracks/{track_id}` — track detail with lessons
+- `POST /api/training/seed` — seed default training content
+- `GET /api/templates/{user_id}` — user's message templates (auto-seeds missing defaults)
+- `GET /api/showcase/pending/{user_id}` — pending showcase entries
 - `DELETE /api/contacts/{user_id}/{contact_id}/photos` — delete gallery photo
-- `PATCH /api/contacts/{user_id}/{contact_id}/profile-photo` — set profile photo
-- `GET /api/showcase/pending/{user_id}` — pending showcase entries for approval
-- `GET /api/showcase/user/{user_id}` — public showcase entries
-- `POST /api/messages/send/{user_id}` — send messages with email signature
 
 ---
 
 ## Prioritized Backlog
 
 ### P1
+- **Phase 3: Onboarding Drip Campaign** — Automated campaign tied to "new_customer" tag, sends 1 video per day over 8 days
 - Wire up email signatures to actual outgoing message sends (messages.py)
 - App Store Preparation (eas.json, push notifications)
 - Gamification & Leaderboards
-- AI-Powered Outreach (contextual follow-up on "sold" tag)
 
 ### P2
 - Full Twilio Integration (currently MOCK)
 - WhatsApp Integration
-- Training Hub video content
 - Inventory Management Module
 - Refactor large files (admin.py 3700+ lines)
 
@@ -95,3 +78,4 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Twilio:** MOCK mode
 - **OpenAI:** AI features via emergentintegrations
 - **apscheduler:** Backend job scheduling (9 jobs)
+- **YouTube:** Embedded video playback in Training Hub

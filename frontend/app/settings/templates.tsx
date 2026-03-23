@@ -36,6 +36,10 @@ const CATEGORIES = [
   { id: 'appointment', name: 'Appointment', icon: 'calendar', color: '#FF9500' },
   { id: 'thank_you', name: 'Thank You', icon: 'heart', color: '#FF2D55' },
   { id: 'review_request', name: 'Review Request', icon: 'star', color: '#FFD60A' },
+  { id: 'training_video', name: 'Training Video', icon: 'play-circle', color: '#AF52DE' },
+  { id: 'referral', name: 'Referral', icon: 'people', color: '#5AC8FA' },
+  { id: 'sold', name: 'Sold', icon: 'trophy', color: '#C9A962' },
+  { id: 'review', name: 'Review', icon: 'star-half', color: '#FFD60A' },
 ];
 
 export default function TemplatesSettings() {
