@@ -16,6 +16,13 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ### Production Crash Fix + ErrorBoundary (Mar 24, 2026) -- LATEST
 - **Critical Bug Fix:** Added missing `GET /api/users/{user_id}` endpoint. Previously only `PATCH` existed, causing **405 Method Not Allowed** when My Account page tried to refresh user data. This was a likely contributor to the "everything crashing" reports.
 - **ErrorBoundary:** Added a global React ErrorBoundary component wrapping the entire app. Any uncaught rendering error now shows a "Try Again" recovery screen instead of crashing the whole app to a white/blank screen. Critical for production stability with 50-60 users.
+- **Error Reporting System:** Built full crash/error reporting pipeline:
+  - `POST /api/errors/report` — frontend auto-sends crash data (render crashes, unhandled promise rejections, 5xx API errors, network failures)
+  - `GET /api/errors/recent?limit=50&error_type=render_crash&user_id=X` — pull recent error reports with filtering
+  - `DELETE /api/errors/clear` — clear old reports
+  - Reports include: error message, stack trace, page/screen, user info, platform, timestamp
+  - Deduplication built in (same error only reported once per 60s)
+  - Also logs to backend console as WARNING for real-time visibility
 
 ### Training Hub + Video Quick-Send Templates (Mar 23, 2026)
 - **Training Hub:** Populated "Onboarding Videos" track with 8 YouTube tutorial videos (Saving The App, Setting Up Your Profile, Home Screen, Contacts, Inbox, Best Practices, The 30 Second Workflow, Tags & Campaigns). Videos play inline via embedded YouTube player on web, or open in browser on native.
@@ -46,6 +53,9 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - `POST /api/auth/login` — user authentication
 - `GET /api/users/{user_id}` — **NEW** user profile data (was 405 before fix)
 - `PATCH /api/users/{user_id}` — update user profile fields
+- `POST /api/errors/report` — **NEW** receive frontend crash/error reports
+- `GET /api/errors/recent` — **NEW** admin view of recent errors (filterable)
+- `DELETE /api/errors/clear` — **NEW** clear error reports
 - `GET /api/contacts/{user_id}` — contacts with sort, search, team view
 - `GET /api/training/tracks` — all training tracks with lesson counts
 - `GET /api/training/tracks/{track_id}` — track detail with lessons

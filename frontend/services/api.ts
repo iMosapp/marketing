@@ -91,8 +91,26 @@ api.interceptors.response.use(
     }
     if (error.response) {
       console.error('API Error:', error.response.data);
+      // Report server errors (5xx) and unexpected client errors to error tracking
+      if (error.response.status >= 500) {
+        import('../services/errorReporter').then(({ reportError }) => {
+          reportError({
+            error_message: `API ${error.response.status}: ${error.config?.method?.toUpperCase()} ${error.config?.url} — ${JSON.stringify(error.response.data)?.slice(0, 300)}`,
+            error_type: 'api_error',
+            extra: { status: error.response.status, url: error.config?.url, method: error.config?.method },
+          });
+        }).catch(() => {});
+      }
     } else if (error.request) {
       console.error('Network Error:', error.message);
+      // Report network failures (server unreachable)
+      import('../services/errorReporter').then(({ reportError }) => {
+        reportError({
+          error_message: `Network Error: ${error.message} — ${error.config?.method?.toUpperCase()} ${error.config?.url}`,
+          error_type: 'api_error',
+          extra: { url: error.config?.url, method: error.config?.method },
+        });
+      }).catch(() => {});
     } else {
       console.error('Error:', error.message);
     }

@@ -200,6 +200,9 @@ api_router.include_router(partner_billing.router)
 api_router.include_router(seo.router)
 api_router.include_router(chat_widget.router)
 
+from routers import error_reporting
+api_router.include_router(error_reporting.router)
+
 # ============= WEBSOCKET ENDPOINT =============
 @app.websocket("/api/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: str):

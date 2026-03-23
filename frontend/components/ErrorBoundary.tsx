@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform } from 'react-native';
+import { reportError } from '../services/errorReporter';
 
 interface Props {
   children: ReactNode;
@@ -23,6 +24,14 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('[ErrorBoundary] Caught error:', error, errorInfo);
+    // Send crash report to backend
+    reportError({
+      error_message: error.message,
+      error_stack: error.stack || '',
+      component_stack: errorInfo.componentStack || '',
+      error_type: 'render_crash',
+      page: typeof window !== 'undefined' ? window.location?.pathname || 'unknown' : 'native',
+    });
   }
 
   handleRetry = () => {
@@ -45,7 +54,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <Text style={styles.errorText}>{this.state.error.toString()}</Text>
             </ScrollView>
           )}
-          <TouchableOpacity style={styles.button} onPress={this.handleRetry}>
+          <TouchableOpacity style={styles.button} onPress={this.handleRetry} data-testid="error-boundary-retry">
             <Text style={styles.buttonText}>Try Again</Text>
           </TouchableOpacity>
         </View>

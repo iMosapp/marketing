@@ -8,6 +8,7 @@ import { useThemeStore } from '../store/themeStore';
 import { ToastProvider } from '../components/common/Toast';
 import JessieFloatingChat, { JESSI_BAR_HEIGHT } from '../components/JessieFloatingChat';
 import { ErrorBoundary } from '../components/ErrorBoundary';
+import { initGlobalErrorHandlers } from '../services/errorReporter';
 
 function usePWAMetaTags() {
   useEffect(() => {
@@ -91,6 +92,7 @@ export default function RootLayout() {
     loadAuth();
     loadTheme();
     setMounted(true);
+    initGlobalErrorHandlers();
     
     // Re-check auth when PWA comes back from background (iOS aggressively kills JS context)
     if (Platform.OS === 'web') {
