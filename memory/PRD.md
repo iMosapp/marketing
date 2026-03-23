@@ -16,7 +16,8 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ### Image Pipeline
 - ALL images -> `utils/image_storage.py` -> WebP -> `/api/images/`
 - NEVER add base64 fallbacks. NEVER serve base64 in responses.
-- Photo deletion removes DB references only; object storage cleanup is deferred.
+- Photo deletion removes DB references only; object storage cleanup deferred.
+- **Backend returns RELATIVE URLs** (`/api/images/...`). Frontend resolves against page origin (web) or prepends EXPO_PUBLIC_BACKEND_URL (native).
 
 ### Role System
 - DB may have legacy roles: `admin` (= `org_admin`), `manager` (= `store_manager`)
@@ -31,27 +32,26 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### Photo Gallery Fixes (Mar 23, 2026) -- LATEST
-- **Bug Fix:** Fixed wrong photo selection in full-screen viewer — `renderItem` was using `galleryWidth || screenWidth` but `getItemLayout` used `screenWidth`, causing mismatched scroll offsets. Now both use `screenWidth` consistently.
-- **Feature:** Added photo delete button (red trash icon) in full-screen viewer bottom bar with confirmation dialog. Handles profile, history, congrats, and birthday photos.
-- **Backend:** New `DELETE /api/contacts/{user_id}/{contact_id}/photos` endpoint — profile deletion promotes latest history photo; history/congrats/birthday deletion removes DB references.
-- **Testing:** 100% pass (11/11 backend, all frontend gallery features verified)
+### Showcase Approvals Photo Fix + Gallery Delete (Mar 23, 2026) -- LATEST
+- **Bug Fix:** Showcase Approvals photos not loading — root cause: used `Image` from react-native (poor WebP support) instead of `Image` from expo-image. Added `resolveUrl()` for native URL resolution.
+- **Root Cause Note:** Supervisor env overrides `APP_URL` with internal preview domain that 404s on images. Absolute URL approach abandoned in favor of relative URLs + frontend resolution.
+- **Feature:** Added photo delete button (red trash icon) in gallery full-screen viewer with confirmation dialog
+- **Backend:** New `DELETE /api/contacts/{user_id}/{contact_id}/photos` — profile deletion promotes latest history photo
+- **Bug Fix:** Gallery FlatList wrong photo selection — `renderItem` width now consistently uses `screenWidth` to match `getItemLayout`
+- **Testing:** 100% pass (13/13 backend, all frontend verified)
 
 ### Production Readiness Audit (Mar 23, 2026)
-- **Security:** Removed `/api/auth/emergency-reset` endpoint from `auth.py`
-- **Performance:** Added 20+ production MongoDB indexes for contacts, conversations, messages, campaign_enrollments, notifications, tags, campaign_pending_sends
-- **Bug Fix:** Fixed "vanishing contacts" race condition in `contacts.tsx` — added `requestSeq` counter to prevent stale API responses from overwriting newer data; fixed `useFocusEffect` stale closure
-- **Performance:** Moved inline photo backfill to `asyncio.create_task()` background processing
-- **Feature:** Enhanced email template with personal signature — `build_branded_email` now includes sender's photo, name, title, phone, email, and digital card link
+- Removed `/api/auth/emergency-reset` security endpoint
+- Added 20+ production MongoDB indexes
+- Fixed "vanishing contacts" race condition (`requestSeq` counter)
+- Moved photo backfill to async background task
+- Enhanced email template with personal signature block
 
 ### Prior Session Work (Mar 22, 2026)
 - New User Onboarding Fix, Date Picker Fix, Inbox Swipe Enhancements
-- Bcrypt Auth Fallback, App-wide Font Bump
-- Contacts UI Polish (expandable action button, dark mode fix)
-- Relationship Intel routing fix, Template Variables fix
-- Inbox Unread Logic Fix, Contact Photo Deduplication
-- Sticky Redirect Loop Fix, Touchpoints Mismatch Fix
-- Card "Create & Send" Fix
+- Bcrypt Auth Fallback, App-wide Font Bump, Contacts UI Polish
+- Template Variables fix, Inbox Unread Logic Fix, Photo Deduplication
+- Sticky Redirect Loop Fix, Touchpoints Mismatch Fix, Card "Create & Send" Fix
 
 ---
 
@@ -60,20 +60,19 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - `GET /api/contacts/{user_id}` — contacts with sort, search, team view
 - `DELETE /api/contacts/{user_id}/{contact_id}/photos` — delete gallery photo
 - `PATCH /api/contacts/{user_id}/{contact_id}/profile-photo` — set profile photo
-- `GET /api/contacts/{user_id}/{contact_id}/photos/all` — get all deduplicated photos
-- `POST /api/messages/send/{user_id}` — send messages with template vars + email signature
-- `GET /api/tasks/{user_id}/summary` — includes async catch-up
+- `GET /api/showcase/pending/{user_id}` — pending showcase entries for approval
+- `GET /api/showcase/user/{user_id}` — public showcase entries
+- `POST /api/messages/send/{user_id}` — send messages with email signature
 
 ---
 
 ## Prioritized Backlog
 
 ### P1
-- App Store Preparation (eas.json, app.json store config, push notifications)
+- Wire up email signatures to actual outgoing message sends (messages.py)
+- App Store Preparation (eas.json, push notifications)
 - Gamification & Leaderboards
 - AI-Powered Outreach (contextual follow-up on "sold" tag)
-- Lead Notification System Phase 2 (push notifications)
-- Voice Help Assistant Backend
 
 ### P2
 - Full Twilio Integration (currently MOCK)
