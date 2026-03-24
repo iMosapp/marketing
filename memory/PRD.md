@@ -13,7 +13,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### Training Report Admin View (Mar 24, 2026) -- LATEST
+### Operations Manual v5.0 Update (Mar 24, 2026) -- LATEST
+- Seeded the updated Operations Manual to the database via `POST /api/docs/seed-project-scope`.
+- Manual now reflects all features built over the last several sessions (partner billing, training reports, OG tags, custom cards, error reporting, campaign fixes, etc.).
+- Verified rendering on `/admin/docs` under the "Operations Manual" category tab.
+
+### Training Report Admin View (Mar 24, 2026)
 - **Training Report page** (`/admin/training-reports`): 3-tab analytics view for training video engagement.
   - **Overview tab:** Shows total links tracked, total clicks, top videos ranked by clicks with YouTube thumbnails, and recent click activity feed.
   - **By Sender tab:** Which salesperson sent the most videos and got the most clicks, with their top videos listed.
