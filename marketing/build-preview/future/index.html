@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>The Future of Sales | i'M On Social</title>
+  <meta name="description" content="The future of sales isn't CRM. It's Relationship Presence. i'M On Social turns every salesperson into a consistent, professional relationship builder."/>
+  <link rel="icon" href="/favicon.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--blue:#007AFF;--blue-dark:#0059CC;--green:#34C759;--red:#FF3B30;--yellow:#FFD60A;--orange:#FF9500;--purple:#AF52DE;--pink:#FF2D55;--text:#111;--text-2:#555;--text-3:#888;--bg:#FFF;--bg-2:#F8F9FB;--surface:#F2F2F7;--border:rgba(0,0,0,.06);--border-2:rgba(0,0,0,.1);--gold:#C9A962}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;transition:all .3s}
+nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 1px 0 var(--border-2)}
+.nav-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 24px}
+.logo{display:flex;align-items:center;text-decoration:none}.logo img{height:72px;width:auto}
+.nav-links{display:flex;align-items:center;gap:2px}
+.nav-item{position:relative}
+.nav-item>a,.nav-trigger{font-size:14px;font-weight:500;color:var(--text-2);text-decoration:none;padding:8px 16px;border-radius:10px;display:flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;font-family:inherit;transition:all .2s}
+.nav-item>a:hover,.nav-trigger:hover{color:var(--text);background:var(--bg-2)}
+.nav-trigger .chev{font-size:10px;transition:transform .25s}.nav-item:hover .chev{transform:rotate(180deg)}
+.nav-dd{display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);padding-top:10px;min-width:300px}.nav-item:hover .nav-dd{display:block}
+.nav-dd-inner{background:#FFF;border:1px solid var(--border-2);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.12);padding:10px}
+.nav-dd-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-3);padding:10px 14px 6px}
+.dd-link{display:flex;align-items:center;gap:14px;padding:10px 14px;border-radius:12px;text-decoration:none;color:var(--text);transition:background .15s}.dd-link:hover{background:var(--bg-2)}
+.dd-ico{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.dd-txt strong{font-size:14px;font-weight:600;display:block}.dd-txt span{font-size:12px;color:var(--text-3);line-height:1.3}
+.nav-cta{display:flex;align-items:center;gap:10px}
+.btn-sign{padding:10px 20px;border-radius:980px;font-size:14px;font-weight:600;color:var(--text);text-decoration:none;transition:background .2s}.btn-sign:hover{background:var(--bg-2)}
+.btn-demo{background:var(--blue);padding:10px 24px;border-radius:980px;font-size:14px;font-weight:600;color:#FFF;text-decoration:none;transition:all .25s;box-shadow:0 2px 12px rgba(0,122,255,.25)}.btn-demo:hover{background:var(--blue-dark);transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,122,255,.35)}
+.hamburger{display:none;background:none;border:none;color:var(--text);font-size:24px;cursor:pointer}
+.mob-menu{display:none;flex-direction:column;background:#FFF;border-top:1px solid var(--border);padding:8px 24px 20px;max-height:80vh;overflow-y:auto}.mob-menu .mob-cta{display:block;background:var(--blue);border-radius:14px;text-align:center;padding:14px;margin-top:12px;font-size:16px;font-weight:700;color:#FFF;text-decoration:none}
+.mob-group{border-bottom:1px solid var(--border)}.mob-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;padding:16px 0;font-size:17px;font-weight:600;color:var(--text);background:none;border:none;cursor:pointer;font-family:inherit}.mob-chev{font-size:11px;color:var(--text-3);transition:transform .3s}.mob-group.open .mob-chev{transform:rotate(180deg)}.mob-sub{display:none;padding:0 0 12px 16px}.mob-group.open .mob-sub{display:block}.mob-sub a{display:block;padding:10px 0;font-size:15px;font-weight:500;color:var(--text-2);text-decoration:none}.mob-sub a:hover{color:var(--blue)}.mob-direct{display:block;padding:16px 0;font-size:17px;font-weight:600;color:var(--text);text-decoration:none;border-bottom:1px solid var(--border)}.mob-direct:hover{color:var(--blue)}
+@media(max-width:900px){.nav-links,.nav-cta{display:none}.hamburger{display:block}.mob-menu.open{display:flex}}
+
+/* ANIMATIONS */
+.rv{opacity:0;transform:translateY(32px);transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1)}.rv.vis{opacity:1;transform:translateY(0)}.rv-1{transition-delay:.1s}.rv-2{transition-delay:.2s}.rv-3{transition-delay:.3s}.rv-4{transition-delay:.4s}
+
+/* HERO */
+.f-hero{padding:180px 24px 100px;text-align:center;background:#0A0A0F;position:relative;overflow:hidden}
+.f-hero::before{content:'';position:absolute;top:-100px;left:50%;transform:translateX(-50%);width:900px;height:600px;background:radial-gradient(ellipse,rgba(201,169,98,.06) 0%,transparent 60%);pointer-events:none}
+.f-hero::after{content:'';position:absolute;bottom:0;left:0;right:0;height:120px;background:linear-gradient(transparent,#0A0A0F);pointer-events:none}
+.hero-kicker{display:inline-flex;align-items:center;gap:8px;padding:8px 20px;border-radius:980px;border:1px solid rgba(201,169,98,.2);background:rgba(201,169,98,.06);font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:32px;position:relative}
+.f-hero h1{font-size:64px;font-weight:900;line-height:1.04;letter-spacing:-.045em;color:#FFF;max-width:820px;margin:0 auto 24px;position:relative}
+.f-hero h1 em{font-style:normal;color:var(--gold)}
+.hero-divider{width:60px;height:3px;background:var(--gold);border-radius:2px;margin:0 auto 24px;position:relative}
+.f-hero .sub{font-size:24px;font-weight:600;color:var(--gold);letter-spacing:.5px;position:relative}
+@media(max-width:768px){.f-hero{padding:140px 24px 80px}.f-hero h1{font-size:36px}.f-hero .sub{font-size:20px}}
+
+/* NARRATIVE SECTION */
+.narrative{padding:80px 24px;max-width:740px;margin:0 auto}
+.narrative p{font-size:20px;color:var(--text-2);line-height:1.75;margin-bottom:16px}
+.narrative p.bold{font-weight:700;color:var(--text)}
+.narrative p.accent{font-weight:700;color:var(--blue)}
+.narrative p.accent-red{font-weight:700;color:var(--red)}
+.narrative p.accent-gold{font-weight:700;color:var(--gold)}
+.narrative p.light{color:var(--text-3)}
+.narrative p.large{font-size:22px}
+.narrative .spacer{height:20px}
+@media(max-width:768px){.narrative{padding:56px 24px}.narrative p{font-size:18px}}
+
+/* SECTION DIVIDER */
+.sec-divider{max-width:740px;margin:0 auto;padding:0 24px}
+.sec-divider hr{border:none;height:1px;background:var(--border-2)}
+
+/* SECTION HEADING */
+.sec-head{max-width:740px;margin:0 auto;padding:80px 24px 0}
+.sec-head h2{font-size:40px;font-weight:900;line-height:1.12;letter-spacing:-.03em;margin-bottom:24px}
+@media(max-width:768px){.sec-head{padding:56px 24px 0}.sec-head h2{font-size:30px}}
+
+/* BULLET BLOCK */
+.bullet-block{max-width:740px;margin:0 auto;padding:0 24px}
+.bullet-block ul{list-style:none;display:flex;flex-direction:column;gap:10px;margin:16px 0}
+.bullet-block ul li{display:flex;align-items:flex-start;gap:12px;font-size:18px;color:var(--text-2);line-height:1.6}
+.bullet-block ul li i{margin-top:5px;flex-shrink:0;font-size:14px}
+
+/* CHIPS */
+.chip-row{max-width:740px;margin:0 auto;padding:12px 24px;display:flex;flex-wrap:wrap;gap:10px}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:980px;border:1px solid;font-size:15px;font-weight:600}
+
+/* HIGHLIGHT BOX */
+.highlight-box{max-width:740px;margin:20px auto;padding:0 24px}
+.highlight-box-inner{background:var(--bg-2);border-left:4px solid var(--blue);border-radius:12px;padding:28px 32px}
+.highlight-box-inner p{font-size:21px;font-weight:700;color:var(--text);line-height:1.5;margin:0}
+@media(max-width:768px){.highlight-box-inner{padding:20px 24px}.highlight-box-inner p{font-size:18px}}
+
+/* TASK MOCKUP */
+.task-list{max-width:740px;margin:0 auto;padding:16px 24px;display:flex;flex-direction:column;gap:10px}
+.task-item{display:flex;align-items:center;gap:14px;background:var(--bg-2);border:1px solid var(--border);border-radius:14px;padding:14px 20px}
+.task-ico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.task-item span{font-size:17px;font-weight:500;color:var(--text)}
+
+/* ICON LIST */
+.icon-list{max-width:740px;margin:0 auto;padding:8px 24px;display:flex;flex-direction:column;gap:12px}
+.icon-list-item{display:flex;align-items:center;gap:14px}
+.icon-list-item .ico{width:40px;height:40px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.icon-list-item span{font-size:18px;font-weight:500;color:var(--text-2)}
+
+/* CHECK LIST */
+.check-list{max-width:740px;margin:0 auto;padding:8px 24px;display:flex;flex-direction:column;gap:12px}
+.check-item{display:flex;align-items:center;gap:12px;font-size:18px;color:var(--text-2);line-height:1.5}
+.check-item i{flex-shrink:0}
+
+/* SIGNAL CARDS */
+.signal-grid{max-width:740px;margin:0 auto;padding:16px 24px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.signal-card{display:flex;align-items:center;gap:12px;background:#F0FFF4;border:1px solid rgba(52,199,89,.15);border-radius:12px;padding:14px 18px}
+.signal-card i{color:var(--green);font-size:16px;flex-shrink:0}
+.signal-card span{font-size:16px;font-weight:500;color:var(--text)}
+@media(max-width:768px){.signal-grid{grid-template-columns:1fr}}
+
+/* METRIC GRID */
+.metric-grid{max-width:740px;margin:0 auto;padding:16px 24px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.metric-card{background:var(--bg-2);border-radius:16px;padding:24px 16px;text-align:center}
+.metric-card .val{font-size:30px;font-weight:900;color:var(--blue);line-height:1}
+.metric-card .lbl{font-size:13px;color:var(--text-3);margin-top:6px}
+@media(max-width:768px){.metric-grid{grid-template-columns:1fr 1fr}}
+
+/* MAGIC BOX */
+.magic-box{max-width:740px;margin:0 auto;padding:0 24px}
+.magic-inner{border:1px solid var(--border-2);border-radius:24px;padding:40px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px}
+.magic-inner i{font-size:36px}
+.magic-inner p{font-size:22px;font-weight:600;color:var(--text);margin:0}
+@media(max-width:768px){.magic-inner{padding:28px 20px}.magic-inner p{font-size:18px}}
+
+/* RESULT LIST */
+.result-list{max-width:740px;margin:0 auto;padding:0 24px;display:flex;flex-direction:column;gap:16px}
+.result-item{display:flex;align-items:center;gap:16px}
+.result-item i{font-size:20px;color:var(--gold);flex-shrink:0;width:24px;text-align:center}
+.result-item span{font-size:20px;font-weight:500;color:var(--text)}
+@media(max-width:768px){.result-item span{font-size:18px}}
+
+/* PROMISE */
+.promise{padding:80px 24px;text-align:center}
+.promise-line{width:40px;height:3px;background:var(--gold);border-radius:2px;margin:0 auto 24px}
+.promise h2{font-size:44px;font-weight:900;letter-spacing:-.03em;margin-bottom:14px}
+.promise p{font-size:26px;font-weight:600;color:var(--gold);font-style:italic}
+@media(max-width:768px){.promise h2{font-size:30px}.promise p{font-size:20px}}
+
+/* BOTTOM CTA */
+.bottom-cta{background:#0A0A0F;padding:100px 24px;text-align:center;position:relative;overflow:hidden}
+.bottom-cta::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:500px;background:radial-gradient(ellipse,rgba(201,169,98,.06) 0%,transparent 60%);pointer-events:none}
+.bottom-cta h3{font-size:32px;font-weight:900;color:#FFF;margin-bottom:12px;position:relative}
+.bottom-cta p{font-size:17px;color:rgba(255,255,255,.4);margin-bottom:36px;position:relative}
+.cta-btns{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;position:relative}
+.btn-gold{display:inline-flex;align-items:center;gap:10px;padding:18px 40px;border-radius:980px;font-size:17px;font-weight:700;color:#0A0A0F;background:var(--gold);text-decoration:none;transition:all .3s;box-shadow:0 4px 32px rgba(201,169,98,.25)}
+.btn-gold:hover{transform:translateY(-2px);box-shadow:0 8px 48px rgba(201,169,98,.35);background:#D4B86A}
+.btn-gw{padding:18px 40px;border-radius:980px;font-size:17px;font-weight:600;color:rgba(255,255,255,.65);text-decoration:none;border:2px solid rgba(255,255,255,.12);display:inline-flex;align-items:center;gap:10px;transition:all .25s}
+.btn-gw:hover{border-color:rgba(255,255,255,.35);color:#FFF}
+@media(max-width:768px){.bottom-cta{padding:72px 24px}.bottom-cta h3{font-size:24px}.cta-btns{flex-direction:column;align-items:center}}
+
+/* FOOTER */
+footer{border-top:1px solid var(--border);background:var(--bg-2)}
+.ft-inner{max-width:1200px;margin:0 auto;padding:56px 24px 40px;display:grid;grid-template-columns:1.5fr repeat(3,1fr);gap:56px}
+.ft-logo{margin-bottom:12px}.ft-logo img{height:44px;width:auto}.ft-tag{font-size:14px;color:var(--text-3);line-height:1.5;margin-bottom:18px}
+.ft-social{display:flex;gap:10px}.ft-social a{width:36px;height:36px;border-radius:10px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-2);font-size:15px;text-decoration:none;transition:all .2s}.ft-social a:hover{border-color:var(--blue);color:var(--blue)}
+.ft-col{display:flex;flex-direction:column;gap:11px}.ft-col-t{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text);margin-bottom:4px}.ft-col a{font-size:14px;color:var(--text-3);text-decoration:none;transition:color .2s}.ft-col a:hover{color:var(--blue)}
+.ft-bottom{border-top:1px solid var(--border);padding:20px 24px;text-align:center}.ft-copy{font-size:12px;color:var(--text-3)}
+@media(max-width:768px){.ft-inner{grid-template-columns:1fr 1fr;gap:32px}.ft-brand{grid-column:span 2}}@media(max-width:480px){.ft-inner{grid-template-columns:1fr}.ft-brand{grid-column:span 1}}
+
+/* DEMO MODAL */
+.demo-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:2000;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:24px}.demo-overlay.active{display:flex}.demo-modal{background:#FFF;border:1px solid var(--border-2);border-radius:24px;padding:40px;max-width:480px;width:100%;position:relative;box-shadow:0 24px 80px rgba(0,0,0,.2)}.demo-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:50%;background:var(--bg-2);border:1px solid var(--border);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}.demo-close:hover{background:var(--border)}.dm-field{margin-bottom:14px}.dm-field label{display:block;font-size:12px;font-weight:600;color:var(--text-3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px}.dm-field input,.dm-field select{width:100%;padding:12px 14px;background:#FFF;border:1px solid var(--border-2);border-radius:10px;color:var(--text);font-size:15px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s}.dm-field input:focus,.dm-field select:focus{border-color:var(--gold)}.dm-field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238E8E93' fill='none' stroke-width='2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}.dm-submit{width:100%;padding:14px;background:var(--gold);color:#0A0A0F;font-size:16px;font-weight:800;border:none;border-radius:980px;cursor:pointer;margin-top:8px;transition:all .25s;box-shadow:0 2px 12px rgba(201,169,98,.25)}.dm-submit:hover{background:#D4B86A;box-shadow:0 6px 24px rgba(201,169,98,.35)}.dm-submit:disabled{opacity:.5;cursor:not-allowed}
+  </style>
+</head>
+<body>
+
+<!-- ========== NAV ========== -->
+<nav>
+  <div class="nav-inner">
+    <a href="https://www.imonsocial.com" class="logo"><img src="/marketing-logo.png" alt="i'M On Social"/></a>
+    <div class="nav-links">
+      <div class="nav-item"><button class="nav-trigger">Products <i class="fa-solid fa-chevron-down chev"></i></button><div class="nav-dd" style="min-width:520px"><div class="nav-dd-inner">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+          <div>
+          <div class="nav-dd-label">Your Digital Presence</div>
+          <a class="dd-link" href="/digital-card/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-regular fa-id-card" style="color:#007AFF"></i></div><div class="dd-txt"><strong>Digital Business Cards</strong><span>Shareable, trackable cards</span></div></a>
+          <a class="dd-link" href="/showcase/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-user-astronaut" style="color:#34C759"></i></div><div class="dd-txt"><strong>Personal Landing Pages</strong><span>Your profile, links & reviews</span></div></a>
+          <a class="dd-link" href="/reviews/"><div class="dd-ico" style="background:rgba(255,214,10,.1)"><i class="fa-regular fa-star" style="color:#D4AD00"></i></div><div class="dd-txt"><strong>Personal Reviews</strong><span>Portable reputation that follows you</span></div></a>
+          <a class="dd-link" href="/store-reviews/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-store" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Store Reviews</strong><span>Google-ready review pages</span></div></a>
+          <div class="nav-dd-label">Engagement</div>
+          <a class="dd-link" href="/congrats-template/"><div class="dd-ico" style="background:rgba(255,45,85,.08)"><i class="fa-regular fa-image" style="color:#FF2D55"></i></div><div class="dd-txt"><strong>Congrats Cards</strong><span>Celebrate every sale automatically</span></div></a>
+          </div>
+          <div>
+          <div class="nav-dd-label" style="visibility:hidden">-</div>
+          <a class="dd-link" href="/date-triggers/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-rocket" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Automated Campaigns</strong><span>Birthdays, follow-ups, on autopilot</span></div></a>
+          <a class="dd-link" href="/inbox/"><div class="dd-ico" style="background:rgba(88,86,214,.08)"><i class="fa-regular fa-comment-dots" style="color:#5856D6"></i></div><div class="dd-txt"><strong>Inbox & Messaging</strong><span>SMS, WhatsApp, email in one place</span></div></a>
+          <a class="dd-link" href="/features/#voice"><div class="dd-ico" style="background:rgba(90,200,250,.08)"><i class="fa-solid fa-microphone" style="color:#5AC8FA"></i></div><div class="dd-txt"><strong>Voice Notes</strong><span>AI-powered voice memos & intel</span></div></a>
+          <div class="nav-dd-label">Visibility & Intelligence</div>
+          <a class="dd-link" href="/seo/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-magnifying-glass-chart" style="color:#34C759"></i></div><div class="dd-txt"><strong>SEO & AEO</strong><span>Be found on Google & AI search</span></div></a>
+          <a class="dd-link" href="/jessi/"><div class="dd-ico" style="background:rgba(175,82,222,.08)"><i class="fa-solid fa-wand-magic-sparkles" style="color:#AF52DE"></i></div><div class="dd-txt"><strong>Jessi AI</strong><span>AI relationship insights</span></div></a>
+          <a class="dd-link" href="/leaderboard/"><div class="dd-ico" style="background:rgba(255,59,48,.08)"><i class="fa-solid fa-trophy" style="color:#FF3B30"></i></div><div class="dd-txt"><strong>Leaderboards</strong><span>Track performance across teams</span></div></a>
+          </div>
+          </div>
+        </div></div></div>
+      <div class="nav-item"><button class="nav-trigger">Solutions <i class="fa-solid fa-chevron-down chev"></i></button><div class="nav-dd" style="min-width:580px"><div class="nav-dd-inner"><div class="nav-dd-label">By Role</div><a class="dd-link" href="/organizations/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-building" style="color:#007AFF"></i></div><div class="dd-txt"><strong>For Organizations</strong><span>Manage teams, stores & reputation</span></div></a><a class="dd-link" href="/individuals/"><div class="dd-ico" style="background:rgba(201,169,98,.08)"><i class="fa-solid fa-user" style="color:#C9A962"></i></div><div class="dd-txt"><strong>For Individuals</strong><span>Own your personal brand</span></div></a><div class="nav-dd-label">By Industry</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:0 4px"><a class="dd-link" href="/dealers/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-car" style="color:#34C759"></i></div><div class="dd-txt"><strong>Automotive</strong><span>Built for dealerships</span></div></a><a class="dd-link" href="/real-estate/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-house-chimney" style="color:#007AFF"></i></div><div class="dd-txt"><strong>Real Estate</strong><span>Agents & brokerages</span></div></a><a class="dd-link" href="/powersports/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-motorcycle" style="color:#34C759"></i></div><div class="dd-txt"><strong>Powersports</strong><span>RV, motorcycle & ATV</span></div></a><a class="dd-link" href="/restaurants/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-utensils" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Restaurants</strong><span>Guest relationships</span></div></a><a class="dd-link" href="/salons/"><div class="dd-ico" style="background:rgba(255,45,85,.08)"><i class="fa-solid fa-scissors" style="color:#FF2D55"></i></div><div class="dd-txt"><strong>Salons & Spas</strong><span>Client retention</span></div></a><a class="dd-link" href="/home-services/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-house-circle-check" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Home Services</strong><span>Roofing, solar, HVAC</span></div></a><a class="dd-link" href="/fitness/"><div class="dd-ico" style="background:rgba(255,59,48,.08)"><i class="fa-solid fa-dumbbell" style="color:#FF3B30"></i></div><div class="dd-txt"><strong>Fitness</strong><span>Gyms & trainers</span></div></a><a class="dd-link" href="/insurance/"><div class="dd-ico" style="background:rgba(88,86,214,.08)"><i class="fa-solid fa-shield-halved" style="color:#5856D6"></i></div><div class="dd-txt"><strong>Insurance</strong><span>Agents & advisors</span></div></a><a class="dd-link" href="/medical/"><div class="dd-ico" style="background:rgba(90,200,250,.08)"><i class="fa-solid fa-tooth" style="color:#5AC8FA"></i></div><div class="dd-txt"><strong>Medical & Dental</strong><span>Patient retention</span></div></a><a class="dd-link" href="/hub/"><div class="dd-ico" style="background:rgba(201,169,98,.08)"><i class="fa-solid fa-briefcase" style="color:#C9A962"></i></div><div class="dd-txt"><strong>Sales Teams</strong><span>Any industry, any size</span></div></a></div></div></div></div>
+      <div class="nav-item"><button class="nav-trigger">Resources <i class="fa-solid fa-chevron-down chev"></i></button><div class="nav-dd"><div class="nav-dd-inner"><a class="dd-link" href="/training/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-graduation-cap" style="color:#007AFF"></i></div><div class="dd-txt"><strong>Training Hub</strong><span>Courses, videos & best practices</span></div></a><a class="dd-link" href="/help/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-regular fa-circle-question" style="color:#34C759"></i></div><div class="dd-txt"><strong>Help Center</strong><span>Guides, FAQs & support</span></div></a><a class="dd-link" href="/why-imonsocial/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-play" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Why i'M On Social</strong><span>See our advantages</span></div></a></div></div></div>
+      <div class="nav-item"><a href="/pricing/">Pricing</a></div>
+    </div>
+    <div class="nav-cta"><a href="#" class="btn-demo" onclick="openDemoModal(event,'future_nav')">Book a Demo</a><a href="https://app.imonsocial.com" class="btn-sign">Sign In</a></div>
+    <button class="hamburger" onclick="document.getElementById('mob').classList.toggle('open')" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
+  </div>
+  <div class="mob-menu" id="mob">
+    <div class="mob-group"><button class="mob-toggle" onclick="this.parentElement.classList.toggle('open')">Products <i class="fa-solid fa-chevron-down mob-chev"></i></button><div class="mob-sub"><a href="/digital-card/">Digital Business Cards</a><a href="/showcase/">Personal Landing Pages</a><a href="/reviews/">Personal Reviews</a><a href="/congrats-template/">Congrats Cards</a><a href="/date-triggers/">Automated Campaigns</a><a href="/inbox/">Inbox & Messaging</a><a href="/jessi/">Jessi AI</a><a href="/leaderboard/">Leaderboards</a></div></div>
+    <div class="mob-group"><button class="mob-toggle" onclick="this.parentElement.classList.toggle('open')">Solutions <i class="fa-solid fa-chevron-down mob-chev"></i></button><div class="mob-sub"><a href="/organizations/">For Organizations</a><a href="/individuals/">For Individuals</a><a href="/dealers/">Automotive</a><a href="/hub/">Sales Teams</a></div></div>
+    <div class="mob-group"><button class="mob-toggle" onclick="this.parentElement.classList.toggle('open')">Resources <i class="fa-solid fa-chevron-down mob-chev"></i></button><div class="mob-sub"><a href="/training/">Training Hub</a><a href="/help/">Help Center</a><a href="/why-imonsocial/">Why i'M On Social</a></div></div>
+    <a href="/pricing/" class="mob-direct">Pricing</a><a href="https://app.imonsocial.com" class="mob-direct">Sign In</a>
+    <a href="#" class="mob-cta" onclick="openDemoModal(event,'future_mob')">Book a Demo</a>
+  </div>
+</nav>
+
+<!-- ========== HERO ========== -->
+<section class="f-hero">
+  <div class="hero-kicker rv"><i class="fa-solid fa-bolt"></i> A NEW CATEGORY</div>
+  <h1 class="rv">The Future of Sales<br/>Isn't <em>CRM</em></h1>
+  <div class="hero-divider rv"></div>
+  <p class="sub rv">It's Relationship Presence</p>
+</section>
+
+<!-- ========== OPENING NARRATIVE ========== -->
+<div class="narrative rv">
+  <p>For decades, sales teams have been told to use CRM systems.</p>
+  <p>But CRM was built for managers and reports, not for the people actually selling.</p>
+  <div class="spacer"></div>
+  <p>Salespeople don't lose customers because they lack a CRM.</p>
+  <p class="accent-red">They lose customers because they forget to follow up.</p>
+  <div class="spacer"></div>
+  <p class="light">They get busy.</p>
+  <p class="light">They move on to the next lead.</p>
+  <p class="light">And the relationship disappears.</p>
+  <div class="spacer"></div>
+  <p class="accent">i'M On Social fixes that problem.</p>
+  <p>It turns every salesperson into a consistent, professional relationship builder &mdash; without requiring them to think about it.</p>
+</div>
+
+<div class="sec-divider"><hr/></div>
+
+<!-- ========== THE PROBLEM ========== -->
+<div class="sec-head rv"><h2>The Problem With Sales Tools Today</h2></div>
+<div class="narrative">
+  <p class="rv">Most tools focus on managing data.</p>
+</div>
+<div class="bullet-block rv">
+  <ul>
+    <li><i class="fa-solid fa-circle" style="font-size:6px;color:var(--text-3);margin-top:10px"></i> storing contacts</li>
+    <li><i class="fa-solid fa-circle" style="font-size:6px;color:var(--text-3);margin-top:10px"></i> logging notes</li>
+    <li><i class="fa-solid fa-circle" style="font-size:6px;color:var(--text-3);margin-top:10px"></i> tracking opportunities</li>
+    <li><i class="fa-solid fa-circle" style="font-size:6px;color:var(--text-3);margin-top:10px"></i> generating reports</li>
+  </ul>
+</div>
+<div class="narrative rv">
+  <p class="bold">But none of those things actually build relationships.</p>
+  <div class="spacer"></div>
+  <p>Relationships are built through consistent human touchpoints:</p>
+</div>
+<div class="chip-row rv">
+  <span class="chip" style="border-color:rgba(0,122,255,.3);color:#007AFF"><i class="fa-regular fa-comment"></i> Texts</span>
+  <span class="chip" style="border-color:rgba(52,199,89,.3);color:#34C759"><i class="fa-solid fa-phone"></i> Calls</span>
+  <span class="chip" style="border-color:rgba(88,86,214,.3);color:#5856D6"><i class="fa-regular fa-envelope"></i> Emails</span>
+  <span class="chip" style="border-color:rgba(255,149,0,.3);color:#FF9500"><i class="fa-regular fa-bell"></i> Check-ins</span>
+  <span class="chip" style="border-color:rgba(255,45,85,.3);color:#FF2D55"><i class="fa-solid fa-arrow-rotate-right"></i> Follow-ups</span>
+  <span class="chip" style="border-color:rgba(212,173,0,.3);color:#D4AD00"><i class="fa-regular fa-star"></i> Reviews</span>
+  <span class="chip" style="border-color:rgba(0,199,190,.3);color:#00C7BE"><i class="fa-solid fa-share-nodes"></i> Social Sharing</span>
+</div>
+<div class="narrative rv">
+  <div class="spacer"></div>
+  <p>Salespeople know this.</p>
+  <p class="bold">They just don't have a system that makes it easy.</p>
+</div>
+
+<div class="sec-divider"><hr/></div>
+
+<!-- ========== RELATIONSHIP OS ========== -->
+<div class="sec-head rv"><h2>A New Category: Relationship Operating System</h2></div>
+<div class="highlight-box rv">
+  <div class="highlight-box-inner">
+    <p>i'M On Social isn't a CRM.<br/>It's a Relationship Operating System.</p>
+  </div>
+</div>
+<div class="narrative">
+  <div class="spacer"></div>
+  <p class="rv">Instead of asking salespeople to remember everything&hellip;</p>
+  <p class="bold rv">The system remembers for them.</p>
+  <div class="spacer"></div>
+  <p class="rv">Instead of asking them what to do next&hellip;</p>
+  <p class="bold rv">The system tells them.</p>
+  <div class="spacer"></div>
+  <p class="rv">Every day, the platform automatically generates <strong>Today's Touchpoints</strong> &mdash; a simple action list that tells the salesperson exactly who they should reach out to and how.</p>
+</div>
+<div class="task-list rv">
+  <div class="task-item"><div class="task-ico" style="background:rgba(0,122,255,.08)"><i class="fa-regular fa-comment" style="color:#007AFF"></i></div><span>Text this customer.</span></div>
+  <div class="task-item"><div class="task-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-phone" style="color:#34C759"></i></div><span>Call that one.</span></div>
+  <div class="task-item"><div class="task-ico" style="background:rgba(212,173,0,.08)"><i class="fa-regular fa-star" style="color:#D4AD00"></i></div><span>Send a review request.</span></div>
+  <div class="task-item"><div class="task-ico" style="background:rgba(0,199,190,.08)"><i class="fa-regular fa-id-card" style="color:#00C7BE"></i></div><span>Share your card.</span></div>
+</div>
+<div class="narrative rv">
+  <div class="spacer"></div>
+  <p>The salesperson just taps the task and the message is ready.</p>
+  <p class="accent">The relationship stays alive.</p>
+</div>
+
+<div class="sec-divider"><hr/></div>
+
+<!-- ========== ONE CONVERSATION HUB ========== -->
+<div class="sec-head rv"><h2>One Conversation Hub</h2></div>
+<div class="narrative rv">
+  <p>All customer communication lives in one place.</p>
+  <div class="spacer"></div>
+  <p>Salespeople can send:</p>
+</div>
+<div class="icon-list rv">
+  <div class="icon-list-item"><div class="ico" style="background:rgba(0,122,255,.08)"><i class="fa-regular fa-comment" style="color:#007AFF"></i></div><span>Text messages</span></div>
+  <div class="icon-list-item"><div class="ico" style="background:rgba(88,86,214,.08)"><i class="fa-regular fa-envelope" style="color:#5856D6"></i></div><span>Emails</span></div>
+  <div class="icon-list-item"><div class="ico" style="background:rgba(255,45,85,.08)"><i class="fa-regular fa-image" style="color:#FF2D55"></i></div><span>Photos</span></div>
+  <div class="icon-list-item"><div class="ico" style="background:rgba(212,173,0,.08)"><i class="fa-regular fa-star" style="color:#D4AD00"></i></div><span>Review links</span></div>
+  <div class="icon-list-item"><div class="ico" style="background:rgba(0,199,190,.08)"><i class="fa-regular fa-id-card" style="color:#00C7BE"></i></div><span>Digital business cards</span></div>
+</div>
+<div class="narrative rv">
+  <div class="spacer"></div>
+  <p>Everything is tracked automatically as a touchpoint, building a timeline of the entire relationship.</p>
+  <p>Managers finally gain visibility into who is actively communicating with customers &mdash; and who isn't.</p>
+  <p class="accent-gold">No micromanaging required.</p>
+</div>
+
+<div class="sec-divider"><hr/></div>
+
+<!-- ========== AI ========== -->
+<div class="sec-head rv"><h2>AI That Helps, Not Replaces</h2></div>
+<div class="narrative rv">
+  <p>Inside every conversation is an AI assistant called <strong>Jessi</strong>.</p>
+  <div class="spacer"></div>
+  <p>Jessi can:</p>
+</div>
+<div class="check-list rv">
+  <div class="check-item"><i class="fa-solid fa-wand-magic-sparkles" style="color:#AF52DE"></i> Suggest responses</div>
+  <div class="check-item"><i class="fa-solid fa-wand-magic-sparkles" style="color:#AF52DE"></i> Generate follow-up messages</div>
+  <div class="check-item"><i class="fa-solid fa-wand-magic-sparkles" style="color:#AF52DE"></i> Analyze conversation tone</div>
+  <div class="check-item"><i class="fa-solid fa-wand-magic-sparkles" style="color:#AF52DE"></i> Help craft the perfect reply</div>
+</div>
+<div class="narrative rv">
+  <div class="spacer"></div>
+  <p class="bold">But the salesperson is always in control.</p>
+  <p>AI assists the relationship &mdash; it doesn't replace it.</p>
+</div>
+
+<div class="sec-divider"><hr/></div>
+
+<!-- ========== DIGITAL PRESENCE ========== -->
+<div class="sec-head rv"><h2>Every Salesperson Gets a Personal Digital Presence</h2></div>
+<div class="narrative rv">
+  <p>Each user has a digital business card page.</p>
+  <div class="spacer"></div>
+  <p>This page includes:</p>
+</div>
+<div class="check-list rv">
+  <div class="check-item"><i class="fa-regular fa-circle-check" style="color:var(--blue)"></i> Their contact information</div>
+  <div class="check-item"><i class="fa-regular fa-circle-check" style="color:var(--blue)"></i> Dealership information</div>
+  <div class="check-item"><i class="fa-regular fa-circle-check" style="color:var(--blue)"></i> Customer reviews</div>
+  <div class="check-item"><i class="fa-regular fa-circle-check" style="color:var(--blue)"></i> Social links</div>
+  <div class="check-item"><i class="fa-regular fa-circle-check" style="color:var(--blue)"></i> A save-to-phone contact button</div>
+</div>
+<div class="narrative rv">
+  <div class="spacer"></div>
+  <p>Salespeople can instantly share this page with customers by text or email.</p>
+  <p class="accent">It becomes their professional relationship hub.</p>
+</div>
+
+<div class="sec-divider"><hr/></div>
+
+<!-- ========== SEO POWER ========== -->
+<div class="sec-head rv"><h2>The Hidden Power: Organic Search Growth</h2></div>
+<div class="narrative rv">
+  <p>Something powerful happens when salespeople consistently use the platform.</p>
+  <div class="spacer"></div>
+  <p>Every interaction creates:</p>
+</div>
+<div class="signal-grid rv">
+  <div class="signal-card"><i class="fa-regular fa-star"></i><span>Review activity</span></div>
+  <div class="signal-card"><i class="fa-solid fa-link"></i><span>Link sharing</span></div>
+  <div class="signal-card"><i class="fa-solid fa-tag"></i><span>Branded mentions</span></div>
+  <div class="signal-card"><i class="fa-solid fa-globe"></i><span>Indexed profile pages</span></div>
+  <div class="signal-card"><i class="fa-solid fa-chart-line"></i><span>Customer engagement signals</span></div>
+</div>
+<div class="narrative rv">
+  <div class="spacer"></div>
+  <p>Over time this builds search authority for both the salesperson and the dealership.</p>
+  <p class="bold">Every salesperson becomes a search engine asset.</p>
+  <div class="spacer"></div>
+  <p>Instead of relying on a single dealership website, the dealership now has dozens of searchable profiles generating visibility.</p>
+  <p>And as AI-powered search grows, these relationship signals become even more important.</p>
+</div>
+<div class="highlight-box rv">
+  <div class="highlight-box-inner">
+    <p>The result is powerful organic SEO and AEO (Answer Engine Optimization) generated naturally through daily sales activity.</p>
+  </div>
+</div>
+<div class="narrative rv">
+  <p class="light">No marketing campaigns required.</p>
+  <p class="accent-gold">Just relationships.</p>
+</div>
+
+<div class="sec-divider"><hr/></div>
+
+<!-- ========== GAMIFICATION ========== -->
+<div class="sec-head rv"><h2>Built-In Motivation Through Gamification</h2></div>
+<div class="narrative rv">
+  <p>To keep teams engaged, the platform includes a leaderboard system.</p>
+  <div class="spacer"></div>
+  <p>Salespeople earn points for activities like:</p>
+</div>
+<div class="check-list rv">
+  <div class="check-item"><i class="fa-solid fa-trophy" style="color:#FF9500"></i> Sending messages</div>
+  <div class="check-item"><i class="fa-solid fa-trophy" style="color:#FF9500"></i> Sharing digital cards</div>
+  <div class="check-item"><i class="fa-solid fa-trophy" style="color:#FF9500"></i> Collecting reviews</div>
+  <div class="check-item"><i class="fa-solid fa-trophy" style="color:#FF9500"></i> Completing touchpoint tasks</div>
+</div>
+<div class="narrative rv">
+  <div class="spacer"></div>
+  <p>Levels, streaks, and rankings create healthy competition and encourage consistent engagement.</p>
+  <p class="bold">Managers can see real activity across their team &mdash; instantly.</p>
+</div>
+
+<div class="sec-divider"><hr/></div>
+
+<!-- ========== COMPOUNDING ========== -->
+<div class="sec-head rv"><h2>The Compounding Effect</h2></div>
+<div class="narrative rv">
+  <p>The more a salesperson uses the system, the more powerful their network becomes.</p>
+  <div class="spacer"></div>
+  <p>Over time they accumulate:</p>
+</div>
+<div class="metric-grid rv">
+  <div class="metric-card"><div class="val">100s</div><div class="lbl">of conversations</div></div>
+  <div class="metric-card"><div class="val">50+</div><div class="lbl">reviews collected</div></div>
+  <div class="metric-card"><div class="val">1000s</div><div class="lbl">of touchpoints</div></div>
+  <div class="metric-card"><div class="val" style="font-size:22px">Growing</div><div class="lbl">digital presence</div></div>
+</div>
+<div class="narrative rv">
+  <div class="spacer"></div>
+  <p>Instead of losing relationships, they build a long-term customer network that continues to generate referrals and repeat business.</p>
+</div>
+
+<div class="sec-divider"><hr/></div>
+
+<!-- ========== MAGIC MOMENT ========== -->
+<div class="sec-head rv"><h2>The Magic Moment</h2></div>
+<div class="narrative rv">
+  <p>The entire experience starts with something incredibly simple.</p>
+</div>
+<div class="magic-box rv">
+  <div class="magic-inner">
+    <i class="fa-solid fa-camera" style="color:var(--gold)"></i>
+    <p>Take a photo with a customer.</p>
+    <i class="fa-regular fa-id-card" style="color:var(--blue)"></i>
+    <p>Share your digital card.</p>
+  </div>
+</div>
+<div class="narrative rv">
+  <div class="spacer"></div>
+  <p>From that moment forward, the relationship is captured, organized, and supported by the platform.</p>
+  <div class="spacer"></div>
+  <p class="light">Follow-ups happen automatically.</p>
+  <p class="light">Messages are easy to send.</p>
+  <p class="light">Reviews are collected naturally.</p>
+  <div class="spacer"></div>
+  <p class="accent">And the relationship never disappears.</p>
+</div>
+
+<div class="sec-divider"><hr/></div>
+
+<!-- ========== THE RESULT ========== -->
+<div class="sec-head rv"><h2>The Result</h2></div>
+<div class="result-list rv">
+  <div class="result-item"><i class="fa-solid fa-ribbon"></i><span>Salespeople look more professional.</span></div>
+  <div class="result-item"><i class="fa-regular fa-eye"></i><span>Managers gain visibility into real activity.</span></div>
+  <div class="result-item"><i class="fa-solid fa-arrow-trend-up"></i><span>Dealerships strengthen their online presence.</span></div>
+  <div class="result-item"><i class="fa-regular fa-heart"></i><span>Customers feel remembered.</span></div>
+  <div class="result-item"><i class="fa-regular fa-clock"></i><span>Relationships last longer.</span></div>
+  <div class="result-item"><i class="fa-solid fa-circle-dollar-to-slot"></i><span>Sales increase.</span></div>
+</div>
+
+<!-- ========== PROMISE ========== -->
+<section class="promise rv">
+  <div class="promise-line"></div>
+  <h2>One Simple Promise</h2>
+  <p>Never forget a customer again.</p>
+  <div class="promise-line" style="margin-top:24px"></div>
+</section>
+
+<!-- ========== BOTTOM CTA ========== -->
+<section class="bottom-cta">
+  <h3 class="rv">See what Relationship Presence looks like</h3>
+  <p class="rv">Schedule a walkthrough and see how it works for your team.</p>
+  <div class="cta-btns rv">
+    <a href="#" class="btn-gold" onclick="openDemoModal(event,'future_cta')"><i class="fa-solid fa-calendar"></i> Schedule a Demo</a>
+    <a href="/features/" class="btn-gw"><i class="fa-solid fa-grid-2"></i> See All Features</a>
+  </div>
+</section>
+
+<!-- ========== FOOTER ========== -->
+<footer>
+  <div class="ft-inner">
+    <div class="ft-brand"><div class="ft-logo"><img src="/marketing-logo.png" alt="i'M On Social"/></div><p class="ft-tag">The relationship engine for sales professionals.</p>
+      <div class="ft-social"><a href="https://instagram.com/imonsocialapp" target="_blank" rel="noopener"><i class="fa-brands fa-instagram"></i></a><a href="https://tiktok.com/@imonsocialapp" target="_blank" rel="noopener"><i class="fa-brands fa-tiktok"></i></a><a href="https://youtube.com/@imonsocial" target="_blank" rel="noopener"><i class="fa-brands fa-youtube"></i></a></div>
+    </div>
+    <div class="ft-col"><div class="ft-col-t">Product</div><a href="/digital-card/">Digital Cards</a><a href="/reviews/">Personal Reviews</a><a href="/inbox/">Inbox</a><a href="/date-triggers/">Automations</a><a href="/leaderboard/">Leaderboards</a><a href="/jessi/">Jessi AI</a></div>
+    <div class="ft-col"><div class="ft-col-t">Company</div><a href="/organizations/">For Teams</a><a href="/pricing/">Pricing</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="mailto:forest@imonsocial.com">Contact</a></div>
+    <div class="ft-col"><div class="ft-col-t">Get Started</div><a href="#" onclick="openDemoModal(event,'future_footer')">Schedule a Demo</a><a href="https://app.imonsocial.com">Sign In</a><a href="/training/">Training</a><a href="/help/">Help Center</a></div>
+  </div>
+  <div class="ft-bottom"><span class="ft-copy">&copy; 2026 i'M On Social. All rights reserved.</span></div>
+</footer>
+
+<!-- ========== DEMO MODAL ========== -->
+<div class="demo-overlay" id="demoModal"><div class="demo-modal"><button class="demo-close" onclick="closeDemoModal()">&times;</button><div id="demoFormWrap"><h2 style="font-size:24px;font-weight:900;margin-bottom:4px">Let's Talk</h2><p style="font-size:14px;color:var(--text-3);margin-bottom:24px">See how i'M On Social can transform your team's relationships.</p><form onsubmit="submitDemoForm(event)"><div class="dm-field"><label>Full Name *</label><input type="text" id="dm-name" placeholder="John Smith" required/></div><div class="dm-field"><label>Email *</label><input type="email" id="dm-email" placeholder="john@company.com" required/></div><div class="dm-field"><label>Phone</label><input type="tel" id="dm-phone" placeholder="(555) 123-4567"/></div><div class="dm-field"><label>Company</label><input type="text" id="dm-company" placeholder="Your company name"/></div><div class="dm-field"><label>Team Size</label><select id="dm-type"><option value="">How big is your team?</option><option value="1-5">1-5 people</option><option value="6-20">6-20 people</option><option value="21-50">21-50 people</option><option value="50+">50+</option></select></div><button type="submit" class="dm-submit" id="dmSubmitBtn">Schedule a Call</button></form></div><div id="demoSuccessWrap" style="display:none;text-align:center;padding:32px 0"><div style="font-size:48px;color:var(--green);margin-bottom:12px">&#10003;</div><h3 style="font-size:20px;font-weight:700;margin-bottom:8px">We'll Be In Touch</h3><p style="font-size:14px;color:var(--text-3)">Expect a call within 24 hours.</p></div></div></div>
+
+<script>
+const ro=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('vis')});},{threshold:.08,rootMargin:'0px 0px -32px 0px'});document.querySelectorAll('.rv').forEach(el=>ro.observe(el));window.addEventListener('scroll',()=>document.querySelector('nav').classList.toggle('scrolled',scrollY>40));
+let _demoSource='';function openDemoModal(e,source){e&&e.preventDefault();_demoSource=source||'';document.getElementById('demoModal').classList.add('active');document.body.style.overflow='hidden'}function closeDemoModal(){document.getElementById('demoModal').classList.remove('active');document.body.style.overflow=''}document.getElementById('demoModal').addEventListener('click',function(e){if(e.target===this)closeDemoModal()});
+async function submitDemoForm(e){e.preventDefault();var btn=document.getElementById('dmSubmitBtn');btn.disabled=true;btn.textContent='Submitting...';try{var res=await fetch('https://app.imonsocial.com/api/demo-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('dm-name').value,email:document.getElementById('dm-email').value,phone:document.getElementById('dm-phone').value,business_type:document.getElementById('dm-type').value,company:document.getElementById('dm-company').value,lead_source:_demoSource||'future_page'})});if(res.ok){document.getElementById('demoFormWrap').style.display='none';document.getElementById('demoSuccessWrap').style.display='block'}else{throw new Error()}}catch(ex){btn.disabled=false;btn.textContent='Schedule a Call';alert('Something went wrong. Please try again.')}}
+</script>
+</body>
+</html>
