@@ -13,7 +13,16 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### Training Video Tracking + Card Templates Fix (Mar 24, 2026) -- LATEST
+### Partner Monthly Invoice System (Mar 24, 2026) -- LATEST
+- **Waiver System:** Super admins can waive individual stores from billing with optional expiry dates. Waived stores appear on invoices as $0 line items with the waiver reason displayed.
+- **Per-Store Rate Overrides:** Each store can have a custom billing rate and package name that overrides the partner's default rate. Supports different price points per package.
+- **Monthly Invoice Generation:** Generates itemized invoices with line items per store, waiver logic, and PDF generation (fpdf2). Duplicate prevention (409 if invoice exists for same period).
+- **Invoice Email Delivery:** Sends invoice via Resend with HTML breakdown and PDF attachment.
+- **Scheduled Job:** APScheduler CronTrigger runs on the 1st of each month at 6:30 UTC to auto-generate invoices for all active partners with billing configured.
+- **Invoice Status Management:** Status flow: draft → sent → paid/overdue/cancelled. PDF regenerated on status change to reflect current status.
+- **Frontend Tabbed UI:** Partner billing page updated with 4 tabs: Overview (summary + config), Invoices (generate + history + PDF download), Waivers (add/remove per store), Rates (per-store rate overrides with package names).
+
+### Training Video Tracking + Card Templates Fix (Mar 24, 2026)
 - **Training Hub Auto-Seed Fix:** Changed the `/api/training/tracks` endpoint to auto-seed *missing* tracks (not just when DB is empty). This ensures the 8 onboarding videos are always discoverable even if other tracks were already created.
 - **Video Click Tracking:** Training video templates now use tracked short URLs (via the existing `/api/s/` system) instead of raw YouTube links. When a contact clicks a video link sent via SMS, the click is logged to their activity feed with `training_video_clicked` event type. Engagement score weight of 3 is applied.
 - **Card Templates Bug Fix:** Custom card types (created via the "+" button on the Card Templates page) were being saved but not returned in the list. The `GET /api/congrats/templates/all/{store_id}` endpoint only iterated over `CARD_TYPE_DEFAULTS` (6 built-in types). Fixed to also include any custom card types stored in the DB.
