@@ -975,9 +975,9 @@ async def get_thread_messages(conversation_id: str):
     
     return [{
         "_id": str(m['_id']),
-        "content": m['content'],
-        "sender": m['sender'],
-        "timestamp": m['timestamp'].isoformat() if hasattr(m['timestamp'], 'isoformat') else str(m['timestamp']),
+        "content": m.get('content', ''),
+        "sender": m.get('sender', 'unknown'),
+        "timestamp": m['timestamp'].isoformat() if m.get('timestamp') and hasattr(m['timestamp'], 'isoformat') else str(m.get('timestamp', '')),
         "status": m.get('status', 'sent'),
         "ai_generated": m.get('ai_generated', False),
         "intent_detected": m.get('intent_detected'),

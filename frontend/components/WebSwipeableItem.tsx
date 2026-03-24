@@ -21,6 +21,12 @@ interface Props {
 const BUTTON_WIDTH = 72;
 const SWIPE_THRESHOLD = 40;
 
+// Track if user swiped (shared ref accessible by child handlers)
+let _lastSwipeTime = 0;
+export function wasRecentSwipe(): boolean {
+  return Date.now() - _lastSwipeTime < 300;
+}
+
 export const WebSwipeableItem: React.FC<Props> = ({
   children,
   leftActions = [],
@@ -33,7 +39,6 @@ export const WebSwipeableItem: React.FC<Props> = ({
   const startY = useRef(0);
   const startTranslate = useRef(0);
   const isHorizontal = useRef<boolean | null>(null);
-  const hasMoved = useRef(false);
 
   const leftMax = leftActions.length * BUTTON_WIDTH;
   const rightMax = rightActions.length * BUTTON_WIDTH;
@@ -43,36 +48,34 @@ export const WebSwipeableItem: React.FC<Props> = ({
     startY.current = e.clientY || e.nativeEvent?.pageY || 0;
     startTranslate.current = translateX;
     isHorizontal.current = null;
-    hasMoved.current = false;
-    setIsDragging(true);
   }, [translateX]);
 
   const handlePointerMove = useCallback((e: any) => {
-    if (!isDragging) return;
     const currentX = e.clientX || e.nativeEvent?.pageX || 0;
     const currentY = e.clientY || e.nativeEvent?.pageY || 0;
     const dx = currentX - startX.current;
     const dy = currentY - startY.current;
 
-    // Determine direction on first significant move
-    if (isHorizontal.current === null && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
-      isHorizontal.current = Math.abs(dx) > Math.abs(dy);
+    if (!isDragging && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+      if (Math.abs(dx) > Math.abs(dy)) {
+        isHorizontal.current = true;
+        setIsDragging(true);
+      }
     }
-    if (!isHorizontal.current) return;
+    if (!isDragging || !isHorizontal.current) return;
 
-    hasMoved.current = Math.abs(dx) > 8;
     let newX = startTranslate.current + dx;
-    // Clamp: don't over-swipe
     newX = Math.max(-rightMax, Math.min(leftMax, newX));
     setTranslateX(newX);
   }, [isDragging, leftMax, rightMax]);
 
   const handlePointerUp = useCallback(() => {
-    if (!isDragging) return;
+    if (isDragging) {
+      _lastSwipeTime = Date.now();
+    }
     setIsDragging(false);
     isHorizontal.current = null;
 
-    // Snap logic
     if (translateX > SWIPE_THRESHOLD && leftActions.length > 0) {
       setTranslateX(leftMax);
     } else if (translateX < -SWIPE_THRESHOLD && rightActions.length > 0) {
@@ -86,8 +89,6 @@ export const WebSwipeableItem: React.FC<Props> = ({
     setTranslateX(0);
     setTimeout(() => action.onPress(), 150);
   }, []);
-
-  const isOpen = translateX !== 0 && !isDragging;
 
   const styles = useMemo(() => getStyles(colors), [colors]);
 
@@ -146,10 +147,7 @@ export const WebSwipeableItem: React.FC<Props> = ({
           } as any,
         ]}
       >
-        {/* Disable child pointer events during swipe or when open */}
-        <View style={{ pointerEvents: (isOpen || isDragging || hasMoved.current) ? 'none' : 'auto' } as any}>
-          {children}
-        </View>
+        {children}
       </View>
     </View>
   );

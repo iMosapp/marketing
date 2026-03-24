@@ -30,7 +30,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { messagesAPI, contactsAPI, emailAPI, tasksAPI, tagsAPI } from '../../services/api';
 import SwipeableConversationItem from '../../components/SwipeableConversationItem';
-import WebSwipeableItem from '../../components/WebSwipeableItem';
+import WebSwipeableItem, { wasRecentSwipe } from '../../components/WebSwipeableItem';
 import AppointmentModal from '../../components/AppointmentModal';
 import { useToast } from '../../components/common/Toast';
 
@@ -777,6 +777,8 @@ export default function InboxScreen() {
     const isSelected = selectedIds.has(item._id);
 
     const handlePress = () => {
+      // Skip if this was a swipe gesture (not a tap)
+      if (wasRecentSwipe()) return;
       triggerHaptic('light');
       if (selectionMode) {
         toggleSelection(item._id);
@@ -1028,6 +1030,7 @@ export default function InboxScreen() {
     const isNew = item.status === 'new';
 
     const handlePress = () => {
+      if (wasRecentSwipe()) return;
       triggerHaptic('light');
       router.push({
         pathname: `/thread/${item.id}`,
