@@ -23,6 +23,8 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
   - Reports include: error message, stack trace, page/screen, user info, platform, timestamp
   - Deduplication built in (same error only reported once per 60s)
   - Also logs to backend console as WARNING for real-time visibility
+  - Admin UI page at Hub > Internal Operations > Error Reports with "Copy All Reports" button, filters, and trash
+  - Mobile-friendly — works on phone with one-tap copy to paste into chat
 
 ### Training Hub + Video Quick-Send Templates (Mar 23, 2026)
 - **Training Hub:** Populated "Onboarding Videos" track with 8 YouTube tutorial videos (Saving The App, Setting Up Your Profile, Home Screen, Contacts, Inbox, Best Practices, The 30 Second Workflow, Tags & Campaigns). Videos play inline via embedded YouTube player on web, or open in browser on native.

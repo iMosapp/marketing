@@ -656,6 +656,8 @@ export default function MoreScreen() {
       // Docs & Assets
       { icon: 'library', title: 'Company Docs', subtitle: 'Policies & procedures', onPress: () => router.push('/admin/docs'), color: '#5856D6' },
       { icon: 'color-palette', title: 'Brand Assets', subtitle: 'Logos & downloads', onPress: () => router.push('/admin/brand-assets'), color: '#FF9500' },
+      // Diagnostics
+      { icon: 'bug', title: 'Error Reports', subtitle: 'App crashes & error logs', onPress: () => router.push('/admin/error-reports' as any), color: '#FF3B30' },
     ];
     sections.push({ id: 'internal_ops', title: 'Internal Operations', icon: 'lock-closed', color: '#8E8E93', items });
   }
