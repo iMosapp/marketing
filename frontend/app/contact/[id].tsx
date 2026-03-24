@@ -3495,6 +3495,26 @@ export default function ContactDetailScreen() {
                 ) : (
                   <View style={s.feedTimeline}>
                     {(() => {
+                      const ENGAGEMENT_SET = new Set(['digital_card_viewed', 'showcase_viewed', 'link_page_viewed', 'link_clicked', 'review_link_clicked', 'congrats_card_viewed', 'review_page_viewed', 'training_video_clicked']);
+                      const MILESTONE_SET = new Set(['new_contact_added', 'campaign_enrolled', 'review_submitted', 'referral_made']);
+                      const PHOTO_SET = new Set(['congrats_card_sent', 'birthday_card_sent', 'anniversary_card_sent', 'holiday_card_sent', 'thank_you_card_sent', 'thankyou_card_sent', 'welcome_card_sent', 'delivery_photo']);
+                      const ENG_LABELS: Record<string, string> = {
+                        digital_card_viewed: 'Viewed your digital card',
+                        showcase_viewed: 'Viewed your showcase',
+                        link_page_viewed: 'Visited your link page',
+                        link_clicked: 'Clicked your link',
+                        review_link_clicked: 'Clicked your review link',
+                        congrats_card_viewed: 'Opened your congrats card',
+                        review_page_viewed: 'Viewed your review page',
+                        training_video_clicked: 'Watched a training video',
+                      };
+                      const MILE_META: Record<string, { icon: string; color: string; label: string }> = {
+                        new_contact_added: { icon: 'person-add', color: '#007AFF', label: 'Relationship Started' },
+                        campaign_enrolled: { icon: 'rocket', color: '#AF52DE', label: 'Campaign Launched' },
+                        review_submitted: { icon: 'star', color: '#FFD60A', label: 'Review Received' },
+                        referral_made: { icon: 'people', color: '#34C759', label: 'Referral Connection' },
+                      };
+                      const contactPhoto = contact.photo ? resolvePhotoUrl(contact.photo) : null;
                       let runningCount = 0;
                       return eventDateGroups.map((group, gi) => {
                       const isCollapsed = collapsedDateGroups[group.label] === true;
@@ -3524,86 +3544,181 @@ export default function ContactDetailScreen() {
                           </TouchableOpacity>
 
                           {!isCollapsed && groupEvents.map((evt, i) => {
-                      const catStyle = EVENT_CATEGORY_ICON[evt.category] || EVENT_CATEGORY_ICON.custom;
                       const evtKey = `${group.label}-${i}`;
                       const isExpanded = expandedEvents[evtKey] === true;
-                      const fullContent = evt.full_content || evt.description || '';
-                      const hasLink = !!evt.link;
                       const isInbound = evt.direction === 'inbound' || evt.event_type === 'customer_reply';
-                      const isCustomerActivity = evt.category === 'customer_activity';
-                      const channelLabel = evt.channel === 'email' ? 'Email' : evt.channel === 'sms_personal' ? 'SMS' : evt.channel === 'sms' ? 'SMS' : evt.channel === 'whatsapp' ? 'WhatsApp' : evt.channel === 'messenger' ? 'Messenger' : evt.channel === 'telegram' ? 'Telegram' : evt.channel === 'linkedin' ? 'LinkedIn' : evt.channel === 'clipboard' ? 'Copied' : '';
-                      return (
-                        <TouchableOpacity
-                          key={evtKey}
-                          activeOpacity={0.7}
-                          onPress={() => setExpandedEvents(prev => ({ ...prev, [evtKey]: !prev[evtKey] }))}
-                          style={[s.feedItem, isInbound && s.feedItemInbound]}
-                          data-testid={`feed-event-${evtKey}`}
-                        >
-                          {i < groupEvents.length - 1 && <View style={[s.feedLine, { backgroundColor: colors.border }]} />}
-                          <View style={[s.feedIcon, { backgroundColor: `${evt.color || catStyle.color}20` }]}>
-                            <Ionicons name={(evt.icon || catStyle.icon) as any} size={16} color={evt.color || catStyle.color} />
+                      const et = evt.event_type;
+                      const catStyle = EVENT_CATEGORY_ICON[evt.category] || EVENT_CATEGORY_ICON.custom;
+
+                      // ── Milestone Card ──
+                      if (MILESTONE_SET.has(et)) {
+                        const meta = MILE_META[et] || { icon: 'flag', color: '#C9A962', label: getEventTitle(evt) };
+                        return (
+                          <View key={evtKey} style={{ marginHorizontal: 4, marginBottom: 10, borderRadius: 16, borderWidth: 1, borderColor: meta.color + '30', backgroundColor: meta.color + '08', flexDirection: 'row', alignItems: 'center', padding: 14, borderStyle: 'dashed' }} data-testid={`feed-event-${evtKey}`}>
+                            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: meta.color + '18', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                              <Ionicons name={meta.icon as any} size={20} color={meta.color} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5, color: meta.color }}>{meta.label}</Text>
+                              {evt.description ? <Text style={{ fontSize: 13, color: colors.textTertiary, marginTop: 2 }} numberOfLines={2}>{evt.description}</Text> : null}
+                            </View>
+                            <Text style={{ fontSize: 12, color: colors.textTertiary }}>{formatEventTime(evt.timestamp)}</Text>
                           </View>
-                          <View style={s.feedContent}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
-                                <Text style={[s.feedTitle, { color: colors.text }]}>{getEventTitle(evt)}</Text>
-                                {isInbound && (
-                                  <View style={s.inboundBadge}>
-                                    <Text style={s.inboundBadgeText}>INBOUND</Text>
+                        );
+                      }
+
+                      // ── Engagement Card (with optional big photo) ──
+                      if (ENGAGEMENT_SET.has(et)) {
+                        const engLabel = ENG_LABELS[et] || getEventTitle(evt);
+                        // If contact has a photo, show as big visual card
+                        if (contactPhoto) {
+                          return (
+                            <View key={evtKey} style={{ marginHorizontal: 4, marginBottom: 14, borderRadius: 20, overflow: 'hidden', backgroundColor: colors.card }} data-testid={`feed-event-${evtKey}`}>
+                              <View style={{ paddingHorizontal: 14, paddingTop: 12, paddingBottom: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                  <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: (evt.color || '#007AFF') + '15', alignItems: 'center', justifyContent: 'center', marginRight: 8 }}>
+                                    <Ionicons name={(evt.icon || catStyle.icon) as any} size={14} color={evt.color || '#007AFF'} />
                                   </View>
-                                )}
-                                {isCustomerActivity && !isInbound && (
-                                  <View style={s.customerBadge}>
-                                    <Text style={s.customerBadgeText}>CUSTOMER</Text>
-                                  </View>
+                                  <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary }}>{engLabel}</Text>
+                                </View>
+                                <Text style={{ fontSize: 12, color: colors.textTertiary }}>{formatEventTime(evt.timestamp)}</Text>
+                              </View>
+                              <View style={{ paddingHorizontal: 12, paddingBottom: 12 }}>
+                                {Platform.OS === 'web' ? (
+                                  <img src={contactPhoto} style={{ width: '100%', height: 220, objectFit: 'cover', borderRadius: 14, display: 'block' }} loading="lazy" />
+                                ) : (
+                                  <Image source={{ uri: contactPhoto }} style={{ width: '100%', height: 220, borderRadius: 14 }} contentFit="cover" />
                                 )}
                               </View>
+                            </View>
+                          );
+                        }
+                        // No photo — compact engagement card
+                        return (
+                          <View key={evtKey} style={{ marginHorizontal: 4, marginBottom: 6, borderRadius: 14, overflow: 'hidden', flexDirection: 'row', backgroundColor: colors.card }} data-testid={`feed-event-${evtKey}`}>
+                            <View style={{ width: 3, backgroundColor: evt.color || '#007AFF' }} />
+                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', padding: 12 }}>
+                              <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: (evt.color || '#007AFF') + '15', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                                <Ionicons name={(evt.icon || catStyle.icon) as any} size={16} color={evt.color || '#007AFF'} />
+                              </View>
+                              <View style={{ flex: 1 }}>
+                                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>{engLabel}</Text>
+                                <Text style={{ fontSize: 12, color: colors.textTertiary, marginTop: 2 }}>{formatEventTime(evt.timestamp)}</Text>
+                              </View>
+                              <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                            </View>
+                          </View>
+                        );
+                      }
+
+                      // ── Photo Moment Card ──
+                      if (PHOTO_SET.has(et)) {
+                        return (
+                          <View key={evtKey} style={{ marginHorizontal: 4, marginBottom: 14, borderRadius: 20, overflow: 'hidden', backgroundColor: colors.card }} data-testid={`feed-event-${evtKey}`}>
+                            <View style={{ paddingHorizontal: 14, paddingTop: 12, paddingBottom: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: (evt.color || '#C9A962') + '15', alignItems: 'center', justifyContent: 'center', marginRight: 8 }}>
+                                  <Ionicons name={(evt.icon || 'camera') as any} size={14} color={evt.color || '#C9A962'} />
+                                </View>
+                                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>{getEventTitle(evt)}</Text>
+                              </View>
+                              <Text style={{ fontSize: 12, color: colors.textTertiary }}>{formatEventTime(evt.timestamp)}</Text>
+                            </View>
+                            {contactPhoto ? (
+                              <View style={{ paddingHorizontal: 12, paddingBottom: 4 }}>
+                                {Platform.OS === 'web' ? (
+                                  <img src={contactPhoto} style={{ width: '100%', height: 220, objectFit: 'cover', borderRadius: 14, display: 'block' }} loading="lazy" />
+                                ) : (
+                                  <Image source={{ uri: contactPhoto }} style={{ width: '100%', height: 220, borderRadius: 14 }} contentFit="cover" />
+                                )}
+                              </View>
+                            ) : (
+                              <View style={{ marginHorizontal: 12, height: 100, borderRadius: 14, backgroundColor: (evt.color || '#C9A962') + '08', alignItems: 'center', justifyContent: 'center' }}>
+                                <Ionicons name={(evt.icon || 'camera') as any} size={32} color={(evt.color || '#C9A962') + '40'} />
+                              </View>
+                            )}
+                            {evt.description ? (
+                              <View style={{ paddingHorizontal: 14, paddingTop: 8, paddingBottom: 12 }}>
+                                <Text style={{ fontSize: 14, color: colors.textSecondary }} numberOfLines={2}>{evt.description}</Text>
+                              </View>
+                            ) : null}
+                          </View>
+                        );
+                      }
+
+                      // ── Inbound / Message Card ──
+                      if (isInbound) {
+                        return (
+                          <TouchableOpacity key={evtKey} activeOpacity={0.7} onPress={() => setExpandedEvents(prev => ({ ...prev, [evtKey]: !prev[evtKey] }))} style={{ marginHorizontal: 4, marginBottom: 6, borderRadius: 14, padding: 12, backgroundColor: colors.card, flexDirection: 'row', alignItems: 'flex-start', borderLeftWidth: 3, borderLeftColor: '#30D158' }} data-testid={`feed-event-${evtKey}`}>
+                            <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: '#30D15818', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                              <Ionicons name="arrow-down" size={16} color="#30D158" />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                <Text style={{ fontSize: 14, fontWeight: '700', color: '#30D158' }}>Customer Reply</Text>
+                                <View style={{ backgroundColor: '#30D15820', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}><Text style={{ fontSize: 9, fontWeight: '700', color: '#30D158' }}>INBOUND</Text></View>
+                              </View>
+                              <Text style={{ fontSize: 14, color: '#30D158', fontStyle: 'italic', marginTop: 3 }} numberOfLines={isExpanded ? 10 : 1}>"{evt.description || evt.full_content}"</Text>
+                              {isExpanded && evt.full_content && evt.full_content !== evt.description && (
+                                <View style={{ marginTop: 6, padding: 10, borderRadius: 10, backgroundColor: '#30D15810' }}>
+                                  <Text style={{ fontSize: 14, color: '#30D158' }}>"{evt.full_content}"</Text>
+                                </View>
+                              )}
+                              {evt.has_photo && (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                                  <Ionicons name="image" size={13} color="#30D158" />
+                                  <Text style={{ fontSize: 12, color: '#30D158' }}>Photo attached</Text>
+                                </View>
+                              )}
+                              <Text style={{ fontSize: 12, color: colors.textTertiary, marginTop: 4 }}>{formatEventTime(evt.timestamp)}</Text>
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      }
+
+                      // ── Default Text Event Card ──
+                      const channelLabel = evt.channel === 'email' ? 'Email' : evt.channel === 'sms_personal' ? 'SMS' : evt.channel === 'sms' ? 'SMS' : evt.channel === 'whatsapp' ? 'WhatsApp' : '';
+                      return (
+                        <TouchableOpacity key={evtKey} activeOpacity={0.7} onPress={() => setExpandedEvents(prev => ({ ...prev, [evtKey]: !prev[evtKey] }))} style={{ marginHorizontal: 4, marginBottom: 4, borderRadius: 14, padding: 12, backgroundColor: colors.card, flexDirection: 'row', alignItems: 'flex-start' }} data-testid={`feed-event-${evtKey}`}>
+                          <View style={{ position: 'relative', marginRight: 12 }}>
+                            <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: `${evt.color || catStyle.color}15`, alignItems: 'center', justifyContent: 'center' }}>
+                              <Ionicons name={(evt.icon || catStyle.icon) as any} size={16} color={evt.color || catStyle.color} />
+                            </View>
+                            {channelLabel ? (
+                              <View style={{ position: 'absolute', bottom: -3, right: -3, backgroundColor: evt.color || '#007AFF', borderRadius: 6, paddingHorizontal: 3, paddingVertical: 1 }}>
+                                <Text style={{ fontSize: 7, fontWeight: '700', color: '#FFF' }}>{channelLabel}</Text>
+                              </View>
+                            ) : null}
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>{getEventTitle(evt)}</Text>
                               <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={colors.textTertiary} />
                             </View>
                             {!isExpanded && evt.description ? (
-                              <Text style={[s.feedDesc, isInbound && { color: '#30D158', fontStyle: 'italic' }]} numberOfLines={1}>
-                                {isInbound ? `"${evt.description}"` : evt.description}
-                              </Text>
+                              <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }} numberOfLines={1}>{evt.description}</Text>
                             ) : null}
                             {isExpanded && (
-                              <View style={s.feedExpandedPreview}>
-                                {channelLabel ? (
-                                  <View style={[s.feedChannelBadge, { backgroundColor: `${evt.color || '#007AFF'}20` }]}>
-                                    <Ionicons name={evt.channel === 'email' ? 'mail' : evt.channel === 'whatsapp' ? 'logo-whatsapp' : evt.channel === 'messenger' ? 'chatbubbles' : evt.channel === 'telegram' ? 'paper-plane' : evt.channel === 'linkedin' ? 'logo-linkedin' : evt.channel === 'clipboard' ? 'copy' : 'chatbubble'} size={10} color={evt.color || '#007AFF'} />
-                                    <Text style={[s.feedChannelText, { color: evt.color || '#007AFF' }]}>{channelLabel}</Text>
-                                  </View>
-                                ) : null}
-                                {evt.subject ? (
-                                  <Text style={s.feedSubject}>{evt.subject}</Text>
-                                ) : null}
-                                <View style={[s.feedMessageBubble, isInbound && s.feedMessageBubbleInbound]}>
-                                  <Text style={[s.feedMessageText, isInbound && { color: '#30D158' }]}>
-                                    {isInbound ? `"${fullContent}"` : fullContent}
-                                  </Text>
+                              <View style={{ marginTop: 6 }}>
+                                {evt.subject ? <Text style={{ fontSize: 13, fontWeight: '600', color: colors.text, marginBottom: 4 }}>{evt.subject}</Text> : null}
+                                <View style={{ padding: 10, borderRadius: 10, backgroundColor: colors.surface }}>
+                                  <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 20 }}>{evt.full_content || evt.description || ''}</Text>
                                 </View>
                                 {evt.has_photo && (
-                                  <View style={s.feedPhotoIndicator}>
-                                    <Ionicons name="image" size={14} color="#30D158" />
-                                    <Text style={s.feedPhotoText}>Photo attached</Text>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 }}>
+                                    <Ionicons name="image" size={13} color="#30D158" />
+                                    <Text style={{ fontSize: 12, color: '#30D158' }}>Photo attached</Text>
                                   </View>
                                 )}
-                                {hasLink && (
-                                  <TouchableOpacity
-                                    style={s.feedViewLink}
-                                    onPress={(e) => {
-                                      e.stopPropagation?.();
-                                      router.push(evt.link as any);
-                                    }}
-                                    data-testid={`feed-view-link-${evtKey}`}
-                                  >
+                                {evt.link && (
+                                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 }} onPress={(e) => { e.stopPropagation?.(); router.push(evt.link as any); }} data-testid={`feed-view-link-${evtKey}`}>
                                     <Ionicons name="open-outline" size={14} color="#007AFF" />
-                                    <Text style={s.feedViewLinkText}>View Card</Text>
+                                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#007AFF' }}>View Card</Text>
                                   </TouchableOpacity>
                                 )}
                               </View>
                             )}
-                            <Text style={s.feedTime}>{formatEventTime(evt.timestamp)}</Text>
+                            <Text style={{ fontSize: 12, color: colors.textTertiary, marginTop: 4 }}>{formatEventTime(evt.timestamp)}</Text>
                           </View>
                         </TouchableOpacity>
                       );
