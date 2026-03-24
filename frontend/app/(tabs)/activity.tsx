@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, FlatList, ScrollView, TouchableOpacity, StyleSheet, Image,
+  View, Text, FlatList, TouchableOpacity, StyleSheet, Image,
   ActivityIndicator, RefreshControl, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -251,15 +251,6 @@ const TextEventCard = ({ item, colors, router }: any) => {
   );
 };
 
-// ── Filter Chips ──
-const FILTERS = [
-  { key: 'all', label: 'All', icon: 'pulse' },
-  { key: 'engagement', label: 'Engagement', icon: 'eye' },
-  { key: 'photo_moment', label: 'Photos', icon: 'camera' },
-  { key: 'milestone', label: 'Milestones', icon: 'flag' },
-  { key: 'text_event', label: 'Messages', icon: 'chatbubble' },
-];
-
 export default function ActivityTab() {
   const { colors } = useThemeStore();
   const { user } = useAuthStore();
@@ -269,7 +260,6 @@ export default function ActivityTab() {
   const [feed, setFeed] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeFilter, setActiveFilter] = useState('all');
   const [, setTick] = useState(0);
 
   const loadFeed = useCallback(async () => {
@@ -304,16 +294,11 @@ export default function ActivityTab() {
     setRefreshing(false);
   };
 
-  // Filter feed
-  const filteredFeed = activeFilter === 'all'
-    ? feed
-    : feed.filter(item => item.visual_type === activeFilter);
-
   // Group by date
   const groupedData = React.useMemo(() => {
     const items: any[] = [];
     let lastLabel = '';
-    for (const item of filteredFeed) {
+    for (const item of feed) {
       const label = getDateLabel(item.timestamp);
       if (label !== lastLabel) {
         items.push({ _type: 'date_header', label });
@@ -322,9 +307,7 @@ export default function ActivityTab() {
       items.push({ _type: 'event', ...item });
     }
     return items;
-  }, [filteredFeed]);
-
-  const photoCount = feed.filter(f => f.visual_type === 'photo_moment').length;
+  }, [feed]);
 
   if (loading) {
     return (
@@ -342,17 +325,11 @@ export default function ActivityTab() {
           <Text style={[s.headerTitle, { color: colors.text }]} data-testid="activity-header">Activity</Text>
           <Text style={[s.headerSubtitle, { color: colors.textTertiary }]}>Your relationship feed</Text>
         </View>
-        {engagementCount > 0 && (
-          <View style={[s.headerStat, { backgroundColor: '#34C75915' }]}>
-            <Ionicons name="eye" size={14} color="#34C759" />
-            <Text style={{ fontSize: 13, fontWeight: '700', color: '#34C759' }}>{engagementCount}</Text>
-          </View>
-        )}
       </View>
 
       {/* Feed */}
       <FlatList
-        data={[{ _type: 'filters' }, ...groupedData]}
+        data={groupedData}
         keyExtractor={(item, idx) => `${item._type}-${(item as any).event_type || (item as any).label || 'f'}-${idx}`}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#C9A962" />}
         showsVerticalScrollIndicator={false}
@@ -368,32 +345,6 @@ export default function ActivityTab() {
           </View>
         }
         renderItem={({ item }) => {
-          if (item._type === 'filters') {
-            return (
-              <View style={{ height: 40, marginBottom: 4 }}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', paddingHorizontal: 12, alignItems: 'center' }}>
-                  {FILTERS.map((f, i) => {
-                  const isActive = activeFilter === f.key;
-                  return (
-                    <TouchableOpacity
-                      key={f.key}
-                      onPress={() => setActiveFilter(f.key)}
-                      style={{
-                        flexDirection: 'row', alignItems: 'center',
-                        paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1,
-                        marginRight: i < FILTERS.length - 1 ? 8 : 0,
-                        backgroundColor: isActive ? '#C9A962' : colors.card,
-                        borderColor: isActive ? '#C9A962' : colors.border,
-                      }}
-                    >
-                      <Ionicons name={f.icon as any} size={14} color={isActive ? '#000' : colors.textSecondary} style={{ marginRight: 5 }} />
-                      <Text style={{ fontSize: 13, fontWeight: '600', color: isActive ? '#000' : colors.textSecondary }}>{f.label}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            );
-          }
           if (item._type === 'date_header') {
             return (
               <View style={s.dateLabelRow}>
@@ -420,12 +371,6 @@ const s = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 },
   headerTitle: { fontSize: 28, fontWeight: '800' },
   headerSubtitle: { fontSize: 14, marginTop: 2 },
-  headerStat: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, marginTop: 4 },
-
-  // Filter chips
-  filterRow: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, paddingBottom: 10, gap: 8, alignItems: 'flex-start' },
-  filterChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1, alignSelf: 'flex-start' },
-  filterText: { fontSize: 13, fontWeight: '600' },
 
   scrollContainer: { flex: 1 },
   scroll: { paddingBottom: 0 },
