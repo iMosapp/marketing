@@ -115,9 +115,10 @@ export default function ManageCardTemplatesPage() {
         <TouchableOpacity onPress={() => router.back()} data-testid="template-list-back"><Ionicons name="chevron-back" size={24} color={colors.text} /></TouchableOpacity>
         <Text style={s.headerTitle}>Card Templates</Text>
         <TouchableOpacity onPress={() => {
-          // Create a new template by pre-filling with defaults and opening the editor
+          // Create a new template with a unique card_type slug
+          const slug = 'custom_' + Date.now().toString(36);
           setEditing({
-            card_type: 'custom',
+            card_type: slug,
             customized: false,
             headline: 'New Card',
             message: 'Hey {customer_name}, just wanted to reach out!',

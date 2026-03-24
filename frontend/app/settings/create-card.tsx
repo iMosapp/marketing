@@ -17,7 +17,7 @@ const IS_WEB = Platform.OS === 'web';
 const BASE_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com';
 
 // Fallback defaults per card type (used while template loads)
-const TYPE_META: Record<string, { label: string; icon: string; accent: string; headline: string; message: string }> = {
+const TYPE_META = {
   congrats:    { label: 'Congrats Card',    icon: 'gift',       accent: '#C9A962', headline: 'Congratulations!',  message: 'Thank you for choosing us, {name}!' },
   birthday:    { label: 'Birthday Card',    icon: 'balloon',    accent: '#FF2D55', headline: 'Happy Birthday!',    message: 'Wishing you the happiest of birthdays, {name}!' },
   anniversary: { label: 'Anniversary Card', icon: 'heart',      accent: '#FF6B6B', headline: 'Happy Anniversary!', message: 'Celebrating this special milestone with you, {name}!' },
@@ -33,31 +33,41 @@ export default function CreateCardPage() {
   const { type, prefillName, prefillPhone, prefillEmail, returnToThread, for_contact, return_to_contact } = useLocalSearchParams<{ type: string; prefillName: string; prefillPhone: string; prefillEmail: string; returnToThread: string; for_contact: string; return_to_contact: string }>();
   const { user } = useAuthStore();
   const cardType = type || 'congrats';
-  const meta = TYPE_META[cardType] || TYPE_META.congrats;
+  const baseMeta = TYPE_META[cardType] || { label: cardType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) + ' Card', icon: 'create-outline', accent: '#C9A962', headline: cardType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), message: 'A special card for {name}!' };
   const isFromContact = !!return_to_contact || !!returnToThread;
 
-  const [template, setTemplate] = useState<any>(null);
+  const [template, setTemplate] = useState(null);
   const [customerName, setCustomerName] = useState(prefillName || '');
   const [customerPhone, setCustomerPhone] = useState(prefillPhone || '');
   const [customerEmail, setCustomerEmail] = useState(prefillEmail || '');
   const [customMessage, setCustomMessage] = useState('');
-  const [photo, setPhoto] = useState<{ uri: string; type: string; name: string } | null>(null);
+  const [photo, setPhoto] = useState(null);
   const [creating, setCreating] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
-  const [createdCard, setCreatedCard] = useState<{ card_id: string; share_url: string } | null>(null);
+  const [createdCard, setCreatedCard] = useState(null);
   const [matchModalVisible, setMatchModalVisible] = useState(false);
-  const [matchInfo, setMatchInfo] = useState<any>(null);
-  const [pendingSharePlatform, setPendingSharePlatform] = useState<string | null>(null);
+  const [matchInfo, setMatchInfo] = useState(null);
+  const [pendingSharePlatform, setPendingSharePlatform] = useState(null);
 
   // Tag picker state
-  const [availableTags, setAvailableTags] = useState<any[]>([]);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState([]);
+  const [selectedTags, setSelectedTags] = useState([]);
   const [startCampaign, setStartCampaign] = useState(true);
   const [loadingTags, setLoadingTags] = useState(false);
 
-  const accent = template?.accent_color || meta.accent;
-  const headline = template?.headline || meta.headline;
-  const message = template?.message || meta.message;
+  // Reactive meta — uses template values when loaded, falls back to baseMeta
+  const accent = template?.accent_color || baseMeta.accent;
+  const headline = template?.headline || baseMeta.headline;
+  const message = template?.message || baseMeta.message;
+  const templateLabel = template?.headline || baseMeta.label;
+  const meta = {
+    ...baseMeta,
+    label: templateLabel,
+    accent,
+    headline,
+    message,
+    icon: baseMeta.icon,
+  };
 
   useEffect(() => {
     if (user?.store_id) {
