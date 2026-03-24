@@ -48,6 +48,12 @@ export async function reportError(report: ErrorReport) {
   try {
     const key = _dedupeKey(report.error_message);
     if (_recentErrors.has(key)) return; // skip duplicate within session
+    
+    // Skip benign errors that aren't real problems
+    const msg = report.error_message.toLowerCase();
+    if (msg.includes('abort') && msg.includes('cancellation of share')) return;
+    if (msg.includes('user denied') || msg.includes('user cancelled')) return;
+    
     _recentErrors.add(key);
     // Auto-clear after 60s so repeated errors eventually get re-reported
     setTimeout(() => _recentErrors.delete(key), 60000);

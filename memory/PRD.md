@@ -13,7 +13,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### React Hydration Error #418 Fix + Campaign Stats Fix (Mar 24, 2026) -- LATEST
+### Error Report Fixes Round 2 + Clear Button (Mar 24, 2026) -- LATEST
+- **Clear Button Fix:** The Error Reports page's "Clear All" button was crashing (`showSimpleAlert` doesn't accept button arrays). Switched to `showConfirm` which properly handles confirm/cancel dialogs.
+- **Card Page Hydration Fix:** Added `mounted` state pattern to `/card/[userId].tsx` to prevent React #418 on public digital card pages.
+- **Share Cancel Noise Suppressed:** Filtered out benign "Abort due to cancellation of share" errors from being reported.
+
+### React Hydration Error #418 Fix + Campaign Stats Fix (Mar 24, 2026)
 - **Campaign Stats Fix:** Campaigns list page was showing "0 sent" for all campaigns because the `GET /api/campaigns/{user_id}` endpoint didn't aggregate enrollment data. Added MongoDB aggregation pipeline to compute `messages_sent_count`, `enrollments_total`, `enrollments_active`, `enrollments_completed`, and `last_sent_at` per campaign from `campaign_enrollments`. Removed `response_model=List[Campaign]` that was stripping the new fields.
 - **React Hydration #418 Fix:** Public pages (`/showcase/`, `/p/`, `/l/`) were using `window.location.href` and rendering browser-specific content during initial render, causing server-client hydration mismatch.
 - **Fix:** Added `mounted` state pattern to all 3 public pages. Content only renders after client mount, ensuring consistent output between SSR and hydration.

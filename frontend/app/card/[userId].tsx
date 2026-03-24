@@ -134,6 +134,7 @@ export default function DigitalCardPage() {
   const [matchModalVisible, setMatchModalVisible] = useState(false);
   const [matchInfo, setMatchInfo] = useState<any>(null);
   const [pendingShareAction, setPendingShareAction] = useState<{platform: string; payload: any} | null>(null);
+  const [mounted, setMounted] = useState(false);
   
   // Derive theme from brand kit
   const themeMode = (cardData?.brand_kit?.page_theme === 'light') ? 'light' : 'dark';
@@ -157,6 +158,10 @@ export default function DigitalCardPage() {
   // Animation values
   const flipAnimation = useRef(new Animated.Value(0)).current;
   const qrRef = useRef<any>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     loadCardData();
@@ -460,7 +465,7 @@ export default function DigitalCardPage() {
     );
   };
 
-  if (loading) {
+  if (!mounted || loading) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: '#0D0D0D' }]}>
         <ActivityIndicator size="large" color="#C9A962" />

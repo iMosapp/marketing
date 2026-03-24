@@ -8,7 +8,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
-import { showSimpleAlert } from '../../services/alert';
+import { showConfirm } from '../../services/alert';
 
 const FILTERS = [
   { key: 'all', label: 'All' },
@@ -133,21 +133,16 @@ export default function ErrorReportsPage() {
   };
 
   const handleClear = () => {
-    showSimpleAlert(
+    showConfirm(
       'Clear All Reports?',
       'This will delete all error reports. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear All', style: 'destructive', onPress: async () => {
-            try {
-              await api.delete('/errors/clear');
-              setReports([]);
-              setCount(0);
-            } catch {}
-          }
-        },
-      ]
+      async () => {
+        try {
+          await api.delete('/errors/clear');
+          setReports([]);
+          setCount(0);
+        } catch {}
+      }
     );
   };
 
