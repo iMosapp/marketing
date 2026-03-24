@@ -13,6 +13,66 @@ from apscheduler.triggers.interval import IntervalTrigger
 
 logger = logging.getLogger(__name__)
 
+# Cache for user/store data to avoid repeated DB lookups within a single scheduler run
+_user_cache = {}
+_store_cache = {}
+
+
+async def resolve_template_variables(db, message: str, contact: dict, user_id: str) -> str:
+    """Replace ALL template variables in a message with real values.
+    
+    Supports: {first_name}, {last_name}, {name}, {contact_name}, {phone},
+              {customer_first_name}, {salesman_first_name}, {salesman_name},
+              {review_link}, {review_url}, {purchase}
+    """
+    if not message:
+        return message
+    
+    # Contact info
+    contact_first = (contact.get("first_name") or contact.get("contact_name", "").split()[0] if contact.get("contact_name") else "there")
+    contact_last = (contact.get("last_name") or (" ".join(contact.get("contact_name", "").split()[1:]) if contact.get("contact_name") else ""))
+    contact_full = f"{contact_first} {contact_last}".strip() or "there"
+    
+    message = message.replace("{first_name}", contact_first)
+    message = message.replace("{last_name}", contact_last)
+    message = message.replace("{name}", contact_first)
+    message = message.replace("{contact_name}", contact_full)
+    message = message.replace("{customer_first_name}", contact_first)
+    message = message.replace("{phone}", contact.get("phone", ""))
+    
+    # Salesman (user) info - fetch once and cache
+    if "{salesman_first_name}" in message or "{salesman_name}" in message or "{review_link}" in message or "{review_url}" in message:
+        if user_id not in _user_cache:
+            _user_cache[user_id] = await db.users.find_one({"_id": ObjectId(user_id)}) or {}
+        user_doc = _user_cache[user_id]
+        
+        user_name = user_doc.get("name", "")
+        user_first = user_name.split()[0] if user_name else ""
+        message = message.replace("{salesman_first_name}", user_first)
+        message = message.replace("{salesman_name}", user_name)
+        
+        # Review link
+        if "{review_link}" in message or "{review_url}" in message:
+            review_url = user_doc.get("review_url", "") or ""
+            if not review_url:
+                store_id = user_doc.get("store_id")
+                if store_id:
+                    store_key = str(store_id)
+                    if store_key not in _store_cache:
+                        _store_cache[store_key] = await db.stores.find_one({"_id": ObjectId(store_id)}) or {}
+                    store = _store_cache[store_key]
+                    rl = store.get("review_links", {})
+                    review_url = rl.get("google", "") or rl.get("yelp", "") or rl.get("facebook", "") or ""
+            message = message.replace("{review_link}", review_url)
+            message = message.replace("{review_url}", review_url)
+    
+    # Purchase info
+    if "{purchase}" in message:
+        purchase = contact.get("purchase", "") or contact.get("vehicle", "") or contact.get("product", "") or "purchase"
+        message = message.replace("{purchase}", purchase)
+    
+    return message
+
 scheduler = AsyncIOScheduler()
 
 # Track scheduler state for health endpoint
@@ -228,10 +288,7 @@ async def _run_date_triggers_for_user(db, user_id: str) -> int:
             if already_sent:
                 continue
 
-            message = template.replace("{first_name}", contact.get("first_name", ""))
-            message = message.replace("{last_name}", contact.get("last_name", ""))
-            message = message.replace("{name}", contact_name)
-            message = message.replace("{phone}", contact.get("phone", ""))
+            message = await resolve_template_variables(db, template, contact, user_id)
 
             send_result = {"sms": False, "email": False}
 
@@ -530,13 +587,13 @@ async def process_pending_campaign_steps():
                             task_title = f"Send {channel.upper()} to {contact_display}"
                             task_desc = f"Campaign '{campaign.get('name', '')}' step {current_step}: {message_content[:200]}"
 
-                        # Replace template variables in the message
-                        contact_first = enrollment.get("contact_name", "").split()[0] if enrollment.get("contact_name") else "there"
-                        clean_message = message_content
-                        clean_message = clean_message.replace("{name}", contact_first)
-                        clean_message = clean_message.replace("{first_name}", contact_first)
-                        clean_message = clean_message.replace("{last_name}", enrollment.get("contact_name", "").split()[-1] if enrollment.get("contact_name") else "")
-                        clean_message = clean_message.replace("{contact_name}", enrollment.get("contact_name", ""))
+                        # Replace ALL template variables in the message
+                        clean_message = await resolve_template_variables(db, message_content, {
+                            "first_name": enrollment.get("contact_name", "").split()[0] if enrollment.get("contact_name") else "there",
+                            "last_name": enrollment.get("contact_name", "").split()[-1] if enrollment.get("contact_name") else "",
+                            "contact_name": enrollment.get("contact_name", ""),
+                            "phone": enrollment.get("contact_phone", ""),
+                        }, user_id)
 
                         try:
                             await db.tasks.insert_one({
@@ -682,6 +739,8 @@ async def process_pending_campaign_steps():
             "ran_at": datetime.now(timezone.utc).isoformat(),
         }
         logger.info(f"[Scheduler] Campaign steps complete. Processed {processed}/{len(pending)}.")
+        _user_cache.clear()
+        _store_cache.clear()
     except Exception as e:
         logger.error(f"[Scheduler] Fatal error in campaign step processing: {e}")
         _scheduler_state["errors"] = (_scheduler_state["errors"] + [str(e)])[-20:]

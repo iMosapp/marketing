@@ -13,7 +13,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### Alert.alert Web Crash Fix (Mar 24, 2026) -- LATEST
+### Campaign Template Variables Fix (Mar 24, 2026) -- LATEST
+- **Critical Bug:** Campaign messages sent `{review_link}` as literal text instead of the actual review URL. Also missing: `{customer_first_name}`, `{salesman_first_name}`, `{salesman_name}`, `{purchase}`, `{review_url}`.
+- **Fix:** Created a centralized `resolve_template_variables()` function in `scheduler.py` that handles ALL template variables with DB lookups for user profile and store review links. Applied to both the campaign step processor and date-triggered campaign paths. Also updated `tasks.py` to use the same shared function.
+- **Variables now supported:** `{first_name}`, `{last_name}`, `{name}`, `{contact_name}`, `{customer_first_name}`, `{phone}`, `{salesman_first_name}`, `{salesman_name}`, `{review_link}`, `{review_url}`, `{purchase}`
+
+### Alert.alert Web Crash Fix (Mar 24, 2026)
 - **Root Cause:** 36+ files used `Alert.alert()` from React Native without importing `Alert`. This works on native but crashes on web with "Can't find variable: Alert". The thread page was the first to surface this via error reporting.
 - **Fix:** Replaced ALL `Alert.alert()` calls across 36 files with the cross-platform `showAlert()` function from `services/alert.ts`. This function uses `window.confirm/alert` on web and `Alert.alert` on native.
 - **Also fixed:** Error Reports clear button (was passing button array to `showSimpleAlert` which only accepts callback), digital card page hydration error (#418).
