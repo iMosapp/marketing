@@ -98,6 +98,7 @@ export default function ShowcasePage() {
   const [error, setError] = useState<string | null>(null);
   const [showQR, setShowQR] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewName, setReviewName] = useState('');
   const [reviewText, setReviewText] = useState('');
@@ -106,6 +107,10 @@ export default function ShowcasePage() {
 
   const pageScope = (scope as string) || 'user';
   const fromUserId = from as string | undefined;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     loadShowcase();
@@ -129,7 +134,7 @@ export default function ShowcasePage() {
     }
   };
 
-  const shareUrl = IS_WEB
+  const shareUrl = mounted && IS_WEB
     ? window.location.href
     : `https://app.imonsocial.com/showcase/${id}`;
 
@@ -182,6 +187,16 @@ export default function ShowcasePage() {
       Share.share({ message: shareUrl });
     }
   };
+
+  if (!mounted) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={ACCENT} />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (loading) {
     return (
@@ -528,10 +543,11 @@ export default function ShowcasePage() {
             <TouchableOpacity
               style={[styles.referralBanner, { borderColor: accent + '40' }]}
               onPress={() => {
-                const shareText = `Check out this showcase! ${typeof window !== 'undefined' ? window.location.href : ''}`;
+                const currentUrl = typeof window !== 'undefined' ? window.location.href : `https://app.imonsocial.com/showcase/${id}`;
+                const shareText = `Check out this showcase! ${currentUrl}`;
                 if (Platform.OS === 'web') {
                   if (typeof navigator !== 'undefined' && navigator.share) {
-                    navigator.share({ title: 'Refer a Friend', text: shareText, url: window.location.href });
+                    navigator.share({ title: 'Refer a Friend', text: shareText, url: currentUrl });
                   } else if (typeof navigator !== 'undefined') {
                     navigator.clipboard?.writeText(shareText);
                     alert('Link copied! Share it with a friend.');

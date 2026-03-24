@@ -36,6 +36,11 @@ export default function PublicLinkPage() {
   const [data, setData] = useState<PageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (username) loadPage();
@@ -74,7 +79,7 @@ export default function PublicLinkPage() {
   const borderColor = isDark ? '#2C2C2E' : '#D1D1D6';
   const subColor = isDark ? '#8E8E93' : '#6C6C70';
 
-  if (loading) return <View style={[s.center, { backgroundColor: bg }]}><ActivityIndicator size="large" color={accent} /></View>;
+  if (!mounted || loading) return <View style={[s.center, { backgroundColor: bg }]}><ActivityIndicator size="large" color={accent} /></View>;
   if (notFound || !data) return (
     <View style={[s.center, { backgroundColor: bg }]}>
       <Text style={{ fontSize: 21, fontWeight: '700', color: textColor, marginBottom: 8 }}>Page Not Found</Text>

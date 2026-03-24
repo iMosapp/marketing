@@ -75,6 +75,7 @@ export default function PublicLandingPage() {
   const [data, setData] = useState<LandingPageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
   
   // Review form state
   const [showReviewModal, setShowReviewModal] = useState(false);
@@ -94,6 +95,10 @@ export default function PublicLandingPage() {
   const [referredEmail, setReferredEmail] = useState('');
   const [referNotes, setReferNotes] = useState('');
   const [submittingReferral, setSubmittingReferral] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     loadData();
@@ -245,6 +250,14 @@ export default function PublicLandingPage() {
   };
 
   const primaryColor = data?.store?.primary_color || '#C9A962';
+
+  if (!mounted) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#C9A962" />
+      </View>
+    );
+  }
 
   if (loading) {
     return (

@@ -13,7 +13,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### Production Crash Fix + ErrorBoundary (Mar 24, 2026) -- LATEST
+### React Hydration Error #418 Fix (Mar 24, 2026) -- LATEST
+- **Root Cause:** Public pages (`/showcase/`, `/p/`, `/l/`) were using `window.location.href` and rendering browser-specific content during initial render, causing server-client hydration mismatch.
+- **Fix:** Added `mounted` state pattern to all 3 public pages. Content only renders after client mount, ensuring consistent output between SSR and hydration.
+- **Pages fixed:** `/app/frontend/app/showcase/[id].tsx`, `/app/frontend/app/p/[userId].tsx`, `/app/frontend/app/l/[username].tsx`
+
+### Production Crash Fix + ErrorBoundary (Mar 24, 2026)
 - **Critical Bug Fix:** Added missing `GET /api/users/{user_id}` endpoint. Previously only `PATCH` existed, causing **405 Method Not Allowed** when My Account page tried to refresh user data. This was a likely contributor to the "everything crashing" reports.
 - **ErrorBoundary:** Added a global React ErrorBoundary component wrapping the entire app. Any uncaught rendering error now shows a "Try Again" recovery screen instead of crashing the whole app to a white/blank screen. Critical for production stability with 50-60 users.
 - **Error Reporting System:** Built full crash/error reporting pipeline:
