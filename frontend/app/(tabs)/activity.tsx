@@ -336,7 +336,7 @@ export default function ActivityTab() {
 
 const s = StyleSheet.create({
   root: { flex: 1 },
-  header: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 6 },
+  header: { paddingHorizontal: 16, paddingTop: 48, paddingBottom: 6 },
   headerTitle: { fontSize: 28, fontWeight: '800' },
   headerSub: { fontSize: 14, marginTop: 2 },
 
