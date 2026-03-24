@@ -14,48 +14,42 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### Automotive Landing Page Rebuild (Mar 24, 2026) -- LATEST
-- **Full page restructure** from critique-based feedback. New conversion-optimized flow: Hook → Problem → Magic Moment → SEO → How It Works → Salespeople → Roles → ROI → Proof → Demo → Close
-- Hero: "Snap a Photo With Your Customer. We Run the Relationship for a Lifetime."
+### Calendar Systems Page Rebuild (Mar 24, 2026) -- LATEST
+- Rebuilt `/calendar-systems/` with conversion-optimized white-label partner pitch
+- New sections: "Sold Moment" trigger, Manager Adoption, Salesperson Value, CS Partnership data feed, Hidden SEO Bomb, 2-Minute Demo flow, Strategic Advantage
 - Viral hook: "Take a photo with your customer. The relationship runs itself."
-- Positioning: "Not CRM. Not social media. Relationship Automation for Salespeople."
-- ROI math section (180 photos/reviews/posts per salesperson per year)
-- Demo video placeholder ready for real content
+
+### Automotive Landing Page Rebuild (Mar 24, 2026)
+- Rebuilt `/automotive/` with conversion-optimized sales flow: Hook > Problem > Magic Moment > SEO > How It Works > Salespeople > Roles > ROI > Proof > Demo > Close
+- Hero: "Snap a Photo With Your Customer. We Run the Relationship for a Lifetime."
 - Added to Resources nav across all 38 marketing HTML files
 
 ### Marketing Site Updates (Mar 24, 2026)
-- **Future Vision Page** (`/future/`): Apple-style landing page for "The Future of Sales / Relationship Operating System" pitch.
-- **Nav Integration:** "Automotive Vision" added to Resources dropdown site-wide.
+- **Future Vision Page** (`/future/`): Apple-style "The Future of Sales" pitch
+- **Nav Integration:** Automotive Vision in Resources dropdown site-wide
 
-### Operations Manual v5.0 Update (Mar 24, 2026)
-- Seeded the updated Operations Manual to the database via `POST /api/docs/seed-project-scope`.
-
-### Error Report Fixes (Mar 24, 2026)
-- **520 Notification Center Fix:** Rewrote unread-count endpoint to use lightweight `count_documents()`.
-- **React #418 Showcase Hardening:** Fixed SSR hydration on `/showcase/` page.
-
-### Campaign System Fixes (Mar 24, 2026)
-- **Scheduler Bug Fix:** Fixed hourly delay randomization and AI toggle override bugs.
-- **Campaign Journey Feature:** New endpoint + component showing campaign timeline on contact detail page.
-- **Template Variables Fix:** Centralized `resolve_template_variables()` for all campaign messages.
-- **Campaign Stats:** Added MongoDB aggregation for enrollment data on campaigns list.
+### Error & Bug Fixes (Mar 24, 2026)
+- 520 Notification Center Fix (lightweight count_documents)
+- React #418 Showcase Hydration Fix
+- Campaign Scheduler hourly delay + AI toggle override bugs
+- Campaign Journey Feature (new endpoint + component)
+- Logout cookie cleanup
 
 ### Production Readiness (Mar 23-24, 2026)
-- ErrorBoundary, Error Reporting System, Alert.alert web crash fix (36 files)
-- Production MongoDB indexes, vanishing contacts race condition fix
+- ErrorBoundary, Error Reporting, Alert.alert web fix
+- Production MongoDB indexes, vanishing contacts race condition
 - Partner Monthly Invoice System with PDF generation
-- Training Hub with 8 YouTube videos, click tracking, video templates
+- Training Hub with 8 YouTube videos
 - Digital card/showcase OG tags, custom card templates
 
 ---
 
 ## Key API Endpoints
-- `POST /api/auth/login` — user authentication
-- `GET /api/users/{user_id}` — user profile data
-- `GET /api/campaigns/contact/{contact_id}/journey` — campaign timeline
-- `GET /notification-center/{user_id}/unread-count` — optimized unread count
-- `POST /api/errors/report` — frontend crash/error reports
-- `POST /api/demo-requests` — marketing site demo form submissions
+- `POST /api/auth/login`
+- `GET /api/campaigns/contact/{contact_id}/journey`
+- `GET /notification-center/{user_id}/unread-count`
+- `POST /api/demo-requests`
+- `POST /api/errors/report`
 
 ---
 
@@ -66,21 +60,16 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Gamification & Leaderboards (social experience)
 - AI-Powered Outreach (sold tag follow-ups)
 - Onboarding Drip Campaign
-- Wire up email signatures to outgoing sends
 
 ### P2
 - Full Twilio Integration (currently MOCK)
 - WhatsApp Integration
 - Stripe for partner invoices
 - Inventory Management Module
-- Refactor large files (admin.py 3700+ lines)
-- Reorganize marketing nav structure (automotive/dealers consolidation)
-- Add real demo video to /automotive page
-- Add real social proof/testimonials to /automotive page
-
-## Known Issues
-- P2: Mobile tags sync
-- P2: Leaderboard toggle not fully tested
+- Refactor large files (admin.py)
+- Reorganize marketing nav (automotive/dealers)
+- Add real demo videos + social proof to landing pages
+- Mobile tags sync issue
 
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
@@ -91,4 +80,3 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Twilio:** MOCK mode
 - **OpenAI:** AI features via emergentintegrations
 - **apscheduler:** Backend job scheduling
-- **YouTube:** Embedded video playback in Training Hub
