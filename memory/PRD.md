@@ -13,8 +13,9 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### React Hydration Error #418 Fix (Mar 24, 2026) -- LATEST
-- **Root Cause:** Public pages (`/showcase/`, `/p/`, `/l/`) were using `window.location.href` and rendering browser-specific content during initial render, causing server-client hydration mismatch.
+### React Hydration Error #418 Fix + Campaign Stats Fix (Mar 24, 2026) -- LATEST
+- **Campaign Stats Fix:** Campaigns list page was showing "0 sent" for all campaigns because the `GET /api/campaigns/{user_id}` endpoint didn't aggregate enrollment data. Added MongoDB aggregation pipeline to compute `messages_sent_count`, `enrollments_total`, `enrollments_active`, `enrollments_completed`, and `last_sent_at` per campaign from `campaign_enrollments`. Removed `response_model=List[Campaign]` that was stripping the new fields.
+- **React Hydration #418 Fix:** Public pages (`/showcase/`, `/p/`, `/l/`) were using `window.location.href` and rendering browser-specific content during initial render, causing server-client hydration mismatch.
 - **Fix:** Added `mounted` state pattern to all 3 public pages. Content only renders after client mount, ensuring consistent output between SSR and hydration.
 - **Pages fixed:** `/app/frontend/app/showcase/[id].tsx`, `/app/frontend/app/p/[userId].tsx`, `/app/frontend/app/l/[username].tsx`
 

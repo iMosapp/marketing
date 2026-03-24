@@ -590,7 +590,7 @@ async def create_campaign(user_id: str, campaign_data: CampaignCreate):
     
     return Campaign(**campaign_dict)
 
-@router.get("/{user_id}", response_model=List[Campaign])
+@router.get("/{user_id}")
 async def get_campaigns(user_id: str):
     """Get campaigns for a user: their own + store-level campaigns they should see."""
     db = get_db()
@@ -629,14 +629,47 @@ async def get_campaigns(user_id: str):
             idx = next(i for i, c in enumerate(result) if (c.get("name"), c.get("type")) == key)
             result[idx] = camp
     
-    result_models = []
+    # Aggregate enrollment stats per campaign
+    campaign_ids = [str(c["_id"]) for c in result]
+    stats_map = {}
+    if campaign_ids:
+        pipeline = [
+            {"$match": {"campaign_id": {"$in": campaign_ids}}},
+            {"$group": {
+                "_id": "$campaign_id",
+                "enrollments_total": {"$sum": 1},
+                "enrollments_active": {"$sum": {"$cond": [{"$eq": ["$status", "active"]}, 1, 0]}},
+                "enrollments_completed": {"$sum": {"$cond": [{"$eq": ["$status", "completed"]}, 1, 0]}},
+                "messages_sent_count": {"$sum": {"$size": {"$ifNull": ["$messages_sent", []]}}},
+                "last_sent_at": {"$max": {"$arrayElemAt": [{"$ifNull": ["$messages_sent.sent_at", []]}, -1]}},
+            }}
+        ]
+        async for stat in db.campaign_enrollments.aggregate(pipeline):
+            stats_map[stat["_id"]] = stat
+    
+    result_dicts = []
     for camp in result:
         # Auto-assign step numbers if missing from DB data
         for i, seq in enumerate(camp.get("sequences", [])):
             if not seq.get("step"):
                 seq["step"] = i + 1
-        result_models.append(Campaign(**{**camp, "_id": str(camp["_id"])}))
-    return result_models
+        
+        camp_id = str(camp["_id"])
+        camp["_id"] = camp_id
+        # Convert datetime fields for JSON serialization
+        if camp.get("created_at") and hasattr(camp["created_at"], "isoformat"):
+            camp["created_at"] = camp["created_at"].isoformat()
+        stats = stats_map.get(camp_id, {})
+        camp["messages_sent_count"] = stats.get("messages_sent_count", 0)
+        camp["enrollments_total"] = stats.get("enrollments_total", 0)
+        camp["enrollments_active"] = stats.get("enrollments_active", 0)
+        camp["enrollments_completed"] = stats.get("enrollments_completed", 0)
+        last_sent = stats.get("last_sent_at")
+        camp["last_sent_at"] = last_sent.isoformat() if last_sent and hasattr(last_sent, "isoformat") else last_sent
+        
+        result_dicts.append(camp)
+    
+    return result_dicts
 
 # ============= PENDING SENDS (Manual Campaigns) =============
 # NOTE: These routes MUST be above /{user_id}/{campaign_id} to avoid route collision.

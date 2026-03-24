@@ -137,12 +137,18 @@ export default function CampaignsScreen() {
           <View style={styles.statsRow}>
             <View style={styles.stat}>
               <Ionicons name="paper-plane" size={14} color={colors.textSecondary} />
-              <Text style={styles.statText}>{item.messagesSent || item.messages_sent || 0} sent</Text>
+              <Text style={styles.statText}>{item.messages_sent_count || 0} sent</Text>
             </View>
             <View style={styles.stat}>
               <Ionicons name="time" size={14} color={colors.textSecondary} />
-              <Text style={styles.statText}>{formatDate(item.lastSent || item.last_sent || null)}</Text>
+              <Text style={styles.statText}>{formatDate(item.last_sent_at ? new Date(item.last_sent_at) : null)}</Text>
             </View>
+            {(item.enrollments_active > 0 || item.enrollments_total > 0) && (
+              <View style={styles.stat}>
+                <Ionicons name="people" size={14} color={colors.textSecondary} />
+                <Text style={styles.statText}>{item.enrollments_active || 0} active</Text>
+              </View>
+            )}
           </View>
         </View>
       </TouchableOpacity>
@@ -184,7 +190,7 @@ export default function CampaignsScreen() {
         <View style={styles.statDivider} />
         <View style={styles.statItem}>
           <Text style={styles.statValue}>
-            {campaigns.reduce((sum, c) => sum + (c.messagesSent || c.messages_sent || 0), 0)}
+            {campaigns.reduce((sum, c) => sum + (c.messages_sent_count || 0), 0)}
           </Text>
           <Text style={styles.statLabel}>Total Sent</Text>
         </View>
