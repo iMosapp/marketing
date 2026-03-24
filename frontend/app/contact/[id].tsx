@@ -3548,6 +3548,8 @@ export default function ContactDetailScreen() {
                       const isInbound = evt.direction === 'inbound' || evt.event_type === 'customer_reply';
                       const et = evt.event_type;
                       const catStyle = EVENT_CATEGORY_ICON[evt.category] || EVENT_CATEGORY_ICON.custom;
+                      const isCustomerAction = ENGAGEMENT_SET.has(et) || isInbound || evt.category === 'customer_activity';
+                      const actorColor = isCustomerAction ? '#34C759' : '#007AFF'; // green = customer, blue = salesperson
 
                       // ── Milestone Card ──
                       if (MILESTONE_SET.has(et)) {
@@ -3566,15 +3568,15 @@ export default function ContactDetailScreen() {
                         );
                       }
 
-                      // ── Engagement Card (always compact on contact detail) ──
+                      // ── Engagement Card (customer action = green) ──
                       if (ENGAGEMENT_SET.has(et)) {
                         const engLabel = ENG_LABELS[et] || getEventTitle(evt);
                         return (
                           <View key={evtKey} style={{ marginHorizontal: 4, marginBottom: 6, borderRadius: 14, overflow: 'hidden', flexDirection: 'row', backgroundColor: colors.card }} data-testid={`feed-event-${evtKey}`}>
-                            <View style={{ width: 3, backgroundColor: evt.color || '#007AFF' }} />
+                            <View style={{ width: 3, backgroundColor: '#34C759' }} />
                             <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', padding: 12 }}>
-                              <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: (evt.color || '#007AFF') + '15', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                                <Ionicons name={(evt.icon || catStyle.icon) as any} size={16} color={evt.color || '#007AFF'} />
+                              <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#34C75915', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                                <Ionicons name={(evt.icon || catStyle.icon) as any} size={16} color="#34C759" />
                               </View>
                               <View style={{ flex: 1 }}>
                                 <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>{engLabel}</Text>
@@ -3586,15 +3588,15 @@ export default function ContactDetailScreen() {
                         );
                       }
 
-                      // ── Photo Moment / Sent Card (compact on contact detail) ──
+                      // ── Sent Card (salesperson action = blue) ──
                       if (PHOTO_SET.has(et)) {
                         const sentLabel = 'You sent ' + (getEventTitle(evt) || '').toLowerCase();
                         return (
                           <View key={evtKey} style={{ marginHorizontal: 4, marginBottom: 6, borderRadius: 14, overflow: 'hidden', flexDirection: 'row', backgroundColor: colors.card }} data-testid={`feed-event-${evtKey}`}>
-                            <View style={{ width: 3, backgroundColor: evt.color || '#C9A962' }} />
+                            <View style={{ width: 3, backgroundColor: '#007AFF' }} />
                             <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', padding: 12 }}>
-                              <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: (evt.color || '#C9A962') + '15', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                                <Ionicons name={(evt.icon || 'camera') as any} size={16} color={evt.color || '#C9A962'} />
+                              <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#007AFF15', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                                <Ionicons name={(evt.icon || 'camera') as any} size={16} color="#007AFF" />
                               </View>
                               <View style={{ flex: 1 }}>
                                 <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>{sentLabel}</Text>
@@ -3636,18 +3638,18 @@ export default function ContactDetailScreen() {
                         );
                       }
 
-                      // ── Default Text Event Card ──
+                      // ── Default Text Event Card (color-coded by actor) ──
                       const channelLabel = evt.channel === 'email' ? 'Email' : evt.channel === 'sms_personal' ? 'SMS' : evt.channel === 'sms' ? 'SMS' : evt.channel === 'whatsapp' ? 'WhatsApp' : '';
                       const isCustomerEvt = evt.category === 'customer_activity';
                       const actorPrefix = isCustomerEvt ? 'Customer: ' : 'You: ';
                       return (
-                        <TouchableOpacity key={evtKey} activeOpacity={0.7} onPress={() => setExpandedEvents(prev => ({ ...prev, [evtKey]: !prev[evtKey] }))} style={{ marginHorizontal: 4, marginBottom: 4, borderRadius: 14, padding: 12, backgroundColor: colors.card, flexDirection: 'row', alignItems: 'flex-start' }} data-testid={`feed-event-${evtKey}`}>
+                        <TouchableOpacity key={evtKey} activeOpacity={0.7} onPress={() => setExpandedEvents(prev => ({ ...prev, [evtKey]: !prev[evtKey] }))} style={{ marginHorizontal: 4, marginBottom: 4, borderRadius: 14, padding: 12, backgroundColor: colors.card, flexDirection: 'row', alignItems: 'flex-start', borderLeftWidth: 3, borderLeftColor: actorColor }} data-testid={`feed-event-${evtKey}`}>
                           <View style={{ position: 'relative', marginRight: 12 }}>
-                            <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: `${evt.color || catStyle.color}15`, alignItems: 'center', justifyContent: 'center' }}>
-                              <Ionicons name={(evt.icon || catStyle.icon) as any} size={16} color={evt.color || catStyle.color} />
+                            <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: actorColor + '15', alignItems: 'center', justifyContent: 'center' }}>
+                              <Ionicons name={(evt.icon || catStyle.icon) as any} size={16} color={actorColor} />
                             </View>
                             {channelLabel ? (
-                              <View style={{ position: 'absolute', bottom: -3, right: -3, backgroundColor: evt.color || '#007AFF', borderRadius: 6, paddingHorizontal: 3, paddingVertical: 1 }}>
+                              <View style={{ position: 'absolute', bottom: -3, right: -3, backgroundColor: actorColor, borderRadius: 6, paddingHorizontal: 3, paddingVertical: 1 }}>
                                 <Text style={{ fontSize: 7, fontWeight: '700', color: '#FFF' }}>{channelLabel}</Text>
                               </View>
                             ) : null}
