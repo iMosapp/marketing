@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { showAlert } from '../../services/alert';
 import {
   View,
   Text,
@@ -71,7 +72,7 @@ export default function TemplatesSettings() {
       setTemplates(data);
     } catch (error) {
       console.error('Error loading templates:', error);
-      Alert.alert('Error', 'Failed to load templates');
+      showAlert('Error', 'Failed to load templates');
     } finally {
       setLoading(false);
     }
@@ -96,7 +97,7 @@ export default function TemplatesSettings() {
   const handleSave = async () => {
     if (!user?._id) return;
     if (!formName.trim() || !formContent.trim()) {
-      Alert.alert('Error', 'Please fill in all fields');
+      showAlert('Error', 'Please fill in all fields');
       return;
     }
 
@@ -119,7 +120,7 @@ export default function TemplatesSettings() {
       loadTemplates();
     } catch (error: any) {
       console.error('Error saving template:', error);
-      Alert.alert('Error', error.response?.data?.detail || 'Failed to save template');
+      showAlert('Error', error.response?.data?.detail || 'Failed to save template');
     } finally {
       setSaving(false);
     }
@@ -130,7 +131,7 @@ export default function TemplatesSettings() {
       if (Platform.OS === 'web') {
         window.alert('Default templates cannot be deleted');
       } else {
-        Alert.alert('Cannot Delete', 'Default templates cannot be deleted');
+        showAlert('Cannot Delete', 'Default templates cannot be deleted');
       }
       return;
     }
@@ -145,7 +146,7 @@ export default function TemplatesSettings() {
         if (Platform.OS === 'web') {
           window.alert('Failed to delete template');
         } else {
-          Alert.alert('Error', 'Failed to delete template');
+          showAlert('Error', 'Failed to delete template');
         }
       }
     };
@@ -155,7 +156,7 @@ export default function TemplatesSettings() {
         await doDelete();
       }
     } else {
-      Alert.alert(
+      showAlert(
         'Delete Template',
         `Are you sure you want to delete "${template.name}"?`,
         [

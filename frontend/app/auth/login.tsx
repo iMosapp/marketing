@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { showAlert } from '../../services/alert';
 import {
   View,
   Text,
@@ -241,12 +242,12 @@ export default function LoginScreen() {
       } else if (result.error) {
         // Only show error if user didn't cancel
         if (!result.error.includes('cancel') && !result.error.includes('Cancel')) {
-          Alert.alert('Authentication Failed', result.error);
+          showAlert('Authentication Failed', result.error);
         }
       }
     } catch (error: any) {
       console.error('Biometric login error:', error);
-      Alert.alert('Error', 'Biometric login failed. Please use your password.');
+      showAlert('Error', 'Biometric login failed. Please use your password.');
     } finally {
       setBiometricLoading(false);
     }
@@ -260,7 +261,7 @@ export default function LoginScreen() {
     const defaultRoute = getDefaultRoute(loggedInUser?.role);
     
     if (success) {
-      Alert.alert(
+      showAlert(
         'Success',
         `${biometricStatus?.biometricLabel} login enabled! You can now login faster.`,
         [{ text: 'OK', onPress: () => router.replace(defaultRoute as any) }]

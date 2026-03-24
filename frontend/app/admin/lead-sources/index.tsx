@@ -16,6 +16,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../../store/authStore';
 import api from '../../../services/api';
 import { useToast } from '../../../components/common/Toast';
+import { showAlert } from '../../../services/alert';
 
 import { useThemeStore } from '../../../store/themeStore';
 interface LeadSource {
@@ -98,7 +99,7 @@ const { showToast } = useToast();
         showToast('${label} copied to clipboard');
       }
     } catch (error) {
-      Alert.alert('Error', 'Could not copy to clipboard');
+      showAlert('Error', 'Could not copy to clipboard');
     }
   };
 

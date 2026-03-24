@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from '../../../services/api';
 import { useToast } from '../../../components/common/Toast';
+import { showAlert } from '../../../services/alert';
 
 export default function PartnerAgreementSigningPage() {
   const { agreementId, payment, session_id } = useLocalSearchParams();
@@ -67,7 +68,7 @@ const { showToast } = useToast();
       }
     } catch (error) {
       console.error('Error loading agreement:', error);
-      Alert.alert('Error', 'Agreement not found or has expired');
+      showAlert('Error', 'Agreement not found or has expired');
     } finally {
       setLoading(false);
     }
@@ -86,7 +87,7 @@ const { showToast } = useToast();
         );
         
         if (response.data.payment_status === 'paid') {
-          Alert.alert('Payment Successful!', "Welcome to the i'M On Social Partner Program!");
+          showAlert('Payment Successful!', "Welcome to the i'M On Social Partner Program!");
           loadAgreement();
           break;
         }
@@ -104,19 +105,19 @@ const { showToast } = useToast();
   const handleSign = async () => {
     // Validation
     if (!form.name.trim()) {
-      Alert.alert('Required', 'Please enter your name');
+      showAlert('Required', 'Please enter your name');
       return;
     }
     if (!form.email.trim()) {
-      Alert.alert('Required', 'Please enter your email');
+      showAlert('Required', 'Please enter your email');
       return;
     }
     if (!signature.trim()) {
-      Alert.alert('Required', 'Please sign the agreement');
+      showAlert('Required', 'Please sign the agreement');
       return;
     }
     if (!agreedToTerms) {
-      Alert.alert('Required', 'Please agree to the terms');
+      showAlert('Required', 'Please agree to the terms');
       return;
     }
     
@@ -133,11 +134,11 @@ const { showToast } = useToast();
         // Redirect to payment
         initiatePayment();
       } else {
-        Alert.alert('Success!', "Welcome to the i'M On Social Partner Program!");
+        showAlert('Success!', "Welcome to the i'M On Social Partner Program!");
         loadAgreement();
       }
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.detail || 'Failed to sign agreement');
+      showAlert('Error', error.response?.data?.detail || 'Failed to sign agreement');
     } finally {
       setSigning(false);
     }
@@ -158,11 +159,11 @@ const { showToast } = useToast();
           window.location.href = response.data.checkout_url;
         } else {
           // For native, you'd use Linking or a WebView
-          Alert.alert('Payment', 'Please complete payment in browser');
+          showAlert('Payment', 'Please complete payment in browser');
         }
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to initiate payment');
+      showAlert('Error', 'Failed to initiate payment');
     }
   };
 

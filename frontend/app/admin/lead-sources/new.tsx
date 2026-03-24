@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { showAlert } from '../../../services/alert';
 import {
   View,
   Text,
@@ -82,7 +83,7 @@ export default function NewLeadSourceScreen() {
       if (IS_WEB) {
         showToast('Please enter a name for the lead source', 'error');
       } else {
-        Alert.alert('Error', 'Please enter a name for the lead source');
+        showAlert('Error', 'Please enter a name for the lead source');
       }
       return;
     }
@@ -90,7 +91,7 @@ export default function NewLeadSourceScreen() {
       if (IS_WEB) {
         showToast('Please select a team to handle leads from this source', 'error');
       } else {
-        Alert.alert('Error', 'Please select a team to handle leads from this source');
+        showAlert('Error', 'Please select a team to handle leads from this source');
       }
       return;
     }
@@ -106,7 +107,7 @@ export default function NewLeadSourceScreen() {
           // Navigate back after a short delay to show the toast
           setTimeout(() => router.back(), 1500);
         } else {
-          Alert.alert(
+          showAlert(
             'Lead Source Created',
             `Webhook URL:\n${response.data.lead_source.webhook_url}\n\nAPI Key has been generated. View details to copy credentials.`,
             [{ text: 'OK', onPress: () => router.back() }]
@@ -118,7 +119,7 @@ export default function NewLeadSourceScreen() {
       if (IS_WEB) {
         showToast('Failed to create lead source', 'error');
       } else {
-        Alert.alert('Error', 'Failed to create lead source');
+        showAlert('Error', 'Failed to create lead source');
       }
     } finally {
       setSaving(false);

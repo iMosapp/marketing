@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { showAlert } from '../../services/alert';
 import {
   View,
   Text,
@@ -381,7 +382,7 @@ export default function InboxScreen() {
     const ids = Array.from(selectedIds);
     
     if (action === 'delete') {
-      Alert.alert(
+      showAlert(
         'Delete Conversations',
         `Are you sure you want to delete ${ids.length} conversation${ids.length > 1 ? 's' : ''}? This cannot be undone.`,
         [
@@ -397,7 +398,7 @@ export default function InboxScreen() {
                 exitSelectionMode();
               } catch (error) {
                 console.error('Bulk delete failed:', error);
-                Alert.alert('Error', 'Failed to delete conversations');
+                showAlert('Error', 'Failed to delete conversations');
               } finally {
                 setBulkActionLoading(false);
               }
@@ -425,7 +426,7 @@ export default function InboxScreen() {
       exitSelectionMode();
     } catch (error) {
       console.error(`Bulk ${action} failed:`, error);
-      Alert.alert('Error', `Failed to ${action} conversations`);
+      showAlert('Error', `Failed to ${action} conversations`);
     } finally {
       setBulkActionLoading(false);
     }
@@ -620,7 +621,7 @@ export default function InboxScreen() {
       await loadConversations();
     } catch (error) {
       console.error('Error toggling read status:', error);
-      Alert.alert('Error', 'Failed to update conversation');
+      showAlert('Error', 'Failed to update conversation');
     }
   };
 
@@ -641,10 +642,10 @@ export default function InboxScreen() {
       }
       const phoneUrl = Platform.OS === 'ios' ? `telprompt:${phone}` : `tel:${phone}`;
       Linking.openURL(phoneUrl).catch(() => {
-        Alert.alert('Error', 'Unable to make phone call');
+        showAlert('Error', 'Unable to make phone call');
       });
     } else {
-      Alert.alert('No Phone Number', 'This contact does not have a phone number');
+      showAlert('No Phone Number', 'This contact does not have a phone number');
     }
   };
 
@@ -654,7 +655,7 @@ export default function InboxScreen() {
       loadConversations();
     } catch (error) {
       console.error('Error deleting conversation:', error);
-      Alert.alert('Error', 'Failed to delete conversation');
+      showAlert('Error', 'Failed to delete conversation');
     }
   };
 

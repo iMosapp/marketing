@@ -20,7 +20,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
 import api from '../../services/api';
-import { showSimpleAlert } from '../../services/alert';
+import { showSimpleAlert, showAlert } from '../../services/alert';
 import { WebSafeButton } from '../../components/WebSafeButton';
 
 import { useThemeStore } from '../../store/themeStore';
@@ -145,11 +145,11 @@ export default function UsersScreen() {
 
   const handleCreateUser = async () => {
     if (!newUserName.trim()) {
-      Alert.alert('Error', 'Please enter a name');
+      showAlert('Error', 'Please enter a name');
       return;
     }
     if (!newUserEmail.trim() || !newUserEmail.includes('@')) {
-      Alert.alert('Error', 'Please enter a valid email');
+      showAlert('Error', 'Please enter a valid email');
       return;
     }
 
@@ -177,7 +177,7 @@ export default function UsersScreen() {
       }
     } catch (error: any) {
       const message = error?.response?.data?.detail || 'Failed to create user';
-      Alert.alert('Error', message);
+      showAlert('Error', message);
     } finally {
       setCreating(false);
     }

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { showAlert } from '../../services/alert';
 import {
   View,
   Text,
@@ -321,11 +322,11 @@ export default function AppDirectoryScreen() {
   const handleShare = async () => {
     if (!shareModal) return;
     if (shareChannel === 'email' && !recipientEmail.trim()) {
-      Alert.alert('Required', 'Please enter an email address');
+      showAlert('Required', 'Please enter an email address');
       return;
     }
     if (shareChannel === 'sms' && !recipientPhone.trim()) {
-      Alert.alert('Required', 'Please enter a phone number');
+      showAlert('Required', 'Please enter a phone number');
       return;
     }
 
@@ -342,11 +343,11 @@ export default function AppDirectoryScreen() {
       });
       if (res.data.success) {
         const mockNote = res.data.mock ? ' (mock mode)' : '';
-        Alert.alert('Sent!', `${shareChannel === 'email' ? 'Email' : 'SMS'} sent successfully${mockNote}`);
+        showAlert('Sent!', `${shareChannel === 'email' ? 'Email' : 'SMS'} sent successfully${mockNote}`);
         closeShareModal();
       }
     } catch (err: any) {
-      Alert.alert('Error', err?.response?.data?.detail || 'Failed to send');
+      showAlert('Error', err?.response?.data?.detail || 'Failed to send');
     } finally {
       setSending(false);
     }

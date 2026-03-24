@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { showAlert } from '../services/alert';
 import {
   View,
   Text,
@@ -131,10 +132,10 @@ export default function CSLoginScreen() {
         if (loggedInUser?.onboarding_complete === false && loggedInUser?.role !== 'super_admin') { router.replace('/auth/complete-profile' as any); return; }
         router.replace(getDefaultRoute(loggedInUser?.role) as any);
       } else if (result.error && !result.error.includes('cancel') && !result.error.includes('Cancel')) {
-        Alert.alert('Authentication Failed', result.error);
+        showAlert('Authentication Failed', result.error);
       }
     } catch {
-      Alert.alert('Error', 'Biometric login failed. Please use your password.');
+      showAlert('Error', 'Biometric login failed. Please use your password.');
     } finally {
       setBiometricLoading(false);
     }

@@ -21,6 +21,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { useToast } from '../../components/common/Toast';
+import { showAlert } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
 import { PersonalizeButton } from '../../components/PersonalizeButton';
@@ -178,7 +179,7 @@ const { showToast } = useToast();
     if (IS_WEB) {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Photo library access is required.');
+        showAlert('Permission Denied', 'Photo library access is required.');
         return;
       }
     }
@@ -205,15 +206,15 @@ const { showToast } = useToast();
 
   const handleSubmit = async (sendNow: boolean = false) => {
     if (!name.trim()) {
-      Alert.alert('Missing Name', 'Please enter a name for this broadcast');
+      showAlert('Missing Name', 'Please enter a name for this broadcast');
       return;
     }
     if (!message.trim()) {
-      Alert.alert('Missing Message', 'Please enter a message to send');
+      showAlert('Missing Message', 'Please enter a message to send');
       return;
     }
     if (previewCount === 0) {
-      Alert.alert('No Recipients', 'No contacts match your selected filters');
+      showAlert('No Recipients', 'No contacts match your selected filters');
       return;
     }
     
@@ -257,13 +258,13 @@ const { showToast } = useToast();
           await api.post(`/broadcast/${res.data.broadcast.id}/send?user_id=${user?._id}`);
           showToast('Broadcast sent successfully!');
         } else {
-          Alert.alert('Success', scheduleType === 'later' ? 'Broadcast scheduled!' : 'Broadcast saved as draft');
+          showAlert('Success', scheduleType === 'later' ? 'Broadcast scheduled!' : 'Broadcast saved as draft');
         }
         router.back();
       }
     } catch (error: any) {
       console.error('Error creating broadcast:', error);
-      Alert.alert('Error', error.response?.data?.detail || 'Failed to create broadcast');
+      showAlert('Error', error.response?.data?.detail || 'Failed to create broadcast');
     } finally {
       setSubmitting(false);
     }

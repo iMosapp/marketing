@@ -19,6 +19,7 @@ import * as Haptics from 'expo-haptics';
 import api, { emailAPI } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/common/Toast';
+import { showAlert } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
 const DEFAULT_COLORS = [
@@ -119,7 +120,7 @@ const { showToast } = useToast();
     } catch (error) {
       console.error('Error saving brand kit:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', 'Failed to save brand kit');
+      showAlert('Error', 'Failed to save brand kit');
     } finally {
       setSaving(false);
     }
@@ -146,7 +147,7 @@ const { showToast } = useToast();
         setLogoUrl(url);
         showToast('Logo uploaded!');
       } catch {
-        Alert.alert('Error', 'Failed to upload logo');
+        showAlert('Error', 'Failed to upload logo');
       } finally {
         setLogoUploading(false);
       }

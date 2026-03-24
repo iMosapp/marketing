@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { showAlert } from '../../services/alert';
 import {
   View,
   Text,
@@ -71,7 +72,7 @@ export default function CampaignsScreen() {
       setCampaigns(
         campaigns.map((c) => (c._id === id || c.id === id ? { ...c, active: !newActiveState } : c))
       );
-      Alert.alert('Error', 'Failed to update campaign status');
+      showAlert('Error', 'Failed to update campaign status');
     }
   };
   

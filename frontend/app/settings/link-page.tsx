@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { showAlert } from '../../services/alert';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView,
   ActivityIndicator, Alert, Switch, Platform, Linking,
@@ -65,7 +66,7 @@ export default function EditLinkPage() {
       setAccentColor(d.accent_color || '#C9A962');
       setViews(d.views || 0);
     } catch {
-      Alert.alert('Error', 'Failed to load link page');
+      showAlert('Error', 'Failed to load link page');
     } finally { setLoading(false); }
   };
 
@@ -85,9 +86,9 @@ export default function EditLinkPage() {
         social_links: socialLinks,
         links, custom_links: customLinks, theme, accent_color: accentColor,
       });
-      Alert.alert('Saved!', 'Your link page has been updated.');
+      showAlert('Saved!', 'Your link page has been updated.');
     } catch (e: any) {
-      Alert.alert('Error', e.response?.data?.detail || 'Failed to save');
+      showAlert('Error', e.response?.data?.detail || 'Failed to save');
     } finally { setSaving(false); }
   };
 
@@ -124,7 +125,7 @@ export default function EditLinkPage() {
     const url = `https://app.imonsocial.com/l/${username}`;
     if (Platform.OS === 'web') {
       navigator.clipboard.writeText(url);
-      Alert.alert('Copied!', url);
+      showAlert('Copied!', url);
     } else { Linking.openURL(url); }
   };
 

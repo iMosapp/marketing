@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { showAlert } from '../../services/alert';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
   ActivityIndicator, TextInput, Alert, RefreshControl,
@@ -108,7 +109,7 @@ export default function ManageTrainingPage() {
       });
       setEditingTrack(null);
       loadTracks();
-    } catch (e) { console.error(e); Alert.alert('Error', 'Failed to save track'); }
+    } catch (e) { console.error(e); showAlert('Error', 'Failed to save track'); }
     finally { setSaving(false); }
   };
 
@@ -127,7 +128,7 @@ export default function ManageTrainingPage() {
   };
 
   const deleteTrack = (trackId: string, title: string) => {
-    Alert.alert('Delete Track', `Delete "${title}" and all its lessons?`, [
+    showAlert('Delete Track', `Delete "${title}" and all its lessons?`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
         await api.delete(`/training/admin/tracks/${trackId}`);
@@ -157,7 +158,7 @@ export default function ManageTrainingPage() {
       });
       setEditingLesson(null);
       if (expandedTrack) loadLessons(expandedTrack);
-    } catch (e) { console.error(e); Alert.alert('Error', 'Failed to save lesson'); }
+    } catch (e) { console.error(e); showAlert('Error', 'Failed to save lesson'); }
     finally { setSaving(false); }
   };
 
@@ -178,7 +179,7 @@ export default function ManageTrainingPage() {
   };
 
   const deleteLesson = (lessonId: string, title: string, trackId: string) => {
-    Alert.alert('Delete Lesson', `Delete "${title}"?`, [
+    showAlert('Delete Lesson', `Delete "${title}"?`, [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
         await api.delete(`/training/admin/lessons/${lessonId}`);

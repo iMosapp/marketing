@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { showAlert } from '../../services/alert';
 import {
   View,
   Text,
@@ -102,7 +103,7 @@ export default function EmailCampaignsPage() {
 
   const handleSave = async () => {
     if (!formName.trim() || !formSubject.trim() || !formContent.trim()) {
-      Alert.alert('Error', 'Please fill in all required fields');
+      showAlert('Error', 'Please fill in all required fields');
       return;
     }
 
@@ -136,14 +137,14 @@ export default function EmailCampaignsPage() {
     } catch (error) {
       console.error('Error saving campaign:', error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert('Error', 'Failed to save campaign');
+      showAlert('Error', 'Failed to save campaign');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = (campaign: EmailCampaign) => {
-    Alert.alert(
+    showAlert(
       'Delete Campaign',
       `Are you sure you want to delete "${campaign.name}"?`,
       [
@@ -157,7 +158,7 @@ export default function EmailCampaignsPage() {
               await emailAPI.deleteCampaign(user!._id, campaign._id);
               loadCampaigns();
             } catch (error) {
-              Alert.alert('Error', 'Failed to delete campaign');
+              showAlert('Error', 'Failed to delete campaign');
             }
           },
         },
@@ -174,7 +175,7 @@ export default function EmailCampaignsPage() {
       });
       loadCampaigns();
     } catch (error) {
-      Alert.alert('Error', 'Failed to update campaign status');
+      showAlert('Error', 'Failed to update campaign status');
     }
   };
 

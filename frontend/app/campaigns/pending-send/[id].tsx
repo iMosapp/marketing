@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { showAlert } from '../../../services/alert';
 import {
   View,
   Text,
@@ -91,7 +92,7 @@ export default function PendingSendPage() {
     setSending(true);
     try {
       await api.post(`/campaigns/${user._id}/pending-sends/${pendingSend._id}/complete`);
-      Alert.alert('Sent!', 'Message marked as sent and logged to activity.', [
+      showAlert('Sent!', 'Message marked as sent and logged to activity.', [
         {
           text: 'OK',
           onPress: () => {
@@ -107,7 +108,7 @@ export default function PendingSendPage() {
         },
       ]);
     } catch (e) {
-      Alert.alert('Error', 'Failed to mark as sent');
+      showAlert('Error', 'Failed to mark as sent');
     } finally {
       setSending(false);
     }
@@ -126,7 +127,7 @@ export default function PendingSendPage() {
         router.back();
       }
     } catch (e) {
-      Alert.alert('Error', 'Failed to skip');
+      showAlert('Error', 'Failed to skip');
     }
   };
 

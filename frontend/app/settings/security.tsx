@@ -19,6 +19,7 @@ import { useAuthStore } from '../../store/authStore';
 import { authAPI } from '../../services/api';
 import { useToast } from '../../components/common/Toast';
 import { useThemeStore } from '../../store/themeStore';
+import { showAlert } from '../../services/alert';
 import {
   checkBiometricSupport,
   enableBiometricLogin,
@@ -89,7 +90,7 @@ const { showToast } = useToast();
                 setBiometricStatus(prev => prev ? { ...prev, isEnabled: true } : null);
                 showToast('${biometricStatus.biometricLabel} login enabled!');
               } else {
-                Alert.alert('Error', 'Failed to enable biometric login. Please try again.');
+                showAlert('Error', 'Failed to enable biometric login. Please try again.');
               }
               setToggling(false);
             },
@@ -99,7 +100,7 @@ const { showToast } = useToast();
       );
     } else {
       // Disable biometric
-      Alert.alert(
+      showAlert(
         'Disable ' + biometricStatus.biometricLabel,
         `Are you sure you want to disable ${biometricStatus.biometricLabel} login?`,
         [
@@ -137,11 +138,11 @@ const { showToast } = useToast();
         setBiometricStatus(prev => prev ? { ...prev, isEnabled: true } : null);
         showToast('${biometricStatus.biometricLabel} login enabled!');
       } else {
-        Alert.alert('Note', 'To enable biometric login, please log out and log back in with your password.');
+        showAlert('Note', 'To enable biometric login, please log out and log back in with your password.');
       }
       setToggling(false);
     } else {
-      Alert.alert(
+      showAlert(
         'Disable ' + biometricStatus.biometricLabel,
         `Are you sure you want to disable ${biometricStatus.biometricLabel} login?`,
         [
@@ -164,19 +165,19 @@ const { showToast } = useToast();
   
   const handleChangePassword = async () => {
     if (!currentPassword) {
-      Alert.alert('Error', 'Please enter your current password');
+      showAlert('Error', 'Please enter your current password');
       return;
     }
     if (!newPassword || newPassword.length < 4) {
-      Alert.alert('Error', 'New password must be at least 4 characters');
+      showAlert('Error', 'New password must be at least 4 characters');
       return;
     }
     if (newPassword !== confirmPassword) {
-      Alert.alert('Error', 'New passwords do not match');
+      showAlert('Error', 'New passwords do not match');
       return;
     }
     if (currentPassword === newPassword) {
-      Alert.alert('Error', 'New password must be different from current password');
+      showAlert('Error', 'New password must be different from current password');
       return;
     }
     
@@ -190,7 +191,7 @@ const { showToast } = useToast();
       setConfirmPassword('');
     } catch (error: any) {
       const message = error?.response?.data?.detail || 'Failed to change password';
-      Alert.alert('Error', message);
+      showAlert('Error', message);
     } finally {
       setChangingPassword(false);
     }

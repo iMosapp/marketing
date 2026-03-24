@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { showAlert } from '../../services/alert';
 import {
   View,
   Text,
@@ -93,22 +94,22 @@ export default function ManageTeamScreen() {
   const handleAddUser = async () => {
     // Validation
     if (!newUser.name.trim()) {
-      Alert.alert('Error', 'Please enter the team member\'s name');
+      showAlert('Error', 'Please enter the team member\'s name');
       return;
     }
     if (!newUser.email.trim() || !newUser.email.includes('@')) {
-      Alert.alert('Error', 'Please enter a valid email address');
+      showAlert('Error', 'Please enter a valid email address');
       return;
     }
     if (!newUser.phone.trim()) {
-      Alert.alert('Error', 'Please enter a phone number');
+      showAlert('Error', 'Please enter a phone number');
       return;
     }
     
     // Confirm with pricing
     const costPerSeat = storeInfo?.pricing?.per_seat || 99;
     
-    Alert.alert(
+    showAlert(
       'Confirm New Team Member',
       `Adding ${newUser.name} will add $${costPerSeat}/month to your subscription.\n\nThey will receive a welcome SMS with onboarding instructions.`,
       [
@@ -128,7 +129,7 @@ export default function ManageTeamScreen() {
                 added_by: user?._id,
               });
               
-              Alert.alert(
+              showAlert(
                 'Team Member Added!',
                 `${newUser.name} has been added to your team. They will receive a welcome SMS with instructions to complete their onboarding.`,
                 [{ text: 'OK' }]
@@ -142,7 +143,7 @@ export default function ManageTeamScreen() {
               loadTeamData();
             } catch (error: any) {
               console.error('Failed to add user:', error);
-              Alert.alert('Error', error.response?.data?.detail || 'Failed to add team member');
+              showAlert('Error', error.response?.data?.detail || 'Failed to add team member');
             } finally {
               setAdding(false);
             }
@@ -153,7 +154,7 @@ export default function ManageTeamScreen() {
   };
   
   const handleDeactivateUser = (member: any) => {
-    Alert.alert(
+    showAlert(
       'Deactivate Team Member',
       `Are you sure you want to deactivate ${member.name}?\n\nThey will no longer be able to access the app, and your subscription will be reduced by $${storeInfo?.pricing?.per_seat || 99}/month.`,
       [
@@ -168,10 +169,10 @@ export default function ManageTeamScreen() {
                 deactivated_by: user?._id,
               });
               
-              Alert.alert('Deactivated', `${member.name} has been deactivated.`);
+              showAlert('Deactivated', `${member.name} has been deactivated.`);
               loadTeamData();
             } catch (error: any) {
-              Alert.alert('Error', error.response?.data?.detail || 'Failed to deactivate user');
+              showAlert('Error', error.response?.data?.detail || 'Failed to deactivate user');
             }
           }
         }
@@ -180,7 +181,7 @@ export default function ManageTeamScreen() {
   };
   
   const handleReactivateUser = async (member: any) => {
-    Alert.alert(
+    showAlert(
       'Reactivate Team Member',
       `Reactivating ${member.name} will add $${storeInfo?.pricing?.per_seat || 99}/month to your subscription.`,
       [
@@ -194,10 +195,10 @@ export default function ManageTeamScreen() {
                 reactivated_by: user?._id,
               });
               
-              Alert.alert('Reactivated', `${member.name} has been reactivated.`);
+              showAlert('Reactivated', `${member.name} has been reactivated.`);
               loadTeamData();
             } catch (error: any) {
-              Alert.alert('Error', error.response?.data?.detail || 'Failed to reactivate user');
+              showAlert('Error', error.response?.data?.detail || 'Failed to reactivate user');
             }
           }
         }

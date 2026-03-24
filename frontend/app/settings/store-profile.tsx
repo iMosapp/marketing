@@ -22,6 +22,7 @@ import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import VoiceInput from '../../components/VoiceInput';
 import { useToast } from '../../components/common/Toast';
+import { showAlert } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -86,7 +87,7 @@ const { showToast } = useToast();
       await api.put(`/admin/stores/${user.store_id}`, store);
       showToast('Account profile updated');
     } catch (error) {
-      Alert.alert('Error', 'Failed to save store profile');
+      showAlert('Error', 'Failed to save store profile');
     } finally {
       setSaving(false);
     }
@@ -164,7 +165,7 @@ const { showToast } = useToast();
       }
     } catch (e) {
       console.error('Upload error:', e);
-      Alert.alert('Error', 'Failed to upload logo');
+      showAlert('Error', 'Failed to upload logo');
     } finally {
       setUploading(false);
     }
@@ -491,7 +492,7 @@ const { showToast } = useToast();
               <TouchableOpacity 
                 style={styles.gmbButton}
                 onPress={() => {
-                  Alert.alert(
+                  showAlert(
                     'Coming Soon',
                     'Google My Business sync will be available in a future update. For now, please enter your hours manually above.',
                     [{ text: 'OK' }]

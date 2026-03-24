@@ -13,7 +13,12 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### Error Report Fixes Round 2 + Clear Button (Mar 24, 2026) -- LATEST
+### Alert.alert Web Crash Fix (Mar 24, 2026) -- LATEST
+- **Root Cause:** 36+ files used `Alert.alert()` from React Native without importing `Alert`. This works on native but crashes on web with "Can't find variable: Alert". The thread page was the first to surface this via error reporting.
+- **Fix:** Replaced ALL `Alert.alert()` calls across 36 files with the cross-platform `showAlert()` function from `services/alert.ts`. This function uses `window.confirm/alert` on web and `Alert.alert` on native.
+- **Also fixed:** Error Reports clear button (was passing button array to `showSimpleAlert` which only accepts callback), digital card page hydration error (#418).
+
+### Error Report Fixes Round 2 + Clear Button (Mar 24, 2026)
 - **Clear Button Fix:** The Error Reports page's "Clear All" button was crashing (`showSimpleAlert` doesn't accept button arrays). Switched to `showConfirm` which properly handles confirm/cancel dialogs.
 - **Card Page Hydration Fix:** Added `mounted` state pattern to `/card/[userId].tsx` to prevent React #418 on public digital card pages.
 - **Share Cancel Noise Suppressed:** Filtered out benign "Abort due to cancellation of share" errors from being reported.

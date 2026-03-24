@@ -19,6 +19,7 @@ import api from '../../services/api';
 import * as Calendar from 'expo-calendar';
 import { getCalendars, getSelectedCalendarId, setSelectedCalendarId } from '../../src/utils/calendar';
 import { useToast } from '../../components/common/Toast';
+import { showAlert } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
 export default function CalendarSettingsScreen() {
@@ -112,7 +113,7 @@ const { showToast } = useToast();
 
   const requestNativeCalendarPermission = async () => {
     if (Platform.OS === 'web') {
-      Alert.alert('Not Available', 'Native calendar is only available on mobile devices.');
+      showAlert('Not Available', 'Native calendar is only available on mobile devices.');
       return;
     }
     
@@ -123,11 +124,11 @@ const { showToast } = useToast();
       if (status === 'granted') {
         showToast('Calendar access granted! Appointments will be added to your device calendar.');
       } else {
-        Alert.alert('Permission Denied', 'Please enable calendar access in your device settings.');
+        showAlert('Permission Denied', 'Please enable calendar access in your device settings.');
       }
     } catch (error) {
       console.error('Failed to request calendar permission:', error);
-      Alert.alert('Error', 'Failed to request calendar permission.');
+      showAlert('Error', 'Failed to request calendar permission.');
     }
   };
 
@@ -148,12 +149,12 @@ const { showToast } = useToast();
     } catch (error: any) {
       console.error('Failed to start Google OAuth:', error);
       if (error.response?.status === 503) {
-        Alert.alert(
+        showAlert(
           'Setup Required',
           'Google Calendar integration needs to be configured. Please contact your administrator to set up Google Calendar API credentials.'
         );
       } else {
-        Alert.alert('Error', 'Failed to connect Google Calendar.');
+        showAlert('Error', 'Failed to connect Google Calendar.');
       }
     } finally {
       setConnectingGoogle(false);
@@ -163,7 +164,7 @@ const { showToast } = useToast();
   const disconnectGoogleCalendar = async () => {
     if (!user) return;
     
-    Alert.alert(
+    showAlert(
       'Disconnect Google Calendar',
       'Are you sure you want to disconnect your Google Calendar? New appointments will no longer sync.',
       [
@@ -178,7 +179,7 @@ const { showToast } = useToast();
               setGoogleEmail(null);
             } catch (error) {
               console.error('Failed to disconnect calendar:', error);
-              Alert.alert('Error', 'Failed to disconnect calendar.');
+              showAlert('Error', 'Failed to disconnect calendar.');
             }
           },
         },

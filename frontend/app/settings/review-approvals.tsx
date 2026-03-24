@@ -17,6 +17,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { useToast } from '../../components/common/Toast';
+import { showAlert } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
 interface PendingReview {
@@ -68,14 +69,14 @@ const { showToast } = useToast();
       showToast('Review approved and will now be visible on your landing page.');
       setReviews(prev => prev.filter(r => r.id !== reviewId));
     } catch (error) {
-      Alert.alert('Error', 'Failed to approve review');
+      showAlert('Error', 'Failed to approve review');
     } finally {
       setProcessing(null);
     }
   };
 
   const handleReject = async (reviewId: string) => {
-    Alert.alert(
+    showAlert(
       'Reject Review',
       'Are you sure you want to reject this review? This action cannot be undone.',
       [
@@ -87,10 +88,10 @@ const { showToast } = useToast();
             setProcessing(reviewId);
             try {
               await api.post(`/p/reviews/reject/${reviewId}`);
-              Alert.alert('Removed', 'Review has been rejected.');
+              showAlert('Removed', 'Review has been rejected.');
               setReviews(prev => prev.filter(r => r.id !== reviewId));
             } catch (error) {
-              Alert.alert('Error', 'Failed to reject review');
+              showAlert('Error', 'Failed to reject review');
             } finally {
               setProcessing(null);
             }

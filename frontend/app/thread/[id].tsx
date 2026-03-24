@@ -31,7 +31,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { messagesAPI, templatesAPI, emailAPI } from '../../services/api';
 import api from '../../services/api';
-import { showSimpleAlert } from '../../services/alert';
+import { showSimpleAlert, showAlert, showConfirm } from '../../services/alert';
 import { PersonalizeButton } from '../../components/PersonalizeButton';
 
 // Web platform detection
@@ -837,7 +837,7 @@ export default function ThreadScreen() {
       if (sendResult?.status === 'failed') {
         const errorMsg = sendResult?.error || 'Message failed to send';
         console.error('[SEND] Backend reported failure:', errorMsg);
-        Alert.alert(
+        showAlert(
           'Send Failed', 
           messageMode === 'email' 
             ? `Email could not be delivered: ${errorMsg}`
@@ -859,7 +859,7 @@ export default function ThreadScreen() {
       
     } catch (error: any) {
       console.error('Failed to send message:', error);
-      Alert.alert('Error', 'Failed to send message. Please try again.');
+      showAlert('Error', 'Failed to send message. Please try again.');
       // Remove optimistic message on error
       setMessages((prev) => prev.filter((m) => !m._id.startsWith('temp_')));
     } finally {
@@ -917,7 +917,7 @@ export default function ThreadScreen() {
       return;
     }
     
-    Alert.alert(
+    showAlert(
       'Add Photo',
       undefined,
       [
@@ -931,7 +931,7 @@ export default function ThreadScreen() {
 
   const handleAttachVideo = () => {
     setShowAttachMenu(false);
-    Alert.alert('Coming Soon', 'Video attachments will be available in a future update.');
+    showAlert('Coming Soon', 'Video attachments will be available in a future update.');
   };
 
   const insertReviewLink = (platformId: string, url: string, platformName: string) => {
@@ -1031,10 +1031,10 @@ export default function ThreadScreen() {
         setMessage(msg);
         setPendingEventType('link_page_shared');
       } else {
-        Alert.alert('Not Set Up', 'Set up your Link Page in Settings first');
+        showAlert('Not Set Up', 'Set up your Link Page in Settings first');
       }
     } catch {
-      Alert.alert('Not Set Up', 'Set up your Link Page in Settings first');
+      showAlert('Not Set Up', 'Set up your Link Page in Settings first');
     }
   };
 
@@ -1044,7 +1044,7 @@ export default function ThreadScreen() {
     if (IS_WEB) {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Photo library access is required.');
+        showAlert('Permission Denied', 'Photo library access is required.');
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -1064,7 +1064,7 @@ export default function ThreadScreen() {
       return;
     }
     
-    Alert.alert(
+    showAlert(
       'Add Customer Photo',
       'Choose an option',
       [
@@ -1073,7 +1073,7 @@ export default function ThreadScreen() {
           onPress: async () => {
             const { status } = await ImagePicker.requestCameraPermissionsAsync();
             if (status !== 'granted') {
-              Alert.alert('Permission Denied', 'Camera access is required to take photos.');
+              showAlert('Permission Denied', 'Camera access is required to take photos.');
               return;
             }
             const result = await ImagePicker.launchCameraAsync({
@@ -1096,7 +1096,7 @@ export default function ThreadScreen() {
           onPress: async () => {
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (status !== 'granted') {
-              Alert.alert('Permission Denied', 'Photo library access is required.');
+              showAlert('Permission Denied', 'Photo library access is required.');
               return;
             }
             const result = await ImagePicker.launchImageLibraryAsync({
@@ -1345,11 +1345,11 @@ export default function ThreadScreen() {
               } else if (response.data.success && !response.data.text) {
                 // Empty transcription (silence) - no error, just don't add anything
               } else {
-                Alert.alert('Transcription Error', response.data.error || 'Failed to transcribe audio');
+                showAlert('Transcription Error', response.data.error || 'Failed to transcribe audio');
               }
             } catch (error: any) {
               console.error('Transcription error:', error);
-              Alert.alert('Error', 'Failed to transcribe audio. Please try again.');
+              showAlert('Error', 'Failed to transcribe audio. Please try again.');
             }
           }
           
@@ -1359,7 +1359,7 @@ export default function ThreadScreen() {
         // Start recording
         const { status } = await Audio.requestPermissionsAsync();
         if (status !== 'granted') {
-          Alert.alert('Permission Denied', 'Microphone permission is required for voice recording.');
+          showAlert('Permission Denied', 'Microphone permission is required for voice recording.');
           return;
         }
         
@@ -1401,9 +1401,9 @@ export default function ThreadScreen() {
       setIsRecording(false);
       setTranscribing(false);
       if (IS_WEB) {
-        Alert.alert('Microphone Error', 'Could not access microphone. Please ensure you have granted microphone permission in your browser.');
+        showAlert('Microphone Error', 'Could not access microphone. Please ensure you have granted microphone permission in your browser.');
       } else {
-        Alert.alert('Error', 'Failed to record audio. Please try again.');
+        showAlert('Error', 'Failed to record audio. Please try again.');
       }
     }
   };
@@ -1412,7 +1412,7 @@ export default function ThreadScreen() {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Photo library access is required to send images.');
+        showAlert('Permission Denied', 'Photo library access is required to send images.');
         return;
       }
       
@@ -1432,7 +1432,7 @@ export default function ThreadScreen() {
       }
     } catch (error) {
       console.error('Image picker error:', error);
-      Alert.alert('Error', 'Failed to select image');
+      showAlert('Error', 'Failed to select image');
     }
   };
   
@@ -1440,7 +1440,7 @@ export default function ThreadScreen() {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Camera access is required to take photos.');
+        showAlert('Permission Denied', 'Camera access is required to take photos.');
         return;
       }
       
@@ -1459,14 +1459,14 @@ export default function ThreadScreen() {
       }
     } catch (error) {
       console.error('Camera error:', error);
-      Alert.alert('Error', 'Failed to take photo');
+      showAlert('Error', 'Failed to take photo');
     }
   };
   
   const sendMMS = async () => {
     const convId = actualConversationId || id as string;
     if (!selectedMedia || !user?._id || !convId) {
-      Alert.alert('Error', 'Unable to send - missing required data');
+      showAlert('Error', 'Unable to send - missing required data');
       return;
     }
     
@@ -1504,12 +1504,12 @@ export default function ThreadScreen() {
       if (response.data.status === 'sent') {
         // Success - no alert needed
       } else if (response.data.status === 'failed') {
-        Alert.alert('Delivery Issue', 'Message saved but delivery failed: ' + (response.data.error || 'Unknown error'));
+        showAlert('Delivery Issue', 'Message saved but delivery failed: ' + (response.data.error || 'Unknown error'));
       }
     } catch (error: any) {
       console.error('MMS send error:', error);
       const errorMsg = error.response?.data?.detail || error.message || 'Failed to send MMS';
-      Alert.alert('Error', errorMsg);
+      showAlert('Error', errorMsg);
     } finally {
       setSendingMedia(false);
     }
@@ -1531,7 +1531,7 @@ export default function ThreadScreen() {
       console.error('Failed to update conversation status:', error);
     }
     
-    Alert.alert(
+    showAlert(
       'Conversation ' + (newStatus === 'closed' ? 'Closed' : 'Reopened'),
       newStatus === 'closed'
         ? 'This conversation has been marked as complete.'
@@ -1867,7 +1867,7 @@ export default function ThreadScreen() {
                 AsyncStorage.setItem('message_mode', 'email');
               } catch (e) {
                 console.error('Failed to save email:', e);
-                Alert.alert('Error', 'Failed to save email address. Please try again.');
+                showAlert('Error', 'Failed to save email address. Please try again.');
               }
             }}
             data-testid="email-prompt-save-btn"

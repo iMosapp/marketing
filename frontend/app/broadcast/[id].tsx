@@ -19,6 +19,7 @@ import { format } from 'date-fns';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { useToast } from '../../components/common/Toast';
+import { showAlert } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
 const IS_WEB = Platform.OS === 'web';
@@ -71,14 +72,14 @@ const { showToast } = useToast();
       }
     } catch (error) {
       console.error('Error fetching broadcast:', error);
-      Alert.alert('Error', 'Failed to load broadcast');
+      showAlert('Error', 'Failed to load broadcast');
     } finally {
       setLoading(false);
     }
   };
 
   const handleSend = async () => {
-    Alert.alert(
+    showAlert(
       'Send Broadcast',
       `Are you sure you want to send this broadcast to ${broadcast?.recipient_count} contacts?`,
       [
@@ -91,11 +92,11 @@ const { showToast } = useToast();
             try {
               const res = await api.post(`/broadcast/${id}/send?user_id=${user?._id}`);
               if (res.data.success) {
-                Alert.alert('Success', res.data.message);
+                showAlert('Success', res.data.message);
                 fetchBroadcast(); // Refresh to show updated status
               }
             } catch (error: any) {
-              Alert.alert('Error', error.response?.data?.detail || 'Failed to send broadcast');
+              showAlert('Error', error.response?.data?.detail || 'Failed to send broadcast');
             } finally {
               setSending(false);
             }
@@ -113,12 +114,12 @@ const { showToast } = useToast();
         router.push(`/broadcast/${res.data.broadcast.id}`);
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to duplicate broadcast');
+      showAlert('Error', 'Failed to duplicate broadcast');
     }
   };
 
   const handleDelete = async () => {
-    Alert.alert(
+    showAlert(
       'Delete Broadcast',
       'Are you sure you want to delete this broadcast? This action cannot be undone.',
       [
@@ -133,7 +134,7 @@ const { showToast } = useToast();
               showToast('Broadcast deleted');
               router.back();
             } catch (error: any) {
-              Alert.alert('Error', error.response?.data?.detail || 'Failed to delete broadcast');
+              showAlert('Error', error.response?.data?.detail || 'Failed to delete broadcast');
             } finally {
               setDeleting(false);
             }

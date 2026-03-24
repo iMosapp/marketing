@@ -830,7 +830,7 @@ export default function ContactDetailScreen() {
       setShowPhotoOptionsModal(true);
       return;
     }
-    Alert.alert('Add Photo', undefined, [
+    showAlert('Add Photo', undefined, [
       { text: 'Add a Photo', onPress: async () => {
         const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, quality: 0.7 });
         if (!result.canceled && result.assets[0]?.uri) setSelectedMedia(result.assets[0]);
@@ -1884,7 +1884,7 @@ export default function ContactDetailScreen() {
         ],
       });
     } else {
-      Alert.alert(
+      showAlert(
         `${label} Automation`,
         undefined,
         [

@@ -22,6 +22,7 @@ import { useThemeStore } from '../../store/themeStore';
 import api from '../../services/api';
 import VoiceInput from '../../components/VoiceInput';
 import { useToast } from '../../components/common/Toast';
+import { showAlert } from '../../services/alert';
 
 // Colors matching the app theme
 const COLORS = {
@@ -212,7 +213,7 @@ export default function TeamChatScreen() {
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      Alert.alert('Error', 'Failed to send message');
+      showAlert('Error', 'Failed to send message');
     } finally {
       setSending(false);
     }
@@ -261,7 +262,7 @@ export default function TeamChatScreen() {
         showToast('Channel created!');
       }
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.detail || 'Failed to create channel');
+      showAlert('Error', error.response?.data?.detail || 'Failed to create channel');
     }
   };
 
@@ -309,7 +310,7 @@ export default function TeamChatScreen() {
       }
     } catch (error: any) {
       const msg = error.response?.data?.detail || 'Failed to delete channel';
-      Platform.OS === 'web' ? window.alert(msg) : Alert.alert('Error', msg);
+      Platform.OS === 'web' ? window.alert(msg) : showAlert('Error', msg);
     }
   };
 
@@ -327,7 +328,7 @@ export default function TeamChatScreen() {
       }
     } catch (error: any) {
       const msg = error.response?.data?.detail || 'Failed to clear history';
-      Platform.OS === 'web' ? window.alert(msg) : Alert.alert('Error', msg);
+      Platform.OS === 'web' ? window.alert(msg) : showAlert('Error', msg);
     }
   };
 
@@ -342,7 +343,7 @@ export default function TeamChatScreen() {
         setChannelMenuId(channel.id);
       }
     } else {
-      Alert.alert(
+      showAlert(
         channel.name,
         undefined,
         [
@@ -791,7 +792,7 @@ export default function TeamChatScreen() {
             if (Platform.OS === 'web') {
               setShowChatMenu(!showChatMenu);
             } else {
-              Alert.alert(
+              showAlert(
                 selectedChannel.name,
                 `${selectedChannel.member_count} member${selectedChannel.member_count !== 1 ? 's' : ''}`,
                 [

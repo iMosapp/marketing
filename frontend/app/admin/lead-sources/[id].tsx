@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { showAlert } from '../../../services/alert';
 import {
   View,
   Text,
@@ -144,7 +145,7 @@ export default function LeadSourceDetailScreen() {
       setTeams(teamsData.map((t: any) => ({ id: t._id || t.id, name: t.name })));
     } catch (error) {
       console.error('Error fetching lead source:', error);
-      Alert.alert('Error', 'Failed to load lead source');
+      showAlert('Error', 'Failed to load lead source');
     } finally {
       setLoading(false);
     }
@@ -155,7 +156,7 @@ export default function LeadSourceDetailScreen() {
       if (IS_WEB) {
         showToast('Name is required', 'error');
       } else {
-        Alert.alert('Error', 'Name is required');
+        showAlert('Error', 'Name is required');
       }
       return;
     }
@@ -177,7 +178,7 @@ export default function LeadSourceDetailScreen() {
       if (IS_WEB) {
         showToast('Failed to update lead source', 'error');
       } else {
-        Alert.alert('Error', 'Failed to update lead source');
+        showAlert('Error', 'Failed to update lead source');
       }
     } finally {
       setSaving(false);
@@ -188,7 +189,7 @@ export default function LeadSourceDetailScreen() {
     if (IS_WEB) {
       setShowDeleteModal(true);
     } else {
-      Alert.alert(
+      showAlert(
         'Delete Lead Source',
         `Are you sure you want to delete "${source?.name}"? This action cannot be undone.`,
         [
@@ -212,7 +213,7 @@ export default function LeadSourceDetailScreen() {
         setShowDeleteModal(false);
         setTimeout(() => router.back(), 500);
       } else {
-        Alert.alert('Deleted', 'Lead source has been deleted');
+        showAlert('Deleted', 'Lead source has been deleted');
         router.back();
       }
     } catch (error) {
@@ -221,7 +222,7 @@ export default function LeadSourceDetailScreen() {
         showToast('Failed to delete lead source', 'error');
         setShowDeleteModal(false);
       } else {
-        Alert.alert('Error', 'Failed to delete lead source');
+        showAlert('Error', 'Failed to delete lead source');
       }
     } finally {
       setDeleting(false);
@@ -242,7 +243,7 @@ export default function LeadSourceDetailScreen() {
       if (IS_WEB) {
         showToast('Could not copy to clipboard', 'error');
       } else {
-        Alert.alert('Error', 'Could not copy to clipboard');
+        showAlert('Error', 'Could not copy to clipboard');
       }
     }
   };

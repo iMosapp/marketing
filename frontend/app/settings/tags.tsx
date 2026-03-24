@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { showAlert } from '../../services/alert';
 import {
   View,
   Text,
@@ -127,7 +128,7 @@ export default function TagsSettings() {
       setTags(data);
     } catch (error) {
       console.error('Error loading tags:', error);
-      Alert.alert('Error', 'Failed to load tags');
+      showAlert('Error', 'Failed to load tags');
     } finally {
       setLoading(false);
     }
@@ -151,12 +152,12 @@ export default function TagsSettings() {
       loadPendingTags();
     } catch (error) {
       console.error('Error approving tag:', error);
-      Alert.alert('Error', 'Failed to approve tag');
+      showAlert('Error', 'Failed to approve tag');
     }
   };
   
   const handleReject = (tag: any) => {
-    Alert.alert(
+    showAlert(
       'Reject Tag',
       `Are you sure you want to reject "${tag.name}"?`,
       [
@@ -171,7 +172,7 @@ export default function TagsSettings() {
               loadPendingTags();
             } catch (error) {
               console.error('Error rejecting tag:', error);
-              Alert.alert('Error', 'Failed to reject tag');
+              showAlert('Error', 'Failed to reject tag');
             }
           },
         },
@@ -198,7 +199,7 @@ export default function TagsSettings() {
   const handleSave = async () => {
     if (!user?._id) return;
     if (!formName.trim()) {
-      Alert.alert('Error', 'Please enter a tag name');
+      showAlert('Error', 'Please enter a tag name');
       return;
     }
 
@@ -221,14 +222,14 @@ export default function TagsSettings() {
       loadTags();
     } catch (error: any) {
       console.error('Error saving tag:', error);
-      Alert.alert('Error', error.response?.data?.detail || 'Failed to save tag');
+      showAlert('Error', error.response?.data?.detail || 'Failed to save tag');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = (tag: Tag) => {
-    Alert.alert(
+    showAlert(
       'Delete Tag',
       `Are you sure you want to delete "${tag.name}"? This will remove it from ${tag.contact_count} contacts.`,
       [
@@ -243,7 +244,7 @@ export default function TagsSettings() {
               loadTags();
             } catch (error) {
               console.error('Error deleting tag:', error);
-              Alert.alert('Error', 'Failed to delete tag');
+              showAlert('Error', 'Failed to delete tag');
             }
           },
         },

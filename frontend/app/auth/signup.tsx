@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { showAlert } from '../../services/alert';
 import {
   View,
   Text,
@@ -100,7 +101,7 @@ export default function SignupScreen() {
       window.alert(`${title}\n\n${message}`);
       if (onOk) onOk();
     } else {
-      Alert.alert(title, message, onOk ? [{ text: 'OK', onPress: onOk }] : undefined);
+      showAlert(title, message, onOk ? [{ text: 'OK', onPress: onOk }] : undefined);
     }
   };
 
@@ -201,13 +202,13 @@ export default function SignupScreen() {
         router.replace('/');
       } else {
         if (isIndependent) {
-          Alert.alert(
+          showAlert(
             "Welcome to i'M On Social!",
             "Your account is ready! Let's set up your profile, AI assistant, and virtual business card to get started.",
             [{ text: 'Let\'s Go!', onPress: () => router.replace('/') }]
           );
         } else {
-          Alert.alert(
+          showAlert(
             'Account Created!',
             'Your account is pending approval. You can set up your profile and business card while you wait for admin configuration.',
             [{ text: 'OK', onPress: () => router.replace('/') }]

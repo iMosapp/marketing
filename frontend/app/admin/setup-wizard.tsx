@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { showAlert } from '../../services/alert';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView,
   ActivityIndicator, Platform, Image, KeyboardAvoidingView, Animated,
@@ -751,7 +752,7 @@ export default function SetupWizardScreen() {
                 <TouchableOpacity style={s.actionChip} onPress={() => {
                   const text = getCredsText();
                   if (Platform.OS === 'web') { navigator.clipboard?.writeText(text); alert('Copied!'); }
-                  else { Clipboard.setString(text); Alert.alert('Copied', 'Credentials copied to clipboard'); }
+                  else { Clipboard.setString(text); showAlert('Copied', 'Credentials copied to clipboard'); }
                 }}>
                   <Ionicons name="copy-outline" size={14} color="#007AFF" /><Text style={{ fontSize: 14, color: '#007AFF', fontWeight: '600' }}>Copy</Text>
                 </TouchableOpacity>

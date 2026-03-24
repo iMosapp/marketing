@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { showAlert } from '../../services/alert';
 import {
   View,
   Text,
@@ -171,7 +172,7 @@ export default function PublicLandingPage() {
 
   const submitReview = async () => {
     if (!reviewName.trim()) {
-      Alert.alert('Error', 'Please enter your name');
+      showAlert('Error', 'Please enter your name');
       return;
     }
 
@@ -193,12 +194,12 @@ export default function PublicLandingPage() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      Alert.alert('Thank You!', 'Your review has been submitted and will be visible after approval.');
+      showAlert('Thank You!', 'Your review has been submitted and will be visible after approval.');
       setShowReviewModal(false);
       resetReviewForm();
     } catch (err) {
       console.error('Error submitting review:', err);
-      Alert.alert('Error', 'Failed to submit review. Please try again.');
+      showAlert('Error', 'Failed to submit review. Please try again.');
     } finally {
       setSubmittingReview(false);
     }
@@ -214,7 +215,7 @@ export default function PublicLandingPage() {
 
   const submitReferral = async () => {
     if (!referrerName.trim() || !referredName.trim()) {
-      Alert.alert('Error', 'Please enter both your name and your friend\'s name');
+      showAlert('Error', 'Please enter both your name and your friend\'s name');
       return;
     }
 
@@ -229,12 +230,12 @@ export default function PublicLandingPage() {
         notes: referNotes,
       });
 
-      Alert.alert('Thank You!', 'Your referral has been submitted. We appreciate your trust!');
+      showAlert('Thank You!', 'Your referral has been submitted. We appreciate your trust!');
       setShowReferModal(false);
       resetReferralForm();
     } catch (err) {
       console.error('Error submitting referral:', err);
-      Alert.alert('Error', 'Failed to submit referral. Please try again.');
+      showAlert('Error', 'Failed to submit referral. Please try again.');
     } finally {
       setSubmittingReferral(false);
     }

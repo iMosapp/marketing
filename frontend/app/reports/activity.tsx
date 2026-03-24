@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { showAlert } from '../../services/alert';
 import {
   View,
   Text,
@@ -139,9 +140,9 @@ export default function ActivityReportScreen() {
     try {
       const { start, end } = getDateRange(preset);
       await api.post(`/reports/send-email/${user._id}?start_date=${start}&end_date=${end}&team=${team}`);
-      Alert.alert('Sent!', 'Report emailed successfully.');
+      showAlert('Sent!', 'Report emailed successfully.');
     } catch (err) {
-      Alert.alert('Error', 'Failed to send report email.');
+      showAlert('Error', 'Failed to send report email.');
     } finally {
       setSendingEmail(false);
     }
@@ -157,10 +158,10 @@ export default function ActivityReportScreen() {
         day_of_week: 1,
         day_of_month: 1,
       });
-      Alert.alert('Saved', schedFreq === 'none' ? 'Scheduled reports disabled.' : `You'll receive ${schedFreq} reports.`);
+      showAlert('Saved', schedFreq === 'none' ? 'Scheduled reports disabled.' : `You'll receive ${schedFreq} reports.`);
       setShowSchedule(false);
     } catch (err) {
-      Alert.alert('Error', 'Failed to save preferences.');
+      showAlert('Error', 'Failed to save preferences.');
     }
   };
 

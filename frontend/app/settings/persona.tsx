@@ -18,6 +18,7 @@ import api from '../../services/api';
 import Toggle from '../../components/Toggle';
 import VoiceInput from '../../components/VoiceInput';
 import { useToast } from '../../components/common/Toast';
+import { showAlert } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
 interface PersonaSettings {
@@ -132,7 +133,7 @@ const { showToast } = useToast();
       showToast('Your AI persona has been updated');
     } catch (error) {
       console.error('Error saving persona:', error);
-      Alert.alert('Error', 'Failed to save settings');
+      showAlert('Error', 'Failed to save settings');
     } finally {
       setSaving(false);
     }
@@ -163,7 +164,7 @@ const { showToast } = useToast();
       }
     } catch (error: any) {
       console.error('Error retraining:', error);
-      Alert.alert('Error', error?.response?.data?.detail || 'Failed to generate bio');
+      showAlert('Error', error?.response?.data?.detail || 'Failed to generate bio');
     } finally {
       setRetraining(false);
     }

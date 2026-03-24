@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { showAlert } from '../../services/alert';
 import {
   View,
   Text,
@@ -63,7 +64,7 @@ export default function PricingPage() {
       calculateStorePrice();
     } catch (error) {
       console.error('Error loading plans:', error);
-      Alert.alert('Error', 'Failed to load pricing plans');
+      showAlert('Error', 'Failed to load pricing plans');
     } finally {
       setLoading(false);
     }
@@ -113,7 +114,7 @@ export default function PricingPage() {
       }
     } catch (error: any) {
       console.error('Checkout error:', error);
-      Alert.alert('Error', error.response?.data?.detail || 'Failed to start checkout');
+      showAlert('Error', error.response?.data?.detail || 'Failed to start checkout');
     } finally {
       setProcessingPlan(null);
     }

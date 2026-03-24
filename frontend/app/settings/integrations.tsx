@@ -19,6 +19,7 @@ import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { WebModal } from '../../components/WebModal';
 import { useToast } from '../../components/common/Toast';
+import { showAlert } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
 type TabType = 'api-keys' | 'webhooks' | 'crm' | 'dms' | 'docs';
@@ -228,14 +229,14 @@ const { showToast } = useToast();
       setApiKeys(prev => [...prev, response.data]);
       setNewKeyName('');
     } catch (error) {
-      Alert.alert('Error', 'Failed to create API key');
+      showAlert('Error', 'Failed to create API key');
     } finally {
       setCreatingKey(false);
     }
   };
 
   const revokeApiKey = async (keyId: string) => {
-    Alert.alert(
+    showAlert(
       'Revoke API Key',
       'Are you sure? This cannot be undone and any integrations using this key will stop working.',
       [
@@ -248,7 +249,7 @@ const { showToast } = useToast();
               await api.delete(`/integrations/api-keys/${keyId}`);
               setApiKeys(prev => prev.filter(k => k.id !== keyId));
             } catch (error) {
-              Alert.alert('Error', 'Failed to revoke API key');
+              showAlert('Error', 'Failed to revoke API key');
             }
           },
         },
@@ -266,21 +267,21 @@ const { showToast } = useToast();
       setNewWebhook({ name: '', url: '', events: [] });
       showToast('Webhook created');
     } catch (error) {
-      Alert.alert('Error', 'Failed to create webhook');
+      showAlert('Error', 'Failed to create webhook');
     }
   };
 
   const testWebhook = async (webhookId: string) => {
     try {
       const response = await api.post(`/integrations/webhooks/${webhookId}/test`);
-      Alert.alert(
+      showAlert(
         response.data.success ? 'Success' : 'Failed',
         response.data.success 
           ? `Webhook responded with status ${response.data.status_code}`
           : response.data.error || 'Webhook test failed'
       );
     } catch (error) {
-      Alert.alert('Error', 'Failed to test webhook');
+      showAlert('Error', 'Failed to test webhook');
     }
   };
 

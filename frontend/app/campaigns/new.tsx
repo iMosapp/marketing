@@ -23,6 +23,7 @@ import api from '../../services/api';
 import { format, addDays, addMonths } from 'date-fns';
 import { WebModal } from '../../components/WebModal';
 import { useToast } from '../../components/common/Toast';
+import { showAlert } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
 import { PersonalizeButton } from '../../components/PersonalizeButton';
@@ -215,7 +216,7 @@ const { showToast } = useToast();
       // Request permissions
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Please allow access to your photo library to attach media.');
+        showAlert('Permission Required', 'Please allow access to your photo library to attach media.');
         return;
       }
       
@@ -271,7 +272,7 @@ const { showToast } = useToast();
       }
     } catch (error) {
       console.error('Error picking media:', error);
-      Alert.alert('Error', 'Failed to select image. Please try again.');
+      showAlert('Error', 'Failed to select image. Please try again.');
     } finally {
       setUploadingMedia(null);
     }

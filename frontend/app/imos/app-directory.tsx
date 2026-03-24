@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { showAlert } from '../../services/alert';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Platform, LayoutAnimation, UIManager, ActivityIndicator, Alert,
   useWindowDimensions,
@@ -255,11 +256,11 @@ export default function AppDirectoryScreen() {
   const handleShare = async () => {
     if (!shareModal) return;
     if (shareChannel === 'email' && !recipientEmail.trim()) {
-      Alert.alert('Required', 'Please enter an email address');
+      showAlert('Required', 'Please enter an email address');
       return;
     }
     if (shareChannel === 'sms' && !recipientPhone.trim()) {
-      Alert.alert('Required', 'Please enter a phone number');
+      showAlert('Required', 'Please enter a phone number');
       return;
     }
     setSending(true);
@@ -275,11 +276,11 @@ export default function AppDirectoryScreen() {
         custom_message: customMessage.trim() || undefined,
       });
       if (res.data.success) {
-        Alert.alert('Sent!', `${shareChannel === 'email' ? 'Email' : 'SMS'} sent successfully`);
+        showAlert('Sent!', `${shareChannel === 'email' ? 'Email' : 'SMS'} sent successfully`);
         closeShareModal();
       }
     } catch (err: any) {
-      Alert.alert('Error', err?.response?.data?.detail || 'Failed to send');
+      showAlert('Error', err?.response?.data?.detail || 'Failed to send');
     } finally {
       setSending(false);
     }

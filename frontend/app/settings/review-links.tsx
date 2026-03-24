@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { useToast } from '../../components/common/Toast';
+import { showAlert } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
 interface ReviewLinks {
@@ -78,7 +79,7 @@ const { showToast } = useToast();
 
   const handleSave = async () => {
     if (!user?.store_id) {
-      Alert.alert('Error', 'No store associated with your account');
+      showAlert('Error', 'No store associated with your account');
       return;
     }
 
@@ -87,7 +88,7 @@ const { showToast } = useToast();
       await api.put(`/admin/stores/${user.store_id}/review-links`, links);
       showToast('Review links updated successfully');
     } catch (error) {
-      Alert.alert('Error', 'Failed to save review links');
+      showAlert('Error', 'Failed to save review links');
     } finally {
       setSaving(false);
     }
@@ -99,7 +100,7 @@ const { showToast } = useToast();
 
   const addCustomLink = () => {
     if (!newCustomName.trim() || !newCustomUrl.trim()) {
-      Alert.alert('Error', 'Please enter both name and URL');
+      showAlert('Error', 'Please enter both name and URL');
       return;
     }
     setLinks(prev => ({
@@ -126,7 +127,7 @@ const { showToast } = useToast();
   const copyLink = (url: string | null) => {
     if (url) {
       // In a real app, use Clipboard API
-      Alert.alert('Link Copied!', url);
+      showAlert('Link Copied!', url);
     }
   };
 
