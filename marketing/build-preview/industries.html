@@ -167,6 +167,6 @@ function copyAll(btn) {
   });
 }
 </script>
-<script>window.IMOS_API=window.IMOS_API||"https://app.imonsocial.com";</script><script src="/chat-widget.js"></script>
+<script>window.IMOS_API=window.IMOS_API||(location.hostname.includes("imonsocial.com")?"https://app.imonsocial.com":"");</script><script src="/chat-widget.js"></script>
 </body>
 </html>

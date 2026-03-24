@@ -7,140 +7,66 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **Frontend:** React Native / Expo (web)
 - **Backend:** FastAPI (Python)
 - **Database:** MongoDB Atlas
-- **Integrations:** Resend (email), Twilio (MOCKED), OpenAI (via emergentintegrations), Emergent Object Storage, Pillow, qrcode
+- **Marketing Site:** Static HTML in `/app/marketing/build/` (deployed to Vercel via GitHub)
+- **Integrations:** Resend (email), Twilio (MOCKED), OpenAI (via emergentintegrations), Emergent Object Storage, Pillow, qrcode, apscheduler
 
 ---
 
 ## What's Been Implemented
 
-### Operations Manual v5.0 Update (Mar 24, 2026) -- LATEST
+### Marketing Site Updates (Mar 24, 2026) -- LATEST
+- **Automotive Vision Page** (`/automotive/`): Full Apple-style landing page with automotive-specific sales copy. Hero: "Take a photo with your customer. The relationship runs for a lifetime." Sections: Problem, Vision Flow, Search Visibility, Manager Pitch, Salesperson Pitch, Network Effect, CRM vs ROS comparison, CTA.
+- **Nav Integration:** Added "Automotive Vision" to Resources dropdown across all 38 marketing HTML pages (desktop + mobile navs).
+- **Future Vision Page** (`/future/`): Apple-style landing page for "The Future of Sales / Relationship Operating System" pitch.
+
+### Operations Manual v5.0 Update (Mar 24, 2026)
 - Seeded the updated Operations Manual to the database via `POST /api/docs/seed-project-scope`.
-- Manual now reflects all features built over the last several sessions (partner billing, training reports, OG tags, custom cards, error reporting, campaign fixes, etc.).
-- Verified rendering on `/admin/docs` under the "Operations Manual" category tab.
 
 ### Error Report Fixes (Mar 24, 2026)
-- **520 Notification Center Fix:** Rewrote `GET /notification-center/{user_id}/unread-count` from a heavyweight `get_notifications()` aggregation (8+ collection queries) to lightweight `count_documents()` calls. Now returns in milliseconds instead of timing out on heavy accounts. Falls back to `{"count": 0}` on any error instead of crashing.
-- **React #418 Showcase Hardening:** Changed SSR-safe pre-mount fallback from `SafeAreaView` to plain `View` with `suppressHydrationWarning` to eliminate inset mismatches between server and client renders.
+- **520 Notification Center Fix:** Rewrote unread-count endpoint to use lightweight `count_documents()`.
+- **React #418 Showcase Hardening:** Fixed SSR hydration on `/showcase/` page.
 
-### Training Report Admin View (Mar 24, 2026)
-- **Training Report page** (`/admin/training-reports`): 3-tab analytics view for training video engagement.
-  - **Overview tab:** Shows total links tracked, total clicks, top videos ranked by clicks with YouTube thumbnails, and recent click activity feed.
-  - **By Sender tab:** Which salesperson sent the most videos and got the most clicks, with their top videos listed.
-  - **By Video tab:** Each video's click count, times sent, and unique senders.
-- Accessible from More > Learning > Training Report (admin/super_admin only).
+### Campaign System Fixes (Mar 24, 2026)
+- **Scheduler Bug Fix:** Fixed hourly delay randomization and AI toggle override bugs.
+- **Campaign Journey Feature:** New endpoint + component showing campaign timeline on contact detail page.
+- **Template Variables Fix:** Centralized `resolve_template_variables()` for all campaign messages.
+- **Campaign Stats:** Added MongoDB aggregation for enrollment data on campaigns list.
 
-### Training Video YouTube Preview + Custom Card Templates (Mar 24, 2026)
-- **YouTube OG Tags:** Training video short URLs now serve YouTube-specific Open Graph meta tags (video thumbnail from `img.youtube.com/vi/{ID}/hqdefault.jpg` + video title). iMessage/WhatsApp previews will show a YouTube video preview instead of the business card.
-- **Custom Card Templates in Send/Composer:** Both the "Send a Card" screen and the contact page composer bar now dynamically fetch custom card types from the API and display them alongside the 6 default types (Congrats, Birthday, Holiday, Thank You, Anniversary, Welcome).
-
-### Partner Monthly Invoice System (Mar 24, 2026)
-- **Waiver System:** Super admins can waive individual stores from billing with optional expiry dates. Waived stores appear on invoices as $0 line items with the waiver reason displayed.
-- **Per-Store Rate Overrides:** Each store can have a custom billing rate and package name that overrides the partner's default rate. Supports different price points per package.
-- **Monthly Invoice Generation:** Generates itemized invoices with line items per store, waiver logic, and PDF generation (fpdf2). Duplicate prevention (409 if invoice exists for same period).
-- **Invoice Email Delivery:** Sends invoice via Resend with HTML breakdown and PDF attachment.
-- **Scheduled Job:** APScheduler CronTrigger runs on the 1st of each month at 6:30 UTC to auto-generate invoices for all active partners with billing configured.
-- **Invoice Status Management:** Status flow: draft → sent → paid/overdue/cancelled. PDF regenerated on status change to reflect current status.
-- **Frontend Tabbed UI:** Partner billing page updated with 4 tabs: Overview (summary + config), Invoices (generate + history + PDF download), Waivers (add/remove per store), Rates (per-store rate overrides with package names).
-
-### Training Video Tracking + Card Templates Fix (Mar 24, 2026)
-- **Training Hub Auto-Seed Fix:** Changed the `/api/training/tracks` endpoint to auto-seed *missing* tracks (not just when DB is empty). This ensures the 8 onboarding videos are always discoverable even if other tracks were already created.
-- **Video Click Tracking:** Training video templates now use tracked short URLs (via the existing `/api/s/` system) instead of raw YouTube links. When a contact clicks a video link sent via SMS, the click is logged to their activity feed with `training_video_clicked` event type. Engagement score weight of 3 is applied.
-- **Card Templates Bug Fix:** Custom card types (created via the "+" button on the Card Templates page) were being saved but not returned in the list. The `GET /api/congrats/templates/all/{store_id}` endpoint only iterated over `CARD_TYPE_DEFAULTS` (6 built-in types). Fixed to also include any custom card types stored in the DB.
-- **Template Categories:** Added `training_video` to the backend categories list endpoint.
-
-### Thread 500 + Inbox Tap Navigation Fix (Mar 24, 2026)
-- **Thread 500 Fix:** Message thread endpoint used `m['content']`, `m['sender']`, `m['timestamp']` without `.get()`. Missing fields in production messages caused 500.
-- **Inbox Tap Fix:** `WebSwipeableItem` permanently blocked taps. Removed `pointerEvents: 'none'` hack, deferred `isDragging` to actual movement, added `wasRecentSwipe()` guard.
-
-### Campaign Template Variables Fix (Mar 24, 2026)
-- **Critical Bug:** Campaign messages sent `{review_link}` as literal text instead of the actual review URL. Also missing: `{customer_first_name}`, `{salesman_first_name}`, `{salesman_name}`, `{purchase}`, `{review_url}`.
-- **Fix:** Created a centralized `resolve_template_variables()` function in `scheduler.py` that handles ALL template variables with DB lookups for user profile and store review links. Applied to both the campaign step processor and date-triggered campaign paths. Also updated `tasks.py` to use the same shared function.
-- **Variables now supported:** `{first_name}`, `{last_name}`, `{name}`, `{contact_name}`, `{customer_first_name}`, `{phone}`, `{salesman_first_name}`, `{salesman_name}`, `{review_link}`, `{review_url}`, `{purchase}`
-
-### Alert.alert Web Crash Fix (Mar 24, 2026)
-- **Root Cause:** 36+ files used `Alert.alert()` from React Native without importing `Alert`. This works on native but crashes on web with "Can't find variable: Alert". The thread page was the first to surface this via error reporting.
-- **Fix:** Replaced ALL `Alert.alert()` calls across 36 files with the cross-platform `showAlert()` function from `services/alert.ts`. This function uses `window.confirm/alert` on web and `Alert.alert` on native.
-- **Also fixed:** Error Reports clear button (was passing button array to `showSimpleAlert` which only accepts callback), digital card page hydration error (#418).
-
-### Error Report Fixes Round 2 + Clear Button (Mar 24, 2026)
-- **Clear Button Fix:** The Error Reports page's "Clear All" button was crashing (`showSimpleAlert` doesn't accept button arrays). Switched to `showConfirm` which properly handles confirm/cancel dialogs.
-- **Card Page Hydration Fix:** Added `mounted` state pattern to `/card/[userId].tsx` to prevent React #418 on public digital card pages.
-- **Share Cancel Noise Suppressed:** Filtered out benign "Abort due to cancellation of share" errors from being reported.
-
-### React Hydration Error #418 Fix + Campaign Stats Fix (Mar 24, 2026)
-- **Campaign Stats Fix:** Campaigns list page was showing "0 sent" for all campaigns because the `GET /api/campaigns/{user_id}` endpoint didn't aggregate enrollment data. Added MongoDB aggregation pipeline to compute `messages_sent_count`, `enrollments_total`, `enrollments_active`, `enrollments_completed`, and `last_sent_at` per campaign from `campaign_enrollments`. Removed `response_model=List[Campaign]` that was stripping the new fields.
-- **React Hydration #418 Fix:** Public pages (`/showcase/`, `/p/`, `/l/`) were using `window.location.href` and rendering browser-specific content during initial render, causing server-client hydration mismatch.
-- **Fix:** Added `mounted` state pattern to all 3 public pages. Content only renders after client mount, ensuring consistent output between SSR and hydration.
-- **Pages fixed:** `/app/frontend/app/showcase/[id].tsx`, `/app/frontend/app/p/[userId].tsx`, `/app/frontend/app/l/[username].tsx`
-
-### Production Crash Fix + ErrorBoundary (Mar 24, 2026)
-- **Critical Bug Fix:** Added missing `GET /api/users/{user_id}` endpoint. Previously only `PATCH` existed, causing **405 Method Not Allowed** when My Account page tried to refresh user data. This was a likely contributor to the "everything crashing" reports.
-- **ErrorBoundary:** Added a global React ErrorBoundary component wrapping the entire app. Any uncaught rendering error now shows a "Try Again" recovery screen instead of crashing the whole app to a white/blank screen. Critical for production stability with 50-60 users.
-- **Error Reporting System:** Built full crash/error reporting pipeline:
-  - `POST /api/errors/report` — frontend auto-sends crash data (render crashes, unhandled promise rejections, 5xx API errors, network failures)
-  - `GET /api/errors/recent?limit=50&error_type=render_crash&user_id=X` — pull recent error reports with filtering
-  - `DELETE /api/errors/clear` — clear old reports
-  - Reports include: error message, stack trace, page/screen, user info, platform, timestamp
-  - Deduplication built in (same error only reported once per 60s)
-  - Also logs to backend console as WARNING for real-time visibility
-  - Admin UI page at Hub > Internal Operations > Error Reports with "Copy All Reports" button, filters, and trash
-  - Mobile-friendly — works on phone with one-tap copy to paste into chat
-
-### Training Hub + Video Quick-Send Templates (Mar 23, 2026)
-- **Training Hub:** Populated "Onboarding Videos" track with 8 YouTube tutorial videos (Saving The App, Setting Up Your Profile, Home Screen, Contacts, Inbox, Best Practices, The 30 Second Workflow, Tags & Campaigns). Videos play inline via embedded YouTube player on web, or open in browser on native.
-- **Quick-Send Templates:** Added 8 video message templates (category: "training_video") to the template system. Auto-seeded for existing users when they open templates. Each has a friendly message + YouTube link with {name} variable.
-- **Template Categories:** Added training_video, referral, sold, review categories to the frontend category picker.
-- **YouTube Embed:** Enhanced training-hub.tsx to embed YouTube videos inline (16:9 aspect ratio iframe) with fallback to Linking.openURL on native.
-
-### UI Fixes (Mar 23, 2026)
-- **Persona page:** Pushed header below Ask Jessi bar (paddingTop 60→82 iOS, 20→40 Android). Added "Save Changes" button at bottom next to "Retrain My AI".
-- **Touchpoints badge:** Moved "X pending" from title row overflow position to subtitle line below "Today's Touchpoints".
-- **Root route:** Removed static public/index.html that was intercepting Expo Router and showing marketing page instead of login redirect.
-
-### Showcase Approvals Photo Fix + Gallery Delete (Mar 23, 2026)
-- Fixed showcase photos not loading (switched from react-native Image to expo-image, kept relative URLs)
-- Added photo delete button in gallery viewer
-- Fixed gallery wrong-photo selection (consistent screenWidth in FlatList)
-
-### Production Readiness Audit (Mar 23, 2026)
-- Removed emergency-reset security endpoint
-- Added 20+ production MongoDB indexes
-- Fixed "vanishing contacts" race condition
-- Moved photo backfill to async background
-- Enhanced email template with personal signature block
+### Production Readiness (Mar 23-24, 2026)
+- ErrorBoundary, Error Reporting System, Alert.alert web crash fix (36 files)
+- Production MongoDB indexes, vanishing contacts race condition fix
+- Partner Monthly Invoice System with PDF generation
+- Training Hub with 8 YouTube videos, click tracking, video templates
+- Digital card/showcase OG tags, custom card templates
 
 ---
 
 ## Key API Endpoints
 - `POST /api/auth/login` — user authentication
-- `GET /api/users/{user_id}` — **NEW** user profile data (was 405 before fix)
-- `PATCH /api/users/{user_id}` — update user profile fields
-- `POST /api/errors/report` — **NEW** receive frontend crash/error reports
-- `GET /api/errors/recent` — **NEW** admin view of recent errors (filterable)
-- `DELETE /api/errors/clear` — **NEW** clear error reports
-- `GET /api/contacts/{user_id}` — contacts with sort, search, team view
-- `GET /api/training/tracks` — all training tracks with lesson counts
-- `GET /api/training/tracks/{track_id}` — track detail with lessons
-- `POST /api/training/seed` — seed default training content
-- `GET /api/templates/{user_id}` — user's message templates (auto-seeds missing defaults)
-- `GET /api/showcase/pending/{user_id}` — pending showcase entries
-- `DELETE /api/contacts/{user_id}/{contact_id}/photos` — delete gallery photo
+- `GET /api/users/{user_id}` — user profile data
+- `GET /api/campaigns/contact/{contact_id}/journey` — campaign timeline
+- `GET /notification-center/{user_id}/unread-count` — optimized unread count
+- `POST /api/errors/report` — frontend crash/error reports
+- `POST /api/demo-requests` — marketing site demo form submissions
 
 ---
 
 ## Prioritized Backlog
 
 ### P1
-- **Phase 3: Onboarding Drip Campaign** — Automated campaign tied to "new_customer" tag, sends 1 video per day over 8 days
-- Wire up email signatures to actual outgoing message sends (messages.py)
 - App Store Preparation (eas.json, push notifications)
-- Gamification & Leaderboards
+- Gamification & Leaderboards (social experience)
+- AI-Powered Outreach (sold tag follow-ups)
+- Onboarding Drip Campaign
+- Wire up email signatures to outgoing sends
 
 ### P2
 - Full Twilio Integration (currently MOCK)
 - WhatsApp Integration
+- Stripe for partner invoices
 - Inventory Management Module
 - Refactor large files (admin.py 3700+ lines)
+- Reorganize marketing nav structure (automotive/dealers)
 
 ## Known Issues
 - P2: Mobile tags sync
@@ -154,5 +80,5 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **MongoDB Atlas:** Primary database
 - **Twilio:** MOCK mode
 - **OpenAI:** AI features via emergentintegrations
-- **apscheduler:** Backend job scheduling (9 jobs)
+- **apscheduler:** Backend job scheduling
 - **YouTube:** Embedded video playback in Training Hub

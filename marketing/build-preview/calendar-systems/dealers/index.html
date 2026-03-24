@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Calendar Systems | A New Way to Use Your Delivery Photos</title>
+  <meta name="description" content="You're already taking delivery photos. Now those photos can do a whole lot more — instant customer engagement, automated follow-up, and branded review requests."/>
+  <link rel="icon" href="/favicon.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#102050;--navy-light:#1A3068;--navy-deep:#0B1838;--orange:#F08010;--orange-hover:#D87210;--orange-light:rgba(240,128,16,.1);--grey:#808080;--grey-light:#B0B0B0;--text:#102050;--text-2:#3A4A6A;--text-3:#7A8AAA;--bg:#FFFFFF;--bg-2:#F4F6FA;--surface:#E8ECF4;--border:rgba(16,32,80,.06);--border-2:rgba(16,32,80,.1)}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+/* ANIMATIONS */
+.rv{opacity:0;transform:translateY(28px);transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1)}.rv.vis{opacity:1;transform:translateY(0)}.rv-1{transition-delay:.1s}.rv-2{transition-delay:.2s}.rv-3{transition-delay:.3s}.rv-4{transition-delay:.4s}
+
+/* TOP BAR */
+.top-bar{background:var(--navy-deep);padding:10px 24px;text-align:center;font-size:12px;color:rgba(255,255,255,.45);font-weight:500;letter-spacing:.3px}
+.top-bar a{color:var(--orange);text-decoration:none;font-weight:700}.top-bar a:hover{text-decoration:underline}
+
+/* NAV */
+nav{background:#FFF;border-bottom:2px solid var(--surface);position:sticky;top:0;z-index:100}
+.nav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 24px}
+.cs-logo-img{height:52px;width:auto}
+.nav-right{display:flex;align-items:center;gap:16px}
+.nav-link{font-size:14px;font-weight:600;color:var(--text-2);text-decoration:none;transition:color .2s}.nav-link:hover{color:var(--orange)}
+.btn-gs{background:var(--orange);color:#FFF;padding:10px 28px;border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;transition:all .25s;box-shadow:0 2px 12px rgba(240,128,16,.2)}.btn-gs:hover{background:var(--orange-hover);transform:translateY(-1px);box-shadow:0 6px 20px rgba(240,128,16,.3)}
+@media(max-width:600px){.cs-logo-img{height:40px}.nav-link{display:none}}
+
+/* HERO */
+.hero{padding:100px 24px 80px;text-align:center;background:var(--navy);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 50% 0%,rgba(240,128,16,.06) 0%,transparent 50%);pointer-events:none}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 18px;border-radius:8px;background:rgba(240,128,16,.1);border:1px solid rgba(240,128,16,.2);font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--orange);margin-bottom:28px;position:relative}
+.hero h1{font-family:'Playfair Display',Georgia,serif;font-size:54px;font-weight:900;line-height:1.1;color:#FFF;max-width:800px;margin:0 auto 20px;position:relative}
+.hero h1 span{color:var(--orange)}
+.hero .sub{font-size:18px;color:rgba(255,255,255,.5);line-height:1.7;max-width:580px;margin:0 auto 28px;position:relative}
+.hero .powered{font-size:13px;color:rgba(255,255,255,.3);font-weight:500;position:relative;display:flex;align-items:center;justify-content:center;gap:6px}
+.hero .powered img{height:18px;width:auto;opacity:.5}
+@media(max-width:768px){.hero{padding:64px 24px 56px}.hero h1{font-size:34px}}
+
+/* ANNOUNCE */
+.announce{padding:64px 24px;background:var(--bg-2);border-bottom:2px solid var(--surface)}
+.announce-inner{max-width:680px;margin:0 auto;text-align:center}
+.announce h2{font-family:'Playfair Display',Georgia,serif;font-size:30px;font-weight:800;color:var(--navy);margin-bottom:14px;line-height:1.25}
+.announce p{font-size:16px;color:var(--text-2);line-height:1.75}
+.announce strong{color:var(--navy);font-weight:700}
+
+/* SECTION HEADERS */
+.sec-label{font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--orange);margin-bottom:10px;display:block;text-align:center}
+.sec-title{font-family:'Playfair Display',Georgia,serif;font-size:38px;font-weight:900;text-align:center;color:var(--navy);margin-bottom:10px;line-height:1.15}
+.sec-sub{text-align:center;color:var(--text-2);font-size:16px;max-width:520px;margin:0 auto 52px;line-height:1.65}
+
+/* WHAT CHANGES */
+.changes{padding:100px 24px;max-width:1000px;margin:0 auto}
+.change-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+.ch-card{padding:36px;border-radius:16px;border:1px solid var(--border-2);background:#FFF;transition:all .3s;position:relative;overflow:hidden}
+.ch-card::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;border-radius:4px 0 0 4px}
+.ch-card:nth-child(1)::before{background:var(--orange)}
+.ch-card:nth-child(2)::before{background:#27AE60}
+.ch-card:nth-child(3)::before{background:#F39C12}
+.ch-card:nth-child(4)::before{background:#8E44AD}
+.ch-card:hover{transform:translateY(-3px);box-shadow:0 16px 48px rgba(16,32,80,.08);border-color:transparent}
+.ch-card i{font-size:24px;margin-bottom:14px;display:block}
+.ch-card h3{font-size:18px;font-weight:800;color:var(--navy);margin-bottom:8px}
+.ch-card p{font-size:14px;color:var(--text-2);line-height:1.65}
+@media(max-width:768px){.change-cards{grid-template-columns:1fr}.changes{padding:64px 24px}}
+.deep-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+@media(max-width:900px){.change-cards{grid-template-columns:1fr}.deep-grid{grid-template-columns:1fr}}
+
+/* HOW IT WORKS */
+.how{padding:100px 24px;background:var(--navy);position:relative;overflow:hidden}
+.how::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(ellipse at 30% 50%,rgba(240,128,16,.04) 0%,transparent 50%);pointer-events:none}
+.how .sec-label{color:rgba(240,128,16,.8)}
+.how .sec-title{color:#FFF}
+.how .sec-sub{color:rgba(255,255,255,.4)}
+.how-inner{max-width:780px;margin:0 auto;position:relative}
+.how-steps{display:flex;flex-direction:column;gap:0}
+.how-step{display:grid;grid-template-columns:64px 1fr;gap:20px;align-items:flex-start;position:relative;padding-bottom:40px}
+.how-step:last-child{padding-bottom:0}
+.how-step::before{content:'';position:absolute;left:31px;top:52px;bottom:0;width:2px;background:linear-gradient(var(--orange),rgba(240,128,16,.1))}
+.how-step:last-child::before{display:none}
+.how-num{width:64px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:var(--orange);border:1px solid rgba(240,128,16,.25);background:rgba(240,128,16,.06);flex-shrink:0}
+.how-body h3{font-size:17px;font-weight:800;color:#FFF;margin-bottom:4px}
+.how-body p{font-size:14px;color:rgba(255,255,255,.4);line-height:1.65}
+.how-body .hl{color:var(--orange);font-weight:600}
+@media(max-width:768px){.how{padding:64px 24px}.how-step{grid-template-columns:48px 1fr;gap:14px}.how-num{width:48px;height:40px;font-size:17px}.how-step::before{left:23px;top:40px}}
+
+/* BENEFITS */
+.benefits{padding:100px 24px;max-width:1000px;margin:0 auto}
+.ben-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.ben-card{padding:28px 24px;border-radius:16px;border:1px solid var(--border-2);background:#FFF;text-align:center;transition:all .3s}
+.ben-card:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(16,32,80,.08);border-color:transparent}
+.ben-card .ben-ico{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 14px}
+.ben-card h4{font-size:15px;font-weight:800;color:var(--navy);margin-bottom:6px}
+.ben-card p{font-size:13px;color:var(--text-2);line-height:1.55}
+@media(max-width:900px){.ben-grid{grid-template-columns:1fr}.benefits{padding:64px 24px}}
+
+/* ONBOARDING */
+.onboard{padding:80px 24px;background:var(--bg-2);border-top:2px solid var(--surface);border-bottom:2px solid var(--surface)}
+.onboard-inner{max-width:680px;margin:0 auto;text-align:center}
+.onboard h2{font-family:'Playfair Display',Georgia,serif;font-size:34px;font-weight:900;color:var(--navy);margin-bottom:12px;line-height:1.2}
+.onboard p{font-size:16px;color:var(--text-2);line-height:1.7;margin-bottom:16px}
+.onboard-stats{display:flex;justify-content:center;gap:56px;margin-top:32px}
+.ob-stat .num{font-size:48px;font-weight:900;color:var(--orange);line-height:1}
+.ob-stat .lbl{font-size:12px;color:var(--text-3);font-weight:700;margin-top:4px;text-transform:uppercase;letter-spacing:.8px}
+@media(max-width:768px){.onboard h2{font-size:26px}.onboard-stats{gap:32px}.ob-stat .num{font-size:36px}}
+
+/* GET STARTED FORM */
+.get-started{padding:100px 24px;background:var(--navy);position:relative;overflow:hidden}
+.get-started::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:500px;background:radial-gradient(ellipse,rgba(240,128,16,.06) 0%,transparent 60%);pointer-events:none}
+.gs-inner{max-width:500px;margin:0 auto;position:relative}
+.gs-inner h2{font-family:'Playfair Display',Georgia,serif;font-size:34px;font-weight:900;color:#FFF;text-align:center;margin-bottom:8px}
+.gs-inner>p{text-align:center;color:rgba(255,255,255,.4);font-size:15px;margin-bottom:36px;line-height:1.6}
+.gs-form{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:36px}
+.gs-field{margin-bottom:16px}
+.gs-field label{display:block;font-size:11px;font-weight:700;color:rgba(255,255,255,.35);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px}
+.gs-field input,.gs-field select{width:100%;padding:12px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#FFF;font-size:15px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s}
+.gs-field input::placeholder{color:rgba(255,255,255,.2)}
+.gs-field input:focus,.gs-field select:focus{border-color:var(--orange)}
+.gs-field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236688AA' fill='none' stroke-width='2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+.gs-field select option{background:var(--navy);color:#FFF}
+.gs-submit{width:100%;padding:14px;background:var(--orange);color:#FFF;font-size:16px;font-weight:800;border:none;border-radius:10px;cursor:pointer;margin-top:8px;transition:all .25s;box-shadow:0 2px 16px rgba(240,128,16,.25)}.gs-submit:hover{background:var(--orange-hover);box-shadow:0 6px 24px rgba(240,128,16,.35)}.gs-submit:disabled{opacity:.5;cursor:not-allowed}
+.gs-note{text-align:center;margin-top:16px;font-size:12px;color:rgba(255,255,255,.25)}
+@media(max-width:768px){.get-started{padding:64px 24px}.gs-inner h2{font-size:26px}.gs-form{padding:24px 20px}}
+
+/* FOOTER */
+.cs-footer{background:#FFF;border-top:2px solid var(--surface);padding:40px 24px;text-align:center}
+.cs-footer .ft-logo img{height:36px;width:auto;margin-bottom:8px}
+.cs-footer .ft-powered{font-size:12px;color:var(--text-3);margin-bottom:16px}
+.cs-footer .ft-powered a{color:var(--orange);text-decoration:none;font-weight:600}
+.cs-footer .ft-links{display:flex;justify-content:center;gap:24px;flex-wrap:wrap}
+.cs-footer .ft-links a{font-size:13px;color:var(--text-3);text-decoration:none;transition:color .2s}.cs-footer .ft-links a:hover{color:var(--orange)}
+.cs-footer .ft-copy{margin-top:20px;font-size:11px;color:var(--grey-light)}
+  </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="top-bar">A message from Calendar Systems to our valued dealer partners &nbsp;|&nbsp; <a href="#get-started">Get Started Today</a></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <img src="/calendar-systems/cs-logo.png" alt="Calendar Systems Incorporated" class="cs-logo-img"/>
+    <div class="nav-right">
+      <a href="#get-started" class="nav-link">Learn More</a>
+      <a href="https://app.imonsocial.com/cs-login" class="btn-gs">Get Started</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge rv"><i class="fa-solid fa-bullhorn"></i> Announcement for Calendar Systems Dealers</div>
+  <h1 class="rv">You're already taking the photos.<br/>Now they do <span>a whole lot more.</span></h1>
+  <p class="sub rv">We're excited to announce a new platform that turns your existing delivery photos into instant customer engagement, automated follow-up, and branded review requests. Same workflow, bigger results.</p>
+  <div class="powered rv">Powered by <img src="/marketing-logo.png" alt="i'M On Social"/></div>
+</section>
+
+<!-- ANNOUNCEMENT -->
+<section class="announce rv">
+  <div class="announce-inner">
+    <h2>We've been listening.</h2>
+    <p>You told us the photos were valuable but felt like a one-way street. Your salespeople take them, they go into the calendar, and that's it. <strong>We wanted to change that.</strong> So we built a platform that makes every delivery photo the starting point for a real, ongoing customer relationship.</p>
+  </div>
+</section>
+
+<!-- WHAT CHANGES -->
+<section class="changes">
+  <span class="sec-label rv">What's New</span>
+  <h2 class="sec-title rv">What changes for your dealership</h2>
+  <p class="sec-sub rv">Your salespeople take the same photo at delivery. Everything after that is new.</p>
+  <div class="change-cards">
+    <div class="ch-card rv rv-1">
+      <i class="fa-solid fa-paper-plane" style="color:var(--orange)"></i>
+      <h3>Instant Delivery to the Customer</h3>
+      <p>The customer gets a beautiful, branded congrats card with their delivery photo via text. Right there at the dealership. They love it. Your salesperson looks like a pro.</p>
+    </div>
+    <div class="ch-card rv rv-2">
+      <i class="fa-solid fa-arrows-spin" style="color:#27AE60"></i>
+      <h3>Automated Follow-Up for Years</h3>
+      <p>Birthday texts, anniversary check-ins, service reminders, referral requests. All running automatically in the background. Your salespeople stay top of mind without lifting a finger.</p>
+    </div>
+    <div class="ch-card rv rv-3">
+      <i class="fa-solid fa-star" style="color:#F39C12"></i>
+      <h3>Branded Review Requests</h3>
+      <p>Every customer who receives a delivery photo also gets a review request with your dealership's logo front and center. More reviews, better online reputation, zero extra effort.</p>
+    </div>
+    <div class="ch-card rv rv-4">
+      <i class="fa-solid fa-plug" style="color:#8E44AD"></i>
+      <h3>Real-Time Data Integration</h3>
+      <p>Every photo pushes directly into Calendar Systems in real time, along with the customer name, phone number, stock number, and deal number. No manual uploads. No end-of-month scramble.</p>
+    </div>
+    <div class="ch-card rv rv-1">
+      <i class="fa-solid fa-magnifying-glass-chart" style="color:var(--orange)"></i>
+      <h3>SEO and Search Visibility</h3>
+      <p>Every salesperson gets a searchable digital profile. Every photo shared, every digital card tapped, every review collected builds your dealership's presence in Google and AI answer engines. More visibility, more walk-ins.</p>
+    </div>
+    <div class="ch-card rv rv-2">
+      <i class="fa-solid fa-chart-pie" style="color:#27AE60"></i>
+      <h3>Click-Through Tracking and Attribution</h3>
+      <p>Know exactly which salesperson is driving clicks, shares, and engagement. Real ROI per rep, per touchpoint. Every interaction is measurable and tied back to the person who made it happen.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SEO & AEO DEEP DIVE -->
+<section class="seo-deep" style="padding:100px 24px;background:var(--bg-2);border-top:2px solid var(--surface);border-bottom:2px solid var(--surface)">
+  <div style="max-width:900px;margin:0 auto">
+    <span class="sec-label rv">The Bigger Picture</span>
+    <h2 class="sec-title rv">It's not just about the photo.</h2>
+    <p class="sec-sub rv">The photo is the starting point. What happens after it is what builds your dealership's digital footprint.</p>
+    <div class="deep-grid">
+      <div class="ch-card rv rv-1" style="border-left:4px solid var(--orange)">
+        <i class="fa-solid fa-globe" style="color:var(--orange)"></i>
+        <h3>Search Engine Optimization</h3>
+        <p>Each salesperson gets their own profile page, optimized to rank in Google. When someone searches "John Smith at your dealership," they find a professional page with reviews, a digital card, and a way to connect. Your team becomes discoverable online, individually and as a store.</p>
+      </div>
+      <div class="ch-card rv rv-2" style="border-left:4px solid #2E86DE">
+        <i class="fa-solid fa-robot" style="color:#2E86DE"></i>
+        <h3>AI Answer Engine Optimization</h3>
+        <p>Google isn't the only place people search anymore. ChatGPT, Siri, Google AI, they all pull from structured data. The more your salespeople share, engage, and collect reviews, the more your dealership shows up in AI-powered answers. This is where search is going, and you'll already be there.</p>
+      </div>
+      <div class="ch-card rv rv-3" style="border-left:4px solid #27AE60">
+        <i class="fa-solid fa-bullseye" style="color:#27AE60"></i>
+        <h3>Real Attribution, Per Salesperson</h3>
+        <p>Track exactly who is driving clicks, shares, and engagement. See which reps are building the strongest digital presence. Know the real ROI per salesperson, not just store-level numbers. Every digital card tap, every link click, every review is tracked back to the individual.</p>
+      </div>
+      <div class="ch-card rv rv-4" style="border-left:4px solid #F39C12">
+        <i class="fa-solid fa-layer-group" style="color:#F39C12"></i>
+        <h3>A Digital Footprint That Compounds</h3>
+        <p>Every photo shared, every review collected, every digital card tapped adds to your dealership's online presence. It compounds over time. Six months in, your dealership has hundreds of indexed touchpoints that didn't exist before. A year in, you're dominating local search in ways your competitors can't match.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how">
+  <div class="how-inner">
+    <span class="sec-label">The Process</span>
+    <h2 class="sec-title" style="color:#FFF">How it works</h2>
+    <p class="sec-sub" style="color:rgba(255,255,255,.4)">Nothing changes about the photo. Everything changes about what happens after.</p>
+    <div class="how-steps">
+      <div class="how-step rv">
+        <div class="how-num">1</div>
+        <div class="how-body">
+          <h3>Salesperson takes the delivery photo</h3>
+          <p>Same moment, same workflow. They open the app, snap the photo with the customer and their new vehicle. <span class="hl">Takes 30 seconds.</span></p>
+        </div>
+      </div>
+      <div class="how-step rv">
+        <div class="how-num">2</div>
+        <div class="how-body">
+          <h3>Customer gets it instantly via text</h3>
+          <p>A branded congrats card with their photo goes to the customer's phone right there at the dealership. <span class="hl">They share it, save it, love it.</span></p>
+        </div>
+      </div>
+      <div class="how-step rv">
+        <div class="how-num">3</div>
+        <div class="how-body">
+          <h3>Review request goes out automatically</h3>
+          <p>Minutes after the customer receives and saves their photo, a review request goes out with your dealership's branded logo. Timing is fully customizable per store, but we recommend within the first hour while the excitement is still fresh. <span class="hl">More five-star reviews on autopilot.</span></p>
+        </div>
+      </div>
+      <div class="how-step rv">
+        <div class="how-num">4</div>
+        <div class="how-body">
+          <h3>Long-term follow-up kicks in</h3>
+          <p>Birthdays, purchase anniversaries, service reminders. The platform handles it all, for years, automatically. <span class="hl">Your salesperson builds a book of business without extra work.</span></p>
+        </div>
+      </div>
+      <div class="how-step rv">
+        <div class="how-num">5</div>
+        <div class="how-body">
+          <h3>Calendar Systems gets the data in real time</h3>
+          <p>Customer name, phone number, stock number, deal number, the photo. All pushed into Calendar Systems the moment it happens. <span class="hl">No CSVs. No waiting. No chasing.</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BENEFITS -->
+<section class="benefits">
+  <span class="sec-label rv">Your Team</span>
+  <h2 class="sec-title rv">What your team gets</h2>
+  <p class="sec-sub rv">Every person at the dealership benefits, from the sales floor to the GM's office.</p>
+  <div class="ben-grid">
+    <div class="ben-card rv rv-1">
+      <div class="ben-ico" style="background:var(--orange-light)"><i class="fa-solid fa-mobile-screen-button" style="color:var(--orange)"></i></div>
+      <h4>Salesperson App</h4>
+      <p>Every rep gets a mobile app with their digital business card, customer CRM, inbox, and campaign dashboard.</p>
+    </div>
+    <div class="ben-card rv rv-2">
+      <div class="ben-ico" style="background:rgba(39,174,96,.08)"><i class="fa-solid fa-chart-line" style="color:#27AE60"></i></div>
+      <h4>Engagement Tracking</h4>
+      <p>See who's opening, clicking, and responding. Know which customers are engaged and which are going cold.</p>
+    </div>
+    <div class="ben-card rv rv-3">
+      <div class="ben-ico" style="background:rgba(243,156,18,.08)"><i class="fa-solid fa-trophy" style="color:#F39C12"></i></div>
+      <h4>Leaderboards</h4>
+      <p>Track photo submissions and customer engagement across your entire sales team. Friendly competition drives results.</p>
+    </div>
+    <div class="ben-card rv rv-1">
+      <div class="ben-ico" style="background:rgba(142,68,173,.08)"><i class="fa-solid fa-address-book" style="color:#8E44AD"></i></div>
+      <h4>Personal Book of Business</h4>
+      <p>Salespeople build long-term customer relationships they own. Referrals come back. Repeat buyers come back.</p>
+    </div>
+    <div class="ben-card rv rv-2">
+      <div class="ben-ico" style="background:var(--orange-light)"><i class="fa-solid fa-shield-halved" style="color:var(--orange)"></i></div>
+      <h4>Your Brand, Front and Center</h4>
+      <p>Every touchpoint the customer sees carries your dealership's branding. Review requests, congrats cards, follow-ups.</p>
+    </div>
+    <div class="ben-card rv rv-3">
+      <div class="ben-ico" style="background:rgba(16,32,80,.06)"><i class="fa-solid fa-users-gear" style="color:var(--navy)"></i></div>
+      <h4>Manager Dashboard</h4>
+      <p>One place to see submissions, team activity, and customer engagement across all salespeople. Full visibility.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ONBOARDING -->
+<section class="onboard rv">
+  <div class="onboard-inner">
+    <h2>Up and running in minutes. Not days or weeks.</h2>
+    <p>We handle the setup. Your team downloads the app, logs in, and they're ready to go. No IT involvement. No complex integrations. No training manuals. Pricing is custom based on your dealership's needs, so there's a plan that fits.</p>
+    <div class="onboard-stats">
+      <div class="ob-stat"><div class="num">5</div><div class="lbl">Minute Setup</div></div>
+      <div class="ob-stat"><div class="num">0</div><div class="lbl">IT Required</div></div>
+      <div class="ob-stat"><div class="num">1</div><div class="lbl">App, Everything</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- GET STARTED FORM -->
+<section class="get-started" id="get-started">
+  <div class="gs-inner">
+    <h2 class="rv">Ready to get started?</h2>
+    <p class="rv">Fill out the form below and your Calendar Systems representative will be in touch to get you set up.</p>
+    <div class="gs-form rv">
+      <form id="gsForm" onsubmit="submitGetStarted(event)">
+        <div class="gs-field"><label>Dealership Name *</label><input type="text" id="gs-dealer" placeholder="ABC Motors" required/></div>
+        <div class="gs-field"><label>Contact Name *</label><input type="text" id="gs-name" placeholder="John Smith" required/></div>
+        <div class="gs-field"><label>Email *</label><input type="email" id="gs-email" placeholder="john@abcmotors.com" required/></div>
+        <div class="gs-field"><label>Phone</label><input type="tel" id="gs-phone" placeholder="(555) 123-4567"/></div>
+        <div class="gs-field"><label>Number of Salespeople</label><select id="gs-size"><option value="">Select team size</option><option value="1-5">1 - 5</option><option value="6-15">6 - 15</option><option value="16-30">16 - 30</option><option value="30+">30+</option></select></div>
+        <button type="submit" class="gs-submit" id="gsSubmitBtn">Get Started</button>
+      </form>
+      <div id="gsSuccess" style="display:none;text-align:center;padding:32px 0">
+        <div style="font-size:48px;color:#27AE60;margin-bottom:12px">&#10003;</div>
+        <h3 style="font-size:20px;font-weight:700;color:#FFF;margin-bottom:8px">You're All Set</h3>
+        <p style="font-size:14px;color:rgba(255,255,255,.5);margin-bottom:20px">Your Calendar Systems rep will reach out shortly to get you up and running.</p>
+        <a href="https://app.imonsocial.com/cs-login" class="btn-gs" style="display:inline-flex;align-items:center;gap:8px;padding:12px 28px"><i class="fa-solid fa-arrow-right"></i> Go to the App</a>
+      </div>
+    </div>
+    <p class="gs-note">Custom pricing based on your dealership's needs.</p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<div class="cs-footer">
+  <div class="ft-logo"><img src="/calendar-systems/cs-logo.png" alt="Calendar Systems Incorporated"/></div>
+  <p class="ft-powered">Powered by <a href="https://www.imonsocial.com">i'M On Social</a></p>
+  <div class="ft-links">
+    <a href="https://www.imonsocial.com/privacy/">Privacy</a>
+    <a href="https://www.imonsocial.com/terms/">Terms</a>
+    <a href="mailto:forest@imonsocial.com">Contact</a>
+    <a href="https://app.imonsocial.com/cs-login">Sign In</a>
+  </div>
+  <p class="ft-copy">&copy; 2026 Calendar Systems Incorporated. All rights reserved.</p>
+</div>
+
+<script>
+const ro=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('vis')});},{threshold:.08,rootMargin:'0px 0px -32px 0px'});document.querySelectorAll('.rv').forEach(el=>ro.observe(el));
+async function submitGetStarted(e){e.preventDefault();var btn=document.getElementById('gsSubmitBtn');btn.disabled=true;btn.textContent='Submitting...';try{var res=await fetch('https://app.imonsocial.com/api/demo-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('gs-name').value,email:document.getElementById('gs-email').value,phone:document.getElementById('gs-phone').value,company:document.getElementById('gs-dealer').value,business_type:document.getElementById('gs-size').value,lead_source:'calendar_systems_dealer_page'})});if(res.ok){document.getElementById('gsForm').style.display='none';document.getElementById('gsSuccess').style.display='block'}else{throw new Error()}}catch(ex){btn.disabled=false;btn.textContent='Get Started';alert('Something went wrong. Please try again.')}}
+</script>
+</body>
+</html>

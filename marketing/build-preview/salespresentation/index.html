@@ -172,6 +172,7 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
           <a class="dd-link" href="/training/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-graduation-cap" style="color:#007AFF"></i></div><div class="dd-txt"><strong>Training Hub</strong><span>Courses, videos & best practices</span></div></a>
           <a class="dd-link" href="/help/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-regular fa-circle-question" style="color:#34C759"></i></div><div class="dd-txt"><strong>Help Center</strong><span>Guides, FAQs & support</span></div></a>
           <a class="dd-link" href="/why-imonsocial/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-play" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Why i'M On Social</strong><span>See our advantages</span></div></a>
+          <a class="dd-link" href="/future/"><div class="dd-ico" style="background:rgba(201,169,98,.08)"><i class="fa-solid fa-bolt" style="color:#C9A962"></i></div><div class="dd-txt"><strong>The Future of Sales</strong><span>Why relationships beat CRM</span></div></a><a class="dd-link" href="/automotive/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-car" style="color:#34C759"></i></div><div class="dd-txt"><strong>Automotive Vision</strong><span>The dealership sales pitch</span></div></a>
         </div></div>
       </div>
       <div class="nav-item"><a href="/pricing/">Pricing</a></div>
@@ -222,7 +223,7 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
       <div class="mob-sub">
         <a href="/training/">Training Hub</a>
         <a href="/help/">Help Center</a>
-        <a href="/why-imonsocial/">Why i'M On Social</a>
+        <a href="/why-imonsocial/">Why i'M On Social</a><a href="/future/">The Future of Sales</a><a href="/automotive/">Automotive Vision</a>
       </div>
     </div>
     <a href="/pricing/" class="mob-direct">Pricing</a>
@@ -321,6 +322,6 @@ document.getElementById('demoModal').addEventListener('click',function(e){if(e.t
 async function submitDemoForm(e){e.preventDefault();var btn=document.getElementById('dmSubmitBtn');btn.disabled=true;btn.textContent='Submitting...';try{var res=await fetch('https://app.imonsocial.com/api/demo-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('dm-name').value,email:document.getElementById('dm-email').value,phone:document.getElementById('dm-phone').value,business_type:document.getElementById('dm-type').value,company:document.getElementById('dm-company').value,lead_source:_demoSource||'sales_presentation_page'})});if(res.ok){document.getElementById('demoFormWrap').style.display='none';document.getElementById('demoSuccessWrap').style.display='block'}else{throw new Error()}}catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert('Something went wrong. Please try again.')}}
 </script>
 
-<script>window.IMOS_API=window.IMOS_API||"https://app.imonsocial.com";</script><script src="/chat-widget.js"></script>
+<script>window.IMOS_API=window.IMOS_API||(location.hostname.includes("imonsocial.com")?"https://app.imonsocial.com":"");</script><script src="/chat-widget.js"></script>
 </body>
 </html>

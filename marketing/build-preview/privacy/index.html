@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Privacy Policy — i'M On Social</title>
+  <title>Privacy Policy - i'M On Social</title>
   <meta name="description" content="We take your privacy seriously. Here's how we handle your data, protect your information, and give you control over your account."/>
   <link rel="icon" href="/favicon.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -98,63 +98,104 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
     .mob-sub a:hover{color:var(--blue)}
     .mob-direct{display:block;padding:16px 0;font-size:17px;font-weight:600;color:var(--text);text-decoration:none;border-bottom:1px solid var(--border)}
     .mob-direct:hover{color:var(--blue)}
-  </style>
+  
+    /* DEMO MODAL */
+    .demo-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:2000;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:24px}
+    .demo-overlay.active{display:flex}
+    .demo-modal{background:#FFF;border:1px solid var(--border-2);border-radius:24px;padding:40px;max-width:480px;width:100%;position:relative;box-shadow:0 24px 80px rgba(0,0,0,.2)}
+    .demo-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:50%;background:var(--bg-2);border:1px solid var(--border);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
+    .demo-close:hover{background:var(--border)}
+    .dm-field{margin-bottom:14px}
+    .dm-field label{display:block;font-size:12px;font-weight:600;color:var(--text-3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px}
+    .dm-field input,.dm-field select,.dm-field textarea{width:100%;padding:12px 14px;background:#FFF;border:1px solid var(--border-2);border-radius:10px;color:var(--text);font-size:15px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s}
+    .dm-field input:focus,.dm-field select:focus{border-color:var(--blue)}
+    .dm-field select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238E8E93' fill='none' stroke-width='2'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center}
+    .dm-submit{width:100%;padding:14px;background:var(--blue);color:#FFF;font-size:16px;font-weight:800;border:none;border-radius:980px;cursor:pointer;margin-top:8px;transition:all .25s;box-shadow:0 2px 12px rgba(0,122,255,.25)}
+    .dm-submit:hover{background:var(--blue-dark);box-shadow:0 6px 24px rgba(0,122,255,.35)}
+    .dm-submit:disabled{opacity:.5;cursor:not-allowed}
+    @media(max-width:768px){.demo-modal{padding:28px 20px;border-radius:20px}}
+
+    </style>
 </head>
 <body>
 <nav>
   <div class="nav-inner">
-    <a href="https://www.imonsocial.com" class="logo"><img src="/logo.png" alt="i'M On Social"/></a>
+    <a href="https://www.imonsocial.com" class="logo"><img src="/marketing-logo.png" alt="i'M On Social"/></a>
     <div class="nav-links">
       <div class="nav-item"><button class="nav-trigger">Products <i class="fa-solid fa-chevron-down chev"></i></button>
-        <div class="nav-dd"><div class="nav-dd-inner">
+        <div class="nav-dd" style="min-width:520px"><div class="nav-dd-inner">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+          <div>
           <div class="nav-dd-label">Your Digital Presence</div>
-          <a class="dd-link" href="/digital-card/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-regular fa-id-card" style="color:#007AFF"></i></div><div class="dd-txt"><strong>Digital Cards</strong><span>Shareable, trackable business cards</span></div></a>
+          <a class="dd-link" href="/digital-card/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-regular fa-id-card" style="color:#007AFF"></i></div><div class="dd-txt"><strong>Digital Business Cards</strong><span>Shareable, trackable cards</span></div></a>
+          <a class="dd-link" href="/showcase/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-user-astronaut" style="color:#34C759"></i></div><div class="dd-txt"><strong>Personal Landing Pages</strong><span>Your profile, links & reviews</span></div></a>
           <a class="dd-link" href="/reviews/"><div class="dd-ico" style="background:rgba(255,214,10,.1)"><i class="fa-regular fa-star" style="color:#D4AD00"></i></div><div class="dd-txt"><strong>Personal Reviews</strong><span>Portable reputation that follows you</span></div></a>
-          <a class="dd-link" href="/showcase/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-share-nodes" style="color:#34C759"></i></div><div class="dd-txt"><strong>Link Pages</strong><span>All your socials in one link</span></div></a>
+          <a class="dd-link" href="/store-reviews/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-store" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Store Reviews</strong><span>Google-ready review pages</span></div></a>
           <div class="nav-dd-label">Engagement</div>
           <a class="dd-link" href="/congrats-template/"><div class="dd-ico" style="background:rgba(255,45,85,.08)"><i class="fa-regular fa-image" style="color:#FF2D55"></i></div><div class="dd-txt"><strong>Congrats Cards</strong><span>Celebrate every sale automatically</span></div></a>
+          </div>
+          <div>
+          <div class="nav-dd-label" style="visibility:hidden">-</div>
           <a class="dd-link" href="/date-triggers/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-rocket" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Automated Campaigns</strong><span>Birthdays, follow-ups, on autopilot</span></div></a>
-          <a class="dd-link" href="/inbox/"><div class="dd-ico" style="background:rgba(88,86,214,.08)"><i class="fa-regular fa-comment-dots" style="color:#5856D6"></i></div><div class="dd-txt"><strong>Inbox & Messaging</strong><span>SMS, email, all in one place</span></div></a>
-          <div class="nav-dd-label">Intelligence</div>
-          <a class="dd-link" href="/jessi/"><div class="dd-ico" style="background:rgba(175,82,222,.08)"><i class="fa-solid fa-wand-magic-sparkles" style="color:#AF52DE"></i></div><div class="dd-txt"><strong>Jessi AI</strong><span>AI powered relationship insights</span></div></a>
+          <a class="dd-link" href="/inbox/"><div class="dd-ico" style="background:rgba(88,86,214,.08)"><i class="fa-regular fa-comment-dots" style="color:#5856D6"></i></div><div class="dd-txt"><strong>Inbox & Messaging</strong><span>SMS, WhatsApp, email in one place</span></div></a>
+          <a class="dd-link" href="/features/#voice"><div class="dd-ico" style="background:rgba(90,200,250,.08)"><i class="fa-solid fa-microphone" style="color:#5AC8FA"></i></div><div class="dd-txt"><strong>Voice Notes</strong><span>AI-powered voice memos & intel</span></div></a>
+          <div class="nav-dd-label">Visibility & Intelligence</div>
+          <a class="dd-link" href="/seo/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-magnifying-glass-chart" style="color:#34C759"></i></div><div class="dd-txt"><strong>SEO & AEO</strong><span>Be found on Google & AI search</span></div></a>
+          <a class="dd-link" href="/jessi/"><div class="dd-ico" style="background:rgba(175,82,222,.08)"><i class="fa-solid fa-wand-magic-sparkles" style="color:#AF52DE"></i></div><div class="dd-txt"><strong>Jessi AI</strong><span>AI relationship insights</span></div></a>
           <a class="dd-link" href="/leaderboard/"><div class="dd-ico" style="background:rgba(255,59,48,.08)"><i class="fa-solid fa-trophy" style="color:#FF3B30"></i></div><div class="dd-txt"><strong>Leaderboards</strong><span>Track performance across teams</span></div></a>
+          </div>
+          </div>
         </div></div>
       </div>
       <div class="nav-item"><button class="nav-trigger">Solutions <i class="fa-solid fa-chevron-down chev"></i></button>
-        <div class="nav-dd"><div class="nav-dd-inner">
+        <div class="nav-dd" style="min-width:580px"><div class="nav-dd-inner">
           <div class="nav-dd-label">By Role</div>
           <a class="dd-link" href="/organizations/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-building" style="color:#007AFF"></i></div><div class="dd-txt"><strong>For Organizations</strong><span>Manage teams, stores & reputation</span></div></a>
           <a class="dd-link" href="/individuals/"><div class="dd-ico" style="background:rgba(201,169,98,.08)"><i class="fa-solid fa-user" style="color:#C9A962"></i></div><div class="dd-txt"><strong>For Individuals</strong><span>Own your personal brand</span></div></a>
           <div class="nav-dd-label">By Industry</div>
-          <a class="dd-link" href="/salespresentation/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-car" style="color:#34C759"></i></div><div class="dd-txt"><strong>Automotive</strong><span>Built for dealerships</span></div></a>
-          <a class="dd-link" href="/hub/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-briefcase" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Sales Teams</strong><span>Any industry, any size</span></div></a>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 4px">
+          <a class="dd-link" href="/dealers/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-car" style="color:#34C759"></i></div><div class="dd-txt"><strong>Automotive</strong><span>Built for dealerships</span></div></a>
+          <a class="dd-link" href="/real-estate/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-house-chimney" style="color:#007AFF"></i></div><div class="dd-txt"><strong>Real Estate</strong><span>Agents & brokerages</span></div></a>
+          <a class="dd-link" href="/powersports/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-motorcycle" style="color:#34C759"></i></div><div class="dd-txt"><strong>Powersports</strong><span>RV, motorcycle & ATV dealers</span></div></a>
+          <a class="dd-link" href="/restaurants/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-utensils" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Restaurants</strong><span>Guest relationships & reviews</span></div></a>
+          <a class="dd-link" href="/salons/"><div class="dd-ico" style="background:rgba(255,45,85,.08)"><i class="fa-solid fa-scissors" style="color:#FF2D55"></i></div><div class="dd-txt"><strong>Salons & Spas</strong><span>Client retention & rebooking</span></div></a>
+          <a class="dd-link" href="/home-services/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-house-circle-check" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Home Services</strong><span>Roofing, solar, HVAC & more</span></div></a>
+          <a class="dd-link" href="/fitness/"><div class="dd-ico" style="background:rgba(255,59,48,.08)"><i class="fa-solid fa-dumbbell" style="color:#FF3B30"></i></div><div class="dd-txt"><strong>Fitness</strong><span>Gyms, studios & trainers</span></div></a>
+          <a class="dd-link" href="/insurance/"><div class="dd-ico" style="background:rgba(88,86,214,.08)"><i class="fa-solid fa-shield-halved" style="color:#5856D6"></i></div><div class="dd-txt"><strong>Insurance & Financial</strong><span>Agents & advisors</span></div></a>
+          <a class="dd-link" href="/medical/"><div class="dd-ico" style="background:rgba(90,200,250,.08)"><i class="fa-solid fa-tooth" style="color:#5AC8FA"></i></div><div class="dd-txt"><strong>Medical & Dental</strong><span>Patient retention & reviews</span></div></a>
+          <a class="dd-link" href="/hub/"><div class="dd-ico" style="background:rgba(201,169,98,.08)"><i class="fa-solid fa-briefcase" style="color:#C9A962"></i></div><div class="dd-txt"><strong>Sales Teams</strong><span>Any industry, any size</span></div></a>
+          </div>
         </div></div>
       </div>
       <div class="nav-item"><button class="nav-trigger">Resources <i class="fa-solid fa-chevron-down chev"></i></button>
         <div class="nav-dd"><div class="nav-dd-inner">
           <a class="dd-link" href="/training/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-graduation-cap" style="color:#007AFF"></i></div><div class="dd-txt"><strong>Training Hub</strong><span>Courses, videos & best practices</span></div></a>
           <a class="dd-link" href="/help/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-regular fa-circle-question" style="color:#34C759"></i></div><div class="dd-txt"><strong>Help Center</strong><span>Guides, FAQs & support</span></div></a>
-          <a class="dd-link" href="/presentation/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-play" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Sales Deck</strong><span>See what we can do for you</span></div></a>
+          <a class="dd-link" href="/why-imonsocial/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-play" style="color:#FF9500"></i></div><div class="dd-txt"><strong>Why i'M On Social</strong><span>See our advantages</span></div></a>
+          <a class="dd-link" href="/future/"><div class="dd-ico" style="background:rgba(201,169,98,.08)"><i class="fa-solid fa-bolt" style="color:#C9A962"></i></div><div class="dd-txt"><strong>The Future of Sales</strong><span>Why relationships beat CRM</span></div></a><a class="dd-link" href="/automotive/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-solid fa-car" style="color:#34C759"></i></div><div class="dd-txt"><strong>Automotive Vision</strong><span>The dealership sales pitch</span></div></a>
         </div></div>
       </div>
       <div class="nav-item"><a href="/pricing/">Pricing</a></div>
     </div>
     <div class="nav-cta">
-      <a href="/demo/" class="btn-sign">Book a Demo</a>
+      <a href="#" class="btn-demo" onclick="openDemoModal(event,'nav')">Book a Demo</a>
       <a href="https://app.imonsocial.com" class="btn-sign">Sign In</a>
     </div>
     <button class="hamburger" onclick="document.getElementById('mob').classList.toggle('open')" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>
   </div>
   <div class="mob-menu" id="mob">
-    <div class="mob-group">
+        <div class="mob-group">
       <button class="mob-toggle" onclick="this.parentElement.classList.toggle('open')">Products <i class="fa-solid fa-chevron-down mob-chev"></i></button>
       <div class="mob-sub">
-        <a href="/digital-card/">Digital Cards</a>
+        <a href="/digital-card/">Digital Business Cards</a>
+        <a href="/showcase/">Personal Landing Pages</a>
         <a href="/reviews/">Personal Reviews</a>
-        <a href="/showcase/">Showcase Pages</a>
-        <a href="/inbox/">Unified Inbox</a>
-        <a href="/date-triggers/">Automated Campaigns</a>
+        <a href="/store-reviews/">Store Reviews</a>
         <a href="/congrats-template/">Congrats Cards</a>
+        <a href="/date-triggers/">Automated Campaigns</a>
+        <a href="/inbox/">Inbox & Messaging</a>
+        <a href="/features/#voice">Voice Notes</a>
+        <a href="/seo/">SEO & AEO</a>
         <a href="/jessi/">Jessi AI</a>
         <a href="/leaderboard/">Leaderboards</a>
       </div>
@@ -164,7 +205,15 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
       <div class="mob-sub">
         <a href="/organizations/">For Organizations</a>
         <a href="/individuals/">For Individuals</a>
-        <a href="/salespresentation/">Automotive</a>
+        <a href="/dealers/">Automotive</a>
+        <a href="/real-estate/">Real Estate</a>
+        <a href="/powersports/">Powersports</a>
+        <a href="/restaurants/">Restaurants</a>
+        <a href="/salons/">Salons & Spas</a>
+        <a href="/home-services/">Home Services</a>
+        <a href="/fitness/">Fitness</a>
+        <a href="/insurance/">Insurance & Financial</a>
+        <a href="/medical/">Medical & Dental</a>
         <a href="/hub/">Sales Teams</a>
         <a href="/features/">All Features</a>
       </div>
@@ -174,12 +223,12 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
       <div class="mob-sub">
         <a href="/training/">Training Hub</a>
         <a href="/help/">Help Center</a>
-        <a href="/presentation/">Sales Deck</a>
+        <a href="/why-imonsocial/">Why i'M On Social</a><a href="/future/">The Future of Sales</a><a href="/automotive/">Automotive Vision</a>
       </div>
     </div>
     <a href="/pricing/" class="mob-direct">Pricing</a>
     <a href="https://app.imonsocial.com" class="mob-direct">Sign In</a>
-    <a href="/demo/" class="mob-cta">Book a Demo</a>
+    <a href="#" class="mob-cta" onclick="openDemoModal(event,'mob')">Book a Demo</a>
   </div>
 </nav>
 <section class="page-hero rv">
@@ -227,12 +276,12 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
 </section>
 <footer>
   <div class="ft-inner">
-    <div class="ft-brand"><div class="ft-logo"><img src="/logo.png" alt="i'M On Social"/></div><p class="ft-tag">The relationship engine for sales professionals.</p>
+    <div class="ft-brand"><div class="ft-logo"><img src="/marketing-logo.png" alt="i'M On Social"/></div><p class="ft-tag">The relationship engine for sales professionals.</p>
       <div class="ft-social"><a href="https://instagram.com/imonsocialapp" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a><a href="https://tiktok.com/@imonsocialapp" target="_blank" rel="noopener" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a><a href="https://youtube.com/@imonsocial" target="_blank" rel="noopener" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a></div>
     </div>
     <div class="ft-col"><div class="ft-col-t">Product</div><a href="/digital-card/">Digital Cards</a><a href="/reviews/">Personal Reviews</a><a href="/inbox/">Inbox</a><a href="/date-triggers/">Automations</a><a href="/leaderboard/">Leaderboards</a><a href="/jessi/">Jessi AI</a></div>
     <div class="ft-col"><div class="ft-col-t">Company</div><a href="/organizations/">For Teams</a><a href="/pricing/">Pricing</a><a href="/privacy/">Privacy</a><a href="/terms/">Terms</a><a href="mailto:forest@imonsocial.com">Contact</a></div>
-    <div class="ft-col"><div class="ft-col-t">Get Started</div><a href="/demo/">Schedule a Demo</a><a href="https://app.imonsocial.com">Sign In</a><a href="/training/">Training</a><a href="/help/">Help Center</a></div>
+    <div class="ft-col"><div class="ft-col-t">Get Started</div><a href="#" onclick="openDemoModal(event,'footer')">Schedule a Demo</a><a href="https://app.imonsocial.com">Sign In</a><a href="/training/">Training</a><a href="/help/">Help Center</a></div>
   </div>
   <div class="ft-bottom"><span class="ft-copy">&copy; 2026 i'M On Social. All rights reserved.</span></div>
 </footer>
@@ -241,5 +290,37 @@ const ro=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target
 document.querySelectorAll('.rv').forEach(el=>ro.observe(el));
 window.addEventListener('scroll',()=>document.querySelector('nav').classList.toggle('scrolled',scrollY>40));
 </script>
+
+<!-- DEMO MODAL -->
+<div class="demo-overlay" id="demoModal">
+  <div class="demo-modal">
+    <button class="demo-close" onclick="closeDemoModal()">&times;</button>
+    <div id="demoFormWrap">
+      <h2 style="font-size:24px;font-weight:900;margin-bottom:4px">Book a Demo</h2>
+      <p style="font-size:14px;color:var(--text-3);margin-bottom:24px">See how i'M On Social can transform your business.</p>
+      <form onsubmit="submitDemoForm(event)">
+        <div class="dm-field"><label>Full Name *</label><input type="text" id="dm-name" placeholder="John Smith" required/></div>
+        <div class="dm-field"><label>Email *</label><input type="email" id="dm-email" placeholder="john@company.com" required/></div>
+        <div class="dm-field"><label>Phone</label><input type="tel" id="dm-phone" placeholder="(555) 123-4567"/></div>
+        <div class="dm-field"><label>Business Type</label><select id="dm-type"><option value="">Select your industry...</option><option value="car_dealer">Car Dealership</option><option value="real_estate">Real Estate</option><option value="small_business">Small Business / Retail</option><option value="hospitality">Hospitality / Food & Beverage</option><option value="sales_team">Sales Team</option><option value="events">Events & Entertainment</option><option value="other">Other</option></select></div>
+        <div class="dm-field"><label>Company</label><input type="text" id="dm-company" placeholder="Your business name"/></div>
+        <button type="submit" class="dm-submit" id="dmSubmitBtn">Book My Demo</button>
+      </form>
+    </div>
+    <div id="demoSuccessWrap" style="display:none;text-align:center;padding:32px 0">
+      <div style="font-size:48px;color:var(--green);margin-bottom:12px">&#10003;</div>
+      <h3 style="font-size:20px;font-weight:700;margin-bottom:8px">You're In!</h3>
+      <p style="font-size:14px;color:var(--text-3)">We'll reach out within 24 hours to schedule your personalized demo.</p>
+    </div>
+  </div>
+</div>
+<script>
+let _demoSource='';
+function openDemoModal(e,source){e&&e.preventDefault();_demoSource=source||'';document.getElementById('demoModal').classList.add('active');document.body.style.overflow='hidden'}
+function closeDemoModal(){document.getElementById('demoModal').classList.remove('active');document.body.style.overflow=''}
+document.getElementById('demoModal').addEventListener('click',function(e){if(e.target===this)closeDemoModal()});
+async function submitDemoForm(e){e.preventDefault();var btn=document.getElementById('dmSubmitBtn');btn.disabled=true;btn.textContent='Submitting...';try{var res=await fetch('https://app.imonsocial.com/api/demo-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('dm-name').value,email:document.getElementById('dm-email').value,phone:document.getElementById('dm-phone').value,business_type:document.getElementById('dm-type').value,company:document.getElementById('dm-company').value,lead_source:_demoSource||'privacy_page'})});if(res.ok){document.getElementById('demoFormWrap').style.display='none';document.getElementById('demoSuccessWrap').style.display='block'}else{throw new Error()}}catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert('Something went wrong. Please try again.')}}
+</script>
+
 </body>
 </html>
