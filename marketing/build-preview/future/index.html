@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>The Future of Sales | i'M On Social</title>
-  <meta name="description" content="The future of sales isn't CRM. It's Relationship Presence. i'M On Social turns every salesperson into a consistent, professional relationship builder."/>
+  <meta name="description" content="Snap a photo. The relationship runs itself. i'M On Social is the Relationship Operating System that turns every salesperson into a consistent relationship builder."/>
   <link rel="icon" href="/favicon.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--blue:#007AFF;--blue-dark:#0059CC;--green:#34C759;--red:#FF3B30;--yellow:#FFD60A;--orange:#FF9500;--purple:#AF52DE;--pink:#FF2D55;--teal:#00C7BE;--text:#111;--text-2:#555;--text-3:#888;--bg:#FFF;--bg-2:#F8F9FB;--surface:#F2F2F7;--border:rgba(0,0,0,.06);--border-2:rgba(0,0,0,.1);--gold:#C9A962}
+:root{--blue:#007AFF;--blue-dark:#0059CC;--green:#34C759;--red:#FF3B30;--orange:#FF9500;--purple:#AF52DE;--pink:#FF2D55;--text:#111;--text-2:#555;--text-3:#888;--bg:#FFF;--bg-2:#F8F9FB;--border:rgba(0,0,0,.06);--border-2:rgba(0,0,0,.1);--gold:#C9A962}
 html{scroll-behavior:smooth}
 body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
 
@@ -40,246 +40,138 @@ nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(20px);-webkit
 
 /* ANIMATIONS */
 .rv{opacity:0;transform:translateY(32px);transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1)}.rv.vis{opacity:1;transform:translateY(0)}.rv-1{transition-delay:.1s}.rv-2{transition-delay:.2s}.rv-3{transition-delay:.3s}.rv-4{transition-delay:.4s}
-@keyframes pulse{0%,100%{opacity:.6}50%{opacity:1}}
-@keyframes countUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-.count-anim{animation:countUp .8s ease-out both}
 
-/* ============================================ */
-/* HERO */
-/* ============================================ */
-.f-hero{padding:180px 24px 120px;text-align:center;background:#0A0A0F;position:relative;overflow:hidden}
-.f-hero::before{content:'';position:absolute;top:-100px;left:50%;transform:translateX(-50%);width:900px;height:600px;background:radial-gradient(ellipse,rgba(201,169,98,.08) 0%,transparent 60%);pointer-events:none}
-.f-hero::after{content:'';position:absolute;bottom:0;left:0;right:0;height:200px;background:linear-gradient(transparent,#0A0A0F);pointer-events:none}
-.hero-kicker{display:inline-flex;align-items:center;gap:8px;padding:8px 20px;border-radius:980px;border:1px solid rgba(201,169,98,.2);background:rgba(201,169,98,.06);font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:32px;position:relative}
-.f-hero h1{font-size:64px;font-weight:900;line-height:1.04;letter-spacing:-.045em;color:#FFF;max-width:820px;margin:0 auto 28px;position:relative}
-.f-hero h1 em{font-style:normal;color:var(--gold)}
-.hero-divider{width:60px;height:3px;background:var(--gold);border-radius:2px;margin:0 auto 24px;position:relative}
-.f-hero .sub{font-size:22px;font-weight:600;color:var(--gold);letter-spacing:.5px;position:relative;margin-bottom:16px}
-.f-hero .sub-2{font-size:17px;color:rgba(255,255,255,.35);line-height:1.7;max-width:560px;margin:0 auto 44px;position:relative}
-.hero-cta{display:inline-flex;align-items:center;gap:10px;padding:18px 40px;border-radius:980px;font-size:17px;font-weight:700;color:#0A0A0F;background:var(--gold);text-decoration:none;transition:all .3s;box-shadow:0 4px 32px rgba(201,169,98,.25);position:relative}.hero-cta:hover{transform:translateY(-2px);box-shadow:0 8px 48px rgba(201,169,98,.35);background:#D4B86A}
-@media(max-width:768px){.f-hero{padding:140px 24px 80px}.f-hero h1{font-size:36px}.f-hero .sub{font-size:18px}}
-
-/* ============================================ */
-/* OPENING NARRATIVE */
-/* ============================================ */
-.narrative-sec{padding:100px 24px;max-width:800px;margin:0 auto}
-.narrative-sec p{font-size:20px;color:var(--text-2);line-height:1.8;margin-bottom:16px}
-.narrative-sec p.bold{font-weight:700;color:var(--text)}
-.narrative-sec p.accent{font-weight:700;color:var(--blue)}
-.narrative-sec p.accent-red{font-weight:700;color:var(--red)}
-.narrative-sec p.light{color:var(--text-3)}
-.narrative-sec .spacer{height:20px}
-@media(max-width:768px){.narrative-sec{padding:72px 24px}.narrative-sec p{font-size:18px}}
-
-/* ============================================ */
-/* MEGA STAT BAR */
-/* ============================================ */
-.mega-stats{background:#0A0A0F;padding:80px 24px;position:relative;overflow:hidden}
-.mega-stats::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:1200px;height:600px;background:radial-gradient(ellipse,rgba(201,169,98,.05) 0%,transparent 60%);pointer-events:none}
-.mega-stats-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);gap:32px;position:relative}
-.mega-stat{text-align:center;padding:32px 16px}
-.mega-stat .num{font-size:56px;font-weight:900;line-height:1;letter-spacing:-.03em;margin-bottom:8px}
-.mega-stat .lbl{font-size:14px;font-weight:500;color:rgba(255,255,255,.4);line-height:1.4}
-.mega-stat .src{font-size:11px;color:rgba(255,255,255,.2);margin-top:6px;font-style:italic}
-@media(max-width:900px){.mega-stats-inner{grid-template-columns:1fr 1fr;gap:16px}.mega-stat .num{font-size:40px}}
-@media(max-width:520px){.mega-stats-inner{grid-template-columns:1fr}}
-
-/* ============================================ */
-/* PROBLEM SECTION */
-/* ============================================ */
-.problem{padding:120px 24px;max-width:900px;margin:0 auto}
-.problem h2{font-size:48px;font-weight:900;line-height:1.08;letter-spacing:-.035em;margin-bottom:24px;text-align:center}
-.problem h2 span{color:var(--red)}
-.problem .deck{font-size:19px;color:var(--text-2);line-height:1.7;max-width:680px;margin:0 auto 32px;text-align:center}
-.problem-list{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
-.problem-list li{display:flex;align-items:flex-start;gap:12px;font-size:17px;color:var(--text-2);line-height:1.6}
-.problem-list li i{margin-top:4px;flex-shrink:0;color:var(--red);font-size:14px}
-@media(max-width:768px){.problem h2{font-size:32px}.problem{padding:80px 24px}}
-
-/* ============================================ */
-/* THE FLIP */
-/* ============================================ */
-.flip{padding:120px 24px;max-width:1100px;margin:0 auto}
-.flip h2{font-size:44px;font-weight:900;text-align:center;letter-spacing:-.03em;margin-bottom:16px}
-.flip>p{text-align:center;color:var(--text-2);font-size:18px;max-width:640px;margin:0 auto 56px;line-height:1.65}
-.flip-grid{display:grid;grid-template-columns:1fr 60px 1fr;gap:0;align-items:stretch}
-.flip-side{padding:40px;border-radius:24px;border:1px solid var(--border-2)}
-.flip-side.before{background:var(--surface);opacity:.7}
-.flip-side.after{background:linear-gradient(135deg,rgba(201,169,98,.03),rgba(0,122,255,.03));border-color:var(--gold)}
-.flip-arrow{display:flex;align-items:center;justify-content:center;font-size:28px;color:var(--gold)}
-.flip-side .tag{font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:16px}
-.flip-side.before .tag{color:var(--red)}
-.flip-side.after .tag{color:var(--green)}
-.flip-side h3{font-size:22px;font-weight:800;margin-bottom:12px}
-.flip-side>p{font-size:15px;color:var(--text-2);line-height:1.65}
-.flip-side ul{list-style:none;margin-top:16px;display:flex;flex-direction:column;gap:10px}
-.flip-side ul li{font-size:14px;color:var(--text-2);display:flex;align-items:flex-start;gap:8px;line-height:1.5}
-.flip-side ul li i{margin-top:3px;flex-shrink:0}
-@media(max-width:900px){.flip-grid{grid-template-columns:1fr;gap:16px}.flip-arrow{transform:rotate(90deg);padding:8px 0}.flip h2{font-size:32px}.flip{padding:80px 24px}}
-
-/* ============================================ */
-/* SECTION HEADING (generic) */
-/* ============================================ */
-.sec-head{max-width:900px;margin:0 auto;padding:120px 24px 0;text-align:center}
-.sec-head h2{font-size:44px;font-weight:900;line-height:1.1;letter-spacing:-.03em;margin-bottom:16px}
-.sec-head>p{font-size:18px;color:var(--text-2);line-height:1.6;max-width:600px;margin:0 auto}
-@media(max-width:768px){.sec-head{padding:80px 24px 0}.sec-head h2{font-size:32px}}
-
-/* ============================================ */
-/* FEATURE CARDS (Touchpoints, Hub, AI, etc.) */
-/* ============================================ */
-.feat-section{padding:56px 24px 120px;max-width:1100px;margin:0 auto}
-.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-.feat-card{padding:32px 28px;border-radius:24px;border:1px solid var(--border-2);background:#FFF;transition:all .3s}
-.feat-card:hover{transform:translateY(-4px);box-shadow:0 16px 48px rgba(0,0,0,.06);border-color:transparent}
-.feat-card .fc-ico{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:18px}
-.feat-card h3{font-size:18px;font-weight:800;margin-bottom:8px}
-.feat-card p{font-size:14px;color:var(--text-2);line-height:1.65}
-.feat-card .fc-highlight{display:inline-block;margin-top:10px;font-size:13px;font-weight:700;color:var(--blue);letter-spacing:.5px}
-@media(max-width:900px){.feat-grid{grid-template-columns:1fr}.feat-section{padding:40px 24px 80px}}
-
-/* ============================================ */
-/* DARK FLOW SECTION */
-/* ============================================ */
-.dark-flow{background:#0A0A0F;padding:120px 24px;position:relative;overflow:hidden}
-.dark-flow::before{content:'';position:absolute;top:-150px;left:50%;transform:translateX(-50%);width:800px;height:500px;background:radial-gradient(ellipse,rgba(201,169,98,.06) 0%,transparent 60%);pointer-events:none}
-.dark-flow-inner{max-width:900px;margin:0 auto;position:relative}
-.dark-flow h2{font-size:44px;font-weight:900;color:#FFF;text-align:center;letter-spacing:-.03em;margin-bottom:16px}
-.dark-flow>p,.dark-flow-inner>p{text-align:center;color:rgba(255,255,255,.4);font-size:18px;max-width:560px;margin:0 auto 56px}
-.flow-steps{display:flex;flex-direction:column;gap:0}
-.flow-step{display:grid;grid-template-columns:80px 1fr;gap:24px;align-items:flex-start;position:relative;padding-bottom:48px}
-.flow-step:last-child{padding-bottom:0}
-.flow-step::before{content:'';position:absolute;left:39px;top:56px;bottom:0;width:2px;background:linear-gradient(rgba(201,169,98,.3),rgba(201,169,98,.05))}
-.flow-step:last-child::before{display:none}
-.flow-num{width:80px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;color:var(--gold);border:1px solid rgba(201,169,98,.2);background:rgba(201,169,98,.04);flex-shrink:0}
-.flow-content h3{font-size:20px;font-weight:800;color:#FFF;margin-bottom:6px}
-.flow-content p{font-size:15px;color:rgba(255,255,255,.4);line-height:1.65}
-.flow-content .highlight{color:var(--gold);font-weight:600}
-@media(max-width:768px){.dark-flow{padding:80px 24px}.dark-flow h2{font-size:30px}.flow-step{grid-template-columns:56px 1fr;gap:16px}.flow-num{width:56px;height:48px;font-size:20px}.flow-step::before{left:27px;top:48px}}
-
-/* ============================================ */
-/* INLINE STAT ROW */
-/* ============================================ */
-.stat-row{background:var(--surface);padding:56px 24px}
-.stat-row-inner{max-width:1000px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:40px;text-align:center}
-.stat-cell .num{font-size:48px;font-weight:900;line-height:1;letter-spacing:-.03em}
-.stat-cell .lbl{font-size:15px;color:var(--text-2);font-weight:500;margin-top:6px;line-height:1.4}
-.stat-cell .src{font-size:11px;color:var(--text-3);margin-top:4px;font-style:italic}
-@media(max-width:768px){.stat-row-inner{grid-template-columns:1fr;gap:32px}.stat-cell .num{font-size:40px}}
-
-/* ============================================ */
-/* MY BRAND SECTION */
-/* ============================================ */
-.brand-sec{padding:120px 24px;background:#0A0A0F;position:relative;overflow:hidden}
-.brand-sec::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:1200px;height:600px;background:radial-gradient(ellipse,rgba(0,122,255,.04) 0%,transparent 60%);pointer-events:none}
-.brand-inner{max-width:1100px;margin:0 auto;position:relative}
-.brand-sec h2{font-size:44px;font-weight:900;color:#FFF;text-align:center;letter-spacing:-.03em;margin-bottom:12px}
-.brand-sec>div>p.brand-deck{text-align:center;color:rgba(255,255,255,.4);font-size:18px;max-width:640px;margin:0 auto 56px;line-height:1.65}
-.brand-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:48px}
-.brand-card{padding:32px 28px;border-radius:24px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);transition:all .35s}
-.brand-card:hover{border-color:rgba(201,169,98,.3);transform:translateY(-4px);background:rgba(255,255,255,.05)}
-.brand-card .bc-ico{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px}
-.brand-card h3{font-size:17px;font-weight:800;color:#FFF;margin-bottom:8px}
-.brand-card p{font-size:14px;color:rgba(255,255,255,.45);line-height:1.65}
-.brand-card .cta-pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
-.brand-card .cta-pills span{font-size:11px;font-weight:600;padding:4px 10px;border-radius:980px;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5)}
-.brand-summary{display:flex;align-items:center;gap:24px;padding:32px 40px;border-radius:20px;border:1px solid rgba(201,169,98,.2);background:rgba(201,169,98,.04)}
-.brand-summary i{font-size:36px;color:var(--gold);flex-shrink:0}
-.brand-summary div h4{font-size:18px;font-weight:800;color:#FFF;margin-bottom:4px}
-.brand-summary div p{font-size:15px;color:rgba(255,255,255,.45);line-height:1.6;margin:0}
-@media(max-width:900px){.brand-grid{grid-template-columns:1fr}.brand-sec{padding:80px 24px}.brand-sec h2{font-size:32px}.brand-summary{flex-direction:column;text-align:center;padding:28px 24px}}
-
-/* ============================================ */
-/* SEO/AEO SECTION */
-/* ============================================ */
-.seo-section{padding:120px 24px;background:var(--bg-2)}
-.seo-inner{max-width:1100px;margin:0 auto}
-.seo-grid{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;margin-top:48px}
-.seo-visual{display:flex;flex-direction:column;gap:16px}
-.seo-signal{display:flex;align-items:center;gap:16px;padding:18px 24px;border-radius:16px;background:#FFF;border:1px solid var(--border-2);transition:all .3s}
-.seo-signal:hover{transform:translateX(8px);border-color:var(--green)}
-.seo-signal i{font-size:20px;color:var(--green);flex-shrink:0;width:28px;text-align:center}
-.seo-signal span{font-size:16px;font-weight:500;color:var(--text)}
-.seo-signal .arrow{margin-left:auto;color:var(--text-3);font-size:13px}
-.seo-text h2{font-size:40px;font-weight:900;letter-spacing:-.03em;margin-bottom:20px;line-height:1.1}
-.seo-text p{font-size:17px;color:var(--text-2);line-height:1.7;margin-bottom:16px}
-.seo-text .callout{background:#FFF;border-left:4px solid var(--green);border-radius:12px;padding:24px;margin-top:24px}
-.seo-text .callout p{font-size:16px;font-weight:700;color:var(--text);margin:0}
-@media(max-width:900px){.seo-grid{grid-template-columns:1fr;gap:40px}.seo-text h2{font-size:32px}}
-
-/* ============================================ */
-/* GAMIFICATION */
-/* ============================================ */
-.gam-section{padding:120px 24px;max-width:1000px;margin:0 auto}
-.gam-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-top:48px}
-.gam-card{padding:32px;border-radius:20px;border:1px solid var(--border-2);text-align:center;transition:all .3s}
-.gam-card:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.06);border-color:transparent}
-.gam-card i{font-size:32px;color:var(--gold);margin-bottom:14px;display:block}
-.gam-card h4{font-size:17px;font-weight:700;margin-bottom:8px}
-.gam-card p{font-size:14px;color:var(--text-2);line-height:1.6}
-@media(max-width:768px){.gam-grid{grid-template-columns:1fr}}
-
-/* ============================================ */
-/* COMPOUND EFFECT */
-/* ============================================ */
-.compound{padding:100px 24px;background:var(--bg-2)}
-.compound-inner{max-width:1000px;margin:0 auto;text-align:center}
-.compound-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:48px}
-.cm-card{background:#FFF;border-radius:20px;border:1px solid var(--border-2);padding:32px 16px;transition:all .3s}
-.cm-card:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.06);border-color:transparent}
-.cm-card .val{font-size:36px;font-weight:900;color:var(--blue);line-height:1;margin-bottom:6px}
-.cm-card .lbl{font-size:14px;color:var(--text-3)}
-@media(max-width:768px){.compound-metrics{grid-template-columns:1fr 1fr}}
-
-/* ============================================ */
-/* MAGIC MOMENT */
-/* ============================================ */
-.magic{padding:120px 24px;max-width:800px;margin:0 auto;text-align:center}
-.magic h2{font-size:44px;font-weight:900;letter-spacing:-.03em;margin-bottom:16px}
-.magic>p{font-size:18px;color:var(--text-2);line-height:1.7;max-width:560px;margin:0 auto}
-.magic-box{margin:48px auto;padding:48px;border:1px solid var(--border-2);border-radius:28px;display:flex;flex-direction:column;align-items:center;gap:20px;max-width:480px;background:linear-gradient(135deg,rgba(201,169,98,.02),rgba(0,122,255,.02))}
-.magic-box i{font-size:40px}
-.magic-box p{font-size:22px;font-weight:600;color:var(--text);margin:0}
-.magic-after{display:flex;flex-direction:column;gap:6px;margin-top:32px}
-.magic-after p{font-size:18px;color:var(--text-3);line-height:1.6;margin:0}
-.magic-after p.accent{color:var(--blue);font-weight:700}
-@media(max-width:768px){.magic h2{font-size:32px}.magic{padding:80px 24px}.magic-box{padding:32px 24px}.magic-box p{font-size:18px}}
-
-/* ============================================ */
-/* RESULT */
-/* ============================================ */
-.result-section{padding:100px 24px;max-width:800px;margin:0 auto}
-.result-section h2{font-size:44px;font-weight:900;letter-spacing:-.03em;margin-bottom:32px}
-.result-list{display:flex;flex-direction:column;gap:18px}
-.result-item{display:flex;align-items:center;gap:16px}
-.result-item i{font-size:22px;color:var(--gold);flex-shrink:0;width:28px;text-align:center}
-.result-item span{font-size:20px;font-weight:500;color:var(--text)}
-@media(max-width:768px){.result-section h2{font-size:32px}.result-item span{font-size:18px}.result-section{padding:80px 24px}}
-
-/* ============================================ */
-/* PROMISE */
-/* ============================================ */
-.promise{padding:100px 24px;text-align:center}
-.promise-line{width:40px;height:3px;background:var(--gold);border-radius:2px;margin:0 auto 24px}
-.promise h2{font-size:48px;font-weight:900;letter-spacing:-.03em;margin-bottom:14px}
-.promise p{font-size:26px;font-weight:600;color:var(--gold);font-style:italic}
-@media(max-width:768px){.promise h2{font-size:30px}.promise p{font-size:20px}}
-
-/* ============================================ */
-/* CLOSER CTA */
-/* ============================================ */
-.closer{background:#0A0A0F;padding:120px 24px;text-align:center;position:relative;overflow:hidden}
-.closer::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:500px;background:radial-gradient(ellipse,rgba(201,169,98,.06) 0%,transparent 60%);pointer-events:none}
-.closer h3{font-size:32px;font-weight:900;color:#FFF;margin-bottom:12px;position:relative}
-.closer>p{font-size:17px;color:rgba(255,255,255,.4);margin-bottom:36px;position:relative}
-.cta-btns{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;position:relative}
+/* ============ HERO ============ */
+.hero{padding:180px 24px 120px;text-align:center;background:#0A0A0F;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-100px;left:50%;transform:translateX(-50%);width:900px;height:600px;background:radial-gradient(ellipse,rgba(201,169,98,.08) 0%,transparent 60%);pointer-events:none}
+.hero h1{font-size:68px;font-weight:900;line-height:1.02;letter-spacing:-.05em;color:#FFF;max-width:820px;margin:0 auto 36px;position:relative}
+.hero h1 em{font-style:normal;color:var(--gold)}
+.hero-hook{font-size:22px;color:rgba(255,255,255,.6);line-height:1.7;max-width:480px;margin:0 auto 8px;position:relative}
+.hero-auto{font-size:17px;color:rgba(255,255,255,.25);line-height:1.7;max-width:420px;margin:0 auto 48px;position:relative}
+.hero-btns{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;position:relative}
 .btn-gold{display:inline-flex;align-items:center;gap:10px;padding:18px 40px;border-radius:980px;font-size:17px;font-weight:700;color:#0A0A0F;background:var(--gold);text-decoration:none;transition:all .3s;box-shadow:0 4px 32px rgba(201,169,98,.25)}.btn-gold:hover{transform:translateY(-2px);box-shadow:0 8px 48px rgba(201,169,98,.35);background:#D4B86A}
-.btn-gw{padding:18px 40px;border-radius:980px;font-size:17px;font-weight:600;color:rgba(255,255,255,.65);text-decoration:none;border:2px solid rgba(255,255,255,.12);display:inline-flex;align-items:center;gap:10px;transition:all .25s}.btn-gw:hover{border-color:rgba(255,255,255,.35);color:#FFF}
-@media(max-width:768px){.closer{padding:80px 24px}.closer h3{font-size:24px}.cta-btns{flex-direction:column;align-items:center}}
+.btn-ghost{padding:18px 40px;border-radius:980px;font-size:17px;font-weight:600;color:rgba(255,255,255,.55);text-decoration:none;border:2px solid rgba(255,255,255,.1);display:inline-flex;align-items:center;gap:10px;transition:all .25s}.btn-ghost:hover{border-color:rgba(255,255,255,.3);color:#FFF}
+@media(max-width:768px){.hero{padding:140px 24px 80px}.hero h1{font-size:38px}.hero-btns{flex-direction:column;align-items:center}}
 
-/* ============================================ */
+/* ============ TEXT SECTION (white bg) ============ */
+.txt{padding:120px 24px;max-width:740px;margin:0 auto;text-align:center}
+.txt h2{font-size:48px;font-weight:900;line-height:1.08;letter-spacing:-.04em;margin-bottom:28px}
+.txt h2 span{color:var(--red)}
+.txt p{font-size:20px;color:var(--text-2);line-height:1.8;margin-bottom:14px}
+.txt p.bold{font-weight:700;color:var(--text)}
+.txt p.light{color:var(--text-3)}
+.txt p.small{font-size:16px}
+.txt p.accent{font-weight:700;color:var(--blue)}
+.txt p.accent-gold{font-weight:700;color:var(--gold)}
+.txt p.accent-red{font-weight:700;color:var(--red)}
+.txt .spacer{height:20px}
+@media(max-width:768px){.txt{padding:80px 24px}.txt h2{font-size:32px}.txt p{font-size:18px}}
+
+/* ============ DARK SECTION ============ */
+.dark{background:#0A0A0F;padding:120px 24px;text-align:center;position:relative;overflow:hidden}
+.dark::before{content:'';position:absolute;top:-150px;left:50%;transform:translateX(-50%);width:800px;height:500px;background:radial-gradient(ellipse,rgba(201,169,98,.06) 0%,transparent 60%);pointer-events:none}
+.dark h2{font-size:48px;font-weight:900;color:#FFF;letter-spacing:-.04em;margin-bottom:16px;position:relative}
+.dark h2 em{font-style:normal;color:var(--gold)}
+.dark>p,.dark-body>p{font-size:20px;color:rgba(255,255,255,.4);line-height:1.8;max-width:560px;margin:0 auto 14px;position:relative}
+.dark>p.bright,.dark-body>p.bright{color:rgba(255,255,255,.75);font-weight:600}
+.dark>p.gold,.dark-body>p.gold{color:var(--gold);font-weight:700}
+.dark .spacer{height:24px}
+@media(max-width:768px){.dark{padding:80px 24px}.dark h2{font-size:32px}.dark>p,.dark-body>p{font-size:18px}}
+
+/* ============ MAGIC FLOW ============ */
+.flow-wrap{max-width:480px;margin:48px auto 0;position:relative}
+.flow-item{display:flex;align-items:center;gap:16px;padding:16px 24px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);margin-bottom:0;position:relative}
+.flow-item .fi{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.flow-item span{font-size:16px;font-weight:600;color:rgba(255,255,255,.75)}
+.flow-arrow{text-align:center;padding:6px 0;color:rgba(201,169,98,.4);font-size:14px}
+.flow-final{margin-top:8px;padding:20px 24px;border-radius:16px;border:1px solid rgba(201,169,98,.25);background:rgba(201,169,98,.06)}
+.flow-final span{color:var(--gold);font-weight:700;font-size:16px}
+
+/* ============ CONNECT LIST ============ */
+.connect-list{max-width:480px;margin:36px auto 0;text-align:left;display:flex;flex-direction:column;gap:12px}
+.connect-item{display:flex;align-items:center;gap:14px;font-size:18px;color:rgba(255,255,255,.55)}
+.connect-item i{color:var(--gold);width:20px;text-align:center;font-size:14px}
+
+/* ============ SEARCH SIGNALS ============ */
+.signals{padding:120px 24px;background:var(--bg-2)}
+.signals-inner{max-width:900px;margin:0 auto;text-align:center}
+.signals h2{font-size:48px;font-weight:900;letter-spacing:-.04em;margin-bottom:16px}
+.signals>p,.signals-inner>p{font-size:18px;color:var(--text-2);line-height:1.7;max-width:580px;margin:0 auto 12px}
+.signals-inner>p.bold{font-weight:700;color:var(--text);font-size:20px;margin-top:20px}
+.sig-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:800px;margin:48px auto 0;text-align:left}
+.sig-card{padding:24px;border-radius:16px;background:#FFF;border:1px solid var(--border-2);transition:all .3s}
+.sig-card:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.05);border-color:transparent}
+.sig-card i{font-size:20px;color:var(--green);margin-bottom:12px;display:block}
+.sig-card span{font-size:15px;font-weight:600;color:var(--text)}
+@media(max-width:768px){.sig-grid{grid-template-columns:1fr}.signals h2{font-size:32px}.signals{padding:80px 24px}}
+
+/* ============ NETWORK ============ */
+.network{padding:120px 24px;max-width:800px;margin:0 auto;text-align:center}
+.network h2{font-size:44px;font-weight:900;letter-spacing:-.035em;margin-bottom:8px}
+.network h2 em{font-style:normal;color:var(--gold)}
+.network .sub{font-size:20px;color:var(--text-2);margin-bottom:48px}
+.net-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.net-stat{padding:32px 16px;border-radius:20px;background:var(--bg-2);border:1px solid var(--border);text-align:center}
+.net-stat .n{font-size:40px;font-weight:900;color:var(--blue);line-height:1}
+.net-stat .l{font-size:14px;color:var(--text-3);margin-top:6px;line-height:1.4}
+.network>p{font-size:18px;color:var(--text-2);line-height:1.7;max-width:580px;margin:36px auto 0}
+@media(max-width:768px){.network{padding:80px 24px}.network h2{font-size:32px}.net-stats{grid-template-columns:1fr}}
+
+/* ============ WHO IT'S FOR ============ */
+.who{padding:100px 24px;background:var(--bg-2)}
+.who-inner{max-width:900px;margin:0 auto;text-align:center}
+.who h2{font-size:44px;font-weight:900;letter-spacing:-.03em;margin-bottom:12px}
+.who>p,.who-inner>p{font-size:18px;color:var(--text-2);margin-bottom:40px}
+.who-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.who-card{padding:24px 16px;border-radius:16px;background:#FFF;border:1px solid var(--border-2);text-align:center;transition:all .3s}
+.who-card:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.05);border-color:transparent}
+.who-card i{font-size:24px;color:var(--gold);margin-bottom:10px;display:block}
+.who-card span{font-size:14px;font-weight:600;color:var(--text)}
+.who-tag{margin-top:36px;font-size:17px;color:var(--text-2);font-weight:500}
+.who-tag strong{color:var(--text);font-weight:700}
+@media(max-width:768px){.who-grid{grid-template-columns:1fr 1fr}.who h2{font-size:32px}.who{padding:80px 24px}}
+
+/* ============ AI SEARCH ============ */
+.aisearch{padding:120px 24px;max-width:740px;margin:0 auto;text-align:center}
+.aisearch h2{font-size:44px;font-weight:900;letter-spacing:-.03em;margin-bottom:20px}
+.aisearch p{font-size:20px;color:var(--text-2);line-height:1.8;margin-bottom:14px}
+.aisearch p.bold{font-weight:700;color:var(--text)}
+.search-queries{max-width:440px;margin:36px auto;display:flex;flex-direction:column;gap:12px}
+.sq{padding:14px 20px;border-radius:12px;background:var(--bg-2);border:1px solid var(--border-2);font-size:15px;font-weight:500;color:var(--text);text-align:left;font-style:italic}
+.sq i{color:var(--text-3);margin-right:8px;font-style:normal}
+@media(max-width:768px){.aisearch{padding:80px 24px}.aisearch h2{font-size:32px}}
+
+/* ============ CAPABILITIES ============ */
+.caps{padding:100px 24px;background:var(--bg-2)}
+.caps-inner{max-width:900px;margin:0 auto}
+.caps h2{font-size:44px;font-weight:900;letter-spacing:-.03em;text-align:center;margin-bottom:48px}
+.caps-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.cap{padding:36px 32px;border-radius:20px;background:#FFF;border:1px solid var(--border-2)}
+.cap h3{font-size:18px;font-weight:800;margin-bottom:6px}
+.cap p{font-size:15px;color:var(--text-3);line-height:1.5;margin:0}
+@media(max-width:768px){.caps-grid{grid-template-columns:1fr}.caps h2{font-size:32px}.caps{padding:80px 24px}}
+
+/* ============ PROOF ============ */
+.proof{padding:80px 24px;text-align:center}
+.proof p{font-size:17px;color:var(--text-3);line-height:1.6;max-width:540px;margin:0 auto}
+.proof p strong{color:var(--text);font-weight:700}
+
+/* ============ CLOSE ============ */
+.close-sec{padding:120px 24px;max-width:740px;margin:0 auto;text-align:center}
+.close-sec h2{font-size:48px;font-weight:900;letter-spacing:-.04em;margin-bottom:20px}
+.close-sec p{font-size:20px;color:var(--text-2);line-height:1.8;margin-bottom:14px}
+.close-sec p.gold{font-weight:700;color:var(--gold);font-size:22px}
+@media(max-width:768px){.close-sec{padding:80px 24px}.close-sec h2{font-size:32px}}
+
+/* ============ FINAL CTA ============ */
+.final-cta{background:#0A0A0F;padding:120px 24px;text-align:center;position:relative;overflow:hidden}
+.final-cta::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:500px;background:radial-gradient(ellipse,rgba(201,169,98,.06) 0%,transparent 60%);pointer-events:none}
+.final-cta h3{font-size:32px;font-weight:900;color:#FFF;margin-bottom:12px;position:relative}
+.final-cta>p{font-size:17px;color:rgba(255,255,255,.35);margin-bottom:40px;position:relative}
+.cta-btns{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;position:relative}
+@media(max-width:768px){.final-cta{padding:80px 24px}.final-cta h3{font-size:24px}.cta-btns{flex-direction:column;align-items:center}}
+
 /* FOOTER */
-/* ============================================ */
 footer{border-top:1px solid var(--border);background:var(--bg-2)}
 .ft-inner{max-width:1200px;margin:0 auto;padding:56px 24px 40px;display:grid;grid-template-columns:1.5fr repeat(3,1fr);gap:56px}
 .ft-logo{margin-bottom:12px}.ft-logo img{height:44px;width:auto}.ft-tag{font-size:14px;color:var(--text-3);line-height:1.5;margin-bottom:18px}
@@ -352,7 +244,7 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
           <a class="dd-link" href="/training/"><div class="dd-ico" style="background:rgba(0,122,255,.08)"><i class="fa-solid fa-graduation-cap" style="color:var(--blue)"></i></div><div class="dd-txt"><strong>Training Hub</strong><span>Courses, videos & best practices</span></div></a>
           <a class="dd-link" href="/help/"><div class="dd-ico" style="background:rgba(52,199,89,.08)"><i class="fa-regular fa-circle-question" style="color:var(--green)"></i></div><div class="dd-txt"><strong>Help Center</strong><span>Guides, FAQs & support</span></div></a>
           <a class="dd-link" href="/why-imonsocial/"><div class="dd-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-play" style="color:var(--orange)"></i></div><div class="dd-txt"><strong>Why i'M On Social</strong><span>See our advantages</span></div></a>
-          <a class="dd-link" href="/future/"><div class="dd-ico" style="background:rgba(201,169,98,.08)"><i class="fa-solid fa-bolt" style="color:var(--gold)"></i></div><div class="dd-txt"><strong>The Future of Sales</strong><span>Why relationships beat CRM</span></div></a>
+          <a class="dd-link" href="/future/"><div class="dd-ico" style="background:rgba(201,169,98,.08)"><i class="fa-solid fa-bolt" style="color:#C9A962"></i></div><div class="dd-txt"><strong>The Future of Sales</strong><span>Why relationships beat CRM</span></div></a>
         </div></div>
       </div>
       <div class="nav-item"><a href="/pricing/">Pricing</a></div>
@@ -373,455 +265,190 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
   </div>
 </nav>
 
-<!-- ===================================================================== -->
-<!-- HERO -->
-<!-- ===================================================================== -->
-<section class="f-hero">
-  <div class="hero-kicker rv"><i class="fa-solid fa-bolt"></i> A NEW CATEGORY</div>
-  <h1 class="rv">The Future of Sales<br/>Isn't <em>CRM</em></h1>
-  <div class="hero-divider rv"></div>
-  <p class="sub rv">It's Relationship Presence</p>
-  <p class="sub-2 rv">CRM was built for managers and reports. We built something for the people actually selling.</p>
+<!-- ===== 1. HERO ===== -->
+<section class="hero">
+  <h1 class="rv">The Future of Sales<br/>Isn't <em>CRM.</em></h1>
+  <p class="hero-hook rv">Snap a photo with a customer.<br/>The relationship runs itself for years.</p>
+  <p class="hero-auto rv">Follow-ups. Reviews. Referrals. Reputation.<br/>Automatically.</p>
+  <div class="hero-btns rv">
+    <a href="#" class="btn-gold" onclick="openDemoModal(event,'future_hero')"><i class="fa-solid fa-calendar"></i> Book a Demo</a>
+  </div>
 </section>
 
-<!-- ===================================================================== -->
-<!-- OPENING NARRATIVE -->
-<!-- ===================================================================== -->
-<section class="narrative-sec rv">
-  <p>For decades, sales teams have been told to use CRM systems.</p>
-  <p>But CRM was built for managers and reports, not for the people actually selling.</p>
+<!-- ===== 2. THE PROBLEM ===== -->
+<section class="txt rv">
+  <h2><span>CRM Was Built for Reports</span></h2>
+  <p>CRM systems track activity.</p>
+  <p>But relationships don't happen in spreadsheets.</p>
   <div class="spacer"></div>
-  <p>Salespeople don't lose customers because they lack a CRM.</p>
-  <p class="accent-red">They lose customers because they forget to follow up.</p>
+  <p class="light">Salespeople forget to follow up.</p>
+  <p class="light">Managers chase data.</p>
+  <p class="light">Customers disappear.</p>
   <div class="spacer"></div>
-  <p class="light">They get busy.</p>
-  <p class="light">They move on to the next lead.</p>
-  <p class="light">And the relationship disappears.</p>
+  <p class="bold">The result?</p>
+  <p class="accent-red">Millions of relationships quietly die every year.</p>
+</section>
+
+<!-- ===== 3. THE BIG IDEA ===== -->
+<section class="dark rv">
+  <h2>Introducing the<br/><em>Relationship Operating System</em></h2>
   <div class="spacer"></div>
-  <p class="accent">i'M On Social fixes that problem.</p>
-  <p>It turns every salesperson into a consistent, professional relationship builder  - without requiring them to think about it.</p>
-</section>
-
-<!-- ===================================================================== -->
-<!-- MEGA STATS: REPEAT & REFERRAL BUSINESS -->
-<!-- ===================================================================== -->
-<section class="mega-stats rv">
-  <div class="mega-stats-inner">
-    <div class="mega-stat">
-      <div class="num" style="color:var(--gold)" data-count="65">65%</div>
-      <div class="lbl">of new business comes from referrals and repeat customers</div>
-      <div class="src">Bain & Company</div>
-    </div>
-    <div class="mega-stat">
-      <div class="num" style="color:var(--green)" data-count="5">5x</div>
-      <div class="lbl">cheaper to retain a customer than acquire a new one</div>
-      <div class="src">Harvard Business Review</div>
-    </div>
-    <div class="mega-stat">
-      <div class="num" style="color:var(--blue)" data-count="80">80%</div>
-      <div class="lbl">of future revenue will come from 20% of existing customers</div>
-      <div class="src">Gartner</div>
-    </div>
-    <div class="mega-stat">
-      <div class="num" style="color:var(--red)" data-count="48">48%</div>
-      <div class="lbl">of salespeople never follow up after the first contact</div>
-      <div class="src">Marketing Donut</div>
-    </div>
+  <div class="dark-body">
+    <p>CRM manages data.</p>
+    <p class="bright">i'M On Social manages relationships.</p>
+    <div class="spacer"></div>
+    <p>It connects:</p>
   </div>
-</section>
-
-<!-- ===================================================================== -->
-<!-- THE PROBLEM -->
-<!-- ===================================================================== -->
-<section class="problem">
-  <h2 class="rv">Most tools manage data. <span>None build relationships.</span></h2>
-  <p class="deck rv">CRM focuses on storing contacts, logging notes, tracking opportunities, and generating reports. But none of those things actually create the human touchpoints that keep customers coming back.</p>
-  <ul class="problem-list rv">
-    <li><i class="fa-solid fa-xmark"></i> No system to remind salespeople who to contact and when</li>
-    <li><i class="fa-solid fa-xmark"></i> No automated follow-up after the sale closes</li>
-    <li><i class="fa-solid fa-xmark"></i> No visibility into which relationships are going cold</li>
-    <li><i class="fa-solid fa-xmark"></i> No way for salespeople to build a lasting personal brand</li>
-  </ul>
-</section>
-
-<!-- ===================================================================== -->
-<!-- THE FLIP: Before vs After -->
-<!-- ===================================================================== -->
-<section class="flip">
-  <h2 class="rv">A New Category: Relationship Operating System</h2>
-  <p class="rv">Instead of asking salespeople to remember everything, the system remembers for them. Instead of asking what to do next, the system tells them.</p>
-  <div class="flip-grid rv">
-    <div class="flip-side before">
-      <div class="tag"><i class="fa-solid fa-xmark"></i> Traditional CRM</div>
-      <h3>Data entry. Lag. Silence.</h3>
-      <p>The salesperson logs the deal, marks it closed, and moves on. The customer never hears from them again unless they call back.</p>
-      <ul>
-        <li><i class="fa-solid fa-xmark" style="color:var(--red)"></i> Manual data entry after every interaction</li>
-        <li><i class="fa-solid fa-xmark" style="color:var(--red)"></i> No automated follow-up or reminders</li>
-        <li><i class="fa-solid fa-xmark" style="color:var(--red)"></i> Customer forgotten within days</li>
-        <li><i class="fa-solid fa-xmark" style="color:var(--red)"></i> Referrals and repeat business left on the table</li>
-      </ul>
-    </div>
-    <div class="flip-arrow"><i class="fa-solid fa-arrow-right"></i></div>
-    <div class="flip-side after">
-      <div class="tag"><i class="fa-solid fa-check"></i> i'M On Social</div>
-      <h3>Instant. Automated. Alive.</h3>
-      <p>The salesperson snaps a photo, shares a card, and the system takes over. Follow-up runs for years. The relationship never goes cold.</p>
-      <ul>
-        <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Today's Touchpoints tells them exactly who to contact</li>
-        <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Automated campaigns run for years on autopilot</li>
-        <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Every interaction tracked as a real touchpoint</li>
-        <li><i class="fa-solid fa-check" style="color:var(--green)"></i> Referrals and reviews generated automatically</li>
-      </ul>
-    </div>
+  <div class="connect-list">
+    <div class="connect-item rv rv-1"><i class="fa-solid fa-circle-dot"></i> your digital presence</div>
+    <div class="connect-item rv rv-2"><i class="fa-solid fa-circle-dot"></i> your conversations</div>
+    <div class="connect-item rv rv-3"><i class="fa-solid fa-circle-dot"></i> your follow-ups</div>
+    <div class="connect-item rv rv-4"><i class="fa-solid fa-circle-dot"></i> your reviews</div>
+    <div class="connect-item rv"><i class="fa-solid fa-circle-dot"></i> your reputation</div>
   </div>
+  <div class="spacer"></div>
+  <div class="dark-body"><p class="gold">Into one system that runs automatically.</p></div>
 </section>
 
-<!-- ===================================================================== -->
-<!-- TODAY'S TOUCHPOINTS FLOW (dark) -->
-<!-- ===================================================================== -->
-<section class="dark-flow">
-  <div class="dark-flow-inner">
-    <h2 class="rv">How it actually works</h2>
-    <p class="rv">Every day, the platform generates a simple action list. The salesperson just taps and goes.</p>
-    <div class="flow-steps">
-      <div class="flow-step rv">
-        <div class="flow-num">1</div>
-        <div class="flow-content">
-          <h3>Take a photo. Share a card.</h3>
-          <p>The magic moment. A delivery photo or a digital business card shared by text. <span class="highlight">The relationship is now captured in the system.</span></p>
-        </div>
-      </div>
-      <div class="flow-step rv">
-        <div class="flow-num">2</div>
-        <div class="flow-content">
-          <h3>Today's Touchpoints appear each morning</h3>
-          <p>The platform tells the salesperson exactly who to reach out to: <span class="highlight">text this customer, call that one, send a review request, share your card.</span></p>
-        </div>
-      </div>
-      <div class="flow-step rv">
-        <div class="flow-num">3</div>
-        <div class="flow-content">
-          <h3>Automated campaigns run in the background</h3>
-          <p>Birthday texts. Anniversary check-ins. Service reminders. Referral requests. <span class="highlight">For years. Automatically. Hands-free.</span></p>
-        </div>
-      </div>
-      <div class="flow-step rv">
-        <div class="flow-num">4</div>
-        <div class="flow-content">
-          <h3>Everything tracked. Nothing lost.</h3>
-          <p>Every message, every click, every response builds a full relationship timeline. <span class="highlight">Managers see real activity, not just pipeline guesses.</span></p>
-        </div>
-      </div>
-      <div class="flow-step rv">
-        <div class="flow-num">5</div>
-        <div class="flow-content">
-          <h3>Referrals and reviews flow naturally</h3>
-          <p>Happy customers are prompted to leave reviews and refer friends. <span class="highlight">No awkward asks. It happens as part of the relationship flow.</span></p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ===================================================================== -->
-<!-- STAT ROW: Referral & Repeat -->
-<!-- ===================================================================== -->
-<section class="stat-row rv">
-  <div class="stat-row-inner">
-    <div class="stat-cell">
-      <div class="num" style="color:var(--green)">92%</div>
-      <div class="lbl">of consumers trust referrals from people they know</div>
-      <div class="src">Nielsen</div>
-    </div>
-    <div class="stat-cell">
-      <div class="num" style="color:var(--blue)">37%</div>
-      <div class="lbl">higher retention rate with consistent follow-up</div>
-      <div class="src">Salesforce State of Sales</div>
-    </div>
-    <div class="stat-cell">
-      <div class="num" style="color:var(--gold)">4.2x</div>
-      <div class="lbl">more revenue per customer with ongoing relationship engagement</div>
-      <div class="src">McKinsey</div>
-    </div>
-  </div>
-</section>
-
-<!-- ===================================================================== -->
-<!-- ONE CONVERSATION HUB + AI + DIGITAL PRESENCE (feature cards) -->
-<!-- ===================================================================== -->
-<div class="sec-head rv">
-  <h2>Everything a salesperson needs. Nothing they don't.</h2>
-  <p>One app. One conversation hub. AI that assists, never replaces. A digital presence that works 24/7.</p>
-</div>
-<section class="feat-section">
-  <div class="feat-grid rv">
-    <div class="feat-card rv rv-1">
-      <div class="fc-ico" style="background:rgba(0,122,255,.08)"><i class="fa-regular fa-comment-dots" style="color:var(--blue)"></i></div>
-      <h3>One Conversation Hub</h3>
-      <p>Text messages, emails, photos, review links, and digital business cards  - all from one place. Everything tracked automatically as a touchpoint.</p>
-      <span class="fc-highlight">No micromanaging required.</span>
-    </div>
-    <div class="feat-card rv rv-2">
-      <div class="fc-ico" style="background:rgba(175,82,222,.08)"><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--purple)"></i></div>
-      <h3>AI That Helps, Not Replaces</h3>
-      <p>Jessi, the built-in AI assistant, suggests responses, generates follow-ups, and analyzes tone. The salesperson stays in control.</p>
-      <span class="fc-highlight">AI assists the relationship.</span>
-    </div>
-    <div class="feat-card rv rv-3">
-      <div class="fc-ico" style="background:rgba(0,199,190,.08)"><i class="fa-regular fa-id-card" style="color:var(--teal)"></i></div>
-      <h3>Your Complete Digital Brand</h3>
-      <p>Digital business cards, showcase pages, link pages, review pages, and congrats cards  - everything a salesperson needs to look professional and share instantly.</p>
-      <span class="fc-highlight">See the full breakdown below.</span>
-    </div>
-    <div class="feat-card rv rv-1">
-      <div class="fc-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-rocket" style="color:var(--orange)"></i></div>
-      <h3>Automated Campaigns</h3>
-      <p>Birthdays, anniversaries, service reminders, and custom sequences run automatically in the background. Set it once, it works for years.</p>
-      <span class="fc-highlight">Hands-free follow-up at scale.</span>
-    </div>
-    <div class="feat-card rv rv-2">
-      <div class="fc-ico" style="background:rgba(255,214,10,.08)"><i class="fa-regular fa-star" style="color:#D4AD00"></i></div>
-      <h3>Review Collection</h3>
-      <p>Every customer interaction can trigger a branded review request. Reviews build reputation naturally as part of the relationship  - no awkward asks.</p>
-      <span class="fc-highlight">More reviews, zero extra effort.</span>
-    </div>
-    <div class="feat-card rv rv-3">
-      <div class="fc-ico" style="background:rgba(255,45,85,.08)"><i class="fa-regular fa-image" style="color:var(--pink)"></i></div>
-      <h3>Congrats Cards</h3>
-      <p>A beautiful, branded photo card is sent to the customer the moment a sale closes. The salesperson looks incredible. The customer is thrilled.</p>
-      <span class="fc-highlight">The shareable moment that starts it all.</span>
-    </div>
-  </div>
-</section>
-
-<!-- ===================================================================== -->
-<!-- MY BRAND: Everything They Get -->
-<!-- ===================================================================== -->
-<section class="brand-sec">
-  <div class="brand-inner">
-    <h2 class="rv">Your Brand. Ready to Share. Everywhere.</h2>
-    <p class="brand-deck rv">Every salesperson gets a complete digital presence out of the box  - professional collateral they can share with any customer in seconds. No designer needed. No extra tools. This is "My Presence."</p>
-    <div class="brand-grid">
-      <div class="brand-card rv rv-1">
-        <div class="bc-ico" style="background:rgba(0,122,255,.1)"><i class="fa-regular fa-id-card" style="color:var(--blue)"></i></div>
-        <h3>Digital Business Card</h3>
-        <p>A shareable, interactive card with every way to connect. One tap and the customer has everything they need.</p>
-        <div class="cta-pills">
-          <span>Call</span><span>Text</span><span>Email</span><span>Save Contact</span><span>Directions</span><span>Leave a Review</span><span>Social Links</span>
-        </div>
-      </div>
-      <div class="brand-card rv rv-2">
-        <div class="bc-ico" style="background:rgba(52,199,89,.1)"><i class="fa-solid fa-user-astronaut" style="color:var(--green)"></i></div>
-        <h3>Showcase Page</h3>
-        <p>A feed of happy customer photos and comments from every sale. Customers opt in, leave a comment, and the salesperson's showcase grows. Every salesperson's showcase feeds into the store showcase automatically.</p>
-        <div class="cta-pills">
-          <span>Customer Photos</span><span>Customer Comments</span><span>Opt-In Based</span><span>Rankings</span><span>Feeds Store Showcase</span>
-        </div>
-      </div>
-      <div class="brand-card rv rv-3">
-        <div class="bc-ico" style="background:rgba(201,169,98,.1)"><i class="fa-solid fa-link" style="color:var(--gold)"></i></div>
-        <h3>Link Page</h3>
-        <p>A branded link-in-bio page they can drop in any social profile. Every important link in one clean, trackable destination.</p>
-        <div class="cta-pills">
-          <span>Social Profiles</span><span>Website</span><span>Reviews</span><span>Card Link</span><span>Custom Links</span>
-        </div>
-      </div>
-      <div class="brand-card rv rv-1">
-        <div class="bc-ico" style="background:rgba(255,214,10,.1)"><i class="fa-regular fa-star" style="color:#D4AD00"></i></div>
-        <h3>Personal Review Page</h3>
-        <p>A portable reputation page that follows them wherever they go. Customers leave reviews tied to the salesperson, not just the business.</p>
-        <div class="cta-pills">
-          <span>Star Rating</span><span>Written Reviews</span><span>Shareable Link</span><span>Google-Ready</span>
-        </div>
-      </div>
-      <div class="brand-card rv rv-2">
-        <div class="bc-ico" style="background:rgba(255,45,85,.1)"><i class="fa-regular fa-image" style="color:var(--pink)"></i></div>
-        <h3>Congrats Cards</h3>
-        <p>A branded photo card sent instantly when a sale closes. The customer shares it, the salesperson looks incredible, and the dealership gets free exposure.</p>
-        <div class="cta-pills">
-          <span>Delivery Photo</span><span>Custom Branding</span><span>Auto-Generated</span><span>Shareable</span>
-        </div>
-      </div>
-      <div class="brand-card rv rv-3">
-        <div class="bc-ico" style="background:rgba(255,149,0,.1)"><i class="fa-solid fa-store" style="color:var(--orange)"></i></div>
-        <h3>Store Review Page</h3>
-        <p>Every location gets a dedicated review hub that feeds Google and builds local search authority. Managed automatically through the platform.</p>
-        <div class="cta-pills">
-          <span>Location-Specific</span><span>Google Indexed</span><span>QR Code Ready</span><span>Aggregated</span>
-        </div>
-      </div>
-    </div>
-    <div class="brand-summary rv">
-      <i class="fa-solid fa-rocket"></i>
-      <div>
-        <h4>One tap to share. Zero learning curve.</h4>
-        <p>Every piece of collateral is pre-built and personalized. Salespeople send a card, share their showcase, or drop their link page  - and instantly look like a social media expert. The system does the work. They get the credit.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ===================================================================== -->
-<!-- SEO / AEO SECTION -->
-<!-- ===================================================================== -->
-<section class="seo-section">
-  <div class="seo-inner">
-    <div class="seo-grid rv">
-      <div class="seo-visual">
-        <div class="seo-signal rv rv-1"><i class="fa-regular fa-star"></i><span>Review activity</span><span class="arrow"><i class="fa-solid fa-arrow-up-right"></i></span></div>
-        <div class="seo-signal rv rv-2"><i class="fa-solid fa-link"></i><span>Link sharing &amp; digital card taps</span><span class="arrow"><i class="fa-solid fa-arrow-up-right"></i></span></div>
-        <div class="seo-signal rv rv-3"><i class="fa-solid fa-tag"></i><span>Branded mentions &amp; citations</span><span class="arrow"><i class="fa-solid fa-arrow-up-right"></i></span></div>
-        <div class="seo-signal rv rv-4"><i class="fa-solid fa-globe"></i><span>Indexed profile pages per salesperson</span><span class="arrow"><i class="fa-solid fa-arrow-up-right"></i></span></div>
-        <div class="seo-signal rv"><i class="fa-solid fa-chart-line"></i><span>Customer engagement signals</span><span class="arrow"><i class="fa-solid fa-arrow-up-right"></i></span></div>
-      </div>
-      <div class="seo-text">
-        <h2>The Hidden Power: Organic Search &amp; AI Visibility</h2>
-        <p>Every salesperson using the platform generates real, measurable search signals. Profile pages rank for "<em>John Smith at ABC Motors</em>." Reviews, links, and branded mentions compound over time.</p>
-        <p>As AI-powered search grows  - ChatGPT, Siri, Google AI  - these relationship signals become the primary way businesses get discovered.</p>
-        <div class="callout">
-          <p>The result: powerful organic SEO and AEO (Answer Engine Optimization) generated naturally through daily sales activity. No marketing campaigns required. Just relationships.</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ===================================================================== -->
-<!-- SEO/AEO STAT ROW -->
-<!-- ===================================================================== -->
-<section class="stat-row rv">
-  <div class="stat-row-inner">
-    <div class="stat-cell">
-      <div class="num" style="color:var(--green)">46%</div>
-      <div class="lbl">of all Google searches have local intent</div>
-      <div class="src">Google / HubSpot</div>
-    </div>
-    <div class="stat-cell">
-      <div class="num" style="color:var(--purple)">75%</div>
-      <div class="lbl">of users never scroll past the first page of search results</div>
-      <div class="src">Backlinko</div>
-    </div>
-    <div class="stat-cell">
-      <div class="num" style="color:var(--blue)">40%</div>
-      <div class="lbl">of Gen Z now uses TikTok and AI search over Google</div>
-      <div class="src">Google Internal Data</div>
-    </div>
-  </div>
-</section>
-
-<!-- ===================================================================== -->
-<!-- GAMIFICATION -->
-<!-- ===================================================================== -->
-<div class="sec-head rv">
-  <h2>Built-In Motivation at Scale</h2>
-  <p>Levels, streaks, and rankings create healthy competition. Managers see real activity across the team  - instantly.</p>
-</div>
-<section class="gam-section">
-  <div class="gam-grid rv">
-    <div class="gam-card rv rv-1">
-      <i class="fa-solid fa-paper-plane"></i>
-      <h4>Sending Messages</h4>
-      <p>Points for every text, email, and follow-up sent through the platform.</p>
-    </div>
-    <div class="gam-card rv rv-2">
-      <i class="fa-solid fa-share-from-square"></i>
-      <h4>Sharing Digital Cards</h4>
-      <p>Earn points every time a customer taps their card or saves their contact.</p>
-    </div>
-    <div class="gam-card rv rv-3">
-      <i class="fa-solid fa-star"></i>
-      <h4>Collecting Reviews</h4>
-      <p>Each review collected boosts ranking and earns top-tier engagement points.</p>
-    </div>
-    <div class="gam-card rv rv-4">
-      <i class="fa-solid fa-circle-check"></i>
-      <h4>Completing Touchpoints</h4>
-      <p>Clear your daily touchpoint list and climb the leaderboard.</p>
-    </div>
-  </div>
-</section>
-
-<!-- ===================================================================== -->
-<!-- THE COMPOUNDING EFFECT -->
-<!-- ===================================================================== -->
-<section class="compound rv">
-  <div class="compound-inner">
-    <h2>The Compounding Effect</h2>
-    <p style="font-size:18px;color:var(--text-2);max-width:600px;margin:0 auto 16px">The more a salesperson uses the system, the more powerful their network becomes. Over time they accumulate:</p>
-    <div class="compound-metrics">
-      <div class="cm-card rv rv-1"><div class="val">100s</div><div class="lbl">of conversations</div></div>
-      <div class="cm-card rv rv-2"><div class="val">50+</div><div class="lbl">reviews collected</div></div>
-      <div class="cm-card rv rv-3"><div class="val">1000s</div><div class="lbl">of touchpoints</div></div>
-      <div class="cm-card rv rv-4"><div class="val" style="font-size:26px">Growing</div><div class="lbl">digital presence</div></div>
-    </div>
-    <p style="font-size:18px;color:var(--text-2);max-width:620px;margin:32px auto 0;line-height:1.7">Instead of losing relationships, they build a long-term customer network that continues to generate referrals and repeat business.</p>
-  </div>
-</section>
-
-<!-- ===================================================================== -->
-<!-- THE MAGIC MOMENT -->
-<!-- ===================================================================== -->
-<section class="magic rv">
+<!-- ===== 4. THE MAGIC MOMENT ===== -->
+<section class="dark rv" style="background:#0D0D12">
   <h2>The Magic Moment</h2>
-  <p>The entire experience starts with something incredibly simple.</p>
-  <div class="magic-box">
-    <i class="fa-solid fa-camera" style="color:var(--gold)"></i>
-    <p>Take a photo with a customer.</p>
-    <i class="fa-regular fa-id-card" style="color:var(--blue)"></i>
-    <p>Share your digital card.</p>
+  <div class="dark-body">
+    <p>You meet a customer.</p>
+    <p>You take a photo together.</p>
+    <p>You share your digital card.</p>
+    <div class="spacer"></div>
+    <p class="bright">That one moment launches a relationship system that runs for years.</p>
   </div>
-  <div class="magic-after">
-    <p>From that moment, the relationship is captured, organized, and supported by the platform.</p>
-    <div class="spacer" style="height:8px"></div>
-    <p>Follow-ups happen automatically.</p>
-    <p>Messages are easy to send.</p>
-    <p>Reviews are collected naturally.</p>
-    <div class="spacer" style="height:8px"></div>
-    <p class="accent"><strong>And the relationship never disappears.</strong></p>
-  </div>
-</section>
-
-<!-- ===================================================================== -->
-<!-- THE RESULT -->
-<!-- ===================================================================== -->
-<section class="result-section rv">
-  <h2>The Result</h2>
-  <div class="result-list">
-    <div class="result-item"><i class="fa-solid fa-ribbon"></i><span>Salespeople look more professional.</span></div>
-    <div class="result-item"><i class="fa-regular fa-eye"></i><span>Managers gain visibility into real activity.</span></div>
-    <div class="result-item"><i class="fa-solid fa-arrow-trend-up"></i><span>Businesses strengthen their online presence.</span></div>
-    <div class="result-item"><i class="fa-regular fa-heart"></i><span>Customers feel remembered.</span></div>
-    <div class="result-item"><i class="fa-regular fa-clock"></i><span>Relationships last longer.</span></div>
-    <div class="result-item"><i class="fa-solid fa-circle-dollar-to-slot"></i><span>Sales increase.</span></div>
+  <div class="flow-wrap rv">
+    <div class="flow-item"><div class="fi" style="background:rgba(201,169,98,.1)"><i class="fa-solid fa-handshake" style="color:var(--gold)"></i></div><span>Meet Customer</span></div>
+    <div class="flow-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+    <div class="flow-item"><div class="fi" style="background:rgba(255,45,85,.1)"><i class="fa-solid fa-camera" style="color:var(--pink)"></i></div><span>Take Photo</span></div>
+    <div class="flow-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+    <div class="flow-item"><div class="fi" style="background:rgba(0,122,255,.1)"><i class="fa-regular fa-id-card" style="color:var(--blue)"></i></div><span>Share Card</span></div>
+    <div class="flow-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+    <div class="flow-item"><div class="fi" style="background:rgba(52,199,89,.1)"><i class="fa-solid fa-user-check" style="color:var(--green)"></i></div><span>Customer Saved</span></div>
+    <div class="flow-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+    <div class="flow-item"><div class="fi" style="background:rgba(255,149,0,.1)"><i class="fa-solid fa-rocket" style="color:var(--orange)"></i></div><span>Automated Follow-Ups</span></div>
+    <div class="flow-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+    <div class="flow-item"><div class="fi" style="background:rgba(175,82,222,.1)"><i class="fa-solid fa-star" style="color:var(--purple)"></i></div><span>Reviews + Referrals</span></div>
+    <div class="flow-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+    <div class="flow-final"><span>The relationship never dies.</span></div>
   </div>
 </section>
 
-<!-- ===================================================================== -->
-<!-- ONE SIMPLE PROMISE -->
-<!-- ===================================================================== -->
-<section class="promise rv">
-  <div class="promise-line"></div>
-  <h2>One Simple Promise</h2>
-  <p>Never forget a customer again.</p>
-  <div class="promise-line" style="margin-top:24px"></div>
+<!-- ===== 5. SEARCH VISIBILITY ===== -->
+<section class="signals rv">
+  <div class="signals-inner">
+    <h2>Every Relationship Creates Search Visibility</h2>
+    <p>Every time a salesperson uses the system:</p>
+    <div class="sig-grid">
+      <div class="sig-card rv rv-1"><i class="fa-solid fa-globe"></i><span>Profile pages get indexed</span></div>
+      <div class="sig-card rv rv-2"><i class="fa-regular fa-star"></i><span>Reviews attach to real people</span></div>
+      <div class="sig-card rv rv-3"><i class="fa-solid fa-chart-line"></i><span>Customer interactions create signals</span></div>
+      <div class="sig-card rv rv-1"><i class="fa-solid fa-link"></i><span>Links get shared</span></div>
+      <div class="sig-card rv rv-2"><i class="fa-solid fa-shield-halved"></i><span>Engagement builds authority</span></div>
+      <div class="sig-card rv rv-3"><i class="fa-solid fa-magnifying-glass"></i><span>Names rank in search results</span></div>
+    </div>
+    <p class="bold rv">Your team doesn't just build relationships. They build search presence.</p>
+    <p class="rv">Your entire sales team becomes an organic marketing engine.</p>
+  </div>
 </section>
 
-<!-- ===================================================================== -->
-<!-- CLOSER CTA -->
-<!-- ===================================================================== -->
-<section class="closer">
-  <h3 class="rv">See what Relationship Presence looks like</h3>
-  <p class="rv">Schedule a walkthrough and see how it works for your team.</p>
+<!-- ===== 6. NETWORK EFFECT ===== -->
+<section class="network rv">
+  <h2>One Salesperson Is Powerful.<br/><em>A Whole Team Is Unstoppable.</em></h2>
+  <p class="sub">When every salesperson in an organization uses the system:</p>
+  <div class="net-stats">
+    <div class="net-stat rv rv-1"><div class="n">1000s</div><div class="l">of customer relationships tracked</div></div>
+    <div class="net-stat rv rv-2"><div class="n">1000s</div><div class="l">of reviews generated</div></div>
+    <div class="net-stat rv rv-3"><div class="n">1000s</div><div class="l">of follow-ups running automatically</div></div>
+  </div>
+  <p class="rv">The company's reputation footprint grows every single day.</p>
+</section>
+
+<!-- ===== 7. WHO THIS IS FOR ===== -->
+<section class="who rv">
+  <div class="who-inner">
+    <h2>Built for Relationship-Driven Professionals</h2>
+    <p>If referrals drive your business, this platform is for you.</p>
+    <div class="who-grid">
+      <div class="who-card rv rv-1"><i class="fa-solid fa-car"></i><span>Car Salespeople</span></div>
+      <div class="who-card rv rv-2"><i class="fa-solid fa-house-chimney"></i><span>Real Estate Agents</span></div>
+      <div class="who-card rv rv-3"><i class="fa-solid fa-shield-halved"></i><span>Insurance Agents</span></div>
+      <div class="who-card rv rv-4"><i class="fa-solid fa-file-invoice-dollar"></i><span>Loan Officers</span></div>
+      <div class="who-card rv rv-1"><i class="fa-solid fa-wrench"></i><span>Service Advisors</span></div>
+      <div class="who-card rv rv-2"><i class="fa-solid fa-briefcase"></i><span>Entrepreneurs</span></div>
+      <div class="who-card rv rv-3"><i class="fa-solid fa-user-tie"></i><span>Consultants</span></div>
+      <div class="who-card rv rv-4"><i class="fa-solid fa-users"></i><span>Sales Teams</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 8. AI SEARCH SHIFT ===== -->
+<section class="aisearch rv">
+  <h2>Search Is Changing</h2>
+  <p>Customers don't just search for businesses anymore.</p>
+  <p class="bold">They search for people.</p>
+  <div class="search-queries">
+    <div class="sq rv rv-1"><i><i class="fa-solid fa-magnifying-glass"></i></i> "best car salesperson near me"</div>
+    <div class="sq rv rv-2"><i><i class="fa-solid fa-magnifying-glass"></i></i> "top realtor in phoenix"</div>
+    <div class="sq rv rv-3"><i><i class="fa-solid fa-magnifying-glass"></i></i> "who sells the most trucks in dallas"</div>
+  </div>
+  <p>Reputation is becoming the new search engine ranking.</p>
+  <p class="bold">i'M On Social builds that reputation automatically.</p>
+</section>
+
+<!-- ===== 9. CAPABILITIES ===== -->
+<section class="caps rv">
+  <div class="caps-inner">
+    <h2>What the Platform Does</h2>
+    <div class="caps-grid">
+      <div class="cap rv rv-1">
+        <h3>Digital Relationship Cards</h3>
+        <p>Your identity. Your reviews. Your links.</p>
+      </div>
+      <div class="cap rv rv-2">
+        <h3>Smart Follow-Up Campaigns</h3>
+        <p>Stay in touch for years without lifting a finger.</p>
+      </div>
+      <div class="cap rv rv-3">
+        <h3>AI-Assisted Communication</h3>
+        <p>Respond faster. Respond better.</p>
+      </div>
+      <div class="cap rv rv-4">
+        <h3>Relationship Intelligence</h3>
+        <p>Know your network. Never forget a customer.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 10. PROOF ===== -->
+<section class="proof rv">
+  <p>Used by <strong>relationship-driven sales professionals</strong><br/>across automotive, real estate, and service industries.</p>
+</section>
+
+<!-- ===== 11. THE CLOSE ===== -->
+<section class="close-sec rv">
+  <h2>Relationships Shouldn't Be Forgotten</h2>
+  <p>Customers remember the people who stay in touch.</p>
+  <div class="spacer" style="height:12px"></div>
+  <p>i'M On Social makes sure that happens.</p>
+  <p class="gold">Automatically.</p>
+</section>
+
+<!-- ===== 12. FINAL CTA ===== -->
+<section class="final-cta">
+  <h3 class="rv">Snap a photo. The relationship runs itself.</h3>
+  <p class="rv">See what Relationship Presence looks like for your team.</p>
   <div class="cta-btns rv">
-    <a href="#" class="btn-gold" onclick="openDemoModal(event,'future_cta')"><i class="fa-solid fa-calendar"></i> Schedule a Demo</a>
-    <a href="/features/" class="btn-gw"><i class="fa-solid fa-grid-2"></i> See All Features</a>
+    <a href="#" class="btn-gold" onclick="openDemoModal(event,'future_cta')"><i class="fa-solid fa-calendar"></i> Book a Demo</a>
+    <a href="/features/" class="btn-ghost"><i class="fa-solid fa-grid-2"></i> See All Features</a>
   </div>
 </section>
 
-<!-- ===================================================================== -->
-<!-- FOOTER -->
-<!-- ===================================================================== -->
+<!-- ========== FOOTER ========== -->
 <footer>
   <div class="ft-inner">
     <div class="ft-brand">
@@ -865,9 +492,7 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
   </div>
 </footer>
 
-<!-- ===================================================================== -->
 <!-- DEMO MODAL -->
-<!-- ===================================================================== -->
 <div class="demo-overlay" id="demoModal"><div class="demo-modal"><button class="demo-close" onclick="closeDemoModal()">&times;</button><div id="demoFormWrap"><h2 style="font-size:24px;font-weight:900;margin-bottom:4px">Let's Talk</h2><p style="font-size:14px;color:var(--text-3);margin-bottom:24px">See how i'M On Social can transform your team's relationships.</p><form onsubmit="submitDemoForm(event)"><div class="dm-field"><label>Full Name *</label><input type="text" id="dm-name" placeholder="John Smith" required/></div><div class="dm-field"><label>Email *</label><input type="email" id="dm-email" placeholder="john@company.com" required/></div><div class="dm-field"><label>Phone</label><input type="tel" id="dm-phone" placeholder="(555) 123-4567"/></div><div class="dm-field"><label>Company</label><input type="text" id="dm-company" placeholder="Your company name"/></div><div class="dm-field"><label>Team Size</label><select id="dm-type"><option value="">How big is your team?</option><option value="1-5">1-5 people</option><option value="6-20">6-20 people</option><option value="21-50">21-50 people</option><option value="50+">50+</option></select></div><button type="submit" class="dm-submit" id="dmSubmitBtn">Schedule a Call</button></form></div><div id="demoSuccessWrap" style="display:none;text-align:center;padding:32px 0"><div style="font-size:48px;color:var(--green);margin-bottom:12px">&#10003;</div><h3 style="font-size:20px;font-weight:700;margin-bottom:8px">We'll Be In Touch</h3><p style="font-size:14px;color:var(--text-3)">Expect a call within 24 hours.</p></div></div></div>
 
 <script>
