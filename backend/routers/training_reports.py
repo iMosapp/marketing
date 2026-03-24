@@ -1,0 +1,187 @@
+"""
+Training Reports Router
+Provides analytics on training video engagement - who watched what, when, ranked by activity.
+"""
+from fastapi import APIRouter, Header
+from datetime import datetime, timezone, timedelta
+from typing import Optional
+import logging
+import re
+
+from routers.database import get_db, get_user_by_id
+
+router = APIRouter(prefix="/admin/training-reports", tags=["Training Reports"])
+logger = logging.getLogger(__name__)
+
+YT_ID_RE = re.compile(r'(?:youtube\.com/watch\?v=|youtu\.be/)([\w-]+)')
+
+
+@router.get("/overview")
+async def get_training_overview(
+    days: int = 30,
+    x_user_id: str = Header(None, alias="X-User-ID"),
+):
+    """Get overview stats for training video engagement."""
+    db = get_db()
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+
+    # Get all training video short URLs
+    video_urls = await db.short_urls.find(
+        {"link_type": "training_video"},
+        {"_id": 0, "short_code": 1, "original_url": 1, "metadata": 1, "click_count": 1, "user_id": 1, "created_at": 1}
+    ).to_list(500)
+
+    total_videos = len(video_urls)
+    total_clicks = sum(v.get("click_count", 0) for v in video_urls)
+
+    # Group by video title
+    video_stats = {}
+    for v in video_urls:
+        meta = v.get("metadata") or {}
+        title = meta.get("video_title", "Unknown Video")
+        yt_url = v.get("original_url", "")
+        vid_match = YT_ID_RE.search(yt_url)
+        video_id = vid_match.group(1) if vid_match else ""
+
+        key = yt_url
+        if key not in video_stats:
+            video_stats[key] = {
+                "title": title,
+                "youtube_url": yt_url,
+                "youtube_id": video_id,
+                "thumbnail": f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg" if video_id else None,
+                "total_clicks": 0,
+                "unique_senders": set(),
+            }
+        video_stats[key]["total_clicks"] += v.get("click_count", 0)
+        if v.get("user_id"):
+            video_stats[key]["unique_senders"].add(v["user_id"])
+
+    # Convert sets to counts
+    videos = []
+    for url, stat in video_stats.items():
+        stat["unique_senders"] = len(stat["unique_senders"])
+        videos.append(stat)
+    videos.sort(key=lambda x: x["total_clicks"], reverse=True)
+
+    # Get recent click activity from short_urls clicks array
+    recent_clicks = await db.short_urls.find(
+        {"link_type": "training_video", "clicks": {"$exists": True, "$ne": []}},
+        {"_id": 0, "clicks": {"$slice": -20}, "metadata": 1, "original_url": 1}
+    ).to_list(100)
+
+    activity_feed = []
+    for url_doc in recent_clicks:
+        meta = url_doc.get("metadata") or {}
+        title = meta.get("video_title", "Unknown")
+        for click in (url_doc.get("clicks") or []):
+            ts = click.get("timestamp")
+            if isinstance(ts, str):
+                try:
+                    ts = datetime.fromisoformat(ts)
+                except Exception:
+                    ts = None
+            activity_feed.append({
+                "video_title": title,
+                "ip": click.get("ip", ""),
+                "user_agent": (click.get("user_agent", ""))[:60],
+                "timestamp": ts.isoformat() if isinstance(ts, datetime) else str(ts) if ts else None,
+            })
+    activity_feed.sort(key=lambda x: x.get("timestamp") or "", reverse=True)
+
+    return {
+        "total_videos_tracked": total_videos,
+        "total_clicks": total_clicks,
+        "period_days": days,
+        "videos": videos[:20],
+        "recent_activity": activity_feed[:30],
+    }
+
+
+@router.get("/by-sender")
+async def get_training_by_sender(
+    x_user_id: str = Header(None, alias="X-User-ID"),
+):
+    """Get training video usage grouped by which salesperson sent the most."""
+    db = get_db()
+
+    pipeline = [
+        {"$match": {"link_type": "training_video", "user_id": {"$ne": None}}},
+        {"$group": {
+            "_id": "$user_id",
+            "videos_sent": {"$sum": 1},
+            "total_clicks": {"$sum": "$click_count"},
+            "videos": {"$push": {
+                "title": {"$ifNull": ["$metadata.video_title", "Unknown"]},
+                "clicks": "$click_count",
+                "url": "$original_url",
+            }},
+        }},
+        {"$sort": {"total_clicks": -1}},
+        {"$limit": 50},
+    ]
+    results = await db.short_urls.aggregate(pipeline).to_list(50)
+
+    # Resolve user names
+    user_ids = [r["_id"] for r in results if r["_id"]]
+    users = {}
+    for uid in user_ids:
+        try:
+            u = await get_user_by_id(uid)
+            if u:
+                users[uid] = {"name": u.get("name", "Unknown"), "email": u.get("email", "")}
+        except Exception:
+            pass
+
+    senders = []
+    for r in results:
+        uid = r["_id"]
+        u = users.get(uid, {"name": "Unknown", "email": ""})
+        senders.append({
+            "user_id": uid,
+            "name": u["name"],
+            "email": u["email"],
+            "videos_sent": r["videos_sent"],
+            "total_clicks": r["total_clicks"],
+            "top_videos": sorted(r.get("videos", []), key=lambda x: x.get("clicks", 0), reverse=True)[:5],
+        })
+
+    return {"senders": senders}
+
+
+@router.get("/by-video")
+async def get_training_by_video(
+    x_user_id: str = Header(None, alias="X-User-ID"),
+):
+    """Get detailed click stats per video."""
+    db = get_db()
+
+    pipeline = [
+        {"$match": {"link_type": "training_video"}},
+        {"$group": {
+            "_id": "$original_url",
+            "title": {"$first": "$metadata.video_title"},
+            "total_clicks": {"$sum": "$click_count"},
+            "times_sent": {"$sum": 1},
+            "senders": {"$addToSet": "$user_id"},
+        }},
+        {"$sort": {"total_clicks": -1}},
+    ]
+    results = await db.short_urls.aggregate(pipeline).to_list(50)
+
+    videos = []
+    for r in results:
+        yt_url = r["_id"] or ""
+        vid_match = YT_ID_RE.search(yt_url)
+        video_id = vid_match.group(1) if vid_match else ""
+        videos.append({
+            "youtube_url": yt_url,
+            "youtube_id": video_id,
+            "thumbnail": f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg" if video_id else None,
+            "title": r.get("title", "Unknown"),
+            "total_clicks": r.get("total_clicks", 0),
+            "times_sent": r.get("times_sent", 0),
+            "unique_senders": len([s for s in (r.get("senders") or []) if s]),
+        })
+
+    return {"videos": videos}

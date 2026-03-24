@@ -13,7 +13,14 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### Training Video YouTube Preview + Custom Card Templates (Mar 24, 2026) -- LATEST
+### Training Report Admin View (Mar 24, 2026) -- LATEST
+- **Training Report page** (`/admin/training-reports`): 3-tab analytics view for training video engagement.
+  - **Overview tab:** Shows total links tracked, total clicks, top videos ranked by clicks with YouTube thumbnails, and recent click activity feed.
+  - **By Sender tab:** Which salesperson sent the most videos and got the most clicks, with their top videos listed.
+  - **By Video tab:** Each video's click count, times sent, and unique senders.
+- Accessible from More > Learning > Training Report (admin/super_admin only).
+
+### Training Video YouTube Preview + Custom Card Templates (Mar 24, 2026)
 - **YouTube OG Tags:** Training video short URLs now serve YouTube-specific Open Graph meta tags (video thumbnail from `img.youtube.com/vi/{ID}/hqdefault.jpg` + video title). iMessage/WhatsApp previews will show a YouTube video preview instead of the business card.
 - **Custom Card Templates in Send/Composer:** Both the "Send a Card" screen and the contact page composer bar now dynamically fetch custom card types from the API and display them alongside the 6 default types (Congrats, Birthday, Holiday, Thank You, Anniversary, Welcome).
 

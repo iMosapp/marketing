@@ -672,6 +672,7 @@ export default function MoreScreen() {
     ];
     if (isAdmin) {
       items.push({ icon: 'create', title: 'Manage Training', subtitle: 'Edit lessons & tracks', onPress: () => router.push('/admin/manage-training'), color: '#34C759' });
+      items.push({ icon: 'analytics', title: 'Training Report', subtitle: 'Video engagement analytics', onPress: () => router.push('/admin/training-reports'), color: '#AF52DE' });
     }
     sections.push({ id: 'learning', title: 'Learning', icon: 'school', color: '#FF9500', items });
   }
