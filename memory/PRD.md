@@ -14,10 +14,18 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### Marketing Site Updates (Mar 24, 2026) -- LATEST
-- **Automotive Vision Page** (`/automotive/`): Full Apple-style landing page with automotive-specific sales copy. Hero: "Take a photo with your customer. The relationship runs for a lifetime." Sections: Problem, Vision Flow, Search Visibility, Manager Pitch, Salesperson Pitch, Network Effect, CRM vs ROS comparison, CTA.
-- **Nav Integration:** Added "Automotive Vision" to Resources dropdown across all 38 marketing HTML pages (desktop + mobile navs).
+### Automotive Landing Page Rebuild (Mar 24, 2026) -- LATEST
+- **Full page restructure** from critique-based feedback. New conversion-optimized flow: Hook → Problem → Magic Moment → SEO → How It Works → Salespeople → Roles → ROI → Proof → Demo → Close
+- Hero: "Snap a Photo With Your Customer. We Run the Relationship for a Lifetime."
+- Viral hook: "Take a photo with your customer. The relationship runs itself."
+- Positioning: "Not CRM. Not social media. Relationship Automation for Salespeople."
+- ROI math section (180 photos/reviews/posts per salesperson per year)
+- Demo video placeholder ready for real content
+- Added to Resources nav across all 38 marketing HTML files
+
+### Marketing Site Updates (Mar 24, 2026)
 - **Future Vision Page** (`/future/`): Apple-style landing page for "The Future of Sales / Relationship Operating System" pitch.
+- **Nav Integration:** "Automotive Vision" added to Resources dropdown site-wide.
 
 ### Operations Manual v5.0 Update (Mar 24, 2026)
 - Seeded the updated Operations Manual to the database via `POST /api/docs/seed-project-scope`.
@@ -66,7 +74,9 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Stripe for partner invoices
 - Inventory Management Module
 - Refactor large files (admin.py 3700+ lines)
-- Reorganize marketing nav structure (automotive/dealers)
+- Reorganize marketing nav structure (automotive/dealers consolidation)
+- Add real demo video to /automotive page
+- Add real social proof/testimonials to /automotive page
 
 ## Known Issues
 - P2: Mobile tags sync
