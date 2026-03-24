@@ -13,7 +13,11 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### Partner Monthly Invoice System (Mar 24, 2026) -- LATEST
+### Training Video YouTube Preview + Custom Card Templates (Mar 24, 2026) -- LATEST
+- **YouTube OG Tags:** Training video short URLs now serve YouTube-specific Open Graph meta tags (video thumbnail from `img.youtube.com/vi/{ID}/hqdefault.jpg` + video title). iMessage/WhatsApp previews will show a YouTube video preview instead of the business card.
+- **Custom Card Templates in Send/Composer:** Both the "Send a Card" screen and the contact page composer bar now dynamically fetch custom card types from the API and display them alongside the 6 default types (Congrats, Birthday, Holiday, Thank You, Anniversary, Welcome).
+
+### Partner Monthly Invoice System (Mar 24, 2026)
 - **Waiver System:** Super admins can waive individual stores from billing with optional expiry dates. Waived stores appear on invoices as $0 line items with the waiver reason displayed.
 - **Per-Store Rate Overrides:** Each store can have a custom billing rate and package name that overrides the partner's default rate. Supports different price points per package.
 - **Monthly Invoice Generation:** Generates itemized invoices with line items per store, waiver logic, and PDF generation (fpdf2). Duplicate prevention (409 if invoice exists for same period).
