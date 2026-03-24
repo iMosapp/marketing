@@ -134,6 +134,8 @@ def _detect_event_type(doc: dict) -> tuple:
     link_type = doc.get("link_type", "")
     original_url = doc.get("original_url", "")
 
+    if link_type == "training_video" or ("youtube.com" in original_url and link_type == "training_video"):
+        return "training_video_clicked", "Watched Training Video", "play-circle", "#AF52DE"
     if link_type == "review_request" or "/review/" in original_url:
         return "review_link_clicked", "Clicked Review Link", "star", "#FFD60A"
     if link_type == "business_card" or "/p/" in original_url or "/card/" in original_url:
@@ -264,6 +266,7 @@ async def _log_link_click_event(db, doc: dict, short_code: str):
             "digital_card": "digital_card_viewed",
             "showcase": "showcase_viewed",
             "link_page": "link_page_viewed",
+            "training_video": "training_video_clicked",
         }
         signal_type = signal_map.get(link_type, "link_clicked")
         await record_signal(

@@ -1,0 +1,77 @@
+{
+  "summary": "Verified all 3 bug fixes: (1) Training tracks auto-seeding works - onboarding-videos track with 8 lessons is present, (2) Templates return tracked short URLs for training_video category (containing /api/s/ instead of raw youtube.com), (3) Custom card types save and appear in card templates list. All 12 backend tests passed. Frontend Training Hub page loads correctly showing Onboarding Videos track with all 8 lessons.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Training Hub",
+        "issues": ["Track cards missing data-testid attributes (e.g., data-testid='track-onboarding-videos')", "Lesson cards missing data-testid attributes (e.g., data-testid='lesson-saving-the-app')"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_training_templates_cards_fixes.py",
+    "/app/test_reports/pytest/pytest_training_templates_cards_fixes.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Training tracks auto-seed logic (lines 426-441 in training.py) correctly seeds missing tracks on GET /api/training/tracks",
+    "_wrap_video_urls function (lines 115-136 in templates.py) correctly wraps YouTube URLs with tracked short URLs",
+    "get_all_store_templates (lines 323-357 in congrats_cards.py) correctly includes custom card types not in CARD_TYPE_DEFAULTS",
+    "_detect_event_type (line 137 in short_urls.py) correctly detects training_video link type"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_training_templates_cards_fixes.py"
+  ],
+  "success_rate": {
+    "backend": "100% (12/12 tests passed)",
+    "frontend": "100% (Training Hub loads, Onboarding Videos track visible with 8 lessons)"
+  },
+  "test_credentials": {
+    "email": "forest@imosapp.com",
+    "password": "Admin123!",
+    "user_id": "69a0b7095fddcede09591667",
+    "store_id": "69a0b7095fddcede09591668"
+  },
+  "seed_data_creation": "Created custom card template with card_type='custom' for testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All 3 bug fixes verified: (1) GET /api/training/tracks?role=super_admin returns onboarding-videos track with 8 lessons, (2) GET /api/templates/{user_id} returns training_video templates with tracked short URLs (/api/s/{code}), (3) POST /api/congrats/template/{store_id} with card_type='custom' saves successfully and GET /api/congrats/templates/all/{store_id} includes custom card types. Short URL stats show link_type=training_video and click_count increments on redirect.",
+  "features_tested": {
+    "backend": {
+      "GET /api/training/tracks?role=super_admin": "PASS - returns onboarding-videos track with 8 lessons",
+      "GET /api/templates/{user_id}": "PASS - returns training_video templates with tracked short URLs",
+      "GET /api/s/stats/{short_code}": "PASS - shows link_type=training_video for video URLs",
+      "GET /api/s/{short_code}": "PASS - redirects and increments click_count",
+      "POST /api/congrats/template/{store_id}": "PASS - saves custom card_type successfully",
+      "GET /api/congrats/templates/all/{store_id}": "PASS - includes custom card_type in list"
+    },
+    "frontend": {
+      "Training Hub page": "PASS - loads at /training-hub with title and description",
+      "Onboarding Videos track": "PASS - visible with '8 lessons' label",
+      "Lesson list": "PASS - all 8 lessons displayed (Saving The App, Setting Up Your Profile, Home Screen, Contacts, Inbox, Best Practices, The 30 Second Workflow, Tags Campaigns and Life Long Relationships)"
+    }
+  },
+  "mocked_apis": {
+    "Twilio SMS": "MOCKED"
+  },
+  "rca_of_the_issue": {
+    "issue_1_training_tracks": {
+      "root_cause": "Training tracks were not being auto-seeded when missing from database",
+      "fix_applied": "Added auto-seed logic in GET /api/training/tracks (lines 426-441) that checks for missing track slugs and seeds them"
+    },
+    "issue_2_youtube_tracking": {
+      "root_cause": "YouTube URLs in training_video templates were not being wrapped with tracked short URLs",
+      "fix_applied": "Added _wrap_video_urls function (lines 115-136) that replaces raw YouTube URLs with tracked /api/s/ short URLs"
+    },
+    "issue_3_custom_card_types": {
+      "root_cause": "Custom card types were not appearing in the templates list because get_all_store_templates only iterated over CARD_TYPE_DEFAULTS",
+      "fix_applied": "Added loop (lines 344-356) to include custom card types from template_map that are not in CARD_TYPE_DEFAULTS"
+    }
+  }
+}

@@ -226,6 +226,7 @@ SCORE_WEIGHTS = {
     "card_review_clicked": 3, "card_online_review_clicked": 3,
     "card_refer_clicked": 5, "card_internal_review_submitted": 5,
     "link_page_link_clicked": 2, "store_team_clicked": 2, "store_review_clicked": 3,
+    "training_video_clicked": 3,
 }
 DEFAULT_WEIGHT = 1
 

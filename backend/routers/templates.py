@@ -6,12 +6,15 @@ from bson import ObjectId
 from datetime import datetime
 from typing import List
 import logging
+import re
 
 from models import MessageTemplateCreate, MessageTemplateUpdate
 from routers.database import get_db
 
 router = APIRouter(prefix="/templates", tags=["Templates"])
 logger = logging.getLogger(__name__)
+
+YOUTUBE_URL_RE = re.compile(r'https?://(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)[\w-]+(?:&[\w=]*)*')
 
 # Default templates that all users get
 DEFAULT_TEMPLATES = [
@@ -109,6 +112,30 @@ DEFAULT_TEMPLATES = [
 ]
 
 
+async def _wrap_video_urls(templates: list, user_id: str) -> list:
+    """For training_video templates, replace raw YouTube URLs with tracked short URLs."""
+    from routers.short_urls import create_short_url
+    for t in templates:
+        if t.get("category") != "training_video":
+            continue
+        content = t.get("content", "")
+        matches = YOUTUBE_URL_RE.findall(content)
+        for yt_url in matches:
+            try:
+                result = await create_short_url(
+                    original_url=yt_url,
+                    link_type="training_video",
+                    reference_id=None,
+                    user_id=user_id,
+                    metadata={"video_url": yt_url},
+                )
+                content = content.replace(yt_url, result["short_url"])
+            except Exception as e:
+                logger.warning(f"Failed to wrap video URL {yt_url}: {e}")
+        t["content"] = content
+    return templates
+
+
 @router.get("/{user_id}")
 async def get_templates(user_id: str):
     """Get all templates for a user (including org-level and defaults)"""
@@ -195,6 +222,9 @@ async def get_templates(user_id: str):
                 added += 1
         if added:
             logger.info(f"Auto-added {added} new default templates for user {user_id}")
+    
+    # Wrap YouTube URLs in training_video templates with tracked short URLs
+    templates = await _wrap_video_urls(templates, user_id)
     
     return templates
 
@@ -323,6 +353,7 @@ async def get_template_categories(user_id: str):
             {"id": "appointment", "name": "Appointment", "icon": "calendar"},
             {"id": "thank_you", "name": "Thank You", "icon": "heart"},
             {"id": "review", "name": "Review Request", "icon": "star"},
+            {"id": "training_video", "name": "Training Video", "icon": "play-circle"},
             {"id": "referral", "name": "Referral Request", "icon": "share"},
             {"id": "sold", "name": "Congratulations - Sold", "icon": "checkmark-circle"},
         ]

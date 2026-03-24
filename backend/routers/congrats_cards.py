@@ -340,6 +340,20 @@ async def get_all_store_templates(store_id: str):
             "text_color": t.get("text_color", defaults["text_color"]) if t else defaults["text_color"],
             "footer_text": t.get("footer_text", "") if t else "",
         })
+    # Include custom card types not in CARD_TYPE_DEFAULTS
+    congrats_defaults = CARD_TYPE_DEFAULTS["congrats"]
+    for card_type, t in template_map.items():
+        if card_type not in CARD_TYPE_DEFAULTS:
+            result.append({
+                "card_type": card_type,
+                "customized": True,
+                "headline": t.get("headline", congrats_defaults["headline"]),
+                "message": t.get("message", congrats_defaults["message"]),
+                "accent_color": t.get("accent_color", congrats_defaults["accent_color"]),
+                "background_color": t.get("background_color", congrats_defaults["background_color"]),
+                "text_color": t.get("text_color", congrats_defaults["text_color"]),
+                "footer_text": t.get("footer_text", ""),
+            })
     return result
 
 
@@ -470,7 +484,7 @@ async def create_congrats_card(
             timeout=30  # 30 second timeout for image processing + upload
         )
     except asyncio.TimeoutError:
-        logger.warning(f"[CongratsCard] Image upload timed out after 30s, using base64 fallback")
+        logger.warning("[CongratsCard] Image upload timed out after 30s, using base64 fallback")
         img_result = None
     except Exception as e:
         logger.warning(f"[CongratsCard] Image upload failed, using base64 fallback: {e}")

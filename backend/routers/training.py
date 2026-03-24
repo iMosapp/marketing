@@ -422,10 +422,23 @@ async def get_tracks(request: Request, role: Optional[str] = Query(None)):
     db = get_db()
     user_id = request.headers.get("X-User-ID")
 
-    # Auto-seed if no tracks exist
-    count = await db.training_tracks.count_documents({})
-    if count == 0:
-        await seed_training_content()
+    # Auto-seed missing tracks (not just when zero)
+    existing_slugs_cursor = db.training_tracks.find({}, {"slug": 1, "_id": 0})
+    existing_slugs = {doc["slug"] async for doc in existing_slugs_cursor}
+    seed_slugs = {t["slug"] for t in SEED_TRACKS}
+    missing = seed_slugs - existing_slugs
+    if missing:
+        for track_data in SEED_TRACKS:
+            if track_data["slug"] not in missing:
+                continue
+            td = {k: v for k, v in track_data.items() if k != "lessons"}
+            td["created_at"] = datetime.now(timezone.utc)
+            td["updated_at"] = datetime.now(timezone.utc)
+            result = await db.training_tracks.insert_one(td)
+            track_id = str(result.inserted_id)
+            for lesson in track_data.get("lessons", []):
+                lesson_copy = {**lesson, "track_id": track_id, "created_at": datetime.now(timezone.utc), "updated_at": datetime.now(timezone.utc)}
+                await db.training_lessons.insert_one(lesson_copy)
 
     query = {}
     # super_admin and admin see all tracks
