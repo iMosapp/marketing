@@ -846,6 +846,23 @@ async def run_monthly_health_reports_job():
         _scheduler_state["errors"] = (_scheduler_state["errors"] + [msg])[-20:]
 
 
+async def run_monthly_partner_invoices_job():
+    """Generate monthly invoices for all active white-label partners on the 1st."""
+    now = datetime.now(timezone.utc)
+    if now.day != 1:
+        return
+    logger.info("[Scheduler] Running monthly partner invoice generation...")
+    try:
+        from routers.partner_invoices import generate_monthly_invoices
+        result = await generate_monthly_invoices()
+        logger.info(f"[Scheduler] Monthly invoices: {result}")
+    except Exception as e:
+        msg = f"[Scheduler] Error in monthly invoice generation: {e}"
+        logger.error(msg)
+        _scheduler_state["errors"] = (_scheduler_state["errors"] + [msg])[-20:]
+
+
+
 async def process_sold_deliveries_job():
     """Wrapper for the scheduler — processes queued sold workflow deliveries."""
     logger.info("[Scheduler] Processing queued sold deliveries...")
@@ -946,8 +963,17 @@ def start_scheduler():
         misfire_grace_time=120,
     )
 
+    # Daily at 6 AM UTC on the 1st - generate monthly partner invoices
+    scheduler.add_job(
+        run_monthly_partner_invoices_job,
+        CronTrigger(day=1, hour=6, minute=30),
+        id="monthly_partner_invoices",
+        replace_existing=True,
+        misfire_grace_time=7200,
+    )
+
     scheduler.start()
-    logger.info("[Scheduler] Started with 9 jobs: daily_system_tasks (5:30 UTC), daily_lifecycle_scan (6:00 UTC), daily_report_delivery (7:00 UTC), daily_date_triggers (8:00 UTC), campaign_step_processor (every 15m), weekly_power_rankings (Mon 9:00 UTC), daily_recent_tag_expiry (4:00 UTC), monthly_health_reports (22:00 UTC), sold_delivery_processor (every 5m)")
+    logger.info("[Scheduler] Started with 10 jobs: daily_system_tasks (5:30 UTC), daily_lifecycle_scan (6:00 UTC), daily_report_delivery (7:00 UTC), daily_date_triggers (8:00 UTC), campaign_step_processor (every 15m), weekly_power_rankings (Mon 9:00 UTC), daily_recent_tag_expiry (4:00 UTC), monthly_health_reports (22:00 UTC), sold_delivery_processor (every 5m), monthly_partner_invoices (1st @ 6:30 UTC)")
 
 
 def stop_scheduler():
