@@ -167,13 +167,13 @@ async def get_master_feed(user_id: str, limit: int = 50, skip: int = 0):
     def classify_visual(evt_type, contact_info):
         if evt_type in PHOTO_EVENTS:
             return "photo_moment"
-        if evt_type in ENGAGEMENT_EVENTS:
-            return "engagement"
         if evt_type in MILESTONE_EVENTS:
             return "milestone"
-        # If the contact has a photo and this is a notable event, upgrade to photo
-        if contact_info.get("photo") and evt_type in ("digital_card_sent", "review_request_sent", "vcard_sent"):
+        # Any event where the contact has a photo → show it as a photo moment
+        if contact_info.get("photo"):
             return "photo_moment"
+        if evt_type in ENGAGEMENT_EVENTS:
+            return "engagement"
         return "text_event"
 
     # Format events with contact info
