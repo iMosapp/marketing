@@ -168,6 +168,28 @@ nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(20px);-webkit
 @media(max-width:768px){.stat-row-inner{grid-template-columns:1fr;gap:32px}.stat-cell .num{font-size:40px}}
 
 /* ============================================ */
+/* MY BRAND SECTION */
+/* ============================================ */
+.brand-sec{padding:120px 24px;background:#0A0A0F;position:relative;overflow:hidden}
+.brand-sec::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:1200px;height:600px;background:radial-gradient(ellipse,rgba(0,122,255,.04) 0%,transparent 60%);pointer-events:none}
+.brand-inner{max-width:1100px;margin:0 auto;position:relative}
+.brand-sec h2{font-size:44px;font-weight:900;color:#FFF;text-align:center;letter-spacing:-.03em;margin-bottom:12px}
+.brand-sec>div>p.brand-deck{text-align:center;color:rgba(255,255,255,.4);font-size:18px;max-width:640px;margin:0 auto 56px;line-height:1.65}
+.brand-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:48px}
+.brand-card{padding:32px 28px;border-radius:24px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);transition:all .35s}
+.brand-card:hover{border-color:rgba(201,169,98,.3);transform:translateY(-4px);background:rgba(255,255,255,.05)}
+.brand-card .bc-ico{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px}
+.brand-card h3{font-size:17px;font-weight:800;color:#FFF;margin-bottom:8px}
+.brand-card p{font-size:14px;color:rgba(255,255,255,.45);line-height:1.65}
+.brand-card .cta-pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.brand-card .cta-pills span{font-size:11px;font-weight:600;padding:4px 10px;border-radius:980px;border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5)}
+.brand-summary{display:flex;align-items:center;gap:24px;padding:32px 40px;border-radius:20px;border:1px solid rgba(201,169,98,.2);background:rgba(201,169,98,.04)}
+.brand-summary i{font-size:36px;color:var(--gold);flex-shrink:0}
+.brand-summary div h4{font-size:18px;font-weight:800;color:#FFF;margin-bottom:4px}
+.brand-summary div p{font-size:15px;color:rgba(255,255,255,.45);line-height:1.6;margin:0}
+@media(max-width:900px){.brand-grid{grid-template-columns:1fr}.brand-sec{padding:80px 24px}.brand-sec h2{font-size:32px}.brand-summary{flex-direction:column;text-align:center;padding:28px 24px}}
+
+/* ============================================ */
 /* SEO/AEO SECTION */
 /* ============================================ */
 .seo-section{padding:120px 24px;background:var(--bg-2)}
@@ -548,9 +570,9 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
     </div>
     <div class="feat-card rv rv-3">
       <div class="fc-ico" style="background:rgba(0,199,190,.08)"><i class="fa-regular fa-id-card" style="color:var(--teal)"></i></div>
-      <h3>Personal Digital Presence</h3>
-      <p>Every user gets an SEO-optimized profile page with contact info, reviews, social links, and a save-to-phone button. Shared instantly by text.</p>
-      <span class="fc-highlight">Their professional relationship hub.</span>
+      <h3>Your Complete Digital Brand</h3>
+      <p>Digital business cards, showcase pages, link pages, review pages, and congrats cards &mdash; everything a salesperson needs to look professional and share instantly.</p>
+      <span class="fc-highlight">See the full breakdown below.</span>
     </div>
     <div class="feat-card rv rv-1">
       <div class="fc-ico" style="background:rgba(255,149,0,.08)"><i class="fa-solid fa-rocket" style="color:var(--orange)"></i></div>
@@ -569,6 +591,73 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
       <h3>Congrats Cards</h3>
       <p>A beautiful, branded photo card is sent to the customer the moment a sale closes. The salesperson looks incredible. The customer is thrilled.</p>
       <span class="fc-highlight">The shareable moment that starts it all.</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===================================================================== -->
+<!-- MY BRAND: Everything They Get -->
+<!-- ===================================================================== -->
+<section class="brand-sec">
+  <div class="brand-inner">
+    <h2 class="rv">Your Brand. Ready to Share. Everywhere.</h2>
+    <p class="brand-deck rv">Every salesperson gets a complete digital presence out of the box &mdash; professional collateral they can share with any customer in seconds. No designer needed. No extra tools. This is "My Brand."</p>
+    <div class="brand-grid">
+      <div class="brand-card rv rv-1">
+        <div class="bc-ico" style="background:rgba(0,122,255,.1)"><i class="fa-regular fa-id-card" style="color:var(--blue)"></i></div>
+        <h3>Digital Business Card</h3>
+        <p>A shareable, interactive card with every way to connect. One tap and the customer has everything they need.</p>
+        <div class="cta-pills">
+          <span>Call</span><span>Text</span><span>Email</span><span>Save Contact</span><span>Directions</span><span>Leave a Review</span><span>Social Links</span>
+        </div>
+      </div>
+      <div class="brand-card rv rv-2">
+        <div class="bc-ico" style="background:rgba(52,199,89,.1)"><i class="fa-solid fa-user-astronaut" style="color:var(--green)"></i></div>
+        <h3>Showcase Page</h3>
+        <p>A full personal landing page &mdash; their profile, bio, reviews, social links, and media &mdash; all SEO-indexed and shareable by link.</p>
+        <div class="cta-pills">
+          <span>Photo &amp; Bio</span><span>Reviews</span><span>Social Media</span><span>Contact Info</span><span>SEO Indexed</span>
+        </div>
+      </div>
+      <div class="brand-card rv rv-3">
+        <div class="bc-ico" style="background:rgba(201,169,98,.1)"><i class="fa-solid fa-link" style="color:var(--gold)"></i></div>
+        <h3>Link Page</h3>
+        <p>A branded link-in-bio page they can drop in any social profile. Every important link in one clean, trackable destination.</p>
+        <div class="cta-pills">
+          <span>Social Profiles</span><span>Website</span><span>Reviews</span><span>Card Link</span><span>Custom Links</span>
+        </div>
+      </div>
+      <div class="brand-card rv rv-1">
+        <div class="bc-ico" style="background:rgba(255,214,10,.1)"><i class="fa-regular fa-star" style="color:#D4AD00"></i></div>
+        <h3>Personal Review Page</h3>
+        <p>A portable reputation page that follows them wherever they go. Customers leave reviews tied to the salesperson, not just the business.</p>
+        <div class="cta-pills">
+          <span>Star Rating</span><span>Written Reviews</span><span>Shareable Link</span><span>Google-Ready</span>
+        </div>
+      </div>
+      <div class="brand-card rv rv-2">
+        <div class="bc-ico" style="background:rgba(255,45,85,.1)"><i class="fa-regular fa-image" style="color:var(--pink)"></i></div>
+        <h3>Congrats Cards</h3>
+        <p>A branded photo card sent instantly when a sale closes. The customer shares it, the salesperson looks incredible, and the dealership gets free exposure.</p>
+        <div class="cta-pills">
+          <span>Delivery Photo</span><span>Custom Branding</span><span>Auto-Generated</span><span>Shareable</span>
+        </div>
+      </div>
+      <div class="brand-card rv rv-3">
+        <div class="bc-ico" style="background:rgba(255,149,0,.1)"><i class="fa-solid fa-store" style="color:var(--orange)"></i></div>
+        <h3>Store Review Page</h3>
+        <p>Every location gets a dedicated review hub that feeds Google and builds local search authority. Managed automatically through the platform.</p>
+        <div class="cta-pills">
+          <span>Location-Specific</span><span>Google Indexed</span><span>QR Code Ready</span><span>Aggregated</span>
+        </div>
+      </div>
+    </div>
+    <div class="brand-summary rv">
+      <i class="fa-solid fa-rocket"></i>
+      <div>
+        <h4>One tap to share. Zero learning curve.</h4>
+        <p>Every piece of collateral is pre-built and personalized. Salespeople send a card, share their showcase, or drop their link page &mdash; and instantly look like a social media expert. The system does the work. They get the credit.</p>
+      </div>
     </div>
   </div>
 </section>
