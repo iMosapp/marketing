@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Image,
+  View, Text, FlatList, ScrollView, TouchableOpacity, StyleSheet, Image,
   ActivityIndicator, RefreshControl, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -10,40 +10,6 @@ import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import api from '../../services/api';
-import { EVENT_TYPE_LABELS, getEventLabel } from '../../utils/eventTypes';
-
-const CHANNEL_LABELS: Record<string, string> = {
-  sms: 'SMS',
-  sms_personal: 'SMS',
-  whatsapp: 'WhatsApp',
-  messenger: 'Messenger',
-  telegram: 'Telegram',
-  linkedin: 'LinkedIn',
-  email: 'Email',
-  clipboard: 'Copied',
-};
-
-const CHANNEL_ICONS: Record<string, string> = {
-  sms: 'chatbubble-ellipses',
-  sms_personal: 'chatbubble-ellipses',
-  whatsapp: 'logo-whatsapp',
-  messenger: 'logo-facebook',
-  telegram: 'paper-plane',
-  linkedin: 'logo-linkedin',
-  email: 'mail',
-  clipboard: 'copy',
-};
-
-const CHANNEL_COLORS: Record<string, string> = {
-  sms: '#34C759',
-  sms_personal: '#34C759',
-  whatsapp: '#25D366',
-  messenger: '#0084FF',
-  telegram: '#0088CC',
-  linkedin: '#0A66C2',
-  email: '#FF9500',
-  clipboard: '#8E8E93',
-};
 
 const formatFeedTime = (ts: string) => {
   if (!ts) return '';
@@ -69,9 +35,230 @@ const getDateLabel = (ts: string) => {
   const days = Math.round((nowDay.getTime() - evtDay.getTime()) / 86400000);
   if (days === 0) return 'Today';
   if (days === 1) return 'Yesterday';
-  if (days < 7) return `${days} days ago`;
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  if (days < 7) return d.toLocaleDateString(undefined, { weekday: 'long' });
+  return d.toLocaleDateString(undefined, { month: 'long', day: 'numeric' });
 };
+
+const ENGAGEMENT_LABELS: Record<string, string> = {
+  digital_card_viewed: 'viewed your digital card',
+  showcase_viewed: 'viewed your showcase',
+  link_page_viewed: 'visited your link page',
+  link_clicked: 'clicked your link',
+  review_link_clicked: 'clicked your review link',
+  congrats_card_viewed: 'opened your congrats card',
+  review_page_viewed: 'viewed your review page',
+  training_video_clicked: 'watched a training video',
+};
+
+const MILESTONE_ICONS: Record<string, { icon: string; color: string; label: string }> = {
+  new_contact_added: { icon: 'person-add', color: '#007AFF', label: 'New relationship started' },
+  campaign_enrolled: { icon: 'rocket', color: '#AF52DE', label: 'Campaign launched' },
+  review_submitted: { icon: 'star', color: '#FFD60A', label: 'Review received' },
+  referral_made: { icon: 'people', color: '#34C759', label: 'Referral connection' },
+};
+
+// ── Photo Moment Card (large, Instagram-style) ──
+const PhotoMomentCard = ({ item, colors, router }: any) => {
+  const contact = item.contact || {};
+  const photoUri = contact.photo;
+  const hasPhoto = !!photoUri;
+
+  return (
+    <TouchableOpacity
+      style={[s.photoCard, { backgroundColor: colors.card }]}
+      onPress={() => contact.id && router.push(`/contact/${contact.id}` as any)}
+      activeOpacity={0.85}
+      data-testid="feed-photo-card"
+    >
+      {/* Header: avatar + name + time */}
+      <View style={s.photoHeader}>
+        <View style={s.photoHeaderLeft}>
+          {photoUri ? (
+            Platform.OS === 'web' ? (
+              <View style={s.smallAvatar}>
+                <img src={photoUri} style={{ width: 36, height: 36, borderRadius: 18, objectFit: 'cover', display: 'block' }} loading="lazy" />
+              </View>
+            ) : (
+              <Image source={{ uri: photoUri }} style={s.smallAvatar} />
+            )
+          ) : (
+            <View style={[s.smallAvatarPlaceholder, { backgroundColor: (item.color || '#C9A962') + '18' }]}>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: item.color || '#C9A962' }}>{contact.name?.[0] || '?'}</Text>
+            </View>
+          )}
+          <View>
+            <Text style={[s.photoName, { color: colors.text }]} numberOfLines={1}>{contact.name || 'Customer'}</Text>
+            <Text style={[s.photoTime, { color: colors.textTertiary }]}>{formatFeedTime(item.timestamp)}</Text>
+          </View>
+        </View>
+        <View style={[s.eventBadge, { backgroundColor: (item.color || '#C9A962') + '15' }]}>
+          <Ionicons name={(item.icon || 'camera') as any} size={14} color={item.color || '#C9A962'} />
+        </View>
+      </View>
+
+      {/* Photo area */}
+      {hasPhoto ? (
+        <View style={s.photoImage}>
+          {Platform.OS === 'web' ? (
+            <img src={photoUri} style={{ width: '100%', height: 280, objectFit: 'cover', borderRadius: 12, display: 'block' }} loading="lazy" />
+          ) : (
+            <Image source={{ uri: photoUri }} style={{ width: '100%', height: 280, borderRadius: 12 }} resizeMode="cover" />
+          )}
+        </View>
+      ) : (
+        <View style={[s.photoPlaceholder, { backgroundColor: (item.color || '#C9A962') + '08' }]}>
+          <Ionicons name={(item.icon || 'camera') as any} size={36} color={(item.color || '#C9A962') + '40'} />
+        </View>
+      )}
+
+      {/* Caption */}
+      <View style={s.photoCaption}>
+        <Text style={[s.photoCaptionTitle, { color: colors.text }]}>{item.title}</Text>
+        {item.description ? (
+          <Text style={[s.photoCaptionDesc, { color: colors.textSecondary }]} numberOfLines={2}>{item.description}</Text>
+        ) : null}
+        {contact.vehicle ? (
+          <View style={[s.vehicleTag, { backgroundColor: colors.surface }]}>
+            <Ionicons name="car-sport" size={12} color={colors.textTertiary} />
+            <Text style={[s.vehicleText, { color: colors.textTertiary }]}>{contact.vehicle}</Text>
+          </View>
+        ) : null}
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+// ── Engagement Card (what customers are clicking/viewing) ──
+const EngagementCard = ({ item, colors, router }: any) => {
+  const contact = item.contact || {};
+  const photoUri = contact.photo;
+  const engagementLabel = ENGAGEMENT_LABELS[item.event_type] || item.title;
+
+  return (
+    <TouchableOpacity
+      style={[s.engagementCard, { backgroundColor: colors.card }]}
+      onPress={() => contact.id && router.push(`/contact/${contact.id}` as any)}
+      activeOpacity={0.8}
+      data-testid="feed-engagement-card"
+    >
+      <View style={[s.engagementStripe, { backgroundColor: item.color || '#007AFF' }]} />
+      <View style={s.engagementBody}>
+        <View style={s.engagementLeft}>
+          {photoUri ? (
+            Platform.OS === 'web' ? (
+              <View style={s.engagementAvatar}>
+                <img src={photoUri} style={{ width: 44, height: 44, borderRadius: 22, objectFit: 'cover', display: 'block' }} loading="lazy" />
+              </View>
+            ) : (
+              <Image source={{ uri: photoUri }} style={s.engagementAvatar} />
+            )
+          ) : (
+            <View style={[s.engagementAvatarPlaceholder, { backgroundColor: (item.color || '#007AFF') + '15' }]}>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: item.color || '#007AFF' }}>{contact.name?.[0] || '?'}</Text>
+            </View>
+          )}
+        </View>
+        <View style={s.engagementContent}>
+          <Text style={[s.engagementName, { color: colors.text }]} numberOfLines={1}>
+            {contact.name || 'Someone'}{' '}
+            <Text style={[s.engagementAction, { color: colors.textSecondary }]}>{engagementLabel}</Text>
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }}>
+            <Ionicons name={(item.icon || 'eye') as any} size={13} color={item.color || '#007AFF'} />
+            <Text style={[s.engagementTime, { color: colors.textTertiary }]}>{formatFeedTime(item.timestamp)}</Text>
+          </View>
+        </View>
+        <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+// ── Milestone Card (special marker) ──
+const MilestoneCard = ({ item, colors, router }: any) => {
+  const contact = item.contact || {};
+  const info = MILESTONE_ICONS[item.event_type] || { icon: 'flag', color: '#C9A962', label: item.title };
+
+  return (
+    <TouchableOpacity
+      style={[s.milestoneCard, { borderColor: info.color + '25' }]}
+      onPress={() => contact.id && router.push(`/contact/${contact.id}` as any)}
+      activeOpacity={0.8}
+      data-testid="feed-milestone-card"
+    >
+      <View style={[s.milestoneIcon, { backgroundColor: info.color + '12' }]}>
+        <Ionicons name={info.icon as any} size={20} color={info.color} />
+      </View>
+      <View style={s.milestoneContent}>
+        <Text style={[s.milestoneLabel, { color: info.color }]}>{info.label}</Text>
+        <Text style={[s.milestoneName, { color: colors.text }]}>{contact.name || 'New Contact'}</Text>
+        {item.description ? (
+          <Text style={[s.milestoneDesc, { color: colors.textTertiary }]} numberOfLines={1}>{item.description}</Text>
+        ) : null}
+      </View>
+      <Text style={[s.milestoneTime, { color: colors.textTertiary }]}>{formatFeedTime(item.timestamp)}</Text>
+    </TouchableOpacity>
+  );
+};
+
+// ── Text Event Card (compact, for messages/tasks) ──
+const TextEventCard = ({ item, colors, router }: any) => {
+  const contact = item.contact || {};
+  const photoUri = contact.photo;
+  const isInbound = item.is_inbound;
+
+  return (
+    <TouchableOpacity
+      style={[s.textCard, { backgroundColor: colors.card }]}
+      onPress={() => contact.id && router.push(`/contact/${contact.id}` as any)}
+      activeOpacity={0.8}
+      data-testid="feed-text-card"
+    >
+      <View style={s.textAvatarWrap}>
+        {photoUri ? (
+          Platform.OS === 'web' ? (
+            <View style={s.textAvatar}>
+              <img src={photoUri} style={{ width: 44, height: 44, borderRadius: 12, objectFit: 'cover', display: 'block' }} loading="lazy" />
+            </View>
+          ) : (
+            <Image source={{ uri: photoUri }} style={s.textAvatar} />
+          )
+        ) : (
+          <View style={[s.textAvatarPlaceholder, { backgroundColor: colors.surface }]}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textTertiary }}>{contact.name?.[0] || '?'}</Text>
+          </View>
+        )}
+        <View style={[s.textIconBadge, { backgroundColor: item.color || '#8E8E93', borderColor: colors.card }]}>
+          <Ionicons name={(item.icon || 'flag') as any} size={10} color="#FFF" />
+        </View>
+      </View>
+      <View style={s.textContent}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Text style={[s.textName, { color: colors.text }]} numberOfLines={1}>{contact.name || 'Unknown'}</Text>
+          {isInbound && (
+            <View style={s.inboundBadge}><Text style={s.inboundText}>INBOUND</Text></View>
+          )}
+        </View>
+        <Text style={[s.textTitle, { color: colors.textSecondary }, isInbound && { color: '#30D158' }]} numberOfLines={1}>
+          {isInbound ? `"${item.description}"` : item.title}
+        </Text>
+        {!isInbound && item.description && item.description !== item.title ? (
+          <Text style={[s.textDesc, { color: colors.textTertiary }]} numberOfLines={1}>{item.description}</Text>
+        ) : null}
+      </View>
+      <Text style={[s.textTime, { color: colors.textTertiary }]}>{formatFeedTime(item.timestamp)}</Text>
+    </TouchableOpacity>
+  );
+};
+
+// ── Filter Chips ──
+const FILTERS = [
+  { key: 'all', label: 'All', icon: 'pulse' },
+  { key: 'engagement', label: 'Engagement', icon: 'eye' },
+  { key: 'photo_moment', label: 'Photos', icon: 'camera' },
+  { key: 'milestone', label: 'Milestones', icon: 'flag' },
+  { key: 'text_event', label: 'Messages', icon: 'chatbubble' },
+];
 
 export default function ActivityTab() {
   const { colors } = useThemeStore();
@@ -82,7 +269,8 @@ export default function ActivityTab() {
   const [feed, setFeed] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [, setTick] = useState(0); // Force re-render for timestamps
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [, setTick] = useState(0);
 
   const loadFeed = useCallback(async () => {
     if (!userId) return;
@@ -98,14 +286,12 @@ export default function ActivityTab() {
 
   useEffect(() => { loadFeed(); }, [loadFeed]);
 
-  // Auto-refresh every 30 seconds
   useEffect(() => {
     if (!userId) return;
     const interval = setInterval(() => { loadFeed(); }, 30000);
     return () => clearInterval(interval);
   }, [userId, loadFeed]);
 
-  // Refresh timestamps every 60 seconds
   useEffect(() => {
     const interval = setInterval(() => setTick(t => t + 1), 60000);
     return () => clearInterval(interval);
@@ -118,182 +304,192 @@ export default function ActivityTab() {
     setRefreshing(false);
   };
 
-  // Build flat list data with section headers
-  const listData = React.useMemo(() => {
+  // Filter feed
+  const filteredFeed = activeFilter === 'all'
+    ? feed
+    : feed.filter(item => item.visual_type === activeFilter);
+
+  // Group by date
+  const groupedData = React.useMemo(() => {
     const items: any[] = [];
     let lastLabel = '';
-    for (const item of feed) {
+    for (const item of filteredFeed) {
       const label = getDateLabel(item.timestamp);
       if (label !== lastLabel) {
-        items.push({ _type: 'header', label, count: feed.filter(f => getDateLabel(f.timestamp) === label).length });
+        items.push({ _type: 'date_header', label });
         lastLabel = label;
       }
       items.push({ _type: 'event', ...item });
     }
     return items;
-  }, [feed]);
+  }, [filteredFeed]);
 
-  const renderItem = useCallback(({ item }: { item: any }) => {
-    if (item._type === 'header') {
-      return (
-        <View style={s.dateLabelRow}>
-          <View style={[s.dateLine, { backgroundColor: colors.border }]} />
-          <Text style={[s.dateLabel, { color: colors.textTertiary }]}>{item.label}</Text>
-          <View style={[s.dateBadge, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[s.dateBadgeText, { color: colors.textTertiary }]}>{item.count}</Text>
-          </View>
-          <View style={[s.dateLine, { backgroundColor: colors.border }]} />
-        </View>
-      );
-    }
-
-    const isInbound = item.is_inbound;
-    const evtLabel = getEventLabel(item.event_type) || item.title || 'Activity';
-    const photoUri = item.contact?.photo;
-    const channelName = CHANNEL_LABELS[item.channel] || '';
-
-    return (
-      <TouchableOpacity
-        style={[s.eventCard, { backgroundColor: colors.card }]}
-        onPress={() => item.contact?.id && router.push(`/contact/${item.contact.id}` as any)}
-        activeOpacity={0.7}
-        data-testid={`activity-event-item`}
-      >
-        <View style={s.avatarGroup}>
-          {photoUri ? (
-            Platform.OS === 'web' ? (
-              <View style={s.eventAvatar}>
-                <img
-                  src={photoUri}
-                  style={{ width: 52, height: 52, borderRadius: 14, objectFit: 'cover', display: 'block' }}
-                  loading="lazy"
-                />
-              </View>
-            ) : (
-              <Image source={{ uri: photoUri }} style={s.eventAvatar} />
-            )
-          ) : (
-            <View style={[s.eventAvatarPlaceholder, { backgroundColor: colors.border }]}>
-              <Text style={[s.eventAvatarText, { color: colors.textTertiary }]}>{item.contact?.name?.[0] || '?'}</Text>
-            </View>
-          )}
-          <View style={[s.eventIconBadge, { backgroundColor: item.color || '#007AFF', borderColor: colors.card }]}>
-            <Ionicons name={(item.icon || 'flag') as any} size={12} color="#FFF" />
-          </View>
-        </View>
-        <View style={s.eventContent}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={[s.eventName, { color: colors.text }]} numberOfLines={1}>{item.contact?.name || 'Unknown'}</Text>
-            {isInbound && <View style={s.inboundBadge}><Text style={s.inboundText}>INBOUND</Text></View>}
-            {item.contact?.tags?.slice(0, 2).map((t: string, ti: number) => (
-              <View key={ti} style={[s.miniTag, { backgroundColor: colors.border }]}><Text style={[s.miniTagText, { color: colors.textTertiary }]}>{t}</Text></View>
-            ))}
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={[s.eventTitle, { color: colors.textSecondary }, isInbound && { color: '#30D158' }]}>
-              {isInbound ? `"${item.description}"` : evtLabel}
-            </Text>
-            {channelName ? (
-              <View style={[s.channelBadge, { backgroundColor: (CHANNEL_COLORS[item.channel] || '#8E8E93') + '20' }]} data-testid={`channel-badge-${item.channel}`}>
-                <Ionicons name={(CHANNEL_ICONS[item.channel] || 'share-outline') as any} size={10} color={CHANNEL_COLORS[item.channel] || '#8E8E93'} />
-                <Text style={[s.channelBadgeText, { color: CHANNEL_COLORS[item.channel] || '#8E8E93' }]}>{channelName}</Text>
-              </View>
-            ) : null}
-          </View>
-          {!isInbound && item.description && item.description !== evtLabel && (
-            <Text style={[s.eventDesc, { color: colors.textTertiary }]} numberOfLines={2}>{item.description}</Text>
-          )}
-        </View>
-        <View style={{ alignItems: 'flex-end' }}>
-          <Text style={[s.eventTime, { color: colors.textTertiary }]}>{formatFeedTime(item.timestamp)}</Text>
-          <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} style={{ marginTop: 4 }} />
-        </View>
-      </TouchableOpacity>
-    );
-  }, [colors, router]);
+  const photoCount = feed.filter(f => f.visual_type === 'photo_moment').length;
 
   if (loading) {
     return (
-      <SafeAreaView style={[s.container, { backgroundColor: colors.bg }]}>
+      <View style={[s.container, { backgroundColor: colors.bg }]}>
         <ActivityIndicator size="large" color="#C9A962" style={{ marginTop: 60 }} />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={[s.container, { backgroundColor: colors.bg }]} edges={['top']}>
+    <View style={[s.container, { backgroundColor: colors.bg }]}>
+      {/* Header */}
       <View style={s.header}>
-        <Text style={[s.headerTitle, { color: colors.text }]}>Activity</Text>
-        <Text style={[s.headerSubtitle, { color: colors.textTertiary }]}>{feed.length} event{feed.length !== 1 ? 's' : ''} across all contacts</Text>
+        <View>
+          <Text style={[s.headerTitle, { color: colors.text }]} data-testid="activity-header">Activity</Text>
+          <Text style={[s.headerSubtitle, { color: colors.textTertiary }]}>Your relationship feed</Text>
+        </View>
+        {engagementCount > 0 && (
+          <View style={[s.headerStat, { backgroundColor: '#34C75915' }]}>
+            <Ionicons name="eye" size={14} color="#34C759" />
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#34C759' }}>{engagementCount}</Text>
+          </View>
+        )}
       </View>
 
-      <ScrollView
-        style={s.scrollContainer}
-        contentContainerStyle={s.scroll}
+      {/* Feed */}
+      <FlatList
+        data={[{ _type: 'filters' }, ...groupedData]}
+        keyExtractor={(item, idx) => `${item._type}-${(item as any).event_type || (item as any).label || 'f'}-${idx}`}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#C9A962" />}
         showsVerticalScrollIndicator={false}
-      >
-        {listData.length === 0 ? (
+        contentContainerStyle={{ paddingBottom: 40 }}
+        style={{ flex: 1 }}
+        ListEmptyComponent={
           <View style={s.empty}>
-            <Ionicons name="pulse-outline" size={48} color={colors.surface} />
+            <View style={[s.emptyIcon, { backgroundColor: colors.surface }]}>
+              <Ionicons name="pulse-outline" size={32} color={colors.textTertiary} />
+            </View>
             <Text style={[s.emptyText, { color: colors.textSecondary }]}>No activity yet</Text>
-            <Text style={[s.emptySubtext, { color: colors.textTertiary }]}>Send a message or card to get started</Text>
+            <Text style={[s.emptySubtext, { color: colors.textTertiary }]}>Share your card or send a message to get started</Text>
           </View>
-        ) : (
-          listData.map((item, idx) => (
-            <React.Fragment key={item._type === 'header' ? `hdr-${item.label}` : `evt-${idx}`}>
-              {renderItem({ item })}
-            </React.Fragment>
-          ))
-        )}
-      </ScrollView>
-    </SafeAreaView>
+        }
+        renderItem={({ item }) => {
+          if (item._type === 'filters') {
+            return (
+              <View style={{ height: 40, marginBottom: 4 }}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', paddingHorizontal: 12, alignItems: 'center' }}>
+                  {FILTERS.map((f, i) => {
+                  const isActive = activeFilter === f.key;
+                  return (
+                    <TouchableOpacity
+                      key={f.key}
+                      onPress={() => setActiveFilter(f.key)}
+                      style={{
+                        flexDirection: 'row', alignItems: 'center',
+                        paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1,
+                        marginRight: i < FILTERS.length - 1 ? 8 : 0,
+                        backgroundColor: isActive ? '#C9A962' : colors.card,
+                        borderColor: isActive ? '#C9A962' : colors.border,
+                      }}
+                    >
+                      <Ionicons name={f.icon as any} size={14} color={isActive ? '#000' : colors.textSecondary} style={{ marginRight: 5 }} />
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: isActive ? '#000' : colors.textSecondary }}>{f.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            );
+          }
+          if (item._type === 'date_header') {
+            return (
+              <View style={s.dateLabelRow}>
+                <View style={[s.dateLine, { backgroundColor: colors.border }]} />
+                <Text style={[s.dateLabel, { color: colors.textTertiary }]}>{item.label}</Text>
+                <View style={[s.dateLine, { backgroundColor: colors.border }]} />
+              </View>
+            );
+          }
+          const vt = item.visual_type || 'text_event';
+          if (vt === 'photo_moment') return <PhotoMomentCard item={item} colors={colors} router={router} />;
+          if (vt === 'engagement') return <EngagementCard item={item} colors={colors} router={router} />;
+          if (vt === 'milestone') return <MilestoneCard item={item} colors={colors} router={router} />;
+          return <TextEventCard item={item} colors={colors} router={router} />;
+        }}
+      />
+
+    </View>
   );
 }
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  header: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 },
   headerTitle: { fontSize: 28, fontWeight: '800' },
-  headerSubtitle: { fontSize: 15, marginTop: 2 },
+  headerSubtitle: { fontSize: 14, marginTop: 2 },
+  headerStat: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, marginTop: 4 },
+
+  // Filter chips
+  filterRow: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, paddingBottom: 10, gap: 8, alignItems: 'flex-start' },
+  filterChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1, alignSelf: 'flex-start' },
+  filterText: { fontSize: 13, fontWeight: '600' },
+
   scrollContainer: { flex: 1 },
   scroll: { paddingBottom: 0 },
 
-  // Date groups
-  dateLabelRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, gap: 12 },
+  // Date headers
+  dateLabelRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12 },
   dateLine: { flex: 1, height: 1 },
-  dateLabel: { fontSize: 14, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1 },
-  dateBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, borderWidth: 1 },
-  dateBadgeText: { fontSize: 12, fontWeight: '700' },
+  dateLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.2 },
 
-  // Event cards — LARGER tiles
-  eventCard: {
-    flexDirection: 'row', alignItems: 'center', marginHorizontal: 12, marginBottom: 6,
-    borderRadius: 16, padding: 16,
-  },
-  avatarGroup: { position: 'relative', marginRight: 14 },
-  eventAvatar: { width: 52, height: 52, borderRadius: 14, borderWidth: 1 },
-  eventAvatarPlaceholder: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  eventAvatarText: { fontSize: 19, fontWeight: '700' },
-  eventIconBadge: {
-    position: 'absolute', bottom: -3, right: -3,
-    width: 22, height: 22, borderRadius: 11,
-    alignItems: 'center', justifyContent: 'center', borderWidth: 2,
-  },
-  eventContent: { flex: 1 },
-  eventName: { fontSize: 18, fontWeight: '700' },
-  eventTitle: { fontSize: 16, marginTop: 2, fontWeight: '500' },
-  eventDesc: { fontSize: 15, marginTop: 2, lineHeight: 18 },
-  eventTime: { fontSize: 14, fontWeight: '500' },
+  // ── Photo Moment Card ──
+  photoCard: { marginHorizontal: 12, marginBottom: 12, borderRadius: 20, overflow: 'hidden' },
+  photoHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingTop: 14, paddingBottom: 10 },
+  photoHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  smallAvatar: { width: 36, height: 36, borderRadius: 18 },
+  smallAvatarPlaceholder: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  photoName: { fontSize: 15, fontWeight: '700' },
+  photoTime: { fontSize: 12 },
+  eventBadge: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  photoImage: { paddingHorizontal: 12 },
+  photoPlaceholder: { marginHorizontal: 12, height: 160, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  photoCaption: { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 14 },
+  photoCaptionTitle: { fontSize: 15, fontWeight: '700' },
+  photoCaptionDesc: { fontSize: 14, marginTop: 3, lineHeight: 19 },
+  vehicleTag: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 8, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, alignSelf: 'flex-start' },
+  vehicleText: { fontSize: 12, fontWeight: '600' },
+
+  // ── Engagement Card ──
+  engagementCard: { marginHorizontal: 12, marginBottom: 6, borderRadius: 14, overflow: 'hidden', flexDirection: 'row' },
+  engagementStripe: { width: 3 },
+  engagementBody: { flex: 1, flexDirection: 'row', alignItems: 'center', padding: 12, gap: 12 },
+  engagementLeft: {},
+  engagementAvatar: { width: 44, height: 44, borderRadius: 22 },
+  engagementAvatarPlaceholder: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  engagementContent: { flex: 1 },
+  engagementName: { fontSize: 15, fontWeight: '700' },
+  engagementAction: { fontWeight: '400', fontSize: 14 },
+  engagementTime: { fontSize: 12 },
+
+  // ── Milestone Card ──
+  milestoneCard: { marginHorizontal: 12, marginBottom: 8, borderRadius: 14, borderWidth: 1, flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12, borderStyle: 'dashed' },
+  milestoneIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  milestoneContent: { flex: 1 },
+  milestoneLabel: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+  milestoneName: { fontSize: 16, fontWeight: '700', marginTop: 2 },
+  milestoneDesc: { fontSize: 13, marginTop: 2 },
+  milestoneTime: { fontSize: 12 },
+
+  // ── Text Event Card ──
+  textCard: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 12, marginBottom: 4, borderRadius: 14, padding: 12, gap: 12 },
+  textAvatarWrap: { position: 'relative' },
+  textAvatar: { width: 44, height: 44, borderRadius: 12 },
+  textAvatarPlaceholder: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  textIconBadge: { position: 'absolute', bottom: -2, right: -2, width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
+  textContent: { flex: 1 },
+  textName: { fontSize: 15, fontWeight: '700' },
+  textTitle: { fontSize: 14, marginTop: 1 },
+  textDesc: { fontSize: 13, marginTop: 1 },
+  textTime: { fontSize: 12 },
   inboundBadge: { backgroundColor: '#30D15820', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 },
   inboundText: { fontSize: 9, fontWeight: '700', color: '#30D158' },
-  miniTag: { paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 },
-  miniTagText: { fontSize: 9, fontWeight: '600' },
-  channelBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
-  channelBadgeText: { fontSize: 12, fontWeight: '700' },
 
   // Empty
-  empty: { alignItems: 'center', paddingVertical: 60 },
-  emptyText: { fontSize: 19, marginTop: 10, fontWeight: '600' },
-  emptySubtext: { fontSize: 15, marginTop: 4 },
+  empty: { alignItems: 'center', paddingVertical: 80 },
+  emptyIcon: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  emptyText: { fontSize: 18, fontWeight: '700' },
+  emptySubtext: { fontSize: 14, marginTop: 4, textAlign: 'center', paddingHorizontal: 40 },
 });

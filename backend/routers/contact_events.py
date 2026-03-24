@@ -148,6 +148,34 @@ async def get_master_feed(user_id: str, limit: int = 50, skip: int = 0):
             except Exception:
                 pass
 
+    # Classify visual type for social-feed rendering
+    PHOTO_EVENTS = {
+        "congrats_card_sent", "birthday_card_sent", "anniversary_card_sent",
+        "holiday_card_sent", "thank_you_card_sent", "thankyou_card_sent",
+        "welcome_card_sent", "delivery_photo",
+    }
+    ENGAGEMENT_EVENTS = {
+        "digital_card_viewed", "showcase_viewed", "link_page_viewed",
+        "link_clicked", "review_link_clicked", "congrats_card_viewed",
+        "review_page_viewed", "training_video_clicked",
+    }
+    MILESTONE_EVENTS = {
+        "new_contact_added", "campaign_enrolled", "review_submitted",
+        "referral_made",
+    }
+
+    def classify_visual(evt_type, contact_info):
+        if evt_type in PHOTO_EVENTS:
+            return "photo_moment"
+        if evt_type in ENGAGEMENT_EVENTS:
+            return "engagement"
+        if evt_type in MILESTONE_EVENTS:
+            return "milestone"
+        # If the contact has a photo and this is a notable event, upgrade to photo
+        if contact_info.get("photo") and evt_type in ("digital_card_sent", "review_request_sent", "vcard_sent"):
+            return "photo_moment"
+        return "text_event"
+
     # Format events with contact info
     feed_items = []
     for evt in recent_events:
@@ -159,9 +187,11 @@ async def get_master_feed(user_id: str, limit: int = 50, skip: int = 0):
         # Always derive title from centralized event type labels (fixes old data with wrong titles)
         evt_type = evt.get("event_type", "custom")
         derived_title = get_event_label(evt_type)
+        visual_type = classify_visual(evt_type, contact_info)
         feed_items.append({
             "type": "event",
             "event_type": evt_type,
+            "visual_type": visual_type,
             "title": derived_title,
             "description": evt.get("description", ""),
             "icon": evt.get("icon", "flag"),
