@@ -13,7 +13,13 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### Thread 500 + Inbox Tap Navigation Fix (Mar 24, 2026) -- LATEST
+### Training Video Tracking + Card Templates Fix (Mar 24, 2026) -- LATEST
+- **Training Hub Auto-Seed Fix:** Changed the `/api/training/tracks` endpoint to auto-seed *missing* tracks (not just when DB is empty). This ensures the 8 onboarding videos are always discoverable even if other tracks were already created.
+- **Video Click Tracking:** Training video templates now use tracked short URLs (via the existing `/api/s/` system) instead of raw YouTube links. When a contact clicks a video link sent via SMS, the click is logged to their activity feed with `training_video_clicked` event type. Engagement score weight of 3 is applied.
+- **Card Templates Bug Fix:** Custom card types (created via the "+" button on the Card Templates page) were being saved but not returned in the list. The `GET /api/congrats/templates/all/{store_id}` endpoint only iterated over `CARD_TYPE_DEFAULTS` (6 built-in types). Fixed to also include any custom card types stored in the DB.
+- **Template Categories:** Added `training_video` to the backend categories list endpoint.
+
+### Thread 500 + Inbox Tap Navigation Fix (Mar 24, 2026)
 - **Thread 500 Fix:** Message thread endpoint used `m['content']`, `m['sender']`, `m['timestamp']` without `.get()`. Missing fields in production messages caused 500.
 - **Inbox Tap Fix:** `WebSwipeableItem` permanently blocked taps. Removed `pointerEvents: 'none'` hack, deferred `isDragging` to actual movement, added `wasRecentSwipe()` guard.
 
@@ -108,7 +114,6 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Refactor large files (admin.py 3700+ lines)
 
 ## Known Issues
-- P2: React Hydration Error #418
 - P2: Mobile tags sync
 - P2: Leaderboard toggle not fully tested
 
