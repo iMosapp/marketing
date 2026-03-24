@@ -18,6 +18,10 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - Manual now reflects all features built over the last several sessions (partner billing, training reports, OG tags, custom cards, error reporting, campaign fixes, etc.).
 - Verified rendering on `/admin/docs` under the "Operations Manual" category tab.
 
+### Error Report Fixes (Mar 24, 2026)
+- **520 Notification Center Fix:** Rewrote `GET /notification-center/{user_id}/unread-count` from a heavyweight `get_notifications()` aggregation (8+ collection queries) to lightweight `count_documents()` calls. Now returns in milliseconds instead of timing out on heavy accounts. Falls back to `{"count": 0}` on any error instead of crashing.
+- **React #418 Showcase Hardening:** Changed SSR-safe pre-mount fallback from `SafeAreaView` to plain `View` with `suppressHydrationWarning` to eliminate inset mismatches between server and client renders.
+
 ### Training Report Admin View (Mar 24, 2026)
 - **Training Report page** (`/admin/training-reports`): 3-tab analytics view for training video engagement.
   - **Overview tab:** Shows total links tracked, total clicks, top videos ranked by clicks with YouTube thumbnails, and recent click activity feed.

@@ -192,11 +192,11 @@ export default function ShowcasePage() {
 
   if (!mounted) {
     return (
-      <SafeAreaView style={styles.container} {...{ suppressHydrationWarning: true }}>
-        <View style={styles.center}>
+      <View style={styles.container} {...{ suppressHydrationWarning: true }}>
+        <View style={styles.center} {...{ suppressHydrationWarning: true }}>
           <ActivityIndicator size="large" color={ACCENT} />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 

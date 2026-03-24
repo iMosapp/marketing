@@ -340,9 +340,70 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
 
 @router.get("/{user_id}/unread-count")
 async def get_unread_count(user_id: str):
-    """Fast unread count for badge display."""
-    result = await get_notifications(user_id, limit=100)
-    return {"count": result["unread_count"]}
+    """Fast unread count for badge display — lightweight query, no heavy aggregation."""
+    try:
+        db = get_db()
+        now = datetime.now(timezone.utc)
+
+        # Count unread lead notifications
+        user_teams = []
+        try:
+            teams = list(db.teams.find({"members": user_id}, {"_id": 1}))
+            user_teams.extend([str(t["_id"]) for t in teams])
+            shared_inboxes = list(db.shared_inboxes.find({"user_ids": user_id}, {"_id": 1}))
+            user_teams.extend([str(si["_id"]) for si in shared_inboxes])
+        except Exception:
+            pass
+
+        lead_count = 0
+        try:
+            lead_query = {
+                "$or": [
+                    {"user_id": user_id},
+                    {"team_id": {"$in": user_teams}, "user_id": None}
+                ],
+                "dismissed": False,
+                "read": {"$ne": True},
+            }
+            lead_count = db.notifications.count_documents(lead_query)
+        except Exception:
+            pass
+
+        # Count overdue tasks
+        overdue_count = 0
+        try:
+            overdue_count = db.tasks.count_documents({
+                "user_id": user_id,
+                "completed": {"$ne": True},
+                "due_date": {"$lt": now}
+            })
+        except Exception:
+            pass
+
+        # Count unread messages
+        unread_msg_count = 0
+        try:
+            unread_msg_count = db.messages.count_documents({
+                "recipient_id": user_id,
+                "read": {"$ne": True},
+                "sender_id": {"$ne": user_id},
+            })
+        except Exception:
+            pass
+
+        # Subtract any that the user has explicitly read
+        total_unread = lead_count + overdue_count + unread_msg_count
+        try:
+            reads = db.notification_reads.find_one({"user_id": user_id})
+            if reads:
+                total_unread = max(0, total_unread - len(reads.get("read_ids", [])))
+        except Exception:
+            pass
+
+        return {"count": total_unread}
+    except Exception as e:
+        logger.error(f"Unread count error for {user_id}: {e}")
+        return {"count": 0}
 
 
 @router.post("/{user_id}/read")
