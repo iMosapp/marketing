@@ -165,22 +165,24 @@ export default function ShowcasePage() {
   };
 
   const handleShare = async () => {
-    if (IS_WEB && navigator.share) {
+    if (IS_WEB && typeof navigator !== 'undefined' && navigator.share) {
       try {
         await navigator.share({ title: `${data?.salesperson?.name}'s Showcase`, url: shareUrl });
       } catch {}
-    } else if (IS_WEB) {
+    } else if (IS_WEB && typeof navigator !== 'undefined') {
       try {
         await navigator.clipboard.writeText(shareUrl);
       } catch {
-        const ta = document.createElement('textarea');
-        ta.value = shareUrl;
-        ta.style.position = 'fixed';
-        ta.style.opacity = '0';
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
+        if (typeof document !== 'undefined') {
+          const ta = document.createElement('textarea');
+          ta.value = shareUrl;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+        }
       }
       alert('Link copied to clipboard!');
     } else {
@@ -190,7 +192,7 @@ export default function ShowcasePage() {
 
   if (!mounted) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} {...{ suppressHydrationWarning: true }}>
         <View style={styles.center}>
           <ActivityIndicator size="large" color={ACCENT} />
         </View>

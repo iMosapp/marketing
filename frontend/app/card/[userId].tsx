@@ -32,7 +32,7 @@ import { SEOHead } from '../../components/SEOHead';
 // which popup blockers intercept for sms: and mailto: protocols.
 // Using an anchor click or location.href is more reliable on web.
 const openProtocolUrl = (url: string) => {
-  if (Platform.OS === 'web') {
+  if (Platform.OS === 'web' && typeof document !== 'undefined') {
     const a = document.createElement('a');
     a.href = url;
     a.target = '_self';
@@ -250,10 +250,7 @@ export default function DigitalCardPage() {
         campaign_id: campaign,
       });
 
-      if (Platform.OS === 'web') {
-        // Direct navigation to VCF URL — iOS Safari will open the native
-        // "Add to Contacts" dialog, Android/desktop will download the file.
-        // Blob downloads do NOT trigger the native contact import on iOS.
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
         window.location.href = `/api/card/vcard/${userId}`;
       } else {
         // Native: Save and share using new Expo File System API
@@ -285,13 +282,13 @@ export default function DigitalCardPage() {
     try {
       const cardUrl = `https://app.imonsocial.com/card/${userId}`;
       if (Platform.OS === 'web') {
-        if (navigator.share) {
+        if (typeof navigator !== 'undefined' && navigator.share) {
           await navigator.share({
             title: cardData?.user?.name ? `${cardData.user.name}'s Business Card` : 'My Business Card',
             text: 'Check out my digital business card:',
             url: cardUrl,
           });
-        } else {
+        } else if (typeof navigator !== 'undefined') {
           await navigator.clipboard.writeText(cardUrl);
         }
       } else {
@@ -375,7 +372,7 @@ export default function DigitalCardPage() {
     const cardUrl = `https://app.imonsocial.com/card/${userId}`;
     const message = `Check out my digital business card: ${cardUrl}`;
     const phone = shareRecipientPhone.trim();
-    const isApple = /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
+    const isApple = typeof navigator !== 'undefined' ? /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent) : false;
     const sep = isApple ? '&' : '?';
     const smsUrl = phone
       ? `sms:${phone}${sep}body=${encodeURIComponent(message)}`
@@ -412,13 +409,13 @@ export default function DigitalCardPage() {
     try {
       const cardUrl = `https://app.imonsocial.com/card/${userId}`;
       if (Platform.OS === 'web') {
-        if (navigator.share) {
+        if (typeof navigator !== 'undefined' && navigator.share) {
           await navigator.share({
             title: cardData?.user?.name ? `${cardData.user.name}'s Business Card` : 'My Business Card',
             text: 'Check out my digital business card:',
             url: cardUrl,
           });
-        } else {
+        } else if (typeof navigator !== 'undefined') {
           await navigator.clipboard.writeText(cardUrl);
         }
       } else {
@@ -433,7 +430,7 @@ export default function DigitalCardPage() {
 
   // Download QR as image (web only for now)
   const handleDownloadQR = async () => {
-    if (Platform.OS === 'web' && qrRef.current) {
+    if (Platform.OS === 'web' && typeof document !== 'undefined' && qrRef.current) {
       try {
         qrRef.current.toDataURL((dataUrl: string) => {
           const link = document.createElement('a');
@@ -467,9 +464,8 @@ export default function DigitalCardPage() {
 
   if (!mounted || loading) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: '#0D0D0D' }]}>
+      <View style={[styles.loadingContainer, { backgroundColor: '#0D0D0D' }]} {...{ suppressHydrationWarning: true }}>
         <ActivityIndicator size="large" color="#C9A962" />
-        <Text style={styles.loadingText}>Loading card...</Text>
       </View>
     );
   }
@@ -807,11 +803,12 @@ export default function DigitalCardPage() {
               style={dynamicStyles.referralBanner}
               onPress={() => {
                 track('refer_clicked');
-                const shareText = `Check out ${user.name || 'my contact'}! ${typeof window !== 'undefined' ? window.location.href : ''}`;
+                const currentHref = typeof window !== 'undefined' ? window.location.href : `https://app.imonsocial.com/card/${userId}`;
+                const shareText = `Check out ${user.name || 'my contact'}! ${currentHref}`;
                 if (Platform.OS === 'web') {
-                  if (navigator.share) {
-                    navigator.share({ title: `Refer ${user.name}`, text: shareText, url: window.location.href });
-                  } else {
+                  if (typeof navigator !== 'undefined' && navigator.share) {
+                    navigator.share({ title: `Refer ${user.name}`, text: shareText, url: currentHref });
+                  } else if (typeof navigator !== 'undefined') {
                     navigator.clipboard?.writeText(shareText);
                     alert('Link copied! Share it with a friend.');
                   }
