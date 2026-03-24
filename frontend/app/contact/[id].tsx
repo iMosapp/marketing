@@ -1507,6 +1507,31 @@ export default function ContactDetailScreen() {
 
   // State for card template picker
   const [showCardTemplatePicker, setShowCardTemplatePicker] = useState(false);
+  const [customCardTypes, setCustomCardTypes] = useState<any[]>([]);
+
+  // Fetch custom card types for the composer
+  useEffect(() => {
+    const fetchCustomCardTypes = async () => {
+      try {
+        const storeId = user?.store_id;
+        if (!storeId) return;
+        const res = await api.get(`/congrats/templates/all/${storeId}`);
+        const all = res.data || [];
+        const defaults = ['congrats', 'birthday', 'holiday', 'thankyou', 'anniversary', 'welcome'];
+        const custom = all
+          .filter((t: any) => !defaults.includes(t.card_type))
+          .map((t: any) => ({
+            type: t.card_type,
+            label: t.headline || t.card_type,
+            sub: t.message?.substring(0, 40) || 'Custom card template',
+            color: t.accent_color || '#C9A962',
+            icon: 'create-outline',
+          }));
+        setCustomCardTypes(custom);
+      } catch (e) { /* ignore */ }
+    };
+    fetchCustomCardTypes();
+  }, [user?.store_id]);
 
   // Clear a date automation field
   const handleClearAutomation = async (field: string) => {
@@ -4383,6 +4408,7 @@ export default function ContactDetailScreen() {
                     { type: 'thankyou', label: 'Thank You', color: '#34C759', icon: 'thumbs-up' },
                     { type: 'anniversary', label: 'Anniversary', color: '#FF6B6B', icon: 'heart' },
                     { type: 'welcome', label: 'Welcome', color: '#007AFF', icon: 'hand-left' },
+                    ...customCardTypes,
                   ].map(item => (
                     <TouchableOpacity
                       key={item.type}
@@ -4446,6 +4472,7 @@ export default function ContactDetailScreen() {
               { type: 'thankyou', label: 'Thank You', sub: 'Show your appreciation', color: '#34C759', icon: 'thumbs-up' },
               { type: 'welcome', label: 'Welcome', sub: 'Welcome a new customer', color: '#007AFF', icon: 'hand-left' },
               { type: 'holiday', label: 'Holiday', sub: 'Seasonal greetings', color: '#5AC8FA', icon: 'snow' },
+              ...customCardTypes,
             ].map(item => (
               <TouchableOpacity
                 key={item.type}

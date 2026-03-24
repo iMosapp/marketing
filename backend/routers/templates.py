@@ -127,7 +127,7 @@ async def _wrap_video_urls(templates: list, user_id: str) -> list:
                     link_type="training_video",
                     reference_id=None,
                     user_id=user_id,
-                    metadata={"video_url": yt_url},
+                    metadata={"video_url": yt_url, "video_title": t.get("name", "Training Video")},
                 )
                 content = content.replace(yt_url, result["short_url"])
             except Exception as e:

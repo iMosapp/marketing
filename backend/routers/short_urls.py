@@ -881,6 +881,22 @@ async def redirect_short_url(short_code: str, request: Request):
         og_description = "Open to see your special card"
         og_image = personalized_og
 
+    elif link_type == "training_video":
+        # === TRAINING VIDEO: Use YouTube thumbnail + video title ===
+        import re as _re
+        yt_url = doc.get("original_url", "")
+        video_id = ""
+        yt_match = _re.search(r'(?:youtube\.com/watch\?v=|youtu\.be/)([\w-]+)', yt_url)
+        if yt_match:
+            video_id = yt_match.group(1)
+        video_title = (doc.get("metadata") or {}).get("video_title", "")
+        og_title = video_title or "Watch this training video"
+        og_description = "Tap to watch on YouTube"
+        if video_id:
+            og_image = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+        else:
+            og_image = f"{base_url}/og-image.png"
+
     elif user_id:
         # === NON-CARD LINK: Use store branding ===
         try:

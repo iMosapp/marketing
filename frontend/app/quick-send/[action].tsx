@@ -47,7 +47,7 @@ const ACTION_CONFIG: Record<string, {
   },
 };
 
-const CARD_TYPES = [
+const DEFAULT_CARD_TYPES = [
   { key: 'congrats', label: 'Congrats Card', icon: 'trophy', color: '#C9A962' },
   { key: 'birthday', label: 'Birthday Card', icon: 'gift', color: '#FF6B6B' },
   { key: 'holiday', label: 'Holiday Card', icon: 'snow', color: '#5AC8FA' },
@@ -78,6 +78,32 @@ export default function QuickSendPage() {
   const dupTimer = useRef<any>(null);
 
   const [selectedCardType, setSelectedCardType] = useState('congrats');
+  const [cardTypes, setCardTypes] = useState(DEFAULT_CARD_TYPES);
+
+  // Fetch custom card types from API
+  useEffect(() => {
+    const fetchCustomTypes = async () => {
+      try {
+        const storeId = user?.store_id;
+        if (!storeId) return;
+        const res = await api.get(`/congrats/templates/all/${storeId}`);
+        const all = res.data || [];
+        const defaultKeys = DEFAULT_CARD_TYPES.map(d => d.key);
+        const custom = all
+          .filter((t: any) => !defaultKeys.includes(t.card_type))
+          .map((t: any) => ({
+            key: t.card_type,
+            label: `${t.headline || t.card_type} Card`,
+            icon: 'create-outline',
+            color: t.accent_color || '#C9A962',
+          }));
+        if (custom.length > 0) {
+          setCardTypes([...DEFAULT_CARD_TYPES, ...custom]);
+        }
+      } catch (e) { /* ignore */ }
+    };
+    fetchCustomTypes();
+  }, [user?.store_id]);
 
   const [shareUrl, setShareUrl] = useState('');
   const [messageText, setMessageText] = useState('');
@@ -349,7 +375,7 @@ export default function QuickSendPage() {
       <Text style={{ fontSize: 15, color: colors.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
         What type of card?
       </Text>
-      {CARD_TYPES.map(ct => (
+      {cardTypes.map(ct => (
         <TouchableOpacity
           key={ct.key}
           style={{
