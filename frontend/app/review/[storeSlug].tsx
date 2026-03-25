@@ -148,42 +148,18 @@ export default function PublicReviewPage() {
       <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={s.pageWrapper}>
 
-          {/* Hero Banner — dealership image with overlay */}
-          <View style={s.heroBanner} data-testid="review-hero-banner">
-            {bannerUrl ? (
+          {/* Clean header — white background, "Thank you for choosing" + logo */}
+          <View style={s.heroClean} data-testid="review-hero-banner">
+            <Text style={s.heroThankYou}>Thank you for choosing</Text>
+            {logoUrl ? (
               Platform.OS === 'web' ? (
-                <img src={bannerUrl} style={{ width: '100%', height: 180, objectFit: 'cover', borderRadius: 20, display: 'block' } as any} />
+                <img src={logoUrl} style={{ height: 52, maxWidth: 220, objectFit: 'contain', display: 'block', marginTop: 8 } as any} />
               ) : (
-                <Image source={{ uri: bannerUrl }} style={{ width: '100%', height: 180, borderRadius: 20 }} resizeMode="cover" />
+                <Image source={{ uri: logoUrl }} style={{ height: 52, width: 220, marginTop: 8 }} resizeMode="contain" />
               )
             ) : (
-              <View style={[s.heroBannerPlaceholder, { backgroundColor: primaryColor }]}>
-                <View style={s.heroBannerPattern}>
-                  {logoUrl ? (
-                    Platform.OS === 'web' ? (
-                      <img src={logoUrl} style={{ width: 80, height: 80, objectFit: 'contain', display: 'block' } as any} />
-                    ) : (
-                      <Image source={{ uri: logoUrl }} style={{ width: 80, height: 80 }} resizeMode="contain" />
-                    )
-                  ) : (
-                    <Ionicons name="business" size={48} color="rgba(255,255,255,0.9)" />
-                  )}
-                </View>
-              </View>
+              <Text style={s.heroStoreName}>{displayName}</Text>
             )}
-            {/* Overlay text on banner */}
-            <View style={s.heroOverlay}>
-              <Text style={s.heroThankYou}>Thank you for choosing</Text>
-              {logoUrl ? (
-                Platform.OS === 'web' ? (
-                  <img src={logoUrl} style={{ height: 44, maxWidth: 200, objectFit: 'contain', display: 'block', marginTop: 4 } as any} />
-                ) : (
-                  <Image source={{ uri: logoUrl }} style={{ height: 44, width: 200, marginTop: 4 }} resizeMode="contain" />
-                )
-              ) : (
-                <Text style={s.heroStoreName}>{displayName}</Text>
-              )}
-            </View>
           </View>
 
           {/* Main Review Card */}
@@ -347,9 +323,9 @@ export default function PublicReviewPage() {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F1F5F9' },
-  loadingContainer: { flex: 1, backgroundColor: '#F1F5F9', justifyContent: 'center', alignItems: 'center' },
-  errorContainer: { flex: 1, backgroundColor: '#F1F5F9', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  loadingContainer: { flex: 1, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center' },
+  errorContainer: { flex: 1, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', padding: 20 },
   errorCard: { backgroundColor: '#FFF', borderRadius: 16, padding: 40, alignItems: 'center', maxWidth: 360, width: '100%' },
   errorTitle: { fontSize: 19, fontWeight: '600', color: '#1E293B', marginTop: 16 },
   errorText: { fontSize: 16, color: '#94A3B8', marginTop: 6, textAlign: 'center' },
@@ -357,16 +333,13 @@ const s = StyleSheet.create({
   scrollContent: { flexGrow: 1, alignItems: 'center', paddingTop: 0, paddingBottom: 48, paddingHorizontal: 16, ...(Platform.OS === 'web' ? { minHeight: '100vh' as any } : {}) },
   pageWrapper: { width: '100%', maxWidth: 440, alignItems: 'center' },
 
-  // Hero banner
-  heroBanner: { width: '100%', height: 180, borderRadius: 20, overflow: 'hidden', marginBottom: -30, position: 'relative' },
-  heroBannerPlaceholder: { width: '100%', height: 180, borderRadius: 20, overflow: 'hidden' },
-  heroBannerPattern: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.15)' },
-  heroOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingBottom: 40, paddingTop: 20, alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
-  heroThankYou: { fontSize: 15, color: 'rgba(255,255,255,0.85)', fontWeight: '500' },
-  heroStoreName: { fontSize: 22, fontWeight: '800', color: '#FFFFFF', marginTop: 4 },
+  // Clean header
+  heroClean: { width: '100%', alignItems: 'center', paddingTop: 32, paddingBottom: 24, backgroundColor: '#FFFFFF' },
+  heroThankYou: { fontSize: 17, color: '#64748B', fontWeight: '500' },
+  heroStoreName: { fontSize: 24, fontWeight: '800', color: '#0F172A', marginTop: 8 },
 
   // Main card
-  card: { backgroundColor: '#FFF', borderRadius: 20, paddingTop: 44, paddingBottom: 28, paddingHorizontal: 24, width: '100%', zIndex: 1, ...(Platform.OS === 'web' ? { boxShadow: '0 2px 12px rgba(0,0,0,0.08)' } : { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 16, elevation: 4 }) },
+  card: { backgroundColor: '#FFF', borderRadius: 20, paddingTop: 24, paddingBottom: 28, paddingHorizontal: 24, width: '100%', zIndex: 1, ...(Platform.OS === 'web' ? { boxShadow: '0 2px 12px rgba(0,0,0,0.08)' } : { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 16, elevation: 4 }) },
 
   inviteSection: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 12 },
   inviteLogo: { width: 28, height: 28 },
