@@ -326,7 +326,10 @@ export default function CongratsCardPage() {
     }
   };
 
-  if (!hydrated || loading) {
+  // Client-only rendering — prevents React #418 hydration errors
+  if (!hydrated) return null;
+
+  if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#C9A962" />

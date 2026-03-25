@@ -207,7 +207,9 @@ export default function ShowcasePage() {
     );
   }
 
-  if (!hydrated || loading) {
+  if (!hydrated) return null;
+
+  if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.center}>

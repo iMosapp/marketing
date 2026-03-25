@@ -147,7 +147,9 @@ export default function DocViewerScreen() {
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   };
 
-  if (!hydrated || loading) {
+  if (!hydrated) return null;
+
+  if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingContainer}>
