@@ -153,9 +153,9 @@ export default function PublicReviewPage() {
             <Text style={s.heroThankYou}>Thank you for choosing</Text>
             {logoUrl ? (
               Platform.OS === 'web' ? (
-                <img src={logoUrl} style={{ height: 52, maxWidth: 220, objectFit: 'contain', display: 'block', marginTop: 8 } as any} />
+                <img src={logoUrl} style={{ height: 160, maxWidth: 320, objectFit: 'contain', display: 'block', marginTop: 8 } as any} />
               ) : (
-                <Image source={{ uri: logoUrl }} style={{ height: 52, width: 220, marginTop: 8 }} resizeMode="contain" />
+                <Image source={{ uri: logoUrl }} style={{ height: 160, width: 320, marginTop: 8 }} resizeMode="contain" />
               )
             ) : (
               <Text style={s.heroStoreName}>{displayName}</Text>
