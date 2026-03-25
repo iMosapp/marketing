@@ -17,15 +17,25 @@ import api from '../../services/api';
 import { trackCustomerAction } from '../../services/tracking';
 import { PoweredByFooter } from '../../components/PoweredByFooter';
 
+function useHydrated() {
+  const [h, setH] = useState(false);
+  useEffect(() => setH(true), []);
+  return h;
+}
+
 const REVIEW_PLATFORMS = [
-  { key: 'google', name: 'Google', icon: 'logo-google', color: '#4285F4', bgColor: '#F0F5FF' },
-  { key: 'yelp', name: 'Yelp', icon: 'star', color: '#D32323', bgColor: '#FFF0F0' },
-  { key: 'facebook', name: 'Facebook', icon: 'logo-facebook', color: '#1877F2', bgColor: '#EFF4FE' },
-  { key: 'dealerrater', name: 'DealerRater', icon: 'car-sport', color: '#00A0E3', bgColor: '#EBF8FD' },
-  { key: 'cars_com', name: 'Cars.com', icon: 'car', color: '#8E44AD', bgColor: '#F5EEFA' },
+  { key: 'google', name: 'Google', color: '#4285F4', bgColor: '#EBF3FF', letter: 'G' },
+  { key: 'yelp', name: 'Yelp', color: '#D32323', bgColor: '#FFF0F0', letter: 'Y' },
+  { key: 'facebook', name: 'Facebook', color: '#1877F2', bgColor: '#EFF4FE', letter: 'f' },
+  { key: 'dealerrater', name: 'DealerRater', color: '#00A0E3', bgColor: '#EBF8FD', letter: 'DR' },
+  { key: 'cars_com', name: 'Cars.com', color: '#8E44AD', bgColor: '#F5EEFA', letter: 'C' },
+  { key: 'edmunds', name: 'Edmunds', color: '#1A73E8', bgColor: '#E8F0FE', letter: 'E' },
+  { key: 'bbb', name: 'BBB', color: '#005A8C', bgColor: '#E6F0F7', letter: 'B' },
+  { key: 'trustpilot', name: 'Trustpilot', color: '#00B67A', bgColor: '#E6F9F3', letter: 'T' },
 ];
 
 export default function PublicReviewPage() {
+  const hydrated = useHydrated();
   const { storeSlug, sp, cid } = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
   const [storeData, setStoreData] = useState<any>(null);
@@ -35,7 +45,6 @@ export default function PublicReviewPage() {
   const [fbSubmitted, setFbSubmitted] = useState(false);
   const [fbSubmitting, setFbSubmitting] = useState(false);
 
-  // Tracking helper
   const track = (action: string, extra?: Record<string, any>) => {
     if (sp) {
       trackCustomerAction('review', action, {
@@ -65,20 +74,16 @@ export default function PublicReviewPage() {
     }
   };
 
-  const handlePlatformClick = async (platform: string, url: string) => {
-    // Track the click via universal tracking
+  const handlePlatformClick = async (platform: string, url: string | undefined) => {
+    if (!url) return;
     track('review_link_clicked', { platform, url });
-    // Also track via the legacy per-store endpoint
     try {
       await api.post(`/review/track-click/${storeSlug}`, {
         platform,
         salesperson_id: sp || null,
         url,
       });
-    } catch (e) {
-      // Don't block the redirect if tracking fails
-    }
-    // Use direct navigation on web to avoid popup blockers
+    } catch {}
     if (Platform.OS === 'web') {
       window.location.href = url;
     } else {
@@ -106,9 +111,11 @@ export default function PublicReviewPage() {
     }
   };
 
+  if (!hydrated) return null;
+
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={s.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
       </View>
     );
@@ -116,11 +123,11 @@ export default function PublicReviewPage() {
 
   if (!storeData) {
     return (
-      <View style={styles.errorContainer}>
-        <View style={styles.errorCard}>
+      <View style={s.errorContainer}>
+        <View style={s.errorCard}>
           <Ionicons name="alert-circle-outline" size={48} color="#CBD5E1" />
-          <Text style={styles.errorTitle}>Page Not Found</Text>
-          <Text style={styles.errorText}>This review page doesn't exist or has been removed.</Text>
+          <Text style={s.errorTitle}>Page Not Found</Text>
+          <Text style={s.errorText}>This review page doesn't exist or has been removed.</Text>
         </View>
       </View>
     );
@@ -130,121 +137,169 @@ export default function PublicReviewPage() {
   const displayName = brand_kit?.company_name || store.name;
   const logoUrl = brand_kit?.logo_url || store.logo_url;
   const primaryColor = brand_kit?.primary_color || store.primary_color || '#007AFF';
+  const bannerUrl = brand_kit?.banner_url || store.cover_image_url;
 
-  const activeLinks = REVIEW_PLATFORMS.filter(
-    p => review_links?.[p.key]?.trim()
-  );
-  const customLinks = review_links?.custom || [];
+  // Show ALL platforms — configured ones are clickable, others shown for demo
+  const configuredLinks = review_links || {};
+  const customLinks = configuredLinks.custom || [];
 
   return (
-    <View style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.pageWrapper}>
-          {/* Logo */}
-          <View style={styles.logoSection}>
-            {logoUrl ? (
-              <Image
-                source={{ uri: logoUrl }}
-                style={styles.logo}
-                resizeMode="contain"
-                data-testid="review-page-logo"
-              />
+    <View style={s.container}>
+      <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={s.pageWrapper}>
+
+          {/* Hero Banner — dealership image with overlay */}
+          <View style={s.heroBanner} data-testid="review-hero-banner">
+            {bannerUrl ? (
+              Platform.OS === 'web' ? (
+                <img src={bannerUrl} style={{ width: '100%', height: 180, objectFit: 'cover', borderRadius: 20, display: 'block' } as any} />
+              ) : (
+                <Image source={{ uri: bannerUrl }} style={{ width: '100%', height: 180, borderRadius: 20 }} resizeMode="cover" />
+              )
             ) : (
-              <View style={[styles.logoPlaceholder, { backgroundColor: primaryColor + '15' }]}>
-                <Ionicons name="business" size={32} color={primaryColor} />
+              <View style={[s.heroBannerPlaceholder, { backgroundColor: primaryColor }]}>
+                <View style={s.heroBannerPattern}>
+                  {logoUrl ? (
+                    Platform.OS === 'web' ? (
+                      <img src={logoUrl} style={{ width: 80, height: 80, objectFit: 'contain', display: 'block' } as any} />
+                    ) : (
+                      <Image source={{ uri: logoUrl }} style={{ width: 80, height: 80 }} resizeMode="contain" />
+                    )
+                  ) : (
+                    <Ionicons name="business" size={48} color="rgba(255,255,255,0.9)" />
+                  )}
+                </View>
               </View>
             )}
+            {/* Overlay text on banner */}
+            <View style={s.heroOverlay}>
+              <Text style={s.heroThankYou}>Thank you for choosing</Text>
+              {logoUrl ? (
+                Platform.OS === 'web' ? (
+                  <img src={logoUrl} style={{ height: 44, maxWidth: 200, objectFit: 'contain', display: 'block', marginTop: 4 } as any} />
+                ) : (
+                  <Image source={{ uri: logoUrl }} style={{ height: 44, width: 200, marginTop: 4 }} resizeMode="contain" />
+                )
+              ) : (
+                <Text style={s.heroStoreName}>{displayName}</Text>
+              )}
+            </View>
           </View>
 
-          {/* Main Content Card */}
-          <View style={styles.card} data-testid="review-page-card">
-            <Text style={styles.storeName} data-testid="review-store-name">{displayName}</Text>
-            <Text style={styles.subtitle}>
-              We'd love your feedback! Tap a site below to leave a review.
+          {/* Main Review Card */}
+          <View style={s.card} data-testid="review-page-card">
+            {/* Invitation heading */}
+            <View style={s.inviteSection}>
+              {logoUrl && (
+                <View style={s.inviteLogo}>
+                  {Platform.OS === 'web' ? (
+                    <img src={logoUrl} style={{ width: 28, height: 28, objectFit: 'contain', display: 'block' } as any} />
+                  ) : (
+                    <Image source={{ uri: logoUrl }} style={{ width: 28, height: 28 }} resizeMode="contain" />
+                  )}
+                </View>
+              )}
+              <Text style={s.inviteLabel}>{displayName}</Text>
+            </View>
+
+            <Text style={s.inviteTitle} data-testid="review-store-name">
+              {displayName} has invited you to review their business
+            </Text>
+            <Text style={s.inviteSubtitle}>
+              Submit your review on Google, or select a different review site
             </Text>
 
             {salesperson?.name && (
-              <View style={styles.salespersonBadge}>
-                <Ionicons name="person-circle-outline" size={16} color="#64748B" />
-                <Text style={styles.salespersonText}>Assisted by {salesperson.name}</Text>
+              <View style={s.spBadge}>
+                <Ionicons name="person-circle-outline" size={15} color="#64748B" />
+                <Text style={s.spBadgeText}>Assisted by {salesperson.name}</Text>
               </View>
             )}
 
-            {/* Divider */}
-            <View style={styles.divider} />
-
-            {/* Review Links */}
-            <View style={styles.linksContainer}>
-              {activeLinks.map((platform) => (
+            {/* Primary CTA — Google */}
+            {(() => {
+              const googleUrl = configuredLinks.google;
+              return (
                 <TouchableOpacity
-                  key={platform.key}
-                  style={styles.linkButton}
-                  onPress={() => handlePlatformClick(platform.key, review_links[platform.key])}
-                  activeOpacity={0.7}
-                  data-testid={`review-link-${platform.key}`}
+                  style={[s.primaryBtn, { backgroundColor: '#4285F4' }]}
+                  onPress={() => handlePlatformClick('google', googleUrl)}
+                  activeOpacity={0.8}
+                  data-testid="review-link-google"
                 >
-                  <View style={[styles.linkIconBox, { backgroundColor: platform.bgColor }]}>
-                    <Ionicons name={platform.icon as any} size={20} color={platform.color} />
+                  <View style={s.primaryBtnIcon}>
+                    <Text style={{ fontSize: 18, fontWeight: '700', color: '#4285F4' }}>G</Text>
                   </View>
-                  <Text style={styles.linkText}>{platform.name}</Text>
-                  <Ionicons name="arrow-forward" size={18} color="#94A3B8" />
+                  <Text style={s.primaryBtnText}>Continue with Google</Text>
                 </TouchableOpacity>
-              ))}
+              );
+            })()}
+
+            {/* Divider */}
+            <View style={s.orRow}>
+              <View style={s.orLine} />
+              <Text style={s.orText}>or select a different site</Text>
+              <View style={s.orLine} />
+            </View>
+
+            {/* All Platform Tiles */}
+            <View style={s.platformGrid}>
+              {REVIEW_PLATFORMS.filter(p => p.key !== 'google').map((platform) => {
+                const url = configuredLinks[platform.key];
+                const isConfigured = !!url?.trim();
+                return (
+                  <TouchableOpacity
+                    key={platform.key}
+                    style={[s.platformTile, !isConfigured && s.platformTileDisabled]}
+                    onPress={() => isConfigured ? handlePlatformClick(platform.key, url) : null}
+                    activeOpacity={isConfigured ? 0.7 : 1}
+                    data-testid={`review-link-${platform.key}`}
+                  >
+                    <View style={[s.platformIcon, { backgroundColor: isConfigured ? platform.bgColor : '#F1F5F9' }]}>
+                      <Text style={{ fontSize: platform.letter.length > 1 ? 12 : 16, fontWeight: '800', color: isConfigured ? platform.color : '#94A3B8' }}>
+                        {platform.letter}
+                      </Text>
+                    </View>
+                    <Text style={[s.platformName, !isConfigured && { color: '#94A3B8' }]}>{platform.name}</Text>
+                    {!isConfigured && <Text style={s.comingSoon}>Coming soon</Text>}
+                  </TouchableOpacity>
+                );
+              })}
 
               {customLinks.map((link: { name: string; url: string }, i: number) => (
                 <TouchableOpacity
                   key={`custom-${i}`}
-                  style={styles.linkButton}
+                  style={s.platformTile}
                   onPress={() => handlePlatformClick(`custom_${link.name}`, link.url)}
                   activeOpacity={0.7}
                   data-testid={`review-custom-${i}`}
                 >
-                  <View style={[styles.linkIconBox, { backgroundColor: '#F1F5F9' }]}>
-                    <Ionicons name="link" size={20} color="#475569" />
+                  <View style={[s.platformIcon, { backgroundColor: '#F1F5F9' }]}>
+                    <Ionicons name="link" size={18} color="#475569" />
                   </View>
-                  <Text style={styles.linkText}>{link.name}</Text>
-                  <Ionicons name="arrow-forward" size={18} color="#94A3B8" />
+                  <Text style={s.platformName}>{link.name}</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            {activeLinks.length === 0 && customLinks.length === 0 && (
-              <View style={styles.emptyState}>
-                <Ionicons name="link-outline" size={32} color="#CBD5E1" />
-                <Text style={styles.emptyText}>No review links configured yet.</Text>
-              </View>
-            )}
-
             {/* Store Info */}
             {(store.phone || store.website) && (
-              <View style={styles.storeInfo}>
+              <View style={s.storeInfo}>
                 {store.phone && (
-                  <TouchableOpacity
-                    style={styles.storeInfoRow}
-                    onPress={() => Linking.openURL(`tel:${store.phone}`)}
-                    data-testid="review-store-phone"
-                  >
-                    <Ionicons name="call-outline" size={14} color="#94A3B8" />
-                    <Text style={styles.storeInfoText}>{store.phone}</Text>
+                  <TouchableOpacity style={s.storeInfoRow} onPress={() => Linking.openURL(`tel:${store.phone}`)} data-testid="review-store-phone">
+                    <Ionicons name="call-outline" size={13} color="#94A3B8" />
+                    <Text style={s.storeInfoText}>{store.phone}</Text>
                   </TouchableOpacity>
                 )}
                 {store.website && (
-                  <TouchableOpacity
-                    style={styles.storeInfoRow}
-                    onPress={() => Linking.openURL(store.website)}
-                    data-testid="review-store-website"
-                  >
-                    <Ionicons name="globe-outline" size={14} color="#94A3B8" />
-                    <Text style={styles.storeInfoText}>{store.website.replace(/^https?:\/\//, '')}</Text>
+                  <TouchableOpacity style={s.storeInfoRow} onPress={() => Linking.openURL(store.website)} data-testid="review-store-website">
+                    <Ionicons name="globe-outline" size={13} color="#94A3B8" />
+                    <Text style={s.storeInfoText}>{store.website.replace(/^https?:\/\//, '')}</Text>
                   </TouchableOpacity>
                 )}
                 {store.address && (
-                  <View style={styles.storeInfoRow}>
-                    <Ionicons name="location-outline" size={14} color="#94A3B8" />
-                    <Text style={styles.storeInfoText}>
+                  <View style={s.storeInfoRow}>
+                    <Ionicons name="location-outline" size={13} color="#94A3B8" />
+                    <Text style={s.storeInfoText}>
                       {store.address}{store.city ? `, ${store.city}` : ''}{store.state ? `, ${store.state}` : ''}
                     </Text>
                   </View>
@@ -254,59 +309,29 @@ export default function PublicReviewPage() {
           </View>
 
           {/* Direct Feedback Card */}
-          <View style={styles.feedbackCard} data-testid="feedback-section">
+          <View style={s.feedbackCard} data-testid="feedback-section">
             {fbSubmitted ? (
-              <View style={styles.feedbackSuccess}>
+              <View style={s.fbSuccess}>
                 <Ionicons name="checkmark-circle" size={36} color="#22C55E" />
-                <Text style={styles.feedbackSuccessTitle}>Thank you!</Text>
-                <Text style={styles.feedbackSuccessText}>Your feedback has been submitted.</Text>
+                <Text style={s.fbSuccessTitle}>Thank you!</Text>
+                <Text style={s.fbSuccessText}>Your feedback has been submitted.</Text>
               </View>
             ) : (
               <>
-                <Text style={styles.feedbackHeading}>Or leave us direct feedback</Text>
-                <View style={styles.starRow} data-testid="feedback-stars">
+                <Text style={s.fbHeading}>Or leave us direct feedback</Text>
+                <View style={s.starRow} data-testid="feedback-stars">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <TouchableOpacity key={star} onPress={() => setFbRating(star)} data-testid={`fb-star-${star}`}>
-                      <Ionicons
-                        name={star <= fbRating ? 'star' : 'star-outline'}
-                        size={32}
-                        color={star <= fbRating ? '#FBBF24' : '#CBD5E1'}
-                      />
+                      <Ionicons name={star <= fbRating ? 'star' : 'star-outline'} size={32} color={star <= fbRating ? '#FBBF24' : '#CBD5E1'} />
                     </TouchableOpacity>
                   ))}
                 </View>
-
                 {fbRating > 0 && (
                   <>
-                    <TextInput
-                      style={styles.feedbackInput}
-                      placeholder="Your name (optional)"
-                      placeholderTextColor="#94A3B8"
-                      value={fbName}
-                      onChangeText={setFbName}
-                      data-testid="fb-name-input"
-                    />
-                    <TextInput
-                      style={[styles.feedbackInput, styles.feedbackTextArea]}
-                      placeholder="Tell us about your experience..."
-                      placeholderTextColor="#94A3B8"
-                      value={fbText}
-                      onChangeText={setFbText}
-                      multiline
-                      numberOfLines={3}
-                      data-testid="fb-text-input"
-                    />
-                    <TouchableOpacity
-                      style={[styles.feedbackSubmitBtn, { backgroundColor: primaryColor }]}
-                      onPress={handleSubmitFeedback}
-                      disabled={fbSubmitting}
-                      data-testid="fb-submit-btn"
-                    >
-                      {fbSubmitting ? (
-                        <ActivityIndicator size="small" color="#FFF" />
-                      ) : (
-                        <Text style={styles.feedbackSubmitText}>Submit Feedback</Text>
-                      )}
+                    <TextInput style={s.fbInput} placeholder="Your name (optional)" placeholderTextColor="#94A3B8" value={fbName} onChangeText={setFbName} data-testid="fb-name-input" />
+                    <TextInput style={[s.fbInput, { height: 80, textAlignVertical: 'top', paddingTop: 14 }]} placeholder="Tell us about your experience..." placeholderTextColor="#94A3B8" value={fbText} onChangeText={setFbText} multiline numberOfLines={3} data-testid="fb-text-input" />
+                    <TouchableOpacity style={[s.fbSubmitBtn, { backgroundColor: primaryColor }]} onPress={handleSubmitFeedback} disabled={fbSubmitting} data-testid="fb-submit-btn">
+                      {fbSubmitting ? <ActivityIndicator size="small" color="#FFF" /> : <Text style={s.fbSubmitText}>Submit Feedback</Text>}
                     </TouchableOpacity>
                   </>
                 )}
@@ -314,7 +339,6 @@ export default function PublicReviewPage() {
             )}
           </View>
 
-          {/* Footer */}
           <PoweredByFooter />
         </View>
       </ScrollView>
@@ -322,277 +346,67 @@ export default function PublicReviewPage() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorContainer: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 40,
-    alignItems: 'center',
-    maxWidth: 360,
-    width: '100%',
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-    } : {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.06,
-      shadowRadius: 3,
-      elevation: 2,
-    }),
-  },
-  errorTitle: {
-    fontSize: 19,
-    fontWeight: '600',
-    color: '#1E293B',
-    marginTop: 16,
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#94A3B8',
-    marginTop: 6,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingVertical: 48,
-    paddingHorizontal: 20,
-    ...(Platform.OS === 'web' ? { minHeight: '100vh' } : {}),
-  },
-  pageWrapper: {
-    width: '100%',
-    maxWidth: 420,
-    alignItems: 'center',
-  },
-  logoSection: {
-    marginBottom: 24,
-    alignItems: 'center',
-  },
-  logo: {
-    width: 72,
-    height: 72,
-    borderRadius: 16,
-    backgroundColor: 'transparent',
-  },
-  logoPlaceholder: {
-    width: 72,
-    height: 72,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    paddingVertical: 32,
-    paddingHorizontal: 28,
-    width: '100%',
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04)',
-    } : {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.06,
-      shadowRadius: 16,
-      elevation: 4,
-    }),
-  },
-  storeName: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#0F172A',
-    textAlign: 'center',
-    letterSpacing: -0.3,
-  },
-  subtitle: {
-    fontSize: 17,
-    color: '#64748B',
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 22,
-  },
-  salespersonBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 12,
-    gap: 6,
-    backgroundColor: '#F8FAFC',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 20,
-    alignSelf: 'center',
-  },
-  salespersonText: {
-    fontSize: 15,
-    color: '#64748B',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#F1F5F9',
-    marginVertical: 24,
-  },
-  linksContainer: {
-    gap: 10,
-  },
-  linkButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    ...(Platform.OS === 'web' ? {
-      cursor: 'pointer',
-      transition: 'background-color 0.15s ease, border-color 0.15s ease',
-    } : {}),
-  },
-  linkIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  linkText: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1E293B',
-    marginLeft: 14,
-  },
-  emptyState: {
-    alignItems: 'center',
-    paddingVertical: 32,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#94A3B8',
-    marginTop: 10,
-  },
-  storeInfo: {
-    marginTop: 24,
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    gap: 8,
-  },
-  storeInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  storeInfoText: {
-    fontSize: 15,
-    color: '#94A3B8',
-  },
-  feedbackCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    paddingVertical: 28,
-    paddingHorizontal: 24,
-    width: '100%',
-    marginTop: 16,
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.04)',
-    } : {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.06,
-      shadowRadius: 16,
-      elevation: 4,
-    }),
-  },
-  feedbackHeading: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#334155',
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  starRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-    marginBottom: 12,
-  },
-  feedbackInput: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 10,
-    padding: 14,
-    fontSize: 17,
-    color: '#1E293B',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: 10,
-  },
-  feedbackTextArea: {
-    height: 80,
-    textAlignVertical: 'top',
-    paddingTop: 14,
-  },
-  feedbackSubmitBtn: {
-    borderRadius: 10,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  feedbackSubmitText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFF',
-  },
-  feedbackSuccess: {
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  feedbackSuccessTitle: {
-    fontSize: 19,
-    fontWeight: '700',
-    color: '#1E293B',
-    marginTop: 10,
-  },
-  feedbackSuccessText: {
-    fontSize: 16,
-    color: '#64748B',
-    marginTop: 4,
-  },
-  footer: {
-    flexDirection: 'row',
-    marginTop: 32,
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: 14,
-    color: '#CBD5E1',
-  },
-  footerBrand: {
-    fontWeight: '700',
-    color: '#94A3B8',
-  },
-  footerUrl: {
-    fontSize: 14,
-    color: '#94A3B8',
-  },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#F1F5F9' },
+  loadingContainer: { flex: 1, backgroundColor: '#F1F5F9', justifyContent: 'center', alignItems: 'center' },
+  errorContainer: { flex: 1, backgroundColor: '#F1F5F9', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  errorCard: { backgroundColor: '#FFF', borderRadius: 16, padding: 40, alignItems: 'center', maxWidth: 360, width: '100%' },
+  errorTitle: { fontSize: 19, fontWeight: '600', color: '#1E293B', marginTop: 16 },
+  errorText: { fontSize: 16, color: '#94A3B8', marginTop: 6, textAlign: 'center' },
+
+  scrollContent: { flexGrow: 1, alignItems: 'center', paddingTop: 0, paddingBottom: 48, paddingHorizontal: 16, ...(Platform.OS === 'web' ? { minHeight: '100vh' as any } : {}) },
+  pageWrapper: { width: '100%', maxWidth: 440, alignItems: 'center' },
+
+  // Hero banner
+  heroBanner: { width: '100%', height: 180, borderRadius: 20, overflow: 'hidden', marginBottom: -30, position: 'relative' },
+  heroBannerPlaceholder: { width: '100%', height: 180, borderRadius: 20, overflow: 'hidden' },
+  heroBannerPattern: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.15)' },
+  heroOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingBottom: 40, paddingTop: 20, alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
+  heroThankYou: { fontSize: 15, color: 'rgba(255,255,255,0.85)', fontWeight: '500' },
+  heroStoreName: { fontSize: 22, fontWeight: '800', color: '#FFFFFF', marginTop: 4 },
+
+  // Main card
+  card: { backgroundColor: '#FFF', borderRadius: 20, paddingTop: 44, paddingBottom: 28, paddingHorizontal: 24, width: '100%', zIndex: 1, ...(Platform.OS === 'web' ? { boxShadow: '0 2px 12px rgba(0,0,0,0.08)' } : { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 16, elevation: 4 }) },
+
+  inviteSection: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 12 },
+  inviteLogo: { width: 28, height: 28 },
+  inviteLabel: { fontSize: 14, fontWeight: '600', color: '#64748B' },
+  inviteTitle: { fontSize: 22, fontWeight: '800', color: '#0F172A', textAlign: 'center', lineHeight: 28, letterSpacing: -0.3 },
+  inviteSubtitle: { fontSize: 15, color: '#64748B', textAlign: 'center', marginTop: 8, lineHeight: 20 },
+  spBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10, gap: 5, backgroundColor: '#F8FAFC', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, alignSelf: 'center' },
+  spBadgeText: { fontSize: 13, color: '#64748B' },
+
+  // Primary CTA
+  primaryBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 28, paddingVertical: 14, marginTop: 24, gap: 10 },
+  primaryBtnIcon: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center' },
+  primaryBtnText: { fontSize: 17, fontWeight: '700', color: '#FFF' },
+
+  // Or divider
+  orRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 20, gap: 12 },
+  orLine: { flex: 1, height: 1, backgroundColor: '#E2E8F0' },
+  orText: { fontSize: 13, color: '#94A3B8', fontWeight: '500' },
+
+  // Platform grid
+  platformGrid: { gap: 10 },
+  platformTile: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 14, paddingVertical: 13, paddingHorizontal: 16, ...(Platform.OS === 'web' ? { cursor: 'pointer' as any } : {}) },
+  platformTileDisabled: { opacity: 0.55, ...(Platform.OS === 'web' ? { cursor: 'default' as any } : {}) },
+  platformIcon: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  platformName: { flex: 1, fontSize: 16, fontWeight: '600', color: '#1E293B', marginLeft: 14 },
+  comingSoon: { fontSize: 11, fontWeight: '600', color: '#94A3B8', backgroundColor: '#F1F5F9', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+
+  // Store info
+  storeInfo: { marginTop: 24, paddingTop: 18, borderTopWidth: 1, borderTopColor: '#F1F5F9', gap: 6 },
+  storeInfoRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
+  storeInfoText: { fontSize: 14, color: '#94A3B8' },
+
+  // Feedback
+  feedbackCard: { backgroundColor: '#FFF', borderRadius: 20, paddingVertical: 24, paddingHorizontal: 24, width: '100%', marginTop: 14, ...(Platform.OS === 'web' ? { boxShadow: '0 2px 12px rgba(0,0,0,0.08)' } : { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 16, elevation: 4 }) },
+  fbHeading: { fontSize: 16, fontWeight: '600', color: '#334155', textAlign: 'center', marginBottom: 14 },
+  starRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: 12 },
+  fbInput: { backgroundColor: '#F8FAFC', borderRadius: 10, padding: 14, fontSize: 16, color: '#1E293B', borderWidth: 1, borderColor: '#E2E8F0', marginBottom: 10 },
+  fbSubmitBtn: { borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
+  fbSubmitText: { fontSize: 17, fontWeight: '600', color: '#FFF' },
+  fbSuccess: { alignItems: 'center', paddingVertical: 12 },
+  fbSuccessTitle: { fontSize: 19, fontWeight: '700', color: '#1E293B', marginTop: 10 },
+  fbSuccessText: { fontSize: 16, color: '#64748B', marginTop: 4 },
 });
