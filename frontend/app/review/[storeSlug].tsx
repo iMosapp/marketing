@@ -164,10 +164,10 @@ export default function PublicReviewPage() {
             )}
 
             <Text style={s.inviteTitle} data-testid="review-store-name">
-              Please leave us a quick review
+              Thank you for choosing us!
             </Text>
             <Text style={s.inviteSubtitle}>
-              Submit your review on Google, or select a different site
+              Please leave us a quick review on Google, or select a different site
             </Text>
 
             {salesperson?.name && (
