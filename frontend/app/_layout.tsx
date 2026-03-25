@@ -13,11 +13,28 @@ import { initGlobalErrorHandlers } from '../services/errorReporter';
 function usePWAMetaTags() {
   useEffect(() => {
     if (Platform.OS !== 'web') return;
+    if (typeof window === 'undefined') return;
     
-    // Skip PWA overrides if on CS login — that page manages its own branding
-    if (typeof window !== 'undefined' && window.location.pathname.includes('cs-login')) return;
-    
+    const path = window.location.pathname;
+    const isCS = path.includes('cs-login') || path.includes('/cs/');
     const head = document.head;
+
+    // Calendar Systems PWA branding override
+    if (isCS) {
+      localStorage.setItem('pwa_brand', 'calendar-systems');
+      const metaTitle = head.querySelector('meta[name="apple-mobile-web-app-title"]');
+      if (metaTitle) metaTitle.setAttribute('content', 'Calendar Systems');
+      const metaTheme = head.querySelector('meta[name="theme-color"]');
+      if (metaTheme) metaTheme.setAttribute('content', '#FFFFFF');
+      const linkManifest = head.querySelector('link[rel="manifest"]');
+      if (linkManifest) linkManifest.setAttribute('href', '/cs-manifest.json');
+      const linkIcon = head.querySelector('link[rel="apple-touch-icon"]');
+      if (linkIcon) linkIcon.setAttribute('href', '/cs-apple-touch-icon.png');
+      document.title = 'Calendar Systems';
+      return; // Skip default branding
+    }
+
+    localStorage.removeItem('pwa_brand');
     
     const ensureMeta = (name: string, content: string, attr = 'name') => {
       if (!head.querySelector(`meta[${attr}="${name}"]`)) {

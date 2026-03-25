@@ -32,27 +32,6 @@ export default function Root({ children }: PropsWithChildren) {
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         {/* Splash screen hints for iOS */}
         <meta name="apple-mobile-web-app-orientations" content="portrait" />
-        {/* Calendar Systems PWA override — must run before iOS reads meta tags */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                var isCS = window.location.pathname.indexOf('cs-login') !== -1
-                  || window.location.pathname.indexOf('/cs/') !== -1;
-                if (isCS) {
-                  localStorage.setItem('pwa_brand', 'calendar-systems');
-                  document.querySelector('meta[name="apple-mobile-web-app-title"]').content = 'Calendar Systems';
-                  document.querySelector('meta[name="theme-color"]').content = '#FFFFFF';
-                  document.querySelector('link[rel="manifest"]').href = '/cs-manifest.json';
-                  document.querySelector('link[rel="apple-touch-icon"]').href = '/cs-apple-touch-icon.png';
-                  document.title = 'Calendar Systems';
-                } else {
-                  localStorage.removeItem('pwa_brand');
-                }
-              })();
-            `,
-          }}
-        />
         {/*
           Disable body scrolling on web to make ScrollView components work correctly.
           If you want to enable scrolling, remove `ScrollViewStyleReset` and
