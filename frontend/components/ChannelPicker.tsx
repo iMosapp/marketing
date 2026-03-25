@@ -99,7 +99,7 @@ export default function ChannelPicker({ message, phone, email, link, onSent, vis
     const url = buildUrl(ch.url_scheme, params);
 
     if (IS_WEB && typeof window !== 'undefined') {
-      window.open(url, '_blank');
+      window.location.href = url;
     } else {
       Linking.openURL(url).catch(() => {
         showToast(`Could not open ${ch.name}`, 'error');

@@ -1460,7 +1460,7 @@ export default function ContactDetailScreen() {
           } catch {}
           // Open in user gesture context (not blocked by popup blocker)
           if (Platform.OS === 'web' && typeof window !== 'undefined') {
-            window.open(url, '_blank');
+            window.location.href = url;
           } else {
             Linking.openURL(url).catch(() => {});
           }
