@@ -1418,7 +1418,7 @@ export default function ContactDetailScreen() {
       const conversationId = conv._id || conv.id;
       
       if (composerMode === 'sms') {
-        // For SMS: Use personal SMS flow  - log the message server-side, then open channel picker
+        // For SMS: Log the message server-side, then open messaging channel
         const sendPayload: any = {
           conversation_id: conversationId,
           content: messageContent,
@@ -1427,17 +1427,57 @@ export default function ContactDetailScreen() {
         if (composerEventType) sendPayload.event_type = composerEventType;
         await messagesAPI.send(user._id, sendPayload);
         
-        // Open channel picker (auto-routes to single channel or shows picker for multi)
-        channelPicker.open({
-          message: messageContent,
-          phone: contact.phone || '',
-          email: contact.email || '',
-          onSent: (ch) => {
-            showToast(`Message logged & opened in ${ch === 'clipboard' ? 'clipboard' : ch}!`);
-            // Update the just-logged event with the actual channel used
-            api.patch(`/contacts/${user._id}/${id}/events/latest-channel`, { channel: ch }).catch(() => {});
-          },
-        });
+        // Fetch user's enabled channels
+        let userChannels: any[] = [];
+        try {
+          const chRes = await api.get(`/messaging-channels/user/${user._id}`);
+          userChannels = chRes.data.channels || [];
+        } catch {
+          userChannels = [{ id: 'sms', url_scheme: 'sms:{phone}?body={message}', requires_phone: true }];
+        }
+
+        if (userChannels.length === 1) {
+          // Single channel — open directly from this click handler (user gesture context)
+          const ch = userChannels[0];
+          const phone_clean = (contact.phone || '').replace(/\D/g, '');
+          let url = ch.url_scheme
+            .replace('{phone}', encodeURIComponent(contact.phone || ''))
+            .replace('{phone_clean}', phone_clean)
+            .replace('{message}', encodeURIComponent(messageContent))
+            .replace('{email}', encodeURIComponent(contact.email || ''));
+          // iOS SMS uses & separator
+          if (url.startsWith('sms:') && Platform.OS === 'web' && typeof window !== 'undefined') {
+            const ua = window.navigator.userAgent.toLowerCase();
+            if (/iphone|ipad|ipod/.test(ua)) {
+              url = url.replace('?body=', '&body=');
+            }
+          }
+          // Copy to clipboard for easy pasting
+          try {
+            if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard) {
+              navigator.clipboard.writeText(messageContent);
+            }
+          } catch {}
+          // Open in user gesture context (not blocked by popup blocker)
+          if (Platform.OS === 'web' && typeof window !== 'undefined') {
+            window.open(url, '_blank');
+          } else {
+            Linking.openURL(url).catch(() => {});
+          }
+          showToast(`Message logged & opening ${ch.name || 'SMS'}...`, 'success');
+          api.patch(`/contacts/${user._id}/${id}/events/latest-channel`, { channel: ch.id }).catch(() => {});
+        } else {
+          // Multiple channels — show the picker modal
+          channelPicker.open({
+            message: messageContent,
+            phone: contact.phone || '',
+            email: contact.email || '',
+            onSent: (ch) => {
+              showToast(`Message logged & opened in ${ch === 'clipboard' ? 'clipboard' : ch}!`);
+              api.patch(`/contacts/${user._id}/${id}/events/latest-channel`, { channel: ch }).catch(() => {});
+            },
+          });
+        }
       } else {
         // Email: send directly via Resend
         const emailPayload: any = {
