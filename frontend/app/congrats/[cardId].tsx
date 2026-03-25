@@ -19,6 +19,13 @@ import api from '../../services/api';
 import { trackCustomerAction } from '../../services/tracking';
 import { PoweredByFooter } from '../../components/PoweredByFooter';
 
+// Hydration guard — avoids React #418 errors from SSR/client mismatch
+function useHydrated() {
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  return hydrated;
+}
+
 interface CongratsCardData {
   card_id: string;
   customer_name: string;
@@ -48,6 +55,7 @@ interface CongratsCardData {
 }
 
 export default function CongratsCardPage() {
+  const hydrated = useHydrated();
   const { cardId, preview, cid } = useLocalSearchParams();
   const router = useRouter();
   const [cardData, setCardData] = useState<CongratsCardData | null>(null);
@@ -318,7 +326,7 @@ export default function CongratsCardPage() {
     }
   };
 
-  if (loading) {
+  if (!hydrated || loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#C9A962" />

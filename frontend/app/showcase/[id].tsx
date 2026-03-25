@@ -22,6 +22,12 @@ import { SEOHead } from '../../components/SEOHead';
 const IS_WEB = Platform.OS === 'web';
 const ACCENT = '#C9A962';
 
+function useHydrated() {
+  const [h, setH] = useState(false);
+  useEffect(() => setH(true), []);
+  return h;
+}
+
 interface ReviewData {
   id: string;
   rating: number;
@@ -91,6 +97,7 @@ function formatDate(dateStr: string | null): string {
 }
 
 export default function ShowcasePage() {
+  const hydrated = useHydrated();
   const { id, scope, from } = useLocalSearchParams();
   const router = useRouter();
   const [data, setData] = useState<ShowcaseData | null>(null);
@@ -200,7 +207,7 @@ export default function ShowcasePage() {
     );
   }
 
-  if (loading) {
+  if (!hydrated || loading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.center}>

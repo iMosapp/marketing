@@ -17,6 +17,13 @@ import { useAuthStore } from '../../../store/authStore';
 import api from '../../../services/api';
 
 import { useThemeStore } from '../../../store/themeStore';
+
+function useHydrated() {
+  const [h, setH] = useState(false);
+  useEffect(() => setH(true), []);
+  return h;
+}
+
 const CATEGORY_COLORS: Record<string, string> = {
   security: '#FF3B30',
   company_policy: '#5856D6',
@@ -26,6 +33,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export default function DocViewerScreen() {
+  const hydrated = useHydrated();
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
   const router = useRouter();
@@ -139,7 +147,7 @@ export default function DocViewerScreen() {
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   };
 
-  if (loading) {
+  if (!hydrated || loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingContainer}>
