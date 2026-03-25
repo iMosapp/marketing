@@ -737,6 +737,8 @@ async def restore_conversation(conversation_id: str):
 @router.put("/conversation/{conversation_id}/read")
 async def mark_conversation_read(conversation_id: str):
     """Mark a conversation as read"""
+    if not ObjectId.is_valid(conversation_id):
+        raise HTTPException(status_code=400, detail="Invalid conversation ID")
     result = await get_db().conversations.update_one(
         {"_id": ObjectId(conversation_id)},
         {"$set": {"unread": False, "unread_count": 0}}
@@ -751,6 +753,8 @@ async def mark_conversation_read(conversation_id: str):
 @router.put("/conversation/{conversation_id}/unread")
 async def mark_conversation_unread(conversation_id: str):
     """Mark a conversation as unread"""
+    if not ObjectId.is_valid(conversation_id):
+        raise HTTPException(status_code=400, detail="Invalid conversation ID")
     result = await get_db().conversations.update_one(
         {"_id": ObjectId(conversation_id)},
         {"$set": {"unread": True, "unread_count": 1}}
