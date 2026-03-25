@@ -148,41 +148,26 @@ export default function PublicReviewPage() {
       <ScrollView contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={s.pageWrapper}>
 
-          {/* Clean header — white background, "Thank you for choosing" + logo */}
-          <View style={s.heroClean} data-testid="review-hero-banner">
-            <Text style={s.heroThankYou}>Thank you for choosing</Text>
-            {logoUrl ? (
-              Platform.OS === 'web' ? (
-                <img src={logoUrl} style={{ height: 160, maxWidth: 320, objectFit: 'contain', display: 'block', marginTop: 8 } as any} />
-              ) : (
-                <Image source={{ uri: logoUrl }} style={{ height: 160, width: 320, marginTop: 8 }} resizeMode="contain" />
-              )
-            ) : (
-              <Text style={s.heroStoreName}>{displayName}</Text>
-            )}
-          </View>
-
-          {/* Main Review Card */}
+          {/* Single clean review card — no separate header */}
           <View style={s.card} data-testid="review-page-card">
-            {/* Invitation heading */}
-            <View style={s.inviteSection}>
-              {logoUrl && (
-                <View style={s.inviteLogo}>
-                  {Platform.OS === 'web' ? (
-                    <img src={logoUrl} style={{ width: 28, height: 28, objectFit: 'contain', display: 'block' } as any} />
-                  ) : (
-                    <Image source={{ uri: logoUrl }} style={{ width: 28, height: 28 }} resizeMode="contain" />
-                  )}
-                </View>
-              )}
-              <Text style={s.inviteLabel}>{displayName}</Text>
-            </View>
+            {/* Large logo */}
+            {logoUrl ? (
+              <View style={s.logoWrap}>
+                {Platform.OS === 'web' ? (
+                  <img src={logoUrl} style={{ height: 120, maxWidth: 280, objectFit: 'contain', display: 'block' } as any} />
+                ) : (
+                  <Image source={{ uri: logoUrl }} style={{ height: 120, width: 280 }} resizeMode="contain" />
+                )}
+              </View>
+            ) : (
+              <Text style={s.fallbackName}>{displayName}</Text>
+            )}
 
             <Text style={s.inviteTitle} data-testid="review-store-name">
-              {displayName} has invited you to review their business
+              Please leave us a quick review
             </Text>
             <Text style={s.inviteSubtitle}>
-              Submit your review on Google, or select a different review site
+              Submit your review on Google, or select a different site
             </Text>
 
             {salesperson?.name && (
@@ -331,19 +316,12 @@ const s = StyleSheet.create({
   errorText: { fontSize: 16, color: '#94A3B8', marginTop: 6, textAlign: 'center' },
 
   scrollContent: { flexGrow: 1, alignItems: 'center', paddingTop: 0, paddingBottom: 48, paddingHorizontal: 16, ...(Platform.OS === 'web' ? { minHeight: '100vh' as any } : {}) },
-  pageWrapper: { width: '100%', maxWidth: 440, alignItems: 'center' },
-
-  // Clean header
-  heroClean: { width: '100%', alignItems: 'center', paddingTop: 32, paddingBottom: 24, backgroundColor: '#FFFFFF' },
-  heroThankYou: { fontSize: 17, color: '#64748B', fontWeight: '500' },
-  heroStoreName: { fontSize: 24, fontWeight: '800', color: '#0F172A', marginTop: 8 },
+  pageWrapper: { width: '100%', maxWidth: 440, alignItems: 'center', paddingTop: 24 },
 
   // Main card
-  card: { backgroundColor: '#FFF', borderRadius: 20, paddingTop: 24, paddingBottom: 28, paddingHorizontal: 24, width: '100%', zIndex: 1, ...(Platform.OS === 'web' ? { boxShadow: '0 2px 12px rgba(0,0,0,0.08)' } : { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 16, elevation: 4 }) },
-
-  inviteSection: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 12 },
-  inviteLogo: { width: 28, height: 28 },
-  inviteLabel: { fontSize: 14, fontWeight: '600', color: '#64748B' },
+  card: { backgroundColor: '#FFF', borderRadius: 20, paddingTop: 32, paddingBottom: 28, paddingHorizontal: 24, width: '100%', zIndex: 1, ...(Platform.OS === 'web' ? { boxShadow: '0 2px 12px rgba(0,0,0,0.08)' } : { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.08, shadowRadius: 16, elevation: 4 }) },
+  logoWrap: { alignItems: 'center', marginBottom: 20 },
+  fallbackName: { fontSize: 26, fontWeight: '800', color: '#0F172A', textAlign: 'center', marginBottom: 16 },
   inviteTitle: { fontSize: 22, fontWeight: '800', color: '#0F172A', textAlign: 'center', lineHeight: 28, letterSpacing: -0.3 },
   inviteSubtitle: { fontSize: 15, color: '#64748B', textAlign: 'center', marginTop: 8, lineHeight: 20 },
   spBadge: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10, gap: 5, backgroundColor: '#F8FAFC', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20, alignSelf: 'center' },
