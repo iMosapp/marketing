@@ -252,6 +252,8 @@ export default function SetupWizardScreen() {
       try {
         const fullName = `${m.firstName.trim()} ${m.lastName.trim()}`.trim();
         const res = await api.post('/admin/users/create', {
+          first_name: m.firstName.trim(),
+          last_name: m.lastName.trim(),
           name: fullName, email: m.email, phone: m.phone,
           role: m.role, send_invite: true,
           store_id: storeId, organization_id: orgId,
