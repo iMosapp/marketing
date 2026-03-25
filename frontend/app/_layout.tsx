@@ -126,6 +126,14 @@ export default function RootLayout() {
   // Use theme background color once mounted, SSR-safe default that matches light theme
   const bgColor = mounted ? colors.bg : '#F2F2F7';
   
+  // Don't render app content until client-side mounted — prevents #418 hydration errors
+  // SSR output is just a blank shell; client renders everything fresh after mount
+  if (!mounted) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#F2F2F7' }} />
+    );
+  }
+  
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1, backgroundColor: bgColor }}>
