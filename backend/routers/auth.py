@@ -1029,9 +1029,18 @@ async def patch_user(user_id: str, user_data: dict):
     if not update_dict:
         raise HTTPException(status_code=400, detail="No valid fields to update")
     
+    # When photo_url is updated, clear old optimized paths so the new photo takes effect
+    unset_dict = {}
+    if 'photo_url' in update_dict:
+        unset_dict = {"photo_path": "", "photo_avatar_path": ""}
+    
+    update_ops = {"$set": update_dict}
+    if unset_dict:
+        update_ops["$unset"] = unset_dict
+    
     result = await get_db().users.update_one(
         {"_id": ObjectId(user_id)},
-        {"$set": update_dict}
+        update_ops
     )
     
     if result.matched_count == 0:

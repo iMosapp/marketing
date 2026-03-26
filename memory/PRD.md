@@ -14,7 +14,14 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### Auth: Forgot Password Email Case Bug + Admin Password Reset (Mar 26, 2026) -- LATEST
+### AI Persona Page UI Fixes + Profile Photo Persistence (Mar 26, 2026) -- LATEST
+- **Header hidden:** Added `JESSI_BAR_HEIGHT` to header paddingTop so "< AI Persona Save" is visible below the Jessi bar
+- **Family field too small:** Made multiline with `minHeight: 80` so full text is readable (e.g., "I'm married to Forest and we have five kids...")
+- **Fun Facts chips cut off:** Added `maxWidth: '100%'` and `flexShrink: 1` so long fact text wraps instead of being clipped
+- **Years in Business:** Made multiline with `minHeight: 60` for longer entries
+- **Profile photo not sticking:** When `photo_url` is updated via PATCH, now clears `photo_path` and `photo_avatar_path` so the new photo takes priority in `resolve_user_photo()`. Previously the old optimized path always won.
+
+### Auth: Forgot Password Email Case Bug + Admin Password Reset (Mar 26, 2026)
 - **Bug:** Forgot password `verify` and `reset` steps didn't lowercase the email, causing lookup failures when iOS auto-capitalizes emails. Fixed by normalizing email in all 3 steps.
 - **Feature:** Added `PUT /api/admin/users/{user_id}/reset-password` endpoint and "Reset Password" button on the admin user detail page so admins can directly reset any team member's password.
 

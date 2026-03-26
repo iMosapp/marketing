@@ -19,6 +19,7 @@ import Toggle from '../../components/Toggle';
 import VoiceInput from '../../components/VoiceInput';
 import { useToast } from '../../components/common/Toast';
 import { showAlert } from '../../services/alert';
+import { JESSI_BAR_HEIGHT } from '../../components/JessieFloatingChat';
 
 import { useThemeStore } from '../../store/themeStore';
 interface PersonaSettings {
@@ -497,11 +498,13 @@ const { showToast } = useToast();
           {/* Years Experience */}
           <Text style={[styles.sectionTitle, { fontSize: 14 }]}>YEARS IN THE BUSINESS</Text>
           <TextInput
-            style={[styles.addInput, { marginBottom: 16 }]}
+            style={[styles.addInput, { marginBottom: 16, minHeight: 60, textAlignVertical: 'top', paddingTop: 12 }]}
             value={settings.years_experience}
             onChangeText={(text) => setSettings(prev => ({ ...prev, years_experience: text }))}
             placeholder="e.g., 15 years"
             placeholderTextColor={colors.textSecondary}
+            multiline
+            numberOfLines={2}
           />
           
           {/* Hometown */}
@@ -524,11 +527,13 @@ const { showToast } = useToast();
           <Text style={[styles.sectionTitle, { fontSize: 14 }]}>FAMILY</Text>
           <View style={styles.voiceInputRow}>
             <TextInput
-              style={[styles.addInput, { flex: 1 }]}
+              style={[styles.addInput, { flex: 1, minHeight: 80, textAlignVertical: 'top', paddingTop: 12 }]}
               value={settings.family_info}
               onChangeText={(text) => setSettings(prev => ({ ...prev, family_info: text }))}
               placeholder="e.g., Married with 2 kids, dog named Max"
               placeholderTextColor={colors.textSecondary}
+              multiline
+              numberOfLines={3}
             />
             <VoiceInput
               onTranscription={(text) => setSettings(prev => ({ ...prev, family_info: prev.family_info ? prev.family_info + ' ' + text : text }))}
@@ -601,8 +606,8 @@ const { showToast } = useToast();
           </Text>
           <View style={styles.chipContainer}>
             {(settings.fun_facts || []).map((fact, index) => (
-              <View key={index} style={[styles.chip, { backgroundColor: '#AF52DE' }]}>
-                <Text style={styles.chipText}>{fact}</Text>
+              <View key={index} style={[styles.chip, { backgroundColor: '#AF52DE', maxWidth: '100%' }]}>
+                <Text style={[styles.chipText, { flexShrink: 1 }]}>{fact}</Text>
                 <TouchableOpacity onPress={() => setSettings(prev => ({ 
                   ...prev, 
                   fun_facts: prev.fun_facts.filter((_, i) => i !== index) 
@@ -716,7 +721,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'ios' ? 82 : 40,
+    paddingTop: (Platform.OS === 'ios' ? 82 : 40) + JESSI_BAR_HEIGHT,
     paddingHorizontal: 16,
     paddingBottom: 16,
     backgroundColor: colors.bg,
