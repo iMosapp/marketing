@@ -14,7 +14,16 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### AI Persona Page UI Fixes + Profile Photo Persistence (Mar 26, 2026) -- LATEST
+### AI Persona Wizard Redesign (Mar 26, 2026) -- LATEST
+- Converted the overwhelming single-scroll AI Persona page into a 4-step wizard:
+  - Step 1: "Your Story" (Bio, Family, Hometown, Years, Motto)
+  - Step 2: "What Makes You Unique" (Hobbies, Fun Facts, Specialties + AI Bio Generator)
+  - Step 3: "Your AI Voice" (Tone, Emoji, Humor, Response Length with Preview)
+  - Step 4: "Finishing Touches" (Greeting, Signature, Escalation Keywords + Save Everything)
+- Added progress bar, step indicator dots, Back/Next navigation
+- Each step shows only 3-5 fields max — much more digestible on mobile
+
+### AI Persona Page UI Fixes + Profile Photo Persistence (Mar 26, 2026)
 - **Header hidden:** Added `JESSI_BAR_HEIGHT` to header paddingTop so "< AI Persona Save" is visible below the Jessi bar
 - **Family field too small:** Made multiline with `minHeight: 80` so full text is readable (e.g., "I'm married to Forest and we have five kids...")
 - **Fun Facts chips cut off:** Added `maxWidth: '100%'` and `flexShrink: 1` so long fact text wraps instead of being clipped

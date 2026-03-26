@@ -79,6 +79,8 @@ export default function PersonaSettings() {
 const { showToast } = useToast();
     const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const TOTAL_STEPS = 4;
   const [settings, setSettings] = useState<PersonaSettings>({
     tone: 'friendly',
     emoji_usage: 'minimal',
@@ -237,6 +239,11 @@ const { showToast } = useToast();
     }));
   };
 
+  const STEP_LABELS = ['Your Story', 'What Makes You Unique', 'Your AI Voice', 'Finishing Touches'];
+
+  const goNext = () => { if (currentStep < TOTAL_STEPS) setCurrentStep(currentStep + 1); };
+  const goBack = () => { if (currentStep > 1) setCurrentStep(currentStep - 1); };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -249,7 +256,7 @@ const { showToast } = useToast();
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backButton} onPress={() => { if (currentStep > 1) goBack(); else router.back(); }}>
           <Ionicons name="chevron-back" size={28} color="#007AFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>AI Persona</Text>
@@ -262,446 +269,435 @@ const { showToast } = useToast();
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Preview Card */}
-        <View style={styles.previewCard}>
-          <Text style={styles.previewLabel}>Preview Message</Text>
-          <View style={styles.previewBubble}>
-            <Text style={styles.previewText}>
-              {settings.greeting_style.replace('{name}', 'Sarah')} Thanks for reaching out about the SUV!
-              {settings.emoji_usage !== 'never' ? ' 🚗' : ''} I'd love to help you find the perfect vehicle.
-              {settings.signature ? `\n\n${settings.signature}` : ''}
-            </Text>
-          </View>
+      {/* Progress Bar */}
+      <View style={styles.progressContainer}>
+        <View style={styles.progressBarTrack}>
+          <View style={[styles.progressBarFill, { width: `${(currentStep / TOTAL_STEPS) * 100}%` }]} />
         </View>
+        <Text style={styles.progressLabel}>Step {currentStep} of {TOTAL_STEPS} — {STEP_LABELS[currentStep - 1]}</Text>
+      </View>
 
-        {/* Communication Tone */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>COMMUNICATION TONE</Text>
-          <View style={styles.optionGrid}>
-            {TONE_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option.id}
-                style={[
-                  styles.toneOption,
-                  settings.tone === option.id && styles.toneOptionSelected,
-                ]}
-                onPress={() => setSettings(prev => ({ ...prev, tone: option.id as any }))}
-              >
-                <Ionicons
-                  name={option.icon as any}
-                  size={24}
-                  color={settings.tone === option.id ? '#007AFF' : colors.textSecondary}
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} key={`step-${currentStep}`}>
+
+        {/* ═══════ STEP 1: Your Story ═══════ */}
+        {currentStep === 1 && (
+          <>
+            <Text style={styles.stepTitle}>Tell us about yourself</Text>
+            <Text style={styles.stepSubtitle}>This is what powers your AI and shows up on your digital card, showcase, and landing page.</Text>
+
+            {/* Bio */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>About You</Text>
+              <Text style={styles.fieldHint}>Write your story in your own words. Who are you? What drives you?</Text>
+              <View style={[styles.voiceInputRow, { alignItems: 'stretch' }]}>
+                <TextInput
+                  style={[styles.addInput, styles.bioInput]}
+                  value={settings.bio}
+                  onChangeText={(text) => setSettings(prev => ({ ...prev, bio: text }))}
+                  placeholder="e.g., I've been in auto sales for 15 years, started as a lot porter..."
+                  placeholderTextColor={colors.textSecondary}
+                  multiline
+                  numberOfLines={10}
+                  scrollEnabled={true}
                 />
-                <Text style={[styles.toneLabel, settings.tone === option.id && styles.toneLabelSelected]}>
-                  {option.label}
-                </Text>
-                <Text style={styles.toneDesc}>{option.desc}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Emoji Usage */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>EMOJI USAGE</Text>
-          <View style={styles.optionRow}>
-            {EMOJI_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option.id}
-                style={[
-                  styles.emojiOption,
-                  settings.emoji_usage === option.id && styles.emojiOptionSelected,
-                ]}
-                onPress={() => setSettings(prev => ({ ...prev, emoji_usage: option.id as any }))}
-              >
-                <Text style={[styles.emojiLabel, settings.emoji_usage === option.id && styles.emojiLabelSelected]}>
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Humor Level */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>HUMOR LEVEL</Text>
-          <View style={styles.optionRow}>
-            {HUMOR_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option.id}
-                style={[
-                  styles.humorOption,
-                  settings.humor_level === option.id && styles.humorOptionSelected,
-                ]}
-                onPress={() => setSettings(prev => ({ ...prev, humor_level: option.id as any }))}
-              >
-                <Text style={[styles.humorLabel, settings.humor_level === option.id && styles.humorLabelSelected]}>
-                  {option.label}
-                </Text>
-                <Text style={styles.humorDesc}>{option.desc}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Response Length */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>RESPONSE LENGTH</Text>
-          <View style={styles.optionRow}>
-            {LENGTH_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option.id}
-                style={[
-                  styles.lengthOption,
-                  settings.response_length === option.id && styles.lengthOptionSelected,
-                ]}
-                onPress={() => setSettings(prev => ({ ...prev, response_length: option.id as any }))}
-              >
-                <Text style={[styles.lengthLabel, settings.response_length === option.id && styles.lengthLabelSelected]}>
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Greeting & Signature */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>GREETING & SIGNATURE</Text>
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Greeting Style</Text>
-            <TextInput
-              style={styles.input}
-              value={settings.greeting_style}
-              onChangeText={(text) => setSettings(prev => ({ ...prev, greeting_style: text }))}
-              placeholder="Hi {name}!"
-              placeholderTextColor={colors.textSecondary}
-            />
-            <Text style={styles.inputHint}>Use {'{name}'} to insert contact's name</Text>
-          </View>
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Signature (optional)</Text>
-            <TextInput
-              style={styles.input}
-              value={settings.signature}
-              onChangeText={(text) => setSettings(prev => ({ ...prev, signature: text }))}
-              placeholder="- Your Name, Title"
-              placeholderTextColor={colors.textSecondary}
-            />
-          </View>
-          <View style={styles.switchRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.switchLabel}>Auto-introduce on first contact</Text>
-              <Text style={styles.switchHint}>AI will introduce itself when messaging new leads</Text>
+                <VoiceInput
+                  onTranscription={(text) => setSettings(prev => ({ ...prev, bio: prev.bio ? prev.bio + ' ' + text : text }))}
+                  size="small"
+                  style={{ marginLeft: 8 }}
+                />
+              </View>
             </View>
-            <Toggle
-              value={settings.auto_introduce}
-              onValueChange={(value) => setSettings(prev => ({ ...prev, auto_introduce: value }))}
-              activeColor="#34C759"
-            />
-          </View>
-        </View>
 
-        {/* Escalation Keywords */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>ESCALATION KEYWORDS</Text>
-          <Text style={styles.sectionDesc}>
-            AI will flag conversations containing these words for your attention
-          </Text>
-          <View style={styles.chipContainer}>
-            {settings.escalation_keywords.map((keyword) => (
-              <View key={keyword} style={styles.chip}>
-                <Text style={styles.chipText}>{keyword}</Text>
-                <TouchableOpacity onPress={() => removeKeyword(keyword)}>
-                  <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
-                </TouchableOpacity>
+            {/* Family */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Family</Text>
+              <View style={styles.voiceInputRow}>
+                <TextInput
+                  style={[styles.addInput, { flex: 1, minHeight: 80, textAlignVertical: 'top', paddingTop: 12 }]}
+                  value={settings.family_info}
+                  onChangeText={(text) => setSettings(prev => ({ ...prev, family_info: text }))}
+                  placeholder="e.g., Married with 2 kids, dog named Max"
+                  placeholderTextColor={colors.textSecondary}
+                  multiline
+                  numberOfLines={3}
+                />
+                <VoiceInput
+                  onTranscription={(text) => setSettings(prev => ({ ...prev, family_info: prev.family_info ? prev.family_info + ' ' + text : text }))}
+                  size="small"
+                />
               </View>
-            ))}
-          </View>
-          <View style={styles.addRow}>
-            <TextInput
-              style={styles.addInput}
-              value={newKeyword}
-              onChangeText={setNewKeyword}
-              placeholder="Add keyword..."
-              placeholderTextColor={colors.textSecondary}
-              onSubmitEditing={addKeyword}
-            />
-            <TouchableOpacity style={styles.addButton} onPress={addKeyword}>
-              <Ionicons name="add" size={24} color="#007AFF" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Specialties */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>YOUR SPECIALTIES</Text>
-          <Text style={styles.sectionDesc}>
-            Help your AI understand what you specialize in
-          </Text>
-          <View style={styles.chipContainer}>
-            {settings.specialties.map((specialty) => (
-              <View key={specialty} style={[styles.chip, styles.chipGreen]}>
-                <Text style={styles.chipText}>{specialty}</Text>
-                <TouchableOpacity onPress={() => removeSpecialty(specialty)}>
-                  <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-          <View style={styles.addRow}>
-            <TextInput
-              style={styles.addInput}
-              value={newSpecialty}
-              onChangeText={setNewSpecialty}
-              placeholder="e.g., Trucks, Financing, Trade-ins..."
-              placeholderTextColor={colors.textSecondary}
-              onSubmitEditing={addSpecialty}
-            />
-            <TouchableOpacity style={styles.addButton} onPress={addSpecialty}>
-              <Ionicons name="add" size={24} color="#007AFF" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Personal Story Section - Train Your AI */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>YOUR BIO & PERSONAL AI</Text>
-          <Text style={styles.sectionDesc}>
-            This is the heart of your AI. Everything here shapes how your AI writes, responds, and connects with people on your behalf. The more detail you add, the more your AI sounds like the real you — not a robot.
-          </Text>
-          
-          {/* Bio */}
-          <Text style={[styles.sectionTitle, { marginTop: 16, fontSize: 14 }]}>ABOUT YOU</Text>
-          <Text style={[styles.sectionDesc, { fontSize: 14 }]}>
-            Write your story in your own words. Who are you? What drives you? This bio powers your AI messages and is displayed on your digital card, showcase page, landing page, and all personal profiles.
-          </Text>
-          <View style={[styles.voiceInputRow, { alignItems: 'stretch' }]}>
-            <TextInput
-              style={[styles.addInput, styles.bioInput]}
-              value={settings.bio}
-              onChangeText={(text) => setSettings(prev => ({ ...prev, bio: text }))}
-              placeholder="Tell us about yourself... e.g., I've been in auto sales for 15 years, started as a lot porter..."
-              placeholderTextColor={colors.textSecondary}
-              multiline
-              numberOfLines={10}
-              scrollEnabled={true}
-            />
-            <VoiceInput
-              onTranscription={(text) => setSettings(prev => ({ ...prev, bio: prev.bio ? prev.bio + ' ' + text : text }))}
-              size="small"
-              style={{ marginLeft: 8 }}
-            />
-          </View>
-          
-          {/* Years Experience */}
-          <Text style={[styles.sectionTitle, { fontSize: 14 }]}>YEARS IN THE BUSINESS</Text>
-          <TextInput
-            style={[styles.addInput, { marginBottom: 16, minHeight: 60, textAlignVertical: 'top', paddingTop: 12 }]}
-            value={settings.years_experience}
-            onChangeText={(text) => setSettings(prev => ({ ...prev, years_experience: text }))}
-            placeholder="e.g., 15 years"
-            placeholderTextColor={colors.textSecondary}
-            multiline
-            numberOfLines={2}
-          />
-          
-          {/* Hometown */}
-          <Text style={[styles.sectionTitle, { fontSize: 14 }]}>HOMETOWN / WHERE YOU'RE FROM</Text>
-          <View style={styles.voiceInputRow}>
-            <TextInput
-              style={[styles.addInput, { flex: 1 }]}
-              value={settings.hometown}
-              onChangeText={(text) => setSettings(prev => ({ ...prev, hometown: text }))}
-              placeholder="e.g., Born and raised in Dallas, TX"
-              placeholderTextColor={colors.textSecondary}
-            />
-            <VoiceInput
-              onTranscription={(text) => setSettings(prev => ({ ...prev, hometown: prev.hometown ? prev.hometown + ' ' + text : text }))}
-              size="small"
-            />
-          </View>
-          
-          {/* Family Info */}
-          <Text style={[styles.sectionTitle, { fontSize: 14 }]}>FAMILY</Text>
-          <View style={styles.voiceInputRow}>
-            <TextInput
-              style={[styles.addInput, { flex: 1, minHeight: 80, textAlignVertical: 'top', paddingTop: 12 }]}
-              value={settings.family_info}
-              onChangeText={(text) => setSettings(prev => ({ ...prev, family_info: text }))}
-              placeholder="e.g., Married with 2 kids, dog named Max"
-              placeholderTextColor={colors.textSecondary}
-              multiline
-              numberOfLines={3}
-            />
-            <VoiceInput
-              onTranscription={(text) => setSettings(prev => ({ ...prev, family_info: prev.family_info ? prev.family_info + ' ' + text : text }))}
-              size="small"
-            />
-          </View>
-          
-          {/* Personal Motto */}
-          <Text style={[styles.sectionTitle, { fontSize: 14 }]}>YOUR MOTTO / CATCHPHRASE</Text>
-          <View style={styles.voiceInputRow}>
-            <TextInput
-              style={[styles.addInput, { flex: 1 }]}
-              value={settings.personal_motto}
-              onChangeText={(text) => setSettings(prev => ({ ...prev, personal_motto: text }))}
-              placeholder='e.g., "Treat every customer like family"'
-              placeholderTextColor={colors.textSecondary}
-            />
-            <VoiceInput
-              onTranscription={(text) => setSettings(prev => ({ ...prev, personal_motto: prev.personal_motto ? prev.personal_motto + ' ' + text : text }))}
-              size="small"
-            />
-          </View>
-          
-          {/* Hobbies */}
-          <Text style={[styles.sectionTitle, { fontSize: 14 }]}>HOBBIES & INTERESTS</Text>
-          <Text style={[styles.sectionDesc, { fontSize: 14 }]}>
-            What do you do outside of work? This helps build rapport.
-          </Text>
-          <View style={styles.chipContainer}>
-            {(settings.hobbies || []).map((hobby) => (
-              <View key={hobby} style={[styles.chip, { backgroundColor: '#FF9500' }]}>
-                <Text style={styles.chipText}>{hobby}</Text>
-                <TouchableOpacity onPress={() => setSettings(prev => ({ 
-                  ...prev, 
-                  hobbies: prev.hobbies.filter(h => h !== hobby) 
-                }))}>
-                  <Ionicons name="close-circle" size={18} color={colors.text} />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-          <View style={styles.addRow}>
-            <TextInput
-              style={styles.addInput}
-              value={newHobby}
-              onChangeText={setNewHobby}
-              placeholder="e.g., Golf, Fishing, Cowboys fan..."
-              placeholderTextColor={colors.textSecondary}
-              onSubmitEditing={() => {
-                if (newHobby.trim()) {
-                  setSettings(prev => ({ ...prev, hobbies: [...(prev.hobbies || []), newHobby.trim()] }));
-                  setNewHobby('');
-                }
-              }}
-            />
-            <TouchableOpacity style={styles.addButton} onPress={() => {
-              if (newHobby.trim()) {
-                setSettings(prev => ({ ...prev, hobbies: [...(prev.hobbies || []), newHobby.trim()] }));
-                setNewHobby('');
-              }
-            }}>
-              <Ionicons name="add" size={24} color="#007AFF" />
-            </TouchableOpacity>
-          </View>
-          
-          {/* Fun Facts */}
-          <Text style={[styles.sectionTitle, { fontSize: 14, marginTop: 16 }]}>FUN FACTS ABOUT YOU</Text>
-          <Text style={[styles.sectionDesc, { fontSize: 14 }]}>
-            Unique things that make you memorable
-          </Text>
-          <View style={styles.chipContainer}>
-            {(settings.fun_facts || []).map((fact, index) => (
-              <View key={index} style={[styles.chip, { backgroundColor: '#AF52DE', maxWidth: '100%' }]}>
-                <Text style={[styles.chipText, { flexShrink: 1 }]}>{fact}</Text>
-                <TouchableOpacity onPress={() => setSettings(prev => ({ 
-                  ...prev, 
-                  fun_facts: prev.fun_facts.filter((_, i) => i !== index) 
-                }))}>
-                  <Ionicons name="close-circle" size={18} color={colors.text} />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-          <View style={styles.addRow}>
-            <TextInput
-              style={styles.addInput}
-              value={newFunFact}
-              onChangeText={setNewFunFact}
-              placeholder="e.g., I once sold 50 cars in one month..."
-              placeholderTextColor={colors.textSecondary}
-              onSubmitEditing={() => {
-                if (newFunFact.trim()) {
-                  setSettings(prev => ({ ...prev, fun_facts: [...(prev.fun_facts || []), newFunFact.trim()] }));
-                  setNewFunFact('');
-                }
-              }}
-            />
-            <TouchableOpacity style={styles.addButton} onPress={() => {
-              if (newFunFact.trim()) {
-                setSettings(prev => ({ ...prev, fun_facts: [...(prev.fun_facts || []), newFunFact.trim()] }));
-                setNewFunFact('');
-              }
-            }}>
-              <Ionicons name="add" size={24} color="#007AFF" />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Retrain Button */}
-        <TouchableOpacity 
-          style={[styles.saveButtonLarge, { backgroundColor: '#34C759', marginBottom: 12, opacity: retraining ? 0.6 : 1 }]}
-          onPress={handleRetrain}
-          disabled={retraining}
-        >
-          {retraining ? (
-            <ActivityIndicator size="small" color={colors.text} style={{ marginRight: 8 }} />
-          ) : (
-            <Ionicons name="refresh" size={20} color={colors.text} style={{ marginRight: 8 }} />
-          )}
-          <Text style={styles.saveButtonLargeText}>{retraining ? 'Generating...' : 'Retrain My AI'}</Text>
-        </TouchableOpacity>
-
-        {/* Save Button (bottom) */}
-        <TouchableOpacity 
-          style={[styles.saveButtonLarge, { backgroundColor: '#007AFF', marginBottom: 16, opacity: saving ? 0.6 : 1 }]}
-          onPress={handleSave}
-          disabled={saving}
-          data-testid="save-persona-bottom"
-        >
-          {saving ? (
-            <ActivityIndicator size="small" color="#FFF" style={{ marginRight: 8 }} />
-          ) : (
-            <Ionicons name="checkmark-circle" size={20} color="#FFF" style={{ marginRight: 8 }} />
-          )}
-          <Text style={[styles.saveButtonLargeText, { color: '#FFF' }]}>{saving ? 'Saving...' : 'Save Changes'}</Text>
-        </TouchableOpacity>
-
-        {/* AI Generated Bio Preview */}
-        {generatedBio ? (
-          <View style={{ backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#34C759' }}>
-            <Text style={{ fontSize: 14, fontWeight: '600', color: '#34C759', marginBottom: 10 }}>AI-GENERATED BIO (PREVIEW)</Text>
-            <TextInput
-              style={[styles.addInput, { height: 200, textAlignVertical: 'top', marginBottom: 12, lineHeight: 22, paddingTop: 14 }]}
-              value={generatedBio}
-              onChangeText={setGeneratedBio}
-              multiline
-              numberOfLines={8}
-              scrollEnabled={true}
-            />
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity
-                style={{ flex: 1, backgroundColor: '#34C759', borderRadius: 10, padding: 12, alignItems: 'center' }}
-                onPress={handleAcceptBio}
-              >
-                <Text style={{ color: '#fff', fontWeight: '600', fontSize: 17 }}>Use This Bio</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={{ flex: 1, backgroundColor: colors.card, borderRadius: 10, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.textSecondary }}
-                onPress={() => setGeneratedBio('')}
-              >
-                <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 17 }}>Dismiss</Text>
-              </TouchableOpacity>
             </View>
-          </View>
-        ) : null}
+
+            {/* Hometown */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Hometown</Text>
+              <View style={styles.voiceInputRow}>
+                <TextInput
+                  style={[styles.addInput, { flex: 1 }]}
+                  value={settings.hometown}
+                  onChangeText={(text) => setSettings(prev => ({ ...prev, hometown: text }))}
+                  placeholder="e.g., Born and raised in Dallas, TX"
+                  placeholderTextColor={colors.textSecondary}
+                />
+                <VoiceInput
+                  onTranscription={(text) => setSettings(prev => ({ ...prev, hometown: prev.hometown ? prev.hometown + ' ' + text : text }))}
+                  size="small"
+                />
+              </View>
+            </View>
+
+            {/* Years in Business */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Years in the Business</Text>
+              <TextInput
+                style={[styles.addInput, { minHeight: 60, textAlignVertical: 'top', paddingTop: 12 }]}
+                value={settings.years_experience}
+                onChangeText={(text) => setSettings(prev => ({ ...prev, years_experience: text }))}
+                placeholder="e.g., 15 years in automotive sales"
+                placeholderTextColor={colors.textSecondary}
+                multiline
+                numberOfLines={2}
+              />
+            </View>
+
+            {/* Motto */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Your Motto / Catchphrase</Text>
+              <View style={styles.voiceInputRow}>
+                <TextInput
+                  style={[styles.addInput, { flex: 1 }]}
+                  value={settings.personal_motto}
+                  onChangeText={(text) => setSettings(prev => ({ ...prev, personal_motto: text }))}
+                  placeholder='"Treat every customer like family"'
+                  placeholderTextColor={colors.textSecondary}
+                />
+                <VoiceInput
+                  onTranscription={(text) => setSettings(prev => ({ ...prev, personal_motto: prev.personal_motto ? prev.personal_motto + ' ' + text : text }))}
+                  size="small"
+                />
+              </View>
+            </View>
+          </>
+        )}
+
+        {/* ═══════ STEP 2: What Makes You Unique ═══════ */}
+        {currentStep === 2 && (
+          <>
+            <Text style={styles.stepTitle}>What makes you stand out?</Text>
+            <Text style={styles.stepSubtitle}>These details help your AI build real rapport with customers.</Text>
+
+            {/* Hobbies */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Hobbies & Interests</Text>
+              <Text style={styles.fieldHint}>What do you do outside of work?</Text>
+              <View style={styles.chipContainer}>
+                {(settings.hobbies || []).map((hobby) => (
+                  <View key={hobby} style={[styles.chip, { backgroundColor: '#FF9500' }]}>
+                    <Text style={styles.chipText}>{hobby}</Text>
+                    <TouchableOpacity onPress={() => setSettings(prev => ({ ...prev, hobbies: prev.hobbies.filter(h => h !== hobby) }))}>
+                      <Ionicons name="close-circle" size={18} color={colors.text} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+              <View style={styles.addRow}>
+                <TextInput
+                  style={styles.addInput}
+                  value={newHobby}
+                  onChangeText={setNewHobby}
+                  placeholder="e.g., Golf, Fishing, Cowboys fan..."
+                  placeholderTextColor={colors.textSecondary}
+                  onSubmitEditing={() => { if (newHobby.trim()) { setSettings(prev => ({ ...prev, hobbies: [...(prev.hobbies || []), newHobby.trim()] })); setNewHobby(''); } }}
+                />
+                <TouchableOpacity style={styles.addButton} onPress={() => { if (newHobby.trim()) { setSettings(prev => ({ ...prev, hobbies: [...(prev.hobbies || []), newHobby.trim()] })); setNewHobby(''); } }}>
+                  <Ionicons name="add" size={24} color="#007AFF" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Fun Facts */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Fun Facts About You</Text>
+              <Text style={styles.fieldHint}>Unique things that make you memorable</Text>
+              <View style={styles.chipContainer}>
+                {(settings.fun_facts || []).map((fact, index) => (
+                  <View key={index} style={[styles.chip, { backgroundColor: '#AF52DE', maxWidth: '100%' }]}>
+                    <Text style={[styles.chipText, { flexShrink: 1 }]}>{fact}</Text>
+                    <TouchableOpacity onPress={() => setSettings(prev => ({ ...prev, fun_facts: prev.fun_facts.filter((_, i) => i !== index) }))}>
+                      <Ionicons name="close-circle" size={18} color={colors.text} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+              <View style={styles.addRow}>
+                <TextInput
+                  style={styles.addInput}
+                  value={newFunFact}
+                  onChangeText={setNewFunFact}
+                  placeholder="e.g., I once sold 50 cars in one month..."
+                  placeholderTextColor={colors.textSecondary}
+                  onSubmitEditing={() => { if (newFunFact.trim()) { setSettings(prev => ({ ...prev, fun_facts: [...(prev.fun_facts || []), newFunFact.trim()] })); setNewFunFact(''); } }}
+                />
+                <TouchableOpacity style={styles.addButton} onPress={() => { if (newFunFact.trim()) { setSettings(prev => ({ ...prev, fun_facts: [...(prev.fun_facts || []), newFunFact.trim()] })); setNewFunFact(''); } }}>
+                  <Ionicons name="add" size={24} color="#007AFF" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Specialties */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Your Specialties</Text>
+              <Text style={styles.fieldHint}>Help your AI understand what you specialize in</Text>
+              <View style={styles.chipContainer}>
+                {settings.specialties.map((specialty) => (
+                  <View key={specialty} style={[styles.chip, styles.chipGreen]}>
+                    <Text style={styles.chipText}>{specialty}</Text>
+                    <TouchableOpacity onPress={() => removeSpecialty(specialty)}>
+                      <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+              <View style={styles.addRow}>
+                <TextInput
+                  style={styles.addInput}
+                  value={newSpecialty}
+                  onChangeText={setNewSpecialty}
+                  placeholder="e.g., Trucks, Financing, Trade-ins..."
+                  placeholderTextColor={colors.textSecondary}
+                  onSubmitEditing={addSpecialty}
+                />
+                <TouchableOpacity style={styles.addButton} onPress={addSpecialty}>
+                  <Ionicons name="add" size={24} color="#007AFF" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Retrain + Generated Bio */}
+            <TouchableOpacity 
+              style={[styles.saveButtonLarge, { backgroundColor: '#34C759', marginBottom: 12, opacity: retraining ? 0.6 : 1 }]}
+              onPress={handleRetrain}
+              disabled={retraining}
+            >
+              {retraining ? (
+                <ActivityIndicator size="small" color={colors.text} style={{ marginRight: 8 }} />
+              ) : (
+                <Ionicons name="sparkles" size={20} color={colors.text} style={{ marginRight: 8 }} />
+              )}
+              <Text style={styles.saveButtonLargeText}>{retraining ? 'Generating...' : 'Generate AI Bio From My Info'}</Text>
+            </TouchableOpacity>
+            {generatedBio ? (
+              <View style={{ backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#34C759' }}>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#34C759', marginBottom: 10 }}>AI-GENERATED BIO (PREVIEW)</Text>
+                <TextInput
+                  style={[styles.addInput, { height: 200, textAlignVertical: 'top', marginBottom: 12, lineHeight: 22, paddingTop: 14 }]}
+                  value={generatedBio}
+                  onChangeText={setGeneratedBio}
+                  multiline
+                  numberOfLines={8}
+                  scrollEnabled={true}
+                />
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <TouchableOpacity
+                    style={{ flex: 1, backgroundColor: '#34C759', borderRadius: 10, padding: 12, alignItems: 'center' }}
+                    onPress={handleAcceptBio}
+                  >
+                    <Text style={{ color: '#fff', fontWeight: '600', fontSize: 17 }}>Use This Bio</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{ flex: 1, backgroundColor: colors.card, borderRadius: 10, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.textSecondary }}
+                    onPress={() => setGeneratedBio('')}
+                  >
+                    <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 17 }}>Dismiss</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : null}
+          </>
+        )}
+
+        {/* ═══════ STEP 3: Your AI Voice ═══════ */}
+        {currentStep === 3 && (
+          <>
+            <Text style={styles.stepTitle}>How should your AI sound?</Text>
+            <Text style={styles.stepSubtitle}>Set the tone for how your AI talks to customers on your behalf.</Text>
+
+            {/* Preview */}
+            <View style={styles.previewCard}>
+              <Text style={styles.previewLabel}>Preview Message</Text>
+              <View style={styles.previewBubble}>
+                <Text style={styles.previewText}>
+                  {settings.greeting_style.replace('{name}', 'Sarah')} Thanks for reaching out about the SUV!
+                  {settings.emoji_usage !== 'never' ? ' \uD83D\uDE97' : ''} I'd love to help you find the perfect vehicle.
+                  {settings.signature ? `\n\n${settings.signature}` : ''}
+                </Text>
+              </View>
+            </View>
+
+            {/* Tone */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>COMMUNICATION TONE</Text>
+              <View style={styles.optionGrid}>
+                {TONE_OPTIONS.map((option) => (
+                  <TouchableOpacity
+                    key={option.id}
+                    style={[styles.toneOption, settings.tone === option.id && styles.toneOptionSelected]}
+                    onPress={() => setSettings(prev => ({ ...prev, tone: option.id as any }))}
+                  >
+                    <Ionicons name={option.icon as any} size={24} color={settings.tone === option.id ? '#007AFF' : colors.textSecondary} />
+                    <Text style={[styles.toneLabel, settings.tone === option.id && styles.toneLabelSelected]}>{option.label}</Text>
+                    <Text style={styles.toneDesc}>{option.desc}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Emoji */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>EMOJI USAGE</Text>
+              <View style={styles.optionRow}>
+                {EMOJI_OPTIONS.map((option) => (
+                  <TouchableOpacity key={option.id} style={[styles.emojiOption, settings.emoji_usage === option.id && styles.emojiOptionSelected]} onPress={() => setSettings(prev => ({ ...prev, emoji_usage: option.id as any }))}>
+                    <Text style={[styles.emojiLabel, settings.emoji_usage === option.id && styles.emojiLabelSelected]}>{option.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Humor */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>HUMOR LEVEL</Text>
+              <View style={styles.optionRow}>
+                {HUMOR_OPTIONS.map((option) => (
+                  <TouchableOpacity key={option.id} style={[styles.humorOption, settings.humor_level === option.id && styles.humorOptionSelected]} onPress={() => setSettings(prev => ({ ...prev, humor_level: option.id as any }))}>
+                    <Text style={[styles.humorLabel, settings.humor_level === option.id && styles.humorLabelSelected]}>{option.label}</Text>
+                    <Text style={styles.humorDesc}>{option.desc}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Response Length */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>RESPONSE LENGTH</Text>
+              <View style={styles.optionRow}>
+                {LENGTH_OPTIONS.map((option) => (
+                  <TouchableOpacity key={option.id} style={[styles.lengthOption, settings.response_length === option.id && styles.lengthOptionSelected]} onPress={() => setSettings(prev => ({ ...prev, response_length: option.id as any }))}>
+                    <Text style={[styles.lengthLabel, settings.response_length === option.id && styles.lengthLabelSelected]}>{option.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </>
+        )}
+
+        {/* ═══════ STEP 4: Finishing Touches ═══════ */}
+        {currentStep === 4 && (
+          <>
+            <Text style={styles.stepTitle}>Final details</Text>
+            <Text style={styles.stepSubtitle}>Set your greeting, signature, and keywords that flag conversations for your attention.</Text>
+
+            {/* Greeting & Signature */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Greeting Style</Text>
+              <TextInput
+                style={styles.input}
+                value={settings.greeting_style}
+                onChangeText={(text) => setSettings(prev => ({ ...prev, greeting_style: text }))}
+                placeholder="Hi {name}!"
+                placeholderTextColor={colors.textSecondary}
+              />
+              <Text style={styles.inputHint}>Use {'{name}'} to insert the contact's name</Text>
+            </View>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Signature (optional)</Text>
+              <TextInput
+                style={styles.input}
+                value={settings.signature}
+                onChangeText={(text) => setSettings(prev => ({ ...prev, signature: text }))}
+                placeholder="- Your Name, Title"
+                placeholderTextColor={colors.textSecondary}
+              />
+            </View>
+            <View style={[styles.switchRow, { marginBottom: 24 }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.switchLabel}>Auto-introduce on first contact</Text>
+                <Text style={styles.switchHint}>AI will introduce itself when messaging new leads</Text>
+              </View>
+              <Toggle
+                value={settings.auto_introduce}
+                onValueChange={(value) => setSettings(prev => ({ ...prev, auto_introduce: value }))}
+                activeColor="#34C759"
+              />
+            </View>
+
+            {/* Escalation Keywords */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Escalation Keywords</Text>
+              <Text style={styles.fieldHint}>AI will flag conversations containing these words for your attention</Text>
+              <View style={styles.chipContainer}>
+                {settings.escalation_keywords.map((keyword) => (
+                  <View key={keyword} style={styles.chip}>
+                    <Text style={styles.chipText}>{keyword}</Text>
+                    <TouchableOpacity onPress={() => removeKeyword(keyword)}>
+                      <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+              <View style={styles.addRow}>
+                <TextInput
+                  style={styles.addInput}
+                  value={newKeyword}
+                  onChangeText={setNewKeyword}
+                  placeholder="Add keyword..."
+                  placeholderTextColor={colors.textSecondary}
+                  onSubmitEditing={addKeyword}
+                />
+                <TouchableOpacity style={styles.addButton} onPress={addKeyword}>
+                  <Ionicons name="add" size={24} color="#007AFF" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Final Save */}
+            <TouchableOpacity 
+              style={[styles.saveButtonLarge, { backgroundColor: '#007AFF', marginBottom: 16, opacity: saving ? 0.6 : 1 }]}
+              onPress={handleSave}
+              disabled={saving}
+              data-testid="save-persona-final"
+            >
+              {saving ? (
+                <ActivityIndicator size="small" color="#FFF" style={{ marginRight: 8 }} />
+              ) : (
+                <Ionicons name="checkmark-circle" size={20} color="#FFF" style={{ marginRight: 8 }} />
+              )}
+              <Text style={[styles.saveButtonLargeText, { color: '#FFF' }]}>{saving ? 'Saving...' : 'Save Everything'}</Text>
+            </TouchableOpacity>
+          </>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Bottom Navigation */}
+      <View style={styles.navBar}>
+        {currentStep > 1 ? (
+          <TouchableOpacity style={styles.navBackBtn} onPress={goBack} data-testid="wizard-back-btn">
+            <Ionicons name="chevron-back" size={20} color="#007AFF" />
+            <Text style={styles.navBackText}>Back</Text>
+          </TouchableOpacity>
+        ) : <View style={{ width: 80 }} />}
+        <Text style={styles.navDots}>
+          {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1 === currentStep ? '\u25CF' : '\u25CB').join('  ')}
+        </Text>
+        {currentStep < TOTAL_STEPS ? (
+          <TouchableOpacity style={styles.navNextBtn} onPress={goNext} data-testid="wizard-next-btn">
+            <Text style={styles.navNextText}>Next</Text>
+            <Ionicons name="chevron-forward" size={20} color="#FFF" />
+          </TouchableOpacity>
+        ) : <View style={{ width: 80 }} />}
+      </View>
     </View>
   );
 }
@@ -996,5 +992,96 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: colors.text,
+  },
+  progressContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.bg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.card,
+  },
+  progressBarTrack: {
+    height: 4,
+    backgroundColor: colors.card,
+    borderRadius: 2,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#007AFF',
+    borderRadius: 2,
+  },
+  progressLabel: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
+  stepTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 6,
+  },
+  stepSubtitle: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    marginBottom: 24,
+    lineHeight: 21,
+  },
+  fieldGroup: {
+    marginBottom: 20,
+  },
+  fieldLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  fieldHint: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 10,
+  },
+  navBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingBottom: Platform.OS === 'ios' ? 28 : 12,
+    backgroundColor: colors.bg,
+    borderTopWidth: 1,
+    borderTopColor: colors.card,
+  },
+  navBackBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: 80,
+  },
+  navBackText: {
+    fontSize: 17,
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  navDots: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    letterSpacing: 2,
+  },
+  navNextBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    width: 80,
+    justifyContent: 'center',
+  },
+  navNextText: {
+    fontSize: 17,
+    color: '#FFF',
+    fontWeight: '600',
   },
 });
