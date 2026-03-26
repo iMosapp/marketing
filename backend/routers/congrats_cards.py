@@ -818,10 +818,11 @@ async def get_congrats_card(card_id: str):
     except Exception as e:
         logger.debug(f"Engagement signal failed: {e}")
     
-    # Format the message with customer name
+    # Format the message with customer first name (full name shown as heading)
     message = card.get("message", "")
+    customer_first = card.get("customer_name", "").split()[0] if card.get("customer_name", "").strip() else ""
     if "{customer_name}" in message:
-        message = message.replace("{customer_name}", card.get("customer_name", ""))
+        message = message.replace("{customer_name}", customer_first)
     if "{salesman_name}" in message:
         message = message.replace("{salesman_name}", card.get("salesman_name", ""))
     
@@ -1311,7 +1312,8 @@ async def get_card_image(card_id: str):
 
     # ---------- message (word-wrapped) ----------
     message = card.get("message", "Thank you for choosing us!")
-    message = message.replace("{customer_name}", customer_name).replace("{name}", customer_name)
+    customer_first = customer_name.split()[0] if customer_name.strip() else ""
+    message = message.replace("{customer_name}", customer_first).replace("{name}", customer_first)
     if "{salesman_name}" in message:
         message = message.replace("{salesman_name}", card.get("salesman_name", ""))
 
