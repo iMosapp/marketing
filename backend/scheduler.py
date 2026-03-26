@@ -91,6 +91,26 @@ def get_scheduler_state() -> dict:
     return {**_scheduler_state, "running": scheduler.running}
 
 
+def safe_job(func):
+    """Wraps any async scheduler job so unhandled exceptions are logged
+    but NEVER propagate up to crash the main server process."""
+    async def wrapper(*args, **kwargs):
+        try:
+            return await func(*args, **kwargs)
+        except Exception as e:
+            logger.error(f"[Scheduler] CAUGHT unhandled error in {func.__name__}: {e}", exc_info=True)
+            _scheduler_state["errors"].append({
+                "job": func.__name__,
+                "error": str(e),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            })
+            # Keep only last 20 errors
+            if len(_scheduler_state["errors"]) > 20:
+                _scheduler_state["errors"] = _scheduler_state["errors"][-20:]
+    wrapper.__name__ = func.__name__
+    return wrapper
+
+
 async def run_daily_lifecycle_scan():
     """Daily job: scan all users for tenure milestones, inactivity, and activity levels."""
     logger.info("[Scheduler] Starting daily lifecycle scan...")
@@ -884,7 +904,7 @@ def start_scheduler():
 
     # Daily at 8 AM UTC  - process date triggers (birthdays, anniversaries, holidays)
     scheduler.add_job(
-        process_all_date_triggers,
+        safe_job(process_all_date_triggers),
         CronTrigger(hour=8, minute=0),
         id="daily_date_triggers",
         replace_existing=True,
@@ -893,7 +913,7 @@ def start_scheduler():
 
     # Daily at 6 AM UTC  - lifecycle scan (tenure tags, inactivity detection, milestone messages)
     scheduler.add_job(
-        run_daily_lifecycle_scan,
+        safe_job(run_daily_lifecycle_scan),
         CronTrigger(hour=6, minute=0),
         id="daily_lifecycle_scan",
         replace_existing=True,
@@ -902,7 +922,7 @@ def start_scheduler():
 
     # Daily at 7 AM UTC  - send scheduled reports
     scheduler.add_job(
-        send_scheduled_reports,
+        safe_job(send_scheduled_reports),
         CronTrigger(hour=7, minute=0),
         id="daily_report_delivery",
         replace_existing=True,
@@ -911,7 +931,7 @@ def start_scheduler():
 
     # Every 15 minutes  - process pending campaign step messages
     scheduler.add_job(
-        process_pending_campaign_steps,
+        safe_job(process_pending_campaign_steps),
         IntervalTrigger(minutes=15),
         id="campaign_step_processor",
         replace_existing=True,
@@ -920,7 +940,7 @@ def start_scheduler():
 
     # Daily at 5:30 AM UTC - generate system tasks (dormant contacts, birthdays, anniversaries)
     scheduler.add_job(
-        generate_daily_system_tasks,
+        safe_job(generate_daily_system_tasks),
         CronTrigger(hour=5, minute=30),
         id="daily_system_tasks",
         replace_existing=True,
@@ -929,7 +949,7 @@ def start_scheduler():
 
     # Weekly Monday at 9 AM UTC - send power rankings emails
     scheduler.add_job(
-        send_weekly_power_rankings_job,
+        safe_job(send_weekly_power_rankings_job),
         CronTrigger(day_of_week='mon', hour=9, minute=0),
         id="weekly_power_rankings",
         replace_existing=True,
@@ -938,7 +958,7 @@ def start_scheduler():
 
     # Daily at 4 AM UTC - expire "Recent" tags older than 14 days
     scheduler.add_job(
-        expire_recent_tags,
+        safe_job(expire_recent_tags),
         CronTrigger(hour=4, minute=0),
         id="daily_recent_tag_expiry",
         replace_existing=True,
@@ -947,7 +967,7 @@ def start_scheduler():
 
     # Daily at 10 PM UTC - check if last day of month → send scheduled health reports
     scheduler.add_job(
-        run_monthly_health_reports_job,
+        safe_job(run_monthly_health_reports_job),
         CronTrigger(hour=22, minute=0),
         id="monthly_health_reports",
         replace_existing=True,
@@ -956,7 +976,7 @@ def start_scheduler():
 
     # Every 5 minutes - process queued sold workflow deliveries
     scheduler.add_job(
-        process_sold_deliveries_job,
+        safe_job(process_sold_deliveries_job),
         IntervalTrigger(minutes=5),
         id="sold_delivery_processor",
         replace_existing=True,
@@ -965,7 +985,7 @@ def start_scheduler():
 
     # Daily at 6 AM UTC on the 1st - generate monthly partner invoices
     scheduler.add_job(
-        run_monthly_partner_invoices_job,
+        safe_job(run_monthly_partner_invoices_job),
         CronTrigger(day=1, hour=6, minute=30),
         id="monthly_partner_invoices",
         replace_existing=True,
