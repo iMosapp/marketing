@@ -148,6 +148,26 @@ async def get_public_link_page(username: str, cid: str = None):
     # Contact links (phone, email, card, review)
     contact_links = [l for l in page.get("links", []) if l.get("visible", True)]
 
+    # Override theme from user's brand kit if available (user → store → org)
+    user_id = page.get("user_id")
+    if user_id:
+        try:
+            user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"email_brand_kit": 1, "store_id": 1, "organization_id": 1})
+            if user_doc:
+                bk = user_doc.get("email_brand_kit", {})
+                if not bk and user_doc.get("store_id"):
+                    store_doc = await db.stores.find_one({"_id": ObjectId(user_doc["store_id"])}, {"email_brand_kit": 1})
+                    if store_doc:
+                        bk = store_doc.get("email_brand_kit", {})
+                if not bk and user_doc.get("organization_id"):
+                    org_doc = await db.organizations.find_one({"_id": ObjectId(user_doc["organization_id"])}, {"email_brand_kit": 1})
+                    if org_doc:
+                        bk = org_doc.get("email_brand_kit", {})
+                if bk.get("page_theme"):
+                    page["theme"] = bk["page_theme"]
+        except Exception:
+            pass
+
     page["built_social_links"] = built_social_links
     page["contact_links"] = contact_links
     return page

@@ -129,6 +129,18 @@ async def get_landing_page_data(user_id: str):
     
     from utils.image_urls import resolve_user_photo, resolve_store_logo
     
+    # Get user's brand kit for public page theming (user → store → org fallback)
+    user_brand_kit = user.get("email_brand_kit", {})
+    if not user_brand_kit and store:
+        user_brand_kit = store.get("email_brand_kit", {})
+    if not user_brand_kit and user.get("organization_id"):
+        try:
+            org = await db.organizations.find_one({"_id": ObjectId(user["organization_id"])})
+            if org:
+                user_brand_kit = org.get("email_brand_kit", {})
+        except Exception:
+            pass
+    
     return {
         "user": {
             "id": str(user["_id"]),
@@ -158,7 +170,12 @@ async def get_landing_page_data(user_id: str):
             "website": store.get("website") if store else None,
             "review_links": store.get("review_links", {}) if store else {},
         } if store else None,
-        "testimonials": formatted_testimonials
+        "testimonials": formatted_testimonials,
+        "brand_kit": {
+            "page_theme": user_brand_kit.get("page_theme", "dark"),
+            "primary_color": user_brand_kit.get("primary_color"),
+            "accent_color": user_brand_kit.get("accent_color"),
+        },
     }
 
 

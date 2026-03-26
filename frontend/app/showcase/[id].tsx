@@ -71,7 +71,7 @@ interface ShowcaseData {
   team?: { id: string; name: string; photo_url: string }[];
 }
 
-function StarRating({ rating }: { rating: number }) {
+function StarRating({ rating, outlineColor }: { rating: number; outlineColor?: string }) {
   return (
     <View style={styles.starRow}>
       {[1, 2, 3, 4, 5].map(i => (
@@ -79,7 +79,7 @@ function StarRating({ rating }: { rating: number }) {
           key={i}
           name={i <= rating ? 'star' : 'star-outline'}
           size={14}
-          color={i <= rating ? '#FFD60A' : '#3A3A3C'}
+          color={i <= rating ? '#FFD60A' : (outlineColor || '#3A3A3C')}
         />
       ))}
     </View>
@@ -234,14 +234,29 @@ export default function ShowcasePage() {
   const isStoreView = pageScope === 'store';
   const spName = isStoreView ? (data.store?.name || 'Our Team') : (data.salesperson?.name || 'Our Team');
   const storeId = data.store?.id;
+  const isDark = data.brand_kit?.page_theme !== 'light';
+  const t = {
+    bg: isDark ? '#000' : '#F2F2F7',
+    card: isDark ? '#111' : '#FFF',
+    cardAlt: isDark ? '#1C1C1E' : '#E5E5EA',
+    text: isDark ? '#FFF' : '#1C1C1E',
+    textSec: isDark ? '#8E8E93' : '#6E6E73',
+    textTer: isDark ? '#E5E5EA' : '#3A3A3C',
+    border: isDark ? '#1C1C1E' : '#D1D1D6',
+    inputBg: isDark ? '#2A2A2C' : '#F2F2F7',
+    inputBorder: isDark ? '#3A3A3C' : '#D1D1D6',
+    starOutline: isDark ? '#3A3A3C' : '#C7C7CC',
+    qrBg: isDark ? '000000' : 'F2F2F7',
+    qrFg: isDark ? 'C9A962' : '1C1C1E',
+  };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: t.bg }]} edges={['top']}>
       <SEOHead type="card" id={id as string} />
       {/* Sticky top bar */}
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { borderBottomColor: t.border }]}>
         <View style={{ width: 32 }} />
-        <Text style={styles.topBarTitle}>{isStoreView ? `${data.store?.name || 'Store'} Showcase` : 'The Showcase'}</Text>
+        <Text style={[styles.topBarTitle, { color: t.text }]}>{isStoreView ? `${data.store?.name || 'Store'} Showcase` : 'The Showcase'}</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -272,8 +287,8 @@ export default function ShowcasePage() {
                     <Ionicons name="storefront" size={36} color="#000" />
                   </View>
                 )}
-                <Text style={styles.heroName}>{data.store?.name || 'Our Store'}</Text>
-                <Text style={styles.heroTitle}>{data.team?.length || 0} Team Members</Text>
+                <Text style={[styles.heroName, { color: t.text }]}>{data.store?.name || 'Our Store'}</Text>
+                <Text style={[styles.heroTitle, { color: t.textSec }]}>{data.team?.length || 0} Team Members</Text>
               </>
             ) : (
               <>
@@ -286,8 +301,8 @@ export default function ShowcasePage() {
                     </Text>
                   </View>
                 )}
-                <Text style={styles.heroName}>{spName}</Text>
-                <Text style={styles.heroTitle}>{data.salesperson?.title}</Text>
+                <Text style={[styles.heroName, { color: t.text }]}>{spName}</Text>
+                <Text style={[styles.heroTitle, { color: t.textSec }]}>{data.salesperson?.title}</Text>
                 {data.store?.name && storeId ? (
                   <TouchableOpacity onPress={() => router.push(`/showcase/${storeId}?scope=store&from=${id}` as any)} data-testid="store-name-link">
                     <Text style={[styles.heroStore, { color: accent }]}>{data.store.name}</Text>
@@ -300,7 +315,7 @@ export default function ShowcasePage() {
           </View>
 
           {/* Stats bar */}
-          <View style={styles.statsBar}>
+          <View style={[styles.statsBar, { backgroundColor: t.card }]}>
             <View style={styles.statItem}>
               <Text style={[styles.statNumber, { color: accent }]}>{data.total_deliveries}</Text>
               <Text style={styles.statLabel}>Happy Customers</Text>
@@ -324,32 +339,32 @@ export default function ShowcasePage() {
             {!isStoreView && (
               <>
                 <TouchableOpacity
-                  style={[styles.reviewCTA, { backgroundColor: '#111', borderColor: accent }]}
+                  style={[styles.reviewCTA, { backgroundColor: t.card, borderColor: accent }]}
                   onPress={() => { if (!reviewSubmitted) setShowReviewForm(!showReviewForm); }}
                   data-testid="leave-review-btn"
                 >
                   <Ionicons name="star" size={20} color="#FFD60A" />
                   <View style={styles.reviewCTAContent}>
-                    <Text style={styles.reviewCTATitle}>{reviewSubmitted ? 'Thank you for your review!' : 'Had a great experience?'}</Text>
+                    <Text style={[styles.reviewCTATitle, { color: t.textTer }]}>{reviewSubmitted ? 'Thank you for your review!' : 'Had a great experience?'}</Text>
                     <Text style={[styles.reviewCTASubtitle, { color: accent }]}>{reviewSubmitted ? 'Your feedback means a lot.' : 'Tap to leave a review'}</Text>
                   </View>
                   {!reviewSubmitted && <Ionicons name={showReviewForm ? 'chevron-up' : 'chevron-down'} size={18} color={accent} />}
                 </TouchableOpacity>
 
                 {showReviewForm && !reviewSubmitted && (
-                  <View style={[styles.reviewFormCard, { borderColor: accent + '40' }]}>
-                    <Text style={styles.reviewFormLabel}>How was your experience?</Text>
+                  <View style={[styles.reviewFormCard, { borderColor: accent + '40', backgroundColor: t.cardAlt }]}>
+                    <Text style={[styles.reviewFormLabel, { color: t.textTer }]}>How was your experience?</Text>
                     <View style={styles.reviewStarRow}>
                       {[1, 2, 3, 4, 5].map((star) => (
                         <TouchableOpacity key={star} onPress={() => setReviewRating(star)} data-testid={`showcase-star-${star}`}>
-                          <Ionicons name={star <= reviewRating ? 'star' : 'star-outline'} size={36} color={star <= reviewRating ? '#FFD60A' : '#555'} />
+                          <Ionicons name={star <= reviewRating ? 'star' : 'star-outline'} size={36} color={star <= reviewRating ? '#FFD60A' : t.starOutline} />
                         </TouchableOpacity>
                       ))}
                     </View>
                     {reviewRating > 0 && (
                       <>
-                        <TextInput style={styles.reviewInput} placeholder="Your name (optional)" placeholderTextColor="#888" value={reviewName} onChangeText={setReviewName} />
-                        <TextInput style={[styles.reviewInput, { height: 80, textAlignVertical: 'top' }]} placeholder="Tell us about your experience..." placeholderTextColor="#888" value={reviewText} onChangeText={setReviewText} multiline numberOfLines={3} />
+                        <TextInput style={[styles.reviewInput, { backgroundColor: t.inputBg, borderColor: t.inputBorder, color: t.text }]} placeholder="Your name (optional)" placeholderTextColor={t.textSec} value={reviewName} onChangeText={setReviewName} />
+                        <TextInput style={[styles.reviewInput, { height: 80, textAlignVertical: 'top', backgroundColor: t.inputBg, borderColor: t.inputBorder, color: t.text }]} placeholder="Tell us about your experience..." placeholderTextColor={t.textSec} value={reviewText} onChangeText={setReviewText} multiline numberOfLines={3} />
                         <TouchableOpacity style={[styles.reviewSubmitBtn, { backgroundColor: accent }]} onPress={handleSubmitReview} disabled={submittingReview} data-testid="showcase-review-submit">
                           {submittingReview ? <ActivityIndicator size="small" color="#000" /> : <Text style={styles.reviewSubmitText}>Submit Review</Text>}
                         </TouchableOpacity>
@@ -429,15 +444,15 @@ export default function ShowcasePage() {
             </View>
 
             {showQR && (
-              <View style={styles.qrContainer}>
+              <View style={[styles.qrContainer, { backgroundColor: t.card }]}>
                 <Image
                   source={{
-                    uri: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareUrl)}&bgcolor=000000&color=C9A962`,
+                    uri: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareUrl)}&bgcolor=${t.qrBg}&color=${t.qrFg}`,
                   }}
                   style={styles.qrImage}
                   resizeMode="contain"
                 />
-                <Text style={styles.qrHint}>Scan to view this page</Text>
+                <Text style={[styles.qrHint, { color: t.textSec }]}>Scan to view this page</Text>
               </View>
             )}
           </View>
@@ -445,16 +460,16 @@ export default function ShowcasePage() {
           {/* Page title */}
           <View style={styles.titleSection}>
             <View style={[styles.titleAccent, { backgroundColor: accent }]} />
-            <Text style={styles.titleText}>The Showcase</Text>
+            <Text style={[styles.titleText, { color: t.text }]}>The Showcase</Text>
           </View>
         </View>
 
         {/* Entries feed */}
         {data.entries.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="images-outline" size={56} color="#3A3A3C" />
-            <Text style={styles.emptyTitle}>Coming Soon</Text>
-            <Text style={styles.emptySubtitle}>Happy customer moments will appear here</Text>
+            <Ionicons name="images-outline" size={56} color={t.starOutline} />
+            <Text style={[styles.emptyTitle, { color: t.textSec }]}>Coming Soon</Text>
+            <Text style={[styles.emptySubtitle, { color: t.textSec }]}>Happy customer moments will appear here</Text>
           </View>
         ) : (
           data.entries.map((entry, index) => (
@@ -481,7 +496,7 @@ export default function ShowcasePage() {
               {/* Entry content */}
               <View style={styles.entryContent}>
                 <View style={styles.entryHeader}>
-                  <Text style={styles.customerName}>{entry.customer_name}</Text>
+                  <Text style={[styles.customerName, { color: t.text }]}>{entry.customer_name}</Text>
                   {entry.created_at && (
                     <Text style={styles.entryDate}>{formatDate(entry.created_at)}</Text>
                   )}
@@ -508,9 +523,9 @@ export default function ShowcasePage() {
                         <Text style={styles.reviewDate}>{formatDate(entry.review.created_at)}</Text>
                       )}
                     </View>
-                    <StarRating rating={entry.review.rating} />
+                    <StarRating rating={entry.review.rating} outlineColor={t.starOutline} />
                     {entry.review.text ? (
-                      <Text style={styles.reviewText}>"{entry.review.text}"</Text>
+                      <Text style={[styles.reviewText, { color: t.textTer }]}>"{entry.review.text}"</Text>
                     ) : null}
 
                     {/* Customer's feedback photo */}
@@ -543,7 +558,7 @@ export default function ShowcasePage() {
               </View>
 
               {/* Divider between entries */}
-              {index < data.entries.length - 1 && <View style={styles.entryDivider} />}
+              {index < data.entries.length - 1 && <View style={[styles.entryDivider, { backgroundColor: t.border }]} />}
             </View>
           ))
         )}
@@ -552,7 +567,7 @@ export default function ShowcasePage() {
         {!isStoreView && (
           <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
             <TouchableOpacity
-              style={[styles.referralBanner, { borderColor: accent + '40' }]}
+              style={[styles.referralBanner, { borderColor: accent + '40', backgroundColor: t.cardAlt }]}
               onPress={() => {
                 const currentUrl = typeof window !== 'undefined' ? window.location.href : `https://app.imonsocial.com/showcase/${id}`;
                 const shareText = `Check out this showcase! ${currentUrl}`;
@@ -571,7 +586,7 @@ export default function ShowcasePage() {
             >
               <Ionicons name="people" size={20} color="#34C759" />
               <View style={{ flex: 1, marginLeft: 10 }}>
-                <Text style={styles.referralTitle}>Know someone who could use my services?</Text>
+                <Text style={[styles.referralTitle, { color: t.text }]}>Know someone who could use my services?</Text>
                 <Text style={styles.referralSub}>Tap to refer a friend</Text>
               </View>
               <Ionicons name="share-outline" size={18} color="#34C759" />

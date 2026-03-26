@@ -251,6 +251,20 @@ export default function PublicLandingPage() {
   };
 
   const primaryColor = data?.store?.primary_color || '#C9A962';
+  const isDark = data?.brand_kit?.page_theme !== 'light';
+  const t = {
+    bg: isDark ? '#1C1C1E' : '#F2F2F7',
+    card: isDark ? '#2C2C2E' : '#FFF',
+    text: isDark ? '#FFF' : '#1C1C1E',
+    textSec: isDark ? '#CCC' : '#6E6E73',
+    textMuted: isDark ? '#AAA' : '#8E8E93',
+    border: isDark ? '#2C2C2E' : '#E5E5EA',
+    inputBg: isDark ? '#2C2C2E' : '#F2F2F7',
+    modalBg: isDark ? '#1C1C1E' : '#FFF',
+    quickLinkBg: isDark ? '#1C1C1E' : '#FFF',
+    heroEnd: isDark ? '#1C1C1E' : '#F2F2F7',
+    placeholderBg: isDark ? '#2C2C2E' : '#E5E5EA',
+  };
 
   if (!mounted) {
     return (
@@ -297,10 +311,10 @@ export default function PublicLandingPage() {
   };
 
   return (
-    <ScrollView style={styles.container} bounces={false}>
+    <ScrollView style={[styles.container, { backgroundColor: t.bg }]} bounces={false}>
       {/* Hero Section */}
       <LinearGradient
-        colors={[primaryColor, '#1C1C1E']}
+        colors={[primaryColor, t.heroEnd]}
         style={styles.heroSection}
       >
         {/* Store Logo */}
@@ -365,20 +379,20 @@ export default function PublicLandingPage() {
 
       {/* About Section */}
       {data.user.bio && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About Me</Text>
-          <Text style={styles.bioText}>{data.user.bio}</Text>
+        <View style={[styles.section, { borderBottomColor: t.border }]}>
+          <Text style={[styles.sectionTitle, { color: t.text }]}>About Me</Text>
+          <Text style={[styles.bioText, { color: t.textSec }]}>{data.user.bio}</Text>
         </View>
       )}
 
       {/* Fun Facts */}
       {data.user.fun_facts && data.user.fun_facts.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Fun Facts</Text>
+        <View style={[styles.section, { borderBottomColor: t.border }]}>
+          <Text style={[styles.sectionTitle, { color: t.text }]}>Fun Facts</Text>
           {data.user.fun_facts.map((fact, index) => (
             <View key={index} style={styles.funFactItem}>
               <Ionicons name="sparkles" size={16} color={primaryColor} />
-              <Text style={styles.funFactText}>{fact}</Text>
+              <Text style={[styles.funFactText, { color: t.textSec }]}>{fact}</Text>
             </View>
           ))}
         </View>
@@ -386,8 +400,8 @@ export default function PublicLandingPage() {
 
       {/* Social Links */}
       {data.user.social_links && Object.keys(data.user.social_links).length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Connect With Me</Text>
+        <View style={[styles.section, { borderBottomColor: t.border }]}>
+          <Text style={[styles.sectionTitle, { color: t.text }]}>Connect With Me</Text>
           <View style={styles.socialLinksContainer}>
             {data.user.social_links.facebook && (
               <TouchableOpacity
@@ -443,16 +457,16 @@ export default function PublicLandingPage() {
 
       {/* Testimonials */}
       {data.testimonials && data.testimonials.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Customer Reviews</Text>
+        <View style={[styles.section, { borderBottomColor: t.border }]}>
+          <Text style={[styles.sectionTitle, { color: t.text }]}>Customer Reviews</Text>
           {data.testimonials.map((testimonial) => (
-            <View key={testimonial.id} style={styles.testimonialCard}>
+            <View key={testimonial.id} style={[styles.testimonialCard, { backgroundColor: t.card }]}>
               <View style={styles.testimonialHeader}>
-                <Text style={styles.testimonialName}>{testimonial.customer_name}</Text>
+                <Text style={[styles.testimonialName, { color: t.text }]}>{testimonial.customer_name}</Text>
                 {renderStars(testimonial.rating)}
               </View>
               {testimonial.text && (
-                <Text style={styles.testimonialText}>"{testimonial.text}"</Text>
+                <Text style={[styles.testimonialText, { color: t.textSec }]}>"{testimonial.text}"</Text>
               )}
               {testimonial.photo_url && (
                 <Image
@@ -489,19 +503,19 @@ export default function PublicLandingPage() {
       {/* Quick Links  - Showroom, Save Contact */}
       <View style={styles.quickLinksSection}>
         <TouchableOpacity
-          style={styles.quickLinkBtn}
+          style={[styles.quickLinkBtn, { backgroundColor: t.quickLinkBg, borderColor: t.border }]}
           onPress={() => Linking.openURL(`${process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'}/showcase/${userId}`)}
           data-testid="landing-view-showroom"
         >
           <View style={[styles.quickLinkIcon, { backgroundColor: '#34C75918' }]}>
             <Ionicons name="storefront-outline" size={20} color="#34C759" />
           </View>
-          <Text style={styles.quickLinkText}>View My Showcase</Text>
+          <Text style={[styles.quickLinkText, { color: t.text }]}>View My Showcase</Text>
           <Ionicons name="chevron-forward" size={16} color="#8E8E93" />
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.quickLinkBtn}
+          style={[styles.quickLinkBtn, { backgroundColor: t.quickLinkBg, borderColor: t.border }]}
           onPress={async () => {
             try {
               const res = await api.get(`/card/vcard/${userId}`);
@@ -525,41 +539,41 @@ export default function PublicLandingPage() {
           <View style={[styles.quickLinkIcon, { backgroundColor: '#C9A96218' }]}>
             <Ionicons name="download-outline" size={20} color="#C9A962" />
           </View>
-          <Text style={styles.quickLinkText}>Save My Contact</Text>
+          <Text style={[styles.quickLinkText, { color: t.text }]}>Save My Contact</Text>
           <Ionicons name="chevron-forward" size={16} color="#8E8E93" />
         </TouchableOpacity>
       </View>
 
       {/* External Review Links */}
       {data.store?.review_links && Object.keys(data.store.review_links).length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Leave a Review On</Text>
+        <View style={[styles.section, { borderBottomColor: t.border }]}>
+          <Text style={[styles.sectionTitle, { color: t.text }]}>Leave a Review On</Text>
           <View style={styles.reviewLinksContainer}>
             {data.store.review_links.google && (
               <TouchableOpacity
-                style={styles.reviewLinkButton}
+                style={[styles.reviewLinkButton, { backgroundColor: t.card }]}
                 onPress={() => openSocialLink(data.store!.review_links.google!)}
               >
                 <Ionicons name="logo-google" size={20} color="#4285F4" />
-                <Text style={styles.reviewLinkText}>Google</Text>
+                <Text style={[styles.reviewLinkText, { color: t.text }]}>Google</Text>
               </TouchableOpacity>
             )}
             {data.store.review_links.yelp && (
               <TouchableOpacity
-                style={styles.reviewLinkButton}
+                style={[styles.reviewLinkButton, { backgroundColor: t.card }]}
                 onPress={() => openSocialLink(data.store!.review_links.yelp!)}
               >
                 <Ionicons name="star" size={20} color="#FF1A1A" />
-                <Text style={styles.reviewLinkText}>Yelp</Text>
+                <Text style={[styles.reviewLinkText, { color: t.text }]}>Yelp</Text>
               </TouchableOpacity>
             )}
             {data.store.review_links.facebook && (
               <TouchableOpacity
-                style={styles.reviewLinkButton}
+                style={[styles.reviewLinkButton, { backgroundColor: t.card }]}
                 onPress={() => openSocialLink(data.store!.review_links.facebook!)}
               >
                 <Ionicons name="logo-facebook" size={20} color="#1877F2" />
-                <Text style={styles.reviewLinkText}>Facebook</Text>
+                <Text style={[styles.reviewLinkText, { color: t.text }]}>Facebook</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -577,22 +591,22 @@ export default function PublicLandingPage() {
         onRequestClose={() => setShowReviewModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Leave a Review</Text>
+          <View style={[styles.modalContent, { backgroundColor: t.modalBg }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: t.border }]}>
+              <Text style={[styles.modalTitle, { color: t.text }]}>Leave a Review</Text>
               <TouchableOpacity onPress={() => setShowReviewModal(false)}>
-                <Ionicons name="close" size={24} color="#FFF" />
+                <Ionicons name="close" size={24} color={t.text} />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.modalBody}>
-              <Text style={styles.inputLabel}>Your Name *</Text>
+              <Text style={[styles.inputLabel, { color: t.textMuted }]}>Your Name *</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: t.inputBg, color: t.text }]}
                 value={reviewName}
                 onChangeText={setReviewName}
                 placeholder="Enter your name"
-                placeholderTextColor="#666"
+                placeholderTextColor={t.textMuted}
               />
 
               <Text style={styles.inputLabel}>Rating</Text>
@@ -608,29 +622,29 @@ export default function PublicLandingPage() {
                 ))}
               </View>
 
-              <Text style={styles.inputLabel}>Your Review (Optional)</Text>
+              <Text style={[styles.inputLabel, { color: t.textMuted }]}>Your Review (Optional)</Text>
               <TextInput
-                style={[styles.input, styles.textArea]}
+                style={[styles.input, styles.textArea, { backgroundColor: t.inputBg, color: t.text }]}
                 value={reviewText}
                 onChangeText={setReviewText}
                 placeholder="Tell us about your experience..."
-                placeholderTextColor="#666"
+                placeholderTextColor={t.textMuted}
                 multiline
                 numberOfLines={4}
               />
 
-              <Text style={styles.inputLabel}>Phone (Optional)</Text>
+              <Text style={[styles.inputLabel, { color: t.textMuted }]}>Phone (Optional)</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: t.inputBg, color: t.text }]}
                 value={reviewPhone}
                 onChangeText={setReviewPhone}
                 placeholder="Your phone number"
-                placeholderTextColor="#666"
+                placeholderTextColor={t.textMuted}
                 keyboardType="phone-pad"
               />
 
-              <Text style={styles.inputLabel}>Photo of Purchase (Optional)</Text>
-              <TouchableOpacity style={styles.photoUploadButton} onPress={pickImage}>
+              <Text style={[styles.inputLabel, { color: t.textMuted }]}>Photo of Purchase (Optional)</Text>
+              <TouchableOpacity style={[styles.photoUploadButton, { backgroundColor: t.inputBg }]} onPress={pickImage}>
                 {reviewPhoto ? (
                   <Image source={{ uri: reviewPhoto }} style={styles.uploadedPhoto} />
                 ) : (
@@ -665,74 +679,74 @@ export default function PublicLandingPage() {
         onRequestClose={() => setShowReferModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Refer a Friend</Text>
+          <View style={[styles.modalContent, { backgroundColor: t.modalBg }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: t.border }]}>
+              <Text style={[styles.modalTitle, { color: t.text }]}>Refer a Friend</Text>
               <TouchableOpacity onPress={() => setShowReferModal(false)}>
-                <Ionicons name="close" size={24} color="#FFF" />
+                <Ionicons name="close" size={24} color={t.text} />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.modalBody}>
               <Text style={styles.subHeader}>Your Information</Text>
               
-              <Text style={styles.inputLabel}>Your Name *</Text>
+              <Text style={[styles.inputLabel, { color: t.textMuted }]}>Your Name *</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: t.inputBg, color: t.text }]}
                 value={referrerName}
                 onChangeText={setReferrerName}
                 placeholder="Enter your name"
-                placeholderTextColor="#666"
+                placeholderTextColor={t.textMuted}
               />
 
-              <Text style={styles.inputLabel}>Your Phone (Optional)</Text>
+              <Text style={[styles.inputLabel, { color: t.textMuted }]}>Your Phone (Optional)</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: t.inputBg, color: t.text }]}
                 value={referrerPhone}
                 onChangeText={setReferrerPhone}
                 placeholder="Your phone number"
-                placeholderTextColor="#666"
+                placeholderTextColor={t.textMuted}
                 keyboardType="phone-pad"
               />
 
               <Text style={styles.subHeader}>Friend's Information</Text>
 
-              <Text style={styles.inputLabel}>Friend's Name *</Text>
+              <Text style={[styles.inputLabel, { color: t.textMuted }]}>Friend's Name *</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: t.inputBg, color: t.text }]}
                 value={referredName}
                 onChangeText={setReferredName}
                 placeholder="Enter friend's name"
-                placeholderTextColor="#666"
+                placeholderTextColor={t.textMuted}
               />
 
-              <Text style={styles.inputLabel}>Friend's Phone</Text>
+              <Text style={[styles.inputLabel, { color: t.textMuted }]}>Friend's Phone</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: t.inputBg, color: t.text }]}
                 value={referredPhone}
                 onChangeText={setReferredPhone}
                 placeholder="Friend's phone number"
-                placeholderTextColor="#666"
+                placeholderTextColor={t.textMuted}
                 keyboardType="phone-pad"
               />
 
-              <Text style={styles.inputLabel}>Friend's Email (Optional)</Text>
+              <Text style={[styles.inputLabel, { color: t.textMuted }]}>Friend's Email (Optional)</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: t.inputBg, color: t.text }]}
                 value={referredEmail}
                 onChangeText={setReferredEmail}
                 placeholder="Friend's email"
-                placeholderTextColor="#666"
+                placeholderTextColor={t.textMuted}
                 keyboardType="email-address"
               />
 
-              <Text style={styles.inputLabel}>Notes (Optional)</Text>
+              <Text style={[styles.inputLabel, { color: t.textMuted }]}>Notes (Optional)</Text>
               <TextInput
-                style={[styles.input, styles.textArea]}
+                style={[styles.input, styles.textArea, { backgroundColor: t.inputBg, color: t.text }]}
                 value={referNotes}
                 onChangeText={setReferNotes}
                 placeholder="Any additional information..."
-                placeholderTextColor="#666"
+                placeholderTextColor={t.textMuted}
                 multiline
                 numberOfLines={3}
               />

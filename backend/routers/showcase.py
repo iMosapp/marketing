@@ -279,6 +279,18 @@ async def get_user_showcase(user_id: str, cid: str = None):
         feedback_filter={"salesperson_id": user_id},
     )
 
+    # Get user's brand kit for public page theming (user → store → org fallback)
+    user_brand_kit = user.get("email_brand_kit", {})
+    if not user_brand_kit and store:
+        user_brand_kit = store.get("email_brand_kit", {})
+    if not user_brand_kit and user.get("organization_id"):
+        try:
+            org = await db.organizations.find_one({"_id": ObjectId(user["organization_id"])})
+            if org:
+                user_brand_kit = org.get("email_brand_kit", {})
+        except Exception:
+            pass
+
     return {
         "salesperson": {
             "id": str(user["_id"]),
@@ -296,6 +308,11 @@ async def get_user_showcase(user_id: str, cid: str = None):
         "entries": entries,
         "total_deliveries": sum(1 for e in entries if e["type"] == "delivery"),
         "total_reviews": sum(1 for e in entries if e.get("review")),
+        "brand_kit": {
+            "page_theme": user_brand_kit.get("page_theme", "dark"),
+            "primary_color": user_brand_kit.get("primary_color"),
+            "accent_color": user_brand_kit.get("accent_color"),
+        },
     }
 
 
@@ -354,6 +371,11 @@ async def get_store_showcase(store_id: str):
         "entries": entries,
         "total_deliveries": sum(1 for e in entries if e["type"] == "delivery"),
         "total_reviews": sum(1 for e in entries if e.get("review")),
+        "brand_kit": {
+            "page_theme": store.get("email_brand_kit", {}).get("page_theme", "dark"),
+            "primary_color": store.get("email_brand_kit", {}).get("primary_color"),
+            "accent_color": store.get("email_brand_kit", {}).get("accent_color"),
+        },
     }
 
 
