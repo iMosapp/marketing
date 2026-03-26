@@ -463,8 +463,8 @@ export default function UsersScreen() {
 
       {/* Add User Modal - web-compatible */}
       {(showAddModal && !createdUser) && (Platform.OS === 'web' ? (
-        <View style={[styles.successOverlay, { position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 99998, paddingTop: JESSI_BAR_HEIGHT }]}>
-          <View style={[styles.modalContainer, { maxWidth: 500, maxHeight: '90vh', borderRadius: 16, overflow: 'hidden' }]}>
+        <View style={[styles.successOverlay, { position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 99998, paddingTop: JESSI_BAR_HEIGHT + 16 }]}>
+          <View style={[styles.modalContainer, { maxWidth: 500, maxHeight: '85vh', borderRadius: 16, overflow: 'hidden' }]}>
           <View style={styles.modalHeader}>
             <WebSafeButton
               onPress={() => { setShowAddModal(false); resetAddForm(); }}
@@ -670,7 +670,7 @@ export default function UsersScreen() {
 
       {/* Success Modal with Credentials - web-compatible */}
       {!!createdUser && (Platform.OS === 'web' ? (
-        <View style={[styles.successOverlay, { position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, paddingTop: JESSI_BAR_HEIGHT }]}>
+        <View style={[styles.successOverlay, { position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, paddingTop: JESSI_BAR_HEIGHT + 16 }]}>
           <View style={styles.successModal}>
             <View style={styles.successIcon}>
               <Ionicons name="checkmark-circle" size={48} color="#34C759" />
@@ -703,8 +703,8 @@ export default function UsersScreen() {
                   style={{ flex: 1 }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Ionicons name="copy-outline" size={18} color={colors.text} />
-                    <Text style={{ color: colors.text, fontWeight: '600' }}>Copy Password</Text>
+                    <Ionicons name="copy-outline" size={18} color="#FFFFFF" />
+                    <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>Copy Password</Text>
                   </View>
                 </WebSafeButton>
                 
@@ -715,8 +715,8 @@ export default function UsersScreen() {
                   style={{ flex: 1 }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Ionicons name="clipboard-outline" size={18} color={colors.text} />
-                    <Text style={{ color: colors.text, fontWeight: '600' }}>Copy All</Text>
+                    <Ionicons name="clipboard-outline" size={18} color="#FFFFFF" />
+                    <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>Copy All</Text>
                   </View>
                 </WebSafeButton>
               </View>
@@ -771,8 +771,8 @@ export default function UsersScreen() {
                     style={{ flex: 1 }}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Ionicons name="copy-outline" size={18} color={colors.text} />
-                      <Text style={{ color: colors.text, fontWeight: '600' }}>Copy Password</Text>
+                      <Ionicons name="copy-outline" size={18} color="#FFFFFF" />
+                      <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>Copy Password</Text>
                     </View>
                   </WebSafeButton>
                   
@@ -783,8 +783,8 @@ export default function UsersScreen() {
                     style={{ flex: 1 }}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Ionicons name="clipboard-outline" size={18} color={colors.text} />
-                      <Text style={{ color: colors.text, fontWeight: '600' }}>Copy All</Text>
+                      <Ionicons name="clipboard-outline" size={18} color="#FFFFFF" />
+                      <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>Copy All</Text>
                     </View>
                   </WebSafeButton>
                 </View>
