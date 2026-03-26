@@ -14,7 +14,11 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### Bug Fix: "First name is required" validation error (Mar 25, 2026) -- LATEST
+### Bug Fix: Modal header hidden behind Jessi bar (Mar 25, 2026) -- LATEST
+- Fixed "Add User" modal in admin/users.tsx where header (Cancel/Add User/Create) was obscured by the Jessi floating bar
+- Added `paddingTop: JESSI_BAR_HEIGHT` to both modal overlays
+
+### Bug Fix: "First name is required" validation error (Mar 25, 2026)
 - Fixed setup-wizard.tsx payload missing `first_name` and `last_name` fields when calling `POST /api/admin/users/create`
 - The invite-team.tsx was already correct; only setup-wizard was affected
 

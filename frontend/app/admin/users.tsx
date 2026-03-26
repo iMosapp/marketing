@@ -22,6 +22,7 @@ import * as Clipboard from 'expo-clipboard';
 import api from '../../services/api';
 import { showSimpleAlert, showAlert } from '../../services/alert';
 import { WebSafeButton } from '../../components/WebSafeButton';
+import { JESSI_BAR_HEIGHT } from '../../components/JessieFloatingChat';
 
 import { useThemeStore } from '../../store/themeStore';
 const ROLE_COLORS: Record<string, string> = {
@@ -412,7 +413,7 @@ export default function UsersScreen() {
 
       {/* Add User Modal - web-compatible */}
       {(showAddModal && !createdUser) && (Platform.OS === 'web' ? (
-        <View style={[styles.successOverlay, { position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 99998 }]}>
+        <View style={[styles.successOverlay, { position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 99998, paddingTop: JESSI_BAR_HEIGHT }]}>
           <View style={[styles.modalContainer, { maxWidth: 500, maxHeight: '90vh', borderRadius: 16, overflow: 'hidden' }]}>
           <View style={styles.modalHeader}>
             <WebSafeButton
@@ -575,7 +576,7 @@ export default function UsersScreen() {
 
       {/* Success Modal with Credentials - web-compatible */}
       {!!createdUser && (Platform.OS === 'web' ? (
-        <View style={[styles.successOverlay, { position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999 }]}>
+        <View style={[styles.successOverlay, { position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, paddingTop: JESSI_BAR_HEIGHT }]}>
           <View style={styles.successModal}>
             <View style={styles.successIcon}>
               <Ionicons name="checkmark-circle" size={48} color="#34C759" />
