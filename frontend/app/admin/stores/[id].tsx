@@ -39,6 +39,9 @@ interface StoreData {
     address?: string;
     city?: string;
     state?: string;
+    zip_code?: string;
+    country?: string;
+    website?: string;
     active: boolean;
   };
   organization?: {
@@ -661,6 +664,42 @@ export default function StoreDetailScreen() {
                 </View>
               </View>
               
+              <View style={styles.row}>
+                <View style={styles.halfField}>
+                  <Text style={styles.inputLabel}>Zip Code</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={editedStore.zip_code}
+                    onChangeText={(text) => setEditedStore({ ...editedStore, zip_code: text })}
+                    placeholder="Zip"
+                    placeholderTextColor={colors.textSecondary}
+                    keyboardType="number-pad"
+                    maxLength={10}
+                  />
+                </View>
+                <View style={styles.halfField}>
+                  <Text style={styles.inputLabel}>Country</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={editedStore.country || 'United States'}
+                    onChangeText={(text) => setEditedStore({ ...editedStore, country: text })}
+                    placeholder="Country"
+                    placeholderTextColor={colors.textSecondary}
+                  />
+                </View>
+              </View>
+              
+              <Text style={styles.inputLabel}>Website</Text>
+              <TextInput
+                style={styles.input}
+                value={editedStore.website}
+                onChangeText={(text) => setEditedStore({ ...editedStore, website: text })}
+                placeholder="https://www.example.com"
+                placeholderTextColor={colors.textSecondary}
+                keyboardType="url"
+                autoCapitalize="none"
+              />
+              
               <TouchableOpacity 
                 style={styles.cancelButton}
                 onPress={() => {
@@ -688,16 +727,25 @@ export default function StoreDetailScreen() {
               {store.address && (
                 <View style={styles.infoRow}>
                   <Ionicons name="location" size={18} color={colors.textSecondary} />
-                  <Text style={styles.infoText}>{store.address}</Text>
+                  <Text style={styles.infoText}>
+                    {store.address}{store.city ? `, ${store.city}` : ''}{store.state ? `, ${store.state}` : ''}{store.zip_code ? ` ${store.zip_code}` : ''}
+                  </Text>
                 </View>
               )}
               
-              {(store.city || store.state) && (
+              {(store.city || store.state) && !store.address && (
                 <View style={styles.infoRow}>
                   <Ionicons name="map" size={18} color={colors.textSecondary} />
                   <Text style={styles.infoText}>
-                    {[store.city, store.state].filter(Boolean).join(', ')}
+                    {[store.city, store.state, store.zip_code].filter(Boolean).join(', ')}
                   </Text>
+                </View>
+              )}
+              
+              {store.website && (
+                <View style={styles.infoRow}>
+                  <Ionicons name="globe" size={18} color={colors.textSecondary} />
+                  <Text style={[styles.infoText, { color: '#007AFF' }]}>{store.website}</Text>
                 </View>
               )}
               

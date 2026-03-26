@@ -572,7 +572,8 @@ async def update_store(store_id: str, store_data: dict):
     """Update a store with all profile fields"""
     allowed_fields = [
         'name', 'organization_id', 'state', 'settings', 'phone', 'address', 'city',
-        'review_links', 'website', 'logo_url', 'cover_image_url', 'primary_color',
+        'zip_code', 'country', 'website',
+        'review_links', 'logo_url', 'cover_image_url', 'primary_color',
         'business_hours', 'timezone', 'social_links', 'slug', 'active',
         'email_footer', 'industry',
         # White-label partner / sold workflow fields

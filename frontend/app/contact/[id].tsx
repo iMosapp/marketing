@@ -4015,6 +4015,35 @@ export default function ContactDetailScreen() {
                   onChangeText={t => setContact({ ...contact, notes: t })} multiline data-testid="input-notes" />
               </View>
 
+              {/* Convert to User (super_admin only) */}
+              {!isNewContact && user?.role === 'super_admin' && (
+                <TouchableOpacity
+                  onPress={() => {
+                    const fullName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim();
+                    showConfirm(
+                      'Convert to User',
+                      `Create a user account for ${fullName}? This will let them log into i'M On Social.`,
+                      () => {
+                        router.push({
+                          pathname: '/admin/users' as any,
+                          params: {
+                            importName: fullName,
+                            importEmail: contact.email || '',
+                            importPhone: contact.phone || '',
+                            importContactId: id as string,
+                          },
+                        });
+                      }
+                    );
+                  }}
+                  style={[s.deleteBtn, { borderColor: '#007AFF40', marginBottom: 8 }]}
+                  data-testid="convert-to-user-btn"
+                >
+                  <Ionicons name="person-add-outline" size={18} color="#007AFF" />
+                  <Text style={[s.deleteBtnText, { color: '#007AFF' }]}>Convert to User Account</Text>
+                </TouchableOpacity>
+              )}
+
               {/* Delete */}
               {!isNewContact && (
                 <TouchableOpacity onPress={handleDelete} style={s.deleteBtn} data-testid="delete-contact-button">

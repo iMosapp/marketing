@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
 import api from '../../services/api';
@@ -25,6 +25,7 @@ import { WebSafeButton } from '../../components/WebSafeButton';
 import { JESSI_BAR_HEIGHT } from '../../components/JessieFloatingChat';
 
 import { useThemeStore } from '../../store/themeStore';
+import { useAuthStore } from '../../store/authStore';
 const ROLE_COLORS: Record<string, string> = {
   super_admin: '#FF3B30',
   org_admin: '#FF9500',
@@ -57,8 +58,10 @@ const ROLE_ORDER = ['super_admin', 'org_admin', 'store_manager', 'user'];
 
 export default function UsersScreen() {
   const { colors } = useThemeStore();
+  const { user } = useAuthStore();
   const styles = getStyles(colors);
   const router = useRouter();
+  const params = useLocalSearchParams<{ importName?: string; importEmail?: string; importPhone?: string; importContactId?: string }>();
   
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -79,12 +82,23 @@ export default function UsersScreen() {
   const [createdUser, setCreatedUser] = useState<any>(null);
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [stores, setStores] = useState<any[]>([]);
-  
+  const [contactSearch, setContactSearch] = useState('');
+  const [contactResults, setContactResults] = useState<any[]>([]);
+  const [searchingContacts, setSearchingContacts] = useState(false);
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   useFocusEffect(
     useCallback(() => {
       loadUsers();
       loadOrganizations();
       loadStores();
+      // Auto-open modal if coming from contact "Convert to User"
+      if (params.importName) {
+        setNewUserName(params.importName || '');
+        setNewUserEmail(params.importEmail || '');
+        setNewUserPhone(params.importPhone || '');
+        setSelectedContactId(params.importContactId || null);
+        setShowAddModal(true);
+      }
     }, [])
   );
   
@@ -142,6 +156,34 @@ export default function UsersScreen() {
     setNewUserStoreId(null);
     setSendInvite(false);
     setCreatedUser(null);
+    setContactSearch('');
+    setContactResults([]);
+    setSelectedContactId(null);
+  };
+
+  const searchContacts = async (query: string) => {
+    setContactSearch(query);
+    if (query.trim().length < 2) { setContactResults([]); return; }
+    setSearchingContacts(true);
+    try {
+      const response = await api.get(`/contacts/${user?._id}`, { params: { search: query.trim() } });
+      setContactResults((response.data.contacts || []).slice(0, 5));
+    } catch (e) {
+      console.error('Contact search failed:', e);
+    } finally {
+      setSearchingContacts(false);
+    }
+  };
+
+  const importFromContact = (contact: any) => {
+    const firstName = contact.first_name || '';
+    const lastName = contact.last_name || '';
+    setNewUserName(`${firstName} ${lastName}`.trim());
+    setNewUserEmail(contact.email || '');
+    setNewUserPhone(contact.phone || '');
+    setSelectedContactId(contact._id);
+    setContactSearch('');
+    setContactResults([]);
   };
 
   const handleCreateUser = async () => {
@@ -156,7 +198,13 @@ export default function UsersScreen() {
 
     setCreating(true);
     try {
+      const nameParts = newUserName.trim().split(' ');
+      const first_name = nameParts[0] || '';
+      const last_name = nameParts.slice(1).join(' ') || '';
+      
       const response = await api.post('/admin/users/create', {
+        first_name,
+        last_name,
         name: newUserName.trim(),
         email: newUserEmail.trim().toLowerCase(),
         phone: newUserPhone.trim() || undefined,
@@ -164,10 +212,24 @@ export default function UsersScreen() {
         organization_id: newUserOrgId || undefined,
         store_id: newUserStoreId || undefined,
         send_invite: sendInvite,
+        source_contact_id: selectedContactId || undefined,
       });
 
       if (response.data.success) {
-        // Store the created user to show credentials
+        // Tag the source contact with role
+        if (selectedContactId) {
+          try {
+            const roleTag = `imos_${newUserRole}`;
+            // Get existing tags first, then add new ones
+            const contactResp = await api.get(`/contacts/${user?._id}/${selectedContactId}`);
+            const existingTags = contactResp.data?.tags || [];
+            const newTags = [...new Set([...existingTags, 'imos_user', roleTag])];
+            await api.patch(`/contacts/${user?._id}/${selectedContactId}/tags`, { tags: newTags });
+          } catch (e) {
+            console.error('Failed to tag contact:', e);
+          }
+        }
+        
         setCreatedUser({
           name: newUserName.trim(),
           email: newUserEmail.trim().toLowerCase(),
@@ -436,6 +498,50 @@ export default function UsersScreen() {
           </View>
 
           <ScrollView style={styles.modalContent}>
+            {/* Import from Contact */}
+            <View style={{ backgroundColor: colors.card, borderRadius: 12, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: selectedContactId ? '#34C759' : colors.bg }}>
+              <Text style={[styles.inputLabel, { marginBottom: 6, color: selectedContactId ? '#34C759' : colors.textSecondary }]}>
+                {selectedContactId ? 'Imported from Contact' : 'Import from Contact'}
+              </Text>
+              {!selectedContactId ? (
+                <>
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="Search contacts by name, email, phone..."
+                    placeholderTextColor={colors.textSecondary}
+                    value={contactSearch}
+                    onChangeText={searchContacts}
+                    autoCapitalize="none"
+                    data-testid="contact-search-input"
+                  />
+                  {searchingContacts && <ActivityIndicator size="small" color="#007AFF" style={{ marginTop: 4 }} />}
+                  {contactResults.map((c) => (
+                    <TouchableOpacity
+                      key={c._id}
+                      style={{ flexDirection: 'row', alignItems: 'center', padding: 10, borderRadius: 8, backgroundColor: colors.bg, marginTop: 6 }}
+                      onPress={() => importFromContact(c)}
+                      data-testid={`contact-result-${c._id}`}
+                    >
+                      <Ionicons name="person-circle" size={32} color={colors.textSecondary} />
+                      <View style={{ marginLeft: 10, flex: 1 }}>
+                        <Text style={{ color: colors.text, fontWeight: '600', fontSize: 15 }}>{c.first_name} {c.last_name}</Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 13 }}>{c.email || c.phone || ''}</Text>
+                      </View>
+                      <Ionicons name="arrow-forward-circle" size={22} color="#007AFF" />
+                    </TouchableOpacity>
+                  ))}
+                </>
+              ) : (
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center' }}
+                  onPress={() => { setSelectedContactId(null); setContactSearch(''); }}
+                >
+                  <Ionicons name="checkmark-circle" size={20} color="#34C759" />
+                  <Text style={{ color: '#34C759', marginLeft: 6, fontSize: 14 }}>Contact linked — tap to clear</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
             <Text style={styles.inputLabel}>Name *</Text>
             <TextInput
               style={styles.modalInput}

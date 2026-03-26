@@ -43,9 +43,12 @@ export default function OrganizationsScreen() {
     account_type: 'organization',
     admin_email: '',
     admin_phone: '',
+    address: '',
     city: '',
     state: '',
-    country: 'US',
+    zip_code: '',
+    country: 'United States',
+    website: '',
     partner_id: '',
   });
   
@@ -109,9 +112,12 @@ export default function OrganizationsScreen() {
         account_type: 'organization',
         admin_email: '',
         admin_phone: '',
+        address: '',
         city: '',
         state: '',
-        country: 'US',
+        zip_code: '',
+        country: 'United States',
+        website: '',
         partner_id: '',
       });
       loadOrganizations();
@@ -403,6 +409,15 @@ export default function OrganizationsScreen() {
                 onChangeText={(text) => setNewOrg({ ...newOrg, admin_phone: text })}
                 keyboardType="phone-pad"
               />
+
+              <Text style={styles.inputLabel}>Street Address</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="123 Main Street"
+                placeholderTextColor={colors.textSecondary}
+                value={newOrg.address}
+                onChangeText={(text) => setNewOrg({ ...newOrg, address: text })}
+              />
               
               <View style={styles.row}>
                 <View style={styles.halfInput}>
@@ -428,6 +443,42 @@ export default function OrganizationsScreen() {
                   />
                 </View>
               </View>
+
+              <View style={styles.row}>
+                <View style={styles.halfInput}>
+                  <Text style={styles.inputLabel}>Zip Code</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="84101"
+                    placeholderTextColor={colors.textSecondary}
+                    value={newOrg.zip_code}
+                    onChangeText={(text) => setNewOrg({ ...newOrg, zip_code: text })}
+                    keyboardType="number-pad"
+                    maxLength={10}
+                  />
+                </View>
+                <View style={styles.halfInput}>
+                  <Text style={styles.inputLabel}>Country</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="United States"
+                    placeholderTextColor={colors.textSecondary}
+                    value={newOrg.country}
+                    onChangeText={(text) => setNewOrg({ ...newOrg, country: text })}
+                  />
+                </View>
+              </View>
+
+              <Text style={styles.inputLabel}>Website</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://www.example.com"
+                placeholderTextColor={colors.textSecondary}
+                value={newOrg.website}
+                onChangeText={(text) => setNewOrg({ ...newOrg, website: text })}
+                keyboardType="url"
+                autoCapitalize="none"
+              />
 
               {/* Partner Dropdown - super_admin only */}
               {isSuperAdmin && partners.length > 0 && (

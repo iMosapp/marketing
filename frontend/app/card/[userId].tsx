@@ -857,9 +857,32 @@ export default function DigitalCardPage() {
                 <View style={[styles.infoRow, { borderBottomColor: theme.surface }]}>
                   <Ionicons name="location-outline" size={20} color={theme.accent} />
                   <Text style={[styles.infoText, { color: theme.text }]}>
-                    {store.address}{store.city ? `, ${store.city}` : ''}{store.state ? `, ${store.state}` : ''}
+                    {store.address}{store.city ? `, ${store.city}` : ''}{store.state ? `, ${store.state}` : ''}{store.zip_code ? ` ${store.zip_code}` : ''}
                   </Text>
                 </View>
+              )}
+              {(store?.address || store?.city) && (
+                <TouchableOpacity 
+                  style={[styles.infoRow, { borderBottomColor: theme.surface }]}
+                  onPress={() => {
+                    const fullAddress = [store.address, store.city, store.state, store.zip_code].filter(Boolean).join(', ');
+                    const encoded = encodeURIComponent(fullAddress);
+                    track('directions_clicked', { address: fullAddress });
+                    if (Platform.OS === 'ios') {
+                      Linking.openURL(`maps://maps.apple.com/?q=${encoded}`).catch(() => {
+                        Linking.openURL(`https://maps.google.com/maps?q=${encoded}`);
+                      });
+                    } else {
+                      Linking.openURL(`geo:0,0?q=${encoded}`).catch(() => {
+                        Linking.openURL(`https://maps.google.com/maps?q=${encoded}`);
+                      });
+                    }
+                  }}
+                  data-testid="directions-btn"
+                >
+                  <Ionicons name="navigate-outline" size={20} color={theme.accent} />
+                  <Text style={[styles.infoText, styles.linkText, { color: theme.accent }]}>Get Directions</Text>
+                </TouchableOpacity>
               )}
               {store?.website && (
                 <TouchableOpacity 

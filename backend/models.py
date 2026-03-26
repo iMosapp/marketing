@@ -64,7 +64,9 @@ class OrganizationCreate(BaseModel):
     address: Optional[str] = None
     city: Optional[str] = None
     state: Optional[str] = None
-    country: str = "US"
+    zip_code: Optional[str] = None
+    country: str = "United States"
+    website: Optional[str] = None
     hires_images: bool = False
     partner_id: Optional[str] = None
 
@@ -80,7 +82,8 @@ class Store(BaseModel):
     address: Optional[str] = None
     city: Optional[str] = None
     state: Optional[str] = None
-    country: str = "US"
+    zip_code: Optional[str] = None
+    country: str = "United States"
     website: Optional[str] = None
     
     # Branding

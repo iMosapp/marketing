@@ -160,6 +160,7 @@ async def get_card_data(user_id: str, cid: str = None):
             "address": store.get("address") if store else None,
             "city": store.get("city") if store else None,
             "state": store.get("state") if store else None,
+            "zip_code": store.get("zip_code") if store else None,
             "website": store.get("website") if store else None,
         } if store else None,
         "testimonials": formatted_testimonials,

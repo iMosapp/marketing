@@ -544,6 +544,58 @@ export default function MyAccountScreen() {
           </View>
         </View>
 
+        {/* ====== MY ADDRESS (Optional) ====== */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>My Address (Optional)</Text>
+          <View style={[styles.menuList, { backgroundColor: colors.card, padding: 16 }]}>
+            <TextInput
+              style={[styles.addressInput, { backgroundColor: colors.bg, color: colors.text }]}
+              value={user?.address || ''}
+              onChangeText={(text) => updateUser({ ...user, address: text })}
+              onBlur={() => { if (user?._id) api.patch(`/auth/users/${user._id}`, { address: user.address || '' }); }}
+              placeholder="Street Address"
+              placeholderTextColor={colors.textSecondary}
+            />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TextInput
+                style={[styles.addressInput, { backgroundColor: colors.bg, color: colors.text, flex: 1 }]}
+                value={user?.city || ''}
+                onChangeText={(text) => updateUser({ ...user, city: text })}
+                onBlur={() => { if (user?._id) api.patch(`/auth/users/${user._id}`, { city: user.city || '' }); }}
+                placeholder="City"
+                placeholderTextColor={colors.textSecondary}
+              />
+              <TextInput
+                style={[styles.addressInput, { backgroundColor: colors.bg, color: colors.text, width: 60 }]}
+                value={user?.state || ''}
+                onChangeText={(text) => updateUser({ ...user, state: text })}
+                onBlur={() => { if (user?._id) api.patch(`/auth/users/${user._id}`, { state: user.state || '' }); }}
+                placeholder="State"
+                placeholderTextColor={colors.textSecondary}
+                maxLength={2}
+                autoCapitalize="characters"
+              />
+              <TextInput
+                style={[styles.addressInput, { backgroundColor: colors.bg, color: colors.text, width: 90 }]}
+                value={user?.zip_code || ''}
+                onChangeText={(text) => updateUser({ ...user, zip_code: text })}
+                onBlur={() => { if (user?._id) api.patch(`/auth/users/${user._id}`, { zip_code: user.zip_code || '' }); }}
+                placeholder="Zip"
+                placeholderTextColor={colors.textSecondary}
+                keyboardType="number-pad"
+              />
+            </View>
+            <TextInput
+              style={[styles.addressInput, { backgroundColor: colors.bg, color: colors.text }]}
+              value={user?.country || 'United States'}
+              onChangeText={(text) => updateUser({ ...user, country: text })}
+              onBlur={() => { if (user?._id) api.patch(`/auth/users/${user._id}`, { country: user.country || '' }); }}
+              placeholder="Country"
+              placeholderTextColor={colors.textSecondary}
+            />
+          </View>
+        </View>
+
         {/* ====== MY PRESENCE — Everything you send out ====== */}
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textTertiary }]}>My Presence</Text>
@@ -1405,6 +1457,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 14,
     borderBottomWidth: 1,
     borderBottomColor: undefined,
+  },
+  addressInput: {
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 10,
   },
   menuIcon: {
     width: 36,

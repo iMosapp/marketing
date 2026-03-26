@@ -1023,7 +1023,8 @@ async def update_user(user_id: str, user_data: dict):
 @router.patch("/users/{user_id}")
 async def patch_user(user_id: str, user_data: dict):
     """Update user profile fields including photo"""
-    allowed_fields = ['name', 'phone', 'persona', 'settings', 'photo_url', 'bio', 'social_links', 'timezone']
+    allowed_fields = ['name', 'phone', 'persona', 'settings', 'photo_url', 'bio', 'social_links', 'timezone',
+                      'address', 'city', 'state', 'zip_code', 'country']
     update_dict = {k: v for k, v in user_data.items() if k in allowed_fields}
     
     if not update_dict:
