@@ -49,14 +49,29 @@ const ENGAGEMENT_LABELS: Record<string, string> = {
   training_video_clicked: 'watched a training video',
 };
 
-const MILESTONE_META: Record<string, { icon: string; color: string; label: string; emoji: string }> = {
-  new_contact_added: { icon: 'person-add', color: '#007AFF', label: 'New Relationship Started', emoji: '' },
-  campaign_enrolled: { icon: 'rocket', color: '#AF52DE', label: 'Campaign Launched', emoji: '' },
-  review_submitted: { icon: 'star', color: '#FFD60A', label: 'Review Received', emoji: '' },
-  referral_made: { icon: 'people', color: '#34C759', label: 'Referral Connection', emoji: '' },
+const MILESTONE_META: Record<string, { icon: string; color: string; label: string }> = {
+  new_contact_added: { icon: 'person-add', color: '#007AFF', label: 'New Relationship Started' },
+  campaign_enrolled: { icon: 'rocket', color: '#AF52DE', label: 'Campaign Launched' },
+  review_submitted: { icon: 'star', color: '#FFD60A', label: 'Review Received' },
+  referral_made: { icon: 'people', color: '#34C759', label: 'Referral Connection' },
 };
 
-// Avatar component that handles web/native + fallback
+const EVENT_ICON: Record<string, string> = {
+  digital_card_viewed: 'card',
+  showcase_viewed: 'eye',
+  link_page_viewed: 'link',
+  link_clicked: 'open',
+  review_link_clicked: 'star-half',
+  congrats_card_viewed: 'gift',
+  review_page_viewed: 'star',
+  training_video_clicked: 'play-circle',
+  new_contact_added: 'person-add',
+  campaign_enrolled: 'rocket',
+  review_submitted: 'star',
+  referral_made: 'people',
+};
+
+// Avatar component
 const Avatar = ({ uri, name, size, borderRadius, color }: { uri?: string | null; name?: string; size: number; borderRadius: number; color?: string }) => {
   const accent = color || '#C9A962';
   if (uri) {
@@ -76,84 +91,68 @@ const Avatar = ({ uri, name, size, borderRadius, color }: { uri?: string | null;
   );
 };
 
-// ── Photo Moment Card — Facebook/Instagram-style large card ──
-const PhotoCard = ({ item, colors, router }: any) => {
-  const c = item.contact || {};
-  const label = ENGAGEMENT_LABELS[item.event_type] || item.title;
-
-  return (
-    <TouchableOpacity
-      style={[s.card, { backgroundColor: colors.card }]}
-      onPress={() => c.id && router.push(`/contact/${c.id}` as any)}
-      activeOpacity={0.85}
-      data-testid="feed-photo-card"
-    >
-      {/* Post header: avatar + name + time */}
-      <View style={s.cardHeader}>
-        <Avatar uri={c.photo} name={c.name} size={40} borderRadius={20} color={item.color} />
-        <View style={{ flex: 1, marginLeft: 10 }}>
-          <Text style={[s.cardName, { color: colors.text }]} numberOfLines={1}>{c.name || 'Customer'}</Text>
-          <Text style={[s.cardTime, { color: colors.textTertiary }]}>{formatFeedTime(item.timestamp)}</Text>
-        </View>
-        <View style={[s.typeBadge, { backgroundColor: (item.color || '#C9A962') + '15' }]}>
-          <Ionicons name={(item.icon || 'eye') as any} size={14} color={item.color || '#C9A962'} />
-        </View>
-      </View>
-
-      {/* Big photo */}
-      {c.photo ? (
-        <View style={s.photoWrap}>
-          {Platform.OS === 'web' ? (
-            <img src={c.photo} style={{ width: '100%', height: 260, objectFit: 'cover', borderRadius: 14, display: 'block' }} loading="lazy" />
-          ) : (
-            <Image source={{ uri: c.photo }} style={{ width: '100%', height: 260, borderRadius: 14 }} resizeMode="cover" />
-          )}
-        </View>
-      ) : (
-        <View style={[s.photoPlaceholder, { backgroundColor: (item.color || '#C9A962') + '08' }]}>
-          <Ionicons name={(item.icon || 'camera') as any} size={40} color={(item.color || '#C9A962') + '50'} />
-        </View>
-      )}
-
-      {/* Caption / action */}
-      <View style={s.cardCaption}>
-        <Text style={[s.captionText, { color: colors.text }]}>
-          <Text style={{ fontWeight: '700' }}>{c.name || 'Customer'}</Text>
-          {' '}{label}
-        </Text>
-        {c.vehicle ? (
-          <View style={[s.vehicleTag, { backgroundColor: colors.surface }]}>
-            <Ionicons name="car-sport" size={12} color={colors.textTertiary} />
-            <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textTertiary, marginLeft: 4 }}>{c.vehicle}</Text>
-          </View>
-        ) : null}
-      </View>
-    </TouchableOpacity>
-  );
+// Get a human-readable label for any event
+const getEventLabel = (item: any) => {
+  if (ENGAGEMENT_LABELS[item.event_type]) return ENGAGEMENT_LABELS[item.event_type];
+  const meta = MILESTONE_META[item.event_type];
+  if (meta) return meta.label;
+  return item.title || item.event_type || 'Activity';
 };
 
-// ── Engagement Card — compact notification-style ──
-const EngagementCard = ({ item, colors, router }: any) => {
-  const c = item.contact || {};
-  const label = ENGAGEMENT_LABELS[item.event_type] || item.title;
+const getEventIcon = (item: any) => item.icon || EVENT_ICON[item.event_type] || 'ellipse';
+const getEventColor = (item: any) => {
+  const meta = MILESTONE_META[item.event_type];
+  if (meta) return meta.color;
+  return item.color || '#C9A962';
+};
 
+// ── Single event card (when contact has only 1 activity) ──
+const SingleEventCard = ({ item, colors, router }: any) => {
+  const c = item.contact || {};
+  const label = getEventLabel(item);
+  const isMilestone = !!MILESTONE_META[item.event_type];
+
+  if (isMilestone) {
+    const meta = MILESTONE_META[item.event_type] || { icon: 'flag', color: '#C9A962', label: item.title };
+    return (
+      <TouchableOpacity
+        style={[s.mileCard, { borderColor: meta.color + '30', backgroundColor: meta.color + '08' }]}
+        onPress={() => c.id && router.push(`/contact/${c.id}` as any)}
+        activeOpacity={0.8}
+        data-testid="feed-milestone-card"
+      >
+        <View style={[s.mileIcon, { backgroundColor: meta.color + '18' }]}>
+          <Ionicons name={meta.icon as any} size={22} color={meta.color} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[s.mileLabel, { color: meta.color }]}>{meta.label}</Text>
+          <Text style={[s.mileName, { color: colors.text }]}>{c.name || 'New Contact'}</Text>
+          {item.description ? (
+            <Text style={{ fontSize: 13, color: colors.textTertiary, marginTop: 2 }} numberOfLines={1}>{item.description}</Text>
+          ) : null}
+        </View>
+        <Text style={{ fontSize: 12, color: colors.textTertiary }}>{formatFeedTime(item.timestamp)}</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  // Standard single event with photo
   return (
     <TouchableOpacity
-      style={[s.engCard, { backgroundColor: colors.card }]}
+      style={[s.singleCard, { backgroundColor: colors.card }]}
       onPress={() => c.id && router.push(`/contact/${c.id}` as any)}
-      activeOpacity={0.8}
-      data-testid="feed-engagement-card"
+      activeOpacity={0.85}
+      data-testid="feed-single-card"
     >
-      <View style={[s.engStripe, { backgroundColor: item.color || '#007AFF' }]} />
-      <View style={s.engBody}>
+      <View style={s.singleHeader}>
         <Avatar uri={c.photo} name={c.name} size={44} borderRadius={22} color={item.color} />
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text style={[{ fontSize: 15, color: colors.text }]} numberOfLines={2}>
-            <Text style={{ fontWeight: '700' }}>{c.name || 'Someone'}</Text>
+            <Text style={{ fontWeight: '700' }}>{c.name || 'Customer'}</Text>
             {' '}<Text style={{ color: colors.textSecondary }}>{label}</Text>
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 3 }}>
-            <Ionicons name={(item.icon || 'eye') as any} size={13} color={item.color || '#007AFF'} />
+            <Ionicons name={getEventIcon(item) as any} size={13} color={getEventColor(item)} />
             <Text style={{ fontSize: 12, color: colors.textTertiary, marginLeft: 5 }}>{formatFeedTime(item.timestamp)}</Text>
           </View>
         </View>
@@ -163,66 +162,71 @@ const EngagementCard = ({ item, colors, router }: any) => {
   );
 };
 
-// ── Milestone Card — celebration-style ──
-const MilestoneCard = ({ item, colors, router }: any) => {
-  const c = item.contact || {};
-  const meta = MILESTONE_META[item.event_type] || { icon: 'flag', color: '#C9A962', label: item.title, emoji: '' };
+// ── Grouped contact card (photo once + touchpoint list) ──
+const GroupedContactCard = ({ group, colors, router }: any) => {
+  const firstEvent = group.events[0];
+  const c = firstEvent.contact || {};
+  const hasPhoto = !!c.photo;
 
   return (
     <TouchableOpacity
-      style={[s.mileCard, { borderColor: meta.color + '30', backgroundColor: meta.color + '08' }]}
+      style={[s.groupCard, { backgroundColor: colors.card }]}
       onPress={() => c.id && router.push(`/contact/${c.id}` as any)}
-      activeOpacity={0.8}
-      data-testid="feed-milestone-card"
+      activeOpacity={0.85}
+      data-testid="feed-grouped-card"
     >
-      <View style={[s.mileIcon, { backgroundColor: meta.color + '18' }]}>
-        <Ionicons name={meta.icon as any} size={22} color={meta.color} />
-      </View>
-      <View style={{ flex: 1 }}>
-        <Text style={[s.mileLabel, { color: meta.color }]}>{meta.label}</Text>
-        <Text style={[s.mileName, { color: colors.text }]}>{c.name || 'New Contact'}</Text>
-        {item.description ? (
-          <Text style={{ fontSize: 13, color: colors.textTertiary, marginTop: 2 }} numberOfLines={1}>{item.description}</Text>
-        ) : null}
-      </View>
-      <Text style={{ fontSize: 12, color: colors.textTertiary }}>{formatFeedTime(item.timestamp)}</Text>
-    </TouchableOpacity>
-  );
-};
-
-// ── Text Event Card — message/task-style ──
-const TextCard = ({ item, colors, router }: any) => {
-  const c = item.contact || {};
-  const isInbound = item.is_inbound;
-
-  return (
-    <TouchableOpacity
-      style={[s.txtCard, { backgroundColor: colors.card }]}
-      onPress={() => c.id && router.push(`/contact/${c.id}` as any)}
-      activeOpacity={0.8}
-      data-testid="feed-text-card"
-    >
-      <View style={{ position: 'relative' }}>
-        <Avatar uri={c.photo} name={c.name} size={44} borderRadius={12} color="#8E8E93" />
-        <View style={[s.txtBadge, { backgroundColor: item.color || '#8E8E93', borderColor: colors.card }]}>
-          <Ionicons name={(item.icon || 'flag') as any} size={10} color="#FFF" />
+      {/* Contact header with photo */}
+      <View style={s.groupHeader}>
+        <Avatar uri={c.photo} name={c.name} size={48} borderRadius={24} color={firstEvent.color} />
+        <View style={{ flex: 1, marginLeft: 12 }}>
+          <Text style={[s.groupName, { color: colors.text }]} numberOfLines={1}>{c.name || 'Customer'}</Text>
+          <Text style={{ fontSize: 13, color: colors.textTertiary, marginTop: 1 }}>
+            {group.events.length} touch{group.events.length === 1 ? '' : 'es'} · {formatFeedTime(firstEvent.timestamp)}
+          </Text>
+          {c.vehicle ? (
+            <View style={[s.vehicleTag, { backgroundColor: colors.surface }]}>
+              <Ionicons name="car-sport" size={11} color={colors.textTertiary} />
+              <Text style={{ fontSize: 11, fontWeight: '600', color: colors.textTertiary, marginLeft: 3 }}>{c.vehicle}</Text>
+            </View>
+          ) : null}
         </View>
+        <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
       </View>
-      <View style={{ flex: 1, marginLeft: 12 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={[{ fontSize: 15, fontWeight: '700', color: colors.text }]} numberOfLines={1}>{c.name || 'Unknown'}</Text>
-          {isInbound && (
-            <View style={s.inbound}><Text style={s.inboundTxt}>INBOUND</Text></View>
+
+      {/* Big photo for the first event if it has one */}
+      {hasPhoto && firstEvent.visual_type === 'photo_moment' && (
+        <View style={s.groupPhotoWrap}>
+          {Platform.OS === 'web' ? (
+            <img src={c.photo} style={{ width: '100%', height: 220, objectFit: 'cover', borderRadius: 12, display: 'block' }} loading="lazy" />
+          ) : (
+            <Image source={{ uri: c.photo }} style={{ width: '100%', height: 220, borderRadius: 12 }} resizeMode="cover" />
           )}
         </View>
-        <Text style={[{ fontSize: 14, marginTop: 1, color: isInbound ? '#30D158' : colors.textSecondary }]} numberOfLines={1}>
-          {isInbound ? `"${item.description}"` : item.title}
-        </Text>
+      )}
+
+      {/* Touchpoint list */}
+      <View style={[s.touchList, { borderTopColor: colors.border }]}>
+        {group.events.map((evt: any, idx: number) => {
+          const label = getEventLabel(evt);
+          const icon = getEventIcon(evt);
+          const color = getEventColor(evt);
+          const isLast = idx === group.events.length - 1;
+
+          return (
+            <View key={`tp-${idx}`} style={[s.touchRow, !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
+              <View style={[s.touchDot, { backgroundColor: color + '18' }]}>
+                <Ionicons name={icon as any} size={14} color={color} />
+              </View>
+              <Text style={[s.touchLabel, { color: colors.textSecondary }]} numberOfLines={1}>{label}</Text>
+              <Text style={[s.touchTime, { color: colors.textTertiary }]}>{formatFeedTime(evt.timestamp)}</Text>
+            </View>
+          );
+        })}
       </View>
-      <Text style={{ fontSize: 12, color: colors.textTertiary }}>{formatFeedTime(item.timestamp)}</Text>
     </TouchableOpacity>
   );
 };
+
 
 export default function ActivityTab() {
   const { colors } = useThemeStore();
@@ -265,18 +269,45 @@ export default function ActivityTab() {
     setRefreshing(false);
   };
 
-  // Group by date
+  // Group by date, then group consecutive same-contact events
   const groupedData = React.useMemo(() => {
     const items: any[] = [];
-    let lastLabel = '';
-    for (const item of feed) {
-      const label = getDateLabel(item.timestamp);
-      if (label !== lastLabel) {
-        items.push({ _type: 'date_header', label, _key: `dh-${label}` });
-        lastLabel = label;
+    let lastDateLabel = '';
+    let currentGroup: { contactId: string; events: any[] } | null = null;
+
+    const flushGroup = () => {
+      if (!currentGroup) return;
+      if (currentGroup.events.length === 1) {
+        items.push({ _type: 'single', ...currentGroup.events[0] });
+      } else {
+        items.push({ _type: 'group', contactId: currentGroup.contactId, events: currentGroup.events, _key: `grp-${currentGroup.contactId}-${currentGroup.events[0].timestamp}` });
       }
-      items.push({ _type: 'event', ...item });
+      currentGroup = null;
+    };
+
+    for (const item of feed) {
+      const dateLabel = getDateLabel(item.timestamp);
+
+      // New date section
+      if (dateLabel !== lastDateLabel) {
+        flushGroup();
+        items.push({ _type: 'date_header', label: dateLabel, _key: `dh-${dateLabel}` });
+        lastDateLabel = dateLabel;
+      }
+
+      const contactId = item.contact?.id || '';
+
+      // Same contact as current group? Add to group
+      if (currentGroup && currentGroup.contactId === contactId && contactId) {
+        currentGroup.events.push(item);
+      } else {
+        // Different contact — flush previous group, start new one
+        flushGroup();
+        currentGroup = { contactId, events: [item] };
+      }
     }
+    flushGroup(); // flush last group
+
     return items;
   }, [feed]);
 
@@ -323,11 +354,11 @@ export default function ActivityTab() {
               </View>
             );
           }
-          const vt = item.visual_type || 'text_event';
-          if (vt === 'photo_moment') return <PhotoCard item={item} colors={colors} router={router} />;
-          if (vt === 'engagement') return <EngagementCard item={item} colors={colors} router={router} />;
-          if (vt === 'milestone') return <MilestoneCard item={item} colors={colors} router={router} />;
-          return <TextCard item={item} colors={colors} router={router} />;
+          if (item._type === 'group') {
+            return <GroupedContactCard group={item} colors={colors} router={router} />;
+          }
+          // Single event
+          return <SingleEventCard item={item} colors={colors} router={router} />;
         }}
       />
     </View>
@@ -345,34 +376,29 @@ const s = StyleSheet.create({
   dateLine: { flex: 1, height: 1 },
   dateText: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.2 },
 
-  // Photo Card (large social-style)
-  card: { marginHorizontal: 12, marginBottom: 14, borderRadius: 20, overflow: 'hidden' },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingTop: 14, paddingBottom: 10 },
-  cardName: { fontSize: 15, fontWeight: '700' },
-  cardTime: { fontSize: 12, marginTop: 1 },
-  typeBadge: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  photoWrap: { paddingHorizontal: 12 },
-  photoPlaceholder: { marginHorizontal: 12, height: 140, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  cardCaption: { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 14 },
-  captionText: { fontSize: 15, lineHeight: 20 },
-  vehicleTag: { flexDirection: 'row', alignItems: 'center', marginTop: 8, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, alignSelf: 'flex-start' },
+  // Single event card (compact)
+  singleCard: { marginHorizontal: 12, marginBottom: 6, borderRadius: 14, overflow: 'hidden' },
+  singleHeader: { flexDirection: 'row', alignItems: 'center', padding: 12 },
 
-  // Engagement Card
-  engCard: { marginHorizontal: 12, marginBottom: 6, borderRadius: 14, overflow: 'hidden', flexDirection: 'row' },
-  engStripe: { width: 3 },
-  engBody: { flex: 1, flexDirection: 'row', alignItems: 'center', padding: 12 },
+  // Grouped contact card
+  groupCard: { marginHorizontal: 12, marginBottom: 14, borderRadius: 18, overflow: 'hidden' },
+  groupHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingTop: 14, paddingBottom: 10 },
+  groupName: { fontSize: 17, fontWeight: '700' },
+  groupPhotoWrap: { paddingHorizontal: 12, marginBottom: 4 },
+  vehicleTag: { flexDirection: 'row', alignItems: 'center', marginTop: 4, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, alignSelf: 'flex-start' },
 
-  // Milestone Card
+  // Touchpoint list inside group
+  touchList: { marginHorizontal: 14, marginBottom: 10, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 4 },
+  touchRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
+  touchDot: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  touchLabel: { flex: 1, fontSize: 14, marginLeft: 10 },
+  touchTime: { fontSize: 12, marginLeft: 8 },
+
+  // Milestone Card (standalone)
   mileCard: { marginHorizontal: 12, marginBottom: 10, borderRadius: 16, borderWidth: 1, flexDirection: 'row', alignItems: 'center', padding: 14, borderStyle: 'dashed' },
   mileIcon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   mileLabel: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
   mileName: { fontSize: 16, fontWeight: '700', marginTop: 2 },
-
-  // Text Card
-  txtCard: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 12, marginBottom: 4, borderRadius: 14, padding: 12 },
-  txtBadge: { position: 'absolute', bottom: -2, right: -2, width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
-  inbound: { backgroundColor: '#30D15820', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4, marginLeft: 6 },
-  inboundTxt: { fontSize: 9, fontWeight: '700', color: '#30D158' },
 
   // Empty
   empty: { alignItems: 'center', paddingVertical: 80 },
