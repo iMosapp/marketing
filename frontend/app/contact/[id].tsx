@@ -2902,10 +2902,11 @@ export default function ContactDetailScreen() {
                   {contact.tags.map((tag, i) => {
                     const info = availableTags.find(t => t.name === tag);
                     const chipColor = info?.color || colors.textSecondary;
+                    const displayTag = tag === 'imos_user' ? 'User' : tag === 'imos_super_admin' ? 'Super Admin' : tag === 'imos_org_admin' ? 'Admin' : tag === 'imos_store_manager' ? 'Manager' : tag;
                     return (
                       <View key={`tag-${i}`} style={[s.heroTagChip, { borderColor: `${chipColor}40`, backgroundColor: `${chipColor}10` }]}>
                         <Ionicons name={(info?.icon || 'pricetag') as any} size={13} color={chipColor} />
-                        <Text style={[s.heroTagChipText, { color: chipColor }]} numberOfLines={1}>{tag}</Text>
+                        <Text style={[s.heroTagChipText, { color: chipColor }]} numberOfLines={1}>{displayTag}</Text>
                       </View>
                     );
                   })}
