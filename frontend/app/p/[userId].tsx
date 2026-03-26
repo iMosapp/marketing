@@ -334,10 +334,10 @@ export default function PublicLandingPage() {
         </View>
         
         {/* Name & Title */}
-        <Text style={styles.userName}>{data.user.name}</Text>
-        <Text style={styles.userTitle}>{data.user.title}</Text>
+        <Text style={[styles.userName, { color: t.text }]}>{data.user.name}</Text>
+        <Text style={[styles.userTitle, { color: t.text }]}>{data.user.title}</Text>
         {data.store && (
-          <Text style={styles.storeName}>{data.store.name}</Text>
+          <Text style={[styles.storeName, { color: t.textSec }]}>{data.store.name}</Text>
         )}
       </LinearGradient>
 
@@ -832,7 +832,7 @@ const styles = StyleSheet.create({
     height: 180,
     borderRadius: 24,
     borderWidth: 4,
-    borderColor: '#FFF',
+    borderColor: 'rgba(255,255,255,0.8)',
   },
   profileImagePlaceholder: {
     backgroundColor: '#2C2C2E',
