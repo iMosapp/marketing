@@ -140,7 +140,7 @@ export default function ManageCardTemplatesPage() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={s.cardTitle}>{t.headline}</Text>
-              <Text style={s.cardSub}>{t.card_type.charAt(0).toUpperCase() + t.card_type.slice(1)} Card{t.customized ? ' (Customized)' : ''}</Text>
+              <Text style={s.cardSub}>{t.card_type.startsWith('custom_') ? 'Custom' : t.card_type.charAt(0).toUpperCase() + t.card_type.slice(1)} Card{t.customized ? ' (Customized)' : ''}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
