@@ -521,6 +521,30 @@ export default function UserDetailScreen() {
             <Ionicons name="toggle-outline" size={20} color="#FF9500" />
             <Text style={[styles.impersonateButtonText, { color: '#FF9500' }]}>Manage Permissions</Text>
           </TouchableOpacity>
+
+          {/* Reset Password Button */}
+          <TouchableOpacity 
+            style={[styles.impersonateButton, { marginTop: 8, borderColor: '#FF3B3040' }]}
+            onPress={() => {
+              showConfirm(
+                'Reset Password',
+                `Reset password for ${user.name}? A new temporary password will be generated.`,
+                async () => {
+                  try {
+                    const tempPassword = Math.random().toString(36).slice(-8) + 'A1!';
+                    await api.put(`/admin/users/${id}/reset-password`, { new_password: tempPassword });
+                    showSimpleAlert('Password Reset', `New temporary password:\n\n${tempPassword}\n\nPlease share this with ${user.name} securely.`);
+                  } catch (error: any) {
+                    showSimpleAlert('Error', error.response?.data?.detail || 'Failed to reset password');
+                  }
+                }
+              );
+            }}
+            data-testid="reset-password-btn"
+          >
+            <Ionicons name="key-outline" size={20} color="#FF3B30" />
+            <Text style={[styles.impersonateButtonText, { color: '#FF3B30' }]}>Reset Password</Text>
+          </TouchableOpacity>
         </View>
         
         {/* Profile Completeness */}

@@ -648,7 +648,7 @@ async def request_password_reset(data: dict):
 @router.post("/forgot-password/verify")
 async def verify_reset_code(data: dict):
     """Verify the reset code"""
-    email = data.get('email')
+    email = (data.get('email') or '').strip().lower()
     code = data.get('code')
     
     if not email or not code:
@@ -670,7 +670,7 @@ async def verify_reset_code(data: dict):
 @router.post("/forgot-password/reset")
 async def reset_password(data: dict):
     """Reset the password with verified code"""
-    email = data.get('email')
+    email = (data.get('email') or '').strip().lower()
     code = data.get('code')
     new_password = data.get('new_password')
     

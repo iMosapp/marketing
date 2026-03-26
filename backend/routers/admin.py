@@ -1076,6 +1076,35 @@ async def get_admin_user(user_id: str, x_user_id: str = Header(None, alias="X-Us
     return user
 
 
+@router.put("/users/{user_id}/reset-password")
+async def admin_reset_password(
+    user_id: str,
+    data: dict,
+    x_user_id: str = Header(None, alias="X-User-ID")
+):
+    """Admin resets a user's password"""
+    requesting_user = await get_requesting_user(x_user_id)
+    if not requesting_user or requesting_user.get('role') not in ('super_admin', 'admin', 'manager'):
+        raise HTTPException(status_code=403, detail="Only admins can reset passwords")
+    
+    new_password = data.get('new_password', '').strip()
+    if not new_password or len(new_password) < 4:
+        raise HTTPException(status_code=400, detail="Password must be at least 4 characters")
+    
+    from routers.auth import hash_password
+    hashed = hash_password(new_password)
+    
+    result = await get_db().users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": {"password": hashed, "needs_password_change": True}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"message": "Password reset successfully"}
+
+
 @router.put("/users/{user_id}")
 async def update_admin_user(
     user_id: str,
@@ -1107,6 +1136,8 @@ async def update_admin_user(
         raise HTTPException(status_code=404, detail="User not found")
     
     return {"message": "User updated"}
+
+
 
 
 @router.put("/users/{user_id}/reactivate")

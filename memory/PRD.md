@@ -14,7 +14,11 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### Brand Kit Theme Support for All Public Pages (Mar 26, 2026) -- LATEST
+### Auth: Forgot Password Email Case Bug + Admin Password Reset (Mar 26, 2026) -- LATEST
+- **Bug:** Forgot password `verify` and `reset` steps didn't lowercase the email, causing lookup failures when iOS auto-capitalizes emails. Fixed by normalizing email in all 3 steps.
+- **Feature:** Added `PUT /api/admin/users/{user_id}/reset-password` endpoint and "Reset Password" button on the admin user detail page so admins can directly reset any team member's password.
+
+### Brand Kit Theme Support for All Public Pages (Mar 26, 2026)
 - **Problem:** User's Brand Kit page_theme (light/dark) setting only worked on the Digital Business Card. Showcase, Landing Page, and Link Page were all hardcoded to dark mode.
 - **Fix:** 
   - Backend: Added `brand_kit` with `page_theme` to showcase (`showcase.py`), landing page (`public_landing.py`), and link page (`linkpage.py`) API responses. Uses user → store → org fallback chain.
