@@ -286,6 +286,11 @@ export default function ContactDetailScreen() {
     address_street: '', address_city: '', address_state: '', address_zip: '', address_country: '',
     disabled_automations: [] as string[],
     ownership_type: 'org' as string,
+    linked_user_id: null as string | null,
+    linked_store_name: null as string | null,
+    linked_store_id: null as string | null,
+    linked_org_name: null as string | null,
+    linked_role: null as string | null,
   });
   const [loading, setLoading] = useState(!isNewContact);
   const [saving, setSaving] = useState(false);
@@ -655,6 +660,11 @@ export default function ContactDetailScreen() {
         address_zip: data.address_zip || '',
         address_country: data.address_country || '',
         disabled_automations: data.disabled_automations || [],
+        linked_user_id: data.linked_user_id || null,
+        linked_store_name: data.linked_store_name || null,
+        linked_store_id: data.linked_store_id || null,
+        linked_org_name: data.linked_org_name || null,
+        linked_role: data.linked_role || null,
       });
     } catch (e) {
       console.error('Failed to load contact:', e);
@@ -2858,6 +2868,33 @@ export default function ContactDetailScreen() {
                   <Text style={s.heroStatLbl}>refs</Text>
                 </View>
               </View>
+            )}
+
+            {/* Linked App Account Card */}
+            {!isNewContact && !isEditing && contact.linked_user_id && (
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row', alignItems: 'center',
+                  backgroundColor: '#007AFF15', borderRadius: 10,
+                  paddingHorizontal: 12, paddingVertical: 8, marginTop: 8,
+                  borderWidth: 1, borderColor: '#007AFF30',
+                }}
+                onPress={() => router.push(`/admin/user/${contact.linked_user_id}` as any)}
+                data-testid="linked-account-card"
+              >
+                <Ionicons name="shield-checkmark" size={18} color="#007AFF" />
+                <View style={{ marginLeft: 8, flex: 1 }}>
+                  <Text style={{ color: '#007AFF', fontWeight: '600', fontSize: 13 }}>
+                    iMOS {contact.linked_role ? (contact.linked_role === 'super_admin' ? 'Super Admin' : contact.linked_role === 'org_admin' ? 'Admin' : contact.linked_role === 'store_manager' ? 'Manager' : 'User') : 'User'} Account
+                  </Text>
+                  {(contact.linked_store_name || contact.linked_org_name) && (
+                    <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 1 }}>
+                      {[contact.linked_store_name, contact.linked_org_name].filter(Boolean).join(' · ')}
+                    </Text>
+                  )}
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#007AFF" />
+              </TouchableOpacity>
             )}
 
             {/* Tags + Automations Strip (merged) */}

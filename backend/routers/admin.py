@@ -953,9 +953,40 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
         except Exception as e:
             logger.warning(f"Failed to send invite SMS to {phone}: {e}")
     
-    # Auto-create the new user as a Contact under the creator
+    # Link source contact to the new user (tag + store info)
+    source_contact_id = data.get('source_contact_id')
+    if source_contact_id:
+        try:
+            # Build update: tags + linked user/store info
+            role_tag = f"imos_{user_role}"
+            contact_update: dict = {
+                "linked_user_id": user_id,
+                "linked_role": user_role,
+                "updated_at": datetime.utcnow(),
+            }
+            if store_id:
+                store_doc = await get_db().stores.find_one({"_id": ObjectId(store_id)}, {"name": 1})
+                if store_doc:
+                    contact_update["linked_store_id"] = store_id
+                    contact_update["linked_store_name"] = store_doc.get("name", "")
+            if organization_id:
+                org_doc = await get_db().organizations.find_one({"_id": ObjectId(organization_id)}, {"name": 1})
+                if org_doc:
+                    contact_update["linked_org_name"] = org_doc.get("name", "")
+            await get_db().contacts.update_one(
+                {"_id": ObjectId(source_contact_id)},
+                {
+                    "$set": contact_update,
+                    "$addToSet": {"tags": {"$each": ["imos_user", role_tag]}},
+                }
+            )
+            logger.info(f"Linked contact {source_contact_id} to new user {user_id}")
+        except Exception as e:
+            logger.error(f"Failed to link source contact {source_contact_id}: {e}")
+
+    # Auto-create the new user as a Contact under the creator (only if NOT converting existing contact)
     contact_created = False
-    if x_user_id:
+    if x_user_id and not source_contact_id:
         try:
             contact_doc = {
                 "user_id": x_user_id,

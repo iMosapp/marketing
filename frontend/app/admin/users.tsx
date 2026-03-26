@@ -167,7 +167,9 @@ export default function UsersScreen() {
     setSearchingContacts(true);
     try {
       const response = await api.get(`/contacts/${user?._id}`, { params: { search: query.trim() } });
-      setContactResults((response.data.contacts || []).slice(0, 5));
+      const data = response.data;
+      const contacts = Array.isArray(data) ? data : (data.contacts || []);
+      setContactResults(contacts.slice(0, 5));
     } catch (e) {
       console.error('Contact search failed:', e);
     } finally {
@@ -216,20 +218,6 @@ export default function UsersScreen() {
       });
 
       if (response.data.success) {
-        // Tag the source contact with role
-        if (selectedContactId) {
-          try {
-            const roleTag = `imos_${newUserRole}`;
-            // Get existing tags first, then add new ones
-            const contactResp = await api.get(`/contacts/${user?._id}/${selectedContactId}`);
-            const existingTags = contactResp.data?.tags || [];
-            const newTags = [...new Set([...existingTags, 'imos_user', roleTag])];
-            await api.patch(`/contacts/${user?._id}/${selectedContactId}/tags`, { tags: newTags });
-          } catch (e) {
-            console.error('Failed to tag contact:', e);
-          }
-        }
-        
         setCreatedUser({
           name: newUserName.trim(),
           email: newUserEmail.trim().toLowerCase(),

@@ -310,6 +310,13 @@ class Contact(BaseModel):
     crm_link_token: Optional[str] = None  # Unique token for public timeline access
     crm_link_copied_at: Optional[datetime] = None  # When the CRM link was first copied
     
+    # Linked App User (when contact is converted to an app user)
+    linked_user_id: Optional[str] = None  # User ID if this contact was converted to an app user
+    linked_store_id: Optional[str] = None  # Store ID the linked user belongs to
+    linked_store_name: Optional[str] = None  # Store name for display
+    linked_org_name: Optional[str] = None  # Organization name for display
+    linked_role: Optional[str] = None  # Role of the linked user (user, store_manager, org_admin, super_admin)
+    
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
