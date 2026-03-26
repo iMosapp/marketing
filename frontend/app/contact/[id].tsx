@@ -2872,20 +2872,19 @@ export default function ContactDetailScreen() {
 
             {/* Linked App Account Card */}
             {!isNewContact && !isEditing && contact.linked_user_id && (
-              <TouchableOpacity
+              <View
                 style={{
                   flexDirection: 'row', alignItems: 'center',
                   backgroundColor: '#007AFF15', borderRadius: 10,
                   paddingHorizontal: 12, paddingVertical: 8, marginTop: 8,
                   borderWidth: 1, borderColor: '#007AFF30',
                 }}
-                onPress={() => router.push(`/admin/user/${contact.linked_user_id}` as any)}
                 data-testid="linked-account-card"
               >
                 <Ionicons name="shield-checkmark" size={18} color="#007AFF" />
                 <View style={{ marginLeft: 8, flex: 1 }}>
                   <Text style={{ color: '#007AFF', fontWeight: '600', fontSize: 13 }}>
-                    iMOS {contact.linked_role ? (contact.linked_role === 'super_admin' ? 'Super Admin' : contact.linked_role === 'org_admin' ? 'Admin' : contact.linked_role === 'store_manager' ? 'Manager' : 'User') : 'User'} Account
+                    {contact.linked_role ? (contact.linked_role === 'super_admin' ? 'Super Admin' : contact.linked_role === 'org_admin' ? 'Admin' : contact.linked_role === 'store_manager' ? 'Manager' : 'User') : 'User'} Account
                   </Text>
                   {(contact.linked_store_name || contact.linked_org_name) && (
                     <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 1 }}>
@@ -2893,8 +2892,7 @@ export default function ContactDetailScreen() {
                     </Text>
                   )}
                 </View>
-                <Ionicons name="chevron-forward" size={16} color="#007AFF" />
-              </TouchableOpacity>
+              </View>
             )}
 
             {/* Tags + Automations Strip (merged) */}
