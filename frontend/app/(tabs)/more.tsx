@@ -589,7 +589,7 @@ export default function MoreScreen() {
   // SECTION 5: SETUP & MANAGE (Admin/Manager tools for their accounts)
   // Only visible to admins, store managers, partners
   // ============================================================
-  if (perm('admin')) {
+  if (isAdmin && perm('admin')) {
     const items: (MenuItem & { permKey?: string })[] = [
       { permKey: 'store_profile', icon: 'storefront-outline', title: 'Store Profile', subtitle: 'Logo, address & store info', onPress: () => router.push('/settings/store-profile' as any), color: '#34C759' },
       { permKey: 'brand_kit', icon: 'color-palette', title: 'Brand Kit', subtitle: 'Email branding & colors', onPress: () => router.push('/settings/brand-kit'), color: '#AF52DE' },
@@ -668,9 +668,9 @@ export default function MoreScreen() {
   if (perm('my_tools', 'training_hub')) {
     const items: MenuItem[] = [
       { icon: 'school', title: 'Training Hub', subtitle: 'Learn the platform', onPress: () => router.push('/training-hub'), color: '#FF9500' },
-      { icon: 'book', title: 'SOPs & Guides', subtitle: 'Step-by-step procedures', onPress: () => router.push('/admin/sops'), color: '#5856D6' },
     ];
-    if (isAdmin) {
+    if (isSuperAdmin) {
+      items.push({ icon: 'book', title: 'SOPs & Guides', subtitle: 'Step-by-step procedures', onPress: () => router.push('/admin/sops'), color: '#5856D6' });
       items.push({ icon: 'create', title: 'Manage Training', subtitle: 'Edit lessons & tracks', onPress: () => router.push('/admin/manage-training'), color: '#34C759' });
       items.push({ icon: 'analytics', title: 'Training Report', subtitle: 'Video engagement analytics', onPress: () => router.push('/admin/training-reports'), color: '#AF52DE' });
     }

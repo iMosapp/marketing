@@ -908,7 +908,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 44,
     height: 26,
     borderRadius: 13,
-    backgroundColor: colors.borderLight,
+    backgroundColor: '#C7C7CC',
     padding: 2,
     justifyContent: 'center',
   },
