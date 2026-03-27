@@ -70,6 +70,7 @@ export default function CampaignJourney({ userId, contactId }: Props) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [selectedStep, setSelectedStep] = useState<StepInfo | null>(null);
   const [marking, setMarking] = useState(false);
+  const [removing, setRemoving] = useState<string | null>(null);
 
   const loadJourneys = useCallback(async () => {
     try {
@@ -132,6 +133,35 @@ export default function CampaignJourney({ userId, contactId }: Props) {
     setMarking(false);
   };
 
+  const handleRemoveCampaign = async (journey: Journey) => {
+    showSimpleAlert(
+      'Remove Campaign',
+      `Remove "${journey.campaign_name}" from this contact? History will be archived. Any pending sends will be cancelled.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            setRemoving(journey.enrollment_id);
+            try {
+              await api.post(`/contacts/${userId}/${contactId}/campaign-journey/remove`, {
+                enrollment_id: journey.enrollment_id,
+              });
+              await loadJourneys();
+              showSimpleAlert('Done', `"${journey.campaign_name}" removed. You can re-add it anytime.`);
+            } catch (e) {
+              console.error('Remove campaign failed:', e);
+              showSimpleAlert('Error', 'Failed to remove campaign');
+            } finally {
+              setRemoving(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const stepMessage = selectedStep?.full_message || selectedStep?.message || '';
 
   return (
@@ -178,7 +208,22 @@ export default function CampaignJourney({ userId, contactId }: Props) {
                   </View>
                 </View>
               </View>
-              <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textSecondary} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <TouchableOpacity
+                  data-testid={`remove-campaign-${jIdx}`}
+                  onPress={() => handleRemoveCampaign(journey)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  disabled={removing === journey.enrollment_id}
+                  style={s.removeBtn}
+                >
+                  {removing === journey.enrollment_id ? (
+                    <ActivityIndicator size="small" color="#FF3B30" />
+                  ) : (
+                    <Ionicons name="trash-outline" size={16} color="#FF3B30" />
+                  )}
+                </TouchableOpacity>
+                <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textSecondary} />
+              </View>
             </TouchableOpacity>
 
             {/* Progress bar */}
@@ -334,6 +379,7 @@ const s = StyleSheet.create({
   card: { borderRadius: 12, borderWidth: 1, marginBottom: 8, overflow: 'hidden' },
   cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, paddingBottom: 8 },
   cardHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  removeBtn: { padding: 4 },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
   campaignName: { fontSize: 16, fontWeight: '700' },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },

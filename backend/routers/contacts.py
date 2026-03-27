@@ -1393,7 +1393,7 @@ async def get_contact_campaign_journey(user_id: str, contact_id: str):
     db = get_db()
 
     enrollments = await db.campaign_enrollments.find(
-        {"contact_id": contact_id, "user_id": user_id},
+        {"contact_id": contact_id, "user_id": user_id, "status": {"$ne": "archived"}},
     ).to_list(None)
 
     # Pre-load pending sends and tasks for this contact to cross-reference
@@ -1613,3 +1613,86 @@ async def mark_campaign_step_sent(user_id: str, contact_id: str, body: dict):
     })
 
     return {"success": True, "message": f"Step {step_num} marked as sent"}
+
+
+@router.post("/{user_id}/{contact_id}/campaign-journey/remove")
+async def remove_campaign_enrollment(user_id: str, contact_id: str, data: dict = {}):
+    """
+    Archive a campaign enrollment for a contact and cancel any pending sends.
+    The enrollment history is preserved (status → 'archived') so you can see
+    what was sent in the past. The contact can be manually re-enrolled later.
+    """
+    db = get_db()
+    enrollment_id = data.get("enrollment_id")
+    if not enrollment_id:
+        raise HTTPException(status_code=400, detail="enrollment_id is required")
+
+    # Find the enrollment
+    enrollment = await db.campaign_enrollments.find_one({
+        "_id": ObjectId(enrollment_id),
+        "contact_id": contact_id,
+    })
+    if not enrollment:
+        raise HTTPException(status_code=404, detail="Enrollment not found")
+
+    campaign_id = enrollment.get("campaign_id", "")
+    campaign_name = enrollment.get("campaign_name", "")
+
+    # If campaign_name not on enrollment, look it up
+    if not campaign_name and campaign_id:
+        try:
+            campaign = await db.campaigns.find_one({"_id": ObjectId(campaign_id)}, {"name": 1})
+            campaign_name = campaign.get("name", "") if campaign else ""
+        except Exception:
+            pass
+
+    # Archive the enrollment (keep history, mark as archived)
+    now = datetime.now(timezone.utc)
+    await db.campaign_enrollments.update_one(
+        {"_id": ObjectId(enrollment_id)},
+        {"$set": {
+            "status": "archived",
+            "archived_at": now,
+            "archived_by": user_id,
+            "previous_status": enrollment.get("status", "active"),
+        }}
+    )
+
+    # Cancel any pending sends for this enrollment
+    cancelled = await db.campaign_pending_sends.update_many(
+        {
+            "campaign_id": campaign_id,
+            "contact_id": contact_id,
+            "status": "pending",
+        },
+        {"$set": {"status": "cancelled", "cancelled_at": now}}
+    )
+
+    # Log the action as a contact event
+    contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"first_name": 1, "last_name": 1})
+    contact_name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip() if contact else "Contact"
+
+    await db.contact_events.insert_one({
+        "user_id": user_id,
+        "contact_id": contact_id,
+        "contact_name": contact_name,
+        "event_type": "campaign_removed",
+        "icon": "close-circle",
+        "color": "#FF3B30",
+        "title": "Campaign Removed",
+        "description": f"Removed '{campaign_name}' campaign. {cancelled.modified_count} pending sends cancelled.",
+        "category": "campaigns",
+        "timestamp": now,
+        "metadata": {
+            "campaign_id": campaign_id,
+            "campaign_name": campaign_name,
+            "enrollment_id": enrollment_id,
+            "cancelled_sends": cancelled.modified_count,
+        },
+    })
+
+    return {
+        "success": True,
+        "message": f"Campaign '{campaign_name}' removed from contact",
+        "cancelled_pending_sends": cancelled.modified_count,
+    }

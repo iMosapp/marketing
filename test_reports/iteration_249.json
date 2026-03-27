@@ -1,0 +1,75 @@
+{
+  "summary": "Iteration 249 - Campaign Removal Feature Testing. Tested the new ability to remove/archive campaign enrollments from contacts. Fixed a route ordering bug in campaigns.py where list-campaigns endpoint was being matched by the generic /{user_id}/{campaign_id} route. All 8 backend tests pass. Frontend loads correctly and shows campaign removal events in activity feed.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_campaign_removal.py",
+    "/app/test_reports/pytest/pytest_campaign_removal.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Fixed route ordering bug: list-campaigns endpoint was defined after /{user_id}/{campaign_id}, causing 'list-campaigns' to be parsed as campaign_id. Moved list-campaigns route before the generic route.",
+    "Campaign removal endpoint correctly archives enrollment (status='archived'), cancels pending sends, and logs contact_event",
+    "Campaign journey endpoint correctly excludes archived enrollments from response",
+    "CampaignJourney.tsx component has proper data-testid attributes and trash icon button for removal"
+  ],
+  "updated_files": [
+    "/app/backend/routers/campaigns.py",
+    "/app/backend/tests/test_campaign_removal.py"
+  ],
+  "success_rate": {
+    "backend": "100% (8/8 tests passed)",
+    "frontend": "100% (login, dashboard, contacts, contact detail all working)"
+  },
+  "test_credentials": {
+    "super_admin": "forest@imosapp.com / Admin123!",
+    "user_id": "69a0b7095fddcede09591667"
+  },
+  "seed_data_creation": "None - used existing test data",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Campaign removal feature fully tested and working. Route ordering fix applied to campaigns.py. The list-campaigns endpoint now works correctly. Campaign journey excludes archived enrollments. Activity feed shows 'Campaign Removed' events when campaigns are removed from contacts.",
+  "mocked_apis": {
+    "Twilio SMS": "MOCKED - SMS sending is mocked"
+  },
+  "tests_executed": {
+    "campaign_removal_endpoint": [
+      "test_remove_without_enrollment_id_returns_400 - PASSED",
+      "test_remove_with_invalid_enrollment_id_returns_404 - PASSED"
+    ],
+    "campaign_journey_endpoint": [
+      "test_campaign_journey_returns_array - PASSED",
+      "test_archived_enrollments_excluded - PASSED"
+    ],
+    "list_campaigns_simple": [
+      "test_list_campaigns_returns_structure - PASSED"
+    ],
+    "rewrap_links_get": [
+      "test_rewrap_links_get_works - PASSED"
+    ],
+    "full_flow": [
+      "test_full_removal_flow - PASSED",
+      "test_removal_logs_event - PASSED"
+    ],
+    "frontend": [
+      "Login flow - PASSED",
+      "Dashboard loads - PASSED",
+      "Contacts page loads - PASSED",
+      "Contact detail page loads - PASSED",
+      "Campaign Removed event visible in activity feed - PASSED"
+    ]
+  },
+  "bug_fix_applied": {
+    "issue": "GET /api/campaigns/{user_id}/list-campaigns returning 500 error",
+    "root_cause": "Route ordering issue - the generic /{user_id}/{campaign_id} route was defined before list-campaigns, causing 'list-campaigns' to be parsed as an invalid ObjectId",
+    "fix": "Moved list-campaigns route definition before the generic /{user_id}/{campaign_id} route in campaigns.py",
+    "verification": "All tests now pass, endpoint returns proper campaign list"
+  }
+}
