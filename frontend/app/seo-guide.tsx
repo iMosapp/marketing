@@ -53,7 +53,7 @@ const SECTIONS = [
     weight: '20 points',
     why: 'Every time someone views your digital card or clicks a link you shared, it signals to search engines that you\'re relevant and active.',
     steps: [
-      { text: 'Share your digital card after every customer interaction — text it, email it, or tap to share via NFC', route: '/settings/create-card', btn: 'View My Card' },
+      { text: 'Share your digital card after every customer interaction — text it, email it, or tap to share via NFC', route: '/settings/card-templates', btn: 'View My Card' },
       { text: 'Post your link page on your social media profiles', route: '/settings/link-page', btn: 'My Link Page' },
       { text: 'Add your profile link to your email signature' },
       { text: 'Use tracking links (UTM) to see which channels drive the most views' },
