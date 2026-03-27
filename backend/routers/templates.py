@@ -15,6 +15,28 @@ router = APIRouter(prefix="/templates", tags=["Templates"])
 logger = logging.getLogger(__name__)
 
 YOUTUBE_URL_RE = re.compile(r'https?://(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)[\w-]+(?:&[\w=]*)*')
+ANY_URL_RE = re.compile(r'https?://[^\s<>"\')\]]+')
+
+
+async def _auto_wrap_content_urls(content: str, user_id: str, context: str = "template") -> str:
+    """Wrap ALL raw URLs in template content with tracked short URLs."""
+    from routers.short_urls import create_short_url
+    urls = ANY_URL_RE.findall(content)
+    for url in urls:
+        if "/api/s/" in url:
+            continue  # already tracked
+        try:
+            link_type = "training_video" if ("youtube.com" in url or "youtu.be" in url) else context
+            result = await create_short_url(
+                original_url=url,
+                link_type=link_type,
+                user_id=user_id,
+                metadata={"source": context},
+            )
+            content = content.replace(url, result["short_url"])
+        except Exception as e:
+            logger.warning(f"[AutoWrap] Failed to wrap {url}: {e}")
+    return content
 
 # Default templates that all users get
 DEFAULT_TEMPLATES = [
@@ -258,11 +280,14 @@ async def create_template(user_id: str, template_data: MessageTemplateCreate):
     })
     if existing:
         raise HTTPException(status_code=400, detail="Template with this name already exists")
+
+    # Auto-wrap any URLs in content with tracking
+    wrapped_content = await _auto_wrap_content_urls(template_data.content, user_id, template_data.category or "template")
     
     template = {
         "user_id": user_id,
         "name": template_data.name,
-        "content": template_data.content,
+        "content": wrapped_content,
         "category": template_data.category,
         "is_default": False,
         "usage_count": 0,
@@ -286,7 +311,9 @@ async def update_template(user_id: str, template_id: str, template_data: Message
     if template_data.name is not None:
         update_dict["name"] = template_data.name
     if template_data.content is not None:
-        update_dict["content"] = template_data.content
+        # Auto-wrap any URLs in content with tracking
+        category = template_data.category or "template"
+        update_dict["content"] = await _auto_wrap_content_urls(template_data.content, user_id, category)
     if template_data.category is not None:
         update_dict["category"] = template_data.category
     
