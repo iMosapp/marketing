@@ -154,7 +154,7 @@ async def get_conversations(user_id: str, personal_only: bool = True):
         ("ai_outcome_priority", 1),  # Lower priority number = more important
         ("unread", -1),  # Unread first
         ("last_message_at", -1)  # Then by recency
-    ]).limit(500).to_list(500)
+    ]).limit(100).to_list(100)
     
     if not conversations:
         return []

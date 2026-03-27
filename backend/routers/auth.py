@@ -1118,3 +1118,101 @@ async def backfill_ref_codes():
         await db.users.update_one({"_id": user["_id"]}, {"$set": {"ref_code": ref_base}})
         count += 1
     return {"status": "success", "backfilled": count}
+
+
+
+@router.post("/admin-fix-login")
+async def admin_fix_login(data: dict):
+    """
+    Diagnose and fix login issues for a user.
+    - Checks password state (plain text vs bcrypt)
+    - Can force-reset to a known password
+    Requires the admin secret.
+    """
+    secret = data.get('secret')
+    if secret != "iM-On-Social-Emergency-Reset-2026":
+        raise HTTPException(status_code=403, detail="Invalid secret")
+
+    email = (data.get('email') or '').strip().lower()
+    new_password = data.get('new_password')
+
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+
+    import re
+    escaped_email = re.escape(email)
+    user = await get_db().users.find_one({"email": {"$regex": f"^{escaped_email}$", "$options": "i"}})
+    if not user:
+        return {"status": "error", "message": f"No user found with email '{email}'"}
+
+    stored_pw = user.get('password', '')
+    is_hashed = stored_pw.startswith("$2b$") or stored_pw.startswith("$2a$")
+
+    diagnosis = {
+        "email": user.get("email"),
+        "name": user.get("name"),
+        "user_id": str(user["_id"]),
+        "status": user.get("status"),
+        "is_active": user.get("is_active"),
+        "password_type": "bcrypt" if is_hashed else "plain_text",
+        "password_length": len(stored_pw),
+        "bcrypt_available": BCRYPT_AVAILABLE,
+        "needs_password_change": user.get("needs_password_change", False),
+    }
+
+    if new_password:
+        hashed = hash_password(new_password)
+        await get_db().users.update_one(
+            {"_id": user["_id"]},
+            {"$set": {
+                "password": hashed,
+                "status": "active",
+                "is_active": True,
+                "needs_password_change": False,
+            }}
+        )
+        diagnosis["action"] = "Password reset and account activated"
+        diagnosis["new_password_type"] = "bcrypt" if hashed.startswith("$2b$") else "plain"
+    else:
+        diagnosis["action"] = "Diagnosis only (pass new_password to reset)"
+
+    return diagnosis
+
+
+@router.post("/admin-fix-all-passwords")
+async def admin_fix_all_plain_passwords(data: dict):
+    """
+    Find all users with plain-text passwords and hash them.
+    This is a one-time migration to fix the historical bug.
+    """
+    secret = data.get('secret')
+    if secret != "iM-On-Social-Emergency-Reset-2026":
+        raise HTTPException(status_code=403, detail="Invalid secret")
+
+    db = get_db()
+    fixed = 0
+    errors = 0
+    plain_text_users = []
+
+    async for user in db.users.find({}, {"_id": 1, "email": 1, "name": 1, "password": 1}):
+        pw = user.get("password", "")
+        if pw and not (pw.startswith("$2b$") or pw.startswith("$2a$")):
+            plain_text_users.append({"email": user.get("email"), "name": user.get("name")})
+            try:
+                hashed = hash_password(pw)
+                await db.users.update_one(
+                    {"_id": user["_id"]},
+                    {"$set": {"password": hashed}}
+                )
+                fixed += 1
+            except Exception as e:
+                logger.error(f"Failed to hash password for {user.get('email')}: {e}")
+                errors += 1
+
+    return {
+        "status": "complete",
+        "users_with_plain_passwords": len(plain_text_users),
+        "fixed": fixed,
+        "errors": errors,
+        "affected_users": [u["email"] for u in plain_text_users],
+    }
