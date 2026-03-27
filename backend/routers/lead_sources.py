@@ -360,6 +360,10 @@ async def receive_inbound_lead(source_id: str, lead: InboundLead, request: Reque
     """
     db = get_db()
     
+    # Validate source_id format
+    if not ObjectId.is_valid(source_id):
+        raise HTTPException(status_code=400, detail="Invalid source ID format")
+    
     # Validate source exists
     source = await db.lead_sources.find_one({"_id": ObjectId(source_id)})
     if not source:
