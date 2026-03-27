@@ -204,7 +204,17 @@ export default function LoginScreen() {
       }
     } catch (error: any) {
       try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error); } catch {}
-      setLoginError('Invalid email or password');
+      // Differentiate between actual auth errors and server/network issues
+      const status = error?.response?.status;
+      if (status === 401) {
+        setLoginError('Invalid email or password');
+      } else if (status === 502 || status === 503 || status === 504) {
+        setLoginError('Server is temporarily unavailable. Please try again in a moment.');
+      } else if (error?.message?.includes('Network') || error?.message?.includes('timeout') || !status) {
+        setLoginError('Connection issue. Please check your internet and try again.');
+      } else {
+        setLoginError('Something went wrong. Please try again.');
+      }
     } finally {
       setLoading(false);
     }

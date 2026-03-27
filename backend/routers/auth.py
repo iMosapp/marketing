@@ -296,106 +296,56 @@ async def login(credentials: dict):
         user['org_id'] = str(effective_org_id)
     if user.get('store_id'):
         user['store_id'] = str(user['store_id'])
-        # Include store slug and name for review link generation
-        try:
-            store = await get_db().stores.find_one({"_id": ObjectId(user['store_id'])}, {"slug": 1, "name": 1})
+
+    # ── Lightweight enrichment: single batch of safe lookups ──
+    # These are small indexed queries. If any fail, login still succeeds.
+    try:
+        store_id = user.get('store_id')
+        if store_id:
+            store = await get_db().stores.find_one({"_id": ObjectId(store_id)}, {"slug": 1, "name": 1})
             if store:
                 if store.get('name'):
                     user['store_name'] = store['name']
-                slug = store.get('slug')
-                # Auto-generate slug from store name if missing
-                if not slug and store.get('name'):
-                    import re
-                    slug = re.sub(r'[^a-z0-9]+', '-', store['name'].lower()).strip('-')
-                    await get_db().stores.update_one(
-                        {"_id": ObjectId(user['store_id'])},
-                        {"$set": {"slug": slug}}
-                    )
-                if slug:
-                    user['store_slug'] = slug
-        except Exception:
-            pass
-    
-    # Include org slug and name
-    if effective_org_id:
-        try:
+                if store.get('slug'):
+                    user['store_slug'] = store['slug']
+    except Exception:
+        pass
+
+    try:
+        if effective_org_id:
             org = await get_db().organizations.find_one({"_id": ObjectId(effective_org_id)}, {"slug": 1, "name": 1})
             if org:
                 if org.get('name'):
                     user['organization_name'] = org['name']
-                org_slug = org.get('slug')
-                if not org_slug and org.get('name'):
-                    import re
-                    org_slug = re.sub(r'[^a-z0-9]+', '-', org['name'].lower()).strip('-')
-                    await get_db().organizations.update_one(
-                        {"_id": ObjectId(effective_org_id)},
-                        {"$set": {"slug": org_slug}}
-                    )
-                if org_slug:
-                    user['org_slug'] = org_slug
-        except Exception:
-            pass
+                if org.get('slug'):
+                    user['org_slug'] = org['slug']
+    except Exception:
+        pass
 
-    # Resolve white-label partner branding
+    # Resolve white-label partner branding (single query)
     partner_branding = None
     try:
-        org_id = user.get('organization_id')
-        store_id = user.get('store_id')
         pid = None
-
-        # Check org-level partner first
-        if org_id:
-            try:
-                org_doc = await get_db().organizations.find_one({"_id": ObjectId(org_id)}, {"partner_id": 1})
-                if org_doc and org_doc.get("partner_id"):
-                    pid = org_doc["partner_id"]
-            except Exception:
-                pass
-
-        # Check store-level partner
-        if not pid and store_id:
-            try:
-                store_doc = await get_db().stores.find_one({"_id": ObjectId(store_id)}, {"partner_id": 1})
-                if store_doc and store_doc.get("partner_id"):
-                    pid = store_doc["partner_id"]
-            except Exception:
-                pass
-
-        # Fetch partner branding
+        if effective_org_id:
+            org_doc = await get_db().organizations.find_one({"_id": ObjectId(effective_org_id)}, {"partner_id": 1})
+            if org_doc and org_doc.get("partner_id"):
+                pid = org_doc["partner_id"]
+        if not pid and user.get('store_id'):
+            store_doc = await get_db().stores.find_one({"_id": ObjectId(user['store_id'])}, {"partner_id": 1})
+            if store_doc and store_doc.get("partner_id"):
+                pid = store_doc["partner_id"]
         if pid:
-            user['partner_id'] = pid  # Add partner_id to user object for frontend
-            try:
-                partner = await get_db().white_label_partners.find_one(
-                    {"_id": ObjectId(pid), "is_active": True},
-                    {"_id": 0, "created_at": 0, "updated_at": 0}
-                )
-                if partner:
-                    partner_branding = partner
-            except Exception:
-                pass
-    except Exception as e:
-        logger.warning(f"Error resolving partner branding: {e}")
-
-    # Store user timezone if provided (auto-detected from browser)
-    client_timezone = credentials.get('timezone')
-    if client_timezone:
-        try:
-            await get_db().users.update_one(
-                {"_id": ObjectId(user['_id'])},
-                {"$set": {"timezone": client_timezone}}
+            user['partner_id'] = pid
+            partner = await get_db().white_label_partners.find_one(
+                {"_id": ObjectId(pid), "is_active": True},
+                {"_id": 0, "created_at": 0, "updated_at": 0}
             )
-            user['timezone'] = client_timezone
-        except Exception as e:
-            logger.warning(f"Timezone update error: {e}")
+            if partner:
+                partner_branding = partner
+    except Exception:
+        pass
 
-    # Track login for lifecycle tagging
-    try:
-        from .user_lifecycle import on_user_login
-        await on_user_login(str(user['_id']))
-    except Exception as e:
-        logger.warning(f"Lifecycle login hook error: {e}")
-
-    # Merge feature permissions with role-based defaults
+    # Merge feature permissions (no DB call)
     from permissions import merge_permissions
     user['feature_permissions'] = merge_permissions(user.get('feature_permissions'), user.get('role', 'user'))
 
@@ -406,7 +356,7 @@ async def login(credentials: dict):
     if partner_branding:
         response_data["partner_branding"] = partner_branding
 
-    # Set persistent session cookie (survives iOS Safari ITP clearing localStorage)
+    # Build response FIRST, then fire background tasks
     from fastapi.responses import JSONResponse
     import json as json_mod
 
@@ -418,17 +368,15 @@ async def login(credentials: dict):
         raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
 
     resp = JSONResponse(content=json_mod.loads(json_mod.dumps(response_data, default=_serialize)))
-    # HttpOnly session cookie for /auth/me endpoint
     resp.set_cookie(
         key="imonsocial_session",
         value=str(user['_id']),
-        max_age=60 * 60 * 24 * 365 * 10,  # 10 years
+        max_age=60 * 60 * 24 * 365 * 10,
         httponly=True,
         samesite="lax",
         secure=True,
         path="/",
     )
-    # JS-readable auth cookie — survives iOS storage purges
     resp.set_cookie(
         key="imonsocial_uid",
         value=str(user['_id']),
@@ -438,6 +386,26 @@ async def login(credentials: dict):
         secure=True,
         path="/",
     )
+
+    # ── Fire-and-forget background tasks (don't block login response) ──
+    import asyncio
+    async def _post_login_tasks(uid: str, tz: str | None):
+        try:
+            if tz:
+                await get_db().users.update_one({"_id": ObjectId(uid)}, {"$set": {"timezone": tz}})
+        except Exception:
+            pass
+        try:
+            from .user_lifecycle import on_user_login
+            await on_user_login(uid)
+        except Exception:
+            pass
+
+    client_timezone = credentials.get('timezone')
+    if client_timezone:
+        user['timezone'] = client_timezone
+    asyncio.create_task(_post_login_tasks(str(user['_id']), client_timezone))
+
     return resp
 
 
