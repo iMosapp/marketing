@@ -14,46 +14,52 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### Convert Contact to User Workflow (Mar 26, 2026) -- LATEST
-- **"Import from Contact" in Add User Modal:** Admins can search CRM contacts by name/email/phone directly in the Add User modal and auto-fill the form fields.
-- **Backend Auto-Linking:** When creating a user from a contact (`source_contact_id`), the backend automatically:
-  - Tags the source contact with `imos_user` and role-specific tag (e.g., `imos_store_manager`)
-  - Sets `linked_user_id`, `linked_store_name`, `linked_store_id`, `linked_org_name`, `linked_role` on the contact document
-  - Skips auto-creating a duplicate contact (since the contact already exists)
-- **Linked App Account Card:** Contact detail page displays a blue card showing the linked user's role and store/org when a contact has been converted to an app user.
-- **Fix:** Contact Pydantic model updated with `linked_*` fields so they're included in API responses.
-- **Fix:** Contact search API response handling — properly handles both list and object response formats.
+### Universal URL Tracking System (Mar 27, 2026) -- LATEST
+- **`POST /api/s/wrap`**: Universal URL wrapper — pass any URL, get back a tracked short URL. Auto-detects YouTube as `training_video`, review links as `review_request`. Idempotent.
+- **`POST /api/s/wrap-bulk`**: Bulk URL wrapping for multiple URLs at once.
+- **`POST /api/campaigns/{user_id}/{campaign_id}/rewrap-links`**: Admin endpoint to scan existing campaign steps for raw URLs and wrap them with tracking. Also patches unsent pending sends.
+- **Auto-wrap in Campaign Edits**: `PUT /api/campaigns/{user_id}/{campaign_id}` now auto-wraps URLs in `sequences.media_urls` and `sequences.message_template`.
+- **Auto-wrap in Training Hub**: Lesson create/update endpoints auto-wrap `video_url` with tracking.
+- **Auto-wrap in Scheduler**: Background campaign step processor wraps raw URLs before creating pending sends.
+- **Full test coverage**: 20/20 backend tests passed.
 
-### AI Persona Wizard Redesign (Mar 26, 2026)
-- Converted the overwhelming single-scroll AI Persona page into a 4-step wizard
-- Each step shows only 3-5 fields max
+### Convert Contact to User Workflow (Mar 26, 2026)
+- "Import from Contact" in Add User Modal
+- Backend Auto-Linking with tags and linked_* fields
+- Linked App Account Card on contact detail page
 
-### Auth: Forgot Password Email Case Bug + Admin Password Reset (Mar 26, 2026)
-- Fixed email casing bug in forgot password flow
-- Added `PUT /api/admin/users/{user_id}/reset-password` endpoint
+### Activity Feed Grouping (Mar 27, 2026)
+- Consecutive actions by same contact grouped under single photo
 
-### Brand Kit Theme Support for All Public Pages (Mar 26, 2026)
-- All public pages (Showcase, Landing Page, Link Page) now respect Brand Kit light/dark toggle
+### RBAC Fix, UI Fixes, Light Mode, Marketing Decks (Mar 27, 2026)
+- Regular users locked out of admin pages
+- Jessi bar padding on Templates/Tags/Users pages
+- Light mode readability on landing page
+- Tags and Lead Sources separated into distinct nav items
+- 12 static HTML sales presentation decks
 
-### Address & Mapping (Mar 26, 2026)
-- Added Zip Code, Country, Website to Orgs, Stores, Users
-- Added "Get Directions" deep-link button to Digital Card
-
-### Campaign System Fixes (Mar 24, 2026)
-- Scheduler hourly delay + AI toggle override bugs + Campaign Journey Feature
+### Scheduler Stability (Mar 27, 2026)
+- `safe_job` wrapper prevents APScheduler exceptions from crashing API server
+- Campaign hourly delay + AI toggle bugs fixed
 
 ---
 
 ## Key API Endpoints
 - `POST /api/auth/login`
-- `POST /api/admin/users/create` — Accepts `source_contact_id` for contact-to-user conversion
+- `POST /api/admin/users/create` — Accepts `source_contact_id`
 - `PUT /api/admin/users/{user_id}/reset-password`
-- `GET /api/contacts/{user_id}?search=X` — Returns plain JSON array
+- `GET /api/contacts/{user_id}?search=X`
 - `GET /api/campaigns/contact/{contact_id}/journey`
+- `POST /api/s/wrap` — Universal URL tracking
+- `POST /api/s/wrap-bulk` — Bulk URL tracking
+- `POST /api/campaigns/{user_id}/{campaign_id}/rewrap-links` — Rewrap campaign links
 
 ---
 
 ## Prioritized Backlog
+
+### P0
+- Deploy and run `rewrap-links` on production "Onboarding Videos" campaign
 
 ### P1
 - App Store Preparation (eas.json, push notifications)
@@ -79,7 +85,7 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - **apscheduler:** Backend job scheduling
 
 ## Key Files Modified This Session
-- `/app/frontend/app/admin/users.tsx` — Import from Contact search UI, response format fix
-- `/app/backend/routers/admin.py` — source_contact_id handling with auto-tagging and store linking
-- `/app/frontend/app/contact/[id].tsx` — Linked App Account card, linked_* fields in state
-- `/app/backend/models.py` — Added linked_* fields to Contact Pydantic model
+- `/app/backend/routers/short_urls.py` — Added `wrap` and `wrap-bulk` endpoints
+- `/app/backend/routers/campaigns.py` — Added `rewrap-links` endpoint, auto-wrap in `update_campaign`
+- `/app/backend/routers/training.py` — Auto-wrap in lesson create/update
+- `/app/backend/scheduler.py` — `_auto_wrap_urls` helper for background jobs
