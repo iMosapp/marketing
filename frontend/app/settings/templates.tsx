@@ -21,6 +21,7 @@ import VoiceInput from '../../components/VoiceInput';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useThemeStore } from '../../store/themeStore';
+import { JESSI_BAR_HEIGHT } from '../../components/JessieFloatingChat';
 interface Template {
   _id: string;
   name: string;
@@ -400,7 +401,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'ios' ? 82 : 40,
+    paddingTop: Platform.OS === 'ios' ? 82 + JESSI_BAR_HEIGHT : 40 + JESSI_BAR_HEIGHT,
     paddingHorizontal: 16,
     paddingBottom: 16,
     backgroundColor: colors.bg,
