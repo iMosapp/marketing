@@ -183,6 +183,7 @@ export default function ThreadScreen() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedMedia, setSelectedMedia] = useState<{uri: string, type: string, name: string} | null>(null);
   const [sendingMedia, setSendingMedia] = useState(false);
+  const [trackOpens, setTrackOpens] = useState(true);
   
   // Load message preferences or use navigation mode
   useEffect(() => {
@@ -929,9 +930,31 @@ export default function ThreadScreen() {
     );
   };
 
-  const handleAttachVideo = () => {
+  const handleAttachVideo = async () => {
     setShowAttachMenu(false);
-    showAlert('Coming Soon', 'Video attachments will be available in a future update.');
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        showAlert('Permission Denied', 'Photo library access is required.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets[0]) {
+        const asset = result.assets[0];
+        setSelectedMedia({
+          uri: asset.uri,
+          type: asset.mimeType || 'video/mp4',
+          name: asset.fileName || 'video.mp4',
+        });
+        setTrackOpens(true); // Default to tracked for videos
+      }
+    } catch (error) {
+      console.error('Video picker error:', error);
+      showAlert('Error', 'Failed to select video');
+    }
   };
 
   const insertReviewLink = (platformId: string, url: string, platformName: string) => {
@@ -1472,43 +1495,79 @@ export default function ThreadScreen() {
     
     setSendingMedia(true);
     try {
-      const formData = new FormData();
-      formData.append('content', message || '');
-      formData.append('media', {
-        uri: selectedMedia.uri,
-        type: selectedMedia.type,
-        name: selectedMedia.name,
-      } as any);
-      
-      const response = await api.post(
-        `/messages/send-mms/${user._id}/${convId}`,
-        formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
-      );
-      
-      // Add message to list
-      setMessages(prev => [...prev, {
-        _id: response.data._id,
-        content: message,
-        sender: 'user',
-        timestamp: new Date().toISOString(),
-        media_urls: response.data.media_urls,
-        has_media: true,
-      }]);
-      
-      setMessage('');
-      setInputHeight(36);
-      setSelectedMedia(null);
-      
-      // Show success or warning
-      if (response.data.status === 'sent') {
-        // Success - no alert needed
-      } else if (response.data.status === 'failed') {
-        showAlert('Delivery Issue', 'Message saved but delivery failed: ' + (response.data.error || 'Unknown error'));
+      if (trackOpens) {
+        // --- Tracked mode: upload to /api/media/upload-tracked, get tracked link ---
+        const formData = new FormData();
+        formData.append('file', {
+          uri: selectedMedia.uri,
+          type: selectedMedia.type,
+          name: selectedMedia.name,
+        } as any);
+        formData.append('user_id', user._id);
+        formData.append('contact_id', id as string);
+        formData.append('contact_name', contact_name as string || '');
+        formData.append('caption', message || '');
+        
+        const trackResp = await api.post('/media/upload-tracked', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        
+        const trackedUrl = trackResp.data.tracked_url;
+        const captionText = message ? `${message}\n${trackedUrl}` : trackedUrl;
+        
+        // Send as a regular text message with the tracked link
+        const response = await api.post(`/messages/send/${user._id}/${convId}`, {
+          content: captionText,
+          channel: 'sms',
+        });
+        
+        setMessages(prev => [...prev, {
+          _id: response.data._id || Date.now().toString(),
+          content: captionText,
+          sender: 'user',
+          timestamp: new Date().toISOString(),
+          tracked_media_id: trackResp.data.media_id,
+        }]);
+        
+        setMessage('');
+        setInputHeight(36);
+        setSelectedMedia(null);
+      } else {
+        // --- Standard MMS mode: raw attachment, no tracking ---
+        const formData = new FormData();
+        formData.append('content', message || '');
+        formData.append('media', {
+          uri: selectedMedia.uri,
+          type: selectedMedia.type,
+          name: selectedMedia.name,
+        } as any);
+        
+        const response = await api.post(
+          `/messages/send-mms/${user._id}/${convId}`,
+          formData,
+          { headers: { 'Content-Type': 'multipart/form-data' } }
+        );
+        
+        setMessages(prev => [...prev, {
+          _id: response.data._id,
+          content: message,
+          sender: 'user',
+          timestamp: new Date().toISOString(),
+          media_urls: response.data.media_urls,
+          has_media: true,
+        }]);
+        
+        setMessage('');
+        setInputHeight(36);
+        setSelectedMedia(null);
+        
+        if (response.data.status === 'failed') {
+          showAlert('Delivery Issue', 'Message saved but delivery failed: ' + (response.data.error || 'Unknown error'));
+        }
       }
     } catch (error: any) {
       console.error('MMS send error:', error);
-      const errorMsg = error.response?.data?.detail || error.message || 'Failed to send MMS';
+      const errorMsg = error.response?.data?.detail || error.message || 'Failed to send';
       showAlert('Error', errorMsg);
     } finally {
       setSendingMedia(false);
@@ -2004,14 +2063,40 @@ export default function ThreadScreen() {
             {/* Media Preview */}
             {selectedMedia && (
               <View style={styles.mediaPreview}>
-                <Image source={{ uri: selectedMedia.uri }} style={styles.mediaPreviewImage} />
+                {selectedMedia.type.startsWith('video/') ? (
+                  <View style={[styles.mediaPreviewImage, { backgroundColor: 'rgba(120,120,128,0.12)', justifyContent: 'center', alignItems: 'center' }]}>
+                    <Ionicons name="videocam" size={36} color={colors.textSecondary} />
+                    <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 4 }}>Video</Text>
+                  </View>
+                ) : (
+                  <Image source={{ uri: selectedMedia.uri }} style={styles.mediaPreviewImage} />
+                )}
                 <TouchableOpacity
                   style={styles.mediaPreviewRemove}
                   onPress={clearSelectedMedia}
                 >
                   <Ionicons name="close-circle" size={24} color="#FF3B30" />
                 </TouchableOpacity>
-                <Text style={[styles.mediaPreviewText, { color: colors.textSecondary }]}>Photo attached - tap send to send MMS</Text>
+                <View style={styles.mediaTrackRow}>
+                  <TouchableOpacity
+                    data-testid="track-opens-toggle"
+                    style={[styles.trackToggle, trackOpens && styles.trackToggleActive]}
+                    onPress={() => setTrackOpens(!trackOpens)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={trackOpens ? "analytics" : "analytics-outline"}
+                      size={14}
+                      color={trackOpens ? "#FFF" : "#888"}
+                    />
+                    <Text style={[styles.trackToggleText, trackOpens && styles.trackToggleTextActive]}>
+                      {trackOpens ? "Tracking Opens" : "No Tracking"}
+                    </Text>
+                  </TouchableOpacity>
+                  <Text style={[styles.mediaPreviewHint, { color: colors.textSecondary }]}>
+                    {trackOpens ? "Customer opens will be tracked" : "Sent as raw attachment"}
+                  </Text>
+                </View>
               </View>
             )}
             
@@ -3377,6 +3462,36 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   mediaPreviewText: {
     fontSize: 14,
+    color: colors.textSecondary,
+  },
+  mediaTrackRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 4,
+  },
+  trackToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 14,
+    backgroundColor: 'rgba(120,120,128,0.12)',
+  },
+  trackToggleActive: {
+    backgroundColor: '#C9A962',
+  },
+  trackToggleText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#888',
+  },
+  trackToggleTextActive: {
+    color: '#FFF',
+  },
+  mediaPreviewHint: {
+    fontSize: 11,
     color: colors.textSecondary,
   },
   // MMS Image styles in message bubbles
