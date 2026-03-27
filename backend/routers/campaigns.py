@@ -1257,6 +1257,7 @@ def _detect_link_type(url: str) -> str:
 
 
 @router.post("/{user_id}/{campaign_id}/rewrap-links")
+@router.get("/{user_id}/{campaign_id}/rewrap-links")
 async def rewrap_campaign_links(user_id: str, campaign_id: str):
     """
     Scan a campaign's sequences for raw (untracked) URLs and wrap them
@@ -1386,3 +1387,31 @@ async def rewrap_campaign_links(user_id: str, campaign_id: str):
         "patched_pending_sends": patched_sends,
         "url_mapping": summary,
     }
+
+
+@router.get("/{user_id}/list-campaigns")
+async def list_campaigns_simple(user_id: str):
+    """Browser-friendly: lists all campaigns with their IDs and names.
+    Use this to find the campaign_id you need for /rewrap-links."""
+    db = get_db()
+    campaigns = await db.campaigns.find(
+        {"user_id": user_id},
+        {"_id": 1, "name": 1, "active": 1, "trigger_tag": 1, "type": 1}
+    ).to_list(100)
+
+    result = []
+    for c in campaigns:
+        cid = str(c["_id"])
+        name = c.get("name", "Untitled")
+        active = c.get("active", False)
+        tag = c.get("trigger_tag", "")
+        rewrap_link = f"/api/campaigns/{user_id}/{cid}/rewrap-links"
+        result.append({
+            "campaign_id": cid,
+            "name": name,
+            "active": active,
+            "trigger_tag": tag,
+            "rewrap_url": rewrap_link,
+        })
+
+    return {"campaigns": result, "count": len(result)}
