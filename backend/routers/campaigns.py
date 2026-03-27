@@ -740,6 +740,8 @@ async def get_campaign(user_id: str, campaign_id: str):
 @router.put("/{user_id}/{campaign_id}")
 async def update_campaign(user_id: str, campaign_id: str, update_data: dict):
     """Update a campaign with role-based access and permission check"""
+    from routers.short_urls import create_short_url as _create_short_url
+
     # Check permissions
     permission = await check_campaign_permission(user_id, "edit")
     if not permission["allowed"]:
@@ -749,6 +751,44 @@ async def update_campaign(user_id: str, campaign_id: str, update_data: dict):
     
     allowed_fields = ['name', 'type', 'trigger_tag', 'date_type', 'segment_tags', 'sequences', 'send_time', 'active', 'media_urls', 'message_template', 'delivery_mode', 'ai_enabled', 'ownership_level', 'action_type', 'card_type']
     update_dict = {k: v for k, v in update_data.items() if k in allowed_fields}
+
+    # Auto-wrap URLs in sequences when saving
+    if "sequences" in update_dict:
+        campaign_name = update_data.get("name", "")
+        for idx, step in enumerate(update_dict["sequences"]):
+            step_num = idx + 1
+            # Wrap media_urls
+            new_media = []
+            for url in step.get("media_urls", []):
+                if url and "/api/s/" not in url:
+                    try:
+                        lt = "training_video" if ("youtube.com" in url or "youtu.be" in url) else "campaign_link"
+                        r = await _create_short_url(
+                            original_url=url, link_type=lt,
+                            reference_id=campaign_id, user_id=user_id,
+                            metadata={"campaign_id": campaign_id, "campaign_name": campaign_name, "step": step_num, "source": "campaign_edit"},
+                        )
+                        new_media.append(r["short_url"])
+                    except Exception:
+                        new_media.append(url)
+                else:
+                    new_media.append(url)
+            step["media_urls"] = new_media
+            # Wrap URLs in message_template
+            msg = step.get("message_template", "") or ""
+            for url in URL_PATTERN.findall(msg):
+                if "/api/s/" not in url:
+                    try:
+                        lt = "training_video" if ("youtube.com" in url or "youtu.be" in url) else "campaign_link"
+                        r = await _create_short_url(
+                            original_url=url, link_type=lt,
+                            reference_id=campaign_id, user_id=user_id,
+                            metadata={"campaign_id": campaign_id, "campaign_name": campaign_name, "step": step_num, "source": "campaign_edit"},
+                        )
+                        msg = msg.replace(url, r["short_url"])
+                    except Exception:
+                        pass
+            step["message_template"] = msg
     
     result = await get_db().campaigns.update_one(
         {"$and": [{"_id": ObjectId(campaign_id)}, base_filter]},

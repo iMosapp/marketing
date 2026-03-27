@@ -1048,3 +1048,106 @@ async def get_stats(short_code: str):
     if not stats:
         raise HTTPException(status_code=404, detail="Short URL not found")
     return stats
+
+
+@router.post("/wrap")
+async def wrap_url(data: dict):
+    """
+    Universal URL wrapper — pass any URL, get back a tracked short URL.
+    Auto-detects link type (YouTube → training_video, review → review_request, etc.).
+    Idempotent: returns existing short URL if already wrapped.
+    
+    Body:
+        url: The URL to wrap with tracking (required)
+        user_id: ID of the user creating this link (required)
+        context: Optional context string (e.g., "training", "campaign", "message")
+        reference_id: Optional reference ID (lesson ID, campaign ID, etc.)
+        contact_id: Optional contact ID for per-contact tracking
+    
+    Returns:
+        short_url: The tracked URL to use
+        short_code: The code portion
+        original_url: The original URL
+        link_type: Auto-detected type
+    """
+    import re
+
+    url = (data.get("url") or "").strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="url is required")
+    user_id = data.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    # Auto-detect link type
+    if "youtube.com" in url or "youtu.be" in url:
+        link_type = "training_video"
+    elif "review" in url.lower():
+        link_type = "review_request"
+    else:
+        link_type = data.get("context", "custom")
+
+    # Extract YouTube video title for metadata if possible
+    metadata = data.get("metadata") or {}
+    metadata["source"] = data.get("context", "manual_wrap")
+    if data.get("contact_id"):
+        metadata["contact_id"] = data["contact_id"]
+
+    result = await create_short_url(
+        original_url=url,
+        link_type=link_type,
+        reference_id=data.get("reference_id"),
+        user_id=user_id,
+        metadata=metadata,
+    )
+    result["link_type"] = link_type
+    return result
+
+
+@router.post("/wrap-bulk")
+async def wrap_urls_bulk(data: dict):
+    """
+    Bulk URL wrapper — pass multiple URLs, get back tracked short URLs.
+    
+    Body:
+        urls: List of URLs to wrap (required)
+        user_id: ID of the user (required)
+        context: Optional context (e.g., "training", "campaign")
+        reference_id: Optional reference ID
+    
+    Returns:
+        results: List of {original_url, short_url, short_code, link_type}
+    """
+    urls = data.get("urls", [])
+    user_id = data.get("user_id")
+    if not urls:
+        raise HTTPException(status_code=400, detail="urls list is required")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    context = data.get("context", "manual_wrap")
+    reference_id = data.get("reference_id")
+    results = []
+
+    for url in urls:
+        url = (url or "").strip()
+        if not url:
+            continue
+        if "youtube.com" in url or "youtu.be" in url:
+            link_type = "training_video"
+        elif "review" in url.lower():
+            link_type = "review_request"
+        else:
+            link_type = context
+
+        result = await create_short_url(
+            original_url=url,
+            link_type=link_type,
+            reference_id=reference_id,
+            user_id=user_id,
+            metadata={"source": context},
+        )
+        result["link_type"] = link_type
+        results.append(result)
+
+    return {"results": results, "wrapped_count": len(results)}

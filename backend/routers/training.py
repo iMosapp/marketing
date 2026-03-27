@@ -539,6 +539,25 @@ async def update_lesson(lesson_id: str, request: Request):
     update = {k: v for k, v in data.items() if k in allowed}
     if not update:
         raise HTTPException(status_code=400, detail="No valid fields to update")
+
+    # Auto-wrap video_url with tracking if changed
+    if "video_url" in update and update["video_url"] and "/api/s/" not in update["video_url"]:
+        try:
+            from routers.short_urls import create_short_url
+            lesson = await db.training_lessons.find_one({"_id": ObjectId(lesson_id)}, {"track_id": 1})
+            track_id = lesson.get("track_id", "") if lesson else ""
+            result = await create_short_url(
+                original_url=update["video_url"],
+                link_type="training_video",
+                reference_id=track_id,
+                user_id=data.get("user_id"),
+                metadata={"source": "training_lesson", "track_id": track_id, "title": update.get("title", "")},
+            )
+            update["original_video_url"] = update["video_url"]
+            update["video_url"] = result["short_url"]
+        except Exception:
+            pass
+
     update["updated_at"] = datetime.now(timezone.utc)
     await db.training_lessons.update_one({"_id": ObjectId(lesson_id)}, {"$set": update})
     return {"success": True}
@@ -639,6 +658,24 @@ async def admin_create_lesson(track_id: str, request: Request):
     """Admin: add a new lesson to a track"""
     db = get_db()
     data = await request.json()
+
+    # Auto-wrap video_url with tracking
+    video_url = data.get("video_url", "")
+    tracked_video_url = video_url
+    if video_url and "/api/s/" not in video_url:
+        try:
+            from routers.short_urls import create_short_url
+            result = await create_short_url(
+                original_url=video_url,
+                link_type="training_video",
+                reference_id=track_id,
+                user_id=data.get("user_id"),
+                metadata={"source": "training_lesson", "track_id": track_id, "title": data.get("title", "")},
+            )
+            tracked_video_url = result["short_url"]
+        except Exception:
+            tracked_video_url = video_url
+
     lesson = {
         "track_id": track_id,
         "slug": data.get("slug", data.get("title", "").lower().replace(" ", "-")),
@@ -648,7 +685,8 @@ async def admin_create_lesson(track_id: str, request: Request):
         "duration": data.get("duration", "5 min"),
         "order": data.get("order", 99),
         "content": data.get("content", ""),
-        "video_url": data.get("video_url", ""),
+        "video_url": tracked_video_url,
+        "original_video_url": video_url,
         "steps": data.get("steps", []),
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc),
