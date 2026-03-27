@@ -13,6 +13,7 @@ import logging
 import asyncio
 
 from routers.database import get_db
+from routers.auth import hash_password
 
 router = APIRouter(prefix="/team-invite", tags=["Team Invite"])
 logger = logging.getLogger(__name__)
@@ -226,7 +227,7 @@ async def join_team(data: TeamMemberJoin):
         "name": data.name.strip(),
         "email": data.email.lower().strip(),
         "phone": phone_normalized,
-        "password": temp_password,  # Will be hashed by auth system on first login
+        "password": hash_password(temp_password),
         "role": "user",  # Default role for team members
         "store_id": invite["store_id"],
         "store_ids": [invite["store_id"]],
@@ -943,7 +944,7 @@ async def accept_invite(data: AcceptInviteRequest):
         "name": data.name.strip(),
         "email": data.email.lower().strip(),
         "phone": phone_normalized,
-        "password": data.password,  # In production, hash this!
+        "password": hash_password(data.password),
         "role": "user",
         "store_id": invite["store_id"],
         "store_ids": [invite["store_id"]],

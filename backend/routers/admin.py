@@ -739,7 +739,7 @@ async def create_admin_user(user_data: dict, x_user_id: str = Header(None, alias
     
     user_dict = {
         "email": user_data.get('email'),
-        "password": user_data.get('password'),
+        "password": hash_password(user_data.get('password', '')),
         "name": user_data.get('name'),
         "phone": user_data.get('phone', ''),
         "role": user_data.get('role', 'user'),

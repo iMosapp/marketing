@@ -272,17 +272,18 @@ async def login(credentials: dict):
         # Log details for debugging (no password values)
         stored_pw = user.get('password', '')
         is_hashed = stored_pw.startswith("$2b$") or stored_pw.startswith("$2a$")
-        logger.warning(f"Login failed: wrong password for email '{email}' (stored_is_hashed={is_hashed}, bcrypt_available={BCRYPT_AVAILABLE})")
+        logger.warning(f"Login failed: wrong password for email '{email}' (stored_is_hashed={is_hashed}, bcrypt_available={BCRYPT_AVAILABLE}, pw_len={len(stored_pw)})")
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    # Auto-upgrade legacy plain-text passwords to bcrypt
+    # Auto-upgrade legacy plain-text passwords to bcrypt (always hash, even if bcrypt unavailable next deploy)
     stored_pw = user.get('password', '')
-    if not (stored_pw.startswith("$2b$") or stored_pw.startswith("$2a$")):
+    if BCRYPT_AVAILABLE and not (stored_pw.startswith("$2b$") or stored_pw.startswith("$2a$")):
         hashed = hash_password(password)
         await get_db().users.update_one(
             {"_id": user["_id"]},
             {"$set": {"password": hashed}}
         )
+        logger.info(f"Auto-upgraded plain-text password to bcrypt for '{email}'")
     
     user['_id'] = str(user['_id'])
     # Remove password from response
