@@ -202,6 +202,8 @@ export default function MyAccountScreen() {
       const response = await api.get(`/users/${user?._id}`);
       if (response.data) {
         setPhotoUrl(response.data.photo_url || null);
+        // Sync auth store so other pages (digital card preview, etc.) see fresh data
+        setUser({ ...user, ...response.data });
       }
     } catch (error) {
       console.error('Error refreshing user data:', error);

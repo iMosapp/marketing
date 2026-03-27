@@ -341,15 +341,27 @@ async def get_user_profile(user_id: str):
 async def patch_user_profile(user_id: str, data: dict):
     """Update user profile fields including photo"""
     db = get_db()
-    allowed_fields = ['name', 'phone', 'persona', 'settings', 'photo_url', 'bio', 'social_links']
+    allowed_fields = ['name', 'phone', 'persona', 'settings', 'photo_url', 'bio', 'social_links',
+                      'timezone', 'address', 'city', 'state', 'zip_code', 'country']
     update_dict = {k: v for k, v in data.items() if k in allowed_fields}
     
     if not update_dict:
         raise HTTPException(status_code=400, detail="No valid fields to update")
     
+    # When photo_url is updated, clear old optimized paths so the new photo takes effect
+    # resolve_user_photo() checks photo_path first — stale paths cause the digital card
+    # and other public pages to keep showing the old image.
+    unset_dict = {}
+    if 'photo_url' in update_dict:
+        unset_dict = {"photo_path": "", "photo_avatar_path": ""}
+    
+    update_ops: dict = {"$set": update_dict}
+    if unset_dict:
+        update_ops["$unset"] = unset_dict
+    
     result = await db.users.update_one(
         {"_id": ObjectId(user_id)},
-        {"$set": update_dict}
+        update_ops
     )
     
     if result.matched_count == 0:
@@ -359,8 +371,10 @@ async def patch_user_profile(user_id: str, data: dict):
     updated_user = await db.users.find_one({"_id": ObjectId(user_id)})
     if updated_user:
         updated_user["_id"] = str(updated_user["_id"])
-        # Remove sensitive fields
         updated_user.pop("password", None)
+        for key in ["organization_id", "org_id", "store_id", "partner_id"]:
+            if updated_user.get(key):
+                updated_user[key] = str(updated_user[key])
     
     return updated_user
 

@@ -1,0 +1,73 @@
+{
+  "summary": "Iteration 250 - Photo URL PATCH Fix Testing. Verified the fix for profile picture and bio updates reverting to old data on digital card. The root cause was duplicate PATCH /users/{user_id} routes and server.py not clearing photo_path/photo_avatar_path when photo_url was updated. All 9 backend tests passed. Frontend my-account page loads correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_photo_url_patch_fix.py",
+    "/app/test_reports/pytest/pytest_photo_url_patch_fix.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Fix verified: server.py PATCH /api/users/{user_id} now correctly clears photo_path and photo_avatar_path when photo_url is updated via $unset operation",
+    "allowed_fields expanded to include timezone, address, city, state, zip_code, country (matching auth.py)",
+    "Response properly serializes ObjectId fields (_id, organization_id, org_id, store_id, partner_id)",
+    "resolve_user_photo() in image_urls.py prioritizes photo_path > photo_avatar_path > photo_url, so clearing photo_path is essential for new photo_url to take effect",
+    "refreshUserData in my-account.tsx now syncs auth store with setUser() after fetching updated user data"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_photo_url_patch_fix.py"
+  ],
+  "success_rate": {
+    "backend": "100% (9/9 tests passed)",
+    "frontend": "100% (my-account page loads correctly, no errors)"
+  },
+  "test_credentials": {
+    "super_admin": "forest@imosapp.com / Admin123!",
+    "user_id": "69a0b7095fddcede09591667"
+  },
+  "seed_data_creation": "None - used existing test user",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Photo URL PATCH fix fully tested and working. The key fix is in server.py lines 354-360 where $unset is used to clear photo_path and photo_avatar_path when photo_url is in the update payload. This ensures resolve_user_photo() returns the new photo_url instead of the old cached photo_path. Bio updates via PUT /api/users/{user_id}/persona also persist correctly to card data.",
+  "mocked_apis": {
+    "Twilio SMS": "MOCKED - SMS sending is mocked"
+  },
+  "tests_executed": {
+    "photo_url_patch_fix": [
+      "test_health_check - PASSED",
+      "test_get_user_profile - PASSED",
+      "test_patch_user_with_photo_url_clears_photo_path - PASSED (CRITICAL TEST)",
+      "test_card_data_returns_updated_photo_url - PASSED",
+      "test_persona_bio_persists_to_card_data - PASSED",
+      "test_patch_non_photo_fields_does_not_clear_photo_path - PASSED",
+      "test_patch_allowed_fields - PASSED (timezone, address, city, state, zip_code, country)",
+      "test_patch_returns_updated_user_with_serialized_objectid - PASSED"
+    ],
+    "resolve_user_photo": [
+      "test_card_data_uses_photo_url_when_photo_path_cleared - PASSED"
+    ],
+    "frontend": [
+      "Login flow - PASSED",
+      "My Account page loads - PASSED",
+      "Profile photo section visible - PASSED",
+      "My Profile section visible - PASSED",
+      "My Address section visible with test data - PASSED",
+      "My Presence section visible - PASSED",
+      "No console errors - PASSED"
+    ]
+  },
+  "bug_fix_verified": {
+    "issue": "Profile Picture and Bio updates showing 'success' but reverting to old data on digital card",
+    "root_cause": "server.py PATCH /api/users/{user_id} was NOT clearing photo_path/photo_avatar_path when photo_url was updated. Since resolve_user_photo() prioritizes photo_path over photo_url, the digital card kept showing the old cached image.",
+    "fix_location": "/app/backend/server.py lines 354-360",
+    "fix_details": "Added $unset operation to clear photo_path and photo_avatar_path when photo_url is in the update payload",
+    "verification": "All 9 tests pass, card data returns updated photo_url after PATCH"
+  }
+}
