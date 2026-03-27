@@ -11,23 +11,21 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ---
 
-## What's Been Implemented (This Session)
+## What's Been Implemented
 
-### Campaign Removal / Archive (Mar 27, 2026) -- LATEST
-- **`POST /api/contacts/{user_id}/{contact_id}/campaign-journey/remove`**: Archives enrollment, cancels pending sends, logs contact_event.
-- **Trash icon** on Campaign Journey card for one-click removal
-- Archived campaigns preserved in DB for history but hidden from active journey
-- Contact can be manually re-enrolled anytime
+### Profile Photo & Bio Fix (Feb 2026) -- LATEST
+- Fixed duplicate PATCH `/api/users/{user_id}` route in `server.py` that was NOT clearing `photo_path`/`photo_avatar_path` when `photo_url` was updated
+- Root cause: `resolve_user_photo()` prioritizes `photo_path` over `photo_url`, so stale cached paths caused digital cards to show old photos
+- Also improved `refreshUserData` in `my-account.tsx` to sync auth store after fetch
 
-### Browser-Friendly Campaign Tools (Mar 27, 2026)
-- **`GET /api/campaigns/{user_id}/list-campaigns`**: Lists all campaigns with IDs (paste in browser)
-- **`GET /api/campaigns/{user_id}/{campaign_id}/rewrap-links`**: Browser-friendly URL rewrap
+### Campaign Removal / Archive (Mar 27, 2026)
+- Trash icon on Campaign Journey card for one-click removal
+- Archived campaigns preserved in DB for history
 
 ### Production Stability Fix (Mar 27, 2026)
-- Converted 3 files from sync pymongo → async motor (was blocking event loop)
+- Converted 3 files from sync pymongo to async motor
 - Throttled catchup task, cached task_summary + unread_count
 - Bulk activity feed, connection pool config, new DB indexes
-- Result: 215ms concurrent vs 60s+ timeouts
 
 ### Tracked Media System (Mar 27, 2026)
 - Upload-tracked endpoint, branded viewing page, open tracking, composer toggle
@@ -40,18 +38,20 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ## Prioritized Backlog
 
 ### P0
-- Deploy (stability fix + all features)
-- Run `rewrap-links` on production campaign
+- Deploy latest fixes (profile photo + stability)
 
 ### P1
-- Link Analytics Dashboard
-- App Store Preparation
-- AI-Powered Outreach
+- App Store Preparation (`eas.json`, `app.json`)
+- Push Notifications (mobile alerts for leads/messages)
+- AI-Powered Outreach (contextual follow-ups for `sold` tags)
 - Gamification & Leaderboards
+- Link Analytics Dashboard
 
 ### P2
-- Full Twilio, WhatsApp, Stripe, Inventory
-- Mobile tags sync, file refactoring
+- Full Twilio / WhatsApp / Stripe integration
+- Inventory Management Module
+- Mobile tags sync issue
+- Refactor `contact/[id].tsx` (6000+ lines) and `admin.py` monolith
 
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
