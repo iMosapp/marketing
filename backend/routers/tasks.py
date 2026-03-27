@@ -20,12 +20,20 @@ from routers.database import get_db, get_user_by_id
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 logger = logging.getLogger(__name__)
 
+# Throttle: only run catchup once per user per 5 minutes
+_catchup_last_run: dict[str, datetime] = {}
+_CATCHUP_INTERVAL = timedelta(minutes=5)
+
 
 async def _catchup_overdue_campaign_tasks(user_id: str):
     """Create missing tasks for overdue campaign enrollments.
-    This ensures campaign steps that the scheduler missed still appear in Today's Touchpoints.
-    Checks both: 1) enrollments where next_send_at passed, and 2) steps marked 'pending' in messages_sent.
+    Throttled: skips if already ran for this user in the last 5 minutes.
     """
+    now = datetime.now(timezone.utc)
+    last = _catchup_last_run.get(user_id)
+    if last and (now - last) < _CATCHUP_INTERVAL:
+        return  # Already ran recently
+    _catchup_last_run[user_id] = now
     db = get_db()
     now = datetime.now(timezone.utc)
 
@@ -343,9 +351,21 @@ async def get_tasks(user_id: str, filter: str = "today", limit: int = 50, skip: 
     return result
 
 
+# Cache task summary for 30s to prevent thundering herd on rapid page navigation
+_summary_cache: dict[str, tuple] = {}  # user_id -> (timestamp, response)
+_SUMMARY_TTL = timedelta(seconds=30)
+
+
 @router.get("/{user_id}/summary")
 async def get_task_summary(user_id: str):
     """Daily summary for scoreboard + progress bar."""
+    now = datetime.now(timezone.utc)
+
+    # Return cached response if fresh
+    cached = _summary_cache.get(user_id)
+    if cached and (now - cached[0]) < _SUMMARY_TTL:
+        return cached[1]
+
     db = get_db()
 
     # Catch-up: fire and forget (don't block the summary response)
@@ -461,7 +481,7 @@ async def get_task_summary(user_id: str):
     combined_total = total_today + activity_touchpoints
     combined_completed = completed_today + activity_touchpoints
 
-    return {
+    result = {
         "total_today": combined_total,
         "completed_today": combined_completed,
         "pending_today": pending,
@@ -479,6 +499,10 @@ async def get_task_summary(user_id: str):
             "new_leads": new_leads,
         },
     }
+
+    # Cache the result
+    _summary_cache[user_id] = (datetime.now(timezone.utc), result)
+    return result
 
 
 @router.post("/{user_id}")

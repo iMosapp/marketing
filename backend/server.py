@@ -386,25 +386,38 @@ async def get_activity_feed(user_id: str, limit: int = 20):
     # ── 1. Contact Events (the PRIMARY source for tracked user actions) ──
     try:
         recent_events = await db.contact_events.find(base_filter).sort("timestamp", -1).limit(limit).to_list(limit)
+
+        # Bulk-fetch all referenced users and contacts in TWO queries instead of N+1
+        user_ids_needed = set()
+        contact_ids_needed = set()
         for ev in recent_events:
-            # Get creator name
-            creator_name = "Someone"
+            if ev.get("user_id"):
+                user_ids_needed.add(ev["user_id"])
+            if ev.get("contact_id") and not ev.get("contact_name"):
+                contact_ids_needed.add(ev["contact_id"])
+
+        users_map = {}
+        if user_ids_needed:
             try:
-                creator = await db.users.find_one({"_id": ObjectId(ev.get('user_id'))}, {"name": 1})
-                if creator:
-                    creator_name = creator.get('name', 'Someone')
+                uoids = [ObjectId(uid) for uid in user_ids_needed if len(uid) == 24]
+                async for u in db.users.find({"_id": {"$in": uoids}}, {"name": 1}):
+                    users_map[str(u["_id"])] = u.get("name", "Someone")
             except Exception:
                 pass
-            # Get contact name
-            contact_name = ev.get('contact_name', '')
-            if not contact_name and ev.get('contact_id'):
-                try:
-                    contact = await db.contacts.find_one({"_id": ObjectId(ev['contact_id'])}, {"first_name": 1, "last_name": 1})
-                    if contact:
-                        contact_name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip()
-                except Exception:
-                    pass
-            # Build human-readable message from event type
+
+        contacts_map = {}
+        if contact_ids_needed:
+            try:
+                coids = [ObjectId(cid) for cid in contact_ids_needed if len(cid) == 24]
+                async for c in db.contacts.find({"_id": {"$in": coids}}, {"first_name": 1, "last_name": 1}):
+                    contacts_map[str(c["_id"])] = f"{c.get('first_name', '')} {c.get('last_name', '')}".strip()
+            except Exception:
+                pass
+
+        for ev in recent_events:
+            creator_name = users_map.get(ev.get("user_id", ""), "Someone")
+            contact_name = ev.get("contact_name", "") or contacts_map.get(ev.get("contact_id", ""), "")
+
             event_type = ev.get('event_type', 'activity')
             event_labels = {
                 'digital_card_shared': 'shared a digital card with',
@@ -669,7 +682,9 @@ async def startup_event():
                     db.campaign_enrollments.create_index([("campaign_id", 1), ("contact_id", 1), ("status", 1)]),
                     db.campaign_enrollments.create_index([("user_id", 1), ("status", 1)]),
                     db.campaign_enrollments.create_index([("contact_id", 1)]),
+                    db.campaign_enrollments.create_index([("user_id", 1), ("status", 1), ("next_send_at", 1)]),
                     db.campaign_pending_sends.create_index([("user_id", 1), ("status", 1)]),
+                    db.campaign_pending_sends.create_index([("campaign_id", 1), ("contact_id", 1), ("step", 1), ("status", 1)]),
                     # Tasks
                     db.tasks.create_index([("user_id", 1), ("status", 1), ("due_date", 1)]),
                     db.tasks.create_index("idempotency_key", unique=True, partialFilterExpression={"idempotency_key": {"$type": "string"}}),
