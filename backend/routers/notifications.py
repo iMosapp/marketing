@@ -12,42 +12,34 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime, timezone
 from bson import ObjectId
-from pymongo import MongoClient
 import logging
-import os
+
+from routers.database import get_db
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
-# MongoDB connection - uses environment variable, no localhost fallback
-def get_db():
-    mongo_url = os.environ.get("MONGO_URL")
-    if not mongo_url:
-        raise Exception("MONGO_URL not configured")
-    client = MongoClient(mongo_url)
-    return client[os.environ.get("DB_NAME", "test_database")]
-
 
 class NotificationCreate(BaseModel):
-    type: str  # 'new_lead', 'lead_assigned', 'lead_claimed', 'jump_ball'
+    type: str
     title: str
     message: str
-    user_id: Optional[str] = None  # Target user (None = team notification)
-    team_id: Optional[str] = None  # Target team
+    user_id: Optional[str] = None
+    team_id: Optional[str] = None
     conversation_id: Optional[str] = None
     contact_id: Optional[str] = None
     contact_name: Optional[str] = None
     contact_phone: Optional[str] = None
     contact_email: Optional[str] = None
     lead_source_name: Optional[str] = None
-    action_required: bool = True  # Requires user action (Call/Text/Email)
-    priority: str = "high"  # 'high', 'normal', 'low'
+    action_required: bool = True
+    priority: str = "high"
 
 
 # ============ CREATE NOTIFICATION ============
 
-def create_notification(
+async def create_notification(
     notification_type: str,
     title: str,
     message: str,
@@ -64,7 +56,7 @@ def create_notification(
 ) -> str:
     """Create a notification in the database"""
     db = get_db()
-    
+
     notification = {
         "type": notification_type,
         "title": title,
@@ -81,16 +73,16 @@ def create_notification(
         "priority": priority,
         "read": False,
         "dismissed": False,
-        "action_taken": None,  # 'call', 'text', 'email', 'dismissed'
+        "action_taken": None,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
-    
-    result = db.notifications.insert_one(notification)
+
+    result = await db.notifications.insert_one(notification)
     logger.info(f"Created notification: {notification_type} for user={user_id} team={team_id}")
     return str(result.inserted_id)
 
 
-def create_team_notifications(
+async def create_team_notifications(
     team_id: str,
     notification_type: str,
     title: str,
@@ -105,26 +97,24 @@ def create_team_notifications(
     """Create notifications for all team members"""
     db = get_db()
     notification_ids = []
-    
-    # Get team members
-    team = db.teams.find_one({"_id": ObjectId(team_id)}) if ObjectId.is_valid(team_id) else None
-    
-    # Also check shared_inboxes collection
+
+    team = await db.teams.find_one({"_id": ObjectId(team_id)}) if ObjectId.is_valid(team_id) else None
+
     if not team:
-        team = db.shared_inboxes.find_one({"_id": ObjectId(team_id)}) if ObjectId.is_valid(team_id) else None
-    
+        team = await db.shared_inboxes.find_one({"_id": ObjectId(team_id)}) if ObjectId.is_valid(team_id) else None
+
     if not team:
         logger.warning(f"Team {team_id} not found for notifications")
         return []
-    
+
     members = team.get("members", []) or team.get("user_ids", []) or team.get("assigned_user_ids", [])
-    
+
     if not members:
         logger.warning(f"Team {team_id} has no members")
         return []
-    
+
     for member_id in members:
-        notif_id = create_notification(
+        notif_id = await create_notification(
             notification_type=notification_type,
             title=title,
             message=message,
@@ -140,60 +130,55 @@ def create_team_notifications(
             priority="high"
         )
         notification_ids.append(notif_id)
-    
+
     logger.info(f"Created {len(notification_ids)} team notifications for team {team_id}")
     return notification_ids
+
+
+async def _get_user_teams(db, user_id: str) -> list:
+    user_teams = []
+    teams = await db.teams.find({"members": user_id}, {"_id": 1}).to_list(50)
+    user_teams.extend([str(t["_id"]) for t in teams])
+    shared_inboxes = await db.shared_inboxes.find({"user_ids": user_id}, {"_id": 1}).to_list(50)
+    user_teams.extend([str(si["_id"]) for si in shared_inboxes])
+    return user_teams
 
 
 # ============ GET NOTIFICATIONS ============
 
 @router.get("/")
-async def get_notifications(
+async def get_notifications_list(
     user_id: str = Query(...),
     unread_only: bool = Query(False),
     limit: int = Query(50)
 ):
     """Get notifications for a user (includes team notifications)"""
     db = get_db()
-    
-    # Get user's teams
-    user_teams = []
-    
-    # Check teams collection
-    teams = list(db.teams.find({"members": user_id}))
-    user_teams.extend([str(t["_id"]) for t in teams])
-    
-    # Check shared_inboxes collection
-    shared_inboxes = list(db.shared_inboxes.find({"user_ids": user_id}))
-    user_teams.extend([str(si["_id"]) for si in shared_inboxes])
-    
-    # Build query
+    user_teams = await _get_user_teams(db, user_id)
+
     query = {
         "$or": [
-            {"user_id": user_id},  # Direct notifications
-            {"team_id": {"$in": user_teams}, "user_id": None}  # Team-wide notifications
+            {"user_id": user_id},
+            {"team_id": {"$in": user_teams}, "user_id": None}
         ],
         "dismissed": False
     }
-    
+
     if unread_only:
         query["read"] = False
-    
-    notifications = list(
-        db.notifications.find(query)
-        .sort("created_at", -1)
-        .limit(limit)
-    )
-    
-    # Format response
+
+    notifications = await db.notifications.find(query).sort("created_at", -1).limit(limit).to_list(limit)
+
     for n in notifications:
         n["id"] = str(n.pop("_id"))
-    
+
+    unread_count = await db.notifications.count_documents({**query, "read": False})
+
     return {
         "success": True,
         "notifications": notifications,
         "count": len(notifications),
-        "unread_count": db.notifications.count_documents({**query, "read": False})
+        "unread_count": unread_count
     }
 
 
@@ -201,15 +186,9 @@ async def get_notifications(
 async def get_unread_count(user_id: str = Query(...)):
     """Get count of unread notifications for badge display"""
     db = get_db()
-    
-    # Get user's teams
-    user_teams = []
-    teams = list(db.teams.find({"members": user_id}))
-    user_teams.extend([str(t["_id"]) for t in teams])
-    shared_inboxes = list(db.shared_inboxes.find({"user_ids": user_id}))
-    user_teams.extend([str(si["_id"]) for si in shared_inboxes])
-    
-    count = db.notifications.count_documents({
+    user_teams = await _get_user_teams(db, user_id)
+
+    count = await db.notifications.count_documents({
         "$or": [
             {"user_id": user_id},
             {"team_id": {"$in": user_teams}, "user_id": None}
@@ -217,7 +196,7 @@ async def get_unread_count(user_id: str = Query(...)):
         "read": False,
         "dismissed": False
     })
-    
+
     return {"count": count}
 
 
@@ -225,15 +204,9 @@ async def get_unread_count(user_id: str = Query(...)):
 async def get_pending_action_notification(user_id: str = Query(...)):
     """Get the most recent notification requiring action (for popup)"""
     db = get_db()
-    
-    # Get user's teams
-    user_teams = []
-    teams = list(db.teams.find({"members": user_id}))
-    user_teams.extend([str(t["_id"]) for t in teams])
-    shared_inboxes = list(db.shared_inboxes.find({"user_ids": user_id}))
-    user_teams.extend([str(si["_id"]) for si in shared_inboxes])
-    
-    notification = db.notifications.find_one(
+    user_teams = await _get_user_teams(db, user_id)
+
+    notification = await db.notifications.find_one(
         {
             "$or": [
                 {"user_id": user_id},
@@ -245,11 +218,11 @@ async def get_pending_action_notification(user_id: str = Query(...)):
         },
         sort=[("created_at", -1)]
     )
-    
+
     if notification:
         notification["id"] = str(notification.pop("_id"))
         return {"success": True, "notification": notification}
-    
+
     return {"success": True, "notification": None}
 
 
@@ -259,15 +232,9 @@ async def get_pending_action_notification(user_id: str = Query(...)):
 async def mark_all_as_read(user_id: str = Query(...)):
     """Mark all notifications as read for a user"""
     db = get_db()
-    
-    # Get user's teams
-    user_teams = []
-    teams = list(db.teams.find({"members": user_id}))
-    user_teams.extend([str(t["_id"]) for t in teams])
-    shared_inboxes = list(db.shared_inboxes.find({"user_ids": user_id}))
-    user_teams.extend([str(si["_id"]) for si in shared_inboxes])
-    
-    result = db.notifications.update_many(
+    user_teams = await _get_user_teams(db, user_id)
+
+    result = await db.notifications.update_many(
         {
             "$or": [
                 {"user_id": user_id},
@@ -278,7 +245,7 @@ async def mark_all_as_read(user_id: str = Query(...)):
         },
         {"$set": {"read": True}}
     )
-    
+
     return {"success": True, "marked_count": result.modified_count}
 
 
@@ -286,15 +253,14 @@ async def mark_all_as_read(user_id: str = Query(...)):
 async def mark_as_read(notification_id: str):
     """Mark a notification as read"""
     db = get_db()
-    
-    result = db.notifications.update_one(
+    result = await db.notifications.update_one(
         {"_id": ObjectId(notification_id)},
         {"$set": {"read": True}}
     )
-    
+
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Notification not found")
-    
+
     return {"success": True}
 
 
@@ -306,15 +272,14 @@ async def record_action(
 ):
     """Record that a user took action on a notification"""
     db = get_db()
-    
+
     if action not in ["call", "text", "email", "dismissed"]:
         raise HTTPException(status_code=400, detail="Invalid action")
-    
-    notification = db.notifications.find_one({"_id": ObjectId(notification_id)})
+
+    notification = await db.notifications.find_one({"_id": ObjectId(notification_id)})
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
-    
-    # Update notification
+
     update_data = {
         "action_taken": action,
         "action_taken_by": user_id,
@@ -322,18 +287,16 @@ async def record_action(
         "read": True,
         "dismissed": action == "dismissed"
     }
-    
-    db.notifications.update_one(
+
+    await db.notifications.update_one(
         {"_id": ObjectId(notification_id)},
         {"$set": update_data}
     )
-    
-    # If this was a jump ball notification, also mark other team notifications as claimed
+
     if notification.get("type") == "jump_ball" and action != "dismissed":
         conversation_id = notification.get("conversation_id")
         if conversation_id:
-            # Dismiss other notifications for the same conversation
-            db.notifications.update_many(
+            await db.notifications.update_many(
                 {
                     "conversation_id": conversation_id,
                     "_id": {"$ne": ObjectId(notification_id)},
@@ -345,9 +308,8 @@ async def record_action(
                     "action_taken_at": datetime.now(timezone.utc).isoformat()
                 }}
             )
-            
-            # Also update the conversation to mark as claimed
-            db.conversations.update_one(
+
+            await db.conversations.update_one(
                 {"_id": ObjectId(conversation_id)},
                 {"$set": {
                     "claimed": True,
@@ -356,7 +318,7 @@ async def record_action(
                     "assigned_to": user_id
                 }}
             )
-    
+
     return {
         "success": True,
         "action": action,
@@ -371,8 +333,8 @@ async def record_action(
 async def dismiss_notification(notification_id: str):
     """Dismiss a notification"""
     db = get_db()
-    
-    result = db.notifications.update_one(
+
+    result = await db.notifications.update_one(
         {"_id": ObjectId(notification_id)},
         {"$set": {
             "dismissed": True,
@@ -380,10 +342,10 @@ async def dismiss_notification(notification_id: str):
             "action_taken_at": datetime.now(timezone.utc).isoformat()
         }}
     )
-    
+
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Notification not found")
-    
+
     return {"success": True}
 
 
@@ -391,15 +353,9 @@ async def dismiss_notification(notification_id: str):
 async def clear_all_notifications(user_id: str = Query(...)):
     """Clear all notifications for a user"""
     db = get_db()
-    
-    # Get user's teams
-    user_teams = []
-    teams = list(db.teams.find({"members": user_id}))
-    user_teams.extend([str(t["_id"]) for t in teams])
-    shared_inboxes = list(db.shared_inboxes.find({"user_ids": user_id}))
-    user_teams.extend([str(si["_id"]) for si in shared_inboxes])
-    
-    result = db.notifications.update_many(
+    user_teams = await _get_user_teams(db, user_id)
+
+    result = await db.notifications.update_many(
         {
             "$or": [
                 {"user_id": user_id},
@@ -408,5 +364,5 @@ async def clear_all_notifications(user_id: str = Query(...)):
         },
         {"$set": {"dismissed": True}}
     )
-    
+
     return {"success": True, "cleared_count": result.modified_count}

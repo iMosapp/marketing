@@ -8,20 +8,12 @@ from datetime import datetime, timezone
 from bson import ObjectId
 import secrets
 import logging
-import os
-from pymongo import MongoClient
+
+from routers.database import get_db
 from routers.notifications import create_notification, create_team_notifications
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/lead-sources", tags=["Lead Sources"])
-
-# MongoDB connection - uses environment variable, no localhost fallback
-def get_db():
-    mongo_url = os.environ.get("MONGO_URL")
-    if not mongo_url:
-        raise Exception("MONGO_URL not configured")
-    client = MongoClient(mongo_url)
-    return client[os.environ.get("DB_NAME", "test_database")]
 
 # Models
 class LeadSourceCreate(BaseModel):
@@ -98,7 +90,7 @@ async def create_lead_source(source: LeadSourceCreate, store_id: str, organizati
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
     
-    db.lead_sources.insert_one(lead_source)
+    await db.lead_sources.insert_one(lead_source)
     
     return {
         "success": True,
@@ -111,7 +103,7 @@ async def list_lead_sources(store_id: str):
     """List all lead sources for a store"""
     db = get_db()
     
-    sources = list(db.lead_sources.find({"store_id": store_id}))
+    sources = await db.lead_sources.find({"store_id": store_id}).to_list(500)
     
     return {
         "success": True,
@@ -127,7 +119,7 @@ async def get_team_inbox(team_id: str, include_claimed: bool = False):
     if not include_claimed:
         query["$or"] = [{"claimed": False}, {"claimed": {"$exists": False}}]
     
-    conversations = list(db.conversations.find(query).sort("last_message_at", -1))
+    conversations = await db.conversations.find(query).sort("last_message_at", -1).to_list(200)
     
     result = []
     for c in conversations:
@@ -147,7 +139,7 @@ async def get_team_inbox(team_id: str, include_claimed: bool = False):
         }
         if c.get("contact_id"):
             try:
-                contact = db.contacts.find_one({"_id": ObjectId(c["contact_id"])}, {"photo": 0})
+                contact = await db.contacts.find_one({"_id": ObjectId(c["contact_id"])}, {"photo": 0})
                 if contact:
                     conv_data["contact_photo"] = contact.get("photo_thumbnail") or contact.get("photo_url")
             except:
@@ -164,12 +156,12 @@ async def get_user_inbox(user_id: str):
     """Get all conversations assigned to a specific user"""
     db = get_db()
     
-    conversations = list(db.conversations.find({
+    conversations = await db.conversations.find({
         "$or": [
             {"assigned_to": user_id},
             {"claimed_by": user_id}
         ]
-    }).sort("last_message_at", -1))
+    }).sort("last_message_at", -1).to_list(200)
     
     result = []
     for c in conversations:
@@ -187,7 +179,7 @@ async def get_user_inbox(user_id: str):
         }
         if c.get("contact_id"):
             try:
-                contact = db.contacts.find_one({"_id": ObjectId(c["contact_id"])}, {"photo": 0})
+                contact = await db.contacts.find_one({"_id": ObjectId(c["contact_id"])}, {"photo": 0})
                 if contact:
                     conv_data["contact_photo"] = contact.get("photo_thumbnail") or contact.get("photo_url")
             except:
@@ -204,7 +196,7 @@ async def get_lead_source_stats(source_id: str):
     """Get statistics for a lead source"""
     db = get_db()
     
-    source = db.lead_sources.find_one({"_id": ObjectId(source_id)})
+    source = await db.lead_sources.find_one({"_id": ObjectId(source_id)})
     if not source:
         raise HTTPException(status_code=404, detail="Lead source not found")
     
@@ -215,7 +207,7 @@ async def get_lead_source_stats(source_id: str):
             "count": {"$sum": 1}
         }}
     ]
-    status_counts = {doc["_id"]: doc["count"] for doc in db.conversations.aggregate(pipeline)}
+    status_counts = {doc["_id"]: doc["count"] async for doc in db.conversations.aggregate(pipeline)}
     
     return {
         "success": True,
@@ -232,7 +224,7 @@ async def get_lead_source(source_id: str):
     """Get a specific lead source"""
     db = get_db()
     
-    source = db.lead_sources.find_one({"_id": ObjectId(source_id)})
+    source = await db.lead_sources.find_one({"_id": ObjectId(source_id)})
     if not source:
         raise HTTPException(status_code=404, detail="Lead source not found")
     
@@ -252,7 +244,7 @@ async def update_lead_source(source_id: str, updates: LeadSourceUpdate):
     
     update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
     
-    result = db.lead_sources.update_one(
+    result = await db.lead_sources.update_one(
         {"_id": ObjectId(source_id)},
         {"$set": update_data}
     )
@@ -260,7 +252,7 @@ async def update_lead_source(source_id: str, updates: LeadSourceUpdate):
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Lead source not found")
     
-    source = db.lead_sources.find_one({"_id": ObjectId(source_id)})
+    source = await db.lead_sources.find_one({"_id": ObjectId(source_id)})
     return {
         "success": True,
         "lead_source": serialize_lead_source(source)
@@ -271,7 +263,7 @@ async def delete_lead_source(source_id: str):
     """Delete a lead source"""
     db = get_db()
     
-    result = db.lead_sources.delete_one({"_id": ObjectId(source_id)})
+    result = await db.lead_sources.delete_one({"_id": ObjectId(source_id)})
     
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Lead source not found")
@@ -284,10 +276,10 @@ def get_jump_ball_assignee(db, team_id: str) -> Optional[str]:
     """Jump Ball: Returns None - lead goes to team inbox, first responder claims it"""
     return None
 
-def get_round_robin_assignee(db, source: dict, team_id: str) -> Optional[str]:
+async def get_round_robin_assignee(db, source: dict, team_id: str) -> Optional[str]:
     """Round Robin: Assign to next team member in rotation"""
     # Get team members
-    team = db.teams.find_one({"_id": ObjectId(team_id)})
+    team = await db.teams.find_one({"_id": ObjectId(team_id)})
     if not team or not team.get("members"):
         return None
     
@@ -300,17 +292,17 @@ def get_round_robin_assignee(db, source: dict, team_id: str) -> Optional[str]:
     assignee_id = members[current_index % len(members)]
     
     # Update index for next assignment
-    db.lead_sources.update_one(
+    await db.lead_sources.update_one(
         {"_id": source["_id"]},
         {"$set": {"round_robin_index": (current_index + 1) % len(members)}}
     )
     
     return assignee_id
 
-def get_weighted_round_robin_assignee(db, source: dict, team_id: str) -> Optional[str]:
+async def get_weighted_round_robin_assignee(db, source: dict, team_id: str) -> Optional[str]:
     """Weighted Round Robin: Assign to team member with fewest leads"""
     # Get team members
-    team = db.teams.find_one({"_id": ObjectId(team_id)})
+    team = await db.teams.find_one({"_id": ObjectId(team_id)})
     if not team or not team.get("members"):
         return None
     
@@ -337,14 +329,14 @@ def get_weighted_round_robin_assignee(db, source: dict, team_id: str) -> Optiona
     
     # Increment count for assigned member
     member_counts[assignee_id] = member_counts.get(assignee_id, 0) + 1
-    db.lead_sources.update_one(
+    await db.lead_sources.update_one(
         {"_id": source["_id"]},
         {"$set": {"member_lead_counts": member_counts}}
     )
     
     return assignee_id
 
-def assign_lead(db, source: dict) -> Optional[str]:
+async def assign_lead(db, source: dict) -> Optional[str]:
     """Determine who to assign the lead to based on source's assignment method"""
     team_id = source.get("team_id")
     method = source.get("assignment_method", "jump_ball")
@@ -352,9 +344,9 @@ def assign_lead(db, source: dict) -> Optional[str]:
     if method == "jump_ball":
         return get_jump_ball_assignee(db, team_id)
     elif method == "round_robin":
-        return get_round_robin_assignee(db, source, team_id)
+        return await get_round_robin_assignee(db, source, team_id)
     elif method == "weighted_round_robin":
-        return get_weighted_round_robin_assignee(db, source, team_id)
+        return await get_weighted_round_robin_assignee(db, source, team_id)
     else:
         return None
 
@@ -369,7 +361,7 @@ async def receive_inbound_lead(source_id: str, lead: InboundLead, request: Reque
     db = get_db()
     
     # Validate source exists
-    source = db.lead_sources.find_one({"_id": ObjectId(source_id)})
+    source = await db.lead_sources.find_one({"_id": ObjectId(source_id)})
     if not source:
         raise HTTPException(status_code=404, detail="Lead source not found")
     
@@ -396,7 +388,7 @@ async def receive_inbound_lead(source_id: str, lead: InboundLead, request: Reque
         phone = "+1" + phone if len(phone) == 10 else "+" + phone
     
     # Check if contact already exists
-    existing_contact = db.contacts.find_one({
+    existing_contact = await db.contacts.find_one({
         "phone": phone,
         "user_id": {"$in": [source.get("store_id"), source.get("organization_id")]}
     })
@@ -421,11 +413,11 @@ async def receive_inbound_lead(source_id: str, lead: InboundLead, request: Reque
             "created_at": datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }
-        result = db.contacts.insert_one(new_contact)
+        result = await db.contacts.insert_one(new_contact)
         contact_id = str(result.inserted_id)
     
     # Determine assignment
-    assigned_to = assign_lead(db, source)
+    assigned_to = await assign_lead(db, source)
     team_id = source.get("team_id")
     
     # Create conversation/thread
@@ -457,11 +449,11 @@ async def receive_inbound_lead(source_id: str, lead: InboundLead, request: Reque
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }]
     
-    result = db.conversations.insert_one(conversation)
+    result = await db.conversations.insert_one(conversation)
     conversation_id = str(result.inserted_id)
     
     # Update lead source stats
-    db.lead_sources.update_one(
+    await db.lead_sources.update_one(
         {"_id": ObjectId(source_id)},
         {"$inc": {"lead_count": 1}}
     )
@@ -473,7 +465,7 @@ async def receive_inbound_lead(source_id: str, lead: InboundLead, request: Reque
     
     if assignment_method == "jump_ball":
         # Notify ALL team members - first to respond claims the lead
-        create_team_notifications(
+        await create_team_notifications(
             team_id=team_id,
             notification_type="jump_ball",
             title="New Lead Available!",
@@ -489,7 +481,7 @@ async def receive_inbound_lead(source_id: str, lead: InboundLead, request: Reque
     else:
         # Round Robin or Weighted - notify only the assigned user
         if assigned_to:
-            create_notification(
+            await create_notification(
                 notification_type="lead_assigned",
                 title="New Lead Assigned to You!",
                 message=f"You've been assigned a new lead from {source_name}: {contact_full_name}",
@@ -526,7 +518,7 @@ async def claim_lead(conversation_id: str, user_id: str):
     """Claim an unclaimed lead (for jump ball assignment)"""
     db = get_db()
     
-    conversation = db.conversations.find_one({"_id": ObjectId(conversation_id)})
+    conversation = await db.conversations.find_one({"_id": ObjectId(conversation_id)})
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
     
@@ -534,7 +526,7 @@ async def claim_lead(conversation_id: str, user_id: str):
         raise HTTPException(status_code=400, detail=f"Lead already claimed by {conversation.get('claimed_by')}")
     
     # Claim the lead
-    result = db.conversations.update_one(
+    result = await db.conversations.update_one(
         {"_id": ObjectId(conversation_id), "claimed": {"$ne": True}},
         {"$set": {
             "claimed": True,
@@ -550,7 +542,7 @@ async def claim_lead(conversation_id: str, user_id: str):
     
     # Also update the contact to be owned by this user so it appears in their contacts
     if conversation.get("contact_id"):
-        db.contacts.update_one(
+        await db.contacts.update_one(
             {"_id": ObjectId(conversation["contact_id"])},
             {"$set": {
                 "user_id": user_id,
@@ -562,11 +554,11 @@ async def claim_lead(conversation_id: str, user_id: str):
     
     # Update lead source weighted counts if applicable
     if conversation.get("lead_source_id"):
-        source = db.lead_sources.find_one({"_id": ObjectId(conversation["lead_source_id"])})
+        source = await db.lead_sources.find_one({"_id": ObjectId(conversation["lead_source_id"])})
         if source and source.get("assignment_method") == "weighted_round_robin":
             member_counts = source.get("member_lead_counts", {})
             member_counts[user_id] = member_counts.get(user_id, 0) + 1
-            db.lead_sources.update_one(
+            await db.lead_sources.update_one(
                 {"_id": source["_id"]},
                 {"$set": {"member_lead_counts": member_counts}}
             )

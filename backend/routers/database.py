@@ -25,6 +25,11 @@ def get_db():
                 mongo_url,
                 serverSelectionTimeoutMS=30000,
                 connectTimeoutMS=30000,
+                maxPoolSize=50,
+                minPoolSize=5,
+                retryWrites=True,
+                retryReads=True,
+                maxIdleTimeMS=45000,
             )
             # Try to get database name from the MONGO_URL path first
             # (e.g. mongodb+srv://user:pass@host/my_database)

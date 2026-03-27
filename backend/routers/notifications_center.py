@@ -3,22 +3,20 @@ Notifications Center  - Smart activity hub with prioritized alerts.
 Aggregates tasks, unread messages, flags, lead alerts, and system events into a unified feed.
 """
 import logging
+import urllib.parse
 from datetime import datetime, timezone, timedelta
+from itertools import groupby
 from fastapi import APIRouter
 from bson import ObjectId
-from pymongo import MongoClient
-import os
+
+from routers.database import get_db
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/notification-center", tags=["notification-center"])
 
-
-def get_db():
-    mongo_url = os.environ.get("MONGO_URL")
-    if not mongo_url:
-        raise Exception("MONGO_URL not configured")
-    client = MongoClient(mongo_url)
-    return client[os.environ.get("DB_NAME", "test_database")]
+# Cache unread count for 15 seconds to avoid hammering DB on every page load
+_unread_cache: dict[str, tuple] = {}
+_UNREAD_TTL = timedelta(seconds=15)
 
 
 def _ts(val) -> str:
@@ -28,6 +26,19 @@ def _ts(val) -> str:
     return str(val) if val else datetime.now(timezone.utc).isoformat()
 
 
+async def _get_user_teams(db, user_id: str) -> list:
+    """Get team IDs for a user (shared across endpoints)."""
+    user_teams = []
+    try:
+        teams = await db.teams.find({"members": user_id}, {"_id": 1}).to_list(50)
+        user_teams.extend([str(t["_id"]) for t in teams])
+        shared_inboxes = await db.shared_inboxes.find({"user_ids": user_id}, {"_id": 1}).to_list(50)
+        user_teams.extend([str(si["_id"]) for si in shared_inboxes])
+    except Exception:
+        pass
+    return user_teams
+
+
 @router.get("/{user_id}")
 async def get_notifications(user_id: str, limit: int = 50, category: str = "all"):
     """Get prioritized notifications for a user from all sources."""
@@ -35,14 +46,10 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
     now = datetime.now(timezone.utc)
     notifications = []
 
-    # 1. LEAD NOTIFICATIONS from existing notifications collection (highest priority)
-    try:
-        user_teams = []
-        teams = list(db.teams.find({"members": user_id}))
-        user_teams.extend([str(t["_id"]) for t in teams])
-        shared_inboxes = list(db.shared_inboxes.find({"user_ids": user_id}))
-        user_teams.extend([str(si["_id"]) for si in shared_inboxes])
+    user_teams = await _get_user_teams(db, user_id)
 
+    # 1. LEAD NOTIFICATIONS
+    try:
         lead_query = {
             "$or": [
                 {"user_id": user_id},
@@ -50,11 +57,10 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
             ],
             "dismissed": False,
         }
-        leads = list(db.notifications.find(lead_query).sort("created_at", -1).limit(15))
+        leads = await db.notifications.find(lead_query).sort("created_at", -1).limit(15).to_list(15)
         for n in leads:
             contact_id = n.get("contact_id", "")
             conversation_id = n.get("conversation_id", "")
-            # Build the best link: prefer contact detail, fallback to thread, then lead tracking
             if contact_id:
                 link = f"/contact/{contact_id}"
             elif conversation_id:
@@ -64,7 +70,6 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
             else:
                 link = None
 
-            # For new lead notifications, show form details in body
             body = n.get("message", "")
             form_details = n.get("form_details", "")
             if form_details and n.get("type") in ("new_lead", "new_demo_request"):
@@ -93,17 +98,16 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
 
     # 2. OVERDUE TASKS
     try:
-        overdue = list(db.tasks.find({
+        overdue = await db.tasks.find({
             "user_id": user_id,
             "completed": {"$ne": True},
             "due_date": {"$lt": now}
-        }).sort("due_date", 1).limit(10))
+        }).sort("due_date", 1).limit(10).to_list(10)
         for t in overdue:
             contact_id = t.get("contact_id", "")
             desc = t.get("description", "")
             title = t.get("title", "Follow up")
             task_id = str(t["_id"])
-            import urllib.parse
             prefill = urllib.parse.quote(desc[:500]) if desc else ""
             task_title_enc = urllib.parse.quote(title[:200])
             link = f"/contact/{contact_id}?taskId={task_id}&taskTitle={task_title_enc}&prefill={prefill}" if contact_id else None
@@ -126,11 +130,11 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
     # 3. UPCOMING TASKS (due within 24h)
     try:
         tomorrow = now + timedelta(hours=24)
-        upcoming = list(db.tasks.find({
+        upcoming = await db.tasks.find({
             "user_id": user_id,
             "completed": {"$ne": True},
             "due_date": {"$gte": now, "$lte": tomorrow}
-        }).sort("due_date", 1).limit(5))
+        }).sort("due_date", 1).limit(5).to_list(5)
         for t in upcoming:
             contact_id = t.get("contact_id", "")
             desc = t.get("description", "")
@@ -157,10 +161,10 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
 
     # 4. UNREAD CONVERSATIONS
     try:
-        unread = list(db.conversations.find({
+        unread = await db.conversations.find({
             "participants": user_id,
             "unread": True,
-        }).sort("updated_at", -1).limit(10))
+        }).sort("updated_at", -1).limit(10).to_list(10)
         for c in unread:
             contact = c.get("contact", {})
             notifications.append({
@@ -181,10 +185,10 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
 
     # 5. FLAGGED CONVERSATIONS
     try:
-        flagged = list(db.conversations.find({
+        flagged = await db.conversations.find({
             "participants": user_id,
             "flagged": True,
-        }).sort("updated_at", -1).limit(5))
+        }).sort("updated_at", -1).limit(5).to_list(5)
         for c in flagged:
             contact = c.get("contact", {})
             notifications.append({
@@ -203,10 +207,10 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
     except Exception as e:
         logger.debug(f"Flagged: {e}")
 
-    # 6. RECENT ACTIVITY (last 48h - informational)
+    # 6. RECENT ACTIVITY (last 48h)
     try:
         cutoff = now - timedelta(hours=48)
-        recent = list(db.contact_events.find({
+        recent = await db.contact_events.find({
             "user_id": user_id,
             "timestamp": {"$gte": cutoff},
             "event_type": {"$in": [
@@ -214,7 +218,7 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
                 "digital_card_sent", "review_request_sent", "congrats_card_sent",
                 "email_sent", "sms_sent",
             ]}
-        }).sort("timestamp", -1).limit(15))
+        }).sort("timestamp", -1).limit(15).to_list(15)
         for ev in recent:
             notifications.append({
                 "id": f"evt_{ev['_id']}",
@@ -231,16 +235,15 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
     except Exception as e:
         logger.debug(f"Recent activity: {e}")
 
-    # 7. PENDING CAMPAIGN SENDS (manual mode  - high priority action items)
+    # 7. PENDING CAMPAIGN SENDS
     try:
-        pending_sends = list(db.campaign_pending_sends.find({
+        pending_sends = await db.campaign_pending_sends.find({
             "user_id": user_id,
             "status": "pending",
-        }).sort("created_at", -1).limit(10))
+        }).sort("created_at", -1).limit(10).to_list(10)
         for ps in pending_sends:
             contact_id = ps.get("contact_id", "")
             message_content = ps.get("message", "")
-            import urllib.parse
             prefill = urllib.parse.quote(message_content[:500]) if message_content else ""
             link = f"/contact/{contact_id}?prefill={prefill}" if contact_id else None
             notifications.append({
@@ -260,22 +263,21 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
     except Exception as e:
         logger.debug(f"Pending campaign sends: {e}")
 
-    # 8. ENGAGEMENT SIGNALS — Real-time customer engagement alerts
+    # 8. ENGAGEMENT SIGNALS
     try:
-        from datetime import timedelta as td
-        cutoff = datetime.now(timezone.utc) - td(hours=48)
-        eng_signals = list(db.notifications.find({
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
+        eng_signals = await db.notifications.find({
             "type": "engagement_signal",
             "user_id": user_id,
             "created_at": {"$gte": cutoff},
-        }).sort("created_at", -1).limit(20))
+        }).sort("created_at", -1).limit(20).to_list(20)
         for sig in eng_signals:
             is_return = sig.get("is_return_visit", False)
             view_count = sig.get("view_count", 1)
             contact_id = sig.get("contact_id", "")
-            priority = 0 if is_return else 1  # Return visits are highest priority
+            priority = 0 if is_return else 1
             if view_count >= 3:
-                priority = 0  # Repeat viewers are hot leads
+                priority = 0
             notifications.append({
                 "id": f"eng_{sig['_id']}",
                 "type": "engagement_signal",
@@ -307,11 +309,8 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
     filtered = notifications if category == "all" else [n for n in notifications if n["category"] == category]
 
     # Sort: priority first, then newest within same priority
-    filtered.sort(key=lambda n: (n["priority"], n.get("timestamp", "")))
-    # Stable sort by timestamp desc within same priority
-    from itertools import groupby
-    sorted_notifs = []
     filtered.sort(key=lambda n: n["priority"])
+    sorted_notifs = []
     for _, group in groupby(filtered, key=lambda n: n["priority"]):
         grp = list(group)
         grp.sort(key=lambda n: n.get("timestamp", ""), reverse=True)
@@ -319,7 +318,7 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
 
     # Read status overlay from user's notification_reads
     try:
-        reads = db.notification_reads.find_one({"user_id": user_id})
+        reads = await db.notification_reads.find_one({"user_id": user_id})
         read_ids = set((reads or {}).get("read_ids", []))
         for n in sorted_notifs:
             if n["id"] in read_ids:
@@ -340,20 +339,15 @@ async def get_notifications(user_id: str, limit: int = 50, category: str = "all"
 
 @router.get("/{user_id}/unread-count")
 async def get_unread_count(user_id: str):
-    """Fast unread count for badge display — lightweight query, no heavy aggregation."""
+    """Fast unread count for badge display — cached for 15s."""
+    now = datetime.now(timezone.utc)
+    cached = _unread_cache.get(user_id)
+    if cached and (now - cached[0]) < _UNREAD_TTL:
+        return cached[1]
+
     try:
         db = get_db()
-        now = datetime.now(timezone.utc)
-
-        # Count unread lead notifications
-        user_teams = []
-        try:
-            teams = list(db.teams.find({"members": user_id}, {"_id": 1}))
-            user_teams.extend([str(t["_id"]) for t in teams])
-            shared_inboxes = list(db.shared_inboxes.find({"user_ids": user_id}, {"_id": 1}))
-            user_teams.extend([str(si["_id"]) for si in shared_inboxes])
-        except Exception:
-            pass
+        user_teams = await _get_user_teams(db, user_id)
 
         lead_count = 0
         try:
@@ -365,14 +359,13 @@ async def get_unread_count(user_id: str):
                 "dismissed": False,
                 "read": {"$ne": True},
             }
-            lead_count = db.notifications.count_documents(lead_query)
+            lead_count = await db.notifications.count_documents(lead_query)
         except Exception:
             pass
 
-        # Count overdue tasks
         overdue_count = 0
         try:
-            overdue_count = db.tasks.count_documents({
+            overdue_count = await db.tasks.count_documents({
                 "user_id": user_id,
                 "completed": {"$ne": True},
                 "due_date": {"$lt": now}
@@ -380,10 +373,9 @@ async def get_unread_count(user_id: str):
         except Exception:
             pass
 
-        # Count unread messages
         unread_msg_count = 0
         try:
-            unread_msg_count = db.messages.count_documents({
+            unread_msg_count = await db.messages.count_documents({
                 "recipient_id": user_id,
                 "read": {"$ne": True},
                 "sender_id": {"$ne": user_id},
@@ -391,16 +383,17 @@ async def get_unread_count(user_id: str):
         except Exception:
             pass
 
-        # Subtract any that the user has explicitly read
         total_unread = lead_count + overdue_count + unread_msg_count
         try:
-            reads = db.notification_reads.find_one({"user_id": user_id})
+            reads = await db.notification_reads.find_one({"user_id": user_id})
             if reads:
                 total_unread = max(0, total_unread - len(reads.get("read_ids", [])))
         except Exception:
             pass
 
-        return {"count": total_unread}
+        result = {"count": total_unread}
+        _unread_cache[user_id] = (now, result)
+        return result
     except Exception as e:
         logger.error(f"Unread count error for {user_id}: {e}")
         return {"count": 0}
@@ -412,11 +405,10 @@ async def mark_notifications_read(user_id: str, data: dict = {}):
     db = get_db()
     ids = data.get("ids", [])
 
-    # For lead notifications, also mark in the notifications collection
     for nid in ids:
         if not nid.startswith(("task_", "msg_", "flag_", "evt_", "task_soon_")):
             try:
-                db.notifications.update_one(
+                await db.notifications.update_one(
                     {"_id": ObjectId(nid)},
                     {"$set": {"read": True}}
                 )
@@ -424,11 +416,14 @@ async def mark_notifications_read(user_id: str, data: dict = {}):
                 pass
 
     if ids:
-        db.notification_reads.update_one(
+        await db.notification_reads.update_one(
             {"user_id": user_id},
             {"$addToSet": {"read_ids": {"$each": ids}}},
             upsert=True,
         )
+
+    # Invalidate cache
+    _unread_cache.pop(user_id, None)
     return {"success": True, "message": "Marked as read"}
 
 
@@ -439,11 +434,10 @@ async def mark_all_read(user_id: str):
     notifs = await get_notifications(user_id, limit=200)
     all_ids = [n["id"] for n in notifs.get("notifications", [])]
 
-    # Also mark lead notifications as read in the notifications collection
     for nid in all_ids:
         if not nid.startswith(("task_", "msg_", "flag_", "evt_", "task_soon_")):
             try:
-                db.notifications.update_one(
+                await db.notifications.update_one(
                     {"_id": ObjectId(nid)},
                     {"$set": {"read": True}}
                 )
@@ -451,9 +445,12 @@ async def mark_all_read(user_id: str):
                 pass
 
     if all_ids:
-        db.notification_reads.update_one(
+        await db.notification_reads.update_one(
             {"user_id": user_id},
             {"$set": {"read_ids": all_ids}},
             upsert=True,
         )
+
+    # Invalidate cache
+    _unread_cache.pop(user_id, None)
     return {"success": True, "message": "All marked as read", "count": len(all_ids)}
