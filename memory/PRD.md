@@ -14,45 +14,36 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### Universal URL Tracking System (Mar 27, 2026) -- LATEST
-- **`POST /api/s/wrap`**: Universal URL wrapper — pass any URL, get back a tracked short URL. Auto-detects YouTube as `training_video`, review links as `review_request`. Idempotent.
-- **`POST /api/s/wrap-bulk`**: Bulk URL wrapping for multiple URLs at once.
-- **`POST /api/campaigns/{user_id}/{campaign_id}/rewrap-links`**: Admin endpoint to scan existing campaign steps for raw URLs and wrap them with tracking. Also patches unsent pending sends.
-- **Auto-wrap in Campaign Edits**: `PUT /api/campaigns/{user_id}/{campaign_id}` now auto-wraps URLs in `sequences.media_urls` and `sequences.message_template`.
-- **Auto-wrap in Training Hub**: Lesson create/update endpoints auto-wrap `video_url` with tracking.
-- **Auto-wrap in Scheduler**: Background campaign step processor wraps raw URLs before creating pending sends.
-- **Full test coverage**: 20/20 backend tests passed.
+### Tracked Media System (Mar 27, 2026) -- LATEST
+- **`POST /api/media/upload-tracked`**: Upload photo or video, get a tracked short URL. When recipient opens it, view is logged as contact_event with full analytics.
+- **`GET /api/media/view/{media_id}`**: Branded viewing page showing photo/video full-screen with salesperson branding, caption, and OG meta tags. Logs views with deduplication.
+- **`GET /api/media/stats/{media_id}`**: View stats for tracked media (view count, last viewed, etc.)
+- Viewing page auto-pulls salesperson name, store branding, and accent color.
+- Views logged as `media_viewed` contact_events + engagement signals.
 
-### Convert Contact to User Workflow (Mar 26, 2026)
-- "Import from Contact" in Add User Modal
-- Backend Auto-Linking with tags and linked_* fields
-- Linked App Account Card on contact detail page
+### Universal URL Tracking System (Mar 27, 2026)
+- **`POST /api/s/wrap`**: Universal URL wrapper — auto-detects YouTube, review links. Idempotent.
+- **`POST /api/s/wrap-bulk`**: Bulk URL wrapping.
+- **`POST /api/campaigns/{user_id}/{campaign_id}/rewrap-links`**: Fix existing campaign links.
+- **Auto-wrap in Campaign Edits**: `PUT /api/campaigns/{user_id}/{campaign_id}` auto-wraps URLs.
+- **Auto-wrap in Training Hub**: Lesson create/update auto-wraps `video_url`.
+- **Auto-wrap in Templates**: Template create/update auto-wraps all URLs in content.
+- **Auto-wrap in Scheduler**: Background campaign step processor wraps URLs before creating pending sends.
 
-### Activity Feed Grouping (Mar 27, 2026)
-- Consecutive actions by same contact grouped under single photo
-
-### RBAC Fix, UI Fixes, Light Mode, Marketing Decks (Mar 27, 2026)
-- Regular users locked out of admin pages
-- Jessi bar padding on Templates/Tags/Users pages
-- Light mode readability on landing page
-- Tags and Lead Sources separated into distinct nav items
-- 12 static HTML sales presentation decks
-
-### Scheduler Stability (Mar 27, 2026)
-- `safe_job` wrapper prevents APScheduler exceptions from crashing API server
-- Campaign hourly delay + AI toggle bugs fixed
+### Previous Work (see CHANGELOG for full history)
+- Contact-to-User workflow, Activity Feed grouping, RBAC fix, UI fixes
+- Scheduler stability (safe_job wrapper), Campaign hourly delay + AI toggle fixes
+- Marketing presentation decks, SEO guide routing
 
 ---
 
-## Key API Endpoints
-- `POST /api/auth/login`
-- `POST /api/admin/users/create` — Accepts `source_contact_id`
-- `PUT /api/admin/users/{user_id}/reset-password`
-- `GET /api/contacts/{user_id}?search=X`
-- `GET /api/campaigns/contact/{contact_id}/journey`
+## Key API Endpoints (New)
+- `POST /api/media/upload-tracked` — Upload photo/video, get tracked link
+- `GET /api/media/view/{media_id}` — Branded viewing page
+- `GET /api/media/stats/{media_id}` — View analytics
 - `POST /api/s/wrap` — Universal URL tracking
 - `POST /api/s/wrap-bulk` — Bulk URL tracking
-- `POST /api/campaigns/{user_id}/{campaign_id}/rewrap-links` — Rewrap campaign links
+- `POST /api/campaigns/{user_id}/{campaign_id}/rewrap-links` — Fix campaign links
 
 ---
 
@@ -60,11 +51,13 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ### P0
 - Deploy and run `rewrap-links` on production "Onboarding Videos" campaign
+- Integrate tracked media upload into frontend composer (thread/[id].tsx)
 
 ### P1
 - App Store Preparation (eas.json, push notifications)
 - AI-Powered Outreach (sold tag follow-ups)
 - Gamification & Leaderboards
+- Link Analytics Dashboard (click-through rates by campaign, video watch rates)
 
 ### P2
 - Full Twilio Integration (currently MOCK)
@@ -88,4 +81,7 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 - `/app/backend/routers/short_urls.py` — Added `wrap` and `wrap-bulk` endpoints
 - `/app/backend/routers/campaigns.py` — Added `rewrap-links` endpoint, auto-wrap in `update_campaign`
 - `/app/backend/routers/training.py` — Auto-wrap in lesson create/update
+- `/app/backend/routers/templates.py` — Auto-wrap in template create/update
+- `/app/backend/routers/media_tracking.py` — NEW: Tracked media upload + viewing page
 - `/app/backend/scheduler.py` — `_auto_wrap_urls` helper for background jobs
+- `/app/backend/server.py` — Registered media_tracking router
