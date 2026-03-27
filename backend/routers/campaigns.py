@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException
 from bson import ObjectId
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
+import re
 import logging
 
 from models import Campaign, CampaignCreate
@@ -1191,4 +1192,157 @@ async def check_date_triggers(user_id: str):
         "message": "Date trigger check complete",
         "enrolled": enrolled_count,
         **stats
+    }
+
+
+# =====================================================
+# ADMIN: REWRAP CAMPAIGN LINKS WITH TRACKING
+# =====================================================
+
+URL_PATTERN = re.compile(r'https?://[^\s<>"\')\]]+')
+
+
+def _is_already_tracked(url: str) -> bool:
+    """Check if a URL is already a tracked short URL."""
+    return "/api/s/" in url
+
+
+def _detect_link_type(url: str) -> str:
+    """Detect the link type from a URL for short URL categorization."""
+    if "youtube.com" in url or "youtu.be" in url:
+        return "training_video"
+    if "review" in url.lower():
+        return "review_request"
+    return "campaign_link"
+
+
+@router.post("/{user_id}/{campaign_id}/rewrap-links")
+async def rewrap_campaign_links(user_id: str, campaign_id: str):
+    """
+    Scan a campaign's sequences for raw (untracked) URLs and wrap them
+    in tracked short URLs. Also patches any existing pending sends.
+    
+    Use this after manually editing campaign URLs to restore click tracking.
+    """
+    from routers.short_urls import create_short_url
+
+    db = get_db()
+
+    # Verify campaign exists
+    campaign = await db.campaigns.find_one({"_id": ObjectId(campaign_id)})
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    sequences = campaign.get("sequences", [])
+    if not sequences:
+        return {"message": "No sequences found", "wrapped": 0}
+
+    wrapped_count = 0
+    url_map = {}  # old_url -> new_short_url (to also patch pending sends)
+    updated_sequences = []
+
+    for idx, step in enumerate(sequences):
+        step_copy = dict(step)
+        step_num = idx + 1
+
+        # --- 1. Wrap URLs in media_urls ---
+        new_media = []
+        for url in step_copy.get("media_urls", []):
+            if url and not _is_already_tracked(url):
+                link_type = _detect_link_type(url)
+                result = await create_short_url(
+                    original_url=url,
+                    link_type=link_type,
+                    reference_id=campaign_id,
+                    user_id=user_id,
+                    metadata={
+                        "campaign_id": campaign_id,
+                        "campaign_name": campaign.get("name", ""),
+                        "step": step_num,
+                        "source": "rewrap",
+                    }
+                )
+                short_url = result["short_url"]
+                url_map[url] = short_url
+                new_media.append(short_url)
+                wrapped_count += 1
+                logger.info(f"[Rewrap] Step {step_num} media: {url} -> {short_url}")
+            else:
+                new_media.append(url)
+        step_copy["media_urls"] = new_media
+
+        # --- 2. Wrap URLs embedded in message_template ---
+        msg = step_copy.get("message_template", "") or ""
+        found_urls = URL_PATTERN.findall(msg)
+        for url in found_urls:
+            if not _is_already_tracked(url):
+                link_type = _detect_link_type(url)
+                result = await create_short_url(
+                    original_url=url,
+                    link_type=link_type,
+                    reference_id=campaign_id,
+                    user_id=user_id,
+                    metadata={
+                        "campaign_id": campaign_id,
+                        "campaign_name": campaign.get("name", ""),
+                        "step": step_num,
+                        "source": "rewrap",
+                    }
+                )
+                short_url = result["short_url"]
+                url_map[url] = short_url
+                msg = msg.replace(url, short_url)
+                wrapped_count += 1
+                logger.info(f"[Rewrap] Step {step_num} template: {url} -> {short_url}")
+        step_copy["message_template"] = msg
+
+        updated_sequences.append(step_copy)
+
+    # Save updated sequences back to the campaign
+    if wrapped_count > 0:
+        await db.campaigns.update_one(
+            {"_id": ObjectId(campaign_id)},
+            {"$set": {"sequences": updated_sequences}}
+        )
+
+    # --- 3. Patch existing pending sends that haven't been delivered ---
+    patched_sends = 0
+    if url_map:
+        pending_sends = await db.campaign_pending_sends.find({
+            "campaign_id": campaign_id,
+            "status": "pending",
+        }).to_list(500)
+
+        for ps in pending_sends:
+            changed = False
+            # Patch media_urls
+            new_ps_media = []
+            for url in ps.get("media_urls", []):
+                if url in url_map:
+                    new_ps_media.append(url_map[url])
+                    changed = True
+                else:
+                    new_ps_media.append(url)
+            # Patch message text
+            new_msg = ps.get("message", "")
+            for old_url, new_url in url_map.items():
+                if old_url in new_msg:
+                    new_msg = new_msg.replace(old_url, new_url)
+                    changed = True
+
+            if changed:
+                await db.campaign_pending_sends.update_one(
+                    {"_id": ps["_id"]},
+                    {"$set": {"media_urls": new_ps_media, "message": new_msg}}
+                )
+                patched_sends += 1
+
+    # Build summary of what was wrapped
+    summary = [{"original": k, "tracked": v} for k, v in url_map.items()]
+
+    return {
+        "message": f"Wrapped {wrapped_count} URLs with tracking in {len(sequences)} steps",
+        "wrapped_count": wrapped_count,
+        "patched_pending_sends": patched_sends,
+        "url_mapping": summary,
     }

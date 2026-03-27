@@ -5,6 +5,7 @@ Runs background jobs to process date-triggered campaigns and pending campaign st
 import asyncio
 import logging
 import random
+import re
 from datetime import datetime, timezone, timedelta
 from bson import ObjectId
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -16,6 +17,61 @@ logger = logging.getLogger(__name__)
 # Cache for user/store data to avoid repeated DB lookups within a single scheduler run
 _user_cache = {}
 _store_cache = {}
+
+_URL_RE = re.compile(r'https?://[^\s<>"\')\]]+')
+
+
+async def _auto_wrap_urls(media_urls: list, message: str, user_id: str, campaign_id: str, campaign_name: str, step_num: int) -> tuple:
+    """Wrap any raw (untracked) URLs in media_urls and message text with tracked short URLs.
+    Returns (wrapped_media_urls, wrapped_message)."""
+    from routers.short_urls import create_short_url
+
+    def _is_tracked(url):
+        return "/api/s/" in url
+
+    def _link_type(url):
+        if "youtube.com" in url or "youtu.be" in url:
+            return "training_video"
+        return "campaign_link"
+
+    url_map = {}
+
+    # Wrap media_urls
+    wrapped_media = []
+    for url in media_urls:
+        if url and not _is_tracked(url):
+            if url not in url_map:
+                try:
+                    result = await create_short_url(
+                        original_url=url, link_type=_link_type(url),
+                        reference_id=campaign_id, user_id=user_id,
+                        metadata={"campaign_id": campaign_id, "campaign_name": campaign_name, "step": step_num, "source": "auto_wrap"},
+                    )
+                    url_map[url] = result["short_url"]
+                except Exception as e:
+                    logger.warning(f"[AutoWrap] Failed to wrap {url}: {e}")
+                    url_map[url] = url
+            wrapped_media.append(url_map[url])
+        else:
+            wrapped_media.append(url)
+
+    # Wrap URLs in message
+    for url in _URL_RE.findall(message):
+        if not _is_tracked(url) and url not in url_map:
+            try:
+                result = await create_short_url(
+                    original_url=url, link_type=_link_type(url),
+                    reference_id=campaign_id, user_id=user_id,
+                    metadata={"campaign_id": campaign_id, "campaign_name": campaign_name, "step": step_num, "source": "auto_wrap"},
+                )
+                url_map[url] = result["short_url"]
+            except Exception as e:
+                logger.warning(f"[AutoWrap] Failed to wrap {url}: {e}")
+
+    for old_url, new_url in url_map.items():
+        message = message.replace(old_url, new_url)
+
+    return wrapped_media, message
 
 
 async def resolve_template_variables(db, message: str, contact: dict, user_id: str) -> str:
@@ -579,6 +635,17 @@ async def process_pending_campaign_steps():
                             f"[Scheduler] Task already exists for step {current_step} (status={existing_task.get('status')}), advancing enrollment"
                         )
                     else:
+                        # Auto-wrap raw URLs in media and message for click tracking
+                        raw_media = step.get("media_urls", [])
+                        try:
+                            wrapped_media, wrapped_message = await _auto_wrap_urls(
+                                raw_media, message_content, user_id,
+                                enrollment["campaign_id"], campaign.get("name", ""), current_step,
+                            )
+                        except Exception as e:
+                            logger.warning(f"[Scheduler] Auto-wrap failed, using raw URLs: {e}")
+                            wrapped_media, wrapped_message = raw_media, message_content
+
                         # Create pending send record
                         pending_result = await db.campaign_pending_sends.insert_one({
                             "user_id": user_id,
@@ -590,8 +657,8 @@ async def process_pending_campaign_steps():
                             "campaign_name": campaign.get("name", ""),
                             "step": current_step,
                             "channel": channel,
-                            "message": message_content,
-                            "media_urls": step.get("media_urls", []),
+                            "message": wrapped_message,
+                            "media_urls": wrapped_media,
                             "relationship_brief": relationship_brief,
                             "ai_generated": bool(ai_generated),
                             "step_context": step.get("step_context", ""),
