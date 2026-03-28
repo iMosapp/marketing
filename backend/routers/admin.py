@@ -45,7 +45,7 @@ def safe_objectid(val):
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "notifications@send.imonsocial.com")
 
-APP_URL = "https://app.imonsocial.com"
+APP_URL = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
 
 if RESEND_API_KEY:
     resend.api_key = RESEND_API_KEY

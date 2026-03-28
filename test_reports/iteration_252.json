@@ -1,0 +1,82 @@
+{
+  "summary": "Iteration 252 - Pre-deployment regression test. Tested: login flows (admin + Matt + wrong password), admin.py split (admin_users.py, admin_hierarchy.py, admin_helpers.py all working), impersonation serialization fix, role update, all 6 admin GET endpoints, master-feed performance, PATCH base64 rejection, profile photo multipart upload, /contact/new route, my-account.tsx with ProfilePhotoUpload. 21/21 backend tests pass. All 5 frontend Playwright flows pass.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "POST /api/profile/{user_id}/photo",
+        "issue": "OSError from Pillow not caught — broken/corrupted images return 500 instead of 400. Wrap upload_image() call in try/except OSError and return 400.",
+        "priority": "LOW"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_predeployment_regression_252.py",
+    "/app/test_reports/pytest/pytest_predeployment_252.xml"
+  ],
+  "action_items": [
+    "Optional: Wrap upload_image() in try/except in profile.py line 185 to return 400 on broken images instead of 500",
+    "Optional: Remove orphaned convert_to_individual() function in admin_users.py (line 705) that has no route decorator",
+    "Optional: Rename one of the two `reactivate_user` functions in admin_users.py (lines 511 and 779) to avoid naming confusion (both are registered correctly as PUT/POST but same name in Python is confusing)"
+  ],
+  "critical_code_review_comments": [
+    "admin_users.py: convert_to_individual (line 705) is an orphaned async function — missing @router.post/put decorator. Not accessible via HTTP but harmless.",
+    "admin_users.py: Two functions named `reactivate_user` — line 510 (PUT) and line 779 (POST). Python rebinds name to the second, but FastAPI registers both routes at decoration time. Routes both work but naming is confusing.",
+    "profile.py: upload_image() call (line 185) not wrapped in try/except — OSError from PIL (broken images) propagates as 500. Should catch and return 400."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_predeployment_regression_252.py"
+  ],
+  "success_rate": {
+    "backend": "100% (21/21 tests passed)",
+    "frontend": "100% (admin login→/home PASS, Matt login→/home NOT onboarding PASS, wrong password error PASS, /contact/new route PASS, /my-account with ProfilePhotoUpload PASS)"
+  },
+  "test_credentials": {
+    "super_admin": "forest@imosapp.com / Admin123!",
+    "test_user": "mjeast1985@gmail.com / NavyBean1!"
+  },
+  "seed_data_creation": "None — used existing users",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All regression tests pass for this pre-deployment iteration. Key verification points: (1) admin.py split into admin_users.py/admin_hierarchy.py/admin_helpers.py — all endpoints working, (2) impersonation POST /admin/users/{id}/impersonate returns success:true with clean JSON serialization (no ObjectId errors), (3) Matt (mjeast1985@gmail.com, onboarding_complete: null) correctly goes to /home not /onboarding, (4) /contact/new is a valid Expo Router route rendering the new contact form, (5) my-account.tsx correctly uses ProfilePhotoUpload component, (6) PATCH /users/{id} rejects base64 photo_url with 400, (7) master-feed responds < 2s at limit=25.",
+  "mocked_apis": {
+    "Twilio SMS": "MOCKED - SMS sending is mocked in test env"
+  },
+  "tests_executed": {
+    "backend_api_tests": [
+      "test_admin_login_success — PASSED (200, role=super_admin)",
+      "test_matt_login_success_not_onboarding — PASSED (onboarding_complete=null, not False)",
+      "test_wrong_password_returns_error — PASSED (401)",
+      "test_wrong_password_admin_returns_error — PASSED (401)",
+      "test_impersonate_matt_returns_success — PASSED (success:true, token returned)",
+      "test_impersonate_response_is_json_serializable — PASSED (no ObjectId serialization errors)",
+      "test_impersonate_invalid_user_returns_404 — PASSED",
+      "test_role_update_returns_ok — PASSED (status:ok, role:user)",
+      "test_role_update_invalid_role_returns_400 — PASSED",
+      "test_role_update_unauthenticated_returns_401 — PASSED",
+      "test_get_users_list — PASSED (200, list of users)",
+      "test_get_hierarchy_overview — PASSED (200, organizations/total_organizations keys present)",
+      "test_get_roles — PASSED (200, roles with super_admin present)",
+      "test_get_platform_stats — PASSED (200)",
+      "test_get_billing_summary — PASSED (200)",
+      "test_get_permissions — PASSED (200, permissions/user_id keys present)",
+      "test_master_feed_response_time — PASSED (< 2 seconds at limit=25)",
+      "test_master_feed_limit_respected — PASSED (≤ 25 items returned)",
+      "test_patch_rejects_base64_photo_url — PASSED (400 with error message)",
+      "test_profile_photo_upload_multipart — PASSED (200, photo_url returned)",
+      "test_health_check — PASSED (status:healthy)"
+    ],
+    "frontend_playwright_tests": [
+      "Admin login (forest@imosapp.com / Admin123!) → /home — PASSED",
+      "Matt login (mjeast1985@gmail.com / NavyBean1!, onboarding_complete: null) → /home NOT /onboarding — PASSED",
+      "Wrong password → 'Invalid email or password' shown on login page — PASSED",
+      "/contact/new route renders New Contact form — PASSED",
+      "/my-account renders My Presence screen with ProfilePhotoUpload component (Change/Remove buttons visible) — PASSED"
+    ]
+  }
+}
