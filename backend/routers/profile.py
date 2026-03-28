@@ -267,6 +267,27 @@ async def delete_gallery_photo(user_id: str, photo_id: str):
     return {"success": True}
 
 
+@router.post("/{user_id}/cover")
+async def upload_cover_photo(user_id: str, file: UploadFile = File(...)):
+    """Upload a cover/banner photo for the My Presence page."""
+    db = get_db()
+    if not file.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    contents = await file.read()
+    if len(contents) > 15 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image must be less than 15MB")
+    from utils.image_storage import upload_image
+    try:
+        result = await upload_image(contents, prefix="covers", entity_id=user_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Image processing failed")
+    if not result:
+        raise HTTPException(status_code=500, detail="Image upload failed")
+    cover_url = f"/api/images/{result['original_path']}"
+    await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"cover_photo_url": cover_url}})
+    return {"success": True, "cover_url": cover_url}
+
+
 @router.post("/{user_id}/generate-bio")
 async def generate_bio(user_id: str, data: dict):
     """Generate a professional bio using AI based on user's personal info"""

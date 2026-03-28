@@ -27,6 +27,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import api from '../services/api';
@@ -81,6 +82,9 @@ export default function MyAccountScreen() {
   const [editingTitle, setEditingTitle] = useState(false);
   const [savingBio, setSavingBio] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
+  // Social link inline editing
+  const [editingSocial, setEditingSocial] = useState<string | null>(null);
+  const [socialEditValue, setSocialEditValue] = useState('');
 
   // Local edit buffers
   const [bioText, setBioText] = useState(user?.persona?.bio || user?.bio || '');
@@ -152,29 +156,73 @@ export default function MyAccountScreen() {
     } catch { showSimpleAlert('Error', 'Failed to save title.'); }
   }
 
-  // ── Cover photo ────────────────────────────────────────────────────────────
-  function handleCoverPick() {
-    if (Platform.OS !== 'web') return;
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = async (e: any) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      setCoverUploading(true);
-      try {
-        const fd = new FormData();
-        fd.append('file', file);
-        const res = await api.post(`/profile/${user?._id}/cover`, fd, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-        if (res.data?.cover_url) {
-          setUser({ ...user, cover_photo_url: res.data.cover_url } as any);
-        }
-      } catch {}
-      setCoverUploading(false);
-    };
-    input.click();
+  // ── Cover photo — works on web AND mobile ────────────────────────────────
+  async function handleCoverPick() {
+    if (Platform.OS === 'web') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = async (e: any) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setCoverUploading(true);
+        try {
+          const fd = new FormData();
+          fd.append('file', file);
+          const res = await api.post(`/profile/${user?._id}/cover`, fd, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+          if (res.data?.cover_url) setUser({ ...user, cover_photo_url: res.data.cover_url } as any);
+        } catch { showSimpleAlert('Error', 'Failed to upload cover photo.'); }
+        setCoverUploading(false);
+      };
+      input.click();
+    } else {
+      // Native: use image picker
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        showSimpleAlert('Permission Required', 'Allow photo library access to set a cover photo.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [16, 9],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets?.[0]) {
+        setCoverUploading(true);
+        try {
+          const asset = result.assets[0];
+          const ext = asset.uri.split('.').pop() || 'jpg';
+          const fd = new FormData();
+          fd.append('file', { uri: asset.uri, name: `cover.${ext}`, type: `image/${ext}` } as any);
+          const res = await api.post(`/profile/${user?._id}/cover`, fd, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+          if (res.data?.cover_url) setUser({ ...user, cover_photo_url: res.data.cover_url } as any);
+        } catch { showSimpleAlert('Error', 'Failed to upload cover photo.'); }
+        setCoverUploading(false);
+      }
+    }
+  }
+
+  // ── Social link editing ───────────────────────────────────────────────────
+  function openSocialEdit(platformKey: string) {
+    const current = socialLinks[platformKey] || '';
+    setSocialEditValue(current);
+    setEditingSocial(platformKey);
+  }
+
+  async function saveSocialLink() {
+    if (!editingSocial || !user?._id) return;
+    const val = socialEditValue.trim().replace(/^@/, ''); // strip leading @
+    const updatedLinks = { ...socialLinks, [editingSocial]: val || null };
+    try {
+      await api.patch(`/users/${user?._id}`, { social_links: updatedLinks });
+      setUser({ ...user, social_links: updatedLinks } as any);
+      setEditingSocial(null);
+    } catch { showSimpleAlert('Error', 'Failed to save social link.'); }
   }
 
   // ── Review share handlers ──────────────────────────────────────────────────
@@ -270,8 +318,6 @@ export default function MyAccountScreen() {
                   onPhotoUpdated={(url) => { setUser({ ...user, photo_url: url }); refreshUserData(); }}
                 />
               )}
-              {/* Completeness ring hint */}
-              <View style={[s.completenessRing, { borderColor: completeness >= 80 ? '#34C759' : completeness >= 50 ? '#C9A962' : '#38383A' }]} />
             </View>
             {/* Personal / Store toggle */}
             {isManager && user?.store_id && (
@@ -419,11 +465,14 @@ export default function MyAccountScreen() {
                 <TouchableOpacity
                   key={p.key}
                   style={[s.socialChip, val && { borderColor: p.color + '60', backgroundColor: p.color + '15' }]}
-                  onPress={() => router.push('/settings/store-profile' as any)}
+                  onPress={() => openSocialEdit(p.key)}
                   testID={`social-chip-${p.key}`}
                 >
                   <Ionicons name={p.icon as any} size={16} color={val ? p.color : '#8E8E93'} />
-                  {val && <Text style={[s.socialChipText, { color: p.color }]} numberOfLines={1}>@{val.replace(/^@/, '')}</Text>}
+                  {val
+                    ? <Text style={[s.socialChipText, { color: p.color }]} numberOfLines={1}>@{val.replace(/^@/, '')}</Text>
+                    : <Text style={[s.socialChipText, { color: '#555' }]}>{p.label}</Text>
+                  }
                 </TouchableOpacity>
               );
             })}
@@ -621,6 +670,60 @@ export default function MyAccountScreen() {
 
         <View style={{ height: 32 }} />
       </ScrollView>
+
+      {/* Social Link Edit Modal */}
+      {editingSocial && (() => {
+        const platform = SOCIAL_PLATFORMS.find(p => p.key === editingSocial);
+        return (
+          <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' }}>
+            <View style={{ backgroundColor: '#1C1C1E', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, paddingBottom: 36 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                {platform && <Ionicons name={platform.icon as any} size={24} color={platform?.color} />}
+                <Text style={{ fontSize: 20, fontWeight: '700', color: '#FFF', flex: 1 }}>{platform?.label}</Text>
+                <TouchableOpacity onPress={() => setEditingSocial(null)}>
+                  <Ionicons name="close" size={24} color="#8E8E93" />
+                </TouchableOpacity>
+              </View>
+              <Text style={{ fontSize: 14, color: '#8E8E93', marginBottom: 8 }}>Your handle or username</Text>
+              <TextInput
+                style={{ backgroundColor: '#2C2C2E', color: '#FFF', borderRadius: 12, padding: 14, fontSize: 17, borderWidth: 1, borderColor: platform?.color + '40' }}
+                value={socialEditValue}
+                onChangeText={setSocialEditValue}
+                placeholder={`@yourhandle`}
+                placeholderTextColor="#555"
+                autoFocus
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="done"
+                onSubmitEditing={saveSocialLink}
+                testID={`social-edit-${editingSocial}`}
+              />
+              {socialEditValue.trim() !== '' && (
+                <Text style={{ fontSize: 13, color: '#8E8E93', marginTop: 6 }}>
+                  Will show as: @{socialEditValue.trim().replace(/^@/, '')}
+                </Text>
+              )}
+              <View style={{ flexDirection: 'row', gap: 10, marginTop: 18 }}>
+                {socialLinks[editingSocial] && (
+                  <TouchableOpacity
+                    style={{ flex: 1, paddingVertical: 13, borderRadius: 12, backgroundColor: '#FF3B3020', alignItems: 'center', borderWidth: 1, borderColor: '#FF3B3030' }}
+                    onPress={() => { setSocialEditValue(''); saveSocialLink(); }}
+                  >
+                    <Text style={{ color: '#FF3B30', fontWeight: '600', fontSize: 16 }}>Remove</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  style={{ flex: 2, paddingVertical: 13, borderRadius: 12, backgroundColor: platform?.color || '#C9A962', alignItems: 'center' }}
+                  onPress={saveSocialLink}
+                  testID="social-save-btn"
+                >
+                  <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 16 }}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        );
+      })()}
 
       {/* Share Review Modal */}
       <ShareReviewModal
