@@ -322,13 +322,11 @@ export default function MyAccountScreen() {
               colors={['transparent', 'rgba(0,0,0,0.7)']}
               style={s.coverGrad}
             />
-            {/* Clear "Edit Cover Photo" button — the ONLY trigger for upload */}
-            <TouchableOpacity
-              onPress={handleCoverPick}
-              disabled={coverUploading}
-              style={s.coverEditBtn}
-              testID="cover-photo-btn"
-            >
+            {/* Clear "Edit Cover Photo" button — the ONLY trigger for upload.
+                On iOS/web: a native <input type="file"> is absolutely positioned
+                over the button so the tap goes directly to the file picker without
+                any React synthetic event async delay (which iOS blocks). */}
+            <View style={s.coverEditBtn} pointerEvents="box-none">
               {coverUploading ? (
                 <ActivityIndicator size="small" color="#C9A962" />
               ) : (
@@ -339,7 +337,39 @@ export default function MyAccountScreen() {
                   </Text>
                 </>
               )}
-            </TouchableOpacity>
+              {/* Native file input overlay — bypasses React's async event chain on iOS */}
+              {Platform.OS === 'web' && !coverUploading && (
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{
+                    position: 'absolute',
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    width: '100%', height: '100%',
+                    opacity: 0,
+                    cursor: 'pointer',
+                  }}
+                  onChange={async (e: any) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setCoverUploading(true);
+                    try {
+                      const fd = new FormData();
+                      fd.append('file', file);
+                      const res = await api.post(`/profile/${user?._id}/cover`, fd, {
+                        headers: { 'Content-Type': 'multipart/form-data' },
+                      });
+                      if (res.data?.cover_url) setUser({ ...user, cover_photo_url: res.data.cover_url } as any);
+                      else showSimpleAlert('Error', 'Upload succeeded but no URL returned.');
+                    } catch (err: any) {
+                      showSimpleAlert('Error', err?.response?.data?.detail || 'Failed to upload cover photo.');
+                    } finally {
+                      setCoverUploading(false);
+                    }
+                  }}
+                />
+              )}
+            </View>
           </View>
 
           {/* Avatar + completeness ring */}

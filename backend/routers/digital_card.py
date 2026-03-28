@@ -146,9 +146,10 @@ async def get_card_data(user_id: str, cid: str = None):
             "name": user.get("name", ""),
             "email": user.get("email", ""),
             "phone": user.get("phone", ""),
-            "title": user.get("title", "Sales Professional"),
+            "title": user.get("title", "") or user.get("persona", {}).get("title", "Sales Professional"),
             "photo_url": resolve_user_photo(user),
-            "bio": user.get("persona", {}).get("bio", ""),
+            "cover_photo_url": user.get("cover_photo_url"),
+            "bio": user.get("persona", {}).get("bio", "") or user.get("bio", ""),
             "social_links": user.get("social_links", {}),
         },
         "store": {

@@ -525,6 +525,19 @@ export default function DigitalCardPage() {
                 <View style={[styles.cornerFold, { borderRightColor: theme.accent }]} />
               </TouchableOpacity>
 
+              {/* Cover Photo Banner — full-width at top of card */}
+              {user.cover_photo_url ? (
+                <View style={[styles.coverBanner, { overflow: 'hidden' }]}>
+                  <Image
+                    source={{ uri: user.cover_photo_url }}
+                    style={StyleSheet.absoluteFill}
+                    resizeMode="cover"
+                  />
+                  {/* Gradient fade to card background */}
+                  <View style={styles.coverBannerGrad} />
+                </View>
+              ) : null}
+
               {/* Store Logo */}
               {store?.logo_url && (
                 <Image 
@@ -1344,6 +1357,24 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   // Card content
+  coverBanner: {
+    width: '100%',
+    height: 90,
+    marginTop: -16,
+    marginHorizontal: -16,
+    marginBottom: 12,
+    alignSelf: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  coverBannerGrad: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 40,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+  },
   storeLogo: {
     width: 80,
     height: 40,
