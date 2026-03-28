@@ -7,7 +7,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { differenceInYears, differenceInMonths, differenceInDays, format } from 'date-fns';
-import { useThemeStore } from '../../store/themeStore';
+import { useThemeStore } from '../store/themeStore';
 
 // ─── Time helpers ─────────────────────────────────────────────────────────────
 

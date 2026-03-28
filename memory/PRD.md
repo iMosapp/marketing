@@ -115,7 +115,14 @@ New components created under `components/account/`:
 - `my-account.tsx` 1,533 → 424 lines
 - 5 new focused components under `components/account/`
 
-### Pre-Deployment Health Check ✅ PASSED (Mar 28, 2026) — LATEST
+### Pre-Deployment Build Fix ✅ (Mar 28, 2026) -- LATEST
+Production build `expo export --platform web` was failing with:
+`SyntaxError: utils/contactHelpers.ts: Unexpected token (JSX in .ts file)`
+
+Fixes: Renamed `contactHelpers.ts` → `contactHelpers.tsx`, fixed import path depth.
+Production build now completes cleanly. Confirmed with `expo export --platform web` → `dist/` generated.
+
+### Pre-Deployment Health Check ✅ PASSED (Mar 28, 2026) — CLEARED
 Full regression test: **21/21 backend tests + 5/5 frontend tests = 100%**
 
 Minor fixes applied post-testing:
