@@ -175,6 +175,7 @@ export default function MoreScreen() {
     const refParam = user?.ref_code ? `${spParam ? '&' : '?'}ref=${user.ref_code}` : '';
     return `https://app.imonsocial.com/review/${storeSlug}${spParam}${refParam}`;
   };
+  const reviewShareUrl = getReviewUrl();
 
   const handleCopyReviewLink = async () => {
     const url = getReviewUrl();
@@ -529,21 +530,31 @@ export default function MoreScreen() {
 
   // ============================================================
   // SECTION 1: MY BRAND (Salesperson's personal command center)
-  // "Everything I send out, in one spot"
   // ============================================================
   {
-    const items: (MenuItem & { permKey?: string })[] = [
-      { icon: 'id-card', title: 'My Digital Card', subtitle: 'View, edit & share your card', onPress: () => router.push(`/card/${user?._id}` as any), color: '#C9A962' },
-      { icon: 'globe-outline', title: 'My Link Page', subtitle: 'Your public landing page', onPress: () => router.push(`/l/${user?.username || user?._id}` as any), color: '#007AFF' },
-      { icon: 'planet-outline', title: 'My Landing Page', subtitle: 'Your personal welcome page', onPress: () => router.push(`/p/${user?._id}` as any), color: '#AF52DE' },
-      { icon: 'images', title: 'My Showcase', subtitle: 'Your happy customers page', onPress: () => router.push('/showroom-manage' as any), color: '#34C759' },
-      { icon: 'star', title: 'Review Link', subtitle: 'Share to get customer reviews', onPress: () => { setShowShareModal(true); }, color: '#FFD60A' },
-      { permKey: 'sms_templates', icon: 'document-text', title: 'My Templates', subtitle: 'SMS & email templates I use', onPress: () => router.push('/settings/templates'), color: '#AF52DE' },
-      { icon: 'color-palette-outline', title: 'Card Templates', subtitle: 'Thank-you & congrats card designs', onPress: () => router.push('/settings/card-templates'), color: '#FF9500' },
-      { icon: 'mail-outline', title: 'Email Signature', subtitle: 'Copy & paste into your email client', onPress: () => router.push('/email-signature' as any), color: '#5856D6' },
+    const brandItems = [
+      { icon: 'id-card',        title: 'My Digital Card',  subtitle: 'How customers see you', color: '#C9A962', publicUrl: user?._id ? `${PROD_BASE}/card/${user._id}` : null,         editRoute: '/settings/store-profile' },
+      { icon: 'link',           title: 'My Link Page',     subtitle: 'All your links in one spot', color: '#007AFF', publicUrl: user?._id ? `${PROD_BASE}/l/${user._id}` : null,          editRoute: '/settings/link-page' },
+      { icon: 'planet-outline', title: 'My Landing Page',  subtitle: 'Your full personal page', color: '#AF52DE', publicUrl: user?._id ? `${PROD_BASE}/p/${user._id}` : null,            editRoute: '/settings/store-profile' },
+      { icon: 'images',         title: 'My Showcase',      subtitle: 'Your customer gallery', color: '#34C759', publicUrl: user?._id ? `${PROD_BASE}/showcase/${user._id}` : null,       editRoute: '/showroom-manage' },
+      { icon: 'star',           title: 'Review Link',      subtitle: 'Share to get reviews', color: '#FFD60A', publicUrl: reviewShareUrl || null,                                        editRoute: '/settings/review-links' },
     ];
-    const filtered = items.filter(i => !i.permKey || perm('content', i.permKey));
-    if (filtered.length > 0) sections.push({ id: 'my_brand', title: 'My Brand', icon: 'sparkles', color: '#C9A962', defaultExpanded: true, items: filtered });
+    // Classic menu items (no View/Share needed)
+    const menuItems: (MenuItem & { permKey?: string })[] = [
+      { permKey: 'sms_templates', icon: 'document-text', title: 'My Templates', subtitle: 'SMS & email templates', onPress: () => router.push('/settings/templates'), color: '#AF52DE' },
+      { icon: 'color-palette-outline', title: 'Card Templates', subtitle: 'Thank-you & congrats card designs', onPress: () => router.push('/settings/card-templates'), color: '#FF9500' },
+      { icon: 'mail-outline', title: 'Email Signature', subtitle: 'Copy & paste into your email', onPress: () => router.push('/email-signature' as any), color: '#5856D6' },
+    ];
+    const filteredMenu = menuItems.filter(i => !i.permKey || perm('content', i.permKey));
+    sections.push({
+      id: 'my_brand',
+      title: 'My Brand',
+      icon: 'sparkles',
+      color: '#C9A962',
+      defaultExpanded: true,
+      items: filteredMenu,
+      _brandItems: brandItems, // custom — rendered separately
+    } as any);
   }
 
   // ============================================================
@@ -699,6 +710,82 @@ export default function MoreScreen() {
   // allSections is now just 'sections' since admin is inline
   const allSections = sections;
 
+  const PROD_BASE = 'https://app.imonsocial.com';
+
+  function openExternal(url: string) {
+    if (Platform.OS === 'web') window.open(url, '_blank');
+    else Linking.openURL(url);
+  }
+
+  function shareLink(url: string, label: string) {
+    if (Platform.OS === 'web' && navigator.clipboard) {
+      navigator.clipboard.writeText(url);
+      showSimpleAlert('Copied!', `${label} link copied to clipboard`);
+    } else if (Platform.OS !== 'web') {
+      Linking.openURL(`sms:?body=${encodeURIComponent(`Check this out: ${url}`)}`);
+    }
+  }
+
+  // ── Brand card render — View + Share instead of just Edit arrow ───────────
+  const renderBrandItem = (item: { icon: string; title: string; subtitle: string; color: string; publicUrl: string | null; editRoute?: string }, index: number) => (
+    <View
+      key={`brand-${index}`}
+      style={[styles.menuItemCard, { backgroundColor: colors.surface, flexDirection: 'column', paddingBottom: 8 }]}
+    >
+      {/* Top row: icon + title + bookmark */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+        <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
+          <Ionicons name={item.icon as any} size={20} color={item.color} />
+        </View>
+        <View style={styles.menuContent}>
+          <Text style={[styles.menuTitle, { color: colors.text }]}>{item.title}</Text>
+          <Text style={[styles.menuSubtitle, { color: colors.textSecondary }]}>{item.subtitle}</Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => togglePin({ title: item.title, icon: item.icon, color: item.color, subtitle: item.subtitle })}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={styles.pinButton}
+        >
+          <Ionicons name={isPinned(item.title) ? 'bookmark' : 'bookmark-outline'} size={16}
+            color={isPinned(item.title) ? item.color : colors.textTertiary} />
+        </TouchableOpacity>
+      </View>
+      {/* Action buttons row */}
+      <View style={{ flexDirection: 'row', gap: 8, paddingTop: 8, paddingLeft: 52 }}>
+        {item.publicUrl && (
+          <TouchableOpacity
+            style={[{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: item.color + '20' }]}
+            onPress={() => { trackVisit({ title: item.title, icon: item.icon, color: item.color, subtitle: item.subtitle }); openExternal(item.publicUrl!); }}
+            data-testid={`brand-view-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+          >
+            <Ionicons name="eye-outline" size={14} color={item.color} />
+            <Text style={{ fontSize: 13, fontWeight: '700', color: item.color }}>View</Text>
+          </TouchableOpacity>
+        )}
+        {item.publicUrl && (
+          <TouchableOpacity
+            style={[{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: colors.card }]}
+            onPress={() => shareLink(item.publicUrl!, item.title)}
+            data-testid={`brand-share-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+          >
+            <Ionicons name="share-outline" size={14} color={colors.textSecondary} />
+            <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary }}>Share</Text>
+          </TouchableOpacity>
+        )}
+        {item.editRoute && (
+          <TouchableOpacity
+            style={[{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: colors.card }]}
+            onPress={() => router.push(item.editRoute as any)}
+            data-testid={`brand-edit-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+          >
+            <Ionicons name="create-outline" size={14} color={colors.textSecondary} />
+            <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary }}>Edit</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+
   const renderMenuItem = (item: MenuItem, index: number) => (
     <TouchableOpacity
       key={`${item.title}-${index}`}
@@ -767,6 +854,9 @@ export default function MoreScreen() {
         </TouchableOpacity>
         
         {/* Indented Child Item Cards */}
+        {isExpanded && (section as any)._brandItems && (section as any)._brandItems.map((item: any, index: number) =>
+          renderBrandItem(item, index)
+        )}
         {isExpanded && section.items.map((item, index) => 
           renderMenuItem(item, index)
         )}
