@@ -129,10 +129,19 @@ export default function UserDetailScreen() {
           const response = await api.post(`/admin/users/${id}/impersonate`);
           if (response.data.success) {
             await startImpersonation(response.data.user, response.data.token);
-            router.replace('/(tabs)/inbox');
+            router.replace('/(tabs)/home');
+          } else {
+            showSimpleAlert('Error', 'Impersonation returned unsuccessful response');
           }
-        } catch (error) {
-          showSimpleAlert('Error', 'Failed to impersonate user');
+        } catch (error: any) {
+          console.error('[Impersonate] error:', {
+            message: error?.message,
+            status: error?.response?.status,
+            data: error?.response?.data,
+            code: error?.code,
+          });
+          const detail = error?.response?.data?.detail || error?.message || 'Unknown error';
+          showSimpleAlert('Error', `Failed to impersonate user: ${detail}`);
         } finally {
           setImpersonating(false);
         }

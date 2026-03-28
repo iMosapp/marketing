@@ -242,7 +242,7 @@ export default function ActivityTab() {
   const loadFeed = useCallback(async () => {
     if (!userId) return;
     try {
-      const resp = await api.get(`/contacts/${userId}/master-feed?limit=100`);
+      const resp = await api.get(`/contacts/${userId}/master-feed?limit=25`);
       setFeed(resp.data.feed || []);
     } catch (e) {
       console.error('Failed to load activity feed:', e);

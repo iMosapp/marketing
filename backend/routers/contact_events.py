@@ -100,12 +100,14 @@ KEY_ACTIONS = [
 
 
 @router.get("/{user_id}/master-feed")
-async def get_master_feed(user_id: str, limit: int = 50, skip: int = 0):
+async def get_master_feed(user_id: str, limit: int = 25, skip: int = 0):
     """
     Aggregate a social-media-style feed across ALL contacts for a user.
     Returns recent events. Campaign/suggested data loads separately via dedicated endpoints.
     """
     db = get_db()
+    # Hard cap to prevent slow queries crashing the server
+    limit = min(limit, 30)
 
     # 1) Recent events across all contacts (newest first)
     recent_events = await db.contact_events.find(

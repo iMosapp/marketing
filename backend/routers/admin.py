@@ -1713,13 +1713,25 @@ async def impersonate_user(user_id: str):
     for k, v in user_data.items():
         if isinstance(v, ObjectId):
             user_data[k] = str(v)
-    
-    return {
+
+    # Use same robust serializer as /auth/login to handle nested ObjectIds and datetimes
+    import json as json_mod
+    from fastapi.responses import JSONResponse
+
+    def _serialize(obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        if isinstance(obj, ObjectId):
+            return str(obj)
+        raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
+    response_payload = {
         "success": True,
         "token": impersonation_token,
         "user": user_data,
         "message": f"Now impersonating {user.get('name', 'user')}"
     }
+    return JSONResponse(content=json_mod.loads(json_mod.dumps(response_payload, default=_serialize)))
 
 
 # ============= PENDING USERS =============
