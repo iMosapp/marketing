@@ -35,6 +35,15 @@ const getDefaultRoute = (role?: string): string => {
   return '/(tabs)/home';  // Everyone starts at Home  - the daily command center
 };
 
+/** Gate: first-time / incomplete profiles land on Hub to prompt profile setup.
+ *  Once they have photo + bio (or onboarding_complete === true), go to home. */
+const getProfileGatedRoute = (user: any): string => {
+  const hasPhoto = !!(user?.photo_url || user?.photo_path);
+  const hasBio   = !!(user?.persona?.bio || user?.bio);
+  const complete  = user?.onboarding_complete === true || (hasPhoto && hasBio);
+  return complete ? getDefaultRoute(user?.role) : '/(tabs)/more';
+};
+
 export default function LoginScreen() {
   const { colors: themeColors, loadTheme } = useThemeStore();
   // Force light theme for public login page
@@ -192,13 +201,20 @@ export default function LoginScreen() {
         
         const defaultRoute = getDefaultRoute(loggedInUser?.role);
         
+        // First-login / incomplete profile gate:
+        // If the user hasn't completed their profile (no photo + no bio),
+        // send them to Hub to set up. Once complete, future logins go to home.
+        const hasPhoto = !!(loggedInUser?.photo_url || (loggedInUser as any)?.photo_path);
+        const hasBio = !!((loggedInUser as any)?.persona?.bio || (loggedInUser as any)?.bio);
+        const profileComplete = loggedInUser?.onboarding_complete === true || (hasPhoto && hasBio);
+        const landingRoute = getProfileGatedRoute(loggedInUser);
+        
         // After successful login, check if we should offer biometric setup
         if (biometricStatus?.isAvailable && !biometricStatus?.isEnabled) {
           setPendingCredentials({ email, password });
           setShowBiometricPrompt(true);
         } else {
-          // Navigate based on user role
-          router.replace(defaultRoute as any);
+          router.replace(landingRoute as any);
         }
         return; // Success — exit the retry loop
       } catch (error: any) {
@@ -281,8 +297,7 @@ export default function LoginScreen() {
           return;
         }
         
-        router.replace(getDefaultRoute(loggedInUser?.role) as any);
-      } else if (result.error) {
+        router.replace(getProfileGatedRoute(loggedInUser) as any);
         // Only show error if user didn't cancel
         if (!result.error.includes('cancel') && !result.error.includes('Cancel')) {
           showAlert('Authentication Failed', result.error);
@@ -307,11 +322,10 @@ export default function LoginScreen() {
       showAlert(
         'Success',
         `${biometricStatus?.biometricLabel} login enabled! You can now login faster.`,
-        [{ text: 'OK', onPress: () => router.replace(defaultRoute as any) }]
+        [{ text: 'OK', onPress: () => router.replace(getProfileGatedRoute(loggedInUser) as any) }]
       );
     } else {
-      // Still navigate even if enabling failed
-      router.replace(defaultRoute as any);
+      router.replace(getProfileGatedRoute(loggedInUser) as any);
     }
     
     setShowBiometricPrompt(false);
@@ -322,7 +336,7 @@ export default function LoginScreen() {
     setShowBiometricPrompt(false);
     setPendingCredentials(null);
     const loggedInUser = useAuthStore.getState().user;
-    router.replace(getDefaultRoute(loggedInUser?.role) as any);
+    router.replace(getProfileGatedRoute(loggedInUser) as any);
   };
   
   return (

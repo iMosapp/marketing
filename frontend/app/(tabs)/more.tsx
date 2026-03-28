@@ -816,6 +816,55 @@ export default function MoreScreen() {
           </View>
         )}
 
+        {/* ── Profile Setup Banner — shown until photo + bio are complete ── */}
+        {!isImpersonating && (() => {
+          const hasPhoto = !!(user?.photo_url || (user as any)?.photo_path);
+          const hasBio   = !!((user as any)?.persona?.bio || (user as any)?.bio);
+          const complete  = (user as any)?.onboarding_complete === true || (hasPhoto && hasBio);
+          if (complete) return null;
+          const missing = [!hasPhoto && 'profile photo', !hasBio && 'bio'].filter(Boolean);
+          return (
+            <TouchableOpacity
+              style={styles.onboardingBanner}
+              onPress={() => router.push('/my-account')}
+              activeOpacity={0.92}
+              data-testid="profile-setup-banner"
+            >
+              {/* Gold accent bar */}
+              <View style={styles.onboardingAccent} />
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <Ionicons name="sparkles" size={18} color="#C9A962" />
+                  <Text style={styles.onboardingTitle}>Set Up Your Profile First</Text>
+                </View>
+                <Text style={styles.onboardingBody}>
+                  Your profile powers your Digital Card, Showcase, Link Page, and Landing Page — everything customers see about you. Take 2 minutes to make it shine.
+                </Text>
+                {missing.length > 0 && (
+                  <View style={styles.onboardingChecklist}>
+                    {!hasPhoto && (
+                      <View style={styles.onboardingCheckRow}>
+                        <Ionicons name="camera-outline" size={15} color="#FF9500" />
+                        <Text style={styles.onboardingCheckText}>Add a profile photo</Text>
+                      </View>
+                    )}
+                    {!hasBio && (
+                      <View style={styles.onboardingCheckRow}>
+                        <Ionicons name="document-text-outline" size={15} color="#FF9500" />
+                        <Text style={styles.onboardingCheckText}>Write your bio</Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+                <View style={styles.onboardingCTA}>
+                  <Text style={styles.onboardingCTAText}>Complete My Profile</Text>
+                  <Ionicons name="arrow-forward" size={16} color="#000" />
+                </View>
+              </View>
+            </TouchableOpacity>
+          );
+        })()}
+
         {/* Profile Card — cover photo background, bell only */}
         <View style={styles.profileCardContainer}>
           <TouchableOpacity
@@ -1326,6 +1375,67 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontSize: 15,
     color: 'rgba(255,255,255,0.8)',
     marginTop: 2,
+  },
+  // Onboarding setup banner
+  onboardingBanner: {
+    marginHorizontal: 16,
+    marginBottom: 12,
+    marginTop: 4,
+    borderRadius: 16,
+    backgroundColor: '#1A1400',
+    borderWidth: 1,
+    borderColor: '#C9A96240',
+    overflow: 'hidden',
+    flexDirection: 'row',
+    padding: 16,
+    gap: 0,
+  },
+  onboardingAccent: {
+    width: 4,
+    borderRadius: 2,
+    backgroundColor: '#C9A962',
+    marginRight: 14,
+    alignSelf: 'stretch',
+  },
+  onboardingTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#C9A962',
+  },
+  onboardingBody: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.75)',
+    lineHeight: 20,
+    marginBottom: 10,
+  },
+  onboardingChecklist: {
+    gap: 6,
+    marginBottom: 12,
+  },
+  onboardingCheckRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  onboardingCheckText: {
+    fontSize: 14,
+    color: '#FF9500',
+    fontWeight: '600',
+  },
+  onboardingCTA: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#C9A962',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  onboardingCTAText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#000',
   },
   profileCardContainer: {
     marginHorizontal: 16,

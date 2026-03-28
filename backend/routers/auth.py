@@ -804,26 +804,23 @@ async def admin_password_reset(data: dict):
 @router.post("/persona/{user_id}")
 async def save_persona(user_id: str, persona: UserPersona):
     """Save the full profile/persona settings for a user.
-    
-    This data powers:
-    - Digital Card bio
-    - Link Page bio
-    - Landing Page bio
-    - Jessi AI responses (AI clone system prompt)
-    - Automated Twilio text campaigns
+    Auto-marks onboarding_complete=True once photo + bio are present.
     """
-    result = await get_db().users.update_one(
-        {"_id": ObjectId(user_id)},
-        {"$set": {
-            "persona": persona.dict(),
-            "onboarding_complete": True
-        }}
-    )
+    db = get_db()
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"photo_url": 1, "photo_path": 1, "onboarding_complete": 1})
     
-    if result.modified_count == 0:
+    has_photo = bool((user or {}).get("photo_url") or (user or {}).get("photo_path"))
+    has_bio   = bool(persona.bio and len(persona.bio.strip()) > 10)
+    mark_complete = has_photo and has_bio
+    
+    update = {
+        "persona": persona.dict(),
+        "onboarding_complete": True if mark_complete else (user or {}).get("onboarding_complete", False),
+    }
+    result = await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": update})
+    if result.modified_count == 0 and result.matched_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    return {"message": "Profile saved successfully"}
+    return {"message": "Profile saved successfully", "onboarding_complete": mark_complete}
 
 
 @router.get("/persona/{user_id}/ai-prompt")

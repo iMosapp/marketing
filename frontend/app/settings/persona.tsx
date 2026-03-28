@@ -83,7 +83,7 @@ export default function PersonaSettings() {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
   const router = useRouter();
-  const { user, updateUser } = useAuthStore();
+  const { user, updateUser, setUser } = useAuthStore();
 const { showToast } = useToast();
     const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -147,9 +147,12 @@ const { showToast } = useToast();
     if (!user?._id) return;
     try {
       setSaving(true);
-      await api.put(`/users/${user._id}/persona`, settings);
+      const res = await api.put(`/users/${user._id}/persona`, settings);
+      // Sync onboarding_complete back to the store so the Hub banner hides immediately
+      if (res.data?.onboarding_complete) {
+        setUser({ ...user, onboarding_complete: true } as any);
+      }
       showToast('Your profile has been saved!');
-      // Always navigate back to My Presence after saving
       router.replace('/my-account' as any);
     } catch (error) {
       console.error('Error saving persona:', error);

@@ -200,8 +200,14 @@ async def upload_photo(user_id: str, file: UploadFile = File(...)):
         "photo_thumb_path": result["thumbnail_path"],
         "photo_avatar_path": result["avatar_path"],
         "updated_at": datetime.utcnow(),
-        "og_image_path": None,  # Invalidate cached OG image so it regenerates with new photo
+        "og_image_path": None,
     }
+    
+    # Check if uploading the photo now completes onboarding (photo + bio = done)
+    user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"persona": 1, "bio": 1, "onboarding_complete": 1})
+    has_bio = bool((user_doc or {}).get("persona", {}).get("bio") or (user_doc or {}).get("bio"))
+    if has_bio and not (user_doc or {}).get("onboarding_complete"):
+        update["onboarding_complete"] = True
     
     r = await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": update})
     if r.modified_count == 0:
@@ -286,8 +292,6 @@ async def upload_cover_photo(user_id: str, file: UploadFile = File(...)):
     cover_url = f"/api/images/{result['original_path']}"
     await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"cover_photo_url": cover_url}})
     return {"success": True, "cover_url": cover_url}
-
-
 @router.post("/{user_id}/generate-bio")
 async def generate_bio(user_id: str, data: dict):
     """Generate a professional bio using AI based on user's personal info"""
