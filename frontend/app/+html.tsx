@@ -82,23 +82,15 @@ export default function Root({ children }: PropsWithChildren) {
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              // On page load: if a broken service worker exists and we're on the login/root page, kill it.
-              // After unregistering, reload ONCE so the page is no longer under SW control before login.
+              // On page load: unregister any stale service workers on the login/root page.
+              // NOTE: We do NOT reload after unregistering — our current sw.js never intercepts
+              // API calls or POST requests, so a stale SW cannot block login. The reload was
+              // removed because it created a race condition on mobile: if the user filled in
+              // credentials before the async SW check completed, the reload aborted the login request.
               if ('serviceWorker' in navigator && (window.location.pathname.includes('login') || window.location.pathname === '/')) {
                 navigator.serviceWorker.getRegistrations().then(function(regs) {
-                  if (regs.length > 0) {
-                    Promise.all(regs.map(function(r) { return r.unregister(); })).then(function() {
-                      // Reload once so the old SW stops intercepting requests immediately
-                      if (!sessionStorage.getItem('sw_clean_reload')) {
-                        sessionStorage.setItem('sw_clean_reload', '1');
-                        window.location.reload();
-                      }
-                    });
-                  } else {
-                    // No active SW — safe to clear the flag for next time
-                    sessionStorage.removeItem('sw_clean_reload');
-                  }
-                });
+                  regs.forEach(function(r) { r.unregister(); });
+                }).catch(function() {});
               }
             `,
           }}

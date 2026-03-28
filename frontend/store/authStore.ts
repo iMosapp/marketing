@@ -166,16 +166,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const response = await authAPI.login(email, password);
       const { user, token, partner_branding } = response;
       
-      await AsyncStorage.setItem('auth_token', token);
-      await AsyncStorage.setItem('user', JSON.stringify(user));
-      // Backup to IndexedDB (survives iOS PWA localStorage purges)
+      // Persist session — wrapped in try/catch because iOS WebKit throws SecurityError
+      // when localStorage is blocked (strict privacy settings, some cold-start edge cases).
+      // Storage failure is non-fatal: Zustand in-memory state + server-side cookie handle the session.
+      try {
+        await AsyncStorage.setItem('auth_token', token);
+        await AsyncStorage.setItem('user', JSON.stringify(user));
+        if (partner_branding) {
+          await AsyncStorage.setItem('partner_branding', JSON.stringify(partner_branding));
+        } else {
+          await AsyncStorage.removeItem('partner_branding');
+        }
+      } catch (storageErr: any) {
+        console.warn('[Auth] localStorage blocked (iOS privacy setting?) — session in memory only:', storageErr?.message);
+        // IndexedDB is a separate API and often works even when localStorage is blocked
+      }
+      // Always attempt IndexedDB backup (survives iOS PWA localStorage purges)
       _idbSet('imonsocial_token', token).catch(() => {});
       _idbSet('imonsocial_user', JSON.stringify(user)).catch(() => {});
-      if (partner_branding) {
-        await AsyncStorage.setItem('partner_branding', JSON.stringify(partner_branding));
-      } else {
-        await AsyncStorage.removeItem('partner_branding');
-      }
       
       set({ user: normalizeUser(user), token, partnerBranding: partner_branding || null, isAuthenticated: true, isLoading: false });
       

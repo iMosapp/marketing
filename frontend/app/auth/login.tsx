@@ -205,11 +205,23 @@ export default function LoginScreen() {
         // Always log the raw error so we can diagnose unexpected post-login crashes
         console.error('[Login] catch error:', {
           message: error?.message,
+          name: error?.name,
           status: error?.response?.status,
           data: error?.response?.data,
           code: error?.code,
           stack: error?.stack?.slice?.(0, 500),
         });
+        // Report to backend error log for visibility in admin dashboard
+        try {
+          import('../services/errorReporter').then(({ reportError }) => {
+            reportError({
+              error_message: `Login error on mobile: ${error?.name || 'unknown'} — ${error?.message || 'no message'} | code: ${error?.code || 'none'} | status: ${error?.response?.status || 'none'}`,
+              error_type: 'js_error',
+              extra: { code: error?.code, name: error?.name, status: error?.response?.status },
+            });
+          }).catch(() => {});
+        } catch {}
+
         const status = error?.response?.status;
         // Only retry on network/connection errors, not on 401 (wrong password)
         if (status === 401 || retries >= maxRetries) {
@@ -222,11 +234,13 @@ export default function LoginScreen() {
             setLoginError('Your account is not active. Please contact your administrator.');
           } else if (status === 502 || status === 503 || status === 504) {
             setLoginError('Server is temporarily unavailable. Please try again in a moment.');
-          } else if (error?.message?.includes('Network') || error?.message?.includes('timeout') || error?.code === 'ERR_NETWORK' || error?.code === 'ECONNABORTED') {
+          } else if (error?.message?.includes('Network') || error?.message?.includes('network') || error?.message?.includes('timeout') || error?.code === 'ERR_NETWORK' || error?.code === 'ECONNABORTED') {
             setLoginError('Connection issue. Please check your internet and try again.');
+          } else if (error?.name === 'SecurityError' || error?.message?.includes('SecurityError') || error?.message?.includes('insecure') || error?.message?.includes('storage')) {
+            // iOS blocks localStorage in certain privacy/context conditions
+            setLoginError('Storage access blocked. Please check your browser privacy settings or try a different browser.');
           } else if (!status) {
-            // A JavaScript runtime error or unknown network failure
-            setLoginError('Something went wrong. Please close and reopen the app, then try again.');
+            setLoginError(`Something went wrong (${error?.name || error?.code || 'unknown'}). Please try again or contact support.`);
           } else {
             setLoginError('Something went wrong. Please try again.');
           }
