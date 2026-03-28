@@ -138,6 +138,7 @@ export const Avatar: React.FC<AvatarProps> = ({
           style={{ width: px, height: px }}
           contentFit="cover"
           recyclingKey={resolvedUrl}
+          placeholder={null}
           onError={() => setImgError(true)}
         />
       </View>
