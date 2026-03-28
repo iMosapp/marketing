@@ -603,15 +603,6 @@ export default function MyAccountScreen() {
                           <Text style={[s.assetActionTxt, { color: '#8E8E93' }]}>Copy</Text>
                         </TouchableOpacity>
                       )}
-                      {asset.id === 'review' && (
-                        <TouchableOpacity
-                          style={[s.assetActionBtn, { backgroundColor: '#38383A' }]}
-                          onPress={() => setShowShareModal(true)}
-                        >
-                          <Ionicons name="share-outline" size={13} color="#8E8E93" />
-                          <Text style={[s.assetActionTxt, { color: '#8E8E93' }]}>Share</Text>
-                        </TouchableOpacity>
-                      )}
                     </View>
                   </TouchableOpacity>
                 ))}
