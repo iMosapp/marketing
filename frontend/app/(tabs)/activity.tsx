@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet, Image,
+  View, Text, FlatList, TouchableOpacity, StyleSheet,
   ActivityIndicator, RefreshControl, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,8 @@ import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import api from '../../services/api';
+import { Avatar } from '../../components/Avatar';
+import { resolveContactPhotoUrl } from '../../utils/photoUrl';
 
 const formatFeedTime = (ts: string) => {
   if (!ts) return '';
@@ -71,26 +73,6 @@ const EVENT_ICON: Record<string, string> = {
   referral_made: 'people',
 };
 
-// Avatar component
-const Avatar = ({ uri, name, size, borderRadius, color }: { uri?: string | null; name?: string; size: number; borderRadius: number; color?: string }) => {
-  const accent = color || '#C9A962';
-  if (uri) {
-    if (Platform.OS === 'web') {
-      return (
-        <View style={{ width: size, height: size, borderRadius }}>
-          <img src={uri} style={{ width: size, height: size, borderRadius, objectFit: 'cover', display: 'block' }} loading="lazy" />
-        </View>
-      );
-    }
-    return <Image source={{ uri }} style={{ width: size, height: size, borderRadius }} />;
-  }
-  return (
-    <View style={{ width: size, height: size, borderRadius, backgroundColor: accent + '18', alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ fontSize: size * 0.4, fontWeight: '700', color: accent }}>{name?.[0] || '?'}</Text>
-    </View>
-  );
-};
-
 // Get a human-readable label for any event
 const getEventLabel = (item: any) => {
   if (ENGAGEMENT_LABELS[item.event_type]) return ENGAGEMENT_LABELS[item.event_type];
@@ -145,7 +127,7 @@ const SingleEventCard = ({ item, colors, router }: any) => {
       data-testid="feed-single-card"
     >
       <View style={s.singleHeader}>
-        <Avatar uri={c.photo} name={c.name} size={44} borderRadius={22} color={item.color} />
+        <Avatar uri={c.photo} name={c.name} sizePx={44} borderRadius={22} color={item.color} />
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text style={[{ fontSize: 15, color: colors.text }]} numberOfLines={2}>
             <Text style={{ fontWeight: '700' }}>{c.name || 'Customer'}</Text>
@@ -177,7 +159,7 @@ const GroupedContactCard = ({ group, colors, router }: any) => {
     >
       {/* Contact header with photo */}
       <View style={s.groupHeader}>
-        <Avatar uri={c.photo} name={c.name} size={48} borderRadius={24} color={firstEvent.color} />
+        <Avatar uri={c.photo} name={c.name} sizePx={48} borderRadius={24} color={firstEvent.color} />
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text style={[s.groupName, { color: colors.text }]} numberOfLines={1}>{c.name || 'Customer'}</Text>
           <Text style={{ fontSize: 13, color: colors.textTertiary, marginTop: 1 }}>

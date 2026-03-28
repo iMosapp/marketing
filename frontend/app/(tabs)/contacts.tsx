@@ -21,6 +21,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { contactsAPI, messagesAPI, tagsAPI } from '../../services/api';
 import { showSimpleAlert, showConfirm } from '../../services/alert';
+import { Avatar } from '../../components/Avatar';
 
 interface Tag {
   _id: string;
@@ -322,15 +323,12 @@ export default function ContactsScreen() {
           {isSelected && <Ionicons name="checkmark" size={16} color={colors.text} />}
         </View>
       )}
-      {(item.photo_thumbnail || item.photo_url) ? (
-        <Image source={{ uri: item.photo_thumbnail || item.photo_url }} style={styles.photoAvatar} />
-      ) : (
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {item.first_name?.[0] || ''}{item.last_name?.[0] || ''}
-          </Text>
-        </View>
-      )}
+      <Avatar
+        photo={item.photo_thumbnail || item.photo_url}
+        name={`${item.first_name || ''} ${item.last_name || ''}`.trim()}
+        size="md"
+        style={styles.photoAvatar as any}
+      />
       
       <View style={styles.contactInfo}>
         <Text style={[styles.contactName, { color: colors.text }]} numberOfLines={1}>

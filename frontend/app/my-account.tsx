@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Image,
   ActivityIndicator,
   Platform,
   Linking,
@@ -15,12 +14,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { showSimpleAlert, showConfirm } from '../services/alert';
 import { WebModal } from '../components/WebModal';
 import api from '../services/api';
+import { ProfilePhotoUpload } from '../components/account/ProfilePhotoUpload';
+import { resolveUserPhotoUrl } from '../utils/photoUrl';
+import { Avatar } from '../components/Avatar';
 
 const PROD_BASE = 'https://app.imonsocial.com';
 
@@ -29,8 +30,6 @@ export default function MyAccountScreen() {
   const styles = getStyles(colors);
   const router = useRouter();
   const { user, setUser } = useAuthStore();
-  const [uploading, setUploading] = useState(false);
-  const [photoUrl, setPhotoUrl] = useState(user?.photo_url || null);
   const [copiedLink, setCopiedLink] = useState(false);
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
   const [storeName, setStoreName] = useState<string | null>(null);
@@ -202,208 +201,19 @@ export default function MyAccountScreen() {
       const response = await api.get(`/users/${user?._id}`);
       if (response.data) {
         const fresh = response.data;
-        setPhotoUrl(fresh.photo_url || null);
-        // Sync auth store so all pages (digital card, showroom, etc.) see fresh photo
         const merged = { ...user, ...fresh };
         setUser(merged);
-        // Persist to AsyncStorage so mobile reloads get the latest photo_url (not stale base64)
-        try {
-          const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
-          await AsyncStorage.setItem('user', JSON.stringify(merged)).catch(() => {});
-        } catch {}
+        try { await AsyncStorage.setItem('user', JSON.stringify(merged)).catch(() => {}); } catch {}
       }
     } catch (error) {
       console.error('Error refreshing user data:', error);
     }
   };
 
-  const pickImage = async () => {
-    try {
-      // On web, use native file input for better compatibility
-      if (Platform.OS === 'web') {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'image/*';
-        input.onchange = async (e: any) => {
-          const file = e.target.files[0];
-          if (file) {
-            setUploading(true);
-            const reader = new FileReader();
-            reader.onloadend = async () => {
-              const base64Data = reader.result as string;
-              await uploadPhotoBase64(base64Data);
-            };
-            reader.onerror = () => {
-              setUploading(false);
-              showSimpleAlert('Error', 'Failed to read image file');
-            };
-            reader.readAsDataURL(file);
-          }
-        };
-        input.click();
-        return;
-      }
-
-      // Request permissions (native only)
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        showSimpleAlert('Permission Required', 'Please allow access to your photo library to upload a profile picture.');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-        base64: true,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        await uploadPhoto(result.assets[0]);
-      }
-    } catch (error) {
-      console.error('Error picking image:', error);
-      showSimpleAlert('Error', 'Failed to select image');
-    }
-  };
-
-  // Upload photo from base64 string (for web) — sends to the proper pipeline endpoint
-  const uploadPhotoBase64 = async (base64Data: string) => {
-    if (!user?._id) return;
-
-    try {
-      // Convert base64 data URL to a Blob for multipart upload
-      const [header, b64] = base64Data.split(',');
-      const mimeMatch = header.match(/:(.*?);/);
-      const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-      const binary = atob(b64);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      const blob = new Blob([bytes], { type: mime });
-
-      const formData = new FormData();
-      formData.append('file', blob, `profile.${mime.split('/')[1] || 'jpg'}`);
-
-      const response = await api.post(`/profile/${user._id}/photo`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      if (response.data?.photo_url) {
-        setPhotoUrl(response.data.photo_url);
-        await refreshUserData(); // sync all photo fields from DB
-        showSimpleAlert('Success', 'Profile photo updated!');
-      }
-    } catch (error: any) {
-      console.error('Error uploading photo:', error);
-      showSimpleAlert('Error', error?.response?.data?.detail || 'Failed to upload photo. Please try again.');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const takePhoto = async () => {
-    try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
-        showSimpleAlert('Permission Required', 'Please allow camera access to take a profile picture.');
-        return;
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-        base64: true,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        await uploadPhoto(result.assets[0]);
-      }
-    } catch (error) {
-      console.error('Error taking photo:', error);
-      showSimpleAlert('Error', 'Failed to take photo');
-    }
-  };
-
-  const uploadPhoto = async (asset: ImagePicker.ImagePickerAsset) => {
-    if (!user?._id) return;
-
-    setUploading(true);
-    try {
-      // Build a proper multipart upload — goes through the WebP pipeline
-      const formData = new FormData();
-      if (Platform.OS === 'web' && asset.base64) {
-        // Web: convert base64 to Blob
-        const mime = 'image/jpeg';
-        const binary = atob(asset.base64);
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-        const blob = new Blob([bytes], { type: mime });
-        formData.append('file', blob, 'profile.jpg');
-      } else {
-        // Native: use URI directly
-        const uri = asset.uri;
-        const ext = uri.split('.').pop() || 'jpg';
-        formData.append('file', { uri, name: `profile.${ext}`, type: `image/${ext}` } as any);
-      }
-
-      const response = await api.post(`/profile/${user._id}/photo`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      if (response.data?.photo_url) {
-        setPhotoUrl(response.data.photo_url);
-        await refreshUserData(); // sync all photo fields from DB
-        showSimpleAlert('Success', 'Profile photo updated!');
-      }
-    } catch (error: any) {
-      console.error('Error uploading photo:', error);
-      showSimpleAlert('Error', error?.response?.data?.detail || 'Failed to upload photo. Please try again.');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const removePhoto = () => {
-    showConfirm(
-      'Remove Photo',
-      'Are you sure you want to remove your profile photo?',
-      async () => {
-        if (!user?._id) return;
-        
-        setUploading(true);
-        try {
-          await api.patch(`/users/${user._id}`, {
-            photo_url: null,
-          });
-          setPhotoUrl(null);
-          setUser({ ...user, photo_url: null });
-          showSimpleAlert('Done', 'Profile photo removed');
-        } catch (error) {
-          showSimpleAlert('Error', 'Failed to remove photo');
-        } finally {
-          setUploading(false);
-        }
-      }
-    );
-  };
-
-  const showPhotoOptions = () => {
-    if (Platform.OS === 'web') {
-      // On web, just use the file picker
-      pickImage();
-    } else {
-      // On native, show options
-      showConfirm(
-        'Change Profile Photo',
-        'Choose how to update your photo',
-        () => takePhoto(),
-        () => pickImage(),
-        'Take Photo',
-        'Choose from Library'
-      );
-    }
+  const handlePhotoUpdated = async (newPhotoUrl: string | null) => {
+    if (!user) return;
+    setUser({ ...user, photo_url: newPhotoUrl });
+    await refreshUserData(); // pull all fresh photo paths from DB
   };
 
   const getInitials = () => {
@@ -471,28 +281,13 @@ export default function MyAccountScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Profile Photo Section */}
         <View style={[styles.photoSection, { borderBottomColor: colors.border }]}>
-          <TouchableOpacity 
-            style={styles.photoContainer} 
-            onPress={showPhotoOptions}
-            disabled={uploading}
-            data-testid="profile-photo-button"
-          >
-            {uploading ? (
-              <View style={styles.photoPlaceholder}>
-                <ActivityIndicator size="large" color="#007AFF" />
-              </View>
-            ) : photoUrl ? (
-              <Image source={{ uri: photoUrl }} style={styles.profilePhoto} />
-            ) : (
-              <View style={styles.photoPlaceholder}>
-                <Text style={styles.photoInitials}>{getInitials()}</Text>
-              </View>
-            )}
-            <View style={[styles.cameraButton, { borderColor: colors.bg }]}>
-              <Ionicons name="camera" size={16} color={colors.text} />
-            </View>
-          </TouchableOpacity>
-          
+          {user && (
+            <ProfilePhotoUpload
+              user={user as any}
+              colors={colors}
+              onPhotoUpdated={handlePhotoUpdated}
+            />
+          )}
           <Text style={[styles.userName, { color: colors.text }]}>{user?.name || 'Guest'}</Text>
           <Text style={[styles.userEmail, { color: colors.textSecondary }]}>{user?.email || ''}</Text>
           
@@ -504,20 +299,6 @@ export default function MyAccountScreen() {
                  user.role === 'org_admin' ? 'Org Admin' : 
                  user.role === 'store_manager' ? 'Manager' : 'User'}
               </Text>
-            </View>
-          )}
-
-          {/* Photo action buttons - only show when photo exists */}
-          {photoUrl && (
-            <View style={styles.photoActions}>
-              <TouchableOpacity style={[styles.photoActionBtn, { backgroundColor: colors.card }]} onPress={showPhotoOptions}>
-                <Ionicons name="refresh" size={18} color="#007AFF" />
-                <Text style={styles.photoActionText}>Change</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.photoActionBtn, { backgroundColor: colors.card }]} onPress={removePhoto}>
-                <Ionicons name="trash" size={18} color="#FF3B30" />
-                <Text style={[styles.photoActionText, { color: '#FF3B30' }]}>Remove</Text>
-              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -650,12 +431,8 @@ export default function MyAccountScreen() {
               data-testid="card-preview-panel"
             >
               <View style={{ alignItems: 'center' }}>
-                <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: '#007AFF', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
-                  {photoUrl ? (
-                    <Image source={{ uri: photoUrl }} style={{ width: 52, height: 52, borderRadius: 26 }} />
-                  ) : (
-                    <Text style={{ color: '#fff', fontWeight: '700', fontSize: 21 }}>{getInitials()}</Text>
-                  )}
+                <View style={{ marginBottom: 8 }}>
+                  <Avatar photo={resolveUserPhotoUrl(user as any)} name={user?.name || ''} size="xl" />
                 </View>
                 <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>{user?.name || 'Your Name'}</Text>
                 <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>Sales Professional</Text>

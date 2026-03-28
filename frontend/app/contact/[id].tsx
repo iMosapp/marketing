@@ -35,17 +35,9 @@ import { useToast } from '../../components/common/Toast';
 import VoiceInput from '../../components/VoiceInput';
 import CampaignJourney from '../../components/CampaignJourney';
 import { SoldWorkflowModal } from '../../components/SoldWorkflowModal';
+import { resolvePhotoUrl } from '../../utils/photoUrl';
 
 const IS_WEB = Platform.OS === 'web';
-
-// Resolve relative photo paths to absolute URLs for native/mobile
-const PHOTO_BASE_URL = IS_WEB ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '');
-function resolvePhotoUrl(url: string | null | undefined): string {
-  if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;
-  // Relative path like /api/images/... — prepend backend URL
-  return `${PHOTO_BASE_URL}${url}`;
-}
 
 interface CustomDateField {
   name: string;
