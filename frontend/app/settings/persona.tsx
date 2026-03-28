@@ -149,6 +149,8 @@ const { showToast } = useToast();
       setSaving(true);
       await api.put(`/users/${user._id}/persona`, settings);
       showToast('Your profile has been saved!');
+      // Always navigate back to My Presence after saving
+      router.replace('/my-account' as any);
     } catch (error) {
       console.error('Error saving persona:', error);
       showAlert('Error', 'Failed to save settings');
