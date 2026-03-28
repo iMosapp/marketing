@@ -702,7 +702,8 @@ async def hard_delete_user(user_id: str, x_user_id: str = Header(None, alias="X-
         "message": "User permanently deleted",
         "contacts_reassigned": contacts_updated.modified_count,
     }
-async def convert_to_individual(user_id: str, x_user_id: str = Header(None, alias="X-User-ID")):
+# convert_to_individual: internal helper — called programmatically, not exposed as HTTP route
+async def convert_to_individual_helper(user_id: str, x_user_id: str = None):
     """Convert a deactivated org user to an individual account with their personal data.
     Restores archived personal contacts and strips org association."""
     db = get_db()
@@ -776,7 +777,7 @@ async def convert_to_individual(user_id: str, x_user_id: str = Header(None, alia
 
 
 @router.post("/users/{user_id}/reactivate")
-async def reactivate_user(user_id: str, x_user_id: str = Header(None, alias="X-User-ID")):
+async def reactivate_user_post(user_id: str, x_user_id: str = Header(None, alias="X-User-ID")):
     """Reactivate a deactivated user and restore their hidden contacts"""
     db = get_db()
     requesting_user = await get_requesting_user(x_user_id)

@@ -115,6 +115,17 @@ New components created under `components/account/`:
 - `my-account.tsx` 1,533 → 424 lines
 - 5 new focused components under `components/account/`
 
+### Pre-Deployment Health Check ✅ PASSED (Mar 28, 2026) — LATEST
+Full regression test: **21/21 backend tests + 5/5 frontend tests = 100%**
+
+Minor fixes applied post-testing:
+- `admin_helpers.py` + `admin.py`: `APP_URL` now reads from `PUBLIC_FACING_URL`/`APP_URL` env var (was hardcoded)
+- `admin_users.py`: Renamed `convert_to_individual` to `convert_to_individual_helper` (was missing @router decorator — orphaned function)
+- `admin_users.py`: Renamed duplicate `reactivate_user` (POST) to `reactivate_user_post` (naming clarity, both routes still work)
+- `profile.py`: `upload_image()` now returns 400 on corrupted/invalid image files (was 500)
+
+**CLEARED FOR DEPLOYMENT** ✅
+
 ### Phase 4 — Backend Admin Service Layer ✅ DONE (Mar 28, 2026) -- LATEST
 Split `admin.py` from **4,058 lines → 3 focused files + shared helpers**:
 

@@ -182,7 +182,10 @@ async def upload_photo(user_id: str, file: UploadFile = File(...)):
     
     # Use the optimized image pipeline — compress → WebP → thumbnail → avatar → cache
     from utils.image_storage import upload_image
-    result = await upload_image(contents, prefix="profiles", entity_id=user_id)
+    try:
+        result = await upload_image(contents, prefix="profiles", entity_id=user_id)
+    except (OSError, Exception) as e:
+        raise HTTPException(status_code=400, detail=f"Image processing failed: invalid or corrupted image file")
     if not result:
         raise HTTPException(status_code=500, detail="Image processing failed")
     
