@@ -598,6 +598,27 @@ export default function MyAccountScreen() {
 
         {/* ── Account Info ── */}
         <AccountInfoCard user={user} colors={colors} />
+
+        {/* ── Sign Out ── */}
+        <View style={{ paddingHorizontal: 16, marginTop: 24, marginBottom: 8 }}>
+          <TouchableOpacity
+            style={[s.settingsList, { backgroundColor: '#FF3B3010', borderWidth: 1, borderColor: '#FF3B3025' }]}
+            onPress={async () => {
+              const authStore = await import('../store/authStore');
+              await authStore.useAuthStore.getState().logout();
+              router.replace('/auth/login' as any);
+            }}
+            testID="logout-btn"
+          >
+            <View style={[s.settingsRow, { borderBottomWidth: 0 }]}>
+              <View style={[s.settingsIcon, { backgroundColor: '#FF3B3020' }]}>
+                <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
+              </View>
+              <Text style={[s.settingsLabel, { color: '#FF3B30' }]}>Sign Out</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
         <View style={{ height: 32 }} />
       </ScrollView>
 

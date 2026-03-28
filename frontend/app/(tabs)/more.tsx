@@ -849,20 +849,6 @@ export default function MoreScreen() {
             </View>
             <View style={styles.profileActions}>
               <NotificationBell />
-              <TouchableOpacity
-                style={styles.profileActionIcon}
-                onPress={(e) => { e.stopPropagation(); toggleTheme(); }}
-                data-testid="theme-toggle-btn"
-              >
-                <Ionicons name={themeMode === 'dark' ? 'moon' : 'sunny'} size={18} color={themeMode === 'dark' ? '#5856D6' : '#FF9500'} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.profileActionIcon}
-                onPress={(e) => { e.stopPropagation(); handleLogout(); }}
-                data-testid="logout-button"
-              >
-                <Ionicons name="log-out-outline" size={18} color="#FF3B30" />
-              </TouchableOpacity>
             </View>
           </TouchableOpacity>
           <View style={styles.profileCardHint}>

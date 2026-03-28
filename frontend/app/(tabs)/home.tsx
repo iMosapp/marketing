@@ -335,7 +335,7 @@ function ContactActionModal({
 
 // ─── Main Home Screen ─────────────────────────────────────────────
 export default function HomeScreen() {
-  const { colors } = useThemeStore();
+  const { colors, themeMode, toggle: toggleTheme } = useThemeStore();
   const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
@@ -619,7 +619,20 @@ export default function HomeScreen() {
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <View style={{ width: 32 }} />
         <Text style={[styles.userName, { color: colors.text }]}>Home</Text>
-        <NotificationBell />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <TouchableOpacity
+            onPress={toggleTheme}
+            style={{ padding: 6 }}
+            testID="theme-toggle-home"
+          >
+            <Ionicons
+              name={themeMode === 'dark' ? 'moon' : 'sunny'}
+              size={20}
+              color={themeMode === 'dark' ? '#5856D6' : '#FF9500'}
+            />
+          </TouchableOpacity>
+          <NotificationBell />
+        </View>
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
