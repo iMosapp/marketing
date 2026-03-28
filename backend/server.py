@@ -339,7 +339,7 @@ async def get_user_profile(user_id: str):
 
 @api_router.patch("/users/{user_id}")
 async def patch_user_profile(user_id: str, data: dict):
-    """Update user profile fields including photo"""
+    """Update user profile fields. Photo updates must go through POST /profile/{user_id}/photo."""
     db = get_db()
     allowed_fields = ['name', 'phone', 'persona', 'settings', 'photo_url', 'bio', 'social_links',
                       'timezone', 'address', 'city', 'state', 'zip_code', 'country']
@@ -348,30 +348,34 @@ async def patch_user_profile(user_id: str, data: dict):
     if not update_dict:
         raise HTTPException(status_code=400, detail="No valid fields to update")
     
-    # When photo_url is updated, clear old optimized paths so the new photo takes effect
-    # resolve_user_photo() checks photo_path first — stale paths cause the digital card
-    # and other public pages to keep showing the old image.
-    unset_dict = {}
+    # Block raw base64 from being stored as photo_url — it causes massive MongoDB docs,
+    # breaks resolve_user_photo(), and bypasses the WebP/thumbnail pipeline.
+    # Photo uploads must use POST /profile/{user_id}/photo.
     if 'photo_url' in update_dict:
-        unset_dict = {"photo_path": "", "photo_avatar_path": ""}
+        url_val = update_dict.get('photo_url') or ''
+        if url_val and url_val.startswith('data:'):
+            raise HTTPException(
+                status_code=400,
+                detail="Base64 images are not accepted here. Use POST /profile/{user_id}/photo for photo uploads."
+            )
+        # When photo_url is set to a real URL or cleared, invalidate ALL cached optimised paths
+        # so resolve_user_photo() returns the fresh image everywhere (digital card, showroom, etc.)
+        update_ops: dict = {
+            "$set": update_dict,
+            "$unset": {"photo_path": "", "photo_avatar_path": "", "photo_thumb_path": ""},
+        }
+    else:
+        update_ops = {"$set": update_dict}
     
-    update_ops: dict = {"$set": update_dict}
-    if unset_dict:
-        update_ops["$unset"] = unset_dict
-    
-    result = await db.users.update_one(
-        {"_id": ObjectId(user_id)},
-        update_ops
-    )
+    result = await db.users.update_one({"_id": ObjectId(user_id)}, update_ops)
     
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
     
     # Return the updated user data
-    updated_user = await db.users.find_one({"_id": ObjectId(user_id)})
+    updated_user = await db.users.find_one({"_id": ObjectId(user_id)}, {"password": 0})
     if updated_user:
         updated_user["_id"] = str(updated_user["_id"])
-        updated_user.pop("password", None)
         for key in ["organization_id", "org_id", "store_id", "partner_id"]:
             if updated_user.get(key):
                 updated_user[key] = str(updated_user[key])

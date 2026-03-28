@@ -201,9 +201,16 @@ export default function MyAccountScreen() {
     try {
       const response = await api.get(`/users/${user?._id}`);
       if (response.data) {
-        setPhotoUrl(response.data.photo_url || null);
-        // Sync auth store so other pages (digital card preview, etc.) see fresh data
-        setUser({ ...user, ...response.data });
+        const fresh = response.data;
+        setPhotoUrl(fresh.photo_url || null);
+        // Sync auth store so all pages (digital card, showroom, etc.) see fresh photo
+        const merged = { ...user, ...fresh };
+        setUser(merged);
+        // Persist to AsyncStorage so mobile reloads get the latest photo_url (not stale base64)
+        try {
+          const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
+          await AsyncStorage.setItem('user', JSON.stringify(merged)).catch(() => {});
+        } catch {}
       }
     } catch (error) {
       console.error('Error refreshing user data:', error);
@@ -261,25 +268,35 @@ export default function MyAccountScreen() {
     }
   };
 
-  // Upload photo from base64 string (for web)
+  // Upload photo from base64 string (for web) — sends to the proper pipeline endpoint
   const uploadPhotoBase64 = async (base64Data: string) => {
     if (!user?._id) return;
 
     try {
-      // Upload to backend
-      const response = await api.patch(`/users/${user._id}`, {
-        photo_url: base64Data,
+      // Convert base64 data URL to a Blob for multipart upload
+      const [header, b64] = base64Data.split(',');
+      const mimeMatch = header.match(/:(.*?);/);
+      const mime = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+      const binary = atob(b64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: mime });
+
+      const formData = new FormData();
+      formData.append('file', blob, `profile.${mime.split('/')[1] || 'jpg'}`);
+
+      const response = await api.post(`/profile/${user._id}/photo`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      if (response.data) {
-        setPhotoUrl(base64Data);
-        // Update user in store
-        setUser({ ...user, photo_url: base64Data });
+      if (response.data?.photo_url) {
+        setPhotoUrl(response.data.photo_url);
+        await refreshUserData(); // sync all photo fields from DB
         showSimpleAlert('Success', 'Profile photo updated!');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading photo:', error);
-      showSimpleAlert('Error', 'Failed to upload photo. Please try again.');
+      showSimpleAlert('Error', error?.response?.data?.detail || 'Failed to upload photo. Please try again.');
     } finally {
       setUploading(false);
     }
@@ -314,23 +331,35 @@ export default function MyAccountScreen() {
 
     setUploading(true);
     try {
-      // Convert to base64 data URL
-      const base64Data = `data:image/jpeg;base64,${asset.base64}`;
-      
-      // Upload to backend
-      const response = await api.patch(`/users/${user._id}`, {
-        photo_url: base64Data,
+      // Build a proper multipart upload — goes through the WebP pipeline
+      const formData = new FormData();
+      if (Platform.OS === 'web' && asset.base64) {
+        // Web: convert base64 to Blob
+        const mime = 'image/jpeg';
+        const binary = atob(asset.base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        const blob = new Blob([bytes], { type: mime });
+        formData.append('file', blob, 'profile.jpg');
+      } else {
+        // Native: use URI directly
+        const uri = asset.uri;
+        const ext = uri.split('.').pop() || 'jpg';
+        formData.append('file', { uri, name: `profile.${ext}`, type: `image/${ext}` } as any);
+      }
+
+      const response = await api.post(`/profile/${user._id}/photo`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      if (response.data) {
-        setPhotoUrl(base64Data);
-        // Update user in store
-        setUser({ ...user, photo_url: base64Data });
+      if (response.data?.photo_url) {
+        setPhotoUrl(response.data.photo_url);
+        await refreshUserData(); // sync all photo fields from DB
         showSimpleAlert('Success', 'Profile photo updated!');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading photo:', error);
-      showSimpleAlert('Error', 'Failed to upload photo. Please try again.');
+      showSimpleAlert('Error', error?.response?.data?.detail || 'Failed to upload photo. Please try again.');
     } finally {
       setUploading(false);
     }
