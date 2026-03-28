@@ -115,7 +115,15 @@ New components created under `components/account/`:
 - `my-account.tsx` 1,533 → 424 lines
 - 5 new focused components under `components/account/`
 
-### Phase 3b — Contact Page Context Infrastructure ✅ DONE (Mar 28, 2026)
+### Phase 3c — New Contact Form as Separate Route ✅ DONE (Mar 28, 2026)
+Extracted the new contact creation form into `app/contact/new.tsx` (791 lines, standalone).
+- Expo Router automatically routes `/contact/new` → `new.tsx` (preferred over `[id].tsx`)
+- Owns all its own state: contact form, device contacts picker, voice recorder, duplicate detection, tag picker, referral picker, date picker
+- `contact/[id].tsx` reduced from 5,017 → 4,427 lines (-590 lines, 12% more reduction)
+- The two pages share nothing — future changes to new contact form can't break existing contact view
+
+**Phase 3 total reduction:** 6,060 → 4,427 lines in `[id].tsx` (27% reduction overall)
+New files extracted: `contactStyles.ts`, `contactHelpers.ts`, `ContactContext.tsx`, `contact/new.tsx`
 Created `contexts/ContactContext.tsx` — the full contract for the contact page state.
 - Defines ~80 typed fields covering ALL state variables and handler signatures
 - Exports `useContact()` hook — sub-components call this instead of receiving 30+ props
