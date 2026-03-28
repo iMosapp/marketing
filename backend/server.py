@@ -707,6 +707,8 @@ async def startup_event():
                     db.notifications.create_index([("user_id", 1), ("read", 1), ("created_at", -1)]),
                     # Tags
                     db.tags.create_index([("user_id", 1)]),
+                    # Short URL click dedup index
+                    db.short_url_clicks.create_index([("short_code", 1), ("ip", 1), ("clicked_at", -1)]),
                 ), timeout=15)
                 logger.info("Database indexes created/verified (production-ready)")
             except asyncio.TimeoutError:

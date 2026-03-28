@@ -8,7 +8,7 @@ Features:
 - Public shareable landing page with download and social sharing
 - Image generation for easy saving/sharing
 """
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request
 from fastapi.responses import Response
 from bson import ObjectId
 from datetime import datetime, timezone, timedelta
@@ -721,7 +721,7 @@ async def create_congrats_card(
 
 
 @router.get("/card/{card_id}")
-async def get_congrats_card(card_id: str):
+async def get_congrats_card(card_id: str, request: Request):
     """
     Get card data for the public landing page.
     Checks congrats_cards first, then falls back to legacy birthday_cards collection.
@@ -760,7 +760,16 @@ async def get_congrats_card(card_id: str):
         raise HTTPException(status_code=404, detail="Card not found")
     
     # Increment view count (only for congrats_cards - legacy already incremented above)
-    if await db.congrats_cards.find_one({"card_id": card_id}, {"_id": 1}):
+    # Filter bots/prefetchers — they don't count as real views
+    ua = (request.headers.get("user-agent") or "").lower()
+    bot_patterns = [
+        "facebookexternalhit", "whatsapp", "telegrambot", "twitterbot",
+        "linkedinbot", "slackbot", "googlebot", "bingbot", "bot/",
+        "crawler", "spider", "preview", "fetch/", "headless",
+    ]
+    is_bot = any(p in ua for p in bot_patterns)
+    
+    if not is_bot and await db.congrats_cards.find_one({"card_id": card_id}, {"_id": 1}):
         await db.congrats_cards.update_one(
             {"card_id": card_id},
             {"$inc": {"views": 1}}
@@ -780,8 +789,9 @@ async def get_congrats_card(card_id: str):
         title = viewed_info["label"]
         event_type = viewed_info["event_type"]
         
-        # Dedup: skip if the same card view was logged in the last 2 minutes
-        recent_cutoff = datetime.utcnow() - timedelta(minutes=2)
+        # Dedup: skip if the same card view was logged in the last 30 minutes
+        # (prevents duplicate events from refreshes, prefetchers, and repeated opens)
+        recent_cutoff = datetime.utcnow() - timedelta(minutes=30)
         existing = await db.contact_events.find_one({
             "event_type": event_type,
             "metadata.card_id": card_id,

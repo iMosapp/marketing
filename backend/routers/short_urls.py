@@ -183,12 +183,12 @@ async def _log_link_click_event(db, doc: dict, short_code: str):
     if not contact_id:
         return
 
-    # Avoid duplicate events within a short window (5 minutes)
+    # Avoid duplicate events within a short window (30 minutes)
     from datetime import timedelta
     recent = await db.contact_events.find_one({
         "contact_id": contact_id,
         "event_type": event_type,
-        "timestamp": {"$gte": datetime.utcnow() - timedelta(minutes=5)},
+        "timestamp": {"$gte": datetime.utcnow() - timedelta(minutes=30)},
     })
     if recent:
         return
@@ -740,32 +740,56 @@ async def redirect_short_url(short_code: str, request: Request):
     if not doc:
         raise HTTPException(status_code=404, detail="Link not found")
     
-    # Update click stats
-    await db.short_urls.update_one(
-        {"short_code": short_code},
-        {
-            "$inc": {"click_count": 1},
-            "$set": {"last_clicked_at": datetime.utcnow()}
-        }
-    )
+    # ── Bot / prefetch detection ──
+    ua = (request.headers.get("user-agent") or "").lower()
+    bot_patterns = [
+        "facebookexternalhit", "whatsapp", "telegrambot", "twitterbot",
+        "linkedinbot", "slackbot", "googlebot", "bingbot", "yandex",
+        "baiduspider", "duckduckbot", "applebot", "preview", "crawler",
+        "spider", "bot/", "fetch/", "headless", "phantom", "prerender",
+    ]
+    is_bot = any(p in ua for p in bot_patterns)
     
-    # Log the click for analytics
-    click_log = {
-        "short_code": short_code,
-        "link_type": doc.get("link_type"),
-        "reference_id": doc.get("reference_id"),
-        "user_agent": request.headers.get("user-agent", ""),
-        "referer": request.headers.get("referer", ""),
-        "ip": request.client.host if request.client else None,
-        "clicked_at": datetime.utcnow()
-    }
-    await db.short_url_clicks.insert_one(click_log)
+    # ── IP-based dedup (skip counting if same IP + link within 60 seconds) ──
+    client_ip = request.client.host if request.client else "unknown"
+    is_duplicate = False
+    if not is_bot:
+        from datetime import timedelta
+        recent_click = await db.short_url_clicks.find_one({
+            "short_code": short_code,
+            "ip": client_ip,
+            "clicked_at": {"$gte": datetime.utcnow() - timedelta(seconds=60)}
+        })
+        is_duplicate = recent_click is not None
+    
+    # Only count genuine, non-duplicate human clicks
+    if not is_bot and not is_duplicate:
+        # Update click stats
+        await db.short_urls.update_one(
+            {"short_code": short_code},
+            {
+                "$inc": {"click_count": 1},
+                "$set": {"last_clicked_at": datetime.utcnow()}
+            }
+        )
+        
+        # Log the click for analytics
+        click_log = {
+            "short_code": short_code,
+            "link_type": doc.get("link_type"),
+            "reference_id": doc.get("reference_id"),
+            "user_agent": request.headers.get("user-agent", ""),
+            "referer": request.headers.get("referer", ""),
+            "ip": client_ip,
+            "clicked_at": datetime.utcnow()
+        }
+        await db.short_url_clicks.insert_one(click_log)
 
-    # Log a contact_event so the click appears in the activity feed
-    try:
-        await _log_link_click_event(db, doc, short_code)
-    except Exception as e:
-        print(f"[ShortURL] Failed to log click event: {e}")
+        # Log a contact_event so the click appears in the activity feed
+        try:
+            await _log_link_click_event(db, doc, short_code)
+        except Exception as e:
+            print(f"[ShortURL] Failed to log click event: {e}")
 
     original_url = doc["original_url"]
 

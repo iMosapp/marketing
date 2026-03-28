@@ -4,7 +4,7 @@
 Build a Relationship Management System (RMS) / CRM for automotive sales professionals. AI-powered, human-to-human relationship building where every follow-up is deliberate, meaningful, and personal.
 
 ## Core Architecture
-- **Frontend:** React Native / Expo (web)
+- **Frontend:** React Native / Expo (web PWA)
 - **Backend:** FastAPI (Python) with async Motor (MongoDB driver)
 - **Database:** MongoDB Atlas
 - **Integrations:** Resend (email), Twilio (MOCKED), OpenAI, Emergent Object Storage, apscheduler
@@ -13,37 +13,49 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### Profile Photo & Bio Fix (Feb 2026) -- LATEST
-- Fixed duplicate PATCH `/api/users/{user_id}` route in `server.py` that was NOT clearing `photo_path`/`photo_avatar_path` when `photo_url` was updated
-- Root cause: `resolve_user_photo()` prioritizes `photo_path` over `photo_url`, so stale cached paths caused digital cards to show old photos
-- Also improved `refreshUserData` in `my-account.tsx` to sync auth store after fetch
+### Click Tracking Deduplication (Mar 28, 2026) -- LATEST
+- Added bot/prefetch user-agent filtering (iMessage, WhatsApp, Facebook, Google, etc.)
+- Added IP-based dedup (same IP + same link within 60 seconds = 1 click)
+- Increased contact_event dedup window from 2-5 min to 30 min
+- Added DB index for click dedup queries
+- Congrats card views now skip bot requests
 
-### Campaign Removal / Archive (Mar 27, 2026)
-- Trash icon on Campaign Journey card for one-click removal
-- Archived campaigns preserved in DB for history
+### PWA Login Fix (Mar 28, 2026)
+- Service worker v5: never intercepts navigation, only caches static assets passively
+- SW registration moved to post-login (not on login page)
+- Login page actively kills any existing broken service workers
+- Removed `withCredentials: true` from axios (unnecessary for same-origin)
+- Fixed CORS `allow_credentials` + wildcard origin conflict
+- Added auto-retry on login (1 silent retry for network hiccups)
+- iOS keyboard fix: proper inputmode/autocomplete/user-select attributes
+- Created `fix.html` — self-service SW/cache clearing page for stuck users
 
-### Production Stability Fix (Mar 27, 2026)
-- Converted 3 files from sync pymongo to async motor
-- Throttled catchup task, cached task_summary + unread_count
-- Bulk activity feed, connection pool config, new DB indexes
+### Password Security Fix (Mar 28, 2026)
+- Fixed 3 user creation paths storing passwords as plain text (admin, team invite register, team invite accept)
+- All now use bcrypt via `hash_password()`
+- Added `admin-fix-login` diagnostic+reset endpoint (case-insensitive)
+- Added `admin-fix-all-passwords` bulk migration endpoint
+- Login endpoint optimized: background tasks for timezone/lifecycle, under 0.5s response
 
-### Tracked Media System (Mar 27, 2026)
-- Upload-tracked endpoint, branded viewing page, open tracking, composer toggle
+### Profile Photo & Bio Fix (Mar 28, 2026)
+- Fixed duplicate PATCH `/api/users/{user_id}` in server.py not clearing `photo_path`/`photo_avatar_path`
+- Fixed `refreshUserData` in my-account.tsx to sync auth store
 
-### Universal URL Tracking (Mar 27, 2026)
-- Auto-wrap in: Campaigns, Training Hub, Templates, Scheduler
+### Previous Session Work
+- Universal Link Tracking, Tracked Media, Production Stability (async motor), Campaign removal/archive
 
 ---
 
 ## Prioritized Backlog
 
 ### P0
-- Deploy latest fixes (profile photo + stability)
+- Verify PWA login fix works after deployment
+- Verify click dedup works in production
 
 ### P1
 - App Store Preparation (`eas.json`, `app.json`)
-- Push Notifications (mobile alerts for leads/messages)
-- AI-Powered Outreach (contextual follow-ups for `sold` tags)
+- Push Notifications (mobile alerts)
+- AI-Powered Outreach (contextual follow-ups)
 - Gamification & Leaderboards
 - Link Analytics Dashboard
 
