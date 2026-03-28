@@ -13,7 +13,13 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### Click Tracking Deduplication (Mar 28, 2026) -- LATEST
+### Mobile Login Routing Fix (Mar 28, 2026) -- LATEST
+- Root cause: `(tabs)/_layout.tsx` used `!user.onboarding_complete` (truthy check) which evaluated to `true` for `null` values, silently redirecting users like Matt (who have `onboarding_complete: null`) to `/onboarding` on every login
+- Fix: Changed to strict equality `user.onboarding_complete === false` — only new users in active onboarding flow get redirected
+- `+html.tsx` SW cleanup now reloads once after unregistering old SWs (prevents stale SWs from intercepting login requests)
+- `login.tsx` catch block improved: full error logging (status, code, stack), granular 402/403 messages, "close and reopen" guidance for JS runtime errors
+
+### Click Tracking Deduplication (Mar 28, 2026)
 - Added bot/prefetch user-agent filtering (iMessage, WhatsApp, Facebook, Google, etc.)
 - Added IP-based dedup (same IP + same link within 60 seconds = 1 click)
 - Increased contact_event dedup window from 2-5 min to 30 min
@@ -49,7 +55,8 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 ## Prioritized Backlog
 
 ### P0
-- Verify PWA login fix works after deployment
+- ✅ Mobile login routing fix for users with null onboarding_complete (DONE)
+- Verify PWA login fix works after deployment (send Matt fix.html to clear old SW cache if issue persists)
 - Verify click dedup works in production
 
 ### P1
