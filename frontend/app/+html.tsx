@@ -76,23 +76,16 @@ export default function Root({ children }: PropsWithChildren) {
         }}
       >
         {children}
-        {/* Register service worker with forced update check and self-healing */}
+        {/* Service worker is registered AFTER login, not here.
+            This prevents any SW interference with the login flow in PWA standalone mode.
+            Registration happens in the auth store after successful login. */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
-                  .then(function(reg) {
-                    // Force check for updates immediately
-                    reg.update();
-                  })
-                  .catch(function() {});
-                // Self-healing: if any service worker errors occur, unregister and reload
-                navigator.serviceWorker.addEventListener('controllerchange', function() {
-                  // New service worker took over — reload to get fresh content
-                  if (document.visibilityState === 'visible') {
-                    window.location.reload();
-                  }
+              // On page load: if a broken service worker exists and we're on the login page, kill it
+              if ('serviceWorker' in navigator && (window.location.pathname.includes('login') || window.location.pathname === '/')) {
+                navigator.serviceWorker.getRegistrations().then(function(regs) {
+                  regs.forEach(function(reg) { reg.unregister(); });
                 });
               }
             `,

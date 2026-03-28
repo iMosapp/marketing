@@ -168,53 +168,66 @@ export default function LoginScreen() {
     try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
     
     setLoading(true);
-    try {
-      await login(email.trim().toLowerCase(), password);
-      
-      // Save or clear remembered email based on checkbox
-      await saveRememberedEmail(email);
-      
-      // Success haptic on successful login
-      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch {}
-      
-      // Get the user from store after login
-      const loggedInUser = useAuthStore.getState().user;
-      
-      // Check if user needs to change password (first-time login with temp password)
-      if (loggedInUser?.needs_password_change) {
-        router.replace('/auth/change-password');
-        return;
+    let retries = 0;
+    const maxRetries = 1; // Auto-retry once for PWA network hiccups
+    
+    while (retries <= maxRetries) {
+      try {
+        await login(email.trim().toLowerCase(), password);
+        
+        // Save or clear remembered email based on checkbox
+        await saveRememberedEmail(email);
+        
+        // Success haptic on successful login
+        try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch {}
+        
+        // Get the user from store after login
+        const loggedInUser = useAuthStore.getState().user;
+        
+        // Check if user needs to change password (first-time login with temp password)
+        if (loggedInUser?.needs_password_change) {
+          router.replace('/auth/change-password');
+          return;
+        }
+        
+        // Check if user needs to complete profile onboarding
+        if (loggedInUser?.onboarding_complete === false && loggedInUser?.role !== 'super_admin') {
+          router.replace('/auth/complete-profile' as any);
+          return;
+        }
+        
+        const defaultRoute = getDefaultRoute(loggedInUser?.role);
+        
+        // After successful login, check if we should offer biometric setup
+        if (biometricStatus?.isAvailable && !biometricStatus?.isEnabled) {
+          setPendingCredentials({ email, password });
+          setShowBiometricPrompt(true);
+        } else {
+          // Navigate based on user role
+          router.replace(defaultRoute as any);
+        }
+        return; // Success — exit the retry loop
+      } catch (error: any) {
+        const status = error?.response?.status;
+        // Only retry on network/connection errors, not on 401 (wrong password)
+        if (status === 401 || retries >= maxRetries) {
+          try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error); } catch {}
+          if (status === 401) {
+            setLoginError('Invalid email or password');
+          } else if (status === 502 || status === 503 || status === 504) {
+            setLoginError('Server is temporarily unavailable. Please try again in a moment.');
+          } else if (error?.message?.includes('Network') || error?.message?.includes('timeout') || !status) {
+            setLoginError('Connection issue. Please check your internet and try again.');
+          } else {
+            setLoginError('Something went wrong. Please try again.');
+          }
+          break;
+        }
+        // Wait briefly then retry
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        retries++;
       }
-      
-      // Check if user needs to complete profile onboarding
-      if (loggedInUser?.onboarding_complete === false && loggedInUser?.role !== 'super_admin') {
-        router.replace('/auth/complete-profile' as any);
-        return;
-      }
-      
-      const defaultRoute = getDefaultRoute(loggedInUser?.role);
-      
-      // After successful login, check if we should offer biometric setup
-      if (biometricStatus?.isAvailable && !biometricStatus?.isEnabled) {
-        setPendingCredentials({ email, password });
-        setShowBiometricPrompt(true);
-      } else {
-        // Navigate based on user role
-        router.replace(defaultRoute as any);
-      }
-    } catch (error: any) {
-      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error); } catch {}
-      // Differentiate between actual auth errors and server/network issues
-      const status = error?.response?.status;
-      if (status === 401) {
-        setLoginError('Invalid email or password');
-      } else if (status === 502 || status === 503 || status === 504) {
-        setLoginError('Server is temporarily unavailable. Please try again in a moment.');
-      } else if (error?.message?.includes('Network') || error?.message?.includes('timeout') || !status) {
-        setLoginError('Connection issue. Please check your internet and try again.');
-      } else {
-        setLoginError('Something went wrong. Please try again.');
-      }
+    }
     } finally {
       setLoading(false);
     }

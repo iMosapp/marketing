@@ -178,6 +178,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
       
       set({ user: normalizeUser(user), token, partnerBranding: partner_branding || null, isAuthenticated: true, isLoading: false });
+      
+      // Register service worker AFTER successful login (never on login page)
+      // This prevents SW from interfering with the login flow in PWA standalone mode
+      if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+        try {
+          navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
+        } catch {}
+      }
     } catch (error) {
       set({ isLoading: false });
       throw error;

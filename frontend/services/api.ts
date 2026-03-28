@@ -22,7 +22,6 @@ const BACKEND_URL = getBackendUrl();
 const api = axios.create({
   baseURL: BACKEND_URL,
   timeout: 60000, // 60 seconds for AI/voice processing
-  withCredentials: true, // Always send cookies (needed for persistent session restore)
   headers: {
     'Content-Type': 'application/json',
   },
