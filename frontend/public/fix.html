@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fix App</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; text-align: center; padding: 40px 20px; background: #1a1a2e; color: #fff; }
+    h2 { margin-bottom: 20px; }
+    .status { padding: 15px; border-radius: 10px; margin: 15px 0; font-size: 16px; }
+    .ok { background: #1b4332; }
+    .fixing { background: #5a3e1b; }
+    .btn { display: inline-block; padding: 16px 40px; background: #e94560; color: #fff; border-radius: 30px; text-decoration: none; font-size: 18px; font-weight: 600; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h2>Fixing your app...</h2>
+  <div id="log"></div>
+  <script>
+    var log = document.getElementById('log');
+    function msg(text, cls) {
+      var d = document.createElement('div');
+      d.className = 'status ' + (cls || 'ok');
+      d.textContent = text;
+      log.appendChild(d);
+    }
+
+    async function fix() {
+      // 1. Unregister ALL service workers
+      if ('serviceWorker' in navigator) {
+        var regs = await navigator.serviceWorker.getRegistrations();
+        msg('Found ' + regs.length + ' service worker(s)', 'fixing');
+        for (var i = 0; i < regs.length; i++) {
+          await regs[i].unregister();
+        }
+        msg('All service workers removed', 'ok');
+      } else {
+        msg('No service worker support', 'ok');
+      }
+
+      // 2. Clear all caches
+      if ('caches' in window) {
+        var names = await caches.keys();
+        msg('Found ' + names.length + ' cache(s)', 'fixing');
+        for (var j = 0; j < names.length; j++) {
+          await caches.delete(names[j]);
+        }
+        msg('All caches cleared', 'ok');
+      }
+
+      // 3. Done
+      msg('All fixed! Tap the button below to log in.', 'ok');
+      var a = document.createElement('a');
+      a.href = '/auth/login';
+      a.className = 'btn';
+      a.textContent = 'Go to Login';
+      log.appendChild(a);
+    }
+
+    fix();
+  </script>
+</body>
+</html>

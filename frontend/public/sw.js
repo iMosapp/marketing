@@ -34,9 +34,9 @@ self.addEventListener('fetch', (event) => {
   // Only intercept GET requests — let POST/PATCH/PUT/DELETE pass through untouched
   if (event.request.method !== 'GET') return;
 
-  // Skip API calls entirely — never cache or intercept /api/ requests
+  // Skip API calls and fix page entirely — never intercept these
   const url = new URL(event.request.url);
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/api')) return;
+  if (url.pathname.startsWith('/api') || url.pathname === '/fix.html') return;
 
   // For HTML pages — network-first, cache fallback
   if (event.request.mode === 'navigate' || event.request.headers.get('accept')?.includes('text/html')) {

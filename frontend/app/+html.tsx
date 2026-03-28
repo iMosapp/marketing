@@ -76,12 +76,24 @@ export default function Root({ children }: PropsWithChildren) {
         }}
       >
         {children}
-        {/* Register service worker on ALL routes  - critical for iOS PWA standalone mode */}
+        {/* Register service worker with forced update check and self-healing */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('/sw.js').catch(function() {});
+                navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+                  .then(function(reg) {
+                    // Force check for updates immediately
+                    reg.update();
+                  })
+                  .catch(function() {});
+                // Self-healing: if any service worker errors occur, unregister and reload
+                navigator.serviceWorker.addEventListener('controllerchange', function() {
+                  // New service worker took over — reload to get fresh content
+                  if (document.visibilityState === 'visible') {
+                    window.location.reload();
+                  }
+                });
               }
             `,
           }}
