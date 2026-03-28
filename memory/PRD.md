@@ -115,6 +115,18 @@ New components created under `components/account/`:
 - `my-account.tsx` 1,533 → 424 lines
 - 5 new focused components under `components/account/`
 
+### Phase 4 — Backend Admin Service Layer ✅ DONE (Mar 28, 2026) -- LATEST
+Split `admin.py` from **4,058 lines → 3 focused files + shared helpers**:
+
+| File | Lines | Owns |
+|---|---|---|
+| `admin.py` | 2,027 | Orgs, stores, billing, phone assignments, stats, misc |
+| `admin_users.py` | 1,552 | User CRUD, pending users, impersonation, permissions, logos |
+| `admin_hierarchy.py` | 547 | Org/store assignment, role changes, hierarchy views |
+| `admin_helpers.py` | 129 | `safe_objectid`, `get_requesting_user`, `send_invite_email` |
+
+All endpoints verified working (200 OK). Server.py registers all 3 routers. Future user/hierarchy bugs have a clear, focused home.
+
 ### Phase 3c — New Contact Form as Separate Route ✅ DONE (Mar 28, 2026)
 Extracted the new contact creation form into `app/contact/new.tsx` (791 lines, standalone).
 - Expo Router automatically routes `/contact/new` → `new.tsx` (preferred over `[id].tsx`)
