@@ -207,7 +207,8 @@ DEMO_TAGS = [
 
 async def seed_data():
     client = AsyncIOMotorClient(os.environ.get('MONGO_URL'))
-    db = client['mvpline_db']
+    db_name = os.environ.get('DB_NAME', 'mvpline_db')
+    db = client[db_name]
     
     # Get superadmin user
     superadmin = await db.users.find_one({"email": "superadmin@mvpline.com"})
