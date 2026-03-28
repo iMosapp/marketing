@@ -349,7 +349,11 @@ export default function MyAccountScreen() {
                 <ProfilePhotoUpload
                   user={user as any}
                   colors={{ card: '#1C1C1E', accent: '#C9A962', ...colors }}
-                  onPhotoUpdated={(url) => { setUser({ ...user, photo_url: url }); refreshUserData(); }}
+                  onPhotoUpdated={(url) => {
+                    // Clear old cached thumbnail paths so new photo shows immediately
+                    setUser({ ...user, photo_url: url, photo_path: null, photo_thumb_path: null, photo_avatar_path: null } as any);
+                    refreshUserData();
+                  }}
                 />
               )}
             </View>
@@ -589,7 +593,10 @@ export default function MyAccountScreen() {
               <ProfileGallery
                 userId={user._id}
                 colors={colors}
-                onSetProfilePhoto={(url) => { setUser({ ...user, photo_url: url }); refreshUserData(); }}
+                onSetProfilePhoto={(url) => {
+                    setUser({ ...user, photo_url: url, photo_path: null, photo_thumb_path: null, photo_avatar_path: null } as any);
+                    refreshUserData();
+                }}
               />
             )}
 

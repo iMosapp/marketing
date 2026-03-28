@@ -25,6 +25,9 @@ interface Props {
 
 export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
   const [uploading, setUploading] = useState(false);
+  // Optimistic local preview — shows the new photo IMMEDIATELY after upload
+  // without waiting for the store to refresh through resolveUserPhotoUrlHiRes
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
 
   // ── Helpers ──────────────────────────────────────────────────────────────
   async function uploadFile(file: File | { uri: string; name: string; type: string }) {
@@ -34,6 +37,14 @@ export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return res.data?.photo_url as string | null;
+  }
+
+  function handleSuccess(url: string) {
+    // Show the new photo immediately using the local preview
+    setLocalPreviewUrl(url);
+    // Notify parent — parent should clear old photo_thumb_path from store
+    // and call refreshUserData to pull in the new optimized paths
+    onPhotoUpdated(url);
   }
 
   // ── Web: file input ───────────────────────────────────────────────────────
@@ -56,7 +67,7 @@ export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
       setUploading(true);
       try {
         const url = await uploadFile(file);
-        if (url) onPhotoUpdated(url);
+        if (url) handleSuccess(url);
         else showSimpleAlert('Error', 'Upload succeeded but no URL was returned.');
       } catch (err: any) {
         showSimpleAlert('Error', err?.response?.data?.detail || 'Failed to upload photo.');
@@ -112,7 +123,7 @@ export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
       const ext = uri.split('.').pop() || 'jpg';
       const file = { uri, name: `profile.${ext}`, type: `image/${ext}` };
       const url = await uploadFile(file);
-      if (url) onPhotoUpdated(url);
+      if (url) handleSuccess(url);
     } catch (err: any) {
       showSimpleAlert('Error', err?.response?.data?.detail || 'Failed to upload photo.');
     } finally {
@@ -155,8 +166,10 @@ export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
     );
   }
 
-  // Use hi-res thumbnail for the profile circle — avatar path is too small for retina screens
-  const currentPhoto = resolveUserPhotoUrlHiRes(user);
+  // localPreviewUrl shows immediately after upload; store photo resolves on refresh
+  // Priority: local preview (just uploaded) → hi-res thumbnail → full photo
+  const storePhoto = resolveUserPhotoUrlHiRes(user);
+  const currentPhoto = localPreviewUrl || storePhoto;
 
   return (
     <View style={styles.container}>
@@ -165,6 +178,9 @@ export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
           {uploading ? (
             <View style={styles.avatarPlaceholder}>
               <ActivityIndicator size="large" color={colors.accent} />
+              <Text style={{ fontSize: 11, color: colors.accent, marginTop: 6, fontWeight: '600' }}>
+                Uploading...
+              </Text>
             </View>
           ) : currentPhoto ? (
             <Image
@@ -172,6 +188,7 @@ export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
               style={styles.avatarImage}
               contentFit="cover"
               placeholder={null}
+              recyclingKey={currentPhoto}
             />
           ) : (
             /* Initials fallback — rounded square matching Hub style */
