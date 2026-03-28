@@ -207,18 +207,22 @@ DEMO_TAGS = [
 
 async def seed_data():
     client = AsyncIOMotorClient(os.environ.get('MONGO_URL'))
-    db_name = os.environ.get('DB_NAME', 'mvpline_db')
+    db_name = os.environ.get('DB_NAME')
+    if not db_name:
+        raise ValueError('DB_NAME environment variable is required')
     db = client[db_name]
     
-    # Get superadmin user
-    superadmin = await db.users.find_one({"email": "superadmin@mvpline.com"})
+    # Get superadmin user (matches production credentials)
+    superadmin = await db.users.find_one({"email": "forest@imosapp.com"})
     if not superadmin:
         print("Superadmin not found! Creating...")
+        import bcrypt
+        hashed_pw = bcrypt.hashpw("Admin123!".encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
         superadmin = {
             "_id": ObjectId(),
-            "email": "superadmin@mvpline.com",
+            "email": "forest@imosapp.com",
             "name": "Super Admin",
-            "password": "admin123",
+            "password": hashed_pw,
             "role": "super_admin",
             "mode": "rep",
             "phone": "+18015550000",
@@ -406,7 +410,7 @@ async def seed_data():
     print(f"   - {len(DEMO_CAMPAIGNS)} campaigns")
     print(f"   - {len(DEMO_TASKS)} tasks")
     print(f"   - {len(DEMO_TAGS)} tags")
-    print(f"\nLogin as: superadmin@mvpline.com / admin123")
+    print(f"\nLogin as: forest@imosapp.com / Admin123!")
 
 
 if __name__ == "__main__":
