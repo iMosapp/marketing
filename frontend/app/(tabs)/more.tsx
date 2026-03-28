@@ -826,7 +826,7 @@ export default function MoreScreen() {
           return (
             <TouchableOpacity
               style={styles.onboardingBanner}
-              onPress={() => router.push('/my-account')}
+              onPress={() => router.push('/profile-setup')}
               activeOpacity={0.92}
               data-testid="profile-setup-banner"
             >
