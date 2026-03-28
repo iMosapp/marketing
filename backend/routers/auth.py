@@ -790,7 +790,15 @@ async def admin_password_reset(data: dict):
 
 @router.post("/persona/{user_id}")
 async def save_persona(user_id: str, persona: UserPersona):
-    """Save the AI persona settings for a user"""
+    """Save the full profile/persona settings for a user.
+    
+    This data powers:
+    - Digital Card bio
+    - Link Page bio
+    - Landing Page bio
+    - Jessi AI responses (AI clone system prompt)
+    - Automated Twilio text campaigns
+    """
     result = await get_db().users.update_one(
         {"_id": ObjectId(user_id)},
         {"$set": {
@@ -802,7 +810,91 @@ async def save_persona(user_id: str, persona: UserPersona):
     if result.modified_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
     
-    return {"message": "Persona saved successfully"}
+    return {"message": "Profile saved successfully"}
+
+
+@router.get("/persona/{user_id}/ai-prompt")
+async def get_ai_system_prompt(user_id: str):
+    """Build the full AI clone system prompt from the user's saved profile.
+    Used internally by Jessi and all AI features.
+    """
+    db = get_db()
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"password": 0, "_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    persona = user.get("persona", {})
+    name = user.get("name", "Your Rep")
+    first = name.split()[0]
+    
+    prompt = _build_ai_clone_prompt(name, first, persona, user)
+    return {"prompt": prompt, "user_id": user_id}
+
+
+def _build_ai_clone_prompt(name: str, first: str, persona: dict, user: dict) -> str:
+    """Compile user profile data into the AI clone system prompt."""
+    tone_map = {
+        "professional": "professional, polished, and confident",
+        "friendly": "friendly, warm, and approachable",
+        "casual": "casual, relaxed, and conversational",
+        "formal": "formal and highly professional"
+    }
+    tone_desc = tone_map.get(persona.get("tone", "friendly"), "friendly and professional")
+
+    humor_map = {"none": "no humor", "light": "light occasional wit", "moderate": "moderately playful when appropriate"}
+    humor_desc = humor_map.get(persona.get("humor_level", "light"), "light humor")
+
+    length_map = {"brief": "Keep responses 1-2 sentences.", "balanced": "Keep responses 2-3 sentences.", "detailed": "Be thorough but not wordy."}
+    length_desc = length_map.get(persona.get("response_length", "balanced"), "Keep responses concise.")
+
+    emoji_map = {"never": "Never use emojis.", "minimal": "Use emojis sparingly (max 1).", "moderate": "Use emojis occasionally.", "frequent": "Feel free to use emojis."}
+    emoji_desc = emoji_map.get(persona.get("emoji_usage", "minimal"), "Use emojis sparingly.")
+
+    sections = [
+        f"You are {first}'s personal assistant. You know {first} personally and respond exactly as they would — with their style, personality, and voice. Never act generic.",
+        f"\n## Who {first} Is",
+    ]
+
+    if persona.get("bio"):
+        sections.append(f"Background: {persona['bio']}")
+    if persona.get("years_experience"):
+        sections.append(f"Experience: {persona['years_experience']}")
+    if persona.get("specialties"):
+        sections.append(f"Specialties: {', '.join(persona['specialties'])}")
+    if persona.get("ideal_customer"):
+        sections.append(f"Ideal customers: {persona['ideal_customer']}")
+    if persona.get("vehicles"):
+        sections.append(f"Vehicles/lifestyle: {persona['vehicles']}")
+    if persona.get("hobbies"):
+        sections.append(f"Hobbies: {', '.join(persona['hobbies'])}")
+    if persona.get("family_info"):
+        sections.append(f"Family: {persona['family_info']}")
+    if persona.get("hometown"):
+        sections.append(f"Hometown: {persona['hometown']}")
+    if persona.get("personal_motto"):
+        sections.append(f"Motto: {persona['personal_motto']}")
+
+    sections.append(f"\n## Tone & Style\n- Be {tone_desc}\n- {humor_desc}\n- {length_desc}\n- {emoji_desc}")
+
+    if persona.get("custom_phrases"):
+        sections.append(f"- {first}'s phrases: {persona['custom_phrases']}")
+
+    sections.append("\n## Behavior Rules\n- Never make promises they wouldn't make.\n- Never say you're 'just an AI'.\n- No long apologies. No corporate speak.\n- Do NOT use em dashes (—). Use commas or hyphens instead.\n- Respond as if you ARE {first}, not an assistant describing them.")
+
+    if persona.get("never_say"):
+        sections.append(f"- Never say or do: {persona['never_say']}")
+
+    links = []
+    if persona.get("scheduling_link"):
+        links.append(f"Scheduling: {persona['scheduling_link']}")
+    if persona.get("payment_link"):
+        links.append(f"Payment: {persona['payment_link']}")
+    if persona.get("key_links"):
+        links.append(f"Other: {persona['key_links']}")
+    if links:
+        sections.append(f"\n## Key Links (share when asked)\n" + "\n".join(links))
+
+    return "\n".join(sections)
 
 
 @router.post("/complete-onboarding")

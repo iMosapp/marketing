@@ -33,7 +33,7 @@ interface PersonaSettings {
   escalation_keywords: string[];
   interests: string[];
   specialties: string[];
-  // Personal info for more realistic AI responses
+  // Personal info
   bio: string;
   hobbies: string[];
   family_info: string;
@@ -41,6 +41,14 @@ interface PersonaSettings {
   fun_facts: string[];
   years_experience: string;
   personal_motto: string;
+  // New: from AI clone document
+  vehicles: string;         // What they drive/own — makes AI sound human
+  never_say: string;        // Phrases/things they would never say
+  custom_phrases: string;   // Things they always say
+  ideal_customer: string;   // Who they serve best
+  scheduling_link: string;  // e.g. Calendly / HubSpot meetings link
+  payment_link: string;     // Venmo, CashApp, etc.
+  key_links: string;        // Other important URLs (comma-separated)
 }
 
 const TONE_OPTIONS = [
@@ -80,7 +88,7 @@ const { showToast } = useToast();
     const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
-  const TOTAL_STEPS = 4;
+  const TOTAL_STEPS = 5;
   const [settings, setSettings] = useState<PersonaSettings>({
     tone: 'friendly',
     emoji_usage: 'minimal',
@@ -92,7 +100,6 @@ const { showToast } = useToast();
     escalation_keywords: DEFAULT_ESCALATION_KEYWORDS,
     interests: [],
     specialties: [],
-    // Personal info defaults
     bio: '',
     hobbies: [],
     family_info: '',
@@ -100,6 +107,14 @@ const { showToast } = useToast();
     fun_facts: [],
     years_experience: '',
     personal_motto: '',
+    // New fields
+    vehicles: '',
+    never_say: '',
+    custom_phrases: '',
+    ideal_customer: '',
+    scheduling_link: '',
+    payment_link: '',
+    key_links: '',
   });
   const [newKeyword, setNewKeyword] = useState('');
   const [newInterest, setNewInterest] = useState('');
@@ -133,7 +148,7 @@ const { showToast } = useToast();
     try {
       setSaving(true);
       await api.put(`/users/${user._id}/persona`, settings);
-      showToast('Your AI persona has been updated');
+      showToast('Your profile has been saved!');
     } catch (error) {
       console.error('Error saving persona:', error);
       showAlert('Error', 'Failed to save settings');
@@ -239,7 +254,7 @@ const { showToast } = useToast();
     }));
   };
 
-  const STEP_LABELS = ['Your Story', 'What Makes You Unique', 'Your AI Voice', 'Finishing Touches'];
+  const STEP_LABELS = ['Your Story', 'Your World', 'Your Voice', 'Your Tools', 'Final Touches'];
 
   const goNext = () => { if (currentStep < TOTAL_STEPS) setCurrentStep(currentStep + 1); };
   const goBack = () => { if (currentStep > 1) setCurrentStep(currentStep - 1); };
@@ -259,7 +274,7 @@ const { showToast } = useToast();
         <TouchableOpacity style={styles.backButton} onPress={() => { if (currentStep > 1) goBack(); else router.back(); }}>
           <Ionicons name="chevron-back" size={28} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>AI Persona</Text>
+        <Text style={styles.headerTitle}>Build Your Profile</Text>
         <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
           {saving ? (
             <ActivityIndicator size="small" color="#007AFF" />
@@ -282,8 +297,16 @@ const { showToast } = useToast();
         {/* ═══════ STEP 1: Your Story ═══════ */}
         {currentStep === 1 && (
           <>
+            {/* WHY banner */}
+            <View style={styles.whyBanner}>
+              <Ionicons name="information-circle" size={20} color="#C9A962" />
+              <Text style={styles.whyText}>
+                Your story shows up on your <Text style={styles.whyHighlight}>Digital Card, Link Page, and Landing Page</Text> — it's how customers get to know you before they ever meet you.
+              </Text>
+            </View>
+
             <Text style={styles.stepTitle}>Tell us about yourself</Text>
-            <Text style={styles.stepSubtitle}>This is what powers your AI and shows up on your digital card, showcase, and landing page.</Text>
+            <Text style={styles.stepSubtitle}>Write it like you're talking to a customer. Be real, be you.</Text>
 
             {/* Bio */}
             <View style={styles.fieldGroup}>
@@ -380,11 +403,40 @@ const { showToast } = useToast();
           </>
         )}
 
-        {/* ═══════ STEP 2: What Makes You Unique ═══════ */}
+        {/* ═══════ STEP 2: Your World ═══════ */}
         {currentStep === 2 && (
           <>
-            <Text style={styles.stepTitle}>What makes you stand out?</Text>
-            <Text style={styles.stepSubtitle}>These details help your AI build real rapport with customers.</Text>
+            {/* WHY banner */}
+            <View style={styles.whyBanner}>
+              <Ionicons name="information-circle" size={20} color="#C9A962" />
+              <Text style={styles.whyText}>
+                The more specific you are, the more <Text style={styles.whyHighlight}>authentic your profile feels</Text> to customers. These details make you relatable — not just another salesperson.
+              </Text>
+            </View>
+
+            <Text style={styles.stepTitle}>What makes you, you?</Text>
+            <Text style={styles.stepSubtitle}>Your lifestyle, interests, and the things customers connect with.</Text>
+
+            {/* What you drive / own */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>What Do You Drive / Own?</Text>
+              <Text style={styles.fieldHint}>Your vehicle(s), toys, gear — whatever says something about you. This makes your profile feel like a real person, not a sales bot.</Text>
+              <View style={styles.voiceInputRow}>
+                <TextInput
+                  style={[styles.addInput, { flex: 1, minHeight: 80, textAlignVertical: 'top', paddingTop: 12 }]}
+                  value={settings.vehicles}
+                  onChangeText={(text) => setSettings(prev => ({ ...prev, vehicles: text }))}
+                  placeholder={'e.g., I drive a 2021 Jeep Gladiator on 40" tires. I also have two Harleys — a Road Glide ST and a Low Rider S. Nothing I own stays stock for more than a week.'}
+                  placeholderTextColor={colors.textSecondary}
+                  multiline
+                  numberOfLines={4}
+                />
+                <VoiceInput
+                  onTranscription={(text) => setSettings(prev => ({ ...prev, vehicles: prev.vehicles ? prev.vehicles + ' ' + text : text }))}
+                  size="small"
+                />
+              </View>
+            </View>
 
             {/* Hobbies */}
             <View style={styles.fieldGroup}>
@@ -516,11 +568,19 @@ const { showToast } = useToast();
           </>
         )}
 
-        {/* ═══════ STEP 3: Your AI Voice ═══════ */}
+        {/* ═══════ STEP 3: Your Voice ═══════ */}
         {currentStep === 3 && (
           <>
-            <Text style={styles.stepTitle}>How should your AI sound?</Text>
-            <Text style={styles.stepSubtitle}>Set the tone for how your AI talks to customers on your behalf.</Text>
+            {/* WHY banner */}
+            <View style={styles.whyBanner}>
+              <Ionicons name="information-circle" size={20} color="#C9A962" />
+              <Text style={styles.whyText}>
+                When Jessi responds to your customers, she'll match <Text style={styles.whyHighlight}>your tone, your style, your way</Text>. The more specific you are, the more it actually sounds like you.
+              </Text>
+            </View>
+
+            <Text style={styles.stepTitle}>How do you communicate?</Text>
+            <Text style={styles.stepSubtitle}>Your style, your vibe — not a corporate bot.</Text>
 
             {/* Preview */}
             <View style={styles.previewCard}>
@@ -536,7 +596,7 @@ const { showToast } = useToast();
 
             {/* Tone */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>COMMUNICATION TONE</Text>
+              <Text style={styles.sectionTitle}>YOUR STYLE</Text>
               <View style={styles.optionGrid}>
                 {TONE_OPTIONS.map((option) => (
                   <TouchableOpacity
@@ -588,14 +648,147 @@ const { showToast } = useToast();
                 ))}
               </View>
             </View>
+
+            {/* Things you NEVER say */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Things You Never Say</Text>
+              <Text style={styles.fieldHint}>Phrases, words, or attitudes you'd never use with a customer. Jessi won't use them either.</Text>
+              <View style={styles.voiceInputRow}>
+                <TextInput
+                  style={[styles.addInput, { flex: 1, minHeight: 80, textAlignVertical: 'top', paddingTop: 12 }]}
+                  value={settings.never_say}
+                  onChangeText={(text) => setSettings(prev => ({ ...prev, never_say: text }))}
+                  placeholder={'e.g., I never use em dashes, never say "just an AI", never over-apologize, never use corporate speak'}
+                  placeholderTextColor={colors.textSecondary}
+                  multiline
+                  numberOfLines={4}
+                />
+                <VoiceInput
+                  onTranscription={(text) => setSettings(prev => ({ ...prev, never_say: prev.never_say ? prev.never_say + ' ' + text : text }))}
+                  size="small"
+                />
+              </View>
+            </View>
+
+            {/* Your go-to phrases */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Your Go-To Phrases</Text>
+              <Text style={styles.fieldHint}>Things you actually say. Expressions, catchphrases, how you sign off — whatever makes you sound like you.</Text>
+              <View style={styles.voiceInputRow}>
+                <TextInput
+                  style={[styles.addInput, { flex: 1, minHeight: 80, textAlignVertical: 'top', paddingTop: 12 }]}
+                  value={settings.custom_phrases}
+                  onChangeText={(text) => setSettings(prev => ({ ...prev, custom_phrases: text }))}
+                  placeholder={'e.g., I always say "let me wrap up what I\'m doing quick", I end texts with "- Forest", I use "I appreciate you" a lot'}
+                  placeholderTextColor={colors.textSecondary}
+                  multiline
+                  numberOfLines={4}
+                />
+                <VoiceInput
+                  onTranscription={(text) => setSettings(prev => ({ ...prev, custom_phrases: prev.custom_phrases ? prev.custom_phrases + ' ' + text : text }))}
+                  size="small"
+                />
+              </View>
+            </View>
           </>
         )}
 
-        {/* ═══════ STEP 4: Finishing Touches ═══════ */}
+        {/* ═══════ STEP 4: Your Tools ═══════ */}
         {currentStep === 4 && (
           <>
+            {/* WHY banner */}
+            <View style={styles.whyBanner}>
+              <Ionicons name="information-circle" size={20} color="#C9A962" />
+              <Text style={styles.whyText}>
+                When customers ask to schedule, pay, or learn more, Jessi can <Text style={styles.whyHighlight}>share your links instantly</Text> — no you required.
+              </Text>
+            </View>
+
+            <Text style={styles.stepTitle}>Your links and tools</Text>
+            <Text style={styles.stepSubtitle}>The stuff Jessi can share on your behalf when customers need it.</Text>
+
+            {/* Who is your ideal customer */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Who Do You Serve Best?</Text>
+              <Text style={styles.fieldHint}>Describe your ideal customer. Jessi uses this to personalize conversations and qualify leads.</Text>
+              <View style={styles.voiceInputRow}>
+                <TextInput
+                  style={[styles.addInput, { flex: 1, minHeight: 80, textAlignVertical: 'top', paddingTop: 12 }]}
+                  value={settings.ideal_customer}
+                  onChangeText={(text) => setSettings(prev => ({ ...prev, ideal_customer: text }))}
+                  placeholder={'e.g., First-time car buyers, families looking for SUVs, people who value the experience more than just the price'}
+                  placeholderTextColor={colors.textSecondary}
+                  multiline
+                  numberOfLines={4}
+                />
+                <VoiceInput
+                  onTranscription={(text) => setSettings(prev => ({ ...prev, ideal_customer: prev.ideal_customer ? prev.ideal_customer + ' ' + text : text }))}
+                  size="small"
+                />
+              </View>
+            </View>
+
+            {/* Scheduling link */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Your Scheduling Link</Text>
+              <Text style={styles.fieldHint}>Calendly, HubSpot, Google Calendar — wherever customers can book time with you.</Text>
+              <TextInput
+                style={styles.addInput}
+                value={settings.scheduling_link}
+                onChangeText={(text) => setSettings(prev => ({ ...prev, scheduling_link: text }))}
+                placeholder="https://meetings.hubspot.com/yourname"
+                placeholderTextColor={colors.textSecondary}
+                keyboardType="url"
+                autoCapitalize="none"
+              />
+            </View>
+
+            {/* Payment link */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Your Payment Link (optional)</Text>
+              <Text style={styles.fieldHint}>Venmo, CashApp, Stripe — wherever customers pay you directly.</Text>
+              <TextInput
+                style={styles.addInput}
+                value={settings.payment_link}
+                onChangeText={(text) => setSettings(prev => ({ ...prev, payment_link: text }))}
+                placeholder="https://venmo.com/u/yourhandle"
+                placeholderTextColor={colors.textSecondary}
+                keyboardType="url"
+                autoCapitalize="none"
+              />
+            </View>
+
+            {/* Other key links */}
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Other Key Links (optional)</Text>
+              <Text style={styles.fieldHint}>Any other URLs Jessi might need — product pages, forms, resources. Separate with commas.</Text>
+              <TextInput
+                style={[styles.addInput, { minHeight: 80, textAlignVertical: 'top', paddingTop: 12 }]}
+                value={settings.key_links}
+                onChangeText={(text) => setSettings(prev => ({ ...prev, key_links: text }))}
+                placeholder="https://example.com/form, https://example.com/pricing"
+                placeholderTextColor={colors.textSecondary}
+                multiline
+                numberOfLines={3}
+                autoCapitalize="none"
+              />
+            </View>
+          </>
+        )}
+
+        {/* ═══════ STEP 5: Final Touches ═══════ */}
+        {currentStep === 5 && (
+          <>
+            {/* WHY banner */}
+            <View style={styles.whyBanner}>
+              <Ionicons name="information-circle" size={20} color="#34C759" />
+              <Text style={styles.whyText}>
+                Almost done! Set your <Text style={styles.whyHighlight}>greeting, signature, and alert keywords</Text> — then hit Save to activate your full profile.
+              </Text>
+            </View>
+
             <Text style={styles.stepTitle}>Final details</Text>
-            <Text style={styles.stepSubtitle}>Set your greeting, signature, and keywords that flag conversations for your attention.</Text>
+            <Text style={styles.stepSubtitle}>How Jessi opens conversations and what flags your attention.</Text>
 
             {/* Greeting & Signature */}
             <View style={styles.fieldGroup}>
@@ -1028,6 +1221,27 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: 24,
     lineHeight: 21,
+  },
+  whyBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    backgroundColor: '#C9A96215',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#C9A96230',
+    padding: 14,
+    marginBottom: 20,
+  },
+  whyText: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.textSecondary,
+    lineHeight: 20,
+  },
+  whyHighlight: {
+    color: '#C9A962',
+    fontWeight: '600',
   },
   fieldGroup: {
     marginBottom: 20,

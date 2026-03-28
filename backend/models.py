@@ -160,6 +160,28 @@ class UserPersona(BaseModel):
     professional_identity: str = ""
     interests: List[str] = []
     escalation_keywords: List[str] = []
+    # Extended profile fields for AI clone
+    bio: str = ""
+    hobbies: List[str] = []
+    family_info: str = ""
+    hometown: str = ""
+    fun_facts: List[str] = []
+    years_experience: str = ""
+    personal_motto: str = ""
+    specialties: List[str] = []
+    vehicles: str = ""
+    never_say: str = ""
+    custom_phrases: str = ""
+    ideal_customer: str = ""
+    scheduling_link: str = ""
+    payment_link: str = ""
+    key_links: str = ""
+    # Jessi-specific
+    greeting_style: str = "Hi {name}!"
+    signature: str = ""
+    auto_introduce: bool = True
+    emoji_usage: str = "minimal"
+    response_length: str = "balanced"
 
 class UserCreate(BaseModel):
     email: str

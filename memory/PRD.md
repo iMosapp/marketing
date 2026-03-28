@@ -31,6 +31,22 @@ Created the core building blocks for a clean, maintainable codebase:
 
 **Architecture principle established:** Every place in the app that shows a person's photo now uses the same Avatar component and the same URL resolver. Fixing a photo bug once fixes it everywhere.
 
+### AI Clone Profile Builder (Mar 28, 2026) -- LATEST
+Rebuilt `settings/persona.tsx` from "AI Persona" settings into a natural 5-step "Build Your Profile" wizard:
+
+- **Step 1 "Your Story"**: Bio, family, hometown, years experience, motto. WHY banner: "Shows on your Digital Card, Link Page, and Landing Page"
+- **Step 2 "Your World"**: Vehicles/possessions (new), hobbies, specialties, interests, fun facts. WHY banner: "Makes your profile feel real"
+- **Step 3 "Your Voice"**: Communication tone, emoji, humor, response length. NEW: "Things you never say" + "Your go-to phrases". WHY banner: "How Jessi responds to your customers as you"
+- **Step 4 "Your Tools"**: Ideal customer description (new), scheduling link (new), payment link (new), other key links (new). WHY banner: "Jessi can share these directly"
+- **Step 5 "Final Touches"**: Greeting style, signature, escalation keywords, AI bio generator
+
+Backend:
+- `UserPersona` model in `models.py` extended with all new fields: `vehicles`, `never_say`, `custom_phrases`, `ideal_customer`, `scheduling_link`, `payment_link`, `key_links`
+- NEW `GET /api/auth/persona/{user_id}/ai-prompt` — compiles the full AI clone system prompt matching the doc structure (Who you are → Tone & Style → Behavior Rules → Key Links)
+- The compiled prompt is used by Jessi, suggested replies, and future Twilio automated texting
+
+Zero AI/persona language visible to users. Everything framed as "building your profile" and "helping customers get to know you."
+
 ### Auth Storage Hardening (Mar 28, 2026) -- LATEST
 - Flipped storage write priority: **IndexedDB is now primary** (awaited), AsyncStorage is a fast-read cache
 - All AsyncStorage reads wrapped in `safeAsyncGet` — never throws, returns null if blocked
