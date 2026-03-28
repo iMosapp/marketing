@@ -81,6 +81,10 @@ const ROLE_LABELS: Record<string, string> = {
   user: 'Sales Rep',
 };
 
+// Helpers with fallbacks for unknown/legacy roles
+const getRoleColor = (role: string) => ROLE_COLORS[role] || '#8E8E93';
+const getRoleLabel = (role: string) => ROLE_LABELS[role] || role;
+
 const AVAILABLE_ROLES = [
   { value: 'user', label: 'Sales Rep', color: '#007AFF' },
   { value: 'store_manager', label: 'Account Manager', color: '#34C759' },
@@ -430,11 +434,13 @@ export default function UserDetailScreen() {
               <Text style={styles.userName}>{user.name}</Text>
               <Text style={styles.userTitle}>{user.title || 'No title set'}</Text>
               <View style={styles.roleBadgeContainer}>
-                <View style={[styles.roleBadge, { backgroundColor: ROLE_COLORS[user.role] + '20' }]}>
-                  <Text style={[styles.roleBadgeText, { color: ROLE_COLORS[user.role] }]}>
-                    {ROLE_LABELS[user.role] || user.role}
+                <View style={[styles.roleBadge, { backgroundColor: getRoleColor(user.role) + '20' }]}>
+                  <Text style={[styles.roleBadgeText, { color: getRoleColor(user.role) }]}>
+                    {getRoleLabel(user.role)}
                   </Text>
                 </View>
+                {/* Only show edit pencil for non-super-admin targets */}
+                {user.role !== 'super_admin' && (
                 <TouchableOpacity 
                   style={styles.changeRoleButton}
                   onPress={() => setShowRoleModal(true)}
@@ -442,6 +448,7 @@ export default function UserDetailScreen() {
                 >
                   <Ionicons name="pencil" size={14} color="#007AFF" />
                 </TouchableOpacity>
+                )}
               </View>
             </View>
           </View>
@@ -847,6 +854,16 @@ export default function UserDetailScreen() {
             <Text style={styles.modalTitle}>Change Role</Text>
             <View style={{ width: 60 }} />
           </View>
+
+          {/* Current role banner — shown when role isn't in the selectable list */}
+          {!AVAILABLE_ROLES.find(r => r.value === user?.role) && user?.role && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', margin: 16, padding: 12, borderRadius: 10, backgroundColor: getRoleColor(user.role) + '20', borderWidth: 1, borderColor: getRoleColor(user.role) + '40' }}>
+              <Ionicons name="information-circle" size={18} color={getRoleColor(user.role)} style={{ marginRight: 8 }} />
+              <Text style={{ fontSize: 15, color: getRoleColor(user.role), fontWeight: '600' }}>
+                Current role: {getRoleLabel(user.role)} — select a new role below
+              </Text>
+            </View>
+          )}
           
           <FlatList
             data={AVAILABLE_ROLES}
