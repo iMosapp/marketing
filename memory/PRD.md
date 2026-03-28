@@ -81,6 +81,18 @@ Created the core building blocks for a clean, maintainable codebase:
 
 ## Architecture Refactor Roadmap
 
+### Phase 2 — Account Page Decomposition ✅ DONE (Mar 28, 2026)
+Split `my-account.tsx` from **1,533 lines → 424 lines** (72% reduction).
+
+New components created under `components/account/`:
+- `PresenceCard.tsx` — reusable card wrapper for all presence assets (preview panel + header + action buttons)
+- `PresenceLinks.tsx` — all 8 presence items (Digital Card, Showcase, Review Link, Link Page, Landing Page, Templates, Card Templates, Email Signature)
+- `StoreManagement.tsx` — store presence & settings section for managers
+- `ShareReviewModal.tsx` — review link share modal (SMS/email/copy)
+- `AccountInfoCard.tsx` — read-only account info rows
+
+`my-account.tsx` is now a ~400-line coordinator: state + layout only. Adding/fixing any presence card now takes 5 minutes instead of hunting through 1,500 lines.
+
 ### Phase 1 — Shared Foundations ✅ DONE (Mar 28, 2026)
 - `utils/photoUrl.ts` — unified photo URL resolver
 - `types/index.ts` — centralized TypeScript interfaces
@@ -90,7 +102,11 @@ Created the core building blocks for a clean, maintainable codebase:
 - `contacts.tsx` — uses shared Avatar
 - `contact/[id].tsx` — uses shared resolvePhotoUrl
 
-### Phase 2 — Account Page Decomposition (NEXT)
+### Phase 2 — Account Page Decomposition ✅ DONE
+- `my-account.tsx` 1,533 → 424 lines
+- 5 new focused components under `components/account/`
+
+### Phase 3 — Contact Page Decomposition (NEXT)
 Split `my-account.tsx` (1,700 lines) into:
 - `components/account/ProfileInfo.tsx` — name, bio, title, phone editing
 - `components/account/SocialLinks.tsx` — social handle management
