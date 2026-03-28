@@ -81,6 +81,15 @@ Created the core building blocks for a clean, maintainable codebase:
 
 ## Architecture Refactor Roadmap
 
+### Phase 3 — Contact Page Partial Decomposition ✅ DONE (Mar 28, 2026)
+Reduced `contact/[id].tsx` from **6,060 lines → 5,017 lines** (1,043 lines extracted).
+
+New files:
+- `components/contact/contactStyles.ts` — all 245 StyleSheet definitions (~903 lines)
+- `utils/contactHelpers.ts` — utility functions (`getTimeInSystem`, `formatEventTime`, `formatDateUTC`), constants (`QUICK_ACTIONS`, `EVENT_CATEGORY_ICON`), and `IntelRenderer` component (~150 lines)
+
+What remains in contact/[id].tsx: the deeply interlinked state machine (40+ state vars), business logic, and JSX. The remaining 5,000 lines require a React Context pattern to properly decompose — documented as Phase 3b.
+
 ### Phase 2 — Account Page Decomposition ✅ DONE (Mar 28, 2026)
 Split `my-account.tsx` from **1,533 lines → 424 lines** (72% reduction).
 
@@ -106,24 +115,14 @@ New components created under `components/account/`:
 - `my-account.tsx` 1,533 → 424 lines
 - 5 new focused components under `components/account/`
 
-### Phase 3 — Contact Page Decomposition (NEXT)
-Split `my-account.tsx` (1,700 lines) into:
-- `components/account/ProfileInfo.tsx` — name, bio, title, phone editing
-- `components/account/SocialLinks.tsx` — social handle management
-- `components/account/SecuritySettings.tsx` — password change, 2FA
-- `components/account/PresenceLinks.tsx` — digital card, link page, showcase links
-- `my-account.tsx` reduces to ~200 lines (layout + state coordinator only)
-
-### Phase 3 — Contact Page Decomposition (HIGH IMPACT)
-Split `contact/[id].tsx` (6,000 lines) into:
-- `components/contact/ContactHeader.tsx` — photo, name, tags, quick actions
-- `components/contact/ConversationThread.tsx` — SMS/email message thread
-- `components/contact/ActivityFeed.tsx` — CRM timeline events
-- `components/contact/ContactNotes.tsx` — notes, tasks, reminders
-- `components/contact/CongratsCardSender.tsx` — card sending flow
-- `components/contact/AIAssistant.tsx` — AI suggestions panel
-- `components/contact/ContactEditModal.tsx` — edit contact info
-- `contact/[id].tsx` reduces to ~300 lines
+### Phase 3b — Contact Page Full Decomposition (NEXT — requires React Context)
+The remaining 5,017 lines need a `ContactContext` pattern first. Then split into:
+- `context/ContactContext.tsx` — shared state (40+ state vars)
+- `components/contact/ContactHero.tsx` — profile header, tags, campaigns
+- `components/contact/ActivityFeed.tsx` — feed tab with timeline
+- `components/contact/ContactDetails.tsx` — details tab
+- `components/contact/InlineComposer.tsx` — SMS/email composer bar
+- `app/contact/new.tsx` — new contact form as separate route
 
 ### Phase 4 — Backend Service Layer
 Extract `admin.py` (4,000 lines) into:
