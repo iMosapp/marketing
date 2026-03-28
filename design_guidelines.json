@@ -1,176 +1,142 @@
 {
-  "design_system": {
-    "identity": {
-      "name": "MVPLine Luxury Edition",
-      "tone": "Premium, Stealth, Professional, Exclusive",
-      "core_values": ["Clarity", "Speed", "Elegance"]
+  "theme": "dark",
+  "archetype": "Archetype 5 (Jewel & Luxury) adapted for iOS Native App",
+  "design_philosophy": "Instagram/Facebook style profile editing. Natural, photo-forward, and easy. A mobile-first premium dark mode with gold and vibrant iOS accents.",
+  "colors": {
+    "background": "#000000",
+    "surface": "#1C1C1E",
+    "surface_secondary": "#2C2C2E",
+    "text_primary": "#FFFFFF",
+    "text_secondary": "#8E8E93",
+    "accent_gold": "#C9A962",
+    "accent_blue": "#007AFF",
+    "accent_green": "#34C759",
+    "border": "#38383A",
+    "overlay": "rgba(0,0,0,0.5)",
+    "error": "#FF453A"
+  },
+  "typography": {
+    "font_family": "System",
+    "h1": {
+      "font_size": 24,
+      "font_weight": "bold",
+      "line_height": 32,
+      "letter_spacing": 0.5
     },
-    "typography": {
-      "font_family": {
-        "primary": "System",
-        "code": "SpaceMono",
-        "recommendation": "Use 'SF Pro Display' features (on iOS) or load 'Geist Sans' / 'Inter' for cross-platform consistency if possible."
-      },
-      "weights": {
-        "thin": "100",
-        "light": "300",
-        "regular": "400",
-        "medium": "500",
-        "semibold": "600",
-        "bold": "700",
-        "black": "900"
-      },
-      "styles": {
-        "h1": { "fontSize": 34, "fontWeight": "700", "letterSpacing": -0.4, "lineHeight": 41 },
-        "h2": { "fontSize": 28, "fontWeight": "700", "letterSpacing": -0.3, "lineHeight": 34 },
-        "h3": { "fontSize": 22, "fontWeight": "600", "letterSpacing": -0.2, "lineHeight": 28 },
-        "body": { "fontSize": 17, "fontWeight": "400", "letterSpacing": -0.1, "lineHeight": 22 },
-        "caption": { "fontSize": 13, "fontWeight": "400", "color": "#8E8E93" },
-        "button": { "fontSize": 17, "fontWeight": "600", "textTransform": "none" }
-      }
+    "h2": {
+      "font_size": 20,
+      "font_weight": "600",
+      "line_height": 28
     },
-    "colors": {
-      "mode": "dark",
-      "palette": {
-        "background": {
-          "main": "#000000",
-          "secondary": "#050505",
-          "modal": "#121212"
-        },
-        "surface": {
-          "card": "#1C1C1E",
-          "elevated": "#2C2C2E",
-          "grouped": "#151517"
-        },
-        "text": {
-          "primary": "#FFFFFF",
-          "secondary": "#8E8E93",
-          "tertiary": "#48484A",
-          "brand": "#2E5CFF"
-        },
-        "accent": {
-          "primary": "#2E5CFF",
-          "success": "#30D158",
-          "warning": "#FFD60A",
-          "danger": "#FF453A",
-          "luxury_gold": "#D4AF37"
-        },
-        "border": {
-          "subtle": "rgba(255, 255, 255, 0.1)",
-          "focus": "rgba(46, 92, 255, 0.5)"
-        }
-      }
+    "h3": {
+      "font_size": 18,
+      "font_weight": "600",
+      "line_height": 24
     },
-    "layout": {
-      "spacing": {
-        "xs": 4,
-        "s": 8,
-        "m": 16,
-        "l": 24,
-        "xl": 32,
-        "xxl": 48
-      },
-      "radius": {
-        "s": 8,
-        "m": 12,
-        "l": 16,
-        "xl": 24,
-        "pill": 9999
-      },
-      "containers": {
-        "card_padding": 16,
-        "screen_padding": 16
-      }
+    "body": {
+      "font_size": 16,
+      "font_weight": "400",
+      "line_height": 22
     },
-    "components": {
-      "cards": {
-        "style": "Use backgroundColor: '#1C1C1E', borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)'",
-        "shadow": "shadowColor: '#000', shadowOffset: {width: 0, height: 4}, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5"
-      },
-      "buttons": {
-        "primary": {
-          "backgroundColor": "#2E5CFF",
-          "borderRadius": 9999,
-          "paddingVertical": 14,
-          "paddingHorizontal": 24,
-          "height": 50,
-          "alignItems": "center",
-          "justifyContent": "center"
-        },
-        "secondary": {
-          "backgroundColor": "rgba(255, 255, 255, 0.1)",
-          "borderRadius": 9999
-        }
-      },
-      "inputs": {
-        "backgroundColor": "#1C1C1E",
-        "borderRadius": 12,
-        "height": 50,
-        "paddingHorizontal": 16,
-        "color": "#FFFFFF",
-        "fontSize": 17
-      },
-      "headers": {
-        "type": "Large Title",
-        "alignment": "left",
-        "blur": true
-      }
+    "small": {
+      "font_size": 14,
+      "font_weight": "400",
+      "line_height": 20
     },
-    "visual_enhancers": {
-      "glassmorphism": "Use 'expo-blur' (BlurView) with intensity={80} and tint='dark' for headers, bottom sheets, and floating bars.",
-      "haptics": "Trigger 'expo-haptics' (Selection or Light) on all tap interactions.",
-      "gradients": "Avoid full screen gradients. Use subtle radial gradients in backgrounds if necessary (e.g., behind a hero image).",
-      "skeuomorphism": "None. Keep it 'Flat 2.0' (Flat with depth via shadows and layers)."
-    },
-    "animation": {
-      "library": "react-native-reanimated",
-      "defaults": {
-        "duration": 300,
-        "easing": "Easing.out(Easing.exp)"
-      },
-      "transitions": "Use LayoutAnimation or Reanimated Layout Transitions for list updates."
+    "micro": {
+      "font_size": 12,
+      "font_weight": "500",
+      "line_height": 16
     }
   },
-  "implementation_guide": {
-    "tech_stack": {
-      "framework": "React Native (Expo)",
-      "navigation": "Expo Router",
-      "styling": "StyleSheet or Inline Styles (No Tailwind configured)",
-      "icons": "@expo/vector-icons (Feather or Ionicons) or expo-symbols (SF Symbols on iOS)"
+  "layout": {
+    "global_padding": 16,
+    "border_radius": {
+      "small": 8,
+      "medium": 12,
+      "large": 16,
+      "full": 9999
     },
-    "file_structure_notes": {
-      "root": "/app/frontend/app",
-      "components": "/app/frontend/components",
-      "assets": "/app/frontend/assets"
+    "spacing": {
+      "xs": 4,
+      "sm": 8,
+      "md": 16,
+      "lg": 24,
+      "xl": 32
+    }
+  },
+  "components_guidelines": {
+    "cover_photo": {
+      "height": 160,
+      "overlay": "Use a subtle dark gradient at the bottom to ensure the overlapping profile photo and toggle buttons pop."
     },
-    "rules": [
-      "Do NOT use HTML tags (div, span). Use View, Text, ScrollView, SafeAreaView.",
-      "Ensure all text is wrapped in <Text> components.",
-      "Use SafeAreaView from 'react-native-safe-area-context' for screen wrappers.",
-      "For lists, always use FlatList or SectionList, never map over ScrollView for large datasets.",
-      "Use 'expo-blur' for the Tab Bar background if customizable, or headers.",
-      "Maintain 60fps animations using Reanimated worklets."
+    "profile_photo": {
+      "size": 100,
+      "border_width": 3,
+      "border_color": "#000000",
+      "completeness_ring_color": "#C9A962",
+      "offset_top": -50,
+      "edit_icon_overlay": "Small circular button at the bottom right of the avatar."
+    },
+    "inline_editable_fields": {
+      "behavior": "Render as TextInputs but style them seamlessly like Text. Use placeholder text color #8E8E93. Include a small subtle Ionicons 'pencil' icon near the name to indicate editability."
+    },
+    "social_chips": {
+      "height": 32,
+      "padding_horizontal": 12,
+      "background": "#1C1C1E",
+      "border": "1px solid #38383A",
+      "border_radius": 16,
+      "icon_color": "#FFFFFF"
+    },
+    "asset_cards": {
+      "layout": "2-column flex wrap grid (48% width each) with 4% gap.",
+      "background": "#1C1C1E",
+      "border_radius": 16,
+      "padding": 12,
+      "preview_image_height": 100,
+      "preview_border_radius": 8,
+      "title_style": "small text, font-weight 600, margin-top 8px"
+    },
+    "photo_gallery": {
+      "layout": "3-column grid, square aspect ratio images. Gap of 2px between images."
+    },
+    "collapsible_address": {
+      "header": "Row with title and chevron-down/up icon.",
+      "content": "Indented or styled with a left border using accent_gold."
+    },
+    "settings_list": {
+      "row_style": "Row layout, icon on left, text in middle, chevron-forward on right. Padding vertical 16px, border-bottom 1px solid #38383A."
+    }
+  },
+  "image_urls": {
+    "cover_photo": {
+      "url": "https://images.unsplash.com/photo-1643324896137-f0928e76202a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDN8MHwxfHNlYXJjaHwxfHxkYXJrJTIwbW9kZSUyMGFic3RyYWN0JTIwdGV4dHVyZSUyMGdvbGR8ZW58MHx8fHwxNzc0NzIzMzAzfDA&ixlib=rb-4.1.0&q=85",
+      "description": "Dark gold abstract texture for the profile cover banner."
+    },
+    "profile_photo": {
+      "url": "https://images.unsplash.com/photo-1758534063829-a72058381e21?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBoZWFkc2hvdCUyMGRhcmslMjBiYWNrZ3JvdW5kfGVufDB8fHx8MTc3NDcyMzI5N3ww&ixlib=rb-4.1.0&q=85",
+      "description": "Professional high-quality portrait for the main user avatar."
+    },
+    "asset_previews": [
+      "https://images.pexels.com/photos/6638409/pexels-photo-6638409.png?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "https://images.pexels.com/photos/36136699/pexels-photo-36136699.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
     ],
-    "universal_guidelines": [
-      "Dark Mode is the default and only mode for this Luxury Edition.",
-      "Touch targets must be at least 44x44 points.",
-      "Text contrast must meet WCAG AA standards (Light grey on Black).",
-      "Avoid system alerts. Use custom non-blocking toasts or in-app notifications."
+    "gallery_photos": [
+      "https://images.unsplash.com/photo-1763893296686-208b12fed9b8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzV8MHwxfHNlYXJjaHwxfHxsaWZlc3R5bGUlMjBwcm9mZXNzaW9uYWwlMjBwb3J0cmFpdHxlbnwwfHx8fDE3NzQ3MjMyOTh8MA&ixlib=rb-4.1.0&q=85",
+      "https://images.unsplash.com/photo-1580974869414-5e7b7e796a24?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzV8MHwxfHNlYXJjaHwyfHxsaWZlc3R5bGUlMjBwcm9mZXNzaW9uYWwlMjBwb3J0cmFpdHxlbnwwfHx8fDE3NzQ3MjMyOTh8MA&ixlib=rb-4.1.0&q=85",
+      "https://images.unsplash.com/photo-1774414489761-6b9bf1d86cfd?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzV8MHwxfHNlYXJjaHwzfHxsaWZlc3R5bGUlMjBwcm9mZXNzaW9uYWwlMjBwb3J0cmFpdHxlbnwwfHx8fDE3NzQ3MjMyOTh8MA&ixlib=rb-4.1.0&q=85",
+      "https://images.pexels.com/photos/36645466/pexels-photo-36645466.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "https://images.pexels.com/photos/18003662/pexels-photo-18003662.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
     ]
   },
-  "assets": {
-    "icons": {
-      "library": "Ionicons",
-      "mapping": {
-        "inbox": "chatbubble-ellipses-outline",
-        "dialer": "keypad-outline",
-        "contacts": "people-outline",
-        "more": "grid-outline",
-        "settings": "settings-outline",
-        "search": "search-outline",
-        "back": "chevron-back"
-      }
-    }
-  },
-  "instructions_to_main_agent": "Follow the 'design_system' strictly. You are working in a React Native Expo environment. Do not try to install Tailwind unless explicitly asked. Use standard React Native styling. Transform the existing pages in /app/frontend/app/ to match this new Luxury Dark theme. Prioritize the 'Inbox' and 'Dialer' screens as they are core to the user experience."
+  "instructions_to_main_agent": [
+    "CRITICAL: The user strictly requested React Native / Expo Web components. You MUST output JSX using ONLY React Native components: <View>, <Text>, <ScrollView>, <TouchableOpacity>, <TextInput>.",
+    "Do NOT use HTML tags (like <div>, <span>, <p>, <img>).",
+    "Use 'expo-image' (import { Image } from 'expo-image') for photos.",
+    "Use '@expo/vector-icons/Ionicons' for all icons (no emojis).",
+    "STYLING: Use React Native's StyleSheet API. Do NOT output Tailwind CSS classes (className) on standard elements unless you are 100% sure NativeWind is configured for RN components. Assume standard React Native StyleSheet objects for safety.",
+    "The component should look like a mobile-first Instagram/Facebook profile redesign for an A+B hybrid presence view.",
+    "Add 'testID' attributes (equivalent to data-testid in RN) to all interactive elements."
+  ]
 }
