@@ -13,7 +13,16 @@ Build a Relationship Management System (RMS) / CRM for automotive sales professi
 
 ## What's Been Implemented
 
-### Mobile Login Routing Fix (Mar 28, 2026) -- LATEST
+### Auth Storage Hardening (Mar 28, 2026) -- LATEST
+- Flipped storage write priority: **IndexedDB is now primary** (awaited), AsyncStorage is a fast-read cache
+- All AsyncStorage reads wrapped in `safeAsyncGet` — never throws, returns null if blocked
+- All AsyncStorage writes wrapped in individual try/catch — storage failures are non-fatal
+- `login`, `signup`, `logout`, `loadAuth`, `startImpersonation`, `stopImpersonation` all hardened
+- SW registration `.catch(() => {})` added — was causing unhandled promise rejections on iOS
+- Removed `window.location.reload()` from `+html.tsx` SW cleanup — was causing login request abort race condition on mobile
+- Face ID / biometric login unchanged — uses iOS Keychain (SecureStore), unaffected by localStorage restrictions
+
+### Mobile Login iOS Fixes (Mar 28, 2026)
 - Root cause: `(tabs)/_layout.tsx` used `!user.onboarding_complete` (truthy check) which evaluated to `true` for `null` values, silently redirecting users like Matt (who have `onboarding_complete: null`) to `/onboarding` on every login
 - Fix: Changed to strict equality `user.onboarding_complete === false` — only new users in active onboarding flow get redirected
 - `+html.tsx` SW cleanup now reloads once after unregistering old SWs (prevents stale SWs from intercepting login requests)

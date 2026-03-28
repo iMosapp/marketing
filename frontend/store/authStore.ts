@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
 import { authAPI } from '../services/api';
 
 // IndexedDB helpers — iOS PWA preserves IndexedDB better than localStorage
@@ -166,9 +165,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const response = await authAPI.login(email, password);
       const { user, token, partner_branding } = response;
       
-      // Persist session — wrapped in try/catch because iOS WebKit throws SecurityError
-      // when localStorage is blocked (strict privacy settings, some cold-start edge cases).
-      // Storage failure is non-fatal: Zustand in-memory state + server-side cookie handle the session.
+      // === WRITE STRATEGY: IDB first (reliable on all iOS), AsyncStorage second (fast cache) ===
+      // IndexedDB is the primary store — it survives iOS localStorage purges and privacy restrictions.
+      try {
+        await _idbSet('imonsocial_token', token);
+        await _idbSet('imonsocial_user', JSON.stringify(user));
+        if (partner_branding) {
+          await _idbSet('imonsocial_branding', JSON.stringify(partner_branding));
+        }
+      } catch (idbErr) {
+        console.warn('[Auth] IDB write failed:', idbErr);
+      }
+      // AsyncStorage (localStorage) as a fast-read cache — non-fatal if blocked on iOS
       try {
         await AsyncStorage.setItem('auth_token', token);
         await AsyncStorage.setItem('user', JSON.stringify(user));
@@ -178,17 +186,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           await AsyncStorage.removeItem('partner_branding');
         }
       } catch (storageErr: any) {
-        console.warn('[Auth] localStorage blocked (iOS privacy setting?) — session in memory only:', storageErr?.message);
-        // IndexedDB is a separate API and often works even when localStorage is blocked
+        // iOS WebKit throws SecurityError when localStorage is blocked — this is expected
+        console.warn('[Auth] localStorage blocked, IDB-only session:', storageErr?.message);
       }
-      // Always attempt IndexedDB backup (survives iOS PWA localStorage purges)
-      _idbSet('imonsocial_token', token).catch(() => {});
-      _idbSet('imonsocial_user', JSON.stringify(user)).catch(() => {});
       
       set({ user: normalizeUser(user), token, partnerBranding: partner_branding || null, isAuthenticated: true, isLoading: false });
       
       // Register service worker AFTER successful login (never on login page)
-      // This prevents SW from interfering with the login flow in PWA standalone mode
       if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
         try {
           navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch(() => {});
@@ -206,8 +210,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const user = await authAPI.signup(data);
       const token = `token_${user._id}`;
       
-      await AsyncStorage.setItem('auth_token', token);
-      await AsyncStorage.setItem('user', JSON.stringify(user));
+      try { await _idbSet('imonsocial_token', token); } catch {}
+      try { await _idbSet('imonsocial_user', JSON.stringify(user)); } catch {}
+      try { await AsyncStorage.setItem('auth_token', token); } catch {}
+      try { await AsyncStorage.setItem('user', JSON.stringify(user)); } catch {}
       
       set({ user: normalizeUser(user), token, isAuthenticated: true, isLoading: false });
     } catch (error) {
@@ -217,13 +223,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   
   logout: async () => {
-    await AsyncStorage.removeItem('auth_token');
-    await AsyncStorage.removeItem('user');
-    await AsyncStorage.removeItem('original_auth');
-    await AsyncStorage.removeItem('partner_branding');
-    // Clear IndexedDB backup
+    try { await AsyncStorage.removeItem('auth_token'); } catch {}
+    try { await AsyncStorage.removeItem('user'); } catch {}
+    try { await AsyncStorage.removeItem('original_auth'); } catch {}
+    try { await AsyncStorage.removeItem('partner_branding'); } catch {}
     _idbClear().catch(() => {});
-    // Clear server-side session cookie
     try {
       const { default: api } = await import('../services/api');
       await api.post('/auth/logout');
@@ -240,57 +244,56 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   
   loadAuth: async () => {
-    // Prevent concurrent loadAuth calls — share the same promise
     if (_loadAuthPromise) return _loadAuthPromise;
     
     _loadAuthPromise = (async () => {
-      // Helper: safely parse JSON without throwing
       const safeParse = (str: string | null): any => {
         if (!str) return null;
         try { return JSON.parse(str); } catch { return null; }
       };
 
+      // Safe wrappers — never throw even if storage is blocked on iOS
+      const safeAsyncGet = async (key: string): Promise<string | null> => {
+        try { return await AsyncStorage.getItem(key); } catch { return null; }
+      };
+      const safeIdbGet = async (key: string): Promise<string | null> => {
+        try { return await _idbGet(key); } catch { return null; }
+      };
+
       try {
-        // === LAYER 1: AsyncStorage (fastest local read) ===
-        let token = await AsyncStorage.getItem('auth_token');
-        let userStr = await AsyncStorage.getItem('user');
-        
-        // On iOS PWA, cold boot can cause slow reads — retry once
-        if ((!token || !userStr) && Platform.OS === 'web') {
-          await new Promise(r => setTimeout(r, 200));
-          if (!token) token = await AsyncStorage.getItem('auth_token');
-          if (!userStr) userStr = await AsyncStorage.getItem('user');
+        // === LAYER 1: AsyncStorage — fast on devices where localStorage works ===
+        let token = await safeAsyncGet('auth_token');
+        let userStr = await safeAsyncGet('user');
+
+        // === LAYER 2: IndexedDB — primary fallback, survives iOS privacy restrictions ===
+        // Always check IDB if AsyncStorage came up empty (covers iOS localStorage-blocked case)
+        if (!token || !userStr) {
+          const idbToken = await safeIdbGet('imonsocial_token');
+          const idbUser = await safeIdbGet('imonsocial_user');
+          if (idbToken && idbUser) {
+            token = idbToken;
+            userStr = idbUser;
+            // Back-fill AsyncStorage for faster future reads (non-fatal)
+            try { await AsyncStorage.setItem('auth_token', idbToken); } catch {}
+            try { await AsyncStorage.setItem('user', idbUser); } catch {}
+          }
         }
-        
-        // === LAYER 2: IndexedDB (survives iOS localStorage purges) ===
-        if ((!token || !userStr) && typeof window !== 'undefined' && window.indexedDB) {
-          try {
-            const idbToken = await _idbGet('imonsocial_token');
-            const idbUser = await _idbGet('imonsocial_user');
-            if (idbToken && idbUser) {
-              token = idbToken;
-              userStr = idbUser;
-              await AsyncStorage.setItem('auth_token', idbToken).catch(() => {});
-              await AsyncStorage.setItem('user', idbUser).catch(() => {});
-            }
-          } catch {}
-        }
-        
+
         if (token && userStr) {
           const user = safeParse(userStr);
-          
           if (!user || !user._id) {
             await _restoreFromCookie(set);
             return;
           }
-          
-          const originalAuthStr = await AsyncStorage.getItem('original_auth');
-          const brandingStr = await AsyncStorage.getItem('partner_branding');
+
+          // Restore impersonation state
+          const originalAuthStr = await safeAsyncGet('original_auth');
+          const brandingStr = await safeAsyncGet('partner_branding') || await safeIdbGet('imonsocial_branding');
           const partnerBranding = safeParse(brandingStr);
           let isImpersonating = false;
           let originalUser = null;
           let originalToken = null;
-          
+
           if (originalAuthStr) {
             const originalAuth = safeParse(originalAuthStr);
             if (originalAuth?.user) {
@@ -299,57 +302,60 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               originalToken = originalAuth.token;
             }
           }
-          
+
           set({ user: normalizeUser(user), token, partnerBranding, isAuthenticated: true, isLoading: false, isImpersonating, originalUser, originalToken });
           return;
         }
-        
-        // === LAYER 3: Cookie-based session restore ===
-        // Check if the JS-readable cookie exists before making a network call
+
+        // === LAYER 3: HTTP-only session cookie → /auth/me ===
+        // Server set imonsocial_uid as a JS-readable cookie — if present, session is live
         const uidCookie = _getCookie('imonsocial_uid');
         if (uidCookie) {
-          // Cookie exists — call /auth/me to get full user data
-          // Retry up to 2 times for flaky cold-start network
           for (let attempt = 0; attempt < 2; attempt++) {
             try {
               const { default: api } = await import('../services/api');
               const res = await api.get('/auth/me');
               if (res.data?.user && res.data?.token) {
-                await AsyncStorage.setItem('auth_token', res.data.token).catch(() => {});
-                await AsyncStorage.setItem('user', JSON.stringify(res.data.user)).catch(() => {});
-                _idbSet('imonsocial_user', JSON.stringify(res.data.user)).catch(() => {});
-                _idbSet('imonsocial_token', res.data.token).catch(() => {});
+                // Restore into both storage layers
+                try { await _idbSet('imonsocial_token', res.data.token); } catch {}
+                try { await _idbSet('imonsocial_user', JSON.stringify(res.data.user)); } catch {}
+                try { await AsyncStorage.setItem('auth_token', res.data.token); } catch {}
+                try { await AsyncStorage.setItem('user', JSON.stringify(res.data.user)); } catch {}
                 set({ user: normalizeUser(res.data.user), token: res.data.token, isAuthenticated: true, isLoading: false });
                 return;
               }
             } catch {
-              // First attempt failed — wait and retry
               if (attempt === 0) await new Promise(r => setTimeout(r, 1000));
             }
           }
         }
-        
-        // No local storage AND no cookie — user genuinely not logged in
+
+        // Nothing found — genuinely not logged in
         set({ isLoading: false });
-      } catch (error) {
-        // Last resort: try cookie
+      } catch {
+        // Last resort: cookie restore
         await _restoreFromCookie(set);
       }
     })();
-    
+
     try { await _loadAuthPromise; } finally { _loadAuthPromise = null; }
   },
   
   startImpersonation: async (impersonatedUser, impersonationToken) => {
     const { user, token } = get();
-    
-    // Store original auth
-    await AsyncStorage.setItem('original_auth', JSON.stringify({ user, token }));
-    
-    // Set impersonated user
-    await AsyncStorage.setItem('auth_token', impersonationToken);
-    await AsyncStorage.setItem('user', JSON.stringify({ ...impersonatedUser, isImpersonating: true }));
-    
+    const originalPayload = JSON.stringify({ user, token });
+
+    // Persist original auth to both stores (non-fatal)
+    try { await _idbSet('imonsocial_original_auth', originalPayload); } catch {}
+    try { await AsyncStorage.setItem('original_auth', originalPayload); } catch {}
+
+    // Persist impersonated session
+    const impersonatedPayload = JSON.stringify({ ...impersonatedUser, isImpersonating: true });
+    try { await _idbSet('imonsocial_token', impersonationToken); } catch {}
+    try { await _idbSet('imonsocial_user', impersonatedPayload); } catch {}
+    try { await AsyncStorage.setItem('auth_token', impersonationToken); } catch {}
+    try { await AsyncStorage.setItem('user', impersonatedPayload); } catch {}
+
     set({
       user: normalizeUser({ ...impersonatedUser, isImpersonating: true }),
       token: impersonationToken,
@@ -358,16 +364,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       originalToken: token
     });
   },
-  
+
   stopImpersonation: async () => {
     const { originalUser, originalToken } = get();
-    
+
     if (originalUser && originalToken) {
-      // Restore original auth
-      await AsyncStorage.setItem('auth_token', originalToken);
-      await AsyncStorage.setItem('user', JSON.stringify(originalUser));
-      await AsyncStorage.removeItem('original_auth');
-      
+      const userPayload = JSON.stringify(originalUser);
+      try { await _idbSet('imonsocial_token', originalToken); } catch {}
+      try { await _idbSet('imonsocial_user', userPayload); } catch {}
+      try { await AsyncStorage.setItem('auth_token', originalToken); } catch {}
+      try { await AsyncStorage.setItem('user', userPayload); } catch {}
+      try { await AsyncStorage.removeItem('original_auth'); } catch {}
+      try { await _idbSet('imonsocial_original_auth', ''); } catch {}
+
       set({
         user: originalUser,
         token: originalToken,
