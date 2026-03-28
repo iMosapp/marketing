@@ -47,7 +47,9 @@ import ChannelPicker, { useChannelPicker } from '../../components/ChannelPicker'
 
 const IS_WEB = Platform.OS === 'web';
 
-function getEventTitle(evt: { title?: string; event_type: string }): string {
+function getEventTitle(evt: { title?: string; event_type: string; metadata?: any }): string {
+  // card_headline in metadata wins — set for custom cards since slug v timestamp 
+  if (evt.metadata?.card_headline) return `Viewed '${evt.metadata.card_headline}' Card`;
   if (evt.title) return evt.title;
   return getEventLabel(evt.event_type);
 }

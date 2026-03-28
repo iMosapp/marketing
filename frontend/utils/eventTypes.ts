@@ -103,7 +103,12 @@ export function getEventLabel(eventType: string): string {
   const cardParts = eventType.split('_card_');
   if (cardParts.length === 2) {
     const [cardType, action] = cardParts;
-    const display = CARD_DISPLAY[cardType] || cardType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    // Random slug detection: short alphanumeric IDs or anything starting with "custom_"
+    // Show "Custom Card" rather than "Mn75D8Yt Card"
+    const isRandomSlug = /^[a-z0-9]{6,12}$/.test(cardType) || cardType.startsWith('custom_');
+    const display = isRandomSlug
+      ? 'Custom'
+      : (CARD_DISPLAY[cardType] || cardType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
     if (action === 'viewed') return `Viewed ${display} Card`;
     if (action === 'download' || action === 'downloaded') return `${display} Card Downloaded`;
     if (action === 'shared' || action === 'share') return `Shared ${display} Card`;

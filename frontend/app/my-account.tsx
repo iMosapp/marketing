@@ -278,7 +278,11 @@ export default function MyAccountScreen() {
 
             {/* My Photo Gallery */}
             {user?._id && (
-              <ProfileGallery userId={user._id} colors={colors} />
+              <ProfileGallery
+                userId={user._id}
+                colors={colors}
+                onSetProfilePhoto={(url) => handlePhotoUpdated(url)}
+              />
             )}
 
             {/* Presence links — Digital Card, Showcase, Review Link, etc. */}

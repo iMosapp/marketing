@@ -28,9 +28,10 @@ interface GalleryPhoto {
 interface Props {
   userId: string;
   colors: Record<string, string>;
+  onSetProfilePhoto?: (photoUrl: string) => void;
 }
 
-export function ProfileGallery({ userId, colors }: Props) {
+export function ProfileGallery({ userId, colors, onSetProfilePhoto }: Props) {
   const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -79,6 +80,18 @@ export function ProfileGallery({ userId, colors }: Props) {
       }
     };
     input.click();
+  }
+
+  // ── Set as profile photo ─────────────────────────────────────────────────
+  async function handleSetAsProfile(photo: GalleryPhoto) {
+    try {
+      await api.patch(`/users/${userId}`, { photo_url: photo.photo_url });
+      onSetProfilePhoto?.(photo.photo_url);
+      setViewerIndex(-1);
+      showSimpleAlert('Done', 'Profile photo updated! Your new photo is live everywhere.');
+    } catch {
+      showSimpleAlert('Error', 'Could not update profile photo.');
+    }
   }
 
   // ── Delete ────────────────────────────────────────────────────────────────
@@ -176,7 +189,18 @@ export function ProfileGallery({ userId, colors }: Props) {
             </TouchableOpacity>
           </View>
 
-          {/* Swipeable photo reel */}
+          {/* Bottom action bar */}
+          <View style={s.viewerActions}>
+            {/* Set as Profile Photo */}
+            <TouchableOpacity
+              style={s.setProfileBtn}
+              onPress={() => viewerIndex >= 0 && handleSetAsProfile(photos[viewerIndex])}
+              data-testid="gallery-set-profile-btn"
+            >
+              <Ionicons name="person-circle-outline" size={18} color="#fff" />
+              <Text style={s.setProfileText}>Set as Profile Photo</Text>
+            </TouchableOpacity>
+          </View>
           <ScrollView
             ref={scrollRef}
             horizontal
@@ -219,6 +243,9 @@ const s = StyleSheet.create({
   emptyState: { alignItems: 'center', padding: 28, borderRadius: 14, borderWidth: 1, borderStyle: 'dashed', gap: 6 },
   emptyText: { fontSize: 16, fontWeight: '600' },
   emptyHint: { fontSize: 13 },
+  viewerActions: { paddingHorizontal: 16, paddingBottom: 8 },
+  setProfileBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#C9A962', paddingVertical: 13, borderRadius: 12 },
+  setProfileText: { fontSize: 16, fontWeight: '700', color: '#fff' },
   viewerContainer: { flex: 1, backgroundColor: '#000' },
   viewerHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, paddingHorizontal: 16 },
   viewerBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },

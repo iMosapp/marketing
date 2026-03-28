@@ -786,8 +786,23 @@ async def get_congrats_card(card_id: str, request: Request):
         # Use centralized event type resolution
         from utils.event_types import get_card_viewed_info
         viewed_info = get_card_viewed_info(card_type)
-        title = viewed_info["label"]
         event_type = viewed_info["event_type"]
+
+        # For custom card types (random slugs), use the card's headline for display
+        # Known standard types that already have human-readable names
+        STANDARD_CARD_TYPES = {"congrats", "birthday", "anniversary", "thank_you", "thankyou", "holiday", "welcome"}
+        is_custom = card_type not in STANDARD_CARD_TYPES
+        card_headline = (card.get("headline") or "").strip()
+
+        if is_custom and card_headline:
+            title = f"Viewed '{card_headline}' Card"
+            description = f"{customer_name or 'Customer'} viewed your '{card_headline}' card"
+            extra_meta = {"card_headline": card_headline}
+        else:
+            title = viewed_info["label"]
+            card_display_name = card_type.replace("custom_", "").replace("_", " ")
+            description = f"{customer_name or 'Customer'} opened their {card_display_name} card"
+            extra_meta = {}
         
         # Dedup: skip if the same card view was logged in the last 30 minutes
         # (prevents duplicate events from refreshes, prefetchers, and repeated opens)
@@ -805,11 +820,11 @@ async def get_congrats_card(card_id: str, request: Request):
                 customer_name=customer_name,
                 event_type=event_type,
                 title=title,
-                description=f"{customer_name or 'Customer'} opened their {card_type} card",
+                description=description,
                 icon="eye",
                 color="#C9A962",
                 category="customer_activity",
-                metadata={"card_id": card_id, "card_type": card_type, "views": card.get("views", 0) + 1},
+                metadata={"card_id": card_id, "card_type": card_type, "views": card.get("views", 0) + 1, **extra_meta},
             )
     except Exception as e:
         print(f"[CongratsCard] Failed to log card view activity: {e}")
