@@ -1,5 +1,5 @@
-// Service Worker for i'M On Social PWA — v3 (Calendar Systems support)
-const CACHE_NAME = 'imos-v3';
+// Service Worker for i'M On Social PWA — v4 (fixed offline fallback)
+const CACHE_NAME = 'imos-v4';
 const PRECACHE_URLS = [
   '/auth/login',
   '/cs-login',
@@ -31,24 +31,45 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Only intercept GET requests — let POST/PATCH/PUT/DELETE pass through untouched
   if (event.request.method !== 'GET') return;
 
-  // For HTML pages — always go network-first to ensure latest meta tags
+  // Skip API calls entirely — never cache or intercept /api/ requests
+  const url = new URL(event.request.url);
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/api')) return;
+
+  // For HTML pages — network-first, cache fallback
   if (event.request.mode === 'navigate' || event.request.headers.get('accept')?.includes('text/html')) {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        // Check if this is a CS-branded request
-        const url = new URL(event.request.url);
-        if (url.pathname.includes('cs-login')) {
-          return caches.match('/cs-login') || caches.match(event.request);
-        }
-        return caches.match(event.request) || caches.match('/auth/login');
-      })
+      fetch(event.request)
+        .then((response) => {
+          // Cache successful navigation responses for offline fallback
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(async () => {
+          // Network failed — try cache with proper async/await
+          const isCS = url.pathname.includes('cs-login');
+          const cached = await caches.match(event.request);
+          if (cached) return cached;
+
+          // Fallback to login page
+          const fallback = isCS ? '/cs-login' : '/auth/login';
+          const fallbackResponse = await caches.match(fallback);
+          if (fallbackResponse) return fallbackResponse;
+
+          // Nothing cached — return a simple offline page
+          return new Response(
+            '<html><body style="font-family:sans-serif;text-align:center;padding:60px"><h2>You appear to be offline</h2><p>Please check your connection and refresh.</p></body></html>',
+            { headers: { 'Content-Type': 'text/html' } }
+          );
+        })
     );
     return;
   }
 
-  // For assets — network-first with cache fallback
+  // For static assets — network-first with cache fallback
   event.respondWith(
     fetch(event.request)
       .then((response) => {
@@ -56,6 +77,9 @@ self.addEventListener('fetch', (event) => {
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         return response;
       })
-      .catch(() => caches.match(event.request))
+      .catch(async () => {
+        const cached = await caches.match(event.request);
+        return cached || new Response('', { status: 408 });
+      })
   );
 });
