@@ -317,6 +317,19 @@ export default function LoginScreen() {
             
             <View style={styles.form}>
               <TextInput
+                ref={(ref) => {
+                  // iOS PWA standalone mode: first tap doesn't trigger keyboard
+                  // Force the input to be interactive with web attributes
+                  if (Platform.OS === 'web' && ref) {
+                    const el = ref as unknown as HTMLInputElement;
+                    if (el.setAttribute) {
+                      el.setAttribute('inputmode', 'email');
+                      el.setAttribute('autocomplete', 'email');
+                      el.setAttribute('name', 'email');
+                      el.setAttribute('id', 'email-input');
+                    }
+                  }
+                }}
                 style={styles.input}
                 placeholder="Email"
                 placeholderTextColor={colors.textSecondary}
@@ -328,10 +341,22 @@ export default function LoginScreen() {
                 textContentType="emailAddress"
                 returnKeyType="next"
                 blurOnSubmit={false}
+                data-testid="login-email-input"
               />
               
               <View style={styles.passwordContainer}>
                 <TextInput
+                  ref={(ref) => {
+                    if (Platform.OS === 'web' && ref) {
+                      const el = ref as unknown as HTMLInputElement;
+                      if (el.setAttribute) {
+                        el.setAttribute('inputmode', 'text');
+                        el.setAttribute('autocomplete', 'current-password');
+                        el.setAttribute('name', 'password');
+                        el.setAttribute('id', 'password-input');
+                      }
+                    }
+                  }}
                   style={styles.passwordInput}
                   placeholder="Password"
                   placeholderTextColor={colors.textSecondary}
@@ -342,6 +367,7 @@ export default function LoginScreen() {
                   textContentType="password"
                   returnKeyType="done"
                   onSubmitEditing={handleLogin}
+                  data-testid="login-password-input"
                 />
                 <TouchableOpacity
                   style={styles.eyeButton}
@@ -554,6 +580,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.border,
+    // iOS PWA: ensure keyboard triggers on first tap
+    ...(Platform.OS === 'web' ? { 
+      cursor: 'text' as any,
+      userSelect: 'text' as any,
+      WebkitUserSelect: 'text' as any,
+    } : {}),
   },
   passwordContainer: {
     flexDirection: 'row',
@@ -568,6 +600,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 16,
     fontSize: 18,
     color: colors.text,
+    ...(Platform.OS === 'web' ? { 
+      cursor: 'text' as any,
+      userSelect: 'text' as any,
+      WebkitUserSelect: 'text' as any,
+    } : {}),
   },
   eyeButton: {
     padding: 16,
