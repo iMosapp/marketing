@@ -251,6 +251,56 @@ async def signup(user_data: UserCreate):
     
     return user_dict
 
+
+@router.post("/test-login")
+async def test_login(credentials: dict):
+    """Lightweight login test — just verifies credentials, returns pass/fail with diagnostics.
+    No enrichment, no cookies, no background tasks. Used for debugging mobile login issues."""
+    import re
+    raw_email = credentials.get('email', '')
+    raw_password = credentials.get('password', '')
+    email = (raw_email or '').strip().lower()
+    password = raw_password or ''
+
+    # Log the raw bytes for debugging character encoding issues
+    diagnostics = {
+        "email_length": len(email),
+        "email_bytes": [ord(c) for c in email],
+        "password_length": len(password),
+        "password_bytes": [ord(c) for c in password],
+        "raw_email_length": len(raw_email),
+        "raw_password_length": len(raw_password),
+    }
+
+    if not email or not password:
+        return {"status": "fail", "reason": "empty_credentials", "diagnostics": diagnostics}
+
+    escaped_email = re.escape(email)
+    user = await get_db().users.find_one({"email": {"$regex": f"^{escaped_email}$", "$options": "i"}})
+    if not user:
+        return {"status": "fail", "reason": "user_not_found", "diagnostics": diagnostics}
+
+    stored_pw = user.get('password', '')
+    is_hashed = stored_pw.startswith("$2b$") or stored_pw.startswith("$2a$")
+    pw_match = verify_password(password, stored_pw)
+
+    diagnostics["user_found"] = True
+    diagnostics["user_name"] = user.get("name", "")
+    diagnostics["user_email"] = user.get("email", "")
+    diagnostics["password_is_hashed"] = is_hashed
+    diagnostics["password_match"] = pw_match
+    diagnostics["bcrypt_available"] = BCRYPT_AVAILABLE
+    diagnostics["user_status"] = user.get("status", "")
+    diagnostics["is_active"] = user.get("is_active", True)
+    diagnostics["has_store_id"] = bool(user.get("store_id"))
+    diagnostics["has_org_id"] = bool(user.get("organization_id") or user.get("org_id"))
+
+    if not pw_match:
+        return {"status": "fail", "reason": "wrong_password", "diagnostics": diagnostics}
+
+    return {"status": "pass", "reason": "credentials_valid", "diagnostics": diagnostics}
+
+
 @router.post("/login")
 async def login(credentials: dict):
     """Login with email and password"""
