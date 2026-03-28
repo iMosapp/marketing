@@ -155,52 +155,139 @@ const { showToast } = useToast();
     input.click();
   };
 
-  const ColorPicker = ({ 
-    label, 
-    value, 
-    onSelect 
-  }: { 
-    label: string; 
-    value: string; 
+  /**
+   * ColorPickerField — Uses native <input type="color"> on web (full wheel + dropper)
+   * and a hex text field for manual entry. Works on iOS Safari, Chrome, and desktop.
+   */
+  const ColorPickerField = ({
+    label,
+    value,
+    onSelect,
+  }: {
+    label: string;
+    value: string;
     onSelect: (color: string) => void;
-  }) => (
-    <View style={styles.colorPickerContainer}>
-      <Text style={styles.colorPickerLabel}>{label}</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={styles.colorOptions}>
-          {DEFAULT_COLORS.map((color) => (
-            <TouchableOpacity
-              key={color}
-              style={[
-                styles.colorOption,
-                { backgroundColor: color },
-                value === color && styles.colorOptionSelected,
-              ]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onSelect(color);
-              }}
-            >
-              {value === color && (
-                <Ionicons name="checkmark" size={16} color={colors.text} />
-              )}
-            </TouchableOpacity>
-          ))}
-          {/* Custom color input */}
-          <View style={styles.customColorContainer}>
-            <TextInput
-              style={[styles.customColorInput, { borderColor: value }]}
-              value={value}
-              onChangeText={onSelect}
-              placeholder="#000000"
-              placeholderTextColor={colors.textSecondary}
-              maxLength={7}
-            />
+  }) => {
+    const [hexInput, setHexInput] = useState(value);
+    // Sync hex input when value changes externally
+    React.useEffect(() => { setHexInput(value); }, [value]);
+
+    const handleHexChange = (text: string) => {
+      setHexInput(text);
+      // Apply once it's a valid 6-digit hex
+      if (/^#[0-9A-Fa-f]{6}$/.test(text)) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        onSelect(text);
+      }
+    };
+
+    const openNativePicker = () => {
+      if (Platform.OS === 'web') {
+        const input = document.createElement('input');
+        input.type = 'color';
+        input.value = /^#[0-9A-Fa-f]{6}$/.test(value) ? value : '#007AFF';
+        input.style.position = 'absolute';
+        input.style.opacity = '0';
+        input.style.width = '0';
+        input.style.height = '0';
+        document.body.appendChild(input);
+        input.addEventListener('input', (e: any) => {
+          const col = e.target.value;
+          setHexInput(col);
+          onSelect(col);
+        });
+        input.addEventListener('change', () => document.body.removeChild(input));
+        input.click();
+      }
+    };
+
+    const QUICK_PICKS = [
+      '#007AFF','#34C759','#FF9500','#FF3B30','#5856D6',
+      '#AF52DE','#FF2D55','#00C7BE','#FFD60A','#C9A962',
+      '#1877F2','#E1306C','#000000','#FFFFFF',
+    ];
+
+    return (
+      <View style={styles.colorPickerContainer}>
+        <Text style={styles.colorPickerLabel}>{label}</Text>
+
+        {/* Main swatch + hex row */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+          {/* Large tappable swatch — opens native color wheel */}
+          <TouchableOpacity
+            onPress={openNativePicker}
+            activeOpacity={0.8}
+            data-testid={`color-swatch-${label}`}
+            style={{
+              width: 52, height: 52, borderRadius: 14,
+              backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(value) ? value : '#007AFF',
+              borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)',
+              alignItems: 'center', justifyContent: 'center',
+              shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 4,
+            }}
+          >
+            {Platform.OS === 'web' && (
+              <Ionicons name="eyedrop-outline" size={20} color="rgba(255,255,255,0.8)" />
+            )}
+          </TouchableOpacity>
+
+          {/* Hex input */}
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 4, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              Hex Code
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 10, borderWidth: 1, borderColor: /^#[0-9A-Fa-f]{6}$/.test(hexInput) ? hexInput + '60' : colors.border, overflow: 'hidden' }}>
+              <View style={{ width: 28, height: 28, marginLeft: 8, borderRadius: 6, backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(hexInput) ? hexInput : colors.border }} />
+              <TextInput
+                style={{ flex: 1, padding: 10, fontSize: 17, color: colors.text, fontFamily: 'monospace' }}
+                value={hexInput}
+                onChangeText={handleHexChange}
+                placeholder="#000000"
+                placeholderTextColor={colors.textSecondary}
+                maxLength={7}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                data-testid={`color-hex-${label}`}
+              />
+            </View>
           </View>
+
+          {/* Tap-to-pick hint (web only) */}
+          {Platform.OS === 'web' && (
+            <TouchableOpacity onPress={openNativePicker} style={{ alignItems: 'center', opacity: 0.6 }}>
+              <Ionicons name="color-palette-outline" size={22} color={colors.textSecondary} />
+              <Text style={{ fontSize: 10, color: colors.textSecondary, marginTop: 2 }}>Pick</Text>
+            </TouchableOpacity>
+          )}
         </View>
-      </ScrollView>
-    </View>
-  );
+
+        {/* Quick-pick swatches */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={{ flexDirection: 'row', gap: 8, paddingBottom: 4 }}>
+            {QUICK_PICKS.map((c) => (
+              <TouchableOpacity
+                key={c}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setHexInput(c);
+                  onSelect(c);
+                }}
+                style={{
+                  width: 30, height: 30, borderRadius: 8,
+                  backgroundColor: c,
+                  borderWidth: value === c ? 2.5 : 1,
+                  borderColor: value === c ? '#FFF' : 'rgba(255,255,255,0.15)',
+                  alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                {value === c && <Ionicons name="checkmark" size={14} color={c === '#FFFFFF' ? '#000' : '#FFF'} />}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </ScrollView>
+      </View>
+    );
+  };
 
   if (loading) {
     return (
@@ -356,9 +443,9 @@ const { showToast } = useToast();
         </View>
 
         {/* Colors */}
-        <ColorPicker label="Primary Color" value={primaryColor} onSelect={setPrimaryColor} />
-        <ColorPicker label="Secondary Color" value={secondaryColor} onSelect={setSecondaryColor} />
-        <ColorPicker label="Accent Color" value={accentColor} onSelect={setAccentColor} />
+        <ColorPickerField label="Primary Color" value={primaryColor} onSelect={setPrimaryColor} />
+        <ColorPickerField label="Secondary Color" value={secondaryColor} onSelect={setSecondaryColor} />
+        <ColorPickerField label="Accent Color" value={accentColor} onSelect={setAccentColor} />
 
         {/* Footer Text */}
         <View style={styles.inputGroup}>
