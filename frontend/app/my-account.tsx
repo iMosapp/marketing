@@ -278,8 +278,8 @@ export default function MyAccountScreen() {
 
         {/* ── Cover Photo + Avatar ─────────────────────────────────────────── */}
         <View style={s.coverBlock}>
-          {/* Cover photo */}
-          <TouchableOpacity activeOpacity={0.85} onPress={handleCoverPick} style={s.coverTouch} testID="cover-photo-btn">
+          {/* Cover photo — just display, NOT tappable */}
+          <View style={s.coverTouch}>
             {coverPhotoUrl ? (
               <Image source={{ uri: resolvePhotoUrl(coverPhotoUrl) || '' }} style={s.cover} contentFit="cover" placeholder={null} />
             ) : (
@@ -295,18 +295,25 @@ export default function MyAccountScreen() {
               colors={['transparent', 'rgba(0,0,0,0.7)']}
               style={s.coverGrad}
             />
-            {/* Camera badge */}
-            {coverUploading ? (
-              <View style={s.coverCameraBadge}>
+            {/* Clear "Edit Cover Photo" button — the ONLY trigger for upload */}
+            <TouchableOpacity
+              onPress={handleCoverPick}
+              disabled={coverUploading}
+              style={s.coverEditBtn}
+              testID="cover-photo-btn"
+            >
+              {coverUploading ? (
                 <ActivityIndicator size="small" color="#C9A962" />
-              </View>
-            ) : (
-              <View style={s.coverCameraBadge}>
-                <Ionicons name="camera-outline" size={16} color="#C9A962" />
-                <Text style={s.coverCameraText}>Cover</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+              ) : (
+                <>
+                  <Ionicons name="camera-outline" size={16} color="#C9A962" />
+                  <Text style={s.coverEditBtnText}>
+                    {coverPhotoUrl ? 'Change Cover' : 'Add Cover Photo'}
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
 
           {/* Avatar + completeness ring */}
           <View style={s.avatarArea}>
@@ -756,8 +763,15 @@ const s = StyleSheet.create({
   coverTouch: { width: '100%', height: 160, position: 'relative' },
   cover: { width: '100%', height: 160 },
   coverGrad: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 80 },
-  coverCameraBadge: { position: 'absolute', bottom: 10, right: 14, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, borderWidth: 1, borderColor: '#C9A96250' },
-  coverCameraText: { fontSize: 13, color: '#C9A962', fontWeight: '600' },
+  // Clear, obvious "Edit Cover Photo" button — bottom-right of banner
+  coverEditBtn: {
+    position: 'absolute', bottom: 12, right: 14,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    paddingHorizontal: 14, paddingVertical: 8,
+    borderRadius: 20, borderWidth: 1, borderColor: '#C9A96260',
+  },
+  coverEditBtnText: { fontSize: 14, color: '#C9A962', fontWeight: '700' },
   avatarArea: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingHorizontal: 16, marginTop: -48 },
   avatarOuter: { position: 'relative' },
   completenessRing: { position: 'absolute', top: -6, left: -6, right: -6, bottom: -6, borderRadius: 999, borderWidth: 2, pointerEvents: 'none' },

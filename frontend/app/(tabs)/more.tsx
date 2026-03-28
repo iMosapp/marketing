@@ -22,8 +22,10 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { showSimpleAlert } from '../../services/alert';
 import api from '../../services/api';
+import { Image as ExpoImage } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import { resolveUserPhotoUrlHiRes, resolvePhotoUrl } from '../../utils/photoUrl';
 import { NotificationBell } from '../../components/notifications/NotificationBell';
-import { WebModal } from '../../components/WebModal';
 import { BRAND } from '../../config/brand';
 
 // Enable LayoutAnimation on Android
@@ -814,41 +816,66 @@ export default function MoreScreen() {
           </View>
         )}
 
-        {/* Profile Card - Digital Card Style */}
+        {/* Profile Card — cover photo background, bell only */}
         <View style={styles.profileCardContainer}>
-          <TouchableOpacity 
-            style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+          <TouchableOpacity
+            style={styles.profileCard}
             onPress={() => router.push('/my-account')}
-            activeOpacity={0.7}
+            activeOpacity={0.9}
             data-testid="profile-card"
           >
-            <View style={styles.profileAvatarContainer}>
-              {user?.photo_url ? (
-                <Image source={{ uri: user.photo_url }} style={styles.profileAvatarImage} />
+            {/* Cover photo or gold gradient fallback */}
+            {(user as any)?.cover_photo_url ? (
+              <ExpoImage
+                source={{ uri: resolvePhotoUrl((user as any).cover_photo_url) || '' }}
+                style={StyleSheet.absoluteFill}
+                contentFit="cover"
+                placeholder={null}
+              />
+            ) : (
+              <LinearGradient
+                colors={['#1a1200', '#2c1f00', '#3d2c00', '#C9A96225']}
+                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+            )}
+            {/* Dark gradient so text is always readable */}
+            <LinearGradient
+              colors={['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.75)']}
+              style={StyleSheet.absoluteFill}
+            />
+
+            {/* Bell — top right */}
+            <View style={styles.profileCardBell}>
+              <NotificationBell />
+            </View>
+
+            {/* Profile photo + name row — pinned to bottom */}
+            <View style={styles.profileCardBottom}>
+              {/* Rounded-square avatar */}
+              {(user as any)?.photo_url ? (
+                <ExpoImage
+                  source={{ uri: resolveUserPhotoUrlHiRes(user as any) || '' }}
+                  style={styles.profileAvatarImage}
+                  contentFit="cover"
+                  placeholder={null}
+                />
               ) : (
-                <View style={styles.profileAvatar}>
+                <View style={[styles.profileAvatar]}>
                   <Text style={styles.profileAvatarText}>
-                    {user?.name
-                      ?.split(' ')
-                      .map((n) => n[0])
-                      .join('')
-                      .toUpperCase() || '?'}
+                    {user?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || '?'}
                   </Text>
                 </View>
               )}
-            </View>
-            <View style={styles.profileInfo}>
-              <Text style={[styles.profileName, { color: colors.text }]}>{user?.name || 'Guest'}</Text>
-              {user?.title ? (
-                <Text style={styles.profileTitle}>{user.title}</Text>
-              ) : null}
-              <Text style={[styles.profileEmail, { color: colors.textSecondary }]}>{user?.email || ''}</Text>
-              {user?.phone && (
-                <Text style={[styles.profilePhone, { color: colors.textSecondary }]}>{user.phone}</Text>
-              )}
-            </View>
-            <View style={styles.profileActions}>
-              <NotificationBell />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.profileName}>{user?.name || 'Guest'}</Text>
+                {(user as any)?.persona?.title || (user as any)?.title ? (
+                  <Text style={styles.profileTitle}>
+                    {(user as any)?.persona?.title || (user as any)?.title}
+                  </Text>
+                ) : null}
+                <Text style={styles.profileEmail}>{user?.email || ''}</Text>
+              </View>
             </View>
           </TouchableOpacity>
           <View style={styles.profileCardHint}>
@@ -1306,13 +1333,24 @@ const getStyles = (colors: any) => StyleSheet.create({
     zIndex: 10000,
   },
   profileCard: {
+    height: 160,
+    borderRadius: 18,
+    overflow: 'hidden',
+    position: 'relative',
+    justifyContent: 'flex-end',
+  },
+  profileCardBell: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    zIndex: 10,
+  },
+  profileCardBottom: {
     flexDirection: 'row',
-    backgroundColor: '#1A1A1A',
-    padding: 20,
-    borderRadius: 14,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#2A2A2A',
+    gap: 12,
+    padding: 16,
+    paddingTop: 0,
   },
   profileActions: {
     justifyContent: 'space-between',
@@ -1343,17 +1381,19 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 14,
   },
   profileAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 14,
     backgroundColor: '#007AFF',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#C9A962',
   },
   profileAvatarImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 16,
+    width: 56,
+    height: 56,
+    borderRadius: 14,
     borderWidth: 2,
     borderColor: '#C9A962',
   },
@@ -1394,11 +1434,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   profileName: {
-    fontSize: 20,
+    fontSize: 19,
     fontWeight: '700',
-    color: colors.text,
-    marginBottom: 2,
+    color: '#FFFFFF',
+    marginBottom: 1,
     letterSpacing: 0.2,
+    textShadowColor: 'rgba(0,0,0,0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   profileTitle: {
     fontSize: 13,
@@ -1406,14 +1449,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.8,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   profileEmail: {
-    fontSize: 14,
-    marginBottom: 1,
-  },
-  profilePhone: {
-    fontSize: 14,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.7)',
   },
   // Recently Visited
   recentSection: {
