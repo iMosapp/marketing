@@ -54,11 +54,17 @@ export function ProfileGallery({ userId, colors, onSetProfilePhoto }: Props) {
       showSimpleAlert('Upload', 'Photo upload is available on the web version.');
       return;
     }
+    // Synchronous trigger — no awaits before input.click() on iOS Safari
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
+    input.style.position = 'fixed';
+    input.style.top = '-9999px';
+    input.style.opacity = '0';
+    document.body.appendChild(input);
     input.onchange = async (e: any) => {
       const file = e.target.files?.[0];
+      try { document.body.removeChild(input); } catch {}
       if (!file) return;
       setUploading(true);
       try {
@@ -79,6 +85,7 @@ export function ProfileGallery({ userId, colors, onSetProfilePhoto }: Props) {
         setUploading(false);
       }
     };
+    input.addEventListener('cancel', () => { try { document.body.removeChild(input); } catch {} });
     input.click();
   }
 

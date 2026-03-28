@@ -85,11 +85,17 @@ export default function ProfileSetupScreen() {
   // ── Photo helpers ──────────────────────────────────────────────────────────
   async function pickAndUpload(endpoint: string, aspect: [number, number], setLoading: (v: boolean) => void) {
     if (Platform.OS === 'web') {
+      // Synchronous trigger — iOS Safari blocks input.click() from async contexts
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = 'image/*';
+      input.style.position = 'fixed';
+      input.style.top = '-9999px';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
       input.onchange = async (e: any) => {
         const file = e.target.files?.[0];
+        try { document.body.removeChild(input); } catch {}
         if (!file) return;
         setLoading(true);
         try {
@@ -101,7 +107,8 @@ export default function ProfileSetupScreen() {
         } catch { showSimpleAlert('Error', 'Upload failed. Please try again.'); }
         setLoading(false);
       };
-      input.click();
+      input.addEventListener('cancel', () => { try { document.body.removeChild(input); } catch {} });
+      input.click(); // synchronous — no awaits before this line
     } else {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') return;

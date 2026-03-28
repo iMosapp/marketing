@@ -38,11 +38,20 @@ export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
 
   // ── Web: file input ───────────────────────────────────────────────────────
   function pickWeb() {
+    // Append to DOM + click synchronously — iOS Safari blocks input.click()
+    // if called from any async context. No awaits before this point.
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
+    input.style.position = 'fixed';
+    input.style.top = '-9999px';
+    input.style.left = '-9999px';
+    input.style.opacity = '0';
+    document.body.appendChild(input);
+
     input.onchange = async (e: any) => {
       const file = e.target.files?.[0];
+      try { document.body.removeChild(input); } catch {}
       if (!file) return;
       setUploading(true);
       try {
@@ -55,6 +64,9 @@ export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
         setUploading(false);
       }
     };
+    input.addEventListener('cancel', () => {
+      try { document.body.removeChild(input); } catch {}
+    });
     input.click();
   }
 

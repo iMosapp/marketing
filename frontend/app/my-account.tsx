@@ -157,13 +157,24 @@ export default function MyAccountScreen() {
   }
 
   // ── Cover photo — works on web AND mobile ────────────────────────────────
-  async function handleCoverPick() {
+  // IMPORTANT: On iOS Safari, file pickers MUST be triggered synchronously from
+  // the user gesture. Any `await` before input.click() breaks it silently.
+  // Keep the trigger sync — do all async work inside the onChange callback.
+  function handleCoverPick() {
     if (Platform.OS === 'web') {
+      // Create, append, and click synchronously within the gesture handler
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = 'image/*';
+      input.style.position = 'fixed';
+      input.style.top = '-9999px';
+      input.style.left = '-9999px';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+
       input.onchange = async (e: any) => {
         const file = e.target.files?.[0];
+        document.body.removeChild(input);
         if (!file) return;
         setCoverUploading(true);
         try {
@@ -173,37 +184,53 @@ export default function MyAccountScreen() {
             headers: { 'Content-Type': 'multipart/form-data' },
           });
           if (res.data?.cover_url) setUser({ ...user, cover_photo_url: res.data.cover_url } as any);
-        } catch { showSimpleAlert('Error', 'Failed to upload cover photo.'); }
-        setCoverUploading(false);
+          else showSimpleAlert('Error', 'Upload succeeded but no URL returned.');
+        } catch (err: any) {
+          showSimpleAlert('Error', err?.response?.data?.detail || 'Failed to upload cover photo.');
+        } finally {
+          setCoverUploading(false);
+        }
       };
+
+      // Remove on cancel too (no file selected)
+      input.addEventListener('cancel', () => {
+        try { document.body.removeChild(input); } catch {}
+      });
+
+      // Click synchronously — no await before this line
       input.click();
     } else {
-      // Native: use image picker
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        showSimpleAlert('Permission Required', 'Allow photo library access to set a cover photo.');
-        return;
-      }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [16, 9],
-        quality: 0.8,
-      });
-      if (!result.canceled && result.assets?.[0]) {
-        setCoverUploading(true);
-        try {
-          const asset = result.assets[0];
-          const ext = asset.uri.split('.').pop() || 'jpg';
-          const fd = new FormData();
-          fd.append('file', { uri: asset.uri, name: `cover.${ext}`, type: `image/${ext}` } as any);
-          const res = await api.post(`/profile/${user?._id}/cover`, fd, {
-            headers: { 'Content-Type': 'multipart/form-data' },
-          });
-          if (res.data?.cover_url) setUser({ ...user, cover_photo_url: res.data.cover_url } as any);
-        } catch { showSimpleAlert('Error', 'Failed to upload cover photo.'); }
-        setCoverUploading(false);
-      }
+      // Native: async is fine since ImagePicker handles its own gesture
+      (async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          showSimpleAlert('Permission Required', 'Allow photo library access to set a cover photo.');
+          return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [16, 9],
+          quality: 0.8,
+        });
+        if (!result.canceled && result.assets?.[0]) {
+          setCoverUploading(true);
+          try {
+            const asset = result.assets[0];
+            const ext = asset.uri.split('.').pop() || 'jpg';
+            const fd = new FormData();
+            fd.append('file', { uri: asset.uri, name: `cover.${ext}`, type: `image/${ext}` } as any);
+            const res = await api.post(`/profile/${user?._id}/cover`, fd, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            if (res.data?.cover_url) setUser({ ...user, cover_photo_url: res.data.cover_url } as any);
+          } catch (err: any) {
+            showSimpleAlert('Error', err?.response?.data?.detail || 'Failed to upload cover photo.');
+          } finally {
+            setCoverUploading(false);
+          }
+        }
+      })();
     }
   }
 
