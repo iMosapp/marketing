@@ -34,6 +34,9 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+// Module-level constant — must be here so sections building code can reference it
+const PROD_BASE = 'https://app.imonsocial.com';
+
 type MenuItem = {
   icon: string;
   title: string;
@@ -709,8 +712,6 @@ export default function MoreScreen() {
 
   // allSections is now just 'sections' since admin is inline
   const allSections = sections;
-
-  const PROD_BASE = 'https://app.imonsocial.com';
 
   function openExternal(url: string) {
     if (Platform.OS === 'web') window.open(url, '_blank');
