@@ -87,15 +87,22 @@ async def root():
 
 @api_router.get("/health")
 async def api_health():
-    """Health check that also verifies MongoDB connectivity."""
+    """
+    Liveness health check — must always return 200 quickly so K8s/Emergent
+    does NOT restart the pod during brief MongoDB hiccups.
+    Use /health/deep for full DB connectivity check.
+    """
+    return {"status": "healthy", "message": "i'M On Social API v2.0"}
+
+
+@api_router.get("/health/deep")
+async def api_health_deep():
+    """Deep health check including MongoDB ping — use for monitoring only, NOT as a liveness probe."""
     try:
         db = get_db()
-        # Ping MongoDB — if this fails, the DB is unreachable
         await db.command("ping")
-        return {"status": "healthy", "db": "connected", "message": "i'M On Social API v2.0"}
+        return {"status": "healthy", "db": "connected"}
     except Exception as e:
-        # Return 503 so Cloudflare/monitoring know the DB is down
-        from fastapi import Response
         from fastapi.responses import JSONResponse
         return JSONResponse(
             status_code=503,
@@ -668,9 +675,22 @@ app.include_router(short_urls.router)
 @app.on_event("startup")
 async def startup_event():
     import time
+    import asyncio
     app.state.start_time = time.time()
     logger.info("i'M On Social API v2.0 starting...")
     logger.info(f"Database configured: {os.environ.get('DB_NAME', 'unknown')} (MONGO_URL {'set' if os.environ.get('MONGO_URL') else 'missing'})")
+
+    # ── Global asyncio exception handler ────────────────────────────────────
+    # Catches ANY unhandled exception from asyncio.create_task() calls so they
+    # get LOGGED instead of silently crashing or corrupting the event loop.
+    def _handle_async_exception(loop, context):
+        msg = context.get("exception", context.get("message", "Unknown async error"))
+        task = context.get("task")
+        task_name = getattr(task, "get_name", lambda: "unknown")() if task else "no-task"
+        logger.error(f"[Asyncio] Unhandled background task exception ({task_name}): {msg}")
+        # DO NOT re-raise — this would crash the server. Just log and continue.
+
+    asyncio.get_event_loop().set_exception_handler(_handle_async_exception)
     
     # Initialize object storage (non-blocking, will retry on first use)
     try:

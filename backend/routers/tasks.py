@@ -21,8 +21,9 @@ router = APIRouter(prefix="/tasks", tags=["Tasks"])
 logger = logging.getLogger(__name__)
 
 # Throttle: only run catchup once per user per 5 minutes
-_catchup_last_run: dict[str, datetime] = {}
+_catchup_last_run: dict = {}
 _CATCHUP_INTERVAL = timedelta(minutes=5)
+_CATCHUP_MAX_ENTRIES = 500  # prevent unbounded memory growth
 
 
 async def _catchup_overdue_campaign_tasks(user_id: str):
@@ -34,6 +35,12 @@ async def _catchup_overdue_campaign_tasks(user_id: str):
     if last and (now - last) < _CATCHUP_INTERVAL:
         return  # Already ran recently
     _catchup_last_run[user_id] = now
+    # Evict oldest entries to prevent unbounded memory growth
+    if len(_catchup_last_run) > _CATCHUP_MAX_ENTRIES:
+        cutoff = now - timedelta(hours=2)
+        to_delete = [k for k, v in _catchup_last_run.items() if v < cutoff]
+        for k in to_delete:
+            del _catchup_last_run[k]
     db = get_db()
     now = datetime.now(timezone.utc)
 

@@ -23,53 +23,45 @@ def _ts_iso(dt) -> str:
 
 
 async def _quick_milestone_check(user_id: str):
-    """Lightweight milestone check fired after each event. Non-blocking."""
+    """Lightweight milestone check fired after each event. Non-blocking.
+    Uses a single aggregation instead of 60 separate count queries.
+    """
     try:
         db = get_db()
         from datetime import timedelta
         now = datetime.now(timezone.utc)
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        sixty_days_ago = today_start - timedelta(days=60)
 
-        # Count today's events
-        today_count = await db.contact_events.count_documents({
-            "user_id": user_id,
-            "timestamp": {"$gte": today_start},
-        })
-
-        # Quick streak calculation (check last 60 days)
-        streak = 0
-        for day_offset in range(60):
-            day = today_start - timedelta(days=day_offset)
-            day_end = day + timedelta(days=1)
-            c = await db.contact_events.count_documents({
-                "user_id": user_id,
-                "timestamp": {"$gte": day, "$lt": day_end},
-            })
-            if c >= 5:
-                streak += 1
-            elif day_offset > 0:
-                break
-
-        # Best day (simple max)
+        # Single aggregation to get per-day counts — replaces 60 individual queries
         pipeline = [
-            {"$match": {"user_id": user_id}},
+            {"$match": {"user_id": user_id, "timestamp": {"$gte": sixty_days_ago}}},
             {"$group": {
                 "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$timestamp"}},
                 "count": {"$sum": 1},
             }},
-            {"$sort": {"count": -1}},
-            {"$limit": 1},
+            {"$sort": {"_id": -1}},
         ]
-        best_result = await db.contact_events.aggregate(pipeline).to_list(1)
-        best_day = best_result[0]["count"] if best_result else 0
+        daily_counts = await db.contact_events.aggregate(pipeline).to_list(65)
+        day_map = {d["_id"]: d["count"] for d in daily_counts}
 
-        # Level
+        today_str = today_start.strftime("%Y-%m-%d")
+        today_count = day_map.get(today_str, 0)
+        best_day = max((d["count"] for d in daily_counts), default=0)
+
+        # Streak calculation from pre-fetched data — no more per-day DB calls
+        streak = 0
+        for i in range(60):
+            day = (today_start - timedelta(days=i)).strftime("%Y-%m-%d")
+            if day_map.get(day, 0) >= 5:
+                streak += 1
+            elif i > 0:
+                break
+
+        # Total for level (single count)
         total = await db.contact_events.count_documents({"user_id": user_id})
         levels = [(0, "Rookie"), (100, "Hustler"), (500, "Closer"), (1500, "All-Star"), (5000, "Legend")]
-        level_title = "Rookie"
-        for threshold, name in levels:
-            if total >= threshold:
-                level_title = name
+        level_title = next((name for threshold, name in reversed(levels) if total >= threshold), "Rookie")
 
         from routers.push_notifications import check_and_notify_milestones
         await check_and_notify_milestones(user_id, streak, level_title, today_count, best_day)
