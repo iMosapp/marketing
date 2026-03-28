@@ -142,7 +142,7 @@ const { showToast } = useToast();
         const endpoint = storeId
           ? `/admin/stores/${storeId}/upload-logo`
           : `/admin/organizations/${user?.organization_id}/upload-logo`;
-        const res = await api.post(endpoint, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        const res = await api.post(endpoint, fd, );
         const url = res.data.logo_url || '';
         setLogoUrl(url);
         showToast('Logo uploaded!');

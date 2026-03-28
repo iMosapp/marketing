@@ -181,7 +181,7 @@ export default function MyAccountScreen() {
           const fd = new FormData();
           fd.append('file', file);
           const res = await api.post(`/profile/${user?._id}/cover`, fd, {
-            headers: { 'Content-Type': 'multipart/form-data' },
+            
           });
           if (res.data?.cover_url) setUser({ ...user, cover_photo_url: res.data.cover_url } as any);
           else showSimpleAlert('Error', 'Upload succeeded but no URL returned.');
@@ -221,7 +221,7 @@ export default function MyAccountScreen() {
             const fd = new FormData();
             fd.append('file', { uri: asset.uri, name: `cover.${ext}`, type: `image/${ext}` } as any);
             const res = await api.post(`/profile/${user?._id}/cover`, fd, {
-              headers: { 'Content-Type': 'multipart/form-data' },
+              
             });
             if (res.data?.cover_url) setUser({ ...user, cover_photo_url: res.data.cover_url } as any);
           } catch (err: any) {
@@ -357,7 +357,7 @@ export default function MyAccountScreen() {
                       const fd = new FormData();
                       fd.append('file', file);
                       const res = await api.post(`/profile/${user?._id}/cover`, fd, {
-                        headers: { 'Content-Type': 'multipart/form-data' },
+                        
                       });
                       if (res.data?.cover_url) setUser({ ...user, cover_photo_url: res.data.cover_url } as any);
                       else showSimpleAlert('Error', 'Upload succeeded but no URL returned.');

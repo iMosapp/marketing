@@ -71,7 +71,7 @@ export function ProfileGallery({ userId, colors, onSetProfilePhoto }: Props) {
         const fd = new FormData();
         fd.append('file', file);
         const res = await api.post(`/profile/${userId}/gallery`, fd, {
-          headers: { 'Content-Type': 'multipart/form-data' },
+          
         });
         if (res.data?.photo_url) {
           setPhotos(prev => [

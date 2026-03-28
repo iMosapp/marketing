@@ -181,7 +181,7 @@ export default function NewContactScreen() {
             }
             try {
               const response = await api.post('/voice/transcribe', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
+                
               });
               if (response.data.success && response.data.text) {
                 setContact(prev => ({
@@ -359,7 +359,7 @@ export default function NewContactScreen() {
           }
           formData.append('duration', '0');
           await api.post(`/voice-notes/${user._id}/${newId}`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' },
+            
           });
           ncVoiceAudioBlob.current = null;
         } catch {}

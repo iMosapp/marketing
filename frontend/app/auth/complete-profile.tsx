@@ -98,7 +98,7 @@ export default function CompleteProfileScreen() {
       setPhotoUploading(true);
       try {
         const fd = new FormData(); fd.append('file', file);
-        const res = await api.post(`/profile/${userId}/photo`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        const res = await api.post(`/profile/${userId}/photo`, fd, );
         if (res.data.photo_url) setPhotoUrl(res.data.photo_url);
       } catch { alert('Error uploading photo.'); }
       finally { setPhotoUploading(false); }

@@ -884,7 +884,7 @@ export default function ContactDetailScreen() {
             }
             try {
               const response = await api.post('/voice/transcribe', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
+                
               });
               if (response.data.success && response.data.text) {
                 setComposerMessage(prev => prev ? `${prev} ${response.data.text}` : response.data.text);
@@ -1032,7 +1032,7 @@ export default function ContactDetailScreen() {
             }
             try {
               const response = await api.post('/voice/transcribe', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
+                
               });
               if (response.data.success && response.data.text) {
                 setContact(prev => ({
@@ -1119,7 +1119,7 @@ export default function ContactDetailScreen() {
             }
             voiceFormData.append('duration', '0');
             await api.post(`/voice-notes/${user._id}/${newId}`, voiceFormData, {
-              headers: { 'Content-Type': 'multipart/form-data' },
+              
             });
             ncVoiceAudioBlob.current = null;
           } catch (voiceErr) {

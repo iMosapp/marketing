@@ -151,7 +151,7 @@ const { showToast } = useToast();
       const uploadRes = await api.post(
         `/admin/stores/${user?.store_id}/upload-logo`,
         formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
+        
       );
 
       if (uploadRes.data?.logo_url) {

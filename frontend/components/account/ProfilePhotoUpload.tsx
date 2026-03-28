@@ -34,7 +34,7 @@ export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
     const formData = new FormData();
     formData.append('file', file as any);
     const res = await api.post(`/profile/${user._id}/photo`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      
     });
     return res.data?.photo_url as string | null;
   }
