@@ -1,92 +1,112 @@
 /**
- * my-account.tsx — My Presence screen.
+ * my-account.tsx — "My Presence" redesign.
  *
- * This file is the coordinator: state management + layout.
- * All heavy UI is in focused sub-components under components/account/.
+ * A+B hybrid: Instagram-style profile header (cover photo, avatar,
+ * inline editable bio) + visual tap-cards for all presence assets below.
  *
- * Sub-components:
- *   ProfilePhotoUpload   — profile photo upload/remove
- *   PresenceLinks        — digital card, showcase, review link, link page, etc.
- *   StoreManagement      — store presence & settings (managers only)
- *   ShareReviewModal     — share review link via SMS/email/copy
- *   AccountInfoCard      — read-only phone/org/store info
+ * Layout:
+ *  1. Cover photo banner + profile circle (overlap)
+ *  2. Name / title / bio — inline editable, tap to edit
+ *  3. Profile completeness bar
+ *  4. Social link chips
+ *  5. Presence asset cards (2-column grid)
+ *  6. My Photos gallery
+ *  7. Address (collapsible)
+ *  8. Personal Settings
+ *  9. Account Info
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  Platform, Linking, TextInput,
+  TextInput, Platform, Linking, Animated, ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
-import { showSimpleAlert } from '../services/alert';
 import api from '../services/api';
-
-// Sub-components
+import { showSimpleAlert } from '../services/alert';
 import { ProfilePhotoUpload } from '../components/account/ProfilePhotoUpload';
-import { PresenceLinks } from '../components/account/PresenceLinks';
-import { StoreManagement } from '../components/account/StoreManagement';
+import { ProfileGallery } from '../components/account/ProfileGallery';
 import { ShareReviewModal } from '../components/account/ShareReviewModal';
 import { AccountInfoCard } from '../components/account/AccountInfoCard';
-import { ProfileGallery } from '../components/account/ProfileGallery';
+import { StoreManagement } from '../components/account/StoreManagement';
+import { resolveUserPhotoUrlHiRes, resolvePhotoUrl } from '../utils/photoUrl';
 
 const PROD_BASE = 'https://app.imonsocial.com';
 
+const SOCIAL_PLATFORMS = [
+  { key: 'instagram', icon: 'logo-instagram', color: '#E1306C', label: 'Instagram' },
+  { key: 'facebook',  icon: 'logo-facebook',  color: '#1877F2', label: 'Facebook'  },
+  { key: 'tiktok',    icon: 'logo-tiktok',     color: '#FFFFFF', label: 'TikTok'    },
+  { key: 'youtube',   icon: 'logo-youtube',    color: '#FF0000', label: 'YouTube'   },
+  { key: 'linkedin',  icon: 'logo-linkedin',   color: '#0A66C2', label: 'LinkedIn'  },
+  { key: 'twitter',   icon: 'logo-twitter',    color: '#1DA1F2', label: 'Twitter'   },
+];
+
+// ─── Profile completeness ─────────────────────────────────────────────────────
+function calcCompleteness(user: any): number {
+  const fields = [
+    user?.photo_url || user?.photo_path,
+    user?.name,
+    user?.phone,
+    user?.persona?.bio || user?.bio,
+    user?.persona?.title || user?.title,
+    Object.values(user?.persona?.social_links || user?.social_links || {}).some(Boolean),
+  ];
+  const done = fields.filter(Boolean).length;
+  return Math.round((done / fields.length) * 100);
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function MyAccountScreen() {
   const { colors } = useThemeStore();
-  const s = getStyles(colors);
   const router = useRouter();
   const { user, setUser, updateUser } = useAuthStore();
 
-  // ── State ───────────────────────────────────────────────────────────────
+  // ── State ──────────────────────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<'personal' | 'store'>('personal');
   const [storeSlug, setStoreSlug] = useState<string | null>(user?.store_slug || null);
   const [storeName, setStoreName] = useState<string | null>(user?.store_name || null);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [toolsExpanded, setToolsExpanded] = useState(false);
+  const [copiedReview, setCopiedReview] = useState(false);
+  const [addressOpen, setAddressOpen] = useState(false);
+  const [editingBio, setEditingBio] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [savingBio, setSavingBio] = useState(false);
+  const [coverUploading, setCoverUploading] = useState(false);
 
+  // Local edit buffers
+  const [bioText, setBioText] = useState(user?.persona?.bio || user?.bio || '');
+  const [nameText, setNameText] = useState(user?.name || '');
+  const [titleText, setTitleText] = useState(user?.persona?.title || user?.title || '');
+
+  const bioInputRef = useRef<TextInput>(null);
+  const completeness = calcCompleteness(user);
   const isManager = !!user?.role && ['super_admin', 'org_admin', 'store_manager'].includes(user.role);
+  const coverPhotoUrl = (user as any)?.cover_photo_url || null;
 
   const reviewUrl = storeSlug
     ? `${PROD_BASE}/review/${storeSlug}${user?._id ? `?sp=${user._id}` : ''}`
     : '';
 
-  const ALL_TOOLS = [
-    { icon: 'paper-plane', label: 'Send Card', color: '#32ADE6', route: '/settings/create-card' },
-    { icon: 'sparkles', label: 'Ask Jessi', color: '#C9A962', route: '/jessie' },
-    { icon: 'bar-chart', label: 'My Activity', color: '#5AC8FA', route: '/reports/activity' },
-    { icon: 'checkmark-done', label: 'Tasks', color: '#34C759', route: '/tasks' },
-    { icon: 'stats-chart', label: 'Analytics', color: '#34C759', route: '/analytics' },
-    { icon: 'document-text', label: 'Templates', color: '#FFD60A', route: '/settings/templates' },
-    { icon: 'trophy', label: 'Leaderboard', color: '#FFD700', route: '/admin/leaderboard' },
-    { icon: 'school', label: 'Training Hub', color: '#FF9500', route: '/training-hub' },
-    { icon: 'mail', label: 'Email Analytics', color: '#5856D6', route: '/settings/email-analytics' },
-    { icon: 'calendar', label: 'Date Triggers', color: '#FF3B30', route: '/settings/date-triggers' },
-    { icon: 'link', label: 'Edit Link Page', color: '#C9A962', route: '/settings/link-page' },
-  ];
-
-  // ── Data loading ─────────────────────────────────────────────────────────
-  useFocusEffect(
-    useCallback(() => {
-      if (user?._id) refreshUserData();
-      if (user?.store_slug) setStoreSlug(user.store_slug);
-      else if (user?.store_id) fetchStoreSlug();
-    }, [user?._id, user?.store_slug, user?.store_id]),
-  );
+  // ── Data loading ───────────────────────────────────────────────────────────
+  useFocusEffect(useCallback(() => {
+    if (user?._id) refreshUserData();
+    if (user?.store_id && !storeSlug) fetchStoreSlug();
+  }, [user?._id]));
 
   async function fetchStoreSlug() {
     try {
-      const res = await api.get(`/admin/stores/${user?.store_id}`, { headers: { 'X-User-ID': user?._id } });
-      const slug = res.data?.slug;
-      const name = res.data?.name;
-      if (name) setStoreName(name);
-      if (slug) setStoreSlug(slug);
-      else if (name) setStoreSlug(name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
+      const res = await api.get(`/admin/stores/${user?.store_id}`);
+      if (res.data?.slug) setStoreSlug(res.data.slug);
+      if (res.data?.name) setStoreName(res.data.name);
     } catch {}
   }
 
@@ -96,203 +116,445 @@ export default function MyAccountScreen() {
       if (res.data) {
         const merged = { ...user, ...res.data };
         setUser(merged);
+        setBioText(merged?.persona?.bio || merged?.bio || '');
+        setNameText(merged?.name || '');
+        setTitleText(merged?.persona?.title || merged?.title || '');
         try { await AsyncStorage.setItem('user', JSON.stringify(merged)).catch(() => {}); } catch {}
       }
     } catch {}
   }
 
-  // ── Handlers ─────────────────────────────────────────────────────────────
-  async function handlePhotoUpdated(newPhotoUrl: string | null) {
-    if (!user) return;
-    setUser({ ...user, photo_url: newPhotoUrl });
-    await refreshUserData();
+  // ── Save fields ────────────────────────────────────────────────────────────
+  async function saveBio() {
+    setSavingBio(true);
+    try {
+      await api.patch(`/users/${user?._id}`, { bio: bioText });
+      setUser({ ...user, bio: bioText, persona: { ...(user as any)?.persona, bio: bioText } });
+      setEditingBio(false);
+    } catch { showSimpleAlert('Error', 'Failed to save bio.'); }
+    setSavingBio(false);
   }
 
-  function handleCopyReviewLink() {
+  async function saveName() {
+    if (!nameText.trim()) return;
+    try {
+      await api.patch(`/users/${user?._id}`, { name: nameText.trim() });
+      setUser({ ...user, name: nameText.trim() });
+      setEditingName(false);
+    } catch { showSimpleAlert('Error', 'Failed to save name.'); }
+  }
+
+  async function saveTitle() {
+    try {
+      await api.patch(`/users/${user?._id}`, { persona: { ...(user as any)?.persona, title: titleText } });
+      setUser({ ...user, persona: { ...(user as any)?.persona, title: titleText } });
+      setEditingTitle(false);
+    } catch { showSimpleAlert('Error', 'Failed to save title.'); }
+  }
+
+  // ── Cover photo ────────────────────────────────────────────────────────────
+  function handleCoverPick() {
+    if (Platform.OS !== 'web') return;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e: any) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setCoverUploading(true);
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        const res = await api.post(`/profile/${user?._id}/cover`, fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        if (res.data?.cover_url) {
+          setUser({ ...user, cover_photo_url: res.data.cover_url } as any);
+        }
+      } catch {}
+      setCoverUploading(false);
+    };
+    input.click();
+  }
+
+  // ── Review share handlers ──────────────────────────────────────────────────
+  function handleCopyReview() {
     if (!reviewUrl) return;
-    if (Platform.OS === 'web' && navigator.clipboard) {
-      navigator.clipboard.writeText(reviewUrl);
-    }
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2500);
+    if (Platform.OS === 'web' && navigator.clipboard) navigator.clipboard.writeText(reviewUrl);
+    setCopiedReview(true);
+    setTimeout(() => setCopiedReview(false), 2500);
   }
-
   function handleShareSMS() {
-    const msg = `Hey! We'd love your feedback. Leave us a review here: ${reviewUrl}`;
-    const href = `sms:?body=${encodeURIComponent(msg)}`;
-    if (Platform.OS === 'web') {
-      const a = document.createElement('a');
-      a.href = href; a.target = '_self';
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    } else { Linking.openURL(href); }
+    const href = `sms:?body=${encodeURIComponent(`Hey! Leave us a review: ${reviewUrl}`)}`;
+    Platform.OS === 'web' ? window.open(href, '_self') : Linking.openURL(href);
     setShowShareModal(false);
   }
-
   function handleShareEmail() {
-    const subject = "We'd love your feedback!";
-    const body = `Hi!\n\nThank you for your business. We'd really appreciate it if you could take a moment to leave us a review:\n\n${reviewUrl}\n\nThank you!`;
-    const href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    if (Platform.OS === 'web') {
-      const a = document.createElement('a');
-      a.href = href; a.target = '_self';
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    } else { Linking.openURL(href); }
+    const href = `mailto:?subject=We'd love your feedback!&body=${encodeURIComponent(`Hi!\n\nWould you mind leaving us a quick review?\n\n${reviewUrl}\n\nThank you!`)}`;
+    Platform.OS === 'web' ? window.open(href, '_self') : Linking.openURL(href);
     setShowShareModal(false);
   }
 
-  function handlePreviewReview() {
-    router.push(`/review/${storeSlug || 'my-store'}` as any);
-    setShowShareModal(false);
-  }
-
+  const photoUrl = resolveUserPhotoUrlHiRes(user as any);
   const roleLabel = user?.role === 'super_admin' ? 'Super Admin'
     : user?.role === 'org_admin' ? 'Org Admin'
     : user?.role === 'store_manager' ? 'Manager' : null;
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  const socialLinks = (user as any)?.persona?.social_links || (user as any)?.social_links || {};
+
+  // ── Presence asset cards ───────────────────────────────────────────────────
+  const ASSETS = [
+    { id: 'card',     icon: 'card',         color: '#007AFF', label: 'Digital Card',  sub: 'Your business card',  url: user?._id ? `${PROD_BASE}/card/${user._id}` : null,         route: '/settings/store-profile' },
+    { id: 'showcase', icon: 'images',        color: '#34C759', label: 'Showcase',       sub: 'Happy customers',     url: user?._id ? `${PROD_BASE}/showcase/${user._id}` : null,     route: '/showroom-manage' },
+    { id: 'review',   icon: 'star',          color: '#FFD60A', label: 'Review Link',    sub: 'Collect reviews',     url: reviewUrl || null,                                           route: '/settings/review-links' },
+    { id: 'linkpage', icon: 'link',          color: '#C9A962', label: 'Link Page',      sub: 'All your links',      url: user?._id ? `${PROD_BASE}/l/${user._id}` : null,            route: '/settings/link-page' },
+    { id: 'landing',  icon: 'globe-outline', color: '#AF52DE', label: 'Landing Page',   sub: 'Full profile page',   url: user?._id ? `${PROD_BASE}/p/${user._id}` : null,            route: '/settings/store-profile' },
+    { id: 'brand',    icon: 'color-palette', color: '#C9A962', label: 'Brand Kit',      sub: 'Colors & theme',      url: null,                                                        route: '/settings/brand-kit' },
+  ] as const;
+
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={[s.container, { backgroundColor: colors.bg }]} edges={['top']}>
-      {/* Header */}
-      <View style={[s.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn} data-testid="back-button">
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
+    <SafeAreaView style={[s.container, { backgroundColor: '#000' }]} edges={['top']}>
+      {/* Header nav */}
+      <View style={s.nav}>
+        <TouchableOpacity onPress={() => router.back()} style={s.navBtn} testID="back-button">
+          <Ionicons name="chevron-back" size={26} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={[s.headerTitle, { color: colors.text }]}>My Presence</Text>
-        <View style={{ width: 28 }} />
+        <Text style={s.navTitle}>My Presence</Text>
+        <TouchableOpacity onPress={() => router.push('/settings/persona' as any)} style={s.navBtn} testID="edit-profile-btn">
+          <Text style={s.navAction}>Edit</Text>
+        </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={s.scroll}>
-        {/* ── Profile Header ── */}
-        <View style={[s.photoSection, { borderBottomColor: colors.border }]}>
-          {user && (
-            <ProfilePhotoUpload user={user as any} colors={colors} onPhotoUpdated={handlePhotoUpdated} />
-          )}
-          <Text style={[s.userName, { color: colors.text }]}>{user?.name || 'Guest'}</Text>
-          <Text style={[s.userEmail, { color: colors.textSecondary }]}>{user?.email || ''}</Text>
-          {roleLabel && (
-            <View style={s.roleBadge}>
-              <Ionicons name="shield-checkmark" size={14} color="#34C759" />
-              <Text style={s.roleText}>{roleLabel}</Text>
+      <ScrollView contentContainerStyle={{ paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
+
+        {/* ── Cover Photo + Avatar ─────────────────────────────────────────── */}
+        <View style={s.coverBlock}>
+          {/* Cover photo */}
+          <TouchableOpacity activeOpacity={0.85} onPress={handleCoverPick} style={s.coverTouch} testID="cover-photo-btn">
+            {coverPhotoUrl ? (
+              <Image source={{ uri: resolvePhotoUrl(coverPhotoUrl) || '' }} style={s.cover} contentFit="cover" placeholder={null} />
+            ) : (
+              <LinearGradient
+                colors={['#1a1200', '#2c1f00', '#3d2c00', '#C9A96230']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={s.cover}
+              />
+            )}
+            {/* Dark bottom gradient for readability */}
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.7)']}
+              style={s.coverGrad}
+            />
+            {/* Camera badge */}
+            {coverUploading ? (
+              <View style={s.coverCameraBadge}>
+                <ActivityIndicator size="small" color="#C9A962" />
+              </View>
+            ) : (
+              <View style={s.coverCameraBadge}>
+                <Ionicons name="camera-outline" size={16} color="#C9A962" />
+                <Text style={s.coverCameraText}>Cover</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          {/* Avatar + completeness ring */}
+          <View style={s.avatarArea}>
+            <View style={s.avatarOuter}>
+              {user && (
+                <ProfilePhotoUpload
+                  user={user as any}
+                  colors={{ card: '#1C1C1E', accent: '#C9A962', ...colors }}
+                  onPhotoUpdated={(url) => { setUser({ ...user, photo_url: url }); refreshUserData(); }}
+                />
+              )}
+              {/* Completeness ring hint */}
+              <View style={[s.completenessRing, { borderColor: completeness >= 80 ? '#34C759' : completeness >= 50 ? '#C9A962' : '#38383A' }]} />
             </View>
-          )}
+            {/* Personal / Store toggle */}
+            {isManager && user?.store_id && (
+              <View style={s.toggle}>
+                {(['personal', 'store'] as const).map((mode) => (
+                  <TouchableOpacity
+                    key={mode}
+                    style={[s.toggleBtn, viewMode === mode && { backgroundColor: mode === 'store' ? '#34C759' : '#007AFF' }]}
+                    onPress={() => setViewMode(mode)}
+                    testID={`toggle-${mode}`}
+                  >
+                    <Ionicons name={mode === 'personal' ? 'person' : 'storefront'} size={14}
+                      color={viewMode === mode ? '#FFF' : '#8E8E93'} />
+                    <Text style={[s.toggleTxt, viewMode === mode && { color: '#FFF', fontWeight: '700' }]}>
+                      {mode === 'personal' ? 'Personal' : (storeName || 'Store')}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
         </View>
 
-        {/* ── Personal / Store Toggle (managers only) ── */}
-        {isManager && user?.store_id && (
-          <View style={[s.toggle, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-            {(['personal', 'store'] as const).map((mode) => (
-              <TouchableOpacity
-                key={mode}
-                style={[s.toggleBtn, viewMode === mode && { backgroundColor: mode === 'personal' ? '#007AFF' : '#34C759' }]}
-                onPress={() => setViewMode(mode)}
-                data-testid={`toggle-${mode}`}
-              >
-                <Ionicons name={mode === 'personal' ? 'person' : 'storefront'} size={16}
-                  color={viewMode === mode ? '#FFF' : colors.textSecondary} />
-                <Text style={[s.toggleText, viewMode === mode && { color: '#FFF', fontWeight: '700' }]}>
-                  {mode === 'personal' ? 'Personal' : (storeName || user?.store_name || 'Store')}
-                </Text>
+        {/* ── Identity Block ─────────────────────────────────────────────────── */}
+        <View style={s.identity}>
+          {/* Name */}
+          {editingName ? (
+            <View style={s.inlineEditRow}>
+              <TextInput
+                style={[s.nameInput, { color: '#FFF' }]}
+                value={nameText}
+                onChangeText={setNameText}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={saveName}
+                onBlur={saveName}
+                testID="name-input"
+              />
+              <TouchableOpacity onPress={saveName} style={s.inlineEditDone}>
+                <Ionicons name="checkmark" size={20} color="#34C759" />
               </TouchableOpacity>
-            ))}
-          </View>
-        )}
+            </View>
+          ) : (
+            <TouchableOpacity style={s.nameRow} onPress={() => setEditingName(true)} testID="name-tap">
+              <Text style={s.nameText}>{user?.name || 'Your Name'}</Text>
+              <Ionicons name="pencil" size={14} color="#8E8E93" style={{ marginLeft: 6, marginTop: 3 }} />
+            </TouchableOpacity>
+          )}
 
-        {/* ── Personal View ── */}
+          {/* Title / tagline */}
+          {editingTitle ? (
+            <TextInput
+              style={[s.titleInput, { color: '#8E8E93' }]}
+              value={titleText}
+              onChangeText={setTitleText}
+              placeholder="Your title or tagline..."
+              placeholderTextColor="#38383A"
+              autoFocus
+              returnKeyType="done"
+              onSubmitEditing={saveTitle}
+              onBlur={saveTitle}
+              testID="title-input"
+            />
+          ) : (
+            <TouchableOpacity onPress={() => setEditingTitle(true)} testID="title-tap">
+              <Text style={s.titleText}>
+                {(user as any)?.persona?.title || (user as any)?.title || 'Add your title or tagline...'}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Role badge */}
+          {roleLabel && (
+            <View style={[s.roleBadge, { backgroundColor: user?.role === 'super_admin' ? '#FF3B3020' : '#C9A96220' }]}>
+              <Ionicons name="shield-checkmark" size={13}
+                color={user?.role === 'super_admin' ? '#FF3B30' : '#C9A962'} />
+              <Text style={[s.roleTxt, { color: user?.role === 'super_admin' ? '#FF3B30' : '#C9A962' }]}>
+                {roleLabel}
+              </Text>
+            </View>
+          )}
+
+          {/* Email */}
+          <Text style={s.emailText}>{user?.email}</Text>
+
+          {/* ── Profile completeness ── */}
+          <View style={s.completenessBar}>
+            <View style={s.completenessTrack}>
+              <View style={[s.completenessFill, {
+                width: `${completeness}%` as any,
+                backgroundColor: completeness >= 80 ? '#34C759' : completeness >= 50 ? '#C9A962' : '#FF453A',
+              }]} />
+            </View>
+            <Text style={s.completenessText}>{completeness}% complete</Text>
+          </View>
+
+          {/* ── Bio ── */}
+          <View style={s.bioBlock}>
+            {editingBio ? (
+              <View>
+                <TextInput
+                  ref={bioInputRef}
+                  style={[s.bioInput, { color: '#FFF' }]}
+                  value={bioText}
+                  onChangeText={setBioText}
+                  multiline
+                  maxLength={300}
+                  placeholder="Write something about yourself..."
+                  placeholderTextColor="#38383A"
+                  autoFocus
+                  testID="bio-input"
+                />
+                <View style={s.bioActions}>
+                  <Text style={s.bioCount}>{bioText.length}/300</Text>
+                  <TouchableOpacity onPress={() => { setEditingBio(false); setBioText((user as any)?.persona?.bio || (user as any)?.bio || ''); }}>
+                    <Text style={s.bioCancel}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={saveBio} style={s.bioSaveBtn} disabled={savingBio} testID="bio-save-btn">
+                    {savingBio
+                      ? <ActivityIndicator size="small" color="#000" />
+                      : <Text style={s.bioSaveText}>Save</Text>
+                    }
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <TouchableOpacity onPress={() => setEditingBio(true)} testID="bio-tap">
+                {bioText ? (
+                  <Text style={s.bioText}>{bioText}</Text>
+                ) : (
+                  <View style={s.bioEmpty}>
+                    <Ionicons name="add-circle-outline" size={18} color="#C9A962" />
+                    <Text style={s.bioEmptyText}>Add your bio</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {/* ── Social link chips ── */}
+          <View style={s.socialChips}>
+            {SOCIAL_PLATFORMS.map((p) => {
+              const val = socialLinks[p.key];
+              return (
+                <TouchableOpacity
+                  key={p.key}
+                  style={[s.socialChip, val && { borderColor: p.color + '60', backgroundColor: p.color + '15' }]}
+                  onPress={() => router.push('/settings/store-profile' as any)}
+                  testID={`social-chip-${p.key}`}
+                >
+                  <Ionicons name={p.icon as any} size={16} color={val ? p.color : '#8E8E93'} />
+                  {val && <Text style={[s.socialChipText, { color: p.color }]} numberOfLines={1}>@{val.replace(/^@/, '')}</Text>}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* ── Personal View ─────────────────────────────────────────────────── */}
         {viewMode === 'personal' && (
           <>
-            {/* My Profile links */}
+            {/* ── Presence Assets 2-col grid ── */}
             <View style={s.section}>
-              <Text style={[s.sectionTitle, { color: colors.textTertiary }]}>My Profile</Text>
-              <View style={[s.menuList, { backgroundColor: colors.card }]}>
-                {[
-                  { icon: 'person', label: 'Edit Profile & Bio', sub: 'Name, bio, photo, social links', color: '#007AFF', route: '/settings/persona' },
-                  { icon: 'color-palette', label: 'My Brand Kit', sub: 'Colors, logo, page theme', color: '#C9A962', route: '/settings/brand-kit' },
-                  { icon: 'mic', label: 'Voice Training', sub: 'Train AI with your voice', color: '#FF3B30', route: '/voice-training' },
-                ].map((item, i, arr) => (
+              <Text style={s.sectionTitle}>My Presence</Text>
+              <Text style={s.sectionSub}>Tap any card to manage or share</Text>
+              <View style={s.assetGrid}>
+                {ASSETS.map((asset) => (
                   <TouchableOpacity
-                    key={item.label}
-                    style={[s.menuRow, { borderBottomColor: colors.border }, i === arr.length - 1 && s.lastRow]}
-                    onPress={() => router.push(item.route as any)}
-                    data-testid={`profile-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                    key={asset.id}
+                    style={s.assetCard}
+                    activeOpacity={0.8}
+                    onPress={() => router.push(asset.route as any)}
+                    testID={`asset-card-${asset.id}`}
                   >
-                    <View style={[s.menuIcon, { backgroundColor: `${item.color}20` }]}>
-                      <Ionicons name={item.icon as any} size={22} color={item.color} />
+                    {/* Mini preview area */}
+                    <View style={[s.assetPreview, { backgroundColor: asset.color + '12', borderColor: asset.color + '30' }]}>
+                      <Ionicons name={asset.icon as any} size={28} color={asset.color} />
+                      {asset.url && (
+                        <TouchableOpacity
+                          style={s.assetPreviewLink}
+                          onPress={() => Platform.OS === 'web' && asset.url && window.open(asset.url, '_blank')}
+                          testID={`asset-preview-${asset.id}`}
+                        >
+                          <Ionicons name="eye-outline" size={13} color={asset.color} />
+                        </TouchableOpacity>
+                      )}
                     </View>
-                    <View style={s.menuContent}>
-                      <Text style={[s.menuTitle, { color: colors.text }]}>{item.label}</Text>
-                      <Text style={[s.menuSub, { color: colors.textSecondary }]}>{item.sub}</Text>
+                    {/* Info row */}
+                    <View style={s.assetInfo}>
+                      <Text style={s.assetLabel}>{asset.label}</Text>
+                      <Text style={s.assetSub}>{asset.sub}</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+                    {/* Actions row */}
+                    <View style={s.assetActions}>
+                      <TouchableOpacity
+                        style={[s.assetActionBtn, { backgroundColor: asset.color + '20' }]}
+                        onPress={() => router.push(asset.route as any)}
+                      >
+                        <Ionicons name="create-outline" size={13} color={asset.color} />
+                        <Text style={[s.assetActionTxt, { color: asset.color }]}>Edit</Text>
+                      </TouchableOpacity>
+                      {asset.url && (
+                        <TouchableOpacity
+                          style={[s.assetActionBtn, { backgroundColor: '#38383A' }]}
+                          onPress={() => {
+                            if (Platform.OS === 'web' && navigator.clipboard && asset.url) {
+                              navigator.clipboard.writeText(asset.url);
+                            }
+                          }}
+                        >
+                          <Ionicons name="copy-outline" size={13} color="#8E8E93" />
+                          <Text style={[s.assetActionTxt, { color: '#8E8E93' }]}>Copy</Text>
+                        </TouchableOpacity>
+                      )}
+                      {asset.id === 'review' && (
+                        <TouchableOpacity
+                          style={[s.assetActionBtn, { backgroundColor: '#38383A' }]}
+                          onPress={() => setShowShareModal(true)}
+                        >
+                          <Ionicons name="share-outline" size={13} color="#8E8E93" />
+                          <Text style={[s.assetActionTxt, { color: '#8E8E93' }]}>Share</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
                   </TouchableOpacity>
                 ))}
               </View>
             </View>
 
-            {/* Address form */}
-            <View style={s.section}>
-              <Text style={[s.sectionTitle, { color: colors.textTertiary }]}>My Address (Optional)</Text>
-              <View style={[s.menuList, { backgroundColor: colors.card, padding: 16 }]}>
-                {[
-                  { field: 'address', placeholder: 'Street Address', flex: 1 },
-                ].map(({ field, placeholder, flex }) => (
-                  <TextInput
-                    key={field}
-                    style={[s.input, { backgroundColor: colors.bg, color: colors.text, flex: flex as any }]}
-                    value={(user as any)?.[field] || ''}
-                    onChangeText={(t) => updateUser({ [field]: t } as any)}
-                    onBlur={() => { if (user?._id) api.patch(`/auth/users/${user._id}`, { [field]: (user as any)?.[field] || '' }); }}
-                    placeholder={placeholder}
-                    placeholderTextColor={colors.textSecondary}
-                  />
-                ))}
-                <View style={{ flexDirection: 'row', gap: 10 }}>
-                  {[
-                    { field: 'city', placeholder: 'City', flex: 1 },
-                    { field: 'state', placeholder: 'ST', flex: 0, width: 60, caps: 'characters' as const, max: 2 },
-                    { field: 'zip_code', placeholder: 'Zip', flex: 0, width: 90, kb: 'number-pad' as const },
-                  ].map(({ field, placeholder, flex, width, caps, max, kb }: any) => (
-                    <TextInput
-                      key={field}
-                      style={[s.input, { backgroundColor: colors.bg, color: colors.text, flex: flex || undefined, width: width || undefined }]}
-                      value={(user as any)?.[field] || ''}
-                      onChangeText={(t) => updateUser({ [field]: t } as any)}
-                      onBlur={() => { if (user?._id) api.patch(`/auth/users/${user._id}`, { [field]: (user as any)?.[field] || '' }); }}
-                      placeholder={placeholder}
-                      placeholderTextColor={colors.textSecondary}
-                      autoCapitalize={caps}
-                      maxLength={max}
-                      keyboardType={kb}
-                    />
-                  ))}
-                </View>
-                <TextInput
-                  style={[s.input, { backgroundColor: colors.bg, color: colors.text }]}
-                  value={(user as any)?.country || 'United States'}
-                  onChangeText={(t) => updateUser({ country: t } as any)}
-                  onBlur={() => { if (user?._id) api.patch(`/auth/users/${user._id}`, { country: (user as any)?.country || '' }); }}
-                  placeholder="Country"
-                  placeholderTextColor={colors.textSecondary}
-                />
-              </View>
-            </View>
-
-            {/* My Photo Gallery */}
+            {/* ── Photo Gallery ── */}
             {user?._id && (
               <ProfileGallery
                 userId={user._id}
                 colors={colors}
-                onSetProfilePhoto={(url) => handlePhotoUpdated(url)}
+                onSetProfilePhoto={(url) => { setUser({ ...user, photo_url: url }); refreshUserData(); }}
               />
             )}
 
-            {/* Presence links — Digital Card, Showcase, Review Link, etc. */}
-            <PresenceLinks
-              user={user}
-              colors={colors}
-              storeSlug={storeSlug}
-              onOpenShareModal={() => setShowShareModal(true)}
-              onPreviewReview={handlePreviewReview}
-            />
+            {/* ── Address (collapsible) ── */}
+            <View style={s.section}>
+              <TouchableOpacity style={s.collapseHeader} onPress={() => setAddressOpen(!addressOpen)} testID="address-toggle">
+                <Ionicons name="location-outline" size={18} color="#C9A962" />
+                <Text style={s.collapseTitle}>My Address</Text>
+                <Ionicons name={addressOpen ? 'chevron-up' : 'chevron-down'} size={18} color="#8E8E93" style={{ marginLeft: 'auto' }} />
+              </TouchableOpacity>
+              {addressOpen && (
+                <View style={[s.collapseBody, { borderLeftColor: '#C9A96240' }]}>
+                  {[
+                    { field: 'address', placeholder: 'Street Address' },
+                    { field: 'city', placeholder: 'City' },
+                  ].map(({ field, placeholder }) => (
+                    <TextInput
+                      key={field}
+                      style={s.addrInput}
+                      value={(user as any)?.[field] || ''}
+                      onChangeText={(t) => updateUser({ [field]: t } as any)}
+                      onBlur={() => { if (user?._id) api.patch(`/auth/users/${user._id}`, { [field]: (user as any)?.[field] || '' }); }}
+                      placeholder={placeholder}
+                      placeholderTextColor="#38383A"
+                      testID={`addr-${field}`}
+                    />
+                  ))}
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {[
+                      { field: 'state', placeholder: 'ST', flex: 0, width: 60 },
+                      { field: 'zip_code', placeholder: 'ZIP', flex: 1, kb: 'number-pad' as const },
+                    ].map(({ field, placeholder, flex, width, kb }: any) => (
+                      <TextInput
+                        key={field}
+                        style={[s.addrInput, { flex: flex || undefined, width: width || undefined }]}
+                        value={(user as any)?.[field] || ''}
+                        onChangeText={(t) => updateUser({ [field]: t } as any)}
+                        onBlur={() => { if (user?._id) api.patch(`/auth/users/${user._id}`, { [field]: (user as any)?.[field] || '' }); }}
+                        placeholder={placeholder}
+                        placeholderTextColor="#38383A"
+                        keyboardType={kb}
+                        testID={`addr-${field}`}
+                      />
+                    ))}
+                  </View>
+                </View>
+              )}
+            </View>
           </>
         )}
 
@@ -301,74 +563,34 @@ export default function MyAccountScreen() {
           <StoreManagement user={user} colors={colors} storeSlug={storeSlug} storeName={storeName} />
         )}
 
-        {/* ── All Tools (collapsible) ── */}
-        <View style={s.section}>
-          <TouchableOpacity
-            style={[s.menuList, { backgroundColor: colors.card, flexDirection: 'row', alignItems: 'center', padding: 16 }]}
-            onPress={() => setToolsExpanded(!toolsExpanded)}
-            activeOpacity={0.7}
-            data-testid="tools-toggle"
-          >
-            <View style={[s.menuIcon, { backgroundColor: '#5856D620' }]}>
-              <Ionicons name="grid" size={22} color="#5856D6" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[s.menuTitle, { color: colors.text }]}>All Tools & Settings</Text>
-              <Text style={[s.menuSub, { color: colors.textSecondary }]}>{ALL_TOOLS.length} tools available</Text>
-            </View>
-            <Ionicons name={toolsExpanded ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textTertiary} />
-          </TouchableOpacity>
-
-          {toolsExpanded && (
-            <View style={[s.menuList, { backgroundColor: colors.card, marginTop: 8 }]}>
-              {ALL_TOOLS.map((item, i, arr) => (
-                <TouchableOpacity
-                  key={item.label}
-                  style={[s.menuRow, { borderBottomColor: colors.border }, i === arr.length - 1 && s.lastRow]}
-                  onPress={() => router.push(item.route as any)}
-                  data-testid={`tool-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
-                >
-                  <View style={[s.menuIcon, { backgroundColor: `${item.color}20` }]}>
-                    <Ionicons name={item.icon as any} size={22} color={item.color} />
-                  </View>
-                  <View style={s.menuContent}>
-                    <Text style={[s.menuTitle, { color: colors.text }]}>{item.label}</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </View>
-
         {/* ── Personal Settings ── */}
         <View style={s.section}>
-          <Text style={[s.sectionTitle, { color: colors.textTertiary }]}>Personal Settings</Text>
-          <View style={[s.menuList, { backgroundColor: colors.card }]}>
+          <Text style={s.sectionTitle}>Settings</Text>
+          <View style={s.settingsList}>
             {[
-              { icon: 'shield-checkmark', label: 'Security', sub: 'Password & Face ID', color: '#FF3B30', route: '/settings/security' },
-              { icon: 'calendar', label: 'Calendar', sub: 'Connect Google Calendar', color: '#007AFF', route: '/settings/calendar' },
-              { icon: 'download-outline', label: 'Install App', sub: 'Add to home screen', color: '#007AFF', action: 'install' },
+              { icon: 'shield-checkmark', label: 'Security', sub: 'Password & Face ID', color: '#FF453A', route: '/settings/security' },
+              { icon: 'calendar', label: 'Calendar', sub: 'Google Calendar sync', color: '#007AFF', route: '/settings/calendar' },
+              { icon: 'mic', label: 'Voice Training', sub: 'Train AI with your voice', color: '#FF3B30', route: '/voice-training' },
+              { icon: 'download-outline', label: 'Install App', sub: 'Add to home screen', color: '#34C759', action: 'install' },
             ].map((item, i, arr) => (
               <TouchableOpacity
                 key={item.label}
-                style={[s.menuRow, { borderBottomColor: colors.border }, i === arr.length - 1 && s.lastRow]}
+                style={[s.settingsRow, i === arr.length - 1 && { borderBottomWidth: 0 }]}
                 onPress={() => {
                   if ((item as any).action === 'install') {
-                    if (Platform.OS === 'web') window.open('/install.html', '_self');
-                    else Linking.openURL('https://app.imonsocial.com/install.html');
+                    Platform.OS === 'web' ? window.open('/install.html', '_self') : Linking.openURL('https://app.imonsocial.com/install.html');
                   } else { router.push((item as any).route as any); }
                 }}
-                data-testid={`settings-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                testID={`settings-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
               >
-                <View style={[s.menuIcon, { backgroundColor: `${item.color}20` }]}>
-                  <Ionicons name={item.icon as any} size={22} color={item.color} />
+                <View style={[s.settingsIcon, { backgroundColor: item.color + '20' }]}>
+                  <Ionicons name={item.icon as any} size={20} color={item.color} />
                 </View>
-                <View style={s.menuContent}>
-                  <Text style={[s.menuTitle, { color: colors.text }]}>{item.label}</Text>
-                  <Text style={[s.menuSub, { color: colors.textSecondary }]}>{item.sub}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.settingsLabel}>{item.label}</Text>
+                  <Text style={s.settingsSub}>{item.sub}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+                <Ionicons name="chevron-forward" size={18} color="#38383A" />
               </TouchableOpacity>
             ))}
           </View>
@@ -376,59 +598,114 @@ export default function MyAccountScreen() {
 
         {/* ── Account Info ── */}
         <AccountInfoCard user={user} colors={colors} />
-
-        <View style={{ height: 40 }} />
+        <View style={{ height: 32 }} />
       </ScrollView>
 
-      {/* ── Share Review Modal ── */}
+      {/* Share Review Modal */}
       <ShareReviewModal
         visible={showShareModal}
         onClose={() => setShowShareModal(false)}
         colors={colors}
         reviewUrl={reviewUrl}
-        copiedLink={copiedLink}
-        onCopyLink={handleCopyReviewLink}
+        copiedLink={copiedReview}
+        onCopyLink={handleCopyReview}
         onShareSMS={handleShareSMS}
         onShareEmail={handleShareEmail}
-        onPreview={handlePreviewReview}
+        onPreview={() => { router.push(`/review/${storeSlug || 'my-store'}` as any); setShowShareModal(false); }}
       />
     </SafeAreaView>
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
-const getStyles = (colors: any) => StyleSheet.create({
-  container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1 },
-  backBtn: { padding: 4 },
-  headerTitle: { fontSize: 19, fontWeight: '600' },
-  scroll: { paddingBottom: 32 },
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#000' },
 
-  // Profile header
-  photoSection: { alignItems: 'center', paddingVertical: 24, borderBottomWidth: 1 },
-  userName: { fontSize: 24, fontWeight: '700', marginBottom: 4 },
-  userEmail: { fontSize: 17, marginBottom: 8 },
-  roleBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#34C75920', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, marginTop: 4 },
-  roleText: { fontSize: 15, fontWeight: '600', color: '#34C759' },
+  // Nav
+  nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10 },
+  navBtn: { padding: 4, minWidth: 48 },
+  navTitle: { fontSize: 17, fontWeight: '600', color: '#FFF' },
+  navAction: { fontSize: 17, color: '#C9A962', fontWeight: '600' },
+
+  // Cover
+  coverBlock: { position: 'relative', marginBottom: 0 },
+  coverTouch: { width: '100%', height: 160, position: 'relative' },
+  cover: { width: '100%', height: 160 },
+  coverGrad: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 80 },
+  coverCameraBadge: { position: 'absolute', bottom: 10, right: 14, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, borderWidth: 1, borderColor: '#C9A96250' },
+  coverCameraText: { fontSize: 13, color: '#C9A962', fontWeight: '600' },
+  avatarArea: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingHorizontal: 16, marginTop: -50 },
+  avatarOuter: { position: 'relative' },
+  completenessRing: { position: 'absolute', top: -6, left: -6, right: -6, bottom: -6, borderRadius: 999, borderWidth: 2, pointerEvents: 'none' },
 
   // Toggle
-  toggle: { flexDirection: 'row', padding: 6, marginHorizontal: 16, marginTop: 16, marginBottom: 4, borderRadius: 12, gap: 4 },
-  toggleBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 10, gap: 6 },
-  toggleText: { fontSize: 16, fontWeight: '500', color: colors.textSecondary },
+  toggle: { flexDirection: 'row', backgroundColor: '#1C1C1E', borderRadius: 20, padding: 3, gap: 2, marginBottom: 8 },
+  toggleBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16 },
+  toggleTxt: { fontSize: 13, color: '#8E8E93', fontWeight: '500' },
+
+  // Identity
+  identity: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
+  nameText: { fontSize: 26, fontWeight: '700', color: '#FFF', letterSpacing: 0.3 },
+  nameInput: { fontSize: 26, fontWeight: '700', flex: 1, paddingVertical: 0, paddingHorizontal: 0 },
+  inlineEditRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  inlineEditDone: { padding: 4 },
+  titleText: { fontSize: 15, color: '#8E8E93', marginBottom: 8 },
+  titleInput: { fontSize: 15, paddingVertical: 4, paddingHorizontal: 0, marginBottom: 8 },
+  roleBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginBottom: 6 },
+  roleTxt: { fontSize: 13, fontWeight: '600' },
+  emailText: { fontSize: 14, color: '#8E8E93', marginBottom: 14 },
+
+  // Completeness
+  completenessBar: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
+  completenessTrack: { flex: 1, height: 4, backgroundColor: '#38383A', borderRadius: 2, overflow: 'hidden' },
+  completenessFill: { height: 4, borderRadius: 2 },
+  completenessText: { fontSize: 12, color: '#8E8E93', fontWeight: '600' },
+
+  // Bio
+  bioBlock: { marginBottom: 16 },
+  bioText: { fontSize: 15, color: '#EBEBF5CC', lineHeight: 21 },
+  bioEmpty: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  bioEmptyText: { fontSize: 15, color: '#C9A962', fontWeight: '500' },
+  bioInput: { fontSize: 15, lineHeight: 21, paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#1C1C1E', borderRadius: 10, borderWidth: 1, borderColor: '#38383A', minHeight: 80, textAlignVertical: 'top' },
+  bioActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 10, marginTop: 8 },
+  bioCount: { fontSize: 12, color: '#8E8E93', flex: 1 },
+  bioCancel: { fontSize: 15, color: '#8E8E93' },
+  bioSaveBtn: { backgroundColor: '#C9A962', paddingHorizontal: 18, paddingVertical: 7, borderRadius: 16 },
+  bioSaveText: { fontSize: 15, fontWeight: '700', color: '#000' },
+
+  // Social chips
+  socialChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+  socialChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#38383A' },
+  socialChipText: { fontSize: 13, fontWeight: '600', maxWidth: 80 },
 
   // Sections
-  section: { marginTop: 24, paddingHorizontal: 16 },
-  sectionTitle: { fontSize: 15, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
+  section: { marginTop: 28, paddingHorizontal: 16 },
+  sectionTitle: { fontSize: 20, fontWeight: '700', color: '#FFF', marginBottom: 2 },
+  sectionSub: { fontSize: 13, color: '#8E8E93', marginBottom: 14 },
 
-  // Menu lists
-  menuList: { borderRadius: 12, overflow: 'hidden' },
-  menuRow: { flexDirection: 'row', alignItems: 'center', padding: 14, borderBottomWidth: 1 },
-  lastRow: { borderBottomWidth: 0 },
-  menuIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  menuContent: { flex: 1 },
-  menuTitle: { fontSize: 17, fontWeight: '600', marginBottom: 2 },
-  menuSub: { fontSize: 14 },
+  // Asset cards 2-col grid
+  assetGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  assetCard: { width: '47.5%', backgroundColor: '#1C1C1E', borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#38383A' },
+  assetPreview: { height: 88, alignItems: 'center', justifyContent: 'center', position: 'relative', borderBottomWidth: 1, borderBottomColor: '#38383A' },
+  assetPreviewLink: { position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 12, padding: 4 },
+  assetInfo: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 6 },
+  assetLabel: { fontSize: 14, fontWeight: '700', color: '#FFF', marginBottom: 2 },
+  assetSub: { fontSize: 12, color: '#8E8E93' },
+  assetActions: { flexDirection: 'row', gap: 6, paddingHorizontal: 10, paddingBottom: 10 },
+  assetActionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, paddingVertical: 6, borderRadius: 8 },
+  assetActionTxt: { fontSize: 12, fontWeight: '600' },
 
   // Address
-  input: { borderRadius: 10, padding: 12, fontSize: 16, marginBottom: 10 },
+  collapseHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14, paddingHorizontal: 16, backgroundColor: '#1C1C1E', borderRadius: 12 },
+  collapseTitle: { fontSize: 16, fontWeight: '600', color: '#FFF' },
+  collapseBody: { borderLeftWidth: 2, marginLeft: 16, paddingLeft: 16, paddingTop: 12, gap: 10 },
+  addrInput: { backgroundColor: '#1C1C1E', color: '#FFF', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, borderWidth: 1, borderColor: '#38383A', marginBottom: 8 },
+
+  // Settings list
+  settingsList: { backgroundColor: '#1C1C1E', borderRadius: 14, overflow: 'hidden' },
+  settingsRow: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12, borderBottomWidth: 1, borderBottomColor: '#38383A' },
+  settingsIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  settingsLabel: { fontSize: 16, fontWeight: '600', color: '#FFF', marginBottom: 2 },
+  settingsSub: { fontSize: 13, color: '#8E8E93' },
 });
