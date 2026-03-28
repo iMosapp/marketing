@@ -208,16 +208,31 @@ export default function LoginScreen() {
         }
         return; // Success — exit the retry loop
       } catch (error: any) {
+        // Always log the raw error so we can diagnose unexpected post-login crashes
+        console.error('[Login] catch error:', {
+          message: error?.message,
+          status: error?.response?.status,
+          data: error?.response?.data,
+          code: error?.code,
+          stack: error?.stack?.slice?.(0, 500),
+        });
         const status = error?.response?.status;
         // Only retry on network/connection errors, not on 401 (wrong password)
         if (status === 401 || retries >= maxRetries) {
           try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error); } catch {}
           if (status === 401) {
             setLoginError('Invalid email or password');
+          } else if (status === 402) {
+            setLoginError(error?.response?.data?.detail || 'Account access issue. Please contact support.');
+          } else if (status === 403) {
+            setLoginError('Your account is not active. Please contact your administrator.');
           } else if (status === 502 || status === 503 || status === 504) {
             setLoginError('Server is temporarily unavailable. Please try again in a moment.');
-          } else if (error?.message?.includes('Network') || error?.message?.includes('timeout') || !status) {
+          } else if (error?.message?.includes('Network') || error?.message?.includes('timeout') || error?.code === 'ERR_NETWORK' || error?.code === 'ECONNABORTED') {
             setLoginError('Connection issue. Please check your internet and try again.');
+          } else if (!status) {
+            // A JavaScript runtime error or unknown network failure
+            setLoginError('Something went wrong. Please close and reopen the app, then try again.');
           } else {
             setLoginError('Something went wrong. Please try again.');
           }

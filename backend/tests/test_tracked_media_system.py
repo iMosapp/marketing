@@ -19,7 +19,7 @@ import io
 import time
 from PIL import Image
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://scheduler-update-1.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://user-routing-issue.preview.emergentagent.com').rstrip('/')
 
 # Test credentials from iteration_246.json
 TEST_USER_ID = "69a0b7095fddcede09591667"

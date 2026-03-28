@@ -7,7 +7,7 @@ import requests
 import os
 from datetime import datetime
 
-BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://scheduler-update-1.preview.emergentagent.com')
+BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://user-routing-issue.preview.emergentagent.com')
 
 
 class TestSubscriptionPlans:

@@ -1,0 +1,76 @@
+{
+  "summary": "Iteration 251 - Login Routing Fix (onboarding_complete: null) Testing. Verified 3 key fixes: (1) _layout.tsx changed !user.onboarding_complete to user.onboarding_complete === false, (2) +html.tsx SW cleanup with sessionStorage-gated reload, (3) login.tsx improved catch block. All 14 backend tests passed. All 3 frontend flows verified via Playwright on mobile viewport (390x844).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_login_routing_fix.py",
+    "/app/test_reports/pytest/pytest_login_routing_fix.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Fix verified: _layout.tsx line 65 correctly uses user.onboarding_complete === false (strict equality) instead of !user.onboarding_complete (truthy check that incorrectly redirected null users)",
+    "+html.tsx SW cleanup with sessionStorage-gated reload prevents infinite reload loops and clears stale SWs on login page",
+    "login.tsx catch block now logs full error details including status, response data, code, and stack for diagnostics",
+    "login.tsx also checks onboarding_complete === false (not truthy) before redirecting to complete-profile - consistent with layout fix",
+    "Backend /api/auth/login correctly returns onboarding_complete: null for Matt (mjeast1985@gmail.com) - confirms old code was the bug"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_login_routing_fix.py"
+  ],
+  "success_rate": {
+    "backend": "100% (14/14 tests passed)",
+    "frontend": "100% (Matt login → /home PASS, Admin login → /home PASS, Wrong password error PASS)"
+  },
+  "test_credentials": {
+    "super_admin": "forest@imosapp.com / Admin123!",
+    "test_user_no_store": "mjeast1985@gmail.com / NavyBean1!"
+  },
+  "seed_data_creation": "None - used existing users",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Login routing fix fully verified. Matt (mjeast1985@gmail.com, onboarding_complete: null) now correctly lands on /home after login. The key fix is in _layout.tsx line 65: user.onboarding_complete === false instead of !user.onboarding_complete. null === false evaluates to false in JS, so null users skip onboarding redirect. +html.tsx SW cleanup prevents stale service workers from intercepting login requests on PWA mobile.",
+  "mocked_apis": {
+    "Twilio SMS": "MOCKED - SMS sending is mocked in test env"
+  },
+  "tests_executed": {
+    "backend_api_tests": [
+      "test_health_check - PASSED",
+      "test_matt_login_success - PASSED (HTTP 200)",
+      "test_matt_user_has_null_onboarding_complete - PASSED (onboarding_complete: null confirmed)",
+      "test_matt_user_no_store_id - PASSED (store_id: null)",
+      "test_matt_user_no_org_id - PASSED (org_id: null)",
+      "test_matt_user_is_active - PASSED (status: active)",
+      "test_admin_login_success - PASSED (HTTP 200, role: super_admin)",
+      "test_admin_user_onboarding_not_false - PASSED",
+      "test_wrong_password_returns_401 - PASSED",
+      "test_wrong_password_admin_returns_401 - PASSED",
+      "test_nonexistent_user_returns_401 - PASSED",
+      "test_empty_credentials_returns_401 - PASSED",
+      "test_matt_test_login_endpoint - PASSED (diagnostics: status=pass, password_match=true)",
+      "test_layout_fix_verification - PASSED (null === false → false, no redirect)"
+    ],
+    "frontend_playwright_tests": [
+      "Matt login (mjeast1985@gmail.com / NavyBean1!) → navigates to /home - PASSED (NOT /onboarding)",
+      "Admin login (forest@imosapp.com / Admin123!) → navigates to /home - PASSED",
+      "Wrong password (mjeast1985@gmail.com / WrongPassword123!) → 'Invalid email or password' error shown - PASSED"
+    ]
+  },
+  "bug_fix_verified": {
+    "issue": "Matt (mjeast1985@gmail.com) could not login via mobile PWA - got redirected to /onboarding instead of home",
+    "root_cause": "_layout.tsx used !user.onboarding_complete which evaluates to true for null values (not just false). Matt's onboarding_complete is null, causing mobile PWA redirect loop to /onboarding",
+    "fix_location": "/app/frontend/app/(tabs)/_layout.tsx line 65",
+    "fix_details": "Changed `!user.onboarding_complete` to `user.onboarding_complete === false` — strict equality check means null and undefined correctly skip onboarding redirect",
+    "additional_fixes": [
+      "+html.tsx: SW cleanup with sessionStorage-gated reload prevents infinite reloads after SW unregistration",
+      "login.tsx: catch block improved with full error logging (status, data, code, stack) for better mobile PWA diagnostics"
+    ],
+    "verification": "14 backend tests + 3 frontend Playwright tests all pass. Matt lands on /home confirmed."
+  }
+}

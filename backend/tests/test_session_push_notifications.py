@@ -13,7 +13,7 @@ import os
 from datetime import datetime
 
 # Use PUBLIC URL from frontend/.env
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://scheduler-update-1.preview.emergentagent.com").rstrip("/")
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://user-routing-issue.preview.emergentagent.com").rstrip("/")
 
 # Test credentials
 TEST_EMAIL = "forest@imosapp.com"

@@ -60,7 +60,9 @@ export default function TabLayout() {
   }, [mounted, isLoading, isAuthenticated]);
 
   useEffect(() => {
-    if (mounted && !isLoading && isAuthenticated && user && !isImpersonating && !user.onboarding_complete) {
+    // Only redirect to onboarding when explicitly set to false (new user flow).
+    // null / undefined = existing user who predates the onboarding field — skip it.
+    if (mounted && !isLoading && isAuthenticated && user && !isImpersonating && user.onboarding_complete === false) {
       router.replace('/onboarding');
     }
   }, [mounted, isLoading, isAuthenticated, user?.onboarding_complete, isImpersonating]);

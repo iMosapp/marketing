@@ -14,7 +14,7 @@ import requests
 import os
 from datetime import datetime
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://scheduler-update-1.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://user-routing-issue.preview.emergentagent.com')
 
 # Test data from the review request
 TEST_PARTNER_ID = "69b9dd5cb27dd76126c289cd"

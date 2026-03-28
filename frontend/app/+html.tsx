@@ -82,10 +82,22 @@ export default function Root({ children }: PropsWithChildren) {
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              // On page load: if a broken service worker exists and we're on the login page, kill it
+              // On page load: if a broken service worker exists and we're on the login/root page, kill it.
+              // After unregistering, reload ONCE so the page is no longer under SW control before login.
               if ('serviceWorker' in navigator && (window.location.pathname.includes('login') || window.location.pathname === '/')) {
                 navigator.serviceWorker.getRegistrations().then(function(regs) {
-                  regs.forEach(function(reg) { reg.unregister(); });
+                  if (regs.length > 0) {
+                    Promise.all(regs.map(function(r) { return r.unregister(); })).then(function() {
+                      // Reload once so the old SW stops intercepting requests immediately
+                      if (!sessionStorage.getItem('sw_clean_reload')) {
+                        sessionStorage.setItem('sw_clean_reload', '1');
+                        window.location.reload();
+                      }
+                    });
+                  } else {
+                    // No active SW — safe to clear the flag for next time
+                    sessionStorage.removeItem('sw_clean_reload');
+                  }
                 });
               }
             `,

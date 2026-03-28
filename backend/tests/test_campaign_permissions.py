@@ -9,7 +9,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://scheduler-update-1.preview.emergentagent.com')
+BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://user-routing-issue.preview.emergentagent.com')
 
 # Test credentials
 SALES_REP_EMAIL = "sales@mvpline.com"

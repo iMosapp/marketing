@@ -19,7 +19,7 @@ from bson import ObjectId
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
 if not BASE_URL:
     # Fallback for local testing
-    BASE_URL = "https://scheduler-update-1.preview.emergentagent.com"
+    BASE_URL = "https://user-routing-issue.preview.emergentagent.com"
 
 # Test prefix for cleanup
 TEST_PREFIX = "TEST_CAMP_TASK_"

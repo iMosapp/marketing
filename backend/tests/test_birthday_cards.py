@@ -10,7 +10,7 @@ import os
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://scheduler-update-1.preview.emergentagent.com"
+    BASE_URL = "https://user-routing-issue.preview.emergentagent.com"
 
 TEST_CARD_ID = "3ffea59c-c37"
 

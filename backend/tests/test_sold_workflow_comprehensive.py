@@ -17,7 +17,7 @@ from datetime import datetime
 from pymongo import MongoClient
 from bson import ObjectId
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://scheduler-update-1.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://user-routing-issue.preview.emergentagent.com').rstrip('/')
 
 # MongoDB connection for test setup/cleanup
 client = MongoClient("mongodb://localhost:27017")
