@@ -215,6 +215,58 @@ async def upload_photo(user_id: str, file: UploadFile = File(...)):
     }
 
 
+@router.get("/{user_id}/gallery")
+async def get_user_gallery(user_id: str):
+    """Get user's personal photo gallery."""
+    db = get_db()
+    photos = await db.user_gallery.find(
+        {"user_id": user_id},
+        {"_id": 0, "photo_id": 1, "photo_url": 1, "thumbnail_url": 1, "created_at": 1}
+    ).sort("created_at", -1).to_list(50)
+    return {"photos": photos}
+
+
+@router.post("/{user_id}/gallery")
+async def upload_gallery_photo(user_id: str, file: UploadFile = File(...)):
+    """Upload a photo to the user's personal gallery."""
+    db = get_db()
+    if not file.content_type.startswith('image/'):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    contents = await file.read()
+    if len(contents) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image must be less than 10MB")
+    from utils.image_storage import upload_image
+    try:
+        result = await upload_image(contents, prefix="gallery", entity_id=user_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Image processing failed")
+    if not result:
+        raise HTTPException(status_code=500, detail="Image processing failed")
+
+    import uuid
+    photo_id = str(uuid.uuid4())
+    photo_url = f"/api/images/{result['original_path']}"
+    thumb_url = f"/api/images/{result['thumbnail_path']}"
+    await db.user_gallery.insert_one({
+        "user_id": user_id,
+        "photo_id": photo_id,
+        "photo_url": photo_url,
+        "thumbnail_url": thumb_url,
+        "created_at": datetime.utcnow(),
+    })
+    return {"success": True, "photo_id": photo_id, "photo_url": photo_url, "thumbnail_url": thumb_url}
+
+
+@router.delete("/{user_id}/gallery/{photo_id}")
+async def delete_gallery_photo(user_id: str, photo_id: str):
+    """Delete a photo from the user's personal gallery."""
+    db = get_db()
+    result = await db.user_gallery.delete_one({"user_id": user_id, "photo_id": photo_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Photo not found")
+    return {"success": True}
+
+
 @router.post("/{user_id}/generate-bio")
 async def generate_bio(user_id: str, data: dict):
     """Generate a professional bio using AI based on user's personal info"""

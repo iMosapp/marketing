@@ -31,6 +31,7 @@ export function resolvePhotoUrl(url: string | null | undefined): string | null {
 /**
  * Picks the best available photo URL from a user object.
  * Checks avatar → thumbnail → full in order of smallest file size.
+ * Use for small avatars (list items, chips, badges).
  */
 export function resolveUserPhotoUrl(user: {
   photo_avatar_path?: string | null;
@@ -45,6 +46,23 @@ export function resolveUserPhotoUrl(user: {
   if (user.photo_thumb_path)  return resolvePhotoUrl(`/api/images/${user.photo_thumb_path}`);
   if (user.photo_path)        return resolvePhotoUrl(`/api/images/${user.photo_path}`);
   if (user.photo_url)         return resolvePhotoUrl(user.photo_url);
+  return null;
+}
+
+/**
+ * Picks the highest quality available photo URL from a user object.
+ * Skips the tiny avatar — use for large displays (My Presence, profile headers).
+ */
+export function resolveUserPhotoUrlHiRes(user: {
+  photo_thumb_path?: string | null;
+  photo_path?: string | null;
+  photo_url?: string | null;
+  _id?: string;
+} | null | undefined): string | null {
+  if (!user) return null;
+  if (user.photo_thumb_path) return resolvePhotoUrl(`/api/images/${user.photo_thumb_path}`);
+  if (user.photo_path)       return resolvePhotoUrl(`/api/images/${user.photo_path}`);
+  if (user.photo_url)        return resolvePhotoUrl(user.photo_url);
   return null;
 }
 

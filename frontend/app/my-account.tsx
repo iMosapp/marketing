@@ -32,6 +32,7 @@ import { PresenceLinks } from '../components/account/PresenceLinks';
 import { StoreManagement } from '../components/account/StoreManagement';
 import { ShareReviewModal } from '../components/account/ShareReviewModal';
 import { AccountInfoCard } from '../components/account/AccountInfoCard';
+import { ProfileGallery } from '../components/account/ProfileGallery';
 
 const PROD_BASE = 'https://app.imonsocial.com';
 
@@ -274,6 +275,11 @@ export default function MyAccountScreen() {
                 />
               </View>
             </View>
+
+            {/* My Photo Gallery */}
+            {user?._id && (
+              <ProfileGallery userId={user._id} colors={colors} />
+            )}
 
             {/* Presence links — Digital Card, Showcase, Review Link, etc. */}
             <PresenceLinks

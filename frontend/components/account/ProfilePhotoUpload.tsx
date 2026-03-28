@@ -14,7 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 import api from '../../services/api';
 import { showSimpleAlert, showConfirm } from '../../services/alert';
 import { Avatar } from '../Avatar';
-import { resolveUserPhotoUrl } from '../../utils/photoUrl';
+import { resolveUserPhotoUrlHiRes } from '../../utils/photoUrl';
 import { User } from '../../types';
 
 interface Props {
@@ -143,7 +143,8 @@ export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
     );
   }
 
-  const currentPhoto = resolveUserPhotoUrl(user);
+  // Use hi-res thumbnail for the profile circle — avatar path is too small for retina screens
+  const currentPhoto = resolveUserPhotoUrlHiRes(user);
 
   return (
     <View style={styles.container}>

@@ -159,6 +159,7 @@ export default function ContactDetailScreen() {
   const [fullPhotoLoading, setFullPhotoLoading] = useState(false);
   const [allPhotos, setAllPhotos] = useState<any[]>([]);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
+  const photoReelRef = useRef<ScrollView>(null);
   const [isEditing, setIsEditing] = useState(isNewContact);
   const [showMoreDetails, setShowMoreDetails] = useState(false);
 
@@ -4221,32 +4222,37 @@ export default function ContactDetailScreen() {
               </View>
             </View>
           ) : selectedPhotoIndex >= 0 && allPhotos.length > 0 ? (
-            /* === FULL-SCREEN VIEWER (tap a photo to get here) === */
+            /* === FULL-SCREEN VIEWER === */
             <View style={{ flex: 1 }}>
-              <FlatList
-                data={allPhotos}
+              <ScrollView
+                ref={photoReelRef}
                 horizontal
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
-                initialScrollIndex={Math.min(selectedPhotoIndex, allPhotos.length - 1)}
-                getItemLayout={(_, index) => {
-                  const w = screenWidth;
-                  return { length: w, offset: w * index, index };
-                }}
-                onMomentumScrollEnd={(e) => {
-                  const pageWidth = e.nativeEvent.layoutMeasurement.width;
-                  const newIndex = Math.round(e.nativeEvent.contentOffset.x / pageWidth);
-                  if (newIndex >= 0 && newIndex < allPhotos.length) {
-                    setSelectedPhotoIndex(newIndex);
-                    setFullPhoto(allPhotos[newIndex]?.url || null);
+                scrollEventThrottle={16}
+                onLayout={() => {
+                  // Scroll to the tapped photo after layout — more reliable than FlatList initialScrollIndex on web
+                  if (selectedPhotoIndex > 0 && photoReelRef.current) {
+                    setTimeout(() => {
+                      photoReelRef.current?.scrollTo({ x: selectedPhotoIndex * screenWidth, animated: false });
+                    }, 50);
                   }
                 }}
-                keyExtractor={(item, index) => `photo-reel-${item.type}-${index}`}
-                renderItem={({ item }) => {
+                onScroll={(e) => {
+                  const idx = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
+                  if (idx >= 0 && idx < allPhotos.length && idx !== selectedPhotoIndex) {
+                    setSelectedPhotoIndex(idx);
+                    setFullPhoto(allPhotos[idx]?.url || null);
+                  }
+                }}
+                style={{ flex: 1 }}
+                data-testid="photo-reel"
+              >
+                {allPhotos.map((item, i) => {
                   const screenH = Dimensions.get('window').height;
                   const imgH = screenH - 200;
                   return (
-                    <View style={{ width: screenWidth, height: imgH, justifyContent: 'center', alignItems: 'center' }}>
+                    <View key={`reel-${i}`} style={{ width: screenWidth, height: imgH, justifyContent: 'center', alignItems: 'center' }}>
                       <Image
                         source={{ uri: item.url }}
                         style={{ width: screenWidth, height: imgH }}
@@ -4256,10 +4262,8 @@ export default function ContactDetailScreen() {
                       />
                     </View>
                   );
-                }}
-                style={{ flex: 1 }}
-                data-testid="photo-reel"
-              />
+                })}
+              </ScrollView>
               {/* Bottom action bar */}
               <View style={s.viewerBottomBar}>
                 <View style={{ flex: 1 }}>
