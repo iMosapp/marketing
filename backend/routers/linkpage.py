@@ -212,6 +212,35 @@ async def get_user_link_page(user_id: str):
                 {"user_id": user_id},
                 {"$set": {"social_links": social_links}}
             )
+
+        # Migration: inject "Text Me" SMS link if missing (for pages created before this feature)
+        existing_link_ids = {l.get("id") for l in page.get("links", [])}
+        if "sms" not in existing_link_ids:
+            # Find the phone number — from the existing "Call Me" link or the user doc
+            phone = None
+            for l in page.get("links", []):
+                if l.get("id") == "phone" and l.get("url", "").startswith("tel:"):
+                    phone = l["url"].replace("tel:", "")
+                    break
+            if not phone:
+                user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"phone": 1})
+                if user_doc:
+                    phone = user_doc.get("phone")
+            if phone:
+                sms_link = {"id": "sms", "label": "Text Me", "url": f"sms:{phone}", "icon": "sms", "color": "#34C759", "visible": True}
+                # Insert after the "phone" Call Me link if present, otherwise at start
+                links_list = page.get("links", [])
+                phone_idx = next((i for i, l in enumerate(links_list) if l.get("id") == "phone"), -1)
+                if phone_idx >= 0:
+                    links_list.insert(phone_idx + 1, sms_link)
+                else:
+                    links_list.insert(0, sms_link)
+                page["links"] = links_list
+                await db.link_pages.update_one(
+                    {"user_id": user_id},
+                    {"$set": {"links": links_list}}
+                )
+
         return page
 
     # Auto-create from digital card data
@@ -246,6 +275,7 @@ async def get_user_link_page(user_id: str):
     links = []
     if user.get("phone"):
         links.append({"id": "phone", "label": "Call Me", "url": f"tel:{user['phone']}", "icon": "call", "color": "#34C759", "visible": True})
+        links.append({"id": "sms", "label": "Text Me", "url": f"sms:{user['phone']}", "icon": "sms", "color": "#34C759", "visible": True})
     if user.get("email"):
         links.append({"id": "email", "label": "Email Me", "url": f"mailto:{user['email']}", "icon": "mail", "color": "#007AFF", "visible": True})
     links.append({"id": "digital_card", "label": "My Digital Card", "url": f"/card/{user_id}", "icon": "card", "color": "#C9A962", "visible": True})

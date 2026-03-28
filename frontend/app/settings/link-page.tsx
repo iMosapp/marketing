@@ -23,6 +23,7 @@ const SOCIAL_PLATFORMS = [
 
 const CONTACT_ICONS: Record<string, { name: string; color: string }> = {
   'call': { name: 'call', color: '#34C759' },
+  'sms': { name: 'chatbubble', color: '#34C759' },
   'mail': { name: 'mail', color: '#007AFF' },
   'card': { name: 'card', color: '#C9A962' },
   'star': { name: 'star', color: '#FBBC04' },
