@@ -191,7 +191,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // This prevents SW from interfering with the login flow in PWA standalone mode
       if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
         try {
-          navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
+          navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch(() => {});
         } catch {}
       }
     } catch (error) {
