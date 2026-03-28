@@ -232,17 +232,22 @@ export default function LoginScreen() {
             setLoginError(error?.response?.data?.detail || 'Account access issue. Please contact support.');
           } else if (status === 403) {
             setLoginError('Your account is not active. Please contact your administrator.');
+          } else if (status === 429) {
+            // Cloudflare or server rate-limiting — common on iOS/mobile
+            setLoginError('Too many login attempts. Please wait a moment and try again.');
+          } else if (status === 500 || status === 501) {
+            // Server-side error — could be temporary DB connection issue
+            setLoginError('Server error. This usually clears in 1-2 minutes — please try again shortly.');
           } else if (status === 502 || status === 503 || status === 504) {
-            setLoginError('Server is temporarily unavailable. Please try again in a moment.');
+            setLoginError('Server is temporarily restarting. Please try again in 30 seconds.');
           } else if (error?.message?.includes('Network') || error?.message?.includes('network') || error?.message?.includes('timeout') || error?.code === 'ERR_NETWORK' || error?.code === 'ECONNABORTED') {
             setLoginError('Connection issue. Please check your internet and try again.');
           } else if (error?.name === 'SecurityError' || error?.message?.includes('SecurityError') || error?.message?.includes('insecure') || error?.message?.includes('storage')) {
-            // iOS blocks localStorage in certain privacy/context conditions
             setLoginError('Storage access blocked. Please check your browser privacy settings or try a different browser.');
           } else if (!status) {
             setLoginError(`Something went wrong (${error?.name || error?.code || 'unknown'}). Please try again or contact support.`);
           } else {
-            setLoginError('Something went wrong. Please try again.');
+            setLoginError(`Something went wrong (${status}). Please try again.`);
           }
           break;
         }

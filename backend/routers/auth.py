@@ -305,6 +305,7 @@ async def test_login(credentials: dict):
 async def login(credentials: dict):
     """Login with email and password"""
     import re
+    from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError, NetworkTimeout
     email = (credentials.get('email') or '').strip().lower()
     password = credentials.get('password') or ''
     
@@ -313,7 +314,19 @@ async def login(credentials: dict):
     
     # Case-insensitive email lookup (escape regex special chars in email)
     escaped_email = re.escape(email)
-    user = await get_db().users.find_one({"email": {"$regex": f"^{escaped_email}$", "$options": "i"}})
+    try:
+        user = await get_db().users.find_one({"email": {"$regex": f"^{escaped_email}$", "$options": "i"}})
+    except (ConnectionFailure, ServerSelectionTimeoutError, NetworkTimeout) as db_err:
+        # MongoDB is temporarily unreachable — return 503 so the client shows
+        # "Server is temporarily restarting" instead of generic "Something went wrong"
+        logger.error(f"[Login] MongoDB connection failure for {email}: {db_err}")
+        raise HTTPException(
+            status_code=503,
+            detail="Service temporarily unavailable — please try again in a moment"
+        )
+    except Exception as db_err:
+        logger.error(f"[Login] Unexpected DB error for {email}: {db_err}")
+        raise HTTPException(status_code=503, detail="Service temporarily unavailable")
     if not user:
         logger.warning(f"Login failed: no user found for email '{email}'")
         raise HTTPException(status_code=401, detail="Invalid credentials")

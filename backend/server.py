@@ -87,7 +87,20 @@ async def root():
 
 @api_router.get("/health")
 async def api_health():
-    return {"status": "healthy", "message": "i'M On Social API v2.0"}
+    """Health check that also verifies MongoDB connectivity."""
+    try:
+        db = get_db()
+        # Ping MongoDB — if this fails, the DB is unreachable
+        await db.command("ping")
+        return {"status": "healthy", "db": "connected", "message": "i'M On Social API v2.0"}
+    except Exception as e:
+        # Return 503 so Cloudflare/monitoring know the DB is down
+        from fastapi import Response
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=503,
+            content={"status": "degraded", "db": "unreachable", "error": str(e)[:100]}
+        )
 
 @api_router.get("/build-version")
 async def build_version():
