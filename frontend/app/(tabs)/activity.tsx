@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet, Image,
+  View, Text, FlatList, TouchableOpacity, StyleSheet,
   ActivityIndicator, RefreshControl, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -144,11 +144,10 @@ const SingleEventCard = ({ item, colors, router }: any) => {
   );
 };
 
-// ── Grouped contact card (photo once + touchpoint list) ──
+// ── Grouped contact card (small avatar only + touchpoint list) ──
 const GroupedContactCard = ({ group, colors, router }: any) => {
   const firstEvent = group.events[0];
   const c = firstEvent.contact || {};
-  const hasPhoto = !!c.photo;
 
   return (
     <TouchableOpacity
@@ -157,9 +156,9 @@ const GroupedContactCard = ({ group, colors, router }: any) => {
       activeOpacity={0.85}
       data-testid="feed-grouped-card"
     >
-      {/* Contact header with photo */}
+      {/* Contact header — small avatar only, no full-size photo */}
       <View style={s.groupHeader}>
-        <Avatar uri={c.photo} name={c.name} sizePx={48} borderRadius={24} color={firstEvent.color} />
+        <Avatar uri={c.photo} name={c.name} sizePx={48} borderRadius={12} color={firstEvent.color} />
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text style={[s.groupName, { color: colors.text }]} numberOfLines={1}>{c.name || 'Customer'}</Text>
           <Text style={{ fontSize: 13, color: colors.textTertiary, marginTop: 1 }}>
@@ -175,18 +174,7 @@ const GroupedContactCard = ({ group, colors, router }: any) => {
         <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
       </View>
 
-      {/* Big photo for the first event if it has one */}
-      {hasPhoto && firstEvent.visual_type === 'photo_moment' && (
-        <View style={s.groupPhotoWrap}>
-          {Platform.OS === 'web' ? (
-            <img src={c.photo} style={{ width: '100%', height: 220, objectFit: 'cover', borderRadius: 12, display: 'block' }} loading="lazy" />
-          ) : (
-            <Image source={{ uri: c.photo }} style={{ width: '100%', height: 220, borderRadius: 12 }} resizeMode="cover" />
-          )}
-        </View>
-      )}
-
-      {/* Touchpoint list */}
+      {/* Touchpoint list — all events preserved, no photo tile */}
       <View style={[s.touchList, { borderTopColor: colors.border }]}>
         {group.events.map((evt: any, idx: number) => {
           const label = getEventLabel(evt);
