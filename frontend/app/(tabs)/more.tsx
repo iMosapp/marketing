@@ -26,6 +26,7 @@ import { Image as ExpoImage } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { resolveUserPhotoUrlHiRes, resolvePhotoUrl } from '../../utils/photoUrl';
 import { NotificationBell } from '../../components/notifications/NotificationBell';
+import { WebModal } from '../../components/WebModal';
 import { BRAND } from '../../config/brand';
 
 // Enable LayoutAnimation on Android
