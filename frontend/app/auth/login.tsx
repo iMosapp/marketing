@@ -228,9 +228,7 @@ export default function LoginScreen() {
         retries++;
       }
     }
-    } finally {
-      setLoading(false);
-    }
+    setLoading(false);
   };
   
   const handleBiometricLogin = async () => {
