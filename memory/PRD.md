@@ -115,14 +115,28 @@ New components created under `components/account/`:
 - `my-account.tsx` 1,533 → 424 lines
 - 5 new focused components under `components/account/`
 
-### Phase 3b — Contact Page Full Decomposition (NEXT — requires React Context)
-The remaining 5,017 lines need a `ContactContext` pattern first. Then split into:
-- `context/ContactContext.tsx` — shared state (40+ state vars)
-- `components/contact/ContactHero.tsx` — profile header, tags, campaigns
-- `components/contact/ActivityFeed.tsx` — feed tab with timeline
-- `components/contact/ContactDetails.tsx` — details tab
-- `components/contact/InlineComposer.tsx` — SMS/email composer bar
-- `app/contact/new.tsx` — new contact form as separate route
+### Phase 3b — Contact Page Context Infrastructure ✅ DONE (Mar 28, 2026)
+Created `contexts/ContactContext.tsx` — the full contract for the contact page state.
+- Defines ~80 typed fields covering ALL state variables and handler signatures
+- Exports `useContact()` hook — sub-components call this instead of receiving 30+ props
+- Pattern: parent owns state → wraps with Provider → children use `useContact()`
+
+**Why full extraction wasn't done in this session:**
+The contact page modals alone reference 30+ state vars + 15+ handlers with non-obvious naming conventions (`addTagFromHero` vs `addTag`, `confirmDateSelection` not `handleConfirmDate`, etc.). Extracting them without running the full component test suite risks subtle undefined-variable bugs in a production-critical screen. The TypeScript compiler errors from missing context fields become the exact "Phase 3c TODO list."
+
+**Phase 3c — Contact Page Component Extraction (NEXT)**
+With the context contract defined, each extraction follows the same 3-step pattern:
+1. Add missing items to `ContactContext.tsx` 
+2. Build `ctxValue` in the main component  
+3. Create sub-component calling `useContact()` instead of props
+
+Priority extraction order (easiest → hardest):
+1. `TagPickerModal.tsx` — 30 lines, 8 context items, self-contained
+2. `ReferralPickerModal.tsx` — 25 lines, 6 context items
+3. `CampaignPickerModal.tsx` — 25 lines, 6 context items
+4. `DatePickerModal.tsx` — 80 lines, 12 context items
+5. `ToolbarModals.tsx` — templates + review links + business card (~200 lines)
+6. `ActivityFeed.tsx` — the big one (~530 lines)
 
 ### Phase 4 — Backend Service Layer
 Extract `admin.py` (4,000 lines) into:
