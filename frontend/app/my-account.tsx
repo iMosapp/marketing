@@ -758,7 +758,7 @@ const s = StyleSheet.create({
   coverGrad: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 80 },
   coverCameraBadge: { position: 'absolute', bottom: 10, right: 14, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.6)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, borderWidth: 1, borderColor: '#C9A96250' },
   coverCameraText: { fontSize: 13, color: '#C9A962', fontWeight: '600' },
-  avatarArea: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingHorizontal: 16, marginTop: -50 },
+  avatarArea: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingHorizontal: 16, marginTop: -48 },
   avatarOuter: { position: 'relative' },
   completenessRing: { position: 'absolute', top: -6, left: -6, right: -6, bottom: -6, borderRadius: 999, borderWidth: 2, pointerEvents: 'none' },
 

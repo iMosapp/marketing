@@ -9,11 +9,11 @@ import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../../services/api';
 import { showSimpleAlert, showConfirm } from '../../services/alert';
-import { Avatar } from '../Avatar';
 import { resolveUserPhotoUrlHiRes } from '../../utils/photoUrl';
 import { User } from '../../types';
 
@@ -151,11 +151,23 @@ export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
       <TouchableOpacity onPress={handlePress} disabled={uploading} activeOpacity={0.8}>
         <View style={styles.avatarWrapper}>
           {uploading ? (
-            <View style={[styles.avatarPlaceholder, { backgroundColor: colors.card }]}>
+            <View style={styles.avatarPlaceholder}>
               <ActivityIndicator size="large" color={colors.accent} />
             </View>
+          ) : currentPhoto ? (
+            <Image
+              source={{ uri: currentPhoto }}
+              style={styles.avatarImage}
+              contentFit="cover"
+              placeholder={null}
+            />
           ) : (
-            <Avatar photo={currentPhoto} name={user.name} size="xxl" />
+            /* Initials fallback — rounded square matching Hub style */
+            <View style={[styles.avatarPlaceholder, { backgroundColor: colors.card }]}>
+              <Text style={{ fontSize: 32, fontWeight: '700', color: colors.accent }}>
+                {user.name?.split(' ').map((w: string) => w[0]).slice(0, 2).join('') || '?'}
+              </Text>
+            </View>
           )}
           <View style={[styles.editBadge, { backgroundColor: colors.accent }]}>
             <Ionicons name="camera" size={14} color="#fff" />
@@ -180,24 +192,34 @@ const styles = StyleSheet.create({
   avatarWrapper: {
     position: 'relative',
   },
+  // Rounded square — matches the Hub profile card shape
+  avatarImage: {
+    width: 96,
+    height: 96,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: '#C9A962',
+  },
   avatarPlaceholder: {
     width: 96,
     height: 96,
-    borderRadius: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  editBadge: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#fff',
+    borderColor: '#C9A962',
+  },
+  editBadge: {
+    position: 'absolute',
+    bottom: -4,
+    right: -4,
+    width: 28,
+    height: 28,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#000',
   },
   removeButton: {
     marginTop: 8,
