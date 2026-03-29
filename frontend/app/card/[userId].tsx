@@ -534,19 +534,8 @@ export default function DigitalCardPage() {
                 />
               )}
 
-              {/* Profile Photo with cover photo as background behind it */}
+              {/* Profile Photo */}
               <View style={styles.photoContainer}>
-                {user.cover_photo_url && (
-                  <View style={[styles.coverBehindPhoto, { borderColor: theme.cardBorder }]}>
-                    <Image
-                      source={{ uri: user.cover_photo_url }}
-                      style={StyleSheet.absoluteFill}
-                      resizeMode="cover"
-                    />
-                    {/* Soft vignette so profile photo pops */}
-                    <View style={styles.coverBehindGrad} />
-                  </View>
-                )}
                 {user.photo_url ? (
                   <Image 
                     source={{ uri: user.photo_url }} 
