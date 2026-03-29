@@ -252,18 +252,13 @@ async def get_user_link_page(user_id: str):
     if user.get("store_id"):
         store = await db.stores.find_one({"_id": ObjectId(user["store_id"])})
 
-    # Build username from name
+    # Build username from name — use a single DB call instead of a while loop
     name = user.get("name", "")
     base_username = sanitize_username(name) or user_id
-    username = base_username
-
-    # Ensure unique
-    existing = await db.link_pages.find_one({"username": username})
-    counter = 1
-    while existing:
-        username = f"{base_username}{counter}"
-        existing = await db.link_pages.find_one({"username": username})
-        counter += 1
+    
+    # Check if the base username is already taken; if so, append user_id suffix
+    existing = await db.link_pages.find_one({"username": base_username, "user_id": {"$ne": user_id}})
+    username = base_username if not existing else f"{base_username}_{user_id[-6:]}"
 
     # Build social links from user/store profile data
     user_social = user.get("social_links", {})

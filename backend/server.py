@@ -731,6 +731,9 @@ async def startup_event():
                     db.contact_events.create_index([("user_id", 1), ("timestamp", -1)]),
                     db.contact_events.create_index([("contact_id", 1), ("timestamp", -1)]),
                     db.contact_events.create_index([("contact_id", 1), ("event_type", 1)]),
+                    # Link pages — was missing, caused 60s timeout on full collection scan
+                    db.link_pages.create_index("user_id", unique=True, sparse=True),
+                    db.link_pages.create_index("username", sparse=True),
                     # Campaign system
                     db.campaign_enrollments.create_index([("campaign_id", 1), ("contact_id", 1), ("status", 1)]),
                     db.campaign_enrollments.create_index([("user_id", 1), ("status", 1)]),
