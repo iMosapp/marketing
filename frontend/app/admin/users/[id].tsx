@@ -823,7 +823,7 @@ export default function UserDetailScreen() {
                   <View style={styles.storeInfo}>
                     <Text style={styles.storeName}>{item.name}</Text>
                     <Text style={styles.storeLocation}>
-                      {[item.city, item.state].filter(Boolean).join(', ') || 'No location'}
+                      {item.org_name ? `${item.org_name} · ` : ''}{[item.city, item.state].filter(Boolean).join(', ') || 'No location'}
                     </Text>
                   </View>
                   {actionLoading ? (
