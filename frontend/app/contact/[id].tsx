@@ -918,10 +918,13 @@ export default function ContactDetailScreen() {
     }
   };
 
-  const handleSuggestedAction = (action: any) => {
+  const handleSuggestedAction = async (action: any) => {
     if (!contact.phone && (action.action === 'sms' || action.action === 'call')) {
-      showSimpleAlert('Missing Info', 'No phone number available');
-      return;
+      const recovered = await resolveContactPhone();
+      if (!recovered) {
+        showSimpleAlert('Missing Info', 'No phone number saved for this contact.');
+        return;
+      }
     }
     
     switch (action.action) {
@@ -1175,11 +1178,40 @@ export default function ContactDetailScreen() {
     });
   };
 
+  // ── Look up phone from conversation history if contact.phone is missing ──
+  const resolveContactPhone = async (): Promise<string | null> => {
+    if (contact.phone) return contact.phone;
+    // Try to find phone from their most recent conversation
+    try {
+      const res = await api.get(`/messages/conversations/${user?._id}`);
+      const convs = res.data?.conversations || res.data || [];
+      const match = convs.find((c: any) => c.contact_id === id && c.contact_phone);
+      if (match?.contact_phone) {
+        // Auto-save it back to the contact record so it's there next time
+        await api.patch(`/contacts/${user?._id}/${id}`, { phone: match.contact_phone }).catch(() => {});
+        setContact((prev: any) => ({ ...prev, phone: match.contact_phone }));
+        return match.contact_phone;
+      }
+    } catch {}
+    return null;
+  };
+
   // ===== QUICK ACTIONS =====
-  const handleQuickAction = (key: string) => {
+  const handleQuickAction = async (key: string) => {
     if (!contact.phone && (key === 'sms' || key === 'call')) {
-      showSimpleAlert('Missing Info', 'No phone number available');
-      return;
+      // Try to recover the phone from conversation history first
+      const recovered = await resolveContactPhone();
+      if (!recovered) {
+        showAlert('No Phone Number', 'This contact has no phone number saved. Would you like to add one?', [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Add Number', onPress: () => {
+            setIsEditing(true);
+            // Scroll to phone field
+            setTimeout(() => showSimpleAlert('Edit contact', 'Scroll to the Phone field and add their number, then save.'), 300);
+          }},
+        ]);
+        return;
+      }
     }
     const contactEmail = contact.email || contact.email_work || '';
     if (!contactEmail && key === 'email') {
@@ -1247,8 +1279,12 @@ export default function ContactDetailScreen() {
       return;
     }
     if (composerMode === 'sms' && !contact.phone) {
-      showSimpleAlert('Missing Info', 'No phone number available for this contact');
-      return;
+      // Try to recover from conversation history before failing
+      const recovered = await resolveContactPhone();
+      if (!recovered) {
+        showSimpleAlert('Missing Info', 'No phone number saved for this contact. Open the edit form and add their number.');
+        return;
+      }
     }
     
     setComposerSending(true);
