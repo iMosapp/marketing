@@ -22,6 +22,8 @@ interface Organization {
   _id: string;
   name: string;
   account_type: string;
+  email?: string;
+  website?: string;
   admin_email?: string;
   admin_phone?: string;
   city?: string;
@@ -609,6 +611,30 @@ export default function OrganizationDetailScreen() {
                 onChangeText={(text) => setEditedOrg({ ...editedOrg, name: text })}
                 placeholder="Organization name"
                 placeholderTextColor={colors.textSecondary}
+              />
+
+              <Text style={styles.inputLabel}>Business Email</Text>
+              <TextInput
+                style={styles.input}
+                value={editedOrg.email}
+                onChangeText={(text) => setEditedOrg({ ...editedOrg, email: text })}
+                placeholder="info@company.com"
+                placeholderTextColor={colors.textSecondary}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                data-testid="org-email-input"
+              />
+
+              <Text style={styles.inputLabel}>Website</Text>
+              <TextInput
+                style={styles.input}
+                value={editedOrg.website}
+                onChangeText={(text) => setEditedOrg({ ...editedOrg, website: text })}
+                placeholder="https://yourcompany.com"
+                placeholderTextColor={colors.textSecondary}
+                keyboardType="url"
+                autoCapitalize="none"
+                data-testid="org-website-input"
               />
               
               <Text style={styles.inputLabel}>Admin Email</Text>
