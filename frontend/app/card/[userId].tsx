@@ -525,19 +525,6 @@ export default function DigitalCardPage() {
                 <View style={[styles.cornerFold, { borderRightColor: theme.accent }]} />
               </TouchableOpacity>
 
-              {/* Cover Photo Banner — full-width at top of card */}
-              {user.cover_photo_url ? (
-                <View style={[styles.coverBanner, { overflow: 'hidden' }]}>
-                  <Image
-                    source={{ uri: user.cover_photo_url }}
-                    style={StyleSheet.absoluteFill}
-                    resizeMode="cover"
-                  />
-                  {/* Gradient fade to card background */}
-                  <View style={styles.coverBannerGrad} />
-                </View>
-              ) : null}
-
               {/* Store Logo */}
               {store?.logo_url && (
                 <Image 
@@ -546,9 +533,20 @@ export default function DigitalCardPage() {
                   resizeMode="contain"
                 />
               )}
-              
-              {/* Profile Photo */}
+
+              {/* Profile Photo with cover photo as background behind it */}
               <View style={styles.photoContainer}>
+                {user.cover_photo_url && (
+                  <View style={[styles.coverBehindPhoto, { borderColor: theme.cardBorder }]}>
+                    <Image
+                      source={{ uri: user.cover_photo_url }}
+                      style={StyleSheet.absoluteFill}
+                      resizeMode="cover"
+                    />
+                    {/* Soft vignette so profile photo pops */}
+                    <View style={styles.coverBehindGrad} />
+                  </View>
+                )}
                 {user.photo_url ? (
                   <Image 
                     source={{ uri: user.photo_url }} 
@@ -1357,23 +1355,17 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   // Card content
-  coverBanner: {
-    width: '100%',
-    height: 90,
-    marginTop: -16,
-    marginHorizontal: -16,
-    marginBottom: 12,
-    alignSelf: 'center',
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  coverBannerGrad: {
+  coverBehindPhoto: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 40,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    overflow: 'hidden',
+    borderWidth: 3,
+  },
+  coverBehindGrad: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.25)',
   },
   storeLogo: {
     width: 80,
