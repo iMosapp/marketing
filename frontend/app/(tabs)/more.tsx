@@ -714,8 +714,11 @@ export default function MoreScreen() {
   const allSections = sections;
 
   function openExternal(url: string) {
-    if (Platform.OS === 'web') window.open(url, '_blank');
-    else Linking.openURL(url);
+    // Append self_preview=1 so tracking ignores salesperson viewing their own page
+    const sep = url.includes('?') ? '&' : '?';
+    const u = `${url}${sep}self_preview=1`;
+    if (Platform.OS === 'web') window.open(u, '_blank');
+    else Linking.openURL(u);
   }
 
   function shareLink(url: string, label: string) {

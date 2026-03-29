@@ -54,13 +54,11 @@ export function ProfileGallery({ userId, colors, onSetProfilePhoto }: Props) {
       showSimpleAlert('Upload', 'Photo upload is available on the web version.');
       return;
     }
-    // Synchronous trigger — no awaits before input.click() on iOS Safari
+    // Synchronous trigger — iOS Safari blocks input.click() from async contexts
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.style.position = 'fixed';
-    input.style.top = '-9999px';
-    input.style.opacity = '0';
+    input.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
     document.body.appendChild(input);
     input.onchange = async (e: any) => {
       const file = e.target.files?.[0];
@@ -70,9 +68,7 @@ export function ProfileGallery({ userId, colors, onSetProfilePhoto }: Props) {
       try {
         const fd = new FormData();
         fd.append('file', file);
-        const res = await api.post(`/profile/${userId}/gallery`, fd, {
-          
-        });
+        const res = await api.post(`/profile/${userId}/gallery`, fd);
         if (res.data?.photo_url) {
           setPhotos(prev => [
             { photo_id: res.data.photo_id, photo_url: res.data.photo_url, thumbnail_url: res.data.thumbnail_url, created_at: new Date().toISOString() },
@@ -86,7 +82,7 @@ export function ProfileGallery({ userId, colors, onSetProfilePhoto }: Props) {
       }
     };
     input.addEventListener('cancel', () => { try { document.body.removeChild(input); } catch {} });
-    input.click();
+    input.click(); // synchronous — no awaits before this line
   }
 
   // ── Set as profile photo ─────────────────────────────────────────────────

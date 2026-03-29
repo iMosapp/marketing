@@ -38,7 +38,7 @@ def get_safe_logo(doc, fallback_doc=None):
 
 
 @router.get("/page/{store_slug}")
-async def get_review_page_data(store_slug: str, sp: str = None, cid: str = None):
+async def get_review_page_data(store_slug: str, sp: str = None, cid: str = None, self_preview: str = None):
     """
     Get store data for the public review page.
     sp = salesperson ID (optional, for tracking)
@@ -56,50 +56,31 @@ async def get_review_page_data(store_slug: str, sp: str = None, cid: str = None)
             user = await db.users.find_one({"_id": ObjectId(sp)})
             if user:
                 salesperson_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip() or user.get('name', '')
-                # Log view event — use cid (contact_id) directly if provided
-                try:
-                    from utils.contact_activity import log_customer_activity
-                    from datetime import timedelta
-                    contact_id = cid  # Prefer the explicit contact_id from the short URL
-                    
-                    if not contact_id:
-                        # Legacy fallback: guess from the most recent review message
-                        msg = await db.messages.find_one(
-                            {"user_id": sp, "sender": "user",
-                             "$or": [
-                                 {"content": {"$regex": "/review/", "$options": "i"}},
-                             ]},
-                            {"conversation_id": 1},
-                            sort=[("created_at", -1)],
-                        )
-                        if msg and msg.get("conversation_id"):
-                            conv = await db.conversations.find_one(
-                                {"_id": ObjectId(msg["conversation_id"]) if not isinstance(msg["conversation_id"], ObjectId) else msg["conversation_id"]},
-                                {"contact_id": 1},
-                            )
-                            if conv and conv.get("contact_id"):
-                                contact_id = str(conv["contact_id"])
-                    
-                    if contact_id:
+                # Skip tracking when salesperson previews their own page — prevents
+                # "Bridger Ward viewed your page" when Forest clicks his own View button
+                if self_preview != "1" and cid:
+                    try:
+                        from utils.contact_activity import log_customer_activity
+                        from datetime import timedelta
                         recent = await db.contact_events.find_one({
-                            "contact_id": contact_id,
+                            "contact_id": cid,
                             "event_type": "review_page_viewed",
                             "timestamp": {"$gte": datetime.now(timezone.utc) - timedelta(hours=1)},
                         })
                         if not recent:
                             await log_customer_activity(
                                 user_id=sp,
-                                contact_id=contact_id,
+                                contact_id=cid,
                                 event_type="review_page_viewed",
                                 title="Viewed Review Page",
                                 description="Contact opened the review page",
                                 icon="eye",
                                 color="#FBBC04",
                                 category="customer_activity",
-                                metadata={"store_slug": store_slug, "salesperson_id": sp, "contact_id": contact_id},
+                                metadata={"store_slug": store_slug, "salesperson_id": sp, "contact_id": cid},
                             )
-                except Exception as e:
-                    print(f"[Review] Failed to log view activity: {e}")
+                    except Exception as e:
+                        print(f"[Review] Failed to log view activity: {e}")
         except Exception:
             pass
     

@@ -174,31 +174,32 @@ const { showToast } = useToast();
 
     const handleHexChange = (text: string) => {
       setHexInput(text);
-      // Apply once it's a valid 6-digit hex
       if (/^#[0-9A-Fa-f]{6}$/.test(text)) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         onSelect(text);
       }
     };
 
+    // input[type=color] only works on desktop Chrome/Firefox — NOT on iOS Safari.
+    // Detect iOS and skip the native picker there; hex input + swatches are the mobile UX.
+    const isIOS = Platform.OS === 'web' && typeof navigator !== 'undefined' &&
+      /iPhone|iPad|iPod/.test(navigator.userAgent);
+    const supportsColorPicker = Platform.OS === 'web' && !isIOS;
+
     const openNativePicker = () => {
-      if (Platform.OS === 'web') {
-        const input = document.createElement('input');
-        input.type = 'color';
-        input.value = /^#[0-9A-Fa-f]{6}$/.test(value) ? value : '#007AFF';
-        input.style.position = 'absolute';
-        input.style.opacity = '0';
-        input.style.width = '0';
-        input.style.height = '0';
-        document.body.appendChild(input);
-        input.addEventListener('input', (e: any) => {
-          const col = e.target.value;
-          setHexInput(col);
-          onSelect(col);
-        });
-        input.addEventListener('change', () => document.body.removeChild(input));
-        input.click();
-      }
+      if (!supportsColorPicker) return;
+      const input = document.createElement('input');
+      input.type = 'color';
+      input.value = /^#[0-9A-Fa-f]{6}$/.test(value) ? value : '#007AFF';
+      input.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+      document.body.appendChild(input);
+      input.addEventListener('input', (e: any) => {
+        const col = e.target.value;
+        setHexInput(col);
+        onSelect(col);
+      });
+      input.addEventListener('change', () => { try { document.body.removeChild(input); } catch {} });
+      input.click();
     };
 
     const QUICK_PICKS = [
@@ -213,20 +214,19 @@ const { showToast } = useToast();
 
         {/* Main swatch + hex row */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-          {/* Large tappable swatch — opens native color wheel */}
+          {/* Large tappable swatch — opens native color wheel on desktop, or tap to show hint on mobile */}
           <TouchableOpacity
-            onPress={openNativePicker}
-            activeOpacity={0.8}
+            onPress={supportsColorPicker ? openNativePicker : undefined}
+            activeOpacity={supportsColorPicker ? 0.8 : 1}
             data-testid={`color-swatch-${label}`}
             style={{
               width: 52, height: 52, borderRadius: 14,
               backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(value) ? value : '#007AFF',
               borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)',
               alignItems: 'center', justifyContent: 'center',
-              shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 4,
             }}
           >
-            {Platform.OS === 'web' && (
+            {supportsColorPicker && (
               <Ionicons name="eyedrop-outline" size={20} color="rgba(255,255,255,0.8)" />
             )}
           </TouchableOpacity>
@@ -261,30 +261,28 @@ const { showToast } = useToast();
           )}
         </View>
 
-        {/* Quick-pick swatches */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={{ flexDirection: 'row', gap: 8, paddingBottom: 4 }}>
-            {QUICK_PICKS.map((c) => (
-              <TouchableOpacity
-                key={c}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setHexInput(c);
-                  onSelect(c);
-                }}
-                style={{
-                  width: 30, height: 30, borderRadius: 8,
-                  backgroundColor: c,
-                  borderWidth: value === c ? 2.5 : 1,
-                  borderColor: value === c ? '#FFF' : 'rgba(255,255,255,0.15)',
-                  alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                {value === c && <Ionicons name="checkmark" size={14} color={c === '#FFFFFF' ? '#000' : '#FFF'} />}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
+        {/* Quick-pick swatches — wrap grid (no horizontal scroll that overflows on mobile) */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingBottom: 4 }}>
+          {QUICK_PICKS.map((c) => (
+            <TouchableOpacity
+              key={c}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setHexInput(c);
+                onSelect(c);
+              }}
+              style={{
+                width: 32, height: 32, borderRadius: 8,
+                backgroundColor: c,
+                borderWidth: value === c ? 2.5 : 1,
+                borderColor: value === c ? '#FFF' : 'rgba(255,255,255,0.15)',
+                alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              {value === c && <Ionicons name="checkmark" size={14} color={c === '#FFFFFF' ? '#000' : '#FFF'} />}
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
     );
   };

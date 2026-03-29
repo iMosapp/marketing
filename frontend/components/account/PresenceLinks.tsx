@@ -19,9 +19,12 @@ import { PresenceCard } from './PresenceCard';
 
 const PROD_BASE = 'https://app.imonsocial.com';
 
+// Append self_preview=1 so the backend skips tracking when the user views their own page
 function openUrl(url: string) {
-  if (Platform.OS === 'web') window.open(url, '_blank');
-  else Linking.openURL(url);
+  const separator = url.includes('?') ? '&' : '?';
+  const previewUrl = `${url}${separator}self_preview=1`;
+  if (Platform.OS === 'web') window.open(previewUrl, '_blank');
+  else Linking.openURL(previewUrl);
 }
 
 function copyToClipboard(url: string, label: string) {
