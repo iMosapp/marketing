@@ -419,13 +419,14 @@ async def backfill_all_store_templates():
 @router.post("/create")
 async def create_congrats_card(
     salesman_id: str = Form(...),
-    customer_name: str = Form(...),
+    customer_name: str = Form(""),          # Optional for generic cards
     customer_phone: str = Form(None),
     custom_message: str = Form(None),
     card_type: str = Form("congrats"),
     tags: str = Form(None),
     skip_campaign: str = Form(None),
-    photo: UploadFile = File(...)
+    generic: str = Form(None),              # "true" = no specific contact
+    photo: Optional[UploadFile] = File(None)  # Optional — uses salesman photo for generic cards
 ):
     """
     Create a new congrats card
@@ -461,34 +462,40 @@ async def create_congrats_card(
                 is_fallback_template = True
     
     # Process photo — compress to WebP via image pipeline
-    contents = await photo.read()
-    if len(contents) > 10 * 1024 * 1024:  # 10MB limit
-        raise HTTPException(status_code=400, detail="Image must be less than 10MB")
-    
-    # Validate it's actually an image before heavy processing
-    try:
-        test_img = Image.open(io.BytesIO(contents))
-        test_img.verify()
-        del test_img
-    except Exception:
-        raise HTTPException(status_code=400, detail="Invalid image file")
-    
-    # Generate unique card ID first (needed for image path)
-    card_id = str(uuid.uuid4())[:12]
-    
-    # Upload via optimized pipeline (run in thread to avoid blocking event loop)
-    import asyncio
-    try:
-        img_result = await asyncio.wait_for(
-            asyncio.to_thread(_sync_upload_bytes, contents, "congrats", card_id),
-            timeout=30  # 30 second timeout for image processing + upload
-        )
-    except asyncio.TimeoutError:
-        logger.warning("[CongratsCard] Image upload timed out after 30s, using base64 fallback")
+    # For generic cards with no photo, use the salesman's profile photo instead
+    is_generic = (generic == "true") or not customer_name.strip()
+    photo_path = None
+    photo_url = None
+
+    if photo and photo.filename:
+        contents = await photo.read()
+        if len(contents) > 10 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Image must be less than 10MB")
+        try:
+            test_img = Image.open(io.BytesIO(contents))
+            test_img.verify()
+            del test_img
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid image file")
+        card_id = str(uuid.uuid4())[:12]
+        import asyncio
+        try:
+            img_result = await asyncio.wait_for(
+                asyncio.to_thread(_sync_upload_bytes, contents, "congrats", card_id),
+                timeout=30
+            )
+        except asyncio.TimeoutError:
+            logger.warning("[CongratsCard] Image upload timed out after 30s, using base64 fallback")
+            img_result = None
+        except Exception as e:
+            logger.warning(f"[CongratsCard] Image upload failed, using base64 fallback: {e}")
+            img_result = None
+    else:
+        # Generic card — no photo uploaded, use salesman profile photo
+        card_id = str(uuid.uuid4())[:12]
         img_result = None
-    except Exception as e:
-        logger.warning(f"[CongratsCard] Image upload failed, using base64 fallback: {e}")
-        img_result = None
+        from utils.image_urls import resolve_user_photo
+        photo_url = resolve_user_photo(salesman)  # salesman's own photo as backdrop
     
     if img_result:
         optimized_photo_url = f"/api/images/{img_result['original_path']}"

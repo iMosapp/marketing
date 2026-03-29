@@ -30,11 +30,14 @@ export default function CreateCardPage() {
   const { colors } = useThemeStore();
   const s = getS(colors);
   const router = useRouter();
-  const { type, prefillName, prefillPhone, prefillEmail, returnToThread, for_contact, return_to_contact } = useLocalSearchParams<{ type: string; prefillName: string; prefillPhone: string; prefillEmail: string; returnToThread: string; for_contact: string; return_to_contact: string }>();
+  const { type, prefillName, prefillPhone, prefillEmail, returnToThread, for_contact, return_to_contact, generic: genericParam } = useLocalSearchParams<{ type: string; prefillName: string; prefillPhone: string; prefillEmail: string; returnToThread: string; for_contact: string; return_to_contact: string; generic: string }>();
   const { user } = useAuthStore();
   const cardType = type || 'congrats';
   const baseMeta = TYPE_META[cardType] || { label: cardType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) + ' Card', icon: 'create-outline', accent: '#C9A962', headline: cardType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), message: 'A special card for {name}!' };
   const isFromContact = !!return_to_contact || !!returnToThread;
+
+  // Generic mode: no specific contact, photo optional, shareable to anyone
+  const [isGeneric, setIsGeneric] = useState(genericParam === 'true' || (!prefillName && !prefillPhone && !isFromContact));
 
   const [template, setTemplate] = useState(null);
   const [customerName, setCustomerName] = useState(prefillName || '');
@@ -102,8 +105,8 @@ export default function CreateCardPage() {
   };
 
   const handlePreview = () => {
-    if (!customerName.trim()) { showSimpleAlert('Required', 'Please enter the recipient name'); return; }
-    if (!photo) { showSimpleAlert('Required', 'Please add a photo'); return; }
+    if (!isGeneric && !customerName.trim()) { showSimpleAlert('Required', 'Please enter the recipient name, or tap "Generic Card" to skip'); return; }
+    if (!isGeneric && !photo) { showSimpleAlert('Required', 'Please add a photo, or tap "Generic Card" to skip'); return; }
     setShowPreview(true);
   };
 
@@ -113,22 +116,26 @@ export default function CreateCardPage() {
     try {
       const formData = new FormData();
       formData.append('salesman_id', user._id);
-      formData.append('customer_name', customerName.trim());
+      formData.append('customer_name', isGeneric ? '' : customerName.trim());
       formData.append('card_type', cardType);
+      if (isGeneric) formData.append('generic', 'true');
       if (customerPhone.trim()) formData.append('customer_phone', customerPhone.trim());
       if (customMessage.trim()) formData.append('custom_message', customMessage.trim());
       if (selectedTags.length > 0) {
         formData.append('tags', JSON.stringify(selectedTags));
         if (!startCampaign) formData.append('skip_campaign', 'true');
       }
-      if (IS_WEB) {
-        const response = await fetch(photo!.uri);
-        const blob = await response.blob();
-        formData.append('photo', blob, photo!.name || 'photo.jpg');
-      } else {
-        formData.append('photo', { uri: photo!.uri, type: photo!.type, name: photo!.name } as any);
+      // Photo is optional for generic cards
+      if (photo) {
+        if (IS_WEB) {
+          const response = await fetch(photo!.uri);
+          const blob = await response.blob();
+          formData.append('photo', blob, photo!.name || 'photo.jpg');
+        } else {
+          formData.append('photo', { uri: photo!.uri, type: photo!.type, name: photo!.name } as any);
+        }
       }
-      const res = await api.post('/congrats/create', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const res = await api.post('/congrats/create', formData);
       const cardId = res.data?.card_id;
       // Use the tracked short URL from the backend (enables contextual OG previews in iMessage)
       const shareUrl = res.data?.short_url || `${BASE_URL}/congrats/${cardId}${user?.ref_code ? `?ref=${user.ref_code}` : ''}`;
@@ -470,11 +477,37 @@ export default function CreateCardPage() {
         </TouchableOpacity>
         {!isFromContact && (
           <>
-            <Text style={s.fieldLabel}>RECIPIENT NAME *</Text>
-            <TextInput style={s.input} value={customerName} onChangeText={setCustomerName} placeholder="Recipient Name" placeholderTextColor={colors.textSecondary} data-testid="card-recipient-name" />
-            <Text style={[s.fieldLabel, { marginTop: 16 }]}>SEND TO (OPTIONAL)</Text>
-            <TextInput style={s.input} value={customerPhone} onChangeText={setCustomerPhone} placeholder="Phone" placeholderTextColor={colors.textSecondary} keyboardType="phone-pad" />
-            <TextInput style={[s.input, { marginTop: 8 }]} value={customerEmail} onChangeText={setCustomerEmail} placeholder="Email" placeholderTextColor={colors.textSecondary} keyboardType="email-address" autoCapitalize="none" />
+            {/* Generic toggle — makes all contact fields optional */}
+            <TouchableOpacity
+              style={[{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 12, marginBottom: 14, borderWidth: 1 },
+                isGeneric
+                  ? { backgroundColor: accent + '20', borderColor: accent + '60' }
+                  : { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => setIsGeneric(!isGeneric)}
+              testID="generic-toggle"
+            >
+              <Ionicons
+                name={isGeneric ? 'checkbox' : 'square-outline'}
+                size={22}
+                color={isGeneric ? accent : colors.textSecondary}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Generic Card (no specific person)</Text>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
+                  Share with anyone — post to social, send in a group text, or copy the link
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {!isGeneric && (
+              <>
+                <Text style={s.fieldLabel}>RECIPIENT NAME *</Text>
+                <TextInput style={s.input} value={customerName} onChangeText={setCustomerName} placeholder="Recipient Name" placeholderTextColor={colors.textSecondary} data-testid="card-recipient-name" />
+                <Text style={[s.fieldLabel, { marginTop: 16 }]}>SEND TO (OPTIONAL)</Text>
+                <TextInput style={s.input} value={customerPhone} onChangeText={setCustomerPhone} placeholder="Phone" placeholderTextColor={colors.textSecondary} keyboardType="phone-pad" />
+                <TextInput style={[s.input, { marginTop: 8 }]} value={customerEmail} onChangeText={setCustomerEmail} placeholder="Email" placeholderTextColor={colors.textSecondary} keyboardType="email-address" autoCapitalize="none" />
+              </>
+            )}
           </>
         )}
         {isFromContact && customerName ? (
