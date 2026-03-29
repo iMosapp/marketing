@@ -247,7 +247,8 @@ async def get_public_timeline(token: str, pin: Optional[str] = None):
         ).sort("sent_at", -1).to_list(20)
         for c in congrats:
             ct = c.get("card_type", "congrats")
-            info = get_card_sent_info(ct)
+            headline = c.get("headline", "")
+            info = get_card_sent_info(ct, headline=headline)
             timeline.append({
                 "event_type": info["event_type"],
                 "icon": info["icon"],

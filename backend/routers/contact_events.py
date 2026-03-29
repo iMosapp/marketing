@@ -400,9 +400,20 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
         if ts and hasattr(ts, "isoformat"):
             ts = _ts_iso(ts)
         ct = c.get("card_type", "congrats")
-        # Use centralized event type info
+        # Use headline for custom card types so the feed shows the actual card name
         from utils.event_types import get_card_sent_info
-        info = get_card_sent_info(ct)
+        card_headline = c.get("headline", "").strip()
+        if not card_headline and c.get("card_id"):
+            # Lookup headline from the card template if not stored on the sent record
+            try:
+                from bson import ObjectId as ObjId
+                card_doc = await db.congrats_card_templates.find_one(
+                    {"_id": ObjId(c["card_id"])}, {"headline": 1}
+                )
+                card_headline = (card_doc or {}).get("headline", "")
+            except Exception:
+                pass
+        info = get_card_sent_info(ct, headline=card_headline)
         events.append({
             "event_type": info["event_type"],
             "icon": info["icon"],
@@ -1048,7 +1059,16 @@ async def fix_event_types_migration():
         # If we found a card_type that's NOT congrats, fix the event
         if card_type and card_type != "congrats":
             from utils.event_types import get_card_sent_info
-            info = get_card_sent_info(card_type)
+            # Fetch headline for custom card types
+            headline = ""
+            if card_id and card_type not in {"congrats", "birthday", "anniversary", "thank_you", "holiday", "welcome"}:
+                try:
+                    from bson import ObjectId as ObjId
+                    card_doc = await db.congrats_card_templates.find_one({"_id": ObjId(card_id)}, {"headline": 1})
+                    headline = (card_doc or {}).get("headline", "")
+                except Exception:
+                    pass
+            info = get_card_sent_info(card_type, headline=headline)
             new_event_type = info["event_type"]
             new_title = info["label"]
             

@@ -134,24 +134,33 @@ def get_event_label(event_type: str) -> str:
     return event_type.replace("_", " ").title() if event_type else "Activity"
 
 
-def get_card_sent_info(card_type: str) -> dict:
-    """Get event_type, label, icon, color for a sent card."""
-    return CARD_TYPE_SENT_INFO.get(card_type, {
+def get_card_sent_info(card_type: str, headline: str = "") -> dict:
+    """Get event_type, label, icon, color for a sent card.
+    Pass headline for custom card types so the display shows the actual card name."""
+    if card_type in CARD_TYPE_SENT_INFO:
+        return CARD_TYPE_SENT_INFO[card_type]
+    # Custom card type — use headline if provided, otherwise show generic "Custom Card Sent"
+    display = f"'{headline}'" if headline and headline.strip() else "Custom"
+    return {
         "event_type": f"{card_type}_card_sent",
-        "label": f"{card_type.replace('_', ' ').title()} Card Sent",
+        "label": f"{display} Card Sent",
         "icon": "gift",
         "color": "#C9A962",
-    })
+    }
 
 
-def get_card_viewed_info(card_type: str) -> dict:
-    """Get event_type, label, icon, color for a viewed card."""
-    return CARD_TYPE_VIEWED_INFO.get(card_type, {
+def get_card_viewed_info(card_type: str, headline: str = "") -> dict:
+    """Get event_type, label, icon, color for a viewed card.
+    Pass headline for custom card types so the display shows the actual card name."""
+    if card_type in CARD_TYPE_VIEWED_INFO:
+        return CARD_TYPE_VIEWED_INFO[card_type]
+    display = f"'{headline}'" if headline and headline.strip() else "Custom"
+    return {
         "event_type": f"{card_type}_card_viewed",
-        "label": f"Viewed {card_type.replace('_', ' ').title()} Card",
+        "label": f"Viewed {display} Card",
         "icon": "eye",
         "color": "#C9A962",
-    })
+    }
 
 
 async def resolve_event_type(content: str, db, explicit_event_type: str = None) -> str:
