@@ -112,7 +112,14 @@ export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
       quality: 0.85,
     });
     if (!result.canceled && result.assets[0]) {
-      await uploadNativeAsset(result.assets[0]);
+      const asset = result.assets[0];
+      // Auto-save to camera roll so the photo isn't lost
+      try {
+        const ML = await import('expo-media-library');
+        const perm = await ML.default.requestPermissionsAsync();
+        if (perm.status === 'granted') await ML.default.saveToLibraryAsync(asset.uri);
+      } catch {}
+      await uploadNativeAsset(asset);
     }
   }
 

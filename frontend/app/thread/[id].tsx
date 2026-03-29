@@ -1106,6 +1106,12 @@ export default function ThreadScreen() {
             });
             if (!result.canceled && result.assets[0]) {
               const asset = result.assets[0];
+              // Save to camera roll automatically
+              try {
+                const ML = await import('expo-media-library');
+                const p = await ML.default.requestPermissionsAsync();
+                if (p.status === 'granted') await ML.default.saveToLibraryAsync(asset.uri);
+              } catch {}
               setCongratsPhoto({
                 uri: asset.uri,
                 type: asset.mimeType || 'image/jpeg',
@@ -1474,6 +1480,12 @@ export default function ThreadScreen() {
       
       if (!result.canceled && result.assets[0]) {
         const asset = result.assets[0];
+        // Save to camera roll automatically
+        try {
+          const ML = await import('expo-media-library');
+          const p = await ML.default.requestPermissionsAsync();
+          if (p.status === 'granted') await ML.default.saveToLibraryAsync(asset.uri);
+        } catch {}
         setSelectedMedia({
           uri: asset.uri,
           type: asset.mimeType || 'image/jpeg',
