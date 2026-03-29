@@ -13,7 +13,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, StyleSheet,
-  ScrollView, Platform, Share, ActivityIndicator, Image,
+  ScrollView, Platform, Share, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,8 +36,8 @@ export default function BroadcastMessageScreen() {
   const [selectedLink, setSelectedLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [showLinkPicker, setShowLinkPicker] = useState(false);
-  const [photo, setPhoto] = useState<{ uri: string; uploadedUrl?: string } | null>(null);
-  const [photoUploading, setPhotoUploading] = useState(false);
+  // Store both local URI (for preview) and original File object (for native share)
+  const [photo, setPhoto] = useState<{ uri: string; file?: File | null } | null>(null);
 
   const storeSlug = (user as any)?.store_slug || null;
   const reviewUrl = storeSlug
@@ -53,18 +53,17 @@ export default function BroadcastMessageScreen() {
   ].filter(l => l.url);
 
   // The full message that gets copied / shared
-  // The full message now includes uploaded photo URL if available
-  const photoUrl = photo?.uploadedUrl || null;
+  // Copy: text + link only (images go via Share button — native iOS shares the actual file)
   const fullMessage = [
     message.trim(),
-    photoUrl ? `📸 ${photoUrl}` : '',
     selectedLink || '',
   ].filter(Boolean).join('\n\n');
 
   const charCount = fullMessage.length;
   const canSend = message.trim().length > 0 || !!photo;
 
-  // ── Photo attachment ───────────────────────────────────────────────────────
+
+  // ── Photo attachment — NO upload needed. Keep the file locally for native share ──
   function pickPhoto() {
     if (Platform.OS === 'web') {
       const input = document.createElement('input');
@@ -72,62 +71,39 @@ export default function BroadcastMessageScreen() {
       input.accept = 'image/*';
       input.style.cssText = 'position:fixed;top:-9999px;opacity:0;';
       document.body.appendChild(input);
-      input.onchange = async (e: any) => {
+      input.onchange = (e: any) => {
         const file = e.target.files?.[0];
         try { document.body.removeChild(input); } catch {}
         if (!file) return;
-        // Show local preview immediately
+        // Create a local blob URL for preview — no server upload required
         const localUri = URL.createObjectURL(file);
-        setPhoto({ uri: localUri });
-        // Upload in background to get a permanent shareable URL
-        if (user?._id) {
-          setPhotoUploading(true);
-          try {
-            const fd = new FormData();
-            fd.append('file', file);
-            const res = await api.post(`/profile/${user._id}/gallery`, fd);
-            if (res.data?.photo_url) {
-              setPhoto({ uri: localUri, uploadedUrl: res.data.photo_url });
-            }
-          } catch {
-            showSimpleAlert('Upload failed', 'Photo attached locally but could not upload. The share will still include the link.');
-          } finally {
-            setPhotoUploading(false);
-          }
-        }
+        setPhoto({ uri: localUri, file });
       };
       input.addEventListener('cancel', () => { try { document.body.removeChild(input); } catch {} });
       input.click();
     } else {
       (async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') { showSimpleAlert('Permission needed', 'Allow photo library access to attach a photo.'); return; }
+        if (status !== 'granted') {
+          showSimpleAlert('Permission needed', 'Allow photo library access to attach a photo.');
+          return;
+        }
         const result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ImagePicker.MediaTypeOptions.Images,
           quality: 0.85,
         });
         if (!result.canceled && result.assets?.[0]) {
-          const asset = result.assets[0];
-          setPhoto({ uri: asset.uri });
-          if (user?._id) {
-            setPhotoUploading(true);
-            try {
-              const fd = new FormData();
-              const ext = asset.uri.split('.').pop() || 'jpg';
-              fd.append('file', { uri: asset.uri, name: `broadcast.${ext}`, type: `image/${ext}` } as any);
-              const res = await api.post(`/profile/${user._id}/gallery`, fd);
-              if (res.data?.photo_url) setPhoto({ uri: asset.uri, uploadedUrl: res.data.photo_url });
-            } catch {} finally { setPhotoUploading(false); }
-          }
+          setPhoto({ uri: result.assets[0].uri, file: null });
         }
       })();
     }
   }
 
   async function handleCopy() {
-    if (!canSend) return;
+    const txt = fullMessage || (photo ? '(Use Share button to send with photo)' : '');
+    if (!txt) return;
     if (Platform.OS === 'web' && navigator.clipboard) {
-      await navigator.clipboard.writeText(fullMessage);
+      await navigator.clipboard.writeText(txt);
     }
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
@@ -139,17 +115,20 @@ export default function BroadcastMessageScreen() {
       if (Platform.OS !== 'web') {
         await Share.share({
           message: [message.trim(), selectedLink || ''].filter(Boolean).join('\n\n'),
-          url: photo?.uri || photoUrl || undefined,
+          url: photo?.uri,  // iOS attaches the actual photo to the share sheet
           title: message.trim().slice(0, 50),
         } as any);
+      } else if (photo?.file && (navigator as any).canShare?.({ files: [photo.file] })) {
+        // iOS Safari 15.4+ / Chrome 89+: share actual image file
+        await (navigator as any).share({ text: fullMessage, files: [photo.file] });
+      } else if (navigator.share) {
+        await navigator.share({ text: fullMessage });
       } else {
-        if (navigator.share) {
-          await navigator.share({ text: fullMessage });
-        } else {
-          await handleCopy();
-        }
+        await handleCopy();
       }
-    } catch {}
+    } catch (e: any) {
+      if (e?.name !== 'AbortError') await handleCopy();
+    }
   }
 
   const STARTER_TEMPLATES = [
@@ -225,18 +204,10 @@ export default function BroadcastMessageScreen() {
           {photo ? (
             <View style={s.photoPreviewBox}>
               <Image source={{ uri: photo.uri }} style={s.photoPreview} resizeMode="cover" />
-              {photoUploading && (
-                <View style={s.photoUploadOverlay}>
-                  <ActivityIndicator color="#FFF" />
-                  <Text style={{ color: '#FFF', fontSize: 12, marginTop: 4 }}>Uploading...</Text>
-                </View>
-              )}
-              {photo.uploadedUrl && (
-                <View style={s.photoUploadedBadge}>
-                  <Ionicons name="checkmark-circle" size={18} color="#34C759" />
-                  <Text style={{ color: '#34C759', fontSize: 12, fontWeight: '600' }}>Ready to share</Text>
-                </View>
-              )}
+              <View style={s.photoReadyBadge}>
+                <Ionicons name="checkmark-circle" size={16} color="#34C759" />
+                <Text style={{ color: '#34C759', fontSize: 12, fontWeight: '600' }}>Ready — tap Share to send</Text>
+              </View>
               <TouchableOpacity style={s.photoRemoveBtn} onPress={() => setPhoto(null)}>
                 <Ionicons name="close-circle" size={24} color="#FF3B30" />
               </TouchableOpacity>
@@ -387,8 +358,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   addPhotoBtnText: { fontSize: 16, fontWeight: '600' },
   photoPreviewBox: { borderRadius: 12, overflow: 'hidden', position: 'relative', height: 180 },
   photoPreview: { width: '100%', height: 180 },
-  photoUploadOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
-  photoUploadedBadge: { position: 'absolute', bottom: 8, left: 8, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 },
+  photoReadyBadge: { position: 'absolute', bottom: 8, left: 8, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 },
   photoRemoveBtn: { position: 'absolute', top: 8, right: 8 },
   previewPhoto: { width: '100%', height: 160, borderRadius: 8, marginBottom: 10 },
   selectedLink: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 10, borderWidth: 1, padding: 12 },
