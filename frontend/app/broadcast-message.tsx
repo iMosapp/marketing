@@ -13,13 +13,16 @@
 import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, TextInput, StyleSheet,
-  ScrollView, Platform, Share, ActivityIndicator,
+  ScrollView, Platform, Share, ActivityIndicator, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
+import api from '../services/api';
+import { showSimpleAlert } from '../services/alert';
 
 const PROD_BASE = 'https://app.imonsocial.com';
 
@@ -33,6 +36,8 @@ export default function BroadcastMessageScreen() {
   const [selectedLink, setSelectedLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [showLinkPicker, setShowLinkPicker] = useState(false);
+  const [photo, setPhoto] = useState<{ uri: string; uploadedUrl?: string } | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
 
   const storeSlug = (user as any)?.store_slug || null;
   const reviewUrl = storeSlug
@@ -48,15 +53,79 @@ export default function BroadcastMessageScreen() {
   ].filter(l => l.url);
 
   // The full message that gets copied / shared
+  // The full message now includes uploaded photo URL if available
+  const photoUrl = photo?.uploadedUrl || null;
   const fullMessage = [
     message.trim(),
+    photoUrl ? `📸 ${photoUrl}` : '',
     selectedLink || '',
   ].filter(Boolean).join('\n\n');
 
   const charCount = fullMessage.length;
+  const canSend = message.trim().length > 0 || !!photo;
+
+  // ── Photo attachment ───────────────────────────────────────────────────────
+  function pickPhoto() {
+    if (Platform.OS === 'web') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.style.cssText = 'position:fixed;top:-9999px;opacity:0;';
+      document.body.appendChild(input);
+      input.onchange = async (e: any) => {
+        const file = e.target.files?.[0];
+        try { document.body.removeChild(input); } catch {}
+        if (!file) return;
+        // Show local preview immediately
+        const localUri = URL.createObjectURL(file);
+        setPhoto({ uri: localUri });
+        // Upload in background to get a permanent shareable URL
+        if (user?._id) {
+          setPhotoUploading(true);
+          try {
+            const fd = new FormData();
+            fd.append('file', file);
+            const res = await api.post(`/profile/${user._id}/gallery`, fd);
+            if (res.data?.photo_url) {
+              setPhoto({ uri: localUri, uploadedUrl: res.data.photo_url });
+            }
+          } catch {
+            showSimpleAlert('Upload failed', 'Photo attached locally but could not upload. The share will still include the link.');
+          } finally {
+            setPhotoUploading(false);
+          }
+        }
+      };
+      input.addEventListener('cancel', () => { try { document.body.removeChild(input); } catch {} });
+      input.click();
+    } else {
+      (async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') { showSimpleAlert('Permission needed', 'Allow photo library access to attach a photo.'); return; }
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          quality: 0.85,
+        });
+        if (!result.canceled && result.assets?.[0]) {
+          const asset = result.assets[0];
+          setPhoto({ uri: asset.uri });
+          if (user?._id) {
+            setPhotoUploading(true);
+            try {
+              const fd = new FormData();
+              const ext = asset.uri.split('.').pop() || 'jpg';
+              fd.append('file', { uri: asset.uri, name: `broadcast.${ext}`, type: `image/${ext}` } as any);
+              const res = await api.post(`/profile/${user._id}/gallery`, fd);
+              if (res.data?.photo_url) setPhoto({ uri: asset.uri, uploadedUrl: res.data.photo_url });
+            } catch {} finally { setPhotoUploading(false); }
+          }
+        }
+      })();
+    }
+  }
 
   async function handleCopy() {
-    if (!fullMessage) return;
+    if (!canSend) return;
     if (Platform.OS === 'web' && navigator.clipboard) {
       await navigator.clipboard.writeText(fullMessage);
     }
@@ -65,12 +134,15 @@ export default function BroadcastMessageScreen() {
   }
 
   async function handleShare() {
-    if (!fullMessage) return;
+    if (!canSend) return;
     try {
       if (Platform.OS !== 'web') {
-        await Share.share({ message: fullMessage });
+        await Share.share({
+          message: [message.trim(), selectedLink || ''].filter(Boolean).join('\n\n'),
+          url: photo?.uri || photoUrl || undefined,
+          title: message.trim().slice(0, 50),
+        } as any);
       } else {
-        // Web: try native share API, fall back to clipboard
         if (navigator.share) {
           await navigator.share({ text: fullMessage });
         } else {
@@ -146,6 +218,41 @@ export default function BroadcastMessageScreen() {
           </ScrollView>
         </View>
 
+        {/* Photo attachment */}
+        <View style={s.section}>
+          <Text style={[s.label, { color: colors.text }]}>Attach a Photo  <Text style={{ color: colors.textTertiary, fontWeight: '400', fontSize: 14 }}>(optional)</Text></Text>
+
+          {photo ? (
+            <View style={s.photoPreviewBox}>
+              <Image source={{ uri: photo.uri }} style={s.photoPreview} resizeMode="cover" />
+              {photoUploading && (
+                <View style={s.photoUploadOverlay}>
+                  <ActivityIndicator color="#FFF" />
+                  <Text style={{ color: '#FFF', fontSize: 12, marginTop: 4 }}>Uploading...</Text>
+                </View>
+              )}
+              {photo.uploadedUrl && (
+                <View style={s.photoUploadedBadge}>
+                  <Ionicons name="checkmark-circle" size={18} color="#34C759" />
+                  <Text style={{ color: '#34C759', fontSize: 12, fontWeight: '600' }}>Ready to share</Text>
+                </View>
+              )}
+              <TouchableOpacity style={s.photoRemoveBtn} onPress={() => setPhoto(null)}>
+                <Ionicons name="close-circle" size={24} color="#FF3B30" />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[s.addPhotoBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
+              onPress={pickPhoto}
+              testID="add-photo-btn"
+            >
+              <Ionicons name="image-outline" size={22} color="#5856D6" />
+              <Text style={[s.addPhotoBtnText, { color: '#5856D6' }]}>Add Photo or Image</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+
         {/* Attach a link */}
         <View style={s.section}>
           <Text style={[s.label, { color: colors.text }]}>Attach a Link  <Text style={{ color: colors.textTertiary, fontWeight: '400', fontSize: 14 }}>(optional)</Text></Text>
@@ -190,11 +297,16 @@ export default function BroadcastMessageScreen() {
         </View>
 
         {/* Preview */}
-        {fullMessage.length > 0 && (
+        {canSend && (
           <View style={s.section}>
             <Text style={[s.label, { color: colors.text }]}>Preview</Text>
             <View style={[s.preview, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[s.previewText, { color: colors.text }]}>{fullMessage}</Text>
+              {photo && (
+                <Image source={{ uri: photo.uri }} style={s.previewPhoto} resizeMode="cover" />
+              )}
+              {fullMessage.length > 0 && (
+                <Text style={[s.previewText, { color: colors.text }]}>{fullMessage}</Text>
+              )}
               <Text style={[s.previewCount, { color: colors.textTertiary }]}>{charCount} characters</Text>
             </View>
           </View>
@@ -202,11 +314,10 @@ export default function BroadcastMessageScreen() {
 
         {/* Actions */}
         <View style={[s.actions, { borderTopColor: colors.border }]}>
-          {/* Copy */}
           <TouchableOpacity
-            style={[s.actionBtn, s.copyBtn, !fullMessage && s.actionDisabled]}
+            style={[s.actionBtn, s.copyBtn, !canSend && s.actionDisabled]}
             onPress={handleCopy}
-            disabled={!fullMessage}
+            disabled={!canSend}
             testID="copy-btn"
           >
             <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={20} color={copied ? '#34C759' : '#fff'} />
@@ -215,15 +326,14 @@ export default function BroadcastMessageScreen() {
             </Text>
           </TouchableOpacity>
 
-          {/* Share */}
           <TouchableOpacity
-            style={[s.actionBtn, s.shareBtn, { borderColor: colors.border, backgroundColor: colors.card }, !fullMessage && s.actionDisabled]}
+            style={[s.actionBtn, s.shareBtn, { borderColor: colors.border, backgroundColor: colors.card }, !canSend && s.actionDisabled]}
             onPress={handleShare}
-            disabled={!fullMessage}
+            disabled={!canSend}
             testID="share-btn"
           >
-            <Ionicons name="share-outline" size={20} color={fullMessage ? '#007AFF' : colors.textTertiary} />
-            <Text style={[s.actionBtnText, { color: fullMessage ? '#007AFF' : colors.textTertiary }]}>Share</Text>
+            <Ionicons name="share-outline" size={20} color={canSend ? '#007AFF' : colors.textTertiary} />
+            <Text style={[s.actionBtnText, { color: canSend ? '#007AFF' : colors.textTertiary }]}>Share</Text>
           </TouchableOpacity>
         </View>
 
@@ -272,6 +382,15 @@ const getStyles = (colors: any) => StyleSheet.create({
 
   addLinkBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 10, borderWidth: 1, borderStyle: 'dashed', padding: 12 },
   addLinkText: { fontSize: 16, color: '#007AFF', fontWeight: '600' },
+
+  addPhotoBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 10, borderWidth: 1, borderStyle: 'dashed', padding: 12 },
+  addPhotoBtnText: { fontSize: 16, fontWeight: '600' },
+  photoPreviewBox: { borderRadius: 12, overflow: 'hidden', position: 'relative', height: 180 },
+  photoPreview: { width: '100%', height: 180 },
+  photoUploadOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
+  photoUploadedBadge: { position: 'absolute', bottom: 8, left: 8, flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 4 },
+  photoRemoveBtn: { position: 'absolute', top: 8, right: 8 },
+  previewPhoto: { width: '100%', height: 160, borderRadius: 8, marginBottom: 10 },
   selectedLink: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 10, borderWidth: 1, padding: 12 },
   selectedLinkText: { flex: 1, fontSize: 14, fontWeight: '600' },
   linkList: { borderRadius: 12, borderWidth: 1, overflow: 'hidden', marginTop: 8 },
