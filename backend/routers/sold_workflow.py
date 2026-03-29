@@ -18,6 +18,9 @@ from routers.database import get_db, get_user_by_id
 router = APIRouter(prefix="/sold-workflow", tags=["Sold Workflow"])
 logger = logging.getLogger(__name__)
 
+# Guard flag — prevents concurrent runs of the delivery processor
+_delivery_running: bool = False
+
 
 # ─── Canonical Sold Tag Detection ───────────────────────────────────────────
 
@@ -513,35 +516,130 @@ async def deliver_sold_event(event_id: str) -> dict:
 # ─── Background Job ──────────────────────────────────────────────────────────
 
 async def process_queued_sold_deliveries():
-    """Background job: process all queued sold event deliveries with retries."""
+    """Background job: process queued sold event deliveries with retries.
+    
+    Safety limits:
+    - Max 10 events per run (prevents 50×30s httpx calls from flooding the server)
+    - Single shared httpx client for all deliveries in this run
+    - Guard against concurrent runs via a module-level flag
+    """
+    global _delivery_running
+    if _delivery_running:
+        logger.debug("[SoldWorkflow] Skipping — previous delivery run still active")
+        return
+    _delivery_running = True
+
     db = get_db()
     now = datetime.now(timezone.utc)
-
-    queued = await db.sold_event_logs.find({
-        "delivery_status": {"$in": ["queued", "retrying"]},
-        "validation_status": "passed",
-        "delivery_attempt_count": {"$lt": 3},
-    }).to_list(50)
-
     processed = 0
-    for event in queued:
-        event_id = str(event["_id"])
-        try:
-            result = await deliver_sold_event(event_id)
-            if not result.get("success") and event.get("delivery_attempt_count", 0) < 2:
-                # Schedule retry
-                from datetime import timedelta
-                retry_at = now + timedelta(minutes=15 * (event.get("delivery_attempt_count", 0) + 1))
-                await db.sold_event_logs.update_one(
-                    {"_id": event["_id"]},
-                    {"$set": {"delivery_status": "retrying", "next_retry_at": retry_at, "updated_at": now}}
-                )
-            processed += 1
-        except Exception as e:
-            logger.error(f"[SoldWorkflow] Error processing delivery for event {event_id}: {e}")
+
+    try:
+        queued = await db.sold_event_logs.find({
+            "delivery_status": {"$in": ["queued", "retrying"]},
+            "validation_status": "passed",
+            "delivery_attempt_count": {"$lt": 3},
+        }).to_list(10)  # reduced from 50 — prevents event loop flooding
+
+        # Reuse a single httpx client for all events in this batch
+        async with httpx.AsyncClient(timeout=15) as client:
+            for event in queued:
+                event_id = str(event["_id"])
+                try:
+                    result = await _deliver_with_client(client, db, event_id, event, now)
+                    if not result.get("success") and event.get("delivery_attempt_count", 0) < 2:
+                        from datetime import timedelta
+                        retry_at = now + timedelta(minutes=15 * (event.get("delivery_attempt_count", 0) + 1))
+                        await db.sold_event_logs.update_one(
+                            {"_id": event["_id"]},
+                            {"$set": {"delivery_status": "retrying", "next_retry_at": retry_at, "updated_at": now}}
+                        )
+                    processed += 1
+                except Exception as e:
+                    logger.error(f"[SoldWorkflow] Error processing delivery for event {event_id}: {e}")
+    finally:
+        _delivery_running = False
 
     if processed:
         logger.info(f"[SoldWorkflow] Processed {processed} queued deliveries")
+
+
+async def _deliver_with_client(client: httpx.AsyncClient, db, event_id: str, event: dict, now) -> dict:
+    """Deliver a single sold event using a shared httpx client."""
+    partner_id = event.get("partner_id")
+    if not partner_id:
+        return {"success": False, "error": "No partner_id on event"}
+
+    try:
+        partner = await db.white_label_partners.find_one({"_id": ObjectId(partner_id)})
+    except Exception:
+        partner = None
+
+    if not partner:
+        return {"success": False, "error": "Partner not found"}
+
+    delivery_config = partner.get("event_delivery", {})
+    if not delivery_config.get("enabled"):
+        await db.sold_event_logs.update_one(
+            {"_id": ObjectId(event_id)},
+            {"$set": {"delivery_status": "not_sent", "error_message": "Endpoint not enabled", "updated_at": now}}
+        )
+        await db.contacts.update_one(
+            {"_id": ObjectId(event.get("contact_id"))},
+            {"$set": {"sold_workflow_status": "delivery_success", "updated_at": now}}
+        )
+        return {"success": True, "status": "endpoint_not_enabled"}
+
+    endpoint_url = delivery_config.get("endpoint_url", "").strip()
+    if not endpoint_url:
+        await db.sold_event_logs.update_one(
+            {"_id": ObjectId(event_id)},
+            {"$set": {"delivery_status": "failed", "error_message": "No endpoint URL configured", "updated_at": now}}
+        )
+        return {"success": False, "error": "No endpoint URL"}
+
+    headers = {"Content-Type": "application/json"}
+    auth_type = delivery_config.get("auth_type", "none")
+    auth_value = delivery_config.get("auth_value_encrypted", "")
+    if auth_type == "bearer" and auth_value:
+        headers["Authorization"] = f"Bearer {auth_value}"
+    elif auth_type == "api_key" and auth_value:
+        headers["X-API-Key"] = auth_value
+
+    payload = event.get("request_payload", event.get("payload_snapshot", {}))
+    attempt = event.get("delivery_attempt_count", 0) + 1
+
+    try:
+        resp = await client.post(endpoint_url, json=payload, headers=headers)
+        success = 200 <= resp.status_code < 300
+        await db.sold_event_logs.update_one(
+            {"_id": ObjectId(event_id)},
+            {"$set": {
+                "delivery_status": "sent" if success else "failed",
+                "delivery_attempt_count": attempt,
+                "last_delivery_response_code": resp.status_code,
+                "response_payload": resp.text[:2000],
+                "error_message": "" if success else f"HTTP {resp.status_code}",
+                "delivered_at": now if success else None,
+                "updated_at": now,
+            }}
+        )
+        await db.contacts.update_one(
+            {"_id": ObjectId(event.get("contact_id"))},
+            {"$set": {"sold_workflow_status": "delivery_success" if success else "delivery_failed", "updated_at": now}}
+        )
+        return {"success": success, "status_code": resp.status_code}
+    except Exception as e:
+        error_msg = str(e)[:500]
+        await db.sold_event_logs.update_one(
+            {"_id": ObjectId(event_id)},
+            {"$set": {"delivery_status": "failed", "delivery_attempt_count": attempt, "error_message": error_msg, "updated_at": now}}
+        )
+        await db.contacts.update_one(
+            {"_id": ObjectId(event.get("contact_id"))},
+            {"$set": {"sold_workflow_status": "delivery_failed", "sold_workflow_last_error": error_msg, "updated_at": now}}
+        )
+        logger.error(f"[SoldWorkflow] Delivery exception for event {event_id}: {error_msg}")
+        return {"success": False, "error": error_msg}
 
 
 # ─── API Endpoints ───────────────────────────────────────────────────────────
