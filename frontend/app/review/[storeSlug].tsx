@@ -150,13 +150,29 @@ export default function PublicReviewPage() {
 
           {/* Single clean review card — no separate header */}
           <View style={s.card} data-testid="review-page-card">
-            {/* Large logo */}
+            {/* Large logo — links to store website */}
             {logoUrl ? (
               <View style={s.logoWrap}>
                 {Platform.OS === 'web' ? (
-                  <img src={logoUrl} style={{ height: 120, maxWidth: 280, objectFit: 'contain', display: 'block' } as any} />
+                  <a
+                    href={store.website || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ display: 'block', cursor: store.website ? 'pointer' : 'default' } as any}
+                    onClick={(e: any) => { if (!store.website) e.preventDefault(); }}
+                  >
+                    <img
+                      src={logoUrl}
+                      style={{ height: 120, maxWidth: 280, objectFit: 'contain', display: 'block', imageRendering: '-webkit-optimize-contrast' } as any}
+                    />
+                  </a>
                 ) : (
-                  <Image source={{ uri: logoUrl }} style={{ height: 120, width: 280 }} resizeMode="contain" />
+                  <TouchableOpacity
+                    onPress={() => store.website && Linking.openURL(store.website)}
+                    activeOpacity={store.website ? 0.75 : 1}
+                  >
+                    <Image source={{ uri: logoUrl }} style={{ height: 120, width: 280 }} resizeMode="contain" />
+                  </TouchableOpacity>
                 )}
               </View>
             ) : (
