@@ -105,20 +105,22 @@ export default function CreateCardPage() {
   };
 
   const handlePreview = () => {
-    if (!isGeneric && !customerName.trim()) { showSimpleAlert('Required', 'Please enter the recipient name, or tap "Generic Card" to skip'); return; }
-    if (!isGeneric && !photo) { showSimpleAlert('Required', 'Please add a photo, or tap "Generic Card" to skip'); return; }
+    // Everything is optional — no recipient or photo required
     setShowPreview(true);
   };
 
   const createCard = async () => {
     if (!user?._id) return;
+    // Treat as generic if no recipient name/phone entered
+    const effectivelyGeneric = !customerName.trim() && !customerPhone.trim();
+    setIsGeneric(effectivelyGeneric);
     setCreating(true);
     try {
       const formData = new FormData();
       formData.append('salesman_id', user._id);
-      formData.append('customer_name', isGeneric ? '' : customerName.trim());
+      formData.append('customer_name', effectivelyGeneric ? '' : customerName.trim());
       formData.append('card_type', cardType);
-      if (isGeneric) formData.append('generic', 'true');
+      if (effectivelyGeneric) formData.append('generic', 'true');
       if (customerPhone.trim()) formData.append('customer_phone', customerPhone.trim());
       if (customMessage.trim()) formData.append('custom_message', customMessage.trim());
       if (selectedTags.length > 0) {
@@ -518,7 +520,7 @@ export default function CreateCardPage() {
 
             {!isGeneric && (
               <>
-                <Text style={s.fieldLabel}>RECIPIENT NAME *</Text>
+                <Text style={s.fieldLabel}>RECIPIENT NAME <Text style={{ color: colors.textTertiary, fontWeight: '400' }}>(optional — leave blank to share with anyone)</Text></Text>
                 <TextInput style={s.input} value={customerName} onChangeText={setCustomerName} placeholder="Recipient Name" placeholderTextColor={colors.textSecondary} data-testid="card-recipient-name" />
                 <Text style={[s.fieldLabel, { marginTop: 16 }]}>SEND TO (OPTIONAL)</Text>
                 <TextInput style={s.input} value={customerPhone} onChangeText={setCustomerPhone} placeholder="Phone" placeholderTextColor={colors.textSecondary} keyboardType="phone-pad" />
