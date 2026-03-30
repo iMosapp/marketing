@@ -141,13 +141,6 @@ export default function CreateCardPage() {
     setIsGeneric(effectivelyGeneric);
     setCreating(true);
     try {
-      // Robust user ID — handles both _id and id field names
-      const userId = user?._id || (user as any)?.id || '';
-      if (!userId) {
-        showSimpleAlert('Error', 'Could not get your user ID. Please log out and log back in.');
-        setCreating(false);
-        return;
-      }
       const formData = new FormData();
       formData.append('salesman_id', userId);
       formData.append('customer_name', effectivelyGeneric ? '' : customerName.trim());
@@ -169,7 +162,10 @@ export default function CreateCardPage() {
           formData.append('photo', { uri: photo!.uri, type: photo!.type, name: photo!.name } as any);
         }
       }
-      const res = await api.post('/congrats/create', formData);
+      // Delete Content-Type so axios sets multipart/form-data with correct boundary
+      const res = await api.post('/congrats/create', formData, {
+        headers: { 'Content-Type': undefined },
+      });
       const cardId = res.data?.card_id;
       // Use the tracked short URL from the backend (enables contextual OG previews in iMessage)
       const shareUrl = res.data?.short_url || `${BASE_URL}/congrats/${cardId}${user?.ref_code ? `?ref=${user.ref_code}` : ''}`;

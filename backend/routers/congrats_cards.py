@@ -418,7 +418,8 @@ async def backfill_all_store_templates():
 
 @router.post("/create")
 async def create_congrats_card(
-    salesman_id: str = Form(...),
+    request: Request,
+    salesman_id: Optional[str] = Form(None),   # Optional — falls back to X-User-ID header
     customer_name: str = Form(""),          # Optional for generic cards
     customer_phone: str = Form(None),
     custom_message: str = Form(None),
@@ -433,6 +434,12 @@ async def create_congrats_card(
     Returns a shareable link
     Also updates the contact's avatar with the photo if contact exists
     """
+    # Fallback: salesman_id from X-User-ID header (handles Content-Type/FormData parsing edge cases)
+    if not salesman_id:
+        salesman_id = request.headers.get("X-User-ID") or request.headers.get("x-user-id")
+    if not salesman_id:
+        raise HTTPException(status_code=400, detail="User ID required")
+
     db = get_db()
     
     # Get salesman info
