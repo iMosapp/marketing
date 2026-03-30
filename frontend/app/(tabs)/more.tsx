@@ -1435,6 +1435,9 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: 0,
+    maxWidth: 480,
+    width: '100%',
+    alignSelf: 'flex-start' as any,
   },
   header: {
     padding: 16,
