@@ -19,6 +19,10 @@ const ICON_MAP: Record<string, string> = {
   'star': 'star',
   'globe': 'globe-outline',
   'link': 'link',
+  'images': 'images',
+  'sms': 'chatbubble',
+  'storefront': 'storefront',
+  'planet': 'planet-outline',
 };
 
 interface LinkItem { id: string; label: string; url: string; icon: string; color: string; visible: boolean; }

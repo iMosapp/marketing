@@ -148,6 +148,13 @@ async def get_public_link_page(username: str, cid: str = None):
     # Contact links (phone, email, card, review)
     contact_links = [l for l in page.get("links", []) if l.get("visible", True)]
 
+    # Always ensure Landing Page and Showcase are available — add if missing
+    existing_ids = {l["id"] for l in contact_links}
+    if "landing_page" not in existing_ids:
+        contact_links.append({"id": "landing_page", "label": "My Landing Page", "url": f"/p/{page.get('user_id', '')}", "icon": "globe", "color": "#AF52DE", "visible": True})
+    if "showcase" not in existing_ids:
+        contact_links.append({"id": "showcase", "label": "My Showcase", "url": f"/showcase/{page.get('user_id', '')}", "icon": "images", "color": "#34C759", "visible": True})
+
     # Override theme from user's brand kit if available (user → store → org)
     user_id = page.get("user_id")
     if user_id:
@@ -276,6 +283,8 @@ async def get_user_link_page(user_id: str):
     if user.get("email"):
         links.append({"id": "email", "label": "Email Me", "url": f"mailto:{user['email']}", "icon": "mail", "color": "#007AFF", "visible": True})
     links.append({"id": "digital_card", "label": "My Digital Card", "url": f"/card/{user_id}", "icon": "card", "color": "#C9A962", "visible": True})
+    links.append({"id": "landing_page", "label": "My Landing Page", "url": f"/p/{user_id}", "icon": "globe", "color": "#AF52DE", "visible": True})
+    links.append({"id": "showcase", "label": "My Showcase", "url": f"/showcase/{user_id}", "icon": "images", "color": "#34C759", "visible": True})
     if store:
         review_links = store.get("review_links", {})
         if review_links.get("google"):
