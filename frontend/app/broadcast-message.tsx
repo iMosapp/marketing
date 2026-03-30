@@ -283,29 +283,66 @@ export default function BroadcastMessageScreen() {
           </View>
         )}
 
-        {/* Actions */}
-        <View style={[s.actions, { borderTopColor: colors.border }]}>
-          <TouchableOpacity
-            style={[s.actionBtn, s.copyBtn, !canSend && s.actionDisabled]}
-            onPress={handleCopy}
-            disabled={!canSend}
-            testID="copy-btn"
-          >
-            <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={20} color={copied ? '#34C759' : '#fff'} />
-            <Text style={[s.actionBtnText, copied && { color: '#34C759' }]}>
-              {copied ? 'Copied!' : 'Copy Message'}
+        {/* Photo+Link warning — appears when both are selected */}
+        {photo && selectedLink && (
+          <View style={[s.photoLinkHint, { backgroundColor: '#FF950015', borderColor: '#FF950040' }]}>
+            <Ionicons name="information-circle-outline" size={16} color="#FF9500" />
+            <Text style={[s.photoLinkHintText, { color: '#FF9500' }]}>
+              Photo can't be clipboard-copied. Use <Text style={{ fontWeight: '700' }}>Share</Text> to send both together.
             </Text>
-          </TouchableOpacity>
+          </View>
+        )}
 
-          <TouchableOpacity
-            style={[s.actionBtn, s.shareBtn, { borderColor: colors.border, backgroundColor: colors.card }, !canSend && s.actionDisabled]}
-            onPress={handleShare}
-            disabled={!canSend}
-            testID="share-btn"
-          >
-            <Ionicons name="share-outline" size={20} color={canSend ? '#007AFF' : colors.textTertiary} />
-            <Text style={[s.actionBtnText, { color: canSend ? '#007AFF' : colors.textTertiary }]}>Share</Text>
-          </TouchableOpacity>
+        {/* Actions — Share is primary when photo is attached */}
+        <View style={[s.actions, { borderTopColor: colors.border }]}>
+          {/* When photo attached: Share is the big primary button */}
+          {photo ? (
+            <>
+              <TouchableOpacity
+                style={[s.actionBtn, s.shareBtn, { flex: 2, backgroundColor: '#007AFF', borderColor: '#007AFF' }, !canSend && s.actionDisabled]}
+                onPress={handleShare}
+                disabled={!canSend}
+                testID="share-btn"
+              >
+                <Ionicons name="share-outline" size={20} color="#fff" />
+                <Text style={[s.actionBtnText, { color: '#fff' }]}>Share with Photo</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.actionBtn, s.copyBtn, { flex: 1, opacity: 0.75 }, !canSend && s.actionDisabled]}
+                onPress={handleCopy}
+                disabled={!canSend}
+                testID="copy-btn"
+              >
+                <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={18} color={copied ? '#34C759' : '#fff'} />
+                <Text style={[s.actionBtnText, { fontSize: 13 }, copied && { color: '#34C759' }]}>
+                  {copied ? 'Copied!' : 'Copy Text'}
+                </Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={[s.actionBtn, s.copyBtn, !canSend && s.actionDisabled]}
+                onPress={handleCopy}
+                disabled={!canSend}
+                testID="copy-btn"
+              >
+                <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={20} color={copied ? '#34C759' : '#fff'} />
+                <Text style={[s.actionBtnText, copied && { color: '#34C759' }]}>
+                  {copied ? 'Copied!' : 'Copy Message'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.actionBtn, s.shareBtn, { borderColor: colors.border, backgroundColor: colors.card }, !canSend && s.actionDisabled]}
+                onPress={handleShare}
+                disabled={!canSend}
+                testID="share-btn"
+              >
+                <Ionicons name="share-outline" size={20} color={canSend ? '#007AFF' : colors.textTertiary} />
+                <Text style={[s.actionBtnText, { color: canSend ? '#007AFF' : colors.textTertiary }]}>Share</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
         {/* Tips */}
@@ -378,6 +415,8 @@ const getStyles = (colors: any) => StyleSheet.create({
   copyBtn: { backgroundColor: '#C9A962' },
   shareBtn: { borderWidth: 1 },
   actionBtnText: { fontSize: 17, fontWeight: '700', color: '#000' },
+  photoLinkHint: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12, borderRadius: 10, borderWidth: 1, marginBottom: 8 },
+  photoLinkHintText: { flex: 1, fontSize: 13, lineHeight: 18 },
 
   tips: { paddingTop: 20, borderTopWidth: 1, gap: 10 },
   tipsTitle: { fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
