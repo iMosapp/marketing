@@ -537,7 +537,7 @@ export default function MoreScreen() {
   {
     const brandItems = [
       { icon: 'megaphone-outline', title: 'Quick Broadcast', subtitle: 'Write a message, copy & share anywhere', color: '#C9A962', publicUrl: null, editRoute: '/broadcast-message' },
-      { icon: 'gift',             title: 'Create a Card to Share', subtitle: 'Photo + message → one link → post anywhere', color: '#FF9500', publicUrl: null, editRoute: '/broadcast-card' },
+      { icon: 'gift',             title: 'Create a Card to Share', subtitle: 'Pick a template, get a trackable link — no recipient needed', color: '#FF9500', publicUrl: null, editRoute: '/settings/create-card?generic=true' },
       { icon: 'id-card',        title: 'My Digital Card',  subtitle: 'How customers see you', color: '#C9A962', publicUrl: user?._id ? `${PROD_BASE}/card/${user._id}` : null,         editRoute: '/settings/store-profile' },
       { icon: 'link',           title: 'My Link Page',     subtitle: 'All your links in one spot', color: '#007AFF', publicUrl: user?._id ? `${PROD_BASE}/l/${user._id}` : null,          editRoute: '/settings/link-page' },
       { icon: 'planet-outline', title: 'My Landing Page',  subtitle: 'Your full personal page', color: '#AF52DE', publicUrl: user?._id ? `${PROD_BASE}/p/${user._id}` : null,            editRoute: '/settings/store-profile' },
