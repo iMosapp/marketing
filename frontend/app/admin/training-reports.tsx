@@ -14,21 +14,24 @@ export default function TrainingReportsScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [tab, setTab] = useState('overview');
+  const [tab, setTab] = useState('viewers');
   const [overview, setOverview] = useState(null);
   const [senders, setSenders] = useState([]);
   const [videos, setVideos] = useState([]);
+  const [viewers, setViewers] = useState<{ by_user: any[]; by_lesson: any[]; total_views: number } | null>(null);
 
   const loadData = useCallback(async () => {
     try {
-      const [ovRes, sndRes, vidRes] = await Promise.all([
+      const [ovRes, sndRes, vidRes, viewRes] = await Promise.all([
         api.get('/admin/training-reports/overview'),
         api.get('/admin/training-reports/by-sender'),
         api.get('/admin/training-reports/by-video'),
+        api.get('/admin/training-reports/viewers'),
       ]);
       setOverview(ovRes.data);
       setSenders(sndRes.data?.senders || []);
       setVideos(vidRes.data?.videos || []);
+      setViewers(viewRes.data);
     } catch (e) { console.error(e); }
     setLoading(false);
   }, []);
@@ -45,6 +48,7 @@ export default function TrainingReportsScreen() {
   const ov = overview || {};
 
   const TABS = [
+    { key: 'viewers', label: 'Who Watched', icon: 'eye-outline' },
     { key: 'overview', label: 'Overview', icon: 'analytics-outline' },
     { key: 'senders', label: 'By Sender', icon: 'people-outline' },
     { key: 'videos', label: 'By Video', icon: 'play-circle-outline' },
@@ -248,6 +252,86 @@ export default function TrainingReportsScreen() {
                       <Ionicons name="open-outline" size={16} color={colors.textSecondary} />
                     </TouchableOpacity>
                   ))
+                )}
+              </View>
+            )}
+
+            {/* ===== WHO WATCHED ===== */}
+            {tab === 'viewers' && (
+              <View style={s.section} data-testid="viewers-section">
+                {/* Summary stats */}
+                <View style={s.statsRow}>
+                  <View style={s.statCard}>
+                    <Ionicons name="eye" size={28} color="#C9A962" />
+                    <Text style={s.statNum}>{viewers?.total_views || 0}</Text>
+                    <Text style={s.statLabel}>Total Views</Text>
+                  </View>
+                  <View style={s.statCard}>
+                    <Ionicons name="people" size={28} color="#007AFF" />
+                    <Text style={s.statNum}>{viewers?.by_user?.length || 0}</Text>
+                    <Text style={s.statLabel}>Unique Viewers</Text>
+                  </View>
+                  <View style={s.statCard}>
+                    <Ionicons name="book" size={28} color="#34C759" />
+                    <Text style={s.statNum}>{viewers?.by_lesson?.length || 0}</Text>
+                    <Text style={s.statLabel}>Lessons Viewed</Text>
+                  </View>
+                </View>
+
+                {/* Per-user table */}
+                <View style={s.sectionHeader}>
+                  <Ionicons name="people-outline" size={18} color="#007AFF" />
+                  <Text style={s.sectionTitle}>By Team Member</Text>
+                </View>
+                {(viewers?.by_user?.length || 0) === 0 ? (
+                  <View style={s.emptyBlock}>
+                    <Ionicons name="eye-off-outline" size={36} color={colors.textSecondary} />
+                    <Text style={s.emptyText}>No video views tracked yet</Text>
+                    <Text style={[s.emptyText, { fontSize: 13, marginTop: 4 }]}>Views are recorded when team members open lesson videos</Text>
+                  </View>
+                ) : (
+                  (viewers?.by_user || []).map((u: any, i: number) => (
+                    <View key={u.user_id || i} style={s.senderRow} data-testid={`viewer-row-${i}`}>
+                      <View style={[s.senderAvatar, { backgroundColor: '#007AFF20' }]}>
+                        <Text style={[s.senderInitials, { color: '#007AFF' }]}>
+                          {(u.name || '?').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
+                        </Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={s.senderName}>{u.name || 'Unknown'}</Text>
+                        <Text style={s.senderSub}>{u.email}</Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={{ fontSize: 18, fontWeight: '800', color: '#C9A962' }}>{u.lessons_viewed}</Text>
+                        <Text style={{ fontSize: 12, color: colors.textSecondary }}>lessons watched</Text>
+                      </View>
+                    </View>
+                  ))
+                )}
+
+                {/* Per-lesson table */}
+                {(viewers?.by_lesson?.length || 0) > 0 && (
+                  <>
+                    <View style={[s.sectionHeader, { marginTop: 24 }]}>
+                      <Ionicons name="play-circle-outline" size={18} color="#AF52DE" />
+                      <Text style={s.sectionTitle}>By Lesson</Text>
+                    </View>
+                    {(viewers?.by_lesson || []).map((l: any, i: number) => (
+                      <View key={l.lesson_id || i} style={[s.senderRow, { alignItems: 'flex-start' }]} data-testid={`lesson-row-${i}`}>
+                        <View style={[s.senderAvatar, { backgroundColor: '#AF52DE20' }]}>
+                          <Ionicons name="play" size={16} color="#AF52DE" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={s.senderName}>{l.lesson_title}</Text>
+                          <Text style={s.senderSub} numberOfLines={2}>{(l.viewer_names || []).join(', ') || 'No views yet'}</Text>
+                        </View>
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text style={{ fontSize: 18, fontWeight: '800', color: '#AF52DE' }}>{l.unique_viewers}</Text>
+                          <Text style={{ fontSize: 12, color: colors.textSecondary }}>viewers</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </>
                 )}
               </View>
             )}

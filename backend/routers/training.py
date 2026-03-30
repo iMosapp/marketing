@@ -530,6 +530,33 @@ async def update_progress(request: Request):
     return {"success": True}
 
 
+@router.post("/track-video-view")
+async def track_video_view(request: Request):
+    """Log that a user opened/viewed a lesson video.
+    Deduped per user per lesson per hour so rapid re-opens don't inflate counts."""
+    db = get_db()
+    data = await request.json()
+    user_id = data.get("user_id") or request.headers.get("X-User-ID")
+    lesson_id = data.get("lesson_id")
+    if not user_id or not lesson_id:
+        return {"success": False}
+
+    from datetime import timedelta
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
+    existing = await db.training_video_views.find_one(
+        {"user_id": user_id, "lesson_id": lesson_id, "viewed_at": {"$gte": cutoff}}
+    )
+    if not existing:
+        await db.training_video_views.insert_one({
+            "user_id": user_id,
+            "lesson_id": lesson_id,
+            "track_id": data.get("track_id", ""),
+            "lesson_title": data.get("lesson_title", ""),
+            "viewed_at": datetime.now(timezone.utc),
+        })
+    return {"success": True}
+
+
 @router.put("/lessons/{lesson_id}")
 async def update_lesson(lesson_id: str, request: Request):
     """Admin: update lesson content"""

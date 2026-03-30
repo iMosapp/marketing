@@ -83,6 +83,21 @@ export default function TrainingHubScreen() {
     finally { setSaving(false); }
   };
 
+  // Track video views — fires once per lesson open (deduped server-side per hour)
+  const trackedLessons = React.useRef<Set<string>>(new Set());
+  const trackVideoView = React.useCallback((lesson: Lesson, trackId: string) => {
+    if (!lesson.video_url || !user?._id) return;
+    const key = `${user._id}:${lesson.id}`;
+    if (trackedLessons.current.has(key)) return;
+    trackedLessons.current.add(key);
+    api.post('/training/track-video-view', {
+      user_id: user._id,
+      lesson_id: lesson.id,
+      track_id: trackId,
+      lesson_title: lesson.title,
+    }).catch(() => {});
+  }, [user?._id]);
+
   const renderMarkdown = (content: string) => {
     const lines = content.split('\n');
     return lines.map((line, i) => {
@@ -209,6 +224,12 @@ export default function TrainingHubScreen() {
     const done = progress[selectedLesson.id] || false;
     const currIdx = selectedTrack.lessons.findIndex(l => l.id === selectedLesson.id);
     const nextLesson = currIdx < selectedTrack.lessons.length - 1 ? selectedTrack.lessons[currIdx + 1] : null;
+
+    // Track video view when lesson renders (covers embedded YouTube — plays inline, never clicks a link)
+    if (selectedLesson.video_url) {
+      trackVideoView(selectedLesson, selectedTrack.id);
+    }
+
     return (
       <View>
         <TouchableOpacity onPress={() => setSelectedLesson(null)} style={s.breadcrumb}>
@@ -247,7 +268,10 @@ export default function TrainingHubScreen() {
             ) : (
               <TouchableOpacity
                 style={s.videoPlaceholder}
-                onPress={() => Linking.openURL(selectedLesson.video_url)}
+                onPress={() => {
+                  trackVideoView(selectedLesson, selectedTrack.id);
+                  Linking.openURL(selectedLesson.video_url);
+                }}
                 data-testid="open-video-btn"
               >
                 <Ionicons name="play" size={32} color="#FFF" />

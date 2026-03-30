@@ -185,3 +185,81 @@ async def get_training_by_video(
         })
 
     return {"videos": videos}
+
+
+@router.get("/viewers")
+async def get_training_viewers(
+    x_user_id: str = Header(None, alias="X-User-ID"),
+):
+    """Who watched which lessons — per-user and per-lesson video view data."""
+    db = get_db()
+
+    # Per-lesson aggregation
+    lesson_pipeline = [
+        {"$group": {
+            "_id": "$lesson_id",
+            "lesson_title": {"$first": "$lesson_title"},
+            "track_id": {"$first": "$track_id"},
+            "view_count": {"$sum": 1},
+            "viewers": {"$addToSet": "$user_id"},
+            "last_viewed": {"$max": "$viewed_at"},
+        }},
+        {"$sort": {"view_count": -1}},
+    ]
+    lessons = await db.training_video_views.aggregate(lesson_pipeline).to_list(200)
+
+    # Per-user aggregation
+    user_pipeline = [
+        {"$group": {
+            "_id": "$user_id",
+            "lessons_viewed": {"$sum": 1},
+            "last_viewed": {"$max": "$viewed_at"},
+        }},
+        {"$sort": {"lessons_viewed": -1}},
+        {"$limit": 100},
+    ]
+    user_stats = await db.training_video_views.aggregate(user_pipeline).to_list(100)
+
+    # Batch-load all user names
+    all_user_ids = set()
+    for u in user_stats:
+        if u["_id"]: all_user_ids.add(u["_id"])
+    for l in lessons:
+        all_user_ids.update(v for v in l.get("viewers", []) if v)
+
+    users_map = {}
+    if all_user_ids:
+        from bson import ObjectId as _ObjId
+        oids = [_ObjId(uid) for uid in all_user_ids if len(uid) == 24]
+        async for u in db.users.find({"_id": {"$in": oids}}, {"name": 1, "email": 1}):
+            users_map[str(u["_id"])] = {"name": u.get("name", "Unknown"), "email": u.get("email", "")}
+
+    by_user = []
+    for u in user_stats:
+        uid = u["_id"] or ""
+        info = users_map.get(uid, {"name": "Unknown", "email": ""})
+        lv = u.get("last_viewed")
+        by_user.append({
+            "user_id": uid,
+            "name": info["name"],
+            "email": info["email"],
+            "lessons_viewed": u["lessons_viewed"],
+            "last_viewed": lv.isoformat() if isinstance(lv, datetime) else str(lv) if lv else None,
+        })
+
+    by_lesson = []
+    for l in lessons:
+        viewer_names = [users_map.get(uid, {}).get("name", "Unknown") for uid in (l.get("viewers") or []) if uid]
+        lv = l.get("last_viewed")
+        by_lesson.append({
+            "lesson_id": l["_id"],
+            "lesson_title": l.get("lesson_title") or "Untitled Lesson",
+            "track_id": l.get("track_id", ""),
+            "view_count": l.get("view_count", 0),
+            "unique_viewers": len([v for v in (l.get("viewers") or []) if v]),
+            "viewer_names": sorted(viewer_names),
+            "last_viewed": lv.isoformat() if isinstance(lv, datetime) else str(lv) if lv else None,
+        })
+
+    total_views = sum(l["view_count"] for l in lessons)
+    return {"by_user": by_user, "by_lesson": by_lesson, "total_views": total_views}
