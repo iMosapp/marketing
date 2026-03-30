@@ -73,6 +73,7 @@ export default function PublicLinkPage() {
 
   const isDark = !data || data.theme === 'dark';
   const accent = data?.accent_color || '#C9A962';
+  const borderColor = data?.primary_color || (isDark ? '#3A3A3C' : '#D1D1D6');
   const bg = isDark ? '#000' : '#F2F2F7';
   const cardBg = isDark ? '#1C1C1E' : '#FFFFFF';
   const textColor = isDark ? '#FFFFFF' : '#000000';
@@ -98,9 +99,9 @@ export default function PublicLinkPage() {
       <SEOHead type="link" id={username as string} />
       <View style={s.profile}>
         {data.photo_url ? (
-          <Image source={{ uri: data.photo_url }} style={s.avatar} />
+          <Image source={{ uri: data.photo_url }} style={[s.avatar, { borderColor }]} />
         ) : (
-          <View style={[s.avatarPlaceholder, { backgroundColor: isDark ? '#1C1C1E' : '#E5E5EA' }]}>
+          <View style={[s.avatarPlaceholder, { borderColor, backgroundColor: isDark ? '#1C1C1E' : '#E5E5EA' }]}>
             <Text style={{ fontSize: 36, fontWeight: '800', color: textColor }}>
               {data.display_name ? data.display_name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase() : '?'}
             </Text>
@@ -168,8 +169,8 @@ const s = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   page: { maxWidth: 480, alignSelf: 'center', width: '100%', paddingHorizontal: 20, paddingTop: 48, paddingBottom: 32, minHeight: '100%' },
   profile: { alignItems: 'center', marginBottom: 28 },
-  avatar: { width: 96, height: 96, borderRadius: 18, marginBottom: 14 },
-  avatarPlaceholder: { width: 96, height: 96, borderRadius: 18, marginBottom: 14, alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 96, height: 96, borderRadius: 18, borderWidth: 3, marginBottom: 14 },
+  avatarPlaceholder: { width: 96, height: 96, borderRadius: 18, borderWidth: 3, marginBottom: 14, alignItems: 'center', justifyContent: 'center' },
   name: { fontSize: 22, fontWeight: '800', letterSpacing: -0.3 },
   company: { fontSize: 15, fontWeight: '600', marginTop: 2, opacity: 0.5 },
   bio: { fontSize: 16, marginTop: 8, lineHeight: 21, opacity: 0.7, textAlign: 'center', maxWidth: 320 },

@@ -165,6 +165,8 @@ async def get_public_link_page(username: str, cid: str = None):
                         bk = org_doc.get("email_brand_kit", {})
                 if bk.get("page_theme"):
                     page["theme"] = bk["page_theme"]
+                if bk.get("primary_color"):
+                    page["primary_color"] = bk["primary_color"]
         except Exception:
             pass
 
