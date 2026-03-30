@@ -10,10 +10,13 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.imonsocial.app",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSCameraUsageDescription": "Take photos of contacts",
-        "NSPhotoLibraryUsageDescription": "Select photos for contacts",
-        "NSContactsUsageDescription": "Import contacts from your address book"
+        "NSCameraUsageDescription": "Take photos of contacts and for your profile",
+        "NSPhotoLibraryUsageDescription": "Select photos for contacts, your profile, and cards",
+        "NSContactsUsageDescription": "Import contacts from your address book",
+        "NSMicrophoneUsageDescription": "Record voice notes for contacts"
       }
     },
     "android": {
