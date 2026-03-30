@@ -73,7 +73,7 @@ export default function PublicLinkPage() {
 
   const isDark = !data || data.theme === 'dark';
   const accent = data?.accent_color || '#C9A962';
-  const borderColor = data?.primary_color || (isDark ? '#3A3A3C' : '#D1D1D6');
+  const photoBorderColor = data?.primary_color || (isDark ? '#3A3A3C' : '#D1D1D6');
   const bg = isDark ? '#000' : '#F2F2F7';
   const cardBg = isDark ? '#1C1C1E' : '#FFFFFF';
   const textColor = isDark ? '#FFFFFF' : '#000000';
@@ -99,9 +99,9 @@ export default function PublicLinkPage() {
       <SEOHead type="link" id={username as string} />
       <View style={s.profile}>
         {data.photo_url ? (
-          <Image source={{ uri: data.photo_url }} style={[s.avatar, { borderColor }]} />
+          <Image source={{ uri: data.photo_url }} style={[s.avatar, { borderColor: photoBorderColor }]} />
         ) : (
-          <View style={[s.avatarPlaceholder, { borderColor, backgroundColor: isDark ? '#1C1C1E' : '#E5E5EA' }]}>
+          <View style={[s.avatarPlaceholder, { borderColor: photoBorderColor, backgroundColor: isDark ? '#1C1C1E' : '#E5E5EA' }]}>
             <Text style={{ fontSize: 36, fontWeight: '800', color: textColor }}>
               {data.display_name ? data.display_name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase() : '?'}
             </Text>
