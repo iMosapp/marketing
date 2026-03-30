@@ -502,11 +502,17 @@ async def create_congrats_card(
         photo_thumb_url = f"/api/images/{img_result['thumbnail_path']}"
         photo_path = img_result["original_path"]
         photo_thumb_path = img_result["thumbnail_path"]
-    else:
-        # Fallback: store as base64 (should be rare)
+    elif photo and photo.filename and 'contents' in dir() and contents:
+        # Photo was provided but upload failed — base64 fallback (rare)
         base64_data = base64.b64encode(contents).decode('utf-8')
         optimized_photo_url = f"data:{photo.content_type};base64,{base64_data}"
         photo_thumb_url = optimized_photo_url
+        photo_path = None
+        photo_thumb_path = None
+    else:
+        # No photo at all — use salesman's profile photo as backdrop (already set above)
+        optimized_photo_url = photo_url or ""
+        photo_thumb_url = photo_url or ""
         photo_path = None
         photo_thumb_path = None
     

@@ -92,12 +92,12 @@ export default function CreateCardPage() {
   const templateLabel = template?.headline || meta.label;
 
   useEffect(() => {
-    if (user?.store_id) {
-      api.get(`/congrats/template/${user.store_id}?card_type=${selectedType}`)
-        .then(r => setTemplate(r.data.template))
-        .catch(() => {});
-    }
-  }, [user?.store_id, cardType]);
+    const entityId = user?.store_id || (user as any)?.organization_id;
+    if (!entityId) return;
+    api.get(`/congrats/template/${entityId}?card_type=${selectedType}`)
+      .then(r => setTemplate(r.data.template))
+      .catch(() => {});
+  }, [user?.store_id, (user as any)?.organization_id, selectedType]);
 
   // Fetch available tags
   useEffect(() => {
@@ -467,9 +467,11 @@ export default function CreateCardPage() {
         <ScrollView style={s.scroll} contentContainerStyle={{ alignItems: 'center', paddingBottom: 40 }}>
           <View style={s.previewCard} data-testid="card-preview">
             <Text style={[s.previewHeadline, { color: accent }]}>{headline}</Text>
-            <View style={[s.previewPhotoRing, { borderColor: accent }]}>
-              <Image source={{ uri: photo.uri }} style={s.previewPhoto} />
-            </View>
+            {photo && (
+              <View style={[s.previewPhotoRing, { borderColor: accent }]}>
+                <Image source={{ uri: photo.uri }} style={s.previewPhoto} />
+              </View>
+            )}
             <Text style={s.previewName}>{customerName}</Text>
             <Text style={s.previewMessage}>{previewMsg}</Text>
             {customMessage ? <View style={[s.previewCustomBox, { borderLeftColor: accent }]}><Text style={s.previewCustomMsg}>"{customMessage}"</Text></View> : null}

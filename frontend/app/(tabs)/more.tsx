@@ -732,35 +732,20 @@ export default function MoreScreen() {
     }
   }
 
-  // ── Brand card render — fully inlined styles to avoid RN Web specificity issues ──
+  // ── Brand card render ──
   const renderBrandItem = (item: { icon: string; title: string; subtitle: string; color: string; publicUrl: string | null; editRoute?: string }, index: number) => (
     <TouchableOpacity
       key={`brand-${index}`}
       onPress={() => item.editRoute && router.push(item.editRoute as any)}
       activeOpacity={0.7}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'flex-start',
-        backgroundColor: colors.surface,
-        borderRadius: 10,
-        padding: 12,
-        marginBottom: 6,
-        marginLeft: 16,
-        marginRight: 0,
-      }}
+      style={[styles.menuItemCard, { backgroundColor: colors.surface }]}
     >
-      <View style={{
-        width: 36, height: 36, borderRadius: 10,
-        backgroundColor: `${item.color}20`,
-        alignItems: 'center', justifyContent: 'center',
-        marginRight: 12, flexShrink: 0,
-      }}>
+      <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
         <Ionicons name={item.icon as any} size={20} color={item.color} />
       </View>
-      <View style={{ flex: 1, flexDirection: 'column', alignItems: 'flex-start' }}>
-        <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text, marginBottom: 2 }} numberOfLines={1}>{item.title}</Text>
-        <Text style={{ fontSize: 13, color: colors.textSecondary }} numberOfLines={1}>{item.subtitle}</Text>
+      <View style={styles.menuContent}>
+        <Text style={[styles.menuTitle, { color: colors.text }]} numberOfLines={1}>{item.title}</Text>
+        <Text style={[styles.menuSubtitle, { color: colors.textSecondary }]} numberOfLines={1}>{item.subtitle}</Text>
         <View style={{ flexDirection: 'row', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
           {item.publicUrl && (
             <TouchableOpacity
@@ -794,7 +779,7 @@ export default function MoreScreen() {
       <TouchableOpacity
         onPress={(e: any) => { e?.stopPropagation?.(); togglePin({ title: item.title, icon: item.icon, color: item.color, subtitle: item.subtitle }); }}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        style={{ padding: 4 }}
+        style={styles.pinButton}
       >
         <Ionicons name={isPinned(item.title) ? 'bookmark' : 'bookmark-outline'} size={16}
           color={isPinned(item.title) ? item.color : colors.textTertiary} />

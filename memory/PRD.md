@@ -131,7 +131,18 @@ New components created under `components/account/`:
 - `my-account.tsx` 1,533 → 424 lines
 - 5 new focused components under `components/account/`
 
-### Pre-Deployment Build Fix ✅ (Mar 28, 2026) -- LATEST
+### Bug Fixes (Mar 30, 2026) -- LATEST
+
+**Hub "My Brand" Layout Fix:**
+- `renderBrandItem` in `more.tsx` now uses same `styles.menuItemCard` StyleSheet as regular menu items
+- Root cause: React Native Web doesn't apply `flexDirection: row` reliably on inline-styled `TouchableOpacity`; StyleSheet.create() styles work correctly
+
+**Generic Card Creation Fixed (3 bugs):**
+- **Backend 500 crash**: `congrats_cards.py` line 507 used `contents` variable when no photo was provided (UnboundLocalError). Fixed with proper `elif`/`else` branches for photo-present-but-failed vs no-photo cases
+- **Frontend preview crash**: `create-card.tsx` preview screen called `photo.uri` without null check; wrapped in `{photo && ...}`
+- **Template reload bug**: `useEffect` watched `cardType` (static URL param) instead of `selectedType` (reactive state); now also handles users with only `org_id` (no `store_id`)
+
+### Pre-Deployment Build Fix ✅ (Mar 28, 2026)
 Production build `expo export --platform web` was failing with:
 `SyntaxError: utils/contactHelpers.ts: Unexpected token (JSX in .ts file)`
 
