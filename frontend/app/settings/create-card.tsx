@@ -129,20 +129,14 @@ export default function CreateCardPage() {
   };
 
   const createCard = async () => {
-    // Read directly from store state — avoids any stale closure issue with user._id
-    const storeUser = useAuthStore.getState().user;
-    const userId = storeUser?._id || (storeUser as any)?.id || user?._id || '';
-    if (!userId) {
-      showSimpleAlert('Error', 'Not logged in. Please log out and log back in.');
-      return;
-    }
+    if (!user?._id) return;
     // Treat as generic if no recipient name/phone entered
     const effectivelyGeneric = !customerName.trim() && !customerPhone.trim();
     setIsGeneric(effectivelyGeneric);
     setCreating(true);
     try {
       const formData = new FormData();
-      formData.append('salesman_id', userId);
+      formData.append('salesman_id', user._id);
       formData.append('customer_name', effectivelyGeneric ? '' : customerName.trim());
       formData.append('card_type', selectedType);
       if (effectivelyGeneric) formData.append('generic', 'true');
@@ -162,10 +156,7 @@ export default function CreateCardPage() {
           formData.append('photo', { uri: photo!.uri, type: photo!.type, name: photo!.name } as any);
         }
       }
-      // Delete Content-Type so axios sets multipart/form-data with correct boundary
-      const res = await api.post('/congrats/create', formData, {
-        headers: { 'Content-Type': undefined },
-      });
+      const res = await api.post('/congrats/create', formData);
       const cardId = res.data?.card_id;
       // Use the tracked short URL from the backend (enables contextual OG previews in iMessage)
       const shareUrl = res.data?.short_url || `${BASE_URL}/congrats/${cardId}${user?.ref_code ? `?ref=${user.ref_code}` : ''}`;
