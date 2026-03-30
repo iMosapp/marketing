@@ -140,7 +140,12 @@ async def get_public_timeline(token: str, pin: Optional[str] = None):
     for e in raw_events:
         etype = e.get("event_type", "custom")
         e["timestamp"] = _ts(e.get("timestamp"))
-        e["title"] = get_event_label(etype)
+        # For custom card types: use stored title if available (it has the real card name)
+        stored_title = e.get("title", "")
+        if stored_title and etype.startswith("custom_") and "_card_" in etype:
+            pass  # Keep the explicitly stored card name
+        else:
+            e["title"] = get_event_label(etype)
         # Carry over description / content
         if not e.get("description"):
             e["description"] = (e.get("content_preview") or e.get("content") or "")[:120]

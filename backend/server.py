@@ -488,7 +488,20 @@ async def get_activity_feed(user_id: str, limit: int = 20):
                 'note_updated': 'updated notes for',
                 'link_page_shared': 'shared link page with',
             }
-            label = event_labels.get(event_type, ev.get('title', event_type.replace('_', ' ')))
+            label = event_labels.get(event_type)
+            if label is None:
+                # Use get_event_label for proper human-readable labels (handles custom card types)
+                from utils.event_types import get_event_label as _gel
+                generated = _gel(event_type)
+                # For "sent" actions: convert "X Card Sent" → "sent an X card"
+                if event_type.endswith('_card_sent'):
+                    card_display = generated.replace(' Card Sent', '').replace(' Card Viewed', '')
+                    label = f"sent a {card_display.lower()} card"
+                elif event_type.endswith('_card_viewed'):
+                    card_display = generated.replace('Viewed ', '').replace(' Card', '')
+                    label = f"viewed a {card_display.lower()} card"
+                else:
+                    label = ev.get('title') or generated
             msg = f"{creator_name} {label} {contact_name}".strip() if contact_name else f"{creator_name} {label}".strip()
             
             activities.append({
