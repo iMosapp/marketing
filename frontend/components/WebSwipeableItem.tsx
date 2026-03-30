@@ -56,13 +56,18 @@ export const WebSwipeableItem: React.FC<Props> = ({
     const dx = currentX - startX.current;
     const dy = currentY - startY.current;
 
-    if (!isDragging && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
-      if (Math.abs(dx) > Math.abs(dy)) {
+    if (!isDragging) {
+      // Only commit to horizontal if dx is clearly dominant (2x) AND exceeds minimum
+      if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 2) {
         isHorizontal.current = true;
         setIsDragging(true);
+      } else if (Math.abs(dy) > 8) {
+        // Clearly vertical — lock out horizontal for this gesture
+        isHorizontal.current = false;
       }
+      return;
     }
-    if (!isDragging || !isHorizontal.current) return;
+    if (!isHorizontal.current) return;
 
     let newX = startTranslate.current + dx;
     newX = Math.max(-rightMax, Math.min(leftMax, newX));
@@ -161,6 +166,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     overflow: 'hidden',
     cursor: 'grab',
     userSelect: 'none',
+    touchAction: 'pan-y',
   } as any,
   content: {
     position: 'relative',
