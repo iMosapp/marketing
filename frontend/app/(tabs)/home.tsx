@@ -498,10 +498,11 @@ export default function HomeScreen() {
   });
 
   const handleCardTypeSelect = (cardKey: string) => {
-    setSelectedCardType(cardKey);
-    setSendCardStep('contact');
-    setCardSearch('');
-    loadCardContacts();
+    setShowSendCard(false);
+    setSendCardStep('type');
+    // Go straight to the card creator — no contact picker step
+    // Recipient is optional on the create-card page (leave blank to just get a link)
+    router.push(`/settings/create-card?type=${cardKey}&generic=true` as any);
   };
 
   const handleCardContactSelect = (contact: any) => {
