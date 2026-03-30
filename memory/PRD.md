@@ -131,6 +131,28 @@ New components created under `components/account/`:
 - `my-account.tsx` 1,533 → 424 lines
 - 5 new focused components under `components/account/`
 
+### Performance Sprint (Mar 30, 2026) -- LATEST
+
+**N+1 query elimination (contact_events.py):**
+- Batch-load all `message_id` lookups in ONE query (was: up to 50 separate DB calls per contact page)
+- Batch-load all campaign name lookups in ONE query (was: up to 20 separate DB calls)
+- Batch-load all card template headline lookups in ONE query (was: up to 20 separate DB calls)
+- Net: contact page now does ~5 DB calls instead of potentially ~90
+
+**OOM risk eliminated (contacts.py):**
+- Changed 3x `to_list(None)` (unbounded) to `to_list(100/200)` in campaign-journey endpoint
+
+**7 new compound indexes added (server.py):**
+- `campaign_enrollments`: `(contact_id, user_id, status)`
+- `campaign_pending_sends`: `(contact_id, user_id)`
+- `tasks`: `(contact_id, user_id, type)`
+- `congrats_cards_sent`: `(contact_id, user_id)`
+- `contacts`: `(user_id, phone)` and `(user_id, email)` for dedup
+- `messages._id` explicit index for batch lookups
+
+**Slow-request monitoring middleware (server.py):**
+- Logs any request >2s with `[SLOW REQUEST]` prefix — identifies future bottlenecks
+
 ### Bug Fixes (Mar 30, 2026) -- LATEST
 
 **Hub "My Brand" Layout Fix:**

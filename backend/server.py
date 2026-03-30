@@ -64,6 +64,22 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# ============= PERFORMANCE MONITORING MIDDLEWARE =============
+import time
+
+@app.middleware("http")
+async def log_slow_requests(request: Request, call_next):
+    """Log any request that takes longer than 2 seconds — helps identify bottlenecks."""
+    start = time.monotonic()
+    response = await call_next(request)
+    duration = time.monotonic() - start
+    if duration > 2.0:
+        path = request.url.path
+        method = request.method
+        logger.warning(f"[SLOW REQUEST] {method} {path} took {duration:.2f}s")
+    return response
+
+
 # ============= CORS MIDDLEWARE =============
 app.add_middleware(
     CORSMiddleware,
@@ -751,6 +767,14 @@ async def startup_event():
                     db.tags.create_index([("user_id", 1)]),
                     # Short URL click dedup index
                     db.short_url_clicks.create_index([("short_code", 1), ("ip", 1), ("clicked_at", -1)]),
+                    # Performance: compound indexes for contact page queries
+                    db.campaign_enrollments.create_index([("contact_id", 1), ("user_id", 1), ("status", 1)]),
+                    db.campaign_pending_sends.create_index([("contact_id", 1), ("user_id", 1)]),
+                    db.tasks.create_index([("contact_id", 1), ("user_id", 1), ("type", 1)]),
+                    db.congrats_cards_sent.create_index([("contact_id", 1), ("user_id", 1)]),
+                    db.messages.create_index([("_id", 1)]),  # Ensures batch message lookups are instant
+                    db.contacts.create_index([("user_id", 1), ("phone", 1)]),  # For phone dedup
+                    db.contacts.create_index([("user_id", 1), ("email", 1)]),  # For email dedup
                 ), timeout=15)
                 logger.info("Database indexes created/verified (production-ready)")
             except asyncio.TimeoutError:

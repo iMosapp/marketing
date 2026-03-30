@@ -249,6 +249,19 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
         {"contact_id": contact_id},
         {"_id": 0}
     ).sort("timestamp", -1).limit(limit).to_list(limit)
+
+    # ── Batch-load all messages needed by events in ONE query (fixes N+1) ──
+    message_ids_needed = [
+        ObjectId(e["message_id"]) for e in custom_events
+        if e.get("message_id") and not e.get("full_content")
+    ]
+    messages_by_id: dict = {}
+    if message_ids_needed:
+        msg_docs = await db.messages.find(
+            {"_id": {"$in": message_ids_needed}}, {"body": 1, "subject": 1}
+        ).to_list(len(message_ids_needed))
+        messages_by_id = {str(m["_id"]): m for m in msg_docs}
+
     for e in custom_events:
         if e.get("timestamp") and hasattr(e["timestamp"], "isoformat"):
             e["timestamp"] = _ts_iso(e["timestamp"])
@@ -303,16 +316,13 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
             e["icon"] = e.get("icon", "swap-horizontal")
             e["color"] = e.get("color", "#C9A962")
             e["category"] = e.get("category", "system")
-        # Pull full message body from messages collection if we have a message_id
+        # Pull full message body from pre-loaded batch (no extra DB calls)
         if e.get("message_id") and not e.get("full_content"):
-            try:
-                msg = await db.messages.find_one({"_id": ObjectId(e["message_id"])}, {"body": 1, "subject": 1})
-                if msg:
-                    e["full_content"] = msg.get("body", "")
-                    if msg.get("subject"):
-                        e["subject"] = msg["subject"]
-            except Exception:
-                pass
+            msg = messages_by_id.get(e["message_id"])
+            if msg:
+                e["full_content"] = msg.get("body", "")
+                if msg.get("subject"):
+                    e["subject"] = msg["subject"]
         events.append(e)
 
     # 2) Messages sent to/from this contact
@@ -355,11 +365,20 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
         {"contact_id": contact_id, "user_id": user_id},
         {"_id": 0}
     ).sort("enrolled_at", -1).to_list(20)
+
+    # ── Batch-load all campaigns needed in ONE query (fixes N+1) ──
+    campaign_ids_needed = [
+        ObjectId(e["campaign_id"]) for e in enrollments if e.get("campaign_id")
+    ]
+    campaigns_by_id: dict = {}
+    if campaign_ids_needed:
+        camp_docs = await db.campaigns.find(
+            {"_id": {"$in": campaign_ids_needed}}, {"name": 1, "type": 1}
+        ).to_list(len(campaign_ids_needed))
+        campaigns_by_id = {str(c["_id"]): c for c in camp_docs}
+
     for e in enrollments:
-        campaign = await db.campaigns.find_one(
-            {"_id": ObjectId(e["campaign_id"])},
-            {"_id": 0, "name": 1, "type": 1}
-        ) if e.get("campaign_id") else None
+        campaign = campaigns_by_id.get(e.get("campaign_id", ""))
         campaign_name = campaign.get("name", "Unknown") if campaign else "Unknown"
         ts = e.get("enrolled_at")
         if ts and hasattr(ts, "isoformat"):
@@ -395,6 +414,23 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
         {"contact_id": contact_id, "user_id": user_id},
         {"_id": 0}
     ).sort("sent_at", -1).to_list(20)
+
+    # ── Batch-load card templates that are missing headlines (fixes N+1) ──
+    card_ids_needed = [
+        ObjectId(c["card_id"]) for c in congrats
+        if not c.get("headline") and c.get("card_id")
+    ]
+    card_headlines: dict = {}
+    if card_ids_needed:
+        try:
+            from bson import ObjectId as ObjId
+            card_docs = await db.congrats_card_templates.find(
+                {"_id": {"$in": card_ids_needed}}, {"headline": 1}
+            ).to_list(len(card_ids_needed))
+            card_headlines = {str(d["_id"]): d.get("headline", "") for d in card_docs}
+        except Exception:
+            pass
+
     for c in congrats:
         ts = c.get("sent_at")
         if ts and hasattr(ts, "isoformat"):
@@ -404,15 +440,7 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
         from utils.event_types import get_card_sent_info
         card_headline = c.get("headline", "").strip()
         if not card_headline and c.get("card_id"):
-            # Lookup headline from the card template if not stored on the sent record
-            try:
-                from bson import ObjectId as ObjId
-                card_doc = await db.congrats_card_templates.find_one(
-                    {"_id": ObjId(c["card_id"])}, {"headline": 1}
-                )
-                card_headline = (card_doc or {}).get("headline", "")
-            except Exception:
-                pass
+            card_headline = card_headlines.get(c["card_id"], "")
         info = get_card_sent_info(ct, headline=card_headline)
         events.append({
             "event_type": info["event_type"],

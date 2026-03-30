@@ -1394,12 +1394,12 @@ async def get_contact_campaign_journey(user_id: str, contact_id: str):
 
     enrollments = await db.campaign_enrollments.find(
         {"contact_id": contact_id, "user_id": user_id, "status": {"$ne": "archived"}},
-    ).to_list(None)
+    ).to_list(100)
 
     # Pre-load pending sends and tasks for this contact to cross-reference
     pending_sends = await db.campaign_pending_sends.find(
         {"contact_id": contact_id, "user_id": user_id}
-    ).to_list(None)
+    ).to_list(200)
     ps_by_key = {}
     for ps in pending_sends:
         key = f"{ps.get('campaign_id')}_{ps.get('step')}"
@@ -1407,7 +1407,7 @@ async def get_contact_campaign_journey(user_id: str, contact_id: str):
 
     campaign_tasks = await db.tasks.find(
         {"contact_id": contact_id, "user_id": user_id, "type": "campaign_send"}
-    ).to_list(None)
+    ).to_list(200)
     task_by_key = {}
     for t in campaign_tasks:
         cid = t.get("campaign_id", "")
