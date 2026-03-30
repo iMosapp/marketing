@@ -36,8 +36,10 @@ export default function CreateCardPage() {
   const baseMeta = TYPE_META[cardType] || { label: cardType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) + ' Card', icon: 'create-outline', accent: '#C9A962', headline: cardType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), message: 'A special card for {name}!' };
   const isFromContact = !!return_to_contact || !!returnToThread;
 
-  // Generic mode: no specific contact, photo optional, shareable to anyone
   const [isGeneric, setIsGeneric] = useState(genericParam === 'true' || (!prefillName && !prefillPhone && !isFromContact));
+  const [selectedType, setSelectedType] = useState(cardType);
+  const [showTypePicker, setShowTypePicker] = useState(false);
+  const meta = TYPE_META[selectedType] || baseMeta;
 
   const [template, setTemplate] = useState(null);
   const [customerName, setCustomerName] = useState(prefillName || '');
@@ -58,23 +60,15 @@ export default function CreateCardPage() {
   const [startCampaign, setStartCampaign] = useState(true);
   const [loadingTags, setLoadingTags] = useState(false);
 
-  // Reactive meta — uses template values when loaded, falls back to baseMeta
-  const accent = template?.accent_color || baseMeta.accent;
-  const headline = template?.headline || baseMeta.headline;
-  const message = template?.message || baseMeta.message;
-  const templateLabel = template?.headline || baseMeta.label;
-  const meta = {
-    ...baseMeta,
-    label: templateLabel,
-    accent,
-    headline,
-    message,
-    icon: baseMeta.icon,
-  };
+  // Reactive meta — uses template values when loaded, falls back to selected type meta
+  const accent = template?.accent_color || meta.accent;
+  const headline = template?.headline || meta.headline;
+  const message = template?.message || meta.message;
+  const templateLabel = template?.headline || meta.label;
 
   useEffect(() => {
     if (user?.store_id) {
-      api.get(`/congrats/template/${user.store_id}?card_type=${cardType}`)
+      api.get(`/congrats/template/${user.store_id}?card_type=${selectedType}`)
         .then(r => setTemplate(r.data.template))
         .catch(() => {});
     }
@@ -119,7 +113,7 @@ export default function CreateCardPage() {
       const formData = new FormData();
       formData.append('salesman_id', user._id);
       formData.append('customer_name', effectivelyGeneric ? '' : customerName.trim());
-      formData.append('card_type', cardType);
+      formData.append('card_type', selectedType);
       if (effectivelyGeneric) formData.append('generic', 'true');
       if (customerPhone.trim()) formData.append('customer_phone', customerPhone.trim());
       if (customMessage.trim()) formData.append('custom_message', customMessage.trim());
@@ -423,7 +417,7 @@ export default function CreateCardPage() {
   }
 
   // ---- Preview ----
-  if (showPreview && photo) {
+  if (showPreview) {
     const previewMsg = message.replace('{customer_name}', customerName).replace('{name}', customerName);
     return (
       <SafeAreaView style={s.container} edges={['top']}>
@@ -488,6 +482,55 @@ export default function CreateCardPage() {
         <View style={{ width: 28 }} />
       </View>
       <ScrollView style={s.scroll} contentContainerStyle={{ paddingBottom: 40 }}>
+
+        {/* Template picker — tap to change card type */}
+        <Text style={s.fieldLabel}>CARD TYPE</Text>
+        <TouchableOpacity
+          style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 12, borderWidth: 1.5, borderColor: accent, padding: 14, marginBottom: 20, gap: 12 }}
+          onPress={() => setShowTypePicker(true)}
+          data-testid="card-type-picker"
+        >
+          <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: accent + '25', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name={meta.icon as any} size={22} color={accent} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>{meta.label}</Text>
+            <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>{meta.headline}</Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: accent + '20', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 }}>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: accent }}>Change</Text>
+            <Ionicons name="chevron-down" size={14} color={accent} />
+          </View>
+        </TouchableOpacity>
+
+        {/* Type picker modal */}
+        {showTypePicker && (
+          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1000, justifyContent: 'flex-end' }}>
+            <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 36 }}>
+              <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 16 }}>Choose Card Type</Text>
+              {Object.entries(TYPE_META).map(([key, t]) => (
+                <TouchableOpacity
+                  key={key}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14, borderRadius: 12, marginBottom: 8, backgroundColor: selectedType === key ? t.accent + '20' : colors.card, borderWidth: 1.5, borderColor: selectedType === key ? t.accent : colors.border }}
+                  onPress={() => { setSelectedType(key); setShowTypePicker(false); }}
+                  data-testid={`card-type-${key}`}
+                >
+                  <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: t.accent + '25', alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name={t.icon as any} size={22} color={t.accent} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{t.label}</Text>
+                    <Text style={{ fontSize: 13, color: colors.textSecondary }}>{t.headline}</Text>
+                  </View>
+                  {selectedType === key && <Ionicons name="checkmark-circle" size={22} color={t.accent} />}
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity onPress={() => setShowTypePicker(false)} style={{ marginTop: 8, padding: 14, alignItems: 'center' }}>
+                <Text style={{ fontSize: 17, color: colors.textSecondary }}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
         <Text style={s.fieldLabel}>{isGeneric ? 'CARD PHOTO (OPTIONAL)' : 'RECIPIENT PHOTO *'}</Text>
         <TouchableOpacity style={s.photoPicker} onPress={pickPhoto} data-testid="card-pick-photo">
           {photo ? <Image source={{ uri: photo.uri }} style={[s.photoPreview, { borderColor: accent }]} /> : (
@@ -615,7 +658,7 @@ export default function CreateCardPage() {
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity style={[s.createBtn, { backgroundColor: accent }, (!customerName.trim() || !photo) && { opacity: 0.5 }]} onPress={handlePreview} disabled={!customerName.trim() || !photo} data-testid="card-preview-btn">
+      <TouchableOpacity style={[s.createBtn, { backgroundColor: accent }, creating && { opacity: 0.5 }]} onPress={handlePreview} disabled={creating} data-testid="card-preview-btn">
           <Ionicons name="eye-outline" size={20} color={colors.text} /><Text style={s.createBtnText}>Preview Card</Text>
         </TouchableOpacity>
       </ScrollView>
