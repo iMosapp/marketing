@@ -496,6 +496,7 @@ async def get_track_detail(track_id: str):
             "order": l.get("order", 0),
             "content": l.get("content", ""),
             "video_url": l.get("video_url", ""),
+            "original_video_url": l.get("original_video_url", ""),  # Raw URL for embedding (video_url may be a tracked short URL)
             "steps": l.get("steps", []),
         } for l in lessons],
     }

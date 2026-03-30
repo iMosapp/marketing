@@ -26,7 +26,7 @@ interface Track {
 interface Lesson {
   id: string; slug: string; title: string; description: string;
   icon: string; duration: string; order: number;
-  content: string; video_url: string; steps: string[];
+  content: string; video_url: string; original_video_url: string; steps: string[];
 }
 
 export default function TrainingHubScreen() {
@@ -249,35 +249,43 @@ export default function TrainingHubScreen() {
           {renderMarkdown(selectedLesson.content)}
         </View>
 
-        {/* Video */}
+        {/* Video — embed YouTube inline (no redirect); use tracked link for non-YouTube */}
         {selectedLesson.video_url ? (
           <View style={[s.contentCard, { marginTop: 12 }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
               <Ionicons name="play-circle" size={20} color={selectedTrack.color} />
               <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>Watch the Video</Text>
             </View>
-            {IS_WEB && getYouTubeEmbedUrl(selectedLesson.video_url) ? (
-              <View style={{ borderRadius: 12, overflow: 'hidden', aspectRatio: 16/9, width: '100%', backgroundColor: '#000' }}>
-                <iframe
-                  src={getYouTubeEmbedUrl(selectedLesson.video_url)!}
-                  style={{ width: '100%', height: '100%', border: 'none' } as any}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={s.videoPlaceholder}
-                onPress={() => {
-                  trackVideoView(selectedLesson, selectedTrack.id);
-                  Linking.openURL(selectedLesson.video_url);
-                }}
-                data-testid="open-video-btn"
-              >
-                <Ionicons name="play" size={32} color="#FFF" />
-                <Text style={{ color: '#FFF', fontSize: 15, marginTop: 4 }}>Open Video</Text>
-              </TouchableOpacity>
-            )}
+            {(() => {
+              // Use original_video_url for YouTube detection — video_url may be a tracked short URL
+              const embedSrc = getYouTubeEmbedUrl(selectedLesson.original_video_url || selectedLesson.video_url);
+              if (IS_WEB && embedSrc) {
+                return (
+                  <View style={{ borderRadius: 12, overflow: 'hidden', aspectRatio: 16/9, width: '100%', backgroundColor: '#000' }}>
+                    <iframe
+                      src={embedSrc}
+                      style={{ width: '100%', height: '100%', border: 'none' } as any}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </View>
+                );
+              }
+              // Non-YouTube or native: open the tracked short URL (logs the click) which redirects to the video
+              return (
+                <TouchableOpacity
+                  style={s.videoPlaceholder}
+                  onPress={() => {
+                    trackVideoView(selectedLesson, selectedTrack.id);
+                    Linking.openURL(selectedLesson.video_url);
+                  }}
+                  data-testid="open-video-btn"
+                >
+                  <Ionicons name="play" size={32} color="#FFF" />
+                  <Text style={{ color: '#FFF', fontSize: 15, marginTop: 4 }}>Open Video</Text>
+                </TouchableOpacity>
+              );
+            })()}
           </View>
         ) : null}
 

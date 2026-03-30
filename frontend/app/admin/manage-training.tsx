@@ -217,7 +217,10 @@ export default function ManageTrainingPage() {
           <TextInput style={s.input} value={lessonForm.duration} onChangeText={v => setLessonForm(p => ({ ...p, duration: v }))} placeholder="e.g. 5 min" placeholderTextColor={colors.textTertiary} data-testid="lesson-duration-input" />
 
           <Text style={s.label}>Video URL (optional)</Text>
-          <TextInput style={s.input} value={lessonForm.video_url} onChangeText={v => setLessonForm(p => ({ ...p, video_url: v }))} placeholder="https://..." placeholderTextColor={colors.textTertiary} data-testid="lesson-video-input" />
+          <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 6 }}>
+            Paste any YouTube, Vimeo, or Loom URL. YouTube videos play embedded inside the lesson (no app switching). Other URLs open in browser.
+          </Text>
+          <TextInput style={s.input} value={lessonForm.video_url} onChangeText={v => setLessonForm(p => ({ ...p, video_url: v }))} placeholder="https://www.youtube.com/watch?v=..." placeholderTextColor={colors.textTertiary} data-testid="lesson-video-input" autoCapitalize="none" autoCorrect={false} />
 
           <Text style={s.label}>Content (Markdown)</Text>
           <TextInput style={[s.input, s.textArea]} value={lessonForm.content} onChangeText={v => setLessonForm(p => ({ ...p, content: v }))} placeholder="Lesson content in Markdown..." placeholderTextColor={colors.textTertiary} multiline numberOfLines={12} textAlignVertical="top" data-testid="lesson-content-input" />
