@@ -67,6 +67,7 @@ function calcCompleteness(user: any): number {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function MyAccountScreen() {
   const { colors } = useThemeStore();
+  const s = getStyles(colors);
   const router = useRouter();
   const { user, setUser, updateUser } = useAuthStore();
 
@@ -289,7 +290,7 @@ export default function MyAccountScreen() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={[s.container, { backgroundColor: '#000' }]} edges={['top']}>
+    <SafeAreaView style={s.container} edges={['top']}>
       {/* Header nav */}
       <View style={s.nav}>
         <TouchableOpacity onPress={() => router.back()} style={s.navBtn} testID="back-button">
@@ -347,7 +348,7 @@ export default function MyAccountScreen() {
               {user && (
                 <ProfilePhotoUpload
                   user={user as any}
-                  colors={{ card: '#1C1C1E', accent: '#C9A962', ...colors }}
+                  colors={{ ...colors }}
                   onPhotoUpdated={(url) => {
                     // Clear old cached thumbnail paths so new photo shows immediately
                     setUser({ ...user, photo_url: url, photo_path: null, photo_thumb_path: null, photo_avatar_path: null } as any);
@@ -367,8 +368,8 @@ export default function MyAccountScreen() {
                     testID={`toggle-${mode}`}
                   >
                     <Ionicons name={mode === 'personal' ? 'person' : 'storefront'} size={14}
-                      color={viewMode === mode ? '#FFF' : '#8E8E93'} />
-                    <Text style={[s.toggleTxt, viewMode === mode && { color: '#FFF', fontWeight: '700' }]}>
+                      color={viewMode === mode ? colors.text : colors.textSecondary} />
+                    <Text style={[s.toggleTxt, viewMode === mode && { color: colors.text, fontWeight: '700' }]}>
                       {mode === 'personal' ? 'Personal' : (storeName || 'Store')}
                     </Text>
                   </TouchableOpacity>
@@ -384,7 +385,7 @@ export default function MyAccountScreen() {
           {editingName ? (
             <View style={s.inlineEditRow}>
               <TextInput
-                style={[s.nameInput, { color: '#FFF' }]}
+                style={[s.nameInput, { color: colors.text }]}
                 value={nameText}
                 onChangeText={setNameText}
                 autoFocus
@@ -407,7 +408,7 @@ export default function MyAccountScreen() {
           {/* Title / tagline */}
           {editingTitle ? (
             <TextInput
-              style={[s.titleInput, { color: '#8E8E93' }]}
+              style={[s.titleInput, { color: colors.textSecondary }]}
               value={titleText}
               onChangeText={setTitleText}
               placeholder="Your title or tagline..."
@@ -457,7 +458,7 @@ export default function MyAccountScreen() {
               <View>
                 <TextInput
                   ref={bioInputRef}
-                  style={[s.bioInput, { color: '#FFF' }]}
+                  style={[s.bioInput, { color: colors.text }]}
                   value={bioText}
                   onChangeText={setBioText}
                   multiline
@@ -561,7 +562,7 @@ export default function MyAccountScreen() {
                       </TouchableOpacity>
                       {asset.url && (
                         <TouchableOpacity
-                          style={[s.assetActionBtn, { backgroundColor: '#38383A' }]}
+                          style={[s.assetActionBtn, { backgroundColor: colors.borderLight }]}
                           onPress={() => {
                             if (Platform.OS === 'web' && navigator.clipboard && asset.url) {
                               navigator.clipboard.writeText(asset.url);
@@ -569,7 +570,7 @@ export default function MyAccountScreen() {
                           }}
                         >
                           <Ionicons name="copy-outline" size={13} color="#8E8E93" />
-                          <Text style={[s.assetActionTxt, { color: '#8E8E93' }]}>Copy</Text>
+                          <Text style={[s.assetActionTxt, { color: colors.textSecondary }]}>Copy</Text>
                         </TouchableOpacity>
                       )}
                     </View>
@@ -707,21 +708,21 @@ export default function MyAccountScreen() {
         const platform = SOCIAL_PLATFORMS.find(p => p.key === editingSocial);
         return (
           <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' }}>
-            <View style={{ backgroundColor: '#1C1C1E', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, paddingBottom: 36 }}>
+            <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, paddingBottom: 36 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 }}>
                 {platform && <Ionicons name={platform.icon as any} size={24} color={platform?.color} />}
-                <Text style={{ fontSize: 20, fontWeight: '700', color: '#FFF', flex: 1 }}>{platform?.label}</Text>
+                <Text style={{ fontSize: 20, fontWeight: '700', color: colors.text, flex: 1 }}>{platform?.label}</Text>
                 <TouchableOpacity onPress={() => setEditingSocial(null)}>
-                  <Ionicons name="close" size={24} color="#8E8E93" />
+                  <Ionicons name="close" size={24} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
-              <Text style={{ fontSize: 14, color: '#8E8E93', marginBottom: 8 }}>Your handle or username</Text>
+              <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 8 }}>Your handle or username</Text>
               <TextInput
-                style={{ backgroundColor: '#2C2C2E', color: '#FFF', borderRadius: 12, padding: 14, fontSize: 17, borderWidth: 1, borderColor: platform?.color + '40' }}
+                style={{ backgroundColor: colors.surface, color: colors.text, borderRadius: 12, padding: 14, fontSize: 17, borderWidth: 1, borderColor: platform?.color + '40' }}
                 value={socialEditValue}
                 onChangeText={setSocialEditValue}
                 placeholder={`@yourhandle`}
-                placeholderTextColor="#555"
+                placeholderTextColor={colors.textTertiary}
                 autoFocus
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -730,7 +731,7 @@ export default function MyAccountScreen() {
                 testID={`social-edit-${editingSocial}`}
               />
               {socialEditValue.trim() !== '' && (
-                <Text style={{ fontSize: 13, color: '#8E8E93', marginTop: 6 }}>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 6 }}>
                   Will show as: @{socialEditValue.trim().replace(/^@/, '')}
                 </Text>
               )}
@@ -773,13 +774,13 @@ export default function MyAccountScreen() {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+const getStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
 
   // Nav
   nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10 },
   navBtn: { padding: 4, minWidth: 48 },
-  navTitle: { fontSize: 17, fontWeight: '600', color: '#FFF' },
+  navTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
   navAction: { fontSize: 17, color: '#C9A962', fontWeight: '600' },
 
   // Cover
@@ -787,7 +788,6 @@ const s = StyleSheet.create({
   coverTouch: { width: '100%', height: 160, position: 'relative' },
   cover: { width: '100%', height: 160 },
   coverGrad: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 80 },
-  // Clear, obvious "Edit Cover Photo" button — bottom-right of banner
   coverEditBtn: {
     position: 'absolute', bottom: 12, right: 14,
     flexDirection: 'row', alignItems: 'center', gap: 6,
@@ -801,73 +801,73 @@ const s = StyleSheet.create({
   completenessRing: { position: 'absolute', top: -6, left: -6, right: -6, bottom: -6, borderRadius: 999, borderWidth: 2, pointerEvents: 'none' },
 
   // Toggle
-  toggle: { flexDirection: 'row', backgroundColor: '#1C1C1E', borderRadius: 20, padding: 3, gap: 2, marginBottom: 8 },
+  toggle: { flexDirection: 'row', backgroundColor: colors.card, borderRadius: 20, padding: 3, gap: 2, marginBottom: 8 },
   toggleBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16 },
-  toggleTxt: { fontSize: 13, color: '#8E8E93', fontWeight: '500' },
+  toggleTxt: { fontSize: 13, color: colors.textSecondary, fontWeight: '500' },
 
   // Identity
   identity: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 },
   nameRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
-  nameText: { fontSize: 26, fontWeight: '700', color: '#FFF', letterSpacing: 0.3 },
+  nameText: { fontSize: 26, fontWeight: '700', color: colors.text, letterSpacing: 0.3 },
   nameInput: { fontSize: 26, fontWeight: '700', flex: 1, paddingVertical: 0, paddingHorizontal: 0 },
   inlineEditRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   inlineEditDone: { padding: 4 },
-  titleText: { fontSize: 15, color: '#8E8E93', marginBottom: 8 },
+  titleText: { fontSize: 15, color: colors.textSecondary, marginBottom: 8 },
   titleInput: { fontSize: 15, paddingVertical: 4, paddingHorizontal: 0, marginBottom: 8 },
   roleBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginBottom: 6 },
   roleTxt: { fontSize: 13, fontWeight: '600' },
-  emailText: { fontSize: 14, color: '#8E8E93', marginBottom: 14 },
+  emailText: { fontSize: 14, color: colors.textSecondary, marginBottom: 14 },
 
   // Completeness
   completenessBar: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 },
-  completenessTrack: { flex: 1, height: 4, backgroundColor: '#38383A', borderRadius: 2, overflow: 'hidden' },
+  completenessTrack: { flex: 1, height: 4, backgroundColor: colors.borderLight, borderRadius: 2, overflow: 'hidden' },
   completenessFill: { height: 4, borderRadius: 2 },
-  completenessText: { fontSize: 12, color: '#8E8E93', fontWeight: '600' },
+  completenessText: { fontSize: 12, color: colors.textSecondary, fontWeight: '600' },
 
   // Bio
   bioBlock: { marginBottom: 16 },
-  bioText: { fontSize: 15, color: '#EBEBF5CC', lineHeight: 21 },
+  bioText: { fontSize: 15, color: colors.text, lineHeight: 21, opacity: 0.85 },
   bioEmpty: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   bioEmptyText: { fontSize: 15, color: '#C9A962', fontWeight: '500' },
-  bioInput: { fontSize: 15, lineHeight: 21, paddingVertical: 8, paddingHorizontal: 12, backgroundColor: '#1C1C1E', borderRadius: 10, borderWidth: 1, borderColor: '#38383A', minHeight: 80, textAlignVertical: 'top' },
+  bioInput: { fontSize: 15, lineHeight: 21, paddingVertical: 8, paddingHorizontal: 12, backgroundColor: colors.card, borderRadius: 10, borderWidth: 1, borderColor: colors.borderLight, minHeight: 80, textAlignVertical: 'top', color: colors.text },
   bioActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 10, marginTop: 8 },
-  bioCount: { fontSize: 12, color: '#8E8E93', flex: 1 },
-  bioCancel: { fontSize: 15, color: '#8E8E93' },
+  bioCount: { fontSize: 12, color: colors.textSecondary, flex: 1 },
+  bioCancel: { fontSize: 15, color: colors.textSecondary },
   bioSaveBtn: { backgroundColor: '#C9A962', paddingHorizontal: 18, paddingVertical: 7, borderRadius: 16 },
   bioSaveText: { fontSize: 15, fontWeight: '700', color: '#000' },
 
   // Social chips
   socialChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
-  socialChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: '#1C1C1E', borderWidth: 1, borderColor: '#38383A' },
+  socialChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.borderLight },
   socialChipText: { fontSize: 13, fontWeight: '600', maxWidth: 80 },
 
   // Sections
   section: { marginTop: 28, paddingHorizontal: 16 },
-  sectionTitle: { fontSize: 20, fontWeight: '700', color: '#FFF', marginBottom: 2 },
-  sectionSub: { fontSize: 13, color: '#8E8E93', marginBottom: 14 },
+  sectionTitle: { fontSize: 20, fontWeight: '700', color: colors.text, marginBottom: 2 },
+  sectionSub: { fontSize: 13, color: colors.textSecondary, marginBottom: 14 },
 
   // Asset cards 2-col grid
   assetGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  assetCard: { width: '47.5%', backgroundColor: '#1C1C1E', borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#38383A' },
-  assetPreview: { height: 88, alignItems: 'center', justifyContent: 'center', position: 'relative', borderBottomWidth: 1, borderBottomColor: '#38383A' },
+  assetCard: { width: '47.5%', backgroundColor: colors.card, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: colors.borderLight },
+  assetPreview: { height: 88, alignItems: 'center', justifyContent: 'center', position: 'relative', borderBottomWidth: 1, borderBottomColor: colors.borderLight },
   assetPreviewLink: { position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 12, padding: 4 },
   assetInfo: { paddingHorizontal: 12, paddingTop: 10, paddingBottom: 6 },
-  assetLabel: { fontSize: 14, fontWeight: '700', color: '#FFF', marginBottom: 2 },
-  assetSub: { fontSize: 12, color: '#8E8E93' },
+  assetLabel: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 2 },
+  assetSub: { fontSize: 12, color: colors.textSecondary },
   assetActions: { flexDirection: 'row', gap: 6, paddingHorizontal: 10, paddingBottom: 10 },
   assetActionBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 3, paddingVertical: 6, borderRadius: 8 },
   assetActionTxt: { fontSize: 12, fontWeight: '600' },
 
   // Address
-  collapseHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14, paddingHorizontal: 16, backgroundColor: '#1C1C1E', borderRadius: 12 },
-  collapseTitle: { fontSize: 16, fontWeight: '600', color: '#FFF' },
+  collapseHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14, paddingHorizontal: 16, backgroundColor: colors.card, borderRadius: 12 },
+  collapseTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
   collapseBody: { borderLeftWidth: 2, marginLeft: 16, paddingLeft: 16, paddingTop: 12, gap: 10 },
-  addrInput: { backgroundColor: '#1C1C1E', color: '#FFF', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, borderWidth: 1, borderColor: '#38383A', marginBottom: 8 },
+  addrInput: { backgroundColor: colors.card, color: colors.text, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, borderWidth: 1, borderColor: colors.borderLight, marginBottom: 8 },
 
   // Settings list
-  settingsList: { backgroundColor: '#1C1C1E', borderRadius: 14, overflow: 'hidden' },
-  settingsRow: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12, borderBottomWidth: 1, borderBottomColor: '#38383A' },
+  settingsList: { backgroundColor: colors.card, borderRadius: 14, overflow: 'hidden' },
+  settingsRow: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12, borderBottomWidth: 1, borderBottomColor: colors.borderLight },
   settingsIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  settingsLabel: { fontSize: 16, fontWeight: '600', color: '#FFF', marginBottom: 2 },
-  settingsSub: { fontSize: 13, color: '#8E8E93' },
+  settingsLabel: { fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 2 },
+  settingsSub: { fontSize: 13, color: colors.textSecondary },
 });
