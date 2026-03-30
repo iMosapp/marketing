@@ -47,14 +47,13 @@ export default function Root({ children }: PropsWithChildren) {
               [role="heading"], [role="heading"] * { overflow: visible !important; display: none !important; }
               /* Prevent iOS Safari from zooming in on input focus (happens when font-size < 16px) */
               input, textarea, select { font-size: 16px !important; }
-              /* Fix browser autofill styling — iOS Safari overrides text color to black/dark on autofill */
+              /* Fix browser autofill styling — iOS Safari overrides text color on autofill */
               input:-webkit-autofill,
               input:-webkit-autofill:hover,
               input:-webkit-autofill:focus,
               input:-webkit-autofill:active {
-                -webkit-text-fill-color: #ffffff !important;
-                -webkit-box-shadow: 0 0 0 1000px #2c2c2e inset !important;
-                caret-color: #ffffff !important;
+                -webkit-text-fill-color: inherit !important;
+                caret-color: inherit !important;
                 transition: background-color 5000s ease-in-out 0s !important;
               }
               /* iOS safe area  - fill the bottom home indicator area with black */
