@@ -21,19 +21,26 @@ async def find_store_by_slug(db, slug: str):
 
 
 def get_safe_logo(doc, fallback_doc=None):
-    """Get a logo URL that's safe for API responses.
-    Prefers avatar (small) version, falls back to logo_url only if it's a real URL (not base64)."""
+    """Get the sharpest available logo URL. Priority: full logo_url → full logo_path → thumbnail → avatar."""
     for d in [doc, fallback_doc]:
         if not d:
             continue
-        # Prefer small avatar version
-        avatar = d.get("logo_avatar_url")
-        if avatar:
-            return avatar
-        # Use logo_url only if it's a real URL (not huge base64)
+        # 1. Full-size logo URL (best quality)
         logo = d.get("logo_url")
-        if logo and not logo.startswith("data:") or (logo and len(logo) < 500):
+        if logo and not logo.startswith("data:") and len(logo) < 2000:
             return logo
+        # 2. Construct URL from logo_path (full-size stored image)
+        logo_path = d.get("logo_path")
+        if logo_path:
+            return f"/api/images/{logo_path}"
+        # 3. Thumbnail (medium quality)
+        thumb = d.get("logo_thumbnail_url")
+        if thumb and not thumb.startswith("data:"):
+            return thumb
+        # 4. Avatar as last resort (smallest)
+        avatar = d.get("logo_avatar_url")
+        if avatar and not avatar.startswith("data:"):
+            return avatar
     return ""
 
 
