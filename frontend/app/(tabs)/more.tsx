@@ -736,10 +736,10 @@ export default function MoreScreen() {
   const renderBrandItem = (item: { icon: string; title: string; subtitle: string; color: string; publicUrl: string | null; editRoute?: string }, index: number) => (
     <View
       key={`brand-${index}`}
-      style={[styles.menuItemCard, { backgroundColor: colors.surface, flexDirection: 'column', paddingBottom: 8 }]}
+      style={[styles.menuItemCard, { backgroundColor: colors.surface, flexDirection: 'column', paddingBottom: 8, alignItems: 'flex-start' }]}
     >
       {/* Top row: icon + title + bookmark */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
         <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
           <Ionicons name={item.icon as any} size={20} color={item.color} />
         </View>
