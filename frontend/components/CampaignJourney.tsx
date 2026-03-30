@@ -5,7 +5,7 @@ import { useThemeStore } from '../store/themeStore';
 import api from '../services/api';
 import { format, formatDistanceToNow, isPast, parseISO } from 'date-fns';
 import * as Clipboard from 'expo-clipboard';
-import { showSimpleAlert } from '../services/alert';
+import { showSimpleAlert, showAlert } from '../services/alert';
 
 interface StepInfo {
   step: number;
@@ -134,7 +134,7 @@ export default function CampaignJourney({ userId, contactId }: Props) {
   };
 
   const handleRemoveCampaign = async (journey: Journey) => {
-    showSimpleAlert(
+    showAlert(
       'Remove Campaign',
       `Remove "${journey.campaign_name}" from this contact? History will be archived. Any pending sends will be cancelled.`,
       [
