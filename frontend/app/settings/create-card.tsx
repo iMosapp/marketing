@@ -51,17 +51,20 @@ export default function CreateCardPage() {
     message: customMeta.message || '',
   } : { label: 'Custom Card', icon: 'gift', accent: '#C9A962', headline: 'Custom Card', message: '' });
   
-  // Load user's custom card templates (Weekly Special, Trade of the Day, etc.)
+  // Load user's custom card templates — try store first, fall back to org
   useEffect(() => {
-    if (!user?.store_id) return;
-    api.get(`/congrats/templates/all/${user.store_id}`)
+    const storeId = user?.store_id || (user as any)?.store_id;
+    const orgId = user?.organization_id || (user as any)?.org_id;
+    const entityId = storeId || orgId;
+    if (!entityId) return;
+    api.get(`/congrats/templates/all/${entityId}`)
       .then(res => {
         const all = res.data || [];
         const custom = all.filter((t: any) => !TYPE_META[t.card_type] && t.headline);
         setCustomTemplates(custom);
       })
       .catch(() => {});
-  }, [user?.store_id]);
+  }, [user?.store_id, (user as any)?.organization_id]);
 
   const [template, setTemplate] = useState(null);
   const [customerName, setCustomerName] = useState(prefillName || '');
@@ -126,7 +129,13 @@ export default function CreateCardPage() {
   };
 
   const createCard = async () => {
-    if (!user?._id) return;
+    // Read directly from store state — avoids any stale closure issue with user._id
+    const storeUser = useAuthStore.getState().user;
+    const userId = storeUser?._id || (storeUser as any)?.id || user?._id || '';
+    if (!userId) {
+      showSimpleAlert('Error', 'Not logged in. Please log out and log back in.');
+      return;
+    }
     // Treat as generic if no recipient name/phone entered
     const effectivelyGeneric = !customerName.trim() && !customerPhone.trim();
     setIsGeneric(effectivelyGeneric);

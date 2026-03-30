@@ -732,66 +732,74 @@ export default function MoreScreen() {
     }
   }
 
-  // ── Brand card render — same structure as renderMenuItem, action buttons inside content ──
+  // ── Brand card render — fully inlined styles to avoid RN Web specificity issues ──
   const renderBrandItem = (item: { icon: string; title: string; subtitle: string; color: string; publicUrl: string | null; editRoute?: string }, index: number) => (
-    <View
+    <TouchableOpacity
       key={`brand-${index}`}
-      style={[styles.menuItemCard, { backgroundColor: colors.surface }]}
+      onPress={() => item.editRoute && router.push(item.editRoute as any)}
+      activeOpacity={0.7}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        backgroundColor: colors.surface,
+        borderRadius: 10,
+        padding: 12,
+        marginBottom: 6,
+        marginLeft: 16,
+        marginRight: 0,
+      }}
     >
-      {/* Icon — far left, same as every other menu item */}
-      <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
+      <View style={{
+        width: 36, height: 36, borderRadius: 10,
+        backgroundColor: `${item.color}20`,
+        alignItems: 'center', justifyContent: 'center',
+        marginRight: 12, flexShrink: 0,
+      }}>
         <Ionicons name={item.icon as any} size={20} color={item.color} />
       </View>
-
-      {/* Content column — title, subtitle, then action buttons */}
-      <View style={{ flex: 1, flexDirection: 'column' }}>
-        <Text style={[styles.menuTitle, { color: colors.text }]}>{item.title}</Text>
-        <Text style={[styles.menuSubtitle, { color: colors.textSecondary }]}>{item.subtitle}</Text>
-        {/* View / Share / Edit buttons */}
-        <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+      <View style={{ flex: 1, flexDirection: 'column', alignItems: 'flex-start' }}>
+        <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text, marginBottom: 2 }} numberOfLines={1}>{item.title}</Text>
+        <Text style={{ fontSize: 13, color: colors.textSecondary }} numberOfLines={1}>{item.subtitle}</Text>
+        <View style={{ flexDirection: 'row', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
           {item.publicUrl && (
             <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14, backgroundColor: item.color + '20' }}
-              onPress={() => { trackVisit({ title: item.title, icon: item.icon, color: item.color, subtitle: item.subtitle }); openExternal(item.publicUrl!); }}
-              data-testid={`brand-view-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, backgroundColor: item.color + '20' }}
+              onPress={(e: any) => { e?.stopPropagation?.(); openExternal(item.publicUrl!); }}
             >
-              <Ionicons name="eye-outline" size={13} color={item.color} />
+              <Ionicons name="eye-outline" size={12} color={item.color} />
               <Text style={{ fontSize: 12, fontWeight: '700', color: item.color }}>View</Text>
             </TouchableOpacity>
           )}
           {item.publicUrl && (
             <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14, backgroundColor: colors.card }}
-              onPress={() => shareLink(item.publicUrl!, item.title)}
-              data-testid={`brand-share-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, backgroundColor: colors.card }}
+              onPress={(e: any) => { e?.stopPropagation?.(); shareLink(item.publicUrl!, item.title); }}
             >
-              <Ionicons name="share-outline" size={13} color={colors.textSecondary} />
+              <Ionicons name="share-outline" size={12} color={colors.textSecondary} />
               <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>Share</Text>
             </TouchableOpacity>
           )}
           {item.editRoute && (
             <TouchableOpacity
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14, backgroundColor: colors.card }}
-              onPress={() => router.push(item.editRoute as any)}
-              data-testid={`brand-edit-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, backgroundColor: colors.card }}
+              onPress={(e: any) => { e?.stopPropagation?.(); router.push(item.editRoute as any); }}
             >
-              <Ionicons name="create-outline" size={13} color={colors.textSecondary} />
+              <Ionicons name="create-outline" size={12} color={colors.textSecondary} />
               <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>Edit</Text>
             </TouchableOpacity>
           )}
         </View>
       </View>
-
-      {/* Pin — far right, same as every other menu item */}
       <TouchableOpacity
-        onPress={() => togglePin({ title: item.title, icon: item.icon, color: item.color, subtitle: item.subtitle })}
+        onPress={(e: any) => { e?.stopPropagation?.(); togglePin({ title: item.title, icon: item.icon, color: item.color, subtitle: item.subtitle }); }}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        style={styles.pinButton}
+        style={{ padding: 4 }}
       >
         <Ionicons name={isPinned(item.title) ? 'bookmark' : 'bookmark-outline'} size={16}
           color={isPinned(item.title) ? item.color : colors.textTertiary} />
       </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 
   const renderMenuItem = (item: MenuItem, index: number) => (
@@ -1715,6 +1723,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   sectionWrapper: {
     marginHorizontal: 16,
     marginBottom: 8,
+    alignItems: 'stretch',
   },
   // Section Header Card (standalone card)
   sectionHeaderCard: {
@@ -1741,10 +1750,15 @@ const getStyles = (colors: any) => StyleSheet.create({
   menuItemCard: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-start',
     borderRadius: 10,
     padding: 12,
+    paddingLeft: 12,
     marginBottom: 6,
     marginLeft: 16,
+    marginRight: 0,
+    alignSelf: 'stretch' as any,
+    minWidth: 0,
   },
   menuIcon: {
     width: 36,
@@ -1753,6 +1767,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+    flexShrink: 0,
   },
   menuContent: {
     flex: 1,
