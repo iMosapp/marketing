@@ -542,22 +542,23 @@ export default function CreateCardPage() {
           transparent
           onRequestClose={() => setShowTypePicker(false)}
         >
-          <TouchableOpacity
-            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' }}
-            activeOpacity={1}
-            onPress={() => setShowTypePicker(false)}
-          >
-            <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation?.()}>
-              <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 20, paddingHorizontal: 20, maxHeight: '80%' }}>
-                <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 16 }}>Choose Card Type</Text>
-                {/* ScrollView constrained by parent maxHeight — enables scroll on all platforms */}
-                <ScrollView
-                  showsVerticalScrollIndicator={true}
-                  bounces={true}
-                  style={{ flex: 1 }}
-                  contentContainerStyle={{ paddingBottom: 36 }}
-                  keyboardShouldPersistTaps="handled"
-                >
+          <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+            {/* Tap-to-dismiss backdrop — separate from the sheet so it doesn't fight scroll */}
+            <TouchableOpacity
+              style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.7)' } as any}
+              activeOpacity={1}
+              onPress={() => setShowTypePicker(false)}
+            />
+            {/* Modal sheet — plain View, no touch wrapper that conflicts with ScrollView */}
+            <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 20, paddingHorizontal: 20, maxHeight: '80%' }}>
+              <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 16 }}>Choose Card Type</Text>
+              <ScrollView
+                showsVerticalScrollIndicator={true}
+                bounces={false}
+                style={{ flex: 1 }}
+                contentContainerStyle={{ paddingBottom: 36 }}
+                keyboardShouldPersistTaps="handled"
+              >
                   {Object.entries(TYPE_META).map(([key, t]) => (
                     <TouchableOpacity
                       key={key}
@@ -606,9 +607,8 @@ export default function CreateCardPage() {
                     <Text style={{ fontSize: 17, color: colors.textSecondary }}>Cancel</Text>
                   </TouchableOpacity>
                 </ScrollView>
-              </View>
-            </TouchableOpacity>
-          </TouchableOpacity>
+            </View>
+          </View>
         </Modal>
         <Text style={s.fieldLabel}>{isGeneric ? 'CARD PHOTO (OPTIONAL)' : 'RECIPIENT PHOTO *'}</Text>
         <TouchableOpacity style={s.photoPicker} onPress={pickPhoto} data-testid="card-pick-photo">
