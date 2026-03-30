@@ -859,7 +859,7 @@ export default function HomeScreen() {
               <Ionicons name="chevron-back" size={24} color={colors.text} />
             </TouchableOpacity>
             <Text style={{ fontSize: 19, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' }}>
-              {sendCardStep === 'type' ? 'Send a Card' : 'Select Contact'}
+              {sendCardStep === 'type' ? 'Send a Card' : "Who's it for?"}
             </Text>
             <View style={{ width: 32 }} />
           </View>
@@ -893,29 +893,33 @@ export default function HomeScreen() {
             </>
           ) : (
             <>
-              <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
+              {/* Skip button FIRST — most visible, before keyboard opens */}
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, margin: 16, marginBottom: 8, padding: 16, backgroundColor: colors.accent + '20', borderRadius: 14, borderWidth: 1.5, borderColor: colors.accent }}
+                onPress={handleCardSkipContact}
+                data-testid="send-card-skip-contact"
+              >
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="share-outline" size={20} color="#000" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.accent, fontSize: 17, fontWeight: '800' }}>No Contact — Just Get a Link</Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 2 }}>Create the card and share the link anywhere</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.accent} />
+              </TouchableOpacity>
+
+              <Text style={{ color: colors.textTertiary, fontSize: 13, fontWeight: '600', paddingHorizontal: 16, paddingBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>— or send to a specific contact —</Text>
+              <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
                 <TextInput
                   style={{ backgroundColor: colors.card, borderRadius: 12, padding: 12, fontSize: 17, color: colors.text, borderWidth: 1, borderColor: colors.border }}
                   placeholder="Search by name, phone, or email..."
                   placeholderTextColor={colors.textTertiary}
                   value={cardSearch}
                   onChangeText={setCardSearch}
-                  autoFocus
                   data-testid="send-card-contact-search"
                 />
               </View>
-              <TouchableOpacity
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 14, backgroundColor: colors.accent + '15', marginHorizontal: 16, marginBottom: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.accent + '40' }}
-                onPress={handleCardSkipContact}
-                data-testid="send-card-skip-contact"
-              >
-                <Ionicons name="share-outline" size={20} color={colors.accent} />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.accent, fontSize: 16, fontWeight: '700' }}>No Contact — Just Get a Link</Text>
-                  <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 1 }}>Create the card and copy a shareable link</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.accent} />
-              </TouchableOpacity>
               {cardContactsLoading ? (
                 <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 20 }} />
               ) : (
