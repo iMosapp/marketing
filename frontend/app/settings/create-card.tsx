@@ -40,6 +40,7 @@ export default function CreateCardPage() {
   const [selectedType, setSelectedType] = useState(cardType);
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [customTemplates, setCustomTemplates] = useState<any[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
   
   // Resolve meta for both standard and custom card types
   const customMeta = customTemplates.find(t => t.card_type === selectedType);
@@ -57,13 +58,15 @@ export default function CreateCardPage() {
     const orgId = user?.organization_id || (user as any)?.org_id;
     const entityId = storeId || orgId;
     if (!entityId) return;
+    setTemplatesLoading(true);
     api.get(`/congrats/templates/all/${entityId}`)
       .then(res => {
         const all = res.data || [];
         const custom = all.filter((t: any) => !TYPE_META[t.card_type] && t.headline);
         setCustomTemplates(custom);
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setTemplatesLoading(false));
   }, [user?.store_id, (user as any)?.organization_id]);
 
   const [template, setTemplate] = useState(null);
@@ -572,7 +575,12 @@ export default function CreateCardPage() {
                       {selectedType === key && <Ionicons name="checkmark-circle" size={22} color={t.accent} />}
                     </TouchableOpacity>
                   ))}
-                  {customTemplates.length > 0 && (
+                  {templatesLoading ? (
+                    <View style={{ padding: 16, alignItems: 'center' }}>
+                      <ActivityIndicator size="small" color="#C9A962" />
+                      <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 6 }}>Loading your templates...</Text>
+                    </View>
+                  ) : customTemplates.length > 0 ? (
                     <>
                       <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 8, marginBottom: 8 }}>My Custom Cards</Text>
                       {customTemplates.map((t: any) => (
@@ -593,7 +601,7 @@ export default function CreateCardPage() {
                         </TouchableOpacity>
                       ))}
                     </>
-                  )}
+                  ) : null}
                   <TouchableOpacity onPress={() => setShowTypePicker(false)} style={{ marginTop: 8, padding: 14, alignItems: 'center' }}>
                     <Text style={{ fontSize: 17, color: colors.textSecondary }}>Cancel</Text>
                   </TouchableOpacity>
