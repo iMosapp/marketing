@@ -519,7 +519,7 @@ export default function HomeScreen() {
   const handleCardSkipContact = () => {
     setShowSendCard(false);
     setSendCardStep('type');
-    router.push(`/settings/create-card?type=${selectedCardType}` as any);
+    router.push(`/settings/create-card?type=${selectedCardType}&generic=true` as any);
   };
 
   // Open share modal for a tile
@@ -905,12 +905,16 @@ export default function HomeScreen() {
                 />
               </View>
               <TouchableOpacity
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 12 }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 14, backgroundColor: colors.accent + '15', marginHorizontal: 16, marginBottom: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.accent + '40' }}
                 onPress={handleCardSkipContact}
                 data-testid="send-card-skip-contact"
               >
-                <Ionicons name="arrow-forward-circle-outline" size={20} color={colors.accent} />
-                <Text style={{ color: colors.accent, fontSize: 16, fontWeight: '600' }}>Skip  - create without selecting a contact</Text>
+                <Ionicons name="share-outline" size={20} color={colors.accent} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: colors.accent, fontSize: 16, fontWeight: '700' }}>No Contact — Just Get a Link</Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 1 }}>Create the card and copy a shareable link</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.accent} />
               </TouchableOpacity>
               {cardContactsLoading ? (
                 <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 20 }} />
