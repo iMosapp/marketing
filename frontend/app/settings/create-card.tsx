@@ -39,7 +39,21 @@ export default function CreateCardPage() {
   const [isGeneric, setIsGeneric] = useState(genericParam === 'true' || (!prefillName && !prefillPhone && !isFromContact));
   const [selectedType, setSelectedType] = useState(cardType);
   const [showTypePicker, setShowTypePicker] = useState(false);
-  const meta = TYPE_META[selectedType] || baseMeta;
+  const [customTemplates, setCustomTemplates] = useState<any[]>([]);
+  const meta = TYPE_META[selectedType] || { label: selectedType, icon: 'gift', accent: '#C9A962', headline: selectedType, message: '' };
+  
+  // Load user's custom card templates (Weekly Special, Trade of the Day, etc.)
+  useEffect(() => {
+    if (!user?.store_id) return;
+    api.get(`/congrats/templates/all/${user.store_id}`)
+      .then(res => {
+        const all = res.data || [];
+        // Only include custom templates (not the standard types already in TYPE_META)
+        const custom = all.filter((t: any) => !TYPE_META[t.card_type] && t.headline);
+        setCustomTemplates(custom);
+      })
+      .catch(() => {});
+  }, [user?.store_id]);
 
   const [template, setTemplate] = useState(null);
   const [customerName, setCustomerName] = useState(prefillName || '');
@@ -525,6 +539,28 @@ export default function CreateCardPage() {
                   {selectedType === key && <Ionicons name="checkmark-circle" size={22} color={t.accent} />}
                 </TouchableOpacity>
               ))}
+              {customTemplates.length > 0 && (
+                <>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 8, marginBottom: 8 }}>My Custom Cards</Text>
+                  {customTemplates.map((t: any) => (
+                    <TouchableOpacity
+                      key={t.card_type}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14, borderRadius: 12, marginBottom: 8, backgroundColor: selectedType === t.card_type ? '#C9A96220' : colors.card, borderWidth: 1.5, borderColor: selectedType === t.card_type ? '#C9A962' : colors.border }}
+                      onPress={() => { setSelectedType(t.card_type); setShowTypePicker(false); }}
+                      data-testid={`card-type-custom-${t.card_type}`}
+                    >
+                      <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: (t.accent_color || '#C9A962') + '25', alignItems: 'center', justifyContent: 'center' }}>
+                        <Ionicons name="gift-outline" size={22} color={t.accent_color || '#C9A962'} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{t.headline}</Text>
+                        <Text style={{ fontSize: 13, color: colors.textSecondary }}>Custom Card</Text>
+                      </View>
+                      {selectedType === t.card_type && <Ionicons name="checkmark-circle" size={22} color={t.accent_color || '#C9A962'} />}
+                    </TouchableOpacity>
+                  ))}
+                </>
+              )}
               <TouchableOpacity onPress={() => setShowTypePicker(false)} style={{ marginTop: 8, padding: 14, alignItems: 'center' }}>
                 <Text style={{ fontSize: 17, color: colors.textSecondary }}>Cancel</Text>
               </TouchableOpacity>
