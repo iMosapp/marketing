@@ -732,63 +732,65 @@ export default function MoreScreen() {
     }
   }
 
-  // ── Brand card render — View + Share instead of just Edit arrow ───────────
+  // ── Brand card render — same structure as renderMenuItem, action buttons inside content ──
   const renderBrandItem = (item: { icon: string; title: string; subtitle: string; color: string; publicUrl: string | null; editRoute?: string }, index: number) => (
     <View
       key={`brand-${index}`}
-      style={[styles.menuItemCard, { backgroundColor: colors.surface, flexDirection: 'column', paddingBottom: 8, alignItems: 'flex-start' }]}
+      style={[styles.menuItemCard, { backgroundColor: colors.surface }]}
     >
-      {/* Top row: icon + title + bookmark */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
-        <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
-          <Ionicons name={item.icon as any} size={20} color={item.color} />
-        </View>
-        <View style={styles.menuContent}>
-          <Text style={[styles.menuTitle, { color: colors.text }]}>{item.title}</Text>
-          <Text style={[styles.menuSubtitle, { color: colors.textSecondary }]}>{item.subtitle}</Text>
-        </View>
-        <TouchableOpacity
-          onPress={() => togglePin({ title: item.title, icon: item.icon, color: item.color, subtitle: item.subtitle })}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          style={styles.pinButton}
-        >
-          <Ionicons name={isPinned(item.title) ? 'bookmark' : 'bookmark-outline'} size={16}
-            color={isPinned(item.title) ? item.color : colors.textTertiary} />
-        </TouchableOpacity>
+      {/* Icon — far left, same as every other menu item */}
+      <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
+        <Ionicons name={item.icon as any} size={20} color={item.color} />
       </View>
-      {/* Action buttons row */}
-      <View style={{ flexDirection: 'row', gap: 8, paddingTop: 8, paddingLeft: 52 }}>
-        {item.publicUrl && (
-          <TouchableOpacity
-            style={[{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: item.color + '20' }]}
-            onPress={() => { trackVisit({ title: item.title, icon: item.icon, color: item.color, subtitle: item.subtitle }); openExternal(item.publicUrl!); }}
-            data-testid={`brand-view-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
-          >
-            <Ionicons name="eye-outline" size={14} color={item.color} />
-            <Text style={{ fontSize: 13, fontWeight: '700', color: item.color }}>View</Text>
-          </TouchableOpacity>
-        )}
-        {item.publicUrl && (
-          <TouchableOpacity
-            style={[{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: colors.card }]}
-            onPress={() => shareLink(item.publicUrl!, item.title)}
-            data-testid={`brand-share-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
-          >
-            <Ionicons name="share-outline" size={14} color={colors.textSecondary} />
-            <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary }}>Share</Text>
-          </TouchableOpacity>
-        )}
-        {item.editRoute && (
-          <TouchableOpacity
-            style={[{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: colors.card }]}
-            onPress={() => router.push(item.editRoute as any)}
-            data-testid={`brand-edit-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
-          >
-            <Ionicons name="create-outline" size={14} color={colors.textSecondary} />
-            <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary }}>Edit</Text>
-          </TouchableOpacity>
-        )}
+
+      {/* Content column — title, subtitle, then action buttons */}
+      <View style={{ flex: 1, flexDirection: 'column' }}>
+        <Text style={[styles.menuTitle, { color: colors.text }]}>{item.title}</Text>
+        <Text style={[styles.menuSubtitle, { color: colors.textSecondary }]}>{item.subtitle}</Text>
+        {/* View / Share / Edit buttons */}
+        <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+          {item.publicUrl && (
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14, backgroundColor: item.color + '20' }}
+              onPress={() => { trackVisit({ title: item.title, icon: item.icon, color: item.color, subtitle: item.subtitle }); openExternal(item.publicUrl!); }}
+              data-testid={`brand-view-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+            >
+              <Ionicons name="eye-outline" size={13} color={item.color} />
+              <Text style={{ fontSize: 12, fontWeight: '700', color: item.color }}>View</Text>
+            </TouchableOpacity>
+          )}
+          {item.publicUrl && (
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14, backgroundColor: colors.card }}
+              onPress={() => shareLink(item.publicUrl!, item.title)}
+              data-testid={`brand-share-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+            >
+              <Ionicons name="share-outline" size={13} color={colors.textSecondary} />
+              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>Share</Text>
+            </TouchableOpacity>
+          )}
+          {item.editRoute && (
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 14, backgroundColor: colors.card }}
+              onPress={() => router.push(item.editRoute as any)}
+              data-testid={`brand-edit-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+            >
+              <Ionicons name="create-outline" size={13} color={colors.textSecondary} />
+              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>Edit</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
+
+      {/* Pin — far right, same as every other menu item */}
+      <TouchableOpacity
+        onPress={() => togglePin({ title: item.title, icon: item.icon, color: item.color, subtitle: item.subtitle })}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        style={styles.pinButton}
+      >
+        <Ionicons name={isPinned(item.title) ? 'bookmark' : 'bookmark-outline'} size={16}
+          color={isPinned(item.title) ? item.color : colors.textTertiary} />
+      </TouchableOpacity>
     </View>
   );
 
