@@ -535,10 +535,16 @@ export default function CreateCardPage() {
         {/* Type picker modal */}
         {showTypePicker && (
           <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1000, justifyContent: 'flex-end' }}>
-            <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 20, paddingHorizontal: 20, maxHeight: '85%' }}>
+            <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 20, paddingHorizontal: 20, maxHeight: '80%', flex: 0 }}>
               <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 16 }}>Choose Card Type</Text>
-              {/* ScrollView so all types are reachable on any screen size */}
-              <ScrollView showsVerticalScrollIndicator={false} bounces={false} style={{ flexShrink: 1 }} contentContainerStyle={{ paddingBottom: 36 }}>
+              {/* ScrollView constrained by parent maxHeight — enables scroll on all platforms */}
+              <ScrollView
+                showsVerticalScrollIndicator={true}
+                bounces={true}
+                style={{ flex: 1 }}
+                contentContainerStyle={{ paddingBottom: 36 }}
+                keyboardShouldPersistTaps="handled"
+              >
                 {Object.entries(TYPE_META).map(([key, t]) => (
                   <TouchableOpacity
                     key={key}
