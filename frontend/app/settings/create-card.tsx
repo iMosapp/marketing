@@ -315,16 +315,33 @@ export default function CreateCardPage() {
       <SafeAreaView style={s.container} edges={['top']}>
         <View style={s.shareModalInner}>
           <View style={s.shareHandle} />
-          <Text style={s.shareTitle}>Share {meta.label}</Text>
-          <Text style={s.shareSubtitle}>Share it with {customerName}</Text>
+          <Text style={s.shareTitle}>{isGeneric ? 'Your Card is Live!' : `Share ${meta.label}`}</Text>
+          <Text style={s.shareSubtitle}>{isGeneric ? 'Copy the link and post it anywhere' : `Share it with ${customerName}`}</Text>
 
-          {/* Pre-filled recipient section */}
-          <View style={s.recipientSection}>
+          {/* Generic mode: big prominent copy-link banner */}
+          {isGeneric && (
+            <TouchableOpacity
+              style={{ backgroundColor: '#C9A962', borderRadius: 14, padding: 16, marginBottom: 20, flexDirection: 'row', alignItems: 'center', gap: 10 }}
+              onPress={handleCopyLink}
+              data-testid="generic-copy-link"
+            >
+              <Ionicons name="copy-outline" size={22} color="#000" />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: '700', color: '#000' }}>Copy Link to Share</Text>
+                <Text style={{ fontSize: 12, color: '#00000080', marginTop: 2 }} numberOfLines={1}>{shareUrl}</Text>
+              </View>
+            </TouchableOpacity>
+          )}
+
+          {/* Pre-filled recipient section — hidden in generic mode */}
+          {!isGeneric && (
+            <View style={s.recipientSection}>
             <Text style={s.recipientLabel}>SEND TO (OPTIONAL)</Text>
             <TextInput style={s.recipientInput} placeholder="Recipient Name" placeholderTextColor="#6E6E73" value={customerName} onChangeText={setCustomerName} data-testid="card-share-name" />
             <TextInput style={s.recipientInput} placeholder="Phone" placeholderTextColor="#6E6E73" value={customerPhone} onChangeText={setCustomerPhone} keyboardType="phone-pad" data-testid="card-share-phone" />
             <TextInput style={s.recipientInput} placeholder="Email" placeholderTextColor="#6E6E73" value={customerEmail} onChangeText={setCustomerEmail} keyboardType="email-address" autoCapitalize="none" data-testid="card-share-email" />
           </View>
+          )}
 
           {/* 2×3 action grid matching UniversalShareModal */}
           <View style={s.shareOptionsGrid}>
@@ -469,7 +486,7 @@ export default function CreateCardPage() {
         <View style={{ width: 28 }} />
       </View>
       <ScrollView style={s.scroll} contentContainerStyle={{ paddingBottom: 40 }}>
-        <Text style={s.fieldLabel}>RECIPIENT PHOTO *</Text>
+        <Text style={s.fieldLabel}>{isGeneric ? 'CARD PHOTO (OPTIONAL)' : 'RECIPIENT PHOTO *'}</Text>
         <TouchableOpacity style={s.photoPicker} onPress={pickPhoto} data-testid="card-pick-photo">
           {photo ? <Image source={{ uri: photo.uri }} style={[s.photoPreview, { borderColor: accent }]} /> : (
             <View style={s.photoPlaceholder}><Ionicons name="camera" size={36} color={colors.textSecondary} /><Text style={s.photoPlaceholderText}>Tap to add photo</Text></View>
