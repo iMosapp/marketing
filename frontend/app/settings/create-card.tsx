@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
-  Image, ActivityIndicator, Platform, Linking,
+  Image, ActivityIndicator, Platform, Linking, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -532,65 +532,76 @@ export default function CreateCardPage() {
           </View>
         </TouchableOpacity>
 
-        {/* Type picker modal */}
-        {showTypePicker && (
-          <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1000, justifyContent: 'flex-end' }}>
-            <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 20, paddingHorizontal: 20, maxHeight: '80%', flex: 0 }}>
-              <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 16 }}>Choose Card Type</Text>
-              {/* ScrollView constrained by parent maxHeight — enables scroll on all platforms */}
-              <ScrollView
-                showsVerticalScrollIndicator={true}
-                bounces={true}
-                style={{ flex: 1 }}
-                contentContainerStyle={{ paddingBottom: 36 }}
-                keyboardShouldPersistTaps="handled"
-              >
-                {Object.entries(TYPE_META).map(([key, t]) => (
-                  <TouchableOpacity
-                    key={key}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14, borderRadius: 12, marginBottom: 8, backgroundColor: selectedType === key ? t.accent + '20' : colors.card, borderWidth: 1.5, borderColor: selectedType === key ? t.accent : colors.border }}
-                    onPress={() => { setSelectedType(key); setShowTypePicker(false); }}
-                    data-testid={`card-type-${key}`}
-                  >
-                    <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: t.accent + '25', alignItems: 'center', justifyContent: 'center' }}>
-                      <Ionicons name={t.icon as any} size={22} color={t.accent} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{t.label}</Text>
-                      <Text style={{ fontSize: 13, color: colors.textSecondary }}>{t.headline}</Text>
-                    </View>
-                    {selectedType === key && <Ionicons name="checkmark-circle" size={22} color={t.accent} />}
+        {/* Type picker — uses Modal so it renders above ScrollView on all platforms */}
+        <Modal
+          visible={showTypePicker}
+          animationType="slide"
+          transparent
+          onRequestClose={() => setShowTypePicker(false)}
+        >
+          <TouchableOpacity
+            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' }}
+            activeOpacity={1}
+            onPress={() => setShowTypePicker(false)}
+          >
+            <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation?.()}>
+              <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 20, paddingHorizontal: 20, maxHeight: '80%' }}>
+                <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 16 }}>Choose Card Type</Text>
+                {/* ScrollView constrained by parent maxHeight — enables scroll on all platforms */}
+                <ScrollView
+                  showsVerticalScrollIndicator={true}
+                  bounces={true}
+                  style={{ flex: 1 }}
+                  contentContainerStyle={{ paddingBottom: 36 }}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {Object.entries(TYPE_META).map(([key, t]) => (
+                    <TouchableOpacity
+                      key={key}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14, borderRadius: 12, marginBottom: 8, backgroundColor: selectedType === key ? t.accent + '20' : colors.card, borderWidth: 1.5, borderColor: selectedType === key ? t.accent : colors.border }}
+                      onPress={() => { setSelectedType(key); setShowTypePicker(false); }}
+                      data-testid={`card-type-${key}`}
+                    >
+                      <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: t.accent + '25', alignItems: 'center', justifyContent: 'center' }}>
+                        <Ionicons name={t.icon as any} size={22} color={t.accent} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{t.label}</Text>
+                        <Text style={{ fontSize: 13, color: colors.textSecondary }}>{t.headline}</Text>
+                      </View>
+                      {selectedType === key && <Ionicons name="checkmark-circle" size={22} color={t.accent} />}
+                    </TouchableOpacity>
+                  ))}
+                  {customTemplates.length > 0 && (
+                    <>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 8, marginBottom: 8 }}>My Custom Cards</Text>
+                      {customTemplates.map((t: any) => (
+                        <TouchableOpacity
+                          key={t.card_type}
+                          style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14, borderRadius: 12, marginBottom: 8, backgroundColor: selectedType === t.card_type ? '#C9A96220' : colors.card, borderWidth: 1.5, borderColor: selectedType === t.card_type ? '#C9A962' : colors.border }}
+                          onPress={() => { setSelectedType(t.card_type); setTemplate(t); setShowTypePicker(false); }}
+                          data-testid={`card-type-custom-${t.card_type}`}
+                        >
+                          <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: (t.accent_color || '#C9A962') + '25', alignItems: 'center', justifyContent: 'center' }}>
+                            <Ionicons name="gift-outline" size={22} color={t.accent_color || '#C9A962'} />
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{t.headline}</Text>
+                            <Text style={{ fontSize: 13, color: colors.textSecondary }}>Custom Card</Text>
+                          </View>
+                          {selectedType === t.card_type && <Ionicons name="checkmark-circle" size={22} color={t.accent_color || '#C9A962'} />}
+                        </TouchableOpacity>
+                      ))}
+                    </>
+                  )}
+                  <TouchableOpacity onPress={() => setShowTypePicker(false)} style={{ marginTop: 8, padding: 14, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 17, color: colors.textSecondary }}>Cancel</Text>
                   </TouchableOpacity>
-                ))}
-                {customTemplates.length > 0 && (
-                  <>
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 8, marginBottom: 8 }}>My Custom Cards</Text>
-                    {customTemplates.map((t: any) => (
-                      <TouchableOpacity
-                        key={t.card_type}
-                        style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14, borderRadius: 12, marginBottom: 8, backgroundColor: selectedType === t.card_type ? '#C9A96220' : colors.card, borderWidth: 1.5, borderColor: selectedType === t.card_type ? '#C9A962' : colors.border }}
-                        onPress={() => { setSelectedType(t.card_type); setTemplate(t); setShowTypePicker(false); }}
-                        data-testid={`card-type-custom-${t.card_type}`}
-                      >
-                        <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: (t.accent_color || '#C9A962') + '25', alignItems: 'center', justifyContent: 'center' }}>
-                          <Ionicons name="gift-outline" size={22} color={t.accent_color || '#C9A962'} />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{t.headline}</Text>
-                          <Text style={{ fontSize: 13, color: colors.textSecondary }}>Custom Card</Text>
-                        </View>
-                        {selectedType === t.card_type && <Ionicons name="checkmark-circle" size={22} color={t.accent_color || '#C9A962'} />}
-                      </TouchableOpacity>
-                    ))}
-                  </>
-                )}
-                <TouchableOpacity onPress={() => setShowTypePicker(false)} style={{ marginTop: 8, padding: 14, alignItems: 'center' }}>
-                  <Text style={{ fontSize: 17, color: colors.textSecondary }}>Cancel</Text>
-                </TouchableOpacity>
-              </ScrollView>
-            </View>
-          </View>
-        )}
+                </ScrollView>
+              </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </Modal>
         <Text style={s.fieldLabel}>{isGeneric ? 'CARD PHOTO (OPTIONAL)' : 'RECIPIENT PHOTO *'}</Text>
         <TouchableOpacity style={s.photoPicker} onPress={pickPhoto} data-testid="card-pick-photo">
           {photo ? <Image source={{ uri: photo.uri }} style={[s.photoPreview, { borderColor: accent }]} /> : (
