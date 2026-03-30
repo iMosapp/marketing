@@ -125,7 +125,7 @@ export default function ContactDetailScreen() {
     },
   };
   const router = useRouter();
-  const { id, prefill, channel, action, taskId, taskTitle, event_type: urlEventType } = useLocalSearchParams();
+  const { id, prefill, channel, action, taskId, taskTitle, event_type: urlEventType, event_title: urlEventTitle } = useLocalSearchParams();
   const user = useAuthStore((state) => state.user);
   const isNewContact = id === 'new';
   const { showToast } = useToast();
@@ -419,6 +419,7 @@ export default function ContactDetailScreen() {
   const [composerMode, setComposerMode] = useState<'sms' | 'email'>('sms');
   const [composerSending, setComposerSending] = useState(false);
   const [composerEventType, setComposerEventType] = useState<string | null>(null);
+  const [composerEventTitle, setComposerEventTitle] = useState<string | null>(null);
   const channelPicker = useChannelPicker();
 
   // Populate composer from query param (e.g. returning from create-card or task action item)
@@ -439,7 +440,10 @@ export default function ContactDetailScreen() {
     if (urlEventType && typeof urlEventType === 'string') {
       setComposerEventType(urlEventType);
     }
-  }, [prefill, channel, taskId, urlEventType]);
+    if (urlEventTitle && typeof urlEventTitle === 'string') {
+      setComposerEventTitle(decodeURIComponent(urlEventTitle as string));
+    }
+  }, [prefill, channel, taskId, urlEventType, urlEventTitle]);
 
   // Auto-trigger action from query param (e.g. /contact/123?action=digitalcard)
   useEffect(() => {
@@ -1331,6 +1335,7 @@ export default function ContactDetailScreen() {
           channel: 'sms_personal',
         };
         if (composerEventType) sendPayload.event_type = composerEventType;
+        if (composerEventTitle) sendPayload.event_title = composerEventTitle;
         await messagesAPI.send(user._id, sendPayload);
         
         // Fetch user's enabled channels

@@ -426,6 +426,7 @@ class MessageCreate(BaseModel):
     template_name: Optional[str] = None
     channel: Optional[str] = None  # 'sms' or 'email' - defaults to sms
     event_type: Optional[str] = None  # Explicit event type for activity tracking (e.g., digital_card_sent, review_request_sent)
+    event_title: Optional[str] = None  # Human-readable title override (e.g., "'Before' Card Sent" for custom cards)
 
 # Call Models
 class Call(BaseModel):

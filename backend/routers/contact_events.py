@@ -266,8 +266,14 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
         if e.get("timestamp") and hasattr(e["timestamp"], "isoformat"):
             e["timestamp"] = _ts_iso(e["timestamp"])
         # Always derive title from centralized event type labels (fixes old data with wrong titles)
+        # Exception: if a custom title was explicitly stored (e.g., custom card names), keep it
         etype = e.get("event_type", "")
-        e["title"] = get_event_label(etype)
+        stored_title = e.get("title", "")
+        if stored_title and etype.startswith("custom_") and "_card_" in etype:
+            # Keep the explicitly stored card name (e.g., "'Before' Card Sent")
+            pass
+        else:
+            e["title"] = get_event_label(etype)
         # Ensure full_content is available for rich preview
         if not e.get("full_content"):
             e["full_content"] = e.get("content") or e.get("content_preview") or e.get("description") or ""

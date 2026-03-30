@@ -461,6 +461,9 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
                 "content_preview": message_data.content[:100],
                 "timestamp": datetime.now(timezone.utc),
             }
+            # Store explicit title for custom card types so activity feed shows real name
+            if message_data.event_title:
+                event_doc["title"] = message_data.event_title
             await get_db().contact_events.insert_one(event_doc)
     elif to_phone:
         # Send via Twilio (SMS)

@@ -122,7 +122,11 @@ def get_event_label(event_type: str) -> str:
     parts = event_type.split("_card_")
     if len(parts) == 2:
         card_type, action = parts
-        display = _CARD_DISPLAY.get(card_type, card_type.replace("_", " ").title())
+        # Custom card types have random slug IDs (e.g. "custom_mn9ffglp") — never show the raw slug
+        if card_type.startswith("custom_"):
+            display = "Custom"
+        else:
+            display = _CARD_DISPLAY.get(card_type, card_type.replace("_", " ").title())
         if action in ("viewed",):
             return f"Viewed {display} Card"
         if action in ("download", "downloaded"):
