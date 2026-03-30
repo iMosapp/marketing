@@ -98,8 +98,8 @@ async def get_master_feed(user_id: str, limit: int = 25, skip: int = 0):
     Returns recent events. Campaign/suggested data loads separately via dedicated endpoints.
     """
     db = get_db()
-    # Hard cap to prevent slow queries crashing the server
-    limit = min(limit, 30)
+    # Hard cap — 50 per page allows scrolling back weeks without overloading the server
+    limit = min(limit, 50)
 
     # 1) Recent events across all contacts (newest first)
     recent_events = await db.contact_events.find(

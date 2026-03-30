@@ -207,26 +207,49 @@ export default function ActivityTab() {
   const [feed, setFeed] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [page, setPage] = useState(0);
   const [, setTick] = useState(0);
 
-  const loadFeed = useCallback(async () => {
+  const PAGE_SIZE = 30;
+
+  const loadFeed = useCallback(async (reset = true) => {
     if (!userId) return;
+    const skip = reset ? 0 : page * PAGE_SIZE;
     try {
-      const resp = await api.get(`/contacts/${userId}/master-feed?limit=25`);
-      setFeed(resp.data.feed || []);
+      const resp = await api.get(`/contacts/${userId}/master-feed?limit=${PAGE_SIZE}&skip=${skip}`);
+      const newItems = resp.data.feed || [];
+      const more = resp.data.has_more ?? (newItems.length === PAGE_SIZE);
+      if (reset) {
+        setFeed(newItems);
+        setPage(1);
+      } else {
+        setFeed(prev => [...prev, ...newItems]);
+        setPage(p => p + 1);
+      }
+      setHasMore(more);
     } catch (e) {
       console.error('Failed to load activity feed:', e);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  }, [userId]);
+  }, [userId, page]);
 
-  useEffect(() => { loadFeed(); }, [loadFeed]);
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore || loading) return;
+    setLoadingMore(true);
+    await loadFeed(false);
+  }, [loadingMore, hasMore, loading, loadFeed]);
+
+  useEffect(() => { loadFeed(true); }, [userId]);
   useEffect(() => {
     if (!userId) return;
-    const interval = setInterval(loadFeed, 30000);
+    // Refresh first page every 30s — don't paginate on refresh
+    const interval = setInterval(() => loadFeed(true), 30000);
     return () => clearInterval(interval);
-  }, [userId, loadFeed]);
+  }, [userId]);
   useEffect(() => {
     const interval = setInterval(() => setTick(t => t + 1), 60000);
     return () => clearInterval(interval);
@@ -235,7 +258,7 @@ export default function ActivityTab() {
   const onRefresh = async () => {
     setRefreshing(true);
     try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
-    await loadFeed();
+    await loadFeed(true);
     setRefreshing(false);
   };
 
@@ -330,6 +353,27 @@ export default function ActivityTab() {
           // Single event
           return <SingleEventCard item={item} colors={colors} router={router} />;
         }}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.3}
+        ListFooterComponent={
+          loadingMore ? (
+            <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+              <ActivityIndicator color={colors.textSecondary} />
+              <Text style={{ fontSize: 13, color: colors.textTertiary, marginTop: 6 }}>Loading more...</Text>
+            </View>
+          ) : hasMore ? (
+            <TouchableOpacity
+              style={{ paddingVertical: 16, alignItems: 'center' }}
+              onPress={loadMore}
+            >
+              <Text style={{ fontSize: 15, fontWeight: '600', color: '#007AFF' }}>Load more activity</Text>
+            </TouchableOpacity>
+          ) : feed.length > 0 ? (
+            <Text style={{ textAlign: 'center', color: colors.textTertiary, fontSize: 13, paddingVertical: 20 }}>
+              You've reached the beginning
+            </Text>
+          ) : null
+        }
       />
     </View>
   );
