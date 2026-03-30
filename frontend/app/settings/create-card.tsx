@@ -40,7 +40,16 @@ export default function CreateCardPage() {
   const [selectedType, setSelectedType] = useState(cardType);
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [customTemplates, setCustomTemplates] = useState<any[]>([]);
-  const meta = TYPE_META[selectedType] || { label: selectedType, icon: 'gift', accent: '#C9A962', headline: selectedType, message: '' };
+  
+  // Resolve meta for both standard and custom card types
+  const customMeta = customTemplates.find(t => t.card_type === selectedType);
+  const meta = TYPE_META[selectedType] || (customMeta ? {
+    label: customMeta.headline || 'Custom Card',
+    icon: 'gift',
+    accent: customMeta.accent_color || '#C9A962',
+    headline: customMeta.headline || 'Custom Card',
+    message: customMeta.message || '',
+  } : { label: 'Custom Card', icon: 'gift', accent: '#C9A962', headline: 'Custom Card', message: '' });
   
   // Load user's custom card templates (Weekly Special, Trade of the Day, etc.)
   useEffect(() => {
@@ -48,7 +57,6 @@ export default function CreateCardPage() {
     api.get(`/congrats/templates/all/${user.store_id}`)
       .then(res => {
         const all = res.data || [];
-        // Only include custom templates (not the standard types already in TYPE_META)
         const custom = all.filter((t: any) => !TYPE_META[t.card_type] && t.headline);
         setCustomTemplates(custom);
       })
@@ -124,8 +132,15 @@ export default function CreateCardPage() {
     setIsGeneric(effectivelyGeneric);
     setCreating(true);
     try {
+      // Robust user ID — handles both _id and id field names
+      const userId = user?._id || (user as any)?.id || '';
+      if (!userId) {
+        showSimpleAlert('Error', 'Could not get your user ID. Please log out and log back in.');
+        setCreating(false);
+        return;
+      }
       const formData = new FormData();
-      formData.append('salesman_id', user._id);
+      formData.append('salesman_id', userId);
       formData.append('customer_name', effectivelyGeneric ? '' : customerName.trim());
       formData.append('card_type', selectedType);
       if (effectivelyGeneric) formData.append('generic', 'true');
@@ -546,7 +561,7 @@ export default function CreateCardPage() {
                     <TouchableOpacity
                       key={t.card_type}
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14, borderRadius: 12, marginBottom: 8, backgroundColor: selectedType === t.card_type ? '#C9A96220' : colors.card, borderWidth: 1.5, borderColor: selectedType === t.card_type ? '#C9A962' : colors.border }}
-                      onPress={() => { setSelectedType(t.card_type); setShowTypePicker(false); }}
+                      onPress={() => { setSelectedType(t.card_type); setTemplate(t); setShowTypePicker(false); }}
                       data-testid={`card-type-custom-${t.card_type}`}
                     >
                       <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: (t.accent_color || '#C9A962') + '25', alignItems: 'center', justifyContent: 'center' }}>
