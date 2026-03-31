@@ -190,19 +190,13 @@ export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
               </Text>
             </View>
           ) : currentPhoto ? (
-            <>
-              <Image
-                source={{ uri: currentPhoto }}
-                style={styles.avatarImage}
-                contentFit="cover"
-                placeholder={null}
-                recyclingKey={currentPhoto}
-              />
-              {/* Semi-transparent overlay — makes the tap target obvious */}
-              <View style={styles.avatarOverlay}>
-                <Ionicons name="camera" size={22} color="rgba(255,255,255,0.9)" />
-              </View>
-            </>
+            <Image
+              source={{ uri: currentPhoto }}
+              style={styles.avatarImage}
+              contentFit="cover"
+              placeholder={null}
+              recyclingKey={currentPhoto}
+            />
           ) : (
             /* Initials fallback — rounded square matching Hub style */
             <View style={[styles.avatarPlaceholder, { backgroundColor: colors.card }]}>
@@ -262,18 +256,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#000',
-  },
-  avatarOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 36,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    borderBottomLeftRadius: 22,
-    borderBottomRightRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   removeButton: {
     marginTop: 8,
