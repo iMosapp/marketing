@@ -43,6 +43,7 @@ interface Journey {
 interface Props {
   userId: string;
   contactId: string;
+  onEnrollmentRemoved?: () => void;
 }
 
 function formatDelay(s: StepInfo): string {
@@ -63,7 +64,7 @@ function formatScheduledTime(iso: string): string {
   }
 }
 
-export default function CampaignJourney({ userId, contactId }: Props) {
+export default function CampaignJourney({ userId, contactId, onEnrollmentRemoved }: Props) {
   const { colors } = useThemeStore();
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [loading, setLoading] = useState(true);
@@ -150,6 +151,7 @@ export default function CampaignJourney({ userId, contactId }: Props) {
               });
               await loadJourneys();
               showSimpleAlert('Done', `"${journey.campaign_name}" removed. You can re-add it anytime.`);
+              onEnrollmentRemoved?.(); // Refresh parent's enrollment list so campaign reappears in picker
             } catch (e) {
               console.error('Remove campaign failed:', e);
               showSimpleAlert('Error', 'Failed to remove campaign');

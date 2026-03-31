@@ -2778,7 +2778,7 @@ export default function ContactDetailScreen() {
 
               {/* Campaign Journey — upcoming campaign activities */}
               {!isNewContact && user && (
-                <CampaignJourney userId={user._id} contactId={id as string} />
+                <CampaignJourney userId={user._id} contactId={id as string} onEnrollmentRemoved={loadCampaignsAndEnrollments} />
               )}
 
               {/* Relationship Feed (Activity) */}
