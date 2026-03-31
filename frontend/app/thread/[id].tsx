@@ -2172,12 +2172,6 @@ export default function ThreadScreen() {
                   <Ionicons name="card-outline" size={22} color={colors.textSecondary} />
                 </WebToolButton>
                 
-                <PersonalizeButton
-                  colors={colors}
-                  compact
-                  onInsert={(tag) => setMessage(prev => prev + tag)}
-                />
-                
                 <WebToolButton
                   onPress={handleVoiceToText}
                   disabled={transcribing}
