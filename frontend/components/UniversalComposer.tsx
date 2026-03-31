@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import api, { messagesAPI } from '../services/api';
 import { showSimpleAlert } from '../services/alert';
-import useAuthStore from '../store/authStore';
+import { useAuthStore } from '../store/authStore';
 
 const IS_WEB = Platform.OS === 'web';
 const APP_BASE = 'https://app.imonsocial.com';
