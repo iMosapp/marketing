@@ -3105,14 +3105,34 @@ export default function ContactDetailScreen() {
               {/* Conversations Link */}
               <TouchableOpacity
                 style={s.conversationLink}
-                onPress={() => router.push({
-                  pathname: `/thread/${id}`,
-                  params: {
-                    contact_name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
-                    contact_phone: contact.phone || '',
-                    contact_email: contact.email || contact.email_work || '',
+                onPress={async () => {
+                  // Get the actual conversation ID (not contact ID) so thread loads messages correctly
+                  try {
+                    const conv = await messagesAPI.createConversation(user._id, {
+                      contact_id: id as string,
+                      contact_phone: contact?.phone || undefined,
+                    });
+                    const conversationId = conv._id || conv.id;
+                    router.push({
+                      pathname: `/thread/${conversationId}`,
+                      params: {
+                        contact_name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
+                        contact_phone: contact.phone || '',
+                        contact_email: contact.email || contact.email_work || '',
+                      }
+                    });
+                  } catch {
+                    // Fallback to contact ID
+                    router.push({
+                      pathname: `/thread/${id}`,
+                      params: {
+                        contact_name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
+                        contact_phone: contact.phone || '',
+                        contact_email: contact.email || contact.email_work || '',
+                      }
+                    });
                   }
-                })}
+                }}
                 data-testid="go-to-conversation"
               >
                 <View style={[s.quickActionIcon, { backgroundColor: '#007AFF20' }]}>

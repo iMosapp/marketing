@@ -2039,7 +2039,14 @@ export default function ThreadScreen() {
           )}
           onContentSizeChange={() => {
             if (messages.length > 0) {
-              flatListRef.current?.scrollToEnd({ animated: false });
+              // Delay needed on iOS — layout isn't complete at the time onContentSizeChange fires
+              setTimeout(() => flatListRef.current?.scrollToEnd({ animated: false }), 80);
+            }
+          }}
+          onLayout={() => {
+            // Also scroll on layout — catches the initial render where content was already there
+            if (messages.length > 0) {
+              setTimeout(() => flatListRef.current?.scrollToEnd({ animated: false }), 80);
             }
           }}
         />
