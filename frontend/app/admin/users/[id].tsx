@@ -119,18 +119,26 @@ export default function UserDetailScreen() {
 
   const saveContactField = async (field: 'phone' | 'email', value: string) => {
     if (contactSavingRef.current) return;
+    const trimmed = value.trim();
+    if (!trimmed) { setEditingContactField(null); return; } // Don't save empty value
     contactSavingRef.current = true;
     try {
       const payload = field === 'email'
-        ? { email: value.trim().toLowerCase() }
-        : { phone: value.trim() };
+        ? { email: trimmed.toLowerCase() }
+        : { phone: trimmed };
       await adminAPI.updateUser(user!._id, payload);
       setUser((prev: any) => prev ? { ...prev, ...payload } : prev);
       setEditingContactField(null);
-      showToast(`${field === 'email' ? 'Email' : 'Phone'} updated`);
+      showToast(`${field === 'email' ? 'Email' : 'Phone'} updated ✓`);
     } catch (e: any) {
-      showSimpleAlert('Error', e?.response?.data?.detail || `Failed to update ${field}`);
-      setEditingContactField(null); // Close on error too
+      // Show the actual backend error message so we can debug
+      const detail = e?.response?.data?.detail;
+      const status = e?.response?.status;
+      const msg = typeof detail === 'string' ? detail
+        : detail ? JSON.stringify(detail)
+        : `Failed to update ${field}${status ? ` (HTTP ${status})` : ''}: ${e?.message || 'unknown'}`;
+      showSimpleAlert('Error', msg);
+      setEditingContactField(null);
     } finally {
       contactSavingRef.current = false;
     }
