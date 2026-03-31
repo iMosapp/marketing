@@ -44,6 +44,7 @@ interface Props {
   userId: string;
   contactId: string;
   onEnrollmentRemoved?: () => void;
+  onPrePopulateComposer?: (message: string) => void;  // Pre-fills SMS composer instead of copying
 }
 
 function formatDelay(s: StepInfo): string {
@@ -64,7 +65,7 @@ function formatScheduledTime(iso: string): string {
   }
 }
 
-export default function CampaignJourney({ userId, contactId, onEnrollmentRemoved }: Props) {
+export default function CampaignJourney({ userId, contactId, onEnrollmentRemoved, onPrePopulateComposer }: Props) {
   const { colors } = useThemeStore();
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,14 +106,12 @@ export default function CampaignJourney({ userId, contactId, onEnrollmentRemoved
     }
   };
 
-  const handleCopyMessage = async () => {
+  const handleSendMessage = () => {
     if (!selectedStep) return;
     const msg = selectedStep.full_message || selectedStep.message;
-    try {
-      await Clipboard.setStringAsync(msg);
-      showSimpleAlert('Copied', 'Message copied to clipboard');
-    } catch {
-      showSimpleAlert('Error', 'Could not copy message');
+    setSelectedStep(null);  // Close the step modal
+    if (onPrePopulateComposer) {
+      onPrePopulateComposer(msg);  // Drop message into SMS composer bar
     }
   };
 
@@ -323,15 +322,15 @@ export default function CampaignJourney({ userId, contactId, onEnrollmentRemoved
                 <>
                   <button
                     type="button"
-                    data-testid="copy-message-btn"
-                    onClick={() => handleCopyMessage()}
+                    data-testid="send-message-btn"
+                    onClick={() => handleSendMessage()}
                     style={{
                       flex: 1, padding: 14, borderRadius: 12, border: 'none',
                       backgroundColor: '#007AFF', cursor: 'pointer',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                     }}
                   >
-                    <Text style={s.actionBtnText}>Copy Message</Text>
+                    <Text style={s.actionBtnText}>Send Message</Text>
                   </button>
                   <button
                     type="button"
@@ -354,9 +353,9 @@ export default function CampaignJourney({ userId, contactId, onEnrollmentRemoved
                 </>
               ) : (
                 <>
-                  <TouchableOpacity style={[s.actionBtn, { backgroundColor: '#007AFF' }]} onPress={handleCopyMessage} data-testid="copy-message-btn">
-                    <Ionicons name="copy-outline" size={18} color="#fff" />
-                    <Text style={s.actionBtnText}>Copy Message</Text>
+                  <TouchableOpacity style={[s.actionBtn, { backgroundColor: '#007AFF' }]} onPress={handleSendMessage} data-testid="send-message-btn">
+                    <Ionicons name="chatbubble-outline" size={18} color="#fff" />
+                    <Text style={s.actionBtnText}>Send Message</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[s.actionBtn, { backgroundColor: '#34C759' }]} onPress={handleMarkSent} disabled={marking} data-testid="mark-sent-btn">
                     {marking ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="checkmark-circle" size={18} color="#fff" />}
