@@ -115,6 +115,26 @@ export default function UserDetailScreen() {
   // Contact info inline editing
   const [editingContactField, setEditingContactField] = useState<'phone' | 'email' | null>(null);
   const [contactEditValue, setContactEditValue] = useState('');
+  const contactSavingRef = React.useRef(false); // Prevents double-save from onSubmitEditing + onBlur
+
+  const saveContactField = async (field: 'phone' | 'email', value: string) => {
+    if (contactSavingRef.current) return;
+    contactSavingRef.current = true;
+    try {
+      const payload = field === 'email'
+        ? { email: value.trim().toLowerCase() }
+        : { phone: value.trim() };
+      await adminAPI.updateUser(user!._id, payload);
+      setUser((prev: any) => prev ? { ...prev, ...payload } : prev);
+      setEditingContactField(null);
+      showToast(`${field === 'email' ? 'Email' : 'Phone'} updated`);
+    } catch (e: any) {
+      showSimpleAlert('Error', e?.response?.data?.detail || `Failed to update ${field}`);
+      setEditingContactField(null); // Close on error too
+    } finally {
+      contactSavingRef.current = false;
+    }
+  };
   
   const { startImpersonation } = useAuthStore();
   
@@ -624,14 +644,8 @@ export default function UserDetailScreen() {
                   autoCapitalize="none"
                   autoFocus
                   returnKeyType="done"
-                  onSubmitEditing={async () => {
-                    try {
-                      await adminAPI.updateUser(user!._id, { email: contactEditValue.trim().toLowerCase() });
-                      setUser((prev: any) => prev ? { ...prev, email: contactEditValue.trim().toLowerCase() } : prev);
-                      setEditingContactField(null);
-                      showToast('Email updated');
-                    } catch (e: any) { showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to update email'); }
-                  }}
+                  onSubmitEditing={() => saveContactField('email', contactEditValue)}
+                  onBlur={() => saveContactField('email', contactEditValue)}
                 />
                 <TouchableOpacity onPress={() => setEditingContactField(null)}><Ionicons name="close-circle" size={20} color={colors.textSecondary} /></TouchableOpacity>
               </View>
@@ -654,14 +668,8 @@ export default function UserDetailScreen() {
                   keyboardType="phone-pad"
                   autoFocus
                   returnKeyType="done"
-                  onSubmitEditing={async () => {
-                    try {
-                      await adminAPI.updateUser(user!._id, { phone: contactEditValue.trim() });
-                      setUser((prev: any) => prev ? { ...prev, phone: contactEditValue.trim() } : prev);
-                      setEditingContactField(null);
-                      showToast('Phone number updated');
-                    } catch (e: any) { showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to update phone'); }
-                  }}
+                  onSubmitEditing={() => saveContactField('phone', contactEditValue)}
+                  onBlur={() => saveContactField('phone', contactEditValue)}
                 />
                 <TouchableOpacity onPress={() => setEditingContactField(null)}><Ionicons name="close-circle" size={20} color={colors.textSecondary} /></TouchableOpacity>
               </View>
