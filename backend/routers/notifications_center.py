@@ -366,10 +366,13 @@ async def get_unread_count(user_id: str):
 
         overdue_count = 0
         try:
+            # Exclude campaign_send tasks from badge — they have their own notification flow
+            # and shouldn't double-count in the overdue badge
             overdue_count = await db.tasks.count_documents({
                 "user_id": user_id,
                 "completed": {"$ne": True},
-                "due_date": {"$lt": now}
+                "due_date": {"$lt": now},
+                "type": {"$nin": ["campaign_send", "campaign_step"]},
             })
         except Exception:
             pass
@@ -430,28 +433,25 @@ async def mark_notifications_read(user_id: str, data: dict = {}):
 
 @router.post("/{user_id}/read-all")
 async def mark_all_read(user_id: str):
-    """Mark all current notifications as read."""
+    """Mark all notifications as read AND dismissed — prevents them re-appearing in the count."""
     db = get_db()
+
+    # Single update_many — far faster than looping one-by-one
+    result = await db.notifications.update_many(
+        {"user_id": user_id, "dismissed": {"$ne": True}},
+        {"$set": {"read": True, "dismissed": True}},
+    )
+
+    # Also record in notification_reads for virtual notification types (tasks, messages)
     notifs = await get_notifications(user_id, limit=200)
     all_ids = [n["id"] for n in notifs.get("notifications", [])]
-
-    for nid in all_ids:
-        if not nid.startswith(("task_", "msg_", "flag_", "evt_", "task_soon_")):
-            try:
-                await db.notifications.update_one(
-                    {"_id": ObjectId(nid)},
-                    {"$set": {"read": True}}
-                )
-            except Exception:
-                pass
-
     if all_ids:
         await db.notification_reads.update_one(
             {"user_id": user_id},
-            {"$set": {"read_ids": all_ids}},
+            {"$set": {"read_ids": all_ids, "last_cleared_at": datetime.now(timezone.utc)}},
             upsert=True,
         )
 
-    # Invalidate cache
+    # Invalidate cache so next poll reflects the cleared state immediately
     _unread_cache.pop(user_id, None)
-    return {"success": True, "message": "All marked as read", "count": len(all_ids)}
+    return {"success": True, "message": "All marked as read", "count": result.modified_count}

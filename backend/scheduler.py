@@ -415,20 +415,27 @@ async def _run_date_triggers_for_user(db, user_id: str) -> int:
                 "created_at": datetime.now(timezone.utc),
             })
 
-            # Create a notification (bell alert)
-            await db.notifications.insert_one({
-                "user_id": user_id,
-                "type": "date_trigger",
-                "title": f"{trigger_label} Today",
-                "message": f"It's {contact_name}'s {trigger_label.lower()} today! Send them a message.",
-                "contact_name": contact_name,
-                "contact_id": contact_id,
-                "trigger_type": trigger_type,
-                "action_required": True,
-                "read": False,
-                "dismissed": False,
-                "created_at": datetime.now(timezone.utc),
-            })
+            # Upsert notification — dedup by contact+trigger+date so same birthday never creates 2 alerts
+            today_str = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+            notif_dedup_key = f"date_trigger_{user_id}_{contact_id}_{trigger_type}_{today_str}"
+            await db.notifications.update_one(
+                {"idempotency_key": notif_dedup_key},
+                {"$setOnInsert": {
+                    "user_id": user_id,
+                    "type": "date_trigger",
+                    "title": f"{trigger_label} Today",
+                    "message": f"It's {contact_name}'s {trigger_label.lower()} today! Send them a message.",
+                    "contact_name": contact_name,
+                    "contact_id": contact_id,
+                    "trigger_type": trigger_type,
+                    "idempotency_key": notif_dedup_key,
+                    "action_required": True,
+                    "read": False,
+                    "dismissed": False,
+                    "created_at": datetime.now(timezone.utc),
+                }},
+                upsert=True,
+            )
 
             # Also queue the message for tracking
             if delivery in ("sms", "both") and contact.get("phone"):
@@ -714,16 +721,23 @@ async def process_pending_campaign_steps():
                         except Exception as task_err:
                             logger.warning(f"[Scheduler] Task insert failed: {task_err}")
 
-                        await db.notifications.insert_one({
-                            "user_id": user_id, "type": "campaign_send",
-                            "title": f"Campaign: {send_doc.get('campaign_name', '')}",
-                            "message": f"Time to send step {current_step} to {contact_display}",
-                            "contact_name": contact_display, "contact_id": contact_id,
-                            "campaign_id": send_doc.get("campaign_id"),
-                            "pending_send_step": current_step,
-                            "action_required": True, "read": False, "dismissed": False,
-                            "created_at": now,
-                        })
+                        # Upsert notification — dedup by idempotency key so re-runs never create duplicates
+                        notif_key = f"campaign_notif_{idem_key}"
+                        await db.notifications.update_one(
+                            {"user_id": user_id, "idempotency_key": notif_key},
+                            {"$setOnInsert": {
+                                "user_id": user_id, "type": "campaign_send",
+                                "title": f"Campaign: {send_doc.get('campaign_name', '')}",
+                                "message": f"Time to send step {current_step} to {contact_display}",
+                                "contact_name": contact_display, "contact_id": contact_id,
+                                "campaign_id": send_doc.get("campaign_id"),
+                                "pending_send_step": current_step,
+                                "idempotency_key": notif_key,
+                                "action_required": True, "read": False, "dismissed": False,
+                                "created_at": now,
+                            }},
+                            upsert=True,
+                        )
                         logger.info(f"[Scheduler] MANUAL task created for step {current_step} to {contact_display}")
 
                 # ── MARK SEND COMPLETE ──

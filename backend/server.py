@@ -864,6 +864,7 @@ async def startup_event():
                     db.short_urls.create_index([("short_code", 1)]),
                     # Notifications — user reads (also has TTL applied separately)
                     db.notifications.create_index([("user_id", 1), ("created_at", -1)]),
+                    db.notifications.create_index([("idempotency_key", 1)], unique=False, sparse=True),  # Notification dedup
                     # Congrats cards — tracking and reporting
                     db.congrats_cards_sent.create_index([("user_id", 1), ("sent_at", -1)]),
                     db.congrats_cards_sent.create_index([("salesman_id", 1), ("sent_at", -1)]),
