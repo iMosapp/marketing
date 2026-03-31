@@ -341,6 +341,7 @@ class Contact(BaseModel):
     
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+    last_activity_at: Optional[datetime] = None  # Updated on every contact event — powers "sort by recent" index
 
     class Config:
         populate_by_name = True

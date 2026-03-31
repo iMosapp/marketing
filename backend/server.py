@@ -111,6 +111,19 @@ async def api_health():
     return {"status": "healthy", "message": "i'M On Social API v2.0"}
 
 
+@api_router.post("/admin/backfill-last-activity")
+async def backfill_last_activity(request: Request):
+    """
+    One-time admin backfill: populate contacts.last_activity_at from contact_events.
+    Run once after deploying the last_activity_at feature.
+    Powers the 'sort by recent' contacts query with O(log n) index performance.
+    """
+    from utils.contact_activity import backfill_last_activity_at
+    db = get_db()
+    result = await backfill_last_activity_at(db)
+    return {"success": True, **result}
+
+
 @api_router.get("/health/deep")
 async def api_health_deep():
     """Deep health check including MongoDB ping — use for monitoring only, NOT as a liveness probe."""
@@ -791,8 +804,49 @@ async def startup_event():
                     db.messages.create_index([("_id", 1)]),  # Ensures batch message lookups are instant
                     db.contacts.create_index([("user_id", 1), ("phone", 1)]),  # For phone dedup
                     db.contacts.create_index([("user_id", 1), ("email", 1)]),  # For email dedup
+                    # last_activity_at — powers "recent" sort without in-memory aggregation
+                    db.contacts.create_index([("user_id", 1), ("last_activity_at", -1)]),
+                    db.contacts.create_index([("user_id", 1), ("last_activity_at", -1), ("status", 1)]),
+                    # Short URLs — user's link listing and cleanup
+                    db.short_urls.create_index([("user_id", 1), ("created_at", -1)]),
+                    db.short_urls.create_index([("short_code", 1)]),
+                    # Notifications — user reads (also has TTL applied separately)
+                    db.notifications.create_index([("user_id", 1), ("created_at", -1)]),
+                    # Congrats cards — tracking and reporting
+                    db.congrats_cards_sent.create_index([("user_id", 1), ("sent_at", -1)]),
+                    db.congrats_cards_sent.create_index([("salesman_id", 1), ("sent_at", -1)]),
                 ), timeout=15)
                 logger.info("Database indexes created/verified (production-ready)")
+
+                # TTL indexes — run separately so a failure doesn't block all indexes
+                # These auto-expire old data to prevent unbounded collection growth
+                try:
+                    import pymongo
+                    one_year_secs   = 365 * 24 * 3600
+                    two_year_secs   = 2 * one_year_secs
+                    ninety_day_secs = 90 * 24 * 3600
+
+                    # short_url_clicks: keep 1 year of click analytics
+                    await db.short_url_clicks.create_index(
+                        [("clicked_at", pymongo.ASCENDING)],
+                        expireAfterSeconds=one_year_secs,
+                        background=True,
+                    )
+                    # notifications: expire after 90 days (users rarely read old ones)
+                    await db.notifications.create_index(
+                        [("created_at", pymongo.ASCENDING)],
+                        expireAfterSeconds=ninety_day_secs,
+                        background=True,
+                    )
+                    # contact_events: archive after 2 years (compliance-safe retention)
+                    await db.contact_events.create_index(
+                        [("timestamp", pymongo.ASCENDING)],
+                        expireAfterSeconds=two_year_secs,
+                        background=True,
+                    )
+                    logger.info("TTL indexes created — data auto-expires to prevent unbounded growth")
+                except Exception as ttl_err:
+                    logger.warning(f"TTL index creation failed (non-critical): {ttl_err}")
             except asyncio.TimeoutError:
                 logger.warning("Index creation timed out - will retry on first request")
     except Exception as e:

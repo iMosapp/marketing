@@ -11,6 +11,7 @@ import base64
 import os
 import re
 import urllib.parse
+from utils.contact_activity import log_contact_event
 import asyncio
 
 from models import Message, MessageCreate
@@ -464,7 +465,7 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
             # Store explicit title for custom card types so activity feed shows real name
             if message_data.event_title:
                 event_doc["title"] = message_data.event_title
-            await get_db().contact_events.insert_one(event_doc)
+            await log_contact_event(get_db(), str(contact_id), event_doc)
     elif to_phone:
         # Send via Twilio (SMS)
         message['channel'] = 'sms'

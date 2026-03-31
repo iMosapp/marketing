@@ -433,26 +433,34 @@ async def get_contacts(
     
     # Determine sort order
     if sort_by == "recent":
-        # Sort by most recent ACTIVITY — requires in-memory sort, then slice
-        activity_pipeline = [
-            {"$match": {"user_id": user_id}},
-            {"$group": {"_id": "$contact_id", "last_activity": {"$max": "$timestamp"}}},
-        ]
-        activity_results = await db.contact_events.aggregate(activity_pipeline).to_list(2000)
-        activity_map = {r["_id"]: r["last_activity"] for r in activity_results}
+        # Use last_activity_at index if field exists on contacts (populated by log_contact_event)
+        # Falls back to in-memory sort for contacts that predate the field (first deploy only)
+        indexed_count = await db.contacts.count_documents({**query, "last_activity_at": {"$exists": True}})
+        total = await db.contacts.count_documents(query)
 
-        all_contacts = await db.contacts.find(query, {"photo": 0}).to_list(2000)
-
-        epoch = datetime(2000, 1, 1)
-        for c in all_contacts:
-            cid = str(c.get("_id", ""))
-            c["_last_activity"] = activity_map.get(cid, c.get("updated_at", c.get("created_at", epoch)))
-        all_contacts.sort(key=lambda c: c.get("_last_activity", epoch), reverse=True)
-        for c in all_contacts:
-            c.pop("_last_activity", None)
-
-        total = len(all_contacts)
-        contacts = all_contacts[skip: skip + limit]
+        if indexed_count > total * 0.8:
+            # Most contacts have the field — use the fast indexed sort
+            contacts = await db.contacts.find(query, {"photo": 0}).sort(
+                [("last_activity_at", -1), ("updated_at", -1)]
+            ).skip(skip).limit(limit).to_list(limit)
+        else:
+            # Backfill not yet run — fall back to in-memory sort (temporary)
+            activity_pipeline = [
+                {"$match": {"user_id": user_id}},
+                {"$group": {"_id": "$contact_id", "last_activity": {"$max": "$timestamp"}}},
+            ]
+            activity_results = await db.contact_events.aggregate(activity_pipeline).to_list(2000)
+            activity_map = {r["_id"]: r["last_activity"] for r in activity_results}
+            all_contacts = await db.contacts.find(query, {"photo": 0}).to_list(2000)
+            epoch = datetime(2000, 1, 1)
+            for c in all_contacts:
+                cid = str(c.get("_id", ""))
+                c["_last_activity"] = activity_map.get(cid, c.get("updated_at", c.get("created_at", epoch)))
+            all_contacts.sort(key=lambda c: c.get("_last_activity", epoch), reverse=True)
+            for c in all_contacts:
+                c.pop("_last_activity", None)
+            total = len(all_contacts)
+            contacts = all_contacts[skip: skip + limit]
     else:
         sort_spec = [("first_name", 1), ("last_name", 1)]
         total = await db.contacts.count_documents(query)

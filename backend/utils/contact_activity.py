@@ -124,3 +124,54 @@ async def log_activity_for_customer(
         category=category,
         metadata=metadata,
     )
+
+
+# ── NEW: centralized event logger that also bumps last_activity_at ──────────
+
+async def log_contact_event(db, contact_id: str, event: dict) -> str:
+    """
+    Insert a contact event AND bump last_activity_at on the contact.
+    Powers the 'sort by recent' O(log n) indexed query.
+    """
+    event.setdefault("contact_id", contact_id)
+    event.setdefault("timestamp", datetime.now(timezone.utc))
+
+    result = await db.contact_events.insert_one(event)
+
+    try:
+        if contact_id and len(str(contact_id)) == 24:
+            await db.contacts.update_one(
+                {"_id": ObjectId(contact_id)},
+                {"$set": {"last_activity_at": event["timestamp"]}},
+            )
+    except Exception as e:
+        logger.debug(f"last_activity_at bump failed for {contact_id}: {e}")
+
+    return str(result.inserted_id)
+
+
+async def backfill_last_activity_at(db) -> dict:
+    """
+    One-time backfill: set last_activity_at on contacts from contact_events.
+    Call POST /admin/backfill-last-activity once after deploying.
+    """
+    pipeline = [
+        {"$group": {"_id": "$contact_id", "last": {"$max": "$timestamp"}}},
+    ]
+    results = await db.contact_events.aggregate(pipeline).to_list(50000)
+
+    updated = 0
+    for r in results:
+        cid = r["_id"]
+        if not cid or len(cid) != 24:
+            continue
+        try:
+            res = await db.contacts.update_one(
+                {"_id": ObjectId(cid), "last_activity_at": {"$exists": False}},
+                {"$set": {"last_activity_at": r["last"]}},
+            )
+            updated += res.modified_count
+        except Exception:
+            pass
+
+    return {"backfilled": updated, "total_contacts_with_events": len(results)}
