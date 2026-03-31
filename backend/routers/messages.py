@@ -466,6 +466,17 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
             if message_data.event_title:
                 event_doc["title"] = message_data.event_title
             await log_contact_event(get_db(), str(contact_id), event_doc)
+
+            # Tag any short URLs in this message with the contact_id so clicks are attributed
+            # This makes "Video Watched" / "Link Clicked" show in the contact's Activity feed
+            import re
+            short_codes = re.findall(r'/api/s/([A-Za-z0-9]+)', message_data.content or '')
+            if short_codes:
+                await get_db().short_urls.update_many(
+                    {"short_code": {"$in": short_codes}, "metadata.contact_id": {"$exists": False}},
+                    {"$set": {"metadata.contact_id": str(contact_id),
+                              "metadata.sent_at": datetime.now(timezone.utc).isoformat()}},
+                )
     elif to_phone:
         # Send via Twilio (SMS)
         message['channel'] = 'sms'
@@ -506,6 +517,15 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
                 "status": message['status'],
                 "timestamp": datetime.now(timezone.utc),
             })
+            # Tag short URLs with contact_id for click attribution
+            import re as _re
+            short_codes = _re.findall(r'/api/s/([A-Za-z0-9]+)', message_data.content or '')
+            if short_codes:
+                await get_db().short_urls.update_many(
+                    {"short_code": {"$in": short_codes}, "metadata.contact_id": {"$exists": False}},
+                    {"$set": {"metadata.contact_id": str(contact_id),
+                              "metadata.sent_at": datetime.now(timezone.utc).isoformat()}},
+                )
     else:
         message['status'] = 'sent'
         logger.warning(f"No phone number for conversation {conversation_id}")
