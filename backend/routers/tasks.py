@@ -14,6 +14,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional
 from zoneinfo import ZoneInfo
 import logging
+from cachetools import TTLCache
 
 from routers.database import get_db, get_user_by_id
 
@@ -359,7 +360,7 @@ async def get_tasks(user_id: str, filter: str = "today", limit: int = 50, skip: 
 
 
 # Cache task summary for 30s to prevent thundering herd on rapid page navigation
-_summary_cache: dict[str, tuple] = {}  # user_id -> (timestamp, response)
+_summary_cache: TTLCache = TTLCache(maxsize=1000, ttl=60)  # 1-min TTL, auto-evicts
 _SUMMARY_TTL = timedelta(seconds=30)
 
 
@@ -368,9 +369,9 @@ async def get_task_summary(user_id: str):
     """Daily summary for scoreboard + progress bar."""
     now = datetime.now(timezone.utc)
 
-    # Return cached response if fresh
+    # Return cached response if fresh (TTLCache handles expiry automatically)
     cached = _summary_cache.get(user_id)
-    if cached and (now - cached[0]) < _SUMMARY_TTL:
+    if cached:
         return cached[1]
 
     db = get_db()

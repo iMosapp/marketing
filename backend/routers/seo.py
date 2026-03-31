@@ -9,6 +9,7 @@ from bson import ObjectId
 import json
 import logging
 import time
+from cachetools import TTLCache
 
 from routers.database import get_db
 from utils.image_urls import resolve_user_photo, resolve_store_logo
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/seo", tags=["seo"])
 
 # ─── In-memory TTL cache for health scores ──────────────────────────
-_score_cache: dict = {}  # {user_id: {"data": ..., "ts": timestamp}}
+_score_cache: TTLCache = TTLCache(maxsize=1000, ttl=300)  # 500 users, auto-evicts after 5min
 SCORE_CACHE_TTL = 300  # 5 minutes
 
 # ─── helpers ────────────────────────────────────────────────────────
@@ -713,9 +714,7 @@ async def seo_health_score(user_id: str, skip_cache: bool = False):
     # Check cache first
     now = time.time()
     if not skip_cache and user_id in _score_cache:
-        cached = _score_cache[user_id]
-        if now - cached["ts"] < SCORE_CACHE_TTL:
-            return cached["data"]
+        return _score_cache[user_id]["data"]  # TTLCache handles expiry automatically
 
     try:
         result = await _compute_health_score(user_id)

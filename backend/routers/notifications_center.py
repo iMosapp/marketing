@@ -8,6 +8,7 @@ from datetime import datetime, timezone, timedelta
 from itertools import groupby
 from fastapi import APIRouter
 from bson import ObjectId
+from cachetools import TTLCache
 
 from routers.database import get_db
 
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/notification-center", tags=["notification-center"])
 
 # Cache unread count for 15 seconds to avoid hammering DB on every page load
-_unread_cache: dict[str, tuple] = {}
+_unread_cache: TTLCache = TTLCache(maxsize=1000, ttl=30)  # 30-sec TTL — unread count stays fresh
 _UNREAD_TTL = timedelta(seconds=15)
 
 
@@ -342,8 +343,8 @@ async def get_unread_count(user_id: str):
     """Fast unread count for badge display — cached for 15s."""
     now = datetime.now(timezone.utc)
     cached = _unread_cache.get(user_id)
-    if cached and (now - cached[0]) < _UNREAD_TTL:
-        return cached[1]
+    if cached:
+        return cached[1]  # TTLCache handles expiry automatically
 
     try:
         db = get_db()
