@@ -251,7 +251,7 @@ async def process_all_date_triggers():
             {"$match": {"enabled": True}},
             {"$group": {"_id": "$user_id"}},
         ]
-        user_docs = await db.date_trigger_configs.aggregate(pipeline).to_list(10000)
+        user_docs = await db.date_trigger_configs.aggregate(pipeline).to_list(500)
         user_ids = [d["_id"] for d in user_docs]
 
         logger.info(f"[Scheduler] Found {len(user_ids)} users with active date triggers")
@@ -896,7 +896,7 @@ async def expire_recent_tags():
                 ],
             },
             {"_id": 1, "first_name": 1, "last_name": 1},
-        ).to_list(5000)
+        ).to_list(500)
 
         removed = 0
         for c in expired:
