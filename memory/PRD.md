@@ -264,6 +264,75 @@ Extract `admin.py` (4,000 lines) into:
 - Inventory Management Module
 - Mobile tags sync issue
 
+---
+
+## Scale Roadmap (6-12 Month Horizon)
+
+### Current State (Mar 2026)
+- Single MongoDB instance (Atlas), single FastAPI process, in-process TTLCache
+- Pre-scheduled campaign queue (done), contacts pagination (done), last_activity_at index (done)
+- TTL indexes on contact_events (2yr), notifications (90d), short_url_clicks (1yr)
+- Estimated comfortable capacity: **1K–5K active users**
+
+### Scale Tier 1: 1K → 10K users (~$200–500/mo infra)
+**Priority: HIGH — do before launch to paying customers**
+- [ ] **Redis cache** — Replace in-process `TTLCache` with Redis. One change, ~$30/mo.
+  - Solves: cache survives deploys (no cold-cache OOM spikes), all pods share one cache
+  - Files to change: `routers/seo.py`, `routers/tasks.py`, `routers/notifications_center.py`
+  - Use `redis.asyncio` with `aioredis`, same TTL logic, just a different backend
+- [ ] **2 FastAPI workers** — Change supervisor to run Gunicorn with 2-4 Uvicorn workers
+  - `gunicorn -w 4 -k uvicorn.workers.UvicornWorker server:app --bind 0.0.0.0:8001`
+  - Doubles throughput with zero code changes
+- [ ] **MongoDB Atlas M10 → M30** — More RAM means more of the working set fits in memory, fewer disk reads
+- [ ] **Cloudflare CDN for images** — Put Cloudflare in front of object storage URLs
+  - Serves images from edge nodes globally, removes all image load from your server
+
+### Scale Tier 2: 10K → 100K users (~$1K–3K/mo infra)
+- [ ] **WebSockets for inbox** — Replace polling with push (already have WebSocket infra in place)
+  - Currently: every user polls `/messages/conversations/{id}` on every page open
+  - Fix: server pushes new message events to connected clients
+  - Impact: eliminates ~70% of all API requests at this scale
+- [ ] **MongoDB read replicas** — Route read-heavy queries (contact list, activity feed) to replica
+  - Write to primary, read from secondary — doubles effective read throughput
+- [ ] **Separate analytics DB** — Move `contact_events`, `short_url_clicks` to ClickHouse or BigQuery
+  - These collections will be billions of rows at this scale
+  - ClickHouse handles time-series analytics at 100× less cost than MongoDB
+- [ ] **Contact list virtual scroll** — Currently renders all visible contacts; React Window for true virtualization
+- [ ] **`last_activity_at` full rollout** — Complete `log_contact_event()` adoption across all 20 call sites
+
+### Scale Tier 3: 100K → 1M users (~$10K–50K/mo infra)
+- [ ] **MongoDB sharding on `user_id`** — Partition all collections across multiple nodes
+  - All queries already have `user_id` as the first field in compound indexes (ready for this)
+  - Requires MongoDB Atlas M50+ with sharding enabled
+- [ ] **Kafka event streaming** — Replace direct DB inserts for events with a Kafka topic
+  - Decouples event producers from consumers (analytics, notifications, campaigns)
+  - Campaign queue already follows the correct pattern — just needs Kafka as the transport
+- [ ] **Dedicated microservices** — Split scheduler, campaign processor, and media pipeline into separate containers
+- [ ] **Redis Cluster** — Replace single Redis with a cluster for cache at this scale
+
+### Comparison: Us vs the Big Players
+
+| Concern | Us (now) | At 100K users | Facebook/WhatsApp |
+|---------|----------|----------------|-------------------|
+| Messaging | HTTP polling | WebSockets | Persistent TCP/XMPP |
+| Cache | In-process TTLCache | Redis | Memcached (100TB+) |
+| Images | Object storage ✅ | + CDN | CDN edge in 100+ cities |
+| Job queue | Pre-scheduled DB queue ✅ | Same | Kafka (100B msgs/day) |
+| Database | Single MongoDB | + Read replica | Sharded MySQL + Cassandra |
+| Workers | 1 FastAPI process | 4 Gunicorn workers | Thousands of pods |
+
+**What we do RIGHT that most early-stage apps don't:**
+- Object storage for images (not in DB) ✅
+- Pre-scheduled campaign queue (not polling enrollments) ✅
+- Compound indexes on all major query paths ✅
+- TTL indexes to prevent unbounded collection growth ✅
+- Async Python throughout (no blocking calls) ✅
+- JWT stateless auth (horizontally scalable) ✅
+
+**Key insight from WhatsApp:** They ran 500M users with 32 engineers by keeping it simple — Erlang + PostgreSQL, no fancy microservices. Simplicity scales. The architecture choices made here (pre-scheduled queues, indexed sorts, bounded collections) are the right foundation.
+
+---
+
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
 - Test User (no store/org): `mjeast1985@gmail.com` / `NavyBean1!` (preview) / `Mjeast1985!` (production)
