@@ -32,7 +32,6 @@ import { useThemeStore } from '../../store/themeStore';
 import { messagesAPI, templatesAPI, emailAPI } from '../../services/api';
 import api from '../../services/api';
 import { showSimpleAlert, showAlert, showConfirm } from '../../services/alert';
-import UniversalComposer from '../../components/UniversalComposer';
 
 // Web platform detection
 const IS_WEB = Platform.OS === 'web';
@@ -2071,25 +2070,202 @@ export default function ThreadScreen() {
         </View>
       )}
       
-      {/* UniversalComposer — same bar as contact page */}
-      <UniversalComposer
-        userId={user?._id || ''}
-        conversationId={conversationId || (id as string)}
-        contactId={contactIdForNav || undefined}
-        contact={{
-          first_name: contactName?.split(' ')[0],
-          last_name: contactName?.split(' ').slice(1).join(' '),
-          phone: contactPhone || undefined,
-          email: contact_email as string || undefined,
-        }}
-        storeId={(user as any)?.store_id || undefined}
-        orgId={(user as any)?.organization_id || undefined}
-        colors={colors}
-        onMessageSent={() => {
-          loadMessages();
-          setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 200);
-        }}
-      />
+      {/* Input Area - Large contained box with all tools inside */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
+        <View style={[styles.composerContainer, { backgroundColor: colors.background }]}>
+          {/* Main composer box */}
+          <View style={[styles.composerBox, { backgroundColor: colors.surface }]}>
+            {/* Media Preview */}
+            {selectedMedia && (
+              <View style={styles.mediaPreview}>
+                {selectedMedia.type.startsWith('video/') ? (
+                  <View style={[styles.mediaPreviewImage, { backgroundColor: 'rgba(120,120,128,0.12)', justifyContent: 'center', alignItems: 'center' }]}>
+                    <Ionicons name="videocam" size={36} color={colors.textSecondary} />
+                    <Text style={{ color: colors.textSecondary, fontSize: 11, marginTop: 4 }}>Video</Text>
+                  </View>
+                ) : (
+                  <Image source={{ uri: selectedMedia.uri }} style={styles.mediaPreviewImage} />
+                )}
+                <TouchableOpacity
+                  style={styles.mediaPreviewRemove}
+                  onPress={clearSelectedMedia}
+                >
+                  <Ionicons name="close-circle" size={24} color="#FF3B30" />
+                </TouchableOpacity>
+                <View style={styles.mediaTrackRow}>
+                  <TouchableOpacity
+                    data-testid="track-opens-toggle"
+                    style={[styles.trackToggle, trackOpens && styles.trackToggleActive]}
+                    onPress={() => setTrackOpens(!trackOpens)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={trackOpens ? "analytics" : "analytics-outline"}
+                      size={14}
+                      color={trackOpens ? "#FFF" : "#888"}
+                    />
+                    <Text style={[styles.trackToggleText, trackOpens && styles.trackToggleTextActive]}>
+                      {trackOpens ? "Tracking Opens" : "No Tracking"}
+                    </Text>
+                  </TouchableOpacity>
+                  <Text style={[styles.mediaPreviewHint, { color: colors.textSecondary }]}>
+                    {trackOpens ? "Customer opens will be tracked" : "Sent as raw attachment"}
+                  </Text>
+                </View>
+              </View>
+            )}
+            
+            {/* Text input area */}
+            <TextInput
+              style={[styles.composerInput, { color: colors.textPrimary, height: Math.max(36, Math.min(inputHeight, 150)) }]}
+              placeholder={selectedMedia ? "Add a caption (optional)..." : "Type your message..."}
+              placeholderTextColor={colors.textSecondary}
+              value={message}
+              onChangeText={setMessage}
+              multiline
+              numberOfLines={1}
+              maxLength={1000}
+              onContentSizeChange={(e) => {
+                const h = e.nativeEvent.contentSize.height;
+                if (message.trim()) {
+                  setInputHeight(h);
+                } else {
+                  setInputHeight(36);
+                }
+              }}
+              scrollEnabled={inputHeight > 150}
+            />
+            
+            {/* Bottom toolbar inside the box */}
+            <View style={[styles.composerToolbar, { borderTopColor: colors.border }]}>
+              {/* Left side tools */}
+              <View style={styles.composerTools}>
+                <WebToolButton
+                  onPress={handleAttachPhoto}
+                  testID="attach-photo-btn"
+                >
+                  <Ionicons name="image-outline" size={22} color={colors.textSecondary} />
+                </WebToolButton>
+                
+                <WebToolButton
+                  onPress={() => setShowTemplates(true)}
+                  testID="templates-btn"
+                >
+                  <Ionicons name="document-text-outline" size={22} color={colors.textSecondary} />
+                </WebToolButton>
+                
+                <WebToolButton
+                  onPress={() => setShowReviewLinks(true)}
+                  testID="review-links-btn"
+                >
+                  <Ionicons name="star-outline" size={22} color={colors.textSecondary} />
+                </WebToolButton>
+                
+                <WebToolButton
+                  onPress={openBusinessCardPicker}
+                  testID="business-card-btn"
+                >
+                  <Ionicons name="card-outline" size={22} color={colors.textSecondary} />
+                </WebToolButton>
+                
+                <WebToolButton
+                  onPress={handleVoiceToText}
+                  disabled={transcribing}
+                  isRecording={isRecording}
+                  testID="voice-to-text-btn"
+                >
+                  {transcribing ? (
+                    <ActivityIndicator size="small" color={colors.accent} />
+                  ) : (
+                    <Ionicons
+                      name={isRecording ? 'stop-circle' : 'mic-outline'}
+                      size={22}
+                      color={isRecording ? '#FF3B30' : colors.textSecondary}
+                    />
+                  )}
+                </WebToolButton>
+                
+                <WebToolButton
+                  onPress={loadAISuggestion}
+                  disabled={loadingAI || aiMode === 'off'}
+                  testID="ai-suggestion-btn"
+                >
+                  <Ionicons
+                    name="sparkles"
+                    size={20}
+                    color={aiMode === 'off' ? colors.elevated : '#34C759'}
+                  />
+                </WebToolButton>
+              </View>
+              
+              {/* Send button */}
+              {IS_WEB ? (
+                <button
+                  type="button"
+                  onClick={() => selectedMedia ? sendMMS() : handleSend()}
+                  disabled={(!message.trim() && !selectedMedia) || sending || sendingMedia}
+                  data-testid="send-message-btn"
+                  title={messageMode === 'sms' && !(user as any)?.mvpline_number ? 'Copy & open your messaging app' : 'Send message'}
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    backgroundColor: (message.trim() || selectedMedia) && !sending && !sendingMedia 
+                      ? (messageMode === 'sms' 
+                          ? ((user as any)?.mvpline_number ? '#007AFF' : '#FF9500') 
+                          : '#34C759') 
+                      : colors.borderLight,
+                    border: 'none',
+                    cursor: (!message.trim() && !selectedMedia) || sending || sendingMedia ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {sending || sendingMedia ? (
+                    <ActivityIndicator size="small" color={colors.text} />
+                  ) : (
+                    <Ionicons
+                      name={messageMode === 'sms' 
+                        ? ((user as any)?.mvpline_number ? 'send' : 'open-outline') 
+                        : 'mail'}
+                      size={18}
+                      color={(message.trim() || selectedMedia) ? '#FFF' : '#6E6E73'}
+                    />
+                  )}
+                </button>
+              ) : (
+                <TouchableOpacity
+                  style={[
+                    styles.composerSendButton, 
+                    { backgroundColor: messageMode === 'sms' 
+                        ? ((user as any)?.mvpline_number ? '#007AFF' : '#FF9500') 
+                        : '#34C759' },
+                    ((!message.trim() && !selectedMedia) || sending || sendingMedia) && styles.composerSendButtonDisabled
+                  ]}
+                  onPress={() => selectedMedia ? sendMMS() : handleSend()}
+                  disabled={(!message.trim() && !selectedMedia) || sending || sendingMedia}
+                >
+                  {sending || sendingMedia ? (
+                    <ActivityIndicator size="small" color={colors.text} />
+                  ) : (
+                    <Ionicons
+                      name={messageMode === 'sms' 
+                        ? ((user as any)?.mvpline_number ? 'send' : 'open-outline') 
+                        : 'mail'}
+                      size={18}
+                      color={(message.trim() || selectedMedia) ? '#FFF' : '#6E6E73'}
+                    />
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
       
       {/* Review Links Action Sheet */}
       <Modal visible={showReviewLinks} animationType="slide" transparent={true}>
