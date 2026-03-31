@@ -366,8 +366,15 @@ async def check_duplicate_contact(user_id: str, phone: Optional[str] = None, ema
         for m in matches
     ]}
 
-@router.get("/{user_id}", response_model=List[Contact])
-async def get_contacts(user_id: str, search: Optional[str] = None, view_mode: Optional[str] = None, sort_by: Optional[str] = None):
+@router.get("/{user_id}")
+async def get_contacts(
+    user_id: str,
+    search: Optional[str] = None,
+    view_mode: Optional[str] = None,
+    sort_by: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 50,
+):
     """Get contacts based on view mode.
     
     view_mode:
@@ -426,8 +433,7 @@ async def get_contacts(user_id: str, search: Optional[str] = None, view_mode: Op
     
     # Determine sort order
     if sort_by == "recent":
-        # Sort by most recent ACTIVITY (text, email, call, etc.) — not just updated_at
-        # Aggregate contact_events to find latest interaction per contact
+        # Sort by most recent ACTIVITY — requires in-memory sort, then slice
         activity_pipeline = [
             {"$match": {"user_id": user_id}},
             {"$group": {"_id": "$contact_id", "last_activity": {"$max": "$timestamp"}}},
@@ -435,19 +441,22 @@ async def get_contacts(user_id: str, search: Optional[str] = None, view_mode: Op
         activity_results = await db.contact_events.aggregate(activity_pipeline).to_list(2000)
         activity_map = {r["_id"]: r["last_activity"] for r in activity_results}
 
-        contacts = await db.contacts.find(query, {"photo": 0}).to_list(2000)
+        all_contacts = await db.contacts.find(query, {"photo": 0}).to_list(2000)
 
-        # Sort: contacts with recent activity first, then by updated_at as fallback
         epoch = datetime(2000, 1, 1)
-        for c in contacts:
+        for c in all_contacts:
             cid = str(c.get("_id", ""))
             c["_last_activity"] = activity_map.get(cid, c.get("updated_at", c.get("created_at", epoch)))
-        contacts.sort(key=lambda c: c.get("_last_activity", epoch), reverse=True)
-        for c in contacts:
+        all_contacts.sort(key=lambda c: c.get("_last_activity", epoch), reverse=True)
+        for c in all_contacts:
             c.pop("_last_activity", None)
+
+        total = len(all_contacts)
+        contacts = all_contacts[skip: skip + limit]
     else:
         sort_spec = [("first_name", 1), ("last_name", 1)]
-        contacts = await db.contacts.find(query, {"photo": 0}).sort(sort_spec).to_list(2000)
+        total = await db.contacts.count_documents(query)
+        contacts = await db.contacts.find(query, {"photo": 0}).sort(sort_spec).skip(skip).limit(limit).to_list(limit)
     
     # For team view: enrich with salesperson names
     salesperson_map = {}
@@ -500,7 +509,14 @@ async def get_contacts(user_id: str, search: Optional[str] = None, view_mode: Op
         if salesperson_map:
             c_dict["salesperson_name"] = salesperson_map.get(c.get("user_id", ""), "")
         results.append(Contact(**c_dict))
-    return results
+
+    return {
+        "contacts": results,
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+        "has_more": (skip + limit) < total,
+    }
 
 @router.get("/{user_id}/{contact_id}", response_model=Contact)
 async def get_contact(user_id: str, contact_id: str):

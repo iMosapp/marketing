@@ -40,12 +40,17 @@ export default function ContactsScreen() {
   const [search, setSearch] = useState('');
   const [contacts, setContacts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
   const [crmFilter, setCrmFilter] = useState<'all' | 'linked' | 'not_linked'>('all');
   const [viewMode, setViewMode] = useState<'mine' | 'team'>('mine');
   const [sortMode, setSortMode] = useState<'alpha' | 'recent'>('recent');
+  const [hasMore, setHasMore] = useState(false);
+  const [totalContacts, setTotalContacts] = useState(0);
+  const currentSkip = useRef(0);
+  const PAGE_SIZE = 50;
   
   // Add Contact navigation (unified with home page)
   
@@ -72,27 +77,39 @@ export default function ContactsScreen() {
   const requestSeq = useRef(0); // Track latest request to prevent stale responses
 
   // Define loadContacts BEFORE it's used in hooks
-  const loadContacts = useCallback(async () => {
+  const loadContacts = useCallback(async (resetPage = true) => {
     if (!userId) return;
-    
-    // Increment sequence counter - only the latest request should update state
     const seq = ++requestSeq.current;
-    
+    const skip = resetPage ? 0 : currentSkip.current;
     try {
-      if (!initialLoadDone.current) setLoading(true);
-      const data = await contactsAPI.getAll(userId, search || undefined, viewMode === 'team' ? 'team' : undefined, sortMode);
-      // Only apply if this is still the latest request (prevents stale overwrites)
-      if (seq === requestSeq.current) {
-        setContacts(data);
+      if (resetPage && !initialLoadDone.current) setLoading(true);
+      const data = await contactsAPI.getAll(userId, search || undefined, viewMode === 'team' ? 'team' : undefined, sortMode, skip, PAGE_SIZE);
+      if (seq !== requestSeq.current) return;
+      const newContacts = data.contacts ?? data;
+      if (resetPage) {
+        setContacts(newContacts);
+        currentSkip.current = PAGE_SIZE;
+      } else {
+        setContacts(prev => [...prev, ...newContacts]);
+        currentSkip.current = skip + PAGE_SIZE;
       }
+      setHasMore(data.has_more ?? false);
+      setTotalContacts(data.total ?? newContacts.length);
     } catch (error) {
       console.error('Failed to load contacts:', error);
     } finally {
       if (seq === requestSeq.current) {
         setLoading(false);
+        setLoadingMore(false);
       }
     }
   }, [userId, search, viewMode, sortMode]);
+
+  const loadMoreContacts = useCallback(async () => {
+    if (!hasMore || loadingMore || loading) return;
+    setLoadingMore(true);
+    await loadContacts(false);
+  }, [hasMore, loadingMore, loading, loadContacts]);
 
   const loadTags = async () => {
     if (!user?._id) return;
@@ -148,7 +165,7 @@ export default function ContactsScreen() {
   const onRefresh = async () => {
     setRefreshing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await Promise.all([loadContacts(), loadTags()]);
+    await Promise.all([loadContacts(true), loadTags()]);
     setRefreshing(false);
   };
   
@@ -157,15 +174,9 @@ export default function ContactsScreen() {
     if (searchTimer.current) clearTimeout(searchTimer.current);
     searchTimer.current = setTimeout(async () => {
       if (text.length > 2 || text.length === 0) {
-        const seq = ++requestSeq.current;
-        try {
-          const data = await contactsAPI.getAll(userId || '', text || undefined, viewMode === 'team' ? 'team' : undefined, sortMode);
-          if (seq === requestSeq.current) {
-            setContacts(data);
-          }
-        } catch (error) {
-          console.error('Search failed:', error);
-        }
+        // Reset pagination and reload from page 0 with new search term
+        currentSkip.current = 0;
+        await loadContacts(true);
       }
     }, 300);
   };
@@ -687,6 +698,8 @@ export default function ContactsScreen() {
           maxToRenderPerBatch={10}
           windowSize={5}
           removeClippedSubviews={Platform.OS !== 'web'}
+          onEndReached={loadMoreContacts}
+          onEndReachedThreshold={0.3}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -694,6 +707,20 @@ export default function ContactsScreen() {
               tintColor="#007AFF"
             />
           }
+          ListFooterComponent={() => loadingMore ? (
+            <View style={{ padding: 16, alignItems: 'center' }}>
+              <ActivityIndicator size="small" color={colors.textSecondary} />
+              <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4 }}>Loading more...</Text>
+            </View>
+          ) : hasMore ? (
+            <View style={{ padding: 12, alignItems: 'center' }}>
+              <Text style={{ fontSize: 12, color: colors.textSecondary }}>{contacts.length} of {totalContacts}</Text>
+            </View>
+          ) : contacts.length > 0 ? (
+            <View style={{ padding: 12, alignItems: 'center' }}>
+              <Text style={{ fontSize: 12, color: colors.textSecondary }}>{totalContacts} contacts</Text>
+            </View>
+          ) : null}
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
               <Ionicons name="people-outline" size={64} color={colors.surface} />

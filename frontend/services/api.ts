@@ -189,12 +189,14 @@ export const onboardingAPI = {
 
 // ============= CONTACTS API =============
 export const contactsAPI = {
-  getAll: async (userId: string, search?: string, viewMode?: string, sortBy?: string) => {
-    const params: any = {};
+  getAll: async (userId: string, search?: string, viewMode?: string, sortBy?: string, skip = 0, limit = 50) => {
+    const params: any = { skip, limit };
     if (search) params.search = search;
     if (viewMode) params.view_mode = viewMode;
     if (sortBy) params.sort_by = sortBy;
     const response = await api.get(`/contacts/${userId}`, { params });
+    // Support both paginated {contacts, total, has_more} and legacy array response
+    if (Array.isArray(response.data)) return { contacts: response.data, total: response.data.length, has_more: false };
     return response.data;
   },
 
