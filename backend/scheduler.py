@@ -559,13 +559,25 @@ async def process_pending_campaign_steps():
         except Exception as me:
             logger.warning(f"[Scheduler] Migration scan failed: {me}")
 
-        # ── MAIN QUEUE: process due pre-scheduled sends ──
-        due_sends = await db.campaign_pending_sends.find({
-            "status": "pending",
-            "send_at": {"$lte": now_naive},
-        }).limit(50).to_list(50)
+        # ── MAIN QUEUE: atomic claim + process due pre-scheduled sends ──
+        # Use findOneAndUpdate to atomically lock each job — prevents duplicate sends
+        # if the scheduler ever fires twice concurrently.
+        import uuid
+        worker_id = f"sched-{uuid.uuid4().hex[:8]}"
+        claimed = []
+        for _ in range(50):
+            job = await db.campaign_pending_sends.find_one_and_update(
+                {"status": "pending", "send_at": {"$lte": now_naive}},
+                {"$set": {"status": "processing", "locked_at": now_naive, "worker_id": worker_id}},
+                return_document=True,
+                sort=[("send_at", 1)],  # process oldest-due first
+            )
+            if not job:
+                break
+            claimed.append(job)
 
-        logger.info(f"[Scheduler] {len(due_sends)} pre-scheduled sends due (processing up to 50/run)")
+        due_sends = claimed
+        logger.info(f"[Scheduler] Atomically claimed {len(due_sends)} sends (worker {worker_id})")
 
         processed = 0
         for send_doc in due_sends:
@@ -752,11 +764,14 @@ async def process_pending_campaign_steps():
             except Exception as e:
                 msg = f"[Scheduler] Error processing send {send_doc.get('_id')}: {e}"
                 logger.error(msg)
-                # Reset to pending so it retries next run
+                # Retry up to 3 times, then mark failed (audit trail preserved)
                 try:
+                    attempts = send_doc.get("attempts", 0) + 1
+                    new_status = "failed" if attempts >= 3 else "pending"
                     await db.campaign_pending_sends.update_one(
                         {"_id": send_doc["_id"]},
-                        {"$set": {"status": "pending"}}
+                        {"$set": {"status": new_status, "last_error": str(e),
+                                  "attempts": attempts, "locked_at": None, "worker_id": None}}
                     )
                 except Exception:
                     pass
