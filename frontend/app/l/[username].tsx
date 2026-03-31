@@ -81,7 +81,7 @@ export default function PublicLinkPage() {
   const bg = isDark ? '#000' : '#F2F2F7';
   const cardBg = isDark ? '#1C1C1E' : '#FFFFFF';
   const textColor = isDark ? '#FFFFFF' : '#000000';
-  const borderColor = isDark ? '#2C2C2E' : '#D1D1D6';
+  const linkBorderColor = isDark ? '#2C2C2E' : '#D1D1D6';
   const subColor = isDark ? '#8E8E93' : '#6C6C70';
 
   if (!mounted || loading) return <View style={[s.center, { backgroundColor: bg }]}><ActivityIndicator size="large" color={accent} /></View>;
@@ -119,7 +119,7 @@ export default function PublicLinkPage() {
       {/* Contact Links */}
       <View style={s.links}>
         {contactLinks.map(link => (
-          <TouchableOpacity key={link.id} style={[s.linkBtn, { backgroundColor: cardBg, borderColor }]} onPress={() => openLink(link)} data-testid={`link-${link.id}`}>
+          <TouchableOpacity key={link.id} style={[s.linkBtn, { backgroundColor: cardBg, borderColor: linkBorderColor }]} onPress={() => openLink(link)} data-testid={`link-${link.id}`}>
             <View style={[s.linkIcon, { backgroundColor: `${link.color}18` }]}>
               <Ionicons name={(ICON_MAP[link.icon] || 'link') as any} size={18} color={link.color} />
             </View>
@@ -134,7 +134,7 @@ export default function PublicLinkPage() {
         <View style={s.links}>
           <Text style={[s.sectionLabel, { color: subColor }]}>Socials</Text>
           {socialLinks.map(link => (
-            <TouchableOpacity key={link.id} style={[s.linkBtn, { backgroundColor: cardBg, borderColor }]} onPress={() => openLink(link)} data-testid={`link-${link.id}`}>
+            <TouchableOpacity key={link.id} style={[s.linkBtn, { backgroundColor: cardBg, borderColor: linkBorderColor }]} onPress={() => openLink(link)} data-testid={`link-${link.id}`}>
               <View style={[s.linkIcon, { backgroundColor: `${link.color}18` }]}>
                 <Ionicons name={(ICON_MAP[link.icon] || 'link') as any} size={18} color={link.color} />
               </View>
@@ -149,7 +149,7 @@ export default function PublicLinkPage() {
       {customLinks.length > 0 && (
         <View style={s.links}>
           {customLinks.map(link => (
-            <TouchableOpacity key={link.id} style={[s.linkBtn, { backgroundColor: cardBg, borderColor }]} onPress={() => openLink(link)} data-testid={`link-${link.id}`}>
+            <TouchableOpacity key={link.id} style={[s.linkBtn, { backgroundColor: cardBg, borderColor: linkBorderColor }]} onPress={() => openLink(link)} data-testid={`link-${link.id}`}>
               <View style={[s.linkIcon, { backgroundColor: `${link.color}18` }]}>
                 <Ionicons name={(ICON_MAP[link.icon] || 'globe-outline') as any} size={18} color={link.color} />
               </View>
