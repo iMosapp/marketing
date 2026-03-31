@@ -783,6 +783,9 @@ async def startup_event():
                     # Performance: compound indexes for contact page queries
                     db.campaign_enrollments.create_index([("contact_id", 1), ("user_id", 1), ("status", 1)]),
                     db.campaign_pending_sends.create_index([("contact_id", 1), ("user_id", 1)]),
+                    # New pre-scheduled queue index — powers the scheduler's primary query
+                    db.campaign_pending_sends.create_index([("status", 1), ("send_at", 1)]),
+                    db.campaign_pending_sends.create_index([("enrollment_id", 1), ("status", 1)]),
                     db.tasks.create_index([("contact_id", 1), ("user_id", 1), ("type", 1)]),
                     db.congrats_cards_sent.create_index([("contact_id", 1), ("user_id", 1)]),
                     db.messages.create_index([("_id", 1)]),  # Ensures batch message lookups are instant

@@ -914,12 +914,14 @@ async def enroll_contact_in_campaign(user_id: str, campaign_id: str, contact_id:
     else:
         next_send = datetime.utcnow()
     
+    contact_name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip()
+    
     # Create enrollment
     enrollment = {
         "user_id": user_id,
         "campaign_id": campaign_id,
         "contact_id": contact_id,
-        "contact_name": f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip(),
+        "contact_name": contact_name,
         "contact_phone": contact.get('phone', ''),
         "current_step": 1,
         "status": "active",
@@ -929,8 +931,45 @@ async def enroll_contact_in_campaign(user_id: str, campaign_id: str, contact_id:
     }
     
     result = await get_db().campaign_enrollments.insert_one(enrollment)
-    enrollment['_id'] = str(result.inserted_id)
-    
+    enrollment_id = str(result.inserted_id)
+    enrollment['_id'] = enrollment_id
+
+    # ── PRE-SCHEDULE ALL STEPS ────────────────────────────────────────────────
+    # Calculate exact send times for every step at enrollment time.
+    # The scheduler then only needs to query campaign_pending_sends — no enrollment scan.
+    if sequences:
+        base_time = datetime.utcnow()
+        cumulative = timedelta()
+        pending_docs = []
+        for i, step in enumerate(sequences):
+            # Accumulate delays: step 1 fires immediately (delay 0), step 2 adds its delay on top, etc.
+            cumulative += timedelta(
+                hours=step.get('delay_hours', 0),
+                days=step.get('delay_days', 0) + step.get('delay_months', 0) * 30
+            )
+            pending_docs.append({
+                "user_id": user_id,
+                "campaign_id": campaign_id,
+                "campaign_name": campaign.get('name', ''),
+                "contact_id": contact_id,
+                "contact_name": contact_name,
+                "contact_phone": contact.get('phone', ''),
+                "enrollment_id": enrollment_id,
+                "step": i + 1,
+                "message_template": step.get('message_template') or step.get('message', ''),
+                "media_urls": step.get('media_urls', []),
+                "channel": step.get('channel', 'sms'),
+                "delivery_mode": campaign.get('delivery_mode', 'manual'),
+                "ai_enabled": campaign.get('ai_enabled', False),
+                "send_at": base_time + cumulative,
+                "status": "pending",
+                "created_at": datetime.utcnow(),
+            })
+        if pending_docs:
+            await get_db().campaign_pending_sends.insert_many(pending_docs)
+            logger.info(f"Pre-scheduled {len(pending_docs)} sends for enrollment {enrollment_id} in '{campaign.get('name')}'")
+    # ─────────────────────────────────────────────────────────────────────────
+
     logger.info(f"Contact {contact_id} enrolled in campaign {campaign_id}, first message at {next_send}")
     
     return enrollment

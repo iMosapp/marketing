@@ -480,16 +480,18 @@ async def _run_date_triggers_for_user(db, user_id: str) -> int:
 
 
 async def process_pending_campaign_steps():
-    """Periodic job: find active enrollments with due messages and advance them.
-    Handles two delivery modes:
-    - automated: Logs message + queues for Twilio delivery (or mock)
-    - manual: Creates a notification for the user to send manually
-    AI-enabled campaigns generate personalized content per step.
+    """
+    Reads from the pre-scheduled campaign_pending_sends queue — no enrollment scan.
+
+    At enrollment time, all step send-times are pre-calculated and written to
+    campaign_pending_sends. This job just picks up whatever is due, processes it,
+    and marks it done. Cost is O(due sends) not O(all enrollments).
+
+    Backward compat: migrates legacy enrollments (no pending sends) on first run.
     """
     from routers.database import get_db
-    from routers.campaigns import calculate_next_send_date
 
-    logger.info("[Scheduler] Processing pending campaign steps...")
+    logger.info("[Scheduler] Processing pre-scheduled campaign sends...")
 
     db = get_db()
     if db is None:
@@ -497,52 +499,97 @@ async def process_pending_campaign_steps():
         return
 
     now = datetime.now(timezone.utc)
+    now_naive = datetime.utcnow()
 
     try:
-        # Cap at 50 per run — prevents memory spikes from processing hundreds at once.
-        # Remaining enrollments will be picked up on the next 15-minute interval.
-        pending = await db.campaign_enrollments.find({
-            "status": "active",
-            "next_send_at": {"$lte": now},
+        # ── MIGRATION: pre-schedule any legacy active enrollments that have no pending sends ──
+        try:
+            legacy = await db.campaign_enrollments.find(
+                {"status": "active", "next_send_at": {"$lte": now_naive + timedelta(hours=1)}}
+            ).limit(100).to_list(100)
+
+            for enr in legacy:
+                eid = str(enr["_id"])
+                has_sends = await db.campaign_pending_sends.find_one(
+                    {"enrollment_id": eid, "status": "pending"}
+                )
+                if has_sends:
+                    continue
+
+                # No pre-scheduled sends — generate remaining steps from enrollment
+                try:
+                    campaign = await db.campaigns.find_one({"_id": ObjectId(enr["campaign_id"])})
+                    if not campaign or not campaign.get("active"):
+                        continue
+                    sequences = campaign.get("sequences", [])
+                    current_step = enr.get("current_step", 1)
+                    remaining = sequences[current_step - 1:]
+
+                    base = now_naive
+                    cumulative = timedelta()
+                    docs = []
+                    for i, step in enumerate(remaining):
+                        cumulative += timedelta(
+                            hours=step.get("delay_hours", 0),
+                            days=step.get("delay_days", 0) + step.get("delay_months", 0) * 30
+                        )
+                        docs.append({
+                            "user_id": enr["user_id"],
+                            "campaign_id": enr["campaign_id"],
+                            "campaign_name": campaign.get("name", ""),
+                            "contact_id": enr["contact_id"],
+                            "contact_name": enr.get("contact_name", ""),
+                            "contact_phone": enr.get("contact_phone", ""),
+                            "enrollment_id": eid,
+                            "step": current_step + i,
+                            "message_template": step.get("message_template") or step.get("message", ""),
+                            "media_urls": step.get("media_urls", []),
+                            "channel": step.get("channel", "sms"),
+                            "delivery_mode": campaign.get("delivery_mode", "manual"),
+                            "ai_enabled": campaign.get("ai_enabled", False),
+                            "send_at": base + cumulative,
+                            "status": "pending",
+                            "created_at": now_naive,
+                        })
+                    if docs:
+                        await db.campaign_pending_sends.insert_many(docs)
+                        logger.info(f"[Scheduler] Migrated enrollment {eid}: pre-scheduled {len(docs)} remaining sends")
+                except Exception as me:
+                    logger.warning(f"[Scheduler] Migration error for enrollment {eid}: {me}")
+        except Exception as me:
+            logger.warning(f"[Scheduler] Migration scan failed: {me}")
+
+        # ── MAIN QUEUE: process due pre-scheduled sends ──
+        due_sends = await db.campaign_pending_sends.find({
+            "status": "pending",
+            "send_at": {"$lte": now_naive},
         }).limit(50).to_list(50)
 
-        logger.info(f"[Scheduler] Found {len(pending)} pending campaign messages (processing up to 50/run)")
+        logger.info(f"[Scheduler] {len(due_sends)} pre-scheduled sends due (processing up to 50/run)")
 
         processed = 0
-        for enrollment in pending:
+        for send_doc in due_sends:
             try:
-                campaign = await db.campaigns.find_one(
-                    {"_id": __import__("bson").ObjectId(enrollment["campaign_id"])}
+                send_id = send_doc["_id"]
+                enrollment_id = send_doc.get("enrollment_id", "")
+                user_id = send_doc["user_id"]
+                contact_id = send_doc["contact_id"]
+                contact_phone = send_doc.get("contact_phone", "")
+                current_step = send_doc.get("step", 1)
+                message_content = send_doc.get("message_template", "")
+                channel = send_doc.get("channel", "sms")
+                delivery_mode = send_doc.get("delivery_mode", "manual")
+                campaign_ai_enabled = send_doc.get("ai_enabled", False)
+
+                # Mark send as processing immediately (prevents double-processing)
+                await db.campaign_pending_sends.update_one(
+                    {"_id": send_id},
+                    {"$set": {"status": "processing", "started_at": now_naive}}
                 )
-                if not campaign or not campaign.get("active", False):
-                    continue
 
-                sequences = campaign.get("sequences", [])
-                current_step = enrollment.get("current_step", 1)
-
-                if current_step > len(sequences):
-                    await db.campaign_enrollments.update_one(
-                        {"_id": enrollment["_id"]},
-                        {"$set": {"status": "completed"}},
-                    )
-                    continue
-
-                step = sequences[current_step - 1]
-                message_content = step.get("message_template", "") or step.get("message", "")
-                channel = step.get("channel", "sms")
-                ai_generated = step.get("ai_generated", False) or campaign.get("ai_enabled", False)
-                delivery_mode = campaign.get("delivery_mode", "manual")
-
-                contact_id = enrollment.get("contact_id", "")
-                user_id = enrollment.get("user_id", "")
-                contact_phone = enrollment.get("contact_phone", "")
-
-                # Determine whether to use AI for this step
-                # Campaign's ai_enabled toggle is the primary control
-                campaign_ai_enabled = campaign.get("ai_enabled", False)
-                use_ai = campaign_ai_enabled and ai_generated
-                if campaign_ai_enabled:
-                    # Check store-level config for overrides only when campaign has AI on
+                # AI personalization
+                use_ai = campaign_ai_enabled
+                if use_ai:
                     try:
                         from routers.campaign_config import get_effective_config
                         user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1, "organization_id": 1})
@@ -554,287 +601,183 @@ async def process_pending_campaign_steps():
                             )
                             msg_mode = config.get("message_mode", "ai_suggested")
                             if msg_mode == "template":
-                                use_ai = False  # Store forces templates only
-                            elif msg_mode == "ai_suggested":
-                                use_ai = True  # AI for all steps when campaign AI is on
-                            # "hybrid" respects the step's own ai_generated flag
+                                use_ai = False
+
                     except Exception as e:
                         logger.warning(f"[Scheduler] Campaign config lookup failed: {e}")
 
-                # AI message generation if enabled
                 if use_ai and contact_id and user_id:
                     try:
                         from routers.ai_campaigns import generate_campaign_message
-                        ai_data = {
-                            "step_context": step.get("step_context", f"Step {current_step} of {campaign.get('name', '')}"),
+                        ai_result = await generate_campaign_message(user_id, contact_id, {
+                            "step_context": f"Step {current_step}",
                             "channel": channel,
-                            "campaign_name": campaign.get("name", ""),
+                            "campaign_name": send_doc.get("campaign_name", ""),
                             "template_hint": message_content,
-                        }
-                        ai_result = await generate_campaign_message(user_id, contact_id, ai_data)
+                        })
                         if ai_result.get("success"):
                             message_content = ai_result["message"]
-                            logger.info(f"[Scheduler] AI generated message for step {current_step}")
                     except Exception as e:
                         logger.warning(f"[Scheduler] AI generation failed, using template: {e}")
 
-                # Build relationship intelligence brief for the task
+                # Relationship brief
                 relationship_brief = ""
                 try:
                     from services.relationship_intel import build_relationship_brief
                     brief = await build_relationship_brief(user_id, contact_id)
                     relationship_brief = brief.get("human_summary", "")
-                except Exception as e:
-                    logger.warning(f"[Scheduler] Relationship intel failed: {e}")
+                except Exception:
+                    pass
 
                 if not message_content:
-                    message_content = f"Hi {enrollment.get('contact_name', 'there')}!"
+                    message_content = f"Hi {send_doc.get('contact_name', 'there')}!"
 
-                # ===== DELIVERY =====
+                # ── DELIVERY ──
                 if delivery_mode == "automated":
-                    # AUTOMATED: Log the message and queue for sending
                     conv_id = f"campaign_{user_id}_{contact_id}"
                     await db.messages.insert_one({
-                        "conversation_id": conv_id,
-                        "sender": "user",
-                        "content": message_content,
-                        "timestamp": now,
-                        "auto_sent": True,
-                        "campaign_id": enrollment["campaign_id"],
-                        "campaign_step": current_step,
-                        "channel": channel,
-                        "user_id": user_id,
-                        "contact_id": contact_id,
+                        "conversation_id": conv_id, "sender": "user",
+                        "content": message_content, "timestamp": now,
+                        "auto_sent": True, "campaign_id": send_doc.get("campaign_id"),
+                        "campaign_step": current_step, "channel": channel,
+                        "user_id": user_id, "contact_id": contact_id,
                     })
-
-                    # Log contact event
                     event_type = "email_sent" if channel == "email" else "sms_sent"
                     await db.contact_events.insert_one({
-                        "event_type": event_type,
-                        "user_id": user_id,
+                        "event_type": event_type, "user_id": user_id,
                         "contact_id": contact_id,
-                        "org_id": enrollment.get("org_id", ""),
-                        "description": f"Campaign '{campaign.get('name', '')}' step {current_step}",
-                        "timestamp": now,
-                        "auto_campaign": True,
+                        "description": f"Campaign '{send_doc.get('campaign_name', '')}' step {current_step}",
+                        "timestamp": now, "auto_campaign": True,
                     })
-
-                    logger.info(
-                        f"[Scheduler] AUTO-SENT step {current_step} to {enrollment.get('contact_name', 'unknown')} via {channel}"
-                    )
+                    logger.info(f"[Scheduler] AUTO-SENT step {current_step} to {send_doc.get('contact_name', 'unknown')}")
 
                 else:
-                    # MANUAL: Create a pending send + task for the user's to-do list
-                    action_type = step.get("action_type", "message")
-                    contact_display = enrollment.get("contact_name", "contact")
-                    idem_key = f"campaign_{enrollment['campaign_id']}_{contact_id}_{current_step}"
-
-                    # Check if task already exists for this step (prevents stuck enrollments)
+                    # MANUAL: wrap URLs + create task + notification
+                    contact_display = send_doc.get("contact_name", "contact")
+                    idem_key = f"campaign_{send_doc.get('campaign_id')}_{contact_id}_{current_step}"
                     existing_task = await db.tasks.find_one({"idempotency_key": idem_key})
-                    if existing_task:
-                        # Task already exists (from a previous partial run or immediate processing)
-                        # If it's still pending, just skip. If completed, still advance the enrollment.
-                        logger.info(
-                            f"[Scheduler] Task already exists for step {current_step} (status={existing_task.get('status')}), advancing enrollment"
-                        )
-                    else:
-                        # Auto-wrap raw URLs in media and message for click tracking
-                        raw_media = step.get("media_urls", [])
+
+                    if not existing_task:
+                        raw_media = send_doc.get("media_urls", [])
                         try:
                             wrapped_media, wrapped_message = await _auto_wrap_urls(
                                 raw_media, message_content, user_id,
-                                enrollment["campaign_id"], campaign.get("name", ""), current_step,
+                                send_doc.get("campaign_id", ""), send_doc.get("campaign_name", ""), current_step,
                             )
-                        except Exception as e:
-                            logger.warning(f"[Scheduler] Auto-wrap failed, using raw URLs: {e}")
+                        except Exception:
                             wrapped_media, wrapped_message = raw_media, message_content
 
-                        # Create pending send record
-                        pending_result = await db.campaign_pending_sends.insert_one({
-                            "user_id": user_id,
-                            "contact_id": contact_id,
-                            "contact_name": enrollment.get("contact_name", ""),
-                            "contact_phone": contact_phone,
-                            "contact_email": enrollment.get("contact_email", ""),
-                            "campaign_id": enrollment["campaign_id"],
-                            "campaign_name": campaign.get("name", ""),
-                            "step": current_step,
-                            "channel": channel,
-                            "message": wrapped_message,
-                            "media_urls": wrapped_media,
-                            "relationship_brief": relationship_brief,
-                            "ai_generated": bool(ai_generated),
-                            "step_context": step.get("step_context", ""),
-                            "status": "pending",
-                            "created_at": now,
-                        })
+                        # Update pending send with wrapped content
+                        await db.campaign_pending_sends.update_one(
+                            {"_id": send_id},
+                            {"$set": {"message": wrapped_message, "media_urls": wrapped_media,
+                                      "relationship_brief": relationship_brief}}
+                        )
 
-                        if action_type == "send_card":
-                            card_type = step.get("card_type", "congrats")
-                            task_title = f"Send {card_type.title()} Card to {contact_display}"
-                            task_desc = f"Campaign '{campaign.get('name', '')}' step {current_step}: Send a {card_type} card to {contact_display}."
-                        else:
-                            task_title = f"Send {channel.upper()} to {contact_display}"
-                            task_desc = f"Campaign '{campaign.get('name', '')}' step {current_step}: {message_content[:200]}"
-
-                        # Replace ALL template variables in the message
                         clean_message = await resolve_template_variables(db, message_content, {
-                            "first_name": enrollment.get("contact_name", "").split()[0] if enrollment.get("contact_name") else "there",
-                            "last_name": enrollment.get("contact_name", "").split()[-1] if enrollment.get("contact_name") else "",
-                            "contact_name": enrollment.get("contact_name", ""),
-                            "phone": enrollment.get("contact_phone", ""),
+                            "first_name": contact_display.split()[0] if contact_display else "there",
+                            "last_name": contact_display.split()[-1] if contact_display else "",
+                            "contact_name": contact_display,
+                            "phone": contact_phone,
                         }, user_id)
 
                         try:
                             await db.tasks.insert_one({
-                                "user_id": user_id,
-                                "contact_id": contact_id,
-                                "contact_name": enrollment.get("contact_name", ""),
-                                "contact_phone": enrollment.get("contact_phone", ""),
+                                "user_id": user_id, "contact_id": contact_id,
+                                "contact_name": contact_display, "contact_phone": contact_phone,
                                 "type": "campaign_send",
-                                "title": task_title,
-                                "description": task_desc,
+                                "title": f"Send {channel.upper()} to {contact_display}",
+                                "description": f"Campaign '{send_doc.get('campaign_name', '')}' step {current_step}: {message_content[:200]}",
                                 "suggested_message": clean_message,
                                 "relationship_brief": relationship_brief,
-                                "ai_generated": bool(ai_generated),
-                                "action_type": "card" if action_type == "send_card" else ("email" if channel == "email" else "text"),
-                                "due_date": now,
-                                "priority": "high",
-                                "priority_order": 1,
-                                "status": "pending",
-                                "completed": False,
-                                "source": "campaign",
-                                "campaign_id": enrollment["campaign_id"],
-                                "campaign_name": campaign.get("name", ""),
-                                "pending_send_id": str(pending_result.inserted_id),
-                                "channel": channel,
-                                "created_at": now,
+                                "action_type": "email" if channel == "email" else "text",
+                                "due_date": now, "priority": "high", "priority_order": 1,
+                                "status": "pending", "completed": False, "source": "campaign",
+                                "campaign_id": send_doc.get("campaign_id"),
+                                "campaign_name": send_doc.get("campaign_name", ""),
+                                "pending_send_id": str(send_id),
+                                "channel": channel, "created_at": now,
                                 "idempotency_key": idem_key,
                             })
                         except Exception as task_err:
-                            # DuplicateKeyError or other - log but continue to advance enrollment
-                            logger.warning(f"[Scheduler] Task insert failed (will still advance): {task_err}")
+                            logger.warning(f"[Scheduler] Task insert failed: {task_err}")
 
-                        # Create a notification (bell alert)
                         await db.notifications.insert_one({
-                            "user_id": user_id,
-                            "type": "campaign_send",
-                            "title": f"Campaign: {campaign.get('name', '')}",
+                            "user_id": user_id, "type": "campaign_send",
+                            "title": f"Campaign: {send_doc.get('campaign_name', '')}",
                             "message": f"Time to send step {current_step} to {contact_display}",
-                            "contact_name": enrollment.get("contact_name", ""),
-                            "contact_id": contact_id,
-                            "campaign_id": enrollment["campaign_id"],
+                            "contact_name": contact_display, "contact_id": contact_id,
+                            "campaign_id": send_doc.get("campaign_id"),
                             "pending_send_step": current_step,
-                            "action_required": True,
-                            "read": False,
-                            "dismissed": False,
+                            "action_required": True, "read": False, "dismissed": False,
                             "created_at": now,
                         })
+                        logger.info(f"[Scheduler] MANUAL task created for step {current_step} to {contact_display}")
 
-                        logger.info(
-                            f"[Scheduler] MANUAL task + notification created for step {current_step} to {enrollment.get('contact_name', 'unknown')}"
-                        )
+                # ── MARK SEND COMPLETE ──
+                final_status = "sent" if delivery_mode == "automated" else "pending_user_action"
+                await db.campaign_pending_sends.update_one(
+                    {"_id": send_id},
+                    {"$set": {"status": final_status, "processed_at": now_naive}}
+                )
 
-                # Advance enrollment
-                # For manual mode: mark as "pending" (user still needs to send)
-                # For automated mode: mark as "sent" (message was auto-delivered)
-                is_manual = delivery_mode == "manual"
-                msg_record = {
-                    "step": current_step,
-                    "content": message_content[:100],
-                    "channel": channel,
-                    "delivery_mode": delivery_mode,
-                }
-                if is_manual:
-                    msg_record["status"] = "pending"
-                    msg_record["queued_at"] = now
-                else:
-                    msg_record["status"] = "sent"
-                    msg_record["sent_at"] = now
-
-                if current_step < len(sequences):
-                    next_step = sequences[current_step]
-                    next_send = calculate_next_send_date(next_step)
-
-                    # Only randomize send time for daily+ delays (not hourly)
-                    # This prevents breaking campaigns with short intervals
-                    step_delay_hours = next_step.get('delay_hours', 0)
-                    step_delay_days = next_step.get('delay_days', 0)
-                    step_delay_months = next_step.get('delay_months', 0)
-                    is_daily_or_longer = step_delay_days > 0 or step_delay_months > 0
-
-                    if is_daily_or_longer:
-                        try:
-                            import pytz
-                            user_doc = await db.users.find_one({"_id": __import__("bson").ObjectId(user_id)})
-                            user_tz_str = (user_doc or {}).get("timezone", "America/Denver")
-                            user_tz = pytz.timezone(user_tz_str)
-                            # Properly convert naive UTC datetime to local time
-                            utc_aware = next_send.replace(tzinfo=timezone.utc)
-                            local_send = utc_aware.astimezone(user_tz)
-                            random_hour = random.randint(10, 11)
-                            random_minute = random.randint(0, 59)
-                            local_send = local_send.replace(hour=random_hour, minute=random_minute, second=0)
-                            candidate = local_send.astimezone(timezone.utc).replace(tzinfo=None)
-                            # Ensure the randomized time is in the future
-                            now_naive = datetime.utcnow()
-                            if candidate <= now_naive:
-                                candidate = candidate + timedelta(days=1)
-                            next_send = candidate
-                        except Exception:
-                            pass
-
-                    update_set = {
-                        "current_step": current_step + 1,
-                        "next_send_at": next_send,
-                    }
-                    if not is_manual:
-                        update_set["last_sent_at"] = now
-
-                    await db.campaign_enrollments.update_one(
-                        {"_id": enrollment["_id"]},
-                        {
-                            "$set": update_set,
-                            "$push": {"messages_sent": msg_record},
-                        },
-                    )
-                else:
-                    update_set = {
-                        "current_step": current_step + 1,
-                        "next_send_at": None,
-                        "status": "completed",
-                    }
-                    if not is_manual:
-                        update_set["last_sent_at"] = now
-
-                    await db.campaign_enrollments.update_one(
-                        {"_id": enrollment["_id"]},
-                        {
-                            "$set": update_set,
-                            "$push": {"messages_sent": msg_record},
-                        },
-                    )
+                # ── UPDATE ENROLLMENT ──
+                if enrollment_id:
+                    try:
+                        enr = await db.campaign_enrollments.find_one({"_id": ObjectId(enrollment_id)})
+                        if enr:
+                            # Check if there are more pending sends for this enrollment
+                            next_pending = await db.campaign_pending_sends.find_one({
+                                "enrollment_id": enrollment_id,
+                                "status": "pending",
+                            })
+                            new_status = "active" if next_pending else "completed"
+                            msg_record = {
+                                "step": current_step, "content": message_content[:100],
+                                "channel": channel, "delivery_mode": delivery_mode,
+                                "status": "sent" if delivery_mode == "automated" else "pending",
+                                "sent_at": now,
+                            }
+                            await db.campaign_enrollments.update_one(
+                                {"_id": ObjectId(enrollment_id)},
+                                {"$set": {"current_step": current_step + 1, "status": new_status,
+                                          "next_send_at": None},
+                                 "$push": {"messages_sent": msg_record}},
+                            )
+                    except Exception as ee:
+                        logger.warning(f"[Scheduler] Enrollment update failed: {ee}")
 
                 processed += 1
 
             except Exception as e:
-                msg = f"[Scheduler] Error processing enrollment {enrollment.get('_id')}: {e}"
+                msg = f"[Scheduler] Error processing send {send_doc.get('_id')}: {e}"
                 logger.error(msg)
+                # Reset to pending so it retries next run
+                try:
+                    await db.campaign_pending_sends.update_one(
+                        {"_id": send_doc["_id"]},
+                        {"$set": {"status": "pending"}}
+                    )
+                except Exception:
+                    pass
                 _scheduler_state["errors"] = (_scheduler_state["errors"] + [msg])[-20:]
 
         _scheduler_state["last_campaign_step_run"] = datetime.now(timezone.utc).isoformat()
         _scheduler_state["campaign_step_results"] = {
-            "pending_found": len(pending),
+            "pending_found": len(due_sends),
             "processed": processed,
             "ran_at": datetime.now(timezone.utc).isoformat(),
         }
-        logger.info(f"[Scheduler] Campaign steps complete. Processed {processed}/{len(pending)}.")
+        logger.info(f"[Scheduler] Campaign steps complete. Processed {processed}/{len(due_sends)}.")
         _user_cache.clear()
         _store_cache.clear()
-        gc.collect()  # Free memory after processing batch
+        gc.collect()
+
     except Exception as e:
         logger.error(f"[Scheduler] Fatal error in campaign step processing: {e}")
         _scheduler_state["errors"] = (_scheduler_state["errors"] + [str(e)])[-20:]
+
+
 
 
 async def generate_daily_system_tasks():
