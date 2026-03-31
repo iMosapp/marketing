@@ -1144,12 +1144,20 @@ async def update_user(user_id: str, user_data: dict):
 @router.patch("/users/{user_id}")
 async def patch_user(user_id: str, user_data: dict):
     """Update user profile fields including photo"""
-    allowed_fields = ['name', 'phone', 'persona', 'settings', 'photo_url', 'bio', 'social_links', 'timezone',
-                      'address', 'city', 'state', 'zip_code', 'country']
+    allowed_fields = ['name', 'phone', 'email', 'persona', 'settings', 'photo_url', 'bio', 'social_links', 'timezone',
+                      'address', 'city', 'state', 'zip_code', 'country', 'title']
     update_dict = {k: v for k, v in user_data.items() if k in allowed_fields}
-    
+
     if not update_dict:
         raise HTTPException(status_code=400, detail="No valid fields to update")
+
+    # Email uniqueness check
+    if 'email' in update_dict:
+        new_email = update_dict['email'].strip().lower()
+        update_dict['email'] = new_email
+        existing = await get_db().users.find_one({"email": new_email, "_id": {"$ne": ObjectId(user_id)}})
+        if existing:
+            raise HTTPException(status_code=409, detail="That email is already in use by another account.")
     
     # When photo_url is updated, clear old optimized paths so the new photo takes effect
     unset_dict = {}

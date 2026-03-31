@@ -532,8 +532,16 @@ async def update_admin_user(
         if user_data.get('role') == 'super_admin' and requesting_user.get('role') != 'super_admin':
             raise HTTPException(status_code=403, detail="Only super admins can grant super admin role")
     
-    allowed_fields = ['name', 'phone', 'role', 'organization_id', 'store_id', 'state', 'settings', 'is_active', 'onboarding_complete', 'title', 'bio', 'photo_url', 'social_links', 'social_instagram', 'social_facebook', 'social_linkedin']
+    allowed_fields = ['name', 'phone', 'email', 'role', 'organization_id', 'store_id', 'state', 'settings', 'is_active', 'onboarding_complete', 'title', 'bio', 'photo_url', 'social_links', 'social_instagram', 'social_facebook', 'social_linkedin']
     update_dict = {k: v for k, v in user_data.items() if k in allowed_fields}
+
+    # Email uniqueness check before updating
+    if 'email' in update_dict:
+        new_email = update_dict['email'].strip().lower()
+        update_dict['email'] = new_email
+        existing = await get_db().users.find_one({"email": new_email, "_id": {"$ne": ObjectId(user_id)}})
+        if existing:
+            raise HTTPException(status_code=409, detail="That email is already in use by another account.")
     
     result = await get_db().users.update_one(
         {"_id": ObjectId(user_id)},

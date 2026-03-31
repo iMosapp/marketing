@@ -81,6 +81,8 @@ export default function MyAccountScreen() {
   const [editingBio, setEditingBio] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
+  const [editingPhone, setEditingPhone] = useState(false);
+  const [editingEmail, setEditingEmail] = useState(false);
   const [savingBio, setSavingBio] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
   // Social link inline editing
@@ -91,6 +93,8 @@ export default function MyAccountScreen() {
   const [bioText, setBioText] = useState(user?.persona?.bio || user?.bio || '');
   const [nameText, setNameText] = useState(user?.name || '');
   const [titleText, setTitleText] = useState(user?.persona?.title || user?.title || '');
+  const [phoneText, setPhoneText] = useState((user as any)?.phone || '');
+  const [emailText, setEmailText] = useState(user?.email || '');
 
   const bioInputRef = useRef<TextInput>(null);
   const completeness = calcCompleteness(user);
@@ -155,6 +159,29 @@ export default function MyAccountScreen() {
       setUser({ ...user, persona: { ...(user as any)?.persona, title: titleText } });
       setEditingTitle(false);
     } catch { showSimpleAlert('Error', 'Failed to save title.'); }
+  }
+
+  async function savePhone() {
+    const cleaned = phoneText.trim();
+    try {
+      await api.patch(`/users/${user?._id}`, { phone: cleaned });
+      setUser({ ...user, phone: cleaned } as any);
+      setEditingPhone(false);
+    } catch (e: any) {
+      showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to save phone number.');
+    }
+  }
+
+  async function saveEmail() {
+    const cleaned = emailText.trim().toLowerCase();
+    if (!cleaned.includes('@')) { showSimpleAlert('Error', 'Please enter a valid email address.'); return; }
+    try {
+      await api.patch(`/users/${user?._id}`, { email: cleaned });
+      setUser({ ...user, email: cleaned } as any);
+      setEditingEmail(false);
+    } catch (e: any) {
+      showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to save email.');
+    }
   }
 
   // ── Cover photo — works on web AND mobile ────────────────────────────────
@@ -440,8 +467,68 @@ export default function MyAccountScreen() {
             </View>
           )}
 
-          {/* Email */}
-          <Text style={[s.emailText, { userSelect: 'none' } as any]}>{user?.email}</Text>
+          {/* Email — tap to edit */}
+          {editingEmail ? (
+            <View style={s.inlineEditRow}>
+              <TextInput
+                style={[s.titleInput, { color: colors.text, flex: 1, borderBottomWidth: 1, borderBottomColor: '#C9A962' }]}
+                value={emailText}
+                onChangeText={setEmailText}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={saveEmail}
+                onBlur={saveEmail}
+                placeholder="your@email.com"
+                placeholderTextColor={colors.textTertiary}
+              />
+              <TouchableOpacity onPress={saveEmail} style={s.inlineEditDone}>
+                <Ionicons name="checkmark-circle" size={22} color="#34C759" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { setEditingEmail(false); setEmailText(user?.email || ''); }} style={s.inlineEditDone}>
+                <Ionicons name="close-circle" size={22} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity onPress={() => setEditingEmail(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+              <Text style={[s.emailText, { marginBottom: 0, userSelect: 'none' } as any]}>{user?.email || 'Tap to add email'}</Text>
+              <Ionicons name="pencil-outline" size={13} color={colors.textTertiary} />
+            </TouchableOpacity>
+          )}
+
+          {/* Phone — tap to edit */}
+          {editingPhone ? (
+            <View style={s.inlineEditRow}>
+              <TextInput
+                style={[s.titleInput, { color: colors.text, flex: 1, borderBottomWidth: 1, borderBottomColor: '#C9A962' }]}
+                value={phoneText}
+                onChangeText={setPhoneText}
+                keyboardType="phone-pad"
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={savePhone}
+                onBlur={savePhone}
+                placeholder="(801) 555-1234"
+                placeholderTextColor={colors.textTertiary}
+              />
+              <TouchableOpacity onPress={savePhone} style={s.inlineEditDone}>
+                <Ionicons name="checkmark-circle" size={22} color="#34C759" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { setEditingPhone(false); setPhoneText((user as any)?.phone || ''); }} style={s.inlineEditDone}>
+                <Ionicons name="close-circle" size={22} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity onPress={() => setEditingPhone(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14 }}>
+              <Ionicons name="call-outline" size={14} color={colors.textTertiary} />
+              <Text style={[s.emailText, { marginBottom: 0, userSelect: 'none' } as any]}>
+                {(user as any)?.phone || 'Tap to add phone number'}
+              </Text>
+              <Ionicons name="pencil-outline" size={13} color={colors.textTertiary} />
+            </TouchableOpacity>
+          )}
 
           {/* ── Profile completeness ── */}
           <View style={s.completenessBar}>

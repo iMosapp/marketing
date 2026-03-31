@@ -111,6 +111,9 @@ export default function UserDetailScreen() {
   const [showOrgModal, setShowOrgModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [impersonating, setImpersonating] = useState(false);
+  // Contact info inline editing
+  const [editingContactField, setEditingContactField] = useState<'phone' | 'email' | null>(null);
+  const [contactEditValue, setContactEditValue] = useState('');
   
   const { startImpersonation } = useAuthStore();
   
@@ -608,20 +611,66 @@ export default function UserDetailScreen() {
           </View>
           
           <View style={styles.infoCard}>
-            <View style={styles.infoRow}>
-              <Ionicons name="mail-outline" size={18} color={colors.textSecondary} />
-              <Text style={styles.infoText}>{user.email}</Text>
-            </View>
-            {(user.phone || user.twilio_phone_number) && (
-              <View style={styles.infoRow}>
-                <Ionicons name="call-outline" size={18} color={colors.textSecondary} />
-                <Text style={styles.infoText}>{user.phone || user.twilio_phone_number}</Text>
-                {user.twilio_phone_number && (
-                  <View style={styles.twilioTag}>
-                    <Text style={styles.twilioTagText}>i'M On Social</Text>
-                  </View>
-                )}
+            {/* Email row — tap pencil to edit */}
+            {editingContactField === 'email' ? (
+              <View style={[styles.infoRow, { gap: 8 }]}>
+                <Ionicons name="mail-outline" size={18} color={colors.textSecondary} />
+                <TextInput
+                  style={{ flex: 1, color: colors.text, fontSize: 15, borderBottomWidth: 1, borderBottomColor: '#C9A962', paddingVertical: 4 }}
+                  value={contactEditValue}
+                  onChangeText={setContactEditValue}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoFocus
+                  returnKeyType="done"
+                  onSubmitEditing={async () => {
+                    try {
+                      await adminAPI.updateUser(user!._id, { email: contactEditValue.trim().toLowerCase() });
+                      setUser((prev: any) => prev ? { ...prev, email: contactEditValue.trim().toLowerCase() } : prev);
+                      setEditingContactField(null);
+                      showToast('Email updated');
+                    } catch (e: any) { showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to update email'); }
+                  }}
+                />
+                <TouchableOpacity onPress={() => setEditingContactField(null)}><Ionicons name="close-circle" size={20} color={colors.textSecondary} /></TouchableOpacity>
               </View>
+            ) : (
+              <TouchableOpacity style={styles.infoRow} onPress={() => { setEditingContactField('email'); setContactEditValue(user.email); }}>
+                <Ionicons name="mail-outline" size={18} color={colors.textSecondary} />
+                <Text style={[styles.infoText, { flex: 1 }]}>{user.email}</Text>
+                <Ionicons name="pencil-outline" size={14} color={colors.textTertiary} />
+              </TouchableOpacity>
+            )}
+
+            {/* Phone row — tap pencil to edit */}
+            {editingContactField === 'phone' ? (
+              <View style={[styles.infoRow, { gap: 8 }]}>
+                <Ionicons name="call-outline" size={18} color={colors.textSecondary} />
+                <TextInput
+                  style={{ flex: 1, color: colors.text, fontSize: 15, borderBottomWidth: 1, borderBottomColor: '#C9A962', paddingVertical: 4 }}
+                  value={contactEditValue}
+                  onChangeText={setContactEditValue}
+                  keyboardType="phone-pad"
+                  autoFocus
+                  returnKeyType="done"
+                  onSubmitEditing={async () => {
+                    try {
+                      await adminAPI.updateUser(user!._id, { phone: contactEditValue.trim() });
+                      setUser((prev: any) => prev ? { ...prev, phone: contactEditValue.trim() } : prev);
+                      setEditingContactField(null);
+                      showToast('Phone number updated');
+                    } catch (e: any) { showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to update phone'); }
+                  }}
+                />
+                <TouchableOpacity onPress={() => setEditingContactField(null)}><Ionicons name="close-circle" size={20} color={colors.textSecondary} /></TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.infoRow} onPress={() => { setEditingContactField('phone'); setContactEditValue(user.phone || user.twilio_phone_number || ''); }}>
+                <Ionicons name="call-outline" size={18} color={colors.textSecondary} />
+                <Text style={[styles.infoText, { flex: 1 }]}>{user.phone || user.twilio_phone_number || 'Tap to add phone'}</Text>
+                {user.twilio_phone_number && (<View style={styles.twilioTag}><Text style={styles.twilioTagText}>i'M On Social</Text></View>)}
+                <Ionicons name="pencil-outline" size={14} color={colors.textTertiary} />
+              </TouchableOpacity>
             )}
             {user.created_at && (
               <View style={styles.infoRow}>
