@@ -124,6 +124,58 @@ async def backfill_last_activity(request: Request):
     return {"success": True, **result}
 
 
+@api_router.post("/admin/backfill-user-contact-links")
+async def backfill_user_contact_links(request: Request):
+    """
+    One-time backfill: find all users and link any matching contacts (by email/phone).
+    Run once to fix contacts that existed before the auto-link feature was added.
+    """
+    db = get_db()
+    linked = 0
+    users = await db.users.find({}, {"_id": 1, "email": 1, "phone": 1, "role": 1, "store_id": 1, "organization_id": 1, "name": 1}).to_list(2000)
+
+    for u in users:
+        user_id = str(u["_id"])
+        email = u.get("email", "")
+        phone = u.get("phone", "")
+        role = u.get("role", "user")
+
+        conditions = []
+        if email:
+            conditions.append({"email": email})
+        if phone:
+            digits = ''.join(filter(str.isdigit, phone))[-10:]
+            if digits:
+                conditions.append({"phone": {"$regex": digits}})
+        if not conditions:
+            continue
+
+        link_update = {"linked_user_id": user_id, "linked_role": role, "updated_at": datetime.utcnow()}
+        if u.get("store_id"):
+            try:
+                sd = await db.stores.find_one({"_id": ObjectId(u["store_id"])}, {"name": 1})
+                if sd:
+                    link_update["linked_store_id"] = u["store_id"]
+                    link_update["linked_store_name"] = sd.get("name", "")
+            except Exception:
+                pass
+        if u.get("organization_id"):
+            try:
+                od = await db.organizations.find_one({"_id": ObjectId(u["organization_id"])}, {"name": 1})
+                if od:
+                    link_update["linked_org_name"] = od.get("name", "")
+            except Exception:
+                pass
+
+        r = await db.contacts.update_many(
+            {"$or": conditions, "linked_user_id": {"$exists": False}},
+            {"$set": link_update, "$addToSet": {"tags": {"$each": ["imos_user", f"imos_{role}"]}}},
+        )
+        linked += r.modified_count
+
+    return {"success": True, "contacts_linked": linked, "users_scanned": len(users)}
+
+
 @api_router.get("/health/deep")
 async def api_health_deep():
     """Deep health check including MongoDB ping — use for monitoring only, NOT as a liveness probe."""

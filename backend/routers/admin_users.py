@@ -345,6 +345,50 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
         except Exception as e:
             logger.error(f"Failed to auto-create contact for {email}: {e}")
     
+    # ── Universal contact link: find any existing contacts with same email/phone ──
+    # Works BOTH directions: Contact→User (already handled above with source_contact_id)
+    # AND User→Contact (admin creates user, contact already exists with same email/phone)
+    try:
+        search_conditions = []
+        if email:
+            search_conditions.append({"email": email})
+            search_conditions.append({"email_work": email})
+        if phone:
+            digits = ''.join(filter(str.isdigit, phone))[-10:]
+            if digits:
+                search_conditions.append({"phone": {"$regex": digits}})
+
+        if search_conditions:
+            link_update: dict = {
+                "linked_user_id": user_id,
+                "linked_role": user_role,
+                "updated_at": datetime.utcnow(),
+            }
+            if store_id:
+                try:
+                    sd = await get_db().stores.find_one({"_id": ObjectId(store_id)}, {"name": 1})
+                    if sd:
+                        link_update["linked_store_id"] = store_id
+                        link_update["linked_store_name"] = sd.get("name", "")
+                except Exception:
+                    pass
+            if organization_id:
+                try:
+                    od = await get_db().organizations.find_one({"_id": ObjectId(organization_id)}, {"name": 1})
+                    if od:
+                        link_update["linked_org_name"] = od.get("name", "")
+                except Exception:
+                    pass
+            role_tag = f"imos_{user_role}"
+            link_result = await get_db().contacts.update_many(
+                {"$or": search_conditions, "linked_user_id": {"$exists": False}},
+                {"$set": link_update, "$addToSet": {"tags": {"$each": ["imos_user", role_tag]}}},
+            )
+            if link_result.modified_count:
+                logger.info(f"Auto-linked {link_result.modified_count} contact(s) to user {user_id} ({email})")
+    except Exception as e:
+        logger.error(f"Failed to auto-link contacts for user {user_id}: {e}")
+
     return {
         "success": True,
         "user_id": user_id,
@@ -359,9 +403,6 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
         "temp_password": temp_password,
         "message": f"User created successfully. {'Invite email sent.' if invite_sent else ''} {'SMS sent.' if sms_sent else ''} {'Added to your contacts.' if contact_created else ''}".strip()
     }
-
-
-@router.get("/users")
 async def list_users(
     organization_id: Optional[str] = None,
     store_id: Optional[str] = None,

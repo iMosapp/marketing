@@ -44,7 +44,7 @@ export default function ContactsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [crmFilter, setCrmFilter] = useState<'all' | 'linked' | 'not_linked'>('all');
+  const [crmFilter, setCrmFilter] = useState<'all' | 'linked' | 'not_linked' | 'users'>('all');
   const [viewMode, setViewMode] = useState<'mine' | 'team'>('mine');
   const [sortMode, setSortMode] = useState<'alpha' | 'recent'>('recent');
   const [hasMore, setHasMore] = useState(false);
@@ -284,6 +284,8 @@ export default function ContactsScreen() {
       result = result.filter(c => c.crm_link_copied_at);
     } else if (crmFilter === 'not_linked') {
       result = result.filter(c => !c.crm_link_copied_at);
+    } else if (crmFilter === 'users') {
+      result = result.filter(c => c.linked_user_id);  // Contacts who are also app users
     }
     return result;
   }, [contacts, selectedTag, crmFilter]);
@@ -615,12 +617,12 @@ export default function ContactsScreen() {
           contentContainerStyle={styles.tagFilterContent}
         >
           {/* CRM filters first */}
-          {(['all', 'linked', 'not_linked'] as const).map(f => (
+          {(['all', 'linked', 'not_linked', 'users'] as const).map(f => (
             <TouchableOpacity
               key={`crm-${f}`}
               style={[
                 styles.tagFilterChip,
-                { backgroundColor: crmFilter === f ? '#C9A962' : colors.card },
+                { backgroundColor: crmFilter === f ? (f === 'users' ? '#007AFF' : '#C9A962') : colors.card },
               ]}
               onPress={() => {
                 setCrmFilter(crmFilter === f ? 'all' : f);
@@ -630,10 +632,10 @@ export default function ContactsScreen() {
             >
               <Text style={[
                 styles.tagFilterText,
-                { color: crmFilter === f ? '#000' : colors.textSecondary },
+                { color: crmFilter === f ? '#fff' : colors.textSecondary },
                 crmFilter === f && { fontWeight: '700' },
               ]}>
-                {f === 'all' ? 'All' : f === 'linked' ? 'CRM' : 'Non-CRM'}
+                {f === 'all' ? 'All' : f === 'linked' ? 'CRM' : f === 'not_linked' ? 'Non-CRM' : '👤 Users'}
               </Text>
             </TouchableOpacity>
           ))}
