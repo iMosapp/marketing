@@ -68,7 +68,10 @@ export function ProfileGallery({ userId, colors, onSetProfilePhoto }: Props) {
       try {
         const fd = new FormData();
         fd.append('file', file);
-        const res = await api.post(`/profile/${userId}/gallery`, fd);
+        // Explicitly set multipart — overrides axios global Content-Type: application/json
+        const res = await api.post(`/profile/${userId}/gallery`, fd, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
         if (res.data?.photo_url) {
           setPhotos(prev => [
             { photo_id: res.data.photo_id, photo_url: res.data.photo_url, thumbnail_url: res.data.thumbnail_url, created_at: new Date().toISOString() },
@@ -76,7 +79,11 @@ export function ProfileGallery({ userId, colors, onSetProfilePhoto }: Props) {
           ]);
         }
       } catch (err: any) {
-        showSimpleAlert('Error', err?.response?.data?.detail || 'Upload failed');
+        const detail = err?.response?.data?.detail;
+        const msg = typeof detail === 'string' ? detail
+          : Array.isArray(detail) ? 'Upload failed — try a smaller photo or different format'
+          : err?.message || 'Upload failed. Please try again.';
+        showSimpleAlert('Error', msg);
       } finally {
         setUploading(false);
       }
