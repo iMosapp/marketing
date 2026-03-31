@@ -190,7 +190,7 @@ export const onboardingAPI = {
 // ============= CONTACTS API =============
 export const contactsAPI = {
   getAll: async (userId: string, search?: string, viewMode?: string, sortBy?: string, skip = 0, limit = 50) => {
-    const params: any = { skip, limit };
+    const params: any = { skip, limit, paginated: true };
     if (search) params.search = search;
     if (viewMode) params.view_mode = viewMode;
     if (sortBy) params.sort_by = sortBy;

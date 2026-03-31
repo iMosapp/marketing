@@ -374,6 +374,8 @@ async def get_contacts(
     sort_by: Optional[str] = None,
     skip: int = 0,
     limit: int = 50,
+    paginated: bool = False,  # Set True by new frontend — returns {contacts, total, has_more}
+                              # Old clients get plain array for backward compatibility
 ):
     """Get contacts based on view mode.
     
@@ -524,7 +526,7 @@ async def get_contacts(
         "skip": skip,
         "limit": limit,
         "has_more": (skip + limit) < total,
-    }
+    } if paginated else results  # plain array for old clients
 
 @router.get("/{user_id}/{contact_id}", response_model=Contact)
 async def get_contact(user_id: str, contact_id: str):
