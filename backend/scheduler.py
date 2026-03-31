@@ -3,6 +3,7 @@ i'M On Social Campaign Scheduler
 Runs background jobs to process date-triggered campaigns and pending campaign step messages.
 """
 import asyncio
+import gc
 import logging
 import random
 import re
@@ -498,12 +499,14 @@ async def process_pending_campaign_steps():
     now = datetime.now(timezone.utc)
 
     try:
+        # Cap at 50 per run — prevents memory spikes from processing hundreds at once.
+        # Remaining enrollments will be picked up on the next 15-minute interval.
         pending = await db.campaign_enrollments.find({
             "status": "active",
             "next_send_at": {"$lte": now},
-        }).to_list(500)
+        }).limit(50).to_list(50)
 
-        logger.info(f"[Scheduler] Found {len(pending)} pending campaign messages")
+        logger.info(f"[Scheduler] Found {len(pending)} pending campaign messages (processing up to 50/run)")
 
         processed = 0
         for enrollment in pending:
@@ -828,6 +831,7 @@ async def process_pending_campaign_steps():
         logger.info(f"[Scheduler] Campaign steps complete. Processed {processed}/{len(pending)}.")
         _user_cache.clear()
         _store_cache.clear()
+        gc.collect()  # Free memory after processing batch
     except Exception as e:
         logger.error(f"[Scheduler] Fatal error in campaign step processing: {e}")
         _scheduler_state["errors"] = (_scheduler_state["errors"] + [str(e)])[-20:]
@@ -960,6 +964,8 @@ async def process_sold_deliveries_job():
         msg = f"[Scheduler] Error in sold deliveries: {e}"
         logger.error(msg)
         _scheduler_state["errors"] = (_scheduler_state["errors"] + [msg])[-20:]
+    finally:
+        gc.collect()  # Free memory after delivery processing
 
 
 
