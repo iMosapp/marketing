@@ -306,8 +306,14 @@ export default function MyAccountScreen() {
 
         {/* ── Cover Photo + Avatar ─────────────────────────────────────────── */}
         <View style={s.coverBlock}>
-          {/* Cover photo — just display, NOT tappable */}
-          <View style={s.coverTouch}>
+          {/* Cover photo — entire area is tappable to change */}
+          <TouchableOpacity
+            onPress={handleCoverPick}
+            disabled={coverUploading}
+            activeOpacity={0.85}
+            style={s.coverTouch}
+            testID="cover-photo-btn"
+          >
             {coverPhotoUrl ? (
               <Image source={{ uri: resolvePhotoUrl(coverPhotoUrl) || '' }} style={s.cover} contentFit="cover" placeholder={null} />
             ) : (
@@ -323,12 +329,8 @@ export default function MyAccountScreen() {
               colors={['transparent', 'rgba(0,0,0,0.7)']}
               style={s.coverGrad}
             />
-            <TouchableOpacity
-              onPress={handleCoverPick}
-              disabled={coverUploading}
-              style={s.coverEditBtn}
-              testID="cover-photo-btn"
-            >
+            {/* Camera overlay — visible indicator the whole area is tappable */}
+            <View style={s.coverEditBtn} pointerEvents="none">
               {coverUploading ? (
                 <ActivityIndicator size="small" color="#C9A962" />
               ) : (
@@ -339,8 +341,8 @@ export default function MyAccountScreen() {
                   </Text>
                 </>
               )}
-            </TouchableOpacity>
-          </View>
+            </View>
+          </TouchableOpacity>
 
           {/* Avatar + completeness ring */}
           <View style={s.avatarArea}>
@@ -427,19 +429,19 @@ export default function MyAccountScreen() {
             </TouchableOpacity>
           )}
 
-          {/* Role badge */}
+          {/* Role badge — userSelect:none prevents iOS text selection when cover is tapped */}
           {roleLabel && (
             <View style={[s.roleBadge, { backgroundColor: user?.role === 'super_admin' ? '#FF3B3020' : '#C9A96220' }]}>
               <Ionicons name="shield-checkmark" size={13}
                 color={user?.role === 'super_admin' ? '#FF3B30' : '#C9A962'} />
-              <Text style={[s.roleTxt, { color: user?.role === 'super_admin' ? '#FF3B30' : '#C9A962' }]}>
+              <Text style={[s.roleTxt, { color: user?.role === 'super_admin' ? '#FF3B30' : '#C9A962' }, { userSelect: 'none' } as any]}>
                 {roleLabel}
               </Text>
             </View>
           )}
 
           {/* Email */}
-          <Text style={s.emailText}>{user?.email}</Text>
+          <Text style={[s.emailText, { userSelect: 'none' } as any]}>{user?.email}</Text>
 
           {/* ── Profile completeness ── */}
           <View style={s.completenessBar}>
