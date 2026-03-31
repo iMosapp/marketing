@@ -134,7 +134,7 @@ async def get_filtered_contacts(filters: dict, user_id: str) -> List[dict]:
             query["purchase_date"] = date_query
     
     # Get contacts
-    contacts = await get_database().contacts.find(query, {"_id": 1, "phone": 1, "first_name": 1, "last_name": 1, "email": 1}).to_list(10000)
+    contacts = await get_database().contacts.find(query, {"_id": 1, "phone": 1, "first_name": 1, "last_name": 1, "email": 1}).to_list(2000)
     return contacts
 
 
@@ -382,7 +382,7 @@ async def send_broadcast(broadcast_id: str, user_id: str):
     contacts = await get_database().contacts.find(
         {"_id": {"$in": [ObjectId(rid) for rid in recipient_ids]}},
         {"_id": 1, "phone": 1, "first_name": 1}
-    ).to_list(10000)
+    ).to_list(2000)
     
     sent_count = 0
     failed_count = 0

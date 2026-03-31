@@ -344,7 +344,7 @@ async def recalculate_member_metrics(member_id: str):
     db = get_db()
     
     # Get all activities for this member
-    activities = await db.member_activities.find({"member_id": member_id}).to_list(None)
+    activities = await db.member_activities.find({"member_id": member_id}).to_list(500)
     
     if not activities:
         return
@@ -465,13 +465,13 @@ async def get_directory_stats():
         {"$match": {"is_active": True}},
         {"$group": {"_id": "$role", "count": {"$sum": 1}}},
     ]
-    role_counts = await db.team_members.aggregate(pipeline).to_list(None)
+    role_counts = await db.team_members.aggregate(pipeline).to_list(500)
     
     # Calculate totals
     total_members = sum(r["count"] for r in role_counts)
     
     # Aggregate performance metrics
-    all_members = await db.team_members.find({"is_active": True}).to_list(None)
+    all_members = await db.team_members.find({"is_active": True}).to_list(500)
     
     total_revenue = sum(m.get("metrics", {}).get("total_revenue", 0) for m in all_members)
     total_quotes_sent = sum(m.get("metrics", {}).get("quotes_sent", 0) for m in all_members)

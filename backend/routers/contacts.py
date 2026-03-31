@@ -432,10 +432,10 @@ async def get_contacts(user_id: str, search: Optional[str] = None, view_mode: Op
             {"$match": {"user_id": user_id}},
             {"$group": {"_id": "$contact_id", "last_activity": {"$max": "$timestamp"}}},
         ]
-        activity_results = await db.contact_events.aggregate(activity_pipeline).to_list(5000)
+        activity_results = await db.contact_events.aggregate(activity_pipeline).to_list(2000)
         activity_map = {r["_id"]: r["last_activity"] for r in activity_results}
 
-        contacts = await db.contacts.find(query, {"photo": 0}).to_list(5000)
+        contacts = await db.contacts.find(query, {"photo": 0}).to_list(2000)
 
         # Sort: contacts with recent activity first, then by updated_at as fallback
         epoch = datetime(2000, 1, 1)
@@ -447,7 +447,7 @@ async def get_contacts(user_id: str, search: Optional[str] = None, view_mode: Op
             c.pop("_last_activity", None)
     else:
         sort_spec = [("first_name", 1), ("last_name", 1)]
-        contacts = await db.contacts.find(query, {"photo": 0}).sort(sort_spec).to_list(5000)
+        contacts = await db.contacts.find(query, {"photo": 0}).sort(sort_spec).to_list(2000)
     
     # For team view: enrich with salesperson names
     salesperson_map = {}
@@ -1216,7 +1216,7 @@ async def regenerate_thumbnails():
     contacts = await db.contacts.find(
         {"photo": {"$exists": True, "$nin": [None, "", "None"]}},
         {"_id": 1, "photo": 1}
-    ).to_list(5000)
+    ).to_list(2000)
     
     updated = 0
     failed = 0

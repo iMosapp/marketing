@@ -718,7 +718,7 @@ async def convert_to_individual_helper(user_id: str, x_user_id: str = None):
     # 1. Restore archived personal contacts back to the contacts collection
     archived = await db.archived_contacts.find(
         {"original_user_id": user_id}
-    ).to_list(None)
+    ).to_list(500)
     
     restored_count = 0
     if archived:
@@ -809,7 +809,7 @@ async def reactivate_user_post(user_id: str, x_user_id: str = Header(None, alias
     )
     
     # Also restore any archived personal contacts
-    archived = await db.archived_contacts.find({"original_user_id": user_id}).to_list(None)
+    archived = await db.archived_contacts.find({"original_user_id": user_id}).to_list(500)
     archive_restored = 0
     if archived:
         for contact in archived:

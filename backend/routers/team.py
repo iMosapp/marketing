@@ -361,7 +361,7 @@ async def bulk_transfer_customers(data: BulkTransferRequest):
     # Get transferred contact IDs for related transfers
     transferred_contacts = await db.contacts.find(
         {"user_id": data.to_user_id, "transferred_from": data.from_user_id}
-    ).to_list(None)
+    ).to_list(500)
     contact_ids = [str(c["_id"]) for c in transferred_contacts]
     
     # Transfer conversations
@@ -478,7 +478,7 @@ async def preview_transfer(
     contacts_count = await db.contacts.count_documents(contact_query)
     
     # Get contact IDs for related counts
-    contacts = await db.contacts.find(contact_query, {"_id": 1}).to_list(None)
+    contacts = await db.contacts.find(contact_query, {"_id": 1}).to_list(500)
     contact_ids = [str(c["_id"]) for c in contacts]
     
     conversations_count = await db.conversations.count_documents(

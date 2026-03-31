@@ -330,7 +330,7 @@ async def _run_date_triggers_for_user(db, user_id: str) -> int:
 
             contacts = await db.contacts.find(
                 {**base_filter, date_field: {"$exists": True, "$ne": None}}
-            ).to_list(1000)
+            ).to_list(200)
 
             for contact in contacts:
                 dt = contact.get(date_field)
@@ -348,7 +348,7 @@ async def _run_date_triggers_for_user(db, user_id: str) -> int:
             if holiday and holiday["month"] == today_month and holiday["day"] == today_day:
                 contacts = await db.contacts.find(
                     {**base_filter, "tags": {"$in": ["Holiday", "Holidays", "holiday", "holidays"]}}
-                ).to_list(1000)
+                ).to_list(200)
                 contacts_to_message = contacts
 
         for contact in contacts_to_message:
@@ -808,7 +808,7 @@ async def generate_daily_system_tasks():
         users = await db.users.find(
             {"is_active": True, "status": {"$ne": "deactivated"}},
             {"_id": 1}
-        ).to_list(1000)
+        ).to_list(200)
 
         total_created = 0
         for u in users:
