@@ -179,6 +179,7 @@ export default function ThreadScreen() {
   const [isRecording, setIsRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const recordingRef = useRef<Audio.Recording | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedMedia, setSelectedMedia] = useState<{uri: string, type: string, name: string} | null>(null);
   const [sendingMedia, setSendingMedia] = useState(false);
@@ -1335,104 +1336,85 @@ export default function ThreadScreen() {
       if (isRecording) {
         // Stop recording and transcribe
         setIsRecording(false);
-        
+
+        if (IS_WEB) {
+          // Web: stop MediaRecorder
+          if (mediaRecorderRef.current) {
+            mediaRecorderRef.current.stop();
+          }
+          return;
+        }
+
         if (recordingRef.current) {
           setTranscribing(true);
-          
           await recordingRef.current.stopAndUnloadAsync();
           const uri = recordingRef.current.getURI();
           recordingRef.current = null;
-          
           if (uri) {
-            // Create form data to send to backend
             const formData = new FormData();
-            
-            if (IS_WEB) {
-              // On web, audioUri is a blob URL - fetch it and create proper file
-              const response = await fetch(uri);
-              const blob = await response.blob();
-              formData.append('file', blob, 'recording.webm');
-            } else {
-              formData.append('file', {
-                uri,
-                type: 'audio/m4a',
-                name: 'recording.m4a',
-              } as any);
-            }
-            
+            formData.append('file', { uri, type: 'audio/m4a', name: 'recording.m4a' } as any);
             try {
-              const response = await api.post('/voice/transcribe', formData, {
-                headers: {
-                  'Content-Type': 'multipart/form-data',
-                },
-              });
-              
+              const response = await api.post('/voice/transcribe', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
               if (response.data.success && response.data.text) {
-                // Append transcribed text to message
                 setMessage(prev => prev ? `${prev} ${response.data.text}` : response.data.text);
-              } else if (response.data.success && !response.data.text) {
-                // Empty transcription (silence) - no error, just don't add anything
-              } else {
+              } else if (!response.data.success) {
                 showAlert('Transcription Error', response.data.error || 'Failed to transcribe audio');
               }
-            } catch (error: any) {
-              console.error('Transcription error:', error);
-              showAlert('Error', 'Failed to transcribe audio. Please try again.');
-            }
+            } catch { showAlert('Error', 'Failed to transcribe audio. Please try again.'); }
           }
-          
           setTranscribing(false);
         }
       } else {
         // Start recording
+        if (IS_WEB) {
+          // Web: use MediaRecorder (same as contact page — works on iOS PWA)
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          const chunks: BlobPart[] = [];
+          const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
+          recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+          recorder.onstop = async () => {
+            stream.getTracks().forEach(t => t.stop());
+            setTranscribing(true);
+            const blob = new Blob(chunks, { type: 'audio/webm;codecs=opus' });
+            const formData = new FormData();
+            formData.append('file', blob, 'recording.webm');
+            try {
+              const response = await api.post('/voice/transcribe', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+              if (response.data.success && response.data.text) {
+                setMessage(prev => prev ? `${prev} ${response.data.text}` : response.data.text);
+              } else if (!response.data.success) {
+                showAlert('Transcription Error', response.data.error || 'Failed to transcribe audio');
+              }
+            } catch { showAlert('Error', 'Failed to transcribe. Try again.'); }
+            finally { setTranscribing(false); }
+          };
+          recorder.start();
+          mediaRecorderRef.current = recorder;
+          setIsRecording(true);
+          // Auto-stop after 60s
+          setTimeout(() => { if (mediaRecorderRef.current?.state === 'recording') mediaRecorderRef.current.stop(); }, 60000);
+          return;
+        }
+
+        // Native (iOS app / Android): use expo-av
         const { status } = await Audio.requestPermissionsAsync();
         if (status !== 'granted') {
           showAlert('Permission Denied', 'Microphone permission is required for voice recording.');
           return;
         }
-        
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: true,
-          playsInSilentModeIOS: true,
-        });
-        
-        // Platform-specific recording options
-        const recordingOptions = IS_WEB 
-          ? {
-              ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
-              isMeteringEnabled: false,
-              web: {
-                mimeType: 'audio/webm;codecs=opus',
-                bitsPerSecond: 128000,
-              },
-            }
-          : Audio.RecordingOptionsPresets.HIGH_QUALITY;
-        
+        await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+        const recordingOptions = { ...Audio.RecordingOptionsPresets.HIGH_QUALITY, isMeteringEnabled: false };
         const recording = new Audio.Recording();
         await recording.prepareToRecordAsync(recordingOptions);
         await recording.startAsync();
-        
         recordingRef.current = recording;
         setIsRecording(true);
-        
-        // On web, auto-stop after 30 seconds since there's no visual feedback
-        if (IS_WEB) {
-          setTimeout(() => {
-            if (recordingRef.current && isRecording) {
-              handleVoiceToText(); // Stop recording
-            }
-          }, 30000);
-        }
       }
     } catch (error) {
       console.error('Recording error:', error);
       setIsRecording(false);
       setTranscribing(false);
-      if (IS_WEB) {
-        showAlert('Microphone Error', 'Could not access microphone. Please ensure you have granted microphone permission in your browser.');
-      } else {
-        showAlert('Error', 'Failed to record audio. Please try again.');
-      }
+      showAlert('Microphone Error', 'Could not access microphone. Please check your browser permissions.');
     }
   };
   
