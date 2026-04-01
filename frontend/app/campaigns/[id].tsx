@@ -274,20 +274,14 @@ const { showToast } = useToast();
   
   const getDelayLabel = (step: SequenceStep, index: number) => {
     const parts = [];
-    if (step.delayMonths > 0) {
-      parts.push(`${step.delayMonths} month${step.delayMonths > 1 ? 's' : ''}`);
-    }
-    if (step.delayDays > 0) {
-      parts.push(`${step.delayDays} day${step.delayDays > 1 ? 's' : ''}`);
-    }
-    if (step.delayHours > 0) {
-      parts.push(`${step.delayHours} hour${step.delayHours > 1 ? 's' : ''}`);
-    }
-    
-    if (parts.length === 0) {
-      return index === 0 ? 'Immediately when triggered' : 'Immediately after previous';
-    }
-    return index === 0 ? `${parts.join(' ')} after trigger` : `After ${parts.join(' ')}`;
+    if (step.delayMonths > 0) parts.push(`${step.delayMonths}mo`);
+    if (step.delayDays > 0) parts.push(`${step.delayDays}d`);
+    if (step.delayHours > 0) parts.push(`${step.delayHours}hr`);
+    if ((step.delayMinutes || 0) > 0) parts.push(`${step.delayMinutes}min`);
+
+    if (parts.length === 0) return index === 0 ? 'Immediately when triggered' : 'Immediately after previous';
+    const timeStr = parts.join(' ');
+    return index === 0 ? `${timeStr} after trigger` : `${timeStr} after previous`;
   };
   
   const handleSave = async () => {
@@ -692,8 +686,8 @@ const { showToast } = useToast();
                       </View>
                     </ScrollView>
 
-                    {/* Custom fields — always visible for fine-tuning */}
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {/* Custom fields — compact row, all 4 visible on any screen */}
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
                       {[
                         { key: 'delayMonths', label: 'Mo', max: 24 },
                         { key: 'delayDays', label: 'Days', max: 365 },
@@ -701,22 +695,22 @@ const { showToast } = useToast();
                         { key: 'delayMinutes', label: 'Min', max: 59 },
                       ].map(({ key, label, max }) => (
                         <View key={key} style={{ flex: 1, alignItems: 'center' }}>
-                          <Text style={[styles.delayInputLabel, { marginBottom: 4 }]}>{label}</Text>
-                          <View style={[styles.stepper, { borderRadius: 10 }]}>
+                          <Text style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 3, fontWeight: '600' }}>{label}</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 8, borderWidth: 1, borderColor: colors.borderLight, overflow: 'hidden' }}>
                             <TouchableOpacity
-                              style={styles.stepperButton}
-                              onPress={() => updateSequenceStep(step.id, key, Math.max(0, (step as any)[key] - 1))}
+                              style={{ padding: 6 }}
+                              onPress={() => updateSequenceStep(step.id, key, Math.max(0, ((step as any)[key] ?? 0) - 1))}
                             >
-                              <Ionicons name="remove" size={18} color={colors.text} />
+                              <Text style={{ fontSize: 15, color: colors.text, fontWeight: '700', lineHeight: 18 }}>−</Text>
                             </TouchableOpacity>
-                            <Text style={[styles.stepperValue, { minWidth: 28, textAlign: 'center' }]}>
+                            <Text style={{ fontSize: 13, color: colors.text, fontWeight: '700', minWidth: 20, textAlign: 'center' }}>
                               {(step as any)[key] ?? 0}
                             </Text>
                             <TouchableOpacity
-                              style={styles.stepperButton}
+                              style={{ padding: 6 }}
                               onPress={() => updateSequenceStep(step.id, key, Math.min(max, ((step as any)[key] ?? 0) + 1))}
                             >
-                              <Ionicons name="add" size={18} color={colors.text} />
+                              <Text style={{ fontSize: 15, color: colors.text, fontWeight: '700', lineHeight: 18 }}>+</Text>
                             </TouchableOpacity>
                           </View>
                         </View>

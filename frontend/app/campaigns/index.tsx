@@ -25,6 +25,18 @@ export default function CampaignsScreen() {
   const user = useAuthStore((state) => state.user);
   
   const [campaigns, setCampaigns] = useState<any[]>([]);
+
+  const moveCampaign = (id: string, dir: 'up' | 'down') => {
+    setCampaigns(prev => {
+      const idx = prev.findIndex(c => (c._id || c.id) === id);
+      if (idx < 0) return prev;
+      const newIdx = dir === 'up' ? idx - 1 : idx + 1;
+      if (newIdx < 0 || newIdx >= prev.length) return prev;
+      const next = [...prev];
+      [next[idx], next[newIdx]] = [next[newIdx], next[idx]];
+      return next;
+    });
+  };
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
@@ -113,6 +125,23 @@ export default function CampaignsScreen() {
         onPress={() => router.push(`/campaigns/${item._id || item.id}`)}
         activeOpacity={0.7}
       >
+        {/* Reorder arrows */}
+        <View style={{ justifyContent: 'center', marginRight: 6, gap: 2 }}>
+          <TouchableOpacity
+            onPress={(e) => { e.stopPropagation?.(); moveCampaign(item._id || item.id, 'up'); }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            data-testid={`move-up-${item._id}`}
+          >
+            <Ionicons name="chevron-up" size={16} color={campaigns.indexOf(item) === 0 ? colors.borderLight : colors.textSecondary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={(e) => { e.stopPropagation?.(); moveCampaign(item._id || item.id, 'down'); }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            data-testid={`move-down-${item._id}`}
+          >
+            <Ionicons name="chevron-down" size={16} color={campaigns.indexOf(item) === campaigns.length - 1 ? colors.borderLight : colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
         <View style={[styles.iconContainer, { backgroundColor: `${iconData.color}20` }]}>
           <Ionicons name={iconData.icon as any} size={24} color={iconData.color} />
         </View>

@@ -513,8 +513,8 @@ def calculate_next_send_date(step: dict) -> datetime:
             hours=delay_hours,
             days=delay_days + delay_months * 30,
         )
-
-    # Legacy unit-based format
+    # Zero delay = send immediately (schedule 30s in future to give pre-queue time to register)
+    return now + timedelta(seconds=30)
     delay_value = step.get('delay_value', 1)
     delay_unit = step.get('delay_unit', 'days')
     
