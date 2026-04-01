@@ -41,6 +41,8 @@ interface SequenceStep {
   delay_days?: number;
   delayMonths: number;
   delay_months?: number;
+  delayMinutes: number;
+  delay_minutes?: number;
   media_urls: string[];
 }
 
@@ -136,11 +138,12 @@ const { showToast } = useToast();
         delayHours: s.delay_hours || 0,
         delayDays: s.delay_days || 0,
         delayMonths: s.delay_months || 0,
+        delayMinutes: s.delay_minutes || 0,
         media_urls: s.media_urls || [],
       }));
       
       if (seqs.length === 0) {
-        seqs.push({ id: '1', step: 1, actionType: 'message', cardType: '', message: data.message_template || '', delayHours: 0, delayDays: 0, delayMonths: 0, media_urls: [] });
+        seqs.push({ id: '1', step: 1, actionType: 'message', cardType: '', message: data.message_template || '', delayHours: 0, delayDays: 0, delayMonths: 0, delayMinutes: 0, media_urls: [] });
       }
       
       setSequences(seqs);
@@ -182,6 +185,7 @@ const { showToast } = useToast();
         delayHours: 0,
         delayDays: 0, 
         delayMonths: (lastStep?.delayMonths || 0) + 1,
+        delayMinutes: 0,
         media_urls: [],
       },
     ]);
@@ -320,6 +324,7 @@ const { showToast } = useToast();
           delay_hours: s.delayHours,
           delay_days: s.delayDays,
           delay_months: s.delayMonths,
+          delay_minutes: s.delayMinutes || 0,
           media_urls: s.media_urls,
         })),
       };
@@ -628,65 +633,98 @@ const { showToast } = useToast();
                 </TouchableOpacity>
               </View>
               
-              {/* Delay Controls — shown for ALL steps including step 1 */}
-              <View style={styles.delayControls}>
-                <View style={styles.delayInput}>
-                  <Text style={styles.delayInputLabel}>Months</Text>
-                  <View style={styles.stepper}>
-                    <TouchableOpacity 
-                      style={styles.stepperButton}
-                      onPress={() => updateSequenceStep(step.id, 'delayMonths', Math.max(0, step.delayMonths - 1))}
-                    >
-                      <Ionicons name="remove" size={20} color={colors.text} />
-                    </TouchableOpacity>
-                    <Text style={styles.stepperValue}>{step.delayMonths}</Text>
-                    <TouchableOpacity 
-                      style={styles.stepperButton}
-                      onPress={() => updateSequenceStep(step.id, 'delayMonths', step.delayMonths + 1)}
-                    >
-                      <Ionicons name="add" size={20} color={colors.text} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-                
-                <View style={styles.delayInput}>
-                  <Text style={styles.delayInputLabel}>Days</Text>
-                  <View style={styles.stepper}>
-                    <TouchableOpacity 
-                      style={styles.stepperButton}
-                      onPress={() => updateSequenceStep(step.id, 'delayDays', Math.max(0, step.delayDays - 1))}
-                    >
-                      <Ionicons name="remove" size={20} color={colors.text} />
-                    </TouchableOpacity>
-                    <Text style={styles.stepperValue}>{step.delayDays}</Text>
-                    <TouchableOpacity 
-                      style={styles.stepperButton}
-                      onPress={() => updateSequenceStep(step.id, 'delayDays', step.delayDays + 1)}
-                    >
-                      <Ionicons name="add" size={20} color={colors.text} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
+              {/* ── DELAY CONTROLS — Quick presets + custom fields ─────── */}
+              {(() => {
+                const PRESETS = [
+                  { label: 'Now', mo: 0, d: 0, h: 0, m: 0 },
+                  { label: '5 min', mo: 0, d: 0, h: 0, m: 5 },
+                  { label: '10 min', mo: 0, d: 0, h: 0, m: 10 },
+                  { label: '15 min', mo: 0, d: 0, h: 0, m: 15 },
+                  { label: '30 min', mo: 0, d: 0, h: 0, m: 30 },
+                  { label: '1 hr', mo: 0, d: 0, h: 1, m: 0 },
+                  { label: '4 hrs', mo: 0, d: 0, h: 4, m: 0 },
+                  { label: '1 day', mo: 0, d: 1, h: 0, m: 0 },
+                  { label: '3 days', mo: 0, d: 3, h: 0, m: 0 },
+                  { label: '1 week', mo: 0, d: 7, h: 0, m: 0 },
+                  { label: '2 weeks', mo: 0, d: 14, h: 0, m: 0 },
+                  { label: '1 month', mo: 1, d: 0, h: 0, m: 0 },
+                  { label: '3 months', mo: 3, d: 0, h: 0, m: 0 },
+                  { label: '6 months', mo: 6, d: 0, h: 0, m: 0 },
+                  { label: '1 year', mo: 12, d: 0, h: 0, m: 0 },
+                ];
+                const activePreset = PRESETS.find(p =>
+                  p.mo === step.delayMonths && p.d === step.delayDays &&
+                  p.h === step.delayHours && p.m === (step.delayMinutes || 0)
+                );
+                const applyPreset = (p: typeof PRESETS[0]) => {
+                  updateSequenceStep(step.id, 'delayMonths', p.mo);
+                  updateSequenceStep(step.id, 'delayDays', p.d);
+                  updateSequenceStep(step.id, 'delayHours', p.h);
+                  updateSequenceStep(step.id, 'delayMinutes', p.m);
+                };
+                return (
+                  <View style={{ marginTop: 4 }}>
+                    <Text style={[styles.delayInputLabel, { marginBottom: 8 }]}>Send after</Text>
+                    {/* Preset chips */}
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        {PRESETS.map(p => {
+                          const isActive = activePreset?.label === p.label;
+                          return (
+                            <TouchableOpacity
+                              key={p.label}
+                              onPress={() => applyPreset(p)}
+                              style={{
+                                paddingHorizontal: 12, paddingVertical: 7,
+                                borderRadius: 20,
+                                backgroundColor: isActive ? '#C9A962' : colors.card,
+                                borderWidth: 1,
+                                borderColor: isActive ? '#C9A962' : colors.borderLight,
+                              }}
+                              data-testid={`delay-preset-${p.label}`}
+                            >
+                              <Text style={{ fontSize: 13, fontWeight: isActive ? '700' : '500', color: isActive ? '#000' : colors.text }}>
+                                {p.label}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </ScrollView>
 
-                <View style={styles.delayInput}>
-                  <Text style={styles.delayInputLabel}>Hours</Text>
-                  <View style={styles.stepper}>
-                    <TouchableOpacity 
-                      style={styles.stepperButton}
-                      onPress={() => updateSequenceStep(step.id, 'delayHours', Math.max(0, step.delayHours - 1))}
-                    >
-                      <Ionicons name="remove" size={20} color={colors.text} />
-                    </TouchableOpacity>
-                    <Text style={styles.stepperValue}>{step.delayHours}</Text>
-                    <TouchableOpacity 
-                      style={styles.stepperButton}
-                      onPress={() => updateSequenceStep(step.id, 'delayHours', step.delayHours + 1)}
-                    >
-                      <Ionicons name="add" size={20} color={colors.text} />
-                    </TouchableOpacity>
+                    {/* Custom fields — always visible for fine-tuning */}
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      {[
+                        { key: 'delayMonths', label: 'Mo', max: 24 },
+                        { key: 'delayDays', label: 'Days', max: 365 },
+                        { key: 'delayHours', label: 'Hrs', max: 23 },
+                        { key: 'delayMinutes', label: 'Min', max: 59 },
+                      ].map(({ key, label, max }) => (
+                        <View key={key} style={{ flex: 1, alignItems: 'center' }}>
+                          <Text style={[styles.delayInputLabel, { marginBottom: 4 }]}>{label}</Text>
+                          <View style={[styles.stepper, { borderRadius: 10 }]}>
+                            <TouchableOpacity
+                              style={styles.stepperButton}
+                              onPress={() => updateSequenceStep(step.id, key, Math.max(0, (step as any)[key] - 1))}
+                            >
+                              <Ionicons name="remove" size={18} color={colors.text} />
+                            </TouchableOpacity>
+                            <Text style={[styles.stepperValue, { minWidth: 28, textAlign: 'center' }]}>
+                              {(step as any)[key] ?? 0}
+                            </Text>
+                            <TouchableOpacity
+                              style={styles.stepperButton}
+                              onPress={() => updateSequenceStep(step.id, key, Math.min(max, ((step as any)[key] ?? 0) + 1))}
+                            >
+                              <Ionicons name="add" size={18} color={colors.text} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
                   </View>
-                </View>
-              </View>
+                );
+              })()}
               
               {step.actionType === 'send_card' ? (
                 /* Card Type Picker */

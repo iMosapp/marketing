@@ -498,18 +498,23 @@ async def check_campaign_permission(user_id: str, action: str = "edit") -> dict:
     return {"allowed": False, "reason": "Unknown role"}
 
 def calculate_next_send_date(step: dict) -> datetime:
-    """Calculate when the next message should be sent based on step configuration.
-    Supports delay_hours, delay_days, delay_months fields.
+    """Calculate send time from step delay fields.
+    Supports delay_months, delay_days, delay_hours, delay_minutes (Phase 1 addition).
     """
     now = datetime.utcnow()
+    delay_minutes = step.get('delay_minutes', 0) or 0
+    delay_hours = step.get('delay_hours', 0) or 0
+    delay_days = step.get('delay_days', 0) or 0
+    delay_months = step.get('delay_months', 0) or 0
 
-    delay_hours = step.get('delay_hours', 0)
-    delay_days = step.get('delay_days', 0)
-    delay_months = step.get('delay_months', 0)
-    if delay_hours or delay_days or delay_months:
-        return now + timedelta(hours=delay_hours, days=delay_days + delay_months * 30)
+    if delay_minutes or delay_hours or delay_days or delay_months:
+        return now + timedelta(
+            minutes=delay_minutes,
+            hours=delay_hours,
+            days=delay_days + delay_months * 30,
+        )
 
-    # Legacy fields
+    # Legacy unit-based format
     delay_value = step.get('delay_value', 1)
     delay_unit = step.get('delay_unit', 'days')
     
@@ -944,8 +949,9 @@ async def enroll_contact_in_campaign(user_id: str, campaign_id: str, contact_id:
         for i, step in enumerate(sequences):
             # Accumulate delays: step 1 fires immediately (delay 0), step 2 adds its delay on top, etc.
             cumulative += timedelta(
-                hours=step.get('delay_hours', 0),
-                days=step.get('delay_days', 0) + step.get('delay_months', 0) * 30
+                minutes=step.get('delay_minutes', 0) or 0,
+                hours=step.get('delay_hours', 0) or 0,
+                days=(step.get('delay_days', 0) or 0) + (step.get('delay_months', 0) or 0) * 30
             )
             pending_docs.append({
                 "user_id": user_id,
