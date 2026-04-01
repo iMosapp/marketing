@@ -128,15 +128,6 @@ export default function TemplatesSettings() {
   };
 
   const handleDelete = async (template: Template) => {
-    if (template.is_default) {
-      if (Platform.OS === 'web') {
-        window.alert('Default templates cannot be deleted');
-      } else {
-        showAlert('Cannot Delete', 'Default templates cannot be deleted');
-      }
-      return;
-    }
-
     const doDelete = async () => {
       if (!user?._id) return;
       try {
@@ -153,13 +144,13 @@ export default function TemplatesSettings() {
     };
 
     if (Platform.OS === 'web') {
-      if (window.confirm(`Are you sure you want to delete "${template.name}"?`)) {
+      if (window.confirm(`Delete "${template.name}"?`)) {
         await doDelete();
       }
     } else {
       showAlert(
         'Delete Template',
-        `Are you sure you want to delete "${template.name}"?`,
+        `Delete "${template.name}"?`,
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Delete', style: 'destructive', onPress: doDelete },
@@ -236,14 +227,13 @@ export default function TemplatesSettings() {
                       <Text style={styles.defaultBadgeText}>Default</Text>
                     </View>
                   )}
-                  {!template.is_default && (
-                    <TouchableOpacity
-                      style={styles.deleteButton}
-                      onPress={() => handleDelete(template)}
-                    >
-                      <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-                    </TouchableOpacity>
-                  )}
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => handleDelete(template)}
+                    data-testid={`delete-template-${template._id}`}
+                  >
+                    <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                  </TouchableOpacity>
                 </View>
               </View>
               <Text style={styles.templateContent} numberOfLines={2}>

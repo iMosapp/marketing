@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
-import { showSimpleAlert } from '../../services/alert';
+import { showSimpleAlert, showAlert } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
 const ICONS: Record<string, string> = {
@@ -64,6 +64,29 @@ export default function ManageCardTemplatesPage() {
       fetchTemplates();
     } catch { showSimpleAlert('Error', 'Failed to save template'); }
     finally { setSaving(false); }
+  };
+
+  const deleteTemplate = async (template: any) => {
+    if (!user?.store_id) return;
+    const card_type = template.card_type;
+    if (!card_type.startsWith('custom_')) {
+      showSimpleAlert('Cannot Delete', 'Only custom card templates can be deleted.');
+      return;
+    }
+    const doDelete = async () => {
+      try {
+        await api.delete(`/congrats/template/${user.store_id}/${card_type}`);
+        fetchTemplates();
+      } catch { showSimpleAlert('Error', 'Failed to delete template'); }
+    };
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Delete "${template.headline || card_type}" card template?`)) doDelete();
+    } else {
+      showAlert('Delete Card Template', `Delete "${template.headline || card_type}"?`, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: doDelete },
+      ]);
+    }
   };
 
   if (loading) {
@@ -134,16 +157,28 @@ export default function ManageCardTemplatesPage() {
       <ScrollView style={s.content}>
         <Text style={s.sectionNote}>Customize the look and message for each card type. These settings apply to all users in your store.</Text>
         {templates.map(t => (
-          <TouchableOpacity key={t.card_type} style={s.card} onPress={() => setEditing(t)} data-testid={`template-${t.card_type}`}>
-            <View style={[s.cardIcon, { backgroundColor: t.accent_color + '20' }]}>
-              <Ionicons name={(ICONS[t.card_type] || 'gift') as any} size={24} color={t.accent_color} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.cardTitle}>{t.headline}</Text>
-              <Text style={s.cardSub}>{t.card_type.startsWith('custom_') ? 'Custom' : t.card_type.charAt(0).toUpperCase() + t.card_type.slice(1)} Card{t.customized ? ' (Customized)' : ''}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-          </TouchableOpacity>
+          <View key={t.card_type} style={[s.card, { flexDirection: 'row', alignItems: 'center' }]}>
+            <TouchableOpacity style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }} onPress={() => setEditing(t)} data-testid={`template-${t.card_type}`}>
+              <View style={[s.cardIcon, { backgroundColor: t.accent_color + '20' }]}>
+                <Ionicons name={(ICONS[t.card_type] || 'gift') as any} size={24} color={t.accent_color} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.cardTitle}>{t.headline}</Text>
+                <Text style={s.cardSub}>{t.card_type.startsWith('custom_') ? 'Custom' : t.card_type.charAt(0).toUpperCase() + t.card_type.slice(1)} Card{t.customized ? ' (Customized)' : ''}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+            {/* Delete button — only for custom card types */}
+            {t.card_type.startsWith('custom_') && (
+              <TouchableOpacity
+                onPress={() => deleteTemplate(t)}
+                style={{ padding: 10, marginLeft: 4 }}
+                data-testid={`delete-card-template-${t.card_type}`}
+              >
+                <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+              </TouchableOpacity>
+            )}
+          </View>
         ))}
       </ScrollView>
     </SafeAreaView>

@@ -388,6 +388,18 @@ async def save_store_template(store_id: str, data: dict):
 
 
 
+@router.delete("/template/{store_id}/{card_type}")
+async def delete_store_template(store_id: str, card_type: str):
+    """Delete a custom card template. Only custom types (starting with 'custom_') can be deleted."""
+    db = get_db()
+    if not card_type.startswith("custom_"):
+        raise HTTPException(status_code=400, detail="Only custom card templates can be deleted")
+    result = await db.congrats_templates.delete_one({"store_id": store_id, "card_type": card_type})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return {"success": True, "message": f"Card template '{card_type}' deleted"}
+
+
 @router.post("/templates/backfill")
 async def backfill_all_store_templates():
     """Create missing card-type templates for all existing stores."""

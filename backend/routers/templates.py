@@ -333,23 +333,12 @@ async def update_template(user_id: str, template_id: str, template_data: Message
 
 @router.delete("/{user_id}/{template_id}")
 async def delete_template(user_id: str, template_id: str):
-    """Delete a template"""
+    """Delete a template — any template the user owns can be deleted"""
     db = get_db()
-    
-    # Check if it's a default template
-    template = await db.templates.find_one({
-        "_id": ObjectId(template_id),
-        "user_id": user_id
-    })
-    
+    template = await db.templates.find_one({"_id": ObjectId(template_id), "user_id": user_id})
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
-    
-    if template.get("is_default"):
-        raise HTTPException(status_code=400, detail="Cannot delete default templates")
-    
     await db.templates.delete_one({"_id": ObjectId(template_id)})
-    
     return {"message": "Template deleted"}
 
 
