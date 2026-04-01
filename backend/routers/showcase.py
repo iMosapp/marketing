@@ -197,7 +197,7 @@ async def get_user_showcase(user_id: str, cid: str = None):
     """
     db = get_db()
 
-    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"password": 0, "photo_url": 0})
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"password": 0})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -246,32 +246,23 @@ async def get_user_showcase(user_id: str, cid: str = None):
     except Exception as e:
         print(f"[Showcase] Failed to log view activity: {e}")
 
-    # Check if user has a photo — use optimized path if migrated
-    user_photo_doc = await db.users.find_one(
-        {"_id": ObjectId(user_id), "photo_url": {"$exists": True, "$nin": [None, ""]}},
-        {"photo_path": 1, "photo_thumb_path": 1}
-    )
-    if user_photo_doc and user_photo_doc.get("photo_path"):
-        user_photo_url = f"/api/images/{user_photo_doc['photo_path']}"
-    elif user_photo_doc:
-        user_photo_url = f"/api/showcase/user-photo/{user_id}"
+    # Resolve user photo — prefer photo_path (optimized), fall back to photo_url
+    if user.get("photo_path"):
+        user_photo_url = f"/api/images/{user['photo_path']}"
+    elif user.get("photo_url") and not user["photo_url"].startswith("data:"):
+        user_photo_url = user["photo_url"]
     else:
         user_photo_url = None
 
     store = None
     store_logo_url = None
     if user.get("store_id"):
-        store = await db.stores.find_one({"_id": ObjectId(user["store_id"])}, {"logo_url": 0})
-        # Check if store has a logo — use optimized path if migrated
+        store = await db.stores.find_one({"_id": ObjectId(user["store_id"])})
         if store:
-            store_logo_doc = await db.stores.find_one(
-                {"_id": ObjectId(user["store_id"]), "logo_url": {"$exists": True, "$nin": [None, ""]}},
-                {"logo_path": 1, "logo_thumb_path": 1}
-            )
-            if store_logo_doc and store_logo_doc.get("logo_path"):
-                store_logo_url = f"/api/images/{store_logo_doc['logo_path']}"
-            elif store_logo_doc:
-                store_logo_url = f"/api/showcase/store-logo/{user.get('store_id')}"
+            if store.get("logo_path"):
+                store_logo_url = f"/api/images/{store['logo_path']}"
+            elif store.get("logo_url") and not store["logo_url"].startswith("data:"):
+                store_logo_url = store["logo_url"]
 
     entries = await _build_showcase_entries(
         db,
