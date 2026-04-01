@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Modal, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
 import { useToast } from './common/Toast';
@@ -190,56 +190,84 @@ export default function PersonalIntelSection({ contactId, userId, colors }: { co
     );
   }
 
-  // Edit mode
+  // Edit mode — opens as a Modal so it floats above the composer bar
   if (editing) {
     return (
-      <View style={{ paddingHorizontal: 16, marginBottom: 16 }} data-testid="personal-intel-section">
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+      <>
+        {/* Show a collapsed placeholder where the section was */}
+        <View style={{ paddingHorizontal: 16, marginBottom: 8 }} data-testid="personal-intel-section">
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Ionicons name="sparkles" size={14} color="#AF52DE" />
-            <Text style={{ color: '#AF52DE', fontSize: 14, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 }}>Edit Personal Intelligence</Text>
-          </View>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <TouchableOpacity onPress={cancelEdit} disabled={saving} style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: colors.border }} data-testid="cancel-edit-intel-btn">
-              <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={save} disabled={saving} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, backgroundColor: '#AF52DE' }} data-testid="save-intel-btn">
-              {saving ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="checkmark" size={14} color="#fff" />}
-              <Text style={{ color: '#fff', fontSize: 14, fontWeight: '600' }}>{saving ? 'Saving...' : 'Save'}</Text>
-            </TouchableOpacity>
+            <Text style={{ color: '#AF52DE', fontSize: 14, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 }}>Personal Intelligence</Text>
+            <ActivityIndicator size="small" color="#AF52DE" style={{ marginLeft: 6 }} />
           </View>
         </View>
 
-        {FIELDS.map(f => (
-          <View key={f.key} style={{ marginBottom: 10 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-              <Ionicons name={f.icon as any} size={13} color="#C9A962" />
-              <Text style={{ color: '#8E8E93', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>{f.label}</Text>
+        {/* Full-screen modal — safe above keyboard and composer bar */}
+        <Modal
+          visible={editing}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={cancelEdit}
+        >
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1, backgroundColor: colors.bg }}
+          >
+            {/* Header — always visible, never pushed off screen */}
+            <View style={{
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+              paddingHorizontal: 16, paddingVertical: 14,
+              borderBottomWidth: 1, borderBottomColor: colors.border,
+            }}>
+              <TouchableOpacity onPress={cancelEdit} disabled={saving} style={{ paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, backgroundColor: colors.card }} data-testid="cancel-edit-intel-btn">
+                <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>Cancel</Text>
+              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="sparkles" size={15} color="#AF52DE" />
+                <Text style={{ color: colors.text, fontSize: 16, fontWeight: '700' }}>Personal Intelligence</Text>
+              </View>
+              <TouchableOpacity onPress={save} disabled={saving} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: '#AF52DE' }} data-testid="save-intel-btn">
+                {saving ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="checkmark" size={16} color="#fff" />}
+                <Text style={{ color: '#fff', fontSize: 15, fontWeight: '700' }}>{saving ? 'Saving…' : 'Save'}</Text>
+              </TouchableOpacity>
             </View>
-            <TextInput
-              value={form[f.key] || ''}
-              onChangeText={v => updateField(f.key, v)}
-              placeholder={f.label}
-              placeholderTextColor="#666"
-              multiline={f.multi}
-              numberOfLines={f.multi ? 3 : 1}
-              style={{
-                backgroundColor: colors.card,
-                color: colors.text,
-                fontSize: 15,
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                borderRadius: 6,
-                borderWidth: 1,
-                borderColor: colors.border,
-                minHeight: f.multi ? 60 : 36,
-                textAlignVertical: f.multi ? 'top' : 'center',
-              }}
-              data-testid={`intel-input-${f.key}`}
-            />
-          </View>
-        ))}
-      </View>
+
+            {/* Scrollable fields */}
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
+              {FIELDS.map(f => (
+                <View key={f.key} style={{ marginBottom: 16 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                    <Ionicons name={f.icon as any} size={14} color="#C9A962" />
+                    <Text style={{ color: '#8E8E93', fontSize: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>{f.label}</Text>
+                  </View>
+                  <TextInput
+                    value={form[f.key] || ''}
+                    onChangeText={v => updateField(f.key, v)}
+                    placeholder={f.label}
+                    placeholderTextColor="#666"
+                    multiline={f.multi}
+                    numberOfLines={f.multi ? 3 : 1}
+                    style={{
+                      backgroundColor: colors.card,
+                      color: colors.text,
+                      fontSize: 15,
+                      paddingHorizontal: 14,
+                      paddingVertical: 10,
+                      borderRadius: 10,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      minHeight: f.multi ? 80 : 44,
+                      textAlignVertical: f.multi ? 'top' : 'center',
+                    }}
+                    data-testid={`intel-input-${f.key}`}
+                  />
+                </View>
+              ))}
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </Modal>
+      </>
     );
   }
 
