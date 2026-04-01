@@ -824,7 +824,7 @@ export default function ThreadScreen() {
       
       // Scroll to bottom
       setTimeout(() => {
-        flatListRef.current?.scrollToOffset({ offset: 0, animated: true }); // inverted: offset 0 = bottom
+        flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
       
       // Build message payload with template info if available
@@ -2011,11 +2011,10 @@ export default function ThreadScreen() {
       ) : (
         <FlatList
           ref={flatListRef}
-          data={[...messages].reverse()}
-          inverted
+          data={messages}
           renderItem={renderMessage}
           keyExtractor={(item) => item._id}
-          contentContainerStyle={[styles.messagesList, { paddingTop: 16 }]}
+          contentContainerStyle={styles.messagesList}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -2030,6 +2029,11 @@ export default function ThreadScreen() {
               <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Start the conversation!</Text>
             </View>
           )}
+          onContentSizeChange={() => {
+            if (messages.length > 0) {
+              flatListRef.current?.scrollToEnd({ animated: false });
+            }
+          }}
         />
       ))}
       
