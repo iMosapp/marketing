@@ -261,6 +261,9 @@ export default function ThreadScreen() {
     { key: 'holiday', label: 'Holiday', icon: 'snow', color: '#5AC8FA' },
   ];
 
+  // Custom card templates loaded from store
+  const [customCardTemplates, setCustomCardTemplates] = useState<any[]>([]);
+
   // Relationship Intel state
   const [intelData, setIntelData] = useState<any>(null);
   const [showIntel, setShowIntel] = useState(false);
@@ -382,7 +385,7 @@ export default function ThreadScreen() {
     } catch (error) {
       console.log('No user-level review links');
     }
-    // Fetch store slug + store-level review links
+    // Fetch store slug + store-level review links + custom card templates
     try {
       if ((user as any).store_slug) {
         setStoreSlug((user as any).store_slug);
@@ -420,6 +423,14 @@ export default function ThreadScreen() {
           }
           setReviewLinks(merged);
           setCustomLinkName(userCustomName || storeData.custom_link_name || '');
+
+          // Load custom card templates for this store
+          const TYPE_META_KEYS = new Set(['congrats','birthday','anniversary','thankyou','thank_you','holiday','welcome']);
+          api.get(`/congrats/templates/all/${user.store_id}`).then(r => {
+            const custom = (r.data || []).filter((t: any) => !TYPE_META_KEYS.has(t.card_type) && t.headline);
+            setCustomCardTemplates(custom);
+          }).catch(() => {});
+
           return;
         }
       }
@@ -2405,7 +2416,13 @@ export default function ThreadScreen() {
                 </Text>
               </View>
               
-              {/* Share Options */}
+              {/* Share Options — wrapped in ScrollView so nothing gets cut off */}
+              <ScrollView
+                style={{ flex: 1 }}
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+                contentContainerStyle={{ paddingBottom: 24 }}
+              >
               <View style={styles.shareOptionsContainer}>
                 <TouchableOpacity
                   style={styles.shareOptionCard}
@@ -2474,7 +2491,31 @@ export default function ThreadScreen() {
                   </View>
                   <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                 </TouchableOpacity>
+
+                {/* CRM Review Links — same as contact composer */}
+                {Object.entries(reviewLinks).filter(([k, v]) => v && k !== 'custom').map(([platform, url]) => (
+                  <TouchableOpacity
+                    key={platform}
+                    style={styles.shareOptionCard}
+                    onPress={() => {
+                      const firstName = contactName?.split(' ')[0] || 'there';
+                      setMessage(`Hey ${firstName}! We'd love your feedback. Leave us a review here: ${url}`);
+                      setShowBusinessCard(false);
+                    }}
+                    data-testid={`share-review-${platform}`}
+                  >
+                    <View style={[styles.shareOptionIcon, { backgroundColor: '#FF3B3020' }]}>
+                      <Ionicons name="star-outline" size={28} color="#FF3B30" />
+                    </View>
+                    <View style={styles.shareOptionContent}>
+                      <Text style={styles.shareOptionTitle}>{platform.charAt(0).toUpperCase() + platform.slice(1)} Review Link</Text>
+                      <Text style={styles.shareOptionDesc}>Ask for a review on {platform.charAt(0).toUpperCase() + platform.slice(1)}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                ))}
               </View>
+              </ScrollView>
               
               {/* Landing Page Options (Campaign Picker) */}
               {showLandingPageOptions && (
@@ -2668,6 +2709,21 @@ export default function ThreadScreen() {
                       >
                         <Ionicons name={ct.icon as any} size={14} color={selectedCardType === ct.key ? '#FFF' : ct.color} />
                         <Text style={[styles.cardTypeChipText, selectedCardType === ct.key && { color: '#FFF' }]}>{ct.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                    {/* Custom card templates — same as contact page composer */}
+                    {customCardTemplates.map(ct => (
+                      <TouchableOpacity
+                        key={ct.card_type}
+                        style={[
+                          styles.cardTypeChip,
+                          selectedCardType === ct.card_type && { backgroundColor: ct.accent_color || '#C9A962', borderColor: ct.accent_color || '#C9A962' },
+                        ]}
+                        onPress={() => setSelectedCardType(ct.card_type)}
+                        data-testid={`card-type-${ct.card_type}`}
+                      >
+                        <Ionicons name="gift-outline" size={14} color={selectedCardType === ct.card_type ? '#FFF' : (ct.accent_color || '#C9A962')} />
+                        <Text style={[styles.cardTypeChipText, selectedCardType === ct.card_type && { color: '#FFF' }]}>{ct.headline}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>
