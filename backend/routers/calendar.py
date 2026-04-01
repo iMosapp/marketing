@@ -9,7 +9,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 import logging
 import os
-import requests
+import requests  # only used for google-auth library compatibility
+import httpx  # async HTTP — never blocks the event loop
 
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request as GoogleRequest
@@ -59,27 +60,31 @@ async def google_calendar_callback(code: str, state: str):
     user_id = state
     
     try:
-        # Exchange code for tokens
-        token_response = requests.post(
-            'https://oauth2.googleapis.com/token',
-            data={
-                'code': code,
-                'client_id': GOOGLE_CLIENT_ID,
-                'client_secret': GOOGLE_CLIENT_SECRET,
-                'redirect_uri': REDIRECT_URI,
-                'grant_type': 'authorization_code'
-            }
-        ).json()
+        # Exchange code for tokens — use async httpx so we don't block the event loop
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            token_resp = await client.post(
+                'https://oauth2.googleapis.com/token',
+                data={
+                    'code': code,
+                    'client_id': GOOGLE_CLIENT_ID,
+                    'client_secret': GOOGLE_CLIENT_SECRET,
+                    'redirect_uri': REDIRECT_URI,
+                    'grant_type': 'authorization_code'
+                }
+            )
+            token_response = token_resp.json()
         
         if 'error' in token_response:
             logger.error(f"Token exchange error: {token_response}")
             raise HTTPException(status_code=400, detail=token_response.get('error_description', 'OAuth failed'))
         
-        # Get user email
-        user_info = requests.get(
-            'https://www.googleapis.com/oauth2/v2/userinfo',
-            headers={'Authorization': f'Bearer {token_response["access_token"]}'}
-        ).json()
+        # Get user email — async
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            user_resp = await client.get(
+                'https://www.googleapis.com/oauth2/v2/userinfo',
+                headers={'Authorization': f'Bearer {token_response["access_token"]}'}
+            )
+            user_info = user_resp.json()
         
         # Save tokens to user record
         await get_db().users.update_one(

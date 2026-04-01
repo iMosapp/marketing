@@ -17,7 +17,8 @@ router = APIRouter(prefix="/chat", tags=["Chat Widget"])
 logger = logging.getLogger("chat_widget")
 
 # In-memory session store (lightweight, resets on restart — fine for chat)
-_sessions: dict = {}
+_sessions: dict = {}  # session_id -> session data
+_MAX_SESSIONS = 500   # cap to prevent unbounded memory growth
 
 JESSI_SYSTEM_PROMPT = """You are Jessi, the friendly AI assistant for i'M On Social — the relationship engine for sales professionals.
 
@@ -55,6 +56,10 @@ async def start_session(request: Request):
     data = await request.json()
     page = data.get("page", "website")
     session_id = str(uuid.uuid4())
+    # Evict oldest sessions if at cap — prevents unbounded memory growth
+    if len(_sessions) >= _MAX_SESSIONS:
+        oldest = min(_sessions, key=lambda k: _sessions[k].get("created_at", ""))
+        _sessions.pop(oldest, None)
     _sessions[session_id] = {
         "id": session_id,
         "messages": [],

@@ -510,7 +510,9 @@ async def get_contacts(
                             logger.error(f"Failed to backfill thumbnail for {pdoc['_id']}: {e}")
             except Exception as e:
                 logger.error(f"Photo backfill batch failed: {e}")
-        asyncio.create_task(_backfill_photos([c['_id'] for c in needs_backfill]))
+        # Only backfill if not already running (prevents task accumulation)
+        if needs_backfill and not getattr(_backfill_photos, '_running', False):
+            asyncio.create_task(_backfill_photos([c['_id'] for c in needs_backfill]))
     
     results = []
     for c in contacts:
