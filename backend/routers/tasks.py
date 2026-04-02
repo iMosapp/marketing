@@ -76,7 +76,9 @@ async def _catchup_overdue_campaign_tasks(user_id: str):
                 if existing.get("status") in ("pending", "snoozed"):
                     continue
                 elif existing.get("status") in ("dismissed", "completed"):
-                    await db.tasks.delete_one({"_id": existing["_id"]})
+                    # User already handled this step — skip, don't recreate
+                    # (Previously this deleted the task and fell through to insert, causing resurrection bug)
+                    continue
                 else:
                     continue
 
@@ -556,6 +558,16 @@ async def update_task(user_id: str, task_id: str, update_data: dict):
                 })
             except Exception as e:
                 logger.error(f"Failed to log task completion: {e}")
+        # Mark the campaign_pending_sends entry as "done" so catchup never resurrects this task
+        pending_send_id = task.get("pending_send_id", "")
+        if pending_send_id:
+            try:
+                await db.campaign_pending_sends.update_one(
+                    {"_id": ObjectId(pending_send_id)},
+                    {"$set": {"status": "done", "completed_at": datetime.now(timezone.utc)}}
+                )
+            except Exception as e:
+                logger.warning(f"Failed to mark pending_send as done: {e}")
         # When a campaign task is completed, update the enrollment's messages_sent status
         if task.get("type") == "campaign_send" and task.get("campaign_id") and cid:
             try:

@@ -131,7 +131,20 @@ New components created under `components/account/`:
 - `my-account.tsx` 1,533 → 424 lines
 - 5 new focused components under `components/account/`
 
-### Performance Sprint (Mar 30, 2026) -- LATEST
+### Task Resurrection Bug Fix (Apr 2, 2026) -- LATEST
+Fixed critical bug where marking tasks "Done" in Today's Touchpoints would cause them to reappear on next page load.
+
+**Root cause (two bugs combined):**
+1. `_catchup_overdue_campaign_tasks` in `tasks.py`: when a completed/dismissed task was found by idempotency key, it deleted the completed task but lacked a `continue` — causing it to fall through and create a brand new "pending" task immediately after deletion
+2. `update_task` complete action: did not mark the `campaign_pending_sends` entry as "done", so the catchup kept finding it as a trigger
+
+**Fixes:**
+- Catchup: changed `delete_one` + fall-through to `continue` for completed/dismissed tasks
+- Complete action: now also updates `campaign_pending_sends.status = "done"` with timestamp when task is completed — so the catchup's query (`status: {$in: ["pending", "pending_user_action"]}`) skips it entirely
+
+**Verified:** API end-to-end test confirms task stays off list after marking Done and after page reload.
+
+### Performance Sprint (Mar 30, 2026)
 
 **N+1 query elimination (contact_events.py):**
 - Batch-load all `message_id` lookups in ONE query (was: up to 50 separate DB calls per contact page)
