@@ -33,9 +33,8 @@ export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
   async function uploadFile(file: File | { uri: string; name: string; type: string }) {
     const formData = new FormData();
     formData.append('file', file as any);
-    const res = await api.post(`/profile/${user._id}/photo`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },  // Override global json header
-    });
+    // Do NOT set Content-Type manually — let axios auto-set multipart/form-data; boundary=...
+    const res = await api.post(`/profile/${user._id}/photo`, formData);
     return res.data?.photo_url as string | null;
   }
 
@@ -70,7 +69,13 @@ export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
         if (url) handleSuccess(url);
         else showSimpleAlert('Error', 'Upload succeeded but no URL was returned.');
       } catch (err: any) {
-        showSimpleAlert('Error', err?.response?.data?.detail || 'Failed to upload photo.');
+        const detail = err?.response?.data?.detail;
+        const msg = typeof detail === 'string'
+          ? detail
+          : Array.isArray(detail)
+          ? detail.map((d: any) => d.msg || String(d)).join(', ')
+          : (err?.message || 'Failed to upload photo.');
+        showSimpleAlert('Error', msg);
       } finally {
         setUploading(false);
       }
@@ -127,12 +132,22 @@ export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
     setUploading(true);
     try {
       const uri = asset.uri;
-      const ext = uri.split('.').pop() || 'jpg';
-      const file = { uri, name: `profile.${ext}`, type: `image/${ext}` };
+      // Handle HEIC/HEIF from iOS — use mimeType if available, fallback to ext
+      const mimeType = (asset as any).mimeType || '';
+      const isHeic = mimeType.includes('heic') || mimeType.includes('heif') || uri.toLowerCase().includes('.heic') || uri.toLowerCase().includes('.heif');
+      const ext = isHeic ? 'jpg' : (uri.split('.').pop()?.toLowerCase() || 'jpg');
+      const fileType = isHeic ? 'image/jpeg' : (mimeType || `image/${ext === 'jpg' ? 'jpeg' : ext}`);
+      const file = { uri, name: `profile.${ext}`, type: fileType };
       const url = await uploadFile(file);
       if (url) handleSuccess(url);
     } catch (err: any) {
-      showSimpleAlert('Error', err?.response?.data?.detail || 'Failed to upload photo.');
+      const detail = err?.response?.data?.detail;
+      const msg = typeof detail === 'string'
+        ? detail
+        : Array.isArray(detail)
+        ? detail.map((d: any) => d.msg || String(d)).join(', ')
+        : (err?.message || 'Failed to upload photo. Please try a JPEG or PNG file.');
+      showSimpleAlert('Error', msg);
     } finally {
       setUploading(false);
     }

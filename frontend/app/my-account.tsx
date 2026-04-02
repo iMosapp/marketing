@@ -208,13 +208,17 @@ export default function MyAccountScreen() {
         try {
           const fd = new FormData();
           fd.append('file', file);
-          const res = await api.post(`/profile/${user?._id}/cover`, fd, {
-            
-          });
+          const res = await api.post(`/profile/${user?._id}/cover`, fd);
           if (res.data?.cover_url) setUser({ ...user, cover_photo_url: res.data.cover_url } as any);
           else showSimpleAlert('Error', 'Upload succeeded but no URL returned.');
         } catch (err: any) {
-          showSimpleAlert('Error', err?.response?.data?.detail || 'Failed to upload cover photo.');
+          const detail = err?.response?.data?.detail;
+          const msg = typeof detail === 'string'
+            ? detail
+            : Array.isArray(detail)
+            ? detail.map((d: any) => d.msg || String(d)).join(', ')
+            : (err?.message || 'Failed to upload cover photo.');
+          showSimpleAlert('Error', msg);
         } finally {
           setCoverUploading(false);
         }
@@ -227,7 +231,7 @@ export default function MyAccountScreen() {
 
       // Click synchronously — no await before this line
       input.click();
-    } else {
+      } else {
       // Native: async is fine since ImagePicker handles its own gesture
       (async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -245,15 +249,26 @@ export default function MyAccountScreen() {
           setCoverUploading(true);
           try {
             const asset = result.assets[0];
-            const ext = asset.uri.split('.').pop() || 'jpg';
+            // Use mimeType if available (handles HEIC correctly); fallback to extension
+            const mimeType = (asset as any).mimeType || '';
+            const ext = mimeType === 'image/heic' || mimeType === 'image/heif'
+              ? 'jpg'
+              : (asset.uri.split('.').pop()?.toLowerCase() || 'jpg');
+            const fileType = mimeType && !mimeType.includes('heic') && !mimeType.includes('heif')
+              ? mimeType
+              : `image/${ext === 'jpg' ? 'jpeg' : ext}`;
             const fd = new FormData();
-            fd.append('file', { uri: asset.uri, name: `cover.${ext}`, type: `image/${ext}` } as any);
-            const res = await api.post(`/profile/${user?._id}/cover`, fd, {
-              
-            });
+            fd.append('file', { uri: asset.uri, name: `cover.${ext}`, type: fileType } as any);
+            const res = await api.post(`/profile/${user?._id}/cover`, fd);
             if (res.data?.cover_url) setUser({ ...user, cover_photo_url: res.data.cover_url } as any);
           } catch (err: any) {
-            showSimpleAlert('Error', err?.response?.data?.detail || 'Failed to upload cover photo.');
+            const detail = err?.response?.data?.detail;
+            const msg = typeof detail === 'string'
+              ? detail
+              : Array.isArray(detail)
+              ? detail.map((d: any) => d.msg || String(d)).join(', ')
+              : (err?.message || 'Failed to upload cover photo. Please try a JPEG or PNG file.');
+            showSimpleAlert('Error', msg);
           } finally {
             setCoverUploading(false);
           }

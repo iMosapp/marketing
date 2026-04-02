@@ -32,6 +32,12 @@ const api = axios.create({
 api.interceptors.request.use(
   async (config) => {
     try {
+      // For FormData (file uploads), remove the default Content-Type so axios/browser
+      // can set the correct multipart/form-data; boundary=... automatically
+      if (config.data instanceof FormData || 
+          (config.data && typeof config.data === 'object' && typeof (config.data as any).append === 'function')) {
+        delete config.headers['Content-Type'];
+      }
       // Try in-memory state first — avoids AsyncStorage read on every request
       const { useAuthStore } = await import('../store/authStore');
       const { user } = useAuthStore.getState();

@@ -131,7 +131,21 @@ New components created under `components/account/`:
 - `my-account.tsx` 1,533 → 424 lines
 - 5 new focused components under `components/account/`
 
-### Campaign Removal Fix (Apr 2, 2026) -- LATEST
+### Cover Photo Upload Fix — [object Object] Error (Apr 2, 2026) -- LATEST
+
+**Root cause:** Three combined issues causing `[object Object]` on iOS cover/profile photo uploads:
+1. Global axios default `Content-Type: application/json` wasn't overridden for FormData on React Native — server received JSON content type with multipart body → FastAPI returned 422 with `detail` as array → truthy array bypassed `||` fallback → `[object Object]` shown
+2. `ProfilePhotoUpload.tsx` explicitly set `Content-Type: multipart/form-data` without boundary — breaks multipart parsing entirely  
+3. Error display code used `err?.response?.data?.detail || fallback` — when detail is an array (422 validation error), the `||` fallback isn't used
+
+**Fixes:**
+- `services/api.ts`: Added FormData detection in request interceptor — auto-deletes Content-Type for all FormData requests so axios sets correct `multipart/form-data; boundary=...`
+- `components/account/ProfilePhotoUpload.tsx`: Removed explicit wrong Content-Type header
+- `app/my-account.tsx` + `ProfilePhotoUpload.tsx`: Fixed error display to handle array/object detail gracefully
+- `profile.py` backend: Added logging and HEIC-friendly content type validation
+- iOS HEIC handling: Cover photo now uses `asset.mimeType` and converts HEIC → JPEG type before upload
+
+### Campaign Removal Fix (Apr 2, 2026)
 
 Fixed campaign removal being incomplete — tasks remained in Touchpoints and campaign could reappear in journey.
 

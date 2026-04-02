@@ -277,16 +277,19 @@ async def delete_gallery_photo(user_id: str, photo_id: str):
 async def upload_cover_photo(user_id: str, file: UploadFile = File(...)):
     """Upload a cover/banner photo for the My Presence page."""
     db = get_db()
-    if not file.content_type.startswith('image/'):
-        raise HTTPException(status_code=400, detail="File must be an image")
+    # Accept HEIC/HEIF (iOS native format) as well as standard image types
+    allowed_types = ('image/',)
+    if not any(file.content_type.lower().startswith(t) for t in allowed_types):
+        raise HTTPException(status_code=400, detail="File must be an image (JPEG, PNG, HEIC, etc.)")
     contents = await file.read()
     if len(contents) > 15 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Image must be less than 15MB")
     from utils.image_storage import upload_image
     try:
         result = await upload_image(contents, prefix="covers", entity_id=user_id)
-    except Exception:
-        raise HTTPException(status_code=400, detail="Image processing failed")
+    except Exception as e:
+        logger.warning(f"Cover photo processing failed for {user_id}: {e}")
+        raise HTTPException(status_code=400, detail="Image processing failed. Please try a JPEG or PNG file.")
     if not result:
         raise HTTPException(status_code=500, detail="Image upload failed")
     cover_url = f"/api/images/{result['original_path']}"
