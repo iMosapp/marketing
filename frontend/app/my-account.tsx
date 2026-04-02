@@ -372,15 +372,13 @@ export default function MyAccountScreen() {
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      {/* Header nav */}
+      {/* Header nav — no Edit button, replaced by inline Edit Profile button */}
       <View style={s.nav}>
         <TouchableOpacity onPress={() => router.back()} style={s.navBtn} testID="back-button">
           <Ionicons name="chevron-back" size={26} color="#007AFF" />
         </TouchableOpacity>
         <Text style={s.navTitle}>My Presence</Text>
-        <TouchableOpacity onPress={() => router.push('/settings/persona' as any)} style={s.navBtn} testID="edit-profile-btn">
-          <Text style={s.navAction}>Edit</Text>
-        </TouchableOpacity>
+        <View style={s.navBtn} />
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 48 }} showsVerticalScrollIndicator={false}>
@@ -486,6 +484,17 @@ export default function MyAccountScreen() {
             )}
           </View>
         </View>
+
+        {/* ── Edit Profile CTA — one clear button between photo and name ─────── */}
+        <TouchableOpacity
+          style={s.editProfileCta}
+          onPress={() => router.push('/settings/persona' as any)}
+          activeOpacity={0.8}
+          testID="edit-profile-btn"
+        >
+          <Ionicons name="pencil" size={15} color="#C9A962" />
+          <Text style={s.editProfileCtaText}>Edit Profile</Text>
+        </TouchableOpacity>
 
         {/* ── Identity Block ─────────────────────────────────────────────────── */}
         <View style={s.identity}>
@@ -950,6 +959,25 @@ const getStyles = (colors: any) => StyleSheet.create({
   navBtn: { padding: 4, minWidth: 48 },
   navTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
   navAction: { fontSize: 17, color: '#C9A962', fontWeight: '600' },
+  editProfileCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    marginHorizontal: 16,
+    marginTop: 14,
+    marginBottom: 2,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: '#C9A96240',
+  },
+  editProfileCtaText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#C9A962',
+  },
 
   // Cover
   coverBlock: { position: 'relative', marginBottom: 0 },

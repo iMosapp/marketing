@@ -131,7 +131,22 @@ New components created under `components/account/`:
 - `my-account.tsx` 1,533 → 424 lines
 - 5 new focused components under `components/account/`
 
-### Upload Progress Bars (Apr 2, 2026) -- LATEST
+### Profile Edit UX Fix (Apr 2, 2026) -- LATEST
+
+Two UX improvements to make profile editing discoverable:
+
+**Hub page (more.tsx):**
+- Replaced small "Tap to edit profile" hint text (confusing, small target) with a full-width "Edit Profile" button with pencil icon
+- Button uses `colors.card` background + gold border + gold text — matches app design system
+- Full width, 11px vertical padding — very easy to tap
+
+**My Presence page (my-account.tsx):**
+- Removed "Edit" button from top-right nav header (users weren't finding it)
+- Added prominent "Edit Profile" button directly below avatar, above the name field
+- Button is full-width with pencil icon — impossible to miss
+- Inline pencil icons (name, email, phone) remain for quick edits
+
+### Upload Progress Bars (Apr 2, 2026)
 
 Added visual upload progress feedback for cover photo and profile photo uploads on the My Presence page.
 

@@ -1078,8 +1078,15 @@ export default function MoreScreen() {
             </View>
           </TouchableOpacity>
           <View style={styles.profileCardHint}>
-            <Ionicons name="chevron-down" size={14} color={colors.textSecondary} />
-            <Text style={[styles.profileCardHintText, { color: colors.textSecondary }]}>Tap to edit profile</Text>
+            <TouchableOpacity
+              style={styles.editProfileBtn}
+              onPress={() => router.push('/my-account')}
+              activeOpacity={0.8}
+              data-testid="edit-profile-hint-btn"
+            >
+              <Ionicons name="pencil" size={14} color="#C9A962" />
+              <Text style={styles.editProfileBtnText}>Edit Profile</Text>
+            </TouchableOpacity>
           </View>
         </View>
         
@@ -1666,11 +1673,23 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   profileCardHint: {
+    marginTop: 8,
+  },
+  editProfileBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    marginTop: 6,
+    gap: 7,
+    paddingVertical: 11,
+    borderRadius: 12,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: '#C9A96240',
+  },
+  editProfileBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#C9A962',
   },
   profileCardHintText: {
     fontSize: 13,
