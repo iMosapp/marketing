@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 # Throttle: only run catchup once per user per 5 minutes
 _catchup_last_run: dict = {}
-_CATCHUP_INTERVAL = timedelta(minutes=5)
+_CATCHUP_INTERVAL = timedelta(seconds=90)  # Run at most every 90 seconds per user
 _CATCHUP_MAX_ENTRIES = 500  # prevent unbounded memory growth
 
 
@@ -119,6 +119,8 @@ async def _catchup_overdue_campaign_tasks(user_id: str):
 
         if created > 0:
             logger.info(f"[Tasks] Catch-up: created {created} campaign tasks for user {user_id}")
+            # Clear summary cache so next page load immediately shows new tasks
+            _summary_cache.pop(user_id, None)
     except Exception as e:
         logger.warning(f"[Tasks] Catch-up check failed: {e}")
 
@@ -279,7 +281,7 @@ async def get_tasks(user_id: str, filter: str = "today", limit: int = 50, skip: 
 
 
 # Cache task summary for 30s to prevent thundering herd on rapid page navigation
-_summary_cache: TTLCache = TTLCache(maxsize=1000, ttl=60)  # 1-min TTL, auto-evicts
+_summary_cache: TTLCache = TTLCache(maxsize=1000, ttl=20)  # 20s TTL — tasks appear quickly after scheduler fires
 _SUMMARY_TTL = timedelta(seconds=30)
 
 
