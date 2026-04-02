@@ -279,9 +279,9 @@ const { showToast } = useToast();
     if (step.delayHours > 0) parts.push(`${step.delayHours}hr`);
     if ((step.delayMinutes || 0) > 0) parts.push(`${step.delayMinutes}min`);
 
-    if (parts.length === 0) return index === 0 ? 'Immediately when triggered' : 'Immediately after previous';
+    if (parts.length === 0) return index === 0 ? 'Immediately when triggered' : 'Immediately from enrollment';
     const timeStr = parts.join(' ');
-    return index === 0 ? `${timeStr} after trigger` : `${timeStr} after previous`;
+    return `${timeStr} from enrollment`;
   };
   
   const handleSave = async () => {
@@ -677,7 +677,7 @@ const { showToast } = useToast();
                 return (
                   <View style={{ marginTop: 4 }}>
                     <Text style={[styles.delayInputLabel, { marginBottom: 4 }]}>
-                      {isFirstStep ? 'Send after trigger' : 'Send after previous step'}
+                      {isFirstStep ? 'From enrollment date' : 'From enrollment date'}
                     </Text>
 
                     {/* 15-min minimum warning for steps 2+ */}

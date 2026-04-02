@@ -34,6 +34,7 @@ interface SequenceStep {
   delayHours: number;
   delayDays: number;
   delayMonths: number;
+  delayMinutes: number;
   media_urls: string[];
   channel: string;
   ai_generated: boolean;
@@ -64,7 +65,7 @@ const { showToast } = useToast();
   });
   
   const [sequences, setSequences] = useState<SequenceStep[]>([
-    { id: '1', message: '', delayHours: 0, delayDays: 0, delayMonths: 0, media_urls: [], channel: 'sms', ai_generated: false, step_context: '' },
+    { id: '1', message: '', delayHours: 0, delayDays: 0, delayMonths: 0, delayMinutes: 0, media_urls: [], channel: 'sms', ai_generated: false, step_context: '' },
   ]);
   
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -127,11 +128,11 @@ const { showToast } = useToast();
   const availableTags = tags;
   
   const soldFollowupTemplates: SequenceStep[] = [
-    { id: '1', message: "Hey {first_name}! Just wanted to check in - how are you enjoying your new ride? Let me know if you have any questions!", delayHours: 0, delayDays: 3, delayMonths: 0, media_urls: [], channel: 'sms', ai_generated: false, step_context: 'Initial check-in after purchase' },
-    { id: '2', message: "Hi {first_name}! It's been about a month since your purchase. Everything running smoothly? I'm here if you need anything!", delayHours: 0, delayDays: 0, delayMonths: 1, media_urls: [], channel: 'sms', ai_generated: false, step_context: '1 month follow-up' },
-    { id: '3', message: "Hey {first_name}! Quick check-in at the 3 month mark. How's everything treating you? Don't forget to schedule your first service if you haven't already!", delayHours: 0, delayDays: 0, delayMonths: 3, media_urls: [], channel: 'sms', ai_generated: false, step_context: '3 month check-in' },
-    { id: '4', message: "Happy 6 months, {first_name}! Hope you're still loving it. Let me know if there's anything I can help with!", delayHours: 0, delayDays: 0, delayMonths: 6, media_urls: [], channel: 'sms', ai_generated: false, step_context: '6 month milestone' },
-    { id: '5', message: "Can you believe it's been a year, {first_name}?! Time flies! If you know anyone looking for a great deal, send them my way!", delayHours: 0, delayDays: 0, delayMonths: 12, media_urls: [], channel: 'sms', ai_generated: false, step_context: '1 year anniversary' },
+    { id: '1', message: "Hey {first_name}! Just wanted to check in - how are you enjoying your new ride? Let me know if you have any questions!", delayHours: 0, delayDays: 3, delayMonths: 0, delayMinutes: 0, media_urls: [], channel: 'sms', ai_generated: false, step_context: 'Initial check-in after purchase' },
+    { id: '2', message: "Hi {first_name}! It's been about a month since your purchase. Everything running smoothly? I'm here if you need anything!", delayHours: 0, delayDays: 0, delayMonths: 1, delayMinutes: 0, media_urls: [], channel: 'sms', ai_generated: false, step_context: '1 month follow-up' },
+    { id: '3', message: "Hey {first_name}! Quick check-in at the 3 month mark. How's everything treating you? Don't forget to schedule your first service if you haven't already!", delayHours: 0, delayDays: 0, delayMonths: 3, delayMinutes: 0, media_urls: [], channel: 'sms', ai_generated: false, step_context: '3 month check-in' },
+    { id: '4', message: "Happy 6 months, {first_name}! Hope you're still loving it. Let me know if there's anything I can help with!", delayHours: 0, delayDays: 0, delayMonths: 6, delayMinutes: 0, media_urls: [], channel: 'sms', ai_generated: false, step_context: '6 month milestone' },
+    { id: '5', message: "Can you believe it's been a year, {first_name}?! Time flies! If you know anyone looking for a great deal, send them my way!", delayHours: 0, delayDays: 0, delayMonths: 12, delayMinutes: 0, media_urls: [], channel: 'sms', ai_generated: false, step_context: '1 year anniversary' },
   ];
 
   const DATE_TYPES = [
@@ -143,7 +144,7 @@ const { showToast } = useToast();
   const handleTriggerTypeSelect = (triggerType: 'tag' | 'date') => {
     setCampaign(prev => ({ ...prev, type: triggerType, dateType: '', triggerTag: '' }));
     if (triggerType === 'tag') {
-      setSequences([{ id: '1', message: '', delayHours: 0, delayDays: 0, delayMonths: 0, media_urls: [], channel: 'sms', ai_generated: false, step_context: '' }]);
+      setSequences([{ id: '1', message: '', delayHours: 0, delayDays: 0, delayMonths: 0, delayMinutes: 0, media_urls: [], channel: 'sms', ai_generated: false, step_context: '' }]);
     }
   };
 
@@ -151,7 +152,7 @@ const { showToast } = useToast();
     const dt = DATE_TYPES.find(d => d.id === dateType);
     setCampaign(prev => ({ ...prev, dateType: dateType as any, name: prev.name || dt?.name || '' }));
     setSequences([{
-      id: '1', message: dt?.defaultMsg || '', delayHours: 0, delayDays: 0, delayMonths: 0,
+      id: '1', message: dt?.defaultMsg || '', delayHours: 0, delayDays: 0, delayMonths: 0, delayMinutes: 0,
       media_urls: [], channel: 'sms', ai_generated: false, step_context: dt?.name || '',
     }]);
   };
@@ -161,7 +162,7 @@ const { showToast } = useToast();
       setSequences(soldFollowupTemplates);
       setCampaign(prev => ({ ...prev, name: prev.name || 'Sold Follow-up', triggerTag: 'Sold' }));
     } else if (template === 'check_in') {
-      setSequences([{ id: '1', message: "Hey {first_name}! Just checking in to see how things are going. Is there anything I can help with?", delayHours: 0, delayDays: 0, delayMonths: 0, media_urls: [], channel: 'sms', ai_generated: false, step_context: 'Check-in' }]);
+      setSequences([{ id: '1', message: "Hey {first_name}! Just checking in to see how things are going. Is there anything I can help with?", delayHours: 0, delayDays: 0, delayMonths: 0, delayMinutes: 0, media_urls: [], channel: 'sms', ai_generated: false, step_context: 'Check-in' }]);
       setCampaign(prev => ({ ...prev, name: prev.name || 'Check-in Campaign', triggerTag: 'Follow Up' }));
     }
   };
@@ -288,20 +289,13 @@ const { showToast } = useToast();
   
   const getDelayLabel = (step: SequenceStep, index: number) => {
     const parts = [];
-    if (step.delayMonths > 0) {
-      parts.push(`${step.delayMonths} month${step.delayMonths > 1 ? 's' : ''}`);
-    }
-    if (step.delayDays > 0) {
-      parts.push(`${step.delayDays} day${step.delayDays > 1 ? 's' : ''}`);
-    }
-    if (step.delayHours > 0) {
-      parts.push(`${step.delayHours} hour${step.delayHours > 1 ? 's' : ''}`);
-    }
-    
-    if (parts.length === 0) {
-      return index === 0 ? 'Immediately when triggered' : 'Immediately after previous';
-    }
-    return index === 0 ? `${parts.join(' ')} after trigger` : `After ${parts.join(' ')}`;
+    if (step.delayMonths > 0) parts.push(`${step.delayMonths}mo`);
+    if (step.delayDays > 0) parts.push(`${step.delayDays}d`);
+    if (step.delayHours > 0) parts.push(`${step.delayHours}hr`);
+    if ((step.delayMinutes || 0) > 0) parts.push(`${step.delayMinutes}min`);
+    if (parts.length === 0) return index === 0 ? 'Immediately when triggered' : 'Immediately (from enrollment)';
+    const timeStr = parts.join(' ');
+    return `${timeStr} from enrollment`;
   };
   
   const handleTimeChange = (event: any, selectedDate?: Date) => {
@@ -354,6 +348,7 @@ const { showToast } = useToast();
           delay_hours: s.delayHours,
           delay_days: s.delayDays,
           delay_months: s.delayMonths,
+          delay_minutes: s.delayMinutes || 0,
           media_urls: s.media_urls,
           channel: s.channel,
           ai_generated: s.ai_generated,
@@ -716,64 +711,48 @@ const { showToast } = useToast();
               </View>
               
               {/* Delay Controls — shown for ALL steps including step 1 */}
-              <View style={styles.delayRow}>
-                <View style={styles.delayInput}>
-                  <Text style={styles.delayLabel}>Months</Text>
-                  <View style={styles.delayControls}>
-                    <TouchableOpacity 
-                      style={styles.delayButton}
-                      onPress={() => updateSequenceStep(step.id, 'delayMonths', Math.max(0, step.delayMonths - 1))}
-                    >
-                      <Ionicons name="remove" size={18} color={colors.text} />
-                    </TouchableOpacity>
-                    <Text style={styles.delayValue}>{step.delayMonths}</Text>
-                    <TouchableOpacity 
-                      style={styles.delayButton}
-                      onPress={() => updateSequenceStep(step.id, 'delayMonths', step.delayMonths + 1)}
-                    >
-                      <Ionicons name="add" size={18} color={colors.text} />
-                    </TouchableOpacity>
+              {/* Delay controls — preset chips + compact custom fields, ABSOLUTE from enrollment */}
+              {(() => {
+                const isFirstStep = index === 0;
+                const PRESETS = isFirstStep
+                  ? [{ label: 'Now', mo: 0, d: 0, h: 0, m: 0 }, { label: '15 min', mo: 0, d: 0, h: 0, m: 15 }, { label: '30 min', mo: 0, d: 0, h: 0, m: 30 }, { label: '1 hr', mo: 0, d: 0, h: 1, m: 0 }, { label: '1 day', mo: 0, d: 1, h: 0, m: 0 }]
+                  : [{ label: '15 min', mo: 0, d: 0, h: 0, m: 15 }, { label: '30 min', mo: 0, d: 0, h: 0, m: 30 }, { label: '1 hr', mo: 0, d: 0, h: 1, m: 0 }, { label: '1 day', mo: 0, d: 1, h: 0, m: 0 }, { label: '3 days', mo: 0, d: 3, h: 0, m: 0 }, { label: '1 week', mo: 0, d: 7, h: 0, m: 0 }, { label: '2 weeks', mo: 0, d: 14, h: 0, m: 0 }, { label: '1 month', mo: 1, d: 0, h: 0, m: 0 }, { label: '3 months', mo: 3, d: 0, h: 0, m: 0 }, { label: '6 months', mo: 6, d: 0, h: 0, m: 0 }, { label: '1 year', mo: 12, d: 0, h: 0, m: 0 }];
+                const activePreset = PRESETS.find(p => p.mo === step.delayMonths && p.d === step.delayDays && p.h === step.delayHours && p.m === (step.delayMinutes || 0));
+                const apply = (p: typeof PRESETS[0]) => { updateSequenceStep(step.id, 'delayMonths', p.mo); updateSequenceStep(step.id, 'delayDays', p.d); updateSequenceStep(step.id, 'delayHours', p.h); updateSequenceStep(step.id, 'delayMinutes', p.m); };
+                return (
+                  <View style={{ marginBottom: 10 }}>
+                    <Text style={[styles.delayLabel, { marginBottom: 6 }]}>
+                      {isFirstStep ? 'From enrollment' : 'From enrollment date'}
+                    </Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        {PRESETS.map(p => (
+                          <TouchableOpacity key={p.label} onPress={() => apply(p)}
+                            style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: activePreset?.label === p.label ? '#C9A962' : colors.surface, borderWidth: 1, borderColor: activePreset?.label === p.label ? '#C9A962' : colors.borderLight }}>
+                            <Text style={{ fontSize: 13, fontWeight: activePreset?.label === p.label ? '700' : '500', color: activePreset?.label === p.label ? '#000' : colors.text }}>{p.label}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </ScrollView>
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                      {[{ key: 'delayMonths', label: 'Mo', max: 24 }, { key: 'delayDays', label: 'Days', max: 365 }, { key: 'delayHours', label: 'Hrs', max: 23 }, { key: 'delayMinutes', label: 'Min', max: 59 }].map(({ key, label, max }) => (
+                        <View key={key} style={{ flex: 1, alignItems: 'center' }}>
+                          <Text style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 3, fontWeight: '600' }}>{label}</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 8, borderWidth: 1, borderColor: colors.borderLight, overflow: 'hidden' }}>
+                            <TouchableOpacity style={{ padding: 6 }} onPress={() => updateSequenceStep(step.id, key, Math.max(0, ((step as any)[key] ?? 0) - 1))}>
+                              <Text style={{ fontSize: 15, color: colors.text, fontWeight: '700' }}>−</Text>
+                            </TouchableOpacity>
+                            <Text style={{ fontSize: 13, color: colors.text, fontWeight: '700', minWidth: 20, textAlign: 'center' }}>{(step as any)[key] ?? 0}</Text>
+                            <TouchableOpacity style={{ padding: 6 }} onPress={() => updateSequenceStep(step.id, key, Math.min(max, ((step as any)[key] ?? 0) + 1))}>
+                              <Text style={{ fontSize: 15, color: colors.text, fontWeight: '700' }}>+</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
                   </View>
-                </View>
-                
-                <View style={styles.delayInput}>
-                  <Text style={styles.delayLabel}>Days</Text>
-                  <View style={styles.delayControls}>
-                    <TouchableOpacity 
-                      style={styles.delayButton}
-                      onPress={() => updateSequenceStep(step.id, 'delayDays', Math.max(0, step.delayDays - 1))}
-                    >
-                      <Ionicons name="remove" size={18} color={colors.text} />
-                    </TouchableOpacity>
-                    <Text style={styles.delayValue}>{step.delayDays}</Text>
-                    <TouchableOpacity 
-                      style={styles.delayButton}
-                      onPress={() => updateSequenceStep(step.id, 'delayDays', step.delayDays + 1)}
-                    >
-                      <Ionicons name="add" size={18} color={colors.text} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View style={styles.delayInput}>
-                  <Text style={styles.delayLabel}>Hours</Text>
-                  <View style={styles.delayControls}>
-                    <TouchableOpacity 
-                      style={styles.delayButton}
-                      onPress={() => updateSequenceStep(step.id, 'delayHours', Math.max(0, step.delayHours - 1))}
-                    >
-                      <Ionicons name="remove" size={18} color={colors.text} />
-                    </TouchableOpacity>
-                    <Text style={styles.delayValue}>{step.delayHours}</Text>
-                    <TouchableOpacity 
-                      style={styles.delayButton}
-                      onPress={() => updateSequenceStep(step.id, 'delayHours', step.delayHours + 1)}
-                    >
-                      <Ionicons name="add" size={18} color={colors.text} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
+                );
+              })()}
               
               {/* Channel + AI per step */}
               <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>

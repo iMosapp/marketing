@@ -941,17 +941,20 @@ async def enroll_contact_in_campaign(user_id: str, campaign_id: str, contact_id:
 
     # ── PRE-SCHEDULE ALL STEPS ────────────────────────────────────────────────
     # Calculate exact send times for every step at enrollment time.
-    # The scheduler then only needs to query campaign_pending_sends — no enrollment scan.
+    # Pre-schedule ALL steps using ABSOLUTE timing from enrollment date.
+    # Each step's delay = time from enrollment start (not cumulative from previous step).
+    # Example: Step 2 = "2 days" means April 4 if enrolled April 2.
+    #          Step 3 = "1 month" means May 2 if enrolled April 2.
+    #          Step 4 = "1 year" means April 2 next year — regardless of step 3.
     if sequences:
-        base_time = datetime.utcnow()
-        cumulative = timedelta()
+        base_time = datetime.utcnow()  # enrollment date = anchor for ALL steps
         pending_docs = []
         for i, step in enumerate(sequences):
-            # Accumulate delays: step 1 fires immediately (delay 0), step 2 adds its delay on top, etc.
-            cumulative += timedelta(
+            # ABSOLUTE offset from enrollment date (not cumulative)
+            absolute_offset = timedelta(
                 minutes=step.get('delay_minutes', 0) or 0,
                 hours=step.get('delay_hours', 0) or 0,
-                days=(step.get('delay_days', 0) or 0) + (step.get('delay_months', 0) or 0) * 30
+                days=(step.get('delay_days', 0) or 0) + (step.get('delay_months', 0) or 0) * 30,
             )
             pending_docs.append({
                 "user_id": user_id,
@@ -967,7 +970,7 @@ async def enroll_contact_in_campaign(user_id: str, campaign_id: str, contact_id:
                 "channel": step.get('channel', 'sms'),
                 "delivery_mode": campaign.get('delivery_mode', 'manual'),
                 "ai_enabled": campaign.get('ai_enabled', False),
-                "send_at": base_time + cumulative,
+                "send_at": base_time + absolute_offset,
                 "status": "pending",
                 "created_at": datetime.utcnow(),
             })

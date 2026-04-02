@@ -584,12 +584,13 @@ async def process_pending_campaign_steps():
                     remaining = sequences[current_step - 1:]
 
                     base = now_naive
-                    cumulative = timedelta()
                     docs = []
                     for i, step in enumerate(remaining):
-                        cumulative += timedelta(
-                            hours=step.get("delay_hours", 0),
-                            days=step.get("delay_days", 0) + step.get("delay_months", 0) * 30
+                        # ABSOLUTE from enrollment date
+                        absolute_offset = timedelta(
+                            minutes=step.get('delay_minutes', 0) or 0,
+                            hours=step.get('delay_hours', 0) or 0,
+                            days=(step.get('delay_days', 0) or 0) + (step.get('delay_months', 0) or 0) * 30
                         )
                         docs.append({
                             "user_id": enr["user_id"],
@@ -605,7 +606,7 @@ async def process_pending_campaign_steps():
                             "channel": step.get("channel", "sms"),
                             "delivery_mode": campaign.get("delivery_mode", "manual"),
                             "ai_enabled": campaign.get("ai_enabled", False),
-                            "send_at": base + cumulative,
+                            "send_at": base + absolute_offset,
                             "status": "pending",
                             "created_at": now_naive,
                         })
