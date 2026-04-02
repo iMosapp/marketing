@@ -257,7 +257,7 @@ export default function CampaignJourney({ userId, contactId, onEnrollmentRemoved
                       <View style={[s.timelineContent, (isPending || isNext) && s.timelineContentActive, (isPending || isNext) && { borderColor: '#FF950040', backgroundColor: '#FF950008' }]}>
                         <View style={s.stepHeaderRow}>
                           <Text style={[s.stepLabel, { color: stepColor }]}>
-                            {isSent ? 'Sent' : isPending ? 'Ready to Send' : isNext ? 'Next Up' : `Step ${step.step}`}
+                            {isSent ? 'Sent' : isPending ? 'Ready to Send' : isNext ? 'Next Up' : step.scheduled_at ? `Sends ${new Date(step.scheduled_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}` : `Step ${step.step}`}
                           </Text>
                           <View style={s.stepMeta}>
                             <Ionicons name={step.channel === 'email' ? 'mail' : 'chatbubble'} size={11} color={colors.textTertiary || '#666'} />

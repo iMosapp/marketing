@@ -1505,25 +1505,41 @@ async def get_contact_campaign_journey(user_id: str, contact_id: str):
             if sent_record:
                 record_status = sent_record.get("status")
                 if record_status is None:
-                    # Legacy data: no status field. Check task/pending_send for truth.
                     if delivery_mode == "manual":
                         if task_doc and task_doc.get("completed"):
                             record_status = "sent"
                         elif task_doc and not task_doc.get("completed"):
                             record_status = "pending"
-                        elif ps_doc and ps_doc.get("status") == "sent":
+                        elif ps_doc and ps_doc.get("status") in ("sent", "pending_user_action"):
                             record_status = "sent"
                         elif ps_doc and ps_doc.get("status") == "pending":
                             record_status = "pending"
                         else:
-                            record_status = "sent"  # assume sent for very old data
+                            record_status = "sent"
                     else:
-                        record_status = "sent"  # automated mode
+                        record_status = "sent"
 
                 if record_status == "pending":
-                    step_info["status"] = "pending_send"
-                    queued = sent_record.get("queued_at", sent_record.get("sent_at"))
-                    step_info["queued_at"] = queued.isoformat() if queued else None
+                    # ── KEY FIX: only "pending_send" if actually DUE NOW ──
+                    # If send_at is in the future, it's "upcoming" not "ready to send"
+                    is_due_now = True
+                    if ps_doc and ps_doc.get("send_at"):
+                        ps_send_at = ps_doc["send_at"]
+                        if hasattr(ps_send_at, "replace"):
+                            ps_send_at_utc = ps_send_at.replace(tzinfo=None) if ps_send_at.tzinfo else ps_send_at
+                        else:
+                            ps_send_at_utc = ps_send_at
+                        is_due_now = ps_send_at_utc <= datetime.utcnow()
+
+                    if is_due_now:
+                        step_info["status"] = "pending_send"
+                        queued = sent_record.get("queued_at", sent_record.get("sent_at"))
+                        step_info["queued_at"] = queued.isoformat() if queued else None
+                    else:
+                        # Step exists in queue but not due yet — show scheduled time
+                        step_info["status"] = "upcoming"
+                        if ps_doc and ps_doc.get("send_at"):
+                            step_info["scheduled_at"] = ps_doc["send_at"].isoformat() if hasattr(ps_doc["send_at"], "isoformat") else str(ps_doc["send_at"])
                 else:
                     step_info["status"] = "sent"
                     sent_at = sent_record.get("sent_at")
