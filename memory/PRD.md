@@ -132,17 +132,19 @@ New components created under `components/account/`:
 - 5 new focused components under `components/account/`
 
 ### Task Resurrection Bug Fix (Apr 2, 2026) -- LATEST
-Fixed critical bug where marking tasks "Done" in Today's Touchpoints would cause them to reappear on next page load.
+Fixed critical bug where marking tasks "Done" in Today's Touchpoints would cause them to reappear on next page load. Three bugs found and fixed:
 
-**Root cause (two bugs combined):**
-1. `_catchup_overdue_campaign_tasks` in `tasks.py`: when a completed/dismissed task was found by idempotency key, it deleted the completed task but lacked a `continue` — causing it to fall through and create a brand new "pending" task immediately after deletion
-2. `update_task` complete action: did not mark the `campaign_pending_sends` entry as "done", so the catchup kept finding it as a trigger
+**Bug 1 (Catchup resurrection)**: `_catchup_overdue_campaign_tasks` found completed tasks by idempotency key, deleted them, but lacked a `continue` — so it fell through and created a brand new "pending" task immediately. Fix: `continue` for completed/dismissed tasks.
 
-**Fixes:**
-- Catchup: changed `delete_one` + fall-through to `continue` for completed/dismissed tasks
-- Complete action: now also updates `campaign_pending_sends.status = "done"` with timestamp when task is completed — so the catchup's query (`status: {$in: ["pending", "pending_user_action"]}`) skips it entirely
+**Bug 2 (pending_send not marked)**: Task completion didn't update `campaign_pending_sends.status = "done"`. Fix: added update in `update_task` complete action so catchup's query `status: {$in: ["pending", "pending_user_action"]}` never sees it again.
 
-**Verified:** API end-to-end test confirms task stays off list after marking Done and after page reload.
+**Bug 3 (campaign history invisible)**: Tasks created by catchup (not scheduler) had no `messages_sent` entry in enrollment. The update `messages_sent.$.status = "sent"` failed silently. Fix: added upsert pattern — pushes new entry if none exists, so campaign journey always shows sent steps correctly.
+
+**Bug 4 (re-enrollment key collision)**: `ps_by_key` used `campaign_id + step` as dict key, causing wrong step display for re-enrolled contacts. Fix: now uses `enrollment_id + step` as preferred key with `campaign_id + step` as fallback.
+
+**Bug 5 (delay_minutes missing)**: `CampaignJourney.tsx` `formatDelay()` didn't show minutes. Fix: added `delay_minutes` to interface and display.
+
+**Verified:** 14/14 backend + frontend tests pass. Task stays gone after Done, campaign journey shows 'sent', future steps (6mo/1yr) show as upcoming with scheduled dates.
 
 ### Performance Sprint (Mar 30, 2026)
 
