@@ -1421,7 +1421,7 @@ async def get_contact_campaign_journey(user_id: str, contact_id: str):
     db = get_db()
 
     enrollments = await db.campaign_enrollments.find(
-        {"contact_id": contact_id, "user_id": user_id, "status": {"$ne": "archived"}},
+        {"contact_id": contact_id, "user_id": user_id, "status": {"$nin": ["archived", "cancelled"]}},
     ).to_list(100)
 
     # Pre-load pending sends and tasks for this contact to cross-reference
@@ -1732,14 +1732,26 @@ async def remove_campaign_enrollment(user_id: str, contact_id: str, data: dict =
         }}
     )
 
-    # Cancel any pending sends for this enrollment
+    # Cancel ALL non-final pending sends for this specific enrollment
+    # (includes "pending", "pending_user_action", "processing" — so catchup can't create new tasks)
     cancelled = await db.campaign_pending_sends.update_many(
         {
-            "campaign_id": campaign_id,
-            "contact_id": contact_id,
-            "status": "pending",
+            "enrollment_id": enrollment_id,
+            "status": {"$in": ["pending", "pending_user_action", "processing"]},
         },
         {"$set": {"status": "cancelled", "cancelled_at": now}}
+    )
+
+    # Dismiss all active tasks for this campaign/contact so they vanish from Touchpoints immediately
+    dismissed_tasks = await db.tasks.update_many(
+        {
+            "user_id": user_id,
+            "contact_id": contact_id,
+            "campaign_id": campaign_id,
+            "status": {"$in": ["pending", "snoozed", None]},
+            "completed": {"$ne": True},
+        },
+        {"$set": {"status": "dismissed", "dismissed_at": now, "dismissed_reason": "campaign_removed"}}
     )
 
     # Log the action as a contact event
@@ -1754,7 +1766,7 @@ async def remove_campaign_enrollment(user_id: str, contact_id: str, data: dict =
         "icon": "close-circle",
         "color": "#FF3B30",
         "title": "Campaign Removed",
-        "description": f"Removed '{campaign_name}' campaign. {cancelled.modified_count} pending sends cancelled.",
+        "description": f"Removed '{campaign_name}' campaign. {cancelled.modified_count} sends cancelled, {dismissed_tasks.modified_count} tasks dismissed.",
         "category": "campaigns",
         "timestamp": now,
         "metadata": {
@@ -1762,6 +1774,7 @@ async def remove_campaign_enrollment(user_id: str, contact_id: str, data: dict =
             "campaign_name": campaign_name,
             "enrollment_id": enrollment_id,
             "cancelled_sends": cancelled.modified_count,
+            "dismissed_tasks": dismissed_tasks.modified_count,
         },
     })
 
@@ -1769,4 +1782,5 @@ async def remove_campaign_enrollment(user_id: str, contact_id: str, data: dict =
         "success": True,
         "message": f"Campaign '{campaign_name}' removed from contact",
         "cancelled_pending_sends": cancelled.modified_count,
+        "dismissed_tasks": dismissed_tasks.modified_count,
     }
