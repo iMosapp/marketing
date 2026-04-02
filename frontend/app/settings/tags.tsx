@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { showAlert } from '../../services/alert';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View,
   Text,
@@ -98,6 +99,7 @@ export default function TagsSettings() {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const [tags, setTags] = useState<Tag[]>([]);
   const [pendingTags, setPendingTags] = useState<any[]>([]);
@@ -364,7 +366,7 @@ export default function TagsSettings() {
         onRequestClose={() => setShowModal(false)}
       >
         <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
+          <View style={[styles.modalHeader, { paddingTop: Math.max(insets.top, 20) + 8 }]}>
             <TouchableOpacity onPress={() => setShowModal(false)}>
               <Text style={styles.cancelButton}>Cancel</Text>
             </TouchableOpacity>
