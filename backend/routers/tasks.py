@@ -28,178 +28,97 @@ _CATCHUP_MAX_ENTRIES = 500  # prevent unbounded memory growth
 
 
 async def _catchup_overdue_campaign_tasks(user_id: str):
-    """Create missing tasks for overdue campaign enrollments.
-    Throttled: skips if already ran for this user in the last 5 minutes.
+    """Create missing tasks for due campaign_pending_sends.
+
+    With the pre-scheduled queue, due sends live in campaign_pending_sends.
+    This runs when the user opens Today Touchpoints so they see actions
+    immediately — without waiting up to 15 minutes for the scheduler.
+
+    Throttled to once per 2 minutes per user.
     """
     now = datetime.now(timezone.utc)
     last = _catchup_last_run.get(user_id)
     if last and (now - last) < _CATCHUP_INTERVAL:
-        return  # Already ran recently
+        return
     _catchup_last_run[user_id] = now
-    # Evict oldest entries to prevent unbounded memory growth
     if len(_catchup_last_run) > _CATCHUP_MAX_ENTRIES:
         cutoff = now - timedelta(hours=2)
         to_delete = [k for k, v in _catchup_last_run.items() if v < cutoff]
         for k in to_delete:
             del _catchup_last_run[k]
+
     db = get_db()
-    now = datetime.now(timezone.utc)
-
+    created = 0
     try:
-        # ── Path 1: Enrollments where next_send_at has passed ──
-        overdue_enrollments = await db.campaign_enrollments.find({
+        # Find all due pending sends for this user — the pre-scheduled queue
+        due_sends = await db.campaign_pending_sends.find({
             "user_id": user_id,
-            "status": "active",
-            "next_send_at": {"$lte": now},
-        }).to_list(50)
+            "status": "pending",
+            "send_at": {"$lte": now},
+        }).limit(50).to_list(50)
 
-        # ── Path 2: Enrollments with pending message steps (scheduler already advanced but task missing/dismissed) ──
-        pending_step_enrollments = await db.campaign_enrollments.find({
-            "user_id": user_id,
-            "status": "active",
-            "messages_sent.status": "pending",
-        }).to_list(50)
+        for send_doc in due_sends:
+            campaign_id = send_doc.get("campaign_id", "")
+            contact_id = send_doc.get("contact_id", "")
+            step_num = send_doc.get("step", 1)
+            channel = send_doc.get("channel", "sms")
+            message_content = send_doc.get("message_template", send_doc.get("message", ""))
+            contact_display = send_doc.get("contact_name", "contact")
+            idem_key = f"campaign_{campaign_id}_{contact_id}_{step_num}"
+            pending_send_id = str(send_doc["_id"])
 
-        # Merge and deduplicate by enrollment _id
-        seen_ids = set()
-        all_enrollments = []
-        for e in overdue_enrollments + pending_step_enrollments:
-            eid = str(e["_id"])
-            if eid not in seen_ids:
-                seen_ids.add(eid)
-                all_enrollments.append(e)
-
-        created = 0
-        for enrollment in all_enrollments:
-            campaign_id = enrollment.get("campaign_id", "")
-            contact_id = enrollment.get("contact_id", "")
-
-            # Load campaign to get step details
-            campaign = None
-            try:
-                campaign = await db.campaigns.find_one({"_id": ObjectId(campaign_id)})
-            except Exception:
-                pass
-            if not campaign:
-                continue
-
-            sequences = campaign.get("sequences", [])
-            if not sequences:
-                continue
-
-            # Determine which steps need tasks
-            steps_to_process = []
-            messages_sent = enrollment.get("messages_sent", [])
-
-            # Check for pending steps in messages_sent
-            for msg in messages_sent:
-                if msg.get("status") == "pending":
-                    steps_to_process.append(msg.get("step", 0))
-
-            # Also check current step if next_send_at passed
-            current_step = enrollment.get("current_step", 1)
-            next_send_at = enrollment.get("next_send_at")
-            if next_send_at and next_send_at <= now and current_step not in steps_to_process:
-                steps_to_process.append(current_step)
-
-            for step_num in steps_to_process:
-                if step_num < 1 or step_num > len(sequences):
+            # Skip if active task already exists
+            existing = await db.tasks.find_one({"idempotency_key": idem_key})
+            if existing:
+                if existing.get("status") in ("pending", "snoozed"):
+                    continue
+                elif existing.get("status") == "dismissed":
+                    await db.tasks.delete_one({"_id": existing["_id"]})
+                else:
                     continue
 
-                idem_key = f"campaign_{campaign_id}_{contact_id}_{step_num}"
-
-                # Skip if a usable task already exists (pending or snoozed)
-                existing = await db.tasks.find_one({"idempotency_key": idem_key})
-                if existing:
-                    ex_status = existing.get("status", "")
-                    if ex_status in ("pending", "snoozed"):
-                        continue  # Task exists and is active — no action needed
-                    elif ex_status in ("dismissed",):
-                        # Task was dismissed but step is still pending — recreate it
-                        await db.tasks.delete_one({"_id": existing["_id"]})
-                    else:
-                        continue  # completed or other — skip
-
-                step = sequences[step_num - 1]
-                channel = step.get("channel", "sms")
-                message_content = step.get("message_template", "") or step.get("message", "")
-                contact_display = enrollment.get("contact_name", "contact")
-                action_type = step.get("action_type", "message")
-
-                if action_type == "send_card":
-                    card_type = step.get("card_type", "congrats")
-                    task_title = f"Send {card_type.title()} Card to {contact_display}"
-                    task_desc = f"Campaign '{campaign.get('name', '')}' step {step_num}: Send a {card_type} card."
-                else:
-                    task_title = f"Send {channel.upper()} to {contact_display}"
-                    task_desc = f"Campaign '{campaign.get('name', '')}' step {step_num}: {message_content[:200]}"
-
-                # Check if pending_send exists, if not create one
-                existing_ps = await db.campaign_pending_sends.find_one({
-                    "campaign_id": campaign_id,
-                    "contact_id": contact_id,
-                    "step": step_num,
-                    "status": "pending",
-                })
-
-                if existing_ps:
-                    pending_send_id = str(existing_ps["_id"])
-                else:
-                    pending_result = await db.campaign_pending_sends.insert_one({
-                        "user_id": user_id,
-                        "campaign_id": campaign_id,
-                        "campaign_name": campaign.get("name", ""),
-                        "contact_id": contact_id,
-                        "contact_name": enrollment.get("contact_name", ""),
-                        "contact_phone": enrollment.get("contact_phone", ""),
-                        "step": step_num,
-                        "channel": channel,
-                        "message": message_content,
-                        "status": "pending",
-                        "created_at": now,
-                    })
-                    pending_send_id = str(pending_result.inserted_id)
-
-                # Replace template variables
-                # Replace ALL template variables in the message
+            # Resolve template variables
+            try:
                 from scheduler import resolve_template_variables
+                first = contact_display.split()[0] if contact_display else "there"
+                last_name = " ".join(contact_display.split()[1:]) if contact_display else ""
                 clean_message = await resolve_template_variables(db, message_content, {
-                    "first_name": enrollment.get("contact_name", "").split()[0] if enrollment.get("contact_name") else "there",
-                    "last_name": " ".join(enrollment.get("contact_name", "").split()[1:]) if enrollment.get("contact_name") else "",
-                    "contact_name": enrollment.get("contact_name", ""),
-                    "phone": enrollment.get("contact_phone", ""),
+                    "first_name": first, "last_name": last_name,
+                    "contact_name": contact_display, "phone": send_doc.get("contact_phone", ""),
                 }, user_id)
+            except Exception:
+                clean_message = message_content
 
-                try:
-                    await db.tasks.insert_one({
-                        "user_id": user_id,
-                        "contact_id": contact_id,
-                        "contact_name": enrollment.get("contact_name", ""),
-                        "contact_phone": enrollment.get("contact_phone", ""),
-                        "type": "campaign_send",
-                        "title": task_title,
-                        "description": task_desc,
-                        "suggested_message": clean_message,
-                        "action_type": "card" if action_type == "send_card" else ("email" if channel == "email" else "text"),
-                        "due_date": now,
-                        "priority": "high",
-                        "priority_order": 1,
-                        "status": "pending",
-                        "completed": False,
-                        "source": "campaign",
-                        "campaign_id": campaign_id,
-                        "campaign_name": campaign.get("name", ""),
-                        "pending_send_id": pending_send_id,
-                        "channel": channel,
-                        "created_at": now,
-                        "idempotency_key": idem_key,
-                    })
-                    created += 1
-                except Exception:
-                    pass  # DuplicateKeyError or other - skip silently
+            try:
+                await db.tasks.insert_one({
+                    "user_id": user_id,
+                    "contact_id": contact_id,
+                    "contact_name": contact_display,
+                    "contact_phone": send_doc.get("contact_phone", ""),
+                    "type": "campaign_send",
+                    "title": f"Send {channel.upper()} to {contact_display}",
+                    "description": f"Campaign '{send_doc.get('campaign_name', '')}' step {step_num}: {message_content[:200]}",
+                    "suggested_message": clean_message,
+                    "action_type": "email" if channel == "email" else "text",
+                    "due_date": now,
+                    "priority": "high",
+                    "priority_order": 1,
+                    "status": "pending",
+                    "completed": False,
+                    "source": "campaign",
+                    "campaign_id": campaign_id,
+                    "campaign_name": send_doc.get("campaign_name", ""),
+                    "pending_send_id": pending_send_id,
+                    "channel": channel,
+                    "created_at": now,
+                    "idempotency_key": idem_key,
+                })
+                created += 1
+            except Exception:
+                pass
 
         if created > 0:
-            logger.info(f"[Tasks] Catch-up: created {created} missing campaign tasks for user {user_id}")
+            logger.info(f"[Tasks] Catch-up: created {created} campaign tasks for user {user_id}")
     except Exception as e:
         logger.warning(f"[Tasks] Catch-up check failed: {e}")
 

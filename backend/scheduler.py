@@ -974,10 +974,11 @@ def start_scheduler():
         misfire_grace_time=3600,
     )
 
-    # Every 15 minutes  - process pending campaign step messages
+    # Every 5 minutes — process pending campaign sends (pre-scheduled queue makes this cheap)
+    # Fast: only queries indexed {status:"pending", send_at:{$lte:now}} rows — no enrollment scan
     scheduler.add_job(
         safe_job(process_pending_campaign_steps),
-        IntervalTrigger(minutes=15),
+        IntervalTrigger(minutes=5),
         id="campaign_step_processor",
         replace_existing=True,
         misfire_grace_time=300,
