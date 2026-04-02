@@ -629,23 +629,41 @@ const { showToast } = useToast();
               
               {/* ── DELAY CONTROLS — Quick presets + custom fields ─────── */}
               {(() => {
-                const PRESETS = [
-                  { label: 'Now', mo: 0, d: 0, h: 0, m: 0 },
-                  { label: '5 min', mo: 0, d: 0, h: 0, m: 5 },
-                  { label: '10 min', mo: 0, d: 0, h: 0, m: 10 },
-                  { label: '15 min', mo: 0, d: 0, h: 0, m: 15 },
-                  { label: '30 min', mo: 0, d: 0, h: 0, m: 30 },
-                  { label: '1 hr', mo: 0, d: 0, h: 1, m: 0 },
-                  { label: '4 hrs', mo: 0, d: 0, h: 4, m: 0 },
-                  { label: '1 day', mo: 0, d: 1, h: 0, m: 0 },
-                  { label: '3 days', mo: 0, d: 3, h: 0, m: 0 },
-                  { label: '1 week', mo: 0, d: 7, h: 0, m: 0 },
-                  { label: '2 weeks', mo: 0, d: 14, h: 0, m: 0 },
-                  { label: '1 month', mo: 1, d: 0, h: 0, m: 0 },
-                  { label: '3 months', mo: 3, d: 0, h: 0, m: 0 },
-                  { label: '6 months', mo: 6, d: 0, h: 0, m: 0 },
-                  { label: '1 year', mo: 12, d: 0, h: 0, m: 0 },
-                ];
+                const isFirstStep = index === 0;
+                const MIN_MINUTES = 15; // minimum for steps 2+ to ensure reliable scheduler delivery
+
+                // Helper: total delay in minutes for validation
+                const totalMinutes = (step.delayMonths || 0) * 30 * 24 * 60
+                  + (step.delayDays || 0) * 24 * 60
+                  + (step.delayHours || 0) * 60
+                  + (step.delayMinutes || 0);
+                const belowMinimum = !isFirstStep && totalMinutes > 0 && totalMinutes < MIN_MINUTES;
+
+                // Step 1: can fire immediately. Steps 2+: minimum 15 min.
+                const PRESETS = isFirstStep
+                  ? [
+                      { label: 'Now', mo: 0, d: 0, h: 0, m: 0 },
+                      { label: '15 min', mo: 0, d: 0, h: 0, m: 15 },
+                      { label: '30 min', mo: 0, d: 0, h: 0, m: 30 },
+                      { label: '1 hr', mo: 0, d: 0, h: 1, m: 0 },
+                      { label: '4 hrs', mo: 0, d: 0, h: 4, m: 0 },
+                      { label: '1 day', mo: 0, d: 1, h: 0, m: 0 },
+                    ]
+                  : [
+                      // Sub-15min options removed for steps 2+ — unreliable below scheduler interval
+                      { label: '15 min', mo: 0, d: 0, h: 0, m: 15 },
+                      { label: '30 min', mo: 0, d: 0, h: 0, m: 30 },
+                      { label: '1 hr', mo: 0, d: 0, h: 1, m: 0 },
+                      { label: '4 hrs', mo: 0, d: 0, h: 4, m: 0 },
+                      { label: '1 day', mo: 0, d: 1, h: 0, m: 0 },
+                      { label: '3 days', mo: 0, d: 3, h: 0, m: 0 },
+                      { label: '1 week', mo: 0, d: 7, h: 0, m: 0 },
+                      { label: '2 weeks', mo: 0, d: 14, h: 0, m: 0 },
+                      { label: '1 month', mo: 1, d: 0, h: 0, m: 0 },
+                      { label: '3 months', mo: 3, d: 0, h: 0, m: 0 },
+                      { label: '6 months', mo: 6, d: 0, h: 0, m: 0 },
+                      { label: '1 year', mo: 12, d: 0, h: 0, m: 0 },
+                    ];
                 const activePreset = PRESETS.find(p =>
                   p.mo === step.delayMonths && p.d === step.delayDays &&
                   p.h === step.delayHours && p.m === (step.delayMinutes || 0)
@@ -658,7 +676,34 @@ const { showToast } = useToast();
                 };
                 return (
                   <View style={{ marginTop: 4 }}>
-                    <Text style={[styles.delayInputLabel, { marginBottom: 8 }]}>Send after</Text>
+                    <Text style={[styles.delayInputLabel, { marginBottom: 4 }]}>
+                      {isFirstStep ? 'Send after trigger' : 'Send after previous step'}
+                    </Text>
+
+                    {/* 15-min minimum warning for steps 2+ */}
+                    {!isFirstStep && (
+                      <Text style={{ fontSize: 11, color: colors.textTertiary, marginBottom: 8 }}>
+                        Minimum 15 min — ensures reliable delivery
+                      </Text>
+                    )}
+
+                    {/* Warning if custom value is below minimum */}
+                    {belowMinimum && (
+                      <TouchableOpacity
+                        onPress={() => {
+                          updateSequenceStep(step.id, 'delayMinutes', MIN_MINUTES);
+                          updateSequenceStep(step.id, 'delayHours', 0);
+                          updateSequenceStep(step.id, 'delayDays', 0);
+                          updateSequenceStep(step.id, 'delayMonths', 0);
+                        }}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FF9500' + '20', borderRadius: 8, padding: 8, marginBottom: 8, borderWidth: 1, borderColor: '#FF9500' + '40' }}
+                      >
+                        <Ionicons name="warning-outline" size={14} color="#FF9500" />
+                        <Text style={{ fontSize: 12, color: '#FF9500', flex: 1 }}>
+                          Delays under 15 min may not fire reliably. Tap to set 15 min.
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                     {/* Preset chips */}
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
                       <View style={{ flexDirection: 'row', gap: 6 }}>
