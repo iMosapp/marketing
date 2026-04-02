@@ -1546,12 +1546,21 @@ async def get_contact_campaign_journey(user_id: str, contact_id: str):
                     step_info["sent_at"] = sent_at.isoformat() if sent_at else None
             elif step_num == current_step and status == "active":
                 step_info["status"] = "next"
-                next_send = enrollment.get("next_send_at")
-                step_info["scheduled_at"] = next_send.isoformat() if next_send else None
+                # Use ps_doc.send_at for precise timing (pre-scheduled queue)
+                if ps_doc and ps_doc.get("send_at"):
+                    step_info["scheduled_at"] = ps_doc["send_at"].isoformat() if hasattr(ps_doc["send_at"], "isoformat") else str(ps_doc["send_at"])
+                else:
+                    next_send = enrollment.get("next_send_at")
+                    step_info["scheduled_at"] = next_send.isoformat() if next_send else None
             elif step_num > current_step or status == "active":
                 step_info["status"] = "upcoming"
+                # Add scheduled_at from pre-scheduled queue so frontend shows "Sends Apr 2 7:51 PM"
+                if ps_doc and ps_doc.get("send_at"):
+                    step_info["scheduled_at"] = ps_doc["send_at"].isoformat() if hasattr(ps_doc["send_at"], "isoformat") else str(ps_doc["send_at"])
             else:
                 step_info["status"] = "upcoming"
+                if ps_doc and ps_doc.get("send_at"):
+                    step_info["scheduled_at"] = ps_doc["send_at"].isoformat() if hasattr(ps_doc["send_at"], "isoformat") else str(ps_doc["send_at"])
 
             steps.append(step_info)
 

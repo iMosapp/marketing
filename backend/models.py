@@ -460,6 +460,7 @@ class CampaignSequenceStep(BaseModel):
     delay_hours: int = 0
     delay_days: int = 0
     delay_months: int = 0
+    delay_minutes: int = 0  # Sub-hour precision for short-delay campaigns (5min, 15min, etc.)
     media_urls: List[str] = []  # Media attachments for this step
     channel: str = "sms"  # sms, email, both
     ai_generated: bool = False  # Whether to use AI to generate/personalize the message
