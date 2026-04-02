@@ -62,6 +62,31 @@ export default function CampaignDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const user = useAuthStore((state) => state.user);
+  const APP_BASE = 'https://app.imonsocial.com';
+
+  // Quick links for campaign step builder — loaded once on mount
+  const [quickLinks, setQuickLinks] = React.useState<{label:string;icon:string;color:string;url:string}[]>([]);
+  React.useEffect(() => {
+    if (!user?._id) return;
+    const links: {label:string;icon:string;color:string;url:string}[] = [
+      { label: 'Digital Card', icon: 'card-outline', color: '#C9A962', url: `${APP_BASE}/card/${user._id}` },
+      { label: 'Link Page', icon: 'link-outline', color: '#007AFF', url: `${APP_BASE}/l/${user._id}` },
+      { label: 'Showcase', icon: 'images-outline', color: '#34C759', url: `${APP_BASE}/showcase/${user._id}` },
+    ];
+    // Load review links if store exists
+    const storeId = (user as any)?.store_id;
+    if (storeId) {
+      api.get(`/admin/stores/${storeId}`).then(r => {
+        const rl = r.data?.review_links || {};
+        if (rl.google) links.push({ label: 'Google Review', icon: 'star-outline', color: '#FF9500', url: rl.google });
+        if (rl.yelp) links.push({ label: 'Yelp Review', icon: 'star-outline', color: '#D32323', url: rl.yelp });
+        if (rl.facebook) links.push({ label: 'FB Review', icon: 'logo-facebook', color: '#1877F2', url: rl.facebook });
+        setQuickLinks([...links]);
+      }).catch(() => setQuickLinks(links));
+    } else {
+      setQuickLinks(links);
+    }
+  }, [user?._id]);
   
 const { showToast } = useToast();
     const [loading, setLoading] = useState(true);
@@ -825,6 +850,30 @@ const { showToast } = useToast();
                     multiline
                     numberOfLines={4}
                   />
+
+                  {/* Quick Link Insert — tap to append your tracked links */}
+                  {quickLinks.length > 0 && (
+                    <View style={{ marginTop: 8, marginBottom: 4 }}>
+                      <Text style={{ fontSize: 11, color: colors.textTertiary, marginBottom: 5, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.4 }}>
+                        Insert Link
+                      </Text>
+                      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                        <View style={{ flexDirection: 'row', gap: 6 }}>
+                          {quickLinks.map(link => (
+                            <TouchableOpacity
+                              key={link.label}
+                              onPress={() => updateSequenceStep(step.id, 'message', (step.message ? step.message + ' ' : '') + link.url)}
+                              style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, backgroundColor: link.color + '18', borderWidth: 1, borderColor: link.color + '40' }}
+                              data-testid={`insert-link-${link.label}`}
+                            >
+                              <Ionicons name={link.icon as any} size={13} color={link.color} />
+                              <Text style={{ fontSize: 12, fontWeight: '600', color: link.color }}>{link.label}</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </ScrollView>
+                    </View>
+                  )}
                   
                   <Text style={styles.charCount}>{step.message.length}/320</Text>
                   

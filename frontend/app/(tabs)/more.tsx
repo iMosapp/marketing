@@ -732,6 +732,54 @@ export default function MoreScreen() {
     }
   }
 
+  // ── Send + Tag modal state ──
+  const [sendTagModal, setSendTagModal] = React.useState<{url: string; title: string} | null>(null);
+  const [sendTagContact, setSendTagContact] = React.useState('');
+  const [sendTagPhone, setSendTagPhone] = React.useState('');
+  const [sendTagName, setSendTagName] = React.useState('');
+  const [sendTagSelected, setSendTagSelected] = React.useState('');
+  const [sendTagContacts, setSendTagContacts] = React.useState<any[]>([]);
+  const [sendTagSending, setSendTagSending] = React.useState(false);
+
+  const openSendTag = (url: string, title: string) => {
+    setSendTagModal({ url, title });
+    setSendTagContact('');
+    setSendTagPhone('');
+    setSendTagName('');
+    setSendTagSelected('');
+    if (userId) {
+      api.get(`/contacts/${userId}?paginated=true&limit=100`).then(r => {
+        const contacts = r.data?.contacts || r.data || [];
+        setSendTagContacts(contacts);
+      }).catch(() => {});
+    }
+  };
+
+  const handleSendTag = async () => {
+    if (!sendTagPhone && !sendTagSelected) { showSimpleAlert('Missing', 'Enter a phone number or select a contact'); return; }
+    if (!sendTagSelected && !sendTagName) { showSimpleAlert('Missing', 'Enter recipient name'); return; }
+    setSendTagSending(true);
+    try {
+      const contact = sendTagContacts.find(c => c._id === sendTagSelected);
+      const phone = contact?.phone || sendTagPhone;
+      const name = contact?.first_name ? `${contact.first_name} ${contact.last_name || ''}`.trim() : sendTagName;
+      const msg = `Hey ${name.split(' ')[0] || 'there'}! ${sendTagModal?.title}: ${sendTagModal?.url}`;
+      // Open native SMS
+      if (Platform.OS === 'web' && navigator.clipboard) {
+        await navigator.clipboard.writeText(msg);
+        showSimpleAlert('Copied!', 'Message copied — paste it into your SMS app');
+      } else {
+        Linking.openURL(`sms:${phone}?body=${encodeURIComponent(msg)}`);
+      }
+      // Apply tag if selected
+      if (sendTagSelected && sendTagContact && userId) {
+        await api.post(`/contacts/${userId}/${sendTagSelected}/tags`, { tag: sendTagContact }).catch(() => {});
+      }
+      setSendTagModal(null);
+    } catch { showSimpleAlert('Error', 'Could not send'); }
+    finally { setSendTagSending(false); }
+  };
+
   // ── Brand card render ──
   const renderBrandItem = (item: { icon: string; title: string; subtitle: string; color: string; publicUrl: string | null; editRoute?: string }, index: number) => (
     <TouchableOpacity
@@ -763,6 +811,15 @@ export default function MoreScreen() {
             >
               <Ionicons name="share-outline" size={12} color={colors.textSecondary} />
               <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>Share</Text>
+            </TouchableOpacity>
+          )}
+          {item.publicUrl && (
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, backgroundColor: '#FF9500' + '18', borderWidth: 1, borderColor: '#FF9500' + '30' }}
+              onPress={(e: any) => { e?.stopPropagation?.(); openSendTag(item.publicUrl!, item.title); }}
+            >
+              <Ionicons name="pricetag-outline" size={12} color="#FF9500" />
+              <Text style={{ fontSize: 12, fontWeight: '600', color: '#FF9500' }}>Send + Tag</Text>
             </TouchableOpacity>
           )}
           {item.editRoute && (
@@ -866,6 +923,7 @@ export default function MoreScreen() {
   };
   
   return (
+    <>
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
       <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent}>
         {/* Impersonation Banner */}
@@ -1372,6 +1430,44 @@ export default function MoreScreen() {
         </View>
       )}
     </SafeAreaView>
+
+    {/* ── Send + Tag Modal ─────────────────────────────────────────── */}
+    {sendTagModal && (
+      <View style={{ position: 'absolute' as any, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 200, justifyContent: 'flex-end' }}>
+        <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 40 }}>
+          <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text, marginBottom: 4 }}>Send + Tag</Text>
+          <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 16 }}>{sendTagModal.title}</Text>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textTertiary, marginBottom: 6 }}>SELECT CONTACT</Text>
+          {sendTagContacts.length > 0 ? (
+            <ScrollView style={{ maxHeight: 120, borderWidth: 1, borderColor: colors.borderLight, borderRadius: 10, marginBottom: 12 }}>
+              {sendTagContacts.slice(0, 30).map((c: any) => (
+                <TouchableOpacity key={c._id} onPress={() => { setSendTagSelected(c._id); setSendTagPhone(c.phone || ''); setSendTagName(`${c.first_name || ''} ${c.last_name || ''}`.trim()); setSendTagContact(''); }}
+                  style={{ padding: 10, borderBottomWidth: 1, borderBottomColor: colors.borderLight, backgroundColor: sendTagSelected === c._id ? '#C9A96220' : 'transparent' }}>
+                  <Text style={{ color: colors.text, fontWeight: sendTagSelected === c._id ? '700' : '400' }}>{c.first_name} {c.last_name}</Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{c.phone}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+              <TextInput value={sendTagName} onChangeText={setSendTagName} placeholder="Name" placeholderTextColor={colors.textTertiary} style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 10, padding: 12, color: colors.text, borderWidth: 1, borderColor: colors.borderLight }} />
+              <TextInput value={sendTagPhone} onChangeText={setSendTagPhone} placeholder="Phone" placeholderTextColor={colors.textTertiary} keyboardType="phone-pad" style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 10, padding: 12, color: colors.text, borderWidth: 1, borderColor: colors.borderLight }} />
+            </View>
+          )}
+          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textTertiary, marginBottom: 6 }}>APPLY TAG (triggers campaign)</Text>
+          <TextInput value={sendTagContact} onChangeText={setSendTagContact} placeholder="e.g. sold, new_lead (optional)" placeholderTextColor={colors.textTertiary} style={{ backgroundColor: colors.surface, borderRadius: 10, padding: 12, color: colors.text, borderWidth: 1, borderColor: colors.borderLight, marginBottom: 16 }} />
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <TouchableOpacity onPress={() => setSendTagModal(null)} style={{ flex: 1, padding: 14, borderRadius: 12, backgroundColor: colors.card, alignItems: 'center' }}>
+              <Text style={{ color: colors.text, fontWeight: '600' }}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleSendTag} disabled={sendTagSending} style={{ flex: 2, padding: 14, borderRadius: 12, backgroundColor: '#FF9500', alignItems: 'center' }}>
+              <Text style={{ color: '#fff', fontWeight: '700' }}>{sendTagSending ? 'Sending…' : 'Send + Apply Tag'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    )}
+    </>
   );
 }
 
