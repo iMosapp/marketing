@@ -135,8 +135,16 @@ async function _restoreFromCookie(set: any) {
       set({ user: normalizeUser(res.data.user), token: res.data.token, isAuthenticated: true, isLoading: false });
       return;
     }
-  } catch (e) {
-    // Network error or 401 — cookie may be expired or invalid
+  } catch (e: any) {
+    // Only force logout on explicit 401 (invalid credentials)
+    // Server errors (502, 520, network timeout) = server is temporarily down, NOT invalid session
+    const status = e?.response?.status;
+    if (status && status !== 401) {
+      // Server error — keep user "logged in" optimistically; they'll see errors on API calls
+      // but won't be forced through the full login flow just because the server restarted
+      set({ isLoading: false });
+      return;
+    }
   }
   set({ isLoading: false });
 }
@@ -316,7 +324,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               const { default: api } = await import('../services/api');
               const res = await api.get('/auth/me');
               if (res.data?.user && res.data?.token) {
-                // Restore into both storage layers
                 try { await _idbSet('imonsocial_token', res.data.token); } catch {}
                 try { await _idbSet('imonsocial_user', JSON.stringify(res.data.user)); } catch {}
                 try { await AsyncStorage.setItem('auth_token', res.data.token); } catch {}
@@ -324,7 +331,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 set({ user: normalizeUser(res.data.user), token: res.data.token, isAuthenticated: true, isLoading: false });
                 return;
               }
-            } catch {
+            } catch (e: any) {
+              const status = e?.response?.status;
+              if (status && status !== 401) {
+                // Server temporarily down — don't force logout; show as logged in optimistically
+                set({ isLoading: false });
+                return;
+              }
               if (attempt === 0) await new Promise(r => setTimeout(r, 1000));
             }
           }
