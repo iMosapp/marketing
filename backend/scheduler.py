@@ -725,7 +725,10 @@ async def process_pending_campaign_steps():
                 else:
                     # MANUAL: wrap URLs + create task + notification
                     contact_display = send_doc.get("contact_name", "contact")
-                    idem_key = f"campaign_{send_doc.get('campaign_id')}_{contact_id}_{current_step}"
+                    # Include enrollment_id so each re-enrollment gets fresh tasks
+                    # (old key format without enrollment_id blocked tasks across re-enrollments)
+                    enrollment_id_short = send_doc.get("enrollment_id", "")[-8:] if send_doc.get("enrollment_id") else str(send_doc.get("_id", ""))[-8:]
+                    idem_key = f"campaign_{send_doc.get('campaign_id')}_{contact_id}_{enrollment_id_short}_{current_step}"
                     existing_task = await db.tasks.find_one({"idempotency_key": idem_key})
 
                     if not existing_task:

@@ -50,10 +50,11 @@ async def _catchup_overdue_campaign_tasks(user_id: str):
     db = get_db()
     created = 0
     try:
-        # Find all due pending sends for this user — the pre-scheduled queue
+        # Find all due pending sends — include "pending_user_action" in case
+        # the scheduler processed them but task creation was blocked by old idempotency keys
         due_sends = await db.campaign_pending_sends.find({
             "user_id": user_id,
-            "status": "pending",
+            "status": {"$in": ["pending", "pending_user_action"]},
             "send_at": {"$lte": now},
         }).limit(50).to_list(50)
 
@@ -64,18 +65,26 @@ async def _catchup_overdue_campaign_tasks(user_id: str):
             channel = send_doc.get("channel", "sms")
             message_content = send_doc.get("message_template", send_doc.get("message", ""))
             contact_display = send_doc.get("contact_name", "contact")
-            idem_key = f"campaign_{campaign_id}_{contact_id}_{step_num}"
+            # Include enrollment_id so re-enrollments get fresh tasks (not blocked by old ones)
+            enrollment_id_short = send_doc.get("enrollment_id", "")[-8:] if send_doc.get("enrollment_id") else str(send_doc.get("_id", ""))[-8:]
+            idem_key = f"campaign_{campaign_id}_{contact_id}_{enrollment_id_short}_{step_num}"
             pending_send_id = str(send_doc["_id"])
 
-            # Skip if active task already exists
+            # Skip if active task already exists for this key
             existing = await db.tasks.find_one({"idempotency_key": idem_key})
             if existing:
                 if existing.get("status") in ("pending", "snoozed"):
                     continue
-                elif existing.get("status") == "dismissed":
+                elif existing.get("status") in ("dismissed", "completed"):
                     await db.tasks.delete_one({"_id": existing["_id"]})
                 else:
                     continue
+
+            # Also check old-format key (without enrollment_id) — skip only if it's an ACTIVE pending task
+            old_idem_key = f"campaign_{campaign_id}_{contact_id}_{step_num}"
+            old_existing = await db.tasks.find_one({"idempotency_key": old_idem_key})
+            if old_existing and old_existing.get("status") in ("pending", "snoozed") and not old_existing.get("completed"):
+                continue  # active task under old key — don't duplicate
 
             # Resolve template variables
             try:
