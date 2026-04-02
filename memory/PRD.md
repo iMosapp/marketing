@@ -131,7 +131,26 @@ New components created under `components/account/`:
 - `my-account.tsx` 1,533 → 424 lines
 - 5 new focused components under `components/account/`
 
-### Cover Photo Upload Fix — [object Object] Error (Apr 2, 2026) -- LATEST
+### Upload Progress Bars (Apr 2, 2026) -- LATEST
+
+Added visual upload progress feedback for cover photo and profile photo uploads on the My Presence page.
+
+**Cover photo (my-account.tsx):**
+- Semi-transparent overlay slides up from the bottom of the cover image during upload
+- Shows "Uploading 2.3 MB" label + "67%" counter
+- Smooth animated gold progress bar fills left → right
+- Uses `Animated.Value` with `interpolate` for 60fps animation
+- Tracks file size from `file.size` (web) or `asset.fileSize` (native)
+
+**Profile photo (ProfilePhotoUpload.tsx):**
+- Overlay covers the avatar with dark tint during upload
+- Shows percentage counter + thin gold progress bar
+- Badge spinner replaces camera icon during upload
+- "Uploading 2.3 MB..." text appears below avatar
+
+**Progress source:** `axios onUploadProgress` callback with `evt.progress` (axios 1.x normalized 0-1) falling back to `loaded/total` for older versions.
+
+### Cover Photo Upload Fix — [object Object] Error (Apr 2, 2026)
 
 **Root cause:** Three combined issues causing `[object Object]` on iOS cover/profile photo uploads:
 1. Global axios default `Content-Type: application/json` wasn't overridden for FormData on React Native — server received JSON content type with multipart body → FastAPI returned 422 with `detail` as array → truthy array bypassed `||` fallback → `[object Object]` shown

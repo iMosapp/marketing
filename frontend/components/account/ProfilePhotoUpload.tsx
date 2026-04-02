@@ -5,9 +5,9 @@
  * error states. Uses the proper multipart pipeline (WebP, thumbnails, CDN).
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
-  View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Platform,
+  View, Text, TouchableOpacity, ActivityIndicator, StyleSheet, Platform, Animated,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,33 +23,62 @@ interface Props {
   onPhotoUpdated: (newPhotoUrl: string | null) => void;
 }
 
+function formatBytes(bytes: number): string {
+  if (!bytes || bytes === 0) return '';
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
   const [uploading, setUploading] = useState(false);
-  // Optimistic local preview — shows the new photo IMMEDIATELY after upload
-  // without waiting for the store to refresh through resolveUserPhotoUrlHiRes
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [fileSize, setFileSize] = useState('');
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
+  const progressAnim = useRef(new Animated.Value(0)).current;
+
+  function animateProgress(toValue: number) {
+    Animated.timing(progressAnim, {
+      toValue,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
-  async function uploadFile(file: File | { uri: string; name: string; type: string }) {
+  async function uploadFile(file: File | { uri: string; name: string; type: string }, sizeBytes?: number) {
+    if (sizeBytes) setFileSize(formatBytes(sizeBytes));
+    setUploadProgress(0);
+    animateProgress(0);
+
     const formData = new FormData();
     formData.append('file', file as any);
     // Do NOT set Content-Type manually — let axios auto-set multipart/form-data; boundary=...
-    const res = await api.post(`/profile/${user._id}/photo`, formData);
+    const res = await api.post(`/profile/${user._id}/photo`, formData, {
+      onUploadProgress: (evt: any) => {
+        const pct = evt.progress != null ? Math.round(evt.progress * 100) : (evt.total ? Math.round((evt.loaded / evt.total) * 100) : 0);
+        setUploadProgress(pct);
+        animateProgress(pct);
+      },
+    });
     return res.data?.photo_url as string | null;
   }
 
   function handleSuccess(url: string) {
-    // Show the new photo immediately using the local preview
     setLocalPreviewUrl(url);
-    // Notify parent — parent should clear old photo_thumb_path from store
-    // and call refreshUserData to pull in the new optimized paths
     onPhotoUpdated(url);
+    setUploadProgress(0);
+    setFileSize('');
+  }
+
+  function getErrorMsg(err: any, fallback: string): string {
+    const detail = err?.response?.data?.detail;
+    if (typeof detail === 'string') return detail;
+    if (Array.isArray(detail)) return detail.map((d: any) => d.msg || String(d)).join(', ');
+    return err?.message || fallback;
   }
 
   // ── Web: file input ───────────────────────────────────────────────────────
   function pickWeb() {
-    // Append to DOM + click synchronously — iOS Safari blocks input.click()
-    // if called from any async context. No awaits before this point.
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
@@ -65,19 +94,15 @@ export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
       if (!file) return;
       setUploading(true);
       try {
-        const url = await uploadFile(file);
+        const url = await uploadFile(file, file.size);
         if (url) handleSuccess(url);
         else showSimpleAlert('Error', 'Upload succeeded but no URL was returned.');
       } catch (err: any) {
-        const detail = err?.response?.data?.detail;
-        const msg = typeof detail === 'string'
-          ? detail
-          : Array.isArray(detail)
-          ? detail.map((d: any) => d.msg || String(d)).join(', ')
-          : (err?.message || 'Failed to upload photo.');
-        showSimpleAlert('Error', msg);
+        showSimpleAlert('Error', getErrorMsg(err, 'Failed to upload photo.'));
       } finally {
         setUploading(false);
+        setUploadProgress(0);
+        setFileSize('');
       }
     };
     input.addEventListener('cancel', () => {
@@ -118,7 +143,6 @@ export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
     });
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      // Auto-save to camera roll so the photo isn't lost
       try {
         const ML = await import('expo-media-library');
         const perm = await ML.default.requestPermissionsAsync();
@@ -132,24 +156,21 @@ export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
     setUploading(true);
     try {
       const uri = asset.uri;
-      // Handle HEIC/HEIF from iOS — use mimeType if available, fallback to ext
       const mimeType = (asset as any).mimeType || '';
-      const isHeic = mimeType.includes('heic') || mimeType.includes('heif') || uri.toLowerCase().includes('.heic') || uri.toLowerCase().includes('.heif');
+      const isHeic = mimeType.includes('heic') || mimeType.includes('heif')
+        || uri.toLowerCase().includes('.heic') || uri.toLowerCase().includes('.heif');
       const ext = isHeic ? 'jpg' : (uri.split('.').pop()?.toLowerCase() || 'jpg');
       const fileType = isHeic ? 'image/jpeg' : (mimeType || `image/${ext === 'jpg' ? 'jpeg' : ext}`);
+      const sizeBytes = (asset as any).fileSize || 0;
       const file = { uri, name: `profile.${ext}`, type: fileType };
-      const url = await uploadFile(file);
+      const url = await uploadFile(file, sizeBytes);
       if (url) handleSuccess(url);
     } catch (err: any) {
-      const detail = err?.response?.data?.detail;
-      const msg = typeof detail === 'string'
-        ? detail
-        : Array.isArray(detail)
-        ? detail.map((d: any) => d.msg || String(d)).join(', ')
-        : (err?.message || 'Failed to upload photo. Please try a JPEG or PNG file.');
-      showSimpleAlert('Error', msg);
+      showSimpleAlert('Error', getErrorMsg(err, 'Failed to upload photo. Please try a JPEG or PNG file.'));
     } finally {
       setUploading(false);
+      setUploadProgress(0);
+      setFileSize('');
     }
   }
 
@@ -188,8 +209,6 @@ export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
     );
   }
 
-  // localPreviewUrl shows immediately after upload; store photo resolves on refresh
-  // Priority: local preview (just uploaded) → hi-res thumbnail → full photo
   const storePhoto = resolveUserPhotoUrlHiRes(user);
   const currentPhoto = localPreviewUrl || storePhoto;
 
@@ -197,40 +216,61 @@ export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
     <View style={styles.container}>
       <TouchableOpacity onPress={handlePress} disabled={uploading} activeOpacity={0.8}>
         <View style={styles.avatarWrapper}>
-          {uploading ? (
-            <View style={styles.avatarPlaceholder}>
-              <ActivityIndicator size="large" color={colors.accent} />
-              <Text style={{ fontSize: 11, color: colors.accent, marginTop: 6, fontWeight: '600' }}>
-                Uploading...
-              </Text>
-            </View>
-          ) : currentPhoto ? (
+          {currentPhoto ? (
             <Image
               source={{ uri: currentPhoto }}
-              style={styles.avatarImage}
+              style={[styles.avatarImage, uploading && { opacity: 0.6 }]}
               contentFit="cover"
               placeholder={null}
               recyclingKey={currentPhoto}
             />
           ) : (
-            /* Initials fallback — rounded square matching Hub style */
             <View style={[styles.avatarPlaceholder, { backgroundColor: colors.card }]}>
               <Text style={{ fontSize: 32, fontWeight: '700', color: colors.accent }}>
                 {user.name?.split(' ').map((w: string) => w[0]).slice(0, 2).join('') || '?'}
               </Text>
             </View>
           )}
-          <View style={[styles.editBadge, { backgroundColor: colors.accent }]}>
-            <Ionicons name="camera" size={14} color="#fff" />
+
+          {/* Upload overlay with progress */}
+          {uploading && (
+            <View style={styles.uploadOverlay}>
+              <Text style={styles.progressPct}>{uploadProgress}%</Text>
+              <View style={styles.progressTrack}>
+                <Animated.View
+                  style={[
+                    styles.progressFill,
+                    {
+                      width: progressAnim.interpolate({
+                        inputRange: [0, 100],
+                        outputRange: ['0%', '100%'],
+                      }),
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+          )}
+
+          <View style={[styles.editBadge, { backgroundColor: uploading ? '#444' : colors.accent }]}>
+            {uploading
+              ? <ActivityIndicator size="small" color="#fff" />
+              : <Ionicons name="camera" size={14} color="#fff" />
+            }
           </View>
         </View>
       </TouchableOpacity>
 
-      {currentPhoto && !uploading && (
+      {/* File size label */}
+      {uploading && fileSize ? (
+        <Text style={[styles.fileSizeText, { color: colors.textSecondary }]}>
+          {uploadProgress < 100 ? `Uploading ${fileSize}...` : 'Processing...'}
+        </Text>
+      ) : currentPhoto && !uploading ? (
         <TouchableOpacity onPress={handleRemove} style={styles.removeButton}>
           <Text style={[styles.removeText, { color: '#FF3B30' }]}>Remove photo</Text>
         </TouchableOpacity>
-      )}
+      ) : null}
     </View>
   );
 }
@@ -243,7 +283,6 @@ const styles = StyleSheet.create({
   avatarWrapper: {
     position: 'relative',
   },
-  // Rounded square — matches the Hub profile card shape
   avatarImage: {
     width: 96,
     height: 96,
@@ -259,6 +298,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#C9A962',
+  },
+  uploadOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+  },
+  progressPct: {
+    color: '#C9A962',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  progressTrack: {
+    width: '100%',
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#C9A962',
+    borderRadius: 2,
   },
   editBadge: {
     position: 'absolute',
@@ -277,6 +346,11 @@ const styles = StyleSheet.create({
   },
   removeText: {
     fontSize: 14,
+    fontWeight: '500',
+  },
+  fileSizeText: {
+    marginTop: 6,
+    fontSize: 12,
     fontWeight: '500',
   },
 });

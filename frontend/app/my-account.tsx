@@ -85,6 +85,23 @@ export default function MyAccountScreen() {
   const [editingEmail, setEditingEmail] = useState(false);
   const [savingBio, setSavingBio] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
+  const [coverProgress, setCoverProgress] = useState(0);
+  const [coverFileSize, setCoverFileSize] = useState('');
+  const coverProgressAnim = useRef(new Animated.Value(0)).current;
+
+  function formatBytes(bytes: number): string {
+    if (!bytes) return '';
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  function animateCoverProgress(toValue: number) {
+    Animated.timing(coverProgressAnim, {
+      toValue,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  }
   // Social link inline editing
   const [editingSocial, setEditingSocial] = useState<string | null>(null);
   const [socialEditValue, setSocialEditValue] = useState('');
@@ -205,10 +222,19 @@ export default function MyAccountScreen() {
         document.body.removeChild(input);
         if (!file) return;
         setCoverUploading(true);
+        setCoverProgress(0);
+        animateCoverProgress(0);
+        setCoverFileSize(formatBytes(file.size));
         try {
           const fd = new FormData();
           fd.append('file', file);
-          const res = await api.post(`/profile/${user?._id}/cover`, fd);
+          const res = await api.post(`/profile/${user?._id}/cover`, fd, {
+            onUploadProgress: (evt: any) => {
+              const pct = evt.progress != null ? Math.round(evt.progress * 100) : (evt.total ? Math.round((evt.loaded / evt.total) * 100) : 0);
+              setCoverProgress(pct);
+              animateCoverProgress(pct);
+            },
+          });
           if (res.data?.cover_url) setUser({ ...user, cover_photo_url: res.data.cover_url } as any);
           else showSimpleAlert('Error', 'Upload succeeded but no URL returned.');
         } catch (err: any) {
@@ -221,6 +247,8 @@ export default function MyAccountScreen() {
           showSimpleAlert('Error', msg);
         } finally {
           setCoverUploading(false);
+          setCoverProgress(0);
+          setCoverFileSize('');
         }
       };
 
@@ -247,9 +275,10 @@ export default function MyAccountScreen() {
         });
         if (!result.canceled && result.assets?.[0]) {
           setCoverUploading(true);
+          setCoverProgress(0);
+          animateCoverProgress(0);
           try {
             const asset = result.assets[0];
-            // Use mimeType if available (handles HEIC correctly); fallback to extension
             const mimeType = (asset as any).mimeType || '';
             const ext = mimeType === 'image/heic' || mimeType === 'image/heif'
               ? 'jpg'
@@ -257,9 +286,17 @@ export default function MyAccountScreen() {
             const fileType = mimeType && !mimeType.includes('heic') && !mimeType.includes('heif')
               ? mimeType
               : `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+            const sizeBytes = (asset as any).fileSize || 0;
+            if (sizeBytes) setCoverFileSize(formatBytes(sizeBytes));
             const fd = new FormData();
             fd.append('file', { uri: asset.uri, name: `cover.${ext}`, type: fileType } as any);
-            const res = await api.post(`/profile/${user?._id}/cover`, fd);
+            const res = await api.post(`/profile/${user?._id}/cover`, fd, {
+              onUploadProgress: (evt: any) => {
+                const pct = evt.progress != null ? Math.round(evt.progress * 100) : (evt.total ? Math.round((evt.loaded / evt.total) * 100) : 0);
+                setCoverProgress(pct);
+                animateCoverProgress(pct);
+              },
+            });
             if (res.data?.cover_url) setUser({ ...user, cover_photo_url: res.data.cover_url } as any);
           } catch (err: any) {
             const detail = err?.response?.data?.detail;
@@ -271,6 +308,8 @@ export default function MyAccountScreen() {
             showSimpleAlert('Error', msg);
           } finally {
             setCoverUploading(false);
+            setCoverProgress(0);
+            setCoverFileSize('');
           }
         }
       })();
@@ -384,6 +423,31 @@ export default function MyAccountScreen() {
                 </>
               )}
             </View>
+
+            {/* Upload progress overlay */}
+            {coverUploading && (
+              <View style={s.coverProgressOverlay} pointerEvents="none">
+                <View style={s.coverProgressContent}>
+                  <Text style={s.coverProgressLabel}>
+                    {coverFileSize ? `Uploading ${coverFileSize}` : 'Uploading...'}
+                  </Text>
+                  <Text style={s.coverProgressPct}>{coverProgress}%</Text>
+                </View>
+                <View style={s.coverProgressTrack}>
+                  <Animated.View
+                    style={[
+                      s.coverProgressFill,
+                      {
+                        width: coverProgressAnim.interpolate({
+                          inputRange: [0, 100],
+                          outputRange: ['0%', '100%'],
+                        }),
+                      },
+                    ]}
+                  />
+                </View>
+              </View>
+            )}
           </TouchableOpacity>
 
           {/* Avatar + completeness ring */}
@@ -900,6 +964,22 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 20, borderWidth: 1, borderColor: '#C9A96260',
   },
   coverEditBtnText: { fontSize: 14, color: '#C9A962', fontWeight: '700' },
+  coverProgressOverlay: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
+    backgroundColor: 'rgba(0,0,0,0.72)',
+    paddingHorizontal: 16, paddingTop: 10, paddingBottom: 12,
+  },
+  coverProgressContent: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6,
+  },
+  coverProgressLabel: { color: '#fff', fontSize: 12, fontWeight: '600', opacity: 0.85 },
+  coverProgressPct: { color: '#C9A962', fontSize: 13, fontWeight: '700' },
+  coverProgressTrack: {
+    height: 4, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 2, overflow: 'hidden',
+  },
+  coverProgressFill: {
+    height: '100%', backgroundColor: '#C9A962', borderRadius: 2,
+  },
   avatarArea: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingHorizontal: 16, marginTop: -48 },
   avatarOuter: { position: 'relative' },
   completenessRing: { position: 'absolute', top: -6, left: -6, right: -6, bottom: -6, borderRadius: 999, borderWidth: 2, pointerEvents: 'none' },
