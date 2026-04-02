@@ -11,6 +11,7 @@ interface StepInfo {
   step: number;
   message: string;
   channel: string;
+  delay_minutes: number;
   delay_hours: number;
   delay_days: number;
   delay_months: number;
@@ -52,6 +53,7 @@ function formatDelay(s: StepInfo): string {
   if (s.delay_months) parts.push(`${s.delay_months}mo`);
   if (s.delay_days) parts.push(`${s.delay_days}d`);
   if (s.delay_hours) parts.push(`${s.delay_hours}h`);
+  if (s.delay_minutes) parts.push(`${s.delay_minutes}min`);
   return parts.length > 0 ? `+${parts.join(' ')}` : 'Immediate';
 }
 

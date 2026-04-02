@@ -1428,24 +1428,34 @@ async def get_contact_campaign_journey(user_id: str, contact_id: str):
     pending_sends = await db.campaign_pending_sends.find(
         {"contact_id": contact_id, "user_id": user_id}
     ).to_list(200)
-    ps_by_key = {}
+    # Key by enrollment_id + step (enrollment-specific, handles re-enrollments correctly)
+    # Also keep campaign_id + step fallback for sends without enrollment_id
+    ps_by_key = {}           # "campaign_id_step" fallback
+    ps_by_enr_key = {}       # "enrollment_id_step" preferred
     for ps in pending_sends:
-        key = f"{ps.get('campaign_id')}_{ps.get('step')}"
-        ps_by_key[key] = ps
+        campaign_key = f"{ps.get('campaign_id')}_{ps.get('step')}"
+        enr_key = f"{ps.get('enrollment_id')}_{ps.get('step')}"
+        ps_by_key[campaign_key] = ps        # last-write wins (acceptable fallback)
+        if ps.get('enrollment_id'):
+            ps_by_enr_key[enr_key] = ps
 
     campaign_tasks = await db.tasks.find(
         {"contact_id": contact_id, "user_id": user_id, "type": "campaign_send"}
     ).to_list(200)
-    task_by_key = {}
+    task_by_key = {}          # fallback "campaign_id_step"
+    task_by_enr_key = {}      # preferred "enrollment_id_step"
     for t in campaign_tasks:
-        cid = t.get("campaign_id", "")
-        # Get step from pending_send
+        cid_t = t.get("campaign_id", "")
         psid = t.get("pending_send_id", "")
         if psid:
             for ps in pending_sends:
                 if str(ps.get("_id")) == psid:
-                    key = f"{cid}_{ps.get('step')}"
-                    task_by_key[key] = t
+                    step_n = ps.get("step")
+                    enr_k = f"{ps.get('enrollment_id')}_{step_n}"
+                    camp_k = f"{cid_t}_{step_n}"
+                    task_by_key[camp_k] = t
+                    if ps.get("enrollment_id"):
+                        task_by_enr_key[enr_k] = t
                     break
 
     journeys = []
@@ -1478,14 +1488,17 @@ async def get_contact_campaign_journey(user_id: str, contact_id: str):
         for i, seq in enumerate(sequences):
             step_num = i + 1
             sent_record = next((m for m in messages_sent if m.get("step") == step_num), None)
+            # Use enrollment-specific key first (handles re-enrollments correctly)
+            enr_step_key = f"{enrollment_id}_{step_num}"
             ps_key = f"{campaign_id}_{step_num}"
-            ps_doc = ps_by_key.get(ps_key)
-            task_doc = task_by_key.get(ps_key)
+            ps_doc = ps_by_enr_key.get(enr_step_key) or ps_by_key.get(ps_key)
+            task_doc = task_by_enr_key.get(enr_step_key) or task_by_key.get(ps_key)
 
             step_info = {
                 "step": step_num,
                 "message": seq.get("message_template", "") or seq.get("message", ""),
                 "channel": seq.get("channel", "sms"),
+                "delay_minutes": seq.get("delay_minutes", 0),
                 "delay_hours": seq.get("delay_hours", 0),
                 "delay_days": seq.get("delay_days", 0),
                 "delay_months": seq.get("delay_months", 0),
@@ -1510,7 +1523,7 @@ async def get_contact_campaign_journey(user_id: str, contact_id: str):
                             record_status = "sent"
                         elif task_doc and not task_doc.get("completed"):
                             record_status = "pending"
-                        elif ps_doc and ps_doc.get("status") in ("sent", "pending_user_action"):
+                        elif ps_doc and ps_doc.get("status") in ("sent", "pending_user_action", "done"):
                             record_status = "sent"
                         elif ps_doc and ps_doc.get("status") == "pending":
                             record_status = "pending"
@@ -1545,13 +1558,21 @@ async def get_contact_campaign_journey(user_id: str, contact_id: str):
                     sent_at = sent_record.get("sent_at")
                     step_info["sent_at"] = sent_at.isoformat() if sent_at else None
             elif step_num == current_step and status == "active":
-                step_info["status"] = "next"
-                # Use ps_doc.send_at for precise timing (pre-scheduled queue)
-                if ps_doc and ps_doc.get("send_at"):
-                    step_info["scheduled_at"] = ps_doc["send_at"].isoformat() if hasattr(ps_doc["send_at"], "isoformat") else str(ps_doc["send_at"])
+                # Extra safety: check task_doc or pending_send before showing "next"
+                if task_doc and task_doc.get("completed"):
+                    step_info["status"] = "sent"
+                    step_info["sent_at"] = task_doc.get("completed_at", "").isoformat() if task_doc.get("completed_at") else None
+                elif ps_doc and ps_doc.get("status") in ("done", "sent"):
+                    step_info["status"] = "sent"
+                    step_info["sent_at"] = ps_doc.get("completed_at", ps_doc.get("sent_at", "")).isoformat() if ps_doc.get("completed_at") or ps_doc.get("sent_at") else None
                 else:
-                    next_send = enrollment.get("next_send_at")
-                    step_info["scheduled_at"] = next_send.isoformat() if next_send else None
+                    step_info["status"] = "next"
+                    # Use ps_doc.send_at for precise timing (pre-scheduled queue)
+                    if ps_doc and ps_doc.get("send_at"):
+                        step_info["scheduled_at"] = ps_doc["send_at"].isoformat() if hasattr(ps_doc["send_at"], "isoformat") else str(ps_doc["send_at"])
+                    else:
+                        next_send = enrollment.get("next_send_at")
+                        step_info["scheduled_at"] = next_send.isoformat() if next_send else None
             elif step_num > current_step or status == "active":
                 step_info["status"] = "upcoming"
                 # Add scheduled_at from pre-scheduled queue so frontend shows "Sends Apr 2 7:51 PM"

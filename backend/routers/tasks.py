@@ -571,26 +571,46 @@ async def update_task(user_id: str, task_id: str, update_data: dict):
         # When a campaign task is completed, update the enrollment's messages_sent status
         if task.get("type") == "campaign_send" and task.get("campaign_id") and cid:
             try:
-                pending_send_id = task.get("pending_send_id", "")
                 step_num = None
+                enrollment_id_for_update = None
                 if pending_send_id:
                     ps = await db.campaign_pending_sends.find_one({"_id": ObjectId(pending_send_id)})
                     step_num = (ps or {}).get("step")
+                    enrollment_id_for_update = (ps or {}).get("enrollment_id")
                 if step_num:
-                    await db.campaign_enrollments.update_one(
-                        {
-                            "campaign_id": task["campaign_id"],
-                            "contact_id": cid,
-                            "messages_sent.step": step_num,
-                        },
-                        {
-                            "$set": {
-                                "messages_sent.$.status": "sent",
-                                "messages_sent.$.sent_at": datetime.now(timezone.utc),
-                                "last_sent_at": datetime.now(timezone.utc),
-                            }
-                        }
+                    now_ts = datetime.now(timezone.utc)
+                    # Try to update existing messages_sent entry for this step
+                    enrollment_filter = {"campaign_id": task["campaign_id"], "contact_id": cid}
+                    if enrollment_id_for_update:
+                        try:
+                            enrollment_filter["_id"] = ObjectId(enrollment_id_for_update)
+                        except Exception:
+                            pass
+                    result = await db.campaign_enrollments.update_one(
+                        {**enrollment_filter, "messages_sent.step": step_num},
+                        {"$set": {
+                            "messages_sent.$.status": "sent",
+                            "messages_sent.$.sent_at": now_ts,
+                            "last_sent_at": now_ts,
+                        }}
                     )
+                    # If no existing entry (task was created by catchup, not scheduler),
+                    # push a new messages_sent record so the campaign journey shows it as sent
+                    if result.modified_count == 0:
+                        await db.campaign_enrollments.update_one(
+                            enrollment_filter,
+                            {
+                                "$push": {"messages_sent": {
+                                    "step": step_num,
+                                    "status": "sent",
+                                    "sent_at": now_ts,
+                                    "delivery_mode": "manual",
+                                    "content": task.get("suggested_message", task.get("description", ""))[:100],
+                                    "channel": task.get("channel", "sms"),
+                                }},
+                                "$set": {"last_sent_at": now_ts},
+                            }
+                        )
             except Exception as e:
                 logger.warning(f"Failed to update campaign enrollment on task complete: {e}")
 
