@@ -131,7 +131,19 @@ New components created under `components/account/`:
 - `my-account.tsx` 1,533 → 424 lines
 - 5 new focused components under `components/account/`
 
-### Task Resurrection Bug Fix (Apr 2, 2026) -- LATEST
+### Campaign Removal Fix (Apr 2, 2026) -- LATEST
+
+Fixed campaign removal being incomplete — tasks remained in Touchpoints and campaign could reappear in journey.
+
+**Bugs fixed:**
+1. `remove_campaign_enrollment` only cancelled `status:"pending"` sends — now cancels `["pending","pending_user_action","processing"]` using `enrollment_id` filter (not campaign_id+contact_id, which was too broad)
+2. Active tasks were never dismissed on removal — now `status="dismissed"` so they vanish from Touchpoints immediately
+3. Campaign journey query only excluded `"archived"` — now excludes both `"archived"` and `"cancelled"` enrollments
+4. Re-enrollment after removal now works cleanly — old sends are cancelled, new sends are fresh
+
+**Verified:** 12/12 backend+frontend tests pass.
+
+### Task Resurrection Bug Fix (Apr 2, 2026)
 Fixed critical bug where marking tasks "Done" in Today's Touchpoints would cause them to reappear on next page load. Three bugs found and fixed:
 
 **Bug 1 (Catchup resurrection)**: `_catchup_overdue_campaign_tasks` found completed tasks by idempotency key, deleted them, but lacked a `continue` — so it fell through and created a brand new "pending" task immediately. Fix: `continue` for completed/dismissed tasks.
