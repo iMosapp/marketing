@@ -22,13 +22,17 @@ _store_cache = {}
 _URL_RE = re.compile(r'https?://[^\s<>"\')\]]+')
 
 
-async def _auto_wrap_urls(media_urls: list, message: str, user_id: str, campaign_id: str, campaign_name: str, step_num: int) -> tuple:
-    """Wrap any raw (untracked) URLs in media_urls and message text with tracked short URLs.
-    Returns (wrapped_media_urls, wrapped_message)."""
-    from routers.short_urls import create_short_url
+async def _auto_wrap_urls(media_urls: list, message: str, user_id: str, campaign_id: str, campaign_name: str, step_num: int, contact_id: str = "") -> tuple:
+    """Wrap URLs in message/media with tracked short URLs.
 
-    def _is_tracked(url):
-        return "/api/s/" in url
+    For already-tracked short URLs (/api/s/XXXX), creates a NEW per-contact
+    short URL so each recipient gets individual click attribution.
+    For raw URLs, wraps them as before.
+
+    Returns (wrapped_media_urls, wrapped_message)
+    """
+    from routers.short_urls import create_short_url
+    import re as _re
 
     def _link_type(url):
         if "youtube.com" in url or "youtu.be" in url:
@@ -36,41 +40,88 @@ async def _auto_wrap_urls(media_urls: list, message: str, user_id: str, campaign
         return "campaign_link"
 
     url_map = {}
+    db = get_db()
+
+    async def _wrap_or_personalize(url: str) -> str:
+        """For tracked URLs, create a per-contact clone. For raw URLs, wrap fresh."""
+        if url in url_map:
+            return url_map[url]
+
+        metadata = {
+            "campaign_id": campaign_id,
+            "campaign_name": campaign_name,
+            "step": step_num,
+            "source": "auto_wrap",
+        }
+        if contact_id:
+            metadata["contact_id"] = contact_id
+
+        if "/api/s/" in url:
+            # Already a short URL — look up the original and create a per-contact clone
+            existing_code = url.split("/api/s/")[-1].strip("/").split("?")[0]
+            try:
+                existing_doc = await db.short_urls.find_one({"short_code": existing_code})
+                if existing_doc:
+                    # Check if we already have a per-contact version
+                    if contact_id:
+                        existing_personal = await db.short_urls.find_one({
+                            "original_url": existing_doc["original_url"],
+                            "user_id": user_id,
+                            "metadata.contact_id": contact_id,
+                        })
+                        if existing_personal:
+                            result_url = f"/api/s/{existing_personal['short_code']}"
+                            if not result_url.startswith("http"):
+                                from routers.short_urls import get_short_url_base
+                                result_url = f"{get_short_url_base()}{result_url}"
+                            url_map[url] = result_url
+                            return result_url
+
+                    original_url = existing_doc["original_url"]
+                    link_type = existing_doc.get("link_type", _link_type(original_url))
+                    result = await create_short_url(
+                        original_url=original_url,
+                        link_type=link_type,
+                        reference_id=campaign_id,
+                        user_id=user_id,
+                        metadata=metadata,
+                    )
+                    url_map[url] = result["short_url"]
+                    return result["short_url"]
+            except Exception as e:
+                logger.warning(f"[AutoWrap] Failed to personalize {url}: {e}")
+            return url  # fallback to original
+
+        else:
+            # Raw URL — wrap fresh
+            try:
+                result = await create_short_url(
+                    original_url=url,
+                    link_type=_link_type(url),
+                    reference_id=campaign_id,
+                    user_id=user_id,
+                    metadata=metadata,
+                )
+                url_map[url] = result["short_url"]
+                return result["short_url"]
+            except Exception as e:
+                logger.warning(f"[AutoWrap] Failed to wrap {url}: {e}")
+                return url
 
     # Wrap media_urls
     wrapped_media = []
     for url in media_urls:
-        if url and not _is_tracked(url):
-            if url not in url_map:
-                try:
-                    result = await create_short_url(
-                        original_url=url, link_type=_link_type(url),
-                        reference_id=campaign_id, user_id=user_id,
-                        metadata={"campaign_id": campaign_id, "campaign_name": campaign_name, "step": step_num, "source": "auto_wrap"},
-                    )
-                    url_map[url] = result["short_url"]
-                except Exception as e:
-                    logger.warning(f"[AutoWrap] Failed to wrap {url}: {e}")
-                    url_map[url] = url
-            wrapped_media.append(url_map[url])
+        if url:
+            wrapped_media.append(await _wrap_or_personalize(url))
         else:
             wrapped_media.append(url)
 
-    # Wrap URLs in message
-    for url in _URL_RE.findall(message):
-        if not _is_tracked(url) and url not in url_map:
-            try:
-                result = await create_short_url(
-                    original_url=url, link_type=_link_type(url),
-                    reference_id=campaign_id, user_id=user_id,
-                    metadata={"campaign_id": campaign_id, "campaign_name": campaign_name, "step": step_num, "source": "auto_wrap"},
-                )
-                url_map[url] = result["short_url"]
-            except Exception as e:
-                logger.warning(f"[AutoWrap] Failed to wrap {url}: {e}")
-
-    for old_url, new_url in url_map.items():
-        message = message.replace(old_url, new_url)
+    # Wrap/personalize all URLs in message text
+    all_urls = _URL_RE.findall(message)
+    for url in all_urls:
+        new_url = await _wrap_or_personalize(url)
+        if new_url != url:
+            message = message.replace(url, new_url)
 
     return wrapped_media, message
 
@@ -682,6 +733,7 @@ async def process_pending_campaign_steps():
                             wrapped_media, wrapped_message = await _auto_wrap_urls(
                                 raw_media, message_content, user_id,
                                 send_doc.get("campaign_id", ""), send_doc.get("campaign_name", ""), current_step,
+                                contact_id=contact_id,  # per-contact URL cloning for accurate attribution
                             )
                         except Exception:
                             wrapped_media, wrapped_message = raw_media, message_content

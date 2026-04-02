@@ -467,16 +467,33 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
                 event_doc["title"] = message_data.event_title
             await log_contact_event(get_db(), str(contact_id), event_doc)
 
-            # Tag any short URLs in this message with the contact_id so clicks are attributed
-            # This makes "Video Watched" / "Link Clicked" show in the contact's Activity feed
-            import re
-            short_codes = re.findall(r'/api/s/([A-Za-z0-9]+)', message_data.content or '')
-            if short_codes:
-                await get_db().short_urls.update_many(
-                    {"short_code": {"$in": short_codes}, "metadata.contact_id": {"$exists": False}},
-                    {"$set": {"metadata.contact_id": str(contact_id),
-                              "metadata.sent_at": datetime.now(timezone.utc).isoformat()}},
-                )
+            # Create per-contact short URLs for any tracked links in this message
+            # This ensures click attribution works per-recipient, not just the first sender
+            import re as _re_msgs
+            short_codes = _re_msgs.findall(r'/api/s/([A-Za-z0-9]+)', message_data.content or '')
+            if short_codes and contact_id:
+                try:
+                    from routers.short_urls import create_short_url, get_short_url_base
+                    base = get_short_url_base()
+                    for code in short_codes:
+                        existing_doc = await get_db().short_urls.find_one({"short_code": code})
+                        if existing_doc and not existing_doc.get("metadata", {}).get("contact_id"):
+                            # Check if personal version already exists
+                            personal = await get_db().short_urls.find_one({
+                                "original_url": existing_doc["original_url"],
+                                "user_id": user_id,
+                                "metadata.contact_id": str(contact_id),
+                            })
+                            if not personal:
+                                await create_short_url(
+                                    original_url=existing_doc["original_url"],
+                                    link_type=existing_doc.get("link_type", "campaign_link"),
+                                    reference_id=code,
+                                    user_id=user_id,
+                                    metadata={**existing_doc.get("metadata", {}), "contact_id": str(contact_id)},
+                                )
+                except Exception:
+                    pass
     elif to_phone:
         # Send via Twilio (SMS)
         message['channel'] = 'sms'
