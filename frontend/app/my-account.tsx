@@ -19,7 +19,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  TextInput, Platform, Linking, Animated, ActivityIndicator,
+  TextInput, Platform, Linking, Animated, ActivityIndicator, KeyboardAvoidingView,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -79,15 +79,19 @@ export default function MyAccountScreen() {
   const [copiedReview, setCopiedReview] = useState(false);
   const [addressOpen, setAddressOpen] = useState(false);
   const [editingBio, setEditingBio] = useState(false);
-  const [editingName, setEditingName] = useState(false);
-  const [editingTitle, setEditingTitle] = useState(false);
-  const [editingPhone, setEditingPhone] = useState(false);
-  const [editingEmail, setEditingEmail] = useState(false);
   const [savingBio, setSavingBio] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
   const [coverProgress, setCoverProgress] = useState(0);
   const [coverFileSize, setCoverFileSize] = useState('');
   const coverProgressAnim = useRef(new Animated.Value(0)).current;
+
+  // Edit Profile modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editTitle, setEditTitle] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
 
   function formatBytes(bytes: number): string {
     if (!bytes) return '';
@@ -106,12 +110,8 @@ export default function MyAccountScreen() {
   const [editingSocial, setEditingSocial] = useState<string | null>(null);
   const [socialEditValue, setSocialEditValue] = useState('');
 
-  // Local edit buffers
+  // Bio edit buffer
   const [bioText, setBioText] = useState(user?.persona?.bio || user?.bio || '');
-  const [nameText, setNameText] = useState(user?.name || '');
-  const [titleText, setTitleText] = useState(user?.persona?.title || user?.title || '');
-  const [phoneText, setPhoneText] = useState((user as any)?.phone || '');
-  const [emailText, setEmailText] = useState(user?.email || '');
 
   const bioInputRef = useRef<TextInput>(null);
   const completeness = calcCompleteness(user);
@@ -143,62 +143,49 @@ export default function MyAccountScreen() {
         const merged = { ...user, ...res.data };
         setUser(merged);
         setBioText(merged?.persona?.bio || merged?.bio || '');
-        setNameText(merged?.name || '');
-        setTitleText(merged?.persona?.title || merged?.title || '');
         try { await AsyncStorage.setItem('user', JSON.stringify(merged)).catch(() => {}); } catch {}
       }
     } catch {}
   }
 
-  // ── Save fields ────────────────────────────────────────────────────────────
-  async function saveBio() {
-    setSavingBio(true);
-    try {
-      await api.patch(`/users/${user?._id}`, { bio: bioText });
-      setUser({ ...user, bio: bioText, persona: { ...(user as any)?.persona, bio: bioText } });
-      setEditingBio(false);
-    } catch { showSimpleAlert('Error', 'Failed to save bio.'); }
-    setSavingBio(false);
+  // ── Edit Profile modal helpers ──────────────────────────────────────────────
+  function openEditModal() {
+    setEditName(user?.name || '');
+    setEditTitle((user as any)?.persona?.title || (user as any)?.title || '');
+    setEditEmail(user?.email || '');
+    setEditPhone((user as any)?.phone || '');
+    setShowEditModal(true);
   }
 
-  async function saveName() {
-    if (!nameText.trim()) return;
+  async function saveBasicInfo() {
+    if (!editName.trim()) { showSimpleAlert('Required', 'Name cannot be empty'); return; }
+    setEditSaving(true);
     try {
-      await api.patch(`/users/${user?._id}`, { name: nameText.trim() });
-      setUser({ ...user, name: nameText.trim() });
-      setEditingName(false);
-    } catch { showSimpleAlert('Error', 'Failed to save name.'); }
-  }
-
-  async function saveTitle() {
-    try {
-      await api.patch(`/users/${user?._id}`, { persona: { ...(user as any)?.persona, title: titleText } });
-      setUser({ ...user, persona: { ...(user as any)?.persona, title: titleText } });
-      setEditingTitle(false);
-    } catch { showSimpleAlert('Error', 'Failed to save title.'); }
-  }
-
-  async function savePhone() {
-    const cleaned = phoneText.trim();
-    try {
-      await api.patch(`/users/${user?._id}`, { phone: cleaned });
-      setUser({ ...user, phone: cleaned } as any);
-      setEditingPhone(false);
+      const payload: any = {
+        name: editName.trim(),
+        phone: editPhone.trim(),
+        persona: { ...(user as any)?.persona, title: editTitle.trim() },
+      };
+      if (editEmail.trim() && editEmail !== user?.email) {
+        if (!editEmail.includes('@')) { showSimpleAlert('Error', 'Please enter a valid email'); setEditSaving(false); return; }
+        payload.email = editEmail.trim().toLowerCase();
+      }
+      await api.patch(`/users/${user?._id}`, payload);
+      const updated = {
+        ...user,
+        name: payload.name,
+        phone: payload.phone,
+        email: payload.email || user?.email,
+        persona: payload.persona,
+      };
+      setUser(updated as any);
+      setShowEditModal(false);
+      // Continue to full bio builder
+      router.push('/settings/persona' as any);
     } catch (e: any) {
-      showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to save phone number.');
+      showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to save. Please try again.');
     }
-  }
-
-  async function saveEmail() {
-    const cleaned = emailText.trim().toLowerCase();
-    if (!cleaned.includes('@')) { showSimpleAlert('Error', 'Please enter a valid email address.'); return; }
-    try {
-      await api.patch(`/users/${user?._id}`, { email: cleaned });
-      setUser({ ...user, email: cleaned } as any);
-      setEditingEmail(false);
-    } catch (e: any) {
-      showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to save email.');
-    }
+    setEditSaving(false);
   }
 
   // ── Cover photo — works on web AND mobile ────────────────────────────────
@@ -488,7 +475,7 @@ export default function MyAccountScreen() {
         {/* ── Edit Profile CTA — one clear button between photo and name ─────── */}
         <TouchableOpacity
           style={s.editProfileCta}
-          onPress={() => router.push('/settings/persona' as any)}
+          onPress={openEditModal}
           activeOpacity={0.8}
           testID="edit-profile-btn"
         >
@@ -496,55 +483,17 @@ export default function MyAccountScreen() {
           <Text style={s.editProfileCtaText}>Edit Profile</Text>
         </TouchableOpacity>
 
-        {/* ── Identity Block ─────────────────────────────────────────────────── */}
+        {/* ── Identity Block — read only, edit via modal ─────────────────── */}
         <View style={s.identity}>
-          {/* Name */}
-          {editingName ? (
-            <View style={s.inlineEditRow}>
-              <TextInput
-                style={[s.nameInput, { color: colors.text }]}
-                value={nameText}
-                onChangeText={setNameText}
-                autoFocus
-                returnKeyType="done"
-                onSubmitEditing={saveName}
-                onBlur={saveName}
-                testID="name-input"
-              />
-              <TouchableOpacity onPress={saveName} style={s.inlineEditDone}>
-                <Ionicons name="checkmark" size={20} color="#34C759" />
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity style={s.nameRow} onPress={() => setEditingName(true)} testID="name-tap">
-              <Text style={s.nameText}>{user?.name || 'Your Name'}</Text>
-              <Ionicons name="pencil" size={14} color="#8E8E93" style={{ marginLeft: 6, marginTop: 3 }} />
-            </TouchableOpacity>
-          )}
+          {/* Name — read only */}
+          <Text style={s.nameText}>{user?.name || 'Your Name'}</Text>
 
-          {/* Title / tagline */}
-          {editingTitle ? (
-            <TextInput
-              style={[s.titleInput, { color: colors.textSecondary }]}
-              value={titleText}
-              onChangeText={setTitleText}
-              placeholder="Your title or tagline..."
-              placeholderTextColor="#38383A"
-              autoFocus
-              returnKeyType="done"
-              onSubmitEditing={saveTitle}
-              onBlur={saveTitle}
-              testID="title-input"
-            />
-          ) : (
-            <TouchableOpacity onPress={() => setEditingTitle(true)} testID="title-tap">
-              <Text style={s.titleText}>
-                {(user as any)?.persona?.title || (user as any)?.title || 'Add your title or tagline...'}
-              </Text>
-            </TouchableOpacity>
-          )}
+          {/* Title */}
+          <Text style={s.titleText}>
+            {(user as any)?.persona?.title || (user as any)?.title || 'Add your title or tagline...'}
+          </Text>
 
-          {/* Role badge — userSelect:none prevents iOS text selection when cover is tapped */}
+          {/* Role badge */}
           {roleLabel && (
             <View style={[s.roleBadge, { backgroundColor: user?.role === 'super_admin' ? '#FF3B3020' : '#C9A96220' }]}>
               <Ionicons name="shield-checkmark" size={13}
@@ -555,68 +504,21 @@ export default function MyAccountScreen() {
             </View>
           )}
 
-          {/* Email — tap to edit */}
-          {editingEmail ? (
-            <View style={s.inlineEditRow}>
-              <TextInput
-                style={[s.titleInput, { color: colors.text, flex: 1, borderBottomWidth: 1, borderBottomColor: '#C9A962' }]}
-                value={emailText}
-                onChangeText={setEmailText}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoFocus
-                returnKeyType="done"
-                onSubmitEditing={saveEmail}
-                onBlur={saveEmail}
-                placeholder="your@email.com"
-                placeholderTextColor={colors.textTertiary}
-              />
-              <TouchableOpacity onPress={saveEmail} style={s.inlineEditDone}>
-                <Ionicons name="checkmark-circle" size={22} color="#34C759" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => { setEditingEmail(false); setEmailText(user?.email || ''); }} style={s.inlineEditDone}>
-                <Ionicons name="close-circle" size={22} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity onPress={() => setEditingEmail(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-              <Text style={[s.emailText, { marginBottom: 0, userSelect: 'none' } as any]}>{user?.email || 'Tap to add email'}</Text>
-              <Ionicons name="pencil-outline" size={13} color={colors.textTertiary} />
-            </TouchableOpacity>
-          )}
+          {/* Email */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+            <Ionicons name="mail-outline" size={14} color={colors.textTertiary} />
+            <Text style={[s.emailText, { marginBottom: 0, userSelect: 'none' } as any]}>
+              {user?.email || 'No email set'}
+            </Text>
+          </View>
 
-          {/* Phone — tap to edit */}
-          {editingPhone ? (
-            <View style={s.inlineEditRow}>
-              <TextInput
-                style={[s.titleInput, { color: colors.text, flex: 1, borderBottomWidth: 1, borderBottomColor: '#C9A962' }]}
-                value={phoneText}
-                onChangeText={setPhoneText}
-                keyboardType="phone-pad"
-                autoFocus
-                returnKeyType="done"
-                onSubmitEditing={savePhone}
-                onBlur={savePhone}
-                placeholder="(801) 555-1234"
-                placeholderTextColor={colors.textTertiary}
-              />
-              <TouchableOpacity onPress={savePhone} style={s.inlineEditDone}>
-                <Ionicons name="checkmark-circle" size={22} color="#34C759" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => { setEditingPhone(false); setPhoneText((user as any)?.phone || ''); }} style={s.inlineEditDone}>
-                <Ionicons name="close-circle" size={22} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity onPress={() => setEditingPhone(true)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14 }}>
-              <Ionicons name="call-outline" size={14} color={colors.textTertiary} />
-              <Text style={[s.emailText, { marginBottom: 0, userSelect: 'none' } as any]}>
-                {(user as any)?.phone || 'Tap to add phone number'}
-              </Text>
-              <Ionicons name="pencil-outline" size={13} color={colors.textTertiary} />
-            </TouchableOpacity>
-          )}
+          {/* Phone */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14 }}>
+            <Ionicons name="call-outline" size={14} color={colors.textTertiary} />
+            <Text style={[s.emailText, { marginBottom: 0, userSelect: 'none' } as any]}>
+              {(user as any)?.phone || 'No phone set'}
+            </Text>
+          </View>
 
           {/* ── Profile completeness ── */}
           <View style={s.completenessBar}>
@@ -946,6 +848,105 @@ export default function MyAccountScreen() {
         onShareEmail={handleShareEmail}
         onPreview={() => { router.push(`/review/${storeSlug || 'my-store'}` as any); setShowShareModal(false); }}
       />
+
+      {/* ── Edit Profile Modal — Step 1: Basic Info ─────────────────────── */}
+      {showEditModal && (
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ position: 'absolute' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 }}
+        >
+          <TouchableOpacity
+            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' }}
+            activeOpacity={1}
+            onPress={() => setShowEditModal(false)}
+          />
+          <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 }}>
+            {/* Header */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+              <Text style={{ flex: 1, fontSize: 20, fontWeight: '800', color: colors.text }}>Edit Profile</Text>
+              <TouchableOpacity onPress={() => setShowEditModal(false)} style={{ padding: 4 }}>
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 20 }}>
+              Step 1 of 2 — Update your basic info, then build your full bio
+            </Text>
+
+            {/* Name */}
+            <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>Your Name</Text>
+            <View style={{ backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, marginBottom: 14 }}>
+              <TextInput
+                style={{ fontSize: 17, color: colors.text, padding: 14 }}
+                value={editName}
+                onChangeText={setEditName}
+                placeholder="Full name"
+                placeholderTextColor={colors.textTertiary}
+                returnKeyType="next"
+                data-testid="edit-name-input"
+              />
+            </View>
+
+            {/* Title */}
+            <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>Title / Job Description</Text>
+            <View style={{ backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, marginBottom: 14 }}>
+              <TextInput
+                style={{ fontSize: 17, color: colors.text, padding: 14 }}
+                value={editTitle}
+                onChangeText={setEditTitle}
+                placeholder="e.g. Sales Director, High Tech Redneck"
+                placeholderTextColor={colors.textTertiary}
+                returnKeyType="next"
+                data-testid="edit-title-input"
+              />
+            </View>
+
+            {/* Email + Phone row */}
+            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>Email</Text>
+                <View style={{ backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}>
+                  <TextInput
+                    style={{ fontSize: 16, color: colors.text, padding: 12 }}
+                    value={editEmail}
+                    onChangeText={setEditEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    placeholder="your@email.com"
+                    placeholderTextColor={colors.textTertiary}
+                    data-testid="edit-email-input"
+                  />
+                </View>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>Phone</Text>
+                <View style={{ backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}>
+                  <TextInput
+                    style={{ fontSize: 16, color: colors.text, padding: 12 }}
+                    value={editPhone}
+                    onChangeText={setEditPhone}
+                    keyboardType="phone-pad"
+                    placeholder="(801) 555-1234"
+                    placeholderTextColor={colors.textTertiary}
+                    data-testid="edit-phone-input"
+                  />
+                </View>
+              </View>
+            </View>
+
+            {/* CTA */}
+            <TouchableOpacity
+              style={{ backgroundColor: '#C9A962', borderRadius: 14, padding: 16, alignItems: 'center', opacity: editSaving ? 0.7 : 1 }}
+              onPress={saveBasicInfo}
+              disabled={editSaving}
+              data-testid="edit-profile-save-btn"
+            >
+              <Text style={{ fontSize: 17, fontWeight: '700', color: '#000' }}>
+                {editSaving ? 'Saving...' : 'Save & Continue to Bio Builder'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      )}
     </SafeAreaView>
   );
 }
