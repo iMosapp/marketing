@@ -83,36 +83,23 @@ export default function MoreScreen() {
   // Recently Visited & Pinned Tools tracking
   type HubItem = { title: string; icon: string; color: string; subtitle: string; timestamp: number };
   const uid = user?._id || 'anon';
-  const RECENT_KEY = `hub_recent_${uid}`;
   const PINNED_KEY = `hub_pinned_${uid}`;
-  const MAX_RECENT = 4;
   const MAX_PINNED = 6;
-  const [recentVisits, setRecentVisits] = useState<HubItem[]>([]);
   const [pinnedTools, setPinnedTools] = useState<HubItem[]>([]);
 
-  // Load recent visits + pinned tools on focus
+  // Load pinned tools on focus
   useFocusEffect(
     useCallback(() => {
-      AsyncStorage.getItem(RECENT_KEY).then(raw => {
-        if (raw) { try { setRecentVisits(JSON.parse(raw)); } catch {} }
-      });
       AsyncStorage.getItem(PINNED_KEY).then(raw => {
         if (raw) { try { setPinnedTools(JSON.parse(raw)); } catch {} }
       });
-    }, [RECENT_KEY, PINNED_KEY])
+    }, [PINNED_KEY])
   );
 
-  const trackVisit = useCallback(async (item: { title: string; icon: string; color: string; subtitle: string }) => {
-    try {
-      const raw = await AsyncStorage.getItem(RECENT_KEY);
-      let visits: HubItem[] = raw ? JSON.parse(raw) : [];
-      visits = visits.filter(v => v.title !== item.title);
-      visits.unshift({ ...item, timestamp: Date.now() });
-      visits = visits.slice(0, MAX_RECENT);
-      await AsyncStorage.setItem(RECENT_KEY, JSON.stringify(visits));
-      setRecentVisits(visits);
-    } catch {}
-  }, [RECENT_KEY]);
+  // trackVisit is kept for compatibility — no longer persists since Recently Visited was removed
+  const trackVisit = useCallback((_item: { title: string; icon: string; color: string; subtitle: string }) => {
+    // no-op — Recently Visited section removed, use Pin instead
+  }, []);
 
   const togglePin = useCallback(async (item: { title: string; icon: string; color: string; subtitle: string }) => {
     try {
@@ -1123,36 +1110,7 @@ export default function MoreScreen() {
           </View>
         )}
 
-        {/* Recently Visited — quick access to your last tools (excludes pinned) */}
-        {(() => {
-          const pinnedTitles = new Set(pinnedTools.map(p => p.title));
-          const filteredRecent = recentVisits.filter(rv => !pinnedTitles.has(rv.title));
-          if (filteredRecent.length === 0) return null;
-          return (
-            <View style={styles.recentSection} data-testid="recently-visited-section">
-              <Text style={[styles.recentLabel, { color: colors.textTertiary }]}>Recently Visited</Text>
-              <View style={styles.recentRow}>
-                {filteredRecent.map((rv) => {
-                  const match = allSections.flatMap(s => s.items).find(i => i.title === rv.title);
-                  return (
-                    <TouchableOpacity
-                      key={rv.title}
-                      style={[styles.recentChip, { backgroundColor: colors.card }]}
-                      onPress={() => match?.onPress()}
-                      activeOpacity={0.7}
-                      data-testid={`recent-${rv.title.toLowerCase().replace(/\s+/g, '-')}`}
-                    >
-                      <View style={[styles.recentChipIcon, { backgroundColor: `${rv.color}20` }]}>
-                        <Ionicons name={rv.icon as any} size={16} color={rv.color} />
-                      </View>
-                      <Text style={[styles.recentChipText, { color: colors.text }]} numberOfLines={1}>{rv.title}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            </View>
-          );
-        })()}
+        {/* Recently Visited section removed — Pinned Tools replaces it */}
 
         {/* All Collapsible Sections */}
         {allSections.map(section => renderSection(section))}
