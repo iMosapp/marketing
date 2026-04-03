@@ -111,10 +111,18 @@ export default function QuickSendPage() {
 
   const [sending, setSending] = useState(false);
   const [newContactId, setNewContactId] = useState('');
-  const [tagToApply, setTagToApply] = useState('');   // optional tag applied on send
+  const [availableTags, setAvailableTags] = useState<any[]>([]);
+  const [selectedTag, setSelectedTag] = useState('');      // single tag name
+  const [startCampaign, setStartCampaign] = useState(true); // campaign toggle
 
   const storeSlug = user?.store_slug || user?.storeSlug || '';
   const userId = user?._id || '';
+
+  // Fetch tags when user is known
+  useEffect(() => {
+    if (!userId) return;
+    api.get(`/tags/${userId}`).then(r => setAvailableTags(r.data || [])).catch(() => {});
+  }, [userId]);
 
   const fullName = `${firstName} ${lastName}`.trim();
 
@@ -273,14 +281,14 @@ export default function QuickSendPage() {
         } catch {}
       }
 
-      // Apply user-chosen tag (triggers matching campaign)
-      if (tagToApply.trim() && contactId && config.eventType !== 'review_invite_sent') {
+      // Apply user-chosen tag (triggers matching campaign if toggle is on)
+      if (selectedTag && contactId && config.eventType !== 'review_invite_sent') {
         try {
           await api.post(`/tags/${userId}/assign`, {
-            tag_name: tagToApply.trim(),
+            tag_name: selectedTag,
             contact_ids: [contactId],
-            skip_campaign: false,
-            auto_create_tag: true,
+            skip_campaign: !startCampaign,
+            auto_create_tag: false,
           });
         } catch {}
       }
@@ -617,37 +625,73 @@ export default function QuickSendPage() {
         </Text>
       )}
 
-      {/* Tag + Campaign (optional) — shown for all non-review actions */}
+      {/* Tag picker — same UX as Create a Card */}
       {actionKey !== 'review' && (
-        <View style={{ marginTop: 20, backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, padding: 14 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-            <Ionicons name="pricetag-outline" size={16} color="#C9A962" />
-            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8 }}>
-              Add Tag (optional — triggers campaign)
-            </Text>
+        <View style={{ marginTop: 20 }}>
+          <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 }}>
+            Apply Tag (Optional)
+          </Text>
+          <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 10 }}>
+            Applying a tag starts the associated follow-up campaign
+          </Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 }} data-testid="qs-tag-picker">
+            {availableTags.map((tag: any) => {
+              const isSelected = selectedTag === tag.name;
+              return (
+                <TouchableOpacity
+                  key={tag._id || tag.name}
+                  onPress={() => setSelectedTag(isSelected ? '' : tag.name)}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center',
+                    paddingHorizontal: 12, paddingVertical: 8,
+                    borderRadius: 20, borderWidth: 1.5,
+                    borderColor: isSelected ? (tag.color || '#C9A962') : colors.border,
+                    backgroundColor: isSelected ? `${tag.color || '#C9A962'}20` : colors.card,
+                    gap: 6,
+                  }}
+                  data-testid={`qs-tag-${tag.name.toLowerCase().replace(/\s/g, '-')}`}
+                >
+                  {isSelected && <Ionicons name="checkmark-circle" size={16} color={tag.color || '#C9A962'} />}
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: tag.color || '#8E8E93' }} />
+                  <Text style={{ fontSize: 15, fontWeight: isSelected ? '700' : '400', color: isSelected ? (tag.color || '#C9A962') : colors.text }}>
+                    {tag.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+            {availableTags.length === 0 && (
+              <Text style={{ fontSize: 15, color: colors.textSecondary, fontStyle: 'italic' }}>No tags yet</Text>
+            )}
           </View>
-          <TextInput
-            value={tagToApply}
-            onChangeText={setTagToApply}
-            placeholder="e.g. new_lead, sold, follow_up"
-            placeholderTextColor={colors.textTertiary}
-            autoCapitalize="none"
-            returnKeyType="done"
-            style={{
-              backgroundColor: colors.bg,
-              borderRadius: 10,
-              padding: 12,
-              color: colors.text,
-              borderWidth: 1,
-              borderColor: tagToApply.trim() ? '#C9A962' : colors.border,
-              fontSize: 16,
-            }}
-            data-testid="qs-tag-input"
-          />
-          {tagToApply.trim() ? (
-            <Text style={{ fontSize: 13, color: '#C9A962', marginTop: 6 }}>
-              Tag "{tagToApply.trim()}" will be applied and trigger any matching campaign
-            </Text>
+
+          {/* Campaign toggle — only when a tag is selected */}
+          {selectedTag ? (
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                backgroundColor: colors.card, borderRadius: 10,
+                paddingHorizontal: 14, paddingVertical: 12,
+                marginTop: 10, borderWidth: 1, borderColor: colors.border,
+              }}
+              onPress={() => setStartCampaign(prev => !prev)}
+              data-testid="qs-campaign-toggle"
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                <Ionicons name="megaphone-outline" size={18} color={startCampaign ? '#34C759' : colors.textSecondary} />
+                <Text style={{ fontSize: 16, color: colors.text, flex: 1 }}>Start follow-up campaign</Text>
+              </View>
+              <View style={{
+                width: 44, height: 26, borderRadius: 13,
+                backgroundColor: startCampaign ? '#34C759' : colors.surface,
+                justifyContent: 'center', paddingHorizontal: 2,
+              }}>
+                <View style={{
+                  width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff',
+                  alignSelf: startCampaign ? 'flex-end' : 'flex-start',
+                  shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 2,
+                }} />
+              </View>
+            </TouchableOpacity>
           ) : null}
         </View>
       )}
@@ -678,7 +722,7 @@ export default function QuickSendPage() {
           { icon: 'chatbubble', text: `${sendMethod === 'email' ? 'Email' : sendMethod === 'copy' ? 'Link copied' : 'SMS'} sent`, color: '#007AFF' },
           { icon: 'analytics', text: 'Activity feed updated', color: '#C9A962' },
           ...(!matchedContact ? [{ icon: 'person-add' as any, text: 'New contact created', color: '#AF52DE' }] : []),
-          ...(tagToApply.trim() ? [{ icon: 'pricetag' as any, text: `Tag "${tagToApply.trim()}" applied`, color: '#FF9500' }] : []),
+          ...(selectedTag ? [{ icon: 'pricetag' as any, text: `Tag "${selectedTag}" applied`, color: '#FF9500' }] : []),
         ].map((item, i) => (
           <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 }}>
             <Ionicons name={item.icon as any} size={16} color={item.color} />
