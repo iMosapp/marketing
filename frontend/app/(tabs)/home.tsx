@@ -38,11 +38,30 @@ function ContactActionModal({
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [dialNumber, setDialNumber] = useState('');
+  const [phoneMatches, setPhoneMatches] = useState<any[]>([]);
+  const phoneSearchTimer = React.useRef<any>(null);
   const vcfInputRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
-    if (visible) { setMode(initialMode); setSearch(''); setDialNumber(''); loadContacts(); }
+    if (visible) { setMode(initialMode); setSearch(''); setDialNumber(''); setPhoneMatches([]); loadContacts(); }
   }, [visible, initialMode]);
+
+  // Live phone search — queries backend for ALL contacts, not just the local 50
+  React.useEffect(() => {
+    const digits = dialNumber.replace(/\D/g, '');
+    if (digits.length < 4) { setPhoneMatches([]); return; }
+    clearTimeout(phoneSearchTimer.current);
+    phoneSearchTimer.current = setTimeout(async () => {
+      try {
+        // Use the main contacts search which supports partial phone number matching
+        const res = await api.get(`/contacts/${userId}`, { params: { search: digits, limit: 3 } });
+        const results = Array.isArray(res.data) ? res.data : (res.data?.contacts || []);
+        // Filter to only contacts that have a phone matching the typed digits
+        const phoneOnly = results.filter((c: any) => (c.phone || '').replace(/\D/g, '').includes(digits));
+        setPhoneMatches(phoneOnly.slice(0, 3));
+      } catch { setPhoneMatches([]); }
+    }, 300);
+  }, [dialNumber, userId]);
 
   const loadContacts = async () => {
     setLoading(true);
@@ -274,20 +293,17 @@ function ContactActionModal({
               )}
             </View>
 
-            {/* Contact Matches — fixed height slot so keypad never moves */}
+            {/* Contact Matches — live backend search across ALL contacts */}
             <View style={{ height: 84, marginHorizontal: 24, justifyContent: 'flex-start' }}>
-              {dialNumber.length >= 3 && (() => {
-                const digits = dialNumber.replace(/\D/g, '');
-                const matches = contacts.filter(c => (c.phone || '').replace(/\D/g, '').includes(digits)).slice(0, 2);
-                if (matches.length === 0) return null;
+              {dialNumber.length >= 4 && phoneMatches.length > 0 && (() => {
                 const fmtPhone = (p: string) => { const d = (p||'').replace(/\D/g,''); if (d.length===11&&d[0]==='1') return `(${d.slice(1,4)}) ${d.slice(4,7)}-${d.slice(7)}`; if (d.length===10) return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`; return p; };
                 return (
                   <View style={{ backgroundColor: colors.card, borderRadius: 10, overflow: 'hidden' }}>
-                    {matches.map((item: any, i: number) => (
-                      <TouchableOpacity key={item._id} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, height: 40, borderTopWidth: i > 0 ? 0.5 : 0, borderTopColor: colors.border }} onPress={() => logAndDial(item.phone, item)}>
+                    {phoneMatches.map((item: any, i: number) => (
+                      <TouchableOpacity key={item._id || item.id} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, height: 40, borderTopWidth: i > 0 ? 0.5 : 0, borderTopColor: colors.border }} onPress={() => logAndDial(item.phone, item)}>
                         <Ionicons name="person-circle" size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
                         <Text style={{ fontSize: 16, fontWeight: '400', color: colors.text, marginRight: 6 }} numberOfLines={1}>
-                          {`${item.first_name || ''} ${item.last_name || ''}`.trim().length > 14 ? `${item.first_name || ''} ${item.last_name || ''}`.trim().slice(0,12)+'...' : `${item.first_name || ''} ${item.last_name || ''}`.trim()}
+                          {`${item.first_name || ''} ${item.last_name || ''}`.trim().slice(0, 16) || 'Contact'}
                         </Text>
                         <Text style={{ fontSize: 16, color: colors.textSecondary, flex: 1 }} numberOfLines={1}>{fmtPhone(item.phone)}</Text>
                       </TouchableOpacity>
