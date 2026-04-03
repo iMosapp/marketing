@@ -96,26 +96,22 @@ api.interceptors.response.use(
     }
     if (error.response) {
       console.error('API Error:', error.response.data);
-      // Report server errors (5xx) and unexpected client errors to error tracking
-      if (error.response.status >= 500) {
+      // Report actual server errors (500) but skip 502/503/504 gateway errors —
+      // those are infrastructure restarts (Cloudflare) not code bugs
+      const status = error.response.status;
+      const isGatewayError = status === 502 || status === 503 || status === 504 || status === 520 || status === 521 || status === 522 || status === 523 || status === 524;
+      if (status >= 500 && !isGatewayError) {
         import('../services/errorReporter').then(({ reportError }) => {
           reportError({
-            error_message: `API ${error.response.status}: ${error.config?.method?.toUpperCase()} ${error.config?.url} — ${JSON.stringify(error.response.data)?.slice(0, 300)}`,
+            error_message: `API ${status}: ${error.config?.method?.toUpperCase()} ${error.config?.url} — ${JSON.stringify(error.response.data)?.slice(0, 300)}`,
             error_type: 'api_error',
-            extra: { status: error.response.status, url: error.config?.url, method: error.config?.method },
+            extra: { status, url: error.config?.url, method: error.config?.method },
           });
         }).catch(() => {});
       }
     } else if (error.request) {
       console.error('Network Error:', error.message);
-      // Report network failures (server unreachable)
-      import('../services/errorReporter').then(({ reportError }) => {
-        reportError({
-          error_message: `Network Error: ${error.message} — ${error.config?.method?.toUpperCase()} ${error.config?.url}`,
-          error_type: 'api_error',
-          extra: { url: error.config?.url, method: error.config?.method },
-        });
-      }).catch(() => {});
+      // Network errors (server unreachable) are typically infrastructure — don't spam error reports
     } else {
       console.error('Error:', error.message);
     }

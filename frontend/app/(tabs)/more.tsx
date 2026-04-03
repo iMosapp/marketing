@@ -747,8 +747,8 @@ export default function MoreScreen() {
     setSendTagPhone('');
     setSendTagName('');
     setSendTagSelected('');
-    if (userId) {
-      api.get(`/contacts/${userId}?paginated=true&limit=100`).then(r => {
+    if (user?._id) {
+      api.get(`/contacts/${user._id}?paginated=true&limit=100`).then(r => {
         const contacts = r.data?.contacts || r.data || [];
         setSendTagContacts(contacts);
       }).catch(() => {});
@@ -772,8 +772,8 @@ export default function MoreScreen() {
         Linking.openURL(`sms:${phone}?body=${encodeURIComponent(msg)}`);
       }
       // Apply tag if selected
-      if (sendTagSelected && sendTagContact && userId) {
-        await api.post(`/contacts/${userId}/${sendTagSelected}/tags`, { tag: sendTagContact }).catch(() => {});
+      if (sendTagSelected && sendTagContact && user?._id) {
+        await api.post(`/contacts/${user._id}/${sendTagSelected}/tags`, { tag: sendTagContact }).catch(() => {});
       }
       setSendTagModal(null);
     } catch { showSimpleAlert('Error', 'Could not send'); }
