@@ -48,13 +48,35 @@ export default function Root({ children }: PropsWithChildren) {
               /* Prevent iOS Safari from zooming in on input focus (happens when font-size < 16px) */
               input, textarea, select { font-size: 16px !important; }
               /* Fix browser autofill styling — iOS Safari overrides text color on autofill */
+              /* Light mode: dark text on light background */
               input:-webkit-autofill,
               input:-webkit-autofill:hover,
               input:-webkit-autofill:focus,
               input:-webkit-autofill:active {
-                -webkit-text-fill-color: inherit !important;
-                caret-color: inherit !important;
+                -webkit-text-fill-color: #1c1c1e !important;
+                -webkit-box-shadow: 0 0 0px 1000px #f2f2f7 inset !important;
+                caret-color: #1c1c1e !important;
                 transition: background-color 5000s ease-in-out 0s !important;
+              }
+              /* Dark mode: white text on dark background */
+              [data-theme="dark"] input:-webkit-autofill,
+              [data-theme="dark"] input:-webkit-autofill:hover,
+              [data-theme="dark"] input:-webkit-autofill:focus,
+              [data-theme="dark"] input:-webkit-autofill:active {
+                -webkit-text-fill-color: #ffffff !important;
+                -webkit-box-shadow: 0 0 0px 1000px #1c1c1e inset !important;
+                caret-color: #ffffff !important;
+              }
+              /* System-level dark mode fallback (before JS theme loads) */
+              @media (prefers-color-scheme: dark) {
+                html:not([data-theme="light"]) input:-webkit-autofill,
+                html:not([data-theme="light"]) input:-webkit-autofill:hover,
+                html:not([data-theme="light"]) input:-webkit-autofill:focus,
+                html:not([data-theme="light"]) input:-webkit-autofill:active {
+                  -webkit-text-fill-color: #ffffff !important;
+                  -webkit-box-shadow: 0 0 0px 1000px #1c1c1e inset !important;
+                  caret-color: #ffffff !important;
+                }
               }
               /* iOS safe area  - fill the bottom home indicator area with black */
               @supports(padding: env(safe-area-inset-bottom)) {

@@ -89,10 +89,18 @@ export default function RootLayout() {
   const loadAuth = useAuthStore((state) => state.loadAuth);
   const loadTheme = useThemeStore((state) => state.loadTheme);
   const colors = useThemeStore((state) => state.colors);
+  const mode = useThemeStore((state) => state.mode);
   const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const segments = useSegments();
   const [mounted, setMounted] = useState(false);
+
+  // Sync theme mode to data-theme on <html> so CSS can target dark/light autofill colors
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      document.documentElement.setAttribute('data-theme', mode);
+    }
+  }, [mode]);
   
   // Hide Jessi on auth/public/customer-facing screens
   // These are ALL routes where a customer/public visitor could land
