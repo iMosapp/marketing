@@ -392,7 +392,7 @@ export default function ShowcasePage() {
               {isStoreView && (
                 <TouchableOpacity
                   style={[styles.quickLinkChip, { borderColor: accent + '40' }]}
-                  onPress={() => router.push(`/p/${fromUserId || id}` as any)}
+                  onPress={() => router.push(fromUserId ? `/p/${fromUserId}` : `/p/store/${id}` as any)}
                   data-testid="view-store-page"
                 >
                   <Ionicons name="globe-outline" size={15} color={accent} />
