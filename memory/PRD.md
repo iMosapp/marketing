@@ -131,7 +131,19 @@ New components created under `components/account/`:
 - `my-account.tsx` 1,533 → 424 lines
 - 5 new focused components under `components/account/`
 
-### New User → My Presence Redirect (Apr 2, 2026) -- LATEST
+### Hub "Setup & Manage" Disappearing Fix (Apr 2, 2026) -- LATEST
+
+**Root cause:** `GET /api/users/{user_id}` and `PATCH /api/users/{user_id}` in `server.py` returned the raw MongoDB document without calling `merge_permissions()`. The raw DB `feature_permissions.admin._enabled` was `null`/missing for users whose permissions were set before the permissions system existed. Every call to `refreshUserData()` (triggered by any profile edit) replaced the store's properly-merged permissions with the raw DB value → `perm('admin')` returned false → "Setup & Manage" section disappeared.
+
+**Fix:** Added `merge_permissions(user.get("feature_permissions"), user.get("role"))` to both:
+- `GET /api/users/{user_id}` → always returns merged permissions
+- `PATCH /api/users/{user_id}` → patch response also returns merged permissions
+
+All other user-returning endpoints (`/auth/login`, `/auth/me`, `/admin/impersonate`) were already calling `merge_permissions`. This was the only missing path.
+
+**Verified:** GET and PATCH both now return `admin._enabled: True` for super_admin. Section will no longer vanish after profile edits.
+
+### New User → My Presence Redirect (Apr 2, 2026)
 
 On first login (or any login where profile is incomplete — no bio yet), users now land directly on `/my-account` (My Presence) instead of the Hub. Once they have a bio set OR `onboarding_complete === true`, subsequent logins go to `/(tabs)/home`.
 

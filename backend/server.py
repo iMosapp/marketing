@@ -437,6 +437,10 @@ async def get_user_profile(user_id: str):
     for key in ["organization_id", "org_id", "store_id", "partner_id"]:
         if user.get(key):
             user[key] = str(user[key])
+    # Always merge permissions with role defaults so Hub sections never disappear
+    # after refreshUserData (raw DB may have null/stale feature_permissions)
+    from permissions import merge_permissions
+    user["feature_permissions"] = merge_permissions(user.get("feature_permissions"), user.get("role", "user"))
     return user
 
 
@@ -475,13 +479,15 @@ async def patch_user_profile(user_id: str, data: dict):
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Return the updated user data
+    # Return the updated user data with properly merged permissions
     updated_user = await db.users.find_one({"_id": ObjectId(user_id)}, {"password": 0})
     if updated_user:
         updated_user["_id"] = str(updated_user["_id"])
         for key in ["organization_id", "org_id", "store_id", "partner_id"]:
             if updated_user.get(key):
                 updated_user[key] = str(updated_user[key])
+        from permissions import merge_permissions
+        updated_user["feature_permissions"] = merge_permissions(updated_user.get("feature_permissions"), updated_user.get("role", "user"))
     
     return updated_user
 
