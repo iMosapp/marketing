@@ -282,7 +282,8 @@ export default function QuickSendPage() {
       }
 
       // Apply user-chosen tag (triggers matching campaign if toggle is on)
-      if (selectedTag && contactId && config.eventType !== 'review_invite_sent') {
+      // Works for ALL actions including review (on top of the auto "Review Sent" tag)
+      if (selectedTag && contactId) {
         try {
           await api.post(`/tags/${userId}/assign`, {
             tag_name: selectedTag,
@@ -579,6 +580,75 @@ export default function QuickSendPage() {
         </View>
       </View>
 
+      {/* Tag picker — ABOVE send options, same UX as Create a Card */}
+      <View style={{ marginBottom: 20 }}>
+        <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 }}>
+          Apply Tag (Optional)
+        </Text>
+        <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 10 }}>
+          Applying a tag starts the associated follow-up campaign
+        </Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 }} data-testid="qs-tag-picker">
+          {availableTags.map((tag: any) => {
+            const isSelected = selectedTag === tag.name;
+            return (
+              <TouchableOpacity
+                key={tag._id || tag.name}
+                onPress={() => setSelectedTag(isSelected ? '' : tag.name)}
+                style={{
+                  flexDirection: 'row', alignItems: 'center',
+                  paddingHorizontal: 12, paddingVertical: 8,
+                  borderRadius: 20, borderWidth: 1.5,
+                  borderColor: isSelected ? (tag.color || '#C9A962') : colors.border,
+                  backgroundColor: isSelected ? `${tag.color || '#C9A962'}20` : colors.card,
+                  gap: 6,
+                }}
+                data-testid={`qs-tag-${tag.name.toLowerCase().replace(/\s/g, '-')}`}
+              >
+                {isSelected && <Ionicons name="checkmark-circle" size={16} color={tag.color || '#C9A962'} />}
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: tag.color || '#8E8E93' }} />
+                <Text style={{ fontSize: 15, fontWeight: isSelected ? '700' : '400', color: isSelected ? (tag.color || '#C9A962') : colors.text }}>
+                  {tag.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+          {availableTags.length === 0 && (
+            <Text style={{ fontSize: 15, color: colors.textSecondary, fontStyle: 'italic' }}>No tags yet</Text>
+          )}
+        </View>
+
+        {/* Campaign toggle — only when a tag is selected */}
+        {selectedTag ? (
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+              backgroundColor: colors.card, borderRadius: 10,
+              paddingHorizontal: 14, paddingVertical: 12,
+              marginTop: 10, borderWidth: 1, borderColor: colors.border,
+            }}
+            onPress={() => setStartCampaign(prev => !prev)}
+            data-testid="qs-campaign-toggle"
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+              <Ionicons name="megaphone-outline" size={18} color={startCampaign ? '#34C759' : colors.textSecondary} />
+              <Text style={{ fontSize: 16, color: colors.text, flex: 1 }}>Start follow-up campaign</Text>
+            </View>
+            <View style={{
+              width: 44, height: 26, borderRadius: 13,
+              backgroundColor: startCampaign ? '#34C759' : colors.surface,
+              justifyContent: 'center', paddingHorizontal: 2,
+            }}>
+              <View style={{
+                width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff',
+                alignSelf: startCampaign ? 'flex-end' : 'flex-start',
+                shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 2,
+              }} />
+            </View>
+          </TouchableOpacity>
+        ) : null}
+      </View>
+
       {/* Send options */}
       <Text style={{ fontSize: 15, color: colors.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>
         How do you want to send it?
@@ -623,77 +693,6 @@ export default function QuickSendPage() {
         <Text style={{ fontSize: 14, color: colors.textTertiary, textAlign: 'center', marginTop: 8 }}>
           This will open your phone's messaging app
         </Text>
-      )}
-
-      {/* Tag picker — same UX as Create a Card */}
-      {actionKey !== 'review' && (
-        <View style={{ marginTop: 20 }}>
-          <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 }}>
-            Apply Tag (Optional)
-          </Text>
-          <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 10 }}>
-            Applying a tag starts the associated follow-up campaign
-          </Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 }} data-testid="qs-tag-picker">
-            {availableTags.map((tag: any) => {
-              const isSelected = selectedTag === tag.name;
-              return (
-                <TouchableOpacity
-                  key={tag._id || tag.name}
-                  onPress={() => setSelectedTag(isSelected ? '' : tag.name)}
-                  style={{
-                    flexDirection: 'row', alignItems: 'center',
-                    paddingHorizontal: 12, paddingVertical: 8,
-                    borderRadius: 20, borderWidth: 1.5,
-                    borderColor: isSelected ? (tag.color || '#C9A962') : colors.border,
-                    backgroundColor: isSelected ? `${tag.color || '#C9A962'}20` : colors.card,
-                    gap: 6,
-                  }}
-                  data-testid={`qs-tag-${tag.name.toLowerCase().replace(/\s/g, '-')}`}
-                >
-                  {isSelected && <Ionicons name="checkmark-circle" size={16} color={tag.color || '#C9A962'} />}
-                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: tag.color || '#8E8E93' }} />
-                  <Text style={{ fontSize: 15, fontWeight: isSelected ? '700' : '400', color: isSelected ? (tag.color || '#C9A962') : colors.text }}>
-                    {tag.name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-            {availableTags.length === 0 && (
-              <Text style={{ fontSize: 15, color: colors.textSecondary, fontStyle: 'italic' }}>No tags yet</Text>
-            )}
-          </View>
-
-          {/* Campaign toggle — only when a tag is selected */}
-          {selectedTag ? (
-            <TouchableOpacity
-              style={{
-                flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-                backgroundColor: colors.card, borderRadius: 10,
-                paddingHorizontal: 14, paddingVertical: 12,
-                marginTop: 10, borderWidth: 1, borderColor: colors.border,
-              }}
-              onPress={() => setStartCampaign(prev => !prev)}
-              data-testid="qs-campaign-toggle"
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-                <Ionicons name="megaphone-outline" size={18} color={startCampaign ? '#34C759' : colors.textSecondary} />
-                <Text style={{ fontSize: 16, color: colors.text, flex: 1 }}>Start follow-up campaign</Text>
-              </View>
-              <View style={{
-                width: 44, height: 26, borderRadius: 13,
-                backgroundColor: startCampaign ? '#34C759' : colors.surface,
-                justifyContent: 'center', paddingHorizontal: 2,
-              }}>
-                <View style={{
-                  width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff',
-                  alignSelf: startCampaign ? 'flex-end' : 'flex-start',
-                  shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 2,
-                }} />
-              </View>
-            </TouchableOpacity>
-          ) : null}
-        </View>
       )}
     </ScrollView>
   );
