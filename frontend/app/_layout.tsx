@@ -96,11 +96,12 @@ export default function RootLayout() {
   const [mounted, setMounted] = useState(false);
 
   // Sync theme mode to data-theme on <html> so CSS can target dark/light autofill colors
+  // Also re-applies whenever segments change (e.g. after returning from login page which forced 'light')
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
       document.documentElement.setAttribute('data-theme', mode);
     }
-  }, [mode]);
+  }, [mode, segments]);
   
   // Hide Jessi on auth/public/customer-facing screens
   // These are ALL routes where a customer/public visitor could land

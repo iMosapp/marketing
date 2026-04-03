@@ -75,6 +75,17 @@ export default function LoginScreen() {
         useNativeDriver: true,
       }).start();
     });
+
+    // Login page is ALWAYS light — force data-theme="light" so autofill CSS
+    // uses the light-mode rules (white bg, dark text) regardless of app theme.
+    // Restore the real theme on unmount so the rest of the app still works.
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      const prev = document.documentElement.getAttribute('data-theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', 'light');
+      return () => {
+        document.documentElement.setAttribute('data-theme', prev);
+      };
+    }
   }, []);
 
   const [email, setEmail] = useState('');
