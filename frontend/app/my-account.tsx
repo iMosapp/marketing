@@ -853,14 +853,14 @@ export default function MyAccountScreen() {
       {showEditModal && (
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ position: 'absolute' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 999 }}
+          style={{ position: 'absolute' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, justifyContent: 'flex-end' }}
         >
           <TouchableOpacity
             style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)' }}
             activeOpacity={1}
             onPress={() => setShowEditModal(false)}
           />
-          <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 }}>
+          <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 48 }}>
             {/* Header */}
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
               <Text style={{ flex: 1, fontSize: 20, fontWeight: '800', color: colors.text }}>Edit Profile</Text>
@@ -900,37 +900,34 @@ export default function MyAccountScreen() {
               />
             </View>
 
-            {/* Email + Phone row */}
-            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>Email</Text>
-                <View style={{ backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}>
-                  <TextInput
-                    style={{ fontSize: 16, color: colors.text, padding: 12 }}
-                    value={editEmail}
-                    onChangeText={setEditEmail}
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    placeholder="your@email.com"
-                    placeholderTextColor={colors.textTertiary}
-                    data-testid="edit-email-input"
-                  />
-                </View>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>Phone</Text>
-                <View style={{ backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}>
-                  <TextInput
-                    style={{ fontSize: 16, color: colors.text, padding: 12 }}
-                    value={editPhone}
-                    onChangeText={setEditPhone}
-                    keyboardType="phone-pad"
-                    placeholder="(801) 555-1234"
-                    placeholderTextColor={colors.textTertiary}
-                    data-testid="edit-phone-input"
-                  />
-                </View>
-              </View>
+            {/* Email — full width */}
+            <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>Email</Text>
+            <View style={{ backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, marginBottom: 14 }}>
+              <TextInput
+                style={{ fontSize: 16, color: colors.text, padding: 14 }}
+                value={editEmail}
+                onChangeText={setEditEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                placeholder="your@email.com"
+                placeholderTextColor={colors.textTertiary}
+                returnKeyType="next"
+                data-testid="edit-email-input"
+              />
+            </View>
+
+            {/* Phone — full width */}
+            <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 }}>Phone</Text>
+            <View style={{ backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, marginBottom: 20 }}>
+              <TextInput
+                style={{ fontSize: 16, color: colors.text, padding: 14 }}
+                value={editPhone}
+                onChangeText={setEditPhone}
+                keyboardType="phone-pad"
+                placeholder="(801) 555-1234"
+                placeholderTextColor={colors.textTertiary}
+                data-testid="edit-phone-input"
+              />
             </View>
 
             {/* CTA */}
