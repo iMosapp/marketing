@@ -64,7 +64,7 @@ export default function AddTaskScreen() {
     setContactsLoading(true);
     try {
       const data = await contactsAPI.getAll(user._id);
-      setContactsList(data || []);
+      setContactsList(Array.isArray(data) ? data : (data?.contacts || []));
     } catch {}
     setContactsLoading(false);
   };

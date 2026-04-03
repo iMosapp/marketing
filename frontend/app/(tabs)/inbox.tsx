@@ -485,7 +485,7 @@ export default function InboxScreen() {
     try {
       setLoadingContacts(true);
       const data = await contactsAPI.getAll(user._id);
-      setContacts(data);
+      setContacts(Array.isArray(data) ? data : (data?.contacts || []));
     } catch (error) {
       console.error('Failed to load contacts:', error);
     } finally {

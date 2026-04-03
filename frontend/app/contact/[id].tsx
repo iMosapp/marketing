@@ -986,7 +986,8 @@ export default function ContactDetailScreen() {
     if (!user) return;
     try {
       const data = await contactsAPI.getAll(user._id);
-      setAllContacts(data.filter((c: any) => c._id !== id));
+      const contactArr = Array.isArray(data) ? data : (data?.contacts || []);
+      setAllContacts(contactArr.filter((c: any) => c._id !== id));
     } catch (e) { console.error(e); }
   };
 

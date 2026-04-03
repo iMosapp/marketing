@@ -112,7 +112,7 @@ export default function NewContactScreen() {
     if (!user) return;
     try {
       const data = await contactsAPI.getAll(user._id);
-      setAllContacts(data);
+      setAllContacts(Array.isArray(data) ? data : (data?.contacts || []));
     } catch {}
   };
 

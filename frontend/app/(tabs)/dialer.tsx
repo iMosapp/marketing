@@ -44,7 +44,7 @@ export default function DialerScreen() {
 
   useEffect(() => {
     if (user && !isPending) {
-      contactsAPI.getAll(user._id).then(setContacts).catch(() => {});
+      contactsAPI.getAll(user._id).then(data => setContacts(Array.isArray(data) ? data : (data?.contacts || []))).catch(() => {});
     }
   }, [user, isPending]);
 

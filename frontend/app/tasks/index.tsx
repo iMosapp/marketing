@@ -56,7 +56,7 @@ export default function TasksScreen() {
     if (!user) return;
     try {
       const data = await contactsAPI.getAll(user._id);
-      setContacts(data);
+      setContacts(Array.isArray(data) ? data : (data?.contacts || []));
     } catch (error) {
       console.error('Failed to load contacts:', error);
     }

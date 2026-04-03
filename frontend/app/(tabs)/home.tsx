@@ -46,7 +46,7 @@ function ContactActionModal({
 
   const loadContacts = async () => {
     setLoading(true);
-    try { const data = await contactsAPI.getAll(userId); setContacts(data || []); } catch {}
+    try { const data = await contactsAPI.getAll(userId); setContacts(Array.isArray(data) ? data : (data?.contacts || [])); } catch {}
     setLoading(false);
   };
 
@@ -459,7 +459,7 @@ export default function HomeScreen() {
   const loadCardContacts = async () => {
     if (!user?._id) return;
     setCardContactsLoading(true);
-    try { const data = await contactsAPI.getAll(user._id); setCardContacts(data || []); } catch {}
+    try { const data = await contactsAPI.getAll(user._id); setCardContacts(Array.isArray(data) ? data : (data?.contacts || [])); } catch {}
     setCardContactsLoading(false);
   };
 
@@ -467,7 +467,7 @@ export default function HomeScreen() {
   const loadActionContacts = async () => {
     if (!user?._id) return;
     setActionContactsLoading(true);
-    try { const data = await contactsAPI.getAll(user._id); setActionContacts(data || []); } catch {}
+    try { const data = await contactsAPI.getAll(user._id); setActionContacts(Array.isArray(data) ? data : (data?.contacts || [])); } catch {}
     setActionContactsLoading(false);
   };
 

@@ -138,7 +138,7 @@ export default function NewTaskScreen() {
     setContactsLoading(true);
     try {
       const data = await contactsAPI.getAll(user._id);
-      setContacts(data || []);
+      setContacts(Array.isArray(data) ? data : (data?.contacts || []));
     } catch {}
     setContactsLoading(false);
   };
