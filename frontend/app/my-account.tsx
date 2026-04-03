@@ -449,7 +449,7 @@ export default function MyAccountScreen() {
           </TouchableOpacity>
 
           {/* Avatar + completeness ring */}
-          <View style={s.avatarArea}>
+          <View style={s.avatarArea} pointerEvents="box-none">
             <View style={s.avatarOuter}>
               {user && (
                 <ProfilePhotoUpload
