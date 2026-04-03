@@ -35,13 +35,13 @@ const getDefaultRoute = (role?: string): string => {
   return '/(tabs)/home';  // Everyone starts at Home  - the daily command center
 };
 
-/** Gate: first-time / incomplete profiles land on Hub to prompt profile setup.
+/** Gate: first-time / incomplete profiles land on My Presence to set up their profile.
  *  Once they have photo + bio (or onboarding_complete === true), go to home. */
 const getProfileGatedRoute = (user: any): string => {
   const hasPhoto = !!(user?.photo_url || user?.photo_path);
   const hasBio   = !!(user?.persona?.bio || user?.bio);
   const complete  = user?.onboarding_complete === true || (hasPhoto && hasBio);
-  return complete ? getDefaultRoute(user?.role) : '/(tabs)/more';
+  return complete ? getDefaultRoute(user?.role) : '/my-account';
 };
 
 export default function LoginScreen() {

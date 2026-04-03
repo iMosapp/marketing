@@ -131,7 +131,14 @@ New components created under `components/account/`:
 - `my-account.tsx` 1,533 → 424 lines
 - 5 new focused components under `components/account/`
 
-### Profile Edit UX Fix (Apr 2, 2026) -- LATEST
+### New User → My Presence Redirect (Apr 2, 2026) -- LATEST
+
+On first login (or any login where profile is incomplete — no bio yet), users now land directly on `/my-account` (My Presence) instead of the Hub. Once they have a bio set OR `onboarding_complete === true`, subsequent logins go to `/(tabs)/home`.
+
+**Change:** `getProfileGatedRoute` in `login.tsx` — one line: `'/(tabs)/more'` → `'/my-account'`  
+**Verified:** Matt (no bio) → /my-account ✅, Forest (complete) → /home ✅
+
+### Profile Edit UX Fix (Apr 2, 2026)
 
 Two UX improvements to make profile editing discoverable:
 
