@@ -111,6 +111,7 @@ export default function QuickSendPage() {
 
   const [sending, setSending] = useState(false);
   const [newContactId, setNewContactId] = useState('');
+  const [tagToApply, setTagToApply] = useState('');   // optional tag applied on send
 
   const storeSlug = user?.store_slug || user?.storeSlug || '';
   const userId = user?._id || '';
@@ -265,6 +266,18 @@ export default function QuickSendPage() {
         try {
           await api.post(`/tags/${userId}/assign`, {
             tag_name: 'Review Sent',
+            contact_ids: [contactId],
+            skip_campaign: false,
+            auto_create_tag: true,
+          });
+        } catch {}
+      }
+
+      // Apply user-chosen tag (triggers matching campaign)
+      if (tagToApply.trim() && contactId && config.eventType !== 'review_invite_sent') {
+        try {
+          await api.post(`/tags/${userId}/assign`, {
+            tag_name: tagToApply.trim(),
             contact_ids: [contactId],
             skip_campaign: false,
             auto_create_tag: true,
@@ -603,6 +616,41 @@ export default function QuickSendPage() {
           This will open your phone's messaging app
         </Text>
       )}
+
+      {/* Tag + Campaign (optional) — shown for all non-review actions */}
+      {actionKey !== 'review' && (
+        <View style={{ marginTop: 20, backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, padding: 14 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+            <Ionicons name="pricetag-outline" size={16} color="#C9A962" />
+            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8 }}>
+              Add Tag (optional — triggers campaign)
+            </Text>
+          </View>
+          <TextInput
+            value={tagToApply}
+            onChangeText={setTagToApply}
+            placeholder="e.g. new_lead, sold, follow_up"
+            placeholderTextColor={colors.textTertiary}
+            autoCapitalize="none"
+            returnKeyType="done"
+            style={{
+              backgroundColor: colors.bg,
+              borderRadius: 10,
+              padding: 12,
+              color: colors.text,
+              borderWidth: 1,
+              borderColor: tagToApply.trim() ? '#C9A962' : colors.border,
+              fontSize: 16,
+            }}
+            data-testid="qs-tag-input"
+          />
+          {tagToApply.trim() ? (
+            <Text style={{ fontSize: 13, color: '#C9A962', marginTop: 6 }}>
+              Tag "{tagToApply.trim()}" will be applied and trigger any matching campaign
+            </Text>
+          ) : null}
+        </View>
+      )}
     </ScrollView>
   );
 
@@ -630,6 +678,7 @@ export default function QuickSendPage() {
           { icon: 'chatbubble', text: `${sendMethod === 'email' ? 'Email' : sendMethod === 'copy' ? 'Link copied' : 'SMS'} sent`, color: '#007AFF' },
           { icon: 'analytics', text: 'Activity feed updated', color: '#C9A962' },
           ...(!matchedContact ? [{ icon: 'person-add' as any, text: 'New contact created', color: '#AF52DE' }] : []),
+          ...(tagToApply.trim() ? [{ icon: 'pricetag' as any, text: `Tag "${tagToApply.trim()}" applied`, color: '#FF9500' }] : []),
         ].map((item, i) => (
           <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 }}>
             <Ionicons name={item.icon as any} size={16} color={item.color} />

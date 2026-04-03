@@ -1456,9 +1456,9 @@ export default function MoreScreen() {
               ))}
             </ScrollView>
           ) : (
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-              <TextInput value={sendTagName} onChangeText={setSendTagName} placeholder="Name" placeholderTextColor={colors.textTertiary} style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 10, padding: 12, color: colors.text, borderWidth: 1, borderColor: colors.borderLight }} />
-              <TextInput value={sendTagPhone} onChangeText={setSendTagPhone} placeholder="Phone" placeholderTextColor={colors.textTertiary} keyboardType="phone-pad" style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 10, padding: 12, color: colors.text, borderWidth: 1, borderColor: colors.borderLight }} />
+            <View style={{ gap: 8, marginBottom: 12 }}>
+              <TextInput value={sendTagName} onChangeText={setSendTagName} placeholder="Name" placeholderTextColor={colors.textTertiary} style={{ backgroundColor: colors.surface, borderRadius: 10, padding: 12, color: colors.text, borderWidth: 1, borderColor: colors.borderLight }} />
+              <TextInput value={sendTagPhone} onChangeText={setSendTagPhone} placeholder="Phone" placeholderTextColor={colors.textTertiary} keyboardType="phone-pad" style={{ backgroundColor: colors.surface, borderRadius: 10, padding: 12, color: colors.text, borderWidth: 1, borderColor: colors.borderLight }} />
             </View>
           )}
           <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textTertiary, marginBottom: 6 }}>APPLY TAG (triggers campaign)</Text>
