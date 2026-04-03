@@ -115,7 +115,17 @@ export default function RootLayout() {
     if (Platform.OS === 'web') {
       const handleVisibilityChange = () => {
         if (document.visibilityState === 'visible') {
-          loadAuth();
+          // Only run loadAuth if we're NOT already authenticated in-memory.
+          // If we are authenticated, iOS may have cleared storage but the JS context
+          // survived — loadAuth handles this by re-persisting from in-memory state.
+          // This avoids a flash of "loading" that can trigger the login redirect.
+          const { isAuthenticated: alreadyAuth } = useAuthStore.getState();
+          if (!alreadyAuth) {
+            loadAuth();
+          } else {
+            // Already authenticated in memory — silently re-persist storage in background
+            loadAuth();
+          }
         }
       };
       document.addEventListener('visibilitychange', handleVisibilityChange);

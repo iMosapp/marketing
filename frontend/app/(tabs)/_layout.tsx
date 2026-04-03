@@ -52,10 +52,20 @@ export default function TabLayout() {
     });
   }, [subscribe]);
 
-  // Auth redirect
+  // Auth redirect — with grace period to allow loadAuth to restore session
+  // Without the delay, iOS storage reads can briefly show isAuthenticated=false
+  // before loadAuth completes, causing a spurious redirect to login
   useEffect(() => {
-    if (mounted && !isLoading && !isAuthenticated) {
-      router.replace('/auth/login');
+    if (!mounted || isLoading) return;
+    if (!isAuthenticated) {
+      // Small grace period: give loadAuth a chance to finish restoring from storage
+      const t = setTimeout(() => {
+        const { isAuthenticated: stillAuth, isLoading: stillLoading } = useAuthStore.getState();
+        if (!stillAuth && !stillLoading) {
+          router.replace('/auth/login');
+        }
+      }, 600);
+      return () => clearTimeout(t);
     }
   }, [mounted, isLoading, isAuthenticated]);
 

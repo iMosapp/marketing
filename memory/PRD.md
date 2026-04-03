@@ -131,7 +131,17 @@ New components created under `components/account/`:
 - `my-account.tsx` 1,533 → 424 lines
 - 5 new focused components under `components/account/`
 
-### Hub "Setup & Manage" Disappearing Fix (Apr 2, 2026) -- LATEST
+### PWA Session Persistence Fix — Logout on Every Resume (Apr 3, 2026) -- LATEST
+
+**Root cause 1 (PRIMARY):** `manifest.json` had `"start_url": "/auth/login"`. Every cold launch from the iOS home screen icon opened the login page directly — bypassing `loadAuth` and ignoring any stored session. Changed to `"start_url": "/"` so the root `index.tsx` handles auth routing correctly (authenticated → home, not → login).
+
+**Root cause 2:** When iOS clears storage (localStorage/IDB) while the JS context survives, `loadAuth()` would find nothing in storage and leave `isAuthenticated: false`. Added in-memory recovery: if the Zustand store already has a valid user/token, re-persist to storage and continue authenticated without hitting login.
+
+**Root cause 3:** `(tabs)/_layout.tsx` auth redirect had no grace period — any momentary `isAuthenticated: false` during `loadAuth` async reads would immediately redirect to login. Added 600ms grace period that re-checks the final store state before redirecting.
+
+**Verified:** `manifest.json` start_url is now `/`, storage recovery path is in place, grace period prevents race condition logouts.
+
+### Hub "Setup & Manage" Disappearing Fix (Apr 2, 2026)
 
 **Root cause:** `GET /api/users/{user_id}` and `PATCH /api/users/{user_id}` in `server.py` returned the raw MongoDB document without calling `merge_permissions()`. The raw DB `feature_permissions.admin._enabled` was `null`/missing for users whose permissions were set before the permissions system existed. Every call to `refreshUserData()` (triggered by any profile edit) replaced the store's properly-merged permissions with the raw DB value → `perm('admin')` returned false → "Setup & Manage" section disappeared.
 

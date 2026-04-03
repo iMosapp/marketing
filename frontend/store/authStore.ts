@@ -315,6 +315,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           return;
         }
 
+        // === CRITICAL: iOS storage recovery ===
+        // If storage is empty but the in-memory Zustand state still has a valid session
+        // (JS context survived but iOS cleared localStorage/IDB), re-persist and continue.
+        // This prevents logout when iOS clears storage without killing the JS process.
+        const currentState = get();
+        if (currentState.isAuthenticated && currentState.user?._id && currentState.token) {
+          // Re-hydrate storage from in-memory state so future cold starts work
+          const userJson = JSON.stringify(currentState.user);
+          try { await _idbSet('imonsocial_token', currentState.token); } catch {}
+          try { await _idbSet('imonsocial_user', userJson); } catch {}
+          try { await AsyncStorage.setItem('auth_token', currentState.token); } catch {}
+          try { await AsyncStorage.setItem('user', userJson); } catch {}
+          set({ isLoading: false }); // Already authenticated — just clear loading
+          return;
+        }
+
         // === LAYER 3: HTTP-only session cookie → /auth/me ===
         // Server set imonsocial_uid as a JS-readable cookie — if present, session is live
         const uidCookie = _getCookie('imonsocial_uid');
