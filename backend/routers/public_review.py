@@ -163,27 +163,44 @@ async def track_review_click(store_slug: str, data: dict):
     
     await db.review_link_clicks.insert_one(click_doc)
     
-    # Log activity: customer clicked a review link
+    # Notify the salesperson immediately when someone clicks their review link
     if salesperson_id:
         try:
-            from utils.contact_activity import log_activity_for_customer
-            customer_name = data.get("customer_name")
+            customer_name = data.get("customer_name", "Someone")
             customer_phone = data.get("customer_phone")
-            if customer_name or customer_phone:
+            platform_display = platform.replace("_", " ").title()
+
+            # Contact activity log
+            from utils.contact_activity import log_activity_for_customer
+            if customer_name != "Someone" or customer_phone:
                 await log_activity_for_customer(
                     user_id=salesperson_id,
                     customer_phone=customer_phone,
-                    customer_name=customer_name,
+                    customer_name=customer_name if customer_name != "Someone" else None,
                     event_type="review_link_clicked",
-                    title="Clicked Review Link",
-                    description=f"Clicked {platform.replace('_', ' ').title()} review link",
-                    icon="open",
-                    color="#FBBC04",
-                    category="customer_activity",
+                    title="Clicked Your Review Link",
+                    description=f"Clicked your {platform_display} review link — they may have left a review!",
+                    icon="open", color="#FBBC04", category="customer_activity",
                     metadata={"platform": platform, "url": data.get("url", "")},
                 )
+
+            # Real-time notification
+            await db.notifications.insert_one({
+                "type": "review_click",
+                "title": f"Review Link Clicked — {platform_display}",
+                "message": f"{customer_name} clicked your {platform_display} review link! They may have just left you a review.",
+                "user_id": salesperson_id,
+                "contact_name": customer_name,
+                "contact_phone": customer_phone,
+                "platform": platform,
+                "action_required": False,
+                "read": False,
+                "dismissed": False,
+                "priority": "normal",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            })
         except Exception as e:
-            print(f"[PublicReview] Failed to log click activity: {e}")
+            logger.warning(f"[ReviewClick] Failed to notify salesperson {salesperson_id}: {e}")
     
     # Increment store-level click count
     await db.stores.update_one(
@@ -459,3 +476,101 @@ async def check_store_hours(store_slug: str):
         "day": day_name,
         "timezone": store.get("timezone")
     }
+
+
+@router.post("/track-click-by-user/{salesperson_id}")
+async def track_review_click_by_user(salesperson_id: str, data: dict):
+    """Track review link click attributed to a salesperson (no store slug needed)."""
+    db = get_db()
+    platform = data.get("platform", "unknown")
+    now = datetime.now(timezone.utc)
+
+    click_doc = {
+        "salesperson_id": salesperson_id,
+        "platform": platform,
+        "url_clicked": data.get("url", ""),
+        "customer_name": data.get("customer_name"),
+        "customer_phone": data.get("customer_phone"),
+        "source": data.get("source", "card"),
+        "created_at": now,
+    }
+    await db.review_link_clicks.insert_one(click_doc)
+
+    # Update salesperson click counter
+    try:
+        await db.users.update_one(
+            {"_id": ObjectId(salesperson_id)},
+            {"$inc": {f"review_clicks.{platform}": 1, "review_clicks.total": 1}}
+        )
+    except Exception:
+        pass
+
+    # Notify salesperson
+    try:
+        customer_name = data.get("customer_name", "Someone")
+        platform_display = platform.replace("_", " ").title()
+        await db.notifications.insert_one({
+            "type": "review_click",
+            "title": f"Review Link Clicked — {platform_display}",
+            "message": f"{customer_name} clicked your {platform_display} review link! They may have left you a review.",
+            "user_id": salesperson_id,
+            "contact_name": customer_name,
+            "contact_phone": data.get("customer_phone"),
+            "platform": platform,
+            "action_required": False,
+            "read": False, "dismissed": False, "priority": "normal",
+            "created_at": now.isoformat(),
+        })
+    except Exception as e:
+        logger.warning(f"[ReviewClickUser] Notification failed: {e}")
+
+    return {"success": True}
+
+
+@router.get("/attribution/{user_id}")
+async def get_review_attribution(user_id: str):
+    """Get comprehensive review attribution for a salesperson — internal reviews + online click log."""
+    db = get_db()
+    
+    # Internal reviews (all statuses)
+    all_feedback = await db.customer_feedback.find(
+        {"salesperson_id": user_id}
+    ).sort("created_at", -1).limit(100).to_list(100)
+
+    # Online review link clicks
+    clicks = await db.review_link_clicks.find(
+        {"salesperson_id": user_id}
+    ).sort("created_at", -1).limit(100).to_list(100)
+
+    def fmt(doc):
+        d = {k: v for k, v in doc.items() if k != "_id"}
+        d["id"] = str(doc["_id"])
+        if d.get("created_at") and hasattr(d["created_at"], "isoformat"):
+            d["created_at"] = d["created_at"].isoformat()
+        return d
+
+    return {
+        "internal_reviews": [fmt(f) for f in all_feedback],
+        "online_clicks": [fmt(c) for c in clicks],
+        "summary": {
+            "total_internal": len(all_feedback),
+            "pending": sum(1 for f in all_feedback if not f.get("approved")),
+            "approved": sum(1 for f in all_feedback if f.get("approved")),
+            "total_clicks": len(clicks),
+            "clicks_by_platform": {},
+        }
+    }
+
+
+@router.patch("/reviews/{review_id}/publish")
+async def update_review_publish(review_id: str, data: dict):
+    """Update which pages a review is published on."""
+    db = get_db()
+    pages = data.get("pages", ["digital_card", "landing_page"])
+    result = await db.customer_feedback.update_one(
+        {"_id": ObjectId(review_id)},
+        {"$set": {"approved": True, "publish_to": pages, "approved_at": datetime.now(timezone.utc)}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Review not found")
+    return {"success": True, "publish_to": pages}

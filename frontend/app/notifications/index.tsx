@@ -38,6 +38,7 @@ function getNotifIcon(type: string): string {
     campaign_send: 'megaphone',
     engagement_signal: 'flame',
     new_review: 'star',   // customer left a review on digital card
+    review_click: 'open', // customer clicked an online review link
   };
   return map[type] || 'notifications';
 }
@@ -54,6 +55,7 @@ function getNotifColor(type: string): string {
     engagement_signal: '#FF3B30',
     campaign_send: '#FF9500',
     new_review: '#FFD60A',  // gold star for reviews
+    review_click: '#FBBC04', // gold for online review link clicks
   };
   return map[type] || '#8E8E93';
 }

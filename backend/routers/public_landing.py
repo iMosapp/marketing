@@ -106,10 +106,16 @@ async def get_landing_page_data(user_id: str):
         store = await db.stores.find_one({"_id": ObjectId(user["store_id"])})
     
     # Get APPROVED testimonials/reviews for this salesperson
+    # published_to "landing_page" OR old reviews with approved:True (backward compat)
     testimonials = await db.customer_feedback.find({
         "salesperson_id": user_id,
         "approved": True,
-        "rating": {"$gte": 4}
+        "rating": {"$gte": 4},
+        "$or": [
+            {"publish_to": {"$exists": False}},          # old reviews - show everywhere
+            {"publish_to": "landing_page"},               # explicitly published here
+            {"publish_to": {"$in": ["landing_page"]}},   # array format
+        ]
     }).sort("created_at", -1).limit(10).to_list(10)
     
     # Format testimonials
