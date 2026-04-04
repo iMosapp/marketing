@@ -194,17 +194,28 @@ export default function DigitalCardPage() {
     setSubmittingFeedback(true);
     track('internal_review_submitted', { metadata: { rating: feedbackRating } });
     try {
-      const storeSlug = cardData?.store?.slug || 'default';
-      await api.post(`/review/submit/${storeSlug}`, {
+      const storeSlug = cardData?.store?.slug;
+      const payload = {
         customer_name: feedbackName.trim() || 'Anonymous',
         rating: feedbackRating,
         text_review: feedbackText.trim() || null,
         salesperson_id: userId,
         salesperson_name: cardData?.user?.name,
-      });
+        source: 'digital_card',
+      };
+
+      if (storeSlug) {
+        // Preferred: submit via store slug
+        await api.post(`/review/submit/${storeSlug}`, payload);
+      } else {
+        // Fallback: submit directly by salesperson user_id (no store needed)
+        await api.post(`/review/submit-by-user/${userId}`, payload);
+      }
       setFeedbackSubmitted(true);
     } catch (e) {
       console.error('Feedback error:', e);
+      // Still mark submitted to avoid repeat submissions
+      setFeedbackSubmitted(true);
     } finally {
       setSubmittingFeedback(false);
     }

@@ -241,6 +241,74 @@ async def get_click_stats(store_id: str):
     }
 
 
+@router.post("/submit-by-user/{salesperson_id}")
+async def submit_feedback_by_user(salesperson_id: str, feedback: dict):
+    """Submit feedback directly by salesperson user_id — used by digital card page
+    when no store slug is available (independent users, missing slug, etc.)"""
+    db = get_db()
+    user = await db.users.find_one({"_id": ObjectId(salesperson_id)}, {"store_id": 1})
+    store_id = str(user["store_id"]) if user and user.get("store_id") else ""
+    # Inject salesperson_id and delegate to the main submit logic
+    feedback["salesperson_id"] = salesperson_id
+    feedback["source"] = "digital_card"
+    
+    cust_rating = feedback.get("rating", 5)
+    feedback_doc = {
+        "store_id": store_id,
+        "customer_name": feedback.get("customer_name", "Anonymous"),
+        "customer_phone": feedback.get("customer_phone"),
+        "customer_email": feedback.get("customer_email"),
+        "rating": cust_rating,
+        "text_review": feedback.get("text_review"),
+        "salesperson_id": salesperson_id,
+        "salesperson_name": feedback.get("salesperson_name"),
+        "source": "digital_card",
+        "approved": cust_rating >= 4,
+        "created_at": datetime.now(timezone.utc),
+    }
+    result = await db.customer_feedback.insert_one(feedback_doc)
+    feedback_id = str(result.inserted_id)
+
+    # Reuse notification logic
+    cust_name = feedback.get("customer_name", "Someone")
+    cust_phone = feedback.get("customer_phone")
+    cust_text = feedback.get("text_review", "")
+    stars = "⭐" * int(cust_rating)
+
+    try:
+        from utils.contact_activity import log_activity_for_customer
+        await log_activity_for_customer(
+            user_id=salesperson_id, customer_phone=cust_phone, customer_name=cust_name,
+            event_type="review_submitted", title="Left You a Review",
+            description=f"{cust_name} left a {cust_rating}-star review" + (f': "{cust_text[:60]}"' if cust_text else ""),
+            icon="star", color="#FFD60A", category="customer_activity",
+            metadata={"feedback_id": feedback_id, "rating": cust_rating, "source": "digital_card"},
+        )
+    except Exception as e:
+        logger.warning(f"[Card] Failed to log review activity: {e}")
+
+    try:
+        contact_id = None
+        if cust_phone:
+            clean = "".join(c for c in cust_phone if c.isdigit())
+            contact = await db.contacts.find_one({"user_id": salesperson_id, "phone": {"$regex": clean[-10:] + "$"}}, {"_id": 1})
+            if contact:
+                contact_id = str(contact["_id"])
+        await db.notifications.insert_one({
+            "type": "new_review", "title": f"{stars} New Review from {cust_name}",
+            "message": cust_text[:120] if cust_text else f"{cust_name} left you a {cust_rating}-star review from your digital card!",
+            "user_id": salesperson_id, "contact_id": contact_id, "contact_name": cust_name,
+            "contact_phone": cust_phone, "feedback_id": feedback_id, "rating": cust_rating,
+            "action_required": True, "action_label": "Send Thank You",
+            "read": False, "dismissed": False, "priority": "high",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        })
+    except Exception as e:
+        logger.warning(f"[Card] Failed to create review notification: {e}")
+
+    return {"success": True, "feedback_id": feedback_id, "message": "Thank you for your feedback!"}
+
+
 @router.post("/submit/{store_slug}")
 async def submit_feedback(store_slug: str, feedback: dict):
     """Submit customer feedback/review"""
