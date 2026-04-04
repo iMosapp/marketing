@@ -72,16 +72,24 @@ const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
   const [uploadingMedia, setUploadingMedia] = useState<string | null>(null);
   const [generatingAI, setGeneratingAI] = useState<string | null>(null);
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = React.useState<any[]>([]);
 
-  // Fetch tags from API
+  // Fetch tags from API — store full objects for color display
   React.useEffect(() => {
     if (!user?._id) return;
     api.get(`/tags/${user._id}`).then(res => {
-      const tagNames = (res.data || []).map((t: any) => t.name || t);
-      setTags(tagNames.length > 0 ? tagNames : ['sold', 'lead', 'hot', 'customer', 'service_due', 'referral', 'vip']);
+      const tagObjs = res.data || [];
+      setTags(tagObjs.length > 0 ? tagObjs : [
+        { name: 'Sold', color: '#34C759' }, { name: 'Lead', color: '#FF9500' },
+        { name: 'Hot', color: '#FF3B30' }, { name: 'Customer', color: '#007AFF' },
+        { name: 'VIP', color: '#C9A962' },
+      ]);
     }).catch(() => {
-      setTags(['sold', 'lead', 'hot', 'customer', 'service_due', 'referral', 'vip']);
+      setTags([
+        { name: 'Sold', color: '#34C759' }, { name: 'Lead', color: '#FF9500' },
+        { name: 'Hot', color: '#FF3B30' }, { name: 'Customer', color: '#007AFF' },
+        { name: 'VIP', color: '#C9A962' },
+      ]);
     });
   }, [user?._id]);
 
@@ -546,9 +554,10 @@ const { showToast } = useToast();
               tags={availableTags}
               selectedTag={campaign.triggerTag}
               onSelect={(tag) => setCampaign({ ...campaign, triggerTag: tag })}
-              onTagCreated={(tag) => setTags(prev => [...prev, tag])}
+              onTagCreated={(tag) => setTags(prev => [...prev, { name: tag, color: '#C9A962' }])}
               userId={user?._id || ''}
               colors={colors}
+              userRole={user?.role}
             />
           </View>
         )}

@@ -101,7 +101,7 @@ const { showToast } = useToast();
   const [triggerTag, setTriggerTag] = useState('');
   const [triggerType, setTriggerType] = useState<'tag' | 'date'>('tag');
   const [dateType, setDateType] = useState('');
-  const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [availableTags, setAvailableTags] = useState<any[]>([]);
   const [active, setActive] = useState(true);
   const [sequences, setSequences] = useState<SequenceStep[]>([]);
   const [sendTime, setSendTime] = useState(new Date(new Date().setHours(10, 0, 0, 0)));
@@ -116,8 +116,7 @@ const { showToast } = useToast();
         loadCampaign();
         // Load available tags
         api.get(`/tags/${user._id}`).then(r => {
-          const tagNames = (r.data || []).map((t: any) => t.name || t);
-          setAvailableTags(tagNames);
+          setAvailableTags(r.data || []);
         }).catch(() => {});
       }
     }, [id, user])
@@ -529,9 +528,10 @@ const { showToast } = useToast();
               tags={availableTags}
               selectedTag={triggerTag}
               onSelect={(tag) => { setTriggerTag(tag); setHasChanges(true); }}
-              onTagCreated={(tag) => setAvailableTags(prev => [...prev, tag])}
+              onTagCreated={(tag) => setAvailableTags(prev => [...prev, { name: tag, color: '#C9A962' }])}
               userId={user?._id || ''}
               colors={colors}
+              userRole={user?.role}
             />
           </View>
         )}
