@@ -7,6 +7,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   Platform,
+  ScrollView,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -108,6 +110,7 @@ export default function CampaignsScreen() {
 
   const renderItem = ({ item, drag, isActive }: RenderItemParams<any>) => {
     const iconData = getCampaignIcon(item.type);
+    const scopeLabel = item.scope === 'org' ? 'Org' : item.scope === 'account' ? 'Account' : null;
     return (
       <ScaleDecorator>
         <TouchableOpacity
@@ -119,12 +122,11 @@ export default function CampaignsScreen() {
           activeOpacity={0.85}
           data-testid={`campaign-card-${item._id}`}
         >
-          {/* Drag handle — visible affordance */}
+          {/* Drag handle */}
           <TouchableOpacity
             onPressIn={drag}
             style={styles.dragHandle}
             hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
-            data-testid={`drag-handle-${item._id}`}
           >
             <Ionicons name="reorder-three" size={22} color={isActive ? '#C9A962' : colors.textTertiary} />
           </TouchableOpacity>
@@ -135,7 +137,14 @@ export default function CampaignsScreen() {
 
           <View style={styles.campaignContent}>
             <View style={styles.campaignHeader}>
-              <Text style={styles.campaignName}>{item.name}</Text>
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={styles.campaignName} numberOfLines={1}>{item.name}</Text>
+                {scopeLabel && (
+                  <View style={{ backgroundColor: '#C9A96220', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 }}>
+                    <Text style={{ fontSize: 11, color: '#C9A962', fontWeight: '700' }}>{scopeLabel}</Text>
+                  </View>
+                )}
+              </View>
               <Toggle
                 value={item.active}
                 onValueChange={() => toggleCampaign(item._id || item.id)}
@@ -163,6 +172,14 @@ export default function CampaignsScreen() {
       </ScaleDecorator>
     );
   };
+
+  // Group campaigns by scope
+  const groupedCampaigns = {
+    org:     campaigns.filter(c => c.scope === 'org'),
+    account: campaigns.filter(c => c.scope === 'account' || c.ownership_level === 'store'),
+    personal: campaigns.filter(c => !c.scope || c.scope === 'personal'),
+  };
+  const hasGroups = groupedCampaigns.org.length > 0 || groupedCampaigns.account.length > 0;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -219,17 +236,62 @@ export default function CampaignsScreen() {
           <Text style={styles.emptyText}>No campaigns yet</Text>
           <Text style={styles.emptySubtext}>Create your first nurture campaign</Text>
         </View>
-      ) : (
-        <DraggableFlatList
-          data={campaigns}
-          renderItem={renderItem}
-          keyExtractor={(item) => item._id || item.id}
-          onDragEnd={handleDragEnd}
+      ) : hasGroups ? (
+        /* Grouped view: Account / Org sections + Personal */
+        <ScrollView
           contentContainerStyle={styles.listContent}
-          onRefresh={onRefresh}
-          refreshing={refreshing}
-          activationDistance={5}
-        />
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
+          {groupedCampaigns.org.length > 0 && (
+            <>
+              <View style={styles.sectionHeader}><Ionicons name="business" size={14} color="#C9A962" /><Text style={styles.sectionLabel}>Org-Wide</Text></View>
+              {groupedCampaigns.org.map(item => (
+                <TouchableOpacity key={item._id} style={styles.campaignCard} onPress={() => router.push(`/campaigns/${item._id}`)} activeOpacity={0.85}>
+                  <View style={[styles.iconContainer, { backgroundColor: `${getCampaignIcon(item.type).color}20` }]}><Ionicons name={getCampaignIcon(item.type).icon as any} size={24} color={getCampaignIcon(item.type).color} /></View>
+                  <View style={styles.campaignContent}><View style={styles.campaignHeader}><Text style={styles.campaignName} numberOfLines={1}>{item.name}</Text><Toggle value={item.active} onValueChange={() => toggleCampaign(item._id)} activeColor="#007AFF" /></View><View style={styles.statsRow}><View style={styles.stat}><Ionicons name="paper-plane" size={14} color={colors.textSecondary} /><Text style={styles.statText}>{item.messages_sent_count || 0} sent</Text></View></View></View>
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
+          {groupedCampaigns.account.length > 0 && (
+            <>
+              <View style={styles.sectionHeader}><Ionicons name="storefront" size={14} color="#C9A962" /><Text style={styles.sectionLabel}>Account (Team)</Text></View>
+              {groupedCampaigns.account.map(item => (
+                <TouchableOpacity key={item._id} style={styles.campaignCard} onPress={() => router.push(`/campaigns/${item._id}`)} activeOpacity={0.85}>
+                  <View style={[styles.iconContainer, { backgroundColor: `${getCampaignIcon(item.type).color}20` }]}><Ionicons name={getCampaignIcon(item.type).icon as any} size={24} color={getCampaignIcon(item.type).color} /></View>
+                  <View style={styles.campaignContent}><View style={styles.campaignHeader}><Text style={styles.campaignName} numberOfLines={1}>{item.name}</Text><Toggle value={item.active} onValueChange={() => toggleCampaign(item._id)} activeColor="#007AFF" /></View><View style={styles.statsRow}><View style={styles.stat}><Ionicons name="paper-plane" size={14} color={colors.textSecondary} /><Text style={styles.statText}>{item.messages_sent_count || 0} sent</Text></View></View></View>
+                </TouchableOpacity>
+              ))}
+            </>
+          )}
+          {groupedCampaigns.personal.length > 0 && (
+            <>
+              <View style={styles.sectionHeader}><Ionicons name="person" size={14} color="#C9A962" /><Text style={styles.sectionLabel}>My Campaigns</Text></View>
+              <DraggableFlatList
+                data={groupedCampaigns.personal}
+                renderItem={renderItem}
+                keyExtractor={(item) => item._id || item.id}
+                onDragEnd={({ data }) => { setCampaigns([...groupedCampaigns.org, ...groupedCampaigns.account, ...data]); persistOrder([...groupedCampaigns.org, ...groupedCampaigns.account, ...data]); }}
+                activationDistance={20}
+                scrollEnabled={false}
+              />
+            </>
+          )}
+        </ScrollView>
+      ) : (
+        /* Simple view: all personal — full drag-and-drop */
+        <View style={{ flex: 1 }}>
+          <DraggableFlatList
+            data={campaigns}
+            renderItem={renderItem}
+            keyExtractor={(item) => item._id || item.id}
+            onDragEnd={handleDragEnd}
+            contentContainerStyle={styles.listContent}
+            onRefresh={onRefresh}
+            refreshing={refreshing}
+            activationDistance={20}
+          />
+        </View>
       )}
     </SafeAreaView>
   );
@@ -259,6 +321,8 @@ const getStyles = (colors: any) => StyleSheet.create({
   emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 },
   emptyText: { fontSize: 18, fontWeight: '600', color: colors.text, marginTop: 16 },
   emptySubtext: { fontSize: 14, color: colors.textSecondary, marginTop: 6 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 4, marginTop: 8 },
+  sectionLabel:  { fontSize: 13, fontWeight: '700', color: '#C9A962', textTransform: 'uppercase', letterSpacing: 0.8 },
   campaignCard: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: colors.card, borderRadius: 16,

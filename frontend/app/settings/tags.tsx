@@ -263,6 +263,24 @@ export default function TagsSettings() {
     );
   }
 
+
+  const renderTagRow = (tag: Tag) => (
+    <TouchableOpacity key={tag._id} style={styles.tagCard} onPress={() => openEditModal(tag)} activeOpacity={0.7}>
+      <View style={[styles.tagIcon, { backgroundColor: tag.color + '20' }]}>
+        <Ionicons name={(tag.icon || 'pricetag') as any} size={22} color={tag.color} />
+      </View>
+      <View style={styles.tagInfo}>
+        <Text style={styles.tagName}>{tag.name}</Text>
+        <Text style={styles.tagCount}>{tag.contact_count} contact{tag.contact_count !== 1 ? 's' : ''}</Text>
+      </View>
+      <View style={[styles.colorDot, { backgroundColor: tag.color }]} />
+      <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(tag)}>
+        <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
+
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -321,33 +339,40 @@ export default function TagsSettings() {
         </View>
       )}
 
-      {/* Tags List */}
+      {/* Tags List — grouped by scope */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {tags.map((tag) => (
-          <TouchableOpacity
-            key={tag._id}
-            style={styles.tagCard}
-            onPress={() => openEditModal(tag)}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.tagIcon, { backgroundColor: tag.color + '20' }]}>
-              <Ionicons name={tag.icon as any} size={22} color={tag.color} />
+        {/* Org-level tags */}
+        {tags.filter(t => (t as any).scope === 'org').length > 0 && (
+          <View style={{ marginBottom: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 4, paddingVertical: 8 }}>
+              <Ionicons name="business" size={13} color="#C9A962" />
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#C9A962', textTransform: 'uppercase', letterSpacing: 0.8 }}>Org-Wide</Text>
             </View>
-            <View style={styles.tagInfo}>
-              <Text style={styles.tagName}>{tag.name}</Text>
-              <Text style={styles.tagCount}>
-                {tag.contact_count} contact{tag.contact_count !== 1 ? 's' : ''}
-              </Text>
+            {tags.filter(t => (t as any).scope === 'org').map(tag => renderTagRow(tag))}
+          </View>
+        )}
+        {/* Account-level tags */}
+        {tags.filter(t => (t as any).scope === 'account' || (t as any).scope === 'store').length > 0 && (
+          <View style={{ marginBottom: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 4, paddingVertical: 8 }}>
+              <Ionicons name="storefront" size={13} color="#C9A962" />
+              <Text style={{ fontSize: 12, fontWeight: '700', color: '#C9A962', textTransform: 'uppercase', letterSpacing: 0.8 }}>Account (Team)</Text>
             </View>
-            <View style={[styles.colorDot, { backgroundColor: tag.color }]} />
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => handleDelete(tag)}
-            >
-              <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-            </TouchableOpacity>
-          </TouchableOpacity>
-        ))}
+            {tags.filter(t => (t as any).scope === 'account' || (t as any).scope === 'store').map(tag => renderTagRow(tag))}
+          </View>
+        )}
+        {/* Personal tags */}
+        {tags.filter(t => !(t as any).scope || (t as any).scope === 'personal').length > 0 && (
+          <View style={{ marginBottom: 8 }}>
+            {(tags.some(t => (t as any).scope === 'org') || tags.some(t => (t as any).scope === 'account' || (t as any).scope === 'store')) && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 4, paddingVertical: 8 }}>
+                <Ionicons name="person" size={13} color="#C9A962" />
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#C9A962', textTransform: 'uppercase', letterSpacing: 0.8 }}>My Tags</Text>
+              </View>
+            )}
+            {tags.filter(t => !(t as any).scope || (t as any).scope === 'personal').map(tag => renderTagRow(tag))}
+          </View>
+        )}
 
         {/* Create New Tag Card */}
         <TouchableOpacity style={styles.createCard} onPress={openCreateModal}>

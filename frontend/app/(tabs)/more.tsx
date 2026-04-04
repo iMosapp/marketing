@@ -556,16 +556,14 @@ export default function MoreScreen() {
   // ============================================================
   {
     const manageItems: (MenuItem & { permKey?: string })[] = [
-      { icon: 'pricetags',  title: 'My Tags',       subtitle: 'Create & manage your tags',           onPress: () => router.push('/settings/tags'),             color: '#FF9500' },
-      { icon: 'megaphone',  title: 'My Campaigns',  subtitle: 'Personal follow-up sequences',         onPress: () => router.push('/campaigns'),                 color: '#FF2D55' },
-      { icon: 'star',       title: 'Review Center', subtitle: 'Approve, publish & track reviews',     onPress: () => router.push('/settings/review-approvals'), color: '#FFD60A' },
-      { icon: 'images',     title: 'Showcase',      subtitle: 'Approve showcase entries',             onPress: () => router.push('/settings/showcase-approvals'), color: '#34C759' },
+      { icon: 'pricetags',  title: 'Tags',       subtitle: 'All tags — personal, account & org', onPress: () => router.push('/settings/tags'),             color: '#FF9500' },
+      { icon: 'megaphone',  title: 'Campaigns',  subtitle: 'All campaigns in one place',          onPress: () => router.push('/campaigns'),                 color: '#FF2D55' },
+      { icon: 'star',       title: 'Review Center', subtitle: 'Approve, publish & track reviews', onPress: () => router.push('/settings/review-approvals'), color: '#FFD60A' },
+      { icon: 'images',     title: 'Showcase',      subtitle: 'Approve showcase entries',          onPress: () => router.push('/settings/showcase-approvals'), color: '#34C759' },
     ];
     if (isAdmin) {
       manageItems.push(
-        { icon: 'people-circle', title: 'Account Tags',      subtitle: 'Tags shared with the team',        onPress: () => router.push('/settings/tags?scope=account'),   color: '#C9A962' },
-        { icon: 'rocket',        title: 'Account Campaigns', subtitle: 'Campaigns shared with the team',   onPress: () => router.push('/campaigns?scope=account'),       color: '#AF52DE' },
-        { icon: 'star-outline',  title: 'Review Links',      subtitle: 'Google, Facebook & Yelp links',    onPress: () => router.push('/settings/review-links'),         color: '#FFD60A' },
+        { icon: 'star-outline', title: 'Review Links', subtitle: 'Google, Facebook & Yelp links', onPress: () => router.push('/settings/review-links'), color: '#FFD60A' },
       );
     }
     sections.push({ id: 'manage', title: 'Manage', icon: 'settings-outline', color: '#8E8E93', items: manageItems });
