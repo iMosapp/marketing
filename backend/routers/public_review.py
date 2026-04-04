@@ -5,9 +5,11 @@ No authentication required - customers access this directly
 from fastapi import APIRouter, HTTPException
 from bson import ObjectId
 from datetime import datetime, timezone
+import logging
 from routers.database import get_db
 
 router = APIRouter(prefix="/review", tags=["public-review"])
+logger = logging.getLogger(__name__)
 
 
 async def find_store_by_slug(db, slug: str):
@@ -266,34 +268,75 @@ async def submit_feedback(store_slug: str, feedback: dict):
     }
     
     result = await db.customer_feedback.insert_one(feedback_doc)
+    feedback_id = str(result.inserted_id)
     
-    # Log activity: customer submitted feedback via review page
+    # Log activity + send notification to the salesperson
     salesperson_id = feedback.get("salesperson_id")
     if salesperson_id:
+        cust_name = feedback.get("customer_name", "Someone")
+        cust_phone = feedback.get("customer_phone")
+        cust_rating = feedback.get("rating", 5)
+        cust_text = feedback.get("text_review", "")
+        stars = "⭐" * int(cust_rating)
+        short_text = f': "{cust_text[:80]}"' if cust_text else ""
+
+        # 1. Log contact activity
         try:
             from utils.contact_activity import log_activity_for_customer
-            cust_name = feedback.get("customer_name", "")
-            cust_phone = feedback.get("customer_phone")
-            cust_rating = feedback.get("rating", 5)
-            cust_text = feedback.get("text_review", "")
             await log_activity_for_customer(
                 user_id=salesperson_id,
                 customer_phone=cust_phone,
                 customer_name=cust_name,
                 event_type="review_submitted",
-                title="Submitted a Review",
-                description=f"{cust_name or 'Customer'} left a {cust_rating}-star review" + (f': "{cust_text[:60]}"' if cust_text else ""),
+                title="Left You a Review",
+                description=f"{cust_name} left a {cust_rating}-star review{short_text}",
                 icon="star",
                 color="#FFD60A",
                 category="customer_activity",
-                metadata={"feedback_id": str(result.inserted_id), "rating": cust_rating, "source": feedback.get("source", "review_page")},
+                metadata={"feedback_id": feedback_id, "rating": cust_rating, "source": feedback.get("source", "review_page")},
             )
         except Exception as e:
-            print(f"[PublicReview] Failed to log review feedback activity: {e}")
+            logger.warning(f"[PublicReview] Failed to log review activity: {e}")
+
+        # 2. Create actionable notification so salesperson is alerted immediately
+        try:
+            # Find the contact by phone to get contact_id for deep link
+            contact_id = None
+            contact_name = cust_name
+            if cust_phone:
+                clean_phone = "".join(c for c in cust_phone if c.isdigit())
+                contact = await db.contacts.find_one(
+                    {"user_id": salesperson_id, "phone": {"$regex": clean_phone[-10:] + "$"}},
+                    {"_id": 1, "first_name": 1, "last_name": 1}
+                )
+                if contact:
+                    contact_id = str(contact["_id"])
+                    contact_name = f"{contact.get('first_name','')} {contact.get('last_name','')}".strip() or cust_name
+
+            await db.notifications.insert_one({
+                "type": "new_review",
+                "title": f"{stars} New Review from {contact_name}",
+                "message": cust_text[:120] if cust_text else f"{contact_name} left you a {cust_rating}-star review. Tap to send a thank you!",
+                "user_id": salesperson_id,
+                "contact_id": contact_id,
+                "contact_name": contact_name,
+                "contact_phone": cust_phone,
+                "feedback_id": feedback_id,
+                "rating": cust_rating,
+                "action_required": True,
+                "action_label": "Send Thank You",
+                "read": False,
+                "dismissed": False,
+                "priority": "high",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            })
+            logger.info(f"[PublicReview] Notification sent to salesperson {salesperson_id} for review from {cust_name}")
+        except Exception as e:
+            logger.warning(f"[PublicReview] Failed to create review notification: {e}")
     
     return {
         "success": True,
-        "feedback_id": str(result.inserted_id),
+        "feedback_id": feedback_id,
         "message": "Thank you for your feedback!"
     }
 

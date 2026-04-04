@@ -37,6 +37,7 @@ function getNotifIcon(type: string): string {
     badge_earned: 'trophy',
     campaign_send: 'megaphone',
     engagement_signal: 'flame',
+    new_review: 'star',   // customer left a review on digital card
   };
   return map[type] || 'notifications';
 }
@@ -52,6 +53,7 @@ function getNotifColor(type: string): string {
     congrats_card_sent: '#FF2D55',
     engagement_signal: '#FF3B30',
     campaign_send: '#FF9500',
+    new_review: '#FFD60A',  // gold star for reviews
   };
   return map[type] || '#8E8E93';
 }
@@ -134,6 +136,9 @@ export default function NotificationsPage() {
     markAsRead(n.id);
     if (n.link) {
       router.push(n.link as any);
+    } else if (n.contact_id) {
+      // Reviews and other notifications with a contact but no explicit link
+      router.push(`/contact/${n.contact_id}` as any);
     }
   };
 

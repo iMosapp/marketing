@@ -38,32 +38,36 @@ DEFAULT_TAGS = [
 
 
 async def get_tag_scope(user_id: str):
-    """Determine if tags should be user-level or org-level"""
+    """Determine if tags should be user-level, store-level, or org-level"""
     db = get_db()
     user = await db.users.find_one({"_id": ObjectId(user_id)})
     if not user:
-        return None, None, False
+        return None, None, None, False
     
-    org_id = user.get("org_id")
+    # Check both field names — DB may use organization_id or org_id
+    org_id = user.get("organization_id") or user.get("org_id")
+    store_id = user.get("store_id")
     role = user.get("role", "user")
-    is_admin = role in ["super_admin", "org_admin", "admin"]
+    is_admin = role in ["super_admin", "org_admin", "store_manager", "admin"]
     
-    return org_id, role, is_admin
+    return org_id, store_id, role, is_admin
 
 
 @router.get("/{user_id}")
 async def get_tags(user_id: str):
-    """Get all tags for a user (org-level if in org, user-level otherwise)"""
+    """Get all tags for a user — org-level → store-level → user-level fallback"""
     db = get_db()
     
-    org_id, role, is_admin = await get_tag_scope(user_id)
+    org_id, store_id, role, is_admin = await get_tag_scope(user_id)
     
     if org_id:
-        # Organization-level tags - get approved tags for the org
-        query = {"org_id": org_id, "status": "approved"}
-        tags = await db.tags.find(query).sort("name", 1).to_list(200)
+        # Org-wide tags
+        tags = await db.tags.find({"org_id": org_id, "status": "approved"}).sort("name", 1).to_list(200)
+    elif store_id:
+        # Store-wide tags — shared across the whole team in this account
+        tags = await db.tags.find({"store_id": store_id, "status": "approved"}).sort("name", 1).to_list(200)
     else:
-        # User-level tags
+        # Individual user tags
         tags = await db.tags.find({"user_id": user_id}).sort("name", 1).to_list(100)
     
     # If no tags exist, create defaults
@@ -78,6 +82,9 @@ async def get_tags(user_id: str):
             if org_id:
                 tag["org_id"] = org_id
                 tag["created_by"] = user_id
+            elif store_id:
+                tag["store_id"] = store_id
+                tag["created_by"] = user_id
             else:
                 tag["user_id"] = user_id
             
@@ -91,18 +98,14 @@ async def get_tags(user_id: str):
     # Update contact counts
     for tag in tags:
         if org_id:
-            # Count across org users
-            org_users = await db.users.find({"org_id": org_id}, {"_id": 1}).limit(500).to_list(500)
-            org_user_ids = [str(u["_id"]) for u in org_users]
-            count = await db.contacts.count_documents({
-                "user_id": {"$in": org_user_ids},
-                "tags": tag["name"]
-            })
+            org_users = await db.users.find({"$or": [{"organization_id": org_id}, {"org_id": org_id}]}, {"_id": 1}).limit(500).to_list(500)
+            scope_user_ids = [str(u["_id"]) for u in org_users]
+        elif store_id:
+            store_users = await db.users.find({"store_id": store_id}, {"_id": 1}).limit(500).to_list(500)
+            scope_user_ids = [str(u["_id"]) for u in store_users]
         else:
-            count = await db.contacts.count_documents({
-                "user_id": user_id,
-                "tags": tag["name"]
-            })
+            scope_user_ids = [user_id]
+        count = await db.contacts.count_documents({"user_id": {"$in": scope_user_ids}, "tags": tag["name"]})
         tag["contact_count"] = count
     
     return tags
@@ -113,7 +116,7 @@ async def get_pending_tags(user_id: str):
     """Get pending tags awaiting approval (org admins only)"""
     db = get_db()
     
-    org_id, role, is_admin = await get_tag_scope(user_id)
+    org_id, store_id, role, is_admin = await get_tag_scope(user_id)
     
     if not org_id:
         return []  # No pending tags for individual users
@@ -138,58 +141,40 @@ async def get_pending_tags(user_id: str):
 
 @router.post("/{user_id}")
 async def create_tag(user_id: str, tag_data: dict):
-    """Create a new tag (requires approval in orgs)"""
+    """Create a new tag — stored at org/store/user level appropriately"""
     db = get_db()
     
     name = tag_data.get("name", "").strip()
     if not name:
         raise HTTPException(status_code=400, detail="Tag name is required")
     
-    org_id, role, is_admin = await get_tag_scope(user_id)
+    org_id, store_id, role, is_admin = await get_tag_scope(user_id)
     
     if org_id:
-        # Organization tag - check for duplicates across org
-        existing = await db.tags.find_one({
-            "org_id": org_id,
-            "name": {"$regex": f"^{name}$", "$options": "i"},
-            "status": {"$in": ["approved", "pending"]}
-        })
+        existing = await db.tags.find_one({"org_id": org_id, "name": {"$regex": f"^{name}$", "$options": "i"}, "status": {"$in": ["approved", "pending"]}})
         if existing:
-            if existing["status"] == "pending":
-                raise HTTPException(status_code=400, detail="A tag with this name is already pending approval")
-            raise HTTPException(status_code=400, detail="Tag with this name already exists")
-        
-        # Determine status - admins auto-approve, others go to pending
+            raise HTTPException(status_code=400, detail="Tag with this name already exists" if existing["status"] == "approved" else "A tag with this name is already pending approval")
         status = "approved" if is_admin else "pending"
-        
-        tag = {
-            "org_id": org_id,
-            "name": name,
-            "color": tag_data.get("color", DEFAULT_COLORS[0]),
-            "icon": tag_data.get("icon", "pricetag"),
-            "status": status,
-            "created_by": user_id,
-            "created_at": datetime.utcnow(),
-        }
+        tag = {"org_id": org_id, "name": name, "color": tag_data.get("color", DEFAULT_COLORS[0]),
+               "icon": tag_data.get("icon", "pricetag"), "status": status, "created_by": user_id, "created_at": datetime.utcnow()}
+    elif store_id:
+        # Store-level — visible to whole team, admins auto-approve
+        existing = await db.tags.find_one({"store_id": store_id, "name": {"$regex": f"^{name}$", "$options": "i"}, "status": {"$in": ["approved", "pending"]}})
+        if existing:
+            raise HTTPException(status_code=400, detail="Tag with this name already exists in this account")
+        status = "approved" if is_admin else "pending"
+        tag = {"store_id": store_id, "name": name, "color": tag_data.get("color", DEFAULT_COLORS[0]),
+               "icon": tag_data.get("icon", "pricetag"), "status": status, "created_by": user_id, "created_at": datetime.utcnow()}
     else:
-        # Individual user tag - no approval needed
         existing = await db.tags.find_one({"user_id": user_id, "name": name})
         if existing:
             raise HTTPException(status_code=400, detail="Tag with this name already exists")
-        
-        tag = {
-            "user_id": user_id,
-            "name": name,
-            "color": tag_data.get("color", DEFAULT_COLORS[0]),
-            "icon": tag_data.get("icon", "pricetag"),
-            "status": "approved",
-            "created_at": datetime.utcnow(),
-        }
+        tag = {"user_id": user_id, "name": name, "color": tag_data.get("color", DEFAULT_COLORS[0]),
+               "icon": tag_data.get("icon", "pricetag"), "status": "approved", "created_at": datetime.utcnow()}
     
     result = await db.tags.insert_one(tag)
     tag["_id"] = str(result.inserted_id)
     tag["contact_count"] = 0
-    
     return tag
 
 
@@ -198,7 +183,7 @@ async def approve_tag(user_id: str, tag_id: str):
     """Approve a pending tag (org admins only)"""
     db = get_db()
     
-    org_id, role, is_admin = await get_tag_scope(user_id)
+    org_id, store_id, role, is_admin = await get_tag_scope(user_id)
     
     if not org_id or not is_admin:
         raise HTTPException(status_code=403, detail="Only org admins can approve tags")
@@ -230,7 +215,7 @@ async def reject_tag(user_id: str, tag_id: str):
     """Reject a pending tag (org admins only)"""
     db = get_db()
     
-    org_id, role, is_admin = await get_tag_scope(user_id)
+    org_id, store_id, role, is_admin = await get_tag_scope(user_id)
     
     if not org_id or not is_admin:
         raise HTTPException(status_code=403, detail="Only org admins can reject tags")
@@ -256,7 +241,7 @@ async def update_tag(user_id: str, tag_id: str, tag_data: dict):
     """Update a tag (org admins only for org tags)"""
     db = get_db()
     
-    org_id, role, is_admin = await get_tag_scope(user_id)
+    org_id, store_id, role, is_admin = await get_tag_scope(user_id)
     
     if org_id:
         # Org tag - admin only
@@ -314,7 +299,7 @@ async def delete_tag(user_id: str, tag_id: str, remove_from_contacts: bool = Tru
     """Delete a tag (org admins only for org tags)"""
     db = get_db()
     
-    org_id, role, is_admin = await get_tag_scope(user_id)
+    org_id, store_id, role, is_admin = await get_tag_scope(user_id)
     
     if org_id:
         if not is_admin:
@@ -479,11 +464,15 @@ async def assign_tag_to_contacts(user_id: str, data: dict):
     if not contact_ids:
         raise HTTPException(status_code=400, detail="contact_ids is required")
     
-    org_id, _, _ = await get_tag_scope(user_id)
+    org_id, store_id, _, _ = await get_tag_scope(user_id)
     
-    # Verify tag exists and is approved
+    # Verify tag exists and is approved — check org, store, or user scope
     if org_id:
         tag = await db.tags.find_one({"org_id": org_id, "name": tag_name, "status": "approved"})
+    elif store_id:
+        tag = await db.tags.find_one({"store_id": store_id, "name": tag_name, "status": "approved"})
+        if not tag:
+            tag = await db.tags.find_one({"user_id": user_id, "name": tag_name})
     else:
         tag = await db.tags.find_one({"user_id": user_id, "name": tag_name})
     
@@ -494,10 +483,14 @@ async def assign_tag_to_contacts(user_id: str, data: dict):
             "color": "#FFD60A" if "review" in tag_name.lower() else "#007AFF",
             "status": "approved",
             "system_tag": True,
-            "org_id": org_id or "",
-            "user_id": user_id,
             "created_at": datetime.utcnow(),
         }
+        if org_id:
+            tag_doc["org_id"] = org_id
+        elif store_id:
+            tag_doc["store_id"] = store_id
+        else:
+            tag_doc["user_id"] = user_id
         await db.tags.insert_one(tag_doc)
         tag = tag_doc
     
