@@ -143,122 +143,159 @@ DEFAULT_SOCIAL_TEMPLATES = [
     },
 ]
 
-# ==================== DEFAULT CAMPAIGNS (6) ====================
+# ==================== DEFAULT CAMPAIGNS (6 + Five-Year) ====================
+# These are Forest Ward's recommended turnkey campaigns — seeded for every new account.
+# Each campaign has a matching tag (seeded separately in DEFAULT_TAGS below).
+
 DEFAULT_CAMPAIGNS = [
-    # Campaign 1: New Account Onboarding
+
+    # Campaign 1: Working — Active Shopper
+    {
+        "name": "Working",
+        "type": "nurture",
+        "trigger_tag": "Working",
+        "active": True,
+        "delivery_mode": "manual",
+        "ai_enabled": False,
+        "description": "Keep the conversation alive and move toward a purchase. Trigger: Working tag.",
+        "scope": "personal",
+        "sequences": [
+            {"step": 1, "delay_days": 0, "delay_minutes": 0, "channel": "sms", "message_template": "Hey {{name}}, this is {{salesperson_name}}. Thanks again for chatting with me today. If you need anything while you're looking things over just shoot me a message. Happy to help."},
+            {"step": 2, "delay_days": 1, "channel": "sms", "message_template": "Just checking in to see if you had any questions after looking things over. I can also send more photos or videos if that helps."},
+            {"step": 3, "delay_days": 3, "channel": "sms", "message_template": "Quick question for you. Are you still considering this or did you end up going another direction?"},
+            {"step": 4, "delay_days": 7, "channel": "sms", "message_template": "I didn't want to lose track of you. If you're still in the market I'd be happy to help whenever you're ready."},
+        ],
+    },
+
+    # Campaign 2: Sold — Year 1 Relationship
+    {
+        "name": "Sold",
+        "type": "sold_followup",
+        "trigger_tag": "Sold",
+        "active": True,
+        "delivery_mode": "manual",
+        "ai_enabled": False,
+        "description": "Reviews, referrals, service retention and relationship building. Trigger: Sold tag.",
+        "scope": "personal",
+        "sequences": [
+            {"step": 1, "delay_days": 0, "delay_minutes": 0,  "channel": "sms", "message_template": "Congratulations again {{name}}. It was great working with you today. Let me know if you need anything at all as you get used to your new {{vehicle}}."},
+            {"step": 2, "delay_days": 0, "delay_minutes": 15, "channel": "sms", "message_template": "Here's my digital card so you always have my contact info handy. If you ever need anything just text me here. {{card_link}}"},
+            {"step": 3, "delay_days": 0, "delay_minutes": 30, "channel": "sms", "message_template": "One quick favor. Reviews really help customers know who to work with. If you wouldn't mind leaving a quick one I'd really appreciate it. {{review_link}}"},
+            {"step": 4, "delay_days": 7,  "channel": "sms", "message_template": "Just checking in to see how everything is going with the {{vehicle}} so far."},
+            {"step": 5, "delay_days": 21, "channel": "sms", "message_template": "Random question. Do you know anyone else looking for a vehicle right now? I'd be happy to help them the same way."},
+            {"step": 6, "delay_days": 75, "channel": "sms", "message_template": "Your first service will probably be coming up soon. If you'd like I can help get that scheduled for you."},
+            {"step": 7, "delay_days": 0, "delay_months": 6,  "channel": "sms", "message_template": "Hope you're still loving the {{vehicle}}. If you ever need anything just reach out."},
+            {"step": 8, "delay_days": 0, "delay_months": 12, "channel": "sms", "message_template": "Hard to believe it's already been a year since you got your {{vehicle}}. Hope you're still loving it. If you ever need anything just reach out."},
+        ],
+    },
+
+    # Campaign 3: Met — Networking / Events
+    {
+        "name": "Met",
+        "type": "nurture",
+        "trigger_tag": "Met",
+        "active": True,
+        "delivery_mode": "manual",
+        "ai_enabled": False,
+        "description": "Follow up after meeting someone at an event or networking. Trigger: Met tag.",
+        "scope": "personal",
+        "sequences": [
+            {"step": 1, "delay_days": 0, "channel": "sms", "message_template": "Great meeting you today {{name}}. Always nice connecting with good people. Let's stay in touch."},
+            {"step": 2, "delay_days": 2,  "channel": "sms", "message_template": "Just wanted to follow up after we met. If there's anything I can ever help with feel free to reach out."},
+            {"step": 3, "delay_days": 30, "channel": "sms", "message_template": "Random check in. Hope everything is going well on your end."},
+        ],
+    },
+
+    # Campaign 4: Birthday
+    {
+        "name": "Birthday",
+        "type": "birthday",
+        "trigger_tag": "Birthday",
+        "active": True,
+        "delivery_mode": "manual",
+        "ai_enabled": False,
+        "description": "Birthday message. Trigger: Birthday date field.",
+        "scope": "personal",
+        "sequences": [
+            {"step": 1, "delay_days": 0, "channel": "sms", "message_template": "Happy Birthday {{name}}. Hope you have an awesome day."},
+        ],
+    },
+
+    # Campaign 5: Lost Contact — Re-Engagement
+    {
+        "name": "Lost Contact",
+        "type": "re_engagement",
+        "trigger_tag": "Lost Contact",
+        "active": True,
+        "delivery_mode": "manual",
+        "ai_enabled": False,
+        "description": "Re-engage contacts after 60–90 days of silence. Trigger: Lost Contact tag.",
+        "scope": "personal",
+        "sequences": [
+            {"step": 1, "delay_days": 0, "channel": "sms", "message_template": "Hey {{name}}, just wanted to check in. If you're still looking or need anything at all I'd be happy to help."},
+        ],
+    },
+
+    # Campaign 6: Five-Year Relationship (Year 2–5)
+    # Designed to run alongside the Sold campaign — picks up after Year 1
+    {
+        "name": "Five-Year Relationship",
+        "type": "long_term",
+        "trigger_tag": "Sold",
+        "active": True,
+        "delivery_mode": "manual",
+        "ai_enabled": False,
+        "description": "Long-term relationship building, referrals, repeat sales. Years 2–5 after purchase.",
+        "scope": "personal",
+        "sequences": [
+            # Year 2
+            {"step": 1,  "delay_months": 18, "channel": "sms", "message_template": "Random check in. How has the {{vehicle}} been treating you?"},
+            {"step": 2,  "delay_months": 24, "channel": "sms", "message_template": "It's been two years since you got your {{vehicle}}. If you ever want to see what trade value looks like I'd be happy to run the numbers."},
+            {"step": 3,  "delay_months": 24, "channel": "sms", "message_template": "Just wanted to say Happy Holidays {{name}}. Appreciate you being one of my customers."},
+            # Year 3
+            {"step": 4,  "delay_months": 30, "channel": "sms", "message_template": "Quick question. Are you still loving the {{vehicle}} or starting to think about something different?"},
+            {"step": 5,  "delay_months": 36, "channel": "sms", "message_template": "Three years already since you picked up your {{vehicle}}. If you ever want to explore upgrading I'd be happy to help."},
+            {"step": 6,  "delay_months": 38, "channel": "sms", "message_template": "By the way if you ever have a friend or family member looking for a vehicle feel free to send them my way. I'll take great care of them."},
+            # Year 4
+            {"step": 7,  "delay_months": 48, "channel": "sms", "message_template": "Just realized it's been four years since you got your {{vehicle}}. Time flies. Hope everything has been great with it."},
+            {"step": 8,  "delay_months": 50, "channel": "sms", "message_template": "Haven't talked in a while so I figured I'd check in and say hello."},
+            # Year 5
+            {"step": 9,  "delay_months": 54, "channel": "sms", "message_template": "Random question. Are you planning on keeping the {{vehicle}} long term or thinking about replacing it sometime soon?"},
+            {"step": 10, "delay_months": 60, "channel": "sms", "message_template": "Hard to believe it's been five years since you got your {{vehicle}}. If you'd ever like to look at upgrading or see what trade value looks like I'd be happy to help."},
+        ],
+    },
+
+    # Legacy Onboarding — kept for backward compat but deactivated
     {
         "name": "New Account Onboarding",
         "type": "onboarding",
         "trigger_tag": "",
-        "segment_tags": [],
-        "active": True,
-        "send_time": "10:00",
-        "delivery_mode": "manual",
-        "ai_enabled": False,
-        "ownership_level": "user",
-        "description": "Gets new users to 'live + shareable' in under a week. Auto-activates on signup.",
-        "sequences": [
-            {"step": 1, "action_type": "message", "channel": "email", "delay_days": 0, "delay_months": 0, "message_template": "Welcome to i'M On Social! Here's your 3-step quick start:\n\n1. Claim your card URL\n2. Add your logo + brand colors\n3. Add your socials + primary CTA\n\nTap here to get started: {settings_link}", "media_urls": [], "ai_generated": False, "step_context": "welcome + checklist", "card_type": ""},
-            {"step": 2, "action_type": "message", "channel": "email", "delay_days": 1, "delay_months": 0, "message_template": "Your QR code is ready! Here are 3 ways to use it today:\n\n- Add to your email signature\n- Print for your desk/counter\n- Include on your business card\n\nDownload it here: {qr_link}", "media_urls": [], "ai_generated": False, "step_context": "QR code + share pack", "card_type": ""},
-            {"step": 3, "action_type": "message", "channel": "email", "delay_days": 3, "delay_months": 0, "message_template": "Time to set up your review flow! Connect your Google, Facebook, or Yelp review link so customers can leave you a review with one tap.\n\nSet it up here: {review_setup_link}", "media_urls": [], "ai_generated": False, "step_context": "review flow setup", "card_type": ""},
-            {"step": 4, "action_type": "message", "channel": "email", "delay_days": 5, "delay_months": 0, "message_template": "Your congrats card template is ready to customize! Next time you close a deal, send a branded congrats card with one tap — complete with review links and referral buttons.\n\nCustomize it here: {congrats_setup_link}", "media_urls": [], "ai_generated": False, "step_context": "congrats card setup", "card_type": ""},
-            {"step": 5, "action_type": "message", "channel": "email", "delay_days": 7, "delay_months": 0, "message_template": "You're all set! Here are 3 ways to launch today:\n\n1. Post your digital card link to socials\n2. Text your card to 10 contacts\n3. Print your QR code\n\nYou've got this!", "media_urls": [], "ai_generated": False, "step_context": "launch prompt", "card_type": ""},
-        ],
-    },
-    # Campaign 2: First 10 Reviews Sprint
-    {
-        "name": "First 10 Reviews Sprint",
-        "type": "review_sprint",
-        "trigger_tag": "",
-        "segment_tags": [],
         "active": False,
-        "send_time": "10:00",
         "delivery_mode": "manual",
         "ai_enabled": False,
-        "ownership_level": "user",
-        "description": "Quick sprint to get your first 10 reviews. Activate once you have contacts loaded.",
+        "description": "Legacy onboarding flow. Replaced by the new turnkey campaigns above.",
+        "scope": "personal",
         "sequences": [
-            {"step": 1, "action_type": "message", "channel": "sms", "delay_days": 0, "delay_months": 0, "message_template": "Hey {name}, if you've got 20 seconds, would you mind leaving a quick review? It really helps more than you know: {review_link} — appreciate you.", "media_urls": [], "ai_generated": False, "step_context": "initial review ask - warm, personal, short", "card_type": ""},
-            {"step": 2, "action_type": "message", "channel": "sms", "delay_days": 2, "delay_months": 0, "message_template": "Hey {name}, just bumping this in case life got busy. A quick review would mean a lot: {review_link}. Thanks!", "media_urls": [], "ai_generated": False, "step_context": "follow-up to non-clickers - different wording, shorter", "card_type": ""},
-            {"step": 3, "action_type": "message", "channel": "sms", "delay_days": 5, "delay_months": 0, "message_template": "Last one from me on this, {name} — no worries if it's not your thing. But if you've got a sec: {review_link}. Either way, appreciate you!", "media_urls": [], "ai_generated": False, "step_context": "final polite ping", "card_type": ""},
+            {"step": 1, "action_type": "message", "channel": "email", "delay_days": 0, "message_template": "Welcome! Your first step: set up your digital card at {settings_link}"},
         ],
     },
-    # Campaign 3: Ongoing Relationship Touches (5 touches/year)
-    {
-        "name": "Ongoing Relationship Touches",
-        "type": "relationship",
-        "trigger_tag": "",
-        "segment_tags": [],
-        "active": False,
-        "send_time": "10:00",
-        "delivery_mode": "manual",
-        "ai_enabled": False,
-        "ownership_level": "user",
-        "description": "Stay remembered without being annoying. 5 touches/year per contact. Activate once contacts are loaded.",
-        "sequences": [
-            {"step": 1, "action_type": "message", "channel": "sms", "delay_days": 0, "delay_months": 0, "message_template": "Hey {name}, just checking in. How's everything going? Let me know if you need anything — I'm here.", "media_urls": [], "ai_generated": False, "step_context": "quarterly check-in #1", "card_type": ""},
-            {"step": 2, "action_type": "message", "channel": "sms", "delay_days": 0, "delay_months": 3, "message_template": "Hey {name}, hope you're having a great season! Quick tip: [seasonal value relevant to your industry]. Let me know if I can help with anything.", "media_urls": [], "ai_generated": False, "step_context": "seasonal value ping", "card_type": ""},
-            {"step": 3, "action_type": "message", "channel": "sms", "delay_days": 0, "delay_months": 6, "message_template": "Hey {name}, just checking in again. How's everything? If anything's come up, I'm always around.", "media_urls": [], "ai_generated": False, "step_context": "quarterly check-in #2", "card_type": ""},
-            {"step": 4, "action_type": "message", "channel": "sms", "delay_days": 0, "delay_months": 9, "message_template": "Hey {name}, no agenda — just saw something that reminded me of you. Hope all is well! Reach out anytime.", "media_urls": [], "ai_generated": False, "step_context": "just because touch", "card_type": ""},
-            {"step": 5, "action_type": "message", "channel": "sms", "delay_days": 0, "delay_months": 12, "message_template": "Hey {name}, can you believe it's been a year? Time flies. Grateful to know you — reach out if you ever need anything.", "media_urls": [], "ai_generated": False, "step_context": "annual milestone", "card_type": ""},
-        ],
-    },
-    # Campaign 4: Post-Purchase / Post-Service Follow-up
-    {
-        "name": "Post-Purchase Follow-Up",
-        "type": "sold_followup",
-        "trigger_tag": "sold",
-        "segment_tags": [],
-        "active": True,
-        "send_time": "10:00",
-        "delivery_mode": "manual",
-        "ai_enabled": False,
-        "ownership_level": "user",
-        "description": "Triggered when 'sold' tag is applied. Drives reviews, referrals, and repeat business.",
-        "sequences": [
-            {"step": 1, "action_type": "send_card", "card_type": "congrats", "channel": "sms", "delay_days": 0, "delay_months": 0, "message_template": "Congratulations, {name}! So excited for you. Here's a little something from us.", "media_urls": [], "ai_generated": False, "step_context": "same-day congrats card + thank you"},
-            {"step": 2, "action_type": "message", "channel": "sms", "delay_days": 2, "delay_months": 0, "message_template": "Hey {name}, if you had a great experience, a quick review would mean the world: {review_link}. Appreciate you!", "media_urls": [], "ai_generated": False, "step_context": "review ask - only if engaged or no negative feedback", "card_type": ""},
-            {"step": 3, "action_type": "message", "channel": "sms", "delay_days": 14, "delay_months": 0, "message_template": "Hey {name}, everything still going great? Let me know if anything comes up — I'm here for you.", "media_urls": [], "ai_generated": False, "step_context": "2-week check-in", "card_type": ""},
-            {"step": 4, "action_type": "message", "channel": "sms", "delay_days": 30, "delay_months": 0, "message_template": "Hey {name}, know anyone who could use our help? Referrals mean more than you know. No pressure — just thought I'd ask!", "media_urls": [], "ai_generated": False, "step_context": "30-day soft referral ask", "card_type": ""},
-            {"step": 5, "action_type": "message", "channel": "sms", "delay_days": 180, "delay_months": 0, "message_template": "Hey {name}! It's been about 6 months. Just wanted to check in and make sure everything's still great. Reach out anytime!", "media_urls": [], "ai_generated": False, "step_context": "6-month check-in + value tip", "card_type": ""},
-        ],
-    },
-    # Campaign 5: Reputation Rescue
-    {
-        "name": "Reputation Rescue",
-        "type": "reputation_rescue",
-        "trigger_tag": "negative_feedback",
-        "segment_tags": [],
-        "active": True,
-        "send_time": "09:00",
-        "delivery_mode": "manual",
-        "ai_enabled": False,
-        "ownership_level": "user",
-        "description": "Triggered by 1-3 star rating or negative feedback. Save the relationship, don't argue on the internet.",
-        "sequences": [
-            {"step": 1, "action_type": "message", "channel": "sms", "delay_days": 0, "delay_months": 0, "message_template": "Hey {name}, I saw your feedback and I'm sorry about your experience. I want to make this right. Can we chat? Call or text me anytime.", "media_urls": [], "ai_generated": False, "step_context": "immediate apology + offer to fix", "card_type": ""},
-            {"step": 2, "action_type": "message", "channel": "sms", "delay_days": 1, "delay_months": 0, "message_template": "Hey {name}, just making sure you saw my last message. I really do want to fix this. Let me know the best way to reach you.", "media_urls": [], "ai_generated": False, "step_context": "day-1 follow-up if no response", "card_type": ""},
-            {"step": 3, "action_type": "message", "channel": "sms", "delay_days": 7, "delay_months": 0, "message_template": "Hi {name}, I know things didn't go as expected. If you're open to it, I'd love a second chance. Either way, I appreciate your honesty.", "media_urls": [], "ai_generated": False, "step_context": "close the loop - second chance ask", "card_type": ""},
-        ],
-    },
-    # Campaign 6: Social Growth Loop
-    {
-        "name": "Social Growth Loop",
-        "type": "social_growth",
-        "trigger_tag": "",
-        "segment_tags": ["sold", "new_client"],
-        "active": False,
-        "send_time": "11:00",
-        "delivery_mode": "manual",
-        "ai_enabled": False,
-        "ownership_level": "user",
-        "description": "Turn happy customers into followers. Only sends to contacts who engaged (clicked/replied).",
-        "sequences": [
-            {"step": 1, "action_type": "message", "channel": "sms", "delay_days": 0, "delay_months": 0, "message_template": "Hey {name}! We post tips, behind-the-scenes, and customer shoutouts. Give us a follow if you're into it: {social_link}", "media_urls": [], "ai_generated": False, "step_context": "follow ask bundled with thank-you energy", "card_type": ""},
-            {"step": 2, "action_type": "message", "channel": "sms", "delay_days": 7, "delay_months": 0, "message_template": "Hey {name}, here's a taste of what we post: [link to best recent post]. Follow along for more!", "media_urls": [], "ai_generated": False, "step_context": "show what you post + top links", "card_type": ""},
-            {"step": 3, "action_type": "message", "channel": "sms", "delay_days": 30, "delay_months": 0, "message_template": "Hey {name}, we're doing something fun this month — stay tuned on our socials! {social_link}", "media_urls": [], "ai_generated": False, "step_context": "optional giveaway/series tease", "card_type": ""},
-        ],
-    },
+]
+
+# ==================== DEFAULT TAGS (5 core + 5 optional) ====================
+# These are seeded at the USER level for every new account.
+# Admins can promote them to account/org scope via the Tags settings.
+DEFAULT_TAGS = [
+    {"name": "Working",      "color": "#FF9500", "icon": "hammer",        "scope": "personal", "description": "Active shopper — currently working a deal"},
+    {"name": "Sold",         "color": "#34C759", "icon": "checkmark",     "scope": "personal", "description": "Purchase completed — kick off the Sold campaign"},
+    {"name": "Met",          "color": "#007AFF", "icon": "people",        "scope": "personal", "description": "Met at an event or networking — new connection"},
+    {"name": "Birthday",     "color": "#FF2D55", "icon": "gift",          "scope": "personal", "description": "Birthday trigger — send annual birthday message"},
+    {"name": "Lost Contact", "color": "#8E8E93", "icon": "cloud",         "scope": "personal", "description": "No engagement for 60–90 days — re-engagement campaign"},
+    # Optional (created but inactive)
+    {"name": "Be Back",      "color": "#5856D6", "icon": "return-down-back", "scope": "personal", "description": "Will return — follow up in a few days"},
+    {"name": "Price Quote",  "color": "#FF9500", "icon": "pricetag",      "scope": "personal", "description": "Received a price quote — nurture toward decision"},
+    {"name": "Referral",     "color": "#C9A962", "icon": "share",         "scope": "personal", "description": "Referred by another customer"},
+    {"name": "Service",      "color": "#00BCD4", "icon": "build",         "scope": "personal", "description": "Needs service or follow-up"},
+    {"name": "Trade",        "color": "#FF6B00", "icon": "swap-horizontal", "scope": "personal", "description": "Interested in trading in their vehicle"},
 ]
 
 # ==================== DEFAULT DATE TRIGGERS (6) ====================
@@ -372,6 +409,25 @@ async def seed_user_defaults(user_id: str):
         seeded["campaigns"] = len(docs)
     else:
         seeded["campaigns"] = 0
+
+    # 3b. Default Tags — seed the 5 core tags if user has none yet
+    existing_tag_count = await db.tags.count_documents({"user_id": user_id})
+    if existing_tag_count == 0:
+        tag_docs = [{
+            "user_id": user_id,
+            "name": t["name"],
+            "color": t["color"],
+            "icon": t.get("icon", "pricetag"),
+            "scope": t.get("scope", "personal"),
+            "description": t.get("description", ""),
+            "status": "approved",
+            "contact_count": 0,
+            "created_at": now,
+        } for t in DEFAULT_TAGS]
+        await db.tags.insert_many(tag_docs)
+        seeded["tags"] = len(tag_docs)
+    else:
+        seeded["tags"] = 0
 
     # 4. Date Triggers
     existing_triggers = await db.date_trigger_configs.count_documents({"user_id": user_id})

@@ -2025,3 +2025,33 @@ async def backfill_onboarding(x_user_id: str = Header(alias="X-User-ID")):
         {"$set": {"onboarding_complete": True, "needs_onboarding": False}}
     )
     return {"updated": result.modified_count, "message": f"Marked {result.modified_count} existing users as onboarding complete"}
+
+
+
+@router.post("/backfill-default-campaigns")
+async def backfill_default_campaigns(x_user_id: str = Header(alias="X-User-ID")):
+    """Seed the new turnkey campaigns (Working, Sold, Met, Birthday, Lost Contact, Five-Year)
+    and default tags for ALL existing users who don't have them yet.
+    Safe to run multiple times — skips users who already have these campaigns/tags."""
+    caller = await get_user_by_id(x_user_id)
+    if not caller or caller.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super admin only")
+
+    from services.seed_defaults import seed_user_defaults
+    db = get_db()
+
+    users = await db.users.find(
+        {"status": {"$in": ["active", "trialing"]}},
+        {"_id": 1}
+    ).limit(2000).to_list(2000)
+
+    results = {"total": len(users), "seeded": 0, "errors": 0}
+    for user in users:
+        try:
+            await seed_user_defaults(str(user["_id"]))
+            results["seeded"] += 1
+        except Exception as e:
+            logger.warning(f"[Backfill] Failed for {user['_id']}: {e}")
+            results["errors"] += 1
+
+    return results
