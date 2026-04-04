@@ -675,7 +675,29 @@ async def get_campaigns(user_id: str):
         
         result_dicts.append(camp)
     
+    # Sort by user's saved sort_order, then by created_at (newest first)
+    result_dicts.sort(key=lambda c: (c.get("sort_order", 9999), c.get("created_at", "") or ""))
+    
     return result_dicts
+
+
+@router.post("/{user_id}/reorder")
+async def reorder_campaigns(user_id: str, data: dict):
+    """Persist drag-and-drop sort order for a user's campaigns."""
+    ordered_ids = data.get("campaign_ids", [])
+    if not ordered_ids:
+        raise HTTPException(status_code=400, detail="campaign_ids list required")
+    db = get_db()
+    for idx, cid in enumerate(ordered_ids):
+        try:
+            await db.campaigns.update_one(
+                {"_id": ObjectId(cid), "user_id": user_id},
+                {"$set": {"sort_order": idx}}
+            )
+        except Exception:
+            pass
+    return {"success": True, "reordered": len(ordered_ids)}
+
 
 # ============= PENDING SENDS (Manual Campaigns) =============
 # NOTE: These routes MUST be above /{user_id}/{campaign_id} to avoid route collision.
