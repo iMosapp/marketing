@@ -699,7 +699,7 @@ export const tagsAPI = {
     return response.data;
   },
 
-  create: async (userId: string, tag: { name: string; color: string; icon?: string }) => {
+  create: async (userId: string, tag: { name: string; color: string; icon?: string; scope?: string }) => {
     const response = await api.post(`/tags/${userId}`, tag);
     return response.data;
   },
@@ -714,7 +714,7 @@ export const tagsAPI = {
     return response.data;
   },
 
-  update: async (userId: string, tagId: string, tag: { name?: string; color?: string; icon?: string }) => {
+  update: async (userId: string, tagId: string, tag: { name?: string; color?: string; icon?: string; scope?: string }) => {
     const response = await api.put(`/tags/${userId}/${tagId}`, tag);
     return response.data;
   },
