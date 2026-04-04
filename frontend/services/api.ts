@@ -40,9 +40,15 @@ api.interceptors.request.use(
       }
       // Try in-memory state first — avoids AsyncStorage read on every request
       const { useAuthStore } = await import('../store/authStore');
-      const { user } = useAuthStore.getState();
+      const state = useAuthStore.getState();
+      const { user, isImpersonating, originalUser } = state;
       if (user?._id) {
         config.headers['X-User-ID'] = user._id;
+        // Tag all requests with impersonation context so backend logs show it
+        if (isImpersonating && originalUser?._id) {
+          config.headers['X-Impersonating-As'] = user._id;
+          config.headers['X-Real-Admin'] = originalUser._id;
+        }
         return config;
       }
       // Fallback: read from AsyncStorage (cold boot, before loadAuth completes)
@@ -96,22 +102,60 @@ api.interceptors.response.use(
     }
     if (error.response) {
       console.error('API Error:', error.response.data);
-      // Report actual server errors (500) but skip 502/503/504 gateway errors —
-      // those are infrastructure restarts (Cloudflare) not code bugs
       const status = error.response.status;
-      const isGatewayError = status === 502 || status === 503 || status === 504 || status === 520 || status === 521 || status === 522 || status === 523 || status === 524;
-      if (status >= 500 && !isGatewayError) {
+
+      // Report ALL 5xx errors — including 502/503/504 so we can trace server crashes
+      // during impersonation or identify which page/action is causing reboots
+      if (status >= 500) {
         import('../services/errorReporter').then(({ reportError }) => {
+          // Include impersonation context to identify "acting as user X" crashes
+          let impersonationContext = '';
+          try {
+            const { useAuthStore } = require('../store/authStore');
+            const state = useAuthStore.getState();
+            if (state.isImpersonating && state.originalUser) {
+              impersonationContext = ` [IMPERSONATING: ${state.user?.email || state.user?._id}]`;
+            }
+          } catch {}
+
+          const isGateway = status === 502 || status === 503 || status === 504;
           reportError({
-            error_message: `API ${status}: ${error.config?.method?.toUpperCase()} ${error.config?.url} — ${JSON.stringify(error.response.data)?.slice(0, 300)}`,
-            error_type: 'api_error',
-            extra: { status, url: error.config?.url, method: error.config?.method },
+            error_message: `API ${status}${isGateway ? ' (GATEWAY/CRASH)' : ''}${impersonationContext}: ${error.config?.method?.toUpperCase()} ${error.config?.url} — ${JSON.stringify(error.response.data)?.slice(0, 400)}`,
+            error_type: isGateway ? 'server_crash' : 'api_error',
+            extra: {
+              status,
+              url: error.config?.url,
+              method: error.config?.method,
+              is_gateway_error: isGateway,
+              impersonation: impersonationContext || 'none',
+              page: typeof window !== 'undefined' ? window.location.pathname : 'unknown',
+            },
           });
         }).catch(() => {});
       }
     } else if (error.request) {
       console.error('Network Error:', error.message);
-      // Network errors (server unreachable) are typically infrastructure — don't spam error reports
+      // Network errors without response — report if potentially a crash
+      import('../services/errorReporter').then(({ reportError }) => {
+        let impersonationContext = '';
+        try {
+          const { useAuthStore } = require('../store/authStore');
+          const state = useAuthStore.getState();
+          if (state.isImpersonating) {
+            impersonationContext = ` [IMPERSONATING: ${state.user?.email}]`;
+          }
+        } catch {}
+        reportError({
+          error_message: `Network Error${impersonationContext}: ${error.config?.method?.toUpperCase()} ${error.config?.url} — ${error.message}`,
+          error_type: 'network_error',
+          extra: {
+            url: error.config?.url,
+            method: error.config?.method,
+            impersonation: impersonationContext || 'none',
+            page: typeof window !== 'undefined' ? window.location.pathname : 'unknown',
+          },
+        });
+      }).catch(() => {});
     } else {
       console.error('Error:', error.message);
     }

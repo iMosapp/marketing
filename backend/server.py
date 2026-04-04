@@ -69,14 +69,37 @@ import time
 
 @app.middleware("http")
 async def log_slow_requests(request: Request, call_next):
-    """Log any request that takes longer than 2 seconds — helps identify bottlenecks."""
+    """Log all requests — with impersonation context and error tracking for crash diagnosis."""
+    import traceback
     start = time.monotonic()
-    response = await call_next(request)
+    
+    # Capture impersonation context from headers
+    impersonating_as = request.headers.get("X-Impersonating-As")
+    real_admin = request.headers.get("X-Real-Admin")
+    user_id = request.headers.get("X-User-ID")
+    
+    if impersonating_as:
+        logger.info(f"[IMPERSONATION] Admin {real_admin} acting as {impersonating_as} → {request.method} {request.url.path}")
+    
+    try:
+        response = await call_next(request)
+    except Exception as e:
+        duration = time.monotonic() - start
+        ctx = f" [IMPERSONATING as={impersonating_as} admin={real_admin}]" if impersonating_as else ""
+        logger.error(f"[UNHANDLED CRASH]{ctx} {request.method} {request.url.path} after {duration:.2f}s — {type(e).__name__}: {e}\n{traceback.format_exc()}")
+        raise
+    
     duration = time.monotonic() - start
+    
+    # Log 5xx errors with full context
+    if response.status_code >= 500:
+        ctx = f" [IMPERSONATING as={impersonating_as} admin={real_admin}]" if impersonating_as else (f" [user={user_id}]" if user_id else "")
+        logger.error(f"[SERVER ERROR {response.status_code}]{ctx} {request.method} {request.url.path} {duration:.2f}s")
+    
     if duration > 2.0:
-        path = request.url.path
-        method = request.method
-        logger.warning(f"[SLOW REQUEST] {method} {path} took {duration:.2f}s")
+        ctx = f" [IMPERSONATING as={impersonating_as}]" if impersonating_as else ""
+        logger.warning(f"[SLOW REQUEST]{ctx} {request.method} {request.url.path} took {duration:.2f}s")
+    
     return response
 
 
