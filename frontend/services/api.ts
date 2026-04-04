@@ -114,7 +114,7 @@ api.interceptors.response.use(
             const { useAuthStore } = require('../store/authStore');
             const state = useAuthStore.getState();
             if (state.isImpersonating && state.originalUser) {
-              impersonationContext = ` [IMPERSONATING: ${state.user?.email || state.user?._id}]`;
+              impersonationContext = ` [IMPERSONATING as: ${state.user?.email || state.user?._id} (admin: ${state.originalUser?.email || state.originalUser?._id})]`;
             }
           } catch {}
 

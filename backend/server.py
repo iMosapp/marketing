@@ -897,6 +897,17 @@ async def startup_event():
                     # Congrats cards — tracking and reporting
                     db.congrats_cards_sent.create_index([("user_id", 1), ("sent_at", -1)]),
                     db.congrats_cards_sent.create_index([("salesman_id", 1), ("sent_at", -1)]),
+                    # Notification center — compound indexes for all 8 section queries
+                    # Section 6: contact_events by user + timestamp + event_type (was doing full collection scan)
+                    db.contact_events.create_index([("user_id", 1), ("event_type", 1), ("timestamp", -1)]),
+                    # Section 4/5: conversations by participants
+                    db.conversations.create_index([("participants", 1), ("unread", 1), ("updated_at", -1)]),
+                    db.conversations.create_index([("participants", 1), ("flagged", 1), ("updated_at", -1)]),
+                    # Section 8: engagement signals by user + type + date
+                    db.notifications.create_index([("user_id", 1), ("type", 1), ("created_at", -1)]),
+                    # customer_feedback — Review Center queries
+                    db.customer_feedback.create_index([("salesperson_id", 1), ("approved", 1), ("created_at", -1)]),
+                    db.customer_feedback.create_index([("salesperson_id", 1), ("created_at", -1)]),
                 ), timeout=15)
                 logger.info("Database indexes created/verified (production-ready)")
 
