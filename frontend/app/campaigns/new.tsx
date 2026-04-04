@@ -663,7 +663,7 @@ const { showToast } = useToast();
           )}
         </View>
 
-        {/* Scope — who can see this campaign. Role-based chips. */}
+        {/* Campaign Visibility — who can use this campaign */}
         {(user?.role === 'super_admin' || user?.role === 'org_admin' || user?.role === 'store_manager') && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Campaign Visibility</Text>

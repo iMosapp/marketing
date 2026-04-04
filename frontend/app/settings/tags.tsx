@@ -109,10 +109,12 @@ export default function TagsSettings() {
   const [formName, setFormName] = useState('');
   const [formColor, setFormColor] = useState(TAG_COLORS[0]);
   const [formIcon, setFormIcon] = useState('pricetag');
+  const [formScope, setFormScope] = useState<'personal' | 'account' | 'org'>('personal');
   const [saving, setSaving] = useState(false);
-  
-  const isAdmin = user?.role === 'super_admin' || user?.role === 'org_admin' || user?.role === 'admin';
-  const isInOrg = !!user?.org_id;
+
+  const isAdmin = user?.role === 'super_admin' || user?.role === 'org_admin' || user?.role === 'store_manager' || user?.role === 'admin';
+  const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'org_admin';
+  const isInOrg = !!(user as any)?.org_id || !!(user as any)?.organization_id;
 
   useEffect(() => {
     if (user?._id) {
@@ -188,6 +190,7 @@ export default function TagsSettings() {
     setFormName('');
     setFormColor(TAG_COLORS[0]);
     setFormIcon('pricetag');
+    setFormScope('personal');
     setShowModal(true);
   };
 
@@ -196,6 +199,7 @@ export default function TagsSettings() {
     setFormName(tag.name);
     setFormColor(tag.color);
     setFormIcon(tag.icon);
+    setFormScope((tag as any).scope || 'personal');
     setShowModal(true);
   };
 
@@ -213,12 +217,14 @@ export default function TagsSettings() {
           name: formName,
           color: formColor,
           icon: formIcon,
+          scope: formScope,
         });
       } else {
         await tagsAPI.create(user._id, {
           name: formName,
           color: formColor,
           icon: formIcon,
+          scope: formScope,
         });
       }
       setShowModal(false);
@@ -429,6 +435,34 @@ export default function TagsSettings() {
               maxLength={30}
             />
 
+            {/* Scope Picker — RIGHT AFTER NAME, before color/icon so it's always visible */}
+            {isAdmin && (
+              <View style={{ marginBottom: 20 }}>
+                <Text style={styles.inputLabel}>Visibility</Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginTop: 6 }}>
+                  {[
+                    { key: 'personal', label: 'Just Me',  icon: 'person-outline',     desc: 'Only you' },
+                    { key: 'account',  label: 'My Team',  icon: 'storefront-outline',  desc: 'Whole store' },
+                    ...(isSuperAdmin ? [{ key: 'org', label: 'Org-Wide', icon: 'business-outline', desc: 'Everyone' }] : []),
+                  ].map((s) => (
+                    <TouchableOpacity key={s.key}
+                      style={[{
+                        flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 12,
+                        borderWidth: 2, gap: 3,
+                        borderColor: formScope === s.key ? formColor : colors.border,
+                        backgroundColor: formScope === s.key ? formColor + '18' : colors.card,
+                      }]}
+                      onPress={() => setFormScope(s.key as any)}
+                    >
+                      <Ionicons name={s.icon as any} size={18} color={formScope === s.key ? formColor : colors.textSecondary} />
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: formScope === s.key ? formColor : colors.textSecondary }}>{s.label}</Text>
+                      <Text style={{ fontSize: 11, color: formScope === s.key ? formColor + 'AA' : colors.textTertiary }}>{s.desc}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )}
+
             {/* Color Selector */}
             <Text style={styles.inputLabel}>Color</Text>
             <View style={styles.colorGrid}>
@@ -478,7 +512,7 @@ export default function TagsSettings() {
               ))}
             </View>
 
-            {/* Action Buttons (below the form for PWA accessibility) */}
+            {/* Action Buttons */}
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.modalSaveBtn} onPress={handleSave} disabled={saving} data-testid="tag-save-btn">
                 {saving ? (

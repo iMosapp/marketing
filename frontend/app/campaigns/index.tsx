@@ -122,9 +122,10 @@ export default function CampaignsScreen() {
           activeOpacity={0.85}
           data-testid={`campaign-card-${item._id}`}
         >
-          {/* Drag handle */}
+          {/* Drag handle — long press to drag, short tap scrolls normally */}
           <TouchableOpacity
-            onPressIn={drag}
+            onLongPress={drag}
+            delayLongPress={300}
             style={styles.dragHandle}
             hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
           >
