@@ -38,6 +38,20 @@ const ACTION_CONFIG: Record<string, {
     getMessage: (name, url) => `Hey ${name}! Check out my showcase of happy customers: ${url}`,
     eventType: 'showcase_shared',
   },
+  linkpage: {
+    title: 'Share Link Page', icon: 'link-outline', color: '#5856D6',
+    previewTitle: 'My Link Page',
+    getUrl: (uid) => `${process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'}/links/${uid}`,
+    getMessage: (name, url) => `Hey ${name}! Here's a link to all my pages in one spot: ${url}`,
+    eventType: 'link_page_shared',
+  },
+  landingpage: {
+    title: 'Share Landing Page', icon: 'globe-outline', color: '#AF52DE',
+    previewTitle: 'My Landing Page',
+    getUrl: (uid) => `${process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'}/p/${uid}`,
+    getMessage: (name, url) => `Hey ${name}! Here's my personal page with all my info: ${url}`,
+    eventType: 'landing_page_shared',
+  },
   congrats: {
     title: 'Send a Card', icon: 'gift-outline', color: '#C9A962',
     previewTitle: 'Greeting Card',
