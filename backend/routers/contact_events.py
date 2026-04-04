@@ -1061,7 +1061,7 @@ async def fix_event_types_migration():
     wrong_events = await db.contact_events.find(
         {"event_type": "congrats_card_sent"},
         {"_id": 1, "content": 1, "content_preview": 1, "description": 1, "metadata": 1}
-    ).to_list(5000)
+    ).to_list(1000)
 
     for evt in wrong_events:
         # Try to find a card_id from event content or metadata

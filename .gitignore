@@ -1250,3 +1250,4 @@ backend/.env.local
 # Environment files
 *.env
 *.env.*
+memory/test_credentials.md

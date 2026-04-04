@@ -72,7 +72,7 @@ async def get_accessible_user_ids(user: dict) -> List[str]:
     
     if role == 'super_admin':
         # Super admin can see all users
-        all_users = await db.users.find({}, {"_id": 1}).to_list(10000)
+        all_users = await db.users.find({}, {"_id": 1}).to_list(500)
         return [str(u['_id']) for u in all_users]
     
     elif role == 'org_admin':
@@ -80,7 +80,7 @@ async def get_accessible_user_ids(user: dict) -> List[str]:
         org_id = user.get('organization_id')
         if not org_id:
             return [user_id]
-        org_users = await db.users.find({"organization_id": org_id}, {"_id": 1}).to_list(10000)
+        org_users = await db.users.find({"organization_id": org_id}, {"_id": 1}).to_list(500)
         return [str(u['_id']) for u in org_users]
     
     elif role == 'store_manager':
@@ -88,7 +88,7 @@ async def get_accessible_user_ids(user: dict) -> List[str]:
         store_id = user.get('store_id')
         if not store_id:
             return [user_id]
-        store_users = await db.users.find({"store_id": store_id}, {"_id": 1}).to_list(10000)
+        store_users = await db.users.find({"store_id": store_id}, {"_id": 1}).to_list(500)
         return [str(u['_id']) for u in store_users]
     
     else:
