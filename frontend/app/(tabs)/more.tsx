@@ -550,6 +550,30 @@ export default function MoreScreen() {
   }
 
   // ============================================================
+  // SECTION MANAGE — right under My Brand (most-used daily section)
+  // Tags, Campaigns, Reviews, Showcase — all users see this
+  // Role-based: users = personal items; admins = team-level too
+  // ============================================================
+  {
+    const manageItems: (MenuItem & { permKey?: string })[] = [
+      { icon: 'pricetags',  title: 'My Tags',       subtitle: 'Create & manage your tags',           onPress: () => router.push('/settings/tags'),             color: '#FF9500' },
+      { icon: 'megaphone',  title: 'My Campaigns',  subtitle: 'Personal follow-up sequences',         onPress: () => router.push('/campaigns'),                 color: '#FF2D55' },
+      { icon: 'star',       title: 'Review Center', subtitle: 'Approve, publish & track reviews',     onPress: () => router.push('/settings/review-approvals'), color: '#FFD60A' },
+      { icon: 'images',     title: 'Showcase',      subtitle: 'Approve showcase entries',             onPress: () => router.push('/settings/showcase-approvals'), color: '#34C759' },
+    ];
+    if (isAdmin) {
+      manageItems.push(
+        { icon: 'people-circle', title: 'Account Tags',      subtitle: 'Tags shared with the team',        onPress: () => router.push('/settings/tags?scope=account'),   color: '#C9A962' },
+        { icon: 'rocket',        title: 'Account Campaigns', subtitle: 'Campaigns shared with the team',   onPress: () => router.push('/campaigns?scope=account'),       color: '#AF52DE' },
+        { icon: 'star-outline',  title: 'Review Links',      subtitle: 'Google, Facebook & Yelp links',    onPress: () => router.push('/settings/review-links'),         color: '#FFD60A' },
+      );
+    }
+    sections.push({ id: 'manage', title: 'Manage', icon: 'settings-outline', color: '#8E8E93', items: manageItems });
+  }
+
+
+
+  // ============================================================
   // SECTION 2: MY TOOLS (Daily action items)
   // ============================================================
   if (perm('my_tools')) {
@@ -590,35 +614,7 @@ export default function MoreScreen() {
   }
 
   // ============================================================
-  // SECTION M: MANAGE — Tags, Campaigns, Reviews, Showcase (ALL users see this)
-  // Role-based: users = own items only; admins = team-level items too
-  // ============================================================
-  {
-    const manageItems: (MenuItem & { permKey?: string })[] = [
-      // Everyone: manage their own tags
-      { icon: 'pricetags', title: 'My Tags', subtitle: 'Create & manage your tags', onPress: () => router.push('/settings/tags'), color: '#FF9500' },
-      // Everyone: manage their own campaigns
-      { icon: 'megaphone', title: 'My Campaigns', subtitle: 'Personal follow-up sequences', onPress: () => router.push('/campaigns'), color: '#FF2D55' },
-      // Everyone: review center (their own reviews)
-      { icon: 'star', title: 'Review Center', subtitle: 'Approve, publish & track reviews', onPress: () => router.push('/settings/review-approvals'), color: '#FFD60A' },
-      // Everyone: showcase approvals (their own media)
-      { icon: 'images', title: 'Showcase', subtitle: 'Approve showcase entries', onPress: () => router.push('/settings/showcase-approvals'), color: '#34C759' },
-    ];
-
-    // Admins/Managers also see team-level management
-    if (isAdmin) {
-      manageItems.push(
-        { icon: 'people-circle', title: 'Account Tags', subtitle: 'Tags shared with the whole team', onPress: () => router.push('/settings/tags?scope=account'), color: '#C9A962' },
-        { icon: 'rocket', title: 'Account Campaigns', subtitle: 'Campaigns shared with the team', onPress: () => router.push('/campaigns?scope=account'), color: '#AF52DE' },
-        { icon: 'star-outline', title: 'Review Links', subtitle: 'Google, Facebook & Yelp links', onPress: () => router.push('/settings/review-links'), color: '#FFD60A' },
-      );
-    }
-
-    sections.push({ id: 'manage', title: 'Manage', icon: 'settings-outline', color: '#8E8E93', items: manageItems });
-  }
-
-  // ============================================================
-  // SECTION 5: SETUP & MANAGE (Admin/Manager tools for their accounts)
+  // SECTION 5: SETUP (Admin/Manager tools for their accounts)
   // Only visible to admins, store managers, partners
   // ============================================================
   if (isAdmin && perm('admin')) {
