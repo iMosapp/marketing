@@ -654,26 +654,34 @@ const { showToast } = useToast();
           )}
         </View>
 
-        {/* Ownership Level (admin only) */}
-        {user?.role === 'super_admin' && (
+        {/* Scope — who can see this campaign. Role-based chips. */}
+        {(user?.role === 'super_admin' || user?.role === 'org_admin' || user?.role === 'store_manager') && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Campaign Level</Text>
-            <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+            <Text style={styles.sectionTitle}>Campaign Visibility</Text>
+            <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2, marginBottom: 10 }}>
+              Who should have access to this campaign?
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
               {[
-                { key: 'user', label: 'Personal', icon: 'person' },
-                { key: 'store', label: 'Store', icon: 'storefront' },
-                { key: 'org', label: 'Organization', icon: 'business' },
-              ].map(level => (
-                <TouchableOpacity
-                  key={level.key}
-                  style={[styles.levelChip, campaign.ownershipLevel === level.key && styles.levelChipActive]}
-                  onPress={() => setCampaign({ ...campaign, ownershipLevel: level.key as any })}
-                  data-testid={`level-${level.key}`}
-                >
-                  <Ionicons name={level.icon as any} size={16} color={campaign.ownershipLevel === level.key ? '#FFF' : colors.textSecondary} />
-                  <Text style={[styles.levelChipText, campaign.ownershipLevel === level.key && { color: colors.text }]}>{level.label}</Text>
-                </TouchableOpacity>
-              ))}
+                { key: 'personal', label: 'Just Me', icon: 'person', desc: 'Only visible to you' },
+                ...(user?.role !== 'super_admin' ? [] : [{ key: 'org', label: 'Org-Wide', icon: 'business', desc: 'Everyone in the org' }]),
+                { key: 'account', label: 'My Team', icon: 'storefront', desc: 'Everyone in this store' },
+              ].map(s => {
+                const active = (campaign.ownershipLevel === s.key) ||
+                  (s.key === 'account' && campaign.ownershipLevel === 'store');
+                return (
+                  <TouchableOpacity key={s.key}
+                    style={[styles.levelChip, active && styles.levelChipActive, { flex: 1 }]}
+                    onPress={() => setCampaign({ ...campaign, ownershipLevel: s.key as any })}
+                    data-testid={`scope-${s.key}`}
+                  >
+                    <Ionicons name={s.icon as any} size={16}
+                      color={active ? '#FFF' : colors.textSecondary} />
+                    <Text style={[styles.levelChipText, active && { color: '#FFF' }, { fontWeight: '700' }]}>{s.label}</Text>
+                    <Text style={{ fontSize: 11, color: active ? 'rgba(255,255,255,0.75)' : colors.textTertiary, textAlign: 'center' }}>{s.desc}</Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
         )}

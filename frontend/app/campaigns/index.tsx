@@ -113,11 +113,9 @@ export default function CampaignsScreen() {
         <TouchableOpacity
           style={[
             styles.campaignCard,
-            isActive && { opacity: 0.9, transform: [{ scale: 1.02 }], shadowOpacity: 0.3, elevation: 8 },
+            isActive && { opacity: 0.9, shadowOpacity: 0.3, elevation: 8 },
           ]}
           onPress={() => !isActive && router.push(`/campaigns/${item._id || item.id}`)}
-          onLongPress={drag}
-          delayLongPress={150}
           activeOpacity={0.85}
           data-testid={`campaign-card-${item._id}`}
         >

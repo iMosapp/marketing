@@ -569,7 +569,7 @@ async def get_campaign_permissions(user_id: str):
 
 @router.post("/{user_id}", response_model=Campaign)
 async def create_campaign(user_id: str, campaign_data: CampaignCreate):
-    """Create a nurture campaign with permission check"""
+    """Create a nurture campaign. Scope: personal|account|org (role-based)."""
     # Check permissions
     permission = await check_campaign_permission(user_id, "create")
     if not permission["allowed"]:
@@ -578,9 +578,31 @@ async def create_campaign(user_id: str, campaign_data: CampaignCreate):
     campaign_dict = campaign_data.dict()
     campaign_dict['user_id'] = user_id
     campaign_dict['created_at'] = datetime.utcnow()
-    
-    # Prevent exact duplicate campaigns (same name + type for same user)
-    existing = await get_db().campaigns.find_one({
+
+    # Set scope and store/org ids based on requested scope + role
+    db = get_db()
+    user = await get_user_by_id(user_id)
+    requested_scope = campaign_dict.get("scope", "personal")
+    role = (user or {}).get("role", "user")
+    is_admin = role in ("super_admin", "org_admin", "store_manager")
+    store_id = (user or {}).get("store_id")
+    org_id = (user or {}).get("organization_id") or (user or {}).get("org_id")
+
+    # Enforce role: only admins can create account/org campaigns
+    if requested_scope in ("account", "store") and not is_admin:
+        requested_scope = "personal"
+    if requested_scope == "org" and role not in ("super_admin", "org_admin"):
+        requested_scope = "account" if is_admin else "personal"
+
+    campaign_dict["scope"] = requested_scope
+    if requested_scope == "org" and org_id:
+        campaign_dict["org_id"] = org_id
+        campaign_dict["store_id"] = store_id
+    elif requested_scope in ("account", "store") and store_id:
+        campaign_dict["store_id"] = store_id
+
+    # Prevent exact duplicate campaigns (same name + type + scope for same user)
+    existing = await db.campaigns.find_one({
         "user_id": user_id,
         "name": campaign_dict.get("name"),
         "type": campaign_dict.get("type"),
@@ -589,37 +611,41 @@ async def create_campaign(user_id: str, campaign_data: CampaignCreate):
         existing["_id"] = str(existing["_id"])
         return Campaign(**existing)
     
-    result = await get_db().campaigns.insert_one(campaign_dict)
+    result = await db.campaigns.insert_one(campaign_dict)
     campaign_dict['_id'] = result.inserted_id
     
-    logger.info(f"Campaign created: {campaign_dict['name']} with {len(campaign_dict.get('sequences', []))} steps")
+    logger.info(f"Campaign created: {campaign_dict['name']} scope={requested_scope} steps={len(campaign_dict.get('sequences', []))}")
     
     return Campaign(**campaign_dict)
 
 @router.get("/{user_id}")
 async def get_campaigns(user_id: str):
-    """Get campaigns for a user: their own + store-level campaigns they should see."""
+    """Get campaigns for a user — additive: personal + account (store) + org."""
     db = get_db()
     user = await get_user_by_id(user_id)
-    
-    # Build query: user's own campaigns OR store-level campaigns from their store
-    conditions = [{"user_id": user_id}]
-    
+
+    store_id = None
+    org_id = None
     if user:
-        store_id = user.get("store_id")
-        if not store_id and user.get("store_ids"):
-            store_id = user.get("store_ids", [None])[0]
-        if store_id:
-            # Include store-level campaigns from any user in the same store
-            store_user_ids = []
-            async for u in db.users.find({"store_id": store_id}, {"_id": 1}):
-                store_user_ids.append(str(u["_id"]))
-            if store_user_ids:
-                conditions.append({
-                    "user_id": {"$in": store_user_ids},
-                    "ownership_level": "store"
-                })
-    
+        store_id = user.get("store_id") or (user.get("store_ids", [None]) or [None])[0]
+        org_id = user.get("organization_id") or user.get("org_id")
+
+    # Additive OR: user's own + account-level + org-level
+    conditions = [{"user_id": user_id}]  # always see personal
+
+    if store_id:
+        # Account-level campaigns (any admin in this store set scope=account)
+        store_user_ids: list = []
+        async for u in db.users.find({"store_id": store_id}, {"_id": 1}):
+            store_user_ids.append(str(u["_id"]))
+        if store_user_ids:
+            conditions.append({"user_id": {"$in": store_user_ids}, "scope": "account"})
+            conditions.append({"user_id": {"$in": store_user_ids}, "ownership_level": "store"})  # legacy
+        conditions.append({"store_id": store_id, "scope": "account"})
+
+    if org_id:
+        conditions.append({"org_id": org_id, "scope": "org"})
+
     campaigns = await db.campaigns.find({"$or": conditions}).limit(500).to_list(500)
     
     # Deduplicate by name+type (prefer user's own over store-level)
@@ -805,7 +831,7 @@ async def update_campaign(user_id: str, campaign_id: str, update_data: dict):
     
     base_filter = await get_data_filter(user_id)
     
-    allowed_fields = ['name', 'type', 'trigger_tag', 'date_type', 'segment_tags', 'sequences', 'send_time', 'active', 'media_urls', 'message_template', 'delivery_mode', 'ai_enabled', 'ownership_level', 'action_type', 'card_type']
+    allowed_fields = ['name', 'type', 'trigger_tag', 'date_type', 'segment_tags', 'sequences', 'send_time', 'active', 'media_urls', 'message_template', 'delivery_mode', 'ai_enabled', 'ownership_level', 'action_type', 'card_type', 'scope', 'store_id', 'org_id', 'description']
     update_dict = {k: v for k, v in update_data.items() if k in allowed_fields}
 
     # Auto-wrap URLs in sequences when saving

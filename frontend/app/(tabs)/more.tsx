@@ -563,12 +563,10 @@ export default function MoreScreen() {
   }
 
   // ============================================================
-  // SECTION 3: CAMPAIGNS (Automated follow-ups & outreach)
+  // SECTION 3: CAMPAIGNS  (now also in Manage — keep for quick access via Campaigns tab)
   // ============================================================
   if (perm('campaigns')) {
     const items = filterItems('campaigns', [
-      { permKey: 'campaign_builder', icon: 'chatbubbles', title: 'SMS Campaigns', subtitle: 'Automated text follow-ups', onPress: () => router.push('/campaigns'), color: '#FF2D55' },
-      { permKey: 'campaign_builder', icon: 'mail', title: 'Email Campaigns', subtitle: 'Automated email follow-ups', onPress: () => router.push('/campaigns/email'), color: '#AF52DE' },
       { permKey: 'campaign_dashboard', icon: 'speedometer', title: 'Campaign Dashboard', subtitle: 'Enrollments & performance', onPress: () => router.push('/campaigns/dashboard'), color: '#5AC8FA' },
       { permKey: 'broadcast', icon: 'megaphone', title: 'Broadcast', subtitle: 'Send to many at once', onPress: () => router.push('/broadcast'), color: '#FF9500' },
       { permKey: 'date_triggers', icon: 'calendar-outline', title: 'Date Triggers', subtitle: 'Birthdays & anniversaries', onPress: () => router.push('/settings/date-triggers'), color: '#FF9500' },
@@ -592,6 +590,34 @@ export default function MoreScreen() {
   }
 
   // ============================================================
+  // SECTION M: MANAGE — Tags, Campaigns, Reviews, Showcase (ALL users see this)
+  // Role-based: users = own items only; admins = team-level items too
+  // ============================================================
+  {
+    const manageItems: (MenuItem & { permKey?: string })[] = [
+      // Everyone: manage their own tags
+      { icon: 'pricetags', title: 'My Tags', subtitle: 'Create & manage your tags', onPress: () => router.push('/settings/tags'), color: '#FF9500' },
+      // Everyone: manage their own campaigns
+      { icon: 'megaphone', title: 'My Campaigns', subtitle: 'Personal follow-up sequences', onPress: () => router.push('/campaigns'), color: '#FF2D55' },
+      // Everyone: review center (their own reviews)
+      { icon: 'star', title: 'Review Center', subtitle: 'Approve, publish & track reviews', onPress: () => router.push('/settings/review-approvals'), color: '#FFD60A' },
+      // Everyone: showcase approvals (their own media)
+      { icon: 'images', title: 'Showcase', subtitle: 'Approve showcase entries', onPress: () => router.push('/settings/showcase-approvals'), color: '#34C759' },
+    ];
+
+    // Admins/Managers also see team-level management
+    if (isAdmin) {
+      manageItems.push(
+        { icon: 'people-circle', title: 'Account Tags', subtitle: 'Tags shared with the whole team', onPress: () => router.push('/settings/tags?scope=account'), color: '#C9A962' },
+        { icon: 'rocket', title: 'Account Campaigns', subtitle: 'Campaigns shared with the team', onPress: () => router.push('/campaigns?scope=account'), color: '#AF52DE' },
+        { icon: 'star-outline', title: 'Review Links', subtitle: 'Google, Facebook & Yelp links', onPress: () => router.push('/settings/review-links'), color: '#FFD60A' },
+      );
+    }
+
+    sections.push({ id: 'manage', title: 'Manage', icon: 'settings-outline', color: '#8E8E93', items: manageItems });
+  }
+
+  // ============================================================
   // SECTION 5: SETUP & MANAGE (Admin/Manager tools for their accounts)
   // Only visible to admins, store managers, partners
   // ============================================================
@@ -600,17 +626,13 @@ export default function MoreScreen() {
       { permKey: 'store_profile', icon: 'storefront-outline', title: 'Store Profile', subtitle: 'Logo, address & store info', onPress: () => router.push('/settings/store-profile' as any), color: '#34C759' },
       { permKey: 'brand_kit', icon: 'color-palette', title: 'Brand Kit', subtitle: 'Email branding & colors', onPress: () => router.push('/settings/brand-kit'), color: '#AF52DE' },
       { permKey: 'brand_kit', icon: 'chatbubbles', title: 'Messaging Channels', subtitle: 'SMS, WhatsApp, Messenger & more', onPress: () => router.push('/settings/messaging-channels'), color: '#25D366' },
-      { permKey: 'review_links', icon: 'star-outline', title: 'Review Links', subtitle: 'Google, Facebook & Yelp links', onPress: () => router.push('/settings/review-links'), color: '#FFD60A' },
-      { permKey: 'contact_tags', icon: 'pricetags', title: 'Tags', subtitle: 'Organize & categorize contacts', onPress: () => router.push('/settings/tags'), color: '#FF9500' },
       { permKey: 'contact_tags', icon: 'megaphone', title: 'Lead Sources', subtitle: 'Track where leads come from', onPress: () => router.push('/admin/lead-sources'), color: '#5856D6' },
       { permKey: 'users', icon: 'people', title: 'Team Members', subtitle: 'Manage users & permissions', onPress: () => router.push('/admin/users'), color: '#007AFF' },
       { permKey: 'invite_team', icon: 'person-add', title: 'Invite Team', subtitle: 'Send invitations', onPress: () => router.push('/settings/invite-team'), color: '#C9A962' },
-      { permKey: 'review_approvals', icon: 'chatbubbles-outline', title: 'Review Approvals', subtitle: 'Approve customer reviews', onPress: () => router.push('/settings/review-approvals'), color: '#AF52DE' },
-      { permKey: 'showcase_approvals', icon: 'shield-checkmark-outline', title: 'Showcase Approvals', subtitle: 'Approve showcase posts', onPress: () => router.push('/settings/showcase-approvals'), color: '#34C759' },
       { permKey: 'integrations', icon: 'git-network', title: 'Integrations', subtitle: 'API keys & webhooks', onPress: () => router.push('/settings/integrations'), color: '#5856D6' },
     ];
     const filtered = items.filter(i => !i.permKey || perm('admin', i.permKey));
-    if (filtered.length > 0) sections.push({ id: 'setup_manage', title: 'Setup & Manage', icon: 'construct', color: '#FF9500', items: filtered });
+    if (filtered.length > 0) sections.push({ id: 'setup_manage', title: 'Set Up', icon: 'construct', color: '#FF9500', items: filtered });
   }
 
   // ============================================================
