@@ -257,79 +257,101 @@ async def reject_tag(user_id: str, tag_id: str):
 
 @router.put("/{user_id}/{tag_id}")
 async def update_tag(user_id: str, tag_id: str, tag_data: dict):
-    """Update a tag (org admins only for org tags)"""
+    """Update a tag — supports scope changes (personal → account → org)"""
     db = get_db()
-    
+
     org_id, store_id, role, is_admin = await get_tag_scope(user_id)
-    
-    if org_id:
-        # Org tag - admin only
-        if not is_admin:
-            raise HTTPException(status_code=403, detail="Only admins can edit tags")
-        
-        old_tag = await db.tags.find_one({"_id": ObjectId(tag_id), "org_id": org_id})
-    else:
-        old_tag = await db.tags.find_one({"_id": ObjectId(tag_id), "user_id": user_id})
-    
+
+    # Find the tag by ID alone first — don't filter by scope here
+    try:
+        old_tag = await db.tags.find_one({"_id": ObjectId(tag_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid tag ID")
+
     if not old_tag:
         raise HTTPException(status_code=404, detail="Tag not found")
-    
+
+    # Permission check: can edit if it's your personal tag OR you're admin for store/org tags
+    tag_owner = old_tag.get("user_id") or old_tag.get("created_by")
+    is_my_tag = tag_owner == user_id
+    is_my_store_tag = store_id and old_tag.get("store_id") == store_id
+    is_my_org_tag = org_id and old_tag.get("org_id") == org_id
+
+    if not (is_my_tag or (is_admin and (is_my_store_tag or is_my_org_tag))):
+        raise HTTPException(status_code=403, detail="You don't have permission to edit this tag")
+
     old_name = old_tag["name"]
     new_name = tag_data.get("name", old_name).strip()
-    
-    # Update tag
+    new_scope = tag_data.get("scope", old_tag.get("scope", "personal"))
+
+    # Build update dict
     update_dict = {
         "name": new_name,
         "color": tag_data.get("color", old_tag.get("color")),
         "icon": tag_data.get("icon", old_tag.get("icon")),
+        "scope": new_scope,
         "updated_at": datetime.utcnow(),
     }
-    
-    await db.tags.update_one(
-        {"_id": ObjectId(tag_id)},
-        {"$set": update_dict}
-    )
-    
-    # If name changed, update all contacts with this tag
+
+    # Handle scope changes — update ownership fields
+    if new_scope == "org" and org_id and is_admin:
+        update_dict["org_id"] = org_id
+        update_dict["store_id"] = store_id
+        update_dict["status"] = "approved"
+    elif new_scope in ("account", "store") and store_id and is_admin:
+        update_dict["store_id"] = store_id
+        update_dict["status"] = "approved"
+        # Remove org_id if moving down
+        await db.tags.update_one({"_id": ObjectId(tag_id)}, {"$unset": {"org_id": ""}})
+    else:
+        # Personal — keep user_id, clear store/org scope
+        update_dict["user_id"] = user_id
+        update_dict["status"] = "approved"
+        await db.tags.update_one({"_id": ObjectId(tag_id)}, {"$unset": {"org_id": "", "store_id": ""}})
+
+    await db.tags.update_one({"_id": ObjectId(tag_id)}, {"$set": update_dict})
+
+    # If name changed, update all contacts that had the old tag name
     if old_name != new_name:
-        if org_id:
-            org_users = await db.users.find({"org_id": org_id}, {"_id": 1}).limit(500).to_list(500)
-            org_user_ids = [str(u["_id"]) for u in org_users]
-            await db.contacts.update_many(
-                {"user_id": {"$in": org_user_ids}, "tags": old_name},
-                {"$set": {"tags.$": new_name}}
-            )
-        else:
-            await db.contacts.update_many(
-                {"user_id": user_id, "tags": old_name},
-                {"$set": {"tags.$": new_name}}
-            )
-    
-    # Return updated tag
+        scope_user_ids = [user_id]
+        if store_id:
+            store_users = await db.users.find({"store_id": store_id}, {"_id": 1}).limit(500).to_list(500)
+            scope_user_ids = list({str(u["_id"]) for u in store_users} | {user_id})
+        await db.contacts.update_many(
+            {"user_id": {"$in": scope_user_ids}, "tags": old_name},
+            {"$set": {"tags.$": new_name}}
+        )
+
     tag = await db.tags.find_one({"_id": ObjectId(tag_id)})
     tag["_id"] = str(tag["_id"])
-    tag["contact_count"] = 0  # Will be calculated by frontend
-    
+    tag["contact_count"] = 0
     return tag
 
 
 @router.delete("/{user_id}/{tag_id}")
 async def delete_tag(user_id: str, tag_id: str, remove_from_contacts: bool = True):
-    """Delete a tag (org admins only for org tags)"""
+    """Delete a tag"""
     db = get_db()
-    
+
     org_id, store_id, role, is_admin = await get_tag_scope(user_id)
-    
-    if org_id:
-        if not is_admin:
-            raise HTTPException(status_code=403, detail="Only admins can delete tags")
-        
-        tag = await db.tags.find_one({"_id": ObjectId(tag_id), "org_id": org_id})
-    else:
-        tag = await db.tags.find_one({"_id": ObjectId(tag_id), "user_id": user_id})
-    
+
+    # Find tag by ID alone — don't filter by scope
+    try:
+        tag = await db.tags.find_one({"_id": ObjectId(tag_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid tag ID")
+
     if not tag:
         raise HTTPException(status_code=404, detail="Tag not found")
+
+    # Permission: owner can delete personal tag; admin can delete store/org tags
+    tag_owner = tag.get("user_id") or tag.get("created_by")
+    is_my_tag = tag_owner == user_id
+    is_my_store_tag = store_id and tag.get("store_id") == store_id
+    is_my_org_tag = org_id and tag.get("org_id") == org_id
+
+    if not (is_my_tag or (is_admin and (is_my_store_tag or is_my_org_tag))):
+        raise HTTPException(status_code=403, detail="You don't have permission to delete this tag")
     
     tag_name = tag["name"]
     
