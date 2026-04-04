@@ -554,5 +554,5 @@ async def api_export_contacts(auth: dict = Depends(verify_api_key), format: str 
         user_ids = [str(u["_id"]) for u in users]
         query["$or"] = [{"user_id": {"$in": user_ids}}, {"store_id": {"$in": store_ids}}]
     
-    contacts = await db.contacts.find(query, {"photo": 0}).to_list(10000)
+    contacts = await db.contacts.find(query, {"photo": 0}).limit(2000).to_list(2000)
     return {"contacts": serialize(contacts), "total": len(contacts), "exported_at": datetime.utcnow().isoformat()}

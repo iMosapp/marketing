@@ -1,3 +1,4 @@
+import { ScreenErrorBoundary } from '../../components/ScreenErrorBoundary';
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
@@ -350,7 +351,7 @@ function ContactActionModal({
 }
 
 // ─── Main Home Screen ─────────────────────────────────────────────
-export default function HomeScreen() {
+function HomeScreen() {
   const { colors, themeMode, toggle: toggleTheme } = useThemeStore();
   const styles = getStyles(colors);
   const router = useRouter();
@@ -1024,3 +1025,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   keypadKeyText: { fontSize: 28, fontWeight: '500' },
   dialBtn: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', alignSelf: 'center' },
 });
+
+export default function HomeScreenWithBoundary(props: any) {
+  return <ScreenErrorBoundary screenName="Home"><HomeScreen {...props} /></ScreenErrorBoundary>;
+}

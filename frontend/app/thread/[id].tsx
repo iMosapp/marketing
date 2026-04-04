@@ -1,3 +1,4 @@
+import { ScreenErrorBoundary } from '../../components/ScreenErrorBoundary';
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
@@ -119,7 +120,7 @@ interface Template {
   category?: string;
 }
 
-export default function ThreadScreen() {
+function ThreadScreen() {
   const router = useRouter();
   const { id, contact_name, contact_phone, contact_email, contact_photo: paramPhoto, mode, prefill, event_type: paramEventType } = useLocalSearchParams();
   const user = useAuthStore((state) => state.user);
@@ -4451,3 +4452,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.textPrimary,
   },
 });
+
+export default function ThreadScreenWithBoundary(props: any) {
+  return <ScreenErrorBoundary screenName="Inbox Thread"><ThreadScreen {...props} /></ScreenErrorBoundary>;
+}

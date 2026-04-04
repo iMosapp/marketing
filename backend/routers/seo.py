@@ -81,7 +81,7 @@ async def sitemap_xml(request: Request):
     users = await db.users.find(
         {"is_active": True, "status": {"$ne": "deleted"}},
         {"_id": 1, "username": 1, "name": 1, "seo_slug": 1, "updated_at": 1, "created_at": 1}
-    ).to_list(10000)
+    ).limit(500).to_list(500)
     
     for u in users:
         uid = str(u["_id"])
@@ -119,7 +119,7 @@ async def sitemap_xml(request: Request):
     stores = await db.stores.find(
         {"is_active": {"$ne": False}},
         {"_id": 1, "slug": 1, "name": 1, "updated_at": 1}
-    ).to_list(5000)
+    ).limit(500).to_list(500)
     
     for s in stores:
         slug = s.get("slug") or _slug(s.get("name", ""))
@@ -406,7 +406,7 @@ async def generate_user_slugs():
     users = await db.users.find(
         {"is_active": True, "$or": [{"seo_slug": {"$exists": False}}, {"seo_slug": ""}]},
         {"_id": 1, "name": 1, "store_id": 1}
-    ).to_list(10000)
+    ).limit(500).to_list(500)
     
     updated = 0
     for u in users:

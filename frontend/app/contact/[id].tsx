@@ -44,6 +44,8 @@ import {
 import { EVENT_TYPE_LABELS, getEventLabel } from '../../utils/eventTypes';
 import PersonalIntelSection from '../../components/PersonalIntelSection';
 import ChannelPicker, { useChannelPicker } from '../../components/ChannelPicker';
+import { ContactProvider } from '../../components/contact/ContactContext';
+import { ScreenErrorBoundary } from '../../components/ScreenErrorBoundary';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -88,7 +90,7 @@ interface ContactStats {
 }
 
 
-export default function ContactDetailScreen() {
+function ContactDetailScreen() {
   const { colors } = useThemeStore();
   const s = getS(colors);
   const { width: screenWidth } = useWindowDimensions();
@@ -2028,7 +2030,24 @@ export default function ContactDetailScreen() {
   const timeLabel = getTimeInSystemLabel(stats.created_at);
 
   // ===== RENDER (existing contact) =====
+  // Build context value — components extracted in future phases consume this
+  const contextValue = {
+    contact, setContact, contactId: id as string, userId: user?._id || '',
+    isEditing, setIsEditing, loading, saving, colors,
+    events, setEvents, stats, eventsLoading,
+    expandedEvents, setExpandedEvents, showAllEvents, setShowAllEvents,
+    feedSearch, setFeedSearch, collapsedDateGroups, setCollapsedDateGroups,
+    allPhotos, setAllPhotos, showPhotoViewer, setShowPhotoViewer,
+    selectedPhotoIndex, setSelectedPhotoIndex,
+    addTagFromHero: (tag: string) => setContact({ ...contact, tags: [...(contact.tags || []), tag] }),
+    removeTag: (tag: string) => setContact({ ...contact, tags: (contact.tags || []).filter((t: string) => t !== tag) }),
+    loadingCampaigns, selectedCampaign, setSelectedCampaign,
+    composerMessage, setComposerMessage, composerMode, setComposerMode,
+    reloadEvents: loadEvents,
+  };
+
   return (
+    <ContactProvider value={contextValue as any}>
     <SafeAreaView style={[s.container, { backgroundColor: colors.bg }]} edges={['top']}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         {/* HEADER */}
@@ -4498,6 +4517,11 @@ export default function ContactDetailScreen() {
         workflowResult={soldWorkflowResult}
       />
     </SafeAreaView>
+    </ContactProvider>
   );
 }
 
+
+export default function ContactDetailScreenWithBoundary(props: any) {
+  return <ScreenErrorBoundary screenName="Contact Detail"><ContactDetailScreen {...props} /></ScreenErrorBoundary>;
+}

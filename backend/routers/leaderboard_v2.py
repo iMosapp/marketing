@@ -151,7 +151,7 @@ async def _aggregate_user_scores(user_ids: list, date_filter: dict) -> dict:
         }}
     ]
     cursor = db.contact_events.aggregate(pipeline)
-    results = await cursor.to_list(5000)
+    results = await cursor.to_list(500)
 
     # Build per-user score maps
     scores = {}

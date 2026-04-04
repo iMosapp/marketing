@@ -197,7 +197,7 @@ async def get_scoped_user_ids(user: dict) -> List[str]:
     
     if role == 'super_admin':
         # Super admin sees all users
-        users = await db.users.find({}, {"_id": 1}).to_list(10000)
+        users = await db.users.find({}, {"_id": 1}).to_list(500)
         return [str(u["_id"]) for u in users]
     
     elif role == 'org_admin':
@@ -209,7 +209,7 @@ async def get_scoped_user_ids(user: dict) -> List[str]:
         users = await db.users.find(
             {"organization_id": {"$in": [str(o) for o in valid_oids] + org_ids}},
             {"_id": 1}
-        ).to_list(10000)
+        ).to_list(500)
         user_ids = [str(u["_id"]) for u in users]
         if user_id not in user_ids:
             user_ids.append(user_id)
@@ -226,7 +226,7 @@ async def get_scoped_user_ids(user: dict) -> List[str]:
                 {"store_id": {"$in": store_ids}},
                 {"store_ids": {"$elemMatch": {"$in": store_ids}}}
             ]
-        }, {"_id": 1}).to_list(10000)
+        }, {"_id": 1}).to_list(500)
         
         # Always include self
         user_ids = [str(u["_id"]) for u in users]

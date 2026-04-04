@@ -1,3 +1,4 @@
+import { ScreenErrorBoundary } from '../../components/ScreenErrorBoundary';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Linking, Platform,
@@ -71,7 +72,7 @@ function getDueLabel(task: any) {
   return `Due ${due.toLocaleDateString([], { month: 'short', day: 'numeric' })}`;
 }
 
-export default function TouchpointsScreen() {
+function TouchpointsScreen() {
   const { colors } = useThemeStore();
   const router = useRouter();
   const { period: periodParam } = useLocalSearchParams<{ period?: string }>();
@@ -449,4 +450,8 @@ function TaskCard({ task, colors, onComplete, onSnooze, onCall, onText }: {
       </View>
     </View>
   );
+}
+
+export default function TouchpointsScreenWithBoundary(props: any) {
+  return <ScreenErrorBoundary screenName="Today's Touchpoints"><TouchpointsScreen {...props} /></ScreenErrorBoundary>;
 }

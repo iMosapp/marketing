@@ -1,3 +1,4 @@
+import { ScreenErrorBoundary } from '../../components/ScreenErrorBoundary';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { showAlert } from '../../services/alert';
 import {
@@ -13,7 +14,7 @@ import Toggle from '../../components/Toggle';
 import { useThemeStore } from '../../store/themeStore';
 import api from '../../services/api';
 
-export default function CampaignsScreen() {
+function CampaignsScreen() {
   const { colors } = useThemeStore();
   const s = getStyles(colors);
   const router = useRouter();
@@ -276,3 +277,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   stat:          { flexDirection: 'row', alignItems: 'center', gap: 4 },
   statTxt:       { fontSize: 13, color: colors.textSecondary },
 });
+
+export default function CampaignsScreenWithBoundary(props: any) {
+  return <ScreenErrorBoundary screenName="Campaigns"><CampaignsScreen {...props} /></ScreenErrorBoundary>;
+}

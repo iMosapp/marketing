@@ -55,7 +55,7 @@ async def detect_duplicates(user_id: str):
         {"_id": 1, "first_name": 1, "last_name": 1, "phone": 1, "email": 1,
          "photo_thumbnail": 1, "photo_url": 1, "tags": 1, "created_at": 1,
          "notes": 1, "source": 1}
-    ).to_list(5000)
+    ).to_list(1000)
 
     # Group by normalized phone
     phone_groups = {}

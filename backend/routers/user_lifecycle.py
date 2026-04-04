@@ -199,7 +199,7 @@ async def run_lifecycle_scan(x_user_id: str = Header(None, alias="X-User-ID")):
         "users_processed": 0,
     }
     
-    users = await db.users.find({"status": {"$ne": "deleted"}}).to_list(10000)
+    users = await db.users.find({"status": {"$ne": "deleted"}}).limit(2000).to_list(2000)
     
     for user in users:
         uid = str(user["_id"])

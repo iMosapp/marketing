@@ -829,7 +829,7 @@ async def get_data_stats(
         org_users = await db.users.find(
             {"organization_id": organization_id},
             {"_id": 1}
-        ).to_list(10000)
+        ).to_list(500)
         org_user_ids = [str(u["_id"]) for u in org_users]
     
     # Helper to add org filter to queries
@@ -933,7 +933,7 @@ async def get_congrats_cards(
         org_users = await db.users.find(
             {"organization_id": organization_id},
             {"_id": 1}
-        ).to_list(10000)
+        ).to_list(500)
         user_ids = [str(u["_id"]) for u in org_users]
         query["salesman_id"] = {"$in": user_ids}
     
@@ -998,12 +998,12 @@ async def get_recent_activity(
         org_users = await db.users.find(
             {"organization_id": organization_id},
             {"_id": 1, "name": 1}
-        ).to_list(10000)
+        ).to_list(500)
         org_user_ids = [str(u["_id"]) for u in org_users]
         user_map = {str(u["_id"]): u.get("name", "User") for u in org_users}
     else:
         # Get all users for name mapping
-        all_users = await db.users.find({}, {"_id": 1, "name": 1}).to_list(10000)
+        all_users = await db.users.find({}, {"_id": 1, "name": 1}).limit(2000).to_list(2000)
         user_map = {str(u["_id"]): u.get("name", "User") for u in all_users}
     
     # Get recent messages with templates
@@ -1254,12 +1254,12 @@ async def get_billing_summary(
         org_users = await db.users.find(
             {"organization_id": organization_id},
             {"_id": 1}
-        ).to_list(10000)
+        ).to_list(500)
         org_user_ids = [str(u["_id"]) for u in org_users]
         payment_query["user_id"] = {"$in": org_user_ids}
     
     # Fetch all paid transactions
-    transactions = await db.payment_transactions.find(payment_query).to_list(10000)
+    transactions = await db.payment_transactions.find(payment_query).sort("created_at", -1).limit(1000).to_list(1000)
     
     # Calculate totals
     total_revenue = sum(t.get("amount", 0) for t in transactions)
@@ -1335,7 +1335,7 @@ async def get_billing_transactions(
         org_users = await db.users.find(
             {"organization_id": organization_id},
             {"_id": 1}
-        ).to_list(10000)
+        ).to_list(500)
         org_user_ids = [str(u["_id"]) for u in org_users]
         query["user_id"] = {"$in": org_user_ids}
     
@@ -1391,7 +1391,7 @@ async def get_mrr_metrics():
     active_users = await db.users.find({
         "is_active": True,
         "subscription_status": {"$in": ["active", "trialing"]}
-    }).to_list(10000)
+    }).limit(2000).to_list(2000)
     
     # Calculate MRR based on subscription types
     mrr = 0
