@@ -1001,6 +1001,50 @@ async def redirect_short_url(short_code: str, request: Request):
     safe_title = og_title.replace('"', '&quot;').replace("'", '&#39;')
     safe_desc = og_description.replace('"', '&quot;').replace("'", '&#39;')
 
+    # JSON-LD schema for AEO (Answer Engine Optimization) — makes AI search tools
+    # (ChatGPT, Perplexity, Google AI) recognize the salesperson and their business.
+    # Only inject for business card and review links (person + business attribution).
+    json_ld_block = ""
+    if link_type in ("business_card", "review_request") or "/card/" in original_url or "/p/" in original_url:
+        try:
+            # Try to fetch salesperson info for schema
+            sp_user = None
+            sp_store = None
+            if user_id:
+                sp_user = await db.users.find_one({"_id": ObjectId(user_id)}, {"name": 1, "title": 1, "phone": 1, "email": 1, "seo_slug": 1, "store_id": 1})
+                if sp_user and sp_user.get("store_id"):
+                    sp_store = await db.stores.find_one({"_id": ObjectId(str(sp_user["store_id"]))}, {"name": 1, "phone": 1, "address": 1, "city": 1, "state": 1, "zip_code": 1})
+
+            import json as _json
+            person_schema: dict = {
+                "@context": "https://schema.org",
+                "@type": "Person",
+                "name": (sp_user or {}).get("name", og_title.replace("'s Digital Card", "").replace("'s Business Card", "").strip()),
+                "jobTitle": (sp_user or {}).get("title", ""),
+                "telephone": (sp_user or {}).get("phone", ""),
+                "email": (sp_user or {}).get("email", ""),
+                "url": redirect_url,
+                "image": og_image or "",
+            }
+            if sp_store:
+                person_schema["worksFor"] = {
+                    "@type": "AutoDealer",
+                    "name": sp_store.get("name", ""),
+                    "telephone": sp_store.get("phone", ""),
+                    "address": {
+                        "@type": "PostalAddress",
+                        "streetAddress": sp_store.get("address", ""),
+                        "addressLocality": sp_store.get("city", ""),
+                        "addressRegion": sp_store.get("state", ""),
+                        "postalCode": sp_store.get("zip_code", ""),
+                    }
+                }
+            # Remove empty fields
+            person_schema = {k: v for k, v in person_schema.items() if v}
+            json_ld_block = f'<script type="application/ld+json">{_json.dumps(person_schema)}</script>'
+        except Exception:
+            pass
+
     html = f"""<!DOCTYPE html>
 <html><head>
 <meta charset="utf-8" />
@@ -1013,6 +1057,7 @@ async def redirect_short_url(short_code: str, request: Request):
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="{safe_title}" />
 <meta name="twitter:description" content="{safe_desc}" />
+{json_ld_block}
 <style>
 body{{margin:0;font-family:-apple-system,system-ui,sans-serif;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center}}
 .wrap{{padding:24px}}

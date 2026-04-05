@@ -111,6 +111,15 @@ export default function PublicLandingPage() {
       setError(null);
       const response = await api.get(`/p/data/${userId}`);
       setData(response.data);
+      // Track visit for SEO health score
+      api.post('/seo/track-visit', {
+        page_type: 'landing',
+        reference_id: userId,
+        utm_source: typeof document !== 'undefined' ? (new URLSearchParams(window.location.search).get('utm_source') || 'direct') : 'direct',
+        utm_medium: typeof document !== 'undefined' ? (new URLSearchParams(window.location.search).get('utm_medium') || '') : '',
+        referrer: typeof document !== 'undefined' ? document.referrer : '',
+        user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+      }).catch(() => {});
     } catch (err: any) {
       setError('Unable to load profile');
       console.error('Error loading landing page:', err);

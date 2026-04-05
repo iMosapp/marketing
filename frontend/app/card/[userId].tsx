@@ -182,6 +182,16 @@ export default function DigitalCardPage() {
       const cidParam = cid ? `?cid=${cid}` : '';
       const response = await api.get(`/card/data/${userId}${cidParam}`);
       setCardData(response.data);
+      // Track visit for SEO health score — fire & forget, never block the page
+      api.post('/seo/track-visit', {
+        page_type: 'card',
+        reference_id: userId,
+        utm_source: typeof document !== 'undefined' ? (new URLSearchParams(window.location.search).get('utm_source') || 'direct') : 'direct',
+        utm_medium: typeof document !== 'undefined' ? (new URLSearchParams(window.location.search).get('utm_medium') || '') : '',
+        utm_campaign: typeof document !== 'undefined' ? (new URLSearchParams(window.location.search).get('utm_campaign') || '') : '',
+        referrer: typeof document !== 'undefined' ? document.referrer : '',
+        user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+      }).catch(() => {});
     } catch (error) {
       console.error('Error loading card:', error);
     } finally {
