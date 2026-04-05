@@ -1251,3 +1251,7 @@ backend/.env.local
 *.env
 *.env.*
 memory/test_credentials.md
+-e 
+# Environment files
+*.env
+*.env.*
