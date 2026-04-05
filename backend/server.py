@@ -516,12 +516,19 @@ async def patch_user_profile(user_id: str, data: dict):
 
 
 # ============= ACTIVITY FEED ENDPOINT =============
+_activity_cache: dict = {}   # {user_id: (expires_ts, data)}
+_ACTIVITY_TTL = 30           # seconds
+
 @api_router.get("/activity/{user_id}")
 async def get_activity_feed(user_id: str, limit: int = 20):
     """
-    Get team activity feed based on user's role.
-    Shows recent actions by accessible team members, including contact events.
+    Get team activity feed based on user's role. Cached 30s to prevent thundering herd.
     """
+    import time as _time
+    cached = _activity_cache.get(user_id)
+    if cached and _time.monotonic() < cached[0]:
+        return cached[1]
+
     from routers.database import get_data_filter, get_user_by_id
     
     db = get_db()
@@ -694,11 +701,14 @@ async def get_activity_feed(user_id: str, limit: int = 20):
         elif ts:
             a['timestamp'] = str(ts)
     
-    return {
+    result = {
         "activities": activities[:limit],
         "user_role": user.get('role', 'user'),
         "total": len(activities)
     }
+    import time as _time
+    _activity_cache[user_id] = (_time.monotonic() + _ACTIVITY_TTL, result)
+    return result
 
 # ============= STRIPE WEBHOOK ENDPOINT =============
 
@@ -863,6 +873,8 @@ async def startup_event():
                     db.campaign_enrollments.create_index([("contact_id", 1)]),
                     db.campaign_enrollments.create_index([("user_id", 1), ("status", 1), ("next_send_at", 1)]),
                     db.campaign_pending_sends.create_index([("user_id", 1), ("status", 1)]),
+                    # Compound index for catchup query: (user_id, status, send_at) — prevents collection scan
+                    db.campaign_pending_sends.create_index([("user_id", 1), ("status", 1), ("send_at", 1)]),
                     db.campaign_pending_sends.create_index([("campaign_id", 1), ("contact_id", 1), ("step", 1), ("status", 1)]),
                     # Tasks
                     db.tasks.create_index([("user_id", 1), ("status", 1), ("due_date", 1)]),

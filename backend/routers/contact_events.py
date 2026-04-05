@@ -8,9 +8,13 @@ from bson import ObjectId
 from datetime import datetime, timezone
 from typing import Optional
 import logging
+import time as _time
 
 from routers.database import get_db
 from utils.event_types import get_event_label
+
+_master_feed_cache: dict = {}   # {user_id: (expires_ts, data)}
+_MASTER_FEED_TTL = 20           # seconds
 
 def _ts_iso(dt) -> str:
     """Convert a datetime to ISO string with UTC indicator for correct browser parsing."""
@@ -94,9 +98,14 @@ KEY_ACTIONS = [
 @router.get("/{user_id}/master-feed")
 async def get_master_feed(user_id: str, limit: int = 25, skip: int = 0):
     """
-    Aggregate a social-media-style feed across ALL contacts for a user.
+    Aggregate a social-media-style feed across ALL contacts for a user. Cached 20s.
     Returns recent events. Campaign/suggested data loads separately via dedicated endpoints.
     """
+    cache_key = f"{user_id}:{limit}:{skip}"
+    cached = _master_feed_cache.get(cache_key)
+    if cached and _time.monotonic() < cached[0]:
+        return cached[1]
+
     db = get_db()
     # Hard cap — 50 per page allows scrolling back weeks without overloading the server
     limit = min(limit, 50)
@@ -197,13 +206,15 @@ async def get_master_feed(user_id: str, limit: int = 25, skip: int = 0):
             "channel": evt.get("channel"),
         })
 
-    return {
+    result = {
         "feed": feed_items,
         "upcoming": [],
         "suggested": [],
         "total_events": len(feed_items),
         "has_more": len(feed_items) == limit,
     }
+    _master_feed_cache[cache_key] = (_time.monotonic() + _MASTER_FEED_TTL, result)
+    return result
 
 
 @router.get("/{user_id}/{contact_id}/action-progress")

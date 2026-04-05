@@ -247,9 +247,11 @@ async def get_tasks(user_id: str, filter: str = "today", limit: int = 50, skip: 
     """
     db = get_db()
 
-    # Catch-up: create tasks for overdue campaign steps when viewing today's tasks
+    # Catch-up: fire in background — DON'T await this or it blocks the response for 5-30s
+    # Tasks already in DB return instantly; newly due tasks appear on next refresh (seconds later)
+    import asyncio as _asyncio
     if filter in ("today", "overdue"):
-        await _catchup_overdue_campaign_tasks(user_id)
+        _asyncio.create_task(_catchup_overdue_campaign_tasks(user_id))
 
     today_start, today_end = await get_user_day_bounds(user_id, "today")
     now = datetime.now(timezone.utc)
