@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /card/
+Allow: /p/
+Allow: /showcase/
+Allow: /review/
+Allow: /l/
+
+Disallow: /admin/
+Disallow: /api/
+Disallow: /settings/
+Disallow: /campaigns/
+Disallow: /contacts/
+Disallow: /touchpoints/
+Disallow: /thread/
+
+Sitemap: https://app.imonsocial.com/sitemap.xml

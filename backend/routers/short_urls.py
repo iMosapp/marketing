@@ -803,11 +803,25 @@ async def redirect_short_url(short_code: str, request: Request):
     else:
         cid = doc_metadata.get("contact_id") or doc.get("reference_id")
 
-    # Build the redirect URL with contact_id for tracking
+    # Build the redirect URL with contact_id for tracking + UTM params for SEO attribution
     redirect_url = original_url
+    # Add contact attribution
     if cid and f"cid={cid}" not in redirect_url:
         separator = "&" if "?" in redirect_url else "?"
         redirect_url = f"{redirect_url}{separator}cid={cid}"
+    # Add UTM parameters from metadata (campaign, send, etc.)
+    doc_meta = doc.get("metadata") or {}
+    utm_source = doc_meta.get("utm_source", "")
+    utm_medium = doc_meta.get("utm_medium", "")
+    utm_campaign = doc_meta.get("utm_campaign", "")
+    if utm_source and "utm_source" not in redirect_url:
+        sep = "&" if "?" in redirect_url else "?"
+        utm_str = f"utm_source={utm_source}"
+        if utm_medium:
+            utm_str += f"&utm_medium={utm_medium}"
+        if utm_campaign:
+            utm_str += f"&utm_campaign={utm_campaign}"
+        redirect_url = f"{redirect_url}{sep}{utm_str}"
 
     # Always serve HTML with OG meta tags + JS redirect.
     # This ensures link previewers (iMessage, Facebook, etc.) get rich previews
@@ -1001,49 +1015,83 @@ async def redirect_short_url(short_code: str, request: Request):
     safe_title = og_title.replace('"', '&quot;').replace("'", '&#39;')
     safe_desc = og_description.replace('"', '&quot;').replace("'", '&#39;')
 
-    # JSON-LD schema for AEO (Answer Engine Optimization) — makes AI search tools
-    # (ChatGPT, Perplexity, Google AI) recognize the salesperson and their business.
-    # Only inject for business card and review links (person + business attribution).
+    # JSON-LD schema for AEO — Person + sameAs social links + AggregateRating + AutoDealer website
     json_ld_block = ""
     if link_type in ("business_card", "review_request") or "/card/" in original_url or "/p/" in original_url:
         try:
-            # Try to fetch salesperson info for schema
-            sp_user = None
-            sp_store = None
+            sp_user = sp_store = None
             if user_id:
-                sp_user = await db.users.find_one({"_id": ObjectId(user_id)}, {"name": 1, "title": 1, "phone": 1, "email": 1, "seo_slug": 1, "store_id": 1})
+                sp_user = await db.users.find_one(
+                    {"_id": ObjectId(user_id)},
+                    {"name": 1, "title": 1, "phone": 1, "email": 1, "website": 1, "store_id": 1, "social_links": 1}
+                )
                 if sp_user and sp_user.get("store_id"):
-                    sp_store = await db.stores.find_one({"_id": ObjectId(str(sp_user["store_id"]))}, {"name": 1, "phone": 1, "address": 1, "city": 1, "state": 1, "zip_code": 1})
+                    sp_store = await db.stores.find_one(
+                        {"_id": ObjectId(str(sp_user["store_id"]))},
+                        {"name": 1, "phone": 1, "address": 1, "city": 1, "state": 1, "zip_code": 1, "website": 1, "social_links": 1}
+                    )
+
+            # sameAs — social profiles tell AI "this is the same person across platforms"
+            platform_base = {"linkedin": "https://linkedin.com/in/", "facebook": "https://facebook.com/", "instagram": "https://instagram.com/", "twitter": "https://twitter.com/", "youtube": "https://youtube.com/@", "tiktok": "https://tiktok.com/@"}
+            same_as = []
+            for key, base in platform_base.items():
+                v = ((sp_user or {}).get("social_links") or {}).get(key, "")
+                if v:
+                    same_as.append(v if v.startswith("http") else base + v.lstrip("@"))
+
+            # AggregateRating — creates star ratings in Google search results
+            agg = await db.customer_feedback.aggregate([
+                {"$match": {"salesperson_id": user_id, "approved": True, "rating": {"$gte": 1}}},
+                {"$group": {"_id": None, "count": {"$sum": 1}, "avg": {"$avg": "$rating"}}}
+            ]).to_list(1)
+            review_count = agg[0]["count"] if agg else 0
+            avg_rating = round(agg[0]["avg"], 1) if agg else 0
 
             import json as _json
             person_schema: dict = {
                 "@context": "https://schema.org",
                 "@type": "Person",
-                "name": (sp_user or {}).get("name", og_title.replace("'s Digital Card", "").replace("'s Business Card", "").strip()),
+                "name": (sp_user or {}).get("name", ""),
                 "jobTitle": (sp_user or {}).get("title", ""),
                 "telephone": (sp_user or {}).get("phone", ""),
                 "email": (sp_user or {}).get("email", ""),
-                "url": redirect_url,
+                "url": (sp_user or {}).get("website") or redirect_url,
                 "image": og_image or "",
             }
+            if same_as:
+                person_schema["sameAs"] = same_as
+            if review_count >= 1:
+                person_schema["aggregateRating"] = {
+                    "@type": "AggregateRating",
+                    "ratingValue": str(avg_rating),
+                    "reviewCount": str(review_count),
+                    "bestRating": "5", "worstRating": "1"
+                }
             if sp_store:
-                person_schema["worksFor"] = {
+                dealer: dict = {
                     "@type": "AutoDealer",
                     "name": sp_store.get("name", ""),
                     "telephone": sp_store.get("phone", ""),
-                    "address": {
+                    "address": {k: v for k, v in {
                         "@type": "PostalAddress",
                         "streetAddress": sp_store.get("address", ""),
                         "addressLocality": sp_store.get("city", ""),
                         "addressRegion": sp_store.get("state", ""),
                         "postalCode": sp_store.get("zip_code", ""),
-                    }
+                    }.items() if v}
                 }
-            # Remove empty fields
+                # Store website = backlink citation on every card/review share
+                if sp_store.get("website"):
+                    dealer["url"] = sp_store["website"]
+                store_social_urls = [v for v in ((sp_store.get("social_links") or {}).values()) if v and v.startswith("http")]
+                if store_social_urls:
+                    dealer["sameAs"] = store_social_urls
+                person_schema["worksFor"] = {k: v for k, v in dealer.items() if v}
+
             person_schema = {k: v for k, v in person_schema.items() if v}
-            json_ld_block = f'<script type="application/ld+json">{_json.dumps(person_schema)}</script>'
-        except Exception:
-            pass
+            json_ld_block = f'<script type="application/ld+json">{_json.dumps(person_schema, ensure_ascii=False)}</script>'
+        except Exception as e:
+            logger.warning(f"[Schema] {e}")
 
     html = f"""<!DOCTYPE html>
 <html><head>

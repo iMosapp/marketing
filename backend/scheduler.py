@@ -51,7 +51,11 @@ async def _auto_wrap_urls(media_urls: list, message: str, user_id: str, campaign
             "campaign_id": campaign_id,
             "campaign_name": campaign_name,
             "step": step_num,
-            "source": "auto_wrap",
+            "source": "campaign_sms",
+            # UTM parameters — attached to metadata for SEO traffic attribution
+            "utm_source": "imonsocial",
+            "utm_medium": "sms",
+            "utm_campaign": campaign_name.lower().replace(" ", "_")[:50] if campaign_name else "campaign",
         }
         if contact_id:
             metadata["contact_id"] = contact_id

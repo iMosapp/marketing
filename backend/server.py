@@ -57,6 +57,69 @@ app = FastAPI(title="i'M On Social API", version="2.0", redirect_slashes=False, 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# ============= SITEMAP + ROBOTS =============
+from fastapi.responses import PlainTextResponse
+
+@app.get("/sitemap.xml", response_class=PlainTextResponse)
+async def sitemap():
+    """Dynamic XML sitemap — lists all public salesperson pages and store pages.
+    Google and AI crawlers use this to discover and index every user's presence pages."""
+    from routers.database import get_db as _get_db
+    db = _get_db()
+    base = os.environ.get("APP_URL", "https://app.imonsocial.com").rstrip("/")
+    urls = [
+        f"{base}/",
+        f"{base}/sitemap.xml",
+    ]
+    # All active users' digital card + landing pages
+    async for user in db.users.find(
+        {"status": {"$in": ["active", "trialing"]}},
+        {"_id": 1, "seo_slug": 1}
+    ).limit(10000):
+        uid = str(user["_id"])
+        urls.append(f"{base}/card/{uid}")
+        urls.append(f"{base}/p/{uid}")
+    # All store pages
+    async for store in db.stores.find({}, {"slug": 1}).limit(5000):
+        if store.get("slug"):
+            urls.append(f"{base}/p/store/{store['slug']}")
+            urls.append(f"{base}/showcase/store/{store['slug']}")
+
+    url_entries = "\n".join(
+        f"  <url><loc>{u}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>"
+        for u in urls
+    )
+    xml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{url_entries}
+</urlset>"""
+    return PlainTextResponse(content=xml, media_type="application/xml")
+
+
+@app.get("/robots.txt", response_class=PlainTextResponse)
+async def robots():
+    """robots.txt — let Google crawl all public pages, block private app routes."""
+    base = os.environ.get("APP_URL", "https://app.imonsocial.com").rstrip("/")
+    return PlainTextResponse(content=f"""User-agent: *
+Allow: /card/
+Allow: /p/
+Allow: /showcase/
+Allow: /review/
+Allow: /l/
+
+Disallow: /admin/
+Disallow: /api/
+Disallow: /settings/
+Disallow: /campaigns/
+Disallow: /contacts/
+Disallow: /touchpoints/
+Disallow: /thread/
+
+Sitemap: {base}/sitemap.xml
+""")
+
+
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
