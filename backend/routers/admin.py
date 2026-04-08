@@ -2065,3 +2065,58 @@ async def backfill_default_campaigns(x_user_id: str = Header(alias="X-User-ID"))
             results["errors"] += 1
 
     return results
+
+@router.post("/backfill-card-templates")
+async def backfill_card_templates(x_user_id: str = Header(alias="X-User-ID")):
+    """Update ALL stores' card templates with Forest's natural message library.
+    Safe to run multiple times — upserts by (store_id, card_type)."""
+    caller = await get_user_by_id(x_user_id)
+    if not caller or caller.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super admin only")
+
+    NEW_TEMPLATES = {
+        "congrats":           ("Congratulations!",        "Congratulations again! I'm really excited for you and appreciate the opportunity to be part of it.",                             "#C9A962"),
+        "birthday":           ("Happy Birthday!",          "Happy Birthday! Hope you have an awesome day and get spoiled a little.",                                                        "#FF2D55"),
+        "holiday":            ("Happy Holidays!",          "Wishing you and your family a great holiday season. Hope it's filled with good food, good people, and a little time to relax.", "#5AC8FA"),
+        "thankyou":           ("Thank You!",               "Just wanted to say thank you again. I really appreciate the opportunity to help you.",                                          "#34C759"),
+        "anniversary":        ("Happy Anniversary!",       "Happy Anniversary! Hard to believe it's already been a year. Hope everything has been great.",                                  "#FF6B6B"),
+        "welcome":            ("Welcome!",                 "Welcome aboard! I'm excited to work with you and look forward to helping however I can.",                                      "#007AFF"),
+        "nice_meeting_you":   ("Great Meeting You!",       "Great meeting you today. I enjoyed the conversation and look forward to staying in touch.",                                    "#AF52DE"),
+        "check_this_out":     ("Check This Out!",          "I saw this and thought of you. Take a look when you get a second.",                                                            "#FF9500"),
+        "look_at_this_trade": ("Look at This!",            "This one just came in and I thought you might want to see it before everyone else does.",                                     "#FF3B30"),
+        "before":             ("Before Shot!",             "Here's the before shot. Just wait until you see the finished result.",                                                         "#8E8E93"),
+        "after":              ("Finished Result!",         "Here's the finished result. What do you think?",                                                                               "#34C759"),
+        "monthly_special":    ("Monthly Special!",         "Here's what we've got going on this month. Let me know if anything catches your eye.",                                         "#C9A962"),
+        "you_did_it":         ("You Did It!",              "You did it! Congrats, that's a big accomplishment and well deserved.",                                                         "#FFD60A"),
+        "nice_to_meet_you":   ("Nice to Meet You!",        "It was really nice meeting you. Looking forward to staying connected.",                                                        "#007AFF"),
+        "key_west":           ("Greetings from Key West!", "Greetings from Key West! Thought I'd send a little sunshine your way.",                                                       "#00C7BE"),
+    }
+    db = get_db()
+    store_ids = await db.congrats_templates.distinct("store_id")
+    # Also get all stores that might not have templates yet
+    async for store in db.stores.find({}, {"_id": 1}):
+        sid = str(store["_id"])
+        if sid not in store_ids:
+            store_ids.append(sid)
+
+    updated = inserted = 0
+    now = datetime.utcnow()
+    for store_id in store_ids:
+        for card_type, (headline, message, color) in NEW_TEMPLATES.items():
+            existing = await db.congrats_templates.find_one({"store_id": store_id, "card_type": card_type})
+            if existing:
+                await db.congrats_templates.update_one(
+                    {"_id": existing["_id"]},
+                    {"$set": {"name": headline, "headline": headline, "message": message, "accent_color": color, "updated_at": now}}
+                )
+                updated += 1
+            else:
+                await db.congrats_templates.insert_one({
+                    "store_id": store_id, "card_type": card_type, "name": headline,
+                    "headline": headline, "message": message, "accent_color": color,
+                    "is_default": True, "background_color": "#1A1A1A",
+                    "text_color": "#FFFFFF", "created_at": now, "updated_at": now,
+                })
+                inserted += 1
+
+    return {"success": True, "stores": len(store_ids), "updated": updated, "inserted": inserted}
