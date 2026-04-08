@@ -91,50 +91,23 @@ def _sync_upload_bytes(image_bytes: bytes, prefix: str, entity_id: str):
     gc.collect()
     return {"original_path": original_path, "thumbnail_path": thumb_path, "avatar_path": avatar_path}
 
-# ===== Card Type Defaults =====
+# ===== Card Type Defaults — Forest Ward's natural, conversational library =====
 CARD_TYPE_DEFAULTS = {
-    "congrats": {
-        "headline": "Congratulations!",
-        "message": "Thank you for choosing us, {customer_name}! We truly appreciate your business.",
-        "accent_color": "#C9A962",
-        "background_color": "#1A1A1A",
-        "text_color": "#FFFFFF",
-    },
-    "birthday": {
-        "headline": "Happy Birthday!",
-        "message": "Wishing you the happiest of birthdays, {customer_name}!",
-        "accent_color": "#FF2D55",
-        "background_color": "#1A1A1A",
-        "text_color": "#FFFFFF",
-    },
-    "anniversary": {
-        "headline": "Happy Anniversary!",
-        "message": "Celebrating this special milestone with you, {customer_name}!",
-        "accent_color": "#FF6B6B",
-        "background_color": "#1A1A1A",
-        "text_color": "#FFFFFF",
-    },
-    "thankyou": {
-        "headline": "Thank You!",
-        "message": "We truly appreciate your loyalty and trust, {customer_name}!",
-        "accent_color": "#34C759",
-        "background_color": "#1A1A1A",
-        "text_color": "#FFFFFF",
-    },
-    "welcome": {
-        "headline": "Welcome!",
-        "message": "We're so excited to have you, {customer_name}! Welcome to the family.",
-        "accent_color": "#007AFF",
-        "background_color": "#1A1A1A",
-        "text_color": "#FFFFFF",
-    },
-    "holiday": {
-        "headline": "Happy Holidays!",
-        "message": "Warm wishes this holiday season, {customer_name}! Thank you for being part of our family.",
-        "accent_color": "#5AC8FA",
-        "background_color": "#1A1A1A",
-        "text_color": "#FFFFFF",
-    },
+    "congrats":           {"headline": "Congratulations!",        "message": "Congratulations again! I'm really excited for you and appreciate the opportunity to be part of it.",                             "accent_color": "#C9A962", "background_color": "#1A1A1A", "text_color": "#FFFFFF"},
+    "birthday":           {"headline": "Happy Birthday!",          "message": "Happy Birthday! Hope you have an awesome day and get spoiled a little.",                                                        "accent_color": "#FF2D55", "background_color": "#1A1A1A", "text_color": "#FFFFFF"},
+    "anniversary":        {"headline": "Happy Anniversary!",       "message": "Happy Anniversary! Hard to believe it's already been a year. Hope everything has been great.",                                  "accent_color": "#FF6B6B", "background_color": "#1A1A1A", "text_color": "#FFFFFF"},
+    "thankyou":           {"headline": "Thank You!",               "message": "Just wanted to say thank you again. I really appreciate the opportunity to help you.",                                          "accent_color": "#34C759", "background_color": "#1A1A1A", "text_color": "#FFFFFF"},
+    "welcome":            {"headline": "Welcome!",                 "message": "Welcome aboard! I'm excited to work with you and look forward to helping however I can.",                                      "accent_color": "#007AFF", "background_color": "#1A1A1A", "text_color": "#FFFFFF"},
+    "holiday":            {"headline": "Happy Holidays!",          "message": "Wishing you and your family a great holiday season. Hope it's filled with good food, good people, and a little time to relax.", "accent_color": "#5AC8FA", "background_color": "#1A1A1A", "text_color": "#FFFFFF"},
+    "nice_meeting_you":   {"headline": "Great Meeting You!",       "message": "Great meeting you today. I enjoyed the conversation and look forward to staying in touch.",                                    "accent_color": "#AF52DE", "background_color": "#1A1A1A", "text_color": "#FFFFFF"},
+    "check_this_out":     {"headline": "Check This Out!",          "message": "I saw this and thought of you. Take a look when you get a second.",                                                            "accent_color": "#FF9500", "background_color": "#1A1A1A", "text_color": "#FFFFFF"},
+    "look_at_this_trade": {"headline": "Look at This!",            "message": "This one just came in and I thought you might want to see it before everyone else does.",                                     "accent_color": "#FF3B30", "background_color": "#1A1A1A", "text_color": "#FFFFFF"},
+    "before":             {"headline": "Before Shot!",             "message": "Here's the before shot. Just wait until you see the finished result.",                                                         "accent_color": "#8E8E93", "background_color": "#1A1A1A", "text_color": "#FFFFFF"},
+    "after":              {"headline": "Finished Result!",         "message": "Here's the finished result. What do you think?",                                                                               "accent_color": "#34C759", "background_color": "#1A1A1A", "text_color": "#FFFFFF"},
+    "monthly_special":    {"headline": "Monthly Special!",         "message": "Here's what we've got going on this month. Let me know if anything catches your eye.",                                         "accent_color": "#C9A962", "background_color": "#1A1A1A", "text_color": "#FFFFFF"},
+    "you_did_it":         {"headline": "You Did It!",              "message": "You did it! Congrats, that's a big accomplishment and well deserved.",                                                         "accent_color": "#FFD60A", "background_color": "#1A1A1A", "text_color": "#FFFFFF"},
+    "nice_to_meet_you":   {"headline": "Nice to Meet You!",        "message": "It was really nice meeting you. Looking forward to staying connected.",                                                        "accent_color": "#007AFF", "background_color": "#1A1A1A", "text_color": "#FFFFFF"},
+    "key_west":           {"headline": "Greetings from Key West!", "message": "Greetings from Key West! Thought I'd send a little sunshine your way.",                                                       "accent_color": "#00C7BE", "background_color": "#1A1A1A", "text_color": "#FFFFFF"},
 }
 
 
