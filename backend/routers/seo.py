@@ -706,27 +706,44 @@ async def seo_analytics(user_id: str):
 
 @router.get("/health-score/{user_id}")
 async def seo_health_score(user_id: str, skip_cache: bool = False):
-    """Calculate a comprehensive SEO/AEO health score (0-100) for a user."""
-    # Validate user_id format
+    """Calculate a comprehensive SEO/AEO health score (0-100) for a user.
+    
+    Returns cached result immediately if available (5-min TTL).
+    On cache miss: returns a lightweight placeholder and computes in background.
+    This prevents the expensive 6-query computation from blocking the home page load.
+    """
     if not user_id or user_id in ("undefined", "null", "None") or len(user_id) != 24:
         return {"error": "Invalid user ID"}
 
-    # Check cache first
     now = time.time()
-    if not skip_cache and user_id in _score_cache:
-        return _score_cache[user_id]["data"]  # TTLCache handles expiry automatically
 
+    # Cache hit — instant return
+    if not skip_cache and user_id in _score_cache:
+        return _score_cache[user_id]["data"]
+
+    # Cache miss — return a lightweight placeholder immediately and compute in background.
+    # The home page shows a "Calculating..." state until the next poll (which hits the cache).
+    import asyncio as _asyncio
+    _asyncio.create_task(_compute_and_cache_score(user_id, now))
+
+    # Return a minimal "pending" response — home page handles this gracefully
+    return {
+        "total_score": 0,
+        "grade": "Calculating...",
+        "factors": {},
+        "tips": [],
+        "computing": True,
+    }
+
+
+async def _compute_and_cache_score(user_id: str, now: float) -> None:
+    """Background task: compute SEO score and cache it. Never blocks the caller."""
     try:
         result = await _compute_health_score(user_id)
+        if "error" not in result:
+            _score_cache[user_id] = {"data": result, "ts": now}
     except Exception as e:
-        logger.error(f"[SEO] Health score error for {user_id}: {e}")
-        return {"error": "Failed to compute score"}
-
-    # Cache the result
-    if "error" not in result:
-        _score_cache[user_id] = {"data": result, "ts": now}
-
-    return result
+        logger.warning(f"[SEO] Background score compute failed for {user_id}: {e}")
 
 
 async def _compute_health_score(user_id: str) -> dict:
