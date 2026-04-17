@@ -6,6 +6,7 @@ Test suite for notification system fixes:
 4. Task notifications use 'completed' field not 'status'
 5. All notification types have proper links
 """
+import os
 import pytest
 import requests
 import os
@@ -26,7 +27,7 @@ def admin_user(api_client):
     """Login as super admin"""
     response = api_client.post(f"{BASE_URL}/api/auth/login", json={
         "email": "forest@imosapp.com",
-        "password": "Admin123!"
+        "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
     })
     assert response.status_code == 200, f"Login failed: {response.text}"
     data = response.json()

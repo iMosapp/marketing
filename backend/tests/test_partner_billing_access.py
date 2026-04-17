@@ -17,7 +17,7 @@ import os
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test credentials from review_request
-SUPER_ADMIN_ID = "69a0b7095fddcede09591667"  # forest@imosapp.com / Admin123!
+SUPER_ADMIN_ID = "69a0b7095fddcede09591667"  # forest@imosapp.com / (env: TEST_ADMIN_PASS)
 PARTNER_ADMIN_ID = "69ba8350116fd5b3ad1691ba"  # admin@calendarsystems.com / CalSys123!
 CALENDAR_SYSTEMS_PARTNER_ID = "69a10678b8e991776ed5df19"
 CALENDAR_SYSTEMS_HQ_ORG_ID = "69ba8350116fd5b3ad1691b9"

@@ -6,6 +6,7 @@ Tests:
 - After mark-sent, journey shows step as 'sent' with sent_at timestamp
 - Legacy data cross-reference with task/pending_send status
 """
+import os
 import pytest
 import requests
 import os
@@ -22,7 +23,7 @@ class TestCampaignJourneyMarkSent:
         # Login as super admin
         self.login_response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "forest@imosapp.com",
-            "password": "Admin123!"
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         })
         assert self.login_response.status_code == 200, f"Login failed: {self.login_response.text}"
         user_data = self.login_response.json()['user']

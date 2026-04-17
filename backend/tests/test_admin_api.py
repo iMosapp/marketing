@@ -14,7 +14,7 @@ if BASE_URL and not BASE_URL.startswith('http'):
 
 # Test credentials
 TEST_EMAIL = "forest@imonsocial.com"
-TEST_PASSWORD = "Admin123!"
+TEST_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 
 
 class TestAdminHealth:

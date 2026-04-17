@@ -11,6 +11,7 @@ Features tested:
 5. Legacy /api/birthday/* routes - should return 404 (removed)
 6. POST /api/images/migrate-all-base64 - image migration for super admin
 """
+import os
 import pytest
 import requests
 import os
@@ -19,7 +20,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test credentials
 TEST_EMAIL = "forest@imosapp.com"
-TEST_PASSWORD = "Admin123!"
+TEST_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 
 
 class TestUnifiedCardSystem:

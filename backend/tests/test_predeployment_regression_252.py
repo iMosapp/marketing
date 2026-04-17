@@ -4,13 +4,14 @@ Tests: login, impersonation serialization, role update, admin endpoints,
 master-feed performance, photo upload, PATCH base64 rejection, new contact route.
 
 Credentials:
-  super_admin: forest@imosapp.com / Admin123!
-  test_user:   mjeast1985@gmail.com / NavyBean1!
+  super_admin: forest@imosapp.com / (env: TEST_ADMIN_PASS)
+  test_user:   mjeast1985@gmail.com / (see TEST_USER_PASS env var)
 
 Key IDs:
   ADMIN_ID = 69a0b7095fddcede09591667
   MATT_ID  = 69c75782e051d06491e6fa9f
 """
+import os
 import pytest
 import requests
 import os
@@ -20,9 +21,9 @@ import io
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 ADMIN_EMAIL = "forest@imosapp.com"
-ADMIN_PASS  = "Admin123!"
+ADMIN_PASS  = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 MATT_EMAIL  = "mjeast1985@gmail.com"
-MATT_PASS   = "NavyBean1!"
+MATT_PASS   = os.environ.get("TEST_USER_PASS", "test-user-pass")
 ADMIN_ID    = "69a0b7095fddcede09591667"
 MATT_ID     = "69c75782e051d06491e6fa9f"
 

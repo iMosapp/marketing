@@ -16,6 +16,7 @@ Also verifies:
 - Snoozed tasks disappear from today's list until snooze period ends
 - Today's Touchpoints does NOT show future 6-month or 1-year campaign steps
 """
+import os
 import pytest
 import requests
 import os
@@ -26,7 +27,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test credentials
 ADMIN_EMAIL = "forest@imosapp.com"
-ADMIN_PASSWORD = "Admin123!"
+ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 
 
 def login():

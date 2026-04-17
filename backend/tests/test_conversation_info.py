@@ -20,7 +20,7 @@ class TestConversationInfo:
         # Login to get auth token
         login_response = self.session.post(
             f"{BASE_URL}/api/auth/login",
-            json={"email": "forest@imonsocial.com", "password": "Admin123!"}
+            json={"email": "forest@imonsocial.com", "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")}
         )
         assert login_response.status_code == 200, f"Login failed: {login_response.text}"
         
@@ -112,7 +112,7 @@ class TestCongratsCardAPI:
         # Login
         login_response = self.session.post(
             f"{BASE_URL}/api/auth/login",
-            json={"email": "forest@imonsocial.com", "password": "Admin123!"}
+            json={"email": "forest@imonsocial.com", "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")}
         )
         assert login_response.status_code == 200
         

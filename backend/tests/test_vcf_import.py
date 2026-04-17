@@ -10,6 +10,7 @@ Covers:
 - Duplicate detection for VCF imports
 - ownership_type='personal' for imported contacts
 """
+import os
 import pytest
 import requests
 import os
@@ -19,7 +20,7 @@ import tempfile
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL').rstrip('/')
 TEST_USER_ID = "69a0b7095fddcede09591667"
 AUTH_EMAIL = "forest@imosapp.com"
-AUTH_PASSWORD = "Admin123!"
+AUTH_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 
 # Sample VCF test files
 VCF_SINGLE_CONTACT = """BEGIN:VCARD

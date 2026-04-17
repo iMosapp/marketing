@@ -9,6 +9,7 @@ Features:
 - POST /api/ai-outreach/suggestions/{record_id}/dismiss - Dismiss a suggestion
 - Login with timezone parameter stores timezone on user
 """
+import os
 import pytest
 import requests
 import os
@@ -18,7 +19,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 # Test credentials from the context
 TEST_USER_ID = "69a0b7095fddcede09591667"
 TEST_USER_EMAIL = "forest@imosapp.com"
-TEST_USER_PASSWORD = "Admin123!"
+TEST_USER_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 TEST_CONTACT_ID = "69a1dbb4320d732f90069652"  # Jane Doe - has pending suggestion
 
 

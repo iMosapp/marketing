@@ -11,6 +11,7 @@ This test verifies:
 3. Contact events are logged appropriately
 """
 
+import os
 import pytest
 import requests
 import os
@@ -19,7 +20,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://user-routing-issue.p
 
 # Test credentials
 TEST_EMAIL = "forest@imonsocial.com"
-TEST_PASSWORD = "Admin123!"
+TEST_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 
 
 @pytest.fixture(scope="module")

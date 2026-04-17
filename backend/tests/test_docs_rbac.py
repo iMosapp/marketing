@@ -10,7 +10,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Super admin credentials
 SUPER_ADMIN_EMAIL = "forest@imonsocial.com"
-SUPER_ADMIN_PASSWORD = "Admin123!"
+SUPER_ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 
 
 class TestDocsRoleBasedAccess:

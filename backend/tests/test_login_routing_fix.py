@@ -20,7 +20,7 @@ class TestLoginRoutingFix:
         """Matt (onboarding_complete: null) should login successfully"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "mjeast1985@gmail.com",
-            "password": "NavyBean1!"
+            "password": os.environ.get("TEST_USER_PASS", "test-user-pass")
         })
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
         data = response.json()
@@ -31,7 +31,7 @@ class TestLoginRoutingFix:
         """Matt's user record must have onboarding_complete: null (not False)"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "mjeast1985@gmail.com",
-            "password": "NavyBean1!"
+            "password": os.environ.get("TEST_USER_PASS", "test-user-pass")
         })
         assert response.status_code == 200, f"Login failed: {response.text}"
         data = response.json()
@@ -48,7 +48,7 @@ class TestLoginRoutingFix:
         """Matt should have no store_id"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "mjeast1985@gmail.com",
-            "password": "NavyBean1!"
+            "password": os.environ.get("TEST_USER_PASS", "test-user-pass")
         })
         assert response.status_code == 200
         data = response.json()
@@ -60,7 +60,7 @@ class TestLoginRoutingFix:
         """Matt should have no org_id / organization_id"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "mjeast1985@gmail.com",
-            "password": "NavyBean1!"
+            "password": os.environ.get("TEST_USER_PASS", "test-user-pass")
         })
         assert response.status_code == 200
         data = response.json()
@@ -72,7 +72,7 @@ class TestLoginRoutingFix:
         """Matt's account should be active"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "mjeast1985@gmail.com",
-            "password": "NavyBean1!"
+            "password": os.environ.get("TEST_USER_PASS", "test-user-pass")
         })
         assert response.status_code == 200
         data = response.json()
@@ -84,7 +84,7 @@ class TestLoginRoutingFix:
         """Admin (forest@imosapp.com) should login successfully"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "forest@imosapp.com",
-            "password": "Admin123!"
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         })
         assert response.status_code == 200, f"Admin login failed: {response.status_code}: {response.text}"
         data = response.json()
@@ -98,7 +98,7 @@ class TestLoginRoutingFix:
         """Admin should not be redirected to onboarding either"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "forest@imosapp.com",
-            "password": "Admin123!"
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         })
         assert response.status_code == 200
         data = response.json()
@@ -149,7 +149,7 @@ class TestLoginRoutingFix:
         """Test the /auth/test-login diagnostics endpoint for Matt"""
         response = requests.post(f"{BASE_URL}/api/auth/test-login", json={
             "email": "mjeast1985@gmail.com",
-            "password": "NavyBean1!"
+            "password": os.environ.get("TEST_USER_PASS", "test-user-pass")
         })
         assert response.status_code == 200
         data = response.json()
@@ -168,7 +168,7 @@ class TestLoginRoutingFix:
         """
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "mjeast1985@gmail.com",
-            "password": "NavyBean1!"
+            "password": os.environ.get("TEST_USER_PASS", "test-user-pass")
         })
         assert response.status_code == 200
         data = response.json()

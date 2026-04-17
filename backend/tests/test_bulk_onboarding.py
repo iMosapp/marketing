@@ -8,6 +8,7 @@ This tests the new features:
 4. PUT /api/profile/{user_id} saves title, bio, social links, onboarding_complete
 5. POST /api/auth/change-password changes password correctly
 """
+import os
 import pytest
 import requests
 import os
@@ -17,7 +18,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Admin credentials for testing
 ADMIN_EMAIL = "forest@imosapp.com"
-ADMIN_PASSWORD = "Admin123!"
+ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 ADMIN_USER_ID = "69a0b7095fddcede09591667"
 
 

@@ -7,6 +7,7 @@ Tests:
 4. Admin approve endpoint changes user status to 'active'
 5. Store detail page API returns store with users
 """
+import os
 import pytest
 import requests
 import os
@@ -44,7 +45,7 @@ class TestIndependentSignupFlow:
             "email": unique_email,
             "phone": f"+1555{uuid.uuid4().hex[:7]}",
             "name": "TEST_Independent User",
-            "password": "TestPassword123!",
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass"),
             "role": "Sales Rep",
             "account_type": "independent"  # Explicitly set
         }
@@ -72,7 +73,7 @@ class TestIndependentSignupFlow:
             "email": unique_email,
             "phone": f"+1555{uuid.uuid4().hex[:7]}",
             "name": "TEST_NoOrg User",
-            "password": "TestPassword123!",
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass"),
             "role": "Sales Rep"
             # No organization_id or account_type
         }
@@ -115,7 +116,7 @@ class TestOrganizationSignupFlow:
             "email": unique_email,
             "phone": f"+1555{uuid.uuid4().hex[:7]}",
             "name": "TEST_Org User",
-            "password": "TestPassword123!",
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass"),
             "role": "Sales Rep",
             "organization_id": TEST_ORG_ID
         }
@@ -167,7 +168,7 @@ class TestPendingUsersCount:
             "email": unique_email,
             "phone": f"+1555{uuid.uuid4().hex[:7]}",
             "name": "TEST_Count User",
-            "password": "TestPassword123!",
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass"),
             "role": "Sales Rep",
             "organization_id": TEST_ORG_ID
         }
@@ -197,7 +198,7 @@ class TestPendingUsersCount:
             "email": unique_email,
             "phone": f"+1555{uuid.uuid4().hex[:7]}",
             "name": "TEST_IndCount User",
-            "password": "TestPassword123!",
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass"),
             "role": "Sales Rep",
             "account_type": "independent"
         }
@@ -238,7 +239,7 @@ class TestAdminApproveFlow:
             "email": unique_email,
             "phone": f"+1555{uuid.uuid4().hex[:7]}",
             "name": "TEST_Approve User",
-            "password": "TestPassword123!",
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass"),
             "role": "Store Manager",
             "organization_id": TEST_ORG_ID
         }
@@ -292,7 +293,7 @@ class TestAdminApproveFlow:
             "email": unique_email,
             "phone": f"+1555{uuid.uuid4().hex[:7]}",
             "name": "TEST_ApproveStore User",
-            "password": "TestPassword123!",
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass"),
             "role": "Sales Rep",
             "organization_id": TEST_ORG_ID
         }
@@ -408,7 +409,7 @@ class TestLoginWithPendingStatus:
     def test_pending_user_can_login(self):
         """Test that pending users can login and get their status"""
         unique_email = f"testlogin_{uuid.uuid4().hex[:8]}@example.com"
-        password = "TestPassword123!"
+        password = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         
         # Create a pending user
         signup_data = {

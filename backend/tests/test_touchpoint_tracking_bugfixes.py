@@ -10,7 +10,7 @@ This test validates the following critical bug fixes:
 6. Summary endpoint 'cards' does NOT count customer view events like 'congrats_card_viewed'
 7. Summary endpoint 'cards' counts events with '_card_sent' or 'card_shared'
 
-Test Credentials: forest@imosapp.com / Admin123! (user_id: 69a0b7095fddcede09591667)
+Test Credentials: forest@imosapp.com / (env: TEST_ADMIN_PASS) (user_id: 69a0b7095fddcede09591667)
 """
 
 import pytest

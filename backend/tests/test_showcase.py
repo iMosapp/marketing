@@ -12,7 +12,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 TEST_USER_ID = "69a0b7095fddcede09591667"
 TEST_CREDENTIALS = {
     "email": "forest@imonsocial.com",
-    "password": "Admin123!"
+    "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 }
 
 

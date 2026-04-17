@@ -6,6 +6,7 @@ Tests:
 3. Scheduler AI toggle fix - respects campaign ai_enabled=false
 4. Scheduler hourly delay fix - no randomization for hourly campaigns
 """
+import os
 import pytest
 import requests
 import os
@@ -21,7 +22,7 @@ class TestCampaignJourneyAPI:
         """Login and get user credentials"""
         login_response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "forest@imosapp.com",
-            "password": "Admin123!"
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         })
         assert login_response.status_code == 200, f"Login failed: {login_response.text}"
         login_data = login_response.json()
@@ -141,7 +142,7 @@ class TestSchedulerAIToggleFix:
         """Login and setup"""
         login_response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "forest@imosapp.com",
-            "password": "Admin123!"
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         })
         login_data = login_response.json()
         self.user = login_data.get("user", login_data)
@@ -226,7 +227,7 @@ class TestCampaignJourneyComponentIntegration:
     def setup(self):
         login_response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "forest@imosapp.com",
-            "password": "Admin123!"
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         })
         self.user = login_response.json()
         self.user_id = self.user.get("_id") or self.user.get("id")

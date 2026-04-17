@@ -8,6 +8,7 @@ Tests the fixes for:
 5. Activity feed shows correct names (no Unknown entries)
 6. Card lookup works with card_id and ObjectId fallback
 """
+import os
 import pytest
 import requests
 import os
@@ -17,7 +18,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test credentials from review request
 SUPER_ADMIN_EMAIL = "forest@imosapp.com"
-SUPER_ADMIN_PASSWORD = "Admin123!"
+SUPER_ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 USER_ID = "69a0b7095fddcede09591667"
 VALID_CONTACT_ID = "69a0c06f7626f14d125f8c34"
 TEST_CARD_ID = "a37ec720-548"

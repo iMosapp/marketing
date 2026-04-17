@@ -15,6 +15,7 @@ Key Tests:
 2. POST /api/messages/send WITH event_type → should keep explicit type
 3. Summary/performance endpoints should count personal_sms as texts
 """
+import os
 import pytest
 import requests
 import os
@@ -27,7 +28,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 USER_ID = "69a0b7095fddcede09591667"
 CONTACT_ID = "69a496841603573df5a41723"
 TEST_EMAIL = "forest@imosapp.com"
-TEST_PASSWORD = "Admin123!"
+TEST_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 
 
 class TestSMSEventTypeAttribution:

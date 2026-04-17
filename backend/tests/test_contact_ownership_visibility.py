@@ -13,6 +13,7 @@ Business rules being tested:
 5. Users cannot override ownership_type (even if 'personal' is sent for manual, it becomes 'org')
 """
 
+import os
 import pytest
 import requests
 import os
@@ -22,7 +23,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test credentials
 SUPER_ADMIN_EMAIL = "forest@imosapp.com"
-SUPER_ADMIN_PASSWORD = "Admin123!"
+SUPER_ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 
 
 class TestContactOwnershipVisibility:

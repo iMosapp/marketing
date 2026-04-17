@@ -11,6 +11,7 @@ Tests:
 4. PATCH /api/users/{user_id} with non-photo fields should NOT clear photo_path
 5. GET /api/users/{user_id} should return updated data after PATCH
 """
+import os
 import pytest
 import requests
 import os
@@ -20,7 +21,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test credentials
 TEST_USER_EMAIL = "forest@imosapp.com"
-TEST_USER_PASSWORD = "Admin123!"
+TEST_USER_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 TEST_USER_ID = "69a0b7095fddcede09591667"
 
 

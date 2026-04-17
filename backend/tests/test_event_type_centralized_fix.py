@@ -16,6 +16,7 @@ Key tests:
 - Anniversary card short URL -> anniversary_card_sent
 - Congrats card short URL -> congrats_card_sent (control case)
 """
+import os
 import pytest
 import requests
 import os
@@ -37,7 +38,7 @@ class TestCentralizedEventTypeModule:
         # Login
         login_resp = self.session.post(f"{BASE_URL}/api/auth/login", json={
             "email": "forest@imosapp.com",
-            "password": "Admin123!"
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         })
         assert login_resp.status_code == 200, f"Login failed: {login_resp.text}"
         user_data = login_resp.json()
@@ -376,7 +377,7 @@ class TestAllLinkTypesStoreCorrectly:
         
         login_resp = self.session.post(f"{BASE_URL}/api/auth/login", json={
             "email": "forest@imosapp.com",
-            "password": "Admin123!"
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         })
         assert login_resp.status_code == 200
         user_data = login_resp.json()

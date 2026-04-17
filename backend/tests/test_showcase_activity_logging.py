@@ -8,6 +8,7 @@ Tests for:
 - POST /api/p/review/{userId} logging 'review_submitted' event
 - GET /api/contacts/{userId}/{contactId}/events returning customer_activity events
 """
+import os
 import pytest
 import requests
 import os
@@ -21,7 +22,7 @@ TEST_USER_ID = "69a0b7095fddcede09591667"
 TEST_FEEDBACK_ID = "69a5ae2679b133dd270cfc90"  # jimmy's approved review with photo
 TEST_CREDENTIALS = {
     "email": "forest@imonsocial.com",
-    "password": "Admin123!"
+    "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 }
 
 

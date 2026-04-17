@@ -16,7 +16,7 @@ class TestMessagesPhotoData:
         # Login as admin to get a user_id
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "forest@imonsocial.com",
-            "password": "Admin123!"
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         })
         assert response.status_code == 200, f"Login failed: {response.text}"
         self.user_data = response.json()
@@ -71,7 +71,7 @@ class TestLeadSourcesPhotoData:
         """Login and get user context"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "forest@imonsocial.com",
-            "password": "Admin123!"
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         })
         assert response.status_code == 200
         self.user_data = response.json()
@@ -135,7 +135,7 @@ class TestLeaderboardPhotoData:
         """Login and get user context"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "forest@imonsocial.com",
-            "password": "Admin123!"
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         })
         assert response.status_code == 200
         self.user_data = response.json()
@@ -193,7 +193,7 @@ class TestAdminUsersPhotoData:
         """Login as admin"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "forest@imonsocial.com",
-            "password": "Admin123!"
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         })
         assert response.status_code == 200
         self.user_data = response.json()
@@ -250,7 +250,7 @@ class TestContactsPhotoData:
         """Login and get user context"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "forest@imonsocial.com",
-            "password": "Admin123!"
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         })
         assert response.status_code == 200
         self.user_data = response.json()

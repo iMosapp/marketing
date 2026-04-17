@@ -15,7 +15,7 @@ class TestLogin:
         """POST /api/auth/login with super admin credentials"""
         response = requests.post(f"{BASE_URL}/api/auth/login", json={
             "email": "forest@imosapp.com",
-            "password": "Admin123!"
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         })
         assert response.status_code == 200
         data = response.json()

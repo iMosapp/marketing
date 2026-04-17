@@ -11,7 +11,7 @@ from datetime import datetime
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 SUPER_ADMIN_EMAIL = "forest@imosapp.com"
-SUPER_ADMIN_PASSWORD = "Admin123!"
+SUPER_ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 
 # Test user prefix for cleanup
 TEST_PREFIX = "TEST_SEED_"

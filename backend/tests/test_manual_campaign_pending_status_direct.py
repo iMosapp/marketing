@@ -18,6 +18,7 @@ Endpoints tested:
 - PATCH /api/tasks/{user_id}/{task_id} - Complete task
 """
 
+import os
 import pytest
 import requests
 import os
@@ -37,7 +38,7 @@ DB_NAME = "imos-admin-test_database"
 
 # Test credentials
 TEST_EMAIL = "forest@imosapp.com"
-TEST_PASSWORD = "Admin123!"
+TEST_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 
 
 def get_event_loop():

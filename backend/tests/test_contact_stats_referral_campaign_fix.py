@@ -15,6 +15,7 @@ Tests verify:
 - Referral count dynamically counts contacts where referred_by matches contact_id
 - All expected stats fields are returned
 """
+import os
 import pytest
 import requests
 import os
@@ -39,7 +40,7 @@ class TestContactStatsBugFix:
         # Login with provided credentials
         login_resp = api_client.post(f"{BASE_URL}/api/auth/login", json={
             "email": "forest@imosapp.com",
-            "password": "Admin123!"
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         })
         
         if login_resp.status_code == 200:
@@ -291,7 +292,7 @@ class TestContactStatsIntegrationWithFrontend:
         # Login first
         login_resp = api_client.post(f"{BASE_URL}/api/auth/login", json={
             "email": "forest@imosapp.com",
-            "password": "Admin123!"
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         })
         
         if login_resp.status_code != 200:

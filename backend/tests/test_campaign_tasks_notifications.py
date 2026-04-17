@@ -8,6 +8,7 @@ Tests the NEW feature: when manual campaign steps fire, they must create:
 
 Also tests date triggers creating tasks + notifications with type='date_trigger'.
 """
+import os
 import pytest
 import requests
 import os
@@ -523,7 +524,7 @@ class TestDateTriggerTasksNotifications:
         # Login as super admin to access date triggers
         login_resp = self.session.post(f"{BASE_URL}/api/auth/login", json={
             "email": "forest@imosapp.com",
-            "password": "Admin123!"
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         })
         
         if login_resp.status_code != 200:

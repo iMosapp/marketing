@@ -10,7 +10,7 @@ import uuid
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://user-routing-issue.preview.emergentagent.com')
 
 # Test credentials
-SUPER_ADMIN_USER_ID = "69a0b7095fddcede09591667"  # forest@imosapp.com / Admin123!
+SUPER_ADMIN_USER_ID = "69a0b7095fddcede09591667"  # forest@imosapp.com / (env: TEST_ADMIN_PASS)
 
 # Common headers for authenticated requests
 AUTH_HEADERS = {

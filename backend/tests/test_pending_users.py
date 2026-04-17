@@ -8,6 +8,7 @@ Tests:
 - PUT /api/admin/pending-users/{id}/reject - Reject pending user  
 - GET /api/admin/stats - Includes pending_users count
 """
+import os
 import pytest
 import requests
 import os
@@ -77,7 +78,7 @@ class TestPendingUsersWorkflow:
             "email": unique_email,
             "phone": unique_phone,
             "name": "TEST_Pending User",
-            "password": "TestPassword123!",
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass"),
             "role": "Sales Rep",  # Requested role
         }
         if org_id:
@@ -157,7 +158,7 @@ class TestPendingUsersWorkflow:
             "email": unique_email,
             "phone": unique_phone,
             "name": "TEST_ToApprove User",
-            "password": "TestPassword123!",
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass"),
             "role": "Store Manager",
         }
         if org_id:
@@ -210,7 +211,7 @@ class TestPendingUsersWorkflow:
             "email": unique_email,
             "phone": unique_phone,
             "name": "TEST_ToReject User",
-            "password": "TestPassword123!",
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass"),
             "role": "Sales Rep",
         }
         
@@ -252,7 +253,7 @@ class TestPendingUsersWorkflow:
             "email": unique_email,
             "phone": unique_phone,
             "name": "TEST_DoubleApprove User",
-            "password": "TestPassword123!",
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass"),
             "role": "Sales Rep",
         }
         
@@ -302,7 +303,7 @@ class TestSignupValidation:
             "email": f"test_dup_{unique_suffix}@test.com",
             "phone": f"+1555{uuid.uuid4().hex[:7]}",
             "name": "TEST_Dup User",
-            "password": "TestPassword123!",
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass"),
             "role": "Sales Rep",
         }
         
@@ -335,7 +336,7 @@ class TestSignupValidation:
             "email": f"test_org_{unique_suffix}@test.com",
             "phone": f"+1555{uuid.uuid4().hex[:7]}",
             "name": "TEST_OrgUser",
-            "password": "TestPassword123!",
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass"),
             "role": "Sales Manager",
             "organization_id": org_id,
         }
@@ -377,7 +378,7 @@ class TestPendingUserFiltering:
                 "email": f"test_sort_{i}_{unique_suffix}@test.com",
                 "phone": f"+1555{uuid.uuid4().hex[:7]}",
                 "name": f"TEST_SortUser {i}",
-                "password": "TestPassword123!",
+                "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass"),
                 "role": f"Role {i}",
             }
             response = self.session.post(f"{BASE_URL}/api/auth/signup", json=signup_data)
@@ -417,7 +418,7 @@ class TestPendingUserFiltering:
             "email": f"test_orgname_{unique_suffix}@test.com",
             "phone": f"+1555{uuid.uuid4().hex[:7]}",
             "name": "TEST_OrgNameUser",
-            "password": "TestPassword123!",
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass"),
             "role": "Rep",
             "organization_id": org["_id"],
         }

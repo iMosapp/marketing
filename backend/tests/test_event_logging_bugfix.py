@@ -13,7 +13,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test credentials from problem statement
 USER_EMAIL = "forest@imosapp.com"
-USER_PASSWORD = "Admin123!"
+USER_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 USER_ID = "69a0b7095fddcede09591667"
 TEST_CONTACT_ID = "69a496841603573df5a41723"
 

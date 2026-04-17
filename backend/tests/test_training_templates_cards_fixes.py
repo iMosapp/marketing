@@ -6,6 +6,7 @@ Test suite for bug fixes:
 4. Short URL redirect incrementing click_count
 5. Custom card type saving and retrieval in card templates
 """
+import os
 import pytest
 import requests
 import os
@@ -15,7 +16,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test credentials
 SUPER_ADMIN_EMAIL = "forest@imosapp.com"
-SUPER_ADMIN_PASSWORD = "Admin123!"
+SUPER_ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 USER_ID = "69a0b7095fddcede09591667"
 STORE_ID = "69a0b7095fddcede09591668"
 

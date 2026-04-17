@@ -11,6 +11,7 @@ Tests for:
 - GET /api/crm/export-stats/{user_id} - get CRM export stats
 """
 
+import os
 import pytest
 import requests
 import os
@@ -20,7 +21,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test credentials
 SUPER_ADMIN_EMAIL = "forest@imosapp.com"
-SUPER_ADMIN_PASSWORD = "Admin123!"
+SUPER_ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 KNOWN_STORE_ID = "69a0b7095fddcede09591668"
 KNOWN_TOKEN = "77d3edc3-4f8f-4eea-93c8-0f34456e7628"
 

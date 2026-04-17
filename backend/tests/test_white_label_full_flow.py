@@ -10,6 +10,7 @@ Testing the complete end-to-end partner setup:
 7. Verify sold_required_fields (including full_size_image) persist correctly
 """
 
+import os
 import pytest
 import requests
 import os
@@ -18,7 +19,7 @@ from datetime import datetime
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 SUPER_ADMIN_EMAIL = "forest@imosapp.com"
-SUPER_ADMIN_PASSWORD = "Admin123!"
+SUPER_ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 SUPER_ADMIN_ID = "69a0b7095fddcede09591667"
 
 # Use unique suffixes to avoid conflicts

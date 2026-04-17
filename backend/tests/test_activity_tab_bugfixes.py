@@ -159,7 +159,7 @@ class TestLoginPersistence:
         """Login should return token and user data for AsyncStorage"""
         response = requests.post(
             f"{BASE_URL}/api/auth/login",
-            json={"email": "forest@imosapp.com", "password": "Admin123!"}
+            json={"email": "forest@imosapp.com", "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")}
         )
         
         assert response.status_code == 200, f"Login failed with status {response.status_code}"

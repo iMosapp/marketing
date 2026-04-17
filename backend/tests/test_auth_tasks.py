@@ -50,7 +50,7 @@ class TestAuthFlow:
         test_email = generate_test_email()
         signup_data = {
             "email": test_email,
-            "password": "testpassword123",
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-pass-123"),
             "name": "TEST User",
             "phone": "+15551234567",
             "mode": "solo"
@@ -73,7 +73,7 @@ class TestAuthFlow:
         test_email = generate_test_email()
         signup_data = {
             "email": test_email,
-            "password": "testpassword123",
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-pass-123"),
             "name": "TEST User 1",
             "phone": "+15551234567"
         }
@@ -94,7 +94,7 @@ class TestAuthFlow:
     def test_login_success(self, api_client):
         """Test user login with valid credentials"""
         test_email = generate_test_email()
-        password = "testpassword123"
+        password = os.environ.get("TEST_ADMIN_PASS", "test-pass-123")
         
         # First create the user
         signup_data = {
@@ -150,7 +150,7 @@ class TestForgotPasswordFlow:
         # First create the user
         signup_data = {
             "email": test_email,
-            "password": "oldpassword123",
+            "password": os.environ.get("TEST_OLD_PASS", "test-old-pass"),
             "name": "TEST Reset User",
             "phone": "+15551234569"
         }
@@ -185,7 +185,7 @@ class TestForgotPasswordFlow:
         test_email = generate_test_email()
         signup_data = {
             "email": test_email,
-            "password": "oldpassword123",
+            "password": os.environ.get("TEST_OLD_PASS", "test-old-pass"),
             "name": "TEST Verify Code User",
             "phone": "+15551234570"
         }
@@ -210,7 +210,7 @@ class TestForgotPasswordFlow:
         test_email = generate_test_email()
         signup_data = {
             "email": test_email,
-            "password": "oldpassword123",
+            "password": os.environ.get("TEST_OLD_PASS", "test-old-pass"),
             "name": "TEST Invalid Code User",
             "phone": "+15551234571"
         }
@@ -231,8 +231,8 @@ class TestForgotPasswordFlow:
     def test_full_password_reset_flow(self, api_client):
         """Test complete password reset flow: Request -> Verify -> Reset -> Login"""
         test_email = generate_test_email()
-        old_password = "oldpassword123"
-        new_password = "newpassword456"
+        old_password = os.environ.get("TEST_OLD_PASS", "test-old-pass")
+        new_password = os.environ.get("TEST_NEW_PASS", "test-new-pass")
         
         # Step 1: Create user
         signup_data = {

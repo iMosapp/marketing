@@ -12,8 +12,9 @@ Tests ALL major features across the RMS backend API including:
 9. Tasks/Touchpoints
 10. Authentication
 
-Credentials: forest@imosapp.com / Admin123! (user_id: 69a0b7095fddcede09591667)
+Credentials: forest@imosapp.com / (env: TEST_ADMIN_PASS) (user_id: 69a0b7095fddcede09591667)
 """
+import os
 import pytest
 import requests
 import os
@@ -24,7 +25,7 @@ from datetime import datetime, timezone
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
 USER_ID = "69a0b7095fddcede09591667"
 TEST_EMAIL = "forest@imosapp.com"
-TEST_PASSWORD = "Admin123!"
+TEST_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 
 
 class TestAuthentication:

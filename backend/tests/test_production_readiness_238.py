@@ -2,12 +2,13 @@
 Production Readiness Audit Tests - Iteration 238
 Tests for:
 1. Emergency-reset endpoint REMOVED (should return 404/405)
-2. Login still works with forest@imosapp.com / Admin123!
+2. Login still works with forest@imosapp.com / (env: TEST_ADMIN_PASS)
 3. GET /api/contacts/{user_id} with sort_by=recent and sort_by=alpha
 4. GET /api/contacts/{user_id}?view_mode=team for managers
 5. Contacts search with GET /api/contacts/{user_id}?search=test
 6. Email signature data in brand context (sender_title, sender_phone, sender_email)
 """
+import os
 import pytest
 import requests
 import os
@@ -16,7 +17,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://user-routing-issue.p
 
 # Test credentials
 TEST_EMAIL = "forest@imosapp.com"
-TEST_PASSWORD = "Admin123!"
+TEST_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 TEST_USER_ID = "69a0b7095fddcede09591667"
 
 
@@ -44,7 +45,7 @@ class TestLoginFlow:
     """Verify login still works after security changes"""
     
     def test_login_with_valid_credentials(self):
-        """Login with forest@imosapp.com / Admin123! should succeed"""
+        """Login with forest@imosapp.com / (env: TEST_ADMIN_PASS) should succeed"""
         response = requests.post(
             f"{BASE_URL}/api/auth/login",
             json={"email": TEST_EMAIL, "password": TEST_PASSWORD}

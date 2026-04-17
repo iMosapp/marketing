@@ -9,6 +9,7 @@ Tests:
 5. POST /api/admin/stores with partner_id creates store with partner association
 6. GET /api/admin/stores?organization_id={id} returns stores under an org
 """
+import os
 import pytest
 import requests
 import os
@@ -21,7 +22,7 @@ TEST_PARTNER_ID = "69b9dd5cb27dd76126c289cd"
 CALENDAR_SYSTEMS_PARTNER_ID = "69a10678b8e991776ed5df19"
 TEST_ORG_ID = "69a907033b77512d1d8d8a08"
 SUPER_ADMIN_EMAIL = "forest@imosapp.com"
-SUPER_ADMIN_PASSWORD = "Admin123!"
+SUPER_ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 
 
 class TestPartnersList:

@@ -9,6 +9,7 @@ Fix:
 2. Backend _resolve_event_type_from_content() resolves short URLs by looking up link_type from DB
 3. The old broken behavior (everything with /api/s/ becoming congrats_card_sent) is fixed
 """
+import os
 import pytest
 import requests
 import os
@@ -29,7 +30,7 @@ class TestEventTypeResolution:
         # Login to get user_id
         login_resp = self.session.post(f"{BASE_URL}/api/auth/login", json={
             "email": "forest@imosapp.com",
-            "password": "Admin123!"
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         })
         assert login_resp.status_code == 200, f"Login failed: {login_resp.text}"
         user_data = login_resp.json()
@@ -417,7 +418,7 @@ class TestShortURLLinkTypeLookup:
         
         login_resp = self.session.post(f"{BASE_URL}/api/auth/login", json={
             "email": "forest@imosapp.com",
-            "password": "Admin123!"
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         })
         assert login_resp.status_code == 200
         user_data = login_resp.json()

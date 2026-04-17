@@ -12,6 +12,7 @@ Endpoints tested:
 - POST /api/campaigns/{user_id}/pending-sends/{send_id}/complete
 - POST /api/tags/{user_id}/assign (sold tag triggers AI + campaign enrollment)
 """
+import os
 import pytest
 import requests
 import os
@@ -22,7 +23,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 # Test credentials from context
 TEST_USER_ID = "69a0b7095fddcede09591667"
 TEST_USER_EMAIL = "forest@imosapp.com"
-TEST_USER_PASSWORD = "Admin123!"
+TEST_USER_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 
 # Test contacts
 BUD_CONTACT_ID = "69a496841603573df5a41723"  # Already has Sold tag and enrolled

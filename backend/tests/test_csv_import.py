@@ -8,6 +8,7 @@ Tests for Google Contacts CSV import functionality including:
 - Skip contacts with no phone AND no email
 - Proper tagging (csv-import, source=csv)
 """
+import os
 import pytest
 import requests
 import os
@@ -19,7 +20,7 @@ TEST_CSV_URL = "https://customer-assets.emergentagent.com/job_0e985e85-6651-4df7
 
 # Authentication credentials
 AUTH_EMAIL = "forest@imosapp.com"
-AUTH_PASSWORD = "Admin123!"
+AUTH_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 
 
 @pytest.fixture(scope="module")

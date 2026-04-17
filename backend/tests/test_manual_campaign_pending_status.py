@@ -17,6 +17,7 @@ Endpoints tested:
 - PATCH /api/tasks/{user_id}/{task_id} - Complete task
 """
 
+import os
 import pytest
 import requests
 import os
@@ -26,7 +27,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test credentials
 TEST_EMAIL = "forest@imosapp.com"
-TEST_PASSWORD = "Admin123!"
+TEST_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 
 
 class TestManualCampaignPendingStatus:

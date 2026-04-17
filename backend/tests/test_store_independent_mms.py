@@ -8,6 +8,7 @@ Tests for MVPLine hierarchy system:
 - Pending users count API works correctly
 - MMS media download and storage endpoint
 """
+import os
 import pytest
 import requests
 import os
@@ -247,7 +248,7 @@ class TestIndependentSignup:
             "email": unique_email,
             "phone": unique_phone,
             "name": "TEST_Independent User",
-            "password": "TestPassword123!",
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass"),
             "role": "Sales Rep",
             "account_type": "independent"
             # No organization_id - this makes them independent
@@ -277,7 +278,7 @@ class TestIndependentSignup:
             "email": unique_email,
             "phone": unique_phone,
             "name": "TEST_NoOrg User",
-            "password": "TestPassword123!",
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass"),
             "role": "Sales Rep"
             # No organization_id and no account_type
         }
@@ -320,7 +321,7 @@ class TestOrganizationSignup:
             "email": unique_email,
             "phone": unique_phone,
             "name": "TEST_OrgPending User",
-            "password": "TestPassword123!",
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass"),
             "role": "Sales Rep",
             "organization_id": TEST_ORG_ID,
             "account_type": "organization"
@@ -350,7 +351,7 @@ class TestOrganizationSignup:
             "email": unique_email,
             "phone": unique_phone,
             "name": "TEST_PendingList User",
-            "password": "TestPassword123!",
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass"),
             "role": "Sales Manager",
             "organization_id": TEST_ORG_ID
         }
@@ -414,7 +415,7 @@ class TestPendingUsersCount:
             "email": unique_email,
             "phone": f"+1555{uuid.uuid4().hex[:7]}",
             "name": "TEST_Count User",
-            "password": "TestPassword123!",
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass"),
             "role": "Sales Rep",
             "organization_id": TEST_ORG_ID
         }
@@ -443,7 +444,7 @@ class TestPendingUsersCount:
             "email": unique_email,
             "phone": f"+1555{uuid.uuid4().hex[:7]}",
             "name": "TEST_IndepCount User",
-            "password": "TestPassword123!",
+            "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass"),
             "role": "Sales Rep",
             "account_type": "independent"
         }

@@ -8,6 +8,7 @@ Tests verify:
 - GET /api/s/{short_code} for training_video returns HTML with YouTube OG tags
 - GET /api/congrats/templates/all/{store_id} returns custom card types alongside defaults
 """
+import os
 import pytest
 import requests
 import os
@@ -19,7 +20,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://user-routing-issue.p
 TEST_USER_ID = "69a0b7095fddcede09591667"
 TEST_STORE_ID = "69a0b7095fddcede09591668"
 TEST_EMAIL = "forest@imosapp.com"
-TEST_PASSWORD = "Admin123!"
+TEST_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 
 
 @pytest.fixture(scope="module")

@@ -11,7 +11,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test credentials
 SUPER_ADMIN_EMAIL = "forest@imosapp.com"
-SUPER_ADMIN_PASSWORD = "Admin123!"
+SUPER_ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 PARTNER_ADMIN_EMAIL = "admin@calendarsystems.com"
 PARTNER_ADMIN_PASSWORD = "CalSys123!"
 EXPECTED_PARTNER_ID = "69a10678b8e991776ed5df19"

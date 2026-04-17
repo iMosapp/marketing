@@ -16,7 +16,7 @@ class TestPersonalSMSMode:
     def setup(self):
         """Setup test credentials and get auth token"""
         self.email = "forest@imonsocial.com"
-        self.password = "Admin123!"
+        self.password = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         self.session = requests.Session()
         
         # Login and get user info
@@ -204,7 +204,7 @@ class TestInboxAPI:
     def setup(self):
         """Setup test credentials"""
         self.email = "forest@imonsocial.com"
-        self.password = "Admin123!"
+        self.password = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         self.session = requests.Session()
         
         # Login

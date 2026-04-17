@@ -8,6 +8,7 @@ Test Suite for Messages Send Fix - Verifies the critical bug fix where:
 Test user: forest@imonsocial.com (no mvpline_number = Personal SMS mode)
 Test conversation: 69a15f29957bacd218fed55d
 """
+import os
 import pytest
 import requests
 import os
@@ -22,7 +23,7 @@ class TestMessagesSendFix:
     def setup(self):
         """Setup test credentials and get auth token"""
         self.email = "forest@imonsocial.com"
-        self.password = "Admin123!"
+        self.password = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         self.user_id = "69a0b7095fddcede09591667"
         self.conversation_id = "69a15f29957bacd218fed55d"
         self.session = requests.Session()
@@ -197,7 +198,7 @@ class TestConversationsAndThreadEndpoints:
     def setup(self):
         """Setup test credentials"""
         self.email = "forest@imonsocial.com"
-        self.password = "Admin123!"
+        self.password = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         self.user_id = "69a0b7095fddcede09591667"
         self.conversation_id = "69a15f29957bacd218fed55d"
         self.session = requests.Session()
@@ -274,7 +275,7 @@ class TestContactEvents:
     def setup(self):
         """Setup test credentials"""
         self.email = "forest@imonsocial.com"
-        self.password = "Admin123!"
+        self.password = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
         self.user_id = "69a0b7095fddcede09591667"
         self.conversation_id = "69a15f29957bacd218fed55d"
         self.contact_id = "69a0c06f7626f14d125f8c34"  # Forest Ward contact

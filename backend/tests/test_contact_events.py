@@ -12,7 +12,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 TEST_USER_ID = "69a0b7095fddcede09591667"
 TEST_CONTACT_ID = "69a0c06f7626f14d125f8c34"
 LOGIN_EMAIL = "forest@imonsocial.com"
-LOGIN_PASSWORD = "Admin123!"
+LOGIN_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 
 
 class TestContactEventsAPI:

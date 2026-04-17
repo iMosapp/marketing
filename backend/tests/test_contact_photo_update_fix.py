@@ -9,6 +9,7 @@ Tests that PUT /api/contacts/{user_id}/{contact_id} with a photo:
 6. _process_photo applies EXIF auto-rotation (ImageOps.exif_transpose)
 7. Congrats cards still get full-res photos via /photo/full endpoint
 """
+import os
 import pytest
 import requests
 import os
@@ -19,7 +20,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test credentials
 TEST_EMAIL = "forest@imonsocial.com"
-TEST_PASSWORD = "Admin123!"
+TEST_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 TEST_USER_ID = "69a0b7095fddcede09591667"
 TEST_CONTACT_ID = "69a1354f2c0649ac6fb7f3f1"
 

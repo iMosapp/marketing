@@ -7,6 +7,7 @@ Tests:
 - POST /api/profile/{user_id}/generate-bio - AI bio generation
 - PUT /api/profile/{user_id} with onboarding_complete=true - marks onboarding done
 """
+import os
 import pytest
 import requests
 import os
@@ -21,7 +22,7 @@ TEST_USER_PASSWORD = "DwQR2dUxOt0y"
 
 # Super admin for creating test users
 SUPER_ADMIN_EMAIL = "forest@imosapp.com"
-SUPER_ADMIN_PASSWORD = "Admin123!"
+SUPER_ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 
 
 class TestProfileGetEndpoint:

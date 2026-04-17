@@ -10,6 +10,7 @@ Features tested:
 5. OG meta tags include og:title and og:description
 6. Personalized OG image has actual content (file size > 10KB)
 """
+import os
 import pytest
 import requests
 import os
@@ -22,7 +23,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 # Test credentials from review_request
 TEST_USER_ID = "69a0b7095fddcede09591667"
 SUPER_ADMIN_EMAIL = "forest@imosapp.com"
-SUPER_ADMIN_PASSWORD = "Admin123!"
+SUPER_ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 
 
 class TestOGImageEndpoint:

@@ -10,6 +10,7 @@ Testing the fixes for:
 7. PUT /api/admin/stores/{store_id}/review-links - save review links
 8. GET /api/admin/users/{user_id}/detail - user detail with role/org/stores
 """
+import os
 import pytest
 import requests
 import os
@@ -19,7 +20,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 
 # Test credentials for super admin
 SUPER_ADMIN_EMAIL = "forest@imosapp.com"
-SUPER_ADMIN_PASSWORD = "Admin123!"
+SUPER_ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 
 
 class TestAuth:

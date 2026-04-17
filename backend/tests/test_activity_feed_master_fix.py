@@ -13,6 +13,7 @@ Tests verify:
 4. POST /api/contacts/{user_id}/find-or-create-and-log endpoint still works
 5. GET /api/contacts/{user_id}/{contact_id}/events endpoint still works
 """
+import os
 import pytest
 import requests
 import os
@@ -25,7 +26,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 USER_ID = "69a0b7095fddcede09591667"
 VALID_CONTACT_ID = "69a496841603573df5a41723"
 SUPER_ADMIN_EMAIL = "forest@imosapp.com"
-SUPER_ADMIN_PASSWORD = "Admin123!"
+SUPER_ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 
 @pytest.fixture
 def api_client():
