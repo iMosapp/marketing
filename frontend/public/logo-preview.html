@@ -3,212 +3,176 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Logo Preview — i'M On Social</title>
+<title>Logo Preview — Applied</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { background: #0A0A0F; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 24px; }
   h1 { font-size: 24px; font-weight: 800; margin-bottom: 6px; }
-  .subtitle { font-size: 14px; color: #8E8E93; margin-bottom: 40px; }
-  .notice { background: rgba(201,169,98,.12); border: 1px solid rgba(201,169,98,.3); border-radius: 10px; padding: 14px 18px; font-size: 14px; color: #C9A962; margin-bottom: 40px; line-height: 1.5; }
-  .section { margin-bottom: 48px; }
-  .section-title { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 4px; border-left: 3px solid #C9A962; padding-left: 12px; }
-  .section-desc { font-size: 13px; color: #8E8E93; margin-bottom: 20px; padding-left: 15px; }
-  .row { display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-end; }
+  .subtitle { font-size: 14px; color: #8E8E93; margin-bottom: 32px; }
+  .applied-banner { background: rgba(52,199,89,.12); border: 1px solid rgba(52,199,89,.3); border-radius: 10px; padding: 14px 18px; font-size: 14px; color: #34C759; margin-bottom: 40px; }
+  .section { margin-bottom: 44px; }
+  .section-title { font-size: 17px; font-weight: 700; color: #fff; margin-bottom: 3px; border-left: 3px solid #C9A962; padding-left: 12px; }
+  .section-desc { font-size: 12px; color: #8E8E93; margin-bottom: 16px; padding-left: 15px; }
+  .row { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-end; }
   .item { text-align: center; }
-  .label { font-size: 11px; color: #8E8E93; margin-top: 8px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-  .size-note { font-size: 10px; color: #555; margin-top: 3px; }
-  .icon-tile { display: inline-flex; align-items: center; justify-content: center; background: #ffffff; overflow: hidden; flex-shrink: 0; }
+  .label { font-size: 11px; color: #8E8E93; margin-top: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .size-note { font-size: 10px; color: #555; margin-top: 2px; }
+  .icon-tile { display: inline-flex; align-items: center; justify-content: center; background: #fff; overflow: hidden; }
   .icon-tile img { width: 100%; height: 100%; object-fit: cover; }
   .browser-tab { background: #2C2C2E; border-radius: 8px 8px 0 0; padding: 8px 14px; display: inline-flex; align-items: center; gap: 6px; min-width: 160px; }
-  .browser-tab-favicon { width: 16px; height: 16px; border-radius: 3px; }
-  .browser-tab-title { font-size: 12px; color: #EBEBF5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
-  .phone-screen { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border-radius: 20px; padding: 20px; width: 200px; border: 2px solid #333; }
-  .phone-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .phone-screen { background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460); border-radius: 20px; padding: 18px; width: 196px; border: 2px solid #333; }
+  .phone-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
   .phone-icon { text-align: center; }
   .phone-icon-label { font-size: 9px; color: rgba(255,255,255,.7); margin-top: 3px; }
-  .phone-icon.highlighted .icon-tile { box-shadow: 0 0 0 3px #C9A962, 0 4px 20px rgba(201,169,98,.4); }
-  .navbar { background: #1C1C1E; border-radius: 12px; padding: 10px 20px; display: flex; align-items: center; gap: 10px; width: 360px; border: 1px solid #2C2C2E; }
-  .navbar-brand { font-size: 16px; font-weight: 800; color: #fff; }
-  .navbar-brand span { color: #C9A962; }
-  .divider { height: 1px; background: rgba(255,255,255,.08); margin: 48px 0; }
-  .NEW_LOGO { --src: url('https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/tub3f2qx_8C77C2E4-359D-4B63-B980-8F1A937BDEBD.png'); }
+  .phone-icon.hl .icon-tile { box-shadow: 0 0 0 3px #C9A962, 0 4px 20px rgba(201,169,98,.4); }
+  .divider { height: 1px; background: rgba(255,255,255,.08); margin: 40px 0; }
+  .pill { display: inline-block; background: rgba(52,199,89,.15); border: 1px solid rgba(52,199,89,.3); border-radius: 20px; padding: 3px 10px; font-size: 11px; color: #34C759; font-weight: 700; margin-left: 8px; vertical-align: middle; }
+  .pill-orange { background: rgba(255,149,0,.15); border-color: rgba(255,149,0,.3); color: #FF9500; }
 </style>
 </head>
 <body>
 
-<h1>Logo Preview — i'M On Social</h1>
-<p class="subtitle">Review all contexts before any files are changed</p>
+<h1>Logo — Applied ✓</h1>
+<p class="subtitle">All icon files have been updated. Here's how they look everywhere.</p>
 
-<div class="notice">
-  &#9888; <strong>Preview Only — No files have been modified.</strong> This shows exactly how the new logo looks in every context. Reply <strong>"apply the logo"</strong> to proceed with the changes.<br><br>
-  The rainbow speech bubble "iM" logo sits on the same white tile + rounded corners used today. Only the artwork inside changes. All filenames, sizes, and structure stay identical.
+<div class="applied-banner">
+  ✅ <strong>Files updated:</strong> logo192.png, logo512.png, favicon.ico, favicon.png, android-chrome-192/512.png, apple-touch-icon.png<br>
+  <small style="opacity:.7">Originals backed up to /public/_logo_backup/ — restore any time</small>
 </div>
 
+<!-- PWA / FAVICON — speech bubble only -->
 <div class="section">
-  <div class="section-title">Favicon — Browser Tab</div>
-  <div class="section-desc">16×16 and 32×32 — appears in every browser tab and bookmark</div>
+  <div class="section-title">PWA &amp; Favicon <span class="pill">Speech bubble only — no "On Social" text</span></div>
+  <div class="section-desc">iOS/Android adds "On Social" label automatically — just like your screenshot shows</div>
   <div class="row">
+
+    <div class="item">
+      <div class="phone-screen">
+        <div class="phone-grid">
+          <div class="phone-icon"><div class="icon-tile" style="width:42px;height:42px;border-radius:22%;background:#1C1C1E;"></div></div>
+          <div class="phone-icon"><div class="icon-tile" style="width:42px;height:42px;border-radius:22%;background:#1C1C1E;"></div></div>
+          <div class="phone-icon"><div class="icon-tile" style="width:42px;height:42px;border-radius:22%;background:#1C1C1E;"></div></div>
+          <div class="phone-icon"><div class="icon-tile" style="width:42px;height:42px;border-radius:22%;background:#1C1C1E;"></div></div>
+          <div class="phone-icon"><div class="icon-tile" style="width:42px;height:42px;border-radius:22%;background:#1C1C1E;"></div></div>
+          <div class="phone-icon hl">
+            <div class="icon-tile" style="width:42px;height:42px;border-radius:22%;">
+              <img src="/logo192.png?v=2" onerror="this.src='/new-logo-192.png'" alt="app icon">
+            </div>
+            <div class="phone-icon-label" style="color:#C9A962;font-weight:700">On Social</div>
+          </div>
+          <div class="phone-icon"><div class="icon-tile" style="width:42px;height:42px;border-radius:22%;background:#1C1C1E;"></div></div>
+          <div class="phone-icon"><div class="icon-tile" style="width:42px;height:42px;border-radius:22%;background:#1C1C1E;"></div></div>
+        </div>
+      </div>
+      <div class="label">Home Screen (iOS adds "On Social")</div>
+    </div>
+
+    <div class="item">
+      <div class="icon-tile" style="width:180px;height:180px;border-radius:40px;box-shadow:0 8px 40px rgba(0,0,0,.6)">
+        <img src="/logo512.png?v=2" onerror="this.src='/logo192.png'" alt="512">
+      </div>
+      <div class="label">512×512</div>
+      <div class="size-note">logo512.png</div>
+    </div>
+
     <div class="item">
       <div class="browser-tab">
-        <img class="browser-tab-favicon" src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/tub3f2qx_8C77C2E4-359D-4B63-B980-8F1A937BDEBD.png" alt="fav" style="border-radius:3px;background:#fff;padding:1px;">
-        <span class="browser-tab-title">i'M On Social</span>
+        <img src="/favicon.png?v=2" alt="fav" style="width:16px;height:16px;border-radius:3px;">
+        <span style="font-size:12px;color:#EBEBF5">i'M On Social</span>
       </div>
-      <div style="background:#1C1C1E;border-radius:0 0 8px 8px;padding:6px 10px;width:200px">
-        <div style="background:#2C2C2E;border-radius:6px;padding:4px 10px;font-size:11px;color:#636366">app.imonsocial.com</div>
+      <div style="background:#1C1C1E;border-radius:0 0 8px 8px;padding:5px 10px;width:180px">
+        <div style="background:#2C2C2E;border-radius:5px;padding:4px 10px;font-size:11px;color:#636366">app.imonsocial.com</div>
       </div>
-      <div class="label">Browser Tab</div>
+      <div class="label">Browser Tab Favicon</div>
+    </div>
+
+    <div class="item">
+      <div class="icon-tile" style="width:96px;height:96px;border-radius:21px">
+        <img src="/logo192.png?v=2" alt="96">
+      </div>
+      <div class="label">96px</div>
     </div>
     <div class="item">
-      <div class="icon-tile" style="width:32px;height:32px;border-radius:6px">
-        <img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/tub3f2qx_8C77C2E4-359D-4B63-B980-8F1A937BDEBD.png">
+      <div class="icon-tile" style="width:48px;height:48px;border-radius:11px">
+        <img src="/logo192.png?v=2" alt="48">
+      </div>
+      <div class="label">48px</div>
+    </div>
+    <div class="item">
+      <div class="icon-tile" style="width:32px;height:32px;border-radius:7px">
+        <img src="/favicon.png?v=2" alt="32">
       </div>
       <div class="label">32px</div>
     </div>
     <div class="item">
       <div class="icon-tile" style="width:16px;height:16px;border-radius:3px">
-        <img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/tub3f2qx_8C77C2E4-359D-4B63-B980-8F1A937BDEBD.png">
+        <img src="/favicon-16x16.png?v=2" alt="16">
       </div>
       <div class="label">16px</div>
     </div>
+
   </div>
 </div>
 
 <div class="divider"></div>
 
+<!-- MARKETING — full logo with "On Social" -->
 <div class="section">
-  <div class="section-title">PWA / Home Screen Icon</div>
-  <div class="section-desc">How the app icon looks on iOS and Android home screens</div>
+  <div class="section-title">Marketing Site <span class="pill pill-orange">Full logo with "On Social" text</span></div>
+  <div class="section-desc">imonsocial.com nav header and marketing pages</div>
   <div class="row">
-    <div class="item">
-      <div class="phone-screen">
-        <div class="phone-grid">
-          <div class="phone-icon"><div class="icon-tile" style="width:44px;height:44px;border-radius:22%;background:#1C1C1E;"></div></div>
-          <div class="phone-icon"><div class="icon-tile" style="width:44px;height:44px;border-radius:22%;background:#1C1C1E;"></div></div>
-          <div class="phone-icon"><div class="icon-tile" style="width:44px;height:44px;border-radius:22%;background:#1C1C1E;"></div></div>
-          <div class="phone-icon"><div class="icon-tile" style="width:44px;height:44px;border-radius:22%;background:#1C1C1E;"></div></div>
-          <div class="phone-icon"><div class="icon-tile" style="width:44px;height:44px;border-radius:22%;background:#1C1C1E;"></div></div>
-          <div class="phone-icon highlighted">
-            <div class="icon-tile" style="width:44px;height:44px;border-radius:22%;">
-              <img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/tub3f2qx_8C77C2E4-359D-4B63-B980-8F1A937BDEBD.png">
-            </div>
-            <div class="phone-icon-label" style="color:#C9A962;font-weight:600">i'M On</div>
-          </div>
-          <div class="phone-icon"><div class="icon-tile" style="width:44px;height:44px;border-radius:22%;background:#1C1C1E;"></div></div>
-          <div class="phone-icon"><div class="icon-tile" style="width:44px;height:44px;border-radius:22%;background:#1C1C1E;"></div></div>
-        </div>
-      </div>
-      <div class="label">Phone Home Screen</div>
-    </div>
-    <div class="item">
-      <div class="icon-tile" style="width:180px;height:180px;border-radius:40px;box-shadow:0 8px 40px rgba(0,0,0,.6)">
-        <img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/tub3f2qx_8C77C2E4-359D-4B63-B980-8F1A937BDEBD.png">
-      </div>
-      <div class="label">192×192</div>
-      <div class="size-note">logo192.png</div>
-    </div>
-    <div class="item">
-      <div class="icon-tile" style="width:120px;height:120px;border-radius:27px;box-shadow:0 8px 40px rgba(0,0,0,.6)">
-        <img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/tub3f2qx_8C77C2E4-359D-4B63-B980-8F1A937BDEBD.png">
-      </div>
-      <div class="label">Apple Touch Icon</div>
-      <div class="size-note">apple-touch-icon.png (180px)</div>
-    </div>
-  </div>
-</div>
 
-<div class="divider"></div>
-
-<div class="section">
-  <div class="section-title">In-App — Nav Bar &amp; Login Screen</div>
-  <div class="section-desc">How it appears inside the app at runtime</div>
-  <div style="display:flex;flex-direction:column;gap:20px">
     <div class="item" style="text-align:left">
-      <div class="navbar">
-        <div class="icon-tile" style="width:32px;height:32px;border-radius:8px">
-          <img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/tub3f2qx_8C77C2E4-359D-4B63-B980-8F1A937BDEBD.png">
-        </div>
-        <div class="navbar-brand">i'M <span>On Social</span></div>
-        <div style="flex:1"></div>
-        <div style="width:28px;height:28px;border-radius:50%;background:#333;"></div>
-      </div>
-      <div class="label">Nav Bar (32px)</div>
-    </div>
-    <div class="item">
-      <div style="background:#0A0A0F;border:1px solid #222;border-radius:20px;padding:30px;width:280px;text-align:center">
-        <div class="icon-tile" style="width:80px;height:80px;border-radius:20px;margin:0 auto 16px;box-shadow:0 4px 20px rgba(0,0,0,.5)">
-          <img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/tub3f2qx_8C77C2E4-359D-4B63-B980-8F1A937BDEBD.png">
-        </div>
-        <div style="font-size:20px;font-weight:800;color:#fff;margin-bottom:4px">i'M On Social</div>
-        <div style="font-size:12px;color:#636366;margin-bottom:20px">Sign in to your account</div>
-        <div style="background:#1C1C1E;border-radius:10px;padding:12px;margin-bottom:10px;font-size:13px;color:#636366;text-align:left">Email address</div>
-        <div style="background:#1C1C1E;border-radius:10px;padding:12px;font-size:13px;color:#636366;text-align:left">Password</div>
-      </div>
-      <div class="label">Login Screen</div>
-    </div>
-  </div>
-</div>
-
-<div class="divider"></div>
-
-<div class="section">
-  <div class="section-title">Marketing Site — imonsocial.com</div>
-  <div class="section-desc">Header nav and social share card</div>
-  <div style="display:flex;flex-direction:column;gap:20px">
-    <div>
-      <div style="background:#fff;border-radius:10px;overflow:hidden;max-width:600px">
-        <div style="padding:14px 24px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #f0f0f0">
-          <div class="icon-tile" style="width:36px;height:36px;border-radius:9px">
-            <img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/tub3f2qx_8C77C2E4-359D-4B63-B980-8F1A937BDEBD.png">
-          </div>
+      <div style="background:#fff;border-radius:10px;overflow:hidden;max-width:580px">
+        <div style="padding:13px 22px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #f0f0f0">
+          <img src="/logo-marketing-192.png?v=2" style="width:36px;height:36px;border-radius:9px;background:#fff" alt="nav">
           <span style="font-size:16px;font-weight:800;color:#111">i'M On Social</span>
           <div style="flex:1"></div>
-          <span style="font-size:13px;color:#444;margin-right:16px">Products</span>
-          <span style="font-size:13px;color:#444;margin-right:16px">Solutions</span>
+          <span style="font-size:13px;color:#444;margin-right:14px">Products</span>
+          <span style="font-size:13px;color:#444;margin-right:14px">Solutions</span>
           <span style="font-size:13px;color:#0070f3;font-weight:600">Get Started</span>
         </div>
-        <div style="background:linear-gradient(135deg,#0A0A0F,#1a1a2e);padding:30px 24px;text-align:center">
-          <div style="font-size:24px;font-weight:900;color:#fff;margin-bottom:8px">Relationship CRM built for closers</div>
-          <div style="font-size:13px;color:rgba(255,255,255,.55)">Snap. Tag. Send. Done.</div>
+        <div style="background:linear-gradient(135deg,#0A0A0F,#1a1a2e);padding:28px 22px;text-align:center">
+          <div style="font-size:22px;font-weight:900;color:#fff;margin-bottom:6px">Relationship CRM built for closers</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.5)">Snap. Tag. Send. Done.</div>
         </div>
       </div>
-      <div class="label">Marketing Nav Header</div>
+      <div class="label">Marketing Nav (full logo)</div>
     </div>
+
+    <div class="item">
+      <div class="icon-tile" style="width:140px;height:140px;border-radius:30px;box-shadow:0 8px 40px rgba(0,0,0,.5)">
+        <img src="/logo-marketing-512.png?v=2" alt="marketing">
+      </div>
+      <div class="label">Marketing 512px (with text)</div>
+    </div>
+
   </div>
 </div>
 
 <div class="divider"></div>
 
-<div class="section">
-  <div class="section-title">All Sizes</div>
-  <div class="section-desc">Every icon size shown together on white tile</div>
-  <div class="row" style="align-items:flex-end">
-    <div class="item"><div class="icon-tile" style="width:180px;height:180px;border-radius:40px"><img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/tub3f2qx_8C77C2E4-359D-4B63-B980-8F1A937BDEBD.png"></div><div class="label">512px</div></div>
-    <div class="item"><div class="icon-tile" style="width:96px;height:96px;border-radius:21px"><img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/tub3f2qx_8C77C2E4-359D-4B63-B980-8F1A937BDEBD.png"></div><div class="label">96px</div></div>
-    <div class="item"><div class="icon-tile" style="width:72px;height:72px;border-radius:16px"><img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/tub3f2qx_8C77C2E4-359D-4B63-B980-8F1A937BDEBD.png"></div><div class="label">72px</div></div>
-    <div class="item"><div class="icon-tile" style="width:48px;height:48px;border-radius:11px"><img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/tub3f2qx_8C77C2E4-359D-4B63-B980-8F1A937BDEBD.png"></div><div class="label">48px</div></div>
-    <div class="item"><div class="icon-tile" style="width:36px;height:36px;border-radius:8px"><img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/tub3f2qx_8C77C2E4-359D-4B63-B980-8F1A937BDEBD.png"></div><div class="label">36px</div></div>
-    <div class="item"><div class="icon-tile" style="width:32px;height:32px;border-radius:7px"><img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/tub3f2qx_8C77C2E4-359D-4B63-B980-8F1A937BDEBD.png"></div><div class="label">32px</div></div>
-    <div class="item"><div class="icon-tile" style="width:20px;height:20px;border-radius:4px"><img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/tub3f2qx_8C77C2E4-359D-4B63-B980-8F1A937BDEBD.png"></div><div class="label">20px</div></div>
-    <div class="item"><div class="icon-tile" style="width:16px;height:16px;border-radius:3px"><img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/tub3f2qx_8C77C2E4-359D-4B63-B980-8F1A937BDEBD.png"></div><div class="label">16px</div></div>
-  </div>
-</div>
-
-<div class="divider"></div>
-
-<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:24px">
-  <div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:16px">What changes vs what stays the same</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:13px">
+<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px;font-size:13px">
+  <div style="font-weight:700;color:#fff;margin-bottom:12px">Files updated</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;color:#8E8E93;line-height:1.9">
     <div>
-      <div style="color:#34C759;font-weight:700;margin-bottom:8px">STAYS THE SAME</div>
-      <div style="color:#8E8E93;line-height:1.8">White tile background<br>Rounded corners on every icon<br>All filenames (logo192.png etc.)<br>manifest.json structure<br>App routes and functionality<br>Marketing site structure</div>
+      <div style="color:#34C759;font-weight:600;margin-bottom:4px">Speech bubble only (PWA/favicon)</div>
+      logo192.png &amp; logo512.png<br>
+      android-chrome-192×192.png<br>
+      android-chrome-512×512.png<br>
+      apple-touch-icon.png<br>
+      favicon.ico / favicon.png / favicon-16x16.png
     </div>
     <div>
-      <div style="color:#FF9500;font-weight:700;margin-bottom:8px">ARTWORK UPDATES (7 files)</div>
-      <div style="color:#8E8E93;line-height:1.8">logo192.png<br>logo512.png<br>favicon.png / favicon.ico<br>android-chrome-192×192.png<br>android-chrome-512×512.png<br>apple-touch-icon.png<br>favicon-16x16.png</div>
+      <div style="color:#FF9500;font-weight:600;margin-bottom:4px">Full logo with "On Social" (marketing)</div>
+      logo-marketing-512.png<br>
+      logo-marketing-192.png<br>
+      <br>
+      <div style="color:#555;font-size:11px">Use these in /marketing/build/ nav header</div>
     </div>
   </div>
-  <div style="margin-top:20px;padding:14px;background:rgba(201,169,98,.1);border-radius:10px;font-size:13px;color:#C9A962">
-    <strong>Ready to apply?</strong> Reply <strong>"apply the logo"</strong> and all 7 icon files will be regenerated with the new artwork. Current files are backed up automatically.
+  <div style="margin-top:14px;padding:10px 14px;background:rgba(255,149,0,.08);border-radius:8px;color:#8E8E93;font-size:12px">
+    <strong style="color:#FF9500">To roll back:</strong> original files are in <code style="color:#aaa">/public/_logo_backup/</code>
   </div>
 </div>
 
