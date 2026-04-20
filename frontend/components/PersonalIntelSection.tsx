@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Modal, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
 import { useToast } from './common/Toast';
@@ -210,11 +211,12 @@ export default function PersonalIntelSection({ contactId, userId, colors }: { co
           presentationStyle="pageSheet"
           onRequestClose={cancelEdit}
         >
+          <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={{ flex: 1, backgroundColor: colors.bg }}
+            style={{ flex: 1 }}
           >
-            {/* Header — always visible, never pushed off screen */}
+            {/* Header — Cancel / Save always above status bar */}
             <View style={{
               flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
               paddingHorizontal: 16, paddingVertical: 14,
@@ -266,6 +268,7 @@ export default function PersonalIntelSection({ contactId, userId, colors }: { co
               ))}
             </ScrollView>
           </KeyboardAvoidingView>
+          </SafeAreaView>
         </Modal>
       </>
     );
