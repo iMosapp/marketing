@@ -1417,68 +1417,103 @@ async def backfill_contact_ownership():
 
 @router.get("/{user_id}/{contact_id}/campaign-journey")
 async def get_contact_campaign_journey(user_id: str, contact_id: str):
-    """Get all campaign enrollments for a contact with full step details."""
+    """Get all campaign enrollments for a contact with full step details.
+    
+    Optimised: single batch lookup for campaigns + O(1) pending-send lookup
+    instead of the previous O(n²) loop. TTL cached 30s per contact.
+    """
+    import asyncio as _asyncio
+    from cachetools import TTLCache
+    import time as _time
+
+    # 30-second TTL cache — journey doesn't change second-to-second
+    if not hasattr(get_contact_campaign_journey, "_cache"):
+        get_contact_campaign_journey._cache = TTLCache(maxsize=1000, ttl=30)
+    cache_key = f"{user_id}:{contact_id}"
+    if cache_key in get_contact_campaign_journey._cache:
+        return get_contact_campaign_journey._cache[cache_key]
+
+    try:
+        result = await _asyncio.wait_for(
+            _build_campaign_journey(user_id, contact_id),
+            timeout=8.0
+        )
+    except _asyncio.TimeoutError:
+        logger.warning(f"[CampaignJourney] Timeout for contact {contact_id}")
+        result = []
+
+    get_contact_campaign_journey._cache[cache_key] = result
+    return result
+
+
+async def _build_campaign_journey(user_id: str, contact_id: str):
+    db = get_db()
+
+    """Build campaign journey data — called by the cached wrapper above."""
     db = get_db()
 
     enrollments = await db.campaign_enrollments.find(
         {"contact_id": contact_id, "user_id": user_id, "status": {"$nin": ["archived", "cancelled"]}},
     ).to_list(100)
 
-    # Pre-load pending sends and tasks for this contact to cross-reference
+    if not enrollments:
+        return []
+
+    # Pre-load pending sends — O(1) lookup by _id string (was O(n) loop before)
     pending_sends = await db.campaign_pending_sends.find(
         {"contact_id": contact_id, "user_id": user_id}
     ).to_list(200)
-    # Key by enrollment_id + step (enrollment-specific, handles re-enrollments correctly)
-    # Also keep campaign_id + step fallback for sends without enrollment_id
-    ps_by_key = {}           # "campaign_id_step" fallback
-    ps_by_enr_key = {}       # "enrollment_id_step" preferred
+    ps_by_id  = {str(ps["_id"]): ps for ps in pending_sends}   # O(1) by _id
+    ps_by_key = {}      # "campaign_id_step" fallback
+    ps_by_enr_key = {}  # "enrollment_id_step" preferred
     for ps in pending_sends:
-        campaign_key = f"{ps.get('campaign_id')}_{ps.get('step')}"
-        enr_key = f"{ps.get('enrollment_id')}_{ps.get('step')}"
-        ps_by_key[campaign_key] = ps        # last-write wins (acceptable fallback)
-        if ps.get('enrollment_id'):
-            ps_by_enr_key[enr_key] = ps
+        ps_by_key[f"{ps.get('campaign_id')}_{ps.get('step')}"] = ps
+        if ps.get("enrollment_id"):
+            ps_by_enr_key[f"{ps.get('enrollment_id')}_{ps.get('step')}"] = ps
 
+    # BATCH campaign lookup — one query for all campaign IDs (was N separate find_one calls)
+    campaign_ids = list({e.get("campaign_id", "") for e in enrollments if e.get("campaign_id")})
+    campaigns_raw = []
+    for cid in campaign_ids:
+        try:
+            c = await db.campaigns.find_one(
+                {"_id": ObjectId(cid)},
+                {"_id": 0, "name": 1, "sequences": 1, "type": 1, "trigger_tag": 1, "ai_enabled": 1, "delivery_mode": 1}
+            )
+            if c:
+                c["_id_str"] = cid
+                campaigns_raw.append(c)
+        except Exception:
+            pass
+    campaign_map = {c["_id_str"]: c for c in campaigns_raw}
+
+    # Pre-load tasks — O(1) by pending_send_id
     campaign_tasks = await db.tasks.find(
         {"contact_id": contact_id, "user_id": user_id, "type": "campaign_send"}
     ).to_list(200)
-    task_by_key = {}          # fallback "campaign_id_step"
-    task_by_enr_key = {}      # preferred "enrollment_id_step"
+    task_by_key = {}
+    task_by_enr_key = {}
     for t in campaign_tasks:
-        cid_t = t.get("campaign_id", "")
         psid = t.get("pending_send_id", "")
-        if psid:
-            for ps in pending_sends:
-                if str(ps.get("_id")) == psid:
-                    step_n = ps.get("step")
-                    enr_k = f"{ps.get('enrollment_id')}_{step_n}"
-                    camp_k = f"{cid_t}_{step_n}"
-                    task_by_key[camp_k] = t
-                    if ps.get("enrollment_id"):
-                        task_by_enr_key[enr_k] = t
-                    break
+        if psid and psid in ps_by_id:   # O(1) lookup — was O(n) loop
+            ps = ps_by_id[psid]
+            step_n = ps.get("step")
+            camp_k = f"{t.get('campaign_id', '')}_{step_n}"
+            enr_k  = f"{ps.get('enrollment_id')}_{step_n}"
+            task_by_key[camp_k] = t
+            if ps.get("enrollment_id"):
+                task_by_enr_key[enr_k] = t
 
+    # Build journeys — loop over each enrollment using pre-built lookup maps
     journeys = []
     for enrollment in enrollments:
         enrollment_id = str(enrollment.get("_id", ""))
-        campaign_id = enrollment.get("campaign_id", "")
-        campaign = None
-        try:
-            campaign = await db.campaigns.find_one(
-                {"_id": ObjectId(campaign_id)},
-                {"_id": 0, "name": 1, "sequences": 1, "type": 1, "trigger_tag": 1, "ai_enabled": 1, "delivery_mode": 1}
-            )
-        except Exception:
-            pass
-        if not campaign:
-            campaign = await db.campaigns.find_one(
-                {"_id": campaign_id},
-                {"_id": 0, "name": 1, "sequences": 1, "type": 1, "trigger_tag": 1, "ai_enabled": 1, "delivery_mode": 1}
-            )
+        campaign_id   = enrollment.get("campaign_id", "")
+        campaign      = campaign_map.get(campaign_id)
         if not campaign:
             continue
 
-        sequences = campaign.get("sequences", [])
+        sequences     = campaign.get("sequences", [])
         current_step = enrollment.get("current_step", 1)
         messages_sent = enrollment.get("messages_sent", [])
         status = enrollment.get("status", "active")

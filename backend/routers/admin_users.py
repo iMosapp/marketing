@@ -1158,8 +1158,15 @@ async def get_pending_users():
 
 @router.get("/pending-users/count")
 async def get_pending_users_count():
-    """Get count of pending users (for notification badge)"""
+    """Get count of pending users (for notification badge). Cached 60s."""
+    import time as _t
+    if not hasattr(get_pending_users_count, "_cache"):
+        get_pending_users_count._cache = (0, 0.0)
+    count, ts = get_pending_users_count._cache
+    if _t.monotonic() - ts < 60:
+        return {"count": count}
     count = await get_db().users.count_documents({"status": "pending"})
+    get_pending_users_count._cache = (count, _t.monotonic())
     return {"count": count}
 
 @router.put("/pending-users/{user_id}/approve")
