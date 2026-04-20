@@ -154,7 +154,7 @@ class TestLogin:
             f"{BASE_URL}/api/auth/login",
             json={
                 "email": "sales@mvpline.com",
-                "password": "Sales123!"
+                "password": os.environ.get("TEST_SALES_PASS", "test-sales-pass")
             }
         )
         
@@ -174,7 +174,7 @@ class TestLogin:
             f"{BASE_URL}/api/auth/login",
             json={
                 "email": "forest@mvpline.com",
-                "password": "MVPLine2024!"
+                "password": os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
             }
         )
         

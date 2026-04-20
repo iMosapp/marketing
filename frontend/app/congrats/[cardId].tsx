@@ -202,8 +202,17 @@ export default function CongratsCardPage() {
           });
           const w = window.open('');
           if (w) {
-            w.document.write(`<html><head><title>Save Card</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{margin:0;padding:0;background:#000}img{width:100%;height:auto}</style></head><body><img src="${dataUrl}"/></body></html>`);
-            w.document.close();
+            // Safe DOM construction instead of document.write (XSS prevention)
+            w.document.title = 'Save Card';
+            const meta = w.document.createElement('meta');
+            meta.name = 'viewport'; meta.content = 'width=device-width,initial-scale=1';
+            w.document.head.appendChild(meta);
+            const style = w.document.createElement('style');
+            style.textContent = '*{margin:0;padding:0;background:#000}img{width:100%;height:auto}';
+            w.document.head.appendChild(style);
+            const img = w.document.createElement('img');
+            img.src = dataUrl;
+            w.document.body.appendChild(img);
           }
         } else {
           // Desktop: trigger download
@@ -257,8 +266,17 @@ export default function CongratsCardPage() {
           });
           const w = window.open('');
           if (w) {
-            w.document.write(`<html><head><title>Delivery Photo</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>*{margin:0;padding:0;background:#000}img{width:100%;height:auto}</style></head><body><img src="${dataUrl}"/></body></html>`);
-            w.document.close();
+            // Safe DOM construction instead of document.write (XSS prevention)
+            w.document.title = 'Delivery Photo';
+            const meta = w.document.createElement('meta');
+            meta.name = 'viewport'; meta.content = 'width=device-width,initial-scale=1';
+            w.document.head.appendChild(meta);
+            const style = w.document.createElement('style');
+            style.textContent = '*{margin:0;padding:0;background:#000}img{width:100%;height:auto}';
+            w.document.head.appendChild(style);
+            const img = w.document.createElement('img');
+            img.src = dataUrl;
+            w.document.body.appendChild(img);
           }
         } else {
           const url = URL.createObjectURL(blob);

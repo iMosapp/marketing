@@ -281,7 +281,7 @@ async def build_version():
     """Returns current build version for cache-busting"""
     import hashlib
     start_time = getattr(app.state, 'start_time', 0)
-    version = hashlib.md5(str(start_time).encode()).hexdigest()[:8]
+    version = hashlib.sha256(str(start_time).encode()).hexdigest()[:8]
     return {"version": version}
 
 

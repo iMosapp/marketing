@@ -5,6 +5,7 @@ Test Campaign Permissions Feature:
 - GET /api/campaigns/{user_id}/permissions - returns permission status based on user role and store settings
 - POST /api/campaigns/{user_id} - respects permission settings (403 if no permission)
 """
+import os
 import pytest
 import requests
 import os
@@ -13,9 +14,9 @@ BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://user-routing-issue
 
 # Test credentials
 SALES_REP_EMAIL = "sales@mvpline.com"
-SALES_REP_PASSWORD = "Sales123!"
+SALES_REP_PASSWORD = os.environ.get("TEST_SALES_PASS", "test-sales-pass")
 SUPER_ADMIN_EMAIL = "forest@mvpline.com"
-SUPER_ADMIN_PASSWORD = "MVPLine2024!"
+SUPER_ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 TEST_STORE_ID = "699783e741097acc0e570b8c"
 
 

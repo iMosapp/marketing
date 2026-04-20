@@ -202,7 +202,7 @@ async def process_sold_workflow(
     missing = _validate_sold_fields(contact, partner, store)
 
     # Build idempotency key
-    idem_key = f"{contact_id}_sold_{hashlib.md5(now.isoformat().encode()).hexdigest()[:12]}"
+    idem_key = f"{contact_id}_sold_{hashlib.sha256(now.isoformat().encode()).hexdigest()[:12]}"
 
     # Create sold event log
     event_log = {

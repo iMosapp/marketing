@@ -102,24 +102,24 @@ export default function TrainingHubScreen() {
     const lines = content.split('\n');
     return lines.map((line, i) => {
       const trimmed = line.trim();
-      if (!trimmed) return <View key={i} style={{ height: 8 }} />;
-      if (trimmed.startsWith('## ')) return <Text key={i} style={s.mdH2}>{trimmed.replace('## ', '')}</Text>;
-      if (trimmed.startsWith('### ')) return <Text key={i} style={s.mdH3}>{trimmed.replace('### ', '')}</Text>;
-      if (trimmed.startsWith('> ')) return <View key={i} style={s.mdQuote}><Text style={s.mdQuoteText}>{trimmed.replace('> ', '')}</Text></View>;
+      if (!trimmed) return <View key={`md-br-${i}`} style={{ height: 8 }} />;
+      if (trimmed.startsWith('## ')) return <Text key={`md-h2-${i}`} style={s.mdH2}>{trimmed.replace('## ', '')}</Text>;
+      if (trimmed.startsWith('### ')) return <Text key={`md-h3-${i}`} style={s.mdH3}>{trimmed.replace('### ', '')}</Text>;
+      if (trimmed.startsWith('> ')) return <View key={`md-quote-${i}`} style={s.mdQuote}><Text style={s.mdQuoteText}>{trimmed.replace('> ', '')}</Text></View>;
       if (trimmed.startsWith('- ')) return (
-        <View key={i} style={s.mdListItem}>
+        <View key={`md-li-${i}`} style={s.mdListItem}>
           <Text style={s.mdBullet}>{'\u2022'}</Text>
           <Text style={s.mdListText}>{renderInline(trimmed.replace('- ', ''))}</Text>
         </View>
       );
       if (/^\d+\.\s/.test(trimmed)) return (
-        <View key={i} style={s.mdListItem}>
+        <View key={`md-li-${i}`} style={s.mdListItem}>
           <Text style={s.mdBullet}>{trimmed.match(/^(\d+)\./)?.[1]}.</Text>
           <Text style={s.mdListText}>{renderInline(trimmed.replace(/^\d+\.\s/, ''))}</Text>
         </View>
       );
-      if (trimmed.startsWith('*') && trimmed.endsWith('*') && !trimmed.startsWith('**')) return <Text key={i} style={s.mdItalic}>{trimmed.replace(/\*/g, '')}</Text>;
-      return <Text key={i} style={s.mdParagraph}>{renderInline(trimmed)}</Text>;
+      if (trimmed.startsWith('*') && trimmed.endsWith('*') && !trimmed.startsWith('**')) return <Text key={`md-em-${i}`} style={s.mdItalic}>{trimmed.replace(/\*/g, '')}</Text>;
+      return <Text key={`md-p-${i}`} style={s.mdParagraph}>{renderInline(trimmed)}</Text>;
     });
   };
 
@@ -297,7 +297,7 @@ export default function TrainingHubScreen() {
               <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>Action Steps</Text>
             </View>
             {selectedLesson.steps.map((step, i) => (
-              <View key={i} style={{ flexDirection: 'row', gap: 10, paddingVertical: 6 }}>
+              <View key={`md-${i}`} style={{ flexDirection: 'row', gap: 10, paddingVertical: 6 }}>
                 <View style={[s.stepCheck, { borderColor: selectedTrack.color }]}>
                   <Text style={{ fontSize: 12, fontWeight: '700', color: selectedTrack.color }}>{i + 1}</Text>
                 </View>

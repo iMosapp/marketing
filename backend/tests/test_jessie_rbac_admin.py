@@ -10,7 +10,7 @@ Features tested:
 6. Admin RBAC - User data isolation
 
 Test Credentials:
-- Super Admin: forest@mvpline.com / MVPLine2024! (ID: 69975a8b6ff748b1f9da6b57)
+- Super Admin: forest@mvpline.com / (see TEST_ADMIN_PASS env var) (ID: 69975a8b6ff748b1f9da6b57)
 - Manager: manager@mvpline.com / Manager123! (ID: 699783e741097acc0e570b8d)
 """
 import pytest

@@ -244,9 +244,10 @@ async def get_unread_count(user_id: str):
 
 
 @router.post("/{user_id}/read")
-async def mark_notifications_read(user_id: str, data: dict = {}):
+async def mark_notifications_read(user_id: str, data: dict = None):
     """Mark specific notifications as read."""
     db = get_db()
+    data = data or {}
     ids = data.get("ids", [])
 
     for nid in ids:

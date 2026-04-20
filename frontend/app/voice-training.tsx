@@ -316,7 +316,7 @@ export default function VoiceTrainingScreen() {
               </View>
               <View style={styles.tagsContainer}>
                 {extractedInfo.hobbies.map((hobby, i) => (
-                  <View key={i} style={styles.tag}>
+                  <View key={`vt-${i}`} style={styles.tag}>
                     <Text style={styles.tagText}>{hobby}</Text>
                   </View>
                 ))}
@@ -332,7 +332,7 @@ export default function VoiceTrainingScreen() {
               </View>
               <View style={styles.tagsContainer}>
                 {extractedInfo.interests.map((interest, i) => (
-                  <View key={i} style={styles.tag}>
+                  <View key={`vt-${i}`} style={styles.tag}>
                     <Text style={styles.tagText}>{interest}</Text>
                   </View>
                 ))}
@@ -348,7 +348,7 @@ export default function VoiceTrainingScreen() {
               </View>
               <View style={styles.tagsContainer}>
                 {extractedInfo.specialties.map((specialty, i) => (
-                  <View key={i} style={styles.tag}>
+                  <View key={`vt-${i}`} style={styles.tag}>
                     <Text style={styles.tagText}>{specialty}</Text>
                   </View>
                 ))}
@@ -373,7 +373,7 @@ export default function VoiceTrainingScreen() {
                 <Text style={styles.resultLabel}>Fun Facts</Text>
               </View>
               {extractedInfo.fun_facts.map((fact, i) => (
-                <Text key={i} style={styles.funFact}>• {fact}</Text>
+                <Text key={`vt-${i}`} style={styles.funFact}>• {fact}</Text>
               ))}
             </View>
           )}
@@ -419,7 +419,7 @@ export default function VoiceTrainingScreen() {
       <View style={styles.progressContainer}>
         {PROMPTS.map((_, i) => (
           <View 
-            key={i} 
+            key={`vt-${i}`} 
             style={[
               styles.progressDot,
               i === currentPromptIndex && styles.progressDotActive,
@@ -442,7 +442,7 @@ export default function VoiceTrainingScreen() {
           <View style={styles.examplesContainer}>
             <Text style={styles.examplesLabel}>Examples:</Text>
             {currentPrompt.examples.map((ex, i) => (
-              <Text key={i} style={styles.exampleText}>"{ex}"</Text>
+              <Text key={`vt-${i}`} style={styles.exampleText}>"{ex}"</Text>
             ))}
           </View>
         </View>

@@ -38,6 +38,9 @@ export default function Root({ children }: PropsWithChildren) {
           set `overflow: auto` on the body style below.
         */}
         <ScrollViewStyleReset />
+        {/* SECURITY: dangerouslySetInnerHTML used intentionally here — content is
+            100% static (no user input). This is the correct Expo Router pattern for
+            injecting CSS into the HTML shell. */}
         <style
           dangerouslySetInnerHTML={{
             __html: `
@@ -101,6 +104,8 @@ export default function Root({ children }: PropsWithChildren) {
         {/* Service worker is registered AFTER login, not here.
             This prevents any SW interference with the login flow in PWA standalone mode.
             Registration happens in the auth store after successful login. */}
+        {/* SECURITY: dangerouslySetInnerHTML used intentionally here — content is
+            100% static JS (no user input). Standard Expo Router pattern for SW init. */}
         <script
           dangerouslySetInnerHTML={{
             __html: `

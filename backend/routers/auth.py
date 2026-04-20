@@ -226,7 +226,7 @@ async def signup(user_data: UserCreate):
     
     # Generate unique ref code for attribution tracking
     import hashlib
-    ref_base = hashlib.md5(f"{user_dict['email']}{datetime.utcnow().isoformat()}".encode()).hexdigest()[:8].upper()
+    ref_base = hashlib.sha256(f"{user_dict['email']}{datetime.utcnow().isoformat()}".encode()).hexdigest()[:8].upper()
     user_dict['ref_code'] = ref_base
     
     result = await get_db().users.insert_one(user_dict)
@@ -1242,7 +1242,7 @@ async def backfill_ref_codes():
     db = get_db()
     count = 0
     async for user in db.users.find({"ref_code": {"$exists": False}}):
-        ref_base = hashlib.md5(f"{user.get('email', '')}{str(user['_id'])}".encode()).hexdigest()[:8].upper()
+        ref_base = hashlib.sha256(f"{user.get('email', '')}{str(user['_id'])}".encode()).hexdigest()[:8].upper()
         await db.users.update_one({"_id": user["_id"]}, {"$set": {"ref_code": ref_base}})
         count += 1
     return {"status": "success", "backfilled": count}

@@ -11,6 +11,7 @@ Testing the complete end-to-end partner setup:
 """
 
 import os
+import os
 import pytest
 import requests
 import os
@@ -34,7 +35,7 @@ class TestWhiteLabelFullFlow:
     store_id = None
     user_id = None
     test_email = f"test_partner_admin_{TEST_SUFFIX}@testpartner.com"
-    test_password = "TestPartner123!"
+    test_password = os.environ.get("TEST_PARTNER_PASS", "test-partner-pass")
     
     @pytest.fixture(scope="class")
     def api_client(self):

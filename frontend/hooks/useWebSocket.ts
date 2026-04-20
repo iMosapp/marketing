@@ -23,11 +23,12 @@ export function useWebSocket() {
     return () => { handlersRef.current.delete(handler); };
   }, []);
 
+  const connectRef = useRef<() => void>();
+
   const connect = useCallback(() => {
     if (!user?._id || !isAuthenticated) return;
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
-    // Build WS URL from backend URL
     const wsUrl = BACKEND_URL
       .replace(/^https:/, 'wss:')
       .replace(/^http:/, 'ws:')
@@ -54,18 +55,20 @@ export function useWebSocket() {
       ws.onclose = () => {
         setConnected(false);
         wsRef.current = null;
-        // Reconnect after 3 seconds
-        reconnectTimer.current = setTimeout(connect, 3000);
+        // Use ref to avoid stale closure on connect
+        reconnectTimer.current = setTimeout(() => connectRef.current?.(), 3000);
       };
 
       ws.onerror = () => {
         ws.close();
       };
     } catch (e) {
-      // Reconnect on error
-      reconnectTimer.current = setTimeout(connect, 5000);
+      reconnectTimer.current = setTimeout(() => connectRef.current?.(), 5000);
     }
   }, [user?._id, isAuthenticated]);
+
+  // Keep connectRef current so ws.onclose always has the latest version
+  useEffect(() => { connectRef.current = connect; });
 
   useEffect(() => {
     connect();

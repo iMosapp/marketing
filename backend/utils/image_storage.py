@@ -90,7 +90,7 @@ def get_cache_stats() -> dict:
 
 def make_etag(path: str) -> str:
     """Generate a stable ETag from the image path (immutable since UUID-based)."""
-    return hashlib.md5(path.encode()).hexdigest()
+    return hashlib.sha256(path.encode()).hexdigest()
 
 
 # ---------------------------------------------------------------------------

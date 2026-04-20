@@ -1725,13 +1725,14 @@ async def mark_campaign_step_sent(user_id: str, contact_id: str, body: dict):
 
 
 @router.post("/{user_id}/{contact_id}/campaign-journey/remove")
-async def remove_campaign_enrollment(user_id: str, contact_id: str, data: dict = {}):
+async def remove_campaign_enrollment(user_id: str, contact_id: str, data: dict = None):
     """
     Archive a campaign enrollment for a contact and cancel any pending sends.
     The enrollment history is preserved (status → 'archived') so you can see
     what was sent in the past. The contact can be manually re-enrolled later.
     """
     db = get_db()
+    data = data or {}
     enrollment_id = data.get("enrollment_id")
     if not enrollment_id:
         raise HTTPException(status_code=400, detail="enrollment_id is required")

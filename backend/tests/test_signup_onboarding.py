@@ -8,6 +8,7 @@ Tests:
 5. Store detail page API returns store with users
 """
 import os
+import os
 import pytest
 import requests
 import os
@@ -17,7 +18,7 @@ BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://user-routing-issue
 
 # Test credentials
 SUPER_ADMIN_EMAIL = "forest@mvpline.com"
-SUPER_ADMIN_PASSWORD = "MVPLine2024!"
+SUPER_ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 TEST_ORG_ID = "699637971b07c23426a53249"
 
 

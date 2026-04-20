@@ -9,6 +9,7 @@ Tests:
 - GET /api/admin/stats - Includes pending_users count
 """
 import os
+import os
 import pytest
 import requests
 import os
@@ -19,7 +20,7 @@ BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://user-routing-issue
 
 # Test credentials
 SUPER_ADMIN_EMAIL = "forest@mvpline.com"
-SUPER_ADMIN_PASSWORD = "MVPLine2024!"
+SUPER_ADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "test-admin-pass")
 
 
 class TestPendingUsersWorkflow:

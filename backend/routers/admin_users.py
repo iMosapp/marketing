@@ -1203,8 +1203,9 @@ async def approve_pending_user(user_id: str, data: dict):
     return {"message": "User approved", "user_id": user_id}
 
 @router.put("/pending-users/{user_id}/reject")
-async def reject_pending_user(user_id: str, data: dict = {}):
+async def reject_pending_user(user_id: str, data: dict = None):
     """Reject/delete a pending user"""
+    data = data or {}
     reason = data.get("reason", "Application rejected")
     
     # Option: Could mark as rejected instead of deleting
