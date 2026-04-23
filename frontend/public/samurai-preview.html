@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SamurAI Brand Preview — Scope Assessment</title>
+<style>
+  :root {
+    --red: #E8192C;
+    --white: #FFFFFF;
+    --black: #0A0A0A;
+    --dark: #111111;
+    --dark2: #1A1A1A;
+    --dark3: #222222;
+    --border: rgba(255,255,255,0.1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0A0A0A; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+
+  /* ── Page header ── */
+  .page-header { background: #111; border-bottom: 1px solid rgba(255,255,255,.08); padding: 28px 32px; display: flex; align-items: center; gap: 20px; }
+  .page-badge { background: rgba(232,25,44,.12); border: 1px solid rgba(232,25,44,.3); color: var(--red); border-radius: 20px; padding: 4px 14px; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+  .page-title { font-size: 26px; font-weight: 900; }
+  .page-sub { font-size: 14px; color: rgba(255,255,255,.45); margin-top: 4px; }
+
+  /* ── Section layout ── */
+  .sections { padding: 32px; display: flex; flex-direction: column; gap: 48px; max-width: 1200px; margin: 0 auto; }
+  .sec-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px; color: var(--red); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .sec-label::before { content: ''; display: block; width: 3px; height: 14px; background: var(--red); border-radius: 2px; }
+  .divider { height: 1px; background: rgba(255,255,255,.07); }
+
+  /* ── Scope table ── */
+  .scope-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .scope-card { background: var(--dark2); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+  .scope-card.critical { border-color: rgba(232,25,44,.3); }
+  .scope-card.medium  { border-color: rgba(255,170,0,.25); }
+  .scope-card.easy    { border-color: rgba(52,199,89,.25); }
+  .scope-effort { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+  .scope-card.critical .scope-effort { color: var(--red); }
+  .scope-card.medium  .scope-effort  { color: #FFAA00; }
+  .scope-card.easy    .scope-effort   { color: #34C759; }
+  .scope-name { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .scope-detail { font-size: 13px; color: rgba(255,255,255,.5); line-height: 1.6; }
+  .scope-count { display: inline-block; font-size: 22px; font-weight: 900; margin-bottom: 4px; }
+  .scope-card.critical .scope-count { color: var(--red); }
+  .scope-card.medium  .scope-count  { color: #FFAA00; }
+  .scope-card.easy    .scope-count   { color: #34C759; }
+
+  /* ── App nav mockup ── */
+  .app-nav { background: var(--dark2); border-radius: 14px; overflow: hidden; border: 1px solid var(--border); }
+  .nav-bar { display: flex; align-items: center; padding: 14px 20px; gap: 12px; border-bottom: 1px solid var(--border); }
+  .nav-logo { width: 34px; height: 34px; border-radius: 10px; overflow: hidden; background: #0A0A0A; }
+  .nav-logo img { width: 100%; height: 100%; object-fit: cover; }
+  .nav-brand { font-size: 17px; font-weight: 900; }
+  .nav-brand .ai-red { color: var(--red); }
+  .nav-tagline { font-size: 10px; color: rgba(255,255,255,.35); text-transform: uppercase; letter-spacing: .08em; margin-top: 1px; }
+  .nav-body { padding: 20px; display: flex; gap: 12px; }
+  .nav-card { background: var(--dark3); border-radius: 10px; padding: 16px; flex: 1; border: 1px solid var(--border); }
+  .nav-card-label { font-size: 11px; color: rgba(255,255,255,.4); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+  .nav-card-val { font-size: 22px; font-weight: 800; color: var(--red); }
+
+  /* ── Login screen ── */
+  .login-screen { background: var(--dark2); border-radius: 14px; border: 1px solid var(--border); padding: 36px 28px; max-width: 320px; text-align: center; }
+  .login-logo { width: 100px; height: 100px; border-radius: 26px; overflow: hidden; background: var(--black); margin: 0 auto 20px; box-shadow: 0 8px 40px rgba(232,25,44,.25); }
+  .login-logo img { width: 100%; height: 100%; object-fit: cover; }
+  .login-name { font-size: 26px; font-weight: 900; margin-bottom: 4px; }
+  .login-name .ai-red { color: var(--red); }
+  .login-tagline { font-size: 11px; color: rgba(255,255,255,.35); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 28px; }
+  .login-input { background: var(--dark3); border: 1px solid var(--border); border-radius: 10px; padding: 13px 16px; font-size: 15px; color: rgba(255,255,255,.4); text-align: left; margin-bottom: 10px; width: 100%; }
+  .login-btn { background: var(--red); border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 800; color: white; width: 100%; margin-top: 6px; cursor: pointer; letter-spacing: .03em; }
+
+  /* ── Marketing header ── */
+  .mkt-header { background: white; border-radius: 14px; overflow: hidden; border: 1px solid rgba(0,0,0,.1); }
+  .mkt-nav { display: flex; align-items: center; padding: 14px 24px; gap: 12px; border-bottom: 1px solid rgba(0,0,0,.08); }
+  .mkt-logo-wrap { display: flex; align-items: center; gap: 10px; }
+  .mkt-logo { width: 36px; height: 36px; border-radius: 10px; overflow: hidden; background: #0A0A0A; }
+  .mkt-logo img { width: 100%; height: 100%; object-fit: cover; }
+  .mkt-brand { font-size: 20px; font-weight: 900; color: #111; }
+  .mkt-brand .ai-red { color: var(--red); }
+  .mkt-links { display: flex; gap: 24px; margin-left: auto; }
+  .mkt-links span { font-size: 14px; color: #444; font-weight: 500; }
+  .mkt-links .cta { color: var(--red); font-weight: 700; }
+  .mkt-hero { background: linear-gradient(135deg, #0A0A0A, #1a0a0a); padding: 40px 24px; text-align: center; }
+  .mkt-hero-eye { display: inline-block; color: var(--red); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; background: rgba(232,25,44,.1); border: 1px solid rgba(232,25,44,.25); border-radius: 20px; padding: 4px 14px; margin-bottom: 16px; }
+  .mkt-hero h1 { font-size: 36px; font-weight: 900; color: white; line-height: 1.15; margin-bottom: 12px; }
+  .mkt-hero h1 span { color: var(--red); }
+  .mkt-hero p { font-size: 15px; color: rgba(255,255,255,.5); max-width: 480px; margin: 0 auto 24px; line-height: 1.6; }
+  .mkt-hero-btns { display: flex; gap: 12px; justify-content: center; }
+  .btn-primary { background: var(--red); color: white; border-radius: 10px; padding: 12px 24px; font-weight: 700; font-size: 14px; }
+  .btn-secondary { background: transparent; color: white; border: 1px solid rgba(255,255,255,.2); border-radius: 10px; padding: 12px 24px; font-weight: 600; font-size: 14px; }
+
+  /* ── Presentation slide ── */
+  .slide { background: var(--dark2); border-radius: 14px; overflow: hidden; border: 1px solid var(--border); aspect-ratio: 16/9; position: relative; display: flex; flex-direction: column; }
+  .slide-header { background: var(--dark3); padding: 16px 24px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
+  .slide-logo { width: 32px; height: 32px; border-radius: 8px; overflow: hidden; background: #0A0A0A; }
+  .slide-logo img { width: 100%; height: 100%; object-fit: cover; }
+  .slide-brand { font-size: 15px; font-weight: 800; }
+  .slide-brand .ai-red { color: var(--red); }
+  .slide-body { flex: 1; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 32px; text-align: center; gap: 16px; }
+  .slide-tag { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--red); font-weight: 700; }
+  .slide-title { font-size: 32px; font-weight: 900; line-height: 1.2; }
+  .slide-title span { color: var(--red); }
+  .slide-sub { font-size: 14px; color: rgba(255,255,255,.45); max-width: 400px; }
+  .slide-footer { display: flex; align-items: center; justify-content: space-between; padding: 10px 24px; border-top: 1px solid var(--border); background: rgba(0,0,0,.3); }
+  .slide-footer-brand { font-size: 11px; font-weight: 800; color: rgba(255,255,255,.3); letter-spacing: .08em; text-transform: uppercase; }
+  .slide-footer-tagline { font-size: 10px; color: rgba(255,255,255,.2); text-transform: uppercase; letter-spacing: .1em; }
+  .slide-footer-tagline span { color: rgba(232,25,44,.6); }
+
+  /* ── Phone homescreen ── */
+  .phone { background: linear-gradient(135deg, #1a0a0a, #0a0a1a); border-radius: 36px; padding: 40px 20px 30px; width: 200px; border: 2px solid #333; position: relative; }
+  .phone-status { display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: rgba(255,255,255,.7); margin-bottom: 24px; padding: 0 4px; }
+  .phone-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .phone-icon { text-align: center; }
+  .phone-icon .ico { width: 42px; height: 42px; border-radius: 22%; overflow: hidden; margin: 0 auto 3px; }
+  .phone-icon .ico img { width: 100%; height: 100%; object-fit: cover; }
+  .phone-icon .ico.dummy { background: #1C1C1E; }
+  .phone-icon .ico.highlight { box-shadow: 0 0 0 2.5px var(--red), 0 4px 16px rgba(232,25,44,.4); }
+  .phone-icon-lbl { font-size: 8px; color: rgba(255,255,255,.6); }
+  .phone-icon-lbl.red { color: rgba(232,25,44,.9); font-weight: 600; }
+
+  /* ── PWA icon sizes ── */
+  .icon-row { display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap; }
+  .icon-item { text-align: center; }
+  .icon-tile { background: #0A0A0A; border-radius: 22%; overflow: hidden; margin: 0 auto 6px; }
+  .icon-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .icon-lbl { font-size: 10px; color: rgba(255,255,255,.4); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+
+  /* ── Color palette ── */
+  .palette { display: flex; gap: 12px; flex-wrap: wrap; }
+  .swatch { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .swatch-color { width: 64px; height: 64px; border-radius: 14px; }
+  .swatch-label { font-size: 11px; color: rgba(255,255,255,.5); text-align: center; }
+  .swatch-hex { font-size: 11px; color: rgba(255,255,255,.3); font-family: monospace; }
+
+  /* ── Total scope banner ── */
+  .total-banner { background: linear-gradient(135deg, rgba(232,25,44,.1), rgba(232,25,44,.05)); border: 1px solid rgba(232,25,44,.25); border-radius: 16px; padding: 24px 28px; display: flex; align-items: center; gap: 24px; }
+  .total-title { font-size: 20px; font-weight: 900; }
+  .total-detail { font-size: 14px; color: rgba(255,255,255,.5); margin-top: 4px; }
+  .total-time { text-align: right; margin-left: auto; }
+  .total-days { font-size: 38px; font-weight: 900; color: var(--red); line-height: 1; }
+  .total-days-label { font-size: 12px; color: rgba(255,255,255,.4); text-transform: uppercase; letter-spacing: .06em; }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .scope-grid { grid-template-columns: 1fr; }
+    .sections { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div>
+    <div class="page-badge">Preview Only — No Changes Made</div>
+    <div class="page-title" style="margin-top:10px">SamurAI by VI — Rebrand Scope &amp; Preview</div>
+    <div class="page-sub">Full assessment of effort to replace i'M On Social branding across every surface</div>
+  </div>
+</div>
+
+<div class="sections">
+
+  <!-- TOTAL SCOPE BANNER -->
+  <div class="total-banner">
+    <div>
+      <div class="total-title">Total Rebrand Scope</div>
+      <div class="total-detail">
+        100 files with gold (#C9A962) color · 72 files with "i'M On Social" text · 60 marketing HTML files · 13 presentation decks · 9 icon/favicon files · 8 .env URL references
+      </div>
+    </div>
+    <div class="total-time">
+      <div class="total-days">3–5</div>
+      <div class="total-days-label">working days</div>
+    </div>
+  </div>
+
+  <!-- SCOPE BREAKDOWN -->
+  <div>
+    <div class="sec-label">Scope Breakdown</div>
+    <div class="scope-grid">
+
+      <div class="scope-card critical">
+        <div class="scope-effort">🔴 Large — 2 days</div>
+        <div class="scope-count">100+</div>
+        <div class="scope-name">Color System Swap</div>
+        <div class="scope-detail">Every gold <code style="color:#C9A962">#C9A962</code> accent replaced with SamurAI red <code style="color:#E8192C">#E8192C</code>. Lives in themeStore.ts (2 lines) but affects 100 frontend files. Requires visual testing of buttons, highlights, badges, campaign cards, and all modals.</div>
+      </div>
+
+      <div class="scope-card medium">
+        <div class="scope-effort">🟡 Medium — 1 day</div>
+        <div class="scope-count">72</div>
+        <div class="scope-name">Brand Text in App</div>
+        <div class="scope-detail">"i'M On Social", "On Social", "imonsocial" across 72 frontend files — login screen, nav bars, loading states, SEO guide, marketing pages served by the app. Many are one-liner swaps; some need copy rewrites.</div>
+      </div>
+
+      <div class="scope-card medium">
+        <div class="scope-effort">🟡 Medium — 1 day</div>
+        <div class="scope-count">60 + 13</div>
+        <div class="scope-name">Marketing Site + Presentations</div>
+        <div class="scope-detail">60 HTML files in /marketing/build/ (nav, footer, hero copy, OG tags, all logos). 13 presentation decks need logo swap + color update from gold/blue to red/black. Scriptable bulk replace.</div>
+      </div>
+
+      <div class="scope-card easy">
+        <div class="scope-effort">🟢 Easy — 2 hours</div>
+        <div class="scope-count">9</div>
+        <div class="scope-name">Icons &amp; Favicons</div>
+        <div class="scope-detail">logo192.png, logo512.png, favicon.ico, apple-touch-icon.png, android-chrome-*, marketing-logo.png. Same workflow as the i'M On Social icon swap we just did — just different source image.</div>
+      </div>
+
+      <div class="scope-card easy">
+        <div class="scope-effort">🟢 Easy — 1 hour</div>
+        <div class="scope-count">3</div>
+        <div class="scope-name">App Name &amp; Manifest</div>
+        <div class="scope-detail">manifest.json (short_name, name), app.json title, PWA display name. "On Social" → "SamurAI". Also updates what shows under the icon on iPhone home screen.</div>
+      </div>
+
+      <div class="scope-card easy">
+        <div class="scope-effort">🟢 Easy — 1 hour</div>
+        <div class="scope-count">8</div>
+        <div class="scope-name">Backend URLs &amp; Config</div>
+        <div class="scope-detail">backend/.env (APP_URL, SENDER_EMAIL, VAPID_MAILTO) and 2 hardcoded fallbacks in server.py. Domain changes (imonsocial.com → samurai domain) require DNS + re-deploy coordination.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- COLOR PALETTE COMPARISON -->
+  <div>
+    <div class="sec-label">Brand Color Shift</div>
+    <div style="display:flex;gap:40px;flex-wrap:wrap">
+      <div>
+        <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em">Current — i'M On Social</div>
+        <div class="palette">
+          <div class="swatch"><div class="swatch-color" style="background:#C9A962;box-shadow:0 4px 20px rgba(201,169,98,.4)"></div><div class="swatch-label">Gold Accent</div><div class="swatch-hex">#C9A962</div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#0A0A0F"></div><div class="swatch-label">Background</div><div class="swatch-hex">#0A0A0F</div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#1C1C1E"></div><div class="swatch-label">Card</div><div class="swatch-hex">#1C1C1E</div></div>
+        </div>
+      </div>
+      <div style="align-self:center;font-size:28px;color:rgba(255,255,255,.2)">→</div>
+      <div>
+        <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:12px;text-transform:uppercase;letter-spacing:.06em">New — SamurAI</div>
+        <div class="palette">
+          <div class="swatch"><div class="swatch-color" style="background:#E8192C;box-shadow:0 4px 20px rgba(232,25,44,.5)"></div><div class="swatch-label">Red Accent</div><div class="swatch-hex">#E8192C</div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#0A0A0A"></div><div class="swatch-label">Background</div><div class="swatch-hex">#0A0A0A</div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#1A1A1A"></div><div class="swatch-label">Card</div><div class="swatch-hex">#1A1A1A</div></div>
+          <div class="swatch"><div class="swatch-color" style="background:#FFFFFF"></div><div class="swatch-label">Logo White</div><div class="swatch-hex">#FFFFFF</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- MOCKUPS ROW 1: App Nav + Login -->
+  <div>
+    <div class="sec-label">App UI — Nav Bar &amp; Login Screen</div>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start">
+
+      <div style="flex:2;min-width:280px">
+        <div class="app-nav">
+          <div class="nav-bar">
+            <div class="nav-logo"><img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/jee59rx9_B34ED069-3E79-4C3F-8153-910C05A86617.png" alt="SamurAI"></div>
+            <div>
+              <div class="nav-brand">Samur<span class="ai-red">AI</span></div>
+              <div class="nav-tagline">Remember Everyone. Close More. Forever.</div>
+            </div>
+            <div style="margin-left:auto;width:32px;height:32px;border-radius:50%;background:#2C2C2E"></div>
+          </div>
+          <div class="nav-body">
+            <div class="nav-card"><div class="nav-card-label">Today's Tasks</div><div class="nav-card-val">12</div></div>
+            <div class="nav-card"><div class="nav-card-label">Active Campaigns</div><div class="nav-card-val">7</div></div>
+            <div class="nav-card"><div class="nav-card-label">Contacts</div><div class="nav-card-val">248</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="login-screen">
+        <div class="login-logo"><img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/jee59rx9_B34ED069-3E79-4C3F-8153-910C05A86617.png" alt="SamurAI"></div>
+        <div class="login-name">Samur<span class="ai-red">AI</span></div>
+        <div class="login-tagline">Remember Everyone · Close More · Forever</div>
+        <div class="login-input">Email address</div>
+        <div class="login-input">Password</div>
+        <div class="login-btn">Sign In</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- MARKETING SITE -->
+  <div>
+    <div class="sec-label">Marketing Site — imonsocial.com Header</div>
+    <div class="mkt-header">
+      <div class="mkt-nav">
+        <div class="mkt-logo-wrap">
+          <div class="mkt-logo"><img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/jee59rx9_B34ED069-3E79-4C3F-8153-910C05A86617.png" alt="SamurAI"></div>
+          <div>
+            <div class="mkt-brand">Samur<span class="ai-red">AI</span></div>
+          </div>
+        </div>
+        <div class="mkt-links">
+          <span>Products</span><span>Solutions</span><span>Pricing</span>
+          <span class="cta">Get Started</span>
+        </div>
+      </div>
+      <div class="mkt-hero">
+        <div class="mkt-hero-eye">AI-Powered Relationship CRM</div>
+        <h1>Close More.<br/><span>Remember Everyone.</span> Forever.</h1>
+        <p>The AI assistant built for closers. Every customer remembered. Every follow-up automated. Every relationship built to last 5 years.</p>
+        <div class="mkt-hero-btns">
+          <div class="btn-primary">Start Free Trial</div>
+          <div class="btn-secondary">Watch Demo</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- PRESENTATION SLIDE -->
+  <div>
+    <div class="sec-label">Sales Presentation Deck — Slide Style</div>
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-logo"><img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/jee59rx9_B34ED069-3E79-4C3F-8153-910C05A86617.png" alt="SamurAI"></div>
+        <div class="slide-brand">Samur<span class="ai-red">AI</span></div>
+        <div style="margin-left:auto;font-size:11px;color:rgba(255,255,255,.3)">Automotive Solutions</div>
+      </div>
+      <div class="slide-body">
+        <div class="slide-tag">For Dealerships</div>
+        <div class="slide-title">Most CRMs send a text link.<br/><span>We send a reputation signal.</span></div>
+        <div class="slide-sub">Every digital card, every review, every campaign message carries structured AI data that builds your dealership's search presence — automatically.</div>
+        <div style="display:flex;gap:24px;margin-top:8px">
+          <div style="text-align:center"><div style="font-size:28px;font-weight:900;color:#E8192C">5yr</div><div style="font-size:11px;color:rgba(255,255,255,.4)">Relationship</div></div>
+          <div style="text-align:center"><div style="font-size:28px;font-weight:900;color:#E8192C">10×</div><div style="font-size:11px;color:rgba(255,255,255,.4)">Faster Index</div></div>
+          <div style="text-align:center"><div style="font-size:28px;font-weight:900;color:#E8192C">$0</div><div style="font-size:11px;color:rgba(255,255,255,.4)">Extra Budget</div></div>
+        </div>
+      </div>
+      <div class="slide-footer">
+        <div class="slide-footer-brand">Samur<span style="color:rgba(232,25,44,.6)">AI</span> by VI</div>
+        <div class="slide-footer-tagline">Remember Everyone. <span>Close More.</span> Forever.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- PHONE + ICONS -->
+  <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start">
+
+    <div>
+      <div class="sec-label">Phone Home Screen</div>
+      <div class="phone">
+        <div class="phone-status"><span>9:41</span><span>▊▊▊ ✦ ▐▌</span></div>
+        <div class="phone-grid">
+          <div class="phone-icon"><div class="ico dummy" style="width:42px;height:42px;border-radius:22%"></div></div>
+          <div class="phone-icon"><div class="ico dummy" style="width:42px;height:42px;border-radius:22%"></div></div>
+          <div class="phone-icon"><div class="ico dummy" style="width:42px;height:42px;border-radius:22%"></div></div>
+          <div class="phone-icon"><div class="ico dummy" style="width:42px;height:42px;border-radius:22%"></div></div>
+          <div class="phone-icon"><div class="ico dummy" style="width:42px;height:42px;border-radius:22%"></div></div>
+          <div class="phone-icon">
+            <div class="ico highlight" style="width:42px;height:42px;border-radius:22%;overflow:hidden"><img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/jee59rx9_B34ED069-3E79-4C3F-8153-910C05A86617.png" style="width:100%;height:100%;object-fit:cover"></div>
+            <div class="phone-icon-lbl red">SamurAI</div>
+          </div>
+          <div class="phone-icon"><div class="ico dummy" style="width:42px;height:42px;border-radius:22%"></div></div>
+          <div class="phone-icon"><div class="ico dummy" style="width:42px;height:42px;border-radius:22%"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex:1;min-width:280px">
+      <div class="sec-label">App Icon Sizes</div>
+      <div class="icon-row">
+        <div class="icon-item"><div class="icon-tile" style="width:120px;height:120px"><img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/jee59rx9_B34ED069-3E79-4C3F-8153-910C05A86617.png" style="width:100%;height:100%;object-fit:cover"></div><div class="icon-lbl">512px</div></div>
+        <div class="icon-item"><div class="icon-tile" style="width:72px;height:72px"><img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/jee59rx9_B34ED069-3E79-4C3F-8153-910C05A86617.png" style="width:100%;height:100%;object-fit:cover"></div><div class="icon-lbl">192px</div></div>
+        <div class="icon-item"><div class="icon-tile" style="width:48px;height:48px"><img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/jee59rx9_B34ED069-3E79-4C3F-8153-910C05A86617.png" style="width:100%;height:100%;object-fit:cover"></div><div class="icon-lbl">180px</div></div>
+        <div class="icon-item"><div class="icon-tile" style="width:32px;height:32px"><img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/jee59rx9_B34ED069-3E79-4C3F-8153-910C05A86617.png" style="width:100%;height:100%;object-fit:cover"></div><div class="icon-lbl">64px</div></div>
+        <div class="icon-item"><div class="icon-tile" style="width:20px;height:20px"><img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/jee59rx9_B34ED069-3E79-4C3F-8153-910C05A86617.png" style="width:100%;height:100%;object-fit:cover"></div><div class="icon-lbl">32px</div></div>
+      </div>
+      <div style="margin-top:24px;background:var(--dark2);border:1px solid var(--border);border-radius:12px;padding:16px">
+        <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em">Browser Tab (Favicon)</div>
+        <div style="background:#2C2C2E;border-radius:8px 8px 0 0;padding:8px 14px;display:inline-flex;align-items:center;gap:8px;min-width:160px">
+          <img src="https://customer-assets.emergentagent.com/job_3307ef81-704c-4c07-a7b8-577a74f4ab42/artifacts/jee59rx9_B34ED069-3E79-4C3F-8153-910C05A86617.png" style="width:14px;height:14px;border-radius:3px;background:#0A0A0A">
+          <span style="font-size:12px;color:#EBEBF5">SamurAI</span>
+        </div>
+        <div style="background:#1C1C1E;padding:5px 10px;border-radius:0 0 8px 8px;display:flex">
+          <div style="background:#2C2C2E;border-radius:5px;padding:3px 10px;font-size:10px;color:#636366;flex:1">app.samurai.vi</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- DECISION GUIDE -->
+  <div style="background:var(--dark2);border:1px solid var(--border);border-radius:16px;padding:28px">
+    <div class="sec-label">Decision Guide</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;font-size:13px">
+      <div>
+        <div style="font-weight:700;color:#34C759;margin-bottom:10px;font-size:14px">Reasons to do it</div>
+        <div style="color:rgba(255,255,255,.55);line-height:2">
+          • SamurAI is a stronger, more memorable brand<br>
+          • Red/black/white = high contrast, premium, aggressive — fits the sales closer persona<br>
+          • "Remember Everyone. Close More. Forever." is a killer tagline<br>
+          • Easier to trademark "SamurAI" than "i'M On Social"<br>
+          • Better App Store name for discoverability
+        </div>
+      </div>
+      <div>
+        <div style="font-weight:700;color:#FF9500;margin-bottom:10px;font-size:14px">Things to consider</div>
+        <div style="color:rgba(255,255,255,.55);line-height:2">
+          • New domain needed (samurai.ai or samurai.vi or similar)<br>
+          • Existing users bookmarked app.imonsocial.com — need redirect<br>
+          • 10DLC brand registration would need to be updated<br>
+          • Any printed materials / business cards / pitch decks<br>
+          • "by VI" — does that stay as a subtitle or disappear in-app?
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:20px;padding:14px;background:rgba(232,25,44,.08);border-radius:10px;font-size:13px;color:rgba(255,255,255,.6)">
+      <strong style="color:var(--red)">Total scope: 3–5 working days</strong> for a complete rebrand across the entire codebase, marketing site, and all presentations. The color system change (1 line in themeStore.ts) cascades to 100 files but is scriptable. Say <strong style="color:white">"apply SamurAI rebrand"</strong> when you're ready.
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
