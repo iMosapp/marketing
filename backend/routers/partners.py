@@ -279,7 +279,7 @@ EXHIBIT_A_RESELLER = """---
 def build_agreement_content(partner_type: str, partner_name: str, custom_terms: str = "",
                              commission_duration: str = "Lifetime (while account remains active)",
                              billing_structure: str = "Company Bills Customer (Partner receives commission)",
-                             company_name: str = "VI Ventures LLC",
+                             company_name: str = "VI Ventures Group LLC",
                              governing_state: str = "Texas") -> str:
     """Generate the full agreement text from the template + exhibit A."""
     import datetime as dt
