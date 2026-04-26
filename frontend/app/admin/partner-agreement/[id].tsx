@@ -518,13 +518,28 @@ export default function PartnerAgreementDetailScreen() {
 
         {/* Action Buttons */}
         <View style={styles.actionSection}>
-          {/* Download PDF — only for signed agreements */}
           {agreement.status === 'signed' && (
             <TouchableOpacity
               style={[styles.copyLinkButton, { borderColor: '#34C759', backgroundColor: '#34C75910' }]}
-              onPress={() => {
-                const url = `/api/partners/agreements/${agreement.id}/pdf`;
-                if (typeof window !== 'undefined') window.open(url, '_blank');
+              onPress={async () => {
+                try {
+                  const resp = await api.get(`/partners/agreements/${agreement.id}/pdf`, {
+                    responseType: 'blob',
+                  });
+                  const blob = new Blob([resp.data], { type: 'application/pdf' });
+                  const href = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  const partnerName = (agreement.signed_partner?.name || agreement.partner_name || 'agreement')
+                    .replace(/[^a-zA-Z0-9_-]/g, '_');
+                  a.href = href;
+                  a.download = `signed_agreement_${partnerName}.pdf`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(href);
+                } catch (e) {
+                  showSimpleAlert('Error', 'Failed to download PDF. Please try again.');
+                }
               }}
               data-testid="download-pdf-button"
             >
