@@ -523,8 +523,7 @@ export default function PartnerAgreementDetailScreen() {
             <TouchableOpacity
               style={[styles.copyLinkButton, { borderColor: '#34C759', backgroundColor: '#34C75910' }]}
               onPress={() => {
-                const API = process.env.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_API_URL || '';
-                const url = `${API}/api/partners/agreements/${agreement.id}/pdf`;
+                const url = `/api/partners/agreements/${agreement.id}/pdf`;
                 if (typeof window !== 'undefined') window.open(url, '_blank');
               }}
               data-testid="download-pdf-button"
