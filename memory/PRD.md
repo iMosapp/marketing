@@ -443,10 +443,14 @@ Extract `admin.py` (4,000 lines) into:
 
 ---
 
-## Partner Agreement System (Apr 26, 2026)
+## Partner Agreement System (Apr 26, 2026) — VERIFIED ROCK SOLID ✅
 
 Full end-to-end partner agreement + W-9 onboarding:
 - Public signing page: `/partner/agreement/{id}` — full MPA + Exhibit A, typed signature, IP capture, W-9 upload
-- Admin list: `/admin/partner-agreements` — 4 counters, 5 filter tabs, W-9 status badges
-- Admin detail: `/admin/partner-agreement/{id}` — Legal record (IP/timestamp/hash), W-9 panel with verify button
+- Admin list: `/admin/partner-agreements` — 4 counters, 5 filter tabs, W-9 status badges (Verified/Awaiting Review/Pending)
+- Admin detail: `/admin/partner-agreement/{id}` — Legal record (IP/timestamp/hash), W-9 panel with verify button, Full Agreement collapsible
 - Company: VI Ventures Group LLC | Tiers: Referral 10%/15%, Reseller 20%/30%/40%
+- Custom commission notes override standard tiers in Exhibit A when set
+- Markdown renderer improved: handles inline **bold** and *italic* within list items
+- Bugs fixed: agreementId undefined on W-9 verify, get_agreement missing w9_status/w9_file_url/custom_terms/commission_duration, list_agreements missing w9_status, duplicate route decorator, create_default_templates referenced undefined variables
+- Backend: 26/26 tests pass | Frontend: All flows verified via Playwright

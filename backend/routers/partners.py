@@ -372,13 +372,22 @@ async def list_templates():
 async def create_default_templates():
     """Create default agreement templates"""
     db = get_db()
-    
+
+    default_commission_tiers = [
+        {"name": "Tier 1", "percentage": 10, "description": "Up to $10,000 MRR"},
+        {"name": "Tier 2", "percentage": 15, "description": "Above $10,000 MRR"},
+    ]
+
     templates = [
         {
             "name": "Reseller Agreement",
             "type": "reseller",
-            "content": DEFAULT_RESELLER_TEMPLATE,
-            "commission_tiers": DEFAULT_COMMISSION_TIERS,
+            "content": build_agreement_content("reseller", ""),
+            "commission_tiers": [
+                {"name": "Tier 1", "percentage": 20, "description": "Up to $20,000 MRR"},
+                {"name": "Tier 2", "percentage": 30, "description": "$20,001–$40,000 MRR"},
+                {"name": "Tier 3", "percentage": 40, "description": "Above $40,000 MRR"},
+            ],
             "payment_required": False,
             "payment_amount": None,
             "active": True,
@@ -387,15 +396,15 @@ async def create_default_templates():
         {
             "name": "Referral Partner Agreement",
             "type": "referral",
-            "content": DEFAULT_REFERRAL_TEMPLATE,
-            "commission_tiers": DEFAULT_COMMISSION_TIERS,
+            "content": build_agreement_content("referral", ""),
+            "commission_tiers": default_commission_tiers,
             "payment_required": False,
             "payment_amount": None,
             "active": True,
             "created_at": datetime.utcnow(),
         },
     ]
-    
+
     await db.partner_templates.insert_many(templates)
 
 
@@ -674,7 +683,6 @@ async def send_agreement(agreement_id: str):
 
 # ============= PARTNER SIGNING =============
 
-@router.post("/agreements/{agreement_id}/sign")
 @router.post("/agreements/{agreement_id}/sign")
 async def sign_agreement(agreement_id: str, data: PartnerSignup, request: Request):
     """Partner signs the agreement — captures name, IP, timestamp for legal record."""

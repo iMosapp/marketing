@@ -215,37 +215,51 @@ const { showToast } = useToast();
     }
   };
 
+  /** Render a text string with inline **bold** and *italic* markers into React Native Text spans. */
+  const renderInline = (text: string, baseStyle: any, key: string) => {
+    // Strip wrapping italic markers like *(text)* at line level
+    const cleaned = text.replace(/^\*\((.*)\)\*$/, '$1').replace(/^\*(.*)\*$/, '$1');
+    if (!cleaned.includes('**') && !cleaned.includes('*')) {
+      return <Text key={key} style={baseStyle}>{cleaned}</Text>;
+    }
+    // Split on **bold** first, then *italic*
+    const boldParts = cleaned.split(/\*\*(.*?)\*\*/);
+    return (
+      <Text key={key} style={baseStyle}>
+        {boldParts.map((p, pi) => {
+          if (pi % 2 === 1) return <Text key={`${key}-b${pi}`} style={{ fontWeight: '700', color: '#FFF' }}>{p}</Text>;
+          // Check for *italic* within non-bold segments
+          if (p.includes('*')) {
+            const italicParts = p.split(/\*(.*?)\*/);
+            return italicParts.map((ip, ii) =>
+              ii % 2 === 1
+                ? <Text key={`${key}-i${ii}`} style={{ fontStyle: 'italic' }}>{ip}</Text>
+                : ip
+            );
+          }
+          return p;
+        })}
+      </Text>
+    );
+  };
+
   const renderMarkdown = (content: string) => {
     const lines = content.split('\n');
     return lines.map((line, index) => {
-      if (line.startsWith('# '))  return <Text key={`md-h1-${index}`} style={styles.mdH1}>{line.substring(2)}</Text>;
-      if (line.startsWith('## ')) return <Text key={`md-h2-${index}`} style={styles.mdH2}>{line.substring(3)}</Text>;
-      if (line.startsWith('### ')) return <Text key={`md-h3-${index}`} style={styles.mdH3}>{line.substring(4)}</Text>;
+      const key = `md-${index}`;
+      if (line.startsWith('# '))  return <Text key={key} style={styles.mdH1}>{line.substring(2)}</Text>;
+      if (line.startsWith('## ')) return <Text key={key} style={styles.mdH2}>{line.substring(3)}</Text>;
+      if (line.startsWith('### ')) return <Text key={key} style={styles.mdH3}>{line.substring(4)}</Text>;
       if (line.startsWith('- ')) return (
-        <View key={`md-li-${index}`} style={styles.mdListItem}>
+        <View key={key} style={styles.mdListItem}>
           <Text style={styles.mdBullet}>•</Text>
-          <Text style={styles.mdText}>{line.substring(2)}</Text>
+          {renderInline(line.substring(2), styles.mdText, `${key}-li`)}
         </View>
       );
-      if (line.startsWith('| ')) return <Text key={`md-tb-${index}`} style={styles.mdTableRow}>{line}</Text>;
-      if (line.startsWith('---')) return <View key={`md-hr-${index}`} style={styles.mdDivider} />;
-      if (line.startsWith('**') && line.endsWith('**')) {
-        return <Text key={`md-b-${index}`} style={styles.mdBold}>{line.replace(/\*\*/g,'')}</Text>;
-      }
-      if (line.trim() === '' || line.trim() === '*') return <View key={`md-sp-${index}`} style={{ height: 8 }} />;
-      // Inline bold: **text**
-      if (line.includes('**')) {
-        const parts = line.split(/\*\*(.*?)\*\*/);
-        return (
-          <Text key={`md-il-${index}`} style={styles.mdText}>
-            {parts.map((p, pi) => pi % 2 === 1
-              ? <Text key={pi} style={styles.mdBold}>{p}</Text>
-              : p
-            )}
-          </Text>
-        );
-      }
-      return <Text key={`md-p-${index}`} style={styles.mdText}>{line}</Text>;
+      if (line.startsWith('| ')) return <Text key={key} style={styles.mdTableRow}>{line}</Text>;
+      if (line.startsWith('---')) return <View key={key} style={styles.mdDivider} />;
+      if (line.trim() === '' || line.trim() === '*') return <View key={key} style={{ height: 8 }} />;
+      return renderInline(line, styles.mdText, key);
     });
   };
 
