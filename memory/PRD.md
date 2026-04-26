@@ -440,3 +440,13 @@ Extract `admin.py` (4,000 lines) into:
 ## Test Credentials
 - Super Admin: `forest@imosapp.com` / `Admin123!`
 - Test User (no store/org): `mjeast1985@gmail.com` / `NavyBean1!` (preview) / `Mjeast1985!` (production)
+
+---
+
+## Partner Agreement System (Apr 26, 2026)
+
+Full end-to-end partner agreement + W-9 onboarding:
+- Public signing page: `/partner/agreement/{id}` — full MPA + Exhibit A, typed signature, IP capture, W-9 upload
+- Admin list: `/admin/partner-agreements` — 4 counters, 5 filter tabs, W-9 status badges
+- Admin detail: `/admin/partner-agreement/{id}` — Legal record (IP/timestamp/hash), W-9 panel with verify button
+- Company: VI Ventures Group LLC | Tiers: Referral 10%/15%, Reseller 20%/30%/40%

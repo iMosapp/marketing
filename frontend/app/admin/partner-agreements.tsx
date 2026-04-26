@@ -35,12 +35,16 @@ interface Agreement {
   partner_email?: string;
   commission_tier?: { name: string; percentage: number };
   custom_commission_notes?: string;
+  custom_terms?: string;
+  commission_duration?: string;
   is_white_label?: boolean;
   payment_required: boolean;
   payment_amount?: number;
   status: string;
+  w9_status?: string;   // pending | uploaded | verified
   created_at: string;
   signed_at?: string;
+  sent_at?: string;
 }
 
 export default function PartnerAgreementsScreen() {
@@ -62,8 +66,11 @@ export default function PartnerAgreementsScreen() {
   const [paymentRequired, setPaymentRequired] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState('');
   const [customCommissionNotes, setCustomCommissionNotes] = useState('');
+  const [customTerms, setCustomTerms] = useState('');
+  const [commissionDuration, setCommissionDuration] = useState('Lifetime (while account remains active)');
   const [isWhiteLabel, setIsWhiteLabel] = useState(false);
   const [createdLink, setCreatedLink] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   useEffect(() => {
     loadData();
@@ -97,6 +104,8 @@ export default function PartnerAgreementsScreen() {
         template_id: selectedTemplate.id,
         commission_tier: selectedTier,
         custom_commission_notes: customCommissionNotes || null,
+        custom_terms: customTerms || null,
+        commission_duration: commissionDuration,
         is_white_label: isWhiteLabel,
         partner_email: partnerEmail || null,
         partner_name: partnerName || null,
@@ -196,6 +205,7 @@ export default function PartnerAgreementsScreen() {
 
       <ScrollView style={styles.content}>
         {/* Stats */}
+        {/* Stats */}
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>{agreements.length}</Text>
@@ -209,23 +219,67 @@ export default function PartnerAgreementsScreen() {
           </View>
           <View style={styles.statCard}>
             <Text style={[styles.statNumber, { color: '#FF9500' }]}>
-              {agreements.filter(a => a.status === 'pending_payment').length}
+              {agreements.filter(a => a.status === 'signed' && (!a.w9_status || a.w9_status === 'pending')).length}
             </Text>
-            <Text style={styles.statLabel}>Pending</Text>
+            <Text style={styles.statLabel}>W-9 Pending</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={[styles.statNumber, { color: '#C9A962' }]}>
+              {agreements.filter(a => a.w9_status === 'verified').length}
+            </Text>
+            <Text style={styles.statLabel}>Verified</Text>
           </View>
         </View>
 
+        {/* Status Filter Tabs */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+          {[
+            { key: 'all',       label: 'All',           count: agreements.length },
+            { key: 'sent',      label: 'Sent',          count: agreements.filter(a => a.status === 'sent').length },
+            { key: 'signed',    label: 'Signed',        count: agreements.filter(a => a.status === 'signed').length },
+            { key: 'w9_pending',label: 'W-9 Pending',   count: agreements.filter(a => a.status === 'signed' && (!a.w9_status || a.w9_status === 'pending')).length },
+            { key: 'draft',     label: 'Draft',         count: agreements.filter(a => a.status === 'draft').length },
+          ].map(tab => (
+            <TouchableOpacity
+              key={tab.key}
+              onPress={() => setStatusFilter(tab.key)}
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: 6,
+                paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
+                borderWidth: 1,
+                borderColor: statusFilter === tab.key ? '#C9A962' : colors.border,
+                backgroundColor: statusFilter === tab.key ? '#C9A96218' : colors.card,
+              }}
+            >
+              <Text style={{ fontSize: 14, fontWeight: '600', color: statusFilter === tab.key ? '#C9A962' : colors.textSecondary }}>
+                {tab.label}
+              </Text>
+              {tab.count > 0 && (
+                <View style={{ backgroundColor: statusFilter === tab.key ? '#C9A962' : colors.surface, borderRadius: 10, paddingHorizontal: 6, paddingVertical: 1 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: statusFilter === tab.key ? '#000' : colors.textSecondary }}>{tab.count}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
         {/* Agreements List */}
-        <Text style={styles.sectionTitle}>Recent Agreements</Text>
-        
-        {agreements.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Ionicons name="document-text-outline" size={48} color={colors.textSecondary} />
-            <Text style={styles.emptyText}>No agreements yet</Text>
-            <Text style={styles.emptySubtext}>Create your first partner agreement</Text>
-          </View>
-        ) : (
-          agreements.map((agreement) => (
+        {(() => {
+          const filtered = agreements.filter(a => {
+            if (statusFilter === 'all') return true;
+            if (statusFilter === 'w9_pending') return a.status === 'signed' && (!a.w9_status || a.w9_status === 'pending');
+            return a.status === statusFilter;
+          });
+
+          if (filtered.length === 0) return (
+            <View style={styles.emptyState}>
+              <Ionicons name="document-text-outline" size={48} color={colors.textSecondary} />
+              <Text style={styles.emptyText}>{statusFilter === 'all' ? 'No agreements yet' : `No ${statusFilter.replace('_',' ')} agreements`}</Text>
+              {statusFilter === 'all' && <Text style={styles.emptySubtext}>Create your first partner agreement</Text>}
+            </View>
+          );
+
+          return filtered.map((agreement) => (
             <TouchableOpacity
               key={agreement.id}
               style={styles.agreementCard}
@@ -233,50 +287,59 @@ export default function PartnerAgreementsScreen() {
               data-testid={`agreement-${agreement.id}`}
             >
               <View style={styles.agreementHeader}>
-                <View>
+                <View style={{ flex: 1 }}>
                   <Text style={styles.agreementType}>{agreement.template_name}</Text>
                   <Text style={styles.agreementPartner}>
-                    {agreement.partner_name || agreement.partner_email || 'Not yet signed'}
+                    {agreement.partner_name || agreement.partner_email || 'Awaiting partner'}
                   </Text>
                 </View>
-                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(agreement.status) + '20' }]}>
-                  <Text style={[styles.statusText, { color: getStatusColor(agreement.status) }]}>
-                    {agreement.status.replace('_', ' ')}
-                  </Text>
+                <View style={{ alignItems: 'flex-end', gap: 4 }}>
+                  <View style={[styles.statusBadge, { backgroundColor: getStatusColor(agreement.status) + '20' }]}>
+                    <Text style={[styles.statusText, { color: getStatusColor(agreement.status) }]}>
+                      {agreement.status.replace('_', ' ')}
+                    </Text>
+                  </View>
+                  {/* W-9 status badge */}
+                  {agreement.status === 'signed' && (
+                    <View style={{
+                      flexDirection: 'row', alignItems: 'center', gap: 4,
+                      backgroundColor: agreement.w9_status === 'verified' ? '#34C75920'
+                        : agreement.w9_status === 'uploaded' ? '#FF950020'
+                        : '#FF3B3018',
+                      borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3,
+                    }}>
+                      <Ionicons
+                        name={agreement.w9_status === 'verified' ? 'checkmark-circle' : agreement.w9_status === 'uploaded' ? 'cloud-upload' : 'document-outline'}
+                        size={12}
+                        color={agreement.w9_status === 'verified' ? '#34C759' : agreement.w9_status === 'uploaded' ? '#FF9500' : '#FF3B30'}
+                      />
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: agreement.w9_status === 'verified' ? '#34C759' : agreement.w9_status === 'uploaded' ? '#FF9500' : '#FF3B30' }}>
+                        W-9 {agreement.w9_status === 'verified' ? 'Verified' : agreement.w9_status === 'uploaded' ? 'Review' : 'Pending'}
+                      </Text>
+                    </View>
+                  )}
                 </View>
               </View>
-              
-              {agreement.commission_tier && (
-                <Text style={styles.agreementTier}>
-                  {agreement.commission_tier.name} - {agreement.commission_tier.percentage}% commission
-                </Text>
-              )}
-              
-              {agreement.custom_commission_notes && (
-                <Text style={styles.agreementCustomCommission} numberOfLines={2}>
-                  {agreement.custom_commission_notes}
-                </Text>
-              )}
-              
+
               {agreement.is_white_label && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, backgroundColor: '#C9A96215', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, alignSelf: 'flex-start' }}>
-                  <Ionicons name="layers" size={14} color="#C9A962" />
-                  <Text style={{ fontSize: 14, fontWeight: '700', color: '#C9A962' }}>White Label</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6, backgroundColor: '#C9A96215', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, alignSelf: 'flex-start' }}>
+                  <Ionicons name="layers" size={13} color="#C9A962" />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: '#C9A962' }}>White Label</Text>
                 </View>
               )}
-              
+
               <View style={styles.agreementFooter}>
                 <Text style={styles.agreementDate}>
                   Created {new Date(agreement.created_at).toLocaleDateString()}
-                  {agreement.signed_at && ` • Signed ${new Date(agreement.signed_at).toLocaleDateString()}`}
+                  {agreement.signed_at && ` · Signed ${new Date(agreement.signed_at).toLocaleDateString()}`}
                 </Text>
-                <TouchableOpacity onPress={() => copyLink(agreement.id)}>
+                <TouchableOpacity onPress={() => copyLink(agreement.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                   <Ionicons name="link" size={20} color="#007AFF" />
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
-          ))
-        )}
+          ));
+        })()}
       </ScrollView>
 
       {/* Create Agreement Modal */}
@@ -397,6 +460,39 @@ export default function PartnerAgreementsScreen() {
                     <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: -8, marginBottom: 4 }}>
                       Describe the full commission deal. This overrides or supplements the tier above.
                     </Text>
+                  </>
+                )}
+
+                {/* Custom Exhibit A Terms */}
+                {selectedTemplate && (
+                  <>
+                    <Text style={styles.formLabel}>Exhibit A — Custom Terms (Optional)</Text>
+                    <TextInput
+                      style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]}
+                      value={customTerms}
+                      onChangeText={setCustomTerms}
+                      placeholder="e.g., Special deal: 18-month commission guarantee. Exclusive territory: Utah."
+                      placeholderTextColor={colors.textSecondary}
+                      multiline
+                      data-testid="custom-terms"
+                    />
+                    <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: -8, marginBottom: 4 }}>
+                      Appears in Exhibit A as "Special Terms" — visible to partner when signing.
+                    </Text>
+
+                    <Text style={styles.formLabel}>Commission Duration</Text>
+                    {[
+                      'Lifetime (while account remains active)',
+                      '12 months from sign-up',
+                      '24 months from sign-up',
+                    ].map(opt => (
+                      <TouchableOpacity key={opt} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }} onPress={() => setCommissionDuration(opt)}>
+                        <View style={[styles.checkbox, commissionDuration === opt && styles.checkboxChecked]}>
+                          {commissionDuration === opt && <Ionicons name="checkmark" size={16} color={colors.text} />}
+                        </View>
+                        <Text style={{ fontSize: 15, color: colors.text }}>{opt}</Text>
+                      </TouchableOpacity>
+                    ))}
                   </>
                 )}
 

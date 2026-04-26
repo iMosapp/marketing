@@ -27,17 +27,30 @@ interface Agreement {
   partner_email?: string;
   commission_tier?: { name: string; percentage: number };
   custom_commission_notes?: string;
+  custom_terms?: string;
+  commission_duration?: string;
   is_white_label?: boolean;
   commission_tiers?: { name: string; percentage: number; description?: string }[];
   payment_required: boolean;
   payment_amount?: number;
   status: string;
+  w9_status?: string;
+  w9_file_url?: string;
+  w9_uploaded_at?: string;
   signed_partner?: {
     name: string;
     email: string;
     company?: string;
     phone?: string;
+    address?: string;
+    city?: string;
+    state?: string;
+    zip_code?: string;
     signed_at?: string;
+    ip_address?: string;
+    user_agent?: string;
+    document_hash?: string;
+    signature?: string;
   };
   signed_at?: string;
   created_at?: string;
@@ -360,6 +373,99 @@ export default function PartnerAgreementDetailScreen() {
             )}
           </View>
         </View>
+
+        {/* ── Legal Signature Record (shown after signing) ── */}
+        {agreement.status === 'signed' && agreement.signed_partner && (
+          <View style={[styles.section, { borderLeftWidth: 3, borderLeftColor: '#34C759' }]}>
+            <Text style={styles.sectionTitle}>Legal Signature Record</Text>
+            {[
+              { label: 'Signed By',     value: agreement.signed_partner.name },
+              { label: 'Email',         value: agreement.signed_partner.email },
+              { label: 'Company',       value: agreement.signed_partner.company },
+              { label: 'Phone',         value: agreement.signed_partner.phone },
+              { label: 'Signed At',     value: agreement.signed_partner.signed_at ? new Date(agreement.signed_partner.signed_at).toLocaleString() : undefined },
+              { label: 'IP Address',    value: agreement.signed_partner.ip_address },
+              { label: 'User Agent',    value: agreement.signed_partner.user_agent, mono: true, truncate: true },
+              { label: 'Doc Hash',      value: agreement.signed_partner.document_hash ? agreement.signed_partner.document_hash.slice(0, 16) + '…' : undefined, mono: true },
+              { label: 'Signature',     value: agreement.signed_partner.signature ? `"${agreement.signed_partner.signature}"` : undefined },
+            ].filter(r => r.value).map((row, i) => (
+              <View key={i} style={{ flexDirection: 'row', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 12 }}>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, width: 90, flexShrink: 0 }}>{row.label}</Text>
+                <Text style={{ fontSize: 13, color: colors.text, flex: 1, fontFamily: (row as any).mono ? 'monospace' : undefined }} numberOfLines={(row as any).truncate ? 1 : undefined}>{row.value}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* ── W-9 Panel ── */}
+        {agreement.status === 'signed' && (
+          <View style={[styles.section, {
+            borderLeftWidth: 3,
+            borderLeftColor: agreement.w9_status === 'verified' ? '#34C759' : agreement.w9_status === 'uploaded' ? '#FF9500' : '#FF3B30',
+          }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <Text style={styles.sectionTitle}>W-9 Form</Text>
+              <View style={{
+                flexDirection: 'row', alignItems: 'center', gap: 6,
+                backgroundColor: agreement.w9_status === 'verified' ? '#34C75920' : agreement.w9_status === 'uploaded' ? '#FF950020' : '#FF3B3015',
+                borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4,
+              }}>
+                <Ionicons
+                  name={agreement.w9_status === 'verified' ? 'checkmark-circle' : agreement.w9_status === 'uploaded' ? 'cloud-upload' : 'alert-circle'}
+                  size={14}
+                  color={agreement.w9_status === 'verified' ? '#34C759' : agreement.w9_status === 'uploaded' ? '#FF9500' : '#FF3B30'}
+                />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: agreement.w9_status === 'verified' ? '#34C759' : agreement.w9_status === 'uploaded' ? '#FF9500' : '#FF3B30' }}>
+                  {agreement.w9_status === 'verified' ? 'Verified' : agreement.w9_status === 'uploaded' ? 'Awaiting Review' : 'Not Submitted'}
+                </Text>
+              </View>
+            </View>
+
+            {agreement.w9_uploaded_at && (
+              <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 10 }}>
+                Uploaded: {new Date(agreement.w9_uploaded_at).toLocaleString()}
+              </Text>
+            )}
+
+            <View style={{ gap: 10 }}>
+              {agreement.w9_file_url && (
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderRadius: 10, padding: 14, borderWidth: 1, borderColor: colors.border }}
+                  onPress={() => {
+                    const url = agreement.w9_file_url?.startsWith('/api/') ? `${process.env.EXPO_PUBLIC_API_URL || ''}${agreement.w9_file_url}` : agreement.w9_file_url;
+                    if (typeof window !== 'undefined' && url) window.open(url, '_blank');
+                  }}
+                >
+                  <Ionicons name="document-text" size={20} color="#007AFF" />
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: '#007AFF', flex: 1 }}>View / Download W-9</Text>
+                  <Ionicons name="open-outline" size={16} color="#007AFF" />
+                </TouchableOpacity>
+              )}
+
+              {agreement.w9_status === 'uploaded' && (
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#34C75918', borderRadius: 10, padding: 14, borderWidth: 1, borderColor: '#34C759' }}
+                  onPress={async () => {
+                    try {
+                      await api.post(`/partners/agreements/${agreementId}/w9/verify`);
+                      setAgreement((prev: any) => ({ ...prev, w9_status: 'verified' }));
+                      showAlert('Verified', 'W-9 marked as verified. Partner is now fully onboarded.');
+                    } catch { showAlert('Error', 'Failed to verify W-9.'); }
+                  }}
+                >
+                  <Ionicons name="checkmark-circle" size={20} color="#34C759" />
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: '#34C759' }}>Mark W-9 as Verified</Text>
+                </TouchableOpacity>
+              )}
+
+              {(!agreement.w9_status || agreement.w9_status === 'pending') && (
+                <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 20, textAlign: 'center', paddingVertical: 8 }}>
+                  W-9 has not been submitted yet.{'\n'}Partner can upload it from their agreement signing page.
+                </Text>
+              )}
+            </View>
+          </View>
+        )}
 
         {/* Action Buttons */}
         <View style={styles.actionSection}>
