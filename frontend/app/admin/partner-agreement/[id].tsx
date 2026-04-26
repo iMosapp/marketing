@@ -518,7 +518,21 @@ export default function PartnerAgreementDetailScreen() {
 
         {/* Action Buttons */}
         <View style={styles.actionSection}>
-          {/* Copy Link Button */}
+          {/* Download PDF — only for signed agreements */}
+          {agreement.status === 'signed' && (
+            <TouchableOpacity
+              style={[styles.copyLinkButton, { borderColor: '#34C759', backgroundColor: '#34C75910' }]}
+              onPress={() => {
+                const API = process.env.EXPO_PUBLIC_BACKEND_URL || process.env.EXPO_PUBLIC_API_URL || '';
+                const url = `${API}/api/partners/agreements/${agreement.id}/pdf`;
+                if (typeof window !== 'undefined') window.open(url, '_blank');
+              }}
+              data-testid="download-pdf-button"
+            >
+              <Ionicons name="document-text" size={20} color="#34C759" />
+              <Text style={[styles.copyLinkButtonText, { color: '#34C759' }]}>Download Signed Agreement (PDF)</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity 
             style={styles.copyLinkButton}
             onPress={copyLink}

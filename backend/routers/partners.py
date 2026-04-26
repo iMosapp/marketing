@@ -3,12 +3,15 @@ Partner Agreement router - Digital contracts for resellers and referral partners
 Supports: Agreement templates, digital signatures, Stripe payments, commission tiers
 """
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import Response
 from bson import ObjectId
 from datetime import datetime
 from typing import Optional, List
 import os
 import logging
 import asyncio
+import base64
+import re as _re
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
@@ -22,12 +25,256 @@ from routers.database import get_db
 _RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 _SENDER_EMAIL   = os.environ.get("SENDER_EMAIL", "notifications@send.imonsocial.com")
 _APP_URL        = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+_ADMIN_EMAIL    = os.environ.get("ADMIN_EMAIL", "forest@imosapp.com")
 
 if _RESEND_API_KEY:
     _resend.api_key = _RESEND_API_KEY
 
 router = APIRouter(prefix="/partners", tags=["partners"])
 logger = logging.getLogger(__name__)
+
+
+# ============= PDF GENERATION =============
+
+def _clean_text(text: str) -> str:
+    """Strip markdown symbols and return plain text safe for fpdf."""
+    text = _re.sub(r'\*\*(.*?)\*\*', r'\1', text)   # **bold** → plain
+    text = _re.sub(r'\*(.*?)\*', r'\1', text)         # *italic* → plain
+    text = text.replace('{{', '').replace('}}', '')
+    # Replace common unicode that fpdf latin-1 can't handle
+    text = text.replace('\u2018', "'").replace('\u2019', "'")
+    text = text.replace('\u201c', '"').replace('\u201d', '"')
+    text = text.replace('\u2014', '--').replace('\u2013', '-')
+    text = text.replace('\u00a0', ' ')
+    # Encode to latin-1 safely
+    return text.encode('latin-1', errors='replace').decode('latin-1')
+
+
+def _generate_agreement_pdf(agreement: dict) -> bytes:
+    """
+    Generate a professional signed-agreement PDF using fpdf2.
+    Returns raw PDF bytes.
+    """
+    from fpdf import FPDF
+
+    GOLD   = (201, 169, 98)
+    BLACK  = (10,  10,  10)
+    GREY   = (80,  80,  80)
+    LGREY  = (200, 200, 200)
+    WHITE  = (255, 255, 255)
+    GREEN  = (52,  199, 89)
+
+    partner   = agreement.get("signed_partner") or {}
+    agmt_type = agreement.get("template_name", "Partner Agreement")
+    signed_at = agreement.get("signed_at")
+    if signed_at and isinstance(signed_at, datetime):
+        signed_at_str = signed_at.strftime("%B %d, %Y at %I:%M %p UTC")
+    elif signed_at:
+        signed_at_str = str(signed_at)
+    else:
+        signed_at_str = "N/A"
+
+    pdf = FPDF()
+    pdf.set_margins(left=14, top=10, right=14)
+    pdf.set_auto_page_break(auto=True, margin=18)
+    pdf.add_page()
+
+    # Full usable width = page_width - left_margin - right_margin
+    W = pdf.w - pdf.l_margin - pdf.r_margin   # ≈ 182mm for A4 with 14mm margins
+    LBL = 48   # label column width
+    VAL = W - LBL  # value column width
+
+    # ── COVER HEADER ──────────────────────────────────────────────────────────
+    pdf.set_fill_color(*BLACK)
+    pdf.rect(0, 0, 210, 38, 'F')
+    pdf.set_xy(0, 8)
+    pdf.set_font("Helvetica", "B", 18)
+    pdf.set_text_color(*GOLD)
+    pdf.cell(210, 10, "i'M On Social", align="C", ln=True)
+    pdf.set_font("Helvetica", "", 9)
+    pdf.set_text_color(*LGREY)
+    pdf.cell(210, 6, "VI Ventures Group LLC  |  Partner Agreement", align="C", ln=True)
+    # Reset x to left margin after full-width header cells
+    pdf.set_xy(pdf.l_margin, 44)
+
+    # ── AGREEMENT TITLE ───────────────────────────────────────────────────────
+    pdf.set_font("Helvetica", "B", 20)
+    pdf.set_text_color(*BLACK)
+    pdf.cell(W, 12, _clean_text(agmt_type), ln=True, align="C")
+    pdf.set_font("Helvetica", "", 11)
+    pdf.set_text_color(*GREY)
+    pdf.cell(W, 7, f"Signed: {signed_at_str}", ln=True, align="C")
+    pdf.ln(4)
+
+    # ── SIGNED BADGE ──────────────────────────────────────────────────────────
+    badge_w = 40
+    pdf.set_x(pdf.l_margin + (W - badge_w) / 2)
+    pdf.set_fill_color(*GREEN)
+    pdf.set_text_color(*WHITE)
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(badge_w, 7, "SIGNED", align="C", fill=True, border=0, ln=True)
+    pdf.set_x(pdf.l_margin)
+    pdf.ln(8)
+
+    # ── HELPERS ───────────────────────────────────────────────────────────────
+    def divider():
+        pdf.set_x(pdf.l_margin)
+        pdf.set_draw_color(*LGREY)
+        pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
+        pdf.ln(4)
+
+    def section_header(title: str):
+        pdf.ln(2)
+        pdf.set_x(pdf.l_margin)
+        pdf.set_fill_color(*GOLD)
+        pdf.set_text_color(*WHITE)
+        pdf.set_font("Helvetica", "B", 10)
+        pdf.cell(W, 7, f"  {title.upper()}", fill=True, ln=True)
+        pdf.set_x(pdf.l_margin)
+        pdf.ln(3)
+        pdf.set_text_color(*BLACK)
+
+    def label_value(label: str, value: str, mono: bool = False):
+        if not value:
+            return
+        pdf.set_x(pdf.l_margin)
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.set_text_color(*GREY)
+        pdf.cell(LBL, 6, _clean_text(label) + ":", ln=False)
+        pdf.set_font("Courier" if mono else "Helvetica", "", 9)
+        pdf.set_text_color(*BLACK)
+        # Explicit width — no w=0 to avoid horizontal overflow edge cases
+        pdf.multi_cell(VAL, 6, _clean_text(str(value)))
+        pdf.set_x(pdf.l_margin)
+
+    def body_text(text: str, font_size: int = 9, h: int = 5):
+        pdf.set_x(pdf.l_margin)
+        pdf.set_font("Helvetica", "", font_size)
+        pdf.set_text_color(*BLACK)
+        pdf.multi_cell(W, h, _clean_text(text))
+        pdf.set_x(pdf.l_margin)
+
+    # ── PARTNER INFO ──────────────────────────────────────────────────────────
+    section_header("Partner Information")
+    label_value("Name",        partner.get("name", ""))
+    label_value("Email",       partner.get("email", ""))
+    label_value("Company",     partner.get("company", ""))
+    label_value("Phone",       partner.get("phone", ""))
+    addr_parts = [partner.get("address",""), partner.get("city",""), partner.get("state",""), partner.get("zip_code","")]
+    addr = ", ".join(p for p in addr_parts if p)
+    if addr.strip(", "):
+        label_value("Address", addr)
+    label_value("Tax ID / EIN", partner.get("tax_id", ""))
+    pdf.ln(2)
+
+    # ── AGREEMENT CONTENT (MPA + Exhibit A) ───────────────────────────────────
+    content = agreement.get("content", "")
+    if content:
+        section_header("Agreement Terms")
+        for line in content.split("\n"):
+            line = line.strip()
+            if not line or line == "*":
+                pdf.ln(2)
+                continue
+            if line == "---":
+                divider()
+                continue
+            pdf.set_x(pdf.l_margin)
+            if line.startswith("# "):
+                pdf.set_font("Helvetica", "B", 14)
+                pdf.set_text_color(*BLACK)
+                pdf.multi_cell(W, 8, _clean_text(line[2:]))
+                pdf.ln(1)
+            elif line.startswith("## "):
+                pdf.set_font("Helvetica", "B", 11)
+                pdf.set_text_color(*BLACK)
+                pdf.multi_cell(W, 7, _clean_text(line[3:]))
+                pdf.ln(1)
+            elif line.startswith("### "):
+                pdf.set_font("Helvetica", "B", 10)
+                pdf.set_text_color(*GREY)
+                pdf.multi_cell(W, 6, _clean_text(line[4:]))
+            elif line.startswith("- "):
+                indent = 6
+                pdf.set_x(pdf.l_margin + indent)
+                pdf.set_font("Helvetica", "", 9)
+                pdf.set_text_color(*BLACK)
+                pdf.multi_cell(W - indent, 5, _clean_text("- " + line[2:]))
+            elif line.startswith("| "):
+                pdf.set_font("Courier", "", 8)
+                pdf.set_text_color(*GREY)
+                pdf.multi_cell(W, 5, _clean_text(line))
+            else:
+                pdf.set_font("Helvetica", "", 9)
+                pdf.set_text_color(*BLACK)
+                pdf.multi_cell(W, 5, _clean_text(line))
+            pdf.set_x(pdf.l_margin)
+
+    # ── LEGAL SIGNATURE RECORD ────────────────────────────────────────────────
+    pdf.add_page()
+    section_header("Legal Signature Record")
+    y_start = pdf.get_y()
+
+    rows = [
+        ("Signed By",     partner.get("name", ""),         False),
+        ("Email",         partner.get("email", ""),         False),
+        ("Company",       partner.get("company", ""),       False),
+        ("Phone",         partner.get("phone", ""),         False),
+        ("Signed At",     signed_at_str,                    False),
+        ("IP Address",    partner.get("ip_address", ""),    True),
+        ("Signature",     f'"{partner.get("signature","")}"', False),
+        ("User Agent",    partner.get("user_agent", ""),    True),
+        ("Document Hash", partner.get("document_hash", ""), True),
+    ]
+    for label, value, mono in rows:
+        label_value(label, value, mono=mono)
+
+    pdf.ln(4)
+    y_end = pdf.get_y()
+    # Green border around the signature block
+    pdf.set_draw_color(*GREEN)
+    pdf.rect(pdf.l_margin - 2, y_start - 1, W + 4, y_end - y_start + 2)
+    pdf.ln(4)
+
+    # ── W-9 STATUS ────────────────────────────────────────────────────────────
+    section_header("W-9 / Tax Form Status")
+    pdf.set_x(pdf.l_margin)
+    w9_status = agreement.get("w9_status", "pending")
+    w9_verified_at = agreement.get("w9_verified_at")
+    if w9_status == "verified":
+        pdf.set_text_color(*GREEN)
+        pdf.set_font("Helvetica", "B", 11)
+        v_str = ""
+        if w9_verified_at and isinstance(w9_verified_at, datetime):
+            v_str = f"  (verified {w9_verified_at.strftime('%B %d, %Y')})"
+        pdf.cell(W, 8, f"W-9 Verified{v_str}", ln=True)
+    elif w9_status == "uploaded":
+        pdf.set_text_color(255, 149, 0)
+        pdf.set_font("Helvetica", "B", 11)
+        pdf.cell(W, 8, "W-9 Uploaded -- Awaiting Admin Review", ln=True)
+    else:
+        pdf.set_text_color(255, 59, 48)
+        pdf.set_font("Helvetica", "B", 11)
+        pdf.cell(W, 8, "W-9 Not Yet Submitted", ln=True)
+    pdf.ln(4)
+
+    # ── FOOTER ────────────────────────────────────────────────────────────────
+    divider()
+    pdf.set_x(pdf.l_margin)
+    pdf.set_font("Helvetica", "", 8)
+    pdf.set_text_color(*GREY)
+    pdf.multi_cell(W, 5,
+        "This document is a legally binding digital agreement executed via i'M On Social's "
+        "e-signature platform. The signature, IP address, and document hash above serve as "
+        "the official record of execution. Governed by the laws of the State of Texas."
+    )
+    pdf.ln(2)
+    pdf.set_x(pdf.l_margin)
+    pdf.set_font("Helvetica", "I", 8)
+    pdf.cell(W, 5, f"Generated {datetime.utcnow().strftime('%B %d, %Y')} | VI Ventures Group LLC", ln=True)
+
+    return bytes(pdf.output())
+
 
 
 # ============= MODELS =============
@@ -617,6 +864,29 @@ async def get_agreement(agreement_id: str):
     }
 
 
+@router.get("/agreements/{agreement_id}/pdf")
+async def download_agreement_pdf(agreement_id: str):
+    """Generate and stream the signed agreement as a PDF."""
+    db = get_db()
+    agreement = await db.partner_agreements.find_one({"_id": ObjectId(agreement_id)})
+    if not agreement:
+        raise HTTPException(status_code=404, detail="Agreement not found")
+    if agreement.get("status") not in ("signed", "pending_payment"):
+        raise HTTPException(status_code=400, detail="Agreement has not been signed yet")
+
+    partner_name = (agreement.get("signed_partner") or {}).get("name") or agreement.get("partner_name") or "partner"
+    safe_name = _re.sub(r"[^a-zA-Z0-9_-]", "_", partner_name)[:40]
+    filename = f"agreement_{safe_name}.pdf"
+
+    pdf_bytes = await asyncio.to_thread(_generate_agreement_pdf, agreement)
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
 @router.put("/agreements/{agreement_id}")
 async def update_agreement(agreement_id: str, data: dict):
     """Update an agreement (before sending)"""
@@ -735,7 +1005,7 @@ async def _send_agreement_email(
 
     try:
         result = await asyncio.to_thread(_resend.Emails.send, {
-            "from": f"i'M On Social <billing@imonsocial.com>",
+            "from": "i'M On Social <billing@imonsocial.com>",
             "to": [to_email],
             "reply_to": "support@imonsocial.com",
             "subject": f"Your {agreement_type} is Ready to Sign",
@@ -937,9 +1207,120 @@ async def upload_w9(agreement_id: str, request: Request):
     return {"success": True, "message": "W-9 uploaded successfully", "w9_status": "uploaded"}
 
 
+async def _email_signed_agreement(agreement: dict, agreement_id: str) -> None:
+    """
+    Generate the signed agreement PDF and email it to:
+      - The partner (their official copy)
+      - The admin (for records)
+    Called after W-9 verification.
+    """
+    if not _RESEND_API_KEY:
+        logger.warning("[Partners] RESEND_API_KEY not set — skipping signed agreement email")
+        return
+
+    partner   = agreement.get("signed_partner") or {}
+    partner_email = partner.get("email") or agreement.get("partner_email")
+    partner_name  = partner.get("name") or agreement.get("partner_name") or "Partner"
+    agmt_type     = agreement.get("template_name", "Partner Agreement")
+    signed_at     = agreement.get("signed_at")
+    signed_at_str = signed_at.strftime("%B %d, %Y") if isinstance(signed_at, datetime) else str(signed_at or "")
+
+    try:
+        pdf_bytes = await asyncio.to_thread(_generate_agreement_pdf, agreement)
+        pdf_b64 = base64.b64encode(pdf_bytes).decode()
+    except Exception as e:
+        logger.error(f"[Partners] PDF generation failed for {agreement_id}: {e}")
+        return
+
+    safe_name = _re.sub(r"[^a-zA-Z0-9_-]", "_", partner_name)[:40]
+    pdf_filename = f"signed_agreement_{safe_name}.pdf"
+
+    attachment = {"filename": pdf_filename, "content": pdf_b64}
+
+    # ── Partner copy ──────────────────────────────────────────────────────────
+    if partner_email:
+        partner_html = f"""
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#000;color:#fff;padding:40px 32px;border-radius:16px;">
+          <div style="text-align:center;margin-bottom:32px;">
+            <div style="display:inline-block;background:#1C1C1E;border-radius:12px;padding:14px 28px;">
+              <span style="font-size:22px;font-weight:800;color:#C9A962;">i'M On Social</span>
+            </div>
+          </div>
+          <div style="text-align:center;margin-bottom:32px;">
+            <div style="font-size:56px;margin-bottom:16px;">&#x2705;</div>
+            <h1 style="font-size:26px;font-weight:700;color:#fff;margin:0 0 8px 0;">You're Fully Onboarded!</h1>
+            <p style="font-size:16px;color:#8E8E93;margin:0;">Your W-9 has been verified and your partnership is now active.</p>
+          </div>
+          <div style="background:#1C1C1E;border-radius:12px;padding:24px;margin-bottom:28px;border-left:4px solid #C9A962;">
+            <p style="font-size:13px;color:#8E8E93;margin:0 0 4px;text-transform:uppercase;letter-spacing:.5px;">Agreement</p>
+            <p style="font-size:18px;font-weight:700;color:#fff;margin:0 0 10px;">{agmt_type}</p>
+            <p style="font-size:13px;color:#8E8E93;margin:0 0 4px;text-transform:uppercase;letter-spacing:.5px;">Signed</p>
+            <p style="font-size:15px;color:#fff;margin:0;">{signed_at_str}</p>
+          </div>
+          <p style="font-size:14px;color:#CCC;line-height:22px;margin-bottom:28px;">
+            Your fully executed and verified agreement is attached as a PDF. Please save it for your records.
+            Commissions are paid <strong>Net 30</strong> after the close of each calendar month.
+          </p>
+          <div style="border-top:1px solid #2C2C2E;padding-top:24px;text-align:center;">
+            <p style="font-size:13px;color:#636366;margin:0 0 6px;">
+              Questions? <a href="mailto:support@imonsocial.com" style="color:#C9A962;">support@imonsocial.com</a>
+            </p>
+            <p style="font-size:12px;color:#48484A;margin:0;">&copy; 2026 VI Ventures Group LLC &middot; i'M On Social</p>
+          </div>
+        </div>
+        """
+        try:
+            result = await asyncio.to_thread(_resend.Emails.send, {
+                "from": "i'M On Social <billing@imonsocial.com>",
+                "to": [partner_email],
+                "reply_to": "support@imonsocial.com",
+                "subject": f"Your Signed {agmt_type} — Welcome to the Partner Program!",
+                "html": partner_html,
+                "attachments": [attachment],
+            })
+            logger.info(f"[Partners] Signed agreement emailed to partner {partner_email}: {result.get('id')}")
+        except Exception as e:
+            logger.error(f"[Partners] Failed to email partner {partner_email}: {e}")
+
+    # ── Admin copy ────────────────────────────────────────────────────────────
+    admin_html = f"""
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#000;color:#fff;padding:40px 32px;border-radius:16px;">
+      <div style="text-align:center;margin-bottom:32px;">
+        <span style="font-size:22px;font-weight:800;color:#C9A962;">i'M On Social</span>
+      </div>
+      <h1 style="font-size:22px;font-weight:700;color:#fff;margin:0 0 8px 0;">Partner Fully Onboarded</h1>
+      <p style="font-size:14px;color:#8E8E93;margin:0 0 28px;">W-9 verified. Signed agreement attached.</p>
+      <div style="background:#1C1C1E;border-radius:12px;padding:20px;margin-bottom:20px;">
+        <p style="font-size:13px;color:#8E8E93;margin:0 0 3px;">Partner</p>
+        <p style="font-size:16px;font-weight:700;color:#fff;margin:0 0 12px;">{partner_name}</p>
+        <p style="font-size:13px;color:#8E8E93;margin:0 0 3px;">Email</p>
+        <p style="font-size:14px;color:#fff;margin:0 0 12px;">{partner_email or "N/A"}</p>
+        <p style="font-size:13px;color:#8E8E93;margin:0 0 3px;">Agreement Type</p>
+        <p style="font-size:14px;color:#fff;margin:0 0 12px;">{agmt_type}</p>
+        <p style="font-size:13px;color:#8E8E93;margin:0 0 3px;">Signed</p>
+        <p style="font-size:14px;color:#fff;margin:0;">{signed_at_str}</p>
+      </div>
+      <p style="font-size:12px;color:#48484A;text-align:center;">&copy; 2026 VI Ventures Group LLC &middot; i'M On Social</p>
+    </div>
+    """
+    try:
+        result = await asyncio.to_thread(_resend.Emails.send, {
+            "from": "i'M On Social <billing@imonsocial.com>",
+            "to": [_ADMIN_EMAIL],
+            "reply_to": "support@imonsocial.com",
+            "subject": f"[Partner Onboarded] {partner_name} — {agmt_type}",
+            "html": admin_html,
+            "attachments": [attachment],
+        })
+        logger.info(f"[Partners] Signed agreement copy emailed to admin {_ADMIN_EMAIL}: {result.get('id')}")
+    except Exception as e:
+        logger.error(f"[Partners] Failed to email admin {_ADMIN_EMAIL}: {e}")
+
+
+
 @router.post("/agreements/{agreement_id}/w9/verify")
 async def verify_w9(agreement_id: str):
-    """Admin marks W-9 as verified."""
+    """Admin marks W-9 as verified — then emails the signed PDF to partner + admin."""
     db = get_db()
     now = datetime.utcnow()
     await db.partner_agreements.update_one(
@@ -950,6 +1331,12 @@ async def verify_w9(agreement_id: str):
         {"agreement_id": agreement_id},
         {"$set": {"w9_status": "verified"}}
     )
+
+    # Fire-and-forget: generate PDF and email both partner + admin
+    agreement = await db.partner_agreements.find_one({"_id": ObjectId(agreement_id)})
+    if agreement:
+        asyncio.create_task(_email_signed_agreement(agreement, agreement_id))
+
     return {"success": True, "w9_status": "verified"}
 
 
