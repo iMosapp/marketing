@@ -102,6 +102,54 @@ const { showToast } = useToast();
     }
   };
 
+  const [w9Uploading, setW9Uploading] = useState(false);
+  const [w9Uploaded, setW9Uploaded] = useState(false);
+
+  const handleW9Upload = async () => {
+    if (Platform.OS !== 'web') {
+      // Native: pick PDF or image
+      try {
+        const { launchImageLibraryAsync, MediaTypeOptions } = await import('expo-image-picker');
+        const result = await launchImageLibraryAsync({ mediaTypes: MediaTypeOptions.All, quality: 0.9 });
+        if (!result.canceled && result.assets?.[0]) {
+          const asset = result.assets[0];
+          const fd = new FormData();
+          fd.append('file', { uri: asset.uri, name: 'w9.pdf', type: 'application/pdf' } as any);
+          setW9Uploading(true);
+          await api.post(`/partners/agreements/${agreementId}/w9`, fd);
+          setW9Uploaded(true);
+          showAlert('W-9 Submitted', 'Your W-9 has been received. We\'ll verify it within 1-2 business days.');
+        }
+      } catch (e) {
+        showAlert('Error', 'Failed to upload W-9. Please try again.');
+      } finally {
+        setW9Uploading(false);
+      }
+    } else {
+      // Web: file input
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.pdf,.png,.jpg,.jpeg';
+      input.onchange = async (e: any) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const fd = new FormData();
+        fd.append('file', file);
+        setW9Uploading(true);
+        try {
+          await api.post(`/partners/agreements/${agreementId}/w9`, fd);
+          setW9Uploaded(true);
+          showAlert('W-9 Submitted', 'Your W-9 has been received. We\'ll verify it within 1-2 business days.');
+        } catch {
+          showAlert('Error', 'Failed to upload W-9.');
+        } finally {
+          setW9Uploading(false);
+        }
+      };
+      input.click();
+    }
+  };
+
   const handleSign = async () => {
     // Validation
     if (!form.name.trim()) {
@@ -168,30 +216,36 @@ const { showToast } = useToast();
   };
 
   const renderMarkdown = (content: string) => {
-    // Simple markdown-like rendering
     const lines = content.split('\n');
     return lines.map((line, index) => {
-      if (line.startsWith('# ')) {
-        return <Text key={index} style={styles.mdH1}>{line.substring(2)}</Text>;
+      if (line.startsWith('# '))  return <Text key={`md-h1-${index}`} style={styles.mdH1}>{line.substring(2)}</Text>;
+      if (line.startsWith('## ')) return <Text key={`md-h2-${index}`} style={styles.mdH2}>{line.substring(3)}</Text>;
+      if (line.startsWith('### ')) return <Text key={`md-h3-${index}`} style={styles.mdH3}>{line.substring(4)}</Text>;
+      if (line.startsWith('- ')) return (
+        <View key={`md-li-${index}`} style={styles.mdListItem}>
+          <Text style={styles.mdBullet}>•</Text>
+          <Text style={styles.mdText}>{line.substring(2)}</Text>
+        </View>
+      );
+      if (line.startsWith('| ')) return <Text key={`md-tb-${index}`} style={styles.mdTableRow}>{line}</Text>;
+      if (line.startsWith('---')) return <View key={`md-hr-${index}`} style={styles.mdDivider} />;
+      if (line.startsWith('**') && line.endsWith('**')) {
+        return <Text key={`md-b-${index}`} style={styles.mdBold}>{line.replace(/\*\*/g,'')}</Text>;
       }
-      if (line.startsWith('## ')) {
-        return <Text key={index} style={styles.mdH2}>{line.substring(3)}</Text>;
-      }
-      if (line.startsWith('- ')) {
+      if (line.trim() === '' || line.trim() === '*') return <View key={`md-sp-${index}`} style={{ height: 8 }} />;
+      // Inline bold: **text**
+      if (line.includes('**')) {
+        const parts = line.split(/\*\*(.*?)\*\*/);
         return (
-          <View key={index} style={styles.mdListItem}>
-            <Text style={styles.mdBullet}>•</Text>
-            <Text style={styles.mdText}>{line.substring(2)}</Text>
-          </View>
+          <Text key={`md-il-${index}`} style={styles.mdText}>
+            {parts.map((p, pi) => pi % 2 === 1
+              ? <Text key={pi} style={styles.mdBold}>{p}</Text>
+              : p
+            )}
+          </Text>
         );
       }
-      if (line.startsWith('---')) {
-        return <View key={index} style={styles.mdDivider} />;
-      }
-      if (line.trim() === '') {
-        return <View key={index} style={{ height: 12 }} />;
-      }
-      return <Text key={index} style={styles.mdText}>{line}</Text>;
+      return <Text key={`md-p-${index}`} style={styles.mdText}>{line}</Text>;
     });
   };
 
@@ -232,21 +286,17 @@ const { showToast } = useToast();
             </View>
             <Text style={styles.signedTitle}>Agreement Signed!</Text>
             <Text style={styles.signedSubtitle}>
-              Welcome to the i'M On Social Partner Program
+              Welcome to the Partner Program — {agreement.template_name}
             </Text>
             
             <View style={styles.signedDetails}>
               <View style={styles.signedDetailRow}>
                 <Text style={styles.signedDetailLabel}>Partner</Text>
-                <Text style={styles.signedDetailValue}>
-                  {agreement.signed_partner?.name}
-                </Text>
+                <Text style={styles.signedDetailValue}>{agreement.signed_partner?.name}</Text>
               </View>
               <View style={styles.signedDetailRow}>
                 <Text style={styles.signedDetailLabel}>Agreement Type</Text>
-                <Text style={styles.signedDetailValue}>
-                  {agreement.template_name}
-                </Text>
+                <Text style={styles.signedDetailValue}>{agreement.template_name}</Text>
               </View>
               {agreement.commission_tier && (
                 <View style={styles.signedDetailRow}>
@@ -263,19 +313,45 @@ const { showToast } = useToast();
                 </Text>
               </View>
             </View>
+
+            {/* W-9 Upload Section */}
+            <View style={[styles.signedDetails, { marginTop: 20, borderTopWidth: 1, borderTopColor: '#E5E5EA', paddingTop: 20 }]}>
+              <Text style={[styles.signedTitle, { fontSize: 18, marginBottom: 8 }]}>Next Step: Submit Your W-9</Text>
+              <Text style={{ fontSize: 14, color: '#636366', textAlign: 'center', marginBottom: 20, lineHeight: 20 }}>
+                A completed W-9 is required to receive commission payments. Please upload your signed W-9 form (PDF or image).
+              </Text>
+              {w9Uploaded || agreement.w9_status === 'uploaded' || agreement.w9_status === 'verified' ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#F0FFF4', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#34C759' }}>
+                  <Ionicons name="checkmark-circle" size={24} color="#34C759" />
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: '#34C759' }}>
+                    W-9 {agreement.w9_status === 'verified' ? 'Verified ✓' : 'Submitted — pending review'}
+                  </Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={{ backgroundColor: '#007AFF', borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, opacity: w9Uploading ? 0.6 : 1 }}
+                  onPress={handleW9Upload}
+                  disabled={w9Uploading}
+                >
+                  {w9Uploading
+                    ? <ActivityIndicator size="small" color="#fff" />
+                    : <Ionicons name="cloud-upload-outline" size={20} color="#fff" />
+                  }
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff' }}>
+                    {w9Uploading ? 'Uploading...' : 'Upload W-9 Form'}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
             
             <Text style={styles.nextStepsTitle}>What's Next?</Text>
             <View style={styles.nextStep}>
               <Ionicons name="mail-outline" size={24} color="#007AFF" />
-              <Text style={styles.nextStepText}>
-                You'll receive a welcome email with your partner portal access
-              </Text>
+              <Text style={styles.nextStepText}>You'll receive a welcome email with your partner portal access</Text>
             </View>
             <View style={styles.nextStep}>
               <Ionicons name="link-outline" size={24} color="#007AFF" />
-              <Text style={styles.nextStepText}>
-                Your unique referral link will be activated within 24 hours
-              </Text>
+              <Text style={styles.nextStepText}>Your unique referral link will be activated within 24 hours</Text>
             </View>
           </ScrollView>
         </SafeAreaView>
@@ -780,17 +856,37 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   mdH1: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '800',
     color: '#FFF',
-    marginBottom: 16,
+    marginBottom: 14,
+    marginTop: 8,
   },
   mdH2: {
-    fontSize: 19,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: '#FFF',
     marginTop: 20,
-    marginBottom: 12,
+    marginBottom: 10,
+  },
+  mdH3: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#E5E5EA',
+    marginTop: 14,
+    marginBottom: 8,
+  },
+  mdBold: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  mdTableRow: {
+    fontSize: 14,
+    color: '#CCC',
+    fontFamily: 'monospace',
+    lineHeight: 22,
+    paddingVertical: 2,
   },
   mdText: {
     fontSize: 16,

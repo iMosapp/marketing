@@ -52,105 +52,260 @@ class PartnerSignup(BaseModel):
 
 # ============= DEFAULT TEMPLATES =============
 
-DEFAULT_RESELLER_TEMPLATE = """
-# i'M On Social Reseller Agreement
+DEFAULT_MASTER_AGREEMENT = """# MASTER PARTNER AGREEMENT
+*(Referral & Reseller Program)*
 
-This Reseller Agreement ("Agreement") is entered into as of the date of digital signature below.
+**This Master Partner Agreement ("Agreement")** is entered into as of **{{effective_date}}**, by and between:
 
-## 1. Appointment as Reseller
+**Company:** {{company_legal_name}} ("Company")
+**Partner:** {{partner_name}} ("Partner")
 
-i'M On Social hereby appoints the Reseller as a non-exclusive reseller of i'M On Social products and services in the territory agreed upon.
+---
 
-## 2. Reseller Obligations
+## 1. PURPOSE
 
-The Reseller agrees to:
-- Actively promote and market i'M On Social products
-- Maintain professional standards in all customer interactions
-- Provide accurate information about products and pricing
-- Not make unauthorized modifications to products or services
+This Agreement establishes the terms under which Partner may refer prospective customers to Company and/or resell Company's products and services, as further defined in **Exhibit A (Partner Terms)** attached hereto.
+
+---
+
+## 2. PARTNER TYPES
+
+Partner's role shall be defined in Exhibit A as one of the following:
+
+- **Referral Partner:** Introduces prospective customers to Company. Company retains responsibility for all sales, billing, and fulfillment.
+- **Reseller Partner:** Actively markets and sells Company services. Billing structure will be defined in Exhibit A.
+
+---
+
+## 3. CUSTOMER OWNERSHIP
+
+All customers and accounts acquired under this Agreement shall be exclusively owned by Company. Partner shall have no ownership rights to customer relationships, data, or contracts.
+
+---
+
+## 4. COMPENSATION
+
+Partner shall be compensated based on **Collected Active Monthly Recurring Revenue ("Collected Active MRR")** attributed to Partner, as defined below and further detailed in Exhibit A.
+
+### 4.1 Definition of Collected Active MRR
+
+"Collected Active MRR" means monthly recurring revenue actually received by Company from active customer accounts, **excluding:**
+
+- Failed or declined payments
+- Refunds or chargebacks
+- Delinquent or past-due accounts
+- One-time fees or non-recurring charges
+
+### 4.2 Tiered Commission Structure
+
+Partner compensation is tiered based on Collected Active MRR as outlined in Exhibit A.
+
+- Commission tiers are evaluated **monthly at time of payout**
+- Commission rates apply **retroactively to total Collected Active MRR** for that month
+- Tier levels may increase or decrease based on monthly performance
+
+### 4.3 Payment Terms
+
+- Commissions are paid **Net 30 days** after the close of each calendar month
+- Payment is contingent upon Company's receipt of funds from customers
+- No commissions are paid on unpaid, refunded, or disputed revenue
+
+---
+
+## 5. ATTRIBUTION
+
+Partner shall receive credit only for customers:
+
+- Directly referred or sold by Partner
+- Accepted and onboarded by Company
+- Not previously engaged with Company through other channels
+
+Company reserves the right to determine attribution in cases of conflict.
+
+---
+
+## 6. TERM AND TERMINATION
+
+**6.1 Term** — This Agreement shall remain in effect until terminated by either party.
+
+**6.2 Termination** — Either party may terminate this Agreement at any time with written notice.
+
+**6.3 Post-Termination Payments** — Commissions will continue for active accounts for the duration defined in Exhibit A. No new commissions will be earned after termination.
+
+---
+
+## 7. PARTNER OBLIGATIONS
+
+Partner agrees to:
+
+- Represent Company accurately and professionally
+- Not make unauthorized claims, guarantees, or commitments on Company's behalf
 - Comply with all applicable laws and regulations
-
-## 3. Pricing and Payments
-
-- Reseller receives products at the agreed wholesale discount
-- Reseller sets retail pricing at or above minimum advertised price (MAP)
-- Payment terms: Net 30 from invoice date
-- All payments in USD
-
-## 4. Commission Structure
-
-Commission rates are based on the selected tier and are calculated on net revenue.
-
-## 5. Term and Termination
-
-This Agreement is effective from the date of signature and continues for one (1) year, automatically renewing unless terminated by either party with 30 days written notice.
-
-## 6. Confidentiality
-
-Reseller agrees to maintain confidentiality of all proprietary information, pricing structures, and business practices.
-
-## 7. Limitation of Liability
-
-i'M On Social's liability is limited to the fees paid under this Agreement in the 12 months preceding any claim.
+- Maintain confidentiality of all Company information
 
 ---
 
-By signing below, you acknowledge that you have read, understood, and agree to be bound by the terms of this Agreement.
-"""
+## 8. CONFIDENTIALITY
 
-DEFAULT_REFERRAL_TEMPLATE = """
-# i'M On Social Referral Partner Agreement
-
-This Referral Partner Agreement ("Agreement") is entered into as of the date of digital signature below.
-
-## 1. Referral Partnership
-
-i'M On Social welcomes you as a Referral Partner. As a partner, you will earn commissions for qualified referrals that become paying customers.
-
-## 2. How It Works
-
-1. Share your unique referral link with potential customers
-2. When they sign up and become paying customers, you earn commission
-3. Commissions are paid monthly for all qualified referrals
-
-## 3. Referral Partner Obligations
-
-You agree to:
-- Promote i'M On Social honestly and professionally
-- Not engage in spam or misleading marketing
-- Disclose your referral relationship when required by law
-- Not bid on i'M On Social branded keywords in paid advertising
-
-## 4. Commission Structure
-
-Your commission rate is based on your selected tier. Commissions are calculated on the first 12 months of customer payments.
-
-## 5. Payment Terms
-
-- Minimum payout threshold: $100
-- Payment schedule: Monthly, by the 15th
-- Payment method: Direct deposit or check
-- You are responsible for all applicable taxes
-
-## 6. Term and Termination
-
-This Agreement continues until terminated by either party with 14 days notice. Pending commissions for qualified referrals will still be paid.
-
-## 7. No Employment Relationship
-
-This Agreement does not create an employment, agency, or partnership relationship.
+Partner agrees to maintain confidentiality of all Company information, including pricing, technology, customer data, and business practices, both during and after the term of this Agreement.
 
 ---
 
-By signing below, you acknowledge that you have read, understood, and agree to be bound by the terms of this Agreement.
+## 9. INDEPENDENT CONTRACTOR
+
+Partner is an independent contractor and not an employee, agent, or representative of Company. Partner is solely responsible for all applicable taxes on commissions received.
+
+---
+
+## 10. LIMITATION OF LIABILITY
+
+Company shall not be liable for indirect, incidental, or consequential damages. Company's total liability shall not exceed commissions paid in the 12 months preceding any claim.
+
+---
+
+## 11. GOVERNING LAW
+
+This Agreement shall be governed by the laws of the State of {{governing_state}}.
+
+---
+
+## 12. ENTIRE AGREEMENT
+
+This Agreement, together with Exhibit A, constitutes the entire agreement between the parties and supersedes all prior negotiations, representations, or agreements.
+
+---
+
+*By signing below, Partner confirms they have read, understood, and agree to be bound by this Agreement and the attached Exhibit A.*
 """
 
-DEFAULT_COMMISSION_TIERS = [
-    {"name": "Bronze", "percentage": 10.0, "description": "Standard partner tier - 10% commission"},
-    {"name": "Silver", "percentage": 15.0, "description": "High-volume partner - 15% commission"},
-    {"name": "Gold", "percentage": 20.0, "description": "Premium partner - 20% commission"},
-    {"name": "Platinum", "percentage": 25.0, "description": "Elite partner - 25% commission"},
-]
+
+EXHIBIT_A_REFERRAL = """---
+
+# EXHIBIT A — PARTNER TERMS (Referral Partner)
+
+**Partner Name:** {{partner_name}}
+**Effective Date:** {{effective_date}}
+**Partner Type:** Referral Partner
+
+---
+
+## 1. COMMISSION STRUCTURE
+
+| Collected Active MRR | Commission Rate |
+|---|---|
+| Up to $10,000 / month | 10% |
+| Above $10,000 / month | 15% |
+
+*Tiers are evaluated monthly and applied retroactively to total Collected Active MRR for that month.*
+
+---
+
+## 2. PAYMENT TERMS
+
+- Paid **Net 30** after end of each calendar month
+- Only applies to revenue successfully collected by Company
+- Accounts must be active and in good standing at time of payout
+
+---
+
+## 3. COMMISSION DURATION
+
+{{commission_duration}}
+
+---
+
+## 4. SPECIAL TERMS
+
+{{custom_terms}}
+
+---
+
+*This Exhibit A is incorporated into and subject to the Master Partner Agreement dated {{effective_date}}.*
+"""
+
+
+EXHIBIT_A_RESELLER = """---
+
+# EXHIBIT A — PARTNER TERMS (Reseller Partner)
+
+**Partner Name:** {{partner_name}}
+**Effective Date:** {{effective_date}}
+**Partner Type:** Reseller Partner
+
+---
+
+## 1. COMMISSION STRUCTURE
+
+| Collected Active MRR | Commission Rate |
+|---|---|
+| Up to $20,000 / month | 20% |
+| $20,001 – $40,000 / month | 30% |
+| Above $40,000 / month | 40% |
+
+*Tiers are evaluated monthly and applied retroactively to total Collected Active MRR for that month.*
+
+---
+
+## 2. PAYMENT TERMS
+
+- Paid **Net 30** after end of each calendar month
+- Only applies to revenue successfully collected by Company
+- Accounts must be active and in good standing at time of payout
+
+---
+
+## 3. BILLING STRUCTURE
+
+{{billing_structure}}
+
+---
+
+## 4. COMMISSION DURATION
+
+{{commission_duration}}
+
+---
+
+## 5. SPECIAL TERMS
+
+{{custom_terms}}
+
+---
+
+*This Exhibit A is incorporated into and subject to the Master Partner Agreement dated {{effective_date}}.*
+"""
+
+
+def build_agreement_content(partner_type: str, partner_name: str, custom_terms: str = "",
+                             commission_duration: str = "Lifetime (while account remains active)",
+                             billing_structure: str = "Company Bills Customer (Partner receives commission)",
+                             company_name: str = "VI Ventures LLC",
+                             governing_state: str = "Texas") -> str:
+    """Generate the full agreement text from the template + exhibit A."""
+    import datetime as dt
+    effective_date = dt.datetime.utcnow().strftime("%B %d, %Y")
+
+    main = (DEFAULT_MASTER_AGREEMENT
+            .replace("{{partner_name}}", partner_name or "[Partner Name]")
+            .replace("{{effective_date}}", effective_date)
+            .replace("{{company_legal_name}}", company_name)
+            .replace("{{governing_state}}", governing_state))
+
+    if partner_type == "reseller":
+        exhibit = (EXHIBIT_A_RESELLER
+                   .replace("{{partner_name}}", partner_name or "[Partner Name]")
+                   .replace("{{effective_date}}", effective_date)
+                   .replace("{{custom_terms}}", custom_terms or "No additional terms.")
+                   .replace("{{commission_duration}}", commission_duration)
+                   .replace("{{billing_structure}}", billing_structure))
+    else:  # referral
+        exhibit = (EXHIBIT_A_REFERRAL
+                   .replace("{{partner_name}}", partner_name or "[Partner Name]")
+                   .replace("{{effective_date}}", effective_date)
+                   .replace("{{custom_terms}}", custom_terms or "No additional terms.")
+                   .replace("{{commission_duration}}", commission_duration))
+
+    return main + "\n" + exhibit
 
 
 # ============= AGREEMENT TEMPLATES =============
@@ -289,16 +444,28 @@ async def create_agreement(data: dict):
         "template_id": template_id,
         "template_name": template["name"],
         "type": template["type"],
-        "content": data.get("content", template["content"]),  # Allow customization
-        "commission_tier": data.get("commission_tier"),  # Selected tier
-        "custom_commission_notes": data.get("custom_commission_notes"),  # Free-form commission structure
-        "is_white_label": data.get("is_white_label", False),  # White label partner flag
+        # Build the full agreement content from the new template + exhibit A
+        "content": build_agreement_content(
+            partner_type=template["type"],
+            partner_name=data.get("partner_name", ""),
+            custom_terms=data.get("custom_terms", ""),
+            commission_duration=data.get("commission_duration", "Lifetime (while account remains active)"),
+            billing_structure=data.get("billing_structure", "Company Bills Customer (Partner receives commission)"),
+        ),
+        "commission_tier": data.get("commission_tier"),
+        "custom_terms": data.get("custom_terms", ""),               # Forest's Exhibit A notes
+        "commission_duration": data.get("commission_duration", "Lifetime (while account remains active)"),
+        "billing_structure": data.get("billing_structure", "Company Bills Customer (Partner receives commission)"),
+        "custom_commission_notes": data.get("custom_commission_notes"),
+        "is_white_label": data.get("is_white_label", False),
         "payment_required": data.get("payment_required", template.get("payment_required", False)),
         "payment_amount": data.get("payment_amount", template.get("payment_amount")),
-        "partner_email": data.get("partner_email"),  # Optional pre-fill
-        "partner_name": data.get("partner_name"),  # Optional pre-fill
-        "notes": data.get("notes"),  # Internal notes
-        "status": "draft",  # draft, sent, viewed, signed, paid
+        "partner_email": data.get("partner_email"),
+        "partner_name": data.get("partner_name"),
+        "notes": data.get("notes"),
+        "status": "draft",
+        "w9_status": "pending",        # pending | uploaded | verified
+        "w9_file_url": None,
         "created_by": data.get("created_by"),
         "created_at": datetime.utcnow(),
         "sent_at": None,
@@ -470,8 +637,9 @@ async def send_agreement(agreement_id: str):
 # ============= PARTNER SIGNING =============
 
 @router.post("/agreements/{agreement_id}/sign")
-async def sign_agreement(agreement_id: str, data: PartnerSignup):
-    """Partner signs the agreement"""
+@router.post("/agreements/{agreement_id}/sign")
+async def sign_agreement(agreement_id: str, data: PartnerSignup, request: Request):
+    """Partner signs the agreement — captures name, IP, timestamp for legal record."""
     db = get_db()
     
     agreement = await db.partner_agreements.find_one({"_id": ObjectId(agreement_id)})
@@ -481,7 +649,15 @@ async def sign_agreement(agreement_id: str, data: PartnerSignup):
     if agreement.get("status") == "signed":
         raise HTTPException(status_code=400, detail="Agreement already signed")
     
-    # Store partner info
+    # Capture real IP for legal record
+    client_ip = (request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+                 or request.headers.get("X-Real-IP")
+                 or (request.client.host if request.client else "unknown"))
+
+    import hashlib as _hl
+    # Hash the agreement content for document integrity proof
+    doc_hash = _hl.sha256((agreement.get("content", "") + data.signature).encode()).hexdigest()
+
     signed_partner = {
         "name": data.name,
         "email": data.email,
@@ -496,10 +672,11 @@ async def sign_agreement(agreement_id: str, data: PartnerSignup):
         "signature_type": data.signature_type,
         "agreed_to_terms": data.agreed_to_terms,
         "signed_at": datetime.utcnow(),
-        "ip_address": None,  # Can be added from request
+        "ip_address": client_ip,          # ✅ real IP captured
+        "document_hash": doc_hash,        # ✅ integrity proof
+        "user_agent": request.headers.get("User-Agent", ""),
     }
     
-    # Determine new status
     new_status = "signed"
     if agreement.get("payment_required") and agreement.get("payment_amount"):
         new_status = "pending_payment"
@@ -510,10 +687,11 @@ async def sign_agreement(agreement_id: str, data: PartnerSignup):
             "signed_partner": signed_partner,
             "status": new_status,
             "signed_at": datetime.utcnow(),
+            "partner_name": data.name,
+            "partner_email": data.email,
         }}
     )
     
-    # Create partner record
     partner = {
         "agreement_id": agreement_id,
         "name": data.name,
@@ -528,11 +706,11 @@ async def sign_agreement(agreement_id: str, data: PartnerSignup):
         "type": agreement.get("type"),
         "commission_tier": agreement.get("commission_tier"),
         "status": "active" if new_status == "signed" else "pending",
+        "w9_status": "pending",
         "created_at": datetime.utcnow(),
         "total_referrals": 0,
         "total_earnings": 0,
     }
-    
     await db.partners.insert_one(partner)
     
     return {
@@ -540,8 +718,80 @@ async def sign_agreement(agreement_id: str, data: PartnerSignup):
         "status": new_status,
         "payment_required": new_status == "pending_payment",
         "payment_amount": agreement.get("payment_amount") if new_status == "pending_payment" else None,
-        "message": "Agreement signed successfully" if new_status == "signed" else "Agreement signed - payment required"
+        "message": "Agreement signed successfully" if new_status == "signed" else "Agreement signed — payment required"
     }
+
+
+# ============= W-9 UPLOAD =============
+
+@router.post("/agreements/{agreement_id}/w9")
+async def upload_w9(agreement_id: str, request: Request):
+    """Partner uploads their W-9 form. Stores in object storage, updates agreement + partner record."""
+    from fastapi import UploadFile, File
+    db = get_db()
+
+    agreement = await db.partner_agreements.find_one({"_id": ObjectId(agreement_id)})
+    if not agreement:
+        raise HTTPException(status_code=404, detail="Agreement not found")
+
+    # Read multipart file
+    form = await request.form()
+    file = form.get("file")
+    if not file:
+        raise HTTPException(status_code=400, detail="No file uploaded")
+
+    contents = await file.read()
+    if len(contents) > 10 * 1024 * 1024:  # 10 MB limit
+        raise HTTPException(status_code=400, detail="W-9 file must be under 10 MB")
+
+    allowed_types = ("application/pdf", "image/png", "image/jpeg", "image/jpg")
+    content_type = getattr(file, "content_type", "application/octet-stream")
+    if not any(content_type.startswith(t) for t in ("application/pdf", "image/")):
+        raise HTTPException(status_code=400, detail="W-9 must be a PDF or image file")
+
+    try:
+        from utils.image_storage import upload_image
+        ext = "pdf" if "pdf" in content_type else "png"
+        result = await upload_image(contents, prefix="w9_forms", entity_id=agreement_id)
+        file_url = f"/api/images/{result['original_path']}" if result else None
+    except Exception as e:
+        logger.warning(f"[W9] Storage upload failed: {e}")
+        file_url = f"w9_{agreement_id}.{ext}"  # fallback reference
+
+    now = datetime.utcnow()
+    await db.partner_agreements.update_one(
+        {"_id": ObjectId(agreement_id)},
+        {"$set": {
+            "w9_status": "uploaded",
+            "w9_file_url": file_url,
+            "w9_uploaded_at": now,
+            "updated_at": now,
+        }}
+    )
+    # Also update partner record if it exists
+    await db.partners.update_one(
+        {"agreement_id": agreement_id},
+        {"$set": {"w9_status": "uploaded", "w9_file_url": file_url}}
+    )
+
+    logger.info(f"[W9] Uploaded for agreement {agreement_id}")
+    return {"success": True, "message": "W-9 uploaded successfully", "w9_status": "uploaded"}
+
+
+@router.post("/agreements/{agreement_id}/w9/verify")
+async def verify_w9(agreement_id: str):
+    """Admin marks W-9 as verified."""
+    db = get_db()
+    now = datetime.utcnow()
+    await db.partner_agreements.update_one(
+        {"_id": ObjectId(agreement_id)},
+        {"$set": {"w9_status": "verified", "w9_verified_at": now}}
+    )
+    await db.partners.update_one(
+        {"agreement_id": agreement_id},
+        {"$set": {"w9_status": "verified"}}
+    )
+    return {"success": True, "w9_status": "verified"}
 
 
 # ============= STRIPE PAYMENT =============
