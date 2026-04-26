@@ -300,9 +300,11 @@ const { showToast } = useToast();
               </View>
               {agreement.commission_tier && (
                 <View style={styles.signedDetailRow}>
-                  <Text style={styles.signedDetailLabel}>Commission Tier</Text>
+                  <Text style={styles.signedDetailLabel}>Commission</Text>
                   <Text style={styles.signedDetailValue}>
-                    {agreement.commission_tier.name} ({agreement.commission_tier.percentage}%)
+                    {agreement.custom_commission_notes
+                      ? agreement.custom_commission_notes
+                      : `Per Exhibit A — ${agreement.type === 'reseller' ? '20/30/40%' : '10/15%'} tiers`}
                   </Text>
                 </View>
               )}

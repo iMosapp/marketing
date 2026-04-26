@@ -277,6 +277,7 @@ EXHIBIT_A_RESELLER = """---
 
 
 def build_agreement_content(partner_type: str, partner_name: str, custom_terms: str = "",
+                             custom_commission_notes: str = "",
                              commission_duration: str = "Lifetime (while account remains active)",
                              billing_structure: str = "Company Bills Customer (Partner receives commission)",
                              company_name: str = "VI Ventures Group LLC",
@@ -291,19 +292,49 @@ def build_agreement_content(partner_type: str, partner_name: str, custom_terms: 
             .replace("{{company_legal_name}}", company_name)
             .replace("{{governing_state}}", governing_state))
 
-    if partner_type == "reseller":
-        exhibit = (EXHIBIT_A_RESELLER
-                   .replace("{{partner_name}}", partner_name or "[Partner Name]")
-                   .replace("{{effective_date}}", effective_date)
-                   .replace("{{custom_terms}}", custom_terms or "No additional terms.")
-                   .replace("{{commission_duration}}", commission_duration)
-                   .replace("{{billing_structure}}", billing_structure))
-    else:  # referral
-        exhibit = (EXHIBIT_A_REFERRAL
-                   .replace("{{partner_name}}", partner_name or "[Partner Name]")
-                   .replace("{{effective_date}}", effective_date)
-                   .replace("{{custom_terms}}", custom_terms or "No additional terms.")
-                   .replace("{{commission_duration}}", commission_duration))
+    # Build commission section — use custom override if provided, otherwise standard tiers
+    if custom_commission_notes and custom_commission_notes.strip():
+        commission_section = f"""## 1. COMMISSION STRUCTURE
+
+**Custom Commission Terms:**
+
+{custom_commission_notes}
+
+*Custom commission structure agreed upon by both parties in lieu of standard tiers.*"""
+    elif partner_type == "reseller":
+        commission_section = """## 1. COMMISSION STRUCTURE
+
+| Collected Active MRR | Commission Rate |
+|---|---|
+| Up to $20,000 / month | 20% |
+| $20,001 – $40,000 / month | 30% |
+| Above $40,000 / month | 40% |
+
+*Tiers are evaluated monthly and applied retroactively to total Collected Active MRR for that month.*"""
+    else:
+        commission_section = """## 1. COMMISSION STRUCTURE
+
+| Collected Active MRR | Commission Rate |
+|---|---|
+| Up to $10,000 / month | 10% |
+| Above $10,000 / month | 15% |
+
+*Tiers are evaluated monthly and applied retroactively to total Collected Active MRR for that month.*"""
+
+    # Build the correct Exhibit A
+    exhibit_template = EXHIBIT_A_RESELLER if partner_type == "reseller" else EXHIBIT_A_REFERRAL
+    exhibit = (exhibit_template
+               .replace("{{partner_name}}", partner_name or "[Partner Name]")
+               .replace("{{effective_date}}", effective_date)
+               .replace("{{custom_terms}}", custom_terms.strip() if custom_terms.strip() else "No additional terms.")
+               .replace("{{commission_duration}}", commission_duration)
+               .replace("{{billing_structure}}", billing_structure))
+
+    # Replace the commission section in the exhibit
+    import re
+    exhibit = re.sub(r'## 1\. COMMISSION STRUCTURE.*?(?=\n## 2\.)',
+                     commission_section + "\n\n",
+                     exhibit, flags=re.DOTALL)
 
     return main + "\n" + exhibit
 
@@ -449,6 +480,7 @@ async def create_agreement(data: dict):
             partner_type=template["type"],
             partner_name=data.get("partner_name", ""),
             custom_terms=data.get("custom_terms", ""),
+            custom_commission_notes=data.get("custom_commission_notes", ""),
             commission_duration=data.get("commission_duration", "Lifetime (while account remains active)"),
             billing_structure=data.get("billing_structure", "Company Bills Customer (Partner receives commission)"),
         ),
@@ -750,13 +782,16 @@ async def upload_w9(agreement_id: str, request: Request):
         raise HTTPException(status_code=400, detail="W-9 must be a PDF or image file")
 
     try:
-        from utils.image_storage import upload_image
-        ext = "pdf" if "pdf" in content_type else "png"
-        result = await upload_image(contents, prefix="w9_forms", entity_id=agreement_id)
-        file_url = f"/api/images/{result['original_path']}" if result else None
+        import uuid as _uuid
+        ext = "pdf" if "pdf" in content_type else ("jpg" if "jpeg" in content_type else "png")
+        path = f"w9_forms/{agreement_id}/{_uuid.uuid4().hex[:8]}.{ext}"
+        # Use put_object directly — bypasses PIL (which can't handle PDFs)
+        from utils.image_storage import put_object
+        put_object(path, contents, content_type)
+        file_url = f"/api/images/{path}"
     except Exception as e:
-        logger.warning(f"[W9] Storage upload failed: {e}")
-        file_url = f"w9_{agreement_id}.{ext}"  # fallback reference
+        logger.warning(f"[W9] Storage upload failed: {e} — saving reference only")
+        file_url = f"w9_pending_{agreement_id}.pdf"
 
     now = datetime.utcnow()
     await db.partner_agreements.update_one(

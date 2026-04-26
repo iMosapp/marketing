@@ -88,6 +88,8 @@ export default function PartnerAgreementDetailScreen() {
     }
   };
 
+  const [showFullAgreement, setShowFullAgreement] = useState(false);
+
   const handleSave = async () => {
     if (!agreement) return;
     
@@ -315,27 +317,33 @@ export default function PartnerAgreementDetailScreen() {
           </View>
         </View>
 
-        {/* Commission Tier */}
-        {(agreement.commission_tier || agreement.custom_commission_notes) && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Commission</Text>
-            {agreement.commission_tier && (
-              <View style={styles.commissionCard}>
-                <View style={styles.commissionHeader}>
-                  <Text style={styles.commissionTier}>{agreement.commission_tier.name}</Text>
-                  <Text style={styles.commissionPercentage}>{agreement.commission_tier.percentage}%</Text>
-                </View>
-                <Text style={styles.commissionLabel}>Commission Rate</Text>
-              </View>
-            )}
-            {agreement.custom_commission_notes && (
-              <View style={[styles.commissionCard, { marginTop: agreement.commission_tier ? 10 : 0, borderLeftWidth: 3, borderLeftColor: '#C9A962' }]}>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#C9A962', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Custom Terms</Text>
-                <Text style={{ fontSize: 16, color: colors.text, lineHeight: 20 }}>{agreement.custom_commission_notes}</Text>
-              </View>
-            )}
-          </View>
-        )}
+        {/* Commission — show custom override if set, otherwise state "per Exhibit A" */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Commission</Text>
+          {agreement.custom_commission_notes ? (
+            <View style={[styles.commissionCard, { borderLeftWidth: 3, borderLeftColor: '#C9A962' }]}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#C9A962', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Custom Commission Terms (in Exhibit A)</Text>
+              <Text style={{ fontSize: 16, color: colors.text, lineHeight: 22 }}>{agreement.custom_commission_notes}</Text>
+            </View>
+          ) : (
+            <View style={styles.commissionCard}>
+              <Text style={styles.commissionTier}>{agreement.template_name}</Text>
+              <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 4 }}>Commission tiers defined in Exhibit A</Text>
+            </View>
+          )}
+          {agreement.custom_terms ? (
+            <View style={[styles.commissionCard, { marginTop: 10, borderLeftWidth: 3, borderLeftColor: '#007AFF' }]}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#007AFF', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Exhibit A — Special Terms</Text>
+              <Text style={{ fontSize: 15, color: colors.text, lineHeight: 22 }}>{agreement.custom_terms}</Text>
+            </View>
+          ) : null}
+          {agreement.commission_duration ? (
+            <View style={{ flexDirection: 'row', marginTop: 8, gap: 8 }}>
+              <Text style={{ fontSize: 13, color: colors.textSecondary }}>Duration:</Text>
+              <Text style={{ fontSize: 13, color: colors.text, fontWeight: '600', flex: 1 }}>{agreement.commission_duration}</Text>
+            </View>
+          ) : null}
+        </View>
 
         {/* Payment Info */}
         {agreement.payment_required && agreement.payment_amount && (
@@ -464,6 +472,47 @@ export default function PartnerAgreementDetailScreen() {
                 </Text>
               )}
             </View>
+          </View>
+        )}
+
+        {/* View Full Agreement */}
+        {agreement.content && (
+          <View style={styles.section}>
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 }}
+              onPress={() => setShowFullAgreement(v => !v)}
+            >
+              <Text style={styles.sectionTitle}>Full Agreement Text</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={{ fontSize: 13, color: '#007AFF', fontWeight: '600' }}>{showFullAgreement ? 'Collapse' : 'View'}</Text>
+                <Ionicons name={showFullAgreement ? 'chevron-up' : 'chevron-down'} size={18} color="#007AFF" />
+              </View>
+            </TouchableOpacity>
+            {showFullAgreement && (
+              <ScrollView
+                style={{ maxHeight: 480, marginTop: 12, backgroundColor: colors.bg, borderRadius: 10, padding: 14, borderWidth: 1, borderColor: colors.border }}
+                nestedScrollEnabled
+              >
+                {agreement.content.split('\n').map((line: string, i: number) => {
+                  if (line.startsWith('# ')) return <Text key={i} style={{ fontSize: 18, fontWeight: '800', color: colors.text, marginTop: 16, marginBottom: 6 }}>{line.substring(2)}</Text>;
+                  if (line.startsWith('## ')) return <Text key={i} style={{ fontSize: 15, fontWeight: '700', color: colors.text, marginTop: 14, marginBottom: 4 }}>{line.substring(3)}</Text>;
+                  if (line.startsWith('### ')) return <Text key={i} style={{ fontSize: 14, fontWeight: '700', color: colors.textSecondary, marginTop: 10, marginBottom: 3 }}>{line.substring(4)}</Text>;
+                  if (line.startsWith('- ')) return <Text key={i} style={{ fontSize: 13, color: colors.text, lineHeight: 20, paddingLeft: 10 }}>{'• '}{line.substring(2)}</Text>;
+                  if (line.startsWith('| ')) return <Text key={i} style={{ fontSize: 12, color: colors.text, fontFamily: 'monospace', lineHeight: 18 }}>{line}</Text>;
+                  if (line.startsWith('---')) return <View key={i} style={{ height: 1, backgroundColor: colors.border, marginVertical: 8 }} />;
+                  if (!line.trim()) return <View key={i} style={{ height: 6 }} />;
+                  const boldParts = line.split(/\*\*(.*?)\*\*/);
+                  if (boldParts.length > 1) return (
+                    <Text key={i} style={{ fontSize: 13, color: colors.text, lineHeight: 20, marginBottom: 2 }}>
+                      {boldParts.map((p, pi) => pi % 2 === 1
+                        ? <Text key={pi} style={{ fontWeight: '700' }}>{p}</Text>
+                        : p)}
+                    </Text>
+                  );
+                  return <Text key={i} style={{ fontSize: 13, color: colors.text, lineHeight: 20, marginBottom: 2 }}>{line}</Text>;
+                })}
+              </ScrollView>
+            )}
           </View>
         )}
 
