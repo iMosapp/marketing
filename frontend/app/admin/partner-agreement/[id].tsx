@@ -455,10 +455,10 @@ export default function PartnerAgreementDetailScreen() {
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#34C75918', borderRadius: 10, padding: 14, borderWidth: 1, borderColor: '#34C759' }}
                   onPress={async () => {
                     try {
-                      await api.post(`/partners/agreements/${agreementId}/w9/verify`);
+                      await api.post(`/partners/agreements/${agreement.id}/w9/verify`);
                       setAgreement((prev: any) => ({ ...prev, w9_status: 'verified' }));
-                      showAlert('Verified', 'W-9 marked as verified. Partner is now fully onboarded.');
-                    } catch { showAlert('Error', 'Failed to verify W-9.'); }
+                      showSimpleAlert('Verified', 'W-9 marked as verified. Partner is now fully onboarded.');
+                    } catch { showSimpleAlert('Error', 'Failed to verify W-9.'); }
                   }}
                 >
                   <Ionicons name="checkmark-circle" size={20} color="#34C759" />

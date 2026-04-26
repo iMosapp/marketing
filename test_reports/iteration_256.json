@@ -1,0 +1,138 @@
+{
+  "summary": "Partner Agreement System full E2E test — backend (26/26 pass) + frontend. Found and fixed 2 critical backend bugs: GET /api/partners/agreements/{id} missing w9_status/w9_file_url/w9_uploaded_at/custom_terms/commission_duration fields; GET /api/partners/agreements (list) missing w9_status field. After fixes: all flows working rock solid.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "GET /api/partners/agreements/{id}",
+        "issue": "FIXED — Response was missing w9_status, w9_file_url, w9_uploaded_at, custom_terms, commission_duration fields. Admin detail page depends on w9_status to show W-9 panel state correctly.",
+        "priority": "CRITICAL"
+      },
+      {
+        "endpoint": "GET /api/partners/agreements",
+        "issue": "FIXED — List response was missing w9_status field. Admin agreements list page uses w9_status for W-9 status badges (Verified/Awaiting Review/Pending).",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "POST /api/partners/agreements/{id}/sign",
+        "issue": "Duplicate route decorator (@router.post decorator applied twice on line 671-672). Doesn't cause functional failure in FastAPI but is a code smell."
+      },
+      {
+        "endpoint": "GET /api/partners/templates (create_default_templates path)",
+        "issue": "create_default_templates() function references DEFAULT_RESELLER_TEMPLATE, DEFAULT_REFERRAL_TEMPLATE, DEFAULT_COMMISSION_TIERS which are undefined. Would cause NameError on fresh DB with no templates. Non-critical since templates already exist in DB."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Public Signing Page — Agreement Terms",
+        "issues": [
+          "List items with inline bold (e.g., `**Referral Partner:**`) render the `**` markers literally. renderMarkdown() doesn't process inline bold within list items.",
+          "Italic markdown (`*(text)*`) not rendered — shows literally as `*(Referral & Reseller Program)*` instead of italic text."
+        ]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_partner_agreements.py",
+    "/app/test_reports/pytest/pytest_partner_agreements.xml"
+  ],
+  "action_items": [
+    "Fix create_default_templates() — add missing DEFAULT_RESELLER_TEMPLATE, DEFAULT_REFERRAL_TEMPLATE, DEFAULT_COMMISSION_TIERS variables (or inline content). Required for fresh DB deployments.",
+    "Optional: Fix renderMarkdown() in public signing page to handle inline bold within list items and italic text for better agreement readability.",
+    "Remove duplicate @router.post decorator on sign_agreement (line 671-672 in partners.py)."
+  ],
+  "critical_code_review_comments": [
+    "CRITICAL BUG FIXED: get_agreement() was not returning w9_status/w9_file_url/w9_uploaded_at/custom_terms/commission_duration — admin detail page W-9 panel and commission section depended on these fields",
+    "CRITICAL BUG FIXED: list_agreements() was not returning w9_status — admin list W-9 badge logic never worked until now",
+    "LATENT BUG: create_default_templates() references undefined DEFAULT_RESELLER_TEMPLATE, DEFAULT_REFERRAL_TEMPLATE, DEFAULT_COMMISSION_TIERS. This would NameError on fresh DB.",
+    "CODE SMELL: Duplicate @router.post('/agreements/{agreement_id}/sign') decorators on lines 671-672",
+    "MINOR: renderMarkdown() in public signing page doesn't handle italic (*text*) or inline bold within list items"
+  ],
+  "updated_files": [
+    "/app/backend/routers/partners.py — Added w9_status, w9_file_url, w9_uploaded_at, custom_terms, commission_duration to GET /agreements/{id} response",
+    "/app/backend/routers/partners.py — Added w9_status to GET /agreements list response",
+    "/app/backend/tests/test_partner_agreements.py — New test file (26 tests covering all agreement flows)"
+  ],
+  "success_rate": {
+    "backend": "100% (26/26 tests pass)",
+    "frontend": "95% (all critical flows work; minor markdown rendering issues in public page)"
+  },
+  "test_credentials": {
+    "super_admin": "forest@imosapp.com / Admin123!"
+  },
+  "seed_data_creation": "Created ~10 test agreements during backend testing (TEST_ prefixed). Created 1 frontend test agreement via public signing page (FrontendTest Partner). Uploaded W-9 to 2 agreements and verified 2 W-9s.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Partner Agreement system fully tested and verified. Key fixes: (1) GET /api/partners/agreements/{id} now returns w9_status, w9_file_url, w9_uploaded_at, custom_terms, commission_duration. (2) GET /api/partners/agreements list now includes w9_status. Frontend: admin list page shows W-9 badges, admin detail shows Legal Signature Record + W-9 panel + Full Agreement Text, W-9 verify button works (agreementId bug was fixed to use agreement.id), public signing page renders full MPA + Exhibit A + sign form + W-9 upload after signing. Backend URL: https://user-routing-issue.preview.emergentagent.com. Known draft IDs: 69ee7e14d276512419673033, 69ee6fd9aa6d11afaf9179e3(signed by FrontendTest Partner). Signed+W9Verified ID: 69ee86eb9e9e55c64b861f87.",
+  "mocked_apis": {
+    "Twilio SMS": "MOCKED — MOCK_MODE=true",
+    "Stripe": "Not tested — no payment required agreements tested"
+  },
+  "tests_executed": {
+    "backend_tests_26_total": [
+      "test_list_templates_returns_200 — PASS",
+      "test_list_templates_has_required_fields — PASS",
+      "test_templates_include_reseller_and_referral — PASS",
+      "test_create_referral_agreement_success — PASS",
+      "test_create_reseller_agreement_success — PASS",
+      "test_create_agreement_missing_template_id_returns_400 — PASS",
+      "test_create_agreement_invalid_template_id_returns_404 — PASS",
+      "test_create_agreement_with_custom_commission_notes — PASS",
+      "test_get_existing_agreement_returns_200 — PASS",
+      "test_get_agreement_has_full_content (MPA + Exhibit A) — PASS",
+      "test_get_agreement_invalid_id_returns_404 — PASS",
+      "test_referral_exhibit_a_has_10_and_15_percent — PASS",
+      "test_reseller_exhibit_a_has_20_30_40_percent — PASS",
+      "test_custom_commission_notes_override_standard_tiers — PASS",
+      "test_list_agreements_returns_200 — PASS",
+      "test_list_agreements_has_required_fields — PASS",
+      "test_list_agreements_includes_existing_drafts — PASS",
+      "test_sign_agreement_success — PASS",
+      "test_sign_agreement_verifies_status_changed_to_signed — PASS",
+      "test_sign_already_signed_agreement_returns_400 — PASS",
+      "test_sign_nonexistent_agreement_returns_404 — PASS",
+      "test_w9_upload_pdf_success — PASS",
+      "test_w9_upload_updates_agreement_status — PASS (after fix)",
+      "test_w9_upload_no_file_returns_400 — PASS",
+      "test_w9_verify_success — PASS",
+      "test_w9_verify_updates_agreement_status — PASS (after fix)"
+    ],
+    "frontend_playwright_tests": [
+      "Login forest@imosapp.com → /home — PASS",
+      "Navigate to /admin/partner-agreements — PASS: shows 19 agreements, 4 signed, 2 W-9 Pending, 2 Verified",
+      "Admin list W-9 status badges visible (Verified/Review/Pending) — PASS",
+      "Admin detail /admin/partner-agreement/69ee86eb9e9e55c64b861f87 — PASS: SIGNED, partner info, Legal Signature Record with IP+hash, W-9 FORM Verified panel",
+      "W-9 verify button 'Mark W-9 as Verified' visible for uploaded W-9 — PASS",
+      "Click 'Mark W-9 as Verified' → status changes to Verified, button disappears — PASS",
+      "Public signing page /partner/agreement/{id} — loads MPA + Exhibit A with markdown rendering — PASS",
+      "Public page form: 10 inputs (name, email, company, phone, address, city, state, zip, tax_id, signature) — PASS",
+      "Fill form + check agree + click Sign Agreement — PASS",
+      "After signing: shows 'Agreement Signed!' confirmation with W-9 upload section and 'Upload W-9 Form' button — PASS"
+    ]
+  },
+  "rca_of_bugs_fixed": {
+    "bug_1_get_agreement_missing_fields": {
+      "root_cause": "get_agreement() return dict in partners.py was hand-crafted and omitted w9_status, w9_file_url, w9_uploaded_at, custom_terms, commission_duration fields that are stored in MongoDB but not serialized",
+      "location": "partners.py get_agreement() function, ~line 573",
+      "fix": "Added all missing fields to the return dict",
+      "impact": "Admin detail page W-9 panel always showed 'pending' (None), 'Mark W-9 as Verified' button never appeared, commission custom terms/duration not visible"
+    },
+    "bug_2_list_agreements_missing_w9_status": {
+      "root_cause": "list_agreements() return dict omitted w9_status field even though it's stored in MongoDB",
+      "location": "partners.py list_agreements() function, ~line 530",
+      "fix": "Added w9_status to the list response",
+      "impact": "Admin agreement list page W-9 status badges (Verified/Review/Pending) never showed correct status"
+    },
+    "bug_3_w9_verify_agreementId_undefined": {
+      "root_cause": "Was using undefined variable 'agreementId' instead of 'agreement.id' (confirmed as pre-fixed by E1)",
+      "location": "admin/partner-agreement/[id].tsx line 458",
+      "fix": "Changed agreementId to agreement.id (already done by E1 this session)",
+      "impact": "Clicking 'Mark W-9 as Verified' would fail with API call to undefined URL"
+    }
+  }
+}
