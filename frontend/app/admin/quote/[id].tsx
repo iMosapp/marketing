@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import * as Clipboard from 'expo-clipboard';
 import api from '../../../services/api';
 import { showAlert, showSimpleAlert, showConfirm } from '../../../services/alert';
 
@@ -31,6 +32,7 @@ interface Quote {
   business_info?: {
     company_name?: string;
     address?: string;
+    authorized_signer?: { name?: string; title?: string; email?: string };
   };
   pricing: {
     base_price: number;
@@ -38,10 +40,22 @@ interface Quote {
     discount_percent: number;
     interval: string;
     num_users?: number;
+    trial_days?: number;
   };
   valid_until: string;
   created_at: string;
   notes?: string;
+  digital_signature?: {
+    name?: string;
+    email?: string;
+    signature?: string;
+    signed_at?: string;
+    ip_address?: string;
+    user_agent?: string;
+    document_hash?: string;
+  };
+  accepted_at?: string;
+  sent_at?: string;
 }
 
 export default function QuoteDetailScreen() {
@@ -89,6 +103,13 @@ export default function QuoteDetailScreen() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const copyLink = async () => {
+    if (!quote) return;
+    const base = process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com';
+    await Clipboard.setStringAsync(`${base}/quote/accept/${quote._id}`);
+    showSimpleAlert('Copied', 'Quote signing link copied to clipboard');
   };
 
   const handleResend = async () => {
@@ -288,8 +309,75 @@ export default function QuoteDetailScreen() {
           </View>
         )}
 
+        {/* Digital Signature Record */}
+        {quote.status === 'accepted' && quote.digital_signature && (
+          <View style={[styles.section, { borderLeftWidth: 3, borderLeftColor: '#34C759' }]}>
+            <Text style={styles.sectionTitle}>Digital Signature Record</Text>
+            {[
+              { label: 'Signed By',     value: quote.digital_signature.name },
+              { label: 'Email',         value: quote.digital_signature.email },
+              { label: 'Signed At',     value: quote.digital_signature.signed_at ? new Date(quote.digital_signature.signed_at).toLocaleString() : undefined },
+              { label: 'IP Address',    value: quote.digital_signature.ip_address, mono: true },
+              { label: 'Signature',     value: quote.digital_signature.signature ? `"${quote.digital_signature.signature}"` : undefined },
+              { label: 'User Agent',    value: quote.digital_signature.user_agent, mono: true, truncate: true },
+              { label: 'Doc Hash',      value: quote.digital_signature.document_hash ? quote.digital_signature.document_hash.slice(0,16) + '…' : undefined, mono: true },
+            ].filter(r => r.value).map((row, i) => (
+              <View key={i} style={{ flexDirection: 'row', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 12 }}>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, width: 88, flexShrink: 0 }}>{row.label}</Text>
+                <Text style={{ fontSize: 13, color: colors.text, flex: 1, fontFamily: (row as any).mono ? 'monospace' : undefined }} numberOfLines={(row as any).truncate ? 1 : undefined}>
+                  {row.value}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Payment Status (TODO) */}
+        {quote.status === 'accepted' && (
+          <View style={[styles.section, { borderLeftWidth: 3, borderLeftColor: '#FF9500' }]}>
+            <Text style={styles.sectionTitle}>Payment Status</Text>
+            <View style={{ backgroundColor: '#FF950015', borderRadius: 10, padding: 14 }}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: '#FF9500', marginBottom: 4 }}>Pending — Awaiting Payment Setup</Text>
+              <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 19 }}>
+                Customer was emailed &amp; texted a payment setup link when they signed.{'\n'}
+                Payment collection will auto-activate once Stripe is configured.
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Action Buttons */}
         <View style={styles.actionSection}>
+          {/* Copy signing link — for unsigned quotes */}
+          {quote.status !== 'accepted' && (
+            <TouchableOpacity style={styles.copyButton} onPress={copyLink} data-testid="copy-link-button">
+              <Ionicons name="link" size={20} color="#007AFF" />
+              <Text style={styles.copyButtonText}>Copy Signing Link</Text>
+            </TouchableOpacity>
+          )}
+          {/* Download PDF — accepted quotes only */}
+          {quote.status === 'accepted' && (
+            <TouchableOpacity
+              style={[styles.copyButton, { borderColor: '#34C759', backgroundColor: '#34C75910' }]}
+              onPress={async () => {
+                try {
+                  const resp = await api.get(`/subscriptions/quotes/${quote._id}/pdf`, { responseType: 'blob' });
+                  const blob = new Blob([resp.data], { type: 'application/pdf' });
+                  const href = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  const safeName = (quote.business_info?.company_name || quote.customer?.name || 'quote').replace(/[^a-zA-Z0-9_-]/g,'_');
+                  a.href = href; a.download = `signed_quote_${safeName}.pdf`;
+                  document.body.appendChild(a); a.click();
+                  document.body.removeChild(a); URL.revokeObjectURL(href);
+                } catch { showSimpleAlert('Error', 'Failed to download PDF.'); }
+              }}
+              data-testid="download-pdf-button"
+            >
+              <Ionicons name="document-text" size={20} color="#34C759" />
+              <Text style={[styles.copyButtonText, { color: '#34C759' }]}>Download Signed Quote (PDF)</Text>
+            </TouchableOpacity>
+          )}
+
           {quote.status !== 'accepted' && quote.status !== 'archived' && (
             <TouchableOpacity 
               style={styles.resendButton}
@@ -506,6 +594,22 @@ const getStyles = (colors: any) => StyleSheet.create({
   actionSection: {
     padding: 16,
     gap: 12,
+  },
+  copyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.card,
+    padding: 16,
+    borderRadius: 12,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+  },
+  copyButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#007AFF',
   },
   resendButton: {
     flexDirection: 'row',

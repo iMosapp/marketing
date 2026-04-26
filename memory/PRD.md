@@ -454,3 +454,4 @@ Full end-to-end partner agreement + W-9 onboarding:
 - Markdown renderer improved: handles inline **bold** and *italic* within list items
 - Bugs fixed: agreementId undefined on W-9 verify, get_agreement missing w9_status/w9_file_url/custom_terms/commission_duration, list_agreements missing w9_status, duplicate route decorator, create_default_templates referenced undefined variables
 - Backend: 26/26 tests pass | Frontend: All flows verified via Playwright
+Quote signing system complete

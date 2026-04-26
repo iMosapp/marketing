@@ -3,16 +3,478 @@ Subscriptions & Quotes Router
 Handles i'M On Social subscription plans, quotes, and Stripe billing
 """
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import Response
 from bson import ObjectId
 from datetime import datetime, timedelta
 from typing import Optional
 import logging
 import os
+import asyncio
+import base64
+import re as _re
 
 from routers.database import get_db
 
 router = APIRouter(prefix="/subscriptions", tags=["Subscriptions"])
 logger = logging.getLogger(__name__)
+
+# ── Email / PDF config ────────────────────────────────────────────────────────
+import resend as _resend
+
+_RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
+_APP_URL        = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+_ADMIN_EMAIL    = os.environ.get("ADMIN_EMAIL", "forest@imosapp.com")
+
+if _RESEND_API_KEY:
+    _resend.api_key = _RESEND_API_KEY
+
+
+# ── Quote PDF helpers ─────────────────────────────────────────────────────────
+
+def _qt(text: str) -> str:
+    """Strip markdown and encode to latin-1 safely for fpdf."""
+    text = _re.sub(r'\*\*(.*?)\*\*', r'\1', str(text))
+    text = _re.sub(r'\*(.*?)\*',     r'\1', text)
+    for src, dst in [('\u2018',"'"),('\u2019',"'"),('\u201c','"'),('\u201d','"'),('\u2014','--'),('\u2013','-'),('\u00a0',' ')]:
+        text = text.replace(src, dst)
+    return text.encode('latin-1', errors='replace').decode('latin-1')
+
+
+def _generate_quote_pdf(quote: dict) -> bytes:
+    """Generate a professional signed-quote PDF using fpdf2. Returns PDF bytes."""
+    from fpdf import FPDF
+
+    GOLD  = (201, 169, 98)
+    BLACK = (10,  10,  10)
+    GREY  = (80,  80,  80)
+    LGREY = (200, 200, 200)
+    WHITE = (255, 255, 255)
+    GREEN = (52,  199, 89)
+    BLUE  = (0,   122, 255)
+
+    sig       = quote.get("digital_signature") or {}
+    customer  = quote.get("customer") or {}
+    biz       = quote.get("business_info") or {}
+    pricing   = quote.get("pricing") or {}
+    plan_type = quote.get("plan_type", "individual")
+    accepted_at = quote.get("accepted_at")
+    if accepted_at and isinstance(accepted_at, datetime):
+        accepted_str = accepted_at.strftime("%B %d, %Y at %I:%M %p UTC")
+    else:
+        accepted_str = str(accepted_at or "N/A")
+
+    pdf = FPDF()
+    pdf.set_margins(left=14, top=10, right=14)
+    pdf.set_auto_page_break(auto=True, margin=18)
+    pdf.add_page()
+    W = pdf.w - pdf.l_margin - pdf.r_margin
+    LBL = 52
+    VAL = W - LBL
+
+    # Header
+    pdf.set_fill_color(*BLACK)
+    pdf.rect(0, 0, 210, 38, 'F')
+    pdf.set_xy(0, 8)
+    pdf.set_font("Helvetica", "B", 18)
+    pdf.set_text_color(*GOLD)
+    pdf.cell(210, 10, "i'M On Social", align="C", ln=True)
+    pdf.set_font("Helvetica", "", 9)
+    pdf.set_text_color(*LGREY)
+    pdf.cell(210, 6, "Subscription Quote & Service Agreement", align="C", ln=True)
+    pdf.set_xy(pdf.l_margin, 44)
+
+    pdf.set_font("Helvetica", "B", 20)
+    pdf.set_text_color(*BLACK)
+    pdf.cell(W, 12, _qt(quote.get("quote_number", "")), ln=True, align="C")
+    pdf.set_font("Helvetica", "", 11)
+    pdf.set_text_color(*GREY)
+    pdf.cell(W, 7, f"Accepted: {accepted_str}", ln=True, align="C")
+    pdf.ln(4)
+
+    badge_w = 44
+    pdf.set_x(pdf.l_margin + (W - badge_w) / 2)
+    pdf.set_fill_color(*GREEN)
+    pdf.set_text_color(*WHITE)
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.cell(badge_w, 7, "ACCEPTED", align="C", fill=True, border=0, ln=True)
+    pdf.set_x(pdf.l_margin)
+    pdf.ln(8)
+
+    # Helpers
+    def divider():
+        pdf.set_x(pdf.l_margin)
+        pdf.set_draw_color(*LGREY)
+        pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
+        pdf.ln(4)
+
+    def section_header(title: str, color=None):
+        pdf.ln(2)
+        pdf.set_x(pdf.l_margin)
+        pdf.set_fill_color(*(color or GOLD))
+        pdf.set_text_color(*WHITE)
+        pdf.set_font("Helvetica", "B", 10)
+        pdf.cell(W, 7, f"  {title.upper()}", fill=True, ln=True)
+        pdf.set_x(pdf.l_margin)
+        pdf.ln(3)
+        pdf.set_text_color(*BLACK)
+
+    def lv(label: str, value: str, mono: bool = False):
+        if not value:
+            return
+        pdf.set_x(pdf.l_margin)
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.set_text_color(*GREY)
+        pdf.cell(LBL, 6, _qt(label) + ":", ln=False)
+        pdf.set_font("Courier" if mono else "Helvetica", "", 9)
+        pdf.set_text_color(*BLACK)
+        pdf.multi_cell(VAL, 6, _qt(str(value)))
+        pdf.set_x(pdf.l_margin)
+
+    # Customer / Business
+    section_header("Customer")
+    if biz.get("company_name"):
+        lv("Company",  biz["company_name"])
+    lv("Contact",   customer.get("name",""))
+    lv("Email",     customer.get("email",""))
+    lv("Phone",     customer.get("phone",""))
+    addr = biz.get("address", {})
+    addr_str = ", ".join(p for p in [addr.get("street",""), addr.get("city",""), addr.get("state",""), addr.get("zip","")] if p)
+    if addr_str.strip(", "):
+        lv("Address", addr_str)
+    if biz.get("ein"):
+        lv("EIN / Tax ID", biz["ein"])
+    signer = biz.get("authorized_signer", {})
+    if signer.get("name"):
+        lv("Auth. Signer", f"{signer.get('name','')}  {signer.get('title','')}".strip())
+    pdf.ln(2)
+
+    # Plan & Pricing
+    section_header("Plan & Pricing", BLUE)
+    lv("Plan",       quote.get("plan_name",""))
+    lv("Plan Type",  "Account / Team" if plan_type == "store" else "Individual")
+    if pricing.get("num_users") and plan_type == "store":
+        lv("Users",      str(pricing["num_users"]))
+        if pricing.get("price_per_user"):
+            lv("Per User",   f"${pricing['price_per_user']:.2f}/mo")
+    lv("Base Price", f"${pricing.get('base_price',0):.2f}/{pricing.get('interval','mo')}")
+    if pricing.get("discount_percent"):
+        lv("Discount",   f"{pricing['discount_percent']}% off"
+                         + (f" (code: {pricing.get('discount_code','')})" if pricing.get("discount_code") else ""))
+    pdf.set_x(pdf.l_margin)
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.set_text_color(*GREEN)
+    pdf.cell(LBL, 8, "TOTAL:", ln=False)
+    pdf.set_font("Helvetica", "B", 13)
+    pdf.cell(VAL, 8, f"${pricing.get('final_price',0):.2f}/{pricing.get('interval','mo')}", ln=True)
+    pdf.set_x(pdf.l_margin)
+    pdf.set_text_color(*BLACK)
+    pdf.ln(2)
+
+    # Terms
+    section_header("Service Terms")
+    terms = [
+        ("Cancellation",  "Either party may cancel with 30 days written notice."),
+        ("Billing",       "Billed monthly on the date service begins. Prices subject to change with 30 days notice."),
+        ("Trial",         f"{pricing.get('trial_days',7)}-day free trial included. No charge during trial."),
+        ("Refunds",       "No refunds for partial billing periods."),
+        ("Governing Law", "State of Texas."),
+    ]
+    if quote.get("notes"):
+        terms.append(("Special Notes", quote["notes"]))
+    for label, val in terms:
+        lv(label, val)
+    pdf.ln(2)
+
+    # Signature Record
+    pdf.add_page()
+    section_header("Digital Signature Record", GREEN)
+    y_start = pdf.get_y()
+    rows = [
+        ("Signed By",     sig.get("name",""),           False),
+        ("Email",         sig.get("email",""),           False),
+        ("Signed At",     accepted_str,                  False),
+        ("IP Address",    sig.get("ip_address",""),      True),
+        ("Signature",     f'"{sig.get("signature","")}"',False),
+        ("User Agent",    sig.get("user_agent",""),      True),
+        ("Document Hash", sig.get("document_hash",""),   True),
+    ]
+    for label, value, mono in rows:
+        lv(label, value, mono=mono)
+    pdf.ln(4)
+    y_end = pdf.get_y()
+    pdf.set_draw_color(*GREEN)
+    pdf.rect(pdf.l_margin - 2, y_start - 1, W + 4, y_end - y_start + 2)
+    pdf.ln(6)
+
+    # Payment TODO notice
+    section_header("Payment Status", (255, 149, 0))
+    pdf.set_x(pdf.l_margin)
+    pdf.set_font("Helvetica", "B", 10)
+    pdf.set_text_color(255, 149, 0)
+    pdf.multi_cell(W, 6, "PENDING -- Payment information to be collected separately. "
+                         "You will receive a payment setup link by email and/or SMS.")
+    pdf.set_text_color(*BLACK)
+    pdf.ln(4)
+
+    divider()
+    pdf.set_x(pdf.l_margin)
+    pdf.set_font("Helvetica", "", 8)
+    pdf.set_text_color(*GREY)
+    pdf.multi_cell(W, 5,
+        "This document confirms acceptance of the above subscription quote. "
+        "Service terms, cancellation policy, and pricing are binding upon acceptance. "
+        "Governed by the laws of the State of Texas. i'M On Social is a product of VI Ventures Group LLC."
+    )
+    pdf.ln(2)
+    pdf.set_x(pdf.l_margin)
+    pdf.set_font("Helvetica", "I", 8)
+    pdf.cell(W, 5, f"Generated {datetime.utcnow().strftime('%B %d, %Y')} | VI Ventures Group LLC", ln=True)
+
+    return bytes(pdf.output())
+
+
+async def _send_quote_link_email(quote: dict, quote_id: str) -> None:
+    """Email the customer a link to review and sign their quote."""
+    if not _RESEND_API_KEY:
+        logger.warning("[Quotes] RESEND_API_KEY not set — skipping quote email")
+        return
+
+    customer    = quote.get("customer") or {}
+    biz         = quote.get("business_info") or {}
+    pricing     = quote.get("pricing") or {}
+    to_email    = customer.get("email")
+    if not to_email:
+        return
+
+    name        = customer.get("name") or biz.get("company_name") or "there"
+    quote_num   = quote.get("quote_number", "")
+    plan_name   = quote.get("plan_name", "")
+    final_price = pricing.get("final_price", 0)
+    interval    = pricing.get("interval", "month")
+    valid_until = quote.get("valid_until")
+    valid_str   = valid_until.strftime("%B %d, %Y") if isinstance(valid_until, datetime) else str(valid_until or "")
+    sign_link   = f"{_APP_URL}/quote/accept/{quote_id}"
+
+    checklist = [
+        "Your full pricing & plan details",
+        "30-day cancellation policy",
+        "Service terms & agreement",
+        "Digital signature — legally binding"
+    ]
+    checklist_html = "".join(
+        f'<div style="display:flex;align-items:center;gap:12px;font-size:14px;color:#CCC;margin-bottom:10px;">'
+        f'<span style="color:#34C759;font-size:16px;">&#10003;</span> {item}</div>'
+        for item in checklist
+    )
+
+    html = f"""
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#000;color:#fff;padding:40px 32px;border-radius:16px;">
+      <div style="text-align:center;margin-bottom:40px;">
+        <div style="display:inline-block;background:#1C1C1E;border-radius:12px;padding:14px 28px;">
+          <span style="font-size:22px;font-weight:800;color:#C9A962;">i'M On Social</span>
+        </div>
+      </div>
+      <h1 style="font-size:26px;font-weight:700;color:#fff;margin:0 0 8px;text-align:center;">Your Quote is Ready</h1>
+      <p style="font-size:16px;color:#8E8E93;text-align:center;margin:0 0 36px;">Hi {name} — please review and sign below.</p>
+
+      <div style="background:#1C1C1E;border-radius:12px;padding:24px;margin-bottom:28px;border-left:4px solid #C9A962;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <span style="font-size:13px;color:#8E8E93;text-transform:uppercase;letter-spacing:.5px;">Quote</span>
+          <span style="font-size:15px;font-weight:700;color:#C9A962;font-family:monospace;">{quote_num}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <span style="font-size:13px;color:#8E8E93;">Plan</span>
+          <span style="font-size:15px;font-weight:600;color:#fff;">{plan_name}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <span style="font-size:13px;color:#8E8E93;">Monthly Total</span>
+          <span style="font-size:20px;font-weight:800;color:#34C759;">${final_price:.2f}<span style="font-size:13px;color:#8E8E93;">/{interval}</span></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:13px;color:#8E8E93;">Valid Until</span>
+          <span style="font-size:14px;color:#FF9500;">{valid_str}</span>
+        </div>
+      </div>
+
+      <div style="background:#1C1C1E;border-radius:12px;padding:20px;margin-bottom:28px;">
+        <p style="font-size:14px;font-weight:600;color:#fff;margin:0 0 14px;">This quote includes:</p>
+        {checklist_html}
+      </div>
+
+      <div style="text-align:center;margin-bottom:36px;">
+        <a href="{sign_link}" style="display:inline-block;background:#C9A962;color:#000;font-size:18px;font-weight:700;padding:18px 52px;border-radius:12px;text-decoration:none;">
+          Review &amp; Sign Quote
+        </a>
+        <p style="font-size:12px;color:#636366;margin-top:12px;">
+          <a href="{sign_link}" style="color:#C9A962;word-break:break-all;">{sign_link}</a>
+        </p>
+      </div>
+
+      <div style="border-top:1px solid #2C2C2E;padding-top:20px;text-align:center;">
+        <p style="font-size:13px;color:#636366;margin:0 0 6px;">Questions? <a href="mailto:support@imonsocial.com" style="color:#C9A962;">support@imonsocial.com</a></p>
+        <p style="font-size:12px;color:#48484A;margin:0;">&copy; 2026 VI Ventures Group LLC &middot; i'M On Social</p>
+      </div>
+    </div>
+    """
+
+    try:
+        result = await asyncio.to_thread(_resend.Emails.send, {
+            "from": "i'M On Social <billing@imonsocial.com>",
+            "to": [to_email],
+            "reply_to": "support@imonsocial.com",
+            "subject": f"Your Quote {quote_num} — {plan_name} at ${final_price:.2f}/{interval}",
+            "html": html,
+        })
+        logger.info(f"[Quotes] Quote link emailed to {to_email}: {result.get('id')}")
+    except Exception as e:
+        logger.error(f"[Quotes] Failed to email quote link to {to_email}: {e}")
+
+
+async def _email_accepted_quote(quote: dict, quote_id: str) -> None:
+    """
+    After a customer signs:
+    1. Generate signed PDF
+    2. Email customer their signed copy + payment setup instructions
+    3. Email admin a copy
+    4. Send SMS (via Twilio service, which falls back to mock) with payment link
+
+    TODO: Replace payment_link with live Stripe Payment Link or Checkout URL
+          once Stripe integration is configured. See /subscriptions/quotes/{id}/create-payment
+          (endpoint stub already exists, needs STRIPE_API_KEY in .env)
+    """
+    if not _RESEND_API_KEY:
+        logger.warning("[Quotes] RESEND_API_KEY not set — skipping accepted-quote email")
+        return
+
+    customer    = quote.get("customer") or {}
+    biz         = quote.get("business_info") or {}
+    to_email    = customer.get("email")
+    to_phone    = customer.get("phone") or (biz.get("authorized_signer") or {}).get("phone")
+    name        = customer.get("name") or biz.get("company_name") or "Customer"
+    quote_num   = quote.get("quote_number","")
+    plan_name   = quote.get("plan_name","")
+    pricing     = quote.get("pricing") or {}
+    final_price = pricing.get("final_price", 0)
+    interval    = pricing.get("interval","month")
+    accepted_at = quote.get("accepted_at")
+    accepted_str = accepted_at.strftime("%B %d, %Y") if isinstance(accepted_at, datetime) else str(accepted_at or "")
+
+    # ── TODO: Replace with live Stripe payment link ───────────────────────────
+    # When Stripe is configured, generate a payment link here:
+    # payment_link = await create_stripe_payment_link(quote, quote_id)
+    # For now, direct to a placeholder — your team will follow up manually.
+    payment_link = f"{_APP_URL}/subscription/pricing"  # TODO: Replace with Stripe link
+    # ─────────────────────────────────────────────────────────────────────────
+
+    try:
+        pdf_bytes = await asyncio.to_thread(_generate_quote_pdf, quote)
+        pdf_b64   = base64.b64encode(pdf_bytes).decode()
+    except Exception as e:
+        logger.error(f"[Quotes] PDF generation failed for {quote_id}: {e}")
+        pdf_b64 = None
+
+    safe_name = _re.sub(r"[^a-zA-Z0-9_-]", "_", name)[:40]
+    attachment = [{"filename": f"signed_quote_{safe_name}.pdf", "content": pdf_b64}] if pdf_b64 else []
+
+    # ── Customer email ────────────────────────────────────────────────────────
+    if to_email:
+        customer_html = f"""
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#000;color:#fff;padding:40px 32px;border-radius:16px;">
+          <div style="text-align:center;margin-bottom:32px;">
+            <span style="font-size:22px;font-weight:800;color:#C9A962;">i'M On Social</span>
+          </div>
+          <div style="text-align:center;margin-bottom:32px;">
+            <div style="font-size:56px;margin-bottom:16px;">&#x2705;</div>
+            <h1 style="font-size:26px;font-weight:700;color:#fff;margin:0 0 8px;">Quote Accepted!</h1>
+            <p style="font-size:16px;color:#8E8E93;margin:0;">Your signed agreement is attached. One step left.</p>
+          </div>
+          <div style="background:#1C1C1E;border-radius:12px;padding:24px;margin-bottom:24px;border-left:4px solid #C9A962;">
+            <p style="font-size:13px;color:#8E8E93;margin:0 0 4px;text-transform:uppercase;letter-spacing:.5px;">Plan</p>
+            <p style="font-size:18px;font-weight:700;color:#fff;margin:0 0 12px;">{plan_name}</p>
+            <p style="font-size:13px;color:#8E8E93;margin:0 0 4px;text-transform:uppercase;letter-spacing:.5px;">Monthly Total</p>
+            <p style="font-size:22px;font-weight:800;color:#34C759;margin:0 0 12px;">${final_price:.2f}/{interval}</p>
+            <p style="font-size:13px;color:#8E8E93;margin:0 0 4px;text-transform:uppercase;letter-spacing:.5px;">Accepted</p>
+            <p style="font-size:14px;color:#fff;margin:0;">{accepted_str}</p>
+          </div>
+          <div style="background:#FF950015;border-radius:12px;padding:24px;margin-bottom:28px;border:1px solid #FF9500;">
+            <p style="font-size:16px;font-weight:700;color:#FF9500;margin:0 0 10px;">Next Step: Set Up Payment</p>
+            <p style="font-size:14px;color:#CCC;line-height:22px;margin:0 0 18px;">
+              To activate your account, please add your payment information. Your billing starts after your free trial ends.
+            </p>
+            <a href="{payment_link}" style="display:inline-block;background:#FF9500;color:#000;font-size:16px;font-weight:700;padding:14px 32px;border-radius:10px;text-decoration:none;">
+              Set Up Payment &rarr;
+            </a>
+          </div>
+          <p style="font-size:13px;color:#8E8E93;line-height:20px;margin-bottom:24px;">
+            Your signed quote PDF is attached to this email. Keep it for your records.<br>
+            Cancellation: 30 days written notice. Questions? Reply to this email.
+          </p>
+          <div style="border-top:1px solid #2C2C2E;padding-top:20px;text-align:center;">
+            <p style="font-size:13px;color:#636366;margin:0 0 6px;"><a href="mailto:support@imonsocial.com" style="color:#C9A962;">support@imonsocial.com</a></p>
+            <p style="font-size:12px;color:#48484A;margin:0;">&copy; 2026 VI Ventures Group LLC &middot; i'M On Social</p>
+          </div>
+        </div>
+        """
+        try:
+            r = await asyncio.to_thread(_resend.Emails.send, {
+                "from": "i'M On Social <billing@imonsocial.com>",
+                "to": [to_email],
+                "reply_to": "support@imonsocial.com",
+                "subject": f"Signed: {quote_num} — Next Step: Set Up Payment",
+                "html": customer_html,
+                "attachments": attachment,
+            })
+            logger.info(f"[Quotes] Accepted-quote email sent to {to_email}: {r.get('id')}")
+        except Exception as e:
+            logger.error(f"[Quotes] Failed to email customer {to_email}: {e}")
+
+    # ── Admin email ───────────────────────────────────────────────────────────
+    admin_html = f"""
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#000;color:#fff;padding:40px 32px;border-radius:16px;">
+      <div style="text-align:center;margin-bottom:28px;"><span style="font-size:22px;font-weight:800;color:#C9A962;">i'M On Social</span></div>
+      <h1 style="font-size:20px;font-weight:700;color:#fff;margin:0 0 6px;">Quote Accepted</h1>
+      <p style="font-size:14px;color:#8E8E93;margin:0 0 24px;">A customer just signed their quote. Payment setup link was sent.</p>
+      <div style="background:#1C1C1E;border-radius:12px;padding:20px;margin-bottom:16px;">
+        <p style="font-size:13px;color:#8E8E93;margin:0 0 3px;">Customer</p>
+        <p style="font-size:16px;font-weight:700;color:#fff;margin:0 0 12px;">{name}</p>
+        <p style="font-size:13px;color:#8E8E93;margin:0 0 3px;">Email</p>
+        <p style="font-size:14px;color:#fff;margin:0 0 12px;">{to_email or "N/A"}</p>
+        <p style="font-size:13px;color:#8E8E93;margin:0 0 3px;">Quote / Plan</p>
+        <p style="font-size:14px;color:#fff;margin:0 0 12px;">{quote_num} &mdash; {plan_name}</p>
+        <p style="font-size:13px;color:#8E8E93;margin:0 0 3px;">MRR</p>
+        <p style="font-size:18px;font-weight:800;color:#34C759;margin:0;">${final_price:.2f}/{interval}</p>
+      </div>
+      <p style="font-size:11px;color:#48484A;text-align:center;margin:0;">&copy; 2026 VI Ventures Group LLC</p>
+    </div>
+    """
+    try:
+        r = await asyncio.to_thread(_resend.Emails.send, {
+            "from": "i'M On Social <billing@imonsocial.com>",
+            "to": [_ADMIN_EMAIL],
+            "reply_to": "support@imonsocial.com",
+            "subject": f"[Quote Signed] {name} — {plan_name} ${final_price:.2f}/{interval}",
+            "html": admin_html,
+            "attachments": attachment,
+        })
+        logger.info(f"[Quotes] Admin copy sent to {_ADMIN_EMAIL}: {r.get('id')}")
+    except Exception as e:
+        logger.error(f"[Quotes] Failed to email admin: {e}")
+
+    # ── SMS (Twilio — falls back to mock if not configured) ───────────────────
+    # TODO: Replace payment_link with live Stripe payment link when ready
+    if to_phone:
+        try:
+            from services.twilio_service import send_sms
+            sms_body = (
+                f"Hi {name.split()[0]}! Your i'M On Social quote is signed. "
+                f"Final step: set up payment to activate your account: {payment_link}"
+            )
+            result = await send_sms(to_phone, sms_body)
+            logger.info(f"[Quotes] Payment SMS sent to {to_phone}: {result}")
+        except Exception as e:
+            logger.warning(f"[Quotes] SMS send failed (non-fatal): {e}")
+
+
 
 # ============= PRICING PLANS =============
 # These are fixed server-side - NEVER accept amounts from frontend
@@ -523,33 +985,164 @@ async def update_quote(quote_id: str, data: dict):
 async def send_quote(quote_id: str):
     """Send/resend a quote to the customer via email"""
     db = get_db()
-    
+
     quote = await db.subscription_quotes.find_one({"_id": ObjectId(quote_id)})
     if not quote:
         raise HTTPException(status_code=404, detail="Quote not found")
-    
+
     customer_email = quote.get("customer", {}).get("email")
     if not customer_email:
         raise HTTPException(status_code=400, detail="No customer email on this quote")
-    
-    # Update status to sent
+
+    await db.subscription_quotes.update_one(
+        {"_id": ObjectId(quote_id)},
+        {"$set": {"status": "sent", "sent_at": datetime.utcnow(), "updated_at": datetime.utcnow()}}
+    )
+    quote["status"] = "sent"
+
+    await _send_quote_link_email(quote, quote_id)
+    logger.info(f"Quote {quote['quote_number']} sent to {customer_email}")
+
+    return {"message": "Quote sent successfully", "sent_to": customer_email}
+
+
+@router.get("/quotes/{quote_id}/public")
+async def get_quote_public(quote_id: str):
+    """Public endpoint for the signing page — marks as viewed, never reveals internal fields."""
+    db = get_db()
+    quote = await db.subscription_quotes.find_one({"_id": ObjectId(quote_id)})
+    if not quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+
+    if quote["status"] == "sent":
+        await db.subscription_quotes.update_one(
+            {"_id": ObjectId(quote_id)},
+            {"$set": {"status": "viewed", "viewed_at": datetime.utcnow()}}
+        )
+        quote["status"] = "viewed"
+
+    pricing   = quote.get("pricing", {})
+    customer  = quote.get("customer", {})
+    biz       = quote.get("business_info", {})
+    valid_until = quote.get("valid_until")
+
+    return {
+        "id": str(quote["_id"]),
+        "quote_number": quote.get("quote_number"),
+        "status": quote["status"],
+        "plan_name": quote.get("plan_name"),
+        "plan_type": quote.get("plan_type"),
+        "pricing": {
+            "base_price":      pricing.get("base_price", 0),
+            "discount_percent": pricing.get("discount_percent", 0),
+            "final_price":     pricing.get("final_price", 0),
+            "interval":        pricing.get("interval", "month"),
+            "num_users":       pricing.get("num_users"),
+            "price_per_user":  pricing.get("price_per_user"),
+            "trial_days":      pricing.get("trial_days", 7),
+        },
+        "customer": {
+            "name":  customer.get("name", ""),
+            "email": customer.get("email", ""),
+            "phone": customer.get("phone", ""),
+        },
+        "business_info": {
+            "company_name": biz.get("company_name", ""),
+        },
+        "notes": quote.get("notes", ""),
+        "valid_until": valid_until.isoformat() if isinstance(valid_until, datetime) else str(valid_until or ""),
+        "digital_signature": quote.get("digital_signature"),
+        "accepted_at": quote.get("accepted_at").isoformat() if isinstance(quote.get("accepted_at"), datetime) else None,
+    }
+
+
+@router.post("/quotes/{quote_id}/accept")
+async def accept_quote(quote_id: str, data: dict, request: Request):
+    """Customer digitally signs and accepts the quote. Captures IP, timestamp, doc hash."""
+    db = get_db()
+    quote = await db.subscription_quotes.find_one({"_id": ObjectId(quote_id)})
+    if not quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    if quote.get("status") == "accepted":
+        raise HTTPException(status_code=400, detail="Quote already accepted")
+
+    # Validate required fields
+    name      = (data.get("name") or "").strip()
+    email     = (data.get("email") or "").strip()
+    signature = (data.get("signature") or "").strip()
+    if not name or not email or not signature:
+        raise HTTPException(status_code=400, detail="name, email, and signature are required")
+
+    # Legal record
+    client_ip = (
+        request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+        or request.headers.get("X-Real-IP")
+        or (request.client.host if request.client else "unknown")
+    )
+    import hashlib as _hl
+    content_str = str(quote.get("quote_number","")) + str(quote.get("pricing",{})) + signature
+    doc_hash = _hl.sha256(content_str.encode()).hexdigest()
+
+    now = datetime.utcnow()
+    digital_signature = {
+        "name":          name,
+        "email":         email,
+        "signature":     signature,
+        "signature_type": "typed",
+        "signed_at":     now,
+        "ip_address":    client_ip,
+        "user_agent":    request.headers.get("User-Agent", ""),
+        "document_hash": doc_hash,
+        "agreed_to_terms": True,
+    }
+
     await db.subscription_quotes.update_one(
         {"_id": ObjectId(quote_id)},
         {"$set": {
-            "status": "sent",
-            "sent_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
+            "status":            "accepted",
+            "accepted_at":       now,
+            "updated_at":        now,
+            "digital_signature": digital_signature,
+            "customer.name":     name,
+            "customer.email":    email,
         }}
     )
-    
-    # TODO: Send actual email when Resend is configured
-    # For now, just update status
-    logger.info(f"Quote {quote['quote_number']} marked as sent to {customer_email}")
-    
+
+    # Reload with updated data for email/PDF
+    updated = await db.subscription_quotes.find_one({"_id": ObjectId(quote_id)})
+    if updated:
+        asyncio.create_task(_email_accepted_quote(updated, quote_id))
+
     return {
-        "message": "Quote sent successfully",
-        "sent_to": customer_email
+        "success": True,
+        "status":  "accepted",
+        "message": "Quote accepted. Check your email for your signed copy and next steps.",
     }
+
+
+@router.get("/quotes/{quote_id}/pdf")
+async def download_quote_pdf(quote_id: str):
+    """Generate and stream the accepted quote as a signed PDF."""
+    db = get_db()
+    quote = await db.subscription_quotes.find_one({"_id": ObjectId(quote_id)})
+    if not quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    if quote.get("status") != "accepted":
+        raise HTTPException(status_code=400, detail="Quote has not been accepted yet")
+
+    customer  = quote.get("customer") or {}
+    biz       = quote.get("business_info") or {}
+    raw_name  = customer.get("name") or biz.get("company_name") or "quote"
+    safe_name = _re.sub(r"[^a-zA-Z0-9_-]", "_", raw_name)[:40]
+    filename  = f"signed_quote_{safe_name}.pdf"
+
+    pdf_bytes = await asyncio.to_thread(_generate_quote_pdf, quote)
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.delete("/quotes/{quote_id}")
