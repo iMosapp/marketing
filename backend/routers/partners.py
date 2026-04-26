@@ -8,12 +8,23 @@ from datetime import datetime
 from typing import Optional, List
 import os
 import logging
+import asyncio
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
 load_dotenv()
 
+import resend as _resend
+
 from routers.database import get_db
+
+# ── Email config ──────────────────────────────────────────────────────────────
+_RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
+_SENDER_EMAIL   = os.environ.get("SENDER_EMAIL", "notifications@send.imonsocial.com")
+_APP_URL        = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+
+if _RESEND_API_KEY:
+    _resend.api_key = _RESEND_API_KEY
 
 router = APIRouter(prefix="/partners", tags=["partners"])
 logger = logging.getLogger(__name__)
@@ -648,9 +659,96 @@ async def delete_agreement(agreement_id: str):
     return {"success": True, "message": "Agreement deleted"}
 
 
+
+async def _send_agreement_email(
+    to_email: str,
+    partner_name: str,
+    agreement_type: str,
+    agreement_link: str,
+    agreement_id: str,
+) -> None:
+    """Send the partner agreement signing link via Resend. Silently logs on failure."""
+    if not _RESEND_API_KEY:
+        logger.warning("[Partners] RESEND_API_KEY not set — skipping agreement email")
+        return
+
+    checklist_items = [
+        'Full Master Partner Agreement (MPA)',
+        'Exhibit A — Your Commission Structure &amp; Terms',
+        'Digital signature capture (IP &amp; timestamp recorded)',
+        'W-9 upload step for commission payouts',
+    ]
+    checklist_html = ''.join(
+        f'<div style="display:flex;align-items:center;gap:12px;font-size:14px;color:#CCC;margin-bottom:10px;">'
+        f'<span style="color:#34C759;font-size:16px;">&#10003;</span> {item}</div>'
+        for item in checklist_items
+    )
+
+    html = f"""
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#000;color:#fff;padding:40px 32px;border-radius:16px;">
+
+      <div style="text-align:center;margin-bottom:40px;">
+        <div style="display:inline-block;background:#1C1C1E;border-radius:12px;padding:14px 28px;">
+          <span style="font-size:22px;font-weight:800;color:#C9A962;letter-spacing:-0.5px;">i'M On Social</span>
+        </div>
+      </div>
+
+      <h1 style="font-size:28px;font-weight:700;color:#ffffff;margin:0 0 8px 0;text-align:center;">
+        You've Been Invited to Partner
+      </h1>
+      <p style="font-size:16px;color:#8E8E93;text-align:center;margin:0 0 40px 0;">
+        {agreement_type} &mdash; Please review and sign below
+      </p>
+
+      <div style="background:#1C1C1E;border-radius:12px;padding:24px;margin-bottom:32px;border-left:4px solid #C9A962;">
+        <p style="font-size:14px;color:#8E8E93;margin:0 0 6px 0;text-transform:uppercase;letter-spacing:0.5px;">Prepared for</p>
+        <p style="font-size:20px;font-weight:700;color:#fff;margin:0;">{partner_name}</p>
+      </div>
+
+      <div style="background:#1C1C1E;border-radius:12px;padding:24px;margin-bottom:32px;">
+        <p style="font-size:15px;font-weight:600;color:#fff;margin:0 0 16px 0;">Your agreement includes:</p>
+        {checklist_html}
+      </div>
+
+      <div style="text-align:center;margin-bottom:40px;">
+        <a href="{agreement_link}"
+           style="display:inline-block;background:#C9A962;color:#000;font-size:18px;font-weight:700;padding:18px 48px;border-radius:12px;text-decoration:none;letter-spacing:-0.3px;">
+          Review &amp; Sign Agreement
+        </a>
+        <p style="font-size:13px;color:#636366;margin-top:14px;">
+          Or copy this link:<br>
+          <a href="{agreement_link}" style="color:#C9A962;word-break:break-all;">{agreement_link}</a>
+        </p>
+      </div>
+
+      <div style="border-top:1px solid #2C2C2E;padding-top:24px;text-align:center;">
+        <p style="font-size:13px;color:#636366;margin:0 0 6px 0;">
+          Questions? <a href="mailto:support@imonsocial.com" style="color:#C9A962;">support@imonsocial.com</a>
+        </p>
+        <p style="font-size:12px;color:#48484A;margin:0;">
+          &copy; 2026 VI Ventures Group LLC &middot; i'M On Social
+        </p>
+      </div>
+
+    </div>
+    """
+
+    try:
+        result = await asyncio.to_thread(_resend.Emails.send, {
+            "from": f"i'M On Social <billing@imonsocial.com>",
+            "to": [to_email],
+            "reply_to": "support@imonsocial.com",
+            "subject": f"Your {agreement_type} is Ready to Sign",
+            "html": html,
+        })
+        logger.info(f"[Partners] Agreement email sent to {to_email}: {result.get('id')}")
+    except Exception as e:
+        logger.error(f"[Partners] Failed to send agreement email to {to_email}: {e}")
+        # Non-fatal — agreement is still marked as sent in DB
+
+
 @router.post("/agreements/{agreement_id}/send")
 async def send_agreement(agreement_id: str):
-    """Send/resend agreement link to partner via email"""
     db = get_db()
     
     agreement = await db.partner_agreements.find_one({"_id": ObjectId(agreement_id)})
@@ -671,8 +769,20 @@ async def send_agreement(agreement_id: str):
         }}
     )
     
-    # TODO: Send actual email when Resend is configured
-    logger.info(f"Agreement {agreement_id} marked as sent to {partner_email}")
+    # Send the agreement link via Resend
+    partner_name = agreement.get("partner_name") or "Partner"
+    agreement_type = agreement.get("template_name", "Partner Agreement")
+    agreement_link = f"{_APP_URL}/partner/agreement/{agreement_id}"
+
+    await _send_agreement_email(
+        to_email=partner_email,
+        partner_name=partner_name,
+        agreement_type=agreement_type,
+        agreement_link=agreement_link,
+        agreement_id=agreement_id,
+    )
+
+    logger.info(f"Agreement {agreement_id} sent to {partner_email}")
     
     return {
         "success": True,
