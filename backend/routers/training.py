@@ -209,9 +209,30 @@ SEED_TRACKS = [
         "description": "Everything you need to sell, onboard clients, and manage your partner business.",
         "icon": "people-circle",
         "color": "#C9A962",
-        "roles": ["partner", "reseller", "admin", "super_admin"],
+        "roles": ["org_admin", "store_manager", "admin", "super_admin", "user"],
         "order": 2,
         "lessons": [
+            {
+                "slug": "complete-reseller-workflow",
+                "title": "The Complete Reseller Workflow — Start to Client Live",
+                "description": "Step-by-step: from signing your partner agreement to getting a client's team live inside the app.",
+                "icon": "git-branch",
+                "duration": "8 min",
+                "order": 0,
+                "content": "## The Complete Reseller Process\n\nThis is your master playbook. Every deal you close follows this exact sequence. Bookmark it, practice it, and run every client through it.\n\n---\n\n## Phase 1 — Your One-Time Setup (Do This First)\n\n### Step 1: Sign Your Reseller Agreement\nBefore you can onboard any clients, you need a signed partner agreement on file.\n\n1. i'M On Social will email you a **unique signing link**\n2. Open the link from your email (works on phone or desktop)\n3. Review the **Master Partner Agreement + Exhibit A** — this shows your exact commission tiers (20%, 30%, 40%)\n4. Fill in your name, company, phone, address, and EIN\n5. Type your full legal name as your digital signature\n6. Tap **Sign Agreement**\n7. You'll immediately see the **W-9 Upload** prompt — upload your completed W-9 form (PDF or photo)\n\n### Step 2: W-9 Verification\n- Your admin reviews and verifies your W-9\n- Once verified, you receive an email with your **fully executed, legally signed agreement PDF** — save it\n- You are now an active reseller and can begin onboarding clients\n\n> **After verification, commissions begin accruing on every account you bring in.**\n\n---\n\n## Phase 2 — Landing a Client (Repeat for Every Deal)\n\n### Step 3: Have the Sales Conversation\nUse the discovery questions from the \"How to Sell\" lesson. The goal is to qualify:\n- How many users do they need? (minimum 5 for team plans)\n- Are they Individual or Store/Team plan?\n- Do they have decision-making authority?\n- What is their timeline?\n\n### Step 4: Create the Quote\nYou or your admin creates the quote inside the app:\n\n1. From the **Hub → Setup & Manage → Quotes → +**\n2. Select **Individual** or **Account / Team**\n3. Set the number of users and any discount (your authority limit is in your agreement)\n4. Enter the client's name, company, email, and phone\n5. For team plans: fill in business info (company name, address, EIN — required for 10DLC SMS compliance)\n6. Add any special terms in the Notes field\n7. Tap **Create Quote** → then **Send Quote**\n\nThe client receives a **branded email** with their quote details and a signing link.\n\n### Step 5: Client Reviews and Signs\nThe client opens the link on their phone or computer. They see:\n- Their company name and plan details\n- Full pricing breakdown with any discount applied\n- A **7-day free trial** (no charge until trial ends)\n- The **30-day cancellation policy** clearly stated\n- A signature field\n\nThey type their name as their digital signature, check the agreement box, and tap **Sign & Accept Quote**.\n\n### Step 6: What Happens Automatically After Signing\nThe moment they sign, the system does all of this without you doing anything:\n- **Email to client:** Signed agreement PDF attached + Set Up Payment button\n- **Email to you (admin):** Copy of the signed quote with all their details\n- **SMS to client's phone:** Direct link to set up payment\n\nYou will see the quote status change to **ACCEPTED** in your Quotes list.\n\n---\n\n## Phase 3 — Payment & Account Activation\n\n### Step 7: Payment Collection\nAfter signing, the client receives a payment setup link. Once they complete it, billing activates automatically and their account goes live.\n\n### Step 8: Account Goes Live\nYour admin creates the account in the system:\n- Organization created\n- Store/location set up\n- All team members added with temporary passwords\n- Welcome emails sent to each user\n\nSchedule a **15-minute kickoff call** to get the team started.\n\n---\n\n## Phase 4 — Your Commission\n\n### How It Works\n- Your commission is calculated on **Collected Active MRR** (monthly revenue actually received)\n- Tiers: 20% up to $20K MRR → 30% from $20K-$40K → 40% above $40K\n- Paid **Net 30** after the close of each calendar month\n- Commission continues for the **lifetime** of the account (while active)\n\n---\n\n## Where Everything Lives in the App\n\n| What | Where |\n|---|---|\n| Your signed agreement | Hub → Setup & Manage → Partner Agreements |\n| Create a new quote | Hub → Setup & Manage → Quotes → + |\n| View all quotes | Hub → Setup & Manage → Quotes |\n| Quote signing link | Quote Detail → Copy Signing Link |\n| Download signed PDF | Quote Detail → Download Signed Quote (PDF) |\n| Your partner portal | Hub → Partner Portal |\n| Training (you are here) | Hub → Training Hub |",
+                "video_url": "",
+                "steps": [
+                    "Sign your partner agreement and upload your W-9",
+                    "Wait for W-9 verification — you'll get a confirmation email",
+                    "Identify your first prospect and do the discovery call",
+                    "Create a quote: Hub → Setup & Manage → Quotes → +",
+                    "Send the quote — client gets a signing link by email",
+                    "After client signs: follow up on payment setup",
+                    "Once payment is confirmed, notify admin to activate the account",
+                    "Schedule the 15-minute kickoff call",
+                    "Check your commission statement at month-end"
+                ],
+            },
             {
                 "slug": "why-partner",
                 "title": "Why Partner with i'M On Social?",
@@ -286,7 +307,7 @@ SEED_TRACKS = [
         "description": "Run the platform under your brand — setup, client onboarding, and support playbook.",
         "icon": "color-palette",
         "color": "#AF52DE",
-        "roles": ["partner", "reseller", "admin", "super_admin"],
+        "roles": ["org_admin", "store_manager", "admin", "super_admin"],
         "order": 3,
         "lessons": [
             {
