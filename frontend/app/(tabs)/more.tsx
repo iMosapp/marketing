@@ -1052,7 +1052,7 @@ export default function MoreScreen() {
                 data-testid="edit-profile-hint-btn"
               >
                 <Ionicons name="person" size={14} color="#C9A962" />
-                <Text style={styles.editProfileBtnText}>My Presence</Text>
+                <Text style={styles.editProfileBtnText}>Manage Profile</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.editProfileBtn, { flex: 1, backgroundColor: '#C9A96218', borderColor: '#C9A962' }]}
