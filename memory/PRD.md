@@ -344,29 +344,79 @@ Extract `admin.py` (4,000 lines) into:
 
 ---
 
-## Prioritized Backlog
+## Prioritized Backlog — Updated Apr 26, 2026
 
-### P0
-- ✅ Mobile login routing fix for users with null onboarding_complete (DONE)
-- ✅ Architecture Phase 1 foundations (DONE)
-- Verify PWA login/iOS fix works after deployment
-- Deploy all Mar 28 fixes
+### P0 — This Week
+- **App Store / TestFlight Launch** — Get iOS build to TestFlight + Android to Google Play Internal Testing. Blocked on Apple Team ID + bundle ID confirmation. See "App Store Roadmap" section below.
+- **Twilio 10DLC Integration** — User now has LLC/business banking docs. Phase 1: remove mock mode, add STOP/UNSTOP webhooks, store-level Messaging Service SID, in-app 10DLC setup form. Phase 2: brand + campaign registration.
 
-### P1
-- Architecture Phase 2 — account page decomposition
-- Architecture Phase 3 — contact page decomposition  
-- App Store Preparation (`eas.json`, `app.json`)
-- Push Notifications (mobile alerts)
-- AI-Powered Outreach (contextual follow-ups)
+### P1 — Next Sprint
+- **Payment Collection — Stripe vs Elavon decision**
+  - User has US Bank business account (Elavon/Evalon available)
+  - Also evaluating Stripe
+  - Need: compare Elavon Converge API vs Stripe for ease of integration + merchant fees
+  - Once decided: wire into `/subscriptions/quotes/{id}/create-payment` (stub already exists)
+  - **Blocked on:** user decision + credential setup with chosen processor
+- **Inbox Redesign** — User not happy with current layout. HIGH PRIORITY but not starting yet. Document and revisit. Key issues TBD when user is ready.
+- **Push Notifications** — Mobile alerts for new leads, messages, campaign triggers (native iOS/Android)
+
+### P2 — Upcoming
+- Architecture Phase 3b — Contact page component extraction (context shell built)
+- AI-Powered Outreach — contextual follow-up suggestions
 - Gamification & Leaderboards
-
-### P2
-- Architecture Phase 4 — backend service layer
-- Architecture Phase 5 — shared UI components
-- Typing indicators + read receipts (WebSocket already in place)
-- Full Twilio / WhatsApp / Stripe integration
+- WhatsApp Integration
 - Inventory Management Module
 - Mobile tags sync issue
+
+### P3 — Backlog
+- Typing indicators + read receipts (WebSocket already in place)
+- Architecture Phase 5 — shared UI components
+- Redis cache (for scale beyond 5K users)
+
+---
+
+## Payment Processor Decision (Documented Apr 26, 2026)
+**Status: HOLD — Pending user decision**
+
+| | Stripe | Elavon (US Bank) |
+|---|---|---|
+| Setup speed | Same day (online) | Days–weeks (underwriting via US Bank) |
+| Developer docs | Excellent | Adequate (Converge REST API) |
+| Emergent playbook | Yes (pre-built) | No (raw REST API) |
+| Integration complexity | Low | Medium-High |
+| Already have account | No | Potentially (US Bank business account) |
+
+**Integration point already stubbed:**
+- Backend: `/subscriptions/quotes/{id}/create-payment` in `subscriptions.py` 
+- Comment: `# TODO: Replace payment_link with live Stripe/Elavon payment link`
+- Frontend: Payment CTA button in signed-quote email + accepted-quote page
+
+---
+
+## App Store Launch Roadmap (Target: This Week)
+
+### What Needs to Happen (Your Side)
+1. **Apple Developer Account** — Confirm active at developer.apple.com ($99/yr). Get your **Team ID** from Membership tab.
+2. **Bundle ID** — Decide on `com.imonsocial.app` (or similar). Register it in App Store Connect → Identifiers.
+3. **App Store Connect listing** — Create new App record, fill in name/description/category/screenshots.
+4. **Google Play Console** — Create account at play.google.com/console ($25 one-time). Create app listing.
+
+### What the Agent Does (Code Side)
+1. Update `app.json` — bundle ID, version, build number, iOS/Android config
+2. Create `eas.json` — preview profile (TestFlight) + production profile
+3. Create `expo-build-properties` config for iOS capabilities
+4. Run `eas build --platform ios --profile preview` → uploads to TestFlight
+5. Run `eas build --platform android --profile preview` → generates AAB for Play Console
+
+### Blockers (Need From You Before Agent Can Build)
+- Apple Team ID (from developer.apple.com → Account → Membership)
+- Bundle ID decision (e.g. `com.imonsocial.app`)
+- Confirm EAS/Expo account credentials (or agent creates new)
+
+### TestFlight Timeline (Once Blockers Cleared)
+- Build time: ~20-30 min (EAS cloud build)
+- Apple review for TestFlight: 1-2 days (internal), instant (external after first approval)
+- Google Play Internal Testing: same-day after AAB upload
 
 ---
 
