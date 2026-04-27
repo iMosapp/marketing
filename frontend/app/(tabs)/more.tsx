@@ -1044,15 +1044,26 @@ export default function MoreScreen() {
             </View>
           </TouchableOpacity>
           <View style={styles.profileCardHint}>
-            <TouchableOpacity
-              style={styles.editProfileBtn}
-              onPress={() => router.push('/my-account')}
-              activeOpacity={0.8}
-              data-testid="edit-profile-hint-btn"
-            >
-              <Ionicons name="pencil" size={14} color="#C9A962" />
-              <Text style={styles.editProfileBtnText}>Edit Profile</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity
+                style={[styles.editProfileBtn, { flex: 1 }]}
+                onPress={() => router.push('/my-account')}
+                activeOpacity={0.8}
+                data-testid="edit-profile-hint-btn"
+              >
+                <Ionicons name="pencil" size={14} color="#C9A962" />
+                <Text style={styles.editProfileBtnText}>Edit Profile</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.editProfileBtn, { flex: 1, backgroundColor: '#C9A96218', borderColor: '#C9A962' }]}
+                onPress={() => router.push('/settings/virtual-assistant')}
+                activeOpacity={0.8}
+                data-testid="virtual-assistant-btn"
+              >
+                <Ionicons name="person-circle" size={16} color="#C9A962" />
+                <Text style={styles.editProfileBtnText}>My Virtual Assistant</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
         
