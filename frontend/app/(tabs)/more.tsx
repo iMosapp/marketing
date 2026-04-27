@@ -1051,8 +1051,8 @@ export default function MoreScreen() {
                 activeOpacity={0.8}
                 data-testid="edit-profile-hint-btn"
               >
-                <Ionicons name="pencil" size={14} color="#C9A962" />
-                <Text style={styles.editProfileBtnText}>Edit Profile</Text>
+                <Ionicons name="person" size={14} color="#C9A962" />
+                <Text style={styles.editProfileBtnText}>My Presence</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.editProfileBtn, { flex: 1, backgroundColor: '#C9A96218', borderColor: '#C9A962' }]}
