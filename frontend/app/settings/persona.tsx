@@ -297,6 +297,16 @@ const { showToast } = useToast();
         <Text style={styles.progressLabel}>Step {currentStep} of {TOTAL_STEPS} — {STEP_LABELS[currentStep - 1]}</Text>
       </View>
 
+      {/* VA Preview Banner */}
+      <TouchableOpacity
+        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#C9A96215', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#C9A96230' }}
+        onPress={() => router.push('/settings/virtual-assistant')}
+      >
+        <Ionicons name="person-circle" size={16} color="#C9A962" />
+        <Text style={{ fontSize: 13, fontWeight: '600', color: '#C9A962' }}>See how your Virtual Assistant sounds</Text>
+        <Ionicons name="chevron-forward" size={14} color="#C9A962" />
+      </TouchableOpacity>
+
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false} key={`step-${currentStep}`}>
 
         {/* ═══════ STEP 1: Your Story ═══════ */}

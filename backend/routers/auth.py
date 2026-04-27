@@ -841,6 +841,43 @@ async def get_ai_system_prompt(user_id: str):
     return {"prompt": prompt, "user_id": user_id}
 
 
+@router.post("/persona/{user_id}/sample-message")
+async def generate_va_sample_message(user_id: str, data: dict):
+    """
+    Generate a sample reply in the user's VA voice for a given scenario.
+    Used by the Virtual Assistant preview page so users can see how their VA sounds.
+    """
+    db = get_db()
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"password": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    persona = user.get("persona", {})
+    name    = user.get("name", "Your Rep")
+    first   = name.split()[0]
+
+    system_prompt = _build_ai_clone_prompt(name, first, persona, user)
+    scenario      = data.get("scenario", "Hey, I just wanted to check in. Still thinking about making a move?")
+
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+
+        emergent_key = os.environ.get("EMERGENT_LLM_KEY", "")
+        chat = LlmChat(
+            api_key=emergent_key,
+            session_id=f"va-preview-{user_id}",
+            system_message=system_prompt,
+        ).with_model("openai", "gpt-5.2")
+
+        response = await chat.send_message(UserMessage(text=scenario))
+        reply = response.strip() if isinstance(response, str) else (response.text.strip() if hasattr(response, "text") else str(response))
+    except Exception as e:
+        logger.error(f"[VA Preview] GPT call failed for {user_id}: {e}")
+        reply = f"Hey! Thanks for reaching out. I'll get back to you shortly. — {first}"
+
+    return {"reply": reply, "scenario": scenario}
+
+
 def _build_ai_clone_prompt(name: str, first: str, persona: dict, user: dict) -> str:
     """Compile user profile data into the AI clone system prompt."""
     tone_map = {
