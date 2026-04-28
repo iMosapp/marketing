@@ -1060,8 +1060,8 @@ export default function MoreScreen() {
                 activeOpacity={0.8}
                 data-testid="virtual-assistant-btn"
               >
-                <Ionicons name="person-circle" size={16} color="#C9A962" />
-                <Text style={styles.editProfileBtnText}>My Virtual Assistant</Text>
+                <Ionicons name="person-circle" size={15} color="#C9A962" />
+                <Text style={[styles.editProfileBtnText, { fontSize: 13, textAlign: 'center' }]} numberOfLines={1} adjustsFontSizeToFit>My Virtual Assistant</Text>
               </TouchableOpacity>
             </View>
           </View>
