@@ -1055,13 +1055,13 @@ export default function MoreScreen() {
                 <Text style={styles.editProfileBtnText}>Manage Profile</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.editProfileBtn, { flex: 1, backgroundColor: '#C9A96218', borderColor: '#C9A962' }]}
+                style={[styles.editProfileBtn, { flex: 1, flexDirection: 'column', backgroundColor: '#C9A96218', borderColor: '#C9A962' }]}
                 onPress={() => router.push('/settings/virtual-assistant')}
                 activeOpacity={0.8}
                 data-testid="virtual-assistant-btn"
               >
-                <Ionicons name="person-circle" size={15} color="#C9A962" />
-                <Text style={[styles.editProfileBtnText, { fontSize: 13, textAlign: 'center' }]} numberOfLines={1} adjustsFontSizeToFit>My Virtual Assistant</Text>
+                <Ionicons name="person-circle" size={18} color="#C9A962" />
+                <Text style={[styles.editProfileBtnText, { fontSize: 13, textAlign: 'center', marginTop: 3 }]}>My Virtual Assistant</Text>
               </TouchableOpacity>
             </View>
           </View>
