@@ -27,6 +27,7 @@ interface Agreement {
   content?: string;
   partner_name?: string;
   partner_email?: string;
+  partner_phone?: string;
   commission_tier?: { name: string; percentage: number };
   custom_commission_notes?: string;
   custom_terms?: string;
@@ -70,6 +71,7 @@ export default function PartnerAgreementDetailScreen() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editedPartnerName, setEditedPartnerName] = useState('');
   const [editedPartnerEmail, setEditedPartnerEmail] = useState('');
+  const [editedPartnerPhone, setEditedPartnerPhone] = useState('');
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendingText, setSendingText] = useState(false);
@@ -84,6 +86,7 @@ export default function PartnerAgreementDetailScreen() {
       setAgreement(response.data);
       setEditedPartnerName(response.data.partner_name || '');
       setEditedPartnerEmail(response.data.partner_email || '');
+      setEditedPartnerPhone(response.data.partner_phone || response.data.signed_partner?.phone || '');
     } catch (error) {
       console.error('Error loading agreement:', error);
       showSimpleAlert('Error', 'Failed to load agreement');
@@ -101,12 +104,14 @@ export default function PartnerAgreementDetailScreen() {
     try {
       await api.put(`/partners/agreements/${agreement.id}`, {
         partner_name: editedPartnerName,
-        partner_email: editedPartnerEmail
+        partner_email: editedPartnerEmail,
+        partner_phone: editedPartnerPhone,
       });
       setAgreement({ 
         ...agreement, 
         partner_name: editedPartnerName,
-        partner_email: editedPartnerEmail 
+        partner_email: editedPartnerEmail,
+        partner_phone: editedPartnerPhone,
       });
       setShowEditModal(false);
       showSimpleAlert('Success', 'Agreement updated');
@@ -184,7 +189,7 @@ export default function PartnerAgreementDetailScreen() {
 
   const handleSendViaText = async () => {
     if (!agreement || !user?._id) return;
-    const phone = agreement.signed_partner?.phone || '';
+    const phone = agreement.signed_partner?.phone || (agreement as any).partner_phone || '';
     if (!phone) {
       showSimpleAlert('No Phone Number', 'This agreement has no partner phone number. Add one in the edit screen first.');
       return;
@@ -654,7 +659,7 @@ export default function PartnerAgreementDetailScreen() {
         presentationStyle="pageSheet"
         onRequestClose={() => setShowEditModal(false)}
       >
-        <View style={styles.modalContainer}>
+        <SafeAreaView style={[styles.modalContainer, { flex: 1 }]}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setShowEditModal(false)}>
               <Text style={styles.modalCancel}>Cancel</Text>
@@ -689,8 +694,18 @@ export default function PartnerAgreementDetailScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
             />
+
+            <Text style={styles.inputLabel}>Partner Phone</Text>
+            <TextInput
+              style={styles.textInput}
+              value={editedPartnerPhone}
+              onChangeText={setEditedPartnerPhone}
+              placeholder="Enter partner phone number"
+              placeholderTextColor={colors.textSecondary}
+              keyboardType="phone-pad"
+            />
           </ScrollView>
-        </View>
+        </SafeAreaView>
       </Modal>
     </SafeAreaView>
   );

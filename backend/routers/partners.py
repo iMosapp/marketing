@@ -853,6 +853,7 @@ async def get_agreement(agreement_id: str):
         "payment_amount": agreement.get("payment_amount"),
         "partner_name": agreement.get("partner_name"),
         "partner_email": agreement.get("partner_email"),
+        "partner_phone": agreement.get("partner_phone"),
         "status": agreement.get("status"),
         "w9_status": agreement.get("w9_status", "pending"),
         "w9_file_url": agreement.get("w9_file_url"),
@@ -892,7 +893,7 @@ async def update_agreement(agreement_id: str, data: dict):
     """Update an agreement (before sending)"""
     db = get_db()
     
-    allowed_fields = ["content", "commission_tier", "custom_commission_notes", "is_white_label", "payment_required", "payment_amount", "partner_email", "partner_name", "notes", "status"]
+    allowed_fields = ["content", "commission_tier", "custom_commission_notes", "is_white_label", "payment_required", "payment_amount", "partner_email", "partner_name", "partner_phone", "notes", "status"]
     update_dict = {k: v for k, v in data.items() if k in allowed_fields}
     update_dict["updated_at"] = datetime.utcnow()
     
@@ -1476,7 +1477,7 @@ async def add_agreement_contact(agreement_id: str, request: Request):
     signed  = agreement.get("signed_partner") or {}
     name    = signed.get("name")  or agreement.get("partner_name")  or ""
     email   = signed.get("email") or agreement.get("partner_email") or ""
-    phone   = signed.get("phone") or ""
+    phone   = signed.get("phone") or agreement.get("partner_phone") or ""
     company = signed.get("company") or ""
 
     if not phone and not email:
