@@ -296,7 +296,7 @@ const s = StyleSheet.create({
   totalValue:     { fontSize: 20, fontWeight: '800', color: '#34C759' },
 
   termRow:        { flexDirection: 'row', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#2C2C2E', gap: 12 },
-  termLabel:      { width: 90, fontSize: 12, fontWeight: '700', color: '#8E8E93', textTransform: 'uppercase', letterSpacing: 0.4, paddingTop: 1 },
+  termLabel:      { width: 80, fontSize: 10, fontWeight: '700', color: '#8E8E93', textTransform: 'uppercase', letterSpacing: 0.4, paddingTop: 1, flexShrink: 0 },
   termVal:        { flex: 1, fontSize: 13, color: '#CCC', lineHeight: 18 },
 
   inputLabel:     { fontSize: 14, color: '#8E8E93', marginBottom: 6, marginTop: 14 },

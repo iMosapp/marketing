@@ -323,7 +323,7 @@ async def _send_quote_link_email(quote: dict, quote_id: str) -> None:
             "from": "i'M On Social <billing@imonsocial.com>",
             "to": [to_email],
             "reply_to": "support@imonsocial.com",
-            "subject": f"Your Quote {quote_num} — {plan_name} at ${final_price:.2f}/{interval}",
+            "subject": f"i'M On Social Quote — {quote_num}",
             "html": html,
         })
         logger.info(f"[Quotes] Quote link emailed to {to_email}: {result.get('id')}")
