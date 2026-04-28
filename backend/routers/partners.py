@@ -1454,6 +1454,95 @@ async def check_payment_status(agreement_id: str, session_id: str):
 
 # ============= PARTNER MANAGEMENT =============
 
+
+@router.post("/agreements/{agreement_id}/add-contact")
+async def add_agreement_contact(agreement_id: str, request: Request):
+    """
+    Creates the partner from this agreement as a contact in the requesting user's account.
+    Returns contact_id + pre-filled SMS body with the signing link.
+    Idempotent — matches on phone or email first.
+    """
+    db = get_db()
+    data = await request.json()
+    user_id = data.get("user_id") or request.headers.get("X-User-ID")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id required")
+
+    agreement = await db.partner_agreements.find_one({"_id": ObjectId(agreement_id)})
+    if not agreement:
+        raise HTTPException(status_code=404, detail="Agreement not found")
+
+    # Prefer signed_partner data (has phone), fall back to draft fields
+    signed  = agreement.get("signed_partner") or {}
+    name    = signed.get("name")  or agreement.get("partner_name")  or ""
+    email   = signed.get("email") or agreement.get("partner_email") or ""
+    phone   = signed.get("phone") or ""
+    company = signed.get("company") or ""
+
+    if not phone and not email:
+        raise HTTPException(status_code=400, detail="Agreement has no phone or email. Add partner details first.")
+
+    digits = ''.join(c for c in (phone or "") if c.isdigit())
+
+    # Check for existing contact
+    existing = None
+    if digits:
+        existing = await db.contacts.find_one({
+            "user_id": user_id,
+            "$or": [
+                {"phone": {"$regex": digits[-10:]}},
+                {"phone_digits": digits[-10:]},
+            ]
+        })
+    if not existing and email:
+        existing = await db.contacts.find_one({"user_id": user_id, "email": email.lower().strip()})
+
+    if existing:
+        contact_id = str(existing["_id"])
+        created = False
+    else:
+        parts      = name.strip().split(" ", 1)
+        first_name = parts[0] if parts else name
+        last_name  = parts[1] if len(parts) > 1 else ""
+        contact_doc = {
+            "user_id":          user_id,
+            "original_user_id": user_id,
+            "first_name":       first_name,
+            "last_name":        last_name,
+            "email":            email.lower().strip() if email else "",
+            "phone":            phone,
+            "company":          company,
+            "source":           "partner_agreement",
+            "ownership_type":   "org",
+            "status":           "active",
+            "tags":             ["Partner"],
+            "notes":            f"Added from partner agreement — {agreement.get('template_name','')} ({agreement.get('type','')})",
+            "created_at":       datetime.utcnow(),
+            "updated_at":       datetime.utcnow(),
+        }
+        result     = await db.contacts.insert_one(contact_doc)
+        contact_id = str(result.inserted_id)
+        created    = True
+
+    sign_link = f"{_APP_URL}/partner/agreement/{agreement_id}"
+    first     = name.split()[0] if name else "there"
+    agmt_type = agreement.get("template_name", "Partner Agreement")
+    sms_body  = (
+        f"Hi {first}! Here's your i'M On Social {agmt_type} to review and sign: {sign_link}"
+    )
+
+    return {
+        "contact_id": contact_id,
+        "created":    created,
+        "name":       name,
+        "phone":      phone,
+        "email":      email,
+        "sms_body":   sms_body,
+        "sign_link":  sign_link,
+    }
+
+
+
 @router.get("/")
 async def list_partners(status: Optional[str] = None):
     """List all partners"""

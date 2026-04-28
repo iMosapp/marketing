@@ -9,6 +9,7 @@ import {
   TextInput,
   Modal,
   Platform,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +17,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import api from '../../../services/api';
 import { showAlert, showSimpleAlert, showConfirm } from '../../../services/alert';
+import { useAuthStore } from '../../../store/authStore';
 
 import { useThemeStore } from '../../../store/themeStore';
 interface Agreement {
@@ -61,6 +63,7 @@ export default function PartnerAgreementDetailScreen() {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
   const router = useRouter();
+  const { user } = useAuthStore();
   const { id } = useLocalSearchParams();
   const [agreement, setAgreement] = useState<Agreement | null>(null);
   const [loading, setLoading] = useState(true);
@@ -69,6 +72,7 @@ export default function PartnerAgreementDetailScreen() {
   const [editedPartnerEmail, setEditedPartnerEmail] = useState('');
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
+  const [sendingText, setSendingText] = useState(false);
 
   useEffect(() => {
     loadAgreement();
@@ -176,6 +180,41 @@ export default function PartnerAgreementDetailScreen() {
     const link = `${baseUrl}/partner/agreement/${agreement.id}`;
     await Clipboard.setStringAsync(link);
     showSimpleAlert('Copied', 'Agreement link copied to clipboard');
+  };
+
+  const handleSendViaText = async () => {
+    if (!agreement || !user?._id) return;
+    const phone = agreement.signed_partner?.phone || '';
+    if (!phone) {
+      showSimpleAlert('No Phone Number', 'This agreement has no partner phone number. Add one in the edit screen first.');
+      return;
+    }
+    setSendingText(true);
+    try {
+      const res = await api.post(`/partners/agreements/${agreement.id}/add-contact`, {
+        user_id: user._id,
+      });
+      const { sms_body, created, name } = res.data;
+      const digits = phone.replace(/\D/g, '');
+      const smsUrl = Platform.OS === 'ios'
+        ? `sms:${digits}&body=${encodeURIComponent(sms_body)}`
+        : `sms:${digits}?body=${encodeURIComponent(sms_body)}`;
+      const canOpen = await Linking.canOpenURL(smsUrl);
+      if (canOpen) {
+        await Linking.openURL(smsUrl);
+      } else if (typeof window !== 'undefined') {
+        await Clipboard.setStringAsync(sms_body);
+        showSimpleAlert('Copied to Clipboard', `No SMS app detected. Message copied:\n\n${sms_body}`);
+        return;
+      }
+      if (created) {
+        showSimpleAlert('Contact Added', `${name || 'Partner'} has been added to your contacts and your SMS is ready to send.`);
+      }
+    } catch (e: any) {
+      showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to prepare text message.');
+    } finally {
+      setSendingText(false);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -555,6 +594,25 @@ export default function PartnerAgreementDetailScreen() {
             <Ionicons name="link" size={20} color="#007AFF" />
             <Text style={styles.copyLinkButtonText}>Copy Agreement Link</Text>
           </TouchableOpacity>
+
+          {/* Send via Text */}
+          {agreement.status !== 'signed' && (
+            <TouchableOpacity
+              style={[styles.copyLinkButton, { borderColor: '#34C759', backgroundColor: '#34C75910' }]}
+              onPress={handleSendViaText}
+              disabled={sendingText}
+              data-testid="send-text-btn"
+            >
+              {sendingText ? (
+                <ActivityIndicator size="small" color="#34C759" />
+              ) : (
+                <>
+                  <Ionicons name="chatbubble" size={20} color="#34C759" />
+                  <Text style={[styles.copyLinkButtonText, { color: '#34C759' }]}>Send Link via Text</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
           
           {/* Resend Button */}
           {agreement.status !== 'signed' && (
