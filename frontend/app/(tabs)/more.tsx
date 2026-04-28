@@ -1046,13 +1046,13 @@ export default function MoreScreen() {
           <View style={styles.profileCardHint}>
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <TouchableOpacity
-                style={[styles.editProfileBtn, { flex: 1 }]}
+                style={[styles.editProfileBtn, { flex: 1, flexDirection: 'column', backgroundColor: '#C9A96218', borderColor: '#C9A962' }]}
                 onPress={() => router.push('/my-account')}
                 activeOpacity={0.8}
                 data-testid="edit-profile-hint-btn"
               >
-                <Ionicons name="person" size={14} color="#C9A962" />
-                <Text style={styles.editProfileBtnText}>Manage Profile</Text>
+                <Ionicons name="person" size={18} color="#C9A962" />
+                <Text style={[styles.editProfileBtnText, { fontSize: 13, textAlign: 'center', marginTop: 3 }]}>Manage Profile</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.editProfileBtn, { flex: 1, flexDirection: 'column', backgroundColor: '#C9A96218', borderColor: '#C9A962' }]}
