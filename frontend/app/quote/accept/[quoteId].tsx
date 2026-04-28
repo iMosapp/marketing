@@ -172,7 +172,7 @@ export default function QuoteAcceptPage() {
                 ['Billing',      'Billed monthly on the date service begins.'],
                 ['Trial',        `${p.trial_days || 7}-day free trial — no charge during trial period.`],
                 ['Refunds',      'No refunds for partial billing periods.'],
-                ['Governing',    'State of Texas.'],
+                ['Governing',    'State of Wyoming.'],
               ].map(([label, val]) => (
                 <View key={label} style={s.termRow}>
                   <Text style={s.termLabel}>{label}</Text>

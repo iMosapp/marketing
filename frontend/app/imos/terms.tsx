@@ -61,7 +61,7 @@ const SECTIONS = [
   },
   {
     title: '15. Governing Law',
-    content: `These Terms shall be governed by and construed in accordance with the laws of the State of Texas, United States, without regard to conflict of law principles. Any disputes arising from these Terms shall be resolved in the courts of Texas.`,
+    content: `These Terms shall be governed by and construed in accordance with the laws of the State of Wyoming, United States, without regard to conflict of law principles. Any disputes arising from these Terms shall be resolved in the courts of Wyoming.`,
   },
   {
     title: '16. Contact',

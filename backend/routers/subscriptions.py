@@ -177,7 +177,7 @@ def _generate_quote_pdf(quote: dict) -> bytes:
         ("Billing",       "Billed monthly on the date service begins. Prices subject to change with 30 days notice."),
         ("Trial",         f"{pricing.get('trial_days',7)}-day free trial included. No charge during trial."),
         ("Refunds",       "No refunds for partial billing periods."),
-        ("Governing Law", "State of Texas."),
+        ("Governing Law", "State of Wyoming."),
     ]
     if quote.get("notes"):
         terms.append(("Special Notes", quote["notes"]))
@@ -223,7 +223,7 @@ def _generate_quote_pdf(quote: dict) -> bytes:
     pdf.multi_cell(W, 5,
         "This document confirms acceptance of the above subscription quote. "
         "Service terms, cancellation policy, and pricing are binding upon acceptance. "
-        "Governed by the laws of the State of Texas. i'M On Social is a product of VI Ventures Group LLC."
+        "Governed by the laws of the State of Wyoming. i'M On Social is a product of VI Ventures Group LLC."
     )
     pdf.ln(2)
     pdf.set_x(pdf.l_margin)

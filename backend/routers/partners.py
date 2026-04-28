@@ -266,7 +266,7 @@ def _generate_agreement_pdf(agreement: dict) -> bytes:
     pdf.multi_cell(W, 5,
         "This document is a legally binding digital agreement executed via i'M On Social's "
         "e-signature platform. The signature, IP address, and document hash above serve as "
-        "the official record of execution. Governed by the laws of the State of Texas."
+        "the official record of execution. Governed by the laws of the State of Wyoming."
     )
     pdf.ln(2)
     pdf.set_x(pdf.l_margin)
@@ -539,7 +539,7 @@ def build_agreement_content(partner_type: str, partner_name: str, custom_terms: 
                              commission_duration: str = "Lifetime (while account remains active)",
                              billing_structure: str = "Company Bills Customer (Partner receives commission)",
                              company_name: str = "VI Ventures Group LLC",
-                             governing_state: str = "Texas") -> str:
+                             governing_state: str = "Wyoming") -> str:
     """Generate the full agreement text from the template + exhibit A."""
     import datetime as dt
     effective_date = dt.datetime.utcnow().strftime("%B %d, %Y")
