@@ -9,6 +9,7 @@ import {
   TextInput,
   Modal,
   Platform,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +17,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import api from '../../../services/api';
 import { showAlert, showSimpleAlert, showConfirm } from '../../../services/alert';
+import { useAuthStore } from '../../../store/authStore';
 
 import { useThemeStore } from '../../../store/themeStore';
 interface Quote {
@@ -62,6 +64,7 @@ export default function QuoteDetailScreen() {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
   const router = useRouter();
+  const { user } = useAuthStore();
   const { id } = useLocalSearchParams();
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(true);
@@ -69,6 +72,7 @@ export default function QuoteDetailScreen() {
   const [editedNotes, setEditedNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
+  const [sendingText, setSendingText] = useState(false);
 
   useEffect(() => {
     loadQuote();
@@ -110,6 +114,46 @@ export default function QuoteDetailScreen() {
     const base = process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com';
     await Clipboard.setStringAsync(`${base}/quote/accept/${quote._id}`);
     showSimpleAlert('Copied', 'Quote signing link copied to clipboard');
+  };
+
+  const handleSendViaText = async () => {
+    if (!quote || !user?._id) return;
+    const phone = quote.customer?.phone;
+    if (!phone) {
+      showSimpleAlert('No Phone', 'This quote has no customer phone number. Add one first.');
+      return;
+    }
+    setSendingText(true);
+    try {
+      const res = await api.post(`/subscriptions/quotes/${quote._id}/add-contact`, {
+        user_id: user._id,
+      });
+      const { sms_body, created, name } = res.data;
+      // Open native SMS with pre-filled message
+      const digits = phone.replace(/\D/g, '');
+      const smsUrl = Platform.OS === 'ios'
+        ? `sms:${digits}&body=${encodeURIComponent(sms_body)}`
+        : `sms:${digits}?body=${encodeURIComponent(sms_body)}`;
+      const canOpen = await Linking.canOpenURL(smsUrl);
+      if (canOpen) {
+        await Linking.openURL(smsUrl);
+      } else if (typeof window !== 'undefined') {
+        // Web fallback — copy to clipboard
+        await Clipboard.setStringAsync(sms_body);
+        showSimpleAlert('Copied to Clipboard', `No SMS app detected. Message copied:\n\n${sms_body}`);
+        return;
+      }
+      if (created) {
+        showSimpleAlert(
+          'Contact Added',
+          `${name || 'Customer'} has been added to your contacts and your SMS is ready to send.`
+        );
+      }
+    } catch (e: any) {
+      showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to prepare text message.');
+    } finally {
+      setSendingText(false);
+    }
   };
 
   const handleResend = async () => {
@@ -353,6 +397,25 @@ export default function QuoteDetailScreen() {
             <TouchableOpacity style={styles.copyButton} onPress={copyLink} data-testid="copy-link-button">
               <Ionicons name="link" size={20} color="#007AFF" />
               <Text style={styles.copyButtonText}>Copy Signing Link</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Send via Text — creates contact + opens SMS pre-filled */}
+          {quote.status !== 'accepted' && quote.customer?.phone && (
+            <TouchableOpacity
+              style={[styles.copyButton, { borderColor: '#34C759', backgroundColor: '#34C75910' }]}
+              onPress={handleSendViaText}
+              disabled={sendingText}
+              data-testid="send-text-btn"
+            >
+              {sendingText ? (
+                <ActivityIndicator size="small" color="#34C759" />
+              ) : (
+                <>
+                  <Ionicons name="chatbubble" size={20} color="#34C759" />
+                  <Text style={[styles.copyButtonText, { color: '#34C759' }]}>Send Link via Text</Text>
+                </>
+              )}
             </TouchableOpacity>
           )}
           {/* Download PDF — accepted quotes only */}

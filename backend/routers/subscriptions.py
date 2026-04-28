@@ -1157,6 +1157,107 @@ async def download_quote_pdf(quote_id: str):
     )
 
 
+
+@router.post("/quotes/{quote_id}/add-contact")
+async def add_quote_contact(quote_id: str, request: Request):
+    """
+    Creates the customer from this quote as a contact in the requesting user's account.
+    Returns the contact_id + a pre-filled SMS message with the signing link.
+    Idempotent — if a contact with matching phone/email already exists, returns that one.
+    """
+    db = get_db()
+    data = await request.json()
+    user_id = data.get("user_id") or request.headers.get("X-User-ID")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id required")
+
+    quote = await db.subscription_quotes.find_one({"_id": ObjectId(quote_id)})
+    if not quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+
+    customer = quote.get("customer") or {}
+    biz      = quote.get("business_info") or {}
+    pricing  = quote.get("pricing") or {}
+
+    name     = customer.get("name") or biz.get("company_name") or ""
+    email    = customer.get("email") or ""
+    phone    = customer.get("phone") or ""
+
+    if not phone and not email:
+        raise HTTPException(status_code=400, detail="Quote has no phone or email to create contact from")
+
+    # Normalise phone for lookup
+    digits = ''.join(c for c in (phone or "") if c.isdigit())
+
+    # Check if contact already exists (same user, matching phone or email)
+    existing = None
+    if digits:
+        existing = await db.contacts.find_one({
+            "user_id": user_id,
+            "$or": [
+                {"phone": {"$regex": digits[-10:]}},
+                {"phone_digits": digits[-10:]},
+            ]
+        })
+    if not existing and email:
+        existing = await db.contacts.find_one({"user_id": user_id, "email": email.lower().strip()})
+
+    if existing:
+        contact_id = str(existing["_id"])
+        created = False
+    else:
+        # Build contact document
+        parts      = name.strip().split(" ", 1)
+        first_name = parts[0] if parts else name
+        last_name  = parts[1] if len(parts) > 1 else ""
+        addr       = biz.get("address") or {}
+
+        contact_doc = {
+            "user_id":          user_id,
+            "original_user_id": user_id,
+            "first_name":       first_name,
+            "last_name":        last_name,
+            "email":            email.lower().strip() if email else "",
+            "phone":            phone,
+            "company":          biz.get("company_name", ""),
+            "address":          addr.get("street", "") if isinstance(addr, dict) else "",
+            "city":             addr.get("city", "")   if isinstance(addr, dict) else "",
+            "state":            addr.get("state", "")  if isinstance(addr, dict) else "",
+            "zip":              addr.get("zip", "")    if isinstance(addr, dict) else "",
+            "source":           "quote",
+            "ownership_type":   "org",
+            "status":           "active",
+            "tags":             ["Quote Sent"],
+            "notes":            f"Added from quote {quote.get('quote_number','')} — {quote.get('plan_name','')} ${pricing.get('final_price',0):.0f}/mo",
+            "created_at":       datetime.utcnow(),
+            "updated_at":       datetime.utcnow(),
+        }
+        result    = await db.contacts.insert_one(contact_doc)
+        contact_id = str(result.inserted_id)
+        created   = True
+
+    # Build the SMS message
+    sign_link  = f"{_APP_URL}/quote/accept/{quote_id}"
+    first      = (name.split()[0] if name else "there")
+    plan_name  = quote.get("plan_name", "your plan")
+    price      = pricing.get("final_price", 0)
+    sms_body   = (
+        f"Hi {first}! Here's your i'M On Social quote for {plan_name} at ${price:.0f}/mo. "
+        f"Review and sign here: {sign_link}"
+    )
+
+    return {
+        "contact_id": contact_id,
+        "created":    created,
+        "name":       name,
+        "phone":      phone,
+        "email":      email,
+        "sms_body":   sms_body,
+        "sign_link":  sign_link,
+    }
+
+
+
 @router.delete("/quotes/{quote_id}")
 async def delete_quote(quote_id: str):
     """Delete a quote (only drafts can be deleted)"""
