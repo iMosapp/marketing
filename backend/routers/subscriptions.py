@@ -835,8 +835,8 @@ async def create_quote(data: dict):
         else:
             raise HTTPException(status_code=400, detail=code_validation["message"])
     
-    if discount_percent > 25:
-        raise HTTPException(status_code=400, detail="Maximum discount is 25%")
+    if discount_percent > 100:
+        raise HTTPException(status_code=400, detail="Discount cannot exceed 100%")
     
     notes = data.get("notes", "")
     valid_days = data.get("valid_days", 30)
@@ -866,9 +866,20 @@ async def create_quote(data: dict):
         interval = plan["interval"]
         trial_days = plan["trial_days"]
     
-    # Apply discount
-    discount_amount = (base_price * discount_percent / 100) if discount_percent else 0
-    final_price = base_price - discount_amount
+    # Apply discount — or use custom price override if provided
+    custom_price = data.get("custom_price")
+    if custom_price is not None:
+        try:
+            final_price = float(custom_price)
+            discount_amount = base_price - final_price
+            discount_percent = round((discount_amount / base_price * 100), 1) if base_price > 0 else 0
+        except (ValueError, TypeError):
+            custom_price = None
+            discount_amount = (base_price * discount_percent / 100) if discount_percent else 0
+            final_price = base_price - discount_amount
+    else:
+        discount_amount = (base_price * discount_percent / 100) if discount_percent else 0
+        final_price = base_price - discount_amount
     
     quote = {
         "quote_number": f"Q-{datetime.utcnow().strftime('%Y%m%d%H%M%S')}",

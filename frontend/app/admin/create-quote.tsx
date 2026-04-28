@@ -74,6 +74,7 @@ export default function CreateQuotePage() {
   const [discountPercent, setDiscountPercent] = useState(0);
   const [discountCode, setDiscountCode] = useState('');
   const [validatedDiscount, setValidatedDiscount] = useState<number | null>(null);
+  const [customPrice, setCustomPrice] = useState('');
   
   // Quote preparer
   const [preparedByName, setPreparedByName] = useState('');
@@ -189,6 +190,7 @@ export default function CreateQuotePage() {
         // Discount
         discount_percent: validatedDiscount || discountPercent,
         discount_code: validatedDiscount ? discountCode : '',
+        custom_price: customPrice ? parseFloat(customPrice) : undefined,
         
         // Preparer
         prepared_by_name: preparedByName,
@@ -376,10 +378,53 @@ export default function CreateQuotePage() {
         {/* Price Summary */}
         <View style={styles.priceSummary}>
           <Text style={styles.priceSummaryLabel}>Quote Total:</Text>
-          <Text style={styles.priceSummaryAmount}>${calculatedPrice.toFixed(2)}</Text>
+          <Text style={styles.priceSummaryAmount}>
+            ${customPrice ? parseFloat(customPrice || '0').toFixed(2) : calculatedPrice.toFixed(2)}
+          </Text>
           <Text style={styles.priceSummaryInterval}>
             /{planType === 'store' || selectedPlan !== 'annual' ? 'month' : 'year'}
           </Text>
+        </View>
+
+        {/* Custom Price Override */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Custom Price</Text>
+          <Text style={[styles.discountSubtitle, { marginBottom: 10 }]}>
+            Override the calculated price with any amount
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: customPrice ? '#007AFF' : colors.surface, paddingHorizontal: 14 }}>
+              <Text style={{ fontSize: 18, color: colors.textSecondary, marginRight: 4 }}>$</Text>
+              <TextInput
+                style={[styles.input, { flex: 1, marginBottom: 0, backgroundColor: 'transparent', borderWidth: 0, paddingHorizontal: 0 }]}
+                placeholder="Enter custom price"
+                placeholderTextColor={colors.textSecondary}
+                value={customPrice}
+                onChangeText={(text) => {
+                  const cleaned = text.replace(/[^0-9.]/g, '');
+                  setCustomPrice(cleaned);
+                }}
+                keyboardType="decimal-pad"
+                data-testid="custom-price-input"
+              />
+            </View>
+            {customPrice ? (
+              <TouchableOpacity
+                onPress={() => setCustomPrice('')}
+                style={{ backgroundColor: colors.card, borderRadius: 10, padding: 12, borderWidth: 1, borderColor: colors.surface }}
+              >
+                <Text style={{ fontSize: 14, color: '#FF3B30', fontWeight: '600' }}>Clear</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+          {customPrice ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, backgroundColor: '#007AFF15', borderRadius: 8, padding: 10 }}>
+              <Ionicons name="checkmark-circle" size={16} color="#007AFF" />
+              <Text style={{ fontSize: 13, color: '#007AFF', fontWeight: '500' }}>
+                Custom price ${parseFloat(customPrice).toFixed(2)}/mo overrides calculated total
+              </Text>
+            </View>
+          ) : null}
         </View>
         
         {/* Customer Info */}
