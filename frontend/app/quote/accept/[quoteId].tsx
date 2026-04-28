@@ -211,7 +211,27 @@ export default function QuoteAcceptPage() {
                 {agreed && <Ionicons name="checkmark" size={15} color="#000" />}
               </View>
               <Text style={s.agreeText}>
-                I have read and agree to the service terms above, including the 30-day cancellation policy.
+                I have read and agree to the service terms above, including the 30-day cancellation policy, and the{' '}
+                <Text
+                  style={{ color: '#C9A962', textDecorationLine: 'underline' }}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    if (typeof window !== 'undefined') window.open('https://app.imonsocial.com/imos/terms', '_blank');
+                  }}
+                >
+                  Terms of Service
+                </Text>
+                {' '}and{' '}
+                <Text
+                  style={{ color: '#C9A962', textDecorationLine: 'underline' }}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    if (typeof window !== 'undefined') window.open('https://app.imonsocial.com/imos/privacy', '_blank');
+                  }}
+                >
+                  Privacy Policy
+                </Text>
+                .
               </Text>
             </TouchableOpacity>
 
