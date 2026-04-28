@@ -302,11 +302,12 @@ async def _send_quote_link_email(quote: dict, quote_id: str) -> None:
       </div>
 
       <div style="text-align:center;margin-bottom:36px;">
-        <a href="{sign_link}" style="display:inline-block;background:#C9A962;color:#000;font-size:18px;font-weight:700;padding:18px 52px;border-radius:12px;text-decoration:none;">
+        <a href="{sign_link}" target="_blank" style="display:inline-block;background:#C9A962;color:#000000;font-size:18px;font-weight:700;padding:18px 52px;border-radius:12px;text-decoration:none;mso-padding-alt:0;border:2px solid #C9A962;">
           Review &amp; Sign Quote
         </a>
-        <p style="font-size:12px;color:#636366;margin-top:12px;">
-          <a href="{sign_link}" style="color:#C9A962;word-break:break-all;">{sign_link}</a>
+        <p style="font-size:12px;color:#636366;margin-top:14px;">
+          Can't tap the button? Copy this link:<br>
+          <a href="{sign_link}" target="_blank" style="color:#C9A962;word-break:break-all;font-size:13px;">{sign_link}</a>
         </p>
       </div>
 
