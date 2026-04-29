@@ -1089,6 +1089,16 @@ def start_scheduler():
         misfire_grace_time=120,
     )
 
+    # Every 2 minutes — send queued after-hours internet leads
+    from routers.lead_intake import process_queued_leads as _process_leads
+    scheduler.add_job(
+        safe_job(_process_leads),
+        IntervalTrigger(minutes=2),
+        id="internet_lead_processor",
+        replace_existing=True,
+        misfire_grace_time=60,
+    )
+
     # Daily at 6 AM UTC on the 1st - generate monthly partner invoices
     scheduler.add_job(
         safe_job(run_monthly_partner_invoices_job),
@@ -1099,7 +1109,7 @@ def start_scheduler():
     )
 
     scheduler.start()
-    logger.info("[Scheduler] Started with 10 jobs: daily_system_tasks (5:30 UTC), daily_lifecycle_scan (6:00 UTC), daily_report_delivery (7:00 UTC), daily_date_triggers (8:00 UTC), campaign_step_processor (every 15m), weekly_power_rankings (Mon 9:00 UTC), daily_recent_tag_expiry (4:00 UTC), monthly_health_reports (22:00 UTC), sold_delivery_processor (every 5m), monthly_partner_invoices (1st @ 6:30 UTC)")
+    logger.info("[Scheduler] Started with 11 jobs: daily_system_tasks, daily_lifecycle_scan, daily_report_delivery, daily_date_triggers, campaign_step_processor (15m), weekly_power_rankings, daily_recent_tag_expiry, monthly_health_reports, sold_delivery_processor (5m), monthly_partner_invoices, internet_lead_processor (2m)")
 
 
 def stop_scheduler():

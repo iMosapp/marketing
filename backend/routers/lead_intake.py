@@ -1,0 +1,910 @@
+"""
+Lead Intake Router
+Handles inbound internet leads from any source:
+  - ADF/XML  (Cars.com, AutoTrader, OEM, most major portals)
+  - JSON/Form webhook  (dealer websites, Zapier, n8n, CRM POST)
+  - Email body parse   (sources that only send email — GPT extracts fields)
+
+Every lead gets normalized to a standard schema, deduplicated, timed for
+after-hours scheduling, an AI-drafted first message generated, and placed
+in the Unassigned inbox queue.
+"""
+import asyncio
+import logging
+import os
+import re
+import xml.etree.ElementTree as ET
+from datetime import datetime, timezone, timedelta
+from typing import Optional
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+from bson import ObjectId
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import PlainTextResponse
+
+from routers.database import get_db
+
+router = APIRouter(prefix="/leads", tags=["Lead Intake"])
+logger = logging.getLogger(__name__)
+
+_APP_URL = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+
+# ── Smart field normalizer ─────────────────────────────────────────────────────
+
+# Map of normalized (snake_case) keys → standard schema fields
+# Covers 60+ real-world variations from Cars.com, AutoTrader, OEM, dealer sites
+_FIELD_ALIASES: dict[str, list[str]] = {
+    "first_name": [
+        "first_name", "firstname", "fname", "first", "customer_first_name",
+        "buyer_first_name", "contact_first", "lead_first_name", "f_name",
+        "given_name", "givenname",
+    ],
+    "last_name": [
+        "last_name", "lastname", "lname", "last", "customer_last_name",
+        "buyer_last_name", "contact_last", "lead_last_name", "l_name",
+        "family_name", "surname",
+    ],
+    "full_name": [
+        "name", "full_name", "fullname", "customer_name", "contact_name",
+        "buyer_name", "lead_name", "your_name",
+    ],
+    "email": [
+        "email", "email_address", "emailaddress", "customer_email",
+        "buyer_email", "contact_email", "lead_email", "e_mail",
+    ],
+    "phone": [
+        "phone", "phone_number", "phonenumber", "telephone", "tel",
+        "cell", "cell_phone", "cellphone", "mobile", "mobile_phone",
+        "mobilephone", "contact_phone", "buyer_phone", "customer_phone",
+        "primary_phone", "phone1",
+    ],
+    "comments": [
+        "comments", "comment", "notes", "note", "message", "inquiry",
+        "description", "customer_comments", "additional_info",
+        "customer_message", "lead_comments", "body", "text",
+    ],
+    "vehicle_year": [
+        "vehicle_year", "year", "car_year", "auto_year", "model_year",
+        "vehicleyear", "veh_year",
+    ],
+    "vehicle_make": [
+        "vehicle_make", "make", "car_make", "auto_make", "brand",
+        "vehiclemake", "veh_make", "manufacturer",
+    ],
+    "vehicle_model": [
+        "vehicle_model", "model", "car_model", "auto_model",
+        "vehiclemodel", "veh_model",
+    ],
+    "vehicle_trim": [
+        "vehicle_trim", "trim", "trim_level", "trimlevel", "package",
+        "veh_trim",
+    ],
+    "vehicle_vin": [
+        "vin", "vehicle_vin", "vin_number", "stock_vin",
+    ],
+    "vehicle_stock": [
+        "stock", "stock_number", "stocknumber", "stock_no",
+    ],
+    "vehicle_type": [
+        "vehicle_type", "type", "sale_type", "interest", "condition",
+        "new_used", "new_or_used",
+    ],
+    "source_name": [
+        "source", "source_name", "lead_source", "leadsource", "provider",
+        "vendor", "origin", "referrer", "utm_source",
+    ],
+    "zip_code": [
+        "zip", "zipcode", "zip_code", "postal_code", "postalcode",
+    ],
+    "city": ["city", "customer_city"],
+    "state": ["state", "province", "customer_state"],
+    "trade_year": ["trade_year", "tradein_year", "trade_in_year"],
+    "trade_make": ["trade_make", "tradein_make", "trade_in_make"],
+    "trade_model": ["trade_model", "tradein_model", "trade_in_model"],
+    "trade_mileage": ["trade_mileage", "tradein_miles", "trade_miles"],
+}
+
+# Build reverse lookup: normalized_alias → standard_key
+_ALIAS_LOOKUP: dict[str, str] = {}
+for std_key, aliases in _FIELD_ALIASES.items():
+    for alias in aliases:
+        _ALIAS_LOOKUP[alias.lower().replace("-", "_").replace(" ", "_")] = std_key
+
+
+def _snake(key: str) -> str:
+    """CamelCase / PascalCase → snake_case, strip special chars."""
+    s = re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", str(key))
+    s = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", s)
+    return s.lower().replace("-", "_").replace(" ", "_")
+
+
+def normalize_fields(raw: dict) -> dict:
+    """
+    Accept any dict of raw fields and return our standard lead schema.
+    Unknown fields go into `extra_fields` for admin review.
+    """
+    std: dict = {}
+    extra: dict = {}
+
+    for raw_key, value in raw.items():
+        if value is None or value == "":
+            continue
+        nk = _snake(raw_key)
+        mapped = _ALIAS_LOOKUP.get(nk)
+        if mapped:
+            # Only take first match (some sources duplicate fields)
+            if mapped not in std:
+                std[mapped] = str(value).strip()
+        else:
+            extra[raw_key] = value
+
+    # Build full_name if split names present
+    if "full_name" not in std and ("first_name" in std or "last_name" in std):
+        std["full_name"] = f"{std.get('first_name', '')} {std.get('last_name', '')}".strip()
+
+    # Split full_name if only full name provided
+    if "full_name" in std and "first_name" not in std:
+        parts = std["full_name"].split(" ", 1)
+        std["first_name"] = parts[0]
+        std["last_name"] = parts[1] if len(parts) > 1 else ""
+
+    std["extra_fields"] = extra
+    return std
+
+
+# ── ADF / XML parser ───────────────────────────────────────────────────────────
+
+def parse_adf_xml(body: str) -> dict:
+    """
+    Parse ADF (Automotive Data Format) XML lead.
+    Returns dict of normalized lead fields.
+    Handles ADF 1.0 spec used by Cars.com, AutoTrader, most OEMs.
+    """
+    try:
+        root = ET.fromstring(body.strip())
+    except ET.ParseError as e:
+        raise ValueError(f"Invalid XML: {e}")
+
+    # ADF root can be <adf> or <adfleads> or bare <prospect>
+    prospect = root if root.tag in ("prospect", "Prospect") else root.find(
+        "prospect") or root.find("Prospect")
+    if prospect is None:
+        raise ValueError("No <prospect> element found in ADF XML")
+
+    def txt(el, *tags) -> str:
+        for tag in tags:
+            node = el.find(tag)
+            if node is not None and node.text:
+                return node.text.strip()
+        return ""
+
+    def attr(el, *tags, attrib="type") -> str:
+        for tag in tags:
+            node = el.find(tag)
+            if node is not None:
+                return node.get(attrib, "")
+        return ""
+
+    raw: dict = {}
+
+    # ── Request date
+    raw["adf_requestdate"] = txt(prospect, "requestdate", "RequestDate")
+
+    # ── Vehicle
+    veh = prospect.find("vehicle") or prospect.find("Vehicle")
+    if veh is not None:
+        raw["vehicle_year"]  = txt(veh, "year", "Year")
+        raw["vehicle_make"]  = txt(veh, "make", "Make")
+        raw["vehicle_model"] = txt(veh, "model", "Model")
+        raw["vehicle_trim"]  = txt(veh, "trim", "Trim")
+        raw["vehicle_vin"]   = txt(veh, "vin", "VIN", "Vin")
+        raw["vehicle_stock"] = txt(veh, "stock", "Stock", "StockNumber")
+        raw["vehicle_type"]  = veh.get("status") or veh.get("interest") or ""
+        raw["vehicle_price"] = txt(veh, "price", "Price")
+
+    # ── Customer / Contact
+    customer = prospect.find("customer") or prospect.find("Customer")
+    if customer is not None:
+        contact = customer.find("contact") or customer.find("Contact")
+        if contact is not None:
+            # Name — ADF can use <name part="first"> or <name part="full">
+            for name_el in contact.findall("name") + contact.findall("Name"):
+                part = name_el.get("part", "full").lower()
+                val  = (name_el.text or "").strip()
+                if val:
+                    if part == "first":
+                        raw["first_name"] = val
+                    elif part == "last":
+                        raw["last_name"] = val
+                    else:
+                        raw["full_name"] = val
+
+            # Email
+            for el in contact.findall("email") + contact.findall("Email"):
+                if el.text:
+                    raw["email"] = el.text.strip()
+                    break
+
+            # Phone — prefer "voice" or "cell" type
+            phones = contact.findall("phone") + contact.findall("Phone")
+            for ph in phones:
+                t = ph.get("type", "voice").lower()
+                if t in ("voice", "cell", "mobile", "home") and ph.text:
+                    raw["phone"] = ph.text.strip()
+                    break
+            if "phone" not in raw and phones and phones[0].text:
+                raw["phone"] = phones[0].text.strip()
+
+            # Address
+            addr = contact.find("address") or contact.find("Address")
+            if addr is not None:
+                raw["city"]     = txt(addr, "city", "City")
+                raw["state"]    = txt(addr, "regioncode", "state", "State")
+                raw["zip_code"] = txt(addr, "postalcode", "zip", "Zip")
+
+        raw["comments"] = txt(customer, "comments", "Comments")
+
+    # ── Trade-in
+    trade = prospect.find("trade") or prospect.find("Trade") or prospect.find("tradein")
+    if trade is not None:
+        raw["trade_year"]    = txt(trade, "year", "Year")
+        raw["trade_make"]    = txt(trade, "make", "Make")
+        raw["trade_model"]   = txt(trade, "model", "Model")
+        raw["trade_mileage"] = txt(trade, "odometer", "Odometer", "mileage")
+
+    # ── Vendor / Source
+    vendor = prospect.find("vendor") or prospect.find("Vendor")
+    if vendor is not None:
+        raw["source_name"] = txt(vendor, "vendorname", "VendorName", "name")
+
+    # ── Provider (some ADF variants)
+    provider = prospect.find("provider") or prospect.find("Provider")
+    if provider is not None and "source_name" not in raw:
+        raw["source_name"] = txt(provider, "name", "Name", "service")
+
+    return normalize_fields(raw)
+
+
+# ── After-hours timing ─────────────────────────────────────────────────────────
+
+_DAY_NAMES = ["monday", "tuesday", "wednesday", "thursday",
+              "friday", "saturday", "sunday"]
+
+LEAD_SEND_DELAY_SECONDS = 90   # fire 90 s after receipt if within hours
+LEAD_MORNING_BUFFER_MINUTES = 5  # fire X min after opening to avoid exact-on-open blasts
+
+
+def calculate_send_time(store: dict) -> datetime:
+    """
+    Given a store document (with business_hours + timezone), return the UTC
+    datetime when the automated first text should fire.
+
+    - During hours  → now + 90 s
+    - After hours   → next opening time + 5 min buffer
+    - No hours set  → now + 90 s (safe default)
+    """
+    hours = store.get("business_hours") or {}
+    tz_str = store.get("timezone") or "America/Chicago"
+
+    try:
+        tz = ZoneInfo(tz_str)
+    except ZoneInfoNotFoundError:
+        tz = ZoneInfo("America/Chicago")
+
+    now_local = datetime.now(tz)
+    now_utc   = datetime.now(timezone.utc)
+
+    if not hours:
+        return now_utc + timedelta(seconds=LEAD_SEND_DELAY_SECONDS)
+
+    today_name = _DAY_NAMES[now_local.weekday()]
+    today_hours = hours.get(today_name)
+
+    if today_hours:
+        open_h, open_m   = map(int, today_hours["open"].split(":"))
+        close_h, close_m = map(int, today_hours["close"].split(":"))
+        open_dt  = now_local.replace(hour=open_h,  minute=open_m,  second=0, microsecond=0)
+        close_dt = now_local.replace(hour=close_h, minute=close_m, second=0, microsecond=0)
+
+        if open_dt <= now_local < close_dt:
+            # Within hours — send shortly
+            return now_utc + timedelta(seconds=LEAD_SEND_DELAY_SECONDS)
+
+    # After hours (or closed today) — find next opening
+    for offset in range(1, 8):
+        candidate = now_local + timedelta(days=offset)
+        day_name  = _DAY_NAMES[candidate.weekday()]
+        day_hours = hours.get(day_name)
+        if day_hours:
+            open_h, open_m = map(int, day_hours["open"].split(":"))
+            send_local = candidate.replace(
+                hour=open_h, minute=open_m + LEAD_MORNING_BUFFER_MINUTES,
+                second=0, microsecond=0
+            )
+            return send_local.astimezone(timezone.utc)
+
+    # Fallback: 2 hours from now
+    return now_utc + timedelta(hours=2)
+
+
+# ── AI first message generator ────────────────────────────────────────────────
+
+async def generate_first_message(lead: dict, assigned_user: Optional[dict],
+                                  store: dict) -> str:
+    """
+    Generate an AI-drafted first message in the assigned rep's voice.
+    Falls back to a store-branded template if no persona is set.
+    """
+    first  = lead.get("first_name", "there")
+    veh    = " ".join(filter(None, [
+        lead.get("vehicle_year"), lead.get("vehicle_make"),
+        lead.get("vehicle_model")
+    ])) or "the vehicle"
+    source = lead.get("source_name", "your inquiry")
+    store_name = store.get("name", "our dealership")
+
+    # Try personal AI clone if user has a persona
+    if assigned_user:
+        try:
+            from routers.auth import _build_ai_clone_prompt
+            from emergentintegrations.llm.chat import LlmChat, UserMessage
+
+            persona    = assigned_user.get("persona") or {}
+            user_name  = assigned_user.get("name", "your rep")
+            system_prompt = _build_ai_clone_prompt(user_name, user_name.split()[0], persona, assigned_user)
+            system_prompt += (
+                "\n\nYou are drafting the FIRST outbound text message to a new internet lead. "
+                "Keep it under 2 sentences. Warm, personal, NOT generic. "
+                "Mention their vehicle interest if given. Never use em dashes. "
+                "End with a simple question that invites a reply."
+            )
+
+            user_msg = (
+                f"New lead: {first} inquired about {veh} via {source}. "
+                f"Write a first outreach text from {user_name.split()[0]}."
+            )
+
+            emergent_key = os.environ.get("EMERGENT_LLM_KEY", "")
+            chat = LlmChat(
+                api_key=emergent_key,
+                session_id=f"lead-first-msg-{lead.get('phone','')}",
+                system_message=system_prompt,
+            ).with_model("openai", "gpt-5.2")
+
+            response = await chat.send_message(UserMessage(text=user_msg))
+            msg = response.strip() if isinstance(response, str) else (
+                response.text.strip() if hasattr(response, "text") else str(response))
+            if msg:
+                return msg
+        except Exception as e:
+            logger.warning(f"[LeadIntake] AI message generation failed: {e}")
+
+    # Fallback template
+    rep_first = (assigned_user.get("name", "").split()[0] if assigned_user else "")
+    intro = f"I'm {rep_first} at {store_name}. " if rep_first else f"This is {store_name}. "
+    vehicle_str = f"the {veh}" if veh != "the vehicle" else "what you were looking at"
+    return (
+        f"Hey {first}! {intro}Saw your inquiry about {vehicle_str} — "
+        f"are you still in the market or just browsing? Happy to help either way."
+    )
+
+
+# ── Core lead processor ────────────────────────────────────────────────────────
+
+async def process_inbound_lead(normalized: dict, source: dict, db,
+                                raw_body: str = "") -> dict:
+    """
+    Central processing pipeline. Called by every intake endpoint.
+    Returns the created inbound_lead document _id.
+    """
+    now = datetime.now(timezone.utc)
+
+    phone = normalized.get("phone", "")
+    email = normalized.get("email", "")
+    first = normalized.get("first_name", "Unknown")
+    last  = normalized.get("last_name", "")
+    full_name = normalized.get("full_name") or f"{first} {last}".strip()
+
+    # Normalise phone
+    digits = re.sub(r"\D", "", phone)
+    if len(digits) == 10:
+        digits = "1" + digits
+    phone_e164 = f"+{digits}" if digits else ""
+
+    if not phone_e164 and not email:
+        raise HTTPException(status_code=422, detail="Lead has no phone or email — cannot process")
+
+    # ── Get store for timing + assignment
+    store_id = source.get("store_id") or source.get("organization_id") or ""
+    store = {}
+    if store_id:
+        try:
+            store = await db.stores.find_one({"_id": ObjectId(store_id)}) or {}
+        except Exception:
+            pass
+
+    # ── Dedup: check existing contact
+    contact_query: dict = {"$or": []}
+    if phone_e164:
+        contact_query["$or"].append({"phone": {"$regex": re.escape(digits[-10:])}})
+    if email:
+        contact_query["$or"].append({"email": email.lower().strip()})
+
+    existing_contact = None
+    if contact_query["$or"]:
+        existing_contact = await db.contacts.find_one(contact_query)
+
+    if existing_contact:
+        contact_id = str(existing_contact["_id"])
+        is_new_contact = False
+    else:
+        # Create contact
+        contact_doc = {
+            "first_name":    first,
+            "last_name":     last,
+            "phone":         phone_e164,
+            "email":         email.lower().strip() if email else "",
+            "city":          normalized.get("city", ""),
+            "state":         normalized.get("state", ""),
+            "zip":           normalized.get("zip_code", ""),
+            "source":        "internet_lead",
+            "ownership_type": "org",
+            "status":        "active",
+            "tags":          ["Internet Lead", normalized.get("source_name", source.get("name", "Lead"))],
+            "notes":         normalized.get("comments", ""),
+            "vehicle_interest": " ".join(filter(None, [
+                normalized.get("vehicle_year"), normalized.get("vehicle_make"),
+                normalized.get("vehicle_model"), normalized.get("vehicle_trim"),
+            ])),
+            "lead_source_id":   str(source.get("_id", "")),
+            "lead_source_name": source.get("name", ""),
+            "store_id":         store_id,
+            "created_at":       now,
+            "updated_at":       now,
+        }
+        # Assign user_id if source has a default user (round robin / weighted)
+        assigned_user_id = await _resolve_assignment(db, source)
+        if assigned_user_id:
+            contact_doc["user_id"]      = assigned_user_id
+            contact_doc["original_user_id"] = assigned_user_id
+        else:
+            # No assignment yet — belongs to the store/org
+            contact_doc["user_id"] = store_id or ""
+
+        result = await db.contacts.insert_one(contact_doc)
+        contact_id = str(result.inserted_id)
+        is_new_contact = True
+
+    # ── Resolve assigned user (for AI message)
+    assigned_user_id = await _resolve_assignment(db, source)
+    assigned_user = None
+    if assigned_user_id:
+        try:
+            assigned_user = await db.users.find_one({"_id": ObjectId(assigned_user_id)})
+        except Exception:
+            pass
+
+    # ── Determine send time (after-hours logic)
+    scheduled_send_at = calculate_send_time(store)
+    is_immediate = (scheduled_send_at - now).total_seconds() < 120
+
+    # ── Generate AI first message
+    first_message = await generate_first_message(normalized, assigned_user, store)
+
+    # ── Save inbound_lead record
+    lead_doc = {
+        "source_id":         str(source.get("_id", "")),
+        "source_name":       source.get("name", ""),
+        "store_id":          store_id,
+        "contact_id":        contact_id,
+        "is_new_contact":    is_new_contact,
+        "phone":             phone_e164,
+        "email":             email,
+        "full_name":         full_name,
+        "vehicle_interest":  " ".join(filter(None, [
+            normalized.get("vehicle_year"), normalized.get("vehicle_make"),
+            normalized.get("vehicle_model"),
+        ])),
+        "comments":          normalized.get("comments", ""),
+        "vehicle_raw":       {k: v for k, v in normalized.items() if k.startswith("vehicle_") or k.startswith("trade_")},
+        "extra_fields":      normalized.get("extra_fields", {}),
+        "assigned_to":       assigned_user_id,
+        "draft_message":     first_message,
+        "scheduled_send_at": scheduled_send_at,
+        "is_after_hours":    not is_immediate,
+        "status":            "queued",   # queued → sent | failed
+        "raw_body":          raw_body[:4000] if raw_body else "",
+        "received_at":       now,
+        "created_at":        now,
+    }
+    lead_result = await db.inbound_leads.insert_one(lead_doc)
+    lead_id = str(lead_result.inserted_id)
+
+    # ── Create conversation in inbox (Unassigned queue)
+    conversation = {
+        "contact_id":       contact_id,
+        "contact_phone":    phone_e164,
+        "contact_name":     full_name,
+        "lead_source_id":   str(source.get("_id", "")),
+        "lead_source_name": source.get("name", ""),
+        "inbound_lead_id":  lead_id,
+        "team_id":          source.get("team_id"),
+        "assigned_to":      assigned_user_id,
+        "store_id":         store_id,
+        "user_id":          assigned_user_id or store_id or "",
+        "status":           "active",
+        "claimed":          assigned_user_id is not None,
+        "claimed_by":       assigned_user_id,
+        "ai_mode":          "assist",
+        "draft_message":    first_message,
+        "is_internet_lead": True,
+        "created_at":       now,
+        "updated_at":       now,
+        "last_message_at":  now,
+    }
+    conv_result = await db.conversations.insert_one(conversation)
+    conv_id = str(conv_result.inserted_id)
+
+    # Update lead with conversation_id
+    await db.inbound_leads.update_one(
+        {"_id": ObjectId(lead_id)},
+        {"$set": {"conversation_id": conv_id}}
+    )
+
+    # Increment source lead count
+    if source.get("_id"):
+        await db.lead_sources.update_one(
+            {"_id": source["_id"]}, {"$inc": {"lead_count": 1}}
+        )
+
+    logger.info(
+        f"[LeadIntake] Lead received: {full_name} | {phone_e164} | "
+        f"source={source.get('name')} | send_at={scheduled_send_at.isoformat()} | "
+        f"after_hours={not is_immediate}"
+    )
+
+    return {
+        "lead_id":        lead_id,
+        "contact_id":     contact_id,
+        "conversation_id": conv_id,
+        "is_new_contact": is_new_contact,
+        "draft_message":  first_message,
+        "scheduled_send_at": scheduled_send_at.isoformat(),
+        "is_after_hours":   not is_immediate,
+        "assigned_to":      assigned_user_id,
+    }
+
+
+async def _resolve_assignment(db, source: dict) -> Optional[str]:
+    """Resolve assignment from source's method. Returns user_id or None."""
+    method  = source.get("assignment_method", "jump_ball")
+    team_id = source.get("team_id")
+    if not team_id or method == "jump_ball":
+        return None
+    try:
+        team = await db.teams.find_one({"_id": ObjectId(team_id)})
+        if not team or not team.get("members"):
+            return None
+        members = team["members"]
+        if method == "round_robin":
+            idx = source.get("round_robin_index", 0)
+            user_id = members[idx % len(members)]
+            await db.lead_sources.update_one(
+                {"_id": source["_id"]},
+                {"$set": {"round_robin_index": (idx + 1) % len(members)}}
+            )
+            return user_id
+        if method == "weighted_round_robin":
+            counts = source.get("member_lead_counts", {})
+            for m in members:
+                if m not in counts:
+                    counts[m] = 0
+            user_id = min(members, key=lambda m: counts.get(m, 0))
+            counts[user_id] = counts.get(user_id, 0) + 1
+            await db.lead_sources.update_one(
+                {"_id": source["_id"]},
+                {"$set": {"member_lead_counts": counts}}
+            )
+            return user_id
+    except Exception as e:
+        logger.warning(f"[LeadIntake] Assignment error: {e}")
+    return None
+
+
+# ── Queued lead processor (called by scheduler every 2 min) ──────────────────
+
+async def process_queued_leads():
+    """
+    Fire queued after-hours leads whose scheduled_send_at has passed.
+    Sends via Twilio (or logs mock) and updates status.
+    """
+    db   = get_db()
+    now  = datetime.now(timezone.utc)
+    due  = await db.inbound_leads.find({
+        "status": "queued",
+        "scheduled_send_at": {"$lte": now},
+    }).to_list(50)
+
+    if not due:
+        return
+
+    logger.info(f"[LeadIntake] Processing {len(due)} queued leads")
+
+    for lead in due:
+        lead_id = str(lead["_id"])
+        try:
+            phone   = lead.get("phone", "")
+            message = lead.get("draft_message", "")
+
+            if phone and message:
+                from services.twilio_service import send_sms, TWILIO_ENABLED
+                result = await send_sms(phone, message)
+                mocked = result.get("mock", True)
+            else:
+                mocked = True
+
+            await db.inbound_leads.update_one(
+                {"_id": lead["_id"]},
+                {"$set": {
+                    "status":  "sent" if not mocked else "sent_mock",
+                    "sent_at": now,
+                }}
+            )
+
+            # Add message to conversation
+            if lead.get("conversation_id"):
+                try:
+                    msg_doc = {
+                        "conversation_id": lead["conversation_id"],
+                        "content":         message,
+                        "direction":       "outbound",
+                        "channel":         "sms",
+                        "sender":          "ai_draft",
+                        "mocked":          mocked,
+                        "created_at":      now,
+                        "status":          "sent",
+                    }
+                    await db.messages.insert_one(msg_doc)
+                    await db.conversations.update_one(
+                        {"_id": ObjectId(lead["conversation_id"])},
+                        {"$set": {"last_message_at": now, "status": "active"}}
+                    )
+                except Exception:
+                    pass
+
+            logger.info(f"[LeadIntake] Sent {'(MOCK) ' if mocked else ''}to {phone}: {message[:60]}…")
+
+        except Exception as e:
+            logger.error(f"[LeadIntake] Failed to send queued lead {lead_id}: {e}")
+            await db.inbound_leads.update_one(
+                {"_id": lead["_id"]},
+                {"$set": {"status": "failed", "error": str(e)}}
+            )
+
+
+# ── API Endpoints ─────────────────────────────────────────────────────────────
+
+def _get_source_from_query(source_id: Optional[str]) -> str:
+    return source_id or ""
+
+
+@router.post("/adf", response_class=PlainTextResponse)
+async def receive_adf_lead(request: Request):
+    """
+    ADF/XML lead intake. Used by Cars.com, AutoTrader, and most OEM/portal providers.
+    Accepts both raw XML body and URL-encoded 'XML=' form fields.
+    Returns plain-text acknowledgement (required by ADF spec).
+
+    Configure your portal: POST to  /api/leads/adf?source_id=<your_source_id>
+    Optional header:  X-API-Key: <your_api_key>
+    """
+    db = get_db()
+
+    body_bytes = await request.body()
+    body_str   = body_bytes.decode("utf-8", errors="replace").strip()
+
+    # Some portals POST as form field: XML=<adf>...</adf>
+    if body_str.lower().startswith("xml=") or "xml=" in body_str.lower():
+        import urllib.parse
+        parsed = urllib.parse.parse_qs(body_str, keep_blank_values=True)
+        body_str = next(
+            (v[0] for k, v in parsed.items() if k.lower() == "xml"),
+            body_str
+        )
+
+    # Parse
+    try:
+        normalized = parse_adf_xml(body_str)
+    except ValueError as e:
+        logger.error(f"[LeadIntake/ADF] Parse error: {e}\nBody: {body_str[:500]}")
+        return PlainTextResponse("ERROR: Could not parse ADF XML", status_code=400)
+
+    # Resolve source
+    source_id = request.query_params.get("source_id")
+    source = None
+    if source_id and ObjectId.is_valid(source_id):
+        source = await db.lead_sources.find_one({"_id": ObjectId(source_id)})
+
+    if source is None:
+        # Auto-match by vendor/source name or create a default
+        vendor_name = normalized.get("source_name", "ADF Lead")
+        source = await db.lead_sources.find_one(
+            {"name": {"$regex": vendor_name, "$options": "i"}}
+        )
+        if source is None:
+            # Use first active source as fallback
+            source = await db.lead_sources.find_one({"is_active": True}) or {
+                "name": vendor_name, "assignment_method": "jump_ball",
+                "_id": None, "store_id": None
+            }
+
+    # Optional API key validation (skip if no key configured)
+    api_key = request.headers.get("X-API-Key")
+    if source.get("api_key") and api_key and api_key != source["api_key"]:
+        return PlainTextResponse("ERROR: Invalid API key", status_code=401)
+
+    if not normalized.get("source_name") and source.get("name"):
+        normalized["source_name"] = source["name"]
+
+    try:
+        result = await process_inbound_lead(normalized, source, db, raw_body=body_str)
+    except HTTPException as e:
+        logger.error(f"[LeadIntake/ADF] Processing error: {e.detail}")
+        return PlainTextResponse(f"ERROR: {e.detail}", status_code=e.status_code)
+
+    # ADF spec requires plain-text acknowledgement
+    return PlainTextResponse(
+        f"SUCCESS: Lead received for {normalized.get('full_name','')} "
+        f"| Lead ID: {result['lead_id']}"
+    )
+
+
+@router.post("/webhook/{source_id}")
+async def receive_webhook_lead(source_id: str, request: Request):
+    """
+    Universal JSON/form-data webhook.
+    Accepts any field structure — smart normalizer maps to standard schema.
+    Each lead source gets its own URL with an API key for security.
+
+    POST to /api/leads/webhook/<source_id>
+    Header: X-API-Key: <your_api_key>
+    Body:   JSON or application/x-www-form-urlencoded
+    """
+    db = get_db()
+
+    if not ObjectId.is_valid(source_id):
+        raise HTTPException(status_code=400, detail="Invalid source ID")
+
+    source = await db.lead_sources.find_one({"_id": ObjectId(source_id)})
+    if not source:
+        raise HTTPException(status_code=404, detail="Lead source not found")
+
+    api_key = request.headers.get("X-API-Key")
+    if source.get("api_key") and not api_key:
+        raise HTTPException(status_code=401, detail="X-API-Key header required")
+    if source.get("api_key") and api_key != source["api_key"]:
+        raise HTTPException(status_code=401, detail="Invalid API key")
+
+    if not source.get("is_active", True):
+        raise HTTPException(status_code=400, detail="Lead source is inactive")
+
+    # Parse body — JSON or form
+    content_type = request.headers.get("content-type", "")
+    body_bytes = await request.body()
+    body_str   = body_bytes.decode("utf-8", errors="replace")
+
+    try:
+        if "application/json" in content_type:
+            import json
+            raw = json.loads(body_str)
+            # Flatten nested dict one level (some CRMs wrap in {"lead": {...}})
+            if len(raw) == 1:
+                only_val = next(iter(raw.values()))
+                if isinstance(only_val, dict):
+                    raw = only_val
+        elif "xml" in content_type or body_str.strip().startswith("<"):
+            # ADF XML posted to generic webhook
+            raw_normalized = parse_adf_xml(body_str)
+            result = await process_inbound_lead(raw_normalized, source, db, raw_body=body_str)
+            return {"success": True, **result}
+        else:
+            import urllib.parse
+            raw = {k: v[0] if isinstance(v, list) and v else v
+                   for k, v in urllib.parse.parse_qs(body_str, keep_blank_values=True).items()}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Could not parse request body: {e}")
+
+    if not isinstance(raw, dict):
+        raise HTTPException(status_code=400, detail="Expected JSON object or form fields")
+
+    normalized = normalize_fields(raw)
+    if not normalized.get("source_name"):
+        normalized["source_name"] = source.get("name", "")
+
+    result = await process_inbound_lead(normalized, source, db, raw_body=body_str)
+    return {"success": True, **result}
+
+
+@router.get("/")
+async def list_leads(
+    store_id: Optional[str] = None,
+    status:   Optional[str] = None,
+    limit:    int = 50,
+    skip:     int = 0,
+):
+    """Admin: list received leads with status."""
+    db    = get_db()
+    query: dict = {}
+    if store_id:
+        query["store_id"] = store_id
+    if status:
+        query["status"] = status
+
+    leads = await db.inbound_leads.find(query).sort(
+        "received_at", -1
+    ).skip(skip).limit(limit).to_list(limit)
+
+    return [
+        {
+            "id":             str(l["_id"]),
+            "source_name":    l.get("source_name"),
+            "full_name":      l.get("full_name"),
+            "phone":          l.get("phone"),
+            "email":          l.get("email"),
+            "vehicle_interest": l.get("vehicle_interest"),
+            "status":         l.get("status"),
+            "is_after_hours": l.get("is_after_hours", False),
+            "scheduled_send_at": l.get("scheduled_send_at").isoformat() if isinstance(l.get("scheduled_send_at"), datetime) else l.get("scheduled_send_at"),
+            "sent_at":        l.get("sent_at").isoformat() if isinstance(l.get("sent_at"), datetime) else None,
+            "draft_message":  l.get("draft_message"),
+            "contact_id":     l.get("contact_id"),
+            "conversation_id": l.get("conversation_id"),
+            "assigned_to":    l.get("assigned_to"),
+            "received_at":    l.get("received_at").isoformat() if isinstance(l.get("received_at"), datetime) else None,
+        }
+        for l in leads
+    ]
+
+
+@router.get("/{lead_id}")
+async def get_lead(lead_id: str):
+    """Get a specific inbound lead."""
+    db = get_db()
+    if not ObjectId.is_valid(lead_id):
+        raise HTTPException(status_code=400, detail="Invalid lead ID")
+    lead = await db.inbound_leads.find_one({"_id": ObjectId(lead_id)})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    lead["id"] = str(lead.pop("_id"))
+    lead["scheduled_send_at"] = lead["scheduled_send_at"].isoformat() if isinstance(lead.get("scheduled_send_at"), datetime) else lead.get("scheduled_send_at")
+    lead["received_at"]       = lead["received_at"].isoformat() if isinstance(lead.get("received_at"), datetime) else lead.get("received_at")
+    return lead
+
+
+@router.post("/{lead_id}/retry")
+async def retry_lead(lead_id: str):
+    """Re-queue a failed lead for sending."""
+    db = get_db()
+    if not ObjectId.is_valid(lead_id):
+        raise HTTPException(status_code=400, detail="Invalid lead ID")
+    lead = await db.inbound_leads.find_one({"_id": ObjectId(lead_id)})
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    now = datetime.now(timezone.utc)
+    await db.inbound_leads.update_one(
+        {"_id": lead["_id"]},
+        {"$set": {"status": "queued", "scheduled_send_at": now + timedelta(seconds=30), "error": None}}
+    )
+    return {"success": True, "message": "Lead re-queued"}
+
+
+@router.post("/test-adf")
+async def test_adf_parse(request: Request):
+    """Dev/admin utility: parse and preview an ADF XML body without saving."""
+    body = await request.body()
+    body_str = body.decode("utf-8", errors="replace")
+    try:
+        normalized = parse_adf_xml(body_str)
+        return {"success": True, "normalized": normalized}
+    except ValueError as e:
+        return {"success": False, "error": str(e)}
