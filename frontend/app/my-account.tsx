@@ -157,8 +157,25 @@ export default function MyAccountScreen() {
     setShowEditModal(true);
   }
 
+
+  async function saveBio() {
+    if (!user?._id) return;
+    setSavingBio(true);
+    try {
+      const currentPersona = (user as any)?.persona || {};
+      await api.patch(`/users/${user?._id}`, {
+        persona: { ...currentPersona, bio: bioText.trim() },
+      });
+      setUser({ ...user, persona: { ...currentPersona, bio: bioText.trim() } } as any);
+      setEditingBio(false);
+    } catch (e: any) {
+      showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to save bio.');
+    }
+    setSavingBio(false);
+  }
+
+
   async function saveBasicInfo() {
-    if (!editName.trim()) { showSimpleAlert('Required', 'Name cannot be empty'); return; }
     setEditSaving(true);
     try {
       const payload: any = {

@@ -21,6 +21,11 @@ from services.twilio_service import send_sms, get_twilio_status, normalize_phone
 router = APIRouter(prefix="/messages", tags=["Messages"])
 logger = logging.getLogger(__name__)
 
+# Short TTL cache for conversations list — reduces DB load on rapid home-page refreshes
+import time as _time
+_conv_cache: dict = {}
+_CONV_TTL = 10  # seconds — short enough to feel live, long enough to prevent hammers
+
 # Import centralized event type resolution
 from utils.event_types import resolve_event_type, LINK_TYPE_TO_EVENT
 
@@ -141,6 +146,11 @@ async def get_conversations(user_id: str, personal_only: bool = True):
     By default (personal_only=True), shows only the user's own conversations.
     Set personal_only=False to see all accessible conversations (for admins managing team).
     """
+    cache_key = f"{user_id}:{personal_only}"
+    cached = _conv_cache.get(cache_key)
+    if cached and _time.monotonic() < cached[0]:
+        return cached[1]
+
     db = get_db()
     
     if personal_only:
@@ -228,6 +238,7 @@ async def get_conversations(user_id: str, personal_only: bool = True):
         
         result.append(conv)
     
+    _conv_cache[cache_key] = (_time.monotonic() + _CONV_TTL, result)
     return result
 
 @router.get("/conversations/{user_id}/{conversation_id}")
@@ -353,8 +364,9 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
     
     result = await get_db().messages.insert_one(message)
     message['_id'] = str(result.inserted_id)
-    
-    channel = message_data.channel or 'sms'
+    # Invalidate conversation cache so sender sees the new message immediately
+    _conv_cache.pop(f"{user_id}:True", None)
+    _conv_cache.pop(f"{user_id}:False", None)
     
     if channel == 'email':
         # Send via Resend (email) with branded template
