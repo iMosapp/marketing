@@ -65,6 +65,23 @@ export default function LoginScreen() {
 
   // Fade-in animation to prevent flash
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const emailInputRef = useRef<TextInput>(null);
+  const passwordInputRef = useRef<TextInput>(null);
+
+  // iOS PWA: force focus programmatically on touch — first tap often
+  // doesn't trigger keyboard in standalone mode without this.
+  const focusInput = (ref: React.RefObject<TextInput>) => {
+    if (Platform.OS === 'web') {
+      setTimeout(() => {
+        ref.current?.focus();
+        // Also call native DOM focus for iOS PWA
+        if (ref.current) {
+          const el = ref.current as unknown as HTMLInputElement;
+          if (el.focus) el.focus();
+        }
+      }, 0);
+    }
+  };
   
   useEffect(() => {
     loadTheme().finally(() => {
@@ -82,8 +99,35 @@ export default function LoginScreen() {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
       const prev = document.documentElement.getAttribute('data-theme') || 'dark';
       document.documentElement.setAttribute('data-theme', 'light');
+
+      // Inject autofill override — iOS Safari/PWA fills inputs with a dark
+      // system color that ignores our backgroundColor style. Force white.
+      const styleId = 'imos-autofill-override';
+      if (!document.getElementById(styleId)) {
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.innerHTML = `
+          input:-webkit-autofill,
+          input:-webkit-autofill:hover,
+          input:-webkit-autofill:focus,
+          input:-webkit-autofill:active {
+            -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+            -webkit-text-fill-color: #111111 !important;
+            background-color: #ffffff !important;
+            caret-color: #111111 !important;
+          }
+          #email-input, #password-input {
+            background-color: #ffffff !important;
+            color: #111111 !important;
+          }
+        `;
+        document.head.appendChild(style);
+      }
+
       return () => {
         document.documentElement.setAttribute('data-theme', prev);
+        const injected = document.getElementById(styleId);
+        if (injected) injected.remove();
       };
     }
   }, []);
@@ -376,6 +420,7 @@ export default function LoginScreen() {
             <View style={styles.form}>
               <TextInput
                 ref={(ref) => {
+                  (emailInputRef as any).current = ref;
                   // iOS PWA standalone mode: first tap doesn't trigger keyboard
                   // Force the input to be interactive with web attributes
                   if (Platform.OS === 'web' && ref) {
@@ -390,7 +435,7 @@ export default function LoginScreen() {
                 }}
                 style={styles.input}
                 placeholder="Email"
-                placeholderTextColor={colors.textSecondary}
+                placeholderTextColor="#8E8E93"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
@@ -399,12 +444,15 @@ export default function LoginScreen() {
                 textContentType="emailAddress"
                 returnKeyType="next"
                 blurOnSubmit={false}
+                onTouchStart={() => focusInput(emailInputRef)}
+                onSubmitEditing={() => focusInput(passwordInputRef)}
                 data-testid="login-email-input"
               />
               
               <View style={styles.passwordContainer}>
                 <TextInput
                   ref={(ref) => {
+                    (passwordInputRef as any).current = ref;
                     if (Platform.OS === 'web' && ref) {
                       const el = ref as unknown as HTMLInputElement;
                       if (el.setAttribute) {
@@ -417,13 +465,14 @@ export default function LoginScreen() {
                   }}
                   style={styles.passwordInput}
                   placeholder="Password"
-                  placeholderTextColor={colors.textSecondary}
+                  placeholderTextColor="#8E8E93"
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   textContentType="password"
                   returnKeyType="done"
+                  onTouchStart={() => focusInput(passwordInputRef)}
                   onSubmitEditing={handleLogin}
                   data-testid="login-password-input"
                 />
@@ -631,13 +680,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 16,
   },
   input: {
-    backgroundColor: colors.card,
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     fontSize: 18,
-    color: colors.text,
+    color: '#111111',
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: '#E5E5EA',
     // iOS PWA: ensure keyboard triggers on first tap
     ...(Platform.OS === 'web' ? { 
       cursor: 'text' as any,
@@ -648,16 +697,16 @@ const getStyles = (colors: any) => StyleSheet.create({
   passwordContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.card,
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: '#E5E5EA',
   },
   passwordInput: {
     flex: 1,
     padding: 16,
     fontSize: 18,
-    color: colors.text,
+    color: '#111111',
     ...(Platform.OS === 'web' ? { 
       cursor: 'text' as any,
       userSelect: 'text' as any,
