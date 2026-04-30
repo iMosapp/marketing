@@ -1331,7 +1331,8 @@ function ContactDetailScreen() {
       const conversationId = conv._id || conv.id;
       
       if (composerMode === 'sms') {
-        // For SMS: Log the message server-side, then open messaging channel
+        // For SMS: Log the message server-side (non-blocking), then ALWAYS open messaging channel.
+        // Logging failure must NOT prevent the customer from receiving the message.
         const sendPayload: any = {
           conversation_id: conversationId,
           content: messageContent,
@@ -1339,7 +1340,10 @@ function ContactDetailScreen() {
         };
         if (composerEventType) sendPayload.event_type = composerEventType;
         if (composerEventTitle) sendPayload.event_title = composerEventTitle;
-        await messagesAPI.send(user._id, sendPayload);
+        // Fire-and-forget logging — if it fails, we still open SMS
+        messagesAPI.send(user._id, sendPayload).catch((logErr: any) => {
+          console.warn('[Send] Backend logging failed (non-fatal):', logErr?.message);
+        });
         
         // Fetch user's enabled channels
         let userChannels: any[] = [];
