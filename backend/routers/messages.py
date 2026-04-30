@@ -367,7 +367,9 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
     # Invalidate conversation cache so sender sees the new message immediately
     _conv_cache.pop(f"{user_id}:True", None)
     _conv_cache.pop(f"{user_id}:False", None)
-    
+
+    channel = message_data.channel or 'sms'
+
     if channel == 'email':
         # Send via Resend (email) with branded template
         contact = await get_db().contacts.find_one({"_id": ObjectId(conv.get('contact_id', ''))})
