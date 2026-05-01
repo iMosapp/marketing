@@ -44,7 +44,7 @@ const PROD_BASE = 'https://app.imonsocial.com';
 const SOCIAL_PLATFORMS = [
   { key: 'instagram', icon: 'logo-instagram', color: '#E1306C', label: 'Instagram' },
   { key: 'facebook',  icon: 'logo-facebook',  color: '#1877F2', label: 'Facebook'  },
-  { key: 'tiktok',    icon: 'logo-tiktok',     color: '#FFFFFF', label: 'TikTok'    },
+  { key: 'tiktok',    icon: 'logo-tiktok',     color: '#69C9D0', label: 'TikTok'    },
   { key: 'youtube',   icon: 'logo-youtube',    color: '#FF0000', label: 'YouTube'   },
   { key: 'linkedin',  icon: 'logo-linkedin',   color: '#0A66C2', label: 'LinkedIn'  },
   { key: 'twitter',   icon: 'logo-twitter',    color: '#1DA1F2', label: 'Twitter'   },
