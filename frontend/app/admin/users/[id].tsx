@@ -144,7 +144,7 @@ export default function UserDetailScreen() {
     }
   };
   
-  const { startImpersonation } = useAuthStore();
+  const { startImpersonation, user: currentUser } = useAuthStore();
   
   useFocusEffect(
     useCallback(() => {
@@ -471,8 +471,8 @@ export default function UserDetailScreen() {
                     {getRoleLabel(user.role)}
                   </Text>
                 </View>
-                {/* Only show edit pencil for non-super-admin targets */}
-                {user.role !== 'super_admin' && (
+                {/* Show edit pencil for any user — super_admin can also be changed by another super_admin */}
+                {(user.role !== 'super_admin' || currentUser?.role === 'super_admin') && (
                 <TouchableOpacity 
                   style={styles.changeRoleButton}
                   onPress={() => setShowRoleModal(true)}
@@ -932,7 +932,14 @@ export default function UserDetailScreen() {
           )}
           
           <FlatList
-            data={AVAILABLE_ROLES}
+            data={[
+              { value: 'user', label: 'Sales Rep', color: '#007AFF' },
+              { value: 'store_manager', label: 'Account Manager', color: '#34C759' },
+              { value: 'org_admin', label: 'Org Admin', color: '#FF9500' },
+              ...(currentUser?.role === 'super_admin'
+                ? [{ value: 'super_admin', label: 'Super Admin', color: '#FF3B30' }]
+                : []),
+            ]}
             keyExtractor={(item) => item.value}
             renderItem={({ item }) => (
               <TouchableOpacity 
@@ -945,7 +952,11 @@ export default function UserDetailScreen() {
               >
                 <View style={[styles.roleIcon, { backgroundColor: item.color + '20' }]}>
                   <Ionicons 
-                    name={item.value === 'org_admin' ? 'shield' : item.value === 'store_manager' ? 'storefront' : 'person'} 
+                    name={
+                      item.value === 'super_admin' ? 'star' :
+                      item.value === 'org_admin' ? 'shield' :
+                      item.value === 'store_manager' ? 'storefront' : 'person'
+                    } 
                     size={20} 
                     color={item.color} 
                   />
@@ -953,6 +964,7 @@ export default function UserDetailScreen() {
                 <View style={styles.roleInfo}>
                   <Text style={styles.roleLabel}>{item.label}</Text>
                   <Text style={styles.roleDescription}>
+                    {item.value === 'super_admin' && 'Full platform access — same as you'}
                     {item.value === 'org_admin' && 'Full access to manage organization'}
                     {item.value === 'store_manager' && 'Manage assigned stores and users'}
                     {item.value === 'user' && 'Basic access to assigned stores'}

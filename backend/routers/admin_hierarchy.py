@@ -458,6 +458,10 @@ async def update_user_role(user_id: str, data: dict, x_user_id: str = Header(Non
     if not role or role not in valid_roles:
         raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {', '.join(valid_roles)}")
 
+    # Only a super_admin can promote someone to super_admin
+    if role == "super_admin" and req_role != "super_admin":
+        raise HTTPException(status_code=403, detail="Only a Super Admin can promote someone to Super Admin")
+
     db = get_db()
     target = await db.users.find_one({"_id": ObjectId(user_id)}, {"_id": 1})
     if not target:
