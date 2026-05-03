@@ -8,6 +8,7 @@ CDN-like caching layer:
 - All originals compressed to WebP (max 1200px, 85% quality)
 - hires_images accounts also get raw uncompressed originals
 """
+import asyncio
 import os
 import io
 import uuid
@@ -201,12 +202,15 @@ def decode_base64_image(data_uri: str) -> tuple:
 async def upload_image(image_data, prefix: str = "uploads", entity_id: str = "general", preserve_raw: bool = False):
     """
     Upload an image to object storage with automatic compression.
-
-    - Default: compresses original to 1200px wide WebP
-    - preserve_raw=True: also stores the uncompressed original (for hires accounts)
-    - Always generates WebP thumbnail (200x200) and avatar (80x80)
-    - Uploaded images are immediately cached in memory
+    All CPU-intensive PIL work and blocking I/O runs in a thread to avoid
+    blocking the FastAPI event loop (prevents upload timeouts and 502s).
     """
+    return await asyncio.to_thread(
+        _sync_upload_image, image_data, prefix, entity_id, preserve_raw
+    )
+
+
+def _sync_upload_image(image_data, prefix: str = "uploads", entity_id: str = "general", preserve_raw: bool = False):
     if isinstance(image_data, str):
         if image_data.startswith("data:") or len(image_data) > 500:
             image_bytes, content_type = decode_base64_image(image_data)
