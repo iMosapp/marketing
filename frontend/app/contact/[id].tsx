@@ -2961,151 +2961,83 @@ function ContactDetailScreen() {
                             <View style={s.feedDateLine} />
                           </TouchableOpacity>
 
-                          {!isCollapsed && groupEvents.map((evt, i) => {
+                          {!isCollapsed && (
+                            <View style={{ marginHorizontal: 4, marginBottom: 8, borderRadius: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
+                          {groupEvents.map((evt, i) => {
                       const evtKey = `${group.label}-${i}`;
                       const isExpanded = expandedEvents[evtKey] === true;
                       const isInbound = evt.direction === 'inbound' || evt.event_type === 'customer_reply';
                       const et = evt.event_type;
                       const catStyle = EVENT_CATEGORY_ICON[evt.category] || EVENT_CATEGORY_ICON.custom;
                       const isCustomerAction = ENGAGEMENT_SET.has(et) || isInbound || evt.category === 'customer_activity';
-                      const actorColor = isCustomerAction ? '#34C759' : '#007AFF'; // green = customer, blue = salesperson
 
-                      // ── Milestone Card ──
-                      if (MILESTONE_SET.has(et)) {
-                        const meta = MILE_META[et] || { icon: 'flag', color: '#C9A962', label: getEventTitle(evt) };
-                        return (
-                          <View key={evtKey} style={{ marginHorizontal: 4, marginBottom: 10, borderRadius: 16, borderWidth: 1, borderColor: meta.color + '30', backgroundColor: meta.color + '08', flexDirection: 'row', alignItems: 'center', padding: 14, borderStyle: 'dashed' }} data-testid={`feed-event-${evtKey}`}>
-                            <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: meta.color + '18', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                              <Ionicons name={meta.icon as any} size={20} color={meta.color} />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                              <Text style={{ fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5, color: meta.color }}>{meta.label}</Text>
-                              {evt.description ? <Text style={{ fontSize: 13, color: colors.textTertiary, marginTop: 2 }} numberOfLines={2}>{evt.description}</Text> : null}
-                            </View>
-                            <Text style={{ fontSize: 12, color: colors.textTertiary }}>{formatEventTime(evt.timestamp)}</Text>
-                          </View>
-                        );
-                      }
+                      // ── Clean, unified row (Activity-tab style) ────────────────
+                      const rowColor  = isCustomerAction ? '#34C759' : (MILESTONE_SET.has(et) ? '#C9A962' : '#007AFF');
+                      const rowIcon   = (evt.icon || catStyle.icon || (isInbound ? 'arrow-down-circle' : 'flag')) as any;
 
-                      // ── Engagement Card (customer action = green) ──
-                      if (ENGAGEMENT_SET.has(et)) {
-                        const engLabel = ENG_LABELS[et] || getEventTitle(evt);
-                        return (
-                          <View key={evtKey} style={{ marginHorizontal: 4, marginBottom: 6, borderRadius: 14, overflow: 'hidden', flexDirection: 'row', backgroundColor: colors.card }} data-testid={`feed-event-${evtKey}`}>
-                            <View style={{ width: 3, backgroundColor: '#34C759' }} />
-                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', padding: 12 }}>
-                              <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#34C75915', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                                <Ionicons name={(evt.icon || catStyle.icon) as any} size={16} color="#34C759" />
-                              </View>
-                              <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>{engLabel}</Text>
-                                <Text style={{ fontSize: 12, color: colors.textTertiary, marginTop: 2 }}>{formatEventTime(evt.timestamp)}</Text>
-                              </View>
-                              <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
-                            </View>
-                          </View>
-                        );
-                      }
+                      // Clean label — no "Customer:" / "You:" prefix
+                      let cleanLabel = getEventTitle(evt);
+                      if (!cleanLabel) cleanLabel = et.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
-                      // ── Sent Card (salesperson action = blue) ──
-                      if (PHOTO_SET.has(et)) {
-                        const sentLabel = 'You sent ' + (getEventTitle(evt) || '').toLowerCase();
-                        return (
-                          <View key={evtKey} style={{ marginHorizontal: 4, marginBottom: 6, borderRadius: 14, overflow: 'hidden', flexDirection: 'row', backgroundColor: colors.card }} data-testid={`feed-event-${evtKey}`}>
-                            <View style={{ width: 3, backgroundColor: '#007AFF' }} />
-                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', padding: 12 }}>
-                              <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#007AFF15', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                                <Ionicons name={(evt.icon || 'camera') as any} size={16} color="#007AFF" />
-                              </View>
-                              <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>{sentLabel}</Text>
-                                {evt.description ? <Text style={{ fontSize: 13, color: colors.textTertiary, marginTop: 1 }} numberOfLines={1}>{evt.description}</Text> : null}
-                                <Text style={{ fontSize: 12, color: colors.textTertiary, marginTop: 2 }}>{formatEventTime(evt.timestamp)}</Text>
-                              </View>
-                            </View>
-                          </View>
-                        );
-                      }
+                      const hasDetail = !!(evt.description || evt.full_content);
+                      const isLast = i === groupEvents.length - 1;
 
-                      // ── Inbound / Message Card ──
-                      if (isInbound) {
-                        return (
-                          <TouchableOpacity key={evtKey} activeOpacity={0.7} onPress={() => setExpandedEvents(prev => ({ ...prev, [evtKey]: !prev[evtKey] }))} style={{ marginHorizontal: 4, marginBottom: 6, borderRadius: 14, padding: 12, backgroundColor: colors.card, flexDirection: 'row', alignItems: 'flex-start', borderLeftWidth: 3, borderLeftColor: '#30D158' }} data-testid={`feed-event-${evtKey}`}>
-                            <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: '#30D15818', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                              <Ionicons name="arrow-down" size={16} color="#30D158" />
-                            </View>
-                            <View style={{ flex: 1 }}>
-                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                <Text style={{ fontSize: 14, fontWeight: '700', color: '#30D158' }}>Customer Reply</Text>
-                                <View style={{ backgroundColor: '#30D15820', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4 }}><Text style={{ fontSize: 9, fontWeight: '700', color: '#30D158' }}>INBOUND</Text></View>
-                              </View>
-                              <Text style={{ fontSize: 14, color: '#30D158', fontStyle: 'italic', marginTop: 3 }} numberOfLines={isExpanded ? 10 : 1}>"{evt.description || evt.full_content}"</Text>
-                              {isExpanded && evt.full_content && evt.full_content !== evt.description && (
-                                <View style={{ marginTop: 6, padding: 10, borderRadius: 10, backgroundColor: '#30D15810' }}>
-                                  <Text style={{ fontSize: 14, color: '#30D158' }}>"{evt.full_content}"</Text>
-                                </View>
-                              )}
-                              {evt.has_photo && (
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                                  <Ionicons name="image" size={13} color="#30D158" />
-                                  <Text style={{ fontSize: 12, color: '#30D158' }}>Photo attached</Text>
-                                </View>
-                              )}
-                              <Text style={{ fontSize: 12, color: colors.textTertiary, marginTop: 4 }}>{formatEventTime(evt.timestamp)}</Text>
-                            </View>
-                          </TouchableOpacity>
-                        );
-                      }
-
-                      // ── Default Text Event Card (color-coded by actor) ──
-                      const channelLabel = evt.channel === 'email' ? 'Email' : evt.channel === 'sms_personal' ? 'SMS' : evt.channel === 'sms' ? 'SMS' : evt.channel === 'whatsapp' ? 'WhatsApp' : '';
-                      const isCustomerEvt = evt.category === 'customer_activity';
-                      const actorPrefix = isCustomerEvt ? 'Customer: ' : 'You: ';
                       return (
-                        <TouchableOpacity key={evtKey} activeOpacity={0.7} onPress={() => setExpandedEvents(prev => ({ ...prev, [evtKey]: !prev[evtKey] }))} style={{ marginHorizontal: 4, marginBottom: 4, borderRadius: 14, padding: 12, backgroundColor: colors.card, flexDirection: 'row', alignItems: 'flex-start', borderLeftWidth: 3, borderLeftColor: actorColor }} data-testid={`feed-event-${evtKey}`}>
-                          <View style={{ position: 'relative', marginRight: 12 }}>
-                            <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: actorColor + '15', alignItems: 'center', justifyContent: 'center' }}>
-                              <Ionicons name={(evt.icon || catStyle.icon) as any} size={16} color={actorColor} />
-                            </View>
-                            {channelLabel ? (
-                              <View style={{ position: 'absolute', bottom: -3, right: -3, backgroundColor: actorColor, borderRadius: 6, paddingHorizontal: 3, paddingVertical: 1 }}>
-                                <Text style={{ fontSize: 7, fontWeight: '700', color: '#FFF' }}>{channelLabel}</Text>
-                              </View>
-                            ) : null}
+                        <TouchableOpacity
+                          key={evtKey}
+                          activeOpacity={hasDetail ? 0.6 : 1}
+                          onPress={() => hasDetail && setExpandedEvents(prev => ({ ...prev, [evtKey]: !prev[evtKey] }))}
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingVertical: 10,
+                            paddingHorizontal: 8,
+                            borderBottomWidth: isLast ? 0 : 0.5,
+                            borderBottomColor: colors.border,
+                          }}
+                          data-testid={`feed-event-${evtKey}`}
+                        >
+                          {/* Icon */}
+                          <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: rowColor + '18', alignItems: 'center', justifyContent: 'center', marginRight: 10, flexShrink: 0 }}>
+                            <Ionicons name={rowIcon} size={14} color={rowColor} />
                           </View>
+
+                          {/* Label + optional expanded content */}
                           <View style={{ flex: 1 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>{actorPrefix}{getEventTitle(evt)}</Text>
-                              <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={colors.textTertiary} />
-                            </View>
-                            {!isExpanded && evt.description ? (
-                              <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }} numberOfLines={1}>{evt.description}</Text>
-                            ) : null}
-                            {isExpanded && (
-                              <View style={{ marginTop: 6 }}>
-                                {evt.subject ? <Text style={{ fontSize: 13, fontWeight: '600', color: colors.text, marginBottom: 4 }}>{evt.subject}</Text> : null}
-                                <View style={{ padding: 10, borderRadius: 10, backgroundColor: colors.surface }}>
-                                  <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 20 }}>{evt.full_content || evt.description || ''}</Text>
-                                </View>
+                            <Text style={{ fontSize: 14, fontWeight: '500', color: colors.text }} numberOfLines={isExpanded ? undefined : 1}>
+                              {cleanLabel}
+                            </Text>
+                            {isExpanded && hasDetail && (
+                              <View style={{ marginTop: 6, padding: 10, borderRadius: 10, backgroundColor: colors.surface }}>
+                                <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 19 }}>
+                                  {evt.full_content || evt.description}
+                                </Text>
                                 {evt.has_photo && (
-                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 }}>
-                                    <Ionicons name="image" size={13} color="#30D158" />
-                                    <Text style={{ fontSize: 12, color: '#30D158' }}>Photo attached</Text>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                                    <Ionicons name="image" size={13} color={rowColor} />
+                                    <Text style={{ fontSize: 12, color: rowColor }}>Photo attached</Text>
                                   </View>
                                 )}
                                 {evt.link && (
-                                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 }} onPress={(e) => { e.stopPropagation?.(); router.push(evt.link as any); }} data-testid={`feed-view-link-${evtKey}`}>
+                                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 }} onPress={() => router.push(evt.link as any)}>
                                     <Ionicons name="open-outline" size={14} color="#007AFF" />
                                     <Text style={{ fontSize: 13, fontWeight: '600', color: '#007AFF' }}>View Card</Text>
                                   </TouchableOpacity>
                                 )}
                               </View>
                             )}
-                            <Text style={{ fontSize: 12, color: colors.textTertiary, marginTop: 4 }}>{formatEventTime(evt.timestamp)}</Text>
+                          </View>
+
+                          {/* Time + optional expand chevron */}
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 8 }}>
+                            <Text style={{ fontSize: 12, color: colors.textTertiary }}>{formatEventTime(evt.timestamp)}</Text>
+                            {hasDetail ? <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={12} color={colors.textTertiary} /> : null}
                           </View>
                         </TouchableOpacity>
                       );
                     })}
+                            </View>
+                          )}
                         </View>
                       );
                     });
