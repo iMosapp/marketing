@@ -457,6 +457,12 @@ function ContactDetailScreen() {
   const [loadingAI, setLoadingAI] = useState(false);
   const [showAISuggestion, setShowAISuggestion] = useState(false);
   const [showLogReply, setShowLogReply] = useState(false);
+  const [showAddTask, setShowAddTask] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskNotes, setNewTaskNotes] = useState('');
+  const [newTaskDue, setNewTaskDue] = useState<'today' | 'tomorrow' | 'thisweek' | 'custom'>('today');
+  const [newTaskPriority, setNewTaskPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [savingTask, setSavingTask] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [replyPhoto, setReplyPhoto] = useState<string | null>(null);
   const [submittingReply, setSubmittingReply] = useState(false);
@@ -585,8 +591,47 @@ function ContactDetailScreen() {
     }
   };
 
+
+  const handleSaveTask = async () => {
+    if (!newTaskTitle.trim() || !user?._id) return;
+    setSavingTask(true);
+    try {
+      const now = new Date();
+      let dueDate: Date;
+      if (newTaskDue === 'today') {
+        dueDate = new Date(now); dueDate.setHours(23, 59, 0, 0);
+      } else if (newTaskDue === 'tomorrow') {
+        dueDate = new Date(now); dueDate.setDate(dueDate.getDate() + 1); dueDate.setHours(9, 0, 0, 0);
+      } else {
+        // this week = next Monday
+        dueDate = new Date(now);
+        const daysUntilMon = (8 - dueDate.getDay()) % 7 || 7;
+        dueDate.setDate(dueDate.getDate() + daysUntilMon); dueDate.setHours(9, 0, 0, 0);
+      }
+      await api.post(`/tasks/${user._id}`, {
+        title: newTaskTitle.trim(),
+        description: newTaskNotes.trim(),
+        contact_id: id as string,
+        contact_name: contact ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim() : '',
+        contact_phone: contact?.phone || '',
+        due_date: dueDate.toISOString(),
+        priority: newTaskPriority,
+        type: 'manual',
+        source: 'manual',
+        action_type: 'manual',
+      });
+      setShowAddTask(false);
+      setNewTaskTitle('');
+      setNewTaskNotes('');
+      setNewTaskDue('today');
+      setNewTaskPriority('medium');
+      showSimpleAlert('Task Added', `"${newTaskTitle.trim()}" added to your touchpoints.`);
+    } catch { showSimpleAlert('Error', 'Could not save task. Try again.'); }
+    finally { setSavingTask(false); }
+  };
+
+
   const handleLogReply = async () => {
-    if (!user || (!replyText.trim() && !replyPhoto)) return;
     try {
       setSubmittingReply(true);
       await api.post(`/contacts/${user._id}/${id}/log-reply`, {
@@ -2830,6 +2875,14 @@ function ContactDetailScreen() {
                     <Ionicons name="chatbubble-ellipses" size={16} color="#30D158" />
                     <Text style={s.logReplyBtnText}>Log Customer Reply</Text>
                   </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[s.logReplyBtn, { backgroundColor: '#FF950015', borderColor: '#FF950050' }]}
+                    onPress={() => setShowAddTask(true)}
+                    data-testid="add-task-btn"
+                  >
+                    <Ionicons name="add-circle" size={16} color="#FF9500" />
+                    <Text style={[s.logReplyBtnText, { color: '#FF9500' }]}>Add Task</Text>
+                  </TouchableOpacity>
                   {events.length > 0 && (
                     <View style={s.feedSearchRowCompact}>
                       <Ionicons name="search" size={14} color={colors.textTertiary} />
@@ -3939,6 +3992,100 @@ function ContactDetailScreen() {
       </Modal>
 
       {/* Card Template Picker */}
+      {/* ── Add Task Modal ── */}
+      <Modal visible={showAddTask} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAddTask(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+            <TouchableOpacity onPress={() => setShowAddTask(false)}>
+              <Text style={{ fontSize: 17, color: '#007AFF' }}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>Add Task</Text>
+            <TouchableOpacity onPress={handleSaveTask} disabled={savingTask || !newTaskTitle.trim()} data-testid="save-task-btn">
+              {savingTask ? <ActivityIndicator size="small" color="#007AFF" /> : (
+                <Text style={{ fontSize: 17, fontWeight: '700', color: newTaskTitle.trim() ? '#007AFF' : colors.textTertiary }}>Save</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
+            {/* Contact badge */}
+            {contact && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.card, borderRadius: 10, padding: 12, marginBottom: 16 }}>
+                <Ionicons name="person-circle" size={20} color="#007AFF" />
+                <Text style={{ fontSize: 15, color: colors.text, fontWeight: '600' }}>
+                  {`${contact.first_name || ''} ${contact.last_name || ''}`.trim()}
+                </Text>
+              </View>
+            )}
+
+            {/* Task title */}
+            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>What do you need to do?</Text>
+            <TextInput
+              style={{ backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 17, color: colors.text, borderWidth: 1, borderColor: colors.border, marginBottom: 16 }}
+              placeholder={`e.g. Text ${contact?.first_name || 'them'} about Friday's conversation`}
+              placeholderTextColor={colors.textTertiary}
+              value={newTaskTitle}
+              onChangeText={setNewTaskTitle}
+              autoFocus
+              returnKeyType="done"
+              data-testid="task-title-input"
+            />
+
+            {/* Due date */}
+            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>When?</Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+              {([
+                { key: 'today',    label: 'Today' },
+                { key: 'tomorrow', label: 'Tomorrow' },
+                { key: 'thisweek', label: 'This Week' },
+              ] as const).map(opt => (
+                <TouchableOpacity
+                  key={opt.key}
+                  onPress={() => setNewTaskDue(opt.key)}
+                  style={{ paddingHorizontal: 18, paddingVertical: 10, borderRadius: 20, borderWidth: 1.5,
+                    borderColor: newTaskDue === opt.key ? '#FF9500' : colors.border,
+                    backgroundColor: newTaskDue === opt.key ? '#FF950020' : colors.card }}
+                >
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: newTaskDue === opt.key ? '#FF9500' : colors.text }}>{opt.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Priority */}
+            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>Priority</Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+              {([
+                { key: 'low',    label: 'Low',    color: '#34C759' },
+                { key: 'medium', label: 'Medium', color: '#FF9500' },
+                { key: 'high',   label: 'High',   color: '#FF3B30' },
+              ] as const).map(p => (
+                <TouchableOpacity
+                  key={p.key}
+                  onPress={() => setNewTaskPriority(p.key)}
+                  style={{ flex: 1, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5, alignItems: 'center',
+                    borderColor: newTaskPriority === p.key ? p.color : colors.border,
+                    backgroundColor: newTaskPriority === p.key ? p.color + '20' : colors.card }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: newTaskPriority === p.key ? p.color : colors.text }}>{p.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Notes */}
+            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Notes <Text style={{ fontWeight: '400', textTransform: 'none' }}>(optional)</Text></Text>
+            <TextInput
+              style={{ backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1, borderColor: colors.border, minHeight: 80, textAlignVertical: 'top' }}
+              placeholder="Any context or details..."
+              placeholderTextColor={colors.textTertiary}
+              value={newTaskNotes}
+              onChangeText={setNewTaskNotes}
+              multiline
+              data-testid="task-notes-input"
+            />
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
       <Modal visible={showCardTemplatePicker} animationType="fade" transparent onRequestClose={() => setShowCardTemplatePicker(false)}>
         <TouchableOpacity style={s.sendPickerOverlay} activeOpacity={1} onPress={() => setShowCardTemplatePicker(false)}>
           <View style={s.sendPickerSheet} onStartShouldSetResponder={() => true}>
