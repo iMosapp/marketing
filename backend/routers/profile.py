@@ -2,10 +2,12 @@
 Profile router - handles salesperson profile, photo upload, AI bio generation
 """
 from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi.responses import Response
 from bson import ObjectId
 from datetime import datetime
 from typing import Optional
 import os
+import re
 import base64
 import uuid
 import logging
@@ -17,6 +19,80 @@ from routers.database import get_db
 
 router = APIRouter(prefix="/profile", tags=["profile"])
 logger = logging.getLogger(__name__)
+
+_APP_URL = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+
+
+@router.get("/{user_id}/vcard.vcf")
+async def get_vcard(user_id: str):
+    """
+    Generate and return the user's contact info as a vCard 3.0 (.vcf) file.
+    When tapped on iPhone/Android, offers to add the person to Contacts.
+    """
+    db = get_db()
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"password": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    persona     = user.get("persona") or {}
+    name        = user.get("name", "")
+    parts       = name.strip().split(" ", 1)
+    first       = parts[0] if parts else ""
+    last        = parts[1] if len(parts) > 1 else ""
+    title       = persona.get("title") or user.get("title", "")
+    phone       = re.sub(r"\D", "", user.get("phone") or user.get("mvpline_number") or "")
+    email       = user.get("email", "")
+    card_url    = f"{_APP_URL}/card/{user_id}"
+
+    # Build photo line — embed if we have a resolvable URL
+    photo_line = ""
+    photo_path = user.get("photo_url") or user.get("photo_path") or ""
+    if photo_path and photo_path.startswith("/api/"):
+        photo_line = f"PHOTO;VALUE=URL:{_APP_URL}{photo_path}\n"
+    elif photo_path and photo_path.startswith("http"):
+        photo_line = f"PHOTO;VALUE=URL:{photo_path}\n"
+
+    phone_line = f"TEL;TYPE=CELL:{phone}\n" if phone else ""
+    email_line = f"EMAIL:{email}\n" if email else ""
+    title_line = f"TITLE:{title}\n" if title else ""
+
+    org = ""
+    store_id = user.get("store_id")
+    if store_id:
+        try:
+            store = await db.stores.find_one({"_id": ObjectId(store_id)}, {"name": 1})
+            if store:
+                org = store.get("name", "")
+        except Exception:
+            pass
+    org_line = f"ORG:{org}\n" if org else ""
+
+    safe_name = re.sub(r"[^a-zA-Z0-9_-]", "_", name)[:40] or "contact"
+
+    vcf = (
+        "BEGIN:VCARD\n"
+        "VERSION:3.0\n"
+        f"N:{last};{first};;;\n"
+        f"FN:{name}\n"
+        f"{title_line}"
+        f"{org_line}"
+        f"{phone_line}"
+        f"{email_line}"
+        f"{photo_line}"
+        f"URL:{card_url}\n"
+        f"NOTE:Connect with me — digital card: {card_url}\n"
+        f"X-SOCIALPROFILE;type=digitalcard:{card_url}\n"
+        "END:VCARD\n"
+    )
+
+    return Response(
+        content=vcf,
+        media_type="text/vcard",
+        headers={
+            "Content-Disposition": f'attachment; filename="{safe_name}.vcf"',
+            "Cache-Control": "public, max-age=3600",
+        },
+    )
 
 
 @router.get("/{user_id}")
