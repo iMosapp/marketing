@@ -45,7 +45,7 @@ export default function ImportGuide() {
       </Pressable>
 
       <Text style={styles.h1}>How to Export Your Contacts</Text>
-      <Text style={styles.subtitle}>Follow these steps to get your contacts file, then upload it to i'M On Social</Text>
+      <Text style={styles.subtitle}>Follow these steps to get your contacts file, then upload it to I'm On Social</Text>
 
       {/* Format cards */}
       <View style={styles.formats}>
@@ -106,10 +106,10 @@ export default function ImportGuide() {
           <View style={styles.step}>
             <View style={styles.stepHeader}>
               <StepNumber n={3} variant="apple" />
-              <Text style={styles.stepTitle}>Upload to i'M On Social</Text>
+              <Text style={styles.stepTitle}>Upload to I'm On Social</Text>
             </View>
             <Text style={styles.stepDesc}>
-              Go back to the Import Contacts screen in i'M On Social, tap <Text style={styles.bold}>"From File (CSV or VCF)"</Text>, and select the .vcf file you just downloaded. You'll see a preview of all your contacts before importing.
+              Go back to the Import Contacts screen in I'm On Social, tap <Text style={styles.bold}>"From File (CSV or VCF)"</Text>, and select the .vcf file you just downloaded. You'll see a preview of all your contacts before importing.
             </Text>
           </View>
 
@@ -159,10 +159,10 @@ export default function ImportGuide() {
           <View style={styles.step}>
             <View style={styles.stepHeader}>
               <StepNumber n={4} variant="google" />
-              <Text style={styles.stepTitle}>Upload to i'M On Social</Text>
+              <Text style={styles.stepTitle}>Upload to I'm On Social</Text>
             </View>
             <Text style={styles.stepDesc}>
-              Go back to the Import Contacts screen in i'M On Social, tap <Text style={styles.bold}>"From File (CSV or VCF)"</Text>, and select the file you just downloaded. You'll see a preview of all your contacts before importing.
+              Go back to the Import Contacts screen in I'm On Social, tap <Text style={styles.bold}>"From File (CSV or VCF)"</Text>, and select the file you just downloaded. You'll see a preview of all your contacts before importing.
             </Text>
           </View>
 

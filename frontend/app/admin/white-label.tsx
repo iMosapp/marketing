@@ -18,7 +18,7 @@ export default function WhiteLabelPartnersScreen() {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     name: '', slug: '', primary_color: '#E87722', secondary_color: '#008B8B',
-    accent_color: '#1B2A4A', powered_by_text: "i'M On Social",
+    accent_color: '#1B2A4A', powered_by_text: "I'm On Social",
     company_name: '', company_address: '', company_phone: '', company_email: '', company_website: '',
     commission_notes: '',
   });
@@ -46,7 +46,7 @@ export default function WhiteLabelPartnersScreen() {
         await api.post('/admin/partners', form);
       }
       setShowForm(false); setEditing(null);
-      setForm({ name: '', slug: '', primary_color: '#E87722', secondary_color: '#008B8B', accent_color: '#1B2A4A', powered_by_text: "i'M On Social", company_name: '', company_address: '', company_phone: '', company_email: '', company_website: '', commission_notes: '' });
+      setForm({ name: '', slug: '', primary_color: '#E87722', secondary_color: '#008B8B', accent_color: '#1B2A4A', powered_by_text: "I'm On Social", company_name: '', company_address: '', company_phone: '', company_email: '', company_website: '', commission_notes: '' });
       loadPartners();
     } catch (e) { console.error(e); showSimpleAlert('Error', 'Failed to save partner. Please try again.'); }
     setSaving(false);
@@ -115,7 +115,7 @@ export default function WhiteLabelPartnersScreen() {
               { key: 'company_email', label: 'Email', placeholder: 'info@calendarsystems.info' },
               { key: 'company_website', label: 'Website', placeholder: 'https://calendarsystems.info' },
               { key: 'company_address', label: 'Address', placeholder: '1480 E Ridgeline Drive...' },
-              { key: 'powered_by_text', label: 'Powered By Text', placeholder: "i'M On Social" },
+              { key: 'powered_by_text', label: 'Powered By Text', placeholder: "I'm On Social" },
             ].map(f => (
               <View key={f.key} style={s.inputGroup}>
                 <Text style={s.inputLabel}>{f.label}</Text>

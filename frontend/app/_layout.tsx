@@ -63,7 +63,7 @@ function usePWAMetaTags() {
     ensureLink('apple-touch-icon', '/apple-touch-icon.png');
 
     // Set title
-    document.title = "i'M On Social";
+    document.title = "I'm On Social";
 
     // Suppress browser focus outlines and autofill background on inputs
     const styleId = 'imos-global-input-styles';

@@ -685,7 +685,7 @@ export default function UserDetailScreen() {
               <TouchableOpacity style={styles.infoRow} onPress={() => { setEditingContactField('phone'); setContactEditValue(user.phone || user.twilio_phone_number || ''); }}>
                 <Ionicons name="call-outline" size={18} color={colors.textSecondary} />
                 <Text style={[styles.infoText, { flex: 1 }]}>{user.phone || user.twilio_phone_number || 'Tap to add phone'}</Text>
-                {user.twilio_phone_number && (<View style={styles.twilioTag}><Text style={styles.twilioTagText}>i'M On Social</Text></View>)}
+                {user.twilio_phone_number && (<View style={styles.twilioTag}><Text style={styles.twilioTagText}>I'm On Social</Text></View>)}
                 <Ionicons name="pencil-outline" size={14} color={colors.textTertiary} />
               </TouchableOpacity>
             )}

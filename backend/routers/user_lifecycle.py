@@ -1,8 +1,8 @@
 """
 Internal User Lifecycle & Auto-Tagging System
 Tags users based on tenure, role changes, activity, and status.
-Sends automated messages from i'M On Social for milestones and retention.
-"Eat our own dog food"  - use i'M On Social to manage i'M On Social users.
+Sends automated messages from I'm On Social for milestones and retention.
+"Eat our own dog food"  - use I'm On Social to manage I'm On Social users.
 """
 from fastapi import APIRouter, Header
 from datetime import datetime, timedelta
@@ -19,12 +19,12 @@ logger = logging.getLogger(__name__)
 
 # Tenure tags  - applied based on user created_at
 TENURE_MILESTONES = [
-    (30, "tenure_30_days", "30 Days with i'M On Social!"),
-    (90, "tenure_90_days", "90 Days with i'M On Social!"),
-    (180, "tenure_6_months", "6 Months with i'M On Social!"),
-    (365, "tenure_1_year", "1 Year Anniversary with i'M On Social!"),
-    (730, "tenure_2_years", "2 Year Anniversary with i'M On Social!"),
-    (1095, "tenure_3_years", "3 Year Anniversary with i'M On Social!"),
+    (30, "tenure_30_days", "30 Days with I'm On Social!"),
+    (90, "tenure_90_days", "90 Days with I'm On Social!"),
+    (180, "tenure_6_months", "6 Months with I'm On Social!"),
+    (365, "tenure_1_year", "1 Year Anniversary with I'm On Social!"),
+    (730, "tenure_2_years", "2 Year Anniversary with I'm On Social!"),
+    (1095, "tenure_3_years", "3 Year Anniversary with I'm On Social!"),
 ]
 
 # Role tags  - applied on role changes

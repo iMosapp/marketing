@@ -408,7 +408,7 @@ export default function ProfileSetupScreen() {
                     <Text style={s.heading}>Card sent!</Text>
                     <Text style={s.sub}>
                       {recipientName ? `${recipientName.split(' ')[0]} will` : 'They\'ll'} get a text to save your contact and open your card.{'\n\n'}
-                      Welcome to i'M On Social — you're live.
+                      Welcome to I'm On Social — you're live.
                     </Text>
                     <TouchableOpacity style={s.primaryBtn} onPress={finish} data-testid="finish-onboarding-btn">
                       <Text style={s.primaryBtnText}>Go to my dashboard</Text>

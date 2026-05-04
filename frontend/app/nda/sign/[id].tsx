@@ -182,7 +182,7 @@ export default function NDASignPage() {
           <View style={styles.logoArea}>
             <Ionicons name="shield-checkmark" size={48} color="#007AFF" />
             <Text style={styles.pageTitle}>Non-Disclosure Agreement</Text>
-            <Text style={styles.pageSub}>i'M On Social</Text>
+            <Text style={styles.pageSub}>I'm On Social</Text>
           </View>
 
           <View style={styles.card}>
@@ -229,7 +229,7 @@ export default function NDASignPage() {
           </View>
 
           <Text style={styles.footer}>
-            i'M On Social LLC | 1741 Lunford Ln, Riverton, UT
+            I'm On Social LLC | 1741 Lunford Ln, Riverton, UT
           </Text>
         </ScrollView>
       </SafeAreaView>
@@ -417,7 +417,7 @@ export default function NDASignPage() {
           </Text>
         </View>
         <Text style={styles.footer}>
-          i'M On Social LLC | 1741 Lunford Ln, Riverton, UT
+          I'm On Social LLC | 1741 Lunford Ln, Riverton, UT
         </Text>
       </ScrollView>
     </SafeAreaView>

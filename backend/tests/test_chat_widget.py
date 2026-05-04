@@ -1,5 +1,5 @@
 """
-Chat Widget API Tests - Jessi AI Chat Widget for i'M On Social marketing website
+Chat Widget API Tests - Jessi AI Chat Widget for I'm On Social marketing website
 Tests: POST /api/chat/start, POST /api/chat/message, POST /api/chat/capture
 Also tests auto-extraction of name, email, phone from messages
 """
@@ -60,7 +60,7 @@ class TestChatWidgetMessage:
             f"{BASE_URL}/api/chat/message",
             json={
                 "session_id": session_id,
-                "message": "What is i'M On Social?"
+                "message": "What is I'm On Social?"
             }
         )
         assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"

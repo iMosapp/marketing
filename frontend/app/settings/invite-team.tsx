@@ -173,7 +173,7 @@ export default function InviteTeamScreen() {
   const getInviteText = () => {
     if (!inviteResult) return '';
     return (
-      `Welcome to i'M On Social, ${inviteResult.name}!\n\n` +
+      `Welcome to I'm On Social, ${inviteResult.name}!\n\n` +
       `Your login: ${inviteResult.email}\n` +
       `Temp password: ${inviteResult.password}\n\n` +
       `Download the app:\n` +

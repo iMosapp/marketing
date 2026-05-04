@@ -3422,7 +3422,7 @@ function ContactDetailScreen() {
                     const fullName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim();
                     showConfirm(
                       'Convert to User',
-                      `Create a user account for ${fullName}? This will let them log into i'M On Social.`,
+                      `Create a user account for ${fullName}? This will let them log into I'm On Social.`,
                       () => {
                         router.push({
                           pathname: '/admin/users' as any,

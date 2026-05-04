@@ -404,7 +404,7 @@ export default function TimelinePage() {
 
       {/* Footer */}
       <View style={s.footer}>
-        <Text style={s.footerText}>Powered by i'M On Social</Text>
+        <Text style={s.footerText}>Powered by I'm On Social</Text>
         <Text style={s.footerSub}>This timeline updates in real-time</Text>
       </View>
     </ScrollView>

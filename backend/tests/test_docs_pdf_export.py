@@ -45,7 +45,7 @@ class TestDocsPdfExport:
         assert response.status_code == 200, f"Failed to get doc: {response.text}"
         
         data = response.json()
-        assert data.get("title") == "i'M On Social Platform - Complete Operations Manual"
+        assert data.get("title") == "I'm On Social Platform - Complete Operations Manual"
         assert data.get("version") == "3.0"
         assert data.get("slug") == "imos-operations-manual"
         

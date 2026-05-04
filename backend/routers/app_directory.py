@@ -53,7 +53,7 @@ async def share_page(data: SharePageRequest, x_user_id: str = Header(None, alias
     user = await get_admin_user(x_user_id)
 
     page_url = f"{APP_URL}{data.page_path}"
-    sender_name = user.get("name", "i'M On Social Admin")
+    sender_name = user.get("name", "I'm On Social Admin")
     recipient_name = data.recipient_name or "there"
 
     if data.channel == "email":
@@ -75,7 +75,7 @@ async def share_page(data: SharePageRequest, x_user_id: str = Header(None, alias
                 </div>
                 <div style="padding: 30px; background-color: #ffffff;">
                     <h2 style="margin-top: 0; color: #111;">Hi {recipient_name}!</h2>
-                    <p style="font-size: 15px; line-height: 1.6; color: #444;"><strong>{sender_name}</strong> shared a page with you from <strong>i'M On Social</strong>:</p>
+                    <p style="font-size: 15px; line-height: 1.6; color: #444;"><strong>{sender_name}</strong> shared a page with you from <strong>I'm On Social</strong>:</p>
                     {custom_msg}
                     <div style="background-color: #f8f9fa; padding: 16px 20px; border-radius: 12px; margin: 20px 0; border-left: 4px solid #007AFF;">
                         <p style="margin: 0; font-size: 17px; font-weight: 600; color: #111;">{data.page_name}</p>
@@ -89,17 +89,17 @@ async def share_page(data: SharePageRequest, x_user_id: str = Header(None, alias
                 </div>
             </div>
             <div style="text-align: center; margin-top: 20px; color: #999; font-size: 11px;">
-                <p>Sent from i'M On Social by {sender_name}</p>
+                <p>Sent from I'm On Social by {sender_name}</p>
             </div>
         </div>
         """
 
         try:
             result = await asyncio.to_thread(resend.Emails.send, {
-                "from": f"i'M On Social <{SENDER_EMAIL}>",
+                "from": f"I'm On Social <{SENDER_EMAIL}>",
                 "to": data.recipient_email,
                 "reply_to": "support@imonsocial.com",
-                "subject": f"{sender_name} shared \"{data.page_name}\" with you from i'M On Social",
+                "subject": f"{sender_name} shared \"{data.page_name}\" with you from I'm On Social",
                 "html": html,
             })
             logger.info(f"Page share email sent to {data.recipient_email}")
@@ -112,7 +112,7 @@ async def share_page(data: SharePageRequest, x_user_id: str = Header(None, alias
         if not data.recipient_phone:
             raise HTTPException(status_code=400, detail="Phone number required")
 
-        sms_body = f"{sender_name} shared \"{data.page_name}\" with you from i'M On Social."
+        sms_body = f"{sender_name} shared \"{data.page_name}\" with you from I'm On Social."
         if data.custom_message:
             sms_body += f"\n\n{data.custom_message}"
         sms_body += f"\n\nView here: {page_url}"

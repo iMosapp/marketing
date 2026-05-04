@@ -15,17 +15,17 @@ type PublicPage = {
 
 const PAGE_SECTIONS: { category: string; icon: string; color: string; pages: PublicPage[] }[] = [
   {
-    category: "Learn About i'M On Social",
+    category: "Learn About I'm On Social",
     icon: 'diamond',
     color: '#007AFF',
     pages: [
-      { title: "Why Use i'M On Social", description: "Interactive deck showcasing i'M On Social capabilities", icon: 'easel', color: '#007AFF', path: '/imos/salespresentation', badge: 'Featured' },
-      { title: 'Features Overview', description: "Explore what i'M On Social can do for your team", icon: 'apps', color: '#007AFF', path: '/imos/features' },
+      { title: "Why Use I'm On Social", description: "Interactive deck showcasing I'm On Social capabilities", icon: 'easel', color: '#007AFF', path: '/imos/salespresentation', badge: 'Featured' },
+      { title: 'Features Overview', description: "Explore what I'm On Social can do for your team", icon: 'apps', color: '#007AFF', path: '/imos/features' },
       { title: 'Pricing Plans', description: 'Subscription tiers and pricing', icon: 'pricetag', color: '#34C759', path: '/imos/pricing' },
     ],
   },
   {
-    category: "Experience i'M On Social",
+    category: "Experience I'm On Social",
     icon: 'rocket',
     color: '#FF9500',
     pages: [
@@ -37,7 +37,7 @@ const PAGE_SECTIONS: { category: string; icon: string; color: string; pages: Pub
     icon: 'person-add',
     color: '#34C759',
     pages: [
-      { title: 'Sign Up', description: "Create your i'M On Social account", icon: 'person-add', color: '#34C759', path: '/auth/signup' },
+      { title: 'Sign Up', description: "Create your I'm On Social account", icon: 'person-add', color: '#34C759', path: '/auth/signup' },
       { title: 'Log In', description: 'Access your dashboard', icon: 'log-in', color: '#007AFF', path: '/auth/login' },
       { title: 'Forgot Password', description: 'Reset your credentials', icon: 'key', color: '#FF9500', path: '/auth/forgot-password' },
     ],
@@ -78,7 +78,7 @@ export default function HubScreen() {
           <View style={s.titleSection}>
             <Text style={s.label}>PAGE DIRECTORY</Text>
             <Text style={[s.title, isDesktop && { fontSize: 36 }]}>All Public Pages</Text>
-            <Text style={s.subtitle}>i'M On Social</Text>
+            <Text style={s.subtitle}>I'm On Social</Text>
           </View>
 
           {/* Sections */}

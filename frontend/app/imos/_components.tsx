@@ -222,7 +222,7 @@ export function ImosFooter() {
         </View>
       </View>
       <View style={f.bottom}>
-        <Text style={f.copy}>&copy; 2026 i'M On Social. Powered by VI Ventures Group LLC.</Text>
+        <Text style={f.copy}>&copy; 2026 I'm On Social. Powered by VI Ventures Group LLC.</Text>
         <TouchableOpacity onPress={() => navigate('/imos/sms-terms')}>
           <Text style={[f.copy, { color: '#007AFF', marginTop: 4 }]}>SMS Messaging Policy</Text>
         </TouchableOpacity>

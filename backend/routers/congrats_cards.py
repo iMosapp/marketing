@@ -1430,7 +1430,7 @@ async def get_card_image(card_id: str):
     draw.text((url_x, url_y + 28), display_url, fill=accent, font=f_url)
 
     # Powered by
-    powered = "i'M On Social"
+    powered = "I'm On Social"
     bbox = draw.textbbox((0, 0), powered, font=f_footer)
     tw = bbox[2] - bbox[0]
     draw.text((url_x, url_y + 65), powered, fill=dim_txt, font=f_footer)

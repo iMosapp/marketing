@@ -1,5 +1,5 @@
 """
-Test Tracked Media System for i'M On Social RMS
+Test Tracked Media System for I'm On Social RMS
 Tests:
 - POST /api/media/upload-tracked - Upload image file with tracking
 - GET /api/media/view/{media_id} - Branded viewing page with view logging
@@ -127,7 +127,7 @@ class TestTrackedMediaView:
         # Verify HTML contains expected elements
         html = response.text
         assert '<html>' in html.lower() or '<!doctype html>' in html.lower(), "Should be valid HTML"
-        assert "i'M On Social" in html, "Should contain branding"
+        assert "I'm On Social" in html, "Should contain branding"
         assert 'og:' in html, "Should contain OG meta tags"
         print("✓ View page returns branded HTML with OG tags")
     

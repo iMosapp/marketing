@@ -20,7 +20,7 @@ logger = logging.getLogger("chat_widget")
 _sessions: dict = {}  # session_id -> session data
 _MAX_SESSIONS = 500   # cap to prevent unbounded memory growth
 
-JESSI_SYSTEM_PROMPT = """You are Jessi, the friendly AI assistant for i'M On Social — the relationship engine for sales professionals.
+JESSI_SYSTEM_PROMPT = """You are Jessi, the friendly AI assistant for I'm On Social — the relationship engine for sales professionals.
 
 ABOUT i'M ON SOCIAL:
 - It's a platform that turns salespeople into personal brands and automates follow-up so they never lose a customer after the sale.
@@ -29,11 +29,11 @@ ABOUT i'M ON SOCIAL:
 - For organizations: manage teams, stores, and reputation across locations with white-label options.
 - For individuals: own your personal brand, collect reviews, build an online presence.
 - Pricing: custom based on team size — encourage them to book a demo for specifics.
-- Competitors: Podium, Kenect, Matador AI — but those are chatbots that replace people. i'M On Social makes people unforgettable.
+- Competitors: Podium, Kenect, Matador AI — but those are chatbots that replace people. I'm On Social makes people unforgettable.
 
 YOUR PERSONALITY:
 - Warm, knowledgeable, conversational — not salesy or robotic.
-- You genuinely want to help them understand if i'M On Social is right for their business.
+- You genuinely want to help them understand if I'm On Social is right for their business.
 - Keep responses concise (2-4 sentences max). Don't dump feature lists unless asked.
 
 YOUR STRATEGY:
@@ -82,14 +82,14 @@ async def start_session(request: Request):
         "individuals": "Hey! I'm Jessi. Want to build your personal brand and stay connected with every customer automatically?",
         "organizations": "Hi! I'm Jessi. Curious how organizations keep their teams accountable and their customer relationships growing?",
         "pricing": "Hi! I'm Jessi. Have questions about pricing or which plan fits your team? I can help!",
-        "seo": "Hey! I'm Jessi. Want to see how i'M On Social boosts your search rankings and online visibility?",
+        "seo": "Hey! I'm Jessi. Want to see how I'm On Social boosts your search rankings and online visibility?",
         "reviews": "Hi! I'm Jessi. Struggling to get more reviews? I can show you how to make it effortless.",
         "digital-card": "Hey there! I'm Jessi. Curious about digital business cards that actually drive repeat business?",
         "showcase": "Hi! I'm Jessi. Want to see how Showcase pages help your team stand out online?",
     }
 
     # Match page source to a greeting
-    greeting = "Hi! I'm Jessi from i'M On Social. What can I help you with today?"
+    greeting = "Hi! I'm Jessi from I'm On Social. What can I help you with today?"
     page_lower = page.lower().replace("_page", "").replace("_", "-").replace("/", "-")
     for key, msg in greetings.items():
         if key in page_lower:

@@ -153,7 +153,7 @@ export default function CSLoginScreen() {
                 style={styles.csLogo}
                 resizeMode="contain"
               />
-              <Text style={styles.poweredText}>Powered by i'M On Social</Text>
+              <Text style={styles.poweredText}>Powered by I'm On Social</Text>
             </View>
 
             {/* Form */}

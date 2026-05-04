@@ -190,7 +190,7 @@ AUTOMATION_PROVIDERS = {
     "zapier": {
         "name": "Zapier",
         "type": "automation",
-        "description": "Connect i'M On Social to 5,000+ apps",
+        "description": "Connect I'm On Social to 5,000+ apps",
         "auth_type": "webhook",
         "docs_url": "https://zapier.com",
         "setup_instructions": "Use webhooks to trigger Zaps or receive data from Zapier",
@@ -427,7 +427,7 @@ async def test_webhook(webhook_id: str):
         "event": "test",
         "timestamp": datetime.utcnow().isoformat(),
         "data": {
-            "message": "This is a test webhook from i'M On Social",
+            "message": "This is a test webhook from I'm On Social",
             "webhook_id": webhook_id,
         }
     }
@@ -447,7 +447,7 @@ async def test_webhook(webhook_id: str):
                 headers={
                     "Content-Type": "application/json",
                     "X-IMOS-Signature": signature,
-                    "X-i'M On Social-Event": "test",
+                    "X-I'm On Social-Event": "test",
                 }
             )
             
@@ -654,7 +654,7 @@ async def get_sync_logs(connection_id: str, limit: int = 50):
 async def get_api_overview():
     """Get API documentation overview"""
     return {
-        "name": "i'M On Social API",
+        "name": "I'm On Social API",
         "version": "2.0",
         "base_url": "/api",
         "authentication": {
@@ -834,11 +834,11 @@ async def get_messages_docs():
 async def get_webhooks_docs():
     """Get webhooks documentation"""
     return {
-        "overview": "Webhooks allow you to receive real-time HTTP notifications when events occur in i'M On Social.",
+        "overview": "Webhooks allow you to receive real-time HTTP notifications when events occur in I'm On Social.",
         "setup": {
             "steps": [
                 "1. Create a webhook endpoint in your application",
-                "2. Register the webhook URL in i'M On Social",
+                "2. Register the webhook URL in I'm On Social",
                 "3. Select which events to subscribe to",
                 "4. Store the signing secret securely",
             ],

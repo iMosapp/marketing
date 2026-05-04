@@ -1,4 +1,4 @@
-// Service Worker for i'M On Social PWA — v5 (minimal, safe)
+// Service Worker for I'm On Social PWA — v5 (minimal, safe)
 // Strategy: NEVER intercept page navigation. Only passively cache static assets.
 // This prevents the service worker from ever breaking page loads.
 const CACHE_NAME = 'imos-v5';
@@ -56,7 +56,7 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
   try {
     const data = event.data ? event.data.json() : {};
-    const title = data.title || "i'M On Social";
+    const title = data.title || "I'm On Social";
     const options = {
       body: data.body || '',
       icon: '/logo192.png',

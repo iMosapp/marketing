@@ -18,11 +18,11 @@ type Slide = {
 const SLIDES: Slide[] = [
   {
     id: 'intro',
-    title: "i'M On Social",
+    title: "I'm On Social",
     subtitle: 'The Relationship Engine for Sales Professionals',
     content: [
       'Your customers remember people, not companies.',
-      "i'M On Social gives every salesperson a digital presence that builds trust, drives reviews, and keeps customers connected long after the sale.",
+      "I'm On Social gives every salesperson a digital presence that builds trust, drives reviews, and keeps customers connected long after the sale.",
     ],
     icon: 'diamond',
     accentColor: '#007AFF',
@@ -46,7 +46,7 @@ const SLIDES: Slide[] = [
     title: 'The Solution',
     subtitle: "Give every person their own brand",
     content: [
-      "i'M On Social is a structured social ecosystem. Organizations deploy it. Teams use it. Individuals own it.",
+      "I'm On Social is a structured social ecosystem. Organizations deploy it. Teams use it. Individuals own it.",
       'One platform that connects digital cards, personal reviews, automated follow-up, and AI — all under your brand.',
     ],
     icon: 'layers',
@@ -137,7 +137,7 @@ const SLIDES: Slide[] = [
     title: 'Your Brand. Our Engine.',
     subtitle: 'White-label ready for organizations',
     content: [
-      "Deploy i'M On Social under your own brand. Your logo, your colors, your domain.",
+      "Deploy I'm On Social under your own brand. Your logo, your colors, your domain.",
       'Every account, every team member, one unified platform — powered by our infrastructure.',
     ],
     icon: 'color-palette',
@@ -155,7 +155,7 @@ const SLIDES: Slide[] = [
     title: "Ready to Own\nYour Reputation?",
     subtitle: 'The new way to be on social starts here',
     content: [
-      "See why forward-thinking organizations trust i'M On Social to give their people the tools to build lasting customer relationships.",
+      "See why forward-thinking organizations trust I'm On Social to give their people the tools to build lasting customer relationships.",
     ],
     icon: 'arrow-forward-circle',
     accentColor: '#007AFF',

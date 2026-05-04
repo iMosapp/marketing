@@ -132,7 +132,7 @@ export default function QuoteAcceptPage() {
         <View style={s.header}>
           <View style={{ flex: 1 }}>
             <Text style={s.headerTitle}>{companyName || quote.plan_name}</Text>
-            <Text style={s.headerSub}>i'M On Social &mdash; Subscription Quote</Text>
+            <Text style={s.headerSub}>I'm On Social &mdash; Subscription Quote</Text>
           </View>
           <View style={[s.badge, { backgroundColor: '#C9A96220' }]}>
             <Text style={[s.badgeText, { color: '#C9A962' }]}>{quote.quote_number}</Text>

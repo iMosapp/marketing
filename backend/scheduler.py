@@ -1,5 +1,5 @@
 """
-i'M On Social Campaign Scheduler
+I'm On Social Campaign Scheduler
 Runs background jobs to process date-triggered campaigns and pending campaign step messages.
 """
 import asyncio
@@ -514,7 +514,7 @@ async def _run_date_triggers_for_user(db, user_id: str) -> int:
                     if resend_key:
                         import resend
                         resend.api_key = resend_key
-                        sender_name = user.get('name', "i'M On Social")
+                        sender_name = user.get('name', "I'm On Social")
                         await asyncio.to_thread(resend.Emails.send, {
                             "from": f"{sender_name} <{os.environ.get('SENDER_EMAIL', 'notifications@send.imonsocial.com')}>",
                             "to": contact["email"],

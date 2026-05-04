@@ -289,7 +289,7 @@ async def process_date_triggers(user_id: str):
                     if resend_key:
                         import resend
                         resend.api_key = resend_key
-                        sender_name = user.get('name', "i'M On Social")
+                        sender_name = user.get('name', "I'm On Social")
                         await asyncio.to_thread(resend.Emails.send, {
                             "from": f"{sender_name} <{os.environ.get('SENDER_EMAIL', 'notifications@send.imonsocial.com')}>",
                             "to": contact["email"],

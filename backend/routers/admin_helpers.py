@@ -66,21 +66,21 @@ async def send_invite_email(
         logger.warning(f"Could not read logo file: {e}")
 
     email_payload = {
-        "from": f"i'M On Social <{SENDER_EMAIL}>",
+        "from": f"I'm On Social <{SENDER_EMAIL}>",
         "to": email,
         "reply_to": "support@imonsocial.com",
-        "subject": f"You're Invited to Join i'M On Social as {role_title}",
+        "subject": f"You're Invited to Join I'm On Social as {role_title}",
         "html": f"""
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
                 <div style="background-color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e5e5e5;">
                     <div style="text-align: center; padding: 32px 20px 20px 20px; border-bottom: 1px solid #eee;">
-                        <img src="cid:imos-logo" alt="i'M On Social" width="100" height="100" style="width: 100px; height: 100px; border-radius: 50%; display: block; margin: 0 auto;" />
+                        <img src="cid:imos-logo" alt="I'm On Social" width="100" height="100" style="width: 100px; height: 100px; border-radius: 50%; display: block; margin: 0 auto;" />
                         <p style="margin: 10px 0 0 0; font-size: 13px; color: #888; letter-spacing: 1px;">Relationship Management System</p>
                     </div>
                     <div style="padding: 32px 30px; background-color: #ffffff;">
                         <h2 style="margin: 0 0 8px 0; color: #111; font-size: 22px;">Welcome, {name}!</h2>
                         <p style="font-size: 15px; line-height: 1.6; color: #444; margin: 0 0 24px 0;">
-                            You've been invited to join <strong>i'M On Social</strong> as a
+                            You've been invited to join <strong>I'm On Social</strong> as a
                             <strong style="color: #007AFF;">{role_title}</strong>
                             {f' by {inviter_name}' if inviter_name else ''}.
                         </p>
@@ -106,7 +106,7 @@ async def send_invite_email(
                     </div>
                 </div>
                 <div style="text-align: center; margin-top: 24px; color: #999; font-size: 12px;">
-                    <p style="margin: 5px 0;">i'M On Social &mdash; Your Relationship Management System</p>
+                    <p style="margin: 5px 0;">I'm On Social &mdash; Your Relationship Management System</p>
                     <p style="margin: 5px 0;">Questions? Contact support@imonsocial.com</p>
                 </div>
             </div>

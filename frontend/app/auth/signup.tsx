@@ -195,7 +195,7 @@ export default function SignupScreen() {
       // Different messages based on account type - redirect immediately on web
       if (Platform.OS === 'web') {
         if (isIndependent) {
-          window.alert("i'M On Social");
+          window.alert("I'm On Social");
         } else {
           window.alert("Account Created!\n\nYour account is pending approval. You can set up your profile and business card while you wait.");
         }
@@ -203,7 +203,7 @@ export default function SignupScreen() {
       } else {
         if (isIndependent) {
           showAlert(
-            "Welcome to i'M On Social!",
+            "Welcome to I'm On Social!",
             "Your account is ready! Let's set up your profile, AI assistant, and virtual business card to get started.",
             [{ text: 'Let\'s Go!', onPress: () => router.replace('/') }]
           );

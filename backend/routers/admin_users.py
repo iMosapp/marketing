@@ -273,7 +273,7 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
     if send_sms and phone:
         try:
             sms_body = (
-                f"Welcome to i'M On Social, {first_name}! "
+                f"Welcome to I'm On Social, {first_name}! "
                 f"Your login: {email}\n"
                 f"Temp password: {temp_password}\n\n"
                 f"Download the app:\n"

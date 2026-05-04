@@ -1,5 +1,5 @@
 """
-URL Shortener for i'M On Social
+URL Shortener for I'm On Social
 Generates short codes for business cards, congrats cards, and other shareable links.
 """
 from fastapi import APIRouter, HTTPException, Request
@@ -1118,7 +1118,7 @@ a.btn{{display:inline-block;padding:12px 32px;background:#C9A962;color:#000;text
 </head><body>
 <div class="wrap" id="content">
 <div class="spinner"></div>
-<div class="logo">i'M On Social</div>
+<div class="logo">I'm On Social</div>
 <p class="msg">Opening...</p>
 </div>
 <script>

@@ -820,7 +820,7 @@ async def send_email_invite(data: EmailInviteRequest):
                     Hi {recipient_name},
                 </p>
                 <p style="color: #666; line-height: 1.6;">
-                    <strong>{sender_name}</strong> has invited you to join <strong>{store_name}</strong> on i'M On Social.
+                    <strong>{sender_name}</strong> has invited you to join <strong>{store_name}</strong> on I'm On Social.
                 </p>
                 {custom_msg}
                 <p style="color: #666; line-height: 1.6;">
@@ -848,7 +848,7 @@ async def send_email_invite(data: EmailInviteRequest):
         email_result = await asyncio.to_thread(
             resend.Emails.send,
             {
-                "from": f"i'M On Social <{SENDER_EMAIL}>",
+                "from": f"I'm On Social <{SENDER_EMAIL}>",
                 "to": [data.recipient_email],
                 "reply_to": "support@imonsocial.com",
                 "subject": f"{sender_name} invited you to join {store_name}",

@@ -87,7 +87,7 @@ const { showToast } = useToast();
         );
         
         if (response.data.payment_status === 'paid') {
-          showAlert('Payment Successful!', "Welcome to the i'M On Social Partner Program!");
+          showAlert('Payment Successful!', "Welcome to the I'm On Social Partner Program!");
           loadAgreement();
           break;
         }
@@ -182,7 +182,7 @@ const { showToast } = useToast();
         // Redirect to payment
         initiatePayment();
       } else {
-        showAlert('Success!', "Welcome to the i'M On Social Partner Program!");
+        showAlert('Success!', "Welcome to the I'm On Social Partner Program!");
         loadAgreement();
       }
     } catch (error: any) {

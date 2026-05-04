@@ -1,5 +1,5 @@
 """
-i'M On Social API Server - Main entry point
+I'm On Social API Server - Main entry point
 Refactored to use modular routers for maintainability
 """
 from fastapi import FastAPI, APIRouter, HTTPException, Request, WebSocket, WebSocketDisconnect
@@ -52,7 +52,7 @@ class UTCJSONResponse(_JSONResponse):
         return body.encode("utf-8")
 
 # Create the main app - disable trailing slash redirects to avoid mixed content issues
-app = FastAPI(title="i'M On Social API", version="2.0", redirect_slashes=False, default_response_class=UTCJSONResponse)
+app = FastAPI(title="I'm On Social API", version="2.0", redirect_slashes=False, default_response_class=UTCJSONResponse)
 
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
@@ -185,7 +185,7 @@ if static_dir.exists():
 # ============= HEALTH CHECK =============
 @api_router.get("/")
 async def root():
-    return {"message": "i'M On Social API", "version": "2.0"}
+    return {"message": "I'm On Social API", "version": "2.0"}
 
 @api_router.get("/health")
 async def api_health():
@@ -194,7 +194,7 @@ async def api_health():
     does NOT restart the pod during brief MongoDB hiccups.
     Use /health/deep for full DB connectivity check.
     """
-    return {"status": "healthy", "message": "i'M On Social API v2.0"}
+    return {"status": "healthy", "message": "I'm On Social API v2.0"}
 
 
 @api_router.post("/admin/backfill-last-activity")
@@ -295,7 +295,7 @@ async def voice_picker():
 # ============= BRANDING / STATIC ASSETS =============
 @api_router.get("/branding/logo")
 async def get_branding_logo():
-    """Serve the i'M On Social logo for emails and public pages"""
+    """Serve the I'm On Social logo for emails and public pages"""
     logo_path = ROOT_DIR / "static" / "imos-logo-email.png"
     if not logo_path.exists():
         raise HTTPException(status_code=404, detail="Logo not found")
@@ -845,11 +845,11 @@ async def stripe_webhook(request: Request):
 @app.get("/health")
 @app.get("/healthz")
 async def health_check():
-    return {"status": "healthy", "message": "i'M On Social API v2.0"}
+    return {"status": "healthy", "message": "I'm On Social API v2.0"}
 
 @app.get("/")
 async def app_root():
-    return {"status": "healthy", "message": "i'M On Social API v2.0"}
+    return {"status": "healthy", "message": "I'm On Social API v2.0"}
 
 
 @app.get("/l/{username}")
@@ -874,7 +874,7 @@ async def startup_event():
     import time
     import asyncio
     app.state.start_time = time.time()
-    logger.info("i'M On Social API v2.0 starting...")
+    logger.info("I'm On Social API v2.0 starting...")
     logger.info(f"Database configured: {os.environ.get('DB_NAME', 'unknown')} (MONGO_URL {'set' if os.environ.get('MONGO_URL') else 'missing'})")
 
     # ── Global asyncio exception handler ────────────────────────────────────
@@ -1034,7 +1034,7 @@ async def startup_event():
                         "content": prd_content,
                         "updated_at": datetime.utcnow(),
                         "title": "Product Requirements Document",
-                        "summary": "Complete PRD for the i'M On Social platform - features, architecture, backlog, and known issues.",
+                        "summary": "Complete PRD for the I'm On Social platform - features, architecture, backlog, and known issues.",
                         "category": "prd",
                         "icon": "clipboard",
                         "is_published": True,
@@ -1059,7 +1059,7 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"Scheduler start failed (non-fatal): {e}")
 
-    logger.info("i'M On Social API v2.0 started")
+    logger.info("I'm On Social API v2.0 started")
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -1080,7 +1080,7 @@ async def seed_admin_user(db):
             
             admin_user = {
                 "email": "admin@imonsocial.com",
-                "password": "i'M On Social2026!",
+                "password": "I'm On Social2026!",
                 "name": "Admin User",
                 "phone": "",
                 "role": "super_admin",
@@ -1108,7 +1108,7 @@ async def seed_admin_user(db):
             logger.info("=" * 50)
             logger.info("DEFAULT ADMIN USER CREATED:")
             logger.info("  Email: admin@imonsocial.com")
-            logger.info("  Password: i'M On Social2026!")
+            logger.info("  Password: I'm On Social2026!")
             logger.info("=" * 50)
         else:
             logger.info(f"Database has {user_count} existing users - skipping seed")

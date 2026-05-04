@@ -90,7 +90,7 @@ def _generate_agreement_pdf(agreement: dict) -> bytes:
     pdf.set_xy(0, 8)
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(*GOLD)
-    pdf.cell(210, 10, "i'M On Social", align="C", ln=True)
+    pdf.cell(210, 10, "I'm On Social", align="C", ln=True)
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(*LGREY)
     pdf.cell(210, 6, "VI Ventures Group LLC  |  Partner Agreement", align="C", ln=True)
@@ -264,7 +264,7 @@ def _generate_agreement_pdf(agreement: dict) -> bytes:
     pdf.set_font("Helvetica", "", 8)
     pdf.set_text_color(*GREY)
     pdf.multi_cell(W, 5,
-        "This document is a legally binding digital agreement executed via i'M On Social's "
+        "This document is a legally binding digital agreement executed via I'm On Social's "
         "e-signature platform. The signature, IP address, and document hash above serve as "
         "the official record of execution. Governed by the laws of the State of Wyoming."
     )
@@ -960,7 +960,7 @@ async def _send_agreement_email(
 
       <div style="text-align:center;margin-bottom:40px;">
         <div style="display:inline-block;background:#1C1C1E;border-radius:12px;padding:14px 28px;">
-          <span style="font-size:22px;font-weight:800;color:#C9A962;letter-spacing:-0.5px;">i'M On Social</span>
+          <span style="font-size:22px;font-weight:800;color:#C9A962;letter-spacing:-0.5px;">I'm On Social</span>
         </div>
       </div>
 
@@ -997,7 +997,7 @@ async def _send_agreement_email(
           Questions? <a href="mailto:support@imonsocial.com" style="color:#C9A962;">support@imonsocial.com</a>
         </p>
         <p style="font-size:12px;color:#48484A;margin:0;">
-          &copy; 2026 VI Ventures Group LLC &middot; i'M On Social
+          &copy; 2026 VI Ventures Group LLC &middot; I'm On Social
         </p>
       </div>
 
@@ -1006,7 +1006,7 @@ async def _send_agreement_email(
 
     try:
         result = await asyncio.to_thread(_resend.Emails.send, {
-            "from": "i'M On Social <billing@imonsocial.com>",
+            "from": "I'm On Social <billing@imonsocial.com>",
             "to": [to_email],
             "reply_to": "support@imonsocial.com",
             "subject": f"Your {agreement_type} is Ready to Sign",
@@ -1244,7 +1244,7 @@ async def _email_signed_agreement(agreement: dict, agreement_id: str) -> None:
         <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#000;color:#fff;padding:40px 32px;border-radius:16px;">
           <div style="text-align:center;margin-bottom:32px;">
             <div style="display:inline-block;background:#1C1C1E;border-radius:12px;padding:14px 28px;">
-              <span style="font-size:22px;font-weight:800;color:#C9A962;">i'M On Social</span>
+              <span style="font-size:22px;font-weight:800;color:#C9A962;">I'm On Social</span>
             </div>
           </div>
           <div style="text-align:center;margin-bottom:32px;">
@@ -1266,13 +1266,13 @@ async def _email_signed_agreement(agreement: dict, agreement_id: str) -> None:
             <p style="font-size:13px;color:#636366;margin:0 0 6px;">
               Questions? <a href="mailto:support@imonsocial.com" style="color:#C9A962;">support@imonsocial.com</a>
             </p>
-            <p style="font-size:12px;color:#48484A;margin:0;">&copy; 2026 VI Ventures Group LLC &middot; i'M On Social</p>
+            <p style="font-size:12px;color:#48484A;margin:0;">&copy; 2026 VI Ventures Group LLC &middot; I'm On Social</p>
           </div>
         </div>
         """
         try:
             result = await asyncio.to_thread(_resend.Emails.send, {
-                "from": "i'M On Social <billing@imonsocial.com>",
+                "from": "I'm On Social <billing@imonsocial.com>",
                 "to": [partner_email],
                 "reply_to": "support@imonsocial.com",
                 "subject": f"Your Signed {agmt_type} — Welcome to the Partner Program!",
@@ -1287,7 +1287,7 @@ async def _email_signed_agreement(agreement: dict, agreement_id: str) -> None:
     admin_html = f"""
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#000;color:#fff;padding:40px 32px;border-radius:16px;">
       <div style="text-align:center;margin-bottom:32px;">
-        <span style="font-size:22px;font-weight:800;color:#C9A962;">i'M On Social</span>
+        <span style="font-size:22px;font-weight:800;color:#C9A962;">I'm On Social</span>
       </div>
       <h1 style="font-size:22px;font-weight:700;color:#fff;margin:0 0 8px 0;">Partner Fully Onboarded</h1>
       <p style="font-size:14px;color:#8E8E93;margin:0 0 28px;">W-9 verified. Signed agreement attached.</p>
@@ -1301,12 +1301,12 @@ async def _email_signed_agreement(agreement: dict, agreement_id: str) -> None:
         <p style="font-size:13px;color:#8E8E93;margin:0 0 3px;">Signed</p>
         <p style="font-size:14px;color:#fff;margin:0;">{signed_at_str}</p>
       </div>
-      <p style="font-size:12px;color:#48484A;text-align:center;">&copy; 2026 VI Ventures Group LLC &middot; i'M On Social</p>
+      <p style="font-size:12px;color:#48484A;text-align:center;">&copy; 2026 VI Ventures Group LLC &middot; I'm On Social</p>
     </div>
     """
     try:
         result = await asyncio.to_thread(_resend.Emails.send, {
-            "from": "i'M On Social <billing@imonsocial.com>",
+            "from": "I'm On Social <billing@imonsocial.com>",
             "to": [_ADMIN_EMAIL],
             "reply_to": "support@imonsocial.com",
             "subject": f"[Partner Onboarded] {partner_name} — {agmt_type}",
@@ -1529,7 +1529,7 @@ async def add_agreement_contact(agreement_id: str, request: Request):
     first     = name.split()[0] if name else "there"
     agmt_type = agreement.get("template_name", "Partner Agreement")
     sms_body  = (
-        f"Hi {first}! Here's your i'M On Social {agmt_type} to review and sign: {sign_link}"
+        f"Hi {first}! Here's your I'm On Social {agmt_type} to review and sign: {sign_link}"
     )
 
     return {

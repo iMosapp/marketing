@@ -62,7 +62,7 @@ async def send_welcome_email(user: dict):
             <div style="text-align: center; margin-bottom: 30px;">
                 <h1 style="color: #FF3B30; display: inline;">i</h1><h1 style="color: #34C759; display: inline;">'</h1><h1 style="color: #007AFF; display: inline;">M</h1><h1 style="color: #FFD60A; display: inline;">O</h1><h1 style="color: #34C759; display: inline;">s</h1>
             </div>
-            <h2 style="color: #fff; text-align: center;">Welcome to i'M On Social, {user.get('name', 'there')}!</h2>
+            <h2 style="color: #fff; text-align: center;">Welcome to I'm On Social, {user.get('name', 'there')}!</h2>
             <p style="color: #ccc; line-height: 1.6; text-align: center;">
                 Thank you for signing up! You're now part of a community that believes in 
                 timeless relationship principles powered by modern tools.
@@ -79,17 +79,17 @@ async def send_welcome_email(user: dict):
             </p>
             <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #333; text-align: center;">
                 <p style="color: #666; font-size: 12px;">
-                    © 2026 i'M On Social. i'M Old School with modern tools.
+                    © 2026 I'm On Social. i'M Old School with modern tools.
                 </p>
             </div>
         </div>
         """
         
         result = await asyncio.to_thread(resend.Emails.send, {
-            "from": f"i'M On Social <{SENDER_EMAIL}>",
+            "from": f"I'm On Social <{SENDER_EMAIL}>",
             "to": [user.get('email')],
             "reply_to": "support@imonsocial.com",
-            "subject": "Welcome to i'M On Social!",
+            "subject": "Welcome to I'm On Social!",
             "html": html_content
         })
         
@@ -100,7 +100,7 @@ async def send_welcome_email(user: dict):
             "user_id": str(user.get('_id')),
             "recipient_email": user.get('email'),
             "recipient_name": user.get('name'),
-            "subject": "Welcome to i'M On Social! 🎉",
+            "subject": "Welcome to I'm On Social! 🎉",
             "status": "sent",
             "resend_id": result.get('id'),
             "sent_at": datetime.utcnow(),
@@ -134,7 +134,7 @@ async def notify_super_admin_of_new_user(new_user: dict):
             if org:
                 org_name = org.get("name", "Unknown")
         
-        message = f"New i'M On Social Signup!\n\nName: {new_user.get('name', 'Unknown')}\nEmail: {new_user.get('email', 'Unknown')}\nRole: {new_user.get('requested_role', 'Not specified')}\nOrg: {org_name}\n\nReview in Admin Panel → Pending Users"
+        message = f"New I'm On Social Signup!\n\nName: {new_user.get('name', 'Unknown')}\nEmail: {new_user.get('email', 'Unknown')}\nRole: {new_user.get('requested_role', 'Not specified')}\nOrg: {org_name}\n\nReview in Admin Panel → Pending Users"
         
         # Send via Twilio (check if we have credentials)
         twilio_sid = os.environ.get("TWILIO_ACCOUNT_SID")
@@ -643,17 +643,17 @@ async def request_password_reset(data: dict):
     if RESEND_API_KEY:
         try:
             params = {
-                "from": f"i'M On Social <{SENDER_EMAIL}>",
+                "from": f"I'm On Social <{SENDER_EMAIL}>",
                 "to": [email],
                 "reply_to": "support@imonsocial.com",
-                "subject": "Your i'M On Social Password Reset Code",
+                "subject": "Your I'm On Social Password Reset Code",
                 "html": f"""
                 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px; background: #ffffff;">
                     <div style="text-align: center; margin-bottom: 32px;">
                         <h2 style="color: #1A1A1A; margin: 0;">Password Reset</h2>
                     </div>
                     <p style="color: #555; font-size: 15px; line-height: 1.6;">
-                        You requested a password reset for your i'M On Social account. Use the code below to reset your password. This code expires in 10 minutes.
+                        You requested a password reset for your I'm On Social account. Use the code below to reset your password. This code expires in 10 minutes.
                     </p>
                     <div style="text-align: center; margin: 32px 0;">
                         <div style="display: inline-block; background: #F0F4FF; border: 2px solid #007AFF; border-radius: 12px; padding: 16px 40px; letter-spacing: 8px; font-size: 28px; font-weight: 700; color: #007AFF;">
@@ -1085,7 +1085,7 @@ async def notify_onboarding_complete(user: dict):
             "user_id": manager_id,
             "type": "onboarding_complete",
             "title": "Training Completed!",
-            "message": f"{user_name} has completed their onboarding training and is ready to start using i'M On Social!",
+            "message": f"{user_name} has completed their onboarding training and is ready to start using I'm On Social!",
             "related_user_id": str(user.get("_id")),
             "related_user_name": user_name,
             "priority": "urgent",
@@ -1117,7 +1117,7 @@ async def send_onboarding_notification_sms(manager: dict, user_name: str):
     if not manager_phone or not from_number:
         return
     
-    message = f"Training Complete!\n\n{user_name} has completed their i'M On Social onboarding and is ready to start!"
+    message = f"Training Complete!\n\n{user_name} has completed their I'm On Social onboarding and is ready to start!"
     
     try:
         from twilio.rest import Client

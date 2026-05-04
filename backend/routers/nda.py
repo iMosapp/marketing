@@ -47,7 +47,7 @@ class NDARecipientSign(BaseModel):
 
 NDA_CONTENT = {
     "title": "Non-Disclosure and Confidentiality Agreement",
-    "company": "i'M On Social LLC",
+    "company": "I'm On Social LLC",
     "company_address": "1741 Lunford Ln, Riverton, UT 84065",
     "company_email": "forest@imonsocial.com",
     "sections": [
@@ -200,7 +200,7 @@ async def send_nda_email(nda_id: str):
         app_url = os.environ.get("REACT_APP_BACKEND_URL", "").rstrip("/")
     sign_link = f"{app_url}/nda/sign/{nda_id}"
 
-    sender_name = nda.get("sender", {}).get("name", "i'M On Social")
+    sender_name = nda.get("sender", {}).get("name", "I'm On Social")
 
     # Send via Resend
     resend_key = os.environ.get("RESEND_API_KEY")
@@ -213,7 +213,7 @@ async def send_nda_email(nda_id: str):
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
                 <div style="text-align: center; margin-bottom: 32px;">
                     <h1 style="font-size: 24px; color: #1a1a1a; margin: 0;">Non-Disclosure Agreement</h1>
-                    <p style="color: #666; margin-top: 8px;">from {sender_name} at i'M On Social</p>
+                    <p style="color: #666; margin-top: 8px;">from {sender_name} at I'm On Social</p>
                 </div>
                 <div style="background: #f8f9fa; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
                     <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0;">
@@ -233,7 +233,7 @@ async def send_nda_email(nda_id: str):
                     </a>
                 </div>
                 <div style="text-align: center; color: #999; font-size: 12px; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee;">
-                    <p>i'M On Social LLC | 1741 Lunford Ln, Riverton, UT 84065</p>
+                    <p>I'm On Social LLC | 1741 Lunford Ln, Riverton, UT 84065</p>
                     <p>This is a legally binding document. Please review carefully before signing.</p>
                 </div>
             </div>
@@ -241,7 +241,7 @@ async def send_nda_email(nda_id: str):
 
             SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "notifications@send.imonsocial.com")
             resend.Emails.send({
-                "from": f"i'M On Social <{SENDER_EMAIL}>",
+                "from": f"I'm On Social <{SENDER_EMAIL}>",
                 "to": [email],
                 "reply_to": "support@imonsocial.com",
                 "subject": f"NDA for Review & Signature from {sender_name}",
@@ -404,7 +404,7 @@ async def submit_signature(nda_id: str, data: NDARecipientSign):
                     This email serves as confirmation of the executed agreement.
                 </p>
                 <div style="text-align: center; color: #999; font-size: 12px; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee;">
-                    <p>i'M On Social LLC | 1741 Lunford Ln, Riverton, UT 84065</p>
+                    <p>I'm On Social LLC | 1741 Lunford Ln, Riverton, UT 84065</p>
                 </div>
             </div>
             """
@@ -414,7 +414,7 @@ async def submit_signature(nda_id: str, data: NDARecipientSign):
                 if to_email:
                     SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "notifications@send.imonsocial.com")
                     resend.Emails.send({
-                        "from": f"i'M On Social <{SENDER_EMAIL}>",
+                        "from": f"I'm On Social <{SENDER_EMAIL}>",
                         "to": [to_email],
                         "reply_to": "support@imonsocial.com",
                         "subject": "NDA Signed - Confirmation",

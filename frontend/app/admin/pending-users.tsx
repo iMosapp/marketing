@@ -379,7 +379,7 @@ export default function PendingUsersScreen() {
                   )}
                   
                   {/* Phone Number */}
-                  <Text style={styles.fieldLabel}>i'M On Social</Text>
+                  <Text style={styles.fieldLabel}>I'm On Social</Text>
                   <TextInput
                     style={styles.input}
                     placeholder="+1 (555) 123-4567"

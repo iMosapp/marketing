@@ -5,11 +5,11 @@ import { ImosHeader, ImosFooter } from './_components';
 const SECTIONS = [
   {
     title: '1. Information We Collect',
-    content: `When you use i'M On Social, we collect information you provide directly, including your name, email address, phone number, profile photo, and business information. We also collect data about your contacts that you import or create within the platform, including their names, phone numbers, email addresses, and communication history.\n\nWe automatically collect usage data such as device information, IP addresses, browser type, pages visited, and feature interactions to improve our services.`,
+    content: `When you use I'm On Social, we collect information you provide directly, including your name, email address, phone number, profile photo, and business information. We also collect data about your contacts that you import or create within the platform, including their names, phone numbers, email addresses, and communication history.\n\nWe automatically collect usage data such as device information, IP addresses, browser type, pages visited, and feature interactions to improve our services.`,
   },
   {
     title: '2. How We Use Your Information',
-    content: `We use your information to:\n\n- Provide and maintain i'M On Social services, including digital business cards, messaging, campaigns, and AI-powered features\n- Process and deliver communications you initiate through our platform\n- Generate analytics and activity reports for you and your organization\n- Improve our AI assistant (Jessi) and recommendation algorithms\n- Send you service-related notices, updates, and security alerts\n- Provide customer support`,
+    content: `We use your information to:\n\n- Provide and maintain I'm On Social services, including digital business cards, messaging, campaigns, and AI-powered features\n- Process and deliver communications you initiate through our platform\n- Generate analytics and activity reports for you and your organization\n- Improve our AI assistant (Jessi) and recommendation algorithms\n- Send you service-related notices, updates, and security alerts\n- Provide customer support`,
   },
   {
     title: '3. Contact Data You Store',
@@ -21,7 +21,7 @@ const SECTIONS = [
   },
   {
     title: '5. Data Sharing & Third Parties',
-    content: `We do not sell, rent, or trade your personal information to third parties. We may share data with:\n\n- Service providers who help us operate our platform (e.g., email delivery, SMS providers, cloud hosting)\n- Your organization's administrators, if you use i'M On Social as part of a team or enterprise account\n- Law enforcement or government agencies when required by applicable law\n\nAll third-party service providers are contractually obligated to protect your data.`,
+    content: `We do not sell, rent, or trade your personal information to third parties. We may share data with:\n\n- Service providers who help us operate our platform (e.g., email delivery, SMS providers, cloud hosting)\n- Your organization's administrators, if you use I'm On Social as part of a team or enterprise account\n- Law enforcement or government agencies when required by applicable law\n\nAll third-party service providers are contractually obligated to protect your data.`,
   },
   {
     title: '6. Your Rights & Choices',
@@ -41,7 +41,7 @@ const SECTIONS = [
   },
   {
     title: '10. Children\'s Privacy',
-    content: `i'M On Social is not intended for use by individuals under the age of 16. We do not knowingly collect personal information from children. If we learn we have collected data from a child under 16, we will delete it promptly.`,
+    content: `I'm On Social is not intended for use by individuals under the age of 16. We do not knowingly collect personal information from children. If we learn we have collected data from a child under 16, we will delete it promptly.`,
   },
   {
     title: '11. Changes to This Policy',
@@ -49,7 +49,7 @@ const SECTIONS = [
   },
   {
     title: '12. Contact Us',
-    content: `If you have questions about this Privacy Policy or our data practices, contact us at:\n\ni'M On Social\nEmail: privacy@imonsocial.com\nGeneral: forest@imonsocial.com\nWebsite: https://imonsocial.com`,
+    content: `If you have questions about this Privacy Policy or our data practices, contact us at:\n\nI'm On Social\nEmail: privacy@imonsocial.com\nGeneral: forest@imonsocial.com\nWebsite: https://imonsocial.com`,
   },
 ];
 
@@ -67,7 +67,7 @@ export default function PrivacyScreen() {
           <Text style={[s.title, isDesktop && { fontSize: 36 }]}>Privacy Policy</Text>
           <Text style={s.updated}>Last updated: March 12, 2026</Text>
           <Text style={s.intro}>
-            i'M On Social ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and protect your personal information when you use our Relationship Management System platform and related services.
+            I'm On Social ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and protect your personal information when you use our Relationship Management System platform and related services.
           </Text>
           {SECTIONS.map((section, i) => (
             <View key={i} style={s.section}>

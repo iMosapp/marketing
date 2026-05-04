@@ -44,7 +44,7 @@ const { showToast } = useToast();
   const [accentColor, setAccentColor] = useState('#FFD60A');
   const [companyName, setCompanyName] = useState('');
   const [tagline, setTagline] = useState('');
-  const [footerText, setFooterText] = useState("i'M On Social");
+  const [footerText, setFooterText] = useState("I'm On Social");
   const [pageTheme, setPageTheme] = useState<'light' | 'dark'>('dark');
   const [socialLinks, setSocialLinks] = useState({
     website: '',
@@ -78,7 +78,7 @@ const { showToast } = useToast();
         setAccentColor(brandKit.accent_color || '#FFD60A');
         setCompanyName(brandKit.company_name || '');
         setTagline(brandKit.tagline || '');
-        setFooterText(brandKit.footer_text || "i'M On Social");
+        setFooterText(brandKit.footer_text || "I'm On Social");
         setPageTheme(brandKit.page_theme === 'light' ? 'light' : 'dark');
         setSocialLinks(brandKit.social_links || {});
       }
@@ -450,7 +450,7 @@ const { showToast } = useToast();
           <Text style={styles.inputLabel}>Footer Text</Text>
           <TextInput
             style={styles.input}
-            placeholder="i'M On Social"
+            placeholder="I'm On Social"
             placeholderTextColor={colors.textSecondary}
             value={footerText}
             onChangeText={setFooterText}

@@ -123,7 +123,7 @@ PAGES = {
     "individuals": {
         "title": "For Individuals",
         "tagline": "Own your personal brand.",
-        "desc": "You don't need a company behind you. i'M On Social gives every individual salesperson the same tools the big teams use — digital cards, personal reviews, automated outreach, and analytics.",
+        "desc": "You don't need a company behind you. I'm On Social gives every individual salesperson the same tools the big teams use — digital cards, personal reviews, automated outreach, and analytics.",
         "features": [
             ("fa-solid fa-user", "#007AFF", "Your own profile", "Digital card, review page, and link page — all yours, all free to start."),
             ("fa-solid fa-star", "#FFD60A", "Build your reputation", "Collect reviews that follow you. Build credibility that outlasts any employer."),
@@ -188,7 +188,7 @@ PAGES = {
     "hub": {
         "title": "Sales Teams",
         "tagline": "Built for any team. Any industry. Any size.",
-        "desc": "Whether you run a 5-person office or a 500-person sales floor, i'M On Social scales with you. Give every salesperson the tools to build relationships — and give managers the visibility to track it.",
+        "desc": "Whether you run a 5-person office or a 500-person sales floor, I'm On Social scales with you. Give every salesperson the tools to build relationships — and give managers the visibility to track it.",
         "features": [
             ("fa-solid fa-users", "#007AFF", "Team-wide rollout", "Onboard your whole team in minutes. Everyone gets their own card, reviews, and outreach."),
             ("fa-solid fa-chart-pie", "#34C759", "Manager dashboards", "See who's sharing cards, earning reviews, and driving engagement."),
@@ -201,7 +201,7 @@ PAGES = {
     "salespresentation": {
         "title": "Automotive",
         "tagline": "Built for dealerships. Built for you.",
-        "desc": "Sell a car. Send a congrats card. Earn a review. Get a referral. Repeat. i'M On Social turns every sale into a long-term relationship that brings customers back — and brings their friends.",
+        "desc": "Sell a car. Send a congrats card. Earn a review. Get a referral. Repeat. I'm On Social turns every sale into a long-term relationship that brings customers back — and brings their friends.",
         "features": [
             ("fa-solid fa-car", "#007AFF", "Built for auto sales", "Designed around the way dealerships actually work. Not a generic tool."),
             ("fa-solid fa-image", "#FF2D55", "Congrats on every sale", "Branded congrats card sent to every buyer. They share it. You get the referral."),
@@ -214,7 +214,7 @@ PAGES = {
     "presentation": {
         "title": "Sales Deck",
         "tagline": "See what we can do for you.",
-        "desc": "A quick overview of everything i'M On Social offers — from digital cards to automated outreach to AI-powered insights. Share it with your team or your boss.",
+        "desc": "A quick overview of everything I'm On Social offers — from digital cards to automated outreach to AI-powered insights. Share it with your team or your boss.",
         "features": [
             ("fa-solid fa-play", "#007AFF", "Quick overview", "Everything you need to know about the platform in a few minutes."),
             ("fa-solid fa-share", "#34C759", "Easy to share", "Send it to your manager, your team, or anyone who needs to see it."),
@@ -267,7 +267,7 @@ PAGES = {
 
 NAV_HTML = """<nav>
   <div class="nav-inner">
-    <a href="/" class="logo"><img src="/logo.png" alt="i'M On Social"/></a>
+    <a href="/" class="logo"><img src="/logo.png" alt="I'm On Social"/></a>
     <div class="nav-links">
       <div class="nav-item"><button class="nav-trigger">Products <i class="fa-solid fa-chevron-down chev"></i></button>
         <div class="nav-dd"><div class="nav-dd-inner">
@@ -316,14 +316,14 @@ NAV_HTML = """<nav>
 
 FOOTER_HTML = """<footer>
   <div class="ft-inner">
-    <div class="ft-brand"><div class="ft-logo"><img src="/logo.png" alt="i'M On Social"/></div><p class="ft-tag">The relationship engine for sales professionals.</p>
+    <div class="ft-brand"><div class="ft-logo"><img src="/logo.png" alt="I'm On Social"/></div><p class="ft-tag">The relationship engine for sales professionals.</p>
       <div class="ft-social"><a href="https://instagram.com/imonsocialapp" target="_blank" rel="noopener"><i class="fa-brands fa-instagram"></i></a><a href="https://tiktok.com/@imonsocialapp" target="_blank" rel="noopener"><i class="fa-brands fa-tiktok"></i></a><a href="https://youtube.com/@imonsocial" target="_blank" rel="noopener"><i class="fa-brands fa-youtube"></i></a></div>
     </div>
     <div class="ft-col"><div class="ft-col-t">Product</div><a href="/digital-card">Digital Cards</a><a href="/reviews">Personal Reviews</a><a href="/inbox">Inbox</a><a href="/date-triggers">Automations</a><a href="/leaderboard">Leaderboards</a><a href="/jessi">Jessi AI</a></div>
     <div class="ft-col"><div class="ft-col-t">Company</div><a href="/organizations">For Teams</a><a href="/pricing">Pricing</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="mailto:forest@imonsocial.com">Contact</a></div>
     <div class="ft-col"><div class="ft-col-t">Get Started</div><a href="/demo">Schedule a Demo</a><a href="https://app.imonsocial.com/auth/signup">Start Free Trial</a><a href="https://app.imonsocial.com">Sign In</a><a href="/training">Training</a><a href="/help">Help Center</a></div>
   </div>
-  <div class="ft-bottom"><span class="ft-copy">&copy; 2026 i'M On Social. All rights reserved.</span></div>
+  <div class="ft-bottom"><span class="ft-copy">&copy; 2026 I'm On Social. All rights reserved.</span></div>
 </footer>"""
 
 CSS = open("/app/marketing/build/shared.css").read()
@@ -332,7 +332,7 @@ TEMPLATE = """<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>{title} — i'M On Social</title>
+  <title>{title} — I'm On Social</title>
   <meta name="description" content="{desc}"/>
   <link rel="icon" href="/favicon.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

@@ -603,7 +603,7 @@ const { showToast } = useToast();
         <>
           <Text style={styles.docSectionTitle}>Getting Started</Text>
           <Text style={styles.docParagraph}>
-            The i'M On Social API lets you manage contacts, send messages, run campaigns, and sync data with any external system.
+            The I'm On Social API lets you manage contacts, send messages, run campaigns, and sync data with any external system.
           </Text>
 
           <View style={styles.docCard}>
@@ -704,7 +704,7 @@ const { showToast } = useToast();
         <>
           <Text style={styles.docSectionTitle}>Webhook Events</Text>
           <Text style={styles.docParagraph}>
-            Register webhook URLs to receive real-time notifications when events happen in i'M On Social. 
+            Register webhook URLs to receive real-time notifications when events happen in I'm On Social. 
             All payloads include an event name, timestamp, and data object.
           </Text>
 
@@ -722,7 +722,7 @@ const { showToast } = useToast();
           <View style={styles.docCard}>
             <Text style={styles.docCardTitle}>Security</Text>
             <Text style={styles.docParagraph}>
-              Set a shared secret when creating a webhook. i'M On Social signs each payload with HMAC-SHA256 in the{' '}
+              Set a shared secret when creating a webhook. I'm On Social signs each payload with HMAC-SHA256 in the{' '}
               <Text style={styles.codeInline}>X-IMOS-Signature</Text> header.
             </Text>
           </View>
@@ -800,7 +800,7 @@ const { showToast } = useToast();
           <View style={styles.docCard}>
             <Text style={styles.docCardTitle}>Webhook Receiver (Node.js)</Text>
             <View style={styles.codeBlockMulti}>
-              <Text style={styles.codeComment}>i'M On Social</Text>
+              <Text style={styles.codeComment}>I'm On Social</Text>
               <Text style={styles.codeText}>app.post('/webhook', (req, res) =&gt; {'{'}</Text>
               <Text style={styles.codeText}>  const {'{ event, data }'} = req.body;</Text>
               <Text style={styles.codeText}>{''}</Text>
@@ -830,10 +830,10 @@ const { showToast } = useToast();
               <Text style={styles.stepItem}>1. Create a Zap with "Webhooks by Zapier" as trigger</Text>
               <Text style={styles.stepItem}>2. Choose "Catch Hook" as trigger event</Text>
               <Text style={styles.stepItem}>3. Copy the webhook URL from Zapier</Text>
-              <Text style={styles.stepItem}>i'M On Social</Text>
+              <Text style={styles.stepItem}>I'm On Social</Text>
               <Text style={styles.stepItem}>5. Paste the Zapier URL and select your events</Text>
               <Text style={styles.stepItem}>6. Test the webhook  - Zapier will receive sample data</Text>
-              <Text style={styles.stepItem}>i'M On Social</Text>
+              <Text style={styles.stepItem}>I'm On Social</Text>
             </View>
           </View>
 
@@ -847,7 +847,7 @@ const { showToast } = useToast();
             <View style={styles.stepList}>
               <Text style={styles.stepItem}>1. Create a scenario with "Custom Webhook" module</Text>
               <Text style={styles.stepItem}>2. Copy the webhook URL</Text>
-              <Text style={styles.stepItem}>i'M On Social</Text>
+              <Text style={styles.stepItem}>I'm On Social</Text>
               <Text style={styles.stepItem}>4. Run once to establish data structure</Text>
               <Text style={styles.stepItem}>5. Add action modules to your destination</Text>
             </View>
@@ -856,7 +856,7 @@ const { showToast } = useToast();
           <View style={styles.docCard}>
             <Text style={styles.docCardTitle}>Popular Automations</Text>
             <View style={styles.stepList}>
-              <Text style={styles.stepItem}>i'M On Social</Text>
+              <Text style={styles.stepItem}>I'm On Social</Text>
               <Text style={styles.stepItem}>Review submitted → Notify Slack channel</Text>
               <Text style={styles.stepItem}>Message received → Log in Google Sheets</Text>
               <Text style={styles.stepItem}>Contact tagged "HOT" → Add to HubSpot sequence</Text>
@@ -868,7 +868,7 @@ const { showToast } = useToast();
           <View style={styles.docCard}>
             <Text style={styles.docCardTitle}>Two-Way Sync</Text>
             <Text style={styles.docParagraph}>
-              Use the API to push data INTO i'M On Social and webhooks to push data OUT.
+              Use the API to push data INTO I'm On Social and webhooks to push data OUT.
               Map your CRM IDs using the external_id and external_ids fields on contacts and users for bidirectional sync.
             </Text>
           </View>

@@ -595,7 +595,7 @@ const Footer = () => (
       </div>
       
       <div className="footer-bottom">
-        <p>&copy; 2026 i'M On Social. Powered by VI Ventures Group LLC. All rights reserved.</p>
+        <p>&copy; 2026 I'm On Social. Powered by VI Ventures Group LLC. All rights reserved.</p>
         <div className="footer-contact">
           <span><MapPin size={14} /> Wyoming, USA</span>
           <span><Mail size={14} /> support@imonsocial.com</span>

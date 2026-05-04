@@ -238,7 +238,7 @@ body{{font-family:-apple-system,system-ui,'Segoe UI',Roboto,sans-serif;backgroun
 <div class="media-wrap">{media_html}</div>
 {"<p class='caption'>" + safe_caption + "</p>" if safe_caption else ""}
 {"<p class='from'>" + from_line + "</p>" if from_line else ""}
-<p class="brand">i'M On Social</p>
+<p class="brand">I'm On Social</p>
 </div>
 </body></html>"""
 

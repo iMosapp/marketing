@@ -56,7 +56,7 @@ const PAGE_CATALOG: Category[] = [
     icon: 'diamond-outline',
     color: '#007AFF',
     pages: [
-      { name: "i'M On Social Home", description: 'Main marketing page', path: '/imos', icon: 'home-outline', color: '#007AFF', audience: 'Everyone' },
+      { name: "I'm On Social Home", description: 'Main marketing page', path: '/imos', icon: 'home-outline', color: '#007AFF', audience: 'Everyone' },
       { name: 'Sales Presentation', description: 'Interactive slide deck for prospects', path: '/imos/salespresentation', icon: 'easel-outline', color: '#007AFF', audience: 'Prospects, investors' },
       { name: 'Features Overview', description: 'Full feature showcase', path: '/imos/features', icon: 'apps-outline', color: '#007AFF', audience: 'Prospects, customers' },
       { name: 'Pricing Plans', description: 'Subscription tiers & pricing', path: '/imos/pricing', icon: 'pricetag-outline', color: '#34C759', audience: 'Prospects, customers' },
@@ -72,7 +72,7 @@ const PAGE_CATALOG: Category[] = [
     color: '#FF9500',
     pages: [
       { name: 'Onboarding Preview', description: 'Preview all 5 role onboarding flows', path: '/imos/onboarding-preview', icon: 'eye-outline', color: '#007AFF', audience: 'Admins, prospects' },
-      { name: 'Training Hub', description: "Learn how to use i'M On Social", path: '/imos/training', icon: 'school-outline', color: '#FF9500', audience: 'All users' },
+      { name: 'Training Hub', description: "Learn how to use I'm On Social", path: '/imos/training', icon: 'school-outline', color: '#FF9500', audience: 'All users' },
     ],
   },
   {
@@ -190,7 +190,7 @@ const PAGE_CATALOG: Category[] = [
     pages: [
       { name: 'Privacy Policy', description: 'How we protect your data', path: '/imos/privacy', icon: 'shield-outline', color: '#5856D6', audience: 'Everyone' },
       { name: 'Terms of Service', description: 'Usage terms and conditions', path: '/imos/terms', icon: 'document-text-outline', color: '#8E8E93', audience: 'Everyone' },
-      { name: 'Login', description: "Sign in to i'M On Social", path: '/imos/login', icon: 'log-in-outline', color: '#007AFF', audience: 'All users' },
+      { name: 'Login', description: "Sign in to I'm On Social", path: '/imos/login', icon: 'log-in-outline', color: '#007AFF', audience: 'All users' },
       { name: 'Sign Up', description: 'Create a new account', path: '/imos/signup', icon: 'person-add-outline', color: '#34C759', audience: 'New users' },
     ],
   },
@@ -305,7 +305,7 @@ export default function AppDirectoryScreen() {
           <View style={st.titleSection}>
             <Text style={st.label}>ALL PAGES</Text>
             <Text style={[st.title, isDesktop && { fontSize: 36 }]}>App Directory</Text>
-            <Text style={st.subtitle}>i'M On Social</Text>
+            <Text style={st.subtitle}>I'm On Social</Text>
           </View>
 
           {/* Search */}
@@ -446,7 +446,7 @@ export default function AppDirectoryScreen() {
             )}
 
             <Text style={st.inputLabel}>Custom Message (optional)</Text>
-            <TextInput style={[st.modalInput, { height: 80, textAlignVertical: 'top', paddingTop: 12 }]} placeholder="i'M On Social" placeholderTextColor="#6E6E73" value={customMessage} onChangeText={setCustomMessage} multiline />
+            <TextInput style={[st.modalInput, { height: 80, textAlignVertical: 'top', paddingTop: 12 }]} placeholder="I'm On Social" placeholderTextColor="#6E6E73" value={customMessage} onChangeText={setCustomMessage} multiline />
           </ScrollView>
         </View>
       </WebModal>

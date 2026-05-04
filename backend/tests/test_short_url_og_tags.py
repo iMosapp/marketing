@@ -176,7 +176,7 @@ class TestShortUrlRedirectWithOgTags:
         # Check if og:image is present
         if 'og:image' in html:
             print(f"✓ OG image tag found in HTML")
-            # Should NOT contain default i'M On Social logo
+            # Should NOT contain default I'm On Social logo
             assert "imonsocial-logo" not in html.lower(), "Should use store logo, not default app logo"
         else:
             # It's OK if no image - might not have store logo configured

@@ -36,7 +36,7 @@ const FEATURE_SECTIONS = [
     color: '#AF52DE',
     features: [
       { icon: 'sparkles', title: 'AI Response Suggestions', desc: 'Jessi suggests replies that sound like your team wrote them. Faster, better communication.' },
-      { icon: 'mic', title: 'Voice-to-Text', desc: "Speak your notes on the lot. i'M On Social transcribes and logs everything automatically." },
+      { icon: 'mic', title: 'Voice-to-Text', desc: "Speak your notes on the lot. I'm On Social transcribes and logs everything automatically." },
       { icon: 'school', title: 'Training Assistant', desc: 'New hires ask Jessi anything about the app. Interactive training that scales.' },
       { icon: 'bulb', title: 'Smart Tagging', desc: 'AI recommends tags and campaigns based on customer data. Less manual work, more accuracy.' },
     ],
@@ -60,7 +60,7 @@ const FEATURE_SECTIONS = [
     color: '#5AC8FA',
     features: [
       { icon: 'layers', title: 'Multi-Org Hierarchy', desc: 'Organizations, stores, teams  - structured exactly how your business operates.' },
-      { icon: 'color-palette', title: 'White-Label Ready', desc: "i'M On Social" },
+      { icon: 'color-palette', title: 'White-Label Ready', desc: "I'm On Social" },
       { icon: 'people', title: 'Role-Based Onboarding', desc: 'Custom onboarding for every role. Admins, managers, salespeople  - each gets what they need.' },
       { icon: 'shield', title: 'Security & Compliance', desc: 'Enterprise-grade security. Role-based access. Your data stays yours.' },
     ],

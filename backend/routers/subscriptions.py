@@ -1,6 +1,6 @@
 """
 Subscriptions & Quotes Router
-Handles i'M On Social subscription plans, quotes, and Stripe billing
+Handles I'm On Social subscription plans, quotes, and Stripe billing
 """
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
@@ -77,7 +77,7 @@ def _generate_quote_pdf(quote: dict) -> bytes:
     pdf.set_xy(0, 8)
     pdf.set_font("Helvetica", "B", 18)
     pdf.set_text_color(*GOLD)
-    pdf.cell(210, 10, "i'M On Social", align="C", ln=True)
+    pdf.cell(210, 10, "I'm On Social", align="C", ln=True)
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(*LGREY)
     pdf.cell(210, 6, "Subscription Quote & Service Agreement", align="C", ln=True)
@@ -223,7 +223,7 @@ def _generate_quote_pdf(quote: dict) -> bytes:
     pdf.multi_cell(W, 5,
         "This document confirms acceptance of the above subscription quote. "
         "Service terms, cancellation policy, and pricing are binding upon acceptance. "
-        "Governed by the laws of the State of Wyoming. i'M On Social is a product of VI Ventures Group LLC."
+        "Governed by the laws of the State of Wyoming. I'm On Social is a product of VI Ventures Group LLC."
     )
     pdf.ln(2)
     pdf.set_x(pdf.l_margin)
@@ -271,7 +271,7 @@ async def _send_quote_link_email(quote: dict, quote_id: str) -> None:
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#000;color:#fff;padding:40px 32px;border-radius:16px;">
       <div style="text-align:center;margin-bottom:40px;">
         <div style="display:inline-block;background:#1C1C1E;border-radius:12px;padding:14px 28px;">
-          <span style="font-size:22px;font-weight:800;color:#C9A962;">i'M On Social</span>
+          <span style="font-size:22px;font-weight:800;color:#C9A962;">I'm On Social</span>
         </div>
       </div>
       <h1 style="font-size:26px;font-weight:700;color:#fff;margin:0 0 8px;text-align:center;">Your Quote is Ready</h1>
@@ -313,17 +313,17 @@ async def _send_quote_link_email(quote: dict, quote_id: str) -> None:
 
       <div style="border-top:1px solid #2C2C2E;padding-top:20px;text-align:center;">
         <p style="font-size:13px;color:#636366;margin:0 0 6px;">Questions? <a href="mailto:support@imonsocial.com" style="color:#C9A962;">support@imonsocial.com</a></p>
-        <p style="font-size:12px;color:#48484A;margin:0;">&copy; 2026 VI Ventures Group LLC &middot; i'M On Social</p>
+        <p style="font-size:12px;color:#48484A;margin:0;">&copy; 2026 VI Ventures Group LLC &middot; I'm On Social</p>
       </div>
     </div>
     """
 
     try:
         result = await asyncio.to_thread(_resend.Emails.send, {
-            "from": "i'M On Social <billing@imonsocial.com>",
+            "from": "I'm On Social <billing@imonsocial.com>",
             "to": [to_email],
             "reply_to": "support@imonsocial.com",
-            "subject": f"i'M On Social Quote — {quote_num}",
+            "subject": f"I'm On Social Quote — {quote_num}",
             "html": html,
         })
         logger.info(f"[Quotes] Quote link emailed to {to_email}: {result.get('id')}")
@@ -382,7 +382,7 @@ async def _email_accepted_quote(quote: dict, quote_id: str) -> None:
         customer_html = f"""
         <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#000;color:#fff;padding:40px 32px;border-radius:16px;">
           <div style="text-align:center;margin-bottom:32px;">
-            <span style="font-size:22px;font-weight:800;color:#C9A962;">i'M On Social</span>
+            <span style="font-size:22px;font-weight:800;color:#C9A962;">I'm On Social</span>
           </div>
           <div style="text-align:center;margin-bottom:32px;">
             <div style="font-size:56px;margin-bottom:16px;">&#x2705;</div>
@@ -412,13 +412,13 @@ async def _email_accepted_quote(quote: dict, quote_id: str) -> None:
           </p>
           <div style="border-top:1px solid #2C2C2E;padding-top:20px;text-align:center;">
             <p style="font-size:13px;color:#636366;margin:0 0 6px;"><a href="mailto:support@imonsocial.com" style="color:#C9A962;">support@imonsocial.com</a></p>
-            <p style="font-size:12px;color:#48484A;margin:0;">&copy; 2026 VI Ventures Group LLC &middot; i'M On Social</p>
+            <p style="font-size:12px;color:#48484A;margin:0;">&copy; 2026 VI Ventures Group LLC &middot; I'm On Social</p>
           </div>
         </div>
         """
         try:
             r = await asyncio.to_thread(_resend.Emails.send, {
-                "from": "i'M On Social <billing@imonsocial.com>",
+                "from": "I'm On Social <billing@imonsocial.com>",
                 "to": [to_email],
                 "reply_to": "support@imonsocial.com",
                 "subject": f"Signed: {quote_num} — Next Step: Set Up Payment",
@@ -432,7 +432,7 @@ async def _email_accepted_quote(quote: dict, quote_id: str) -> None:
     # ── Admin email ───────────────────────────────────────────────────────────
     admin_html = f"""
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#000;color:#fff;padding:40px 32px;border-radius:16px;">
-      <div style="text-align:center;margin-bottom:28px;"><span style="font-size:22px;font-weight:800;color:#C9A962;">i'M On Social</span></div>
+      <div style="text-align:center;margin-bottom:28px;"><span style="font-size:22px;font-weight:800;color:#C9A962;">I'm On Social</span></div>
       <h1 style="font-size:20px;font-weight:700;color:#fff;margin:0 0 6px;">Quote Accepted</h1>
       <p style="font-size:14px;color:#8E8E93;margin:0 0 24px;">A customer just signed their quote. Payment setup link was sent.</p>
       <div style="background:#1C1C1E;border-radius:12px;padding:20px;margin-bottom:16px;">
@@ -450,7 +450,7 @@ async def _email_accepted_quote(quote: dict, quote_id: str) -> None:
     """
     try:
         r = await asyncio.to_thread(_resend.Emails.send, {
-            "from": "i'M On Social <billing@imonsocial.com>",
+            "from": "I'm On Social <billing@imonsocial.com>",
             "to": [_ADMIN_EMAIL],
             "reply_to": "support@imonsocial.com",
             "subject": f"[Quote Signed] {name} — {plan_name} ${final_price:.2f}/{interval}",
@@ -467,7 +467,7 @@ async def _email_accepted_quote(quote: dict, quote_id: str) -> None:
         try:
             from services.twilio_service import send_sms
             sms_body = (
-                f"Hi {name.split()[0]}! Your i'M On Social quote is signed. "
+                f"Hi {name.split()[0]}! Your I'm On Social quote is signed. "
                 f"Final step: set up payment to activate your account: {payment_link}"
             )
             result = await send_sms(to_phone, sms_body)
@@ -491,7 +491,7 @@ INDIVIDUAL_PLANS = {
         "trial_days": 7,
         "description": "Month-to-month flexibility",
         "features": [
-            "Full i'M On Social access",
+            "Full I'm On Social access",
             "Unlimited contacts",
             "AI-powered messaging",
             "Campaign automation",
@@ -530,7 +530,7 @@ INDIVIDUAL_PLANS = {
         "regular_price": 100.00,
         "description": "Special offer for new customers",
         "features": [
-            "Full i'M On Social access",
+            "Full I'm On Social access",
             "$50/month for first 3 months",
             "Then $100/month",
             "14-day free trial",
@@ -820,7 +820,7 @@ async def create_quote(data: dict):
     prepared_by = {
         "name": data.get("prepared_by_name", ""),
         "email": data.get("prepared_by_email", ""),
-        "company": data.get("our_company_name", "i'M On Social"),
+        "company": data.get("our_company_name", "I'm On Social"),
         "address": data.get("our_company_address", ""),
     }
     
@@ -1242,7 +1242,7 @@ async def add_quote_contact(quote_id: str, request: Request):
     plan_name  = quote.get("plan_name", "your plan")
     price      = pricing.get("final_price", 0)
     sms_body   = (
-        f"Hi {first}! Here's your i'M On Social quote for {plan_name} at ${price:.0f}/mo. "
+        f"Hi {first}! Here's your I'm On Social quote for {plan_name} at ${price:.0f}/mo. "
         f"Review and sign here: {sign_link}"
     )
 

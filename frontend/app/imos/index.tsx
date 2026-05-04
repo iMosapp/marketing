@@ -85,7 +85,7 @@ export default function ImosHome() {
               <Text style={{ color: '#007AFF' }}>to Be On Social.</Text>
             </Text>
             <Text style={[s.heroSub, isDesktop && { fontSize: 19, maxWidth: 560 }]}>
-              In a world where companies automate everything, i'M On Social protects the relationship. Give organizations, teams, and individuals control of their digital presence, reviews, and customer connections.
+              In a world where companies automate everything, I'm On Social protects the relationship. Give organizations, teams, and individuals control of their digital presence, reviews, and customer connections.
             </Text>
 
             {/* Feature Icons Row */}
@@ -156,7 +156,7 @@ export default function ImosHome() {
               </View>
               <Text style={[s.narrativeTag, { color: '#007AFF' }]}>THE SHIFT</Text>
               <Text style={[s.narrativeTitle, isDesktop && { fontSize: 28 }]}>
-                i'M On Social Isn't About Marketing.{'\n'}
+                I'm On Social Isn't About Marketing.{'\n'}
                 <Text style={{ color: '#007AFF' }}>It's About Ownership.</Text>
               </Text>
               <View style={s.narrativeDivider} />
@@ -236,7 +236,7 @@ export default function ImosHome() {
               </View>
               <View style={[s.narrativeHighlight, { backgroundColor: 'rgba(0,122,255,0.08)' }]}>
                 <Text style={[s.narrativeHighlightText, { color: '#5AC8FA' }]}>
-                  i'M On Social gives individuals visibility, credibility, ownership, and continuity. Their reputation moves with them.
+                  I'm On Social gives individuals visibility, credibility, ownership, and continuity. Their reputation moves with them.
                 </Text>
               </View>
             </View>

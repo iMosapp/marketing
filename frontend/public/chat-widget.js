@@ -1,5 +1,5 @@
 (function(){
-  // Jessi Chat Widget — i'M On Social
+  // Jessi Chat Widget — I'm On Social
   var API_BASE = window.IMOS_API || '';
   var CLOSED_KEY = 'imos_chat_closed';
   var SESSION_KEY = 'imos_chat_session';

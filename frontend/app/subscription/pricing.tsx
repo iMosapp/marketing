@@ -399,7 +399,7 @@ export default function PricingPage() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Hero Section */}
         <View style={styles.heroSection}>
-          <Text style={styles.heroTitle}>i'M On Social</Text>
+          <Text style={styles.heroTitle}>I'm On Social</Text>
           <Text style={styles.heroSubtitle}>
             {activeTab === 'individual' 
               ? 'The complete relationship management platform'

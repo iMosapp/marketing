@@ -130,7 +130,7 @@ async def send_weekly_power_rankings(db):
             try:
                 html = _build_power_rankings_html(entry, entries, store_name, PUBLIC_URL)
                 await asyncio.to_thread(resend_mod.Emails.send, {
-                    "from": f"i'M On Social <noreply@imosapp.com>",
+                    "from": f"I'm On Social <noreply@imosapp.com>",
                     "to": [entry["email"]],
                     "subject": f"Weekly Power Rankings — You're #{entry['rank']}!",
                     "html": html,
@@ -323,7 +323,7 @@ def _build_power_rankings_html(you, all_entries, store_name, public_url):
 
   <!-- Footer -->
   <tr><td style="padding:16px;text-align:center;border-top:1px solid #2C2C2E">
-    <div style="font-size:11px;color:#48484A">Powered by <a href="https://app.imonsocial.com/imos" style="color:#C9A962;text-decoration:none">i'M On Social</a></div>
+    <div style="font-size:11px;color:#48484A">Powered by <a href="https://app.imonsocial.com/imos" style="color:#C9A962;text-decoration:none">I'm On Social</a></div>
     <div style="font-size:10px;color:#3A3A3C;margin-top:4px">You received this because you're part of {store_name}</div>
   </td></tr>
 

@@ -333,7 +333,7 @@ export default function SetupWizardScreen() {
   const getCredsText = () => {
     const created = teamMembers.filter(m => m.createdId);
     return created.map(m =>
-      `Welcome to i'M On Social!\n\nHere are your login credentials:\n\nLogin: https://app.imonsocial.com\nUsername: ${m.email}\nPassword: ${m.tempPassword}\n\nYou will be prompted to create a new password on your first login.`
+      `Welcome to I'm On Social!\n\nHere are your login credentials:\n\nLogin: https://app.imonsocial.com\nUsername: ${m.email}\nPassword: ${m.tempPassword}\n\nYou will be prompted to create a new password on your first login.`
     ).join('\n\n---\n\n');
   };
 
@@ -762,7 +762,7 @@ export default function SetupWizardScreen() {
                   const created = teamMembers.filter(m => m.createdId);
                   if (created.length > 0) {
                     const m = created[0];
-                    const msg = `Welcome to i'M On Social!\n\nHere are your login credentials:\n\nLogin: https://app.imonsocial.com\nUsername: ${m.email}\nPassword: ${m.tempPassword}\n\nYou will be prompted to create a new password on your first login.`;
+                    const msg = `Welcome to I'm On Social!\n\nHere are your login credentials:\n\nLogin: https://app.imonsocial.com\nUsername: ${m.email}\nPassword: ${m.tempPassword}\n\nYou will be prompted to create a new password on your first login.`;
                     const url = Platform.OS === 'ios' ? `sms:${m.phone || ''}&body=${encodeURIComponent(msg)}` : `sms:${m.phone || ''}?body=${encodeURIComponent(msg)}`;
                     Linking.openURL(url).catch(() => {});
                   }

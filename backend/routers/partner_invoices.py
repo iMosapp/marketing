@@ -289,7 +289,7 @@ def _generate_invoice_pdf(invoice_id: str, invoice: dict) -> str:
     pdf.set_font("Helvetica", "B", 22)
     pdf.cell(0, 12, "INVOICE", ln=True, align="R")
     pdf.set_font("Helvetica", "", 11)
-    pdf.cell(0, 6, "i'M On Social", ln=True, align="R")
+    pdf.cell(0, 6, "I'm On Social", ln=True, align="R")
     pdf.cell(0, 6, "support@imonsocial.com", ln=True, align="R")
     pdf.ln(6)
 
@@ -407,7 +407,7 @@ def _generate_invoice_pdf(invoice_id: str, invoice: dict) -> str:
     pdf.ln(10)
     pdf.set_font("Helvetica", "", 9)
     pdf.set_text_color(130, 130, 130)
-    pdf.cell(0, 6, "Thank you for your partnership with i'M On Social.", ln=True, align="C")
+    pdf.cell(0, 6, "Thank you for your partnership with I'm On Social.", ln=True, align="C")
 
     filepath = os.path.join(PDF_DIR, f"{invoice_id}.pdf")
     pdf.output(filepath)
@@ -600,7 +600,7 @@ async def send_invoice_email(invoice_id: str, x_user_id: str = Header(None, alia
             }]
 
         params = {
-            "from": "i'M On Social <billing@imonsocial.com>",
+            "from": "I'm On Social <billing@imonsocial.com>",
             "to": [partner_email],
             "reply_to": "support@imonsocial.com",
             "subject": f"Invoice {invoice_number} - {period}",

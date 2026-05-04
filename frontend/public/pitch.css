@@ -1,4 +1,4 @@
-/* i'M On Social — Industry Pitch Pages Shared Styles */
+/* I'm On Social — Industry Pitch Pages Shared Styles */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--blue:#007AFF;--blue-dark:#0059CC;--green:#34C759;--red:#FF3B30;--yellow:#FFD60A;--orange:#FF9500;--purple:#AF52DE;--pink:#FF2D55;--text:#111;--text-2:#555;--text-3:#888;--bg:#FFF;--bg-2:#F8F9FB;--surface:#F2F2F7;--border:rgba(0,0,0,.06);--border-2:rgba(0,0,0,.1);--gold:#C9A962;--accent:var(--gold)}
 html{scroll-behavior:smooth}

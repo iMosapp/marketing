@@ -98,7 +98,7 @@ export default function StoreDirectoryPage() {
   return (
     <View style={styles.container}>
       <Head>
-        <title>{store.name} Team{location ? ` - ${location}` : ''} | i'M On Social</title>
+        <title>{store.name} Team{location ? ` - ${location}` : ''} | I'm On Social</title>
         <meta name="description" content={`Meet the ${team.length} professionals at ${store.name}${location ? ` in ${location}` : ''}. View profiles, reviews, and connect directly.`} />
         <meta property="og:title" content={`${store.name} Team`} />
         <meta property="og:description" content={`Meet the ${team.length} professionals at ${store.name}`} />
@@ -210,7 +210,7 @@ export default function StoreDirectoryPage() {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Powered by i'M On Social</Text>
+          <Text style={styles.footerText}>Powered by I'm On Social</Text>
         </View>
       </ScrollView>
     </View>

@@ -5,11 +5,11 @@ import { ImosHeader, ImosFooter } from './_components';
 const SECTIONS = [
   {
     title: '1. Acceptance of Terms',
-    content: `By accessing or using i'M On Social ("the Service"), you agree to be bound by these Terms of Service. If you do not agree to these terms, do not use the Service. These terms apply to all users, including individual users, team members, store managers, and organization administrators.`,
+    content: `By accessing or using I'm On Social ("the Service"), you agree to be bound by these Terms of Service. If you do not agree to these terms, do not use the Service. These terms apply to all users, including individual users, team members, store managers, and organization administrators.`,
   },
   {
     title: '2. Description of Service',
-    content: `i'M On Social provides a Relationship Management System (RMS) platform that includes digital business cards, contact management, messaging (SMS, email, and personal SMS), automated campaigns, AI-powered communication tools, analytics, and related services. The Service is available through web and mobile applications.`,
+    content: `I'm On Social provides a Relationship Management System (RMS) platform that includes digital business cards, contact management, messaging (SMS, email, and personal SMS), automated campaigns, AI-powered communication tools, analytics, and related services. The Service is available through web and mobile applications.`,
   },
   {
     title: '3. Account Registration & Security',
@@ -25,11 +25,11 @@ const SECTIONS = [
   },
   {
     title: '6. Intellectual Property',
-    content: `The Service, including all software, design, text, graphics, and other content, is owned by i'M On Social and protected by intellectual property laws. You retain ownership of content you create or upload through the Service.\n\nBy using the Service, you grant us a limited, non-exclusive license to use, store, and process your content solely for the purpose of providing and improving the Service.`,
+    content: `The Service, including all software, design, text, graphics, and other content, is owned by I'm On Social and protected by intellectual property laws. You retain ownership of content you create or upload through the Service.\n\nBy using the Service, you grant us a limited, non-exclusive license to use, store, and process your content solely for the purpose of providing and improving the Service.`,
   },
   {
     title: '7. Contact Data & CRM Information',
-    content: `When you use i'M On Social's Relationship Management features, you may store customer and prospect contact information including names, phone numbers, email addresses, physical addresses, birthdays, anniversaries, purchase dates, vehicle information, photos, notes, tags, and communication history.\n\nYou represent and warrant that you have obtained all necessary consents from individuals whose data you store in the platform. You are responsible for complying with all applicable data protection laws (including TCPA, CAN-SPAM, CCPA, and GDPR where applicable) when collecting, storing, and using contact data through the Service.\n\nContact data you create belongs to you. However, within an organizational account, contact data may be shared among team members within the same store or organization as configured by your administrator. When a team member's account is deactivated, their contacts remain accessible to the organization for continuity purposes.`,
+    content: `When you use I'm On Social's Relationship Management features, you may store customer and prospect contact information including names, phone numbers, email addresses, physical addresses, birthdays, anniversaries, purchase dates, vehicle information, photos, notes, tags, and communication history.\n\nYou represent and warrant that you have obtained all necessary consents from individuals whose data you store in the platform. You are responsible for complying with all applicable data protection laws (including TCPA, CAN-SPAM, CCPA, and GDPR where applicable) when collecting, storing, and using contact data through the Service.\n\nContact data you create belongs to you. However, within an organizational account, contact data may be shared among team members within the same store or organization as configured by your administrator. When a team member's account is deactivated, their contacts remain accessible to the organization for continuity purposes.`,
   },
   {
     title: '8. Data Ownership & Portability',
@@ -41,15 +41,15 @@ const SECTIONS = [
   },
   {
     title: '10. SMS, Email & Communication Terms',
-    content: `You agree to use the messaging features of i'M On Social in compliance with all applicable laws, including the Telephone Consumer Protection Act (TCPA), CAN-SPAM Act, and any state-level regulations.\n\nYou must obtain proper consent before sending automated messages to contacts. The platform provides tools for managing opt-outs, and you are required to honor all unsubscribe and opt-out requests promptly.\n\nMessage content sent through the platform may be stored and associated with contact records for relationship management purposes. AI-generated message suggestions are provided as drafts for your review and approval before sending.`,
+    content: `You agree to use the messaging features of I'm On Social in compliance with all applicable laws, including the Telephone Consumer Protection Act (TCPA), CAN-SPAM Act, and any state-level regulations.\n\nYou must obtain proper consent before sending automated messages to contacts. The platform provides tools for managing opt-outs, and you are required to honor all unsubscribe and opt-out requests promptly.\n\nMessage content sent through the platform may be stored and associated with contact records for relationship management purposes. AI-generated message suggestions are provided as drafts for your review and approval before sending.`,
   },
   {
     title: '11. API & Integration Terms',
-    content: `Access to i'M On Social's public API is subject to rate limits and usage policies. API keys are confidential and must not be shared publicly. We reserve the right to revoke API access if usage policies are violated.\n\nWebhook endpoints must be secure (HTTPS) and respond within reasonable timeframes. We are not responsible for data loss due to webhook endpoint failures.`,
+    content: `Access to I'm On Social's public API is subject to rate limits and usage policies. API keys are confidential and must not be shared publicly. We reserve the right to revoke API access if usage policies are violated.\n\nWebhook endpoints must be secure (HTTPS) and respond within reasonable timeframes. We are not responsible for data loss due to webhook endpoint failures.`,
   },
   {
     title: '12. Limitation of Liability',
-    content: `The Service is provided "as is" without warranties of any kind, express or implied. i'M On Social shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, data, or business opportunities.\n\nOur total liability for any claim arising from or related to the Service shall not exceed the amount you paid us in the 12 months preceding the claim.`,
+    content: `The Service is provided "as is" without warranties of any kind, express or implied. I'm On Social shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, data, or business opportunities.\n\nOur total liability for any claim arising from or related to the Service shall not exceed the amount you paid us in the 12 months preceding the claim.`,
   },
   {
     title: '13. Termination',
@@ -65,7 +65,7 @@ const SECTIONS = [
   },
   {
     title: '16. Contact',
-    content: `For questions about these Terms of Service, contact us at:\n\ni'M On Social is operated by VI Ventures Group LLC.\nEmail: legal@imonsocial.com\nSupport: support@imonsocial.com\nWebsite: https://imonsocial.com`,
+    content: `For questions about these Terms of Service, contact us at:\n\nI'm On Social is operated by VI Ventures Group LLC.\nEmail: legal@imonsocial.com\nSupport: support@imonsocial.com\nWebsite: https://imonsocial.com`,
   },
 ];
 
@@ -83,7 +83,7 @@ export default function TermsScreen() {
           <Text style={[s.title, isDesktop && { fontSize: 36 }]}>Terms of Service</Text>
           <Text style={s.updated}>Last updated: March 12, 2026</Text>
           <Text style={s.intro}>
-            These Terms of Service govern your access to and use of the i'M On Social platform and services. Please read these terms carefully before using our Service.
+            These Terms of Service govern your access to and use of the I'm On Social platform and services. Please read these terms carefully before using our Service.
           </Text>
           {SECTIONS.map((section, i) => (
             <View key={i} style={s.section}>
