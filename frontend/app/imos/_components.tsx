@@ -204,9 +204,10 @@ export function ImosFooter() {
             <Text style={f.colTitle}>Company</Text>
             <TouchableOpacity onPress={() => navigate('/imos/organizations')}><Text style={f.link}>For Teams</Text></TouchableOpacity>
             <TouchableOpacity onPress={() => navigate('/imos/pricing')}><Text style={f.link}>Pricing</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => navigate('/imos/privacy')}><Text style={f.link}>Privacy</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => navigate('/imos/terms')}><Text style={f.link}>Terms</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => { if (Platform.OS === 'web') window.location.href = 'mailto:forest@imonsocial.com'; }}>
+            <TouchableOpacity onPress={() => navigate('/imos/privacy')}><Text style={f.link}>Privacy Policy</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigate('/imos/terms')}><Text style={f.link}>Terms of Service</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigate('/imos/sms-terms')}><Text style={f.link}>SMS Messaging Policy</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => { if (Platform.OS === 'web') window.location.href = 'mailto:support@imonsocial.com'; }}>
               <Text style={f.link}>Contact</Text>
             </TouchableOpacity>
           </View>
@@ -221,7 +222,10 @@ export function ImosFooter() {
         </View>
       </View>
       <View style={f.bottom}>
-        <Text style={f.copy}>&copy; 2026 i'M On Social. All rights reserved.</Text>
+        <Text style={f.copy}>&copy; 2026 i'M On Social. Powered by VI Ventures Group LLC.</Text>
+        <TouchableOpacity onPress={() => navigate('/imos/sms-terms')}>
+          <Text style={[f.copy, { color: '#007AFF', marginTop: 4 }]}>SMS Messaging Policy</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );

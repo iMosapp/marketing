@@ -65,7 +65,7 @@ const SECTIONS = [
   },
   {
     title: '16. Contact',
-    content: `For questions about these Terms of Service, contact us at:\n\ni'M On Social\nEmail: legal@imonsocial.com\nGeneral: forest@imonsocial.com\nWebsite: https://imonsocial.com`,
+    content: `For questions about these Terms of Service, contact us at:\n\ni'M On Social is operated by VI Ventures Group LLC.\nEmail: legal@imonsocial.com\nSupport: support@imonsocial.com\nWebsite: https://imonsocial.com`,
   },
 ];
 

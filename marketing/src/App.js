@@ -595,11 +595,10 @@ const Footer = () => (
       </div>
       
       <div className="footer-bottom">
-        <p>&copy; 2024 iMos. All rights reserved.</p>
+        <p>&copy; 2026 i'M On Social. Powered by VI Ventures Group LLC. All rights reserved.</p>
         <div className="footer-contact">
-          <span><MapPin size={14} /> San Francisco, CA</span>
-          <span><Phone size={14} /> (555) 123-4567</span>
-          <span><Mail size={14} /> hello@imosapp.com</span>
+          <span><MapPin size={14} /> Wyoming, USA</span>
+          <span><Mail size={14} /> support@imonsocial.com</span>
         </div>
       </div>
     </div>
