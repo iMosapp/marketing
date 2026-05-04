@@ -63,9 +63,9 @@ const Navigation = () => {
         </div>
         
         <div className="nav-buttons">
-          <a href="https://app.imosapp.com" className="btn btn-ghost">Sign In</a>
-          <a href="https://app.imosapp.com/auth/signup" className="btn btn-primary">
-            Get Started <ArrowRight size={16} />
+          <a href="https://app.imonsocial.com" className="btn btn-ghost">Sign In</a>
+          <a href="/demo" className="btn btn-primary">
+            Get a Demo <ArrowRight size={16} />
           </a>
         </div>
         
@@ -108,10 +108,10 @@ const Hero = () => (
       </p>
       
       <div className="hero-buttons">
-        <a href="https://app.imosapp.com/auth/signup" className="btn btn-primary btn-lg">
+        <a href="https://app.imonsocial.com/auth/signup" className="btn btn-primary btn-lg">
           Start Free Trial <ArrowRight size={18} />
         </a>
-        <a href="#demo-form" className="btn btn-outline btn-lg demo-link">
+        <a href="/demo" className="btn btn-outline btn-lg demo-link">
           Schedule a Demo
         </a>
       </div>
@@ -365,7 +365,7 @@ const Pricing = () => (
               ))}
             </ul>
             <a 
-              href={plan.price === 'Custom' ? '#demo-form' : 'https://app.imosapp.com/auth/signup'}
+              href={plan.price === 'Custom' ? '/demo' : 'https://app.imonsocial.com/auth/signup'}
               className={`btn ${plan.popular ? 'btn-primary' : 'btn-outline'} btn-full`}
             >
               {plan.price === 'Custom' ? 'Contact Sales' : 'Start Free Trial'}
@@ -521,7 +521,7 @@ const CTA = () => (
           Join thousands of sales professionals who are closing more deals with iMos.
         </p>
         <div className="cta-buttons">
-          <a href="https://app.imosapp.com/auth/signup" className="btn btn-white btn-lg">
+          <a href="https://app.imonsocial.com/auth/signup" className="btn btn-white btn-lg">
             Start Your Free Trial <ArrowRight size={18} />
           </a>
           <a href="#" className="btn btn-ghost-white btn-lg">
@@ -587,8 +587,8 @@ const Footer = () => (
         
         <div className="footer-links">
           <h4>Legal</h4>
-          <a href="https://app.imosapp.com/privacy">Privacy Policy</a>
-          <a href="https://app.imosapp.com/terms">Terms of Service</a>
+          <a href="/privacy">Privacy Policy</a>
+          <a href="/terms">Terms of Service</a>
           <a href="#">Cookie Policy</a>
           <a href="#">GDPR</a>
         </div>
