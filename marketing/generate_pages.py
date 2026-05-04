@@ -409,10 +409,6 @@ TEMPLATE = """<!DOCTYPE html>
   <div class="sec-tag" style="color:#007AFF">{title_upper}</div>
   <h1>{tagline}</h1>
   <p class="page-hero-sub">{desc}</p>
-  <div class="hero-btns">
-    <a href="#" onclick="openDemoModal(event,'hero')" class="btn-lg primary"><i class="fa-regular fa-calendar"></i> Schedule a Demo</a>
-    <a href="https://app.imonsocial.com/auth/signup" class="btn-lg ghost">Start Free <i class="fa-solid fa-arrow-right"></i></a>
-  </div>
 </section>
 <section class="sec alt">
   <div class="feat-grid">
@@ -706,7 +702,7 @@ for slug, data in PAGES.items():
         nav=NAV_HTML,
         modal=DEMO_MODAL_HTML,
         feature_cards=make_feature_cards(data["features"]),
-    ).replace("{{footer}}", FOOTER_HTML)
+    ).replace("{footer}", FOOTER_HTML)
     path = f"/app/marketing/build/{slug}/index.html"
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w") as f:
