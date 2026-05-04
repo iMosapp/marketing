@@ -320,10 +320,10 @@ FOOTER_HTML = """<footer>
       <div class="ft-social"><a href="https://instagram.com/imonsocialapp" target="_blank" rel="noopener"><i class="fa-brands fa-instagram"></i></a><a href="https://tiktok.com/@imonsocialapp" target="_blank" rel="noopener"><i class="fa-brands fa-tiktok"></i></a><a href="https://youtube.com/@imonsocial" target="_blank" rel="noopener"><i class="fa-brands fa-youtube"></i></a></div>
     </div>
     <div class="ft-col"><div class="ft-col-t">Product</div><a href="/digital-card">Digital Cards</a><a href="/reviews">Personal Reviews</a><a href="/inbox">Inbox</a><a href="/date-triggers">Automations</a><a href="/leaderboard">Leaderboards</a><a href="/jessi">Jessi AI</a></div>
-    <div class="ft-col"><div class="ft-col-t">Company</div><a href="/organizations">For Teams</a><a href="/pricing">Pricing</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="mailto:forest@imonsocial.com">Contact</a></div>
+    <div class="ft-col"><div class="ft-col-t">Company</div><a href="/organizations">For Teams</a><a href="/pricing">Pricing</a><a href="/privacy">Privacy Policy</a><a href="/terms">Terms of Service</a><a href="/sms-terms">SMS Policy</a><a href="mailto:support@imonsocial.com">Contact</a></div>
     <div class="ft-col"><div class="ft-col-t">Get Started</div><a href="/demo">Schedule a Demo</a><a href="https://app.imonsocial.com/auth/signup">Start Free Trial</a><a href="https://app.imonsocial.com">Sign In</a><a href="/training">Training</a><a href="/help">Help Center</a></div>
   </div>
-  <div class="ft-bottom"><span class="ft-copy">&copy; 2026 I'm On Social. All rights reserved.</span></div>
+  <div class="ft-bottom"><span class="ft-copy">&copy; 2026 I'm On Social. Powered by VI Ventures Group LLC.</span><span class="ft-copy" style="margin-top:4px"><a href="/sms-terms" style="color:#007AFF">SMS Messaging Policy</a></span></div>
 </footer>"""
 
 CSS = open("/app/marketing/build/shared.css").read()
@@ -384,6 +384,132 @@ def make_feature_cards(features):
     </div>""")
     return "\n    ".join(cards)
 
+
+# ── Legal pages ───────────────────────────────────────────────────────────────
+
+LEGAL_TEMPLATE = """<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>{title} — I'm On Social</title>
+  <meta name="description" content="{desc}"/>
+  <link rel="icon" href="/favicon.png"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>{css}
+  .legal-wrap{{max-width:780px;margin:0 auto;padding:60px 24px 80px;}}
+  .legal-eyebrow{{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#007AFF;margin-bottom:12px;}}
+  .legal-title{{font-size:clamp(28px,5vw,44px);font-weight:800;color:#1C1C1E;line-height:1.15;margin-bottom:10px;}}
+  .legal-meta{{font-size:14px;color:#8E8E93;margin-bottom:36px;border-bottom:1px solid #F2F2F7;padding-bottom:20px;}}
+  .legal-stop{{background:#f0fff4;border:1px solid #34C75940;border-radius:12px;padding:16px 20px;margin-bottom:36px;}}
+  .legal-stop strong{{color:#1a7a37;display:block;font-size:16px;margin-bottom:4px;}}
+  .legal-stop span{{color:#1a7a37;font-size:14px;}}
+  .legal-section{{margin-bottom:32px;}}
+  .legal-section h2{{font-size:18px;font-weight:700;color:#1C1C1E;margin-bottom:10px;}}
+  .legal-section p{{font-size:15px;color:#3C3C43;line-height:1.7;white-space:pre-line;}}
+  .legal-related{{margin-top:40px;padding-top:28px;border-top:1px solid #F2F2F7;}}
+  .legal-related h3{{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#8E8E93;margin-bottom:12px;}}
+  .legal-related a{{display:inline-block;font-size:15px;font-weight:600;color:#007AFF;margin-right:20px;text-decoration:none;}}
+  .legal-related a:hover{{text-decoration:underline;}}
+  </style>
+</head>
+<body>
+{nav}
+<div class="legal-wrap">
+  <div class="legal-eyebrow">{eyebrow}</div>
+  <h1 class="legal-title">{title}</h1>
+  <p class="legal-meta">{meta}</p>
+  {stop_box}
+  {sections}
+  {related}
+</div>
+{footer}
+<script>
+window.addEventListener('scroll',()=>document.querySelector('nav').classList.toggle('scrolled',scrollY>40));
+</script>
+</body>
+</html>"""
+
+
+def make_legal_sections(sections):
+    html = []
+    for title, content in sections:
+        html.append(f'<div class="legal-section"><h2>{title}</h2><p>{content}</p></div>')
+    return "\n".join(html)
+
+
+LEGAL_PAGES = {
+    "privacy": {
+        "title": "Privacy Policy",
+        "eyebrow": "Legal",
+        "desc": "How I'm On Social collects, uses, and protects your personal information.",
+        "meta": "Effective Date: January 1, 2026 &nbsp;·&nbsp; I'm On Social is operated by VI Ventures Group LLC.",
+        "stop_box": "",
+        "related": '<div class="legal-related"><h3>Related Policies</h3><a href="/terms">Terms of Service &rarr;</a><a href="/sms-terms">SMS Messaging Policy &rarr;</a></div>',
+        "sections": [
+            ("1. Information We Collect", "We collect information you provide directly (name, email, phone, profile photo, bio, job title), information generated through your use of the platform (contacts, messages, campaign activity, event logs), and technical data (device type, browser, IP address, usage patterns).\n\nWe do not sell your personal information to third parties."),
+            ("2. How We Use Your Information", "We use your information to:\n\n- Provide and maintain I'm On Social services, including digital business cards, messaging, campaigns, and AI features\n- Process and deliver communications you initiate through our platform\n- Generate analytics and activity reports for you and your organization\n- Improve our AI assistant and recommendation algorithms\n- Send service-related notices, updates, and security alerts\n- Provide customer support"),
+            ("3. Contact & CRM Data", "When you use I'm On Social's relationship management features, you may store customer and prospect contact information. You represent and warrant that you have obtained all necessary consents from individuals whose data you store. You are responsible for complying with applicable data protection laws (TCPA, CAN-SPAM, CCPA, GDPR) when collecting, storing, and using contact data."),
+            ("4. Data Sharing", "We do not sell your data. We share information only with:\n\n- Service providers who help us operate the platform (cloud hosting, email delivery, SMS delivery)\n- Your organization's administrators within your account hierarchy\n- Law enforcement when required by law\n\nAll third-party providers are bound by confidentiality agreements."),
+            ("5. Data Security", "We use industry-standard encryption in transit (TLS) and at rest. Access to personal data is restricted to authorized personnel only. We maintain security practices consistent with applicable industry standards."),
+            ("6. Data Retention", "We retain your data for as long as your account is active. Upon account termination, data is retained for 90 days to allow export, then permanently deleted. You may request data export or deletion at any time by contacting support@imonsocial.com."),
+            ("7. Your Rights", "You have the right to:\n\n- Access the personal information we hold about you\n- Correct inaccurate information\n- Request deletion of your account and associated data\n- Export your contacts and content\n- Opt out of marketing communications\n\nTo exercise these rights, contact support@imonsocial.com."),
+            ("8. Cookies", "We use cookies and similar technologies to maintain your session, remember preferences, and analyze platform usage. You can control cookie behavior through your browser settings."),
+            ("9. Children's Privacy", "I'm On Social is not directed to children under 13. We do not knowingly collect personal information from children under 13. If you believe a child has provided us with personal information, contact us immediately."),
+            ("10. Changes to This Policy", "We may update this Privacy Policy periodically. Material changes will be communicated via email or in-app notification at least 30 days before taking effect."),
+            ("11. Contact", "I'm On Social is operated by VI Ventures Group LLC.\nEmail: support@imonsocial.com\nWebsite: https://imonsocial.com"),
+        ],
+    },
+    "terms": {
+        "title": "Terms of Service",
+        "eyebrow": "Legal",
+        "desc": "The terms and conditions for using the I'm On Social platform.",
+        "meta": "Effective Date: January 1, 2026 &nbsp;·&nbsp; I'm On Social is operated by VI Ventures Group LLC.",
+        "stop_box": "",
+        "related": '<div class="legal-related"><h3>Related Policies</h3><a href="/privacy">Privacy Policy &rarr;</a><a href="/sms-terms">SMS Messaging Policy &rarr;</a></div>',
+        "sections": [
+            ("1. Acceptance of Terms", "By accessing or using I'm On Social (\"the Service\"), you agree to be bound by these Terms of Service. If you do not agree to these terms, do not use the Service. These terms apply to all users, including individual users, team members, store managers, and organization administrators."),
+            ("2. Description of Service", "I'm On Social provides a Relationship Management System (RMS) platform that includes digital business cards, contact management, messaging (SMS, email, and personal SMS), automated campaigns, AI-powered communication tools, analytics, and related services. The Service is available through web and mobile applications."),
+            ("3. Account Registration & Security", "You must provide accurate and complete information when creating an account. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You must notify us immediately of any unauthorized use.\n\nOrganization administrators are responsible for managing user access within their organization, including adding, deactivating, and removing team members."),
+            ("4. Acceptable Use", "You agree not to:\n\n- Use the Service to send unsolicited commercial messages (spam)\n- Violate any applicable laws, including CAN-SPAM, TCPA, and GDPR\n- Upload or transmit malicious code or content\n- Attempt to gain unauthorized access to the Service or other users' accounts\n- Use the Service to harass, defame, or threaten any person\n- Resell or redistribute the Service without written permission\n- Use the AI features to generate harmful, misleading, or illegal content"),
+            ("5. Subscription & Billing", "Paid plans are billed on a monthly or annual basis as selected at the time of purchase. Prices are subject to change with 30 days' notice. All fees are non-refundable except as required by applicable law.\n\nFree trials, if offered, automatically convert to paid subscriptions at the end of the trial period unless cancelled. You may cancel your subscription at any time."),
+            ("6. SMS, Email & Communication Terms", "You agree to use the messaging features of I'm On Social in compliance with all applicable laws, including the Telephone Consumer Protection Act (TCPA), CAN-SPAM Act, and any state-level regulations.\n\nYou must obtain proper consent before sending automated messages to contacts. The platform provides tools for managing opt-outs, and you are required to honor all unsubscribe and opt-out requests promptly."),
+            ("7. Contact Data & CRM Information", "You represent and warrant that you have obtained all necessary consents from individuals whose data you store in the platform. You are responsible for complying with all applicable data protection laws (including TCPA, CAN-SPAM, CCPA, and GDPR where applicable) when collecting, storing, and using contact data through the Service."),
+            ("8. Intellectual Property", "The Service, including all software, design, text, graphics, and other content, is owned by I'm On Social and protected by intellectual property laws. You retain ownership of content you create or upload through the Service."),
+            ("9. Limitation of Liability", "The Service is provided \"as is\" without warranties of any kind. I'm On Social shall not be liable for any indirect, incidental, special, consequential, or punitive damages. Our total liability for any claim shall not exceed the amount you paid us in the 12 months preceding the claim."),
+            ("10. Termination", "We may suspend or terminate your access to the Service at any time for violation of these terms with reasonable notice. You may terminate your account at any time. Upon termination, your right to use the Service ceases immediately."),
+            ("11. Modifications to Terms", "We reserve the right to modify these Terms at any time. Material changes will be communicated via email or in-app notification at least 30 days before they take effect."),
+            ("12. Governing Law", "These Terms shall be governed by and construed in accordance with the laws of the State of Wyoming, United States. Any disputes arising from these Terms shall be resolved in the courts of Wyoming."),
+            ("13. Contact", "I'm On Social is operated by VI Ventures Group LLC.\nEmail: support@imonsocial.com\nWebsite: https://imonsocial.com"),
+        ],
+    },
+    "sms-terms": {
+        "title": "SMS Messaging Policy",
+        "eyebrow": "Legal",
+        "desc": "How I'm On Social handles SMS messaging, opt-in, opt-out, and carrier compliance.",
+        "meta": "Effective Date: January 1, 2026 &nbsp;·&nbsp; I'm On Social is operated by VI Ventures Group LLC.",
+        "stop_box": '<div class="legal-stop"><strong>To stop receiving messages: Reply STOP</strong><span>For help: Reply HELP or email support@imonsocial.com</span></div>',
+        "related": '<div class="legal-related"><h3>Related Policies</h3><a href="/privacy">Privacy Policy &rarr;</a><a href="/terms">Terms of Service &rarr;</a></div>',
+        "sections": [
+            ("1. Overview", "I'm On Social, operated by VI Ventures Group LLC, provides SMS messaging as a feature of its Relationship Management System (RMS) platform. This policy explains how SMS messaging works within our platform, how to opt in and out, and what types of messages you may receive."),
+            ("2. Who Sends Messages", "SMS messages sent through I'm On Social are sent by individual sales professionals, service advisors, and business users who have active accounts on the platform. These users send messages to their own customers and contacts who have provided consent to receive communications.\n\nI'm On Social (VI Ventures Group LLC) provides the technology platform. Message content is created and sent by individual platform users, not by VI Ventures Group LLC directly."),
+            ("3. Types of Messages", "Platform users may send the following types of messages:\n\n- Relationship follow-up messages and check-ins\n- Appointment reminders and confirmations\n- Review and feedback requests\n- Digital business card and contact information sharing\n- Congratulations and milestone messages (birthdays, anniversaries, purchases)\n- Campaign-based automated follow-up sequences\n- Account notifications and updates\n- Responses to inbound customer inquiries"),
+            ("4. Message Frequency", "Message frequency varies based on the individual platform user's settings and the contact's relationship with that user. You will not receive unsolicited marketing messages. All automated messages are sent by users to their own opted-in customer contacts."),
+            ("5. How to Opt In", "You may receive SMS messages from an I'm On Social user if:\n\n- You have provided your phone number to a business or sales professional who uses I'm On Social\n- You have verbally or in writing agreed to receive communications from that individual\n- You have submitted a contact form or lead form that includes consent language\n- You have scanned or tapped a digital business card and provided your contact information"),
+            ("6. How to Opt Out (STOP)", "You can stop receiving SMS messages at any time by replying STOP to any message you receive.\n\n- Reply STOP to unsubscribe from all messages from that sender\n- Reply HELP to receive assistance\n- Reply INFO to receive information about the service\n\nAfter opting out, you will receive one confirmation message and no further messages from that sender. Opt-out requests are processed immediately."),
+            ("7. Supported Carriers & Rates", "I'm On Social's SMS messaging is supported by all major U.S. wireless carriers including AT&T, T-Mobile, Verizon, and others. Message and data rates may apply depending on your wireless carrier plan. I'm On Social does not charge separately for SMS messages received."),
+            ("8. TCPA Compliance", "I'm On Social platform users are required to comply with the Telephone Consumer Protection Act (TCPA) and all applicable federal and state communications laws. Platform users must obtain proper written or verbal consent before sending automated messages and honor all opt-out requests immediately.\n\nVI Ventures Group LLC reserves the right to suspend or terminate any user account found to be in violation of TCPA or these messaging policies."),
+            ("9. A2P 10DLC Registration", "I'm On Social uses A2P (Application-to-Person) 10DLC (10-Digit Long Code) messaging registration as required by U.S. mobile carriers.\n\nRegistered use case: Relationship follow-up, customer engagement, appointment reminders, review requests, and account notifications for opted-in users and their contacts."),
+            ("10. Privacy", "Your phone number and message history are used solely for the purpose of facilitating communications between you and the I'm On Social user you have a relationship with. We do not sell phone numbers to third parties. For full details, see our Privacy Policy at https://imonsocial.com/privacy."),
+            ("11. Contact & Support", "I'm On Social is operated by VI Ventures Group LLC.\nEmail: support@imonsocial.com\nWebsite: https://imonsocial.com\n\nTo opt out: Reply STOP to any message.\nFor help: Reply HELP or email support@imonsocial.com."),
+        ],
+    },
+}
+
+
+# ── Generate all pages ────────────────────────────────────────────────────────
+
 # Generate all pages
 for slug, data in PAGES.items():
     html = TEMPLATE.format(
@@ -402,4 +528,24 @@ for slug, data in PAGES.items():
         f.write(html)
     print(f"Created: {slug}")
 
-print(f"\nDone! {len(PAGES)} pages created.")
+# Generate legal pages
+for slug, data in LEGAL_PAGES.items():
+    html = LEGAL_TEMPLATE.format(
+        title=data["title"],
+        eyebrow=data["eyebrow"],
+        desc=data["desc"],
+        meta=data["meta"],
+        stop_box=data["stop_box"],
+        sections=make_legal_sections(data["sections"]),
+        related=data["related"],
+        css=CSS,
+        nav=NAV_HTML,
+        footer=FOOTER_HTML,
+    )
+    path = f"/app/marketing/build/{slug}/index.html"
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        f.write(html)
+    print(f"Created legal: {slug}")
+
+print(f"\nDone! {len(PAGES) + len(LEGAL_PAGES)} pages total.")
