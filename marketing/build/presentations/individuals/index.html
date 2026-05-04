@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-  <title>Individuals - i'M On Social Sales Presentation</title>
-  <meta name="description" content="i'M On Social Individuals sales presentation. See how we transform customer relationships.">
+  <title>Individuals - I'm On Social Sales Presentation</title>
+  <meta name="description" content="I'm On Social Individuals sales presentation. See how we transform customer relationships.">
   <link rel="icon" href="/favicon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
   <div class="progress-bar" id="progress"></div>
-  <img src="/marketing-logo.png" alt="i'M On Social" class="deck-logo">
+  <img src="/marketing-logo.png" alt="I'm On Social" class="deck-logo">
 
   <div class="deck" id="deck">
     
@@ -55,7 +55,7 @@
     <div class="slide slide--dark" id="slide-7">
       <div class="slide-content"><span class="slide-eyebrow"><i class="fas fa-magnifying-glass-chart"></i>&nbsp; SEO &amp; AEO</span></div>
       <div class="slide-content"><h2>Most CRMs send a text link.<br><em>We send a reputation signal.</em></h2></div>
-      <div class="slide-content"><p class="sub">Every link shared through i'M On Social carries invisible machine-readable data that tells Google and AI assistants who you are, where you work, and why customers trust you. Your name, your employer, your reviews, your social profiles &#8212; all attached automatically. Every single time.</p></div>
+      <div class="slide-content"><p class="sub">Every link shared through I'm On Social carries invisible machine-readable data that tells Google and AI assistants who you are, where you work, and why customers trust you. Your name, your employer, your reviews, your social profiles &#8212; all attached automatically. Every single time.</p></div>
     </div>
     <div class="slide slide--surface" id="slide-8">
       <div class="slide-content"><span class="slide-eyebrow">Built-In Search Presence</span></div>
@@ -64,7 +64,7 @@
     </div>
     <div class="slide slide--dark" id="slide-9">
       <div class="slide-content"><h1>You are the brand.<br>Let's make sure<br>everyone remembers.</h1></div>
-      <div class="slide-content"><a href="https://app.imonsocial.com" target="_blank" class="cta-btn gold">See it in Action <i class="fas fa-arrow-right"></i></a></div>
+      <div class="slide-content"><a href="#" onclick="openPresModal(event)" class="cta-btn gold">Book a Demo <i class="fas fa-arrow-right"></i></a></div>
     </div>
   </div>
 
@@ -116,5 +116,60 @@
     update();slides[0].classList.add('active');
   })();
   </script>
+
+<style>
+  .demo-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+  .demo-overlay.active{opacity:1;pointer-events:all}
+  .demo-modal{background:#fff;border-radius:20px;padding:28px 24px;width:90%;max-width:460px;max-height:90vh;overflow-y:auto;position:relative}
+  .demo-close{position:absolute;top:12px;right:14px;background:none;border:none;font-size:22px;cursor:pointer;color:#8E8E93}
+  .dm-f{margin-bottom:12px}.dm-f label{display:block;font-size:11px;font-weight:700;color:#8E8E93;margin-bottom:3px;text-transform:uppercase;letter-spacing:.8px}
+  .dm-f input,.dm-f select{width:100%;padding:11px 12px;background:#FAFAFA;border:1px solid #E5E5EA;border-radius:8px;font-size:14px;font-family:inherit;outline:none;box-sizing:border-box}
+  .dm-f input:focus,.dm-f select:focus{border-color:#007AFF}
+  .dm-btn{width:100%;padding:13px;background:#007AFF;color:#fff;font-size:15px;font-weight:800;border:none;border-radius:980px;cursor:pointer;margin-top:4px;font-family:inherit}
+  .dm-btn:disabled{opacity:.5;cursor:not-allowed}
+</style>
+<div class="demo-overlay" id="presModal">
+  <div class="demo-modal">
+    <button class="demo-close" onclick="document.getElementById('presModal').classList.remove('active');document.body.style.overflow=''">&times;</button>
+    <div id="presFormWrap">
+      <h2 style="font-size:20px;font-weight:900;margin-bottom:4px">Book a Demo</h2>
+      <p style="font-size:13px;color:#8E8E93;margin-bottom:18px">See I'm On Social in action — personalized for your business.</p>
+      <form onsubmit="submitPresForm(event)">
+        <div class="dm-f"><label>Full Name *</label><input type="text" id="pm-name" placeholder="John Smith" required/></div>
+        <div class="dm-f"><label>Email *</label><input type="email" id="pm-email" placeholder="john@company.com" required/></div>
+        <div class="dm-f"><label>Phone *</label><input type="tel" id="pm-phone" placeholder="(555) 123-4567" required/></div>
+        <div class="dm-f"><label>Company</label><input type="text" id="pm-company" placeholder="Your business"/></div>
+        <div style="background:#F2F9FF;border:1px solid rgba(0,122,255,.2);border-radius:8px;padding:10px 12px;margin-bottom:12px;">
+          <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;text-transform:none;letter-spacing:0;font-size:12px;color:#3C3C43;font-weight:400;">
+            <input type="checkbox" id="pm-sms" style="width:15px;height:15px;margin-top:1px;flex-shrink:0;accent-color:#007AFF;cursor:pointer;"/>
+            <span>I agree to receive SMS messages from I'm On Social. Reply STOP to opt out. <a href="/sms-terms" style="color:#007AFF;">SMS Policy</a>.</span>
+          </label>
+        </div>
+        <button type="submit" class="dm-btn" id="presSubmitBtn">Book My Demo</button>
+        <p style="font-size:10px;color:#8E8E93;text-align:center;margin-top:8px;">By submitting you agree to our <a href="/terms" style="color:#007AFF;">Terms</a> &amp; <a href="/privacy" style="color:#007AFF;">Privacy Policy</a>. Operated by VI Ventures Group LLC.</p>
+      </form>
+    </div>
+    <div id="presSuccessWrap" style="display:none;text-align:center;padding:28px 0">
+      <div style="font-size:44px;color:#34C759;margin-bottom:10px">&#10003;</div>
+      <h3 style="font-size:18px;font-weight:800;margin-bottom:6px">You're In!</h3>
+      <p style="font-size:13px;color:#8E8E93">We'll reach out within 24 hours to schedule your personalized demo.</p>
+    </div>
+  </div>
+</div>
+<script>
+document.getElementById('presModal').addEventListener('click',function(e){if(e.target===this){this.classList.remove('active');document.body.style.overflow=''}});
+async function openPresModal(e){e&&e.preventDefault();document.getElementById('presModal').classList.add('active');document.body.style.overflow='hidden'}
+async function submitPresForm(e){
+  e.preventDefault();
+  var btn=document.getElementById('presSubmitBtn');btn.disabled=true;btn.textContent='Submitting...';
+  try{
+    var r=await fetch('https://app.imonsocial.com/api/demo-requests',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name:document.getElementById('pm-name').value,email:document.getElementById('pm-email').value,phone:document.getElementById('pm-phone').value,company:document.getElementById('pm-company').value,sms_opt_in:document.getElementById('pm-sms').checked,lead_source:'presentation'})
+    });
+    if(r.ok){document.getElementById('presFormWrap').style.display='none';document.getElementById('presSuccessWrap').style.display='block'}
+    else throw new Error();
+  }catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert('Something went wrong. Please try again.')}
+}
+</script>
 </body>
 </html>
