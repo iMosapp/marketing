@@ -250,7 +250,7 @@ async def get_action_progress(user_id: str, contact_id: str):
 
 
 @router.get("/{user_id}/{contact_id}/events")
-async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
+async def get_contact_events(user_id: str, contact_id: str, limit: int = 100, skip: int = 0):
     db = get_db()
 
     events = []
@@ -259,7 +259,7 @@ async def get_contact_events(user_id: str, contact_id: str, limit: int = 50):
     custom_events = await db.contact_events.find(
         {"contact_id": contact_id},
         {"_id": 0}
-    ).sort("timestamp", -1).limit(limit).to_list(limit)
+    ).sort("timestamp", -1).skip(skip).limit(limit).to_list(limit)
 
     # ── Batch-load all messages needed by events in ONE query (fixes N+1) ──
     message_ids_needed = [

@@ -196,9 +196,10 @@ function ContactDetailScreen() {
   });
   const [eventsLoading, setEventsLoading] = useState(false);
   const [expandedEvents, setExpandedEvents] = useState<Record<number, boolean>>({});
-  const [showAllEvents, setShowAllEvents] = useState(false);
   const [feedSearch, setFeedSearch] = useState('');
-  const INITIAL_EVENT_COUNT = 5;
+  const [hasMoreEvents, setHasMoreEvents] = useState(false);
+  const [loadingMoreEvents, setLoadingMoreEvents] = useState(false);
+  const EVENT_PAGE_SIZE = 100;
 
   // Tab state for Feed vs Details
   const [contactTab, setContactTab] = useState<'feed' | 'details'>('feed');
@@ -557,15 +558,32 @@ function ContactDetailScreen() {
     try {
       setEventsLoading(true);
       const [evtsResp, statsResp] = await Promise.all([
-        contactsAPI.getEvents(user._id, id as string),
+        contactsAPI.getEvents(user._id, id as string, EVENT_PAGE_SIZE),
         contactsAPI.getStats(user._id, id as string),
       ]);
-      setEvents(evtsResp.events || []);
+      const loaded = evtsResp.events || [];
+      setEvents(loaded);
+      setHasMoreEvents(loaded.length === EVENT_PAGE_SIZE);
       setStats(statsResp);
     } catch (e) {
       console.error('Failed to load events:', e);
     } finally {
       setEventsLoading(false);
+    }
+  };
+
+  const loadMoreEvents = async () => {
+    if (!user || loadingMoreEvents) return;
+    setLoadingMoreEvents(true);
+    try {
+      const resp = await contactsAPI.getEvents(user._id, id as string, EVENT_PAGE_SIZE, events.length);
+      const more = resp.events || [];
+      setEvents(prev => [...prev, ...more]);
+      setHasMoreEvents(more.length === EVENT_PAGE_SIZE);
+    } catch (e) {
+      console.error('Failed to load more events:', e);
+    } finally {
+      setLoadingMoreEvents(false);
     }
   };
 
@@ -2084,7 +2102,7 @@ function ContactDetailScreen() {
     contact, setContact, contactId: id as string, userId: user?._id || '',
     isEditing, setIsEditing, loading, saving, colors,
     events, setEvents, stats, eventsLoading,
-    expandedEvents, setExpandedEvents, showAllEvents, setShowAllEvents,
+    expandedEvents, setExpandedEvents,
     feedSearch, setFeedSearch, collapsedDateGroups, setCollapsedDateGroups,
     allPhotos, setAllPhotos, showPhotoViewer, setShowPhotoViewer,
     selectedPhotoIndex, setSelectedPhotoIndex,
@@ -2989,15 +3007,7 @@ function ContactDetailScreen() {
                       let runningCount = 0;
                       return eventDateGroups.map((group, gi) => {
                       const isCollapsed = collapsedDateGroups[group.label] === true;
-                      let groupEvents: typeof group.events;
-                      if (showAllEvents) {
-                        groupEvents = group.events;
-                      } else {
-                        const remaining = INITIAL_EVENT_COUNT - runningCount;
-                        if (remaining <= 0) return null;
-                        groupEvents = group.events.slice(0, remaining);
-                      }
-                      runningCount += groupEvents.length;
+                      const groupEvents = group.events; // Show ALL events — no artificial cap
                       if (groupEvents.length === 0) return null;
                       return (
                         <View key={group.label}>
@@ -3095,16 +3105,22 @@ function ContactDetailScreen() {
                       );
                     });
                     })()}
-                    {filteredEvents.length > INITIAL_EVENT_COUNT && (
+                    {/* Load Older History button */}
+                    {hasMoreEvents && (
                       <TouchableOpacity
                         style={s.showMoreBtn}
-                        onPress={() => setShowAllEvents(!showAllEvents)}
-                        data-testid="show-more-events-button"
+                        onPress={loadMoreEvents}
+                        disabled={loadingMoreEvents}
+                        data-testid="load-more-events-button"
                       >
-                        <Text style={s.showMoreText}>
-                          {showAllEvents ? 'Show Less' : `Show All ${filteredEvents.length} Events`}
-                        </Text>
-                        <Ionicons name={showAllEvents ? 'chevron-up' : 'chevron-down'} size={16} color="#007AFF" />
+                        {loadingMoreEvents ? (
+                          <ActivityIndicator size="small" color="#007AFF" />
+                        ) : (
+                          <>
+                            <Ionicons name="time-outline" size={16} color="#007AFF" />
+                            <Text style={s.showMoreText}>Load Older History</Text>
+                          </>
+                        )}
                       </TouchableOpacity>
                     )}
                   </View>

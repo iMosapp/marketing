@@ -324,8 +324,8 @@ export const contactsAPI = {
     return response.data;
   },
 
-  getEvents: async (userId: string, contactId: string, limit: number = 50) => {
-    const response = await api.get(`/contacts/${userId}/${contactId}/events`, { params: { limit } });
+  getEvents: async (userId: string, contactId: string, limit: number = 100, skip: number = 0) => {
+    const response = await api.get(`/contacts/${userId}/${contactId}/events`, { params: { limit, skip } });
     return response.data;
   },
 
