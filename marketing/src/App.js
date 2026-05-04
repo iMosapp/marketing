@@ -614,6 +614,7 @@ const DemoForm = () => {
     company: '',
     message: ''
   });
+  const [smsOptIn, setSmsOptIn] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
@@ -626,7 +627,7 @@ const DemoForm = () => {
     
     setIsSubmitting(true);
     try {
-      const response = await fetch('https://app.imosapp.com/api/demo-requests', {
+      const response = await fetch('https://app.imonsocial.com/api/demo-requests', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -637,6 +638,7 @@ const DemoForm = () => {
           phone: formData.phone,
           company: formData.company,
           message: formData.message,
+          sms_opt_in: smsOptIn,
           source: 'website_demo_request',
         }),
       });
@@ -644,6 +646,7 @@ const DemoForm = () => {
       if (response.ok) {
         setSubmitSuccess(true);
         setFormData({ name: '', email: '', phone: '', company: '', message: '' });
+        setSmsOptIn(false);
       } else {
         alert('Something went wrong. Please try again.');
       }
@@ -661,7 +664,7 @@ const DemoForm = () => {
         <div className="demo-form-content">
           <h2 className="demo-form-title">Schedule a Demo</h2>
           <p className="demo-form-subtitle">
-            See how iMOs can transform your sales process. Fill out the form and one of our team members will reach out to schedule a personalized demo.
+            See how I'm On Social can transform your sales process. Fill out the form and one of our team members will reach out to schedule a personalized demo.
           </p>
           
           {submitSuccess ? (
@@ -731,10 +734,25 @@ const DemoForm = () => {
                   rows={4}
                 />
               </div>
+
+              <div className="form-group full-width opt-in-group">
+                <label className="opt-in-label">
+                  <input
+                    type="checkbox"
+                    checked={smsOptIn}
+                    onChange={(e) => setSmsOptIn(e.target.checked)}
+                    className="opt-in-checkbox"
+                  />
+                  <span>
+                    I agree to receive SMS messages from I'm On Social about my demo request and account updates. Msg &amp; data rates may apply. Reply STOP to opt out at any time. See our <a href="/sms-terms" target="_blank" rel="noopener">SMS Messaging Policy</a>.
+                  </span>
+                </label>
+              </div>
               
               <button type="submit" className="btn btn-primary btn-lg btn-full" disabled={isSubmitting}>
                 {isSubmitting ? 'Submitting...' : 'Request Demo'}
               </button>
+              <p className="form-legal">By submitting, you agree to our <a href="/terms" target="_blank">Terms of Service</a> and <a href="/privacy" target="_blank">Privacy Policy</a>. I'm On Social is operated by VI Ventures Group LLC.</p>
             </form>
           )}
         </div>

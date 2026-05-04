@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Schedule a Demo — I'm On Social</title>
-  <meta name="description" content="We'll walk you through the platform, show you how it fits your workflow, and answer every question. No pressure, no commitment — just a conversation about how to build your brand."/>
+  <meta name="description" content="See how I'm On Social transforms your sales process. Schedule a personalized demo with our team."/>
   <link rel="icon" href="/favicon.png"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -87,7 +87,40 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
 @media(max-width:480px){.ft-inner{grid-template-columns:1fr}.ft-brand{grid-column:span 1}}
 .rv{opacity:0;transform:translateY(32px);transition:opacity .7s cubic-bezier(.16,1,.3,1),transform .7s cubic-bezier(.16,1,.3,1)}
 .rv.vis{opacity:1;transform:translateY(0)}.rv-1{transition-delay:.1s}.rv-2{transition-delay:.2s}.rv-3{transition-delay:.3s}
-</style>
+
+  .demo-wrap{max-width:680px;margin:0 auto;padding:60px 24px 80px;}
+  .demo-eyebrow{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#007AFF;margin-bottom:12px;}
+  .demo-title{font-size:clamp(28px,5vw,44px);font-weight:800;color:#1C1C1E;line-height:1.15;margin-bottom:10px;}
+  .demo-sub{font-size:17px;color:#636366;line-height:1.6;margin-bottom:36px;}
+  .demo-card{background:#fff;border:1px solid #E5E5EA;border-radius:20px;padding:36px;box-shadow:0 4px 24px rgba(0,0,0,.06);}
+  .d-form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+  @media(max-width:560px){.d-form-row{grid-template-columns:1fr;}}
+  .d-form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
+  .d-form-group label{font-size:14px;font-weight:600;color:#1C1C1E;}
+  .d-form-group input,.d-form-group textarea{padding:12px 14px;border:1.5px solid #E5E5EA;border-radius:10px;font-size:15px;font-family:Inter,sans-serif;color:#1C1C1E;outline:none;transition:border-color .15s;background:#FAFAFA;width:100%;box-sizing:border-box;}
+  .d-form-group input:focus,.d-form-group textarea:focus{border-color:#007AFF;background:#fff;}
+  .d-form-group textarea{resize:vertical;min-height:100px;}
+  .opt-in-wrap{background:#F2F9FF;border:1px solid #007AFF30;border-radius:12px;padding:14px 16px;margin-bottom:20px;}
+  .opt-in-row{display:flex;align-items:flex-start;gap:10px;}
+  .opt-in-row input[type=checkbox]{width:17px;height:17px;margin-top:2px;flex-shrink:0;accent-color:#007AFF;cursor:pointer;}
+  .opt-in-row label{font-size:13px;color:#3C3C43;line-height:1.55;cursor:pointer;}
+  .opt-in-row a{color:#007AFF;}
+  .btn-demo-submit{width:100%;padding:16px;background:#007AFF;color:#fff;border:none;border-radius:12px;font-size:17px;font-weight:700;cursor:pointer;transition:background .15s;font-family:Inter,sans-serif;}
+  .btn-demo-submit:hover{background:#0062CC;}
+  .btn-demo-submit:disabled{background:#8E8E93;cursor:not-allowed;}
+  .form-legal-note{font-size:12px;color:#8E8E93;text-align:center;margin-top:12px;line-height:1.5;}
+  .form-legal-note a{color:#007AFF;}
+  .demo-success{text-align:center;padding:40px 20px;}
+  .demo-success .si{font-size:52px;color:#34C759;margin-bottom:16px;}
+  .demo-success h3{font-size:24px;font-weight:800;color:#1C1C1E;margin-bottom:8px;}
+  .demo-success p{font-size:16px;color:#636366;}
+  .benefits{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:36px;}
+  @media(max-width:560px){.benefits{grid-template-columns:1fr;}}
+  .benefit{text-align:center;padding:20px;background:#FAFAFA;border-radius:14px;}
+  .benefit i{font-size:22px;margin-bottom:8px;display:block;}
+  .benefit h4{font-size:15px;font-weight:700;color:#1C1C1E;margin-bottom:3px;}
+  .benefit p{font-size:13px;color:#636366;margin:0;}
+  </style>
 </head>
 <body>
 <nav>
@@ -138,57 +171,47 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
     <a href="/digital-card">Digital Cards</a><a href="/reviews">Reviews</a><a href="/inbox">Inbox</a><a href="/organizations">Organizations</a><a href="/pricing">Pricing</a><a href="https://app.imonsocial.com">Sign In</a><a href="/demo" class="mob-cta">Get a Demo</a>
   </div>
 </nav>
-<section class="page-hero rv">
-  <div class="sec-tag" style="color:#007AFF">SCHEDULE A DEMO</div>
-  <h1>See how it works in 15 minutes.</h1>
-  <p class="page-hero-sub">We'll walk you through the platform, show you how it fits your workflow, and answer every question. No pressure, no commitment — just a conversation about how to build your brand.</p>
-  <div class="hero-btns">
-    <a href="/demo" class="btn-lg primary"><i class="fa-regular fa-calendar"></i> Schedule a Demo</a>
-    <a href="https://app.imonsocial.com/auth/signup" class="btn-lg ghost">Start Free <i class="fa-solid fa-arrow-right"></i></a>
+<div class="demo-wrap">
+  <div class="demo-eyebrow">Schedule a Demo</div>
+  <h1 class="demo-title">See I'm On Social in action</h1>
+  <p class="demo-sub">Get a personalized walkthrough with our team. We'll show you exactly how it works for your business.</p>
+
+  <div class="benefits">
+    <div class="benefit"><i class="fa-solid fa-clock" style="color:#007AFF"></i><h4>30 minutes</h4><p>Quick, focused, no fluff</p></div>
+    <div class="benefit"><i class="fa-solid fa-user-tie" style="color:#34C759"></i><h4>Personalized</h4><p>Built around your use case</p></div>
+    <div class="benefit"><i class="fa-solid fa-circle-check" style="color:#FF9500"></i><h4>No pressure</h4><p>See if it's the right fit</p></div>
   </div>
-</section>
-<section class="sec alt">
-  <div class="feat-grid">
-    <div class="feat-card rv rv-1">
-      <div class="feat-ico" style="background:#007AFF14"><i class="fa-solid fa-clock" style="color:#007AFF"></i></div>
-      <h3>15 minutes</h3>
-      <p>Quick, focused, and respectful of your time. We get right to what matters to you.</p>
+
+  <div class="demo-card">
+    <div id="form-area">
+      <div class="d-form-row">
+        <div class="d-form-group"><label for="d-name">Full Name *</label><input type="text" id="d-name" placeholder="Forest Ward" required /></div>
+        <div class="d-form-group"><label for="d-email">Email *</label><input type="email" id="d-email" placeholder="forest@company.com" required /></div>
+      </div>
+      <div class="d-form-row">
+        <div class="d-form-group"><label for="d-phone">Phone Number *</label><input type="tel" id="d-phone" placeholder="(801) 555-1234" required /></div>
+        <div class="d-form-group"><label for="d-company">Company</label><input type="text" id="d-company" placeholder="Your Company" /></div>
+      </div>
+      <div class="d-form-group"><label for="d-msg">What are you looking for? (Optional)</label><textarea id="d-msg" placeholder="Tell us about your team, industry, or what problem you're trying to solve..."></textarea></div>
+
+      <div class="opt-in-wrap">
+        <div class="opt-in-row">
+          <input type="checkbox" id="sms-opt-in" />
+          <label for="sms-opt-in">I agree to receive SMS messages from I'm On Social about my demo request and follow-up communications. Msg &amp; data rates may apply. Reply STOP to opt out at any time. See our <a href="/sms-terms" target="_blank">SMS Messaging Policy</a>.</label>
+        </div>
+      </div>
+
+      <button class="btn-demo-submit" id="submit-btn" onclick="submitDemo()">Request My Demo <i class="fa-solid fa-arrow-right"></i></button>
+      <p class="form-legal-note">By submitting, you agree to our <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.<br>I'm On Social is operated by VI Ventures Group LLC.</p>
     </div>
-    <div class="feat-card rv rv-2">
-      <div class="feat-ico" style="background:#34C75914"><i class="fa-solid fa-user-check" style="color:#34C759"></i></div>
-      <h3>Personalized walkthrough</h3>
-      <p>We show you the features that matter most for YOUR role and industry.</p>
-    </div>
-    <div class="feat-card rv rv-3">
-      <div class="feat-ico" style="background:#FF950014"><i class="fa-solid fa-question" style="color:#FF9500"></i></div>
-      <h3>Ask anything</h3>
-      <p>Pricing, setup, integrations, team rollout — nothing is off limits.</p>
-    </div>
-    <div class="feat-card rv">
-      <div class="feat-ico" style="background:#AF52DE14"><i class="fa-solid fa-handshake" style="color:#AF52DE"></i></div>
-      <h3>No pressure</h3>
-      <p>We're not here to hard sell you. We're here to help you decide if this is right.</p>
-    </div>
-    <div class="feat-card rv">
-      <div class="feat-ico" style="background:#FF2D5514"><i class="fa-solid fa-rocket" style="color:#FF2D55"></i></div>
-      <h3>Start same day</h3>
-      <p>If you love it, you can be live the same day. It's that fast.</p>
-    </div>
-    <div class="feat-card rv">
-      <div class="feat-ico" style="background:#FFD60A14"><i class="fa-solid fa-gift" style="color:#FFD60A"></i></div>
-      <h3>Free trial included</h3>
-      <p>Every demo comes with access to a free trial. Try before you buy.</p>
+
+    <div id="success-area" class="demo-success" style="display:none">
+      <div class="si"><i class="fa-solid fa-circle-check"></i></div>
+      <h3>You're on the list!</h3>
+      <p>We'll reach out within 1 business day to schedule your demo.<br>Check your inbox — and spam just in case.</p>
     </div>
   </div>
-</section>
-<section class="cta-bottom">
-  <h2>You just need help remembering who you know.</h2>
-  <p>Be the one they never forget. Start building your reputation today.</p>
-  <div class="cta-btns">
-    <a href="/demo" class="btn-w"><i class="fa-regular fa-calendar"></i> Schedule a Demo</a>
-    <a href="https://app.imonsocial.com/auth/signup" class="btn-gw">Start Free Trial <i class="fa-solid fa-arrow-right"></i></a>
-  </div>
-</section>
+</div>
 <footer>
   <div class="ft-inner">
     <div class="ft-brand"><div class="ft-logo"><img src="/logo.png" alt="I'm On Social"/></div><p class="ft-tag">The relationship engine for sales professionals.</p>
@@ -201,9 +224,28 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
   <div class="ft-bottom"><span class="ft-copy">&copy; 2026 I'm On Social. Powered by VI Ventures Group LLC.</span><span class="ft-copy" style="margin-top:4px"><a href="/sms-terms" style="color:#007AFF">SMS Messaging Policy</a></span></div>
 </footer>
 <script>
-const ro=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('vis')});},{threshold:.08,rootMargin:'0px 0px -32px 0px'});
-document.querySelectorAll('.rv').forEach(el=>ro.observe(el));
 window.addEventListener('scroll',()=>document.querySelector('nav').classList.toggle('scrolled',scrollY>40));
+async function submitDemo() {
+  const name=document.getElementById('d-name').value.trim();
+  const email=document.getElementById('d-email').value.trim();
+  const phone=document.getElementById('d-phone').value.trim();
+  const company=document.getElementById('d-company').value.trim();
+  const msg=document.getElementById('d-msg').value.trim();
+  const smsOptIn=document.getElementById('sms-opt-in').checked;
+  if(!name||!email||!phone){alert('Please fill in your name, email, and phone number.');return;}
+  const btn=document.getElementById('submit-btn');
+  btn.disabled=true;btn.innerHTML='Submitting...';
+  try{
+    const r=await fetch('https://app.imonsocial.com/api/demo-requests',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name,email,phone,company,message:msg,sms_opt_in:smsOptIn,source:'website_demo_page'})
+    });
+    if(r.ok){
+      document.getElementById('form-area').style.display='none';
+      document.getElementById('success-area').style.display='block';
+    }else{btn.disabled=false;btn.innerHTML='Request My Demo <i class="fa-solid fa-arrow-right"></i>';alert('Something went wrong. Please try again.');}
+  }catch(e){btn.disabled=false;btn.innerHTML='Request My Demo <i class="fa-solid fa-arrow-right"></i>';alert('Something went wrong. Please try again.');}
+}
 </script>
 </body>
 </html>
