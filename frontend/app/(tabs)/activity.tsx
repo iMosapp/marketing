@@ -3,6 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   ActivityIndicator, RefreshControl, Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -202,6 +203,7 @@ export default function ActivityTab() {
   const { colors } = useThemeStore();
   const { user } = useAuthStore();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const userId = user?._id;
 
   const [feed, setFeed] = useState<any[]>([]);
@@ -307,14 +309,14 @@ export default function ActivityTab() {
   if (loading) {
     return (
       <View style={[s.root, { backgroundColor: colors.bg }]}>
-        <ActivityIndicator size="large" color="#C9A962" style={{ marginTop: 60 }} />
+        <ActivityIndicator size="large" color="#C9A962" style={{ marginTop: Math.max(insets.top + 20, 80) }} />
       </View>
     );
   }
 
   return (
     <View style={[s.root, { backgroundColor: colors.bg }]}>
-      <View style={s.header}>
+      <View style={[s.header, { paddingTop: Math.max(insets.top + 8, 48) }]}>
         <Text style={[s.headerTitle, { color: colors.text }]} data-testid="activity-header">Activity</Text>
         <Text style={[s.headerSub, { color: colors.textTertiary }]}>Your relationship feed</Text>
       </View>
@@ -381,7 +383,7 @@ export default function ActivityTab() {
 
 const s = StyleSheet.create({
   root: { flex: 1 },
-  header: { paddingHorizontal: 16, paddingTop: 48, paddingBottom: 6 },
+  header: { paddingHorizontal: 16, paddingBottom: 6 },
   headerTitle: { fontSize: 28, fontWeight: '800' },
   headerSub: { fontSize: 14, marginTop: 2 },
 
