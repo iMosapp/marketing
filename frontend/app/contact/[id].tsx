@@ -210,6 +210,8 @@ function ContactDetailScreen() {
   // Toolbar modals (mirroring inbox)
   const [showTemplates, setShowTemplates] = useState(false);
   const [showReviewLinks, setShowReviewLinks] = useState(false);
+  const [showReviewCardOptions, setShowReviewCardOptions] = useState(false);
+  const [sendingReviewCard, setSendingReviewCard] = useState(false);
   const [showBusinessCard, setShowBusinessCard] = useState(false);
   const [showLandingPageOptions, setShowLandingPageOptions] = useState(false);
   const [loadingCampaigns, setLoadingCampaigns] = useState(false);
@@ -1267,6 +1269,39 @@ function ContactDetailScreen() {
   };
 
   // ===== QUICK ACTIONS =====
+
+  const sendReviewCard = async () => {
+    if (!user?._id || !id) return;
+    setSendingReviewCard(true);
+    setShowReviewCardOptions(false);
+    try {
+      const res = await api.post(`/congrats/review-card/${user._id}/${id}`);
+      const { image_url, sms_text, contact_phone } = res.data;
+      const phone = contact_phone?.replace(/\D/g, '') || '';
+      if (!phone) {
+        showSimpleAlert('No Phone', 'This contact has no phone number.');
+        return;
+      }
+      // Build MMS SMS URL — includes image URL in the body so it shows as rich card
+      const body = image_url ? `${image_url}\n\n${sms_text}` : sms_text;
+      const smsUrl = Platform.OS === 'ios'
+        ? `sms:${phone}&body=${encodeURIComponent(body)}`
+        : `sms:${phone}?body=${encodeURIComponent(body)}`;
+      const canOpen = await Linking.canOpenURL(smsUrl);
+      if (canOpen) {
+        await Linking.openURL(smsUrl);
+      } else if (typeof window !== 'undefined') {
+        await Clipboard.setStringAsync(body);
+        showSimpleAlert('Copied', 'Review card message copied to clipboard.');
+      }
+    } catch (e: any) {
+      showSimpleAlert('Error', e?.response?.data?.detail || 'Could not generate review card.');
+    } finally {
+      setSendingReviewCard(false);
+    }
+  };
+
+
   const handleQuickAction = async (key: string) => {
     if (!contact.phone && (key === 'sms' || key === 'call')) {
       // Try to recover the phone from conversation history first
@@ -1301,7 +1336,8 @@ function ContactDetailScreen() {
         setComposerMode('email');
         break;
       case 'review':
-        setShowReviewLinks(true);
+        // Show options: plain review link OR branded review card
+        setShowReviewCardOptions(true);
         break;
       case 'card':
         openBusinessCardPicker();
@@ -3653,6 +3689,59 @@ function ContactDetailScreen() {
       </KeyboardAvoidingView>
 
       {/* ===== MODALS ===== */}
+
+      {/* Review Card Options — choose between branded card or plain link */}
+      <Modal visible={showReviewCardOptions} animationType="slide" transparent={true} onRequestClose={() => setShowReviewCardOptions(false)}>
+        <TouchableOpacity style={s.actionSheetOverlay} activeOpacity={1} onPress={() => setShowReviewCardOptions(false)}>
+          <View style={s.actionSheetContainer}>
+            <Text style={[s.actionSheetTitle, { color: colors.text }]}>Request a Review</Text>
+            <Text style={[s.actionSheetSubtitle, { color: colors.textSecondary }]}>
+              How would you like to send the review request?
+            </Text>
+
+            {/* Branded card option */}
+            <TouchableOpacity
+              style={[s.actionSheetButton, { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 16 }]}
+              onPress={sendReviewCard}
+              disabled={sendingReviewCard}
+              data-testid="send-review-card-btn"
+            >
+              {sendingReviewCard ? (
+                <ActivityIndicator color="#34C759" />
+              ) : (
+                <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#34C75920', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="image" size={20} color="#34C759" />
+                </View>
+              )}
+              <View style={{ flex: 1 }}>
+                <Text style={[s.actionSheetButtonText, { color: colors.text }]}>Send Branded Review Card</Text>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
+                  MMS with your store logo + "please leave a review"
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Plain review link option */}
+            <TouchableOpacity
+              style={[s.actionSheetButton, { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 16 }]}
+              onPress={() => { setShowReviewCardOptions(false); setShowReviewLinks(true); }}
+              data-testid="send-review-link-btn"
+            >
+              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#007AFF20', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="star" size={20} color="#007AFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.actionSheetButtonText, { color: colors.text }]}>Send Review Link</Text>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>Plain text link only</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={s.actionSheetCancel} onPress={() => setShowReviewCardOptions(false)}>
+              <Text style={s.actionSheetCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Review Links Action Sheet */}
       <Modal visible={showReviewLinks} animationType="slide" transparent={true}>

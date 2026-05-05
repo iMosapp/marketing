@@ -1485,3 +1485,231 @@ async def get_card_history(salesman_id: str, limit: int = 20, card_type: str = N
         "shares": c.get("shares", 0),
         "created_at": c.get("created_at").isoformat() if c.get("created_at") else None,
     } for c in all_cards[:limit]]
+
+
+# ── Review Request Card ─────────────────────────────────────────────────────
+
+def _generate_review_card_image(
+    store_name: str,
+    logo_bytes: Optional[bytes],
+    primary_color: str = "#007AFF",
+) -> bytes:
+    """
+    Generate a review request MMS card image (800x800).
+    Layout:  top 62% white — store logo + "thank you for choosing"
+             bottom 38% colored band — "your feedback matters, please leave a review"
+    """
+    W, H = 800, 800
+    TOP_H = int(H * 0.62)
+    BOT_H = H - TOP_H
+
+    # Parse hex color safely
+    def hex_to_rgb(h: str):
+        h = h.lstrip("#")
+        if len(h) == 3:
+            h = h * 2
+        try:
+            return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+        except Exception:
+            return (0, 122, 255)
+
+    brand_rgb = hex_to_rgb(primary_color)
+
+    def lf(bold: bool = False, size: int = 36):
+        try:
+            name = "LiberationSans-Bold.ttf" if bold else "LiberationSans-Regular.ttf"
+            return ImageFont.truetype(f"/usr/share/fonts/truetype/liberation/{name}", size)
+        except Exception:
+            return ImageFont.load_default()
+
+    img = Image.new("RGB", (W, H), "#FFFFFF")
+    draw = ImageDraw.Draw(img)
+
+    # ── Top section ───────────────────────────────────────────────────────────
+    # "thank you for choosing"
+    font_sub = lf(bold=False, size=32)
+    draw.text((W // 2, 56), "thank you for choosing", fill="#444444",
+              font=font_sub, anchor="mt")
+
+    # Logo or store name
+    logo_placed = False
+    if logo_bytes:
+        try:
+            logo_img = Image.open(io.BytesIO(logo_bytes)).convert("RGBA")
+            # Fit logo into 420×220 box
+            logo_img.thumbnail((420, 220), Image.LANCZOS)
+            # Paste centered in the top section
+            lw, lh = logo_img.size
+            lx = (W - lw) // 2
+            ly = 105
+            # White background for logo
+            bg = Image.new("RGBA", logo_img.size, (255, 255, 255, 255))
+            bg.paste(logo_img, mask=logo_img.split()[3] if logo_img.mode == "RGBA" else None)
+            img.paste(bg.convert("RGB"), (lx, ly))
+            logo_placed = True
+        except Exception:
+            pass
+
+    if not logo_placed:
+        # Draw store name in large bold text
+        font_name = lf(bold=True, size=58)
+        max_w = W - 80
+        # Wrap long names
+        words = store_name.split()
+        lines, cur = [], ""
+        for w in words:
+            test = (cur + " " + w).strip()
+            bbox = draw.textbbox((0, 0), test, font=font_name)
+            if bbox[2] - bbox[0] > max_w and cur:
+                lines.append(cur)
+                cur = w
+            else:
+                cur = test
+        if cur:
+            lines.append(cur)
+        line_h = 68
+        total_h = len(lines) * line_h
+        start_y = (TOP_H - total_h) // 2 - 10
+        for i, line in enumerate(lines):
+            draw.text((W // 2, start_y + i * line_h), line,
+                      fill=brand_rgb, font=font_name, anchor="mt")
+
+    # ── Divider chevron circle ────────────────────────────────────────────────
+    cx, cy, r = W // 2, TOP_H, 28
+    draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill="#FF3B30")
+    # Down chevron (simple triangle)
+    pts = [(cx - 14, cy - 6), (cx + 14, cy - 6), (cx, cy + 10)]
+    draw.polygon(pts, fill="#FFFFFF")
+
+    # ── Bottom colored band ───────────────────────────────────────────────────
+    draw.rectangle([0, TOP_H, W, H], fill=brand_rgb)
+
+    bot_center = TOP_H + BOT_H // 2
+    font_b1 = lf(bold=False, size=30)
+    font_b2 = lf(bold=True, size=33)
+    draw.text((W // 2, bot_center - 30), "your feedback matters,",
+              fill="#FFFFFF", font=font_b1, anchor="mm")
+    draw.text((W // 2, bot_center + 18), "please leave a review",
+              fill="#FFFFFF", font=font_b2, anchor="mm")
+
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG", quality=88)
+    return buf.getvalue()
+
+
+@router.post("/review-card/{user_id}/{contact_id}")
+async def send_review_request_card(user_id: str, contact_id: str, request: Request):
+    """
+    Generate a branded review request card image using the store/user's logo
+    and primary color, upload it, then return an MMS-ready URL + pre-filled
+    SMS body containing the review link.
+
+    The frontend opens native SMS with the MMS image URL + text,
+    so the customer receives a rich card (like the Tide Cleaners example)
+    followed by the review link text.
+    """
+    import asyncio as _aio
+    import httpx
+
+    db = get_db()
+    APP_BASE = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+
+    # ── Get user ──────────────────────────────────────────────────────────────
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"password": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # ── Get contact ───────────────────────────────────────────────────────────
+    contact = await db.contacts.find_one({"_id": ObjectId(contact_id)})
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+
+    contact_first = contact.get("first_name") or contact.get("name", "").split()[0] or "there"
+    contact_phone = contact.get("phone", "")
+
+    # ── Get store for logo + color ────────────────────────────────────────────
+    store = None
+    store_id = user.get("store_id") or user.get("org_id")
+    if store_id:
+        try:
+            store = await db.stores.find_one({"_id": ObjectId(store_id)})
+        except Exception:
+            pass
+
+    store_name = (store or {}).get("name") or user.get("name", "I'm On Social")
+    primary_color = (store or {}).get("primary_color") or "#007AFF"
+
+    # Resolve logo URL
+    from utils.image_urls import resolve_store_logo
+    logo_url = resolve_store_logo(store) if store else None
+    if not logo_url:
+        logo_url = user.get("photo_url") or user.get("photo_path")
+        if logo_url and not logo_url.startswith("http"):
+            logo_url = f"{APP_BASE}{logo_url}"
+
+    # Fetch logo bytes if available
+    logo_bytes = None
+    if logo_url:
+        try:
+            full_url = logo_url if logo_url.startswith("http") else f"{APP_BASE}{logo_url}"
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                resp = await client.get(full_url)
+                if resp.status_code == 200:
+                    logo_bytes = resp.content
+        except Exception as e:
+            logger.warning(f"[ReviewCard] Could not fetch logo: {e}")
+
+    # ── Generate card image ───────────────────────────────────────────────────
+    img_bytes = await _aio.to_thread(
+        _generate_review_card_image, store_name, logo_bytes, primary_color
+    )
+
+    # ── Upload image ──────────────────────────────────────────────────────────
+    from utils.image_storage import upload_image
+    upload_result = await upload_image(img_bytes, prefix="review-cards", entity_id=user_id)
+    img_url = ""
+    if isinstance(upload_result, dict):
+        path = upload_result.get("original_path") or upload_result.get("thumbnail_path") or ""
+        if path:
+            img_url = f"{APP_BASE}/api/images/{path}"
+    elif isinstance(upload_result, str):
+        img_url = upload_result if upload_result.startswith("http") else f"{APP_BASE}{upload_result}"
+
+    # ── Get review link ───────────────────────────────────────────────────────
+    review_link = ""
+    # Check user's personal review links first
+    user_reviews = user.get("review_links") or {}
+    review_link = (
+        user_reviews.get("google") or
+        user_reviews.get("yelp") or
+        user_reviews.get("facebook") or
+        ""
+    )
+    # Fall back to store review links
+    if not review_link and store:
+        store_reviews = store.get("review_links") or {}
+        review_link = (
+            store_reviews.get("google") or
+            store_reviews.get("yelp") or
+            store_reviews.get("facebook") or
+            ""
+        )
+    # Fall back to personal review page in the app
+    if not review_link:
+        review_link = f"{APP_BASE}/review/{user_id}"
+
+    # ── Build SMS text ────────────────────────────────────────────────────────
+    rep_first = (user.get("name") or "").split()[0] or "your rep"
+    sms_text = (
+        f"Hi {contact_first}! Do you have a moment to leave {store_name} a review? "
+        f"Your feedback means the world to us: {review_link}"
+    )
+
+    return {
+        "success": True,
+        "image_url": img_url,
+        "review_link": review_link,
+        "sms_text": sms_text,
+        "contact_phone": contact_phone,
+        "store_name": store_name,
+    }
