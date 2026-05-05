@@ -605,7 +605,7 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
       <a href="/privacy/">Privacy Policy</a>
       <a href="/terms/">Terms of Service</a>
       <a href="/why-imonsocial/">Why I'm On Social</a>
-      <a href="#" onclick="openDemoModal(event,'footer_contact')">Contact Us</a>
+      <a href="#" onclick="openContactModal(event)">Contact Us</a>
     </div>
     <div class="ft-col">
       <div class="ft-col-t">Get Started</div>
@@ -709,5 +709,53 @@ async function submitDemoForm(e){
 </script>
 
 <script>window.IMOS_API=window.IMOS_API||(location.hostname.includes("imonsocial.com")?"https://app.imonsocial.com":"");</script><script src="/chat-widget.js"></script>
+
+<div class="demo-overlay" id="contactModal">
+  <div class="demo-modal">
+    <button class="demo-close" onclick="closeContactModal()">&times;</button>
+    <div id="contactFormWrap">
+      <div style="margin-bottom:20px;">
+        <p style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#007AFF;margin-bottom:6px;">Get in Touch</p>
+        <h2 style="font-size:24px;font-weight:900;color:#1C1C1E;margin-bottom:6px;">Contact Us</h2>
+        <p style="font-size:14px;color:#8E8E93;">We'd love to hear from you. Send us a message and we'll get back to you within 1 business day.</p>
+      </div>
+      <form onsubmit="submitContactForm(event)">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+          <div class="dm-field"><label>First Name *</label><input type="text" id="ct-first" placeholder="John" required/></div>
+          <div class="dm-field"><label>Last Name</label><input type="text" id="ct-last" placeholder="Smith"/></div>
+        </div>
+        <div class="dm-field"><label>Email *</label><input type="email" id="ct-email" placeholder="john@company.com" required/></div>
+        <div class="dm-field"><label>Phone</label><input type="tel" id="ct-phone" placeholder="(555) 123-4567"/></div>
+        <div class="dm-field">
+          <label>How can we help you? *</label>
+          <textarea id="ct-message" placeholder="Tell us what's on your mind..." required style="width:100%;padding:12px 14px;background:#FAFAFA;border:1px solid #E5E5EA;border-radius:10px;color:#1C1C1E;font-size:15px;font-family:'Inter',sans-serif;outline:none;resize:vertical;min-height:120px;box-sizing:border-box;transition:border-color .2s;"></textarea>
+        </div>
+        <button type="submit" class="dm-submit" id="ctSubmitBtn" style="background:#1C1C1E;">Send Message</button>
+        <p style="font-size:11px;color:#8E8E93;text-align:center;margin-top:10px;line-height:1.5;">By submitting you agree to our <a href="/terms" style="color:#007AFF;">Terms</a> &amp; <a href="/privacy" style="color:#007AFF;">Privacy Policy</a>. Operated by VI Ventures Group LLC.</p>
+      </form>
+    </div>
+    <div id="contactSuccessWrap" style="display:none;text-align:center;padding:40px 20px">
+      <div style="font-size:52px;color:#34C759;margin-bottom:14px">&#10003;</div>
+      <h3 style="font-size:20px;font-weight:800;color:#1C1C1E;margin-bottom:8px;">Message Sent!</h3>
+      <p style="font-size:14px;color:#8E8E93;line-height:1.6;">Thanks for reaching out. We'll get back to you within 1 business day.</p>
+    </div>
+  </div>
+</div>
+<script>
+function openContactModal(e){if(e)e.preventDefault();document.getElementById('contactModal').classList.add('active');document.body.style.overflow='hidden';}
+function closeContactModal(){document.getElementById('contactModal').classList.remove('active');document.body.style.overflow='';}
+document.getElementById('contactModal').addEventListener('click',function(e){if(e.target===this)closeContactModal();});
+async function submitContactForm(e){
+  e.preventDefault();
+  var btn=document.getElementById('ctSubmitBtn');btn.disabled=true;btn.textContent='Sending...';
+  try{
+    var r=await fetch('https://app.imonsocial.com/api/demo-requests',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name:(document.getElementById('ct-first').value+' '+document.getElementById('ct-last').value).trim(),email:document.getElementById('ct-email').value,phone:document.getElementById('ct-phone').value,message:document.getElementById('ct-message').value,source:'contact_footer',lead_source:'contact_us'})
+    });
+    if(r.ok){document.getElementById('contactFormWrap').style.display='none';document.getElementById('contactSuccessWrap').style.display='block';}
+    else throw new Error();
+  }catch(ex){btn.disabled=false;btn.textContent='Send Message';alert('Something went wrong. Please try again.');}
+}
+</script>
 </body>
 </html>
