@@ -72,6 +72,11 @@ export default function PartnerAgreementDetailScreen() {
   const [editedPartnerName, setEditedPartnerName] = useState('');
   const [editedPartnerEmail, setEditedPartnerEmail] = useState('');
   const [editedPartnerPhone, setEditedPartnerPhone] = useState('');
+  const [editedCommissionTier, setEditedCommissionTier] = useState('');
+  const [editedCustomNotes, setEditedCustomNotes] = useState('');
+  const [editedNotes, setEditedNotes] = useState('');
+  const [editedContent, setEditedContent] = useState('');
+  const [showContentEditor, setShowContentEditor] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendingText, setSendingText] = useState(false);
@@ -87,6 +92,10 @@ export default function PartnerAgreementDetailScreen() {
       setEditedPartnerName(response.data.partner_name || '');
       setEditedPartnerEmail(response.data.partner_email || '');
       setEditedPartnerPhone(response.data.partner_phone || response.data.signed_partner?.phone || '');
+      setEditedCommissionTier(response.data.commission_tier || '');
+      setEditedCustomNotes(response.data.custom_commission_notes || '');
+      setEditedNotes(response.data.notes || '');
+      setEditedContent(response.data.content || '');
     } catch (error) {
       console.error('Error loading agreement:', error);
       showSimpleAlert('Error', 'Failed to load agreement');
@@ -106,13 +115,21 @@ export default function PartnerAgreementDetailScreen() {
         partner_name: editedPartnerName,
         partner_email: editedPartnerEmail,
         partner_phone: editedPartnerPhone,
+        commission_tier: editedCommissionTier || undefined,
+        custom_commission_notes: editedCustomNotes || undefined,
+        notes: editedNotes,
+        content: editedContent || undefined,
       });
-      setAgreement({ 
-        ...agreement, 
+      setAgreement({
+        ...agreement,
         partner_name: editedPartnerName,
         partner_email: editedPartnerEmail,
         partner_phone: editedPartnerPhone,
-      });
+        commission_tier: editedCommissionTier,
+        custom_commission_notes: editedCustomNotes,
+        notes: editedNotes,
+        content: editedContent,
+      } as any);
       setShowEditModal(false);
       showSimpleAlert('Success', 'Agreement updated');
     } catch (error) {
@@ -674,7 +691,11 @@ export default function PartnerAgreementDetailScreen() {
             </TouchableOpacity>
           </View>
           
-          <ScrollView style={styles.modalContent}>
+          <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled">
+
+            {/* ── Partner Info ──────────────────────────────── */}
+            <Text style={[styles.inputLabel, { color: '#C9A962', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11, marginBottom: 12 }]}>Partner Info</Text>
+
             <Text style={styles.inputLabel}>Partner Name</Text>
             <TextInput
               style={styles.textInput}
@@ -682,8 +703,9 @@ export default function PartnerAgreementDetailScreen() {
               onChangeText={setEditedPartnerName}
               placeholder="Enter partner name"
               placeholderTextColor={colors.textSecondary}
+              autoCapitalize="words"
             />
-            
+
             <Text style={styles.inputLabel}>Partner Email</Text>
             <TextInput
               style={styles.textInput}
@@ -704,6 +726,95 @@ export default function PartnerAgreementDetailScreen() {
               placeholderTextColor={colors.textSecondary}
               keyboardType="phone-pad"
             />
+
+            {/* ── Commission ────────────────────────────────── */}
+            <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 20 }} />
+            <Text style={[styles.inputLabel, { color: '#C9A962', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11, marginBottom: 12 }]}>Commission Terms</Text>
+
+            <Text style={styles.inputLabel}>Commission Tier</Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+              {[
+                { value: 'referral_standard', label: 'Referral\n10/15%' },
+                { value: 'reseller_standard', label: 'Reseller\n20/30/40%' },
+                { value: 'custom', label: 'Custom' },
+              ].map(opt => (
+                <TouchableOpacity
+                  key={opt.value}
+                  onPress={() => setEditedCommissionTier(opt.value)}
+                  style={{ flex: 1, padding: 12, borderRadius: 12, borderWidth: 1.5, alignItems: 'center',
+                    borderColor: editedCommissionTier === opt.value ? '#C9A962' : colors.border,
+                    backgroundColor: editedCommissionTier === opt.value ? '#C9A96218' : colors.card,
+                  }}
+                >
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: editedCommissionTier === opt.value ? '#C9A962' : colors.text, textAlign: 'center' }}>
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={styles.inputLabel}>Custom Commission Notes (replaces Exhibit A tiers)</Text>
+            <TextInput
+              style={[styles.textInput, { minHeight: 90, textAlignVertical: 'top' }]}
+              value={editedCustomNotes}
+              onChangeText={setEditedCustomNotes}
+              placeholder="e.g. 25% flat commission on all MRR for the first 12 months, then standard tiers apply."
+              placeholderTextColor={colors.textSecondary}
+              multiline
+              numberOfLines={4}
+            />
+            <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 16, marginTop: -8 }}>
+              Leave blank to use standard commission table for the selected tier.
+            </Text>
+
+            {/* ── Internal Notes ────────────────────────────── */}
+            <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 20 }} />
+            <Text style={[styles.inputLabel, { color: '#C9A962', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11, marginBottom: 12 }]}>Internal Notes</Text>
+
+            <Text style={styles.inputLabel}>Notes (not shown to partner)</Text>
+            <TextInput
+              style={[styles.textInput, { minHeight: 80, textAlignVertical: 'top' }]}
+              value={editedNotes}
+              onChangeText={setEditedNotes}
+              placeholder="Internal notes about this agreement..."
+              placeholderTextColor={colors.textSecondary}
+              multiline
+              numberOfLines={4}
+            />
+
+            {/* ── Agreement Content ─────────────────────────── */}
+            <View style={{ height: 1, backgroundColor: colors.border, marginVertical: 20 }} />
+            <Text style={[styles.inputLabel, { color: '#C9A962', textTransform: 'uppercase', letterSpacing: 0.5, fontSize: 11, marginBottom: 4 }]}>Agreement Text</Text>
+            <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 12 }}>
+              Edit the full agreement text (MPA + Exhibit A). Changes are saved but not retroactively applied to already-signed agreements.
+            </Text>
+
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                backgroundColor: colors.card, borderRadius: 12, padding: 14, marginBottom: 12,
+                borderWidth: 1, borderColor: colors.border }}
+              onPress={() => setShowContentEditor(v => !v)}
+            >
+              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>
+                {showContentEditor ? 'Hide Editor' : 'Edit Agreement Text'}
+              </Text>
+              <Ionicons name={showContentEditor ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+
+            {showContentEditor && (
+              <TextInput
+                style={[styles.textInput, { minHeight: 400, fontFamily: 'monospace', fontSize: 13, textAlignVertical: 'top' }]}
+                value={editedContent}
+                onChangeText={setEditedContent}
+                placeholder="Agreement content in Markdown..."
+                placeholderTextColor={colors.textSecondary}
+                multiline
+                autoCorrect={false}
+                autoCapitalize="none"
+              />
+            )}
+
+            <View style={{ height: 40 }} />
           </ScrollView>
         </SafeAreaView>
       </Modal>
