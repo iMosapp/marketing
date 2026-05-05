@@ -344,54 +344,107 @@ Extract `admin.py` (4,000 lines) into:
 
 ---
 
-## Prioritized Backlog — Updated Apr 26, 2026
+
+## Prioritized Backlog — Updated May 4, 2026
 
 ### P0 — This Week
-- **App Store / TestFlight Launch** — Get iOS build to TestFlight + Android to Google Play Internal Testing. Blocked on Apple Team ID + bundle ID confirmation. See "App Store Roadmap" section below.
-- **Twilio 10DLC Integration** — User now has LLC/business banking docs. Phase 1: remove mock mode, add STOP/UNSTOP webhooks, store-level Messaging Service SID, in-app 10DLC setup form. Phase 2: brand + campaign registration.
+- **App Store / TestFlight Launch** — Blocked on Apple Team ID + bundle ID. See App Store Roadmap below.
+- **Twilio 10DLC Integration** — LLC/business docs ready. Phase 1: remove mock mode, STOP/UNSTOP webhooks, Messaging Service SID. Registration URLs now live: `/terms`, `/privacy`, `/sms-terms` on `imonsocial.com`.
 
 ### P1 — Next Sprint
-- **Payment Collection — Stripe vs Elavon decision**
-  - User has US Bank business account (Elavon/Evalon available)
-  - Also evaluating Stripe
-  - Need: compare Elavon Converge API vs Stripe for ease of integration + merchant fees
-  - Once decided: wire into `/subscriptions/quotes/{id}/create-payment` (stub already exists)
-  - **Blocked on:** user decision + credential setup with chosen processor
-- **Inbox Redesign** — User not happy with current layout. HIGH PRIORITY but not starting yet. Document and revisit. Key issues TBD when user is ready.
-- **Push Notifications** — Mobile alerts for new leads, messages, campaign triggers (native iOS/Android)
+- **Payment Collection — Stripe vs Elavon** — HOLD, user decision pending. Stub exists at `/subscriptions/quotes/{id}/create-payment`.
+- **Inbox Redesign** — P1, not starting yet. Documented: 5-view structure (Assigned/Unassigned/AI Active/Waiting/All), right panel (bottom sheet on mobile), AI/Human/Hybrid mode toggle, priority scoring.
+- **Virtual Assistant → Inbox Wiring** — Phase 2 of VA: wire the clone to pre-load a draft reply in the composer (Assist mode). Foundation built (persona + `/api/auth/persona/{id}/sample-message` endpoint working).
+- **Reseller Portal for Quotes** — Resellers can't create quotes themselves yet. Admin-only for now.
+- **Push Notifications** — Mobile alerts for new leads, messages, campaign triggers.
 
 ### P2 — Upcoming
-- Architecture Phase 3b — Contact page component extraction (context shell built)
+- Architecture Phase 3b — Contact page component extraction (ContactContext shell built)
 - AI-Powered Outreach — contextual follow-up suggestions
-- Gamification & Leaderboards
 - WhatsApp Integration
 - Inventory Management Module
 - Mobile tags sync issue
+- Stripe/Elavon payment wiring once decision made
 
 ### P3 — Backlog
 - Typing indicators + read receipts (WebSocket already in place)
-- Architecture Phase 5 — shared UI components
-- Redis cache (for scale beyond 5K users)
+- Redis cache (scale beyond 5K users)
+- Reseller self-service quote portal
 
 ---
 
-## Payment Processor Decision (Documented Apr 26, 2026)
-**Status: HOLD — Pending user decision**
+## Completed Work — May 2026 Sprint
 
-| | Stripe | Elavon (US Bank) |
-|---|---|---|
-| Setup speed | Same day (online) | Days–weeks (underwriting via US Bank) |
-| Developer docs | Excellent | Adequate (Converge REST API) |
-| Emergent playbook | Yes (pre-built) | No (raw REST API) |
-| Integration complexity | Low | Medium-High |
-| Already have account | No | Potentially (US Bank business account) |
+### Partner Agreements
+- PDF generation + download button (admin detail page)
+- Auto-email signed PDF + partner copy on W-9 verification
+- "Send Link via Text" → creates contact, opens native SMS pre-filled
+- Partner phone field in edit modal; Save button fixed (SafeAreaView)
+- W-9 verify bug fixed (`agreementId` → `agreement.id`)
 
-**Integration point already stubbed:**
-- Backend: `/subscriptions/quotes/{id}/create-payment` in `subscriptions.py` 
-- Comment: `# TODO: Replace payment_link with live Stripe/Elavon payment link`
-- Frontend: Payment CTA button in signed-quote email + accepted-quote page
+### Quote System
+- Full digital signing flow: public page `/quote/accept/{id}`, IP/timestamp/hash capture
+- Signed PDF generated on acceptance (fpdf2), emailed to customer + admin
+- "Send Link via Text" → contact created + native SMS opens
+- Custom price override field (no more 25% discount cap)
+- Quote subject line: "I'm On Social Quote — Q-XXXXXX"
+- SMS opt-in on public signing page (ToS + Privacy links)
+- Quote email link `target="_blank"` + resilient button (fire-and-forget logging)
 
----
+### Virtual Assistant
+- New `/settings/virtual-assistant` page — completeness score (7/12), personality chips, what VA knows, live sample message preview (4 scenarios), AI Generate button
+- `POST /api/auth/persona/{id}/sample-message` endpoint (GPT-5.2, confirmed working in user's voice)
+- Hub: "Manage Profile" + "My Virtual Assistant" buttons visible immediately
+- Persona wizard: gold banner links to VA page
+
+### Simplified Onboarding
+- `profile-setup.tsx` rebuilt: 3 screens (Name+Photo → Bio+AI → Send First Card)
+- VCF/vCard endpoint: `GET /api/profile/{userId}/vcard.vcf` — iPhone "Add to Contacts" tap
+- First card send: VCF link + digital card link in one SMS
+
+### Contact Page Improvements
+- Feed redesigned: clean Activity-tab style rows (small icon + label + time), single card per day group
+- Manual task creation: "Add Task" button next to "Log Customer Reply", modal with title/when/priority/notes
+- Full relationship history: no more 5-event cap, 100 events per page, "Load Older History" pagination
+- Contact feed expand/collapse on tap (shows message content)
+
+### Internet Lead Intake System
+- `POST /api/leads/adf` — full ADF/XML parser (Cars.com, AutoTrader, OEM)
+- `POST /api/leads/webhook/{source_id}` — smart field normalizer (60+ field name variations)
+- After-hours timing engine — reads store `business_hours` + timezone, queues leads, fires at opening
+- AI first message generation in rep's cloned voice
+- Scheduler job every 2 min processes queued leads
+- Admin dashboard `/admin/internet-leads` — live feed with status, after-hours countdown, AI draft preview
+
+### Branding & Compliance
+- "i'M On Social" → "I'm On Social" (global, all 326 instances)
+- `brand.ts`: name + poweredByText → "Powered by VI Ventures Group LLC"
+- Footer: "Powered by VI Ventures Group LLC" in app + all marketing pages
+- Wyoming governing law (replaced Texas everywhere)
+- New `/imos/sms-terms` page — full Twilio 10DLC compliant messaging policy
+- Terms contact section: "I'm On Social is operated by VI Ventures Group LLC"
+
+### Marketing Site (imonsocial.com)
+- `/privacy`, `/terms`, `/sms-terms` — proper legal pages (replaced marketing feature cards)
+- Demo forms: SMS opt-in checkbox on ALL 54 pages (homepage modal, generated pages, industry pages, ad pages, presentations)
+- `Contact Us` footer → opens Contact Us modal (free-text message, distinct from Book a Demo)
+- Hero CTA buttons (Schedule a Demo / Start Free Trial) removed from product page top sections
+- Footer `ft-inner` wrapper fixed (was rendering vertically)
+- JavaScript double-brace bug fixed — modal buttons now work on all subpages
+- `openContactModal()` / `openDemoModal()` — separate modals, correct functions on every page
+- "Book a Demo" nav button → correct on all pages
+- All `app.imosapp.com` URLs → `app.imonsocial.com`
+- Footer copyright: `© 2026 I'm On Social. Powered by VI Ventures Group LLC.`
+
+### Bug Fixes
+- `saveBio` undefined crash on `/my-account` — function was missing, now restored
+- `image_storage.py` uploads blocking event loop — wrapped in `asyncio.to_thread` (fixes 60s timeouts)
+- `messages.py` `channel` variable deleted — caused 100% send failure across all SMS/email
+- Activity tab header clipping on large status bars — `useSafeAreaInsets()` replaces `paddingTop: 48`
+- TikTok icon invisible in light mode — `#FFFFFF` → `#69C9D0`
+- Super Admin role now assignable from Admin → Users (only by super_admin)
+- 502/OOM crashes — conversations 10s TTL cache, upload async fix
+
 
 ## App Store Launch Roadmap (Target: This Week)
 
