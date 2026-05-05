@@ -311,8 +311,22 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
         <p style="font-size:11px;color:#8E8E93;text-align:center;margin-top:10px;line-height:1.5;">By submitting you agree to our <a href="/terms" style="color:#007AFF;">Terms</a> &amp; <a href="/privacy" style="color:#007AFF;">Privacy Policy</a>. Operated by VI Ventures Group LLC.</p></form></div><div id="demoSuccessWrap" style="display:none;text-align:center;padding:32px 0"><div style="font-size:48px;color:var(--green);margin-bottom:12px">&#10003;</div><h3 style="font-size:20px;font-weight:700;margin-bottom:8px">You're In!</h3><p style="font-size:14px;color:var(--text-3)">We'll reach out within 24 hours to schedule your personalized demo.</p></div></div></div>
 <script>
 const ro=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.classList.add('vis')});},{threshold:.08,rootMargin:'0px 0px -32px 0px'});document.querySelectorAll('.rv').forEach(el=>ro.observe(el));window.addEventListener('scroll',()=>document.querySelector('nav').classList.toggle('scrolled',scrollY>40));
-let _demoSource='';function openDemoModal(e,source){e&&e.preventDefault();_demoSource=source||'';document.getElementById('demoModal').classList.add('active');document.body.style.overflow='hidden'}function closeDemoModal(){document.getElementById('demoModal').classList.remove('active');document.body.style.overflow=''}document.getElementById('demoModal').addEventListener('click',function(e){if(e.target===this)closeDemoModal()});
-async function submitDemoForm(e){e.preventDefault();var btn=document.getElementById('dmSubmitBtn');btn.disabled=true;btn.textContent='Submitting...';try{var res=await fetch('https://app.imonsocial.com/api/demo-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('dm-name').value,email:document.getElementById('dm-email').value,phone:document.getElementById('dm-phone').value,business_type:document.getElementById('dm-type').value,company:document.getElementById('dm-company').value,lead_source:_demoSource||'tiktok_page'},sms_opt_in:document.getElementById('dm-sms-opt-in')?document.getElementById('dm-sms-opt-in').checked:false)});if(res.ok){document.getElementById('demoFormWrap').style.display='none';document.getElementById('demoSuccessWrap').style.display='block'}else{throw new Error()}}catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert('Something went wrong. Please try again.')}}
+
+var _demoSource='';
+function openDemoModal(e,src){if(e)e.preventDefault();_demoSource=src||'';document.getElementById('demoModal').classList.add('active');document.body.style.overflow='hidden';}
+function closeDemoModal(){document.getElementById('demoModal').classList.remove('active');document.body.style.overflow='';}
+document.getElementById('demoModal').addEventListener('click',function(e){if(e.target===this)closeDemoModal();});
+async function submitDemoForm(e){
+  e.preventDefault();
+  var btn=document.getElementById('dmSubmitBtn');btn.disabled=true;btn.textContent='Submitting...';
+  try{
+    var r=await fetch('https://app.imonsocial.com/api/demo-requests',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name:document.getElementById('dm-name').value,email:document.getElementById('dm-email').value,phone:document.getElementById('dm-phone').value,business_type:document.getElementById('dm-type').value,company:document.getElementById('dm-company').value,sms_opt_in:document.getElementById('dm-sms-opt-in')&&document.getElementById('dm-sms-opt-in').checked,lead_source:_demoSource||'page'})
+    });
+    if(r.ok){document.getElementById('demoFormWrap').style.display='none';document.getElementById('demoSuccessWrap').style.display='block';}
+    else throw new Error();
+  }catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert('Something went wrong. Please try again.');}
+}
 </script>
 <script>window.IMOS_API=window.IMOS_API||(location.hostname.includes("imonsocial.com")?"https://app.imonsocial.com":"");</script><script src="/chat-widget.js"></script>
 </body>

@@ -360,31 +360,32 @@ DEMO_MODAL_HTML = """
   </div>
 </div>
 <script>
-let _demoSource='';
-function openDemoModal(e,src){{e&&e.preventDefault();_demoSource=src||'';document.getElementById('demoModal').classList.add('active');document.body.style.overflow='hidden'}}
-function closeDemoModal(){{document.getElementById('demoModal').classList.remove('active');document.body.style.overflow=''}}
-document.getElementById('demoModal').addEventListener('click',function(e){{if(e.target===this)closeDemoModal()}});
-async function submitDemoForm(e){{
+var _demoSource='';
+function openDemoModal(e,src){if(e)e.preventDefault();_demoSource=src||'';document.getElementById('demoModal').classList.add('active');document.body.style.overflow='hidden';}
+function closeDemoModal(){document.getElementById('demoModal').classList.remove('active');document.body.style.overflow='';}
+document.getElementById('demoModal').addEventListener('click',function(e){if(e.target===this)closeDemoModal();});
+async function submitDemoForm(e){
   e.preventDefault();
   var btn=document.getElementById('dmSubmitBtn');btn.disabled=true;btn.textContent='Submitting...';
-  try{{
-    var r=await fetch('https://app.imonsocial.com/api/demo-requests',{{method:'POST',headers:{{'Content-Type':'application/json'}},
-      body:JSON.stringify({{name:document.getElementById('dm-name').value,email:document.getElementById('dm-email').value,phone:document.getElementById('dm-phone').value,business_type:document.getElementById('dm-type').value,company:document.getElementById('dm-company').value,sms_opt_in:document.getElementById('dm-sms-opt-in').checked,lead_source:_demoSource||'subpage'}})
-    }});
-    if(r.ok){{document.getElementById('demoFormWrap').style.display='none';document.getElementById('demoSuccessWrap').style.display='block'}}
+  try{
+    var r=await fetch('https://app.imonsocial.com/api/demo-requests',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name:document.getElementById('dm-name').value,email:document.getElementById('dm-email').value,phone:document.getElementById('dm-phone').value,business_type:document.getElementById('dm-type').value,company:document.getElementById('dm-company').value,sms_opt_in:document.getElementById('dm-sms-opt-in')&&document.getElementById('dm-sms-opt-in').checked,lead_source:_demoSource||'subpage'})
+    });
+    if(r.ok){document.getElementById('demoFormWrap').style.display='none';document.getElementById('demoSuccessWrap').style.display='block';}
     else throw new Error();
-  }}catch(ex){{btn.disabled=false;btn.textContent='Book My Demo';alert('Something went wrong. Please try again.')}}
-}}
+  }catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert('Something went wrong. Please try again.');}
+}
 </script>"""
 
 
 FOOTER_HTML = """<footer>
+  <div class="ft-inner">
     <div class="ft-brand"><div class="ft-logo"><img src="/logo.png" alt="I'm On Social"/></div><p class="ft-tag">The relationship engine for sales professionals.</p>
       <div class="ft-social"><a href="https://instagram.com/imonsocialapp" target="_blank" rel="noopener"><i class="fa-brands fa-instagram"></i></a><a href="https://tiktok.com/@imonsocialapp" target="_blank" rel="noopener"><i class="fa-brands fa-tiktok"></i></a><a href="https://youtube.com/@imonsocial" target="_blank" rel="noopener"><i class="fa-brands fa-youtube"></i></a></div>
     </div>
     <div class="ft-col"><div class="ft-col-t">Product</div><a href="/digital-card">Digital Cards</a><a href="/reviews">Personal Reviews</a><a href="/inbox">Inbox</a><a href="/date-triggers">Automations</a><a href="/leaderboard">Leaderboards</a><a href="/jessi">Jessi AI</a></div>
     <div class="ft-col"><div class="ft-col-t">Company</div><a href="/organizations">For Teams</a><a href="/pricing">Pricing</a><a href="/privacy">Privacy Policy</a><a href="/terms">Terms of Service</a><a href="/sms-terms">SMS Policy</a><a href="mailto:support@imonsocial.com">Contact</a></div>
-  <div class="ft-col"><div class="ft-col-t">Get Started</div><a href="#" onclick="openDemoModal(event,'footer')">Schedule a Demo</a><a href="https://app.imonsocial.com/auth/signup">Start Free Trial</a><a href="https://app.imonsocial.com">Sign In</a><a href="/training">Training</a><a href="/help">Help Center</a></div>
+    <div class="ft-col"><div class="ft-col-t">Get Started</div><a href="#" onclick="openDemoModal(event,'footer')">Schedule a Demo</a><a href="https://app.imonsocial.com/auth/signup">Start Free Trial</a><a href="https://app.imonsocial.com">Sign In</a><a href="/training">Training</a><a href="/help">Help Center</a></div>
   </div>
   <div class="ft-bottom"><span class="ft-copy">&copy; 2026 I'm On Social. Powered by VI Ventures Group LLC.</span><span class="ft-copy" style="margin-top:4px"><a href="/sms-terms" style="color:#007AFF">SMS Messaging Policy</a></span></div>
 </footer>"""
