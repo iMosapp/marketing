@@ -190,7 +190,7 @@ const { showToast } = useToast();
   };
   
   const addSequenceStep = () => {
-    const newId = String(sequences.length + 1);
+    const newId = Date.now().toString();
     const lastStep = sequences[sequences.length - 1];
     setSequences([
       ...sequences,
@@ -206,6 +206,28 @@ const { showToast } = useToast();
         step_context: '',
       },
     ]);
+  };
+
+  const addStepAfter = (index: number) => {
+    const newId = Date.now().toString();
+    const stepBefore = sequences[index];
+    const newStep = {
+      id: newId,
+      message: '',
+      delayHours: stepBefore?.delayHours || 0,
+      delayDays: (stepBefore?.delayDays || 0) + 1,
+      delayMonths: stepBefore?.delayMonths || 0,
+      media_urls: [] as string[],
+      channel: stepBefore?.channel || 'sms',
+      ai_generated: campaign.aiEnabled,
+      step_context: '',
+    };
+    const updated = [
+      ...sequences.slice(0, index + 1),
+      newStep,
+      ...sequences.slice(index + 1),
+    ];
+    setSequences(updated);
   };
   
   const removeSequenceStep = (id: string) => {
@@ -871,6 +893,26 @@ const { showToast } = useToast();
                 </View>
               </View>
             </View>
+
+            {/* ── Add Step After connector ── */}
+            <View style={{ alignItems: 'center', marginVertical: 4 }}>
+              <View style={{ width: 2, height: 12, backgroundColor: colors.border }} />
+              <TouchableOpacity
+                onPress={() => addStepAfter(index)}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 6,
+                  backgroundColor: colors.card,
+                  borderWidth: 1.5, borderColor: '#007AFF40', borderStyle: 'dashed',
+                  borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8,
+                }}
+              >
+                <Ionicons name="add-circle" size={18} color="#007AFF" />
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#007AFF' }}>Add step here</Text>
+              </TouchableOpacity>
+              <View style={{ width: 2, height: 12, backgroundColor: colors.border }} />
+            </View>
+
+
           ))}
           
           <View style={styles.variableHint}>

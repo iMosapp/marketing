@@ -196,7 +196,7 @@ const { showToast } = useToast();
   };
   
   const addSequenceStep = () => {
-    const newId = String(sequences.length + 1);
+    const newId = Date.now().toString();
     const lastStep = sequences[sequences.length - 1];
     setSequences([
       ...sequences,
@@ -213,6 +213,32 @@ const { showToast } = useToast();
         media_urls: [],
       },
     ]);
+    setHasChanges(true);
+  };
+
+  const addStepAfter = (index: number) => {
+    const newId = Date.now().toString();
+    const stepBefore = sequences[index];
+    const stepAfter = sequences[index + 1];
+    // Suggest a delay midway between surrounding steps, or +1 day
+    const newStep = {
+      id: newId,
+      step: index + 2,
+      actionType: 'message' as const,
+      cardType: '',
+      message: '',
+      delayHours: stepBefore?.delayHours || 0,
+      delayDays: (stepBefore?.delayDays || 0) + 1,
+      delayMonths: stepBefore?.delayMonths || 0,
+      delayMinutes: 0,
+      media_urls: [] as string[],
+    };
+    const updated = [
+      ...sequences.slice(0, index + 1),
+      newStep,
+      ...sequences.slice(index + 1),
+    ].map((s, i) => ({ ...s, step: i + 1 }));
+    setSequences(updated);
     setHasChanges(true);
   };
   
@@ -610,8 +636,8 @@ const { showToast } = useToast();
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionLabel}>Message Sequence</Text>
-            <TouchableOpacity style={styles.addButton} onPress={addSequenceStep}>
-              <Ionicons name="add-circle" size={28} color="#007AFF" />
+            <TouchableOpacity style={[styles.addButton, { opacity: 0.5 }]} onPress={addSequenceStep}>
+              <Ionicons name="add-circle-outline" size={22} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
           
@@ -913,6 +939,29 @@ const { showToast } = useToast();
                 </>
               )}
             </View>
+
+            {/* ── Add Step After connector ── */}
+            <View style={{ alignItems: 'center', marginVertical: 4 }}>
+              {/* Vertical line down */}
+              <View style={{ width: 2, height: 12, backgroundColor: colors.border }} />
+              <TouchableOpacity
+                onPress={() => addStepAfter(index)}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 6,
+                  backgroundColor: colors.card,
+                  borderWidth: 1.5, borderColor: '#007AFF40', borderStyle: 'dashed',
+                  borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8,
+                }}
+                data-testid={`add-step-after-${index}`}
+              >
+                <Ionicons name="add-circle" size={18} color="#007AFF" />
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#007AFF' }}>
+                  Add step here
+                </Text>
+              </TouchableOpacity>
+              <View style={{ width: 2, height: 12, backgroundColor: colors.border }} />
+            </View>
+
           ))}
         </View>
         
