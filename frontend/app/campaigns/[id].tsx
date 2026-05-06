@@ -94,6 +94,9 @@ const { showToast } = useToast();
   const [deleting, setDeleting] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
   const [campaign, setCampaign] = useState<any>(null);
+  const [aiAssistMode, setAiAssistMode] = useState<string>('off');
+  const [escalationThreshold, setEscalationThreshold] = useState<number>(2);
+  const [escalationTimeoutMin, setEscalationTimeoutMin] = useState<number>(15);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   
   // Editable fields
@@ -129,6 +132,9 @@ const { showToast } = useToast();
       setLoading(true);
       const data = await campaignsAPI.get(user._id, id);
       setCampaign(data);
+      setAiAssistMode(data.ai_assist_mode || 'off');
+      setEscalationThreshold(data.escalation_threshold || 2);
+      setEscalationTimeoutMin(data.escalation_timeout_minutes || 15);
       
       // Set editable fields
       setName(data.name || '');
@@ -360,6 +366,9 @@ const { showToast } = useToast();
         date_type: triggerType === 'date' ? dateType : '',
         active,
         send_time: format(sendTime, 'HH:mm'),
+        ai_assist_mode: aiAssistMode,
+        escalation_threshold: escalationThreshold,
+        escalation_timeout_minutes: escalationTimeoutMin,
         sequences: sequences.map((s, idx) => ({
           step: idx + 1,
           action_type: s.actionType,
@@ -619,6 +628,78 @@ const { showToast } = useToast();
             <Text style={styles.timeText}>{format(sendTime, 'h:mm a')}</Text>
             <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
+        </View>
+
+        {/* AI Reply Mode */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>AI Reply Mode</Text>
+          <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 12 }}>
+            How should AI handle it when a customer replies?
+          </Text>
+          {[
+            { value: 'off',                  label: 'Off',                       sub: 'Automation pauses, you get notified',                          color: colors.textSecondary },
+            { value: 'draft_only',           label: 'Draft Only',                sub: 'AI writes a reply, you approve before it sends',               color: '#FF9500' },
+            { value: 'auto_reply',           label: 'Auto Reply',                sub: 'AI sends with a natural random delay (45s–5min)',               color: '#34C759' },
+            { value: 'auto_with_approval',   label: 'Auto + Escalate',           sub: 'AI auto-sends until Nth reply, then holds for your approval',   color: '#007AFF' },
+          ].map(opt => (
+            <TouchableOpacity
+              key={opt.value}
+              onPress={() => setAiAssistMode(opt.value)}
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: 12,
+                padding: 14, borderRadius: 12, marginBottom: 8,
+                borderWidth: 1.5,
+                borderColor: aiAssistMode === opt.value ? opt.color : colors.border,
+                backgroundColor: aiAssistMode === opt.value ? opt.color + '12' : colors.card,
+              }}
+            >
+              <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 2,
+                borderColor: aiAssistMode === opt.value ? opt.color : colors.border,
+                backgroundColor: aiAssistMode === opt.value ? opt.color : 'transparent',
+                alignItems: 'center', justifyContent: 'center' }}>
+                {aiAssistMode === opt.value && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#fff' }} />}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '600', color: aiAssistMode === opt.value ? opt.color : colors.text }}>{opt.label}</Text>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>{opt.sub}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+
+          {/* Escalation settings — only show for auto_with_approval */}
+          {aiAssistMode === 'auto_with_approval' && (
+            <View style={{ backgroundColor: '#007AFF10', borderRadius: 12, padding: 14, marginTop: 4, borderWidth: 1, borderColor: '#007AFF30' }}>
+              <Text style={{ fontSize: 14, fontWeight: '700', color: '#007AFF', marginBottom: 12 }}>Escalation Settings</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+                <Text style={{ fontSize: 14, color: colors.text, flex: 1 }}>Require approval after this many replies:</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <TouchableOpacity onPress={() => setEscalationThreshold(Math.max(1, escalationThreshold - 1))}
+                    style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}>
+                    <Ionicons name="remove" size={16} color={colors.text} />
+                  </TouchableOpacity>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: '#007AFF', minWidth: 24, textAlign: 'center' }}>{escalationThreshold}</Text>
+                  <TouchableOpacity onPress={() => setEscalationThreshold(escalationThreshold + 1)}
+                    style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}>
+                    <Ionicons name="add" size={16} color={colors.text} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <Text style={{ fontSize: 14, color: colors.text, flex: 1 }}>Escalate to manager after (minutes):</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <TouchableOpacity onPress={() => setEscalationTimeoutMin(Math.max(5, escalationTimeoutMin - 5))}
+                    style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}>
+                    <Ionicons name="remove" size={16} color={colors.text} />
+                  </TouchableOpacity>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: '#007AFF', minWidth: 30, textAlign: 'center' }}>{escalationTimeoutMin}</Text>
+                  <TouchableOpacity onPress={() => setEscalationTimeoutMin(escalationTimeoutMin + 5)}
+                    style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}>
+                    <Ionicons name="add" size={16} color={colors.text} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
         </View>
         
         {showTimePicker && (

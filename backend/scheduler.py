@@ -1099,6 +1099,26 @@ def start_scheduler():
         misfire_grace_time=60,
     )
 
+    # Every 30 seconds — send due AI reply queue items
+    from routers.ai_reply import process_ai_reply_queue as _process_ai_queue
+    scheduler.add_job(
+        safe_job(_process_ai_queue),
+        IntervalTrigger(seconds=30),
+        id="ai_reply_queue_processor",
+        replace_existing=True,
+        misfire_grace_time=15,
+    )
+
+    # Every 60 seconds — escalate timed-out AI reply approvals to manager
+    from routers.ai_reply import process_ai_reply_escalations as _process_escalations
+    scheduler.add_job(
+        safe_job(_process_escalations),
+        IntervalTrigger(seconds=60),
+        id="ai_reply_escalation_processor",
+        replace_existing=True,
+        misfire_grace_time=30,
+    )
+
     # Daily at 6 AM UTC on the 1st - generate monthly partner invoices
     scheduler.add_job(
         safe_job(run_monthly_partner_invoices_job),

@@ -236,18 +236,116 @@ async def incoming_message(
         
         await db.messages.insert_one(message)
         logger.info(f"Saved incoming message to conversation {conversation_id}")
-        
-        # Return empty TwiML response (no auto-reply)
-        # You can customize this to send an auto-reply if needed
-        twiml_response = '<?xml version="1.0" encoding="UTF-8"?><Response></Response>'
-        
-        return Response(content=twiml_response, media_type="application/xml")
-        
+
+        # ── STOP / UNSTOP detection ───────────────────────────────────────────
+        body_upper = Body.strip().upper()
+        is_stop   = body_upper in ("STOP", "STOPALL", "UNSUBSCRIBE", "CANCEL", "END", "QUIT")
+        is_unstop = body_upper in ("UNSTOP", "START", "SUBSCRIBE")
+
+        if is_stop:
+            await db.contacts.update_one(
+                {"_id": contact["_id"]},
+                {"$set": {"opted_out": True, "opted_out_at": datetime.utcnow(), "sms_consent_status": "opted_out"}}
+            )
+            await db.campaign_enrollments.update_many(
+                {"contact_id": contact_id, "status": "active"},
+                {"$set": {"status": "opted_out", "paused_reason": "contact_opted_out"}}
+            )
+            await db.ai_reply_queue.update_many(
+                {"contact_id": contact_id, "status": "pending"},
+                {"$set": {"status": "cancelled", "cancel_reason": "contact_opted_out"}}
+            )
+            logger.info(f"[Webhook] {from_phone} opted out (STOP)")
+            return Response(
+                content='<?xml version="1.0" encoding="UTF-8"?><Response><Message>You have been unsubscribed. Reply START to re-subscribe.</Message></Response>',
+                media_type="application/xml"
+            )
+
+        if is_unstop:
+            await db.contacts.update_one(
+                {"_id": contact["_id"]},
+                {"$set": {"opted_out": False, "opted_out_at": None, "sms_consent_status": "opted_in"}}
+            )
+            if user_id:
+                cname = contact.get("first_name") or "Customer"
+                await db.notifications.insert_one({
+                    "user_id": user_id, "type": "contact_resubscribed",
+                    "title": f"{cname} re-subscribed", "message": f"{from_phone} replied START.",
+                    "contact_id": contact_id, "read": False, "dismissed": False, "created_at": datetime.utcnow(),
+                })
+            return Response(
+                content='<?xml version="1.0" encoding="UTF-8"?><Response><Message>You are re-subscribed. Reply STOP to unsubscribe.</Message></Response>',
+                media_type="application/xml"
+            )
+
+        # ── Pause campaign enrollments + trigger AI reply ─────────────────────
+        active_enrollments = await db.campaign_enrollments.find({
+            "contact_id": contact_id, "status": "active",
+        }).to_list(10)
+
+        for enrollment in active_enrollments:
+            campaign = None
+            if enrollment.get("campaign_id"):
+                try:
+                    campaign = await db.campaigns.find_one({"_id": ObjectId(enrollment["campaign_id"])})
+                except Exception:
+                    pass
+
+            new_reply_count = (enrollment.get("reply_count") or 0) + 1
+            await db.campaign_enrollments.update_one(
+                {"_id": enrollment["_id"]},
+                {"$set": {
+                    "reply_count": new_reply_count, "last_reply_at": datetime.utcnow(),
+                    "status": "paused", "paused_reason": "customer_replied",
+                }}
+            )
+
+            ai_mode = (campaign or {}).get("ai_assist_mode", "off")
+            if ai_mode not in ("off", None):
+                try:
+                    from routers.ai_reply import queue_ai_reply
+                    await queue_ai_reply(
+                        contact_id=contact_id,
+                        conversation_id=conversation_id,
+                        enrollment_id=str(enrollment["_id"]),
+                        campaign_id=enrollment.get("campaign_id", ""),
+                        assigned_user_id=user_id or enrollment.get("user_id", ""),
+                        incoming_message=Body,
+                        ai_assist_mode=ai_mode,
+                        escalation_threshold=int((campaign or {}).get("escalation_threshold", 2)),
+                        escalation_timeout_minutes=int((campaign or {}).get("escalation_timeout_minutes", 15)),
+                        escalation_manager_id=(campaign or {}).get("escalation_manager_id"),
+                        reply_count=new_reply_count,
+                    )
+                except Exception as qe:
+                    logger.error(f"[Webhook] AI reply queue failed: {qe}")
+
+        # ── Notify assigned rep ───────────────────────────────────────────────
+        if user_id:
+            try:
+                cname = contact.get("name") or f"{contact.get('first_name','')} {contact.get('last_name','')}".strip() or from_phone
+                await db.notifications.insert_one({
+                    "user_id": user_id, "type": "customer_reply",
+                    "title": f"{cname} replied",
+                    "message": Body[:200],
+                    "contact_id": contact_id, "conversation_id": conversation_id,
+                    "campaign_paused": len(active_enrollments) > 0,
+                    "read": False, "dismissed": False, "created_at": datetime.utcnow(),
+                })
+            except Exception:
+                pass
+
+        return Response(
+            content='<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+            media_type="application/xml"
+        )
+
     except Exception as e:
         logger.error(f"Error processing incoming message: {str(e)}")
-        # Still return valid TwiML to prevent Twilio errors
-        twiml_response = '<?xml version="1.0" encoding="UTF-8"?><Response></Response>'
-        return Response(content=twiml_response, media_type="application/xml")
+        return Response(
+            content='<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+            media_type="application/xml"
+        )
 
 
 @router.post("/status")
