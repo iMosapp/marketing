@@ -302,23 +302,27 @@ async def incoming_message(
 
             ai_mode = (campaign or {}).get("ai_assist_mode", "off")
             if ai_mode not in ("off", None):
-                try:
-                    from routers.ai_reply import queue_ai_reply
-                    await queue_ai_reply(
-                        contact_id=contact_id,
-                        conversation_id=conversation_id,
-                        enrollment_id=str(enrollment["_id"]),
-                        campaign_id=enrollment.get("campaign_id", ""),
-                        assigned_user_id=user_id or enrollment.get("user_id", ""),
-                        incoming_message=Body,
-                        ai_assist_mode=ai_mode,
-                        escalation_threshold=int((campaign or {}).get("escalation_threshold", 2)),
-                        escalation_timeout_minutes=int((campaign or {}).get("escalation_timeout_minutes", 15)),
-                        escalation_manager_id=(campaign or {}).get("escalation_manager_id"),
-                        reply_count=new_reply_count,
-                    )
-                except Exception as qe:
-                    logger.error(f"[Webhook] AI reply queue failed: {qe}")
+                # Fire-and-forget — don't block the webhook waiting for GPT
+                # The webhook must return to Twilio quickly to avoid retries
+                async def _fire_ai_reply(enroll=enrollment, camp=campaign, rc=new_reply_count):
+                    try:
+                        from routers.ai_reply import queue_ai_reply
+                        await queue_ai_reply(
+                            contact_id=contact_id,
+                            conversation_id=conversation_id,
+                            enrollment_id=str(enroll["_id"]),
+                            campaign_id=enroll.get("campaign_id", ""),
+                            assigned_user_id=user_id or enroll.get("user_id", ""),
+                            incoming_message=Body,
+                            ai_assist_mode=ai_mode,
+                            escalation_threshold=int((camp or {}).get("escalation_threshold", 2)),
+                            escalation_timeout_minutes=int((camp or {}).get("escalation_timeout_minutes", 15)),
+                            escalation_manager_id=(camp or {}).get("escalation_manager_id"),
+                            reply_count=rc,
+                        )
+                    except Exception as bg_err:
+                        logger.error(f"[Webhook] Background AI reply failed: {bg_err}")
+                asyncio.create_task(_fire_ai_reply())
 
         # ── Notify assigned rep ───────────────────────────────────────────────
         if user_id:

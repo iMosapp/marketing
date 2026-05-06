@@ -134,7 +134,10 @@ async def queue_ai_reply(
             system_message=system_prompt,
         ).with_model("openai", "gpt-5.2")
 
-        response = await chat.send_message(UserMessage(text=user_prompt))
+        response = await asyncio.wait_for(
+            chat.send_message(UserMessage(text=user_prompt)),
+            timeout=12.0,  # Never hang longer than 12s — Twilio's webhook timeout is 15s
+        )
         ai_body = (response.strip() if isinstance(response, str)
                    else response.text.strip() if hasattr(response, "text")
                    else str(response)).strip('"\'')
@@ -241,10 +244,10 @@ async def process_ai_reply_queue():
     now = datetime.now(timezone.utc)
 
     due = await db.ai_reply_queue.find({
-        "status":           STATUS_PENDING,
+        "status":            STATUS_PENDING,
         "requires_approval": False,
-        "send_at":          {"$lte": now},
-    }).to_list(50)
+        "send_at":           {"$lte": now},
+    }).limit(10).to_list(10)  # Max 10 per tick — prevents memory spikes
 
     if not due:
         return

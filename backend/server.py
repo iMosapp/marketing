@@ -985,6 +985,10 @@ async def startup_event():
                     # customer_feedback — Review Center queries
                     db.customer_feedback.create_index([("salesperson_id", 1), ("approved", 1), ("created_at", -1)]),
                     db.customer_feedback.create_index([("salesperson_id", 1), ("created_at", -1)]),
+                    # ai_reply_queue — scheduler lookup: status + send_at (runs every 60s)
+                    db.ai_reply_queue.create_index([("status", 1), ("send_at", 1)]),
+                    db.ai_reply_queue.create_index([("contact_id", 1), ("status", 1)]),
+                    db.ai_reply_queue.create_index([("assigned_user_id", 1), ("status", 1), ("requires_approval", 1)]),
                 ), timeout=15)
                 logger.info("Database indexes created/verified (production-ready)")
 

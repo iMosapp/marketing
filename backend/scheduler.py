@@ -1099,14 +1099,14 @@ def start_scheduler():
         misfire_grace_time=60,
     )
 
-    # Every 30 seconds — send due AI reply queue items
+    # Every 60 seconds — send due AI reply queue items (60s is invisible to users vs 30s)
     from routers.ai_reply import process_ai_reply_queue as _process_ai_queue
     scheduler.add_job(
         safe_job(_process_ai_queue),
-        IntervalTrigger(seconds=30),
+        IntervalTrigger(seconds=60),
         id="ai_reply_queue_processor",
         replace_existing=True,
-        misfire_grace_time=15,
+        misfire_grace_time=30,
     )
 
     # Every 60 seconds — escalate timed-out AI reply approvals to manager
