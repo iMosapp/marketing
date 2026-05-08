@@ -1,10 +1,12 @@
 /**
  * Universal branding config — single source of truth.
- * When the domain changes (e.g., to imonsocial.com), update ONLY here.
+ * Uses environment variables so it works across preview, staging, and production.
  */
+const _base = (process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com').replace(/\/api$/, '');
+
 export const BRAND = {
   name: "I'm On Social",
   poweredByText: "Powered by VI Ventures Group LLC",
-  url: "https://app.imonsocial.com/imos",
-  domain: "app.imonsocial.com/imos",
+  url: `${_base}/imos`,
+  domain: _base.replace(/^https?:\/\//, '') + '/imos',
 };

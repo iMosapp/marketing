@@ -733,7 +733,8 @@ const { showToast } = useToast();
           </View>
           
           {sequences.map((step, index) => (
-            <View key={step.id} style={styles.sequenceCard}>
+            <React.Fragment key={step.id}>
+            <View style={styles.sequenceCard}>
               <View style={styles.sequenceHeader}>
                 <View style={styles.stepBadge}>
                   <Text style={styles.stepNumber}>{index + 1}</Text>
@@ -894,7 +895,7 @@ const { showToast } = useToast();
               </View>
             </View>
 
-            {/* ── Add Step After connector ── */}
+            {/* Add Step After connector */}
             <View style={{ alignItems: 'center', marginVertical: 4 }}>
               <View style={{ width: 2, height: 12, backgroundColor: colors.border }} />
               <TouchableOpacity
@@ -912,7 +913,7 @@ const { showToast } = useToast();
               <View style={{ width: 2, height: 12, backgroundColor: colors.border }} />
             </View>
 
-
+            </React.Fragment>
           ))}
           
           <View style={styles.variableHint}>

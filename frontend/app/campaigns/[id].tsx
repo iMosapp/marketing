@@ -723,7 +723,8 @@ const { showToast } = useToast();
           </View>
           
           {sequences.map((step, index) => (
-            <View key={step.id} style={styles.sequenceCard}>
+            <React.Fragment key={step.id}>
+            <View style={styles.sequenceCard}>
               <View style={styles.sequenceHeader}>
                 <View style={styles.stepBadge}>
                   <Text style={styles.stepNumber}>{index + 1}</Text>
@@ -759,7 +760,7 @@ const { showToast } = useToast();
                 </TouchableOpacity>
               </View>
               
-              {/* ── DELAY CONTROLS — Quick presets + custom fields ─────── */}
+              {/* DELAY CONTROLS - Quick presets + custom fields */}
               {(() => {
                 const isFirstStep = index === 0;
                 const MIN_MINUTES = 15; // minimum for steps 2+ to ensure reliable scheduler delivery
@@ -1021,7 +1022,7 @@ const { showToast } = useToast();
               )}
             </View>
 
-            {/* ── Add Step After connector ── */}
+            {/* Add Step After connector */}
             <View style={{ alignItems: 'center', marginVertical: 4 }}>
               {/* Vertical line down */}
               <View style={{ width: 2, height: 12, backgroundColor: colors.border }} />
@@ -1043,6 +1044,7 @@ const { showToast } = useToast();
               <View style={{ width: 2, height: 12, backgroundColor: colors.border }} />
             </View>
 
+            </React.Fragment>
           ))}
         </View>
         
