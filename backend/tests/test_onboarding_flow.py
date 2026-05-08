@@ -18,7 +18,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 # Test user credentials from main agent
 TEST_USER_ID = "69bf845d9135c4567c2bc614"
 TEST_USER_EMAIL = "onboard_flow_test@test.com"
-TEST_USER_PASSWORD = "DwQR2dUxOt0y"
+TEST_USER_PASSWORD = os.environ.get("TEST_USER_PASS", "Admin123!")
 
 # Super admin for creating test users
 SUPER_ADMIN_EMAIL = "forest@imosapp.com"

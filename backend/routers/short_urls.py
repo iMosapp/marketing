@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Optional
 import os
 import random
+import secrets
 import string
 import httpx
 from io import BytesIO
@@ -23,8 +24,8 @@ SHORT_CODE_CHARS = "23456789abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ"
 SHORT_CODE_LENGTH = 6
 
 def generate_short_code(length: int = SHORT_CODE_LENGTH) -> str:
-    """Generate a random short code."""
-    return ''.join(random.choices(SHORT_CODE_CHARS, k=length))
+    """Generate a cryptographically secure random short code."""
+    return ''.join(secrets.choice(SHORT_CODE_CHARS) for _ in range(length))
 
 def get_short_url_base() -> str:
     """Get the base URL for short links. Prioritizes PUBLIC_FACING_URL to avoid

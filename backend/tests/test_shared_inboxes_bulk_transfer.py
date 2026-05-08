@@ -13,7 +13,7 @@ BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', '').rstrip('/')
 # Test credentials from provided data
 TEST_USER_ID = "69963e636d8473ba25695a34"
 TEST_EMAIL = "superadmin@mvpline.com"
-TEST_PASSWORD = "admin123"
+TEST_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "Admin123!")
 
 
 @pytest.fixture(scope="module")

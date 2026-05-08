@@ -13,7 +13,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://user-routing-issue.p
 
 # Test user credentials
 TEST_EMAIL = "superadmin@mvpline.com"
-TEST_PASSWORD = "admin123"
+TEST_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "Admin123!")
 
 @pytest.fixture(scope="module")
 def auth_session():

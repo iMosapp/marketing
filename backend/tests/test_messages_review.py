@@ -12,7 +12,7 @@ if BASE_URL and not BASE_URL.endswith('/api'):
 
 # Test credentials
 SUPERADMIN_EMAIL = "superadmin@mvpline.com"
-SUPERADMIN_PASSWORD = "admin123"
+SUPERADMIN_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "Admin123!")
 
 
 class TestAuth:

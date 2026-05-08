@@ -695,9 +695,9 @@ async def create_discount_code(data: dict):
     
     if not code:
         # Generate a random code
-        import random
-        import string
-        code = "MVP" + ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        import secrets, string
+        alphabet = string.ascii_uppercase + string.digits
+        code = "MVP" + ''.join(secrets.choice(alphabet) for _ in range(6))
     
     if discount_percent not in DISCOUNT_TIERS:
         raise HTTPException(status_code=400, detail=f"Discount must be one of: {DISCOUNT_TIERS}")

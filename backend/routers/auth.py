@@ -6,6 +6,7 @@ from bson import ObjectId
 from datetime import datetime
 from typing import Optional
 import random
+import secrets
 import logging
 import os
 import httpx
@@ -630,8 +631,8 @@ async def request_password_reset(data: dict):
         # Don't reveal if email exists
         return {"message": "If an account exists with this email, a reset code has been sent"}
     
-    # Generate 6-digit code
-    code = str(random.randint(100000, 999999))
+    # Generate 6-digit code using cryptographically secure random
+    code = str(secrets.randbelow(900000) + 100000)
     reset_codes[email] = {
         'code': code,
         'expires': datetime.utcnow().timestamp() + 600  # 10 minutes

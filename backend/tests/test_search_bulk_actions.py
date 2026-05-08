@@ -18,7 +18,7 @@ BASE_URL = BASE_URL.rstrip('/')
 # Test credentials
 USER_ID = "69963e636d8473ba25695a34"
 TEST_EMAIL = "superadmin@mvpline.com"
-TEST_PASSWORD = "admin123"
+TEST_PASSWORD = os.environ.get("TEST_ADMIN_PASS", "Admin123!")
 
 
 class TestSearchAPI:
