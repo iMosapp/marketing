@@ -2,6 +2,7 @@
 Partner Agreement router - Digital contracts for resellers and referral partners
 Supports: Agreement templates, digital signatures, Stripe payments, commission tiers
 """
+import re
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 from bson import ObjectId
@@ -1459,9 +1460,10 @@ async def check_payment_status(agreement_id: str, session_id: str):
 @router.post("/agreements/{agreement_id}/add-contact")
 async def add_agreement_contact(agreement_id: str, request: Request):
     """
-    Creates the partner from this agreement as a contact in the requesting user's account.
+    Creates the partner from this agreement as a contact.
+    Deduplicates across the ENTIRE org/store — not just one user's contacts.
     Returns contact_id + pre-filled SMS body with the signing link.
-    Idempotent — matches on phone or email first.
+    Idempotent — stores contact_id on the agreement so it's never created twice.
     """
     db = get_db()
     data = await request.json()
@@ -1473,33 +1475,78 @@ async def add_agreement_contact(agreement_id: str, request: Request):
     if not agreement:
         raise HTTPException(status_code=404, detail="Agreement not found")
 
-    # Prefer signed_partner data (has phone), fall back to draft fields
+    # If we already created a contact for this agreement, return it
+    if agreement.get("contact_id"):
+        existing_contact = await db.contacts.find_one({"_id": ObjectId(agreement["contact_id"])})
+        if existing_contact:
+            sign_link = f"{_APP_URL}/partner/agreement/{agreement_id}"
+            name = (agreement.get("signed_partner") or {}).get("name") or agreement.get("partner_name", "")
+            first = name.split()[0] if name else "there"
+            agmt_type = agreement.get("template_name", "Partner Agreement")
+            sms_body = f"Hi {first}! Here's your I'm On Social {agmt_type} to review and sign: {sign_link}"
+            return {
+                "contact_id": agreement["contact_id"],
+                "created": False,
+                "name": name,
+                "phone": existing_contact.get("phone", ""),
+                "email": existing_contact.get("email", ""),
+                "sms_body": sms_body,
+                "sign_link": sign_link,
+            }
+
     signed  = agreement.get("signed_partner") or {}
     name    = signed.get("name")  or agreement.get("partner_name")  or ""
-    email   = signed.get("email") or agreement.get("partner_email") or ""
+    email   = (signed.get("email") or agreement.get("partner_email") or "").lower().strip()
     phone   = signed.get("phone") or agreement.get("partner_phone") or ""
     company = signed.get("company") or ""
 
     if not phone and not email:
         raise HTTPException(status_code=400, detail="Agreement has no phone or email. Add partner details first.")
 
-    digits = ''.join(c for c in (phone or "") if c.isdigit())
+    # Normalize phone to last 10 digits for comparison
+    digits = re.sub(r"\D", "", phone)
+    digits10 = digits[-10:] if len(digits) >= 10 else digits
 
-    # Check for existing contact
+    # ── Org-wide dedup (search across ALL users in same org/store) ─────────────
+    # Get the requesting user's org/store context
+    req_user = await db.users.find_one({"_id": ObjectId(user_id)}, {"org_id": 1, "store_id": 1})
+    org_id   = (req_user or {}).get("org_id")
+    store_id = (req_user or {}).get("store_id")
+
+    # Build a broad dedup query covering: this user, same org, same store
+    user_scope: list = [{"user_id": user_id}]
+    if org_id:
+        user_scope.append({"org_id": org_id})
+    if store_id:
+        user_scope.append({"store_id": store_id})
+
+    or_clauses = []
+    if digits10:
+        or_clauses.append({"phone": {"$regex": re.escape(digits10)}})
+    if email:
+        or_clauses.append({"email": email})
+
     existing = None
-    if digits:
+    if or_clauses:
+        existing = await db.contacts.find_one({
+            "$or": user_scope,
+            "$or": or_clauses,   # noqa: F601 — MongoDB accepts duplicate $or via array
+        })
+
+    # Fallback: simpler exact match if broad query returns nothing
+    if not existing and or_clauses:
         existing = await db.contacts.find_one({
             "user_id": user_id,
-            "$or": [
-                {"phone": {"$regex": digits[-10:]}},
-                {"phone_digits": digits[-10:]},
-            ]
+            "$or": or_clauses,
         })
-    if not existing and email:
-        existing = await db.contacts.find_one({"user_id": user_id, "email": email.lower().strip()})
 
     if existing:
         contact_id = str(existing["_id"])
+        # Update agreement with contact_id to prevent future duplicates
+        await db.partner_agreements.update_one(
+            {"_id": ObjectId(agreement_id)},
+            {"$set": {"contact_id": contact_id}}
+        )
         created = False
     else:
         parts      = name.strip().split(" ", 1)
@@ -1510,7 +1557,7 @@ async def add_agreement_contact(agreement_id: str, request: Request):
             "original_user_id": user_id,
             "first_name":       first_name,
             "last_name":        last_name,
-            "email":            email.lower().strip() if email else "",
+            "email":            email,
             "phone":            phone,
             "company":          company,
             "source":           "partner_agreement",
@@ -1523,7 +1570,12 @@ async def add_agreement_contact(agreement_id: str, request: Request):
         }
         result     = await db.contacts.insert_one(contact_doc)
         contact_id = str(result.inserted_id)
-        created    = True
+        # Store contact_id on agreement to prevent future duplicates
+        await db.partner_agreements.update_one(
+            {"_id": ObjectId(agreement_id)},
+            {"$set": {"contact_id": contact_id}}
+        )
+        created = True
 
     sign_link = f"{_APP_URL}/partner/agreement/{agreement_id}"
     first     = name.split()[0] if name else "there"
