@@ -77,6 +77,7 @@ export default function PartnerAgreementDetailScreen() {
   const [editedNotes, setEditedNotes] = useState('');
   const [editedContent, setEditedContent] = useState('');
   const [showContentEditor, setShowContentEditor] = useState(false);
+  const [showFullScreenEditor, setShowFullScreenEditor] = useState(false);
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
   const [sendingText, setSendingText] = useState(false);
@@ -791,33 +792,88 @@ export default function PartnerAgreementDetailScreen() {
 
             <TouchableOpacity
               style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-                backgroundColor: colors.card, borderRadius: 12, padding: 14, marginBottom: 12,
-                borderWidth: 1, borderColor: colors.border }}
-              onPress={() => setShowContentEditor(v => !v)}
+                backgroundColor: '#C9A96215', borderRadius: 12, padding: 16, marginBottom: 12,
+                borderWidth: 1.5, borderColor: '#C9A96240' }}
+              onPress={() => setShowFullScreenEditor(true)}
             >
-              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>
-                {showContentEditor ? 'Hide Editor' : 'Edit Agreement Text'}
-              </Text>
-              <Ionicons name={showContentEditor ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textSecondary} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <Ionicons name="document-text" size={20} color="#C9A962" />
+                <View>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: '#C9A962' }}>Open Full Editor</Text>
+                  <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                    {editedContent ? `${editedContent.length.toLocaleString()} characters` : 'No content yet'}
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="expand" size={18} color="#C9A962" />
             </TouchableOpacity>
 
-            {showContentEditor && (
-              <TextInput
-                style={[styles.textInput, { minHeight: 400, fontFamily: 'monospace', fontSize: 13, textAlignVertical: 'top' }]}
-                value={editedContent}
-                onChangeText={setEditedContent}
-                placeholder="Agreement content in Markdown..."
-                placeholderTextColor={colors.textSecondary}
-                multiline
-                autoCorrect={false}
-                autoCapitalize="none"
-              />
-            )}
+            {/* removed inline collapsed editor — now full-screen via showFullScreenEditor */}
 
             <View style={{ height: 40 }} />
           </ScrollView>
         </SafeAreaView>
       </Modal>
+      {/* ── Full-Screen Agreement Text Editor ── */}
+      <Modal visible={showFullScreenEditor} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setShowFullScreenEditor(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+          {/* Header */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+            <TouchableOpacity onPress={() => setShowFullScreenEditor(false)}>
+              <Text style={{ fontSize: 17, color: '#FF3B30' }}>Discard</Text>
+            </TouchableOpacity>
+            <View style={{ alignItems: 'center' }}>
+              <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>Agreement Text</Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary }}>{editedContent.length.toLocaleString()} chars</Text>
+            </View>
+            <TouchableOpacity onPress={() => setShowFullScreenEditor(false)}>
+              <Text style={{ fontSize: 17, fontWeight: '700', color: '#C9A962' }}>Done</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Toolbar hint */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+            <Ionicons name="information-circle-outline" size={15} color={colors.textSecondary} />
+            <Text style={{ fontSize: 12, color: colors.textSecondary }}>
+              Markdown supported: **bold**, # Heading, - list, --- divider
+            </Text>
+          </View>
+
+          {/* Editor */}
+          <TextInput
+            style={{
+              flex: 1,
+              padding: 16,
+              fontSize: 15,
+              lineHeight: 24,
+              color: colors.text,
+              backgroundColor: colors.bg,
+              fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+              textAlignVertical: 'top',
+            }}
+            value={editedContent}
+            onChangeText={setEditedContent}
+            placeholder="Paste or type the full MPA + Exhibit A in Markdown..."
+            placeholderTextColor={colors.textSecondary}
+            multiline
+            scrollEnabled
+            autoCorrect={false}
+            autoCapitalize="none"
+            data-testid="agreement-content-editor"
+          />
+
+          {/* Bottom bar */}
+          <View style={{ paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border, backgroundColor: colors.card }}>
+            <TouchableOpacity
+              style={{ backgroundColor: '#C9A962', borderRadius: 12, padding: 16, alignItems: 'center' }}
+              onPress={() => setShowFullScreenEditor(false)}
+            >
+              <Text style={{ fontSize: 17, fontWeight: '800', color: '#000' }}>Save & Close Editor</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </Modal>
+
     </SafeAreaView>
   );
 }
