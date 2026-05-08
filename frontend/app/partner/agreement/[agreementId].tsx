@@ -433,13 +433,28 @@ const { showToast } = useToast();
           </TouchableOpacity>
           <View style={styles.headerContent}>
             <Text style={styles.headerTitle}>{agreement.template_name}</Text>
-            {agreement.commission_tier && (
-              <View style={styles.tierBadge}>
-                <Text style={styles.tierBadgeText}>
-                  {agreement.commission_tier.name} - {agreement.commission_tier.percentage}%
-                </Text>
-              </View>
-            )}
+            {(() => {
+              // Resolve the best commission display string
+              let displayPct = '';
+              // 1. Explicit percentage on commission_tier object
+              if (agreement.commission_tier?.percentage) {
+                displayPct = `${agreement.commission_tier.percentage}%`;
+              }
+              // 2. Parse from custom_commission_notes (e.g. "50% commission")
+              if (!displayPct && agreement.custom_commission_notes) {
+                const match = agreement.custom_commission_notes.match(/(\d+(?:\.\d+)?)\s*%/);
+                if (match) displayPct = `${match[1]}%`;
+              }
+              // 3. Standard tier fallback
+              if (!displayPct) {
+                displayPct = agreement.type === 'reseller' ? '20/30/40%' : '10/15%';
+              }
+              return (
+                <View style={styles.tierBadge}>
+                  <Text style={styles.tierBadgeText}>{displayPct}</Text>
+                </View>
+              );
+            })()}
           </View>
           <View style={{ width: 28 }} />
         </View>
@@ -597,7 +612,27 @@ const { showToast } = useToast();
                 {agreedToTerms && <Ionicons name="checkmark" size={16} color="#FFF" />}
               </View>
               <Text style={styles.agreeText}>
-                I have read and agree to the terms of this agreement
+                I have read and agree to the{' '}
+                <Text
+                  style={{ color: '#007AFF', textDecorationLine: 'underline' }}
+                  onPress={(e) => {
+                    e.stopPropagation?.();
+                    if (typeof window !== 'undefined') window.open('https://imonsocial.com/terms', '_blank');
+                  }}
+                >
+                  Terms of Service
+                </Text>
+                {' '}and{' '}
+                <Text
+                  style={{ color: '#007AFF', textDecorationLine: 'underline' }}
+                  onPress={(e) => {
+                    e.stopPropagation?.();
+                    if (typeof window !== 'undefined') window.open('https://imonsocial.com/privacy', '_blank');
+                  }}
+                >
+                  Privacy Policy
+                </Text>
+                {' '}of this agreement.
               </Text>
             </TouchableOpacity>
             

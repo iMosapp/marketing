@@ -754,8 +754,7 @@ export default function PartnerAgreementDetailScreen() {
               ))}
             </View>
 
-            <Text style={styles.inputLabel}>Custom Commission Notes (replaces Exhibit A tiers)</Text>
-            <TextInput
+            <Text style={styles.inputLabel}>Custom Commission Notes (replaces Exhibit A tiers)</Text>            <TextInput
               style={[styles.textInput, { minHeight: 90, textAlignVertical: 'top' }]}
               value={editedCustomNotes}
               onChangeText={setEditedCustomNotes}
