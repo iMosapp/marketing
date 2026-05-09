@@ -581,8 +581,8 @@ async def patch_user_profile(user_id: str, data: dict):
 
 
 # ============= ACTIVITY FEED ENDPOINT =============
-_activity_cache: dict = {}   # {user_id: (expires_ts, data)}
-_ACTIVITY_TTL = 30           # seconds
+from cachetools import TTLCache as _TTLCache
+_activity_cache: _TTLCache = _TTLCache(maxsize=500, ttl=30)  # bounded, auto-evicts
 
 @api_router.get("/activity/{user_id}")
 async def get_activity_feed(user_id: str, limit: int = 20):
@@ -591,8 +591,8 @@ async def get_activity_feed(user_id: str, limit: int = 20):
     """
     import time as _time
     cached = _activity_cache.get(user_id)
-    if cached and _time.monotonic() < cached[0]:
-        return cached[1]
+    if cached is not None:
+        return cached
 
     from routers.database import get_data_filter, get_user_by_id
     
@@ -772,7 +772,7 @@ async def get_activity_feed(user_id: str, limit: int = 20):
         "total": len(activities)
     }
     import time as _time
-    _activity_cache[user_id] = (_time.monotonic() + _ACTIVITY_TTL, result)
+    _activity_cache[user_id] = result
     return result
 
 # ============= STRIPE WEBHOOK ENDPOINT =============

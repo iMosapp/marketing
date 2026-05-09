@@ -21,10 +21,10 @@ from services.twilio_service import send_sms, get_twilio_status, normalize_phone
 router = APIRouter(prefix="/messages", tags=["Messages"])
 logger = logging.getLogger(__name__)
 
-# Short TTL cache for conversations list — reduces DB load on rapid home-page refreshes
+# Short TTL cache for conversations list — bounded TTLCache prevents memory leaks
 import time as _time
-_conv_cache: dict = {}
-_CONV_TTL = 10  # seconds — short enough to feel live, long enough to prevent hammers
+from cachetools import TTLCache
+_conv_cache: TTLCache = TTLCache(maxsize=500, ttl=10)  # max 500 user entries, auto-evicts
 
 # Import centralized event type resolution
 from utils.event_types import resolve_event_type, LINK_TYPE_TO_EVENT
@@ -148,8 +148,8 @@ async def get_conversations(user_id: str, personal_only: bool = True):
     """
     cache_key = f"{user_id}:{personal_only}"
     cached = _conv_cache.get(cache_key)
-    if cached and _time.monotonic() < cached[0]:
-        return cached[1]
+    if cached is not None:
+        return cached
 
     db = get_db()
     
@@ -238,7 +238,7 @@ async def get_conversations(user_id: str, personal_only: bool = True):
         
         result.append(conv)
     
-    _conv_cache[cache_key] = (_time.monotonic() + _CONV_TTL, result)
+    _conv_cache[cache_key] = result
     return result
 
 @router.get("/conversations/{user_id}/{conversation_id}")

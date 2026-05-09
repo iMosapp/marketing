@@ -1109,8 +1109,19 @@ def start_scheduler():
         misfire_grace_time=30,
     )
 
-    # Every 60 seconds — escalate timed-out AI reply approvals to manager
-    from routers.ai_reply import process_ai_reply_escalations as _process_escalations
+    # Every 5 minutes — force garbage collection to reclaim memory from large operations
+    async def _force_gc():
+        import gc
+        gc.collect()
+        logger.debug("[GC] Manual collection complete")
+
+    scheduler.add_job(
+        safe_job(_force_gc),
+        IntervalTrigger(minutes=5),
+        id="memory_gc",
+        replace_existing=True,
+        misfire_grace_time=60,
+    )
     scheduler.add_job(
         safe_job(_process_escalations),
         IntervalTrigger(seconds=60),

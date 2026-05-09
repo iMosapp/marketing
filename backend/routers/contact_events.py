@@ -13,8 +13,9 @@ import time as _time
 from routers.database import get_db
 from utils.event_types import get_event_label
 
-_master_feed_cache: dict = {}   # {user_id: (expires_ts, data)}
-_MASTER_FEED_TTL = 20           # seconds
+from cachetools import TTLCache
+
+_master_feed_cache: TTLCache = TTLCache(maxsize=500, ttl=20)  # bounded, auto-evicts
 
 def _ts_iso(dt) -> str:
     """Convert a datetime to ISO string with UTC indicator for correct browser parsing."""
@@ -103,8 +104,8 @@ async def get_master_feed(user_id: str, limit: int = 25, skip: int = 0):
     """
     cache_key = f"{user_id}:{limit}:{skip}"
     cached = _master_feed_cache.get(cache_key)
-    if cached and _time.monotonic() < cached[0]:
-        return cached[1]
+    if cached is not None:
+        return cached
 
     db = get_db()
     # Hard cap — 50 per page allows scrolling back weeks without overloading the server
@@ -213,7 +214,7 @@ async def get_master_feed(user_id: str, limit: int = 25, skip: int = 0):
         "total_events": len(feed_items),
         "has_more": len(feed_items) == limit,
     }
-    _master_feed_cache[cache_key] = (_time.monotonic() + _MASTER_FEED_TTL, result)
+    _master_feed_cache[cache_key] = result
     return result
 
 
