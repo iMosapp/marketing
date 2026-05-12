@@ -364,6 +364,13 @@ function HomeScreen() {
   const [seoScore, setSeoScore] = useState<any>(null);
   const [initialLoaded, setInitialLoaded] = useState(false);
 
+  // New: home intelligence data
+  const [streak, setStreak] = useState<any>(null);
+  const [my3, setMy3] = useState<any[]>([]);
+  const [winsFeed, setWinsFeed] = useState<any[]>([]);
+  const [completedToday, setCompletedToday] = useState<Set<string>>(new Set());
+  const [loadingMy3, setLoadingMy3] = useState(false);
+
   // Modals
   const [showContactAction, setShowContactAction] = useState(false);
   const [contactActionMode, setContactActionMode] = useState<'search' | 'keypad'>('search');
@@ -389,16 +396,28 @@ function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (user?._id) loadAllData();
+      if (user?._id) { loadAllData(); loadHomeIntelligence(); }
     }, [user?._id])
   );
 
   // Auto-refresh every 30 seconds (silent — no loading flash)
   useEffect(() => {
     if (!user?._id) return;
-    const interval = setInterval(() => loadAllData(true), 30000);
+    const interval = setInterval(() => { loadAllData(true); loadHomeIntelligence(true); }, 30000);
     return () => clearInterval(interval);
   }, [user?._id]);
+
+  const loadHomeIntelligence = async (silent = false) => {
+    if (!user?._id) return;
+    if (!silent) setLoadingMy3(true);
+    try {
+      const res = await api.get(`/home/${user._id}`);
+      setStreak(res.data.streak);
+      setMy3(res.data.my_3 || []);
+      setWinsFeed(res.data.wins_feed || []);
+    } catch { /* silent fail — not critical */ }
+    finally { if (!silent) setLoadingMy3(false); }
+  };
 
   const loadAllData = async (silent = false) => {
     if (!user?._id) return;
@@ -660,6 +679,106 @@ function HomeScreen() {
           </View>
         ) : (
         <>
+
+        {/* ── STREAK BANNER ─────────────────────────────── */}
+        {streak && (
+          <TouchableOpacity
+            onPress={() => router.push('/touchpoints')}
+            style={{ marginHorizontal: 16, marginBottom: 14, borderRadius: 16,
+              backgroundColor: streak.streak >= 3 ? '#FF950018' : streak.at_risk ? '#FF3B3012' : colors.card,
+              borderWidth: 1.5, borderColor: streak.streak >= 3 ? '#FF9500' : streak.at_risk ? '#FF3B30' : colors.border,
+              flexDirection: 'row', alignItems: 'center', padding: 14, gap: 10 }}
+          >
+            <Text style={{ fontSize: 26 }}>{streak.emoji}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: streak.streak >= 3 ? '#FF9500' : streak.at_risk ? '#FF3B30' : colors.text }}>
+                {streak.label}
+              </Text>
+              {streak.at_risk && <Text style={{ fontSize: 12, color: '#FF3B30', marginTop: 1 }}>Reach out to someone to keep it going</Text>}
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+          </TouchableOpacity>
+        )}
+
+        {/* ── MY 3 FOR TODAY ────────────────────────────── */}
+        <View style={{ marginHorizontal: 16, marginBottom: 20 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <View>
+              <Text style={{ fontSize: 22, fontWeight: '800', color: colors.text }}>Your 3 for Today</Text>
+              <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
+                {my3.length > 0 ? '30 seconds each. Keep the streak alive.' : 'Analysing your relationships...'}
+              </Text>
+            </View>
+            {my3.length > 0 && (
+              <View style={{ backgroundColor: '#C9A96220', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 }}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#C9A962' }}>{my3.length - completedToday.size}/{my3.length}</Text>
+              </View>
+            )}
+          </View>
+          {loadingMy3 && my3.length === 0 ? (
+            <View style={{ padding: 28, alignItems: 'center' }}>
+              <ActivityIndicator color="#C9A962" />
+              <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 10 }}>Finding your best contacts for today...</Text>
+            </View>
+          ) : my3.length === 0 ? (
+            <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: colors.border }}>
+              <Ionicons name="checkmark-circle" size={40} color="#34C759" />
+              <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 10 }}>You're all caught up!</Text>
+              <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 4, textAlign: 'center' }}>No one needs your attention right now.</Text>
+            </View>
+          ) : (
+            my3.map((item, idx) => {
+              const done = completedToday.has(item.contact_id);
+              return (
+                <TouchableOpacity key={item.contact_id + idx} onPress={() => router.push(`/contact/${item.contact_id}`)}
+                  style={{ backgroundColor: colors.card, borderRadius: 16, marginBottom: 10, borderWidth: 1, borderColor: done ? '#34C75930' : colors.border, opacity: done ? 0.5 : 1, overflow: 'hidden' }}
+                  data-testid={`my3-card-${idx}`}
+                >
+                  <View style={{ height: 3, backgroundColor: done ? '#34C759' : item.color }} />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 }}>
+                    <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: item.color + '20', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Ionicons name={item.icon as any} size={20} color={item.color} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 16, fontWeight: '700', color: done ? colors.textSecondary : colors.text }}>{item.first_name} {item.last_name}</Text>
+                      <Text style={{ fontSize: 13, color: item.color, marginTop: 2, fontWeight: '500' }}>{item.reason_label}</Text>
+                    </View>
+                    {!done ? (
+                      <TouchableOpacity onPress={(e) => { e.stopPropagation?.(); setCompletedToday(p => new Set([...p, item.contact_id])); router.push(`/contact/${item.contact_id}`); }}
+                        style={{ backgroundColor: item.color, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>{item.action_label}</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={{ backgroundColor: '#34C75920', borderRadius: 20, padding: 8 }}>
+                        <Ionicons name="checkmark" size={16} color="#34C759" />
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            })
+          )}
+        </View>
+
+        {/* ── WINS FEED ─────────────────────────────────── */}
+        {winsFeed.length > 0 && (
+          <View style={{ marginHorizontal: 16, marginBottom: 16, backgroundColor: colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border }}>
+            <Text style={{ fontSize: 17, fontWeight: '800', color: colors.text, marginBottom: 12 }}>Recent Wins 🎯</Text>
+            {winsFeed.slice(0, 5).map((win: any, i: number) => (
+              <TouchableOpacity key={i} onPress={() => win.contact_id && router.push(`/contact/${win.contact_id}`)}
+                style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 9, gap: 10, borderBottomWidth: i < Math.min(winsFeed.length, 5) - 1 ? 0.5 : 0, borderBottomColor: colors.border }}>
+                <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: win.color + '20', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Ionicons name={win.icon as any} size={14} color={win.color} />
+                </View>
+                <Text style={{ flex: 1, fontSize: 14, color: colors.text, fontWeight: '500' }} numberOfLines={1}>{win.message}</Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary }}>{getRelativeTime(win.timestamp)}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16, marginBottom: 16 }} />
+
         <View style={styles.tilesGrid} data-testid="home-tiles-grid">
           {TILES.map((tile) => (
             <TouchableOpacity key={tile.key} style={[styles.tile, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={tile.onPress} activeOpacity={0.7} data-testid={`home-tile-${tile.key}`}>
