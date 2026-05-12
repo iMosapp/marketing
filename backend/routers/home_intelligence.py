@@ -132,6 +132,51 @@ async def get_my_3(user_id: str, db) -> list:
         })
 
     try:
+        # 0. OVERDUE TASKS — highest priority, always surface these first
+        overdue_tasks = await db.tasks.find({
+            "user_id":  user_id,
+            "status":   {"$in": ["pending", "active", None]},
+            "due_date": {"$lte": now},
+        }).sort("due_date", 1).limit(10).to_list(10)
+
+        for task in overdue_tasks:
+            if not task.get("contact_id"):
+                continue
+            try:
+                c = await db.contacts.find_one({"_id": ObjectId(task["contact_id"])})
+                if not c:
+                    continue
+                due = task.get("due_date")
+                if due:
+                    if due.tzinfo is None:
+                        due = due.replace(tzinfo=timezone.utc)
+                    days_late = (now - due).days
+                    label = f"Overdue task: {task.get('title','Follow up')}" if days_late == 0 else f"{days_late}d overdue: {task.get('title','Follow up')}"
+                else:
+                    label = f"Task due: {task.get('title','Follow up')}"
+                await add(c, "cooling_down", label, 9)
+            except Exception:
+                pass
+
+        # Also grab due TODAY tasks (not yet overdue)
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        today_end   = today_start + timedelta(days=1)
+        today_tasks = await db.tasks.find({
+            "user_id":  user_id,
+            "status":   {"$in": ["pending", "active", None]},
+            "due_date": {"$gte": today_start, "$lt": today_end},
+        }).sort("due_date", 1).limit(5).to_list(5)
+
+        for task in today_tasks:
+            if not task.get("contact_id"):
+                continue
+            try:
+                c = await db.contacts.find_one({"_id": ObjectId(task["contact_id"])})
+                if c:
+                    await add(c, "cooling_down", f"Due today: {task.get('title','Follow up')}", 8)
+            except Exception:
+                pass
+
         # 1. Viewed your card in the last 48 hours
         cutoff_48h = now - timedelta(hours=48)
         views = await db.contact_events.find({
@@ -166,7 +211,7 @@ async def get_my_3(user_id: str, db) -> list:
                     pass
 
         # 3. Birthday within 3 days
-        today_md  = (now.month, now.day)  # noqa — kept for readable reference
+        today_md  = (now.month, now.day)  # noqa
         bday_contacts = await db.contacts.find({
             "user_id": user_id,
             "birthday": {"$exists": True, "$ne": None},
@@ -203,45 +248,59 @@ async def get_my_3(user_id: str, db) -> list:
                 except Exception:
                     pass
 
-        # 5. Purchased recently (6-12 months ago) — prime for referral ask
+        # 5. Purchased recently — prime for referral ask
         ref_start = now - timedelta(days=365)
-        ref_end   = now - timedelta(days=150)
-        sold_tags_contacts = await db.contacts.find({
+        ref_end   = now - timedelta(days=90)
+        sold_contacts = await db.contacts.find({
             "user_id": user_id,
-            "tags":    {"$in": ["sold", "purchased", "customer"]},
+            "tags":    {"$in": ["sold", "purchased", "customer", "Sold"]},
             "updated_at": {"$gte": ref_start, "$lte": ref_end},
         }).limit(20).to_list(20)
-        for c in sold_tags_contacts:
+        for c in sold_contacts:
             await add(c, "purchase_followup", score=6)
 
-        # 6. Cooling down — no contact in 14+ days (overdue follow-up)
-        cutoff_14d = now - timedelta(days=14)
+        # 6. Cooling down — contacts with no recent activity (broadened query)
         if len(scored) < 6:
-            recent_contacted = set()
+            # Get IDs of contacts touched in last 14 days (any event type)
+            cutoff_14d = now - timedelta(days=14)
             recent_events = await db.contact_events.find({
                 "user_id":   user_id,
                 "timestamp": {"$gte": cutoff_14d},
-                "category":  {"$in": ["sent", "outbound", "touchpoint"]},
-            }).to_list(500)
-            for e in recent_events:
-                if e.get("contact_id"):
-                    recent_contacted.add(str(e["contact_id"]))
+            }).limit(500).to_list(500)
+            recently_active = {str(e["contact_id"]) for e in recent_events if e.get("contact_id")}
 
-            old_contacts = await db.contacts.find({
-                "user_id": user_id,
-                "status":  "active",
-            }).sort("updated_at", -1).skip(5).limit(30).to_list(30)
+            # Get recent task interactions too
+            recent_tasks_done = await db.tasks.find({
+                "user_id":     user_id,
+                "status":      {"$in": ["completed", "done"]},
+                "completed_at":{"$gte": cutoff_14d},
+            }).limit(200).to_list(200)
+            recently_active.update({str(t["contact_id"]) for t in recent_tasks_done if t.get("contact_id")})
 
-            for c in old_contacts:
+            # Find contacts NOT recently active — no status filter so we don't miss anyone
+            all_contacts = await db.contacts.find(
+                {"user_id": user_id},
+            ).sort("created_at", -1).limit(100).to_list(100)
+
+            for c in all_contacts:
+                if len(scored) >= 9:
+                    break
                 cid = str(c["_id"])
-                if cid not in recent_contacted:
-                    last = c.get("last_contacted_at") or c.get("updated_at")
-                    if last:
-                        if last.tzinfo is None:
-                            last = last.replace(tzinfo=timezone.utc)
-                        days = (now - last).days
-                        if days >= 14:
-                            await add(c, "cooling_down", f"{days} days since last contact", max(3, 7 - (days // 7)))
+                if cid in recently_active or cid in seen_ids:
+                    continue
+                # Use any date field available
+                last = (c.get("last_contacted_at") or
+                        c.get("last_activity_at") or
+                        c.get("updated_at") or
+                        c.get("created_at"))
+                if last:
+                    if last.tzinfo is None:
+                        last = last.replace(tzinfo=timezone.utc)
+                    days = (now - last).days
+                    if days >= 7:  # Lowered from 14 to catch more
+                        await add(c, "cooling_down",
+                                  f"{days} days since last contact",
+                                  max(3, 7 - (days // 14)))
 
     except Exception as e:
         logger.error(f"[Home] My-3 error: {e}")
