@@ -643,12 +643,14 @@ function HomeScreen() {
   };
 
   const TILES = [
-    { key: 'share-card', icon: 'card-outline', label: 'Share My Card', color: '#007AFF', onPress: () => router.push('/quick-send/digitalcard' as any) },
-    { key: 'share-review', icon: 'star-outline', label: 'Review Link', color: '#FFD60A', onPress: () => router.push('/quick-send/review' as any) },
-    { key: 'send-card', icon: 'gift-outline', label: 'Send a Card', color: '#C9A962', onPress: () => router.push('/quick-send/congrats' as any) },
-    { key: 'showroom', icon: 'storefront-outline', label: 'My Showcase', color: '#34C759', onPress: () => router.push('/quick-send/showcase' as any) },
-    { key: 'keypad', icon: 'keypad-outline', label: 'Keypad', color: '#32ADE6', onPress: () => { setContactActionMode('keypad'); setShowContactAction(true); } },
-    { key: 'add-contact', icon: 'person-add-outline', label: 'Add Contact', color: '#AF52DE', onPress: () => router.push('/contact/new' as any) },
+    { key: 'share-card',   icon: 'card',          label: 'My Card',       sublabel: 'Share it',    color: '#007AFF',  onPress: () => router.push('/quick-send/digitalcard' as any) },
+    { key: 'sold',         icon: 'trophy',         label: 'Sold!',         sublabel: 'Send congrats', color: '#C9A962', onPress: () => router.push('/quick-send/congrats' as any) },
+    { key: 'share-review', icon: 'star',           label: 'Review',        sublabel: 'Ask for one', color: '#FF9500',  onPress: () => router.push('/quick-send/review' as any) },
+    { key: 'send-card',    icon: 'gift',           label: 'Send Card',     sublabel: 'Any occasion',color: '#FF375F',  onPress: () => router.push('/quick-send/congrats' as any) },
+    { key: 'campaign',     icon: 'flash',          label: 'Tag & Go',      sublabel: 'Start a flow', color: '#AF52DE', onPress: () => router.push('/contacts' as any) },
+    { key: 'showroom',     icon: 'storefront',     label: 'Showcase',      sublabel: 'Share it',    color: '#34C759',  onPress: () => router.push('/quick-send/showcase' as any) },
+    { key: 'keypad',       icon: 'keypad',         label: 'Keypad',        sublabel: 'Quick text',  color: '#32ADE6',  onPress: () => { setContactActionMode('keypad'); setShowContactAction(true); } },
+    { key: 'add-contact',  icon: 'person-add',     label: 'New Contact',   sublabel: 'Add them',    color: '#5856D6',  onPress: () => router.push('/contact/new' as any) },
   ];
 
   return (
@@ -680,7 +682,41 @@ function HomeScreen() {
         ) : (
         <>
 
-        {/* ── STREAK BANNER ─────────────────────────────── */}
+        {/* ── QUICK ACTIONS — always at top, one tap, never hunt ─── */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginBottom: 16 }}
+          contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 4, gap: 10 }}
+        >
+          {TILES.map(tile => (
+            <TouchableOpacity
+              key={tile.key}
+              onPress={tile.onPress}
+              style={{
+                alignItems: 'center',
+                width: 76,
+              }}
+              data-testid={`quick-action-${tile.key}`}
+            >
+              <View style={{
+                width: 60, height: 60, borderRadius: 18,
+                backgroundColor: tile.color + '18',
+                borderWidth: 1.5, borderColor: tile.color + '40',
+                alignItems: 'center', justifyContent: 'center',
+                marginBottom: 6,
+              }}>
+                <Ionicons name={tile.icon as any} size={26} color={tile.color} />
+              </View>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: colors.text, textAlign: 'center', lineHeight: 15 }} numberOfLines={1}>
+                {tile.label}
+              </Text>
+              <Text style={{ fontSize: 10, color: colors.textSecondary, textAlign: 'center', lineHeight: 13 }} numberOfLines={1}>
+                {tile.sublabel}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
         {streak && (
           <TouchableOpacity
             onPress={() => router.push('/touchpoints')}
@@ -778,17 +814,6 @@ function HomeScreen() {
         )}
 
         <View style={{ height: 1, backgroundColor: colors.border, marginHorizontal: 16, marginBottom: 16 }} />
-
-        <View style={styles.tilesGrid} data-testid="home-tiles-grid">
-          {TILES.map((tile) => (
-            <TouchableOpacity key={tile.key} style={[styles.tile, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={tile.onPress} activeOpacity={0.7} data-testid={`home-tile-${tile.key}`}>
-              <View style={[styles.tileIconWrap, { backgroundColor: `${tile.color}18` }]}>
-                <Ionicons name={tile.icon as any} size={24} color={tile.color} />
-              </View>
-              <Text style={[styles.tileLabel, { color: colors.text }]}>{tile.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
 
         {/* ===== YOUR DAY SECTION ===== */}
         <View style={styles.activitySection} data-testid="your-day-section">
