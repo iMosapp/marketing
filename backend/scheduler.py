@@ -1122,13 +1122,19 @@ def start_scheduler():
         replace_existing=True,
         misfire_grace_time=60,
     )
-    scheduler.add_job(
-        safe_job(_process_escalations),
-        IntervalTrigger(seconds=60),
-        id="ai_reply_escalation_processor",
-        replace_existing=True,
-        misfire_grace_time=30,
-    )
+
+    # Every 60 seconds — escalate timed-out AI reply approvals to manager
+    try:
+        from routers.ai_reply import process_ai_reply_escalations as _esc
+        scheduler.add_job(
+            safe_job(_esc),
+            IntervalTrigger(seconds=60),
+            id="ai_reply_escalation_processor",
+            replace_existing=True,
+            misfire_grace_time=30,
+        )
+    except Exception as _se:
+        logger.warning(f"[Scheduler] Escalation processor skipped: {_se}")
 
     # Daily at 6 AM UTC on the 1st - generate monthly partner invoices
     scheduler.add_job(
