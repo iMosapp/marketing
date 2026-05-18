@@ -1152,6 +1152,236 @@ async def sign_agreement(agreement_id: str, data: PartnerSignup, request: Reques
 
 # ============= W-9 UPLOAD =============
 
+@router.post("/agreements/{agreement_id}/w9-digital")
+async def submit_digital_w9(agreement_id: str, request: Request):
+    """
+    Partner fills W-9 fields digitally in the app.
+    We generate a professional W-9 PDF from the data and store it,
+    exactly like a manually uploaded W-9.
+    """
+    import asyncio as _aio, uuid as _uuid
+    from fpdf import FPDF
+
+    db = get_db()
+    agreement = await db.partner_agreements.find_one({"_id": ObjectId(agreement_id)})
+    if not agreement:
+        raise HTTPException(status_code=404, detail="Agreement not found")
+
+    data = await request.json()
+    # Required fields
+    legal_name     = (data.get("legal_name") or "").strip()
+    tin            = (data.get("tin") or "").strip()          # SSN or EIN
+    if not legal_name or not tin:
+        raise HTTPException(status_code=422, detail="Legal name and TIN (SSN/EIN) are required")
+
+    business_name  = (data.get("business_name") or "").strip()
+    tax_class      = (data.get("tax_classification") or "individual").strip()
+    address        = (data.get("address") or "").strip()
+    city_state_zip = (data.get("city_state_zip") or "").strip()
+    signature      = (data.get("signature") or legal_name).strip()
+    signed_at      = datetime.utcnow()
+
+    def _build_pdf() -> bytes:
+        from fpdf import FPDF, XPos, YPos
+        pdf = FPDF()
+        pdf.set_margins(18, 14, 18)
+        pdf.set_auto_page_break(auto=True, margin=16)
+        pdf.add_page()
+        W = pdf.w - pdf.l_margin - pdf.r_margin
+
+        def lf(bold=False, size=10):
+            try:
+                pdf.set_font("Helvetica", "B" if bold else "", size)
+            except Exception:
+                pass
+
+        # ── Header ───────────────────────────────────────────────────
+        pdf.set_fill_color(30, 30, 30)
+        pdf.rect(0, 0, 210, 22, 'F')
+        lf(True, 14)
+        pdf.set_text_color(255, 255, 255)
+        pdf.set_xy(18, 6)
+        pdf.cell(W, 10, "W-9 Request for Taxpayer Identification Number", align="L")
+        lf(False, 9)
+        pdf.set_xy(0, 6)
+        pdf.cell(210, 10, "Completed digitally via I'm On Social", align="R")
+        pdf.set_text_color(0, 0, 0)
+        pdf.set_xy(pdf.l_margin, 28)
+
+        # ── Intro note ───────────────────────────────────────────────
+        lf(False, 9)
+        pdf.set_text_color(100, 100, 100)
+        pdf.multi_cell(W, 5, (
+            "This form serves as your certification of taxpayer information for commission payments. "
+            "The information provided is subject to IRS penalties for false statements. "
+            "This document was completed and submitted electronically on "
+            f"{signed_at.strftime('%B %d, %Y at %H:%M UTC')}."
+        ))
+        pdf.ln(4)
+        pdf.set_text_color(0, 0, 0)
+
+        def field(label: str, value: str, full_width: bool = True):
+            lf(True, 9)
+            pdf.set_x(pdf.l_margin)
+            pdf.set_text_color(80, 80, 80)
+            pdf.cell(W if full_width else W / 2, 6, label)
+            pdf.ln(0)
+            pdf.set_x(pdf.l_margin)
+            lf(False, 11)
+            pdf.set_text_color(0, 0, 0)
+            pdf.set_draw_color(200, 200, 200)
+            pdf.set_fill_color(248, 248, 248)
+            pdf.cell(W if full_width else W / 2, 9, f"  {value or '—'}", border=1, fill=True)
+            pdf.ln(3)
+
+        field("1. Name (as shown on your income tax return)", legal_name)
+        field("2. Business name / disregarded entity name (if different from above)", business_name or "N/A")
+
+        # Tax classification checkboxes
+        lf(True, 9)
+        pdf.set_text_color(80, 80, 80)
+        pdf.set_x(pdf.l_margin)
+        pdf.cell(W, 6, "3. Federal tax classification")
+        pdf.ln(1)
+        TAX_CLASSES = [
+            ("individual",   "Individual / Sole proprietor"),
+            ("c_corp",       "C Corporation"),
+            ("s_corp",       "S Corporation"),
+            ("partnership",  "Partnership"),
+            ("trust",        "Trust / Estate"),
+            ("llc",          "LLC"),
+            ("other",        "Other"),
+        ]
+        cols = 3
+        x0 = pdf.l_margin
+        cell_w = W / cols
+        for i, (key, label) in enumerate(TAX_CLASSES):
+            col = i % cols
+            row = i // cols
+            x = x0 + col * cell_w
+            y = pdf.get_y() + (0 if col == 0 else 0)
+            pdf.set_xy(x, pdf.get_y())
+            checked = "✓ " if tax_class.lower().startswith(key[:3]) else "☐ "
+            lf(tax_class.lower().startswith(key[:3]), 10)
+            pdf.set_text_color(0 if tax_class.lower().startswith(key[:3]) else 120, 0, 0)
+            pdf.cell(cell_w, 8, checked + label)
+            if col == cols - 1:
+                pdf.ln(0)
+                pdf.set_x(x0)
+        pdf.ln(6)
+        pdf.set_text_color(0, 0, 0)
+
+        field("5. Address (number, street, apt)", address)
+        field("6. City, state, ZIP code", city_state_zip)
+        pdf.ln(2)
+
+        # TIN
+        lf(True, 9)
+        pdf.set_text_color(80, 80, 80)
+        pdf.set_x(pdf.l_margin)
+        pdf.cell(W, 6, "Part I — Taxpayer Identification Number (TIN)")
+        pdf.ln(2)
+        tin_display = tin[:3] + "-**-****" if len(tin) == 9 and tin.isdigit() else tin[:2] + "-*******" if len(tin) == 9 else tin
+        pdf.set_fill_color(255, 252, 230)
+        pdf.set_draw_color(200, 180, 0)
+        lf(True, 13)
+        pdf.set_text_color(0, 0, 0)
+        pdf.set_x(pdf.l_margin)
+        pdf.cell(W / 2, 12, f"  SSN / EIN: {tin_display}", border=1, fill=True)
+        pdf.ln(6)
+
+        # Certification
+        lf(True, 9)
+        pdf.set_text_color(80, 80, 80)
+        pdf.set_x(pdf.l_margin)
+        pdf.cell(W, 6, "Part II — Certification")
+        pdf.ln(2)
+        lf(False, 9)
+        pdf.set_text_color(60, 60, 60)
+        pdf.set_x(pdf.l_margin)
+        pdf.multi_cell(W, 5, (
+            "Under penalties of perjury, I certify that: (1) The number shown on this form is my correct TIN; "
+            "(2) I am not subject to backup withholding; (3) I am a U.S. person; "
+            "(4) The FATCA code(s) entered on this form (if any) indicating that I am exempt from FATCA reporting is correct."
+        ))
+        pdf.ln(4)
+
+        # Signature line
+        pdf.set_draw_color(0, 0, 0)
+        pdf.set_fill_color(245, 245, 245)
+        pdf.set_x(pdf.l_margin)
+        lf(False, 16)
+        pdf.set_text_color(0, 0, 0)
+        pdf.cell(W * 0.65, 14, f"  {signature}", border=1, fill=True)
+        pdf.set_x(pdf.l_margin + W * 0.67)
+        lf(False, 10)
+        pdf.cell(W * 0.33, 14, f"  {signed_at.strftime('%m/%d/%Y')}", border=1, fill=True)
+        pdf.ln(4)
+        lf(False, 8)
+        pdf.set_text_color(120, 120, 120)
+        pdf.set_x(pdf.l_margin)
+        pdf.cell(W * 0.65, 5, "  Signature (type to certify)")
+        pdf.set_x(pdf.l_margin + W * 0.67)
+        pdf.cell(W * 0.33, 5, "  Date")
+        pdf.ln(8)
+
+        # Footer
+        pdf.set_draw_color(200, 200, 200)
+        pdf.line(pdf.l_margin, pdf.get_y(), pdf.w - pdf.r_margin, pdf.get_y())
+        pdf.ln(3)
+        lf(False, 8)
+        pdf.set_text_color(130, 130, 130)
+        pdf.set_x(pdf.l_margin)
+        pdf.multi_cell(W, 4,
+            f"Submitted digitally via I'm On Social | Agreement ID: {agreement_id} | "
+            f"IP: {data.get('ip_address','N/A')} | {signed_at.strftime('%Y-%m-%d %H:%M:%S UTC')}"
+        )
+        return bytes(pdf.output())
+
+    # Generate PDF in thread (CPU-bound)
+    import asyncio as _asyncio
+    pdf_bytes = await _asyncio.to_thread(_build_pdf)
+
+    # Upload the generated PDF
+    try:
+        path = f"w9_forms/{agreement_id}/{_uuid.uuid4().hex[:8]}_digital.pdf"
+        from utils.image_storage import put_object
+        put_object(path, pdf_bytes, "application/pdf")
+        file_url = f"/api/images/{path}"
+    except Exception as e:
+        logger.error(f"[W9-Digital] Storage failed: {e}")
+        file_url = f"w9_digital_pending_{agreement_id}.pdf"
+
+    now = datetime.utcnow()
+    await db.partner_agreements.update_one(
+        {"_id": ObjectId(agreement_id)},
+        {"$set": {
+            "w9_status":          "uploaded",
+            "w9_file_url":        file_url,
+            "w9_uploaded_at":     now,
+            "w9_method":          "digital",
+            "w9_legal_name":      legal_name,
+            "w9_tax_class":       tax_class,
+            "w9_tin_last4":       tin[-4:] if len(tin) >= 4 else "",
+            "updated_at":         now,
+        }}
+    )
+
+    # Also update partner record if linked
+    await db.partners.update_one(
+        {"agreement_id": agreement_id},
+        {"$set": {"w9_status": "uploaded", "w9_file_url": file_url}}
+    )
+
+    return {
+        "success":   True,
+        "w9_status": "uploaded",
+        "method":    "digital",
+        "file_url":  file_url,
+        "message":   "W-9 submitted digitally. We'll verify it within 1-2 business days.",
+    }
+
+
 @router.post("/agreements/{agreement_id}/w9")
 async def upload_w9(agreement_id: str, request: Request):
     """Partner uploads their W-9 form. Stores in object storage, updates agreement + partner record."""

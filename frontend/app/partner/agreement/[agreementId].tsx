@@ -104,29 +104,73 @@ const { showToast } = useToast();
 
   const [w9Uploading, setW9Uploading] = useState(false);
   const [w9Uploaded, setW9Uploaded] = useState(false);
+  const [w9Mode, setW9Mode] = useState<'choose' | 'digital' | 'upload'>('choose');
 
-  const handleW9Upload = async () => {
+  // Digital W-9 form state
+  const [w9Form, setW9Form] = useState({
+    legal_name: '',
+    business_name: '',
+    tax_classification: 'individual',
+    address: '',
+    city_state_zip: '',
+    tin: '',
+    signature: '',
+  });
+
+  const TAX_CLASSES = [
+    { key: 'individual', label: 'Individual / Sole Proprietor' },
+    { key: 'c_corp',     label: 'C Corporation' },
+    { key: 's_corp',     label: 'S Corporation' },
+    { key: 'partnership',label: 'Partnership' },
+    { key: 'llc',        label: 'LLC' },
+    { key: 'other',      label: 'Other' },
+  ];
+
+  const handleW9Digital = async () => {
+    if (!w9Form.legal_name.trim()) { showSimpleAlert('Required', 'Please enter your legal name.'); return; }
+    if (!w9Form.tin.trim()) { showSimpleAlert('Required', 'Please enter your SSN or EIN.'); return; }
+    if (!w9Form.signature.trim()) { showSimpleAlert('Required', 'Please type your signature to certify.'); return; }
+    setW9Uploading(true);
+    try {
+      await api.post(`/partners/agreements/${agreementId}/w9-digital`, {
+        ...w9Form,
+        ip_address: 'unknown',
+      });
+      setW9Uploaded(true);
+      setW9Mode('choose');
+      showSimpleAlert('W-9 Submitted', 'Your W-9 has been received. We\'ll verify it within 1-2 business days.');
+    } catch (e: any) {
+      showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to submit W-9.');
+    } finally { setW9Uploading(false); }
+  };
+
+  const handleW9Upload = async (useCamera = false) => {
     if (Platform.OS !== 'web') {
-      // Native: pick PDF or image
       try {
-        const { launchImageLibraryAsync, MediaTypeOptions } = await import('expo-image-picker');
-        const result = await launchImageLibraryAsync({ mediaTypes: MediaTypeOptions.All, quality: 0.9 });
+        const { launchImageLibraryAsync, launchCameraAsync, MediaTypeOptions, requestCameraPermissionsAsync } = await import('expo-image-picker');
+        let result;
+        if (useCamera) {
+          const { status } = await requestCameraPermissionsAsync();
+          if (status !== 'granted') { showSimpleAlert('Permission needed', 'Allow camera access to photograph your W-9.'); return; }
+          result = await launchCameraAsync({ mediaTypes: MediaTypeOptions.Images, quality: 0.9 });
+        } else {
+          result = await launchImageLibraryAsync({ mediaTypes: MediaTypeOptions.All, quality: 0.9 });
+        }
         if (!result.canceled && result.assets?.[0]) {
           const asset = result.assets[0];
           const fd = new FormData();
-          fd.append('file', { uri: asset.uri, name: 'w9.pdf', type: 'application/pdf' } as any);
+          const ext = asset.uri.split('.').pop() || 'jpg';
+          const mime = ext === 'pdf' ? 'application/pdf' : `image/${ext}`;
+          fd.append('file', { uri: asset.uri, name: `w9.${ext}`, type: mime } as any);
           setW9Uploading(true);
           await api.post(`/partners/agreements/${agreementId}/w9`, fd);
           setW9Uploaded(true);
-          showAlert('W-9 Submitted', 'Your W-9 has been received. We\'ll verify it within 1-2 business days.');
+          setW9Mode('choose');
+          showSimpleAlert('W-9 Submitted', 'Your W-9 has been received. We\'ll verify it within 1-2 business days.');
         }
-      } catch (e) {
-        showAlert('Error', 'Failed to upload W-9. Please try again.');
-      } finally {
-        setW9Uploading(false);
-      }
+      } catch { showSimpleAlert('Error', 'Failed to upload W-9. Please try again.'); }
+      finally { setW9Uploading(false); }
     } else {
-      // Web: file input
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = '.pdf,.png,.jpg,.jpeg';
@@ -139,12 +183,10 @@ const { showToast } = useToast();
         try {
           await api.post(`/partners/agreements/${agreementId}/w9`, fd);
           setW9Uploaded(true);
-          showAlert('W-9 Submitted', 'Your W-9 has been received. We\'ll verify it within 1-2 business days.');
-        } catch {
-          showAlert('Error', 'Failed to upload W-9.');
-        } finally {
-          setW9Uploading(false);
-        }
+          setW9Mode('choose');
+          showSimpleAlert('W-9 Submitted', 'Your W-9 has been received. We\'ll verify it within 1-2 business days.');
+        } catch { showSimpleAlert('Error', 'Failed to upload W-9.'); }
+        finally { setW9Uploading(false); }
       };
       input.click();
     }
@@ -330,33 +372,168 @@ const { showToast } = useToast();
               </View>
             </View>
 
-            {/* W-9 Upload Section */}
+            {/* W-9 Section */}
             <View style={[styles.signedDetails, { marginTop: 20, borderTopWidth: 1, borderTopColor: '#E5E5EA', paddingTop: 20 }]}>
-              <Text style={[styles.signedTitle, { fontSize: 18, marginBottom: 8 }]}>Next Step: Submit Your W-9</Text>
-              <Text style={{ fontSize: 14, color: '#636366', textAlign: 'center', marginBottom: 20, lineHeight: 20 }}>
-                A completed W-9 is required to receive commission payments. Please upload your signed W-9 form (PDF or image).
+              <Text style={[styles.signedTitle, { fontSize: 18, marginBottom: 6 }]}>Next Step: Submit Your W-9</Text>
+              <Text style={{ fontSize: 14, color: '#636366', textAlign: 'center', marginBottom: 16, lineHeight: 20 }}>
+                A W-9 is required to receive commission payments.
               </Text>
-              {w9Uploaded || agreement.w9_status === 'uploaded' || agreement.w9_status === 'verified' ? (
+
+              {/* Already submitted */}
+              {(w9Uploaded || agreement.w9_status === 'uploaded' || agreement.w9_status === 'verified') ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#F0FFF4', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: '#34C759' }}>
                   <Ionicons name="checkmark-circle" size={24} color="#34C759" />
                   <Text style={{ fontSize: 15, fontWeight: '600', color: '#34C759' }}>
                     W-9 {agreement.w9_status === 'verified' ? 'Verified ✓' : 'Submitted — pending review'}
                   </Text>
                 </View>
+              ) : w9Mode === 'choose' ? (
+                /* Two-option chooser */
+                <View style={{ gap: 12 }}>
+                  {/* Digital form option */}
+                  <TouchableOpacity
+                    onPress={() => { setW9Form(f => ({ ...f, legal_name: agreement.signed_partner?.name || '', signature: agreement.signed_partner?.name || '' })); setW9Mode('digital'); }}
+                    style={{ backgroundColor: '#007AFF', borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14 }}
+                    data-testid="w9-digital-btn"
+                  >
+                    <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' }}>
+                      <Ionicons name="document-text" size={22} color="#fff" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff' }}>Fill Out W-9 Digitally</Text>
+                      <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', marginTop: 2 }}>Complete the form in-app — takes 2 minutes</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
+                  </TouchableOpacity>
+
+                  {/* Upload / photo option */}
+                  <TouchableOpacity
+                    onPress={() => setW9Mode('upload')}
+                    style={{ backgroundColor: '#1C1C1E', borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14 }}
+                    data-testid="w9-upload-btn"
+                  >
+                    <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' }}>
+                      <Ionicons name="camera" size={22} color="#fff" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff' }}>Upload or Photograph W-9</Text>
+                      <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>Snap a photo or upload a PDF / image</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.4)" />
+                  </TouchableOpacity>
+                </View>
+
+              ) : w9Mode === 'upload' ? (
+                /* Upload / camera chooser */
+                <View style={{ gap: 10 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#1C1C1E', marginBottom: 4 }}>How do you want to submit?</Text>
+                  {Platform.OS !== 'web' && (
+                    <TouchableOpacity
+                      style={{ backgroundColor: '#34C759', borderRadius: 14, padding: 15, flexDirection: 'row', alignItems: 'center', gap: 10, opacity: w9Uploading ? 0.6 : 1 }}
+                      onPress={() => handleW9Upload(true)}
+                      disabled={w9Uploading}
+                    >
+                      {w9Uploading ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="camera" size={20} color="#fff" />}
+                      <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>Take a Photo of My W-9</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    style={{ backgroundColor: '#007AFF', borderRadius: 14, padding: 15, flexDirection: 'row', alignItems: 'center', gap: 10, opacity: w9Uploading ? 0.6 : 1 }}
+                    onPress={() => handleW9Upload(false)}
+                    disabled={w9Uploading}
+                  >
+                    {w9Uploading ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="cloud-upload" size={20} color="#fff" />}
+                    <Text style={{ fontSize: 15, fontWeight: '700', color: '#fff' }}>Upload PDF or Image</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setW9Mode('choose')}>
+                    <Text style={{ fontSize: 14, color: '#636366', textAlign: 'center', marginTop: 4 }}>← Back</Text>
+                  </TouchableOpacity>
+                </View>
+
               ) : (
-                <TouchableOpacity
-                  style={{ backgroundColor: '#007AFF', borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, opacity: w9Uploading ? 0.6 : 1 }}
-                  onPress={handleW9Upload}
-                  disabled={w9Uploading}
-                >
-                  {w9Uploading
-                    ? <ActivityIndicator size="small" color="#fff" />
-                    : <Ionicons name="cloud-upload-outline" size={20} color="#fff" />
-                  }
-                  <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff' }}>
-                    {w9Uploading ? 'Uploading...' : 'Upload W-9 Form'}
+                /* Digital W-9 form */
+                <View>
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: '#1C1C1E', marginBottom: 14 }}>W-9 Tax Information</Text>
+
+                  {[
+                    { key: 'legal_name',   label: 'Legal Name (as on tax return) *', placeholder: 'Your full legal name' },
+                    { key: 'business_name',label: 'Business Name (if different)', placeholder: 'Optional — LLC name, DBA, etc.' },
+                    { key: 'address',      label: 'Street Address *', placeholder: '123 Main St' },
+                    { key: 'city_state_zip',label: 'City, State, ZIP *', placeholder: 'Salt Lake City, UT 84101' },
+                  ].map(f => (
+                    <View key={f.key} style={{ marginBottom: 12 }}>
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: '#636366', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 5 }}>{f.label}</Text>
+                      <TextInput
+                        style={{ backgroundColor: '#F2F2F7', borderRadius: 10, padding: 13, fontSize: 15, color: '#1C1C1E' }}
+                        value={(w9Form as any)[f.key]}
+                        onChangeText={v => setW9Form(p => ({ ...p, [f.key]: v }))}
+                        placeholder={f.placeholder}
+                        placeholderTextColor="#8E8E93"
+                        autoCapitalize={f.key === 'legal_name' || f.key === 'business_name' ? 'words' : 'sentences'}
+                      />
+                    </View>
+                  ))}
+
+                  {/* Tax classification */}
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: '#636366', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Federal Tax Classification *</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                    {TAX_CLASSES.map(tc => (
+                      <TouchableOpacity
+                        key={tc.key}
+                        onPress={() => setW9Form(p => ({ ...p, tax_classification: tc.key }))}
+                        style={{ paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, borderWidth: 1.5,
+                          borderColor: w9Form.tax_classification === tc.key ? '#007AFF' : '#E5E5EA',
+                          backgroundColor: w9Form.tax_classification === tc.key ? '#007AFF15' : '#F9F9F9' }}
+                      >
+                        <Text style={{ fontSize: 13, fontWeight: '600', color: w9Form.tax_classification === tc.key ? '#007AFF' : '#3C3C43' }}>
+                          {tc.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  {/* TIN */}
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: '#636366', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 5 }}>SSN or EIN *</Text>
+                  <TextInput
+                    style={{ backgroundColor: '#FFF9E6', borderRadius: 10, padding: 13, fontSize: 16, color: '#1C1C1E', borderWidth: 1, borderColor: '#FFD60A', marginBottom: 12, fontFamily: 'monospace' }}
+                    value={w9Form.tin}
+                    onChangeText={v => setW9Form(p => ({ ...p, tin: v.replace(/[^\d-]/g, '') }))}
+                    placeholder="XXX-XX-XXXX or XX-XXXXXXX"
+                    placeholderTextColor="#8E8E93"
+                    keyboardType="numeric"
+                    secureTextEntry={false}
+                    maxLength={11}
+                  />
+                  <Text style={{ fontSize: 11, color: '#8E8E93', marginBottom: 14, lineHeight: 16 }}>
+                    Your TIN is encrypted and only used for tax reporting purposes. We never store it in plain text.
                   </Text>
-                </TouchableOpacity>
+
+                  {/* Signature */}
+                  <Text style={{ fontSize: 12, fontWeight: '600', color: '#636366', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 5 }}>Signature (type to certify) *</Text>
+                  <TextInput
+                    style={{ backgroundColor: '#F2F2F7', borderRadius: 10, padding: 13, fontSize: 18, color: '#1C1C1E', fontStyle: 'italic', marginBottom: 8 }}
+                    value={w9Form.signature}
+                    onChangeText={v => setW9Form(p => ({ ...p, signature: v }))}
+                    placeholder="Type your full legal name"
+                    placeholderTextColor="#8E8E93"
+                    autoCapitalize="words"
+                  />
+                  <Text style={{ fontSize: 12, color: '#636366', marginBottom: 16, lineHeight: 17 }}>
+                    By typing my name above, I certify under penalties of perjury that the information on this form is correct and that I am a U.S. person.
+                  </Text>
+
+                  <TouchableOpacity
+                    style={{ backgroundColor: '#007AFF', borderRadius: 14, padding: 16, alignItems: 'center', opacity: w9Uploading ? 0.6 : 1 }}
+                    onPress={handleW9Digital}
+                    disabled={w9Uploading}
+                    data-testid="w9-submit-btn"
+                  >
+                    {w9Uploading ? <ActivityIndicator color="#fff" /> : <Text style={{ fontSize: 17, fontWeight: '800', color: '#fff' }}>Submit W-9</Text>}
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setW9Mode('choose')} style={{ marginTop: 12 }}>
+                    <Text style={{ fontSize: 14, color: '#636366', textAlign: 'center' }}>← Back</Text>
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
             
