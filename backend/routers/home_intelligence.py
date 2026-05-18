@@ -314,54 +314,70 @@ async def get_my_3(user_id: str, db) -> list:
 
 async def get_wins_feed(user_id: str, db, limit: int = 15) -> list:
     """
-    Recent dopamine moments — card views, replies, review clicks.
-    Filtered to only rewarding events FROM OTHER PEOPLE (not self-actions).
+    Recent dopamine moments — wins from other people engaging with you.
+    Event types matched to what's actually stored in the DB.
     """
     WIN_TYPES = {
-        "card_viewed":           {"msg": "viewed your digital card",       "icon": "eye",          "color": "#FF9500"},
+        # Card views — most common wins
         "digital_card_viewed":   {"msg": "viewed your digital card",       "icon": "eye",          "color": "#FF9500"},
-        "link_clicked":          {"msg": "clicked your link",              "icon": "hand-right",   "color": "#C9A962"},
+        "congrats_card_viewed":  {"msg": "opened your congrats card",      "icon": "gift",         "color": "#FF375F"},
+        "birthday_card_viewed":  {"msg": "opened your birthday card 🎂",   "icon": "gift",         "color": "#FF375F"},
+        "holiday_card_viewed":   {"msg": "opened your holiday card",       "icon": "gift",         "color": "#FF375F"},
+        "showcase_viewed":       {"msg": "viewed your showcase",           "icon": "storefront",   "color": "#34C759"},
+        "digital_card_shared":   {"msg": "shared your digital card",       "icon": "share",        "color": "#5856D6"},
+        # Engagement
+        "review_link_clicked":   {"msg": "tapped your review link ⭐",     "icon": "star",         "color": "#FFD700"},
+        "review_invite_sent":    {"msg": "received your review request",   "icon": "star-outline", "color": "#C9A962"},
+        # Replies / contact saves
         "customer_reply":        {"msg": "replied to your message",        "icon": "chatbubble",   "color": "#34C759"},
-        "review_link_clicked":   {"msg": "tapped your review link",        "icon": "star",         "color": "#FFD700"},
         "digital_card_saved":    {"msg": "saved your contact info",        "icon": "person-add",   "color": "#007AFF"},
         "vcard_download":        {"msg": "downloaded your contact card",   "icon": "download",     "color": "#5856D6"},
-        "congrats_card_viewed":  {"msg": "opened your card",               "icon": "gift",         "color": "#FF375F"},
+        # Legacy names
+        "card_viewed":           {"msg": "viewed your card",               "icon": "eye",          "color": "#FF9500"},
+        "link_clicked":          {"msg": "clicked your link",              "icon": "hand-right",   "color": "#C9A962"},
     }
+
     wins = []
     try:
-        # Get the user's own name + email so we can filter out self-actions
+        # Get user's own info to filter self-actions
         user = await db.users.find_one({"_id": ObjectId(user_id)}, {"name": 1, "email": 1})
         own_name  = (user.get("name") or "").strip().lower() if user else ""
         own_email = (user.get("email") or "").strip().lower() if user else ""
-
-        # Also get any contact records that belong to the user themselves
         own_contact_ids: set = set()
         if own_email:
-            self_contacts = await db.contacts.find(
-                {"email": own_email},
-                {"_id": 1}
-            ).to_list(10)
-            own_contact_ids = {str(c["_id"]) for c in self_contacts}
+            self_contacts = await db.contact_events.find(
+                {"user_id": user_id, "contact_email": own_email},
+                {"contact_id": 1}
+            ).limit(5).to_list(5)
+            own_contact_ids = {str(c["contact_id"]) for c in self_contacts if c.get("contact_id")}
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=14)  # Expanded from 7 to 14 days
+        # Use naive UTC to match stored timestamps (stored with datetime.utcnow())
+        from datetime import datetime as _dt
+        cutoff = _dt.utcnow() - timedelta(days=30)
+
         events = await db.contact_events.find({
             "user_id":    user_id,
             "event_type": {"$in": list(WIN_TYPES.keys())},
             "timestamp":  {"$gte": cutoff},
-        }).sort("timestamp", -1).limit(limit * 2).to_list(limit * 2)  # Fetch extra to account for filtered items
+        }).sort("timestamp", -1).limit(limit * 3).to_list(limit * 3)
+
+        seen_contact_event: set = set()  # dedupe same contact+event within feed
 
         for evt in events:
             if len(wins) >= limit:
                 break
 
-            meta    = WIN_TYPES.get(evt.get("event_type", ""), {})
-            cid     = evt.get("contact_id")
-            cname   = evt.get("contact_name") or ""
+            meta  = WIN_TYPES.get(evt.get("event_type", ""), {})
+            cid   = str(evt.get("contact_id") or "")
+            cname = (evt.get("contact_name") or "").strip()
 
-            # Resolve contact name if not on event
-            if cid and not cname:
+            # Resolve name if missing
+            if not cname and cid:
                 try:
-                    c = await db.contacts.find_one({"_id": ObjectId(cid)}, {"first_name": 1, "last_name": 1})
+                    c = await db.contacts.find_one(
+                        {"_id": ObjectId(cid)},
+                        {"first_name": 1, "last_name": 1}
+                    )
                     if c:
                         cname = f"{c.get('first_name','')} {c.get('last_name','')}".strip()
                 except Exception:
@@ -370,21 +386,26 @@ async def get_wins_feed(user_id: str, db, limit: int = 15) -> list:
             if not cname:
                 cname = "Someone"
 
-            # ── Filter out self-actions ───────────────────────────────
-            # Skip if contact is the user themselves (own views don't count as wins)
+            # Skip self-actions (but allow "Someone" through)
             if cid and cid in own_contact_ids:
                 continue
             if own_name and cname.strip().lower() == own_name:
                 continue
-            if cname == "Someone":
-                continue  # Unknown contacts not useful in wins feed
+
+            # Dedupe: same contact + same event type shown max once per feed
+            dedup_key = f"{cid}:{evt.get('event_type')}"
+            if dedup_key in seen_contact_event:
+                continue
+            seen_contact_event.add(dedup_key)
 
             ts = evt.get("timestamp")
-            if ts and ts.tzinfo is None:
-                ts = ts.replace(tzinfo=timezone.utc)
+            if ts:
+                # Make timezone-aware for consistent isoformat output
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
 
             wins.append({
-                "contact_id":   cid,
+                "contact_id":   cid or None,
                 "contact_name": cname,
                 "message":      f"{cname} {meta.get('msg', 'engaged with you')}",
                 "icon":         meta.get("icon", "flash"),
@@ -392,6 +413,7 @@ async def get_wins_feed(user_id: str, db, limit: int = 15) -> list:
                 "timestamp":    ts.isoformat() if ts else None,
                 "event_type":   evt.get("event_type"),
             })
+
     except Exception as e:
         logger.warning(f"[Home] Wins feed error: {e}")
     return wins
