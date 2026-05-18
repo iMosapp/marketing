@@ -315,7 +315,7 @@ async def get_my_3(user_id: str, db) -> list:
 async def get_wins_feed(user_id: str, db, limit: int = 15) -> list:
     """
     Recent dopamine moments — card views, replies, review clicks.
-    Filtered to only the rewarding events, not boring system events.
+    Filtered to only rewarding events FROM OTHER PEOPLE (not self-actions).
     """
     WIN_TYPES = {
         "card_viewed":           {"msg": "viewed your digital card",       "icon": "eye",          "color": "#FF9500"},
@@ -329,24 +329,56 @@ async def get_wins_feed(user_id: str, db, limit: int = 15) -> list:
     }
     wins = []
     try:
-        cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+        # Get the user's own name + email so we can filter out self-actions
+        user = await db.users.find_one({"_id": ObjectId(user_id)}, {"name": 1, "email": 1})
+        own_name  = (user.get("name") or "").strip().lower() if user else ""
+        own_email = (user.get("email") or "").strip().lower() if user else ""
+
+        # Also get any contact records that belong to the user themselves
+        own_contact_ids: set = set()
+        if own_email:
+            self_contacts = await db.contacts.find(
+                {"email": own_email},
+                {"_id": 1}
+            ).to_list(10)
+            own_contact_ids = {str(c["_id"]) for c in self_contacts}
+
+        cutoff = datetime.now(timezone.utc) - timedelta(days=14)  # Expanded from 7 to 14 days
         events = await db.contact_events.find({
             "user_id":    user_id,
             "event_type": {"$in": list(WIN_TYPES.keys())},
             "timestamp":  {"$gte": cutoff},
-        }).sort("timestamp", -1).limit(limit).to_list(limit)
+        }).sort("timestamp", -1).limit(limit * 2).to_list(limit * 2)  # Fetch extra to account for filtered items
 
         for evt in events:
+            if len(wins) >= limit:
+                break
+
             meta    = WIN_TYPES.get(evt.get("event_type", ""), {})
             cid     = evt.get("contact_id")
-            cname   = evt.get("contact_name") or "Someone"
-            if cid and cname == "Someone":
+            cname   = evt.get("contact_name") or ""
+
+            # Resolve contact name if not on event
+            if cid and not cname:
                 try:
                     c = await db.contacts.find_one({"_id": ObjectId(cid)}, {"first_name": 1, "last_name": 1})
                     if c:
-                        cname = f"{c.get('first_name','')} {c.get('last_name','')}".strip() or "Someone"
+                        cname = f"{c.get('first_name','')} {c.get('last_name','')}".strip()
                 except Exception:
                     pass
+
+            if not cname:
+                cname = "Someone"
+
+            # ── Filter out self-actions ───────────────────────────────
+            # Skip if contact is the user themselves (own views don't count as wins)
+            if cid and cid in own_contact_ids:
+                continue
+            if own_name and cname.strip().lower() == own_name:
+                continue
+            if cname == "Someone":
+                continue  # Unknown contacts not useful in wins feed
+
             ts = evt.get("timestamp")
             if ts and ts.tzinfo is None:
                 ts = ts.replace(tzinfo=timezone.utc)

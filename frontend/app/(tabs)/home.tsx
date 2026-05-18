@@ -806,8 +806,8 @@ function HomeScreen() {
                 <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: win.color + '20', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Ionicons name={win.icon as any} size={14} color={win.color} />
                 </View>
-                <Text style={{ flex: 1, fontSize: 14, color: colors.text, fontWeight: '500' }} numberOfLines={1}>{win.message}</Text>
-                <Text style={{ fontSize: 12, color: colors.textSecondary }}>{getRelativeTime(win.timestamp)}</Text>
+                <Text style={{ flex: 1, fontSize: 14, color: colors.text, fontWeight: '500', lineHeight: 19 }} numberOfLines={2}>{win.message}</Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, flexShrink: 0, marginLeft: 4 }}>{getRelativeTime(win.timestamp)}</Text>
               </TouchableOpacity>
             ))}
           </View>
