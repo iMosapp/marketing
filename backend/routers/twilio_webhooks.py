@@ -1,6 +1,7 @@
 """
 Twilio Webhooks Router - Handle incoming SMS/MMS messages
 """
+import asyncio
 from fastapi import APIRouter, Request, Form, HTTPException
 from fastapi.responses import Response
 from bson import ObjectId
@@ -106,56 +107,67 @@ async def incoming_message(
     
     # Normalize phone numbers
     from_phone = normalize_phone(From)
-    to_phone = normalize_phone(To)
+    to_phone   = normalize_phone(To)
     
     # Collect media URLs
-    media_urls = []
+    media_urls  = []
     media_types = []
     num_media = int(NumMedia) if NumMedia else 0
-    
     if num_media > 0:
-        if MediaUrl0:
-            media_urls.append(MediaUrl0)
-            media_types.append(MediaContentType0 or 'image/jpeg')
-        if MediaUrl1:
-            media_urls.append(MediaUrl1)
-            media_types.append(MediaContentType1 or 'image/jpeg')
-        if MediaUrl2:
-            media_urls.append(MediaUrl2)
-            media_types.append(MediaContentType2 or 'image/jpeg')
+        if MediaUrl0: media_urls.append(MediaUrl0); media_types.append(MediaContentType0 or 'image/jpeg')
+        if MediaUrl1: media_urls.append(MediaUrl1); media_types.append(MediaContentType1 or 'image/jpeg')
+        if MediaUrl2: media_urls.append(MediaUrl2); media_types.append(MediaContentType2 or 'image/jpeg')
     
     try:
-        # Find the contact by phone number
-        contact = await db.contacts.find_one({"phone": from_phone})
+        # ── Step 1: Route by To: number → find the rep who owns this number ──
+        rep_user = await db.users.find_one({"twilio_number": to_phone})
+        if not rep_user:
+            # Fall back to first super_admin
+            rep_user = await db.users.find_one({"role": {"$in": ["super_admin", "org_admin"]}})
         
+        rep_user_id = str(rep_user["_id"]) if rep_user else None
+        rep_name    = (rep_user.get("name") or "").split()[0] if rep_user else "your rep"
+
+        # ── Step 2: Find or create contact for the sender ────────────────────
+        alt_phone = from_phone.replace("+1", "") if from_phone.startswith("+1") else "+1" + from_phone.lstrip("+")
+        contact = await db.contacts.find_one({
+            "$or": [
+                {"phone": from_phone},
+                {"phone": alt_phone},
+                {"phone": from_phone.lstrip("+")},
+            ]
+        })
+
+        is_new_contact = False
         if not contact:
-            # Try without +1 prefix
-            alt_phone = from_phone.replace("+1", "") if from_phone.startswith("+1") else "+1" + from_phone.lstrip("+")
-            contact = await db.contacts.find_one({"phone": {"$in": [from_phone, alt_phone, from_phone.lstrip("+")]}})
-        
-        if not contact:
-            # Create a new contact for unknown senders
+            is_new_contact = True
             contact = {
-                "phone": from_phone,
-                "first_name": "Unknown",
-                "last_name": from_phone[-4:],  # Last 4 digits as placeholder
-                "name": f"Unknown ({from_phone[-4:]})",
-                "source": "sms_inbound",
-                "created_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow()
+                "phone":       from_phone,
+                "first_name":  "New",
+                "last_name":   "Lead",
+                "name":        f"Lead ({from_phone[-4:]})",
+                "source":      "sms_inbound",
+                "user_id":     rep_user_id,
+                "original_user_id": rep_user_id,
+                "tags":        ["Inbound Lead"],
+                "status":      "active",
+                "created_at":  datetime.utcnow(),
+                "updated_at":  datetime.utcnow(),
             }
-            
-            # Find a user to assign this contact to (use first super_admin or org_admin)
-            admin_user = await db.users.find_one({"role": {"$in": ["super_admin", "org_admin"]}})
-            if admin_user:
-                contact["user_id"] = str(admin_user["_id"])
-            
             result = await db.contacts.insert_one(contact)
             contact["_id"] = result.inserted_id
-            logger.info(f"Created new contact for {from_phone}")
-        
+            logger.info(f"[Webhook] New contact created for {from_phone}, assigned to {rep_user_id}")
+        elif not contact.get("user_id") and rep_user_id:
+            # Assign orphan contact to the rep
+            await db.contacts.update_one(
+                {"_id": contact["_id"]},
+                {"$set": {"user_id": rep_user_id}}
+            )
+            contact["user_id"] = rep_user_id
+
         contact_id = str(contact["_id"])
-        user_id = contact.get("user_id")
+        user_id    = contact.get("user_id") or rep_user_id
+        is_stop    = False   # will be set properly after message is saved
         
         # Find or create conversation
         conversation = await db.conversations.find_one({
@@ -237,7 +249,70 @@ async def incoming_message(
         await db.messages.insert_one(message)
         logger.info(f"Saved incoming message to conversation {conversation_id}")
 
-        # ── STOP / UNSTOP detection ───────────────────────────────────────────
+        # ── AUTO-ENROLL new contacts in rep's default campaign ────────────────
+        if is_new_contact and rep_user_id and not is_stop:
+            try:
+                rep = await db.users.find_one({"_id": ObjectId(rep_user_id)}, {"default_campaign_id": 1, "name": 1})
+                default_camp_id = (rep or {}).get("default_campaign_id")
+                if default_camp_id:
+                    campaign = await db.campaigns.find_one({"_id": ObjectId(default_camp_id), "active": True})
+                    if campaign:
+                        # Check not already enrolled
+                        existing = await db.campaign_enrollments.find_one({
+                            "contact_id": contact_id,
+                            "campaign_id": default_camp_id,
+                            "status": {"$in": ["active", "paused"]},
+                        })
+                        if not existing:
+                            rep_first = ((rep or {}).get("name") or "").split()[0] or "your rep"
+                            first_name = contact.get("first_name") or "there"
+                            # Personalize first step message
+                            sequences = campaign.get("sequences") or []
+                            first_msg = ""
+                            if sequences:
+                                first_msg = (sequences[0].get("message") or "")
+                                first_msg = first_msg.replace("{{firstName}}", first_name).replace("{{salespersonName}}", rep_first)
+
+                            enrollment = {
+                                "campaign_id":   default_camp_id,
+                                "contact_id":    contact_id,
+                                "user_id":       rep_user_id,
+                                "contact_phone": from_phone,
+                                "contact_name":  contact.get("name",""),
+                                "status":        "active",
+                                "current_step":  1,
+                                "reply_count":   1,   # They already sent one message
+                                "last_reply_at": datetime.utcnow(),
+                                "enrolled_at":   datetime.utcnow(),
+                                "next_send_at":  datetime.utcnow(),
+                                "messages_sent": 0,
+                                "ai_assist_mode": campaign.get("ai_assist_mode", "off"),
+                            }
+                            enroll_result = await db.campaign_enrollments.insert_one(enrollment)
+                            logger.info(f"[Webhook] Auto-enrolled {contact_id} in campaign {default_camp_id}")
+
+                            # If campaign has AI mode and a first message, queue it
+                            ai_mode = campaign.get("ai_assist_mode", "off")
+                            if ai_mode not in ("off", None):
+                                try:
+                                    from routers.ai_reply import queue_ai_reply
+                                    asyncio.create_task(queue_ai_reply(
+                                        contact_id=contact_id,
+                                        conversation_id=conversation_id,
+                                        enrollment_id=str(enroll_result.inserted_id),
+                                        campaign_id=default_camp_id,
+                                        assigned_user_id=rep_user_id,
+                                        incoming_message=Body,
+                                        ai_assist_mode=ai_mode,
+                                        escalation_threshold=int(campaign.get("escalation_threshold", 3)),
+                                        escalation_timeout_minutes=int(campaign.get("escalation_timeout_minutes", 15)),
+                                        reply_count=1,
+                                    ))
+                                    logger.info(f"[Webhook] AI reply queued for new inbound from {from_phone}")
+                                except Exception as qe:
+                                    logger.error(f"[Webhook] AI queue error: {qe}")
+            except Exception as ae:
+                logger.error(f"[Webhook] Auto-enroll error: {ae}")
         body_upper = Body.strip().upper()
         is_stop   = body_upper in ("STOP", "STOPALL", "UNSUBSCRIBE", "CANCEL", "END", "QUIT")
         is_unstop = body_upper in ("UNSTOP", "START", "SUBSCRIBE")
