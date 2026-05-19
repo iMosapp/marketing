@@ -1,5 +1,8 @@
 """
 Twilio Service - Handles SMS/MMS sending via Twilio API
+
+Uses Messaging Service SID (A2P 10DLC compliant) when available.
+Falls back to direct phone number if no Messaging Service configured.
 """
 import os
 import logging
@@ -10,119 +13,111 @@ from twilio.base.exceptions import TwilioRestException
 logger = logging.getLogger(__name__)
 
 # Initialize Twilio client
-TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
-TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
-TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER")
+TWILIO_ACCOUNT_SID         = os.getenv("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN          = os.getenv("TWILIO_AUTH_TOKEN")
+TWILIO_PHONE_NUMBER        = os.getenv("TWILIO_PHONE_NUMBER")
+TWILIO_MESSAGING_SERVICE_SID = os.getenv("TWILIO_MESSAGING_SERVICE_SID")  # MG... — A2P compliant
 
-# Check if Twilio is configured
-TWILIO_ENABLED = all([TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER])
+# A2P: prefer messaging service; fall back to direct number
+USE_MESSAGING_SERVICE = bool(TWILIO_MESSAGING_SERVICE_SID)
+
+TWILIO_ENABLED = all([TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN]) and bool(
+    TWILIO_MESSAGING_SERVICE_SID or TWILIO_PHONE_NUMBER
+)
 
 if TWILIO_ENABLED:
     try:
         twilio_client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-        logger.info(f"Twilio client initialized with number: {TWILIO_PHONE_NUMBER}")
+        sender = f"Messaging Service {TWILIO_MESSAGING_SERVICE_SID}" if USE_MESSAGING_SERVICE else TWILIO_PHONE_NUMBER
+        logger.info(f"Twilio initialized — sender: {sender}")
     except Exception as e:
         logger.error(f"Failed to initialize Twilio client: {e}")
         twilio_client = None
         TWILIO_ENABLED = False
 else:
     twilio_client = None
-    logger.warning("Twilio not configured - SMS/MMS will be mocked")
+    logger.warning("Twilio not configured — SMS/MMS will be mocked")
 
 
 async def send_sms(
     to_phone: str,
     message: str,
-    media_urls: Optional[List[str]] = None
+    media_urls: Optional[List[str]] = None,
 ) -> dict:
     """
     Send an SMS or MMS message via Twilio.
-    
+
+    Uses Messaging Service SID for A2P 10DLC compliance when configured.
+    Falls back to direct phone number otherwise.
+
     Args:
-        to_phone: Recipient phone number (E.164 format: +1234567890)
-        message: Text message content
-        media_urls: Optional list of media URLs for MMS (images, videos)
-    
+        to_phone:   Recipient phone number (any format — normalized to E.164)
+        message:    Text message body
+        media_urls: Optional media URLs for MMS (images, PDFs)
+
     Returns:
-        dict with success status, message_sid, and any error info
+        dict with success, message_sid, mock (bool), and any error info
     """
-    # Normalize phone number
     to_phone = normalize_phone(to_phone)
-    
+
     if not TWILIO_ENABLED or not twilio_client:
-        # Mock mode - log and return success
-        logger.info(f"[MOCK SMS] To: {to_phone}, Message: {message[:50]}...")
+        logger.info(f"[MOCK SMS] To: {to_phone} | {message[:60]}...")
         if media_urls:
-            logger.info(f"[MOCK MMS] Media URLs: {media_urls}")
+            logger.info(f"[MOCK MMS] Media: {media_urls}")
         return {
             "success": True,
-            "message_sid": "MOCK_SID_" + str(hash(message))[:10],
-            "mock": True
+            "message_sid": "MOCK_" + str(abs(hash(message + to_phone)))[:8],
+            "mock": True,
         }
-    
+
     try:
-        # Build message parameters
-        params = {
-            "body": message,
-            "from_": TWILIO_PHONE_NUMBER,
-            "to": to_phone
-        }
-        
-        # Add media URLs for MMS
+        params: dict = {"body": message, "to": to_phone}
+
+        if USE_MESSAGING_SERVICE:
+            # A2P 10DLC compliant — messages sent through registered campaign
+            params["messaging_service_sid"] = TWILIO_MESSAGING_SERVICE_SID
+        else:
+            params["from_"] = TWILIO_PHONE_NUMBER
+
         if media_urls:
             params["media_url"] = media_urls
-        
-        # Send via Twilio
-        twilio_message = twilio_client.messages.create(**params)
-        
-        logger.info(f"Twilio message sent: {twilio_message.sid} to {to_phone}")
-        
+
+        msg = twilio_client.messages.create(**params)
+        logger.info(f"Twilio sent: {msg.sid} → {to_phone} | status={msg.status}")
+
         return {
-            "success": True,
-            "message_sid": twilio_message.sid,
-            "status": twilio_message.status,
-            "mock": False
+            "success":     True,
+            "message_sid": msg.sid,
+            "status":      msg.status,
+            "mock":        False,
         }
-        
+
     except TwilioRestException as e:
-        logger.error(f"Twilio error sending to {to_phone}: {e.msg}")
-        return {
-            "success": False,
-            "error": e.msg,
-            "error_code": e.code,
-            "mock": False
-        }
+        logger.error(f"Twilio error → {to_phone}: [{e.code}] {e.msg}")
+        return {"success": False, "error": e.msg, "error_code": e.code, "mock": False}
     except Exception as e:
-        logger.error(f"Error sending SMS to {to_phone}: {str(e)}")
-        return {
-            "success": False,
-            "error": str(e),
-            "mock": False
-        }
+        logger.error(f"SMS send error → {to_phone}: {e}")
+        return {"success": False, "error": str(e), "mock": False}
 
 
 async def get_twilio_status() -> dict:
-    """Check Twilio configuration status"""
     return {
-        "enabled": TWILIO_ENABLED,
-        "phone_number": TWILIO_PHONE_NUMBER if TWILIO_ENABLED else None,
-        "configured": bool(TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN)
+        "enabled":               TWILIO_ENABLED,
+        "phone_number":          TWILIO_PHONE_NUMBER,
+        "messaging_service_sid": TWILIO_MESSAGING_SERVICE_SID,
+        "use_messaging_service": USE_MESSAGING_SERVICE,
+        "mock":                  not TWILIO_ENABLED,
     }
 
 
 def normalize_phone(phone: str) -> str:
-    """Normalize phone number to E.164 format"""
-    # Remove all non-digit characters except +
-    cleaned = ''.join(c for c in phone if c.isdigit() or c == '+')
-    
-    # Add + if not present and starts with country code
-    if not cleaned.startswith('+'):
-        # Assume US number if 10 digits
+    """Normalize any phone format to E.164 (+1XXXXXXXXXX)."""
+    cleaned = "".join(c for c in phone if c.isdigit() or c == "+")
+    if not cleaned.startswith("+"):
         if len(cleaned) == 10:
-            cleaned = '+1' + cleaned
-        elif len(cleaned) == 11 and cleaned.startswith('1'):
-            cleaned = '+' + cleaned
+            cleaned = "+1" + cleaned
+        elif len(cleaned) == 11 and cleaned.startswith("1"):
+            cleaned = "+" + cleaned
         else:
-            cleaned = '+' + cleaned
-    
+            cleaned = "+" + cleaned
     return cleaned
