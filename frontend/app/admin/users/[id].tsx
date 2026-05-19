@@ -112,8 +112,32 @@ export default function UserDetailScreen() {
   const [showOrgModal, setShowOrgModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [impersonating, setImpersonating] = useState(false);
-  // Contact info inline editing
-  const [editingContactField, setEditingContactField] = useState<'phone' | 'email' | null>(null);
+  const [showNumberPicker, setShowNumberPicker] = useState(false);
+  const [poolNumbers, setPoolNumbers] = useState<any[]>([]);
+  const [loadingPool, setLoadingPool] = useState(false);
+  const [assigningNumber, setAssigningNumber] = useState(false);
+
+  const loadPoolNumbers = async () => {
+    setLoadingPool(true);
+    try {
+      const res = await api.get('/admin/twilio/numbers');
+      setPoolNumbers(res.data.numbers || []);
+    } catch { /* silent */ }
+    finally { setLoadingPool(false); }
+  };
+
+  const assignNumberToUser = async (numberSid: string, phoneNumber: string) => {
+    if (!user) return;
+    setAssigningNumber(true);
+    try {
+      await api.post(`/admin/twilio/numbers/${numberSid}/assign`, { user_id: user._id });
+      setUser({ ...user, twilio_phone_number: phoneNumber, mvpline_number: phoneNumber });
+      setShowNumberPicker(false);
+      showSimpleAlert('Number Assigned', `${phoneNumber} is now ${user.name}'s dedicated number.`);
+    } catch (e: any) {
+      showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to assign number.');
+    } finally { setAssigningNumber(false); }
+  };
   const [contactEditValue, setContactEditValue] = useState('');
   const contactSavingRef = React.useRef(false); // Prevents double-save from onSubmitEditing + onBlur
 
@@ -689,6 +713,26 @@ export default function UserDetailScreen() {
                 <Ionicons name="pencil-outline" size={14} color={colors.textTertiary} />
               </TouchableOpacity>
             )}
+
+            {/* Dedicated Twilio Number */}
+            <TouchableOpacity
+              style={[styles.infoRow, { marginTop: 6 }]}
+              onPress={() => { loadPoolNumbers(); setShowNumberPicker(true); }}
+              data-testid="assign-number-btn"
+            >
+              <Ionicons name="call" size={18} color={user.twilio_phone_number || user.mvpline_number ? '#34C759' : '#C9A962'} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.infoText, { color: user.twilio_phone_number || user.mvpline_number ? '#34C759' : '#C9A962', fontWeight: '600' }]}>
+                  {user.twilio_phone_number || (user as any).mvpline_number || 'Assign Dedicated Number'}
+                </Text>
+                {(user.twilio_phone_number || (user as any).mvpline_number) ? (
+                  <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }}>Dedicated line — tap to reassign</Text>
+                ) : (
+                  <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }}>Pick from pool or buy a new number</Text>
+                )}
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+            </TouchableOpacity>
             {user.created_at && (
               <View style={styles.infoRow}>
                 <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
@@ -1044,6 +1088,98 @@ export default function UserDetailScreen() {
           )}
         </SafeAreaView>
       </Modal>
+
+      {/* ── Number Picker Modal ── */}
+      <Modal visible={showNumberPicker} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowNumberPicker(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+            <TouchableOpacity onPress={() => setShowNumberPicker(false)}>
+              <Text style={{ fontSize: 17, color: '#FF3B30' }}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>Assign Dedicated Number</Text>
+            <TouchableOpacity onPress={() => { setShowNumberPicker(false); router.push('/admin/twilio-numbers' as any); }}>
+              <Text style={{ fontSize: 15, color: '#007AFF' }}>Buy New</Text>
+            </TouchableOpacity>
+          </View>
+
+          {loadingPool ? (
+            <ActivityIndicator color="#C9A962" style={{ marginTop: 40 }} />
+          ) : (
+            <ScrollView contentContainerStyle={{ padding: 16 }}>
+              {/* Current assignment */}
+              {(user?.twilio_phone_number || (user as any)?.mvpline_number) && (
+                <View style={{ backgroundColor: '#34C75915', borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: '#34C75930', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <Ionicons name="checkmark-circle" size={20} color="#34C759" />
+                  <View>
+                    <Text style={{ fontSize: 15, fontWeight: '700', color: '#34C759' }}>
+                      {user?.twilio_phone_number || (user as any)?.mvpline_number}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: colors.textSecondary }}>Currently assigned</Text>
+                  </View>
+                </View>
+              )}
+
+              <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
+                Available Numbers
+              </Text>
+
+              {poolNumbers.filter(n => !n.assigned_to || n.assigned_to?.user_id === user?._id).map(num => {
+                const isCurrentUser = num.assigned_to?.user_id === user?._id;
+                const isAssignedElsewhere = num.assigned_to && !isCurrentUser;
+                return (
+                  <TouchableOpacity
+                    key={num.sid}
+                    onPress={() => !isAssignedElsewhere && !assigningNumber && assignNumberToUser(num.sid, num.phone_number)}
+                    style={{
+                      backgroundColor: isCurrentUser ? '#007AFF15' : colors.card,
+                      borderRadius: 14, padding: 14, marginBottom: 8,
+                      borderWidth: 1.5,
+                      borderColor: isCurrentUser ? '#007AFF' : colors.border,
+                      flexDirection: 'row', alignItems: 'center', gap: 12,
+                      opacity: isAssignedElsewhere ? 0.4 : 1,
+                    }}
+                  >
+                    <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: (isCurrentUser ? '#007AFF' : '#C9A962') + '20', alignItems: 'center', justifyContent: 'center' }}>
+                      <Ionicons name="call" size={18} color={isCurrentUser ? '#007AFF' : '#C9A962'} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text, fontFamily: 'monospace' }}>
+                        {num.phone_number}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                        {isCurrentUser ? 'Already assigned to this user'
+                          : isAssignedElsewhere ? `Assigned to ${num.assigned_to?.name}`
+                          : num.status === 'pool' ? 'In pool — available to assign'
+                          : 'Available'}
+                      </Text>
+                    </View>
+                    {assigningNumber ? (
+                      <ActivityIndicator size="small" color="#007AFF" />
+                    ) : isCurrentUser ? (
+                      <Ionicons name="checkmark-circle" size={22} color="#007AFF" />
+                    ) : !isAssignedElsewhere ? (
+                      <View style={{ backgroundColor: '#007AFF', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>Assign</Text>
+                      </View>
+                    ) : null}
+                  </TouchableOpacity>
+                );
+              })}
+
+              {poolNumbers.filter(n => !n.assigned_to || n.assigned_to?.user_id === user?._id).length === 0 && (
+                <View style={{ alignItems: 'center', paddingTop: 40 }}>
+                  <Ionicons name="phone-portrait-outline" size={48} color={colors.textSecondary} />
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginTop: 12 }}>No numbers available</Text>
+                  <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 6, textAlign: 'center' }}>
+                    Tap "Buy New" to purchase a number for this user.
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
+          )}
+        </SafeAreaView>
+      </Modal>
+
     </SafeAreaView>
   );
 }
