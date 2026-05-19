@@ -1058,6 +1058,25 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"PRD auto-sync skipped: {e}")
 
+    # ── Auto-assign Twilio phone number to super_admin on every deploy ───────
+    # Reads TWILIO_PHONE_NUMBER from .env and sets it on the super_admin user.
+    # Idempotent — safe to run every startup. No manual step after deploy.
+    try:
+        twilio_phone = os.environ.get("TWILIO_PHONE_NUMBER", "").strip()
+        if twilio_phone:
+            admin_user = await db.users.find_one({"role": "super_admin"}, {"_id": 1, "mvpline_number": 1, "name": 1})
+            if admin_user:
+                await db.users.update_one(
+                    {"_id": admin_user["_id"]},
+                    {"$set": {
+                        "mvpline_number": twilio_phone,
+                        "twilio_number":  twilio_phone,
+                    }}
+                )
+                logger.info(f"[Startup] Twilio number {twilio_phone} auto-assigned to {admin_user.get('name','super_admin')}")
+    except Exception as e:
+        logger.warning(f"[Startup] Twilio number auto-assign skipped: {e}")
+
     # Start the background campaign scheduler
     try:
         from scheduler import start_scheduler
