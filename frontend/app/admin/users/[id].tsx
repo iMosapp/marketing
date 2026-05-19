@@ -1123,20 +1123,20 @@ export default function UserDetailScreen() {
                 Available Numbers
               </Text>
 
-              {poolNumbers.filter(n => !n.assigned_to || n.assigned_to?.user_id === user?._id).map(num => {
+              {poolNumbers.map(num => {
                 const isCurrentUser = num.assigned_to?.user_id === user?._id;
                 const isAssignedElsewhere = num.assigned_to && !isCurrentUser;
                 return (
                   <TouchableOpacity
                     key={num.sid}
-                    onPress={() => !isAssignedElsewhere && !assigningNumber && assignNumberToUser(num.sid, num.phone_number)}
+                    onPress={() => !assigningNumber && assignNumberToUser(num.sid, num.phone_number)}
                     style={{
                       backgroundColor: isCurrentUser ? '#007AFF15' : colors.card,
                       borderRadius: 14, padding: 14, marginBottom: 8,
                       borderWidth: 1.5,
                       borderColor: isCurrentUser ? '#007AFF' : colors.border,
                       flexDirection: 'row', alignItems: 'center', gap: 12,
-                      opacity: isAssignedElsewhere ? 0.4 : 1,
+                      opacity: 1,
                     }}
                   >
                     <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: (isCurrentUser ? '#007AFF' : '#C9A962') + '20', alignItems: 'center', justifyContent: 'center' }}>
@@ -1148,16 +1148,14 @@ export default function UserDetailScreen() {
                       </Text>
                       <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
                         {isCurrentUser ? 'Already assigned to this user'
-                          : isAssignedElsewhere ? `Assigned to ${num.assigned_to?.name}`
-                          : num.status === 'pool' ? 'In pool — available to assign'
-                          : 'Available'}
+                          : `Currently assigned to ${num.assigned_to?.name} — tap to reassign`}
                       </Text>
                     </View>
                     {assigningNumber ? (
                       <ActivityIndicator size="small" color="#007AFF" />
                     ) : isCurrentUser ? (
                       <Ionicons name="checkmark-circle" size={22} color="#007AFF" />
-                    ) : !isAssignedElsewhere ? (
+                    ) : !isCurrentUser ? (
                       <View style={{ backgroundColor: '#007AFF', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 }}>
                         <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>Assign</Text>
                       </View>
@@ -1166,7 +1164,7 @@ export default function UserDetailScreen() {
                 );
               })}
 
-              {poolNumbers.filter(n => !n.assigned_to || n.assigned_to?.user_id === user?._id).length === 0 && (
+              {poolNumbers.length === 0 && (
                 <View style={{ alignItems: 'center', paddingTop: 40 }}>
                   <Ionicons name="phone-portrait-outline" size={48} color={colors.textSecondary} />
                   <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginTop: 12 }}>No numbers available</Text>
