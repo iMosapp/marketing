@@ -622,6 +622,7 @@ export default function MoreScreen() {
       { permKey: 'brand_kit', icon: 'color-palette', title: 'Brand Kit', subtitle: 'Email branding & colors', onPress: () => router.push('/settings/brand-kit'), color: '#AF52DE' },
       { permKey: 'brand_kit', icon: 'chatbubbles', title: 'Messaging Channels', subtitle: 'SMS, WhatsApp, Messenger & more', onPress: () => router.push('/settings/messaging-channels'), color: '#25D366' },
       { permKey: 'contact_tags', icon: 'flash', title: 'Internet Leads', subtitle: 'Inbound leads & auto-text queue', onPress: () => router.push('/admin/internet-leads'), color: '#C9A962' },
+      { permKey: 'admin', icon: 'call', title: 'Phone Numbers', subtitle: 'Twilio inventory & billing', onPress: () => router.push('/admin/twilio-numbers'), color: '#34C759' },
       { permKey: 'contact_tags', icon: 'megaphone', title: 'Lead Sources', subtitle: 'Configure ADF webhooks', onPress: () => router.push('/admin/lead-sources'), color: '#5856D6' },
       { permKey: 'users', icon: 'people', title: 'Team Members', subtitle: 'Manage users & permissions', onPress: () => router.push('/admin/users'), color: '#007AFF' },
       { permKey: 'invite_team', icon: 'person-add', title: 'Invite Team', subtitle: 'Send invitations', onPress: () => router.push('/settings/invite-team'), color: '#C9A962' },
