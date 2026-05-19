@@ -117,6 +117,9 @@ export default function UserDetailScreen() {
   const [loadingPool, setLoadingPool] = useState(false);
   const [assigningNumber, setAssigningNumber] = useState(false);
 
+  // Contact info inline editing
+  const [editingContactField, setEditingContactField] = useState<'phone' | 'email' | null>(null);
+
   const loadPoolNumbers = async () => {
     setLoadingPool(true);
     try {
