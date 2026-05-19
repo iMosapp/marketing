@@ -831,7 +831,7 @@ async def update_campaign(user_id: str, campaign_id: str, update_data: dict):
     
     base_filter = await get_data_filter(user_id)
     
-    allowed_fields = ['name', 'type', 'trigger_tag', 'date_type', 'segment_tags', 'sequences', 'send_time', 'active', 'media_urls', 'message_template', 'delivery_mode', 'ai_enabled', 'ownership_level', 'action_type', 'card_type', 'scope', 'store_id', 'org_id', 'description']
+    allowed_fields = ['name', 'type', 'trigger_tag', 'date_type', 'segment_tags', 'sequences', 'send_time', 'active', 'media_urls', 'message_template', 'delivery_mode', 'ai_enabled', 'ai_assist_mode', 'escalation_threshold', 'escalation_timeout_minutes', 'escalation_manager_id', 'ownership_level', 'action_type', 'card_type', 'scope', 'store_id', 'org_id', 'description']
     update_dict = {k: v for k, v in update_data.items() if k in allowed_fields}
 
     # Auto-wrap URLs in sequences when saving
