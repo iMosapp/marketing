@@ -168,6 +168,7 @@ function ThreadScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [sending, setSending] = useState(false);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);  // Scroll-to-bottom button
   const [aiMode, setAiMode] = useState<'auto_reply' | 'assisted' | 'draft_only' | 'off'>('assisted');
   const [showAISuggestion, setShowAISuggestion] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -625,6 +626,7 @@ function ThreadScreen() {
     if (messages.length > 0 && !loading) {
       const t = setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: false });
+        setShowScrollBtn(false);
       }, 80);
       return () => clearTimeout(t);
     }
@@ -843,6 +845,7 @@ function ThreadScreen() {
       // Scroll to newest message
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
+        setShowScrollBtn(false);
       }, 100);
       
       // Build message payload with template info if available
@@ -2052,7 +2055,28 @@ function ThreadScreen() {
           )}
           keyboardShouldPersistTaps="handled"
           maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+          onScroll={(e) => {
+            const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+            const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
+            setShowScrollBtn(distanceFromBottom > 120);
+          }}
+          scrollEventThrottle={100}
         />
+      ))}
+
+      {/* Scroll-to-bottom button — appears when user scrolls up */}
+      {showScrollBtn && !showIntel && (
+        <TouchableOpacity
+          style={[styles.scrollToBottomBtn, { backgroundColor: colors.accent }]}
+          onPress={() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+            setShowScrollBtn(false);
+          }}
+          data-testid="scroll-to-bottom-btn"
+          activeOpacity={0.85}
+        >
+          <Ionicons name="chevron-down" size={20} color="#fff" />
+        </TouchableOpacity>
       ))}
       
       {/* AI Suggestion */}
@@ -3379,6 +3403,22 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontSize: 15,
     color: '#34C759',
     fontWeight: '500',
+  },
+  scrollToBottomBtn: {
+    position: 'absolute',
+    bottom: 90,        // Just above the composer bar
+    alignSelf: 'center',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 6,
+    zIndex: 100,
   },
   attachMenu: {
     flexDirection: 'row',
