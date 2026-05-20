@@ -1512,3 +1512,54 @@ async def rewrap_campaign_links(user_id: str, campaign_id: str):
         "patched_pending_sends": patched_sends,
         "url_mapping": summary,
     }
+
+
+
+@router.post("/{user_id}/{campaign_id}/set-inbound-default")
+async def set_inbound_default_campaign(user_id: str, campaign_id: str):
+    """
+    Mark this campaign as the default for auto-enrolling new inbound SMS contacts.
+    The inbound webhook uses default_campaign_id to auto-reply to new texts.
+    Only one campaign can be the default at a time — setting a new one clears the old.
+    """
+    db = get_db()
+    campaign = await db.campaigns.find_one({"_id": ObjectId(campaign_id), "user_id": user_id})
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+
+    await db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": {"default_campaign_id": campaign_id}}
+    )
+
+    # Flag the campaign so the UI can show which one is the default
+    await db.campaigns.update_many(
+        {"user_id": user_id, "is_inbound_default": True, "_id": {"$ne": ObjectId(campaign_id)}},
+        {"$unset": {"is_inbound_default": ""}}
+    )
+    await db.campaigns.update_one(
+        {"_id": ObjectId(campaign_id)},
+        {"$set": {"is_inbound_default": True}}
+    )
+
+    return {
+        "success": True,
+        "default_campaign_id": campaign_id,
+        "campaign_name": campaign.get("name"),
+        "message": f"'{campaign.get('name')}' is now your inbound reply campaign.",
+    }
+
+
+@router.delete("/{user_id}/{campaign_id}/set-inbound-default")
+async def clear_inbound_default_campaign(user_id: str, campaign_id: str):
+    """Remove this campaign as the inbound default (no auto-reply)."""
+    db = get_db()
+    await db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$unset": {"default_campaign_id": ""}}
+    )
+    await db.campaigns.update_one(
+        {"_id": ObjectId(campaign_id)},
+        {"$unset": {"is_inbound_default": ""}}
+    )
+    return {"success": True, "message": "Inbound default cleared."}

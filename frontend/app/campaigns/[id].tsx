@@ -106,6 +106,8 @@ const { showToast } = useToast();
   const [dateType, setDateType] = useState('');
   const [availableTags, setAvailableTags] = useState<any[]>([]);
   const [active, setActive] = useState(true);
+  const [isInboundDefault, setIsInboundDefault] = useState(false);
+  const [togglingDefault, setTogglingDefault] = useState(false);
   const [sequences, setSequences] = useState<SequenceStep[]>([]);
   const [sendTime, setSendTime] = useState(new Date(new Date().setHours(10, 0, 0, 0)));
   const [showTimePicker, setShowTimePicker] = useState(false);
@@ -140,6 +142,7 @@ const { showToast } = useToast();
       setName(data.name || '');
       setTriggerTag(data.trigger_tag || '');
       setActive(data.active ?? true);
+      setIsInboundDefault(data.is_inbound_default === true);
       
       // Determine trigger type from campaign data
       const isDateCampaign = ['birthday', 'anniversary', 'sold_date'].includes(data.type) || !!data.date_type;
@@ -434,6 +437,26 @@ const { showToast } = useToast();
       setDuplicating(false);
     }
   };
+
+  const handleToggleInboundDefault = async (value: boolean) => {
+    if (!user || !id || togglingDefault) return;
+    setTogglingDefault(true);
+    try {
+      if (value) {
+        const res = await api.post(`/campaigns/${user._id}/${id}/set-inbound-default`);
+        setIsInboundDefault(true);
+        showToast(res.data?.message || 'Set as inbound reply campaign', 'success');
+      } else {
+        await api.delete(`/campaigns/${user._id}/${id}/set-inbound-default`);
+        setIsInboundDefault(false);
+        showToast('Inbound default cleared', 'success');
+      }
+    } catch (e: any) {
+      showToast(e?.response?.data?.detail || 'Failed to update', 'error');
+    } finally {
+      setTogglingDefault(false);
+    }
+  };
   
   const handleTimeChange = (event: any, selectedDate?: Date) => {
     if (Platform.OS === 'android') {
@@ -615,6 +638,34 @@ const { showToast } = useToast();
             trackColor={{ false: colors.borderLight, true: '#34C75980' }}
             thumbColor={active ? '#34C759' : colors.textSecondary}
           />
+        </View>
+
+        {/* Inbound Default Toggle */}
+        <View style={[styles.toggleSection, isInboundDefault && { backgroundColor: '#C9A96210', borderRadius: 12, borderWidth: 1, borderColor: '#C9A96230' }]}>
+          <View style={styles.toggleInfo}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={styles.toggleLabel}>Inbound Reply Campaign</Text>
+              {isInboundDefault && (
+                <View style={{ backgroundColor: '#C9A962', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                  <Text style={{ fontSize: 10, fontWeight: '800', color: '#000' }}>DEFAULT</Text>
+                </View>
+              )}
+            </View>
+            <Text style={styles.toggleSubtext}>
+              {isInboundDefault
+                ? 'New inbound SMS contacts auto-enroll here'
+                : 'Enable to auto-reply when someone texts your number'}
+            </Text>
+          </View>
+          {togglingDefault
+            ? <ActivityIndicator size="small" color="#C9A962" />
+            : <Switch
+                value={isInboundDefault}
+                onValueChange={handleToggleInboundDefault}
+                trackColor={{ false: colors.borderLight, true: '#C9A96280' }}
+                thumbColor={isInboundDefault ? '#C9A962' : colors.textSecondary}
+              />
+          }
         </View>
         
         {/* Send Time */}

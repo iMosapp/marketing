@@ -6,6 +6,7 @@ Campaign philosophy: auto-create everything, but only activate customer-facing
 campaigns once contacts exist. Onboarding campaigns are always active.
 """
 from datetime import datetime, timezone
+from bson import ObjectId
 from routers.database import get_db
 import logging
 
@@ -265,6 +266,24 @@ DEFAULT_CAMPAIGNS = [
         ],
     },
 
+    # Campaign 7: New Inbound Lead — AI Auto Reply (default for inbound SMS)
+    {
+        "name": "New Inbound Lead",
+        "type": "inbound_auto",
+        "trigger_tag": "Inbound Lead",
+        "active": True,
+        "delivery_mode": "auto",
+        "ai_enabled": True,
+        "ai_assist_mode": "auto_reply",
+        "is_inbound_default": True,
+        "description": "Auto-reply to new inbound SMS leads in your voice. AI responds with a natural delay.",
+        "scope": "personal",
+        "sequences": [
+            {"step": 1, "delay_days": 0, "delay_minutes": 0, "channel": "sms",
+             "message": "Hey {{firstName}}! Thanks for reaching out. I'm {{salespersonName}} — what can I help you with today?"},
+        ],
+    },
+
     # Legacy Onboarding — kept for backward compat but deactivated
     {
         "name": "New Account Onboarding",
@@ -409,6 +428,21 @@ async def seed_user_defaults(user_id: str):
         seeded["campaigns"] = len(docs)
     else:
         seeded["campaigns"] = 0
+
+    # Set default_campaign_id if not already set — use the inbound auto-reply campaign
+    user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"default_campaign_id": 1})
+    if not user_doc or not user_doc.get("default_campaign_id"):
+        inbound_camp = await db.campaigns.find_one({
+            "user_id": user_id,
+            "type": "inbound_auto",
+            "active": True,
+        })
+        if inbound_camp:
+            await db.users.update_one(
+                {"_id": ObjectId(user_id)},
+                {"$set": {"default_campaign_id": str(inbound_camp["_id"])}}
+            )
+            seeded["default_campaign_set"] = str(inbound_camp["_id"])
 
     # 3b. Default Tags — seed the 5 core tags if user has none yet
     existing_tag_count = await db.tags.count_documents({"user_id": user_id})

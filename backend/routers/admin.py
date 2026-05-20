@@ -2055,11 +2055,13 @@ async def backfill_default_campaigns(x_user_id: str = Header(alias="X-User-ID"))
         {"_id": 1}
     ).limit(2000).to_list(2000)
 
-    results = {"total": len(users), "seeded": 0, "errors": 0}
+    results = {"total": len(users), "seeded": 0, "errors": 0, "default_campaign_set": 0}
     for user in users:
         try:
-            await seed_user_defaults(str(user["_id"]))
+            result = await seed_user_defaults(str(user["_id"]))
             results["seeded"] += 1
+            if result.get("default_campaign_set"):
+                results["default_campaign_set"] += 1
         except Exception as e:
             logger.warning(f"[Backfill] Failed for {user['_id']}: {e}")
             results["errors"] += 1
