@@ -17,7 +17,8 @@ import requests
 import os
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
-TEST_CRM_TOKEN = "c873848e-0ab2-435e-8418-de3ff4c3cb85"
+# CRM token for testing — set TEST_CRM_TOKEN env var or provide a valid token
+TEST_CRM_TOKEN = os.environ.get('TEST_CRM_TOKEN', '')
 
 
 class TestCRMTimelineEnhanced:
@@ -115,7 +116,7 @@ class TestCRMTimelineEnhanced:
         for m in msg_outbound[:5]:  # Check first 5
             # Should have full_content OR description with actual message body
             has_content = bool(m.get("full_content") or m.get("description"))
-            assert has_content, f"message_outbound event missing content/description"
+            assert has_content, "message_outbound event missing content/description"
             
             # Verify direction is outbound
             assert m.get("direction") == "outbound", \
@@ -209,7 +210,7 @@ class TestCRMTimelineEnhanced:
         
         store = data.get("store", {})
         assert "name" in store or "color" in store, "Store should have basic info"
-        print(f"PASS: Store info present")
+        print("PASS: Store info present")
 
     def test_invalid_token_returns_404(self):
         """Verify invalid token returns 404"""

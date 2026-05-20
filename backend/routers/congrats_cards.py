@@ -657,6 +657,8 @@ async def create_congrats_card(
                 # Trigger campaign enrollment for applied tags (unless skipped)
                 should_skip = skip_campaign and skip_campaign.lower() in ("true", "1", "yes")
                 if applied_tags and not should_skip:
+                    # Lazy import intentional: breaks circular dependency with tags.py
+                    # (tags.py also imports from congrats_cards.py).
                     from routers.tags import auto_enroll_contacts_in_campaign
                     for tag_name in applied_tags:
                         await auto_enroll_contacts_in_campaign(salesman_id, tag_name, [contact_id])

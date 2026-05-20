@@ -106,7 +106,8 @@ export default function LoginScreen() {
       if (!document.getElementById(styleId)) {
         const style = document.createElement('style');
         style.id = styleId;
-        style.innerHTML = `
+        // Use textContent instead of innerHTML to avoid potential CSS injection vectors
+        style.textContent = `
           input:-webkit-autofill,
           input:-webkit-autofill:hover,
           input:-webkit-autofill:focus,

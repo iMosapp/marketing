@@ -551,6 +551,9 @@ async def assign_tag_to_contacts(user_id: str, data: dict):
     if tag_name.lower() in ("birthday", "happy birthday", "bday"):
         import asyncio
         try:
+            # Lazy import intentional: breaks circular dependency with congrats_cards.py
+            # (congrats_cards.py also imports from tags.py). Extracting to a service layer
+            # is the long-term solution but this is safe and tested.
             from routers.congrats_cards import auto_create_card
             for cid in contact_ids:
                 asyncio.create_task(auto_create_card(user_id, cid, card_type="birthday"))

@@ -14,8 +14,8 @@ from datetime import datetime
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 MONGO_URL = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
 DB_NAME = os.environ.get('DB_NAME', 'imos-admin-test_database')
-SUPER_ADMIN_EMAIL = "forest@imosapp.com"
-SUPER_ADMIN_PASSWORD = "Admin123!"
+SUPER_ADMIN_EMAIL = os.environ.get('TEST_ADMIN_EMAIL', 'forest@imosapp.com')
+SUPER_ADMIN_PASSWORD = os.environ.get('TEST_ADMIN_PASS', '')  # Set TEST_ADMIN_PASS env var to run tests
 
 # Fake phone number for testing (won't be in Twilio, only in DB)
 TEST_PHONE_NUMBER = "+10000000001"
@@ -179,7 +179,7 @@ class TestDeleteUserReleasesNumber:
             data = del_resp.json()
             assert data.get("number_released_to_pool") is None, \
                 "User without number should have null number_released_to_pool"
-            print(f"PASS: User without number - number_released_to_pool is None")
+            print("PASS: User without number - number_released_to_pool is None")
         finally:
             db.users.delete_one({"_id": ObjectId(user_id)})
 
@@ -211,7 +211,7 @@ class TestDeleteUserReleasesNumber:
             "User should not have mvpline_number after deactivation"
         assert not user_after.get("twilio_number"), \
             "User should not have twilio_number after deactivation"
-        print(f"PASS: User's twilio_number/mvpline_number removed after deactivation")
+        print("PASS: User's twilio_number/mvpline_number removed after deactivation")
 
         # Verify pool entry has status='pool'
         pool_entry = db.phone_number_pool.find_one({"phone_number": TEST_PHONE_NUMBER})
@@ -356,7 +356,7 @@ class TestReactivateWithPooledNumber:
             data = react_resp.json()
             assert data.get("pooled_number_available") is None, \
                 "User without number should have null pooled_number_available"
-            print(f"PASS: pooled_number_available is None for user without number")
+            print("PASS: pooled_number_available is None for user without number")
         finally:
             db.users.delete_one({"_id": ObjectId(user_id)})
 
@@ -420,7 +420,7 @@ class TestGetPoolAfterRelease:
             pool_numbers = [e["phone_number"] for e in data["pool"]]
             assert assigned_number not in pool_numbers, \
                 f"Assigned number {assigned_number} should NOT appear in pool"
-            print(f"PASS: Assigned number not shown in pool")
+            print("PASS: Assigned number not shown in pool")
         finally:
             db.phone_number_pool.delete_one({"phone_number": assigned_number})
 
@@ -590,7 +590,7 @@ class TestReactivateEndpoint:
                 assert "message" in data
                 print(f"PASS: PUT /api/admin/users/{user_id}/reactivate works - {data.get('message')}")
             elif put_resp.status_code == 405:
-                print(f"INFO: PUT reactivate returns 405 (only POST supported) - frontend may have a mismatch")
+                print("INFO: PUT reactivate returns 405 (only POST supported) - frontend may have a mismatch")
                 # Also test POST reactivate
                 post_resp = requests.post(
                     f"{BASE_URL}/api/admin/users/{user_id}/reactivate",

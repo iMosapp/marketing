@@ -184,7 +184,7 @@ export default function CampaignJourney({ userId, contactId, onEnrollmentRemoved
         const accentColor = isActive ? '#007AFF' : '#34C759';
 
         return (
-          <View key={jIdx} style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]} data-testid={`journey-card-${jIdx}`}>
+          <View key={journey.enrollment_id || `journey-${jIdx}`} style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]} data-testid={`journey-card-${jIdx}`}>
             {/* Campaign header — tappable to expand/collapse */}
             <TouchableOpacity onPress={() => toggleExpand(jIdx)} activeOpacity={0.7} style={s.cardHeader}>
               <View style={s.cardHeaderLeft}>
@@ -249,7 +249,7 @@ export default function CampaignJourney({ userId, contactId, onEnrollmentRemoved
                   const wrapperProps = isTappable ? { onPress: () => handleStepTap(step), activeOpacity: 0.6 } : {};
 
                   return (
-                    <StepWrapper key={sIdx} style={s.timelineStep} {...wrapperProps} data-testid={`journey-step-${jIdx}-${sIdx}`}>
+                    <StepWrapper key={step.step || `step-${sIdx}`} style={s.timelineStep} {...wrapperProps} data-testid={`journey-step-${jIdx}-${sIdx}`}>
                       <View style={s.timelineLeft}>
                         <View style={[s.timelineDot, { backgroundColor: stepColor, borderColor: isSent ? '#34C75940' : (isPending || isNext) ? '#FF950040' : `${colors.border}` }]} />
                         {!isLast && (

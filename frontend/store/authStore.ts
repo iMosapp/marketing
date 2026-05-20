@@ -203,8 +203,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Register service worker AFTER successful login (never on login page)
       if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
         try {
-          navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch(() => {});
-        } catch {}
+          navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+            .catch((e) => console.warn('[Auth] SW registration failed:', e?.message));
+        } catch (e: any) {
+          console.warn('[Auth] SW registration threw:', e?.message);
+        }
       }
     } catch (error) {
       set({ isLoading: false });
@@ -239,7 +242,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const { default: api } = await import('../services/api');
       await api.post('/auth/logout');
-    } catch {}
+    } catch (e: any) {
+      // Non-fatal — user is already logged out locally
+      console.warn('[Auth] Server logout call failed (non-fatal):', e?.message);
+    }
     set({ 
       user: null, 
       token: null, 
@@ -361,7 +367,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         // Nothing found — genuinely not logged in
         set({ isLoading: false });
-      } catch {
+      // Last resort: cookie restore
+      } catch (e: any) {
+        console.error('[Auth] loadAuth failed unexpectedly:', e?.message);
         // Last resort: cookie restore
         await _restoreFromCookie(set);
       }
