@@ -1547,13 +1547,33 @@ async def merge_users(primary_id: str, secondary_id: str):
     """
     db = get_db()
 
-    primary   = await db.users.find_one({"_id": ObjectId(primary_id)})
-    secondary = await db.users.find_one({"_id": ObjectId(secondary_id)})
+    try:
+        primary = await db.users.find_one({"_id": ObjectId(primary_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid primary account ID")
+    try:
+        secondary = await db.users.find_one({"_id": ObjectId(secondary_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid secondary account ID")
 
-    if not primary or not secondary:
-        raise HTTPException(status_code=404, detail="One or both users not found")
+    if not primary:
+        raise HTTPException(status_code=404, detail="Primary account not found")
+    if not secondary:
+        raise HTTPException(status_code=404, detail="Secondary account not found")
     if primary_id == secondary_id:
-        raise HTTPException(status_code=400, detail="Cannot merge a user with itself")
+        raise HTTPException(status_code=400, detail="Cannot merge an account with itself")
+
+    # Idempotent: if secondary was already merged into this primary, return success
+    if secondary.get("merged_into") == primary_id:
+        return {
+            "success": True,
+            "primary_id": primary_id,
+            "secondary_id": secondary_id,
+            "primary_email": primary.get("email", ""),
+            "deactivated": secondary.get("email", ""),
+            "data_moved": {},
+            "message": "Already merged — no changes needed.",
+        }
 
     pid = primary_id
     sid = secondary_id
@@ -1582,31 +1602,56 @@ async def merge_users(primary_id: str, secondary_id: str):
         moved["phone_transferred"] = s_phone
 
     # Carry over persona data to primary if primary is missing it
-    s_persona = secondary.get("persona") or {}
-    p_persona = primary.get("persona") or {}
-    merged_persona = {**s_persona, **p_persona}  # primary takes precedence
-    if merged_persona != p_persona:
-        await db.users.update_one({"_id": ObjectId(pid)}, {"$set": {"persona": merged_persona}})
+    try:
+        s_persona = secondary.get("persona") or {}
+        p_persona = primary.get("persona") or {}
+        # Only merge top-level string/primitive fields — skip nested objects that may have ObjectIds
+        safe_s = {k: v for k, v in s_persona.items() if isinstance(v, (str, int, float, bool, list))}
+        merged_persona = {**safe_s, **{k: v for k, v in p_persona.items() if isinstance(v, (str, int, float, bool, list))}}
+        if merged_persona and merged_persona != {k: v for k, v in p_persona.items() if isinstance(v, (str, int, float, bool, list))}:
+            await db.users.update_one({"_id": ObjectId(pid)}, {"$set": {"persona": merged_persona}})
+    except Exception as e:
+        logger.warning(f"[Merge] Persona merge skipped: {e}")
 
-    # Deactivate secondary account
-    await db.users.update_one(
-        {"_id": ObjectId(sid)},
-        {"$set": {
-            "status":        "deactivated",
-            "email":         f"merged_{secondary.get('email',sid)}",  # Prevent email conflicts
-            "merged_into":   pid,
-            "merged_at":     datetime.utcnow(),
-        }}
-    )
+    # Deactivate secondary account — use a safe email rename that won't conflict
+    secondary_email = secondary.get("email") or sid
+    # If already renamed from a previous partial merge, keep it as-is
+    if not secondary_email.startswith("merged_"):
+        new_email = f"merged_{secondary_email}"
+    else:
+        new_email = secondary_email
+    try:
+        await db.users.update_one(
+            {"_id": ObjectId(sid)},
+            {"$set": {
+                "status":      "deactivated",
+                "is_active":   False,
+                "email":       new_email,
+                "merged_into": pid,
+                "merged_at":   datetime.utcnow(),
+            }}
+        )
+    except Exception as e:
+        logger.error(f"[Merge] Could not deactivate secondary {sid}: {e}")
+        # Data was already moved — return partial success rather than error
+        return {
+            "success":       True,
+            "primary_id":    pid,
+            "secondary_id":  sid,
+            "primary_email": str(primary.get("email", "")),
+            "deactivated":   secondary_email,
+            "data_moved":    moved,
+            "message":       "Data moved successfully. Secondary account deactivation may require manual cleanup.",
+        }
 
     return {
-        "success":      True,
-        "primary_id":   pid,
-        "secondary_id": sid,
-        "primary_email": primary.get("email"),
-        "deactivated":  secondary.get("email"),
-        "data_moved":   moved,
-        "message": f"All data from {secondary.get('name')} ({secondary.get('email')}) merged into {primary.get('name')} ({primary.get('email')}). Secondary account deactivated.",
+        "success":       True,
+        "primary_id":    pid,
+        "secondary_id":  sid,
+        "primary_email": str(primary.get("email", "")),
+        "deactivated":   secondary_email,
+        "data_moved":    moved,
+        "message":       f"All data from {secondary.get('name', '')} ({secondary_email}) merged into {primary.get('name', '')} ({primary.get('email', '')}). Secondary account deactivated.",
     }
 
 
