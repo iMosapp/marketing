@@ -1060,7 +1060,7 @@ async def startup_event():
 
     # ── Auto-assign Twilio phone number to the primary admin on every deploy ──
     # Uses ADMIN_EMAIL env var if set, otherwise falls back to first super_admin.
-    # Idempotent — safe to run every startup.
+    # Idempotent — safe to run every startup. Will NOT overwrite an existing number.
     try:
         twilio_phone = os.environ.get("TWILIO_PHONE_NUMBER", "").strip()
         if twilio_phone:
@@ -1068,23 +1068,28 @@ async def startup_event():
             admin_email = os.environ.get("ADMIN_EMAIL", "").strip()
             admin_user = None
             if admin_email:
-                admin_user = await db.users.find_one({"email": admin_email}, {"_id": 1, "name": 1})
+                admin_user = await db.users.find_one({"email": admin_email}, {"_id": 1, "name": 1, "twilio_number": 1, "mvpline_number": 1})
             # Fallback: super_admin with most recent login or highest _id
             if not admin_user:
                 admin_user = await db.users.find_one(
                     {"role": "super_admin"},
-                    {"_id": 1, "name": 1},
+                    {"_id": 1, "name": 1, "twilio_number": 1, "mvpline_number": 1},
                     sort=[("created_at", 1)]  # Oldest = primary admin
                 )
             if admin_user:
-                await db.users.update_one(
-                    {"_id": admin_user["_id"]},
-                    {"$set": {
-                        "mvpline_number": twilio_phone,
-                        "twilio_number":  twilio_phone,
-                    }}
-                )
-                logger.info(f"[Startup] Twilio number {twilio_phone} auto-assigned to {admin_user.get('name','admin')}")
+                existing_number = admin_user.get("twilio_number") or admin_user.get("mvpline_number")
+                if existing_number and existing_number != twilio_phone:
+                    # User already has a number assigned — do NOT overwrite it
+                    logger.info(f"[Startup] Skipping auto-assign: {admin_user.get('name')} already has {existing_number} (env has {twilio_phone})")
+                else:
+                    await db.users.update_one(
+                        {"_id": admin_user["_id"]},
+                        {"$set": {
+                            "mvpline_number": twilio_phone,
+                            "twilio_number":  twilio_phone,
+                        }}
+                    )
+                    logger.info(f"[Startup] Twilio number {twilio_phone} auto-assigned to {admin_user.get('name','admin')}")
     except Exception as e:
         logger.warning(f"[Startup] Twilio number auto-assign skipped: {e}")
 

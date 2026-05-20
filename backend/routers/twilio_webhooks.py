@@ -109,6 +109,16 @@ async def incoming_message(
     from_phone = normalize_phone(From)
     to_phone   = normalize_phone(To)
     
+    # ── Deduplication: reject Twilio retries for the same MessageSid ──────────
+    if MessageSid:
+        already = await db.messages.find_one({"twilio_sid": MessageSid})
+        if already:
+            logger.warning(f"[Webhook] Duplicate MessageSid {MessageSid} — ignoring Twilio retry")
+            return Response(
+                content='<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+                media_type="application/xml"
+            )
+    
     # Collect media URLs
     media_urls  = []
     media_types = []
@@ -120,7 +130,10 @@ async def incoming_message(
     
     try:
         # ── Step 1: Route by To: number → find the rep who owns this number ──
-        rep_user = await db.users.find_one({"twilio_number": to_phone, "is_active": {"$ne": False}})
+        rep_user = await db.users.find_one({
+            "$or": [{"twilio_number": to_phone}, {"mvpline_number": to_phone}],
+            "is_active": {"$ne": False},
+        })
         if not rep_user:
             # Check if this is a pooled number (rep was terminated)
             pool_entry = await db.phone_number_pool.find_one({
