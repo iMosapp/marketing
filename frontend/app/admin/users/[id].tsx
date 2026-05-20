@@ -299,9 +299,12 @@ export default function UserDetailScreen() {
       async () => {
         setActionLoading(true);
         try {
-          await api.put(`/admin/users/${id}/reactivate`);
+          const res = await api.put(`/admin/users/${id}/reactivate`);
           loadUserData();
-          showToast('${user.name} has been reactivated');
+          const poolNote = res.data?.pooled_number_available
+            ? ` Their old number (${res.data.pooled_number_available}) is still in the pool — assign it from Phone Numbers.`
+            : '';
+          showToast(`${user.name} has been reactivated.${poolNote}`);
         } catch (error: any) {
           showSimpleAlert('Error', error.response?.data?.detail || 'Failed to reactivate user');
         } finally {
@@ -372,14 +375,21 @@ export default function UserDetailScreen() {
   
   const handleDeleteUser = () => {
     if (!user) return;
+    const hasNumber = user.twilio_number || user.mvpline_number || user.twilio_phone_number;
+    const numberNote = hasNumber
+      ? `\n\nTheir dedicated number (${hasNumber}) will be held in the Number Pool for reassignment to a new rep.`
+      : '';
     showConfirm(
       'Deactivate User',
-      `Deactivate "${user.name}"? They will be soft-deleted with a 6-month grace period.`,
+      `Deactivate "${user.name}"? They will be soft-deleted with a 6-month grace period.${numberNote}`,
       async () => {
         setActionLoading(true);
         try {
-          await api.delete(`/admin/users/${id}`);
-          showToast('User deactivated');
+          const res = await api.delete(`/admin/users/${id}`);
+          const numberMsg = res.data?.number_released_to_pool
+            ? ` Number ${res.data.number_released_to_pool} returned to pool.`
+            : '';
+          showToast(`User deactivated.${numberMsg}`);
           router.back();
         } catch (error: any) {
           showSimpleAlert('Error', error.response?.data?.detail || 'Failed to deactivate user');
@@ -1240,7 +1250,11 @@ export default function UserDetailScreen() {
                       </Text>
                       <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
                         {isCurrentUser ? 'Already assigned to this user'
-                          : `Currently assigned to ${num.assigned_to?.name} — tap to reassign`}
+                          : num.status === 'pool'
+                            ? num.previous_owner?.name
+                              ? `From pool (prev: ${num.previous_owner.name})`
+                              : 'Available in pool — tap to assign'
+                            : `Currently: ${num.assigned_to?.name || 'Unassigned'} — tap to reassign`}
                       </Text>
                     </View>
                     {assigningNumber ? (

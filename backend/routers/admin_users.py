@@ -703,6 +703,35 @@ async def delete_admin_user(user_id: str, x_user_id: str = Header(None, alias="X
         org_contact_count = 0
         logger.info(f"Individual user {user_id} deactivated. All contacts retained. Hard delete: {hard_delete.isoformat()}")
     
+    # ── Release Twilio number to pool ────────────────────────────────────────
+    number_released = None
+    twilio_number = user_to_deactivate.get("twilio_number") or user_to_deactivate.get("mvpline_number")
+    if twilio_number:
+        try:
+            await get_db().phone_number_pool.update_one(
+                {"phone_number": twilio_number},
+                {"$set": {
+                    "status": "pool",
+                    "assigned_user_id": None,
+                    "previous_user_id": user_id,
+                    "previous_user_name": user_to_deactivate.get("name"),
+                    "previous_user_email": user_to_deactivate.get("email"),
+                    "previous_store_id": user_to_deactivate.get("store_id"),
+                    "released_at": now,
+                    "released_by": x_user_id or "system",
+                    "updated_at": now,
+                }},
+                upsert=True,
+            )
+            await get_db().users.update_one(
+                {"_id": ObjectId(user_id)},
+                {"$unset": {"mvpline_number": "", "twilio_number": "", "twilio_number_sid": ""}}
+            )
+            number_released = twilio_number
+            logger.info(f"[NumberPool] {twilio_number} released to pool from user {user_id} ({user_to_deactivate.get('name')})")
+        except Exception as e:
+            logger.warning(f"[NumberPool] Failed to release number {twilio_number}: {e}")
+
     # Fire lifecycle hooks
     try:
         from .user_lifecycle import on_user_deactivated
@@ -717,6 +746,7 @@ async def delete_admin_user(user_id: str, x_user_id: str = Header(None, alias="X
         "personal_contacts_archived": archived_count,
         "org_contacts_retained": org_contact_count,
         "conversion_available": not is_individual,
+        "number_released_to_pool": number_released,
     }
 
 
@@ -879,6 +909,18 @@ async def reactivate_user_post(user_id: str, x_user_id: str = Header(None, alias
     
     logger.info(f"User {user_id} reactivated. {restored.modified_count} contacts unhidden, {archive_restored} restored from archive.")
     
+    # Check if user's old number is still in the pool
+    pooled_number = None
+    try:
+        pool_entry = await db.phone_number_pool.find_one({
+            "previous_user_id": user_id,
+            "status": "pool",
+        })
+        if pool_entry:
+            pooled_number = pool_entry.get("phone_number")
+    except Exception:
+        pass
+
     # Fire lifecycle hooks
     try:
         from .user_lifecycle import on_user_reactivated
@@ -886,7 +928,11 @@ async def reactivate_user_post(user_id: str, x_user_id: str = Header(None, alias
     except Exception as e:
         logger.warning(f"Lifecycle reactivation hook error: {e}")
     
-    return {"message": "User reactivated", "contacts_restored": restored.modified_count}
+    return {
+        "message": "User reactivated",
+        "contacts_restored": restored.modified_count,
+        "pooled_number_available": pooled_number,
+    }
 
 
 @router.get("/users/{user_id}/detail")

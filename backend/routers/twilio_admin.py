@@ -72,6 +72,11 @@ async def list_numbers():
         )
         user_id = str(user["_id"]) if user else None
 
+        # Check pool for previous owner info (for unassigned/pool numbers)
+        pool_entry = None
+        if not user:
+            pool_entry = await db.phone_number_pool.find_one({"phone_number": phone})
+
         # Find store
         store = None
         if user and user.get("store_id"):
@@ -142,6 +147,12 @@ async def list_numbers():
             } if user else None,
             "store_name":          store.get("name") if store else None,
             "status":              "assigned" if user else "pool",
+            "previous_owner": {
+                "name":       pool_entry.get("previous_user_name") if pool_entry else None,
+                "email":      pool_entry.get("previous_user_email") if pool_entry else None,
+                "store_id":   pool_entry.get("previous_store_id") if pool_entry else None,
+                "released_at": pool_entry["released_at"].isoformat() if pool_entry and pool_entry.get("released_at") else None,
+            } if pool_entry and pool_entry.get("previous_user_name") else None,
             "last_activity":       last_activity,
             "last_activity_type":  last_activity_type,
             "contact_count":       contact_count,
@@ -306,6 +317,43 @@ async def purchase_number(request: Request):
         raise HTTPException(status_code=500, detail=f"Purchase failed: {e}")
 
 
+@router.get("/pool")
+async def get_number_pool():
+    """List all numbers currently in the pool (unassigned, previously used by terminated reps)."""
+    db = get_db()
+    pool_entries = await db.phone_number_pool.find(
+        {"status": "pool"}
+    ).sort("released_at", -1).to_list(100)
+
+    result = []
+    for entry in pool_entries:
+        # Resolve store name
+        store_name = None
+        if entry.get("previous_store_id"):
+            try:
+                store = await db.stores.find_one(
+                    {"_id": ObjectId(entry["previous_store_id"])}, {"name": 1}
+                )
+                if store:
+                    store_name = store.get("name")
+            except Exception:
+                pass
+
+        released_at = entry.get("released_at")
+        result.append({
+            "phone_number":        entry.get("phone_number"),
+            "twilio_sid":          entry.get("twilio_sid"),
+            "previous_user_name":  entry.get("previous_user_name"),
+            "previous_user_email": entry.get("previous_user_email"),
+            "previous_store_id":   entry.get("previous_store_id"),
+            "previous_store_name": store_name,
+            "released_at":         released_at.isoformat() if released_at else None,
+            "released_by":         entry.get("released_by"),
+        })
+
+    return {"pool": result, "count": len(result)}
+
+
 # ── Assign / Pool / Release ───────────────────────────────────────────────────
 
 @router.post("/numbers/{number_sid}/assign")
@@ -345,7 +393,12 @@ async def assign_number(number_sid: str, request: Request):
 
     await db.phone_number_pool.update_one(
         {"twilio_sid": number_sid},
-        {"$set": {"status": status, "assigned_user_id": user_id, "updated_at": datetime.utcnow()}},
+        {"$set": {
+            "status": status,
+            "assigned_user_id": user_id,
+            "assigned_at": datetime.utcnow() if user_id else None,
+            "updated_at": datetime.utcnow(),
+        }},
         upsert=True,
     )
 

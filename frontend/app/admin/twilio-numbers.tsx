@@ -188,7 +188,7 @@ export default function TwilioNumbersDashboard() {
               </View>
             </View>
 
-            {/* Assigned user */}
+            {/* Assigned user or pool info */}
             {num.assigned_to ? (
               <View style={s.assignedRow}>
                 <Ionicons name="person-circle" size={16} color="#007AFF" />
@@ -202,9 +202,20 @@ export default function TwilioNumbersDashboard() {
                 )}
               </View>
             ) : (
-              <View style={s.assignedRow}>
-                <Ionicons name="alert-circle" size={16} color="#FF9500" />
-                <Text style={[s.assignedText, { color: '#FF9500' }]}>Unassigned — in number pool</Text>
+              <View style={{ gap: 4, marginBottom: 8 }}>
+                <View style={[s.assignedRow, { marginBottom: 0 }]}>
+                  <Ionicons name="alert-circle" size={16} color="#FF9500" />
+                  <Text style={[s.assignedText, { color: '#FF9500' }]}>Unassigned — in number pool</Text>
+                </View>
+                {num.previous_owner?.name && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 22 }}>
+                    <Ionicons name="person-remove-outline" size={13} color={colors.textSecondary} />
+                    <Text style={{ fontSize: 12, color: colors.textSecondary }}>
+                      Previously: {num.previous_owner.name}
+                      {num.previous_owner.released_at ? ` (released ${timeAgo(num.previous_owner.released_at)})` : ''}
+                    </Text>
+                  </View>
+                )}
               </View>
             )}
 

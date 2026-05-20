@@ -1,0 +1,96 @@
+{
+  "summary": "Iteration 257: Tested Twilio Number Pool feature - User Termination flow. 14/14 backend tests passed. Frontend verified for deactivation dialog and pool number labels. Found 1 critical bug: PUT /reactivate endpoint missing pooled_number_available in response.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "PUT /api/admin/users/{user_id}/reactivate",
+        "issue": "Response does NOT include 'pooled_number_available' field. Frontend at [id].tsx line 304 reads 'res.data?.pooled_number_available' from the PUT response, but PUT endpoint (lines 559-619 in admin_users.py) only returns {message, user_id, user_name}. The POST reactivate endpoint (line 858) correctly returns pooled_number_available, but frontend uses PUT. As a result, the toast note 'Their old number (X) is still in the pool' NEVER appears.",
+        "priority": "HIGH",
+        "file": "/app/backend/routers/admin_users.py lines 559-619",
+        "frontend_file": "/app/frontend/app/admin/users/[id].tsx line 302-307",
+        "fix": "Add pool number check to PUT reactivate endpoint: after reactivating, query phone_number_pool for {previous_user_id: user_id, status: 'pool'} and include pooled_number_available in response"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "User Reactivation - Pool Note Toast",
+        "issue": "Toast 'Their old number (X) is still in the pool' never shows because PUT /reactivate doesn't return pooled_number_available",
+        "affected_selectors": ["handleReactivateUser"]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_results": {
+    "pool_endpoint": {
+      "status": "PASS",
+      "endpoint": "GET /api/admin/twilio/pool",
+      "verification": "Returns 200 with {pool: [], count: 0} structure. Verified with mock entries."
+    },
+    "delete_releases_number": {
+      "status": "PASS",
+      "endpoint": "DELETE /api/admin/users/{user_id}",
+      "verification": "number_released_to_pool field present in response with correct phone number. User's twilio_number/mvpline_number unset. phone_number_pool entry updated to status='pool' with previous_user_name, previous_user_id, released_at."
+    },
+    "reactivate_pooled_number": {
+      "status": "PARTIAL - POST works, PUT does not",
+      "endpoint_post": "POST /api/admin/users/{user_id}/reactivate - PASS: returns pooled_number_available",
+      "endpoint_put": "PUT /api/admin/users/{user_id}/reactivate - FAIL: does NOT return pooled_number_available",
+      "frontend_uses": "PUT (line 302 of [id].tsx) - so pool note toast never shows"
+    },
+    "numbers_list_previous_owner": {
+      "status": "PASS",
+      "endpoint": "GET /api/admin/twilio/numbers",
+      "verification": "Returns numbers list with previous_owner.name and released_at for pool numbers that have DB entries"
+    },
+    "webhook_routing": {
+      "status": "PASS (code review)",
+      "verification": "twilio_webhooks.py lines 122-145: Checks phone_number_pool for terminated rep numbers, routes to store manager if previous_store_id exists, falls back to super_admin"
+    },
+    "frontend_deactivation_dialog": {
+      "status": "PASS",
+      "verification": "Dialog shows: 'Their dedicated number (+14352203414) will be held in the Number Pool for reassignment to a new rep.' for users with twilio_number"
+    },
+    "frontend_previously_label": {
+      "status": "PASS",
+      "verification": "Pool numbers show 'Previously: TEST Jane Doe (released Just now)' label when previous_owner.name present in API response"
+    }
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_twilio_number_pool.py",
+    "/app/test_reports/pytest/pytest_twilio_pool.xml"
+  ],
+  "action_items": [
+    "Fix PUT /api/admin/users/{user_id}/reactivate (admin_users.py lines 559-619) to also return pooled_number_available field. Query: phone_number_pool.find_one({previous_user_id: user_id, status: 'pool'}). Return pooled_number_available: pool_entry['phone_number'] if found."
+  ],
+  "critical_code_review_comments": [
+    "admin_users.py line 559: PUT reactivate endpoint lacks pooled_number_available in response, even though frontend reads it. Easy fix: add 5-line pool check before return statement (same logic as POST reactivate lines 912-922).",
+    "Two separate reactivate endpoints (PUT and POST) with different logic creates maintenance confusion. Consider consolidating or ensuring both have feature parity.",
+    "pool_entry lookup in GET /admin/twilio/numbers at line 77-78 only fetches if user is None, which is correct - but there's no index on phone_number_pool.phone_number collection which could be slow at scale."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_twilio_number_pool.py"
+  ],
+  "success_rate": {
+    "backend": "93% - 14/14 pytest tests passed; 1 behavioral bug in PUT reactivate",
+    "frontend": "85% - Deactivation dialog PASS, Previously label PASS; Pool toast note broken due to backend PUT issue"
+  },
+  "test_credentials": {
+    "email": "forest@imosapp.com",
+    "password": "Admin123!",
+    "user_id": "69a0b7095fddcede09591667"
+  },
+  "seed_data_creation": "Created/deleted test users and pool entries during testing. All cleaned up.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Iteration 257 tested Twilio Number Pool feature. All core flows work EXCEPT: PUT /api/admin/users/{id}/reactivate does not return pooled_number_available (only POST does). Fix: add pool check to PUT endpoint in admin_users.py around line 614, same as POST endpoint lines 912-922. After fix, verify that reactivating a user whose number is in the pool shows the toast note with the pool number. Phone numbers page 'Previously:' label works. Deactivation dialog works. Pool endpoint works. Number release on deactivation works.",
+  "rca_of_issue": {
+    "bug": "PUT /reactivate missing pooled_number_available",
+    "root_cause": "Two separate reactivate endpoints were created (PUT at line 559 for simple reactivation, POST at line 858 for contact restoration reactivation). The new pool feature (pooled_number_available) was only added to the POST endpoint but not the PUT endpoint. The frontend was updated to read pooled_number_available from PUT response but the endpoint was never updated.",
+    "reproduction": "1. Create user, add mvpline_number to DB, deactivate via DELETE. 2. Call PUT /api/admin/users/{id}/reactivate - response will be {message, user_id, user_name} - no pooled_number_available field. 3. Frontend toast note never shows.",
+    "fix": "In admin_users.py PUT reactivate (lines 559-619), before the return statement at line 615, add: pool_entry = await db.phone_number_pool.find_one({'previous_user_id': user_id, 'status': 'pool'}); pooled_number = pool_entry['phone_number'] if pool_entry else None. Then add 'pooled_number_available': pooled_number to the return dict."
+  }
+}

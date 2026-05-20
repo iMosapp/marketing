@@ -120,7 +120,26 @@ async def incoming_message(
     
     try:
         # ── Step 1: Route by To: number → find the rep who owns this number ──
-        rep_user = await db.users.find_one({"twilio_number": to_phone})
+        rep_user = await db.users.find_one({"twilio_number": to_phone, "is_active": {"$ne": False}})
+        if not rep_user:
+            # Check if this is a pooled number (rep was terminated)
+            pool_entry = await db.phone_number_pool.find_one({
+                "phone_number": to_phone,
+                "status": "pool",
+            })
+            if pool_entry and pool_entry.get("previous_store_id"):
+                # Route to the store manager for that store
+                store_id = pool_entry["previous_store_id"]
+                rep_user = await db.users.find_one({
+                    "$or": [{"store_id": store_id}, {"store_ids": store_id}],
+                    "role": {"$in": ["store_manager", "org_admin"]},
+                    "status": {"$ne": "deactivated"},
+                    "is_active": {"$ne": False},
+                })
+                if rep_user:
+                    logger.info(f"[Webhook] Pooled number {to_phone} routed to store manager {rep_user.get('name')} (store: {store_id})")
+                else:
+                    logger.info(f"[Webhook] Pooled number {to_phone} — no store manager found for store {store_id}, falling back to super_admin")
         if not rep_user:
             # Fall back to first super_admin
             rep_user = await db.users.find_one({"role": {"$in": ["super_admin", "org_admin"]}})
