@@ -135,7 +135,7 @@ async def get_profile(user_id: str):
             "id": str(user["_id"]),
             "name": user.get("name", ""),
             "email": user.get("email", ""),
-            "phone": user.get("phone", ""),
+            "phone": user.get("mvpline_number") or user.get("twilio_number") or user.get("phone", ""),
             "title": user.get("title", "Sales Professional"),
             "company": user.get("company", ""),
             "website": user.get("website", ""),

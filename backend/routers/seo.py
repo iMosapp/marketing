@@ -220,7 +220,7 @@ async def meta_card(user_id: str, request: Request):
         schema["image"] = photo
     if user.get("email"):
         schema["email"] = user["email"]
-    if user.get("phone"):
+    if user.get("mvpline_number") or user.get("twilio_number") or user.get("phone"):
         schema["telephone"] = user["phone"]
     if bio:
         schema["description"] = bio[:500]
@@ -782,7 +782,7 @@ async def _compute_health_score(user_id: str) -> dict:
     profile_checks = {
         "profile_photo": bool(user.get("photo_url") or user.get("profile_image")),
         "bio": bool((user.get("persona", {}) or {}).get("bio") or user.get("bio")),
-        "phone": bool(user.get("phone")),
+        "phone": bool(user.get("mvpline_number") or user.get("twilio_number") or user.get("phone")),
         "title": bool(user.get("title")),
         "seo_slug": bool(user.get("seo_slug")),
         "social_links": bool(user.get("social_links") and any(v for v in (user.get("social_links") or {}).values())),

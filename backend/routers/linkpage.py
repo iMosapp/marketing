@@ -277,7 +277,7 @@ async def get_user_link_page(user_id: str):
 
     # Build contact links
     links = []
-    if user.get("phone"):
+    if user.get("mvpline_number") or user.get("twilio_number") or user.get("phone"):
         links.append({"id": "phone", "label": "Call Me", "url": f"tel:{user['phone']}", "icon": "call", "color": "#34C759", "visible": True})
         links.append({"id": "sms", "label": "Text Me", "url": f"sms:{user['phone']}", "icon": "sms", "color": "#34C759", "visible": True})
     if user.get("email"):

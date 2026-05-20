@@ -152,7 +152,7 @@ async def get_landing_page_data(user_id: str):
             "id": str(user["_id"]),
             "name": user.get("name", ""),
             "email": user.get("email", ""),
-            "phone": user.get("phone", ""),
+            "phone": user.get("mvpline_number") or user.get("twilio_number") or user.get("phone", ""),
             "title": user.get("title", "Sales Professional"),
             "photo_url": resolve_user_photo(user),
             "bio": persona.get("bio", ""),

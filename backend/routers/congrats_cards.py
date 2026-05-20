@@ -191,7 +191,7 @@ async def auto_create_card(
             "salesman_name": user.get("name", ""),
             "salesman_photo": resolve_user_photo(user),
             "salesman_title": user.get("title", "Sales Professional"),
-            "salesman_phone": user.get("phone"),
+            "salesman_phone": user.get("mvpline_number") or user.get("twilio_number") or user.get("phone"),
             "salesman_email": user.get("email"),
             "store_id": store_id,
             "store_name": store.get("name") if store else None,

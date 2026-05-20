@@ -288,7 +288,7 @@ async def get_user_showcase(user_id: str, cid: str = None):
             "name": user.get("name", ""),
             "title": user.get("title", "Sales Professional"),
             "photo_url": user_photo_url,
-            "phone": user.get("phone"),
+            "phone": user.get("mvpline_number") or user.get("twilio_number") or user.get("phone"),
         },
         "store": {
             "id": str(store["_id"]) if store else None,
