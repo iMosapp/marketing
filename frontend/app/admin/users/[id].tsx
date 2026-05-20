@@ -393,6 +393,43 @@ export default function UserDetailScreen() {
     );
   };
 
+  const [showMergeModal, setShowMergeModal] = useState(false);
+  const [mergeEmail, setMergeEmail] = useState('');
+  const [mergingUser, setMergingUser] = useState(false);
+
+  const handleMergeAccount = async () => {
+    if (!mergeEmail.trim()) { showSimpleAlert('Required', 'Enter the email of the account to merge into this one.'); return; }
+    setMergingUser(true);
+    try {
+      // Find the secondary account by email
+      const usersRes = await api.get(`/admin/users?search=${encodeURIComponent(mergeEmail.trim())}&limit=5`);
+      const found = (usersRes.data?.users || usersRes.data || []).find((u: any) =>
+        u.email?.toLowerCase() === mergeEmail.trim().toLowerCase()
+      );
+      if (!found) { showSimpleAlert('Not Found', `No account found with email ${mergeEmail}.`); return; }
+      if (found._id === id) { showSimpleAlert('Error', 'Cannot merge an account with itself.'); return; }
+
+      showConfirm(
+        'Merge Accounts',
+        `This will move ALL data from "${found.name}" (${found.email}) into "${user?.name}" (${user?.email}), then deactivate the ${found.email} account. This cannot be undone.`,
+        async () => {
+          try {
+            const res = await api.post(`/admin/users/${id}/merge/${found._id}`);
+            setShowMergeModal(false);
+            setMergeEmail('');
+            showSimpleAlert('Merged', res.data.message || 'Accounts merged successfully.');
+            loadUser();
+          } catch (e: any) {
+            showSimpleAlert('Error', e?.response?.data?.detail || 'Merge failed.');
+          }
+        }
+      );
+    } catch (e: any) {
+      showSimpleAlert('Error', e?.response?.data?.detail || 'Could not search for account.');
+    } finally {
+      setMergingUser(false); }
+  };
+
   const handleHardDelete = () => {
     if (!user) return;
     showConfirm(
@@ -870,6 +907,15 @@ export default function UserDetailScreen() {
             <Text style={[styles.sectionTitle, { color: '#FF3B30' }]}>Danger Zone</Text>
           </View>
           
+          <TouchableOpacity
+            style={[styles.deleteButton, { borderColor: '#AF52DE40', marginBottom: 10 }]}
+            onPress={() => { setMergeEmail(''); setShowMergeModal(true); }}
+            data-testid="merge-user-btn"
+          >
+            <Ionicons name="git-merge-outline" size={20} color="#AF52DE" />
+            <Text style={[styles.deleteButtonText, { color: '#AF52DE' }]}>Merge with Another Account</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity 
             style={styles.deleteButton}
             onPress={handleDeleteUser}
@@ -1091,6 +1137,47 @@ export default function UserDetailScreen() {
               contentContainerStyle={styles.orgList}
             />
           )}
+        </SafeAreaView>
+      </Modal>
+
+      {/* ── Merge Account Modal ── */}
+      <Modal visible={showMergeModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowMergeModal(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+            <TouchableOpacity onPress={() => setShowMergeModal(false)}><Text style={{ fontSize: 17, color: '#FF3B30' }}>Cancel</Text></TouchableOpacity>
+            <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>Merge Accounts</Text>
+            <View style={{ width: 60 }} />
+          </View>
+          <ScrollView contentContainerStyle={{ padding: 20 }}>
+            <View style={{ backgroundColor: '#AF52DE15', borderRadius: 14, padding: 16, marginBottom: 20, borderWidth: 1, borderColor: '#AF52DE30' }}>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#AF52DE', marginBottom: 6 }}>How this works</Text>
+              <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 21 }}>
+                {`"${user?.name}" (${user?.email}) will become the PRIMARY account.\n\nAll contacts, campaigns, messages, and history from the other account will move here.\n\nThe other account will be deactivated. This cannot be undone.`}
+              </Text>
+            </View>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>
+              Email of account to merge INTO this one
+            </Text>
+            <TextInput
+              style={{ backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1, borderColor: colors.border, marginBottom: 20 }}
+              value={mergeEmail}
+              onChangeText={setMergeEmail}
+              placeholder="other@email.com"
+              placeholderTextColor={colors.textSecondary}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <TouchableOpacity
+              style={{ backgroundColor: '#AF52DE', borderRadius: 14, padding: 16, alignItems: 'center', opacity: mergingUser ? 0.6 : 1 }}
+              onPress={handleMergeAccount}
+              disabled={mergingUser}
+            >
+              {mergingUser ? <ActivityIndicator color="#fff" /> : (
+                <Text style={{ fontSize: 17, fontWeight: '800', color: '#fff' }}>Find and Merge</Text>
+              )}
+            </TouchableOpacity>
+          </ScrollView>
         </SafeAreaView>
       </Modal>
 

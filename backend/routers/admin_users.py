@@ -1458,6 +1458,85 @@ def _resize_image(contents: bytes, max_size: int = 128) -> str:
     return f"data:image/png;base64,{b64}"
 
 
+@router.post("/users/{primary_id}/merge/{secondary_id}")
+async def merge_users(primary_id: str, secondary_id: str):
+    """
+    Merge two user accounts. The PRIMARY account survives.
+    The SECONDARY account is deactivated and all its data moved to primary.
+
+    Transfers: contacts, campaigns, enrollments, messages, contact_events,
+               campaign_enrollments, tasks, conversations, mvpline_number.
+
+    Use cases:
+    - Same person signed up twice with different emails
+    - Rep returned with new email — need to consolidate history
+    - Phone number conflict resolution
+    """
+    db = get_db()
+
+    primary   = await db.users.find_one({"_id": ObjectId(primary_id)})
+    secondary = await db.users.find_one({"_id": ObjectId(secondary_id)})
+
+    if not primary or not secondary:
+        raise HTTPException(status_code=404, detail="One or both users not found")
+    if primary_id == secondary_id:
+        raise HTTPException(status_code=400, detail="Cannot merge a user with itself")
+
+    pid = primary_id
+    sid = secondary_id
+
+    # Collections to reassign from secondary → primary
+    COLLECTIONS = [
+        "contacts", "campaigns", "campaign_enrollments", "messages",
+        "contact_events", "tasks", "conversations", "ai_reply_queue",
+        "notifications", "congrats_cards_sent", "short_urls",
+        "inbound_leads", "partner_agreements",
+    ]
+    moved: dict = {}
+    for col in COLLECTIONS:
+        result = await db[col].update_many({"user_id": sid}, {"$set": {"user_id": pid}})
+        if result.modified_count:
+            moved[col] = result.modified_count
+
+    # Transfer phone number if secondary has one and primary doesn't
+    s_phone = secondary.get("mvpline_number") or secondary.get("twilio_number")
+    p_phone = primary.get("mvpline_number") or primary.get("twilio_number")
+    if s_phone and not p_phone:
+        await db.users.update_one(
+            {"_id": ObjectId(pid)},
+            {"$set": {"mvpline_number": s_phone, "twilio_number": s_phone}}
+        )
+        moved["phone_transferred"] = s_phone
+
+    # Carry over persona data to primary if primary is missing it
+    s_persona = secondary.get("persona") or {}
+    p_persona = primary.get("persona") or {}
+    merged_persona = {**s_persona, **p_persona}  # primary takes precedence
+    if merged_persona != p_persona:
+        await db.users.update_one({"_id": ObjectId(pid)}, {"$set": {"persona": merged_persona}})
+
+    # Deactivate secondary account
+    await db.users.update_one(
+        {"_id": ObjectId(sid)},
+        {"$set": {
+            "status":        "deactivated",
+            "email":         f"merged_{secondary.get('email',sid)}",  # Prevent email conflicts
+            "merged_into":   pid,
+            "merged_at":     datetime.utcnow(),
+        }}
+    )
+
+    return {
+        "success":      True,
+        "primary_id":   pid,
+        "secondary_id": sid,
+        "primary_email": primary.get("email"),
+        "deactivated":  secondary.get("email"),
+        "data_moved":   moved,
+        "message": f"All data from {secondary.get('name')} ({secondary.get('email')}) merged into {primary.get('name')} ({primary.get('email')}). Secondary account deactivated.",
+    }
+
+
 @router.post("/stores/{store_id}/upload-logo")
 async def upload_store_logo(store_id: str, file: UploadFile = File(...)):
     """Upload a logo for a store/account. Stores original + generates thumbnail & avatar."""
