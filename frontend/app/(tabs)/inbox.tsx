@@ -151,7 +151,9 @@ export default function InboxScreen() {
   const { showToast } = useToast();
   
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<'all' | 'unread' | 'active' | 'closed' | 'ai' | 'flagged' | 'archived'>('active');
+  const [activeTab, setActiveTab] = useState<'assigned' | 'waiting' | 'ai_active' | 'unassigned' | 'all'>('assigned');
+  // Keep filter alias for any remaining references
+  const filter = activeTab;
   const [conversations, setConversations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -534,16 +536,19 @@ export default function InboxScreen() {
   const filteredConversations = conversations
     .filter((conv) => {
       if (!conv) return false;
-      const contactName = conv.contact?.name || '';
-      const matchesSearch = !search || contactName.toLowerCase().includes(search.toLowerCase());
-      
-      if (filter === 'unread') return matchesSearch && (conv.unread || conv.needs_assistance);
-      if (filter === 'ai') return matchesSearch && conv.ai_handled && conv.ai_outcome;
-      if (filter === 'active') return matchesSearch && conv.status === 'active';
-      if (filter === 'closed') return matchesSearch && conv.status === 'closed';
-      if (filter === 'flagged') return matchesSearch && conv.flagged === true;
-      if (filter === 'archived') return matchesSearch && conv.status === 'archived';
-      return matchesSearch;
+      const contactName = conv.contact?.name || conv.contact_name || '';
+      const matchesSearch = !search || contactName.toLowerCase().includes(search.toLowerCase()) ||
+        (conv.last_message?.content || '').toLowerCase().includes(search.toLowerCase());
+
+      const isAiActive   = conv.ai_enabled && conv.ai_mode && conv.ai_mode !== 'off';
+      const isWaiting    = conv.needs_assistance || conv.status === 'paused';
+      const isUnassigned = !conv.user_id || conv.user_id === 'unassigned';
+
+      if (activeTab === 'assigned')   return matchesSearch && conv.status === 'active' && !isWaiting && !isUnassigned;
+      if (activeTab === 'waiting')    return matchesSearch && isWaiting;
+      if (activeTab === 'ai_active')  return matchesSearch && isAiActive && conv.status !== 'closed';
+      if (activeTab === 'unassigned') return matchesSearch && (isUnassigned || conv.status === 'archived');
+      return matchesSearch; // 'all'
     })
     .sort((a, b) => {
       const aUnacked = a.ai_outcome && !a.ai_outcome_acknowledged ? 1 : 0;
@@ -754,9 +759,33 @@ export default function InboxScreen() {
     setSwipeTagTarget(null);
   };
 
-  const handleFilterPress = (f: typeof filter) => {
+  const handleFilterPress = (f: typeof activeTab) => {
     triggerHaptic('selection');
-    setFilter(f);
+    setActiveTab(f);
+  };
+
+  const handleAiModeToggle = async (conversationId: string, currentMode: string | undefined, e: any) => {
+    e?.stopPropagation?.();
+    const cycle: Record<string, string> = {
+      'off': 'draft_only',
+      'draft_only': 'auto_reply',
+      'auto_reply': 'off',
+      'auto_with_approval': 'off',
+    };
+    const next = cycle[currentMode || 'off'] || 'draft_only';
+    const enabled = next !== 'off';
+    // Optimistic update
+    setConversations(prev => prev.map(c =>
+      c._id === conversationId ? { ...c, ai_mode: next, ai_enabled: enabled } : c
+    ));
+    try {
+      await messagesAPI.updateConversation(user!._id, conversationId, { ai_mode: next, ai_enabled: enabled });
+    } catch {
+      // revert
+      setConversations(prev => prev.map(c =>
+        c._id === conversationId ? { ...c, ai_mode: currentMode, ai_enabled: currentMode !== 'off' } : c
+      ));
+    }
   };
   
   const renderConversation = ({ item }: { item: any }) => {
@@ -922,6 +951,27 @@ export default function InboxScreen() {
               {item.last_message?.timestamp ? formatTimestamp(item.last_message.timestamp) : ''}
             </Text>
           </View>
+
+          {/* AI mode quick-toggle */}
+          {item.status !== 'closed' && !selectionMode && (() => {
+            const mode = item.ai_mode || 'off';
+            const aiOn = item.ai_enabled && mode !== 'off';
+            const label = mode === 'auto_reply' ? 'Auto' : mode === 'draft_only' ? 'Assist' : mode === 'auto_with_approval' ? 'Assist' : 'Human';
+            const icon = mode === 'auto_reply' ? 'sparkles' : mode === 'draft_only' || mode === 'auto_with_approval' ? 'create-outline' : 'person-outline';
+            const bg = mode === 'auto_reply' ? '#34C75918' : mode !== 'off' ? '#007AFF18' : colors.elevated + '60';
+            const fg = mode === 'auto_reply' ? '#34C759' : mode !== 'off' ? '#007AFF' : colors.textSecondary;
+            return (
+              <TouchableOpacity
+                onPress={(e) => handleAiModeToggle(item._id, mode, e)}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 3, alignSelf: 'flex-start', marginTop: 4, backgroundColor: bg, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 3 }}
+                activeOpacity={0.7}
+                data-testid={`ai-mode-toggle-${item._id}`}
+              >
+                <Ionicons name={icon as any} size={10} color={fg} />
+                <Text style={{ fontSize: 10, fontWeight: '700', color: fg, letterSpacing: 0.3 }}>{label}</Text>
+              </TouchableOpacity>
+            );
+          })()}
           
           <Text
             style={[
@@ -1351,69 +1401,54 @@ export default function InboxScreen() {
         </View>
       </View>
       
-      {/* Luxury Pill Filter Buttons - Scrollable */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false}
-        style={styles.filterScroll}
-        contentContainerStyle={styles.filterContainer}
-      >
-        {(['active', 'unread', 'flagged', 'ai', 'archived', 'closed', 'all'] as const).map((f) => (
-          <TouchableOpacity
-            key={f}
-            style={[
-              styles.filterButton,
-              { backgroundColor: colors.surface, borderColor: colors.border },
-              filter === f && styles.filterButtonActive,
-              f === 'ai' && filter === f && styles.filterButtonAI,
-              f === 'flagged' && filter === f && { backgroundColor: '#FF9500' },
-              f === 'archived' && filter === f && { backgroundColor: '#8E8E93' },
-            ]}
-            onPress={() => handleFilterPress(f)}
-            activeOpacity={0.7}
-          >
-            {f === 'ai' ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <Ionicons name="sparkles" size={13} color={filter === f ? '#FFFFFF' : colors.textSecondary} />
-                <Text style={[
-                  styles.filterText,
-                  { color: colors.textSecondary },
-                  filter === f && styles.filterTextActive,
-                ]}>AI</Text>
-              </View>
-            ) : f === 'flagged' ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <Ionicons name="flag" size={13} color={filter === f ? '#FFFFFF' : '#FF9500'} />
-                <Text style={[
-                  styles.filterText,
-                  { color: colors.textSecondary },
-                  filter === f && styles.filterTextActive,
-                ]}>Flagged</Text>
-              </View>
-            ) : f === 'archived' ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <Ionicons name="archive" size={13} color={filter === f ? '#FFFFFF' : colors.textSecondary} />
-                <Text style={[
-                  styles.filterText,
-                  { color: colors.textSecondary },
-                  filter === f && styles.filterTextActive,
-                ]}>Archived</Text>
-              </View>
-            ) : (
-              <Text
-                style={[
-                  styles.filterText,
-                  { color: colors.textSecondary },
-                  filter === f && styles.filterTextActive,
-                ]}
-              >
-                {f.charAt(0).toUpperCase() + f.slice(1)}
-              </Text>
-            )}
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-      
+      {/* 5-Tab Inbox Bar */}
+      {inboxView === 'my' && (() => {
+        const all = conversations.filter(c => c);
+        const counts = {
+          assigned:   all.filter(c => c.status === 'active' && !(c.needs_assistance || c.status === 'paused') && !(!c.user_id || c.user_id === 'unassigned')).length,
+          waiting:    all.filter(c => c.needs_assistance || c.status === 'paused').length,
+          ai_active:  all.filter(c => c.ai_enabled && c.ai_mode && c.ai_mode !== 'off' && c.status !== 'closed').length,
+          unassigned: all.filter(c => !c.user_id || c.user_id === 'unassigned').length,
+          all:        all.length,
+        };
+        const tabs: { key: typeof activeTab; label: string; icon: string; activeColor: string }[] = [
+          { key: 'assigned',  label: 'Assigned',   icon: 'person-circle-outline', activeColor: '#007AFF' },
+          { key: 'waiting',   label: 'Waiting',    icon: 'time-outline',          activeColor: '#FF9500' },
+          { key: 'ai_active', label: 'AI Active',  icon: 'sparkles',              activeColor: '#34C759' },
+          { key: 'unassigned',label: 'Unassigned', icon: 'help-circle-outline',   activeColor: '#AF52DE' },
+          { key: 'all',       label: 'All',        icon: 'list-outline',          activeColor: '#C9A962' },
+        ];
+        return (
+          <View style={styles.tabBar}>
+            {tabs.map(({ key, label, icon, activeColor }) => {
+              const isActive = activeTab === key;
+              const count = counts[key];
+              return (
+                <TouchableOpacity
+                  key={key}
+                  style={[styles.tabItem, isActive && { borderBottomColor: activeColor, borderBottomWidth: 2 }]}
+                  onPress={() => handleFilterPress(key)}
+                  activeOpacity={0.7}
+                  data-testid={`inbox-tab-${key}`}
+                >
+                  <Ionicons name={icon as any} size={15} color={isActive ? activeColor : colors.textSecondary} />
+                  <Text style={[styles.tabLabel, { color: isActive ? activeColor : colors.textSecondary }, isActive && { fontWeight: '700' }]}>
+                    {label}
+                  </Text>
+                  {count > 0 && (
+                    <View style={[styles.tabBadge, { backgroundColor: isActive ? activeColor : colors.surface }]}>
+                      <Text style={[styles.tabBadgeText, { color: isActive ? '#fff' : colors.textSecondary }]}>
+                        {count > 99 ? '99+' : count}
+                      </Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        );
+      })()}
+
       {/* Conversation List */}
       {loading || (inboxView === 'team' && loadingTeam) ? (
         <View style={styles.loadingContainer}>
@@ -1995,6 +2030,43 @@ const styles = StyleSheet.create({
   },
   filterTextActive: {
     color: '#FFFFFF',
+  },
+
+  // 5-Tab bar
+  tabBar: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS_DARK.border || '#2C2C2E',
+    backgroundColor: COLORS_DARK.background,
+  },
+  tabItem: {
+    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingTop: 6,
+    gap: 2,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabLabel: {
+    fontSize: 9,
+    fontWeight: '500',
+    letterSpacing: 0.2,
+    textAlign: 'center',
+  },
+  tabBadge: {
+    minWidth: 16,
+    height: 14,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+    marginTop: 1,
+  },
+  tabBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
   },
   imosLogoFilter: {
     width: 52,
