@@ -364,12 +364,14 @@ export default function MyAccountScreen() {
   const socialLinks = (user as any)?.persona?.social_links || (user as any)?.social_links || {};
 
   // ── Presence asset cards ───────────────────────────────────────────────────
+  // Personal tab: Digital Card and Landing Page route to persona editor (personal info)
+  // Store tab: same assets route to store-profile (account-level info)
   const ASSETS = [
-    { id: 'card',     icon: 'card',         color: '#007AFF', label: 'Digital Card',  sub: 'Your business card',  url: user?._id ? `${PROD_BASE}/card/${user._id}` : null,         route: '/settings/store-profile' },
+    { id: 'card',     icon: 'card',         color: '#007AFF', label: 'Digital Card',  sub: 'Your business card',  url: user?._id ? `${PROD_BASE}/card/${user._id}` : null,         route: viewMode === 'personal' ? '/settings/persona' : '/settings/store-profile' },
     { id: 'showcase', icon: 'images',        color: '#34C759', label: 'Showcase',       sub: 'Happy customers',     url: user?._id ? `${PROD_BASE}/showcase/${user._id}` : null,     route: '/showroom-manage' },
     { id: 'review',   icon: 'star',          color: '#FFD60A', label: 'Review Link',    sub: 'Collect reviews',     url: reviewUrl || null,                                           route: '/settings/review-links' },
     { id: 'linkpage', icon: 'link',          color: '#C9A962', label: 'Link Page',      sub: 'All your links',      url: user?._id ? `${PROD_BASE}/l/${user._id}` : null,            route: '/settings/link-page' },
-    { id: 'landing',  icon: 'globe-outline', color: '#AF52DE', label: 'Landing Page',   sub: 'Full profile page',   url: user?._id ? `${PROD_BASE}/p/${user._id}` : null,            route: '/settings/store-profile' },
+    { id: 'landing',  icon: 'globe-outline', color: '#AF52DE', label: 'Landing Page',   sub: 'Full profile page',   url: user?._id ? `${PROD_BASE}/p/${user._id}` : null,            route: viewMode === 'personal' ? '/settings/persona' : '/settings/store-profile' },
     { id: 'brand',    icon: 'color-palette', color: '#C9A962', label: 'Brand Kit',      sub: 'Colors & theme',      url: null,                                                        route: '/settings/brand-kit' },
   ] as const;
 
@@ -616,6 +618,18 @@ export default function MyAccountScreen() {
         {/* ── Personal View ─────────────────────────────────────────────────── */}
         {viewMode === 'personal' && (
           <>
+            {/* Quick edit banner — makes it clear Personal = persona editor */}
+            <TouchableOpacity
+              style={{ margin: 16, marginBottom: 0, backgroundColor: '#007AFF15', borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: '#007AFF30' }}
+              onPress={() => router.push('/settings/persona')}
+            >
+              <Ionicons name="person-circle" size={22} color="#007AFF" />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: '#007AFF' }}>Edit Your Personal Profile</Text>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>Name, bio, title, social links — what shows on your card</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color="#007AFF" />
+            </TouchableOpacity>
             {/* ── Presence Assets 2-col grid ── */}
             <View style={s.section}>
               <Text style={s.sectionTitle}>My Presence</Text>
