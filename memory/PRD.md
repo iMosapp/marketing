@@ -568,6 +568,21 @@ When a rep is terminated (deactivated), their dedicated Twilio number is automat
 **Frontend:**
 - Deactivation dialog shows Twilio number and pool notice.
 - Reactivation toast mentions pooled number if still available.
+
+## Inbox 5-Tab Redesign (May 20, 2026) — TESTED 10/10 PASS
+
+Replaced scrollable pill filters with a fixed 5-tab bar:
+- **Assigned** (blue) — Active conversations the rep owns
+- **Waiting** (orange) — Paused / needs_assistance, customer replied
+- **AI Active** (green) — AI is handling the conversation
+- **Unassigned** (purple) — No assigned rep / inbound pool
+- **All** (gold) — Everything
+
+Each tab shows a live count badge. Active tab highlighted with a colored bottom border.
+
+**AI mode quick-toggle** on every conversation row: `Human | Assist | Auto` pill that cycles on tap (optimistic update + API call). Lets reps change AI mode without opening the thread.
+
+
 - Phone Numbers page shows "Previously: [name] (released X ago)" for pool entries.
 
 
