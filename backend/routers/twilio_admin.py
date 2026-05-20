@@ -26,8 +26,19 @@ def _get_twilio_client():
     sid   = os.environ.get("TWILIO_ACCOUNT_SID")
     token = os.environ.get("TWILIO_AUTH_TOKEN")
     if not sid or not token:
-        raise HTTPException(status_code=503, detail="Twilio not configured")
+        raise HTTPException(status_code=503, detail="Twilio credentials not configured")
     return Client(sid, token)
+
+
+async def _twilio_call(fn, *args, timeout: float = 15.0, **kwargs):
+    """Run a synchronous Twilio API call in a thread with a timeout."""
+    try:
+        return await asyncio.wait_for(
+            asyncio.to_thread(fn, *args, **kwargs),
+            timeout=timeout
+        )
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=504, detail="Twilio API timed out — check your Account SID and Auth Token are correct.")
 
 
 # ── Inventory ─────────────────────────────────────────────────────────────────
@@ -43,9 +54,12 @@ async def list_numbers():
     # Fetch from Twilio
     try:
         client = _get_twilio_client()
-        twilio_numbers = await asyncio.to_thread(client.incoming_phone_numbers.list)
+        twilio_numbers = await _twilio_call(client.incoming_phone_numbers.list)
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Twilio API error: {e}")
+        logger.error(f"[TwilioAdmin] API error: {e}")
+        raise HTTPException(status_code=502, detail=f"Twilio API error — check credentials in Settings. ({type(e).__name__}: {str(e)[:100]})")
 
     result = []
     for tn in twilio_numbers:
@@ -144,7 +158,7 @@ async def get_twilio_stats():
     """Summary stats for the accounting dashboard header."""
     try:
         client = _get_twilio_client()
-        numbers = await asyncio.to_thread(client.incoming_phone_numbers.list)
+        numbers = await _twilio_call(client.incoming_phone_numbers.list)
     except Exception as e:
         raise HTTPException(status_code=502, detail=str(e))
 
@@ -198,9 +212,7 @@ async def search_available_numbers(
         if contains:
             params["contains"] = contains
 
-        available = await asyncio.to_thread(
-            lambda: client.available_phone_numbers(country).local.list(**params)
-        )
+        available = await _twilio_call(lambda: client.available_phone_numbers(country).local.list(**params))
 
         return {"numbers": [
             {
@@ -239,8 +251,7 @@ async def purchase_number(request: Request):
         client = _get_twilio_client()
 
         # Purchase
-        purchased = await asyncio.to_thread(
-            client.incoming_phone_numbers.create,
+        purchased = await _twilio_call(client.incoming_phone_numbers.create,
             phone_number=phone_number,
             sms_url=WEBHOOK_URL,
             sms_method="POST",
@@ -252,9 +263,7 @@ async def purchase_number(request: Request):
         ms_sid = os.environ.get("TWILIO_MESSAGING_SERVICE_SID")
         if ms_sid:
             try:
-                await asyncio.to_thread(
-                    client.messaging.v1.services(ms_sid)
-                    .phone_numbers.create,
+                await _twilio_call(client.messaging.v1.services(ms_sid).phone_numbers.create,
                     phone_number_sid=purchased.sid,
                 )
                 logger.info(f"[Twilio] Added {phone_number} to Messaging Service {ms_sid}")
@@ -309,9 +318,7 @@ async def assign_number(number_sid: str, request: Request):
     # Get the number details from Twilio
     try:
         client = _get_twilio_client()
-        number = await asyncio.to_thread(
-            client.incoming_phone_numbers(number_sid).fetch
-        )
+        number = await _twilio_call(client.incoming_phone_numbers(number_sid).fetch)
         phone = number.phone_number
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Number not found: {e}")
@@ -350,8 +357,7 @@ async def fix_webhook(number_sid: str):
     """Set the correct inbound webhook on a number (fixes demo/missing webhooks)."""
     try:
         client = _get_twilio_client()
-        updated = await asyncio.to_thread(
-            client.incoming_phone_numbers(number_sid).update,
+        updated = await _twilio_call(client.incoming_phone_numbers(number_sid).update,
             sms_url=WEBHOOK_URL,
             sms_method="POST",
         )
@@ -366,7 +372,7 @@ async def release_number(number_sid: str):
     db = get_db()
     try:
         client = _get_twilio_client()
-        number = await asyncio.to_thread(client.incoming_phone_numbers(number_sid).fetch)
+        number = await _twilio_call(client.incoming_phone_numbers(number_sid).fetch)
         phone  = number.phone_number
 
         # Clear user assignment
@@ -381,7 +387,7 @@ async def release_number(number_sid: str):
             upsert=True,
         )
         # Delete from Twilio (stops billing)
-        await asyncio.to_thread(client.incoming_phone_numbers(number_sid).delete)
+        await _twilio_call(client.incoming_phone_numbers(number_sid).delete)
         logger.info(f"[Twilio] Released {phone}")
         return {"success": True, "phone_number": phone, "message": "Number released and billing stopped."}
     except Exception as e:

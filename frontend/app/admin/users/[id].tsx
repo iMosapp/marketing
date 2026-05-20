@@ -15,7 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import api from '../../../services/api';
+import api, { adminAPI } from '../../../services/api';
 import { showSimpleAlert, showConfirm } from '../../../services/alert';
 import { useToast } from '../../../components/common/Toast';
 import { useAuthStore } from '../../../store/authStore';
