@@ -55,11 +55,11 @@ async def list_numbers():
     try:
         client = _get_twilio_client()
         twilio_numbers = await _twilio_call(client.incoming_phone_numbers.list)
-    except HTTPException:
-        raise
+    except HTTPException as he:
+        raise he
     except Exception as e:
-        logger.error(f"[TwilioAdmin] API error: {e}")
-        raise HTTPException(status_code=502, detail=f"Twilio API error — check credentials in Settings. ({type(e).__name__}: {str(e)[:100]})")
+        logger.error(f"[TwilioAdmin] numbers list failed: {e}")
+        raise HTTPException(status_code=502, detail=f"Could not connect to Twilio. Verify your Account SID and Auth Token are correct in Settings. ({type(e).__name__})")
 
     result = []
     for tn in twilio_numbers:
