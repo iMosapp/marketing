@@ -2077,7 +2077,7 @@ function ThreadScreen() {
         >
           <Ionicons name="chevron-down" size={20} color="#fff" />
         </TouchableOpacity>
-      ))}
+      )}
       
       {/* AI Suggestion */}
       {showAISuggestion && aiMode !== 'off' && aiSuggestion.text && (
