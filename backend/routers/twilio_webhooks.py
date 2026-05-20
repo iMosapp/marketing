@@ -279,9 +279,9 @@ async def incoming_message(
                                 "user_id":       rep_user_id,
                                 "contact_phone": from_phone,
                                 "contact_name":  contact.get("name",""),
-                                "status":        "active",
+                                "status":        "active",   # Start active — paused when we process the reply
                                 "current_step":  1,
-                                "reply_count":   1,   # They already sent one message
+                                "reply_count":   1,
                                 "last_reply_at": datetime.utcnow(),
                                 "enrolled_at":   datetime.utcnow(),
                                 "next_send_at":  datetime.utcnow(),
@@ -355,7 +355,7 @@ async def incoming_message(
 
         # ── Pause campaign enrollments + trigger AI reply ─────────────────────
         active_enrollments = await db.campaign_enrollments.find({
-            "contact_id": contact_id, "status": "active",
+            "contact_id": contact_id, "status": {"$in": ["active", "paused"]},
         }).to_list(10)
 
         for enrollment in active_enrollments:
