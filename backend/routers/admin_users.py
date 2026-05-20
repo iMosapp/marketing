@@ -612,10 +612,23 @@ async def reactivate_user(
     
     logger.info(f"User {user_id} reactivated by {x_user_id}")
     
+    # Check if user's old number is still in the pool
+    pooled_number = None
+    try:
+        pool_entry = await db.phone_number_pool.find_one({
+            "previous_user_id": user_id,
+            "status": "pool",
+        })
+        if pool_entry:
+            pooled_number = pool_entry.get("phone_number")
+    except Exception:
+        pass
+    
     return {
         "message": "User reactivated successfully",
         "user_id": user_id,
-        "user_name": user.get('name')
+        "user_name": user.get('name'),
+        "pooled_number_available": pooled_number,
     }
 
 

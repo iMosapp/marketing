@@ -347,6 +347,8 @@ Extract `admin.py` (4,000 lines) into:
 
 ## Prioritized Backlog — Updated May 4, 2026
 
+## Prioritized Backlog — Updated May 20, 2026
+
 ### P0 — This Week
 - **App Store / TestFlight Launch** — Blocked on Apple Team ID + bundle ID. See App Store Roadmap below.
 - **Twilio 10DLC Integration** — LLC/business docs ready. Phase 1: remove mock mode, STOP/UNSTOP webhooks, Messaging Service SID. Registration URLs now live: `/terms`, `/privacy`, `/sms-terms` on `imonsocial.com`.
@@ -551,6 +553,24 @@ Extract `admin.py` (4,000 lines) into:
 Full end-to-end partner agreement + W-9 onboarding:
 - Public signing page: `/partner/agreement/{id}` — full MPA + Exhibit A, typed signature, IP capture, W-9 upload
 - Admin list: `/admin/partner-agreements` — 4 counters, 5 filter tabs, W-9 status badges (Verified/Awaiting Review/Pending)
+
+## User Termination / Twilio Number Pool (May 20, 2026) — TESTED 14/14 PASS
+
+When a rep is terminated (deactivated), their dedicated Twilio number is automatically held in the pool for reassignment. Inbound SMS to pooled numbers routes to the store's active manager.
+
+**Backend:**
+- `DELETE /api/admin/users/{id}` — auto-releases `twilio_number` to `phone_number_pool` with previous owner context. Returns `number_released_to_pool`.
+- `PUT + POST /api/admin/users/{id}/reactivate` — both return `pooled_number_available` if old number still in pool.
+- `GET /api/admin/twilio/pool` — new endpoint listing all pooled numbers with previous owner context.
+- `GET /api/admin/twilio/numbers` — enriched with `previous_owner` for pool entries.
+- `twilio_webhooks.py` — pooled number inbound routes to store_manager, falls back to super_admin.
+
+**Frontend:**
+- Deactivation dialog shows Twilio number and pool notice.
+- Reactivation toast mentions pooled number if still available.
+- Phone Numbers page shows "Previously: [name] (released X ago)" for pool entries.
+
+
 - Admin detail: `/admin/partner-agreement/{id}` — Legal record (IP/timestamp/hash), W-9 panel with verify button, Full Agreement collapsible
 - Company: VI Ventures Group LLC | Tiers: Referral 10%/15%, Reseller 20%/30%/40%
 - Custom commission notes override standard tiers in Exhibit A when set
