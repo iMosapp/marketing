@@ -1093,6 +1093,42 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"[Startup] Twilio number auto-assign skipped: {e}")
 
+    # ── Auto-fix Twilio webhook URLs on every deploy ───────────────────────────
+    # Ensures all purchased numbers point to THIS app's inbound endpoint.
+    # Runs in background so it doesn't slow down startup.
+    async def _fix_twilio_webhooks():
+        try:
+            import asyncio as _asyncio
+            from twilio.rest import Client as _TwilioClient
+            tw_sid   = os.environ.get("TWILIO_ACCOUNT_SID", "")
+            tw_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
+            if not tw_sid or not tw_token:
+                return  # Twilio not configured — skip silently
+
+            correct_url = f"{os.environ.get('PUBLIC_FACING_URL', os.environ.get('APP_URL', 'https://app.imonsocial.com'))}/api/webhooks/twilio/incoming"
+            client = _TwilioClient(tw_sid, tw_token)
+            numbers = await _asyncio.to_thread(client.incoming_phone_numbers.list)
+            fixed = 0
+            for n in numbers:
+                current = n.sms_url or ""
+                if current != correct_url:
+                    await _asyncio.to_thread(
+                        client.incoming_phone_numbers(n.sid).update,
+                        sms_url=correct_url,
+                        sms_method="POST",
+                    )
+                    logger.info(f"[Startup] Fixed webhook for {n.phone_number}: {current} → {correct_url}")
+                    fixed += 1
+            if fixed:
+                logger.info(f"[Startup] Fixed {fixed} Twilio webhook(s) to {correct_url}")
+            else:
+                logger.info(f"[Startup] All Twilio webhooks already correct ({correct_url})")
+        except Exception as e:
+            logger.warning(f"[Startup] Twilio webhook auto-fix skipped: {e}")
+
+    import asyncio as _aio
+    _aio.create_task(_fix_twilio_webhooks())
+
     # Start the background campaign scheduler
     try:
         from scheduler import start_scheduler
