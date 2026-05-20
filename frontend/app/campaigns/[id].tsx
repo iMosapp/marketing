@@ -644,7 +644,7 @@ const { showToast } = useToast();
           ].map(opt => (
             <TouchableOpacity
               key={opt.value}
-              onPress={() => setAiAssistMode(opt.value)}
+              onPress={() => { setAiAssistMode(opt.value); setHasChanges(true); }}
               style={{
                 flexDirection: 'row', alignItems: 'center', gap: 12,
                 padding: 14, borderRadius: 12, marginBottom: 8,
@@ -673,12 +673,12 @@ const { showToast } = useToast();
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 }}>
                 <Text style={{ fontSize: 14, color: colors.text, flex: 1 }}>Require approval after this many replies:</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <TouchableOpacity onPress={() => setEscalationThreshold(Math.max(1, escalationThreshold - 1))}
+                  <TouchableOpacity onPress={() => { setEscalationThreshold(Math.max(1, escalationThreshold - 1)); setHasChanges(true); }}
                     style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}>
                     <Ionicons name="remove" size={16} color={colors.text} />
                   </TouchableOpacity>
                   <Text style={{ fontSize: 18, fontWeight: '700', color: '#007AFF', minWidth: 24, textAlign: 'center' }}>{escalationThreshold}</Text>
-                  <TouchableOpacity onPress={() => setEscalationThreshold(escalationThreshold + 1)}
+                  <TouchableOpacity onPress={() => { setEscalationThreshold(escalationThreshold + 1); setHasChanges(true); }}
                     style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}>
                     <Ionicons name="add" size={16} color={colors.text} />
                   </TouchableOpacity>
@@ -687,12 +687,12 @@ const { showToast } = useToast();
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <Text style={{ fontSize: 14, color: colors.text, flex: 1 }}>Escalate to manager after (minutes):</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                  <TouchableOpacity onPress={() => setEscalationTimeoutMin(Math.max(5, escalationTimeoutMin - 5))}
+                  <TouchableOpacity onPress={() => { setEscalationTimeoutMin(Math.max(5, escalationTimeoutMin - 5)); setHasChanges(true); }}
                     style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}>
                     <Ionicons name="remove" size={16} color={colors.text} />
                   </TouchableOpacity>
                   <Text style={{ fontSize: 18, fontWeight: '700', color: '#007AFF', minWidth: 30, textAlign: 'center' }}>{escalationTimeoutMin}</Text>
-                  <TouchableOpacity onPress={() => setEscalationTimeoutMin(escalationTimeoutMin + 5)}
+                  <TouchableOpacity onPress={() => { setEscalationTimeoutMin(escalationTimeoutMin + 5); setHasChanges(true); }}
                     style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}>
                     <Ionicons name="add" size={16} color={colors.text} />
                   </TouchableOpacity>
