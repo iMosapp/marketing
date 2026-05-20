@@ -1439,7 +1439,35 @@ function ContactDetailScreen() {
         };
         if (composerEventType) sendPayload.event_type = composerEventType;
         if (composerEventTitle) sendPayload.event_title = composerEventTitle;
-        // Fire-and-forget logging — if it fails, we still open SMS
+
+        // Check if user has a dedicated Twilio number
+        const twilioNumber = (user as any).twilio_number || (user as any).mvpline_number;
+
+        if (twilioNumber && contact.phone) {
+          // Twilio path: send silently from dedicated business number
+          try {
+            const { smartSendSMS } = await import('../../services/api');
+            const result = await smartSendSMS({
+              to:          contact.phone,
+              body:        messageContent,
+              userId:      user._id,
+              twilioNumber,
+              contactId:   id as string,
+              eventType:   composerEventType || 'personal_sms',
+              platform:    Platform.OS,
+            });
+            if (result.usedTwilio) {
+              showToast(`Sent from ${twilioNumber}`, 'success');
+              setComposerMessage('');
+              setSelectedMedia(null);
+              return;
+            }
+          } catch (twilioErr) {
+            console.warn('[Composer] Twilio send failed, falling back to native:', twilioErr);
+          }
+        }
+
+        // No Twilio number (or fallback): fire-and-forget logging then open native SMS
         messagesAPI.send(user._id, sendPayload).catch((logErr: any) => {
           console.warn('[Send] Backend logging failed (non-fatal):', logErr?.message);
         });

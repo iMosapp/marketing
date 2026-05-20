@@ -129,24 +129,24 @@ export default function QuoteDetailScreen() {
         user_id: user._id,
       });
       const { sms_body, created, name } = res.data;
-      // Open native SMS with pre-filled message
-      const digits = phone.replace(/\D/g, '');
-      const smsUrl = Platform.OS === 'ios'
-        ? `sms:${digits}&body=${encodeURIComponent(sms_body)}`
-        : `sms:${digits}?body=${encodeURIComponent(sms_body)}`;
-      const canOpen = await Linking.canOpenURL(smsUrl);
-      if (canOpen) {
-        await Linking.openURL(smsUrl);
-      } else if (typeof window !== 'undefined') {
-        // Web fallback — copy to clipboard
+      // Route through Twilio if user has dedicated number, else native SMS
+      const { smartSendSMS } = await import('../../../services/api');
+      const result = await smartSendSMS({
+        to:          phone,
+        body:        sms_body,
+        userId:      user._id,
+        twilioNumber: (user as any).twilio_number || (user as any).mvpline_number,
+        platform:    Platform.OS,
+      });
+      if (!result.usedTwilio && !result.sent) {
         await Clipboard.setStringAsync(sms_body);
-        showSimpleAlert('Copied to Clipboard', `No SMS app detected. Message copied:\n\n${sms_body}`);
+        showSimpleAlert('Copied', `Message copied to clipboard.`);
         return;
       }
       if (created) {
         showSimpleAlert(
-          'Contact Added',
-          `${name || 'Customer'} has been added to your contacts and your SMS is ready to send.`
+          result.usedTwilio ? 'Sent via your business number' : 'Contact Added',
+          `${name || 'Customer'} has been added to your contacts.${result.usedTwilio ? ` Message sent from ${(user as any).twilio_number || (user as any).mvpline_number}.` : ''}`
         );
       }
     } catch (e: any) {

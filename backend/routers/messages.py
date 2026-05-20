@@ -581,6 +581,37 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
     return message
 
 
+@router.post("/twilio-send")
+async def send_via_twilio(request: Request):
+    """
+    Send via user's dedicated Twilio number. Called instead of native SMS.
+    Falls back gracefully — frontend shows native SMS if this fails.
+    """
+    from services.twilio_service import send_sms
+    db   = get_db()
+    data = await request.json()
+    user_id    = data.get("user_id", "")
+    to_phone   = data.get("to", "")
+    body       = data.get("body", "")
+    contact_id = data.get("contact_id")
+    event_type = data.get("event_type", "personal_sms")
+    if not to_phone or not body:
+        raise HTTPException(status_code=400, detail="to and body are required")
+    result = await send_sms(to_phone, body)
+    if not result.get("success"):
+        raise HTTPException(status_code=500, detail=result.get("error", "Send failed"))
+    now = datetime.utcnow()
+    conv = await db.conversations.find_one({"user_id": user_id, "contact_phone": to_phone})
+    if not conv:
+        r = await db.conversations.insert_one({"user_id": user_id, "contact_id": contact_id, "contact_phone": to_phone, "status": "active", "created_at": now, "updated_at": now, "last_message_at": now})
+        conv_id = str(r.inserted_id)
+    else:
+        conv_id = str(conv["_id"])
+        await db.conversations.update_one({"_id": conv["_id"]}, {"$set": {"last_message_at": now}})
+    await db.messages.insert_one({"conversation_id": conv_id, "user_id": user_id, "contact_id": contact_id, "content": body, "direction": "outbound", "channel": "sms", "sender": "user", "twilio_sid": result.get("message_sid"), "status": "sent" if not result.get("mock") else "sent_mock", "event_type": event_type, "timestamp": now})
+    return {"success": True, "message_sid": result.get("message_sid"), "mock": result.get("mock", False)}
+
+
 @router.post("/send-mms/{user_id}/{conversation_id}")
 async def send_mms_message(
     user_id: str,

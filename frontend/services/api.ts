@@ -997,3 +997,51 @@ export const permissionTemplatesAPI = {
   },
 };
 
+
+// ── Smart SMS sender: Twilio if user has dedicated number, else native SMS ──
+export async function smartSendSMS(params: {
+  to: string;
+  body: string;
+  userId: string;
+  twilioNumber?: string;   // user.twilio_number or user.mvpline_number
+  contactId?: string;
+  eventType?: string;
+  platform: string;        // Platform.OS
+}): Promise<{ sent: boolean; usedTwilio: boolean; mock?: boolean }> {
+  const { to, body, userId, twilioNumber, contactId, eventType, platform } = params;
+  const phone = to.replace(/\D/g, '');
+  const e164  = phone.length === 10 ? `+1${phone}` : `+${phone}`;
+
+  // If user has a dedicated Twilio number → send through backend
+  if (twilioNumber) {
+    try {
+      const res = await api.post('/messages/twilio-send', {
+        user_id:    userId,
+        to:         e164,
+        body,
+        contact_id: contactId,
+        event_type: eventType || 'personal_sms',
+        from_number: twilioNumber,
+      });
+      return { sent: true, usedTwilio: true, mock: res.data.mock };
+    } catch (err) {
+      // If Twilio fails, fall through to native SMS so message still goes
+      console.warn('[smartSendSMS] Twilio failed, falling back to native:', err);
+    }
+  }
+
+  // No Twilio number (or Twilio failed) → open native SMS app
+  const smsUrl = platform === 'ios'
+    ? `sms:${e164}&body=${encodeURIComponent(body)}`
+    : `sms:${e164}?body=${encodeURIComponent(body)}`;
+
+  if (typeof window !== 'undefined' && window.location) {
+    window.location.href = smsUrl;
+  } else {
+    const { Linking } = require('react-native');
+    const canOpen = await Linking.canOpenURL(smsUrl);
+    if (canOpen) await Linking.openURL(smsUrl);
+  }
+
+  return { sent: true, usedTwilio: false };
+}
