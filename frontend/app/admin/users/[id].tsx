@@ -35,6 +35,8 @@ interface UserDetail {
   organization_id?: string;
   store_ids?: string[];
   twilio_phone_number?: string;
+  mvpline_number?: string;
+  twilio_number?: string;
   ai_persona?: any;
   created_at?: string;
   last_login?: string;
@@ -723,12 +725,12 @@ export default function UserDetailScreen() {
               onPress={() => { loadPoolNumbers(); setShowNumberPicker(true); }}
               data-testid="assign-number-btn"
             >
-              <Ionicons name="call" size={18} color={user.twilio_phone_number || user.mvpline_number ? '#34C759' : '#C9A962'} />
+              <Ionicons name="call" size={18} color={user.twilio_phone_number || user.mvpline_number || user.twilio_number ? '#34C759' : '#C9A962'} />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.infoText, { color: user.twilio_phone_number || user.mvpline_number ? '#34C759' : '#C9A962', fontWeight: '600' }]}>
-                  {user.twilio_phone_number || (user as any).mvpline_number || 'Assign Dedicated Number'}
+                <Text style={[styles.infoText, { color: user.twilio_phone_number || user.mvpline_number || user.twilio_number ? '#34C759' : '#C9A962', fontWeight: '600' }]}>
+                  {user.twilio_phone_number || user.mvpline_number || user.twilio_number || 'Assign Dedicated Number'}
                 </Text>
-                {(user.twilio_phone_number || (user as any).mvpline_number) ? (
+                {(user.twilio_phone_number || user.mvpline_number || user.twilio_number) ? (
                   <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }}>Dedicated line — tap to reassign</Text>
                 ) : (
                   <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }}>Pick from pool or buy a new number</Text>

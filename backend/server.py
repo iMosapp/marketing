@@ -1058,13 +1058,24 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"PRD auto-sync skipped: {e}")
 
-    # ── Auto-assign Twilio phone number to super_admin on every deploy ───────
-    # Reads TWILIO_PHONE_NUMBER from .env and sets it on the super_admin user.
-    # Idempotent — safe to run every startup. No manual step after deploy.
+    # ── Auto-assign Twilio phone number to the primary admin on every deploy ──
+    # Uses ADMIN_EMAIL env var if set, otherwise falls back to first super_admin.
+    # Idempotent — safe to run every startup.
     try:
         twilio_phone = os.environ.get("TWILIO_PHONE_NUMBER", "").strip()
         if twilio_phone:
-            admin_user = await db.users.find_one({"role": "super_admin"}, {"_id": 1, "mvpline_number": 1, "name": 1})
+            # Try ADMIN_EMAIL first for precision
+            admin_email = os.environ.get("ADMIN_EMAIL", "").strip()
+            admin_user = None
+            if admin_email:
+                admin_user = await db.users.find_one({"email": admin_email}, {"_id": 1, "name": 1})
+            # Fallback: super_admin with most recent login or highest _id
+            if not admin_user:
+                admin_user = await db.users.find_one(
+                    {"role": "super_admin"},
+                    {"_id": 1, "name": 1},
+                    sort=[("created_at", 1)]  # Oldest = primary admin
+                )
             if admin_user:
                 await db.users.update_one(
                     {"_id": admin_user["_id"]},
@@ -1073,7 +1084,7 @@ async def startup_event():
                         "twilio_number":  twilio_phone,
                     }}
                 )
-                logger.info(f"[Startup] Twilio number {twilio_phone} auto-assigned to {admin_user.get('name','super_admin')}")
+                logger.info(f"[Startup] Twilio number {twilio_phone} auto-assigned to {admin_user.get('name','admin')}")
     except Exception as e:
         logger.warning(f"[Startup] Twilio number auto-assign skipped: {e}")
 
