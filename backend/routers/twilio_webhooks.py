@@ -249,8 +249,8 @@ async def incoming_message(
         await db.messages.insert_one(message)
         logger.info(f"Saved incoming message to conversation {conversation_id}")
 
-        # ── AUTO-ENROLL new contacts in rep's default campaign ────────────────
-        if is_new_contact and rep_user_id and not is_stop:
+        # ── AUTO-ENROLL: new contacts OR existing with no active enrollment ──────
+        if rep_user_id and not is_stop:
             try:
                 rep = await db.users.find_one({"_id": ObjectId(rep_user_id)}, {"default_campaign_id": 1, "name": 1})
                 default_camp_id = (rep or {}).get("default_campaign_id")
