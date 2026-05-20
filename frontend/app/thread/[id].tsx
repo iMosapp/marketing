@@ -40,13 +40,13 @@ const IS_WEB = Platform.OS === 'web';
 // Dark Mode Colors
 const COLORS = {
   background: '#000000',
-  surface: '#1C1C1E',
-  elevated: '#2C2C2E',
+  surface: '#2C2C2E',   // Darker gray for contact bubbles (was #1C1C1E — too close to bg)
+  elevated: '#3A3A3C',
   accent: '#007AFF',
   textPrimary: '#FFFFFF',
   textSecondary: '#8E8E93',
   textTertiary: '#636366',
-  border: '#2C2C2E',
+  border: '#38383A',
 };
 
 // Web-safe button component for toolbar
@@ -136,20 +136,26 @@ function ThreadScreen() {
     surface: themeColors.card,
     elevated: themeColors.surface || themeColors.card,
     accent: '#007AFF',
+    text: themeColors.text,
     textPrimary: themeColors.text,
     textSecondary: themeColors.textSecondary,
     textTertiary: themeColors.textTertiary || '#8E8E93',
     border: themeColors.border,
-    userBubbleBg: 'rgba(0,122,255,0.1)',
-    userBubbleBorder: 'rgba(0,122,255,0.2)',
-    contactBubbleBg: themeColors.card,
-    contactBubbleBorder: themeColors.border,
+    userBubbleBg: '#007AFF',          // Solid blue — visible on white bg
+    userBubbleBorder: '#007AFF',
+    userBubbleText: '#FFFFFF',        // Always white text on blue bubble
+    contactBubbleBg: '#E5E5EA',       // Light gray — visible on #F2F2F7 bg
+    contactBubbleBorder: '#D1D1D6',
+    contactBubbleText: '#000000',     // Black text on light gray
   } : {
     ...COLORS,
-    userBubbleBg: '#1A2A4A',
-    userBubbleBorder: '#1E3A6E',
-    contactBubbleBg: COLORS.surface,
-    contactBubbleBorder: '#2A2A2A',
+    text: '#FFFFFF',
+    userBubbleBg: '#007AFF',          // Solid blue — visible on black bg
+    userBubbleBorder: '#007AFF',
+    userBubbleText: '#FFFFFF',        // White text on blue
+    contactBubbleBg: '#2C2C2E',       // Dark gray — visible on black bg
+    contactBubbleBorder: '#38383A',
+    contactBubbleText: '#FFFFFF',     // White text on dark gray
   };
   const styles = getStyles(colors);
   
@@ -612,7 +618,18 @@ function ThreadScreen() {
       setLoading(false);
     }
   };
-  
+
+  // Scroll to bottom when messages load or new messages arrive
+  // Uses a short timeout to let the FlatList finish rendering before scrolling
+  useEffect(() => {
+    if (messages.length > 0 && !loading) {
+      const t = setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: false });
+      }, 80);
+      return () => clearTimeout(t);
+    }
+  }, [messages.length, loading]);
+
   const loadAISuggestion = async () => {
     if (!conversationId || aiMode === 'off') return;
     
@@ -823,7 +840,7 @@ function ThreadScreen() {
       setInputHeight(36);
       setShowAISuggestion(false);
       
-      // Scroll to bottom
+      // Scroll to newest message
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
@@ -1779,13 +1796,16 @@ function ThreadScreen() {
           {hasMedia && !item.content && (
             <View style={styles.mediaOnlyIndicator}>
               <Ionicons name="image" size={14} color={isUser ? "#fff" : colors.textSecondary} />
-              <Text style={[styles.mediaOnlyText, isUser && { color: colors.text }]}>Photo</Text>
+              <Text style={[styles.mediaOnlyText, { color: isUser ? '#fff' : colors.contactBubbleText }]}>Photo</Text>
             </View>
           )}
           
           {/* Text content */}
           {item.content ? (
-            <Text style={[styles.messageText, isUser && styles.userMessageText]}>
+            <Text style={[
+              styles.messageText,
+              isUser ? { color: colors.userBubbleText } : { color: colors.contactBubbleText },
+            ]}>
               {item.content}
             </Text>
           ) : null}
@@ -2015,7 +2035,7 @@ function ThreadScreen() {
           data={messages}
           renderItem={renderMessage}
           keyExtractor={(item) => item._id}
-          contentContainerStyle={styles.messagesList}
+          contentContainerStyle={[styles.messagesList, { flexGrow: 1 }]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -2030,11 +2050,8 @@ function ThreadScreen() {
               <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Start the conversation!</Text>
             </View>
           )}
-          onContentSizeChange={() => {
-            if (messages.length > 0) {
-              flatListRef.current?.scrollToEnd({ animated: false });
-            }
-          }}
+          keyboardShouldPersistTaps="handled"
+          maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
         />
       ))}
       
@@ -3189,6 +3206,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 12,
     flexGrow: 1,
     gap: 4,
+    justifyContent: 'flex-end',  // Messages anchor to bottom (like iMessage/WhatsApp)
   },
   emptyContainer: {
     flex: 1,
@@ -3290,11 +3308,11 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   messageText: {
     fontSize: 17,
-    color: colors.text,
+    color: colors.contactBubbleText,  // Default to contact text color; user overrides inline
     lineHeight: 21,
   },
   userMessageText: {
-    color: colors.textPrimary,
+    color: colors.userBubbleText,
   },
   intentBadge: {
     flexDirection: 'row',
