@@ -421,25 +421,48 @@ async def get_wins_feed(user_id: str, db, limit: int = 15) -> list:
 
 # ── Combined endpoint ─────────────────────────────────────────────────────────
 
+from cachetools import TTLCache as _TTLCache
+_home_cache: _TTLCache = _TTLCache(maxsize=200, ttl=45)  # 45s cache — lightweight
+
 @router.get("/{user_id}")
 async def get_home_data(user_id: str):
     """
-    Single endpoint powers the entire new home screen.
-    Returns: streak, my_3, wins_feed.
-    Lightweight — all data fetched in parallel.
+    Single endpoint for the home screen.
+    Cached 45s per user — prevents OOM from rapid refreshes.
     """
     import asyncio
+
+    # Return cached result if fresh
+    cached = _home_cache.get(user_id)
+    if cached is not None:
+        return cached
+
     db = get_db()
 
-    streak_data, my3_data, wins_data = await asyncio.gather(
-        get_streak(user_id, db),
-        get_my_3(user_id, db),
-        get_wins_feed(user_id, db),
-        return_exceptions=True,
-    )
+    # Run all three in parallel with a hard 8s timeout
+    # If any sub-task fails/times out, return empty rather than crash
+    try:
+        streak_data, my3_data, wins_data = await asyncio.wait_for(
+            asyncio.gather(
+                get_streak(user_id, db),
+                get_my_3(user_id, db),
+                get_wins_feed(user_id, db),
+                return_exceptions=True,
+            ),
+            timeout=8.0,
+        )
+    except asyncio.TimeoutError:
+        logger.warning(f"[Home] Timeout for user {user_id} — returning empty")
+        streak_data = {"streak": 0, "at_risk": False, "label": "Start your streak", "emoji": "💪"}
+        my3_data    = []
+        wins_data   = []
 
-    return {
+    result = {
         "streak":    streak_data if not isinstance(streak_data, Exception) else {"streak": 0, "at_risk": False, "label": "Start your streak", "emoji": "💪"},
         "my_3":      my3_data    if not isinstance(my3_data,    Exception) else [],
         "wins_feed": wins_data   if not isinstance(wins_data,   Exception) else [],
     }
+
+    # Cache the result
+    _home_cache[user_id] = result
+    return result
