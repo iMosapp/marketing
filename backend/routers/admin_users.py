@@ -403,10 +403,13 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
         "temp_password": temp_password,
         "message": f"User created successfully. {'Invite email sent.' if invite_sent else ''} {'SMS sent.' if sms_sent else ''} {'Added to your contacts.' if contact_created else ''}".strip()
     }
+@router.get("/users")
 async def list_users(
     organization_id: Optional[str] = None,
     store_id: Optional[str] = None,
     role: Optional[str] = None,
+    search: Optional[str] = None,
+    limit: int = 500,
     x_user_id: str = Header(None, alias="X-User-ID")
 ):
     """List users - scoped by requesting user's role"""
@@ -463,8 +466,19 @@ async def list_users(
         if role:
             query['role'] = role
     
-    users = await get_db().users.find(query, {"password": 0}).limit(500).to_list(500)
-    return [{**user, "_id": str(user["_id"])} for user in users]
+    users = await get_db().users.find(query, {"password": 0}).limit(min(limit, 500)).to_list(min(limit, 500))
+    result = [{**user, "_id": str(user["_id"])} for user in users]
+
+    # Apply search filter in-memory (simple email/name match)
+    if search:
+        search_lower = search.strip().lower()
+        result = [
+            u for u in result
+            if search_lower in (u.get("email") or "").lower()
+            or search_lower in (u.get("name") or "").lower()
+        ]
+
+    return result
 
 
 @router.get("/users/{user_id}")
