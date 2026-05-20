@@ -237,24 +237,35 @@ async def queue_ai_reply(
 
 async def process_ai_reply_queue():
     """
-    Called every 30 seconds by the scheduler.
-    Sends any queued AI replies whose send_at has passed and don't require approval.
+    Called every 60 seconds by the scheduler.
+    Uses atomic find_one_and_update to claim items — prevents double-send race condition.
     """
     db  = get_db()
     now = datetime.now(timezone.utc)
 
-    due = await db.ai_reply_queue.find({
-        "status":            STATUS_PENDING,
-        "requires_approval": False,
-        "send_at":           {"$lte": now},
-    }).limit(10).to_list(10)  # Max 10 per tick — prevents memory spikes
+    # Atomically claim due items one at a time using findOneAndUpdate
+    # This is the ONLY safe way to prevent two scheduler runs from sending the same message twice
+    claimed = []
+    for _ in range(10):
+        item = await db.ai_reply_queue.find_one_and_update(
+            {
+                "status":            STATUS_PENDING,
+                "requires_approval": False,
+                "send_at":           {"$lte": now},
+            },
+            {"$set": {"status": "sending", "claimed_at": now}},
+            return_document=True,
+        )
+        if not item:
+            break
+        claimed.append(item)
 
-    if not due:
+    if not claimed:
         return
 
-    logger.info(f"[AIReply] Processing {len(due)} queued replies")
+    logger.info(f"[AIReply] Processing {len(claimed)} queued replies (atomic claim)")
 
-    for item in due:
+    for item in claimed:
         qid = item["_id"]
         try:
             phone = None
