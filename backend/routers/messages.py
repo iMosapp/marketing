@@ -1034,6 +1034,8 @@ async def get_conversation_info(conversation_id: str):
         "contact_email": conv.get("contact_email"),
         "contact_photo": None,
         "status": conv.get("status", "active"),
+        "ai_mode": conv.get("ai_mode", "assisted"),
+        "ai_enabled": conv.get("ai_enabled", False),
     }
     
     # Try to get contact photo and email

@@ -604,8 +604,19 @@ function ThreadScreen() {
     
     try {
       setLoading(true);
-      const data = await messagesAPI.getThread(convId);
+      const [data, convInfo] = await Promise.all([
+        messagesAPI.getThread(convId),
+        api.get(`/messages/conversation/${convId}/info`).catch(() => null),
+      ]);
       setMessages(data || []);
+
+      // Load saved ai_mode from conversation
+      const savedMode = convInfo?.data?.ai_mode;
+      if (savedMode && ['auto_reply', 'assisted', 'draft_only', 'off'].includes(savedMode)) {
+        setAiMode(savedMode as any);
+      } else if (convInfo?.data?.ai_enabled === false) {
+        setAiMode('off');
+      }
       
       // Auto-load AI suggestion when there are messages from contacts
       if (data && data.length > 0) {
@@ -616,7 +627,6 @@ function ThreadScreen() {
       }
     } catch (error) {
       console.error('Failed to load messages:', error);
-      // Show empty state if no messages
       setMessages([]);
     } finally {
       setLoading(false);
@@ -3018,7 +3028,21 @@ function ThreadScreen() {
             
             <TouchableOpacity 
               style={styles.closeModalButton}
-              onPress={() => setShowSettings(false)}
+              onPress={async () => {
+                setShowSettings(false);
+                // Save ai_mode to backend so it persists across sessions
+                const convId = actualConversationId || conversationId;
+                if (convId && user?._id) {
+                  try {
+                    await messagesAPI.updateConversation(user._id, convId, {
+                      ai_mode: aiMode,
+                      ai_enabled: aiMode !== 'off',
+                    });
+                  } catch (e) {
+                    console.warn('[Settings] Failed to save AI mode:', e);
+                  }
+                }
+              }}
             >
               <Text style={styles.closeModalText}>Done</Text>
             </TouchableOpacity>
