@@ -844,30 +844,37 @@ async def initiate_outbound_call(request: Request):
     if not tw_sid or not tw_token:
         raise HTTPException(status_code=500, detail="Twilio credentials not configured")
 
-    # The TwiML that runs when the REP answers their personal phone
-    # It then dials the customer with the Twilio number as caller ID
-    app_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
-
-    # Encode customer phone for URL (E.164 has + which needs escaping)
-    import urllib.parse
-    customer_encoded = urllib.parse.quote(customer_phone_e164)
+    app_url  = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
     rep_name = (rep.get("name") or "").split()[0] or "your rep"
 
-    # TwiML URL that connects the rep to the customer once rep picks up
-    bridge_twiml_url = f"{app_url}/api/webhooks/twilio/call-bridge?customer={customer_encoded}&caller_id={urllib.parse.quote(rep_twilio_number)}&rep_name={urllib.parse.quote(rep_name)}"
+    # Store call context in DB — retrieved by CallSid when the bridge fires.
+    # This is more reliable than passing phone numbers in URL query params
+    # (Twilio can mangle URL encoding on some account tiers).
+    pending_call_doc = {
+        "customer_phone":   customer_phone_e164,
+        "rep_twilio_number": rep_twilio_number,
+        "rep_name":          rep_name,
+        "rep_user_id":       rep_user_id,
+        "contact_id":        contact_id or None,
+        "created_at":        datetime.utcnow(),
+    }
 
     try:
         from twilio.rest import Client as _TC
         client = _TC(tw_sid, tw_token)
         call = await _aio.to_thread(
             client.calls.create,
-            to=rep_personal_phone,         # Ring the rep's personal cell first
-            from_=rep_twilio_number,        # Show the Twilio number to the rep too
-            url=bridge_twiml_url,
+            to=rep_personal_phone,
+            from_=rep_twilio_number,
+            url=f"{app_url}/api/webhooks/twilio/call-bridge",
             status_callback=f"{app_url}/api/webhooks/twilio/call-status",
             status_callback_method="POST",
         )
-        logger.info(f"[Voice] Outbound call initiated: rep={rep_personal_phone} → customer={customer_phone_e164} | SID={call.sid}")
+        # Store with the real CallSid
+        pending_call_doc["call_sid"] = call.sid
+        await db.pending_calls.insert_one(pending_call_doc)
+
+        logger.info(f"[Voice] Outbound call: rep={rep_personal_phone} → customer={customer_phone_e164} | SID={call.sid}")
 
         # Log call event
         try:
@@ -889,10 +896,10 @@ async def initiate_outbound_call(request: Request):
             pass
 
         return {
-            "success": True,
+            "success":  True,
             "call_sid": call.sid,
-            "status": call.status,
-            "message": f"Calling your phone ({rep_personal_phone[-4:]})... pick up to connect to {customer_phone_e164}",
+            "status":   call.status,
+            "message":  f"Calling your phone ({rep_personal_phone[-4:]})... pick up to connect to {customer_phone_e164}",
         }
     except Exception as e:
         logger.error(f"[Voice] Outbound call failed: {e}")
@@ -918,7 +925,7 @@ async def call_whisper(
     display     = name_raw or (f"a customer ending in {caller_raw[-4:]}" if caller_raw else "a customer")
     twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="Polly.Joanna">I'm On Social. Incoming customer call from {display}.</Say>
+  <Say>I'm On Social. Incoming customer call from {display}.</Say>
 </Response>"""
     return Response(content=twiml, media_type="application/xml")
 
@@ -1103,55 +1110,55 @@ async def cancel_call(request: Request):
 
 
 @router.post("/call-bridge")
+@router.get("/call-bridge")
 async def call_bridge_twiml(
     request: Request,
-    customer: str = Form(default=""),
-    caller_id: str = Form(default=""),
-    rep_name: str = Form(default=""),
+    CallSid: str = Form(default=""),
 ):
     """
     TwiML returned when the REP answers their personal phone.
-    Bridges the rep to the customer with the Twilio number as caller ID.
-    Query params are set when the call was initiated.
+    Looks up the call context from the pending_calls collection using CallSid.
+    This is reliable — no URL param encoding issues.
     """
-    # Also accept from query string (Twilio may GET this URL)
-    params = dict(request.query_params)
-    customer   = params.get("customer", customer)
-    caller_id  = params.get("caller_id", caller_id)
-    rep_name   = params.get("rep_name", rep_name)
+    db = get_db()
 
-    if not customer:
+    # Twilio sends CallSid in the POST body when rep answers
+    # Also check query params as fallback
+    call_sid = CallSid or request.query_params.get("CallSid", "")
+    logger.info(f"[Voice] call-bridge triggered | CallSid={call_sid}")
+
+    pending = None
+    if call_sid:
+        pending = await db.pending_calls.find_one({"call_sid": call_sid})
+
+    if not pending:
+        logger.error(f"[Voice] call-bridge: no pending_call found for SID={call_sid}")
         return Response(
-            content='<?xml version="1.0" encoding="UTF-8"?><Response><Say>Configuration error. Goodbye.</Say></Response>',
+            content='<?xml version="1.0" encoding="UTF-8"?><Response><Say>Sorry, something went wrong connecting your call. Please try again.</Say></Response>',
             media_type="application/xml"
         )
 
-    import urllib.parse
-    customer_phone = urllib.parse.unquote(customer)
-    caller_number  = urllib.parse.unquote(caller_id) if caller_id else ""
-    name           = urllib.parse.unquote(rep_name) if rep_name else "the team"
+    customer_phone  = pending.get("customer_phone", "")
+    caller_number   = pending.get("rep_twilio_number", "")
+
+    if not customer_phone:
+        logger.error(f"[Voice] call-bridge: no customer_phone in pending_call {call_sid}")
+        return Response(
+            content='<?xml version="1.0" encoding="UTF-8"?><Response><Say>Configuration error. Please try again.</Say></Response>',
+            media_type="application/xml"
+        )
 
     twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="Polly.Joanna">Connecting you to the customer now.</Say>
+  <Say>Connecting your call now.</Say>
   <Dial callerId="{caller_number}" timeout="30">
     <Number>{customer_phone}</Number>
   </Dial>
-  <Say voice="Polly.Joanna">The call has ended.</Say>
 </Response>"""
 
+    logger.info(f"[Voice] Bridging {caller_number} → {customer_phone}")
     return Response(content=twiml, media_type="application/xml")
 
-
-@router.get("/call-bridge")
-async def call_bridge_twiml_get(
-    request: Request,
-    customer: str = "",
-    caller_id: str = "",
-    rep_name: str = "",
-):
-    """GET version of call-bridge for Twilio's initial request."""
-    return await call_bridge_twiml(request, customer=customer, caller_id=caller_id, rep_name=rep_name)
 
 
 @router.post("/call-status")
@@ -1263,12 +1270,12 @@ async def handle_inbound_voice(
     else:
         twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="Polly.Joanna">Hi, you've reached {rep_name}. Please leave a message after the tone and we'll get back to you soon.</Say>
+  <Say>Hi, you've reached {rep_name}. Please leave a message after the tone and we'll get back to you soon.</Say>
   <Record maxLength="120" transcribe="true"
           transcribeCallback="{recording_cb}"
           recordingStatusCallback="{recording_cb}"
           recordingStatusCallbackMethod="POST" />
-  <Say voice="Polly.Joanna">Thank you. Goodbye!</Say>
+  <Say>Thank you. Goodbye!</Say>
 </Response>"""
 
     return Response(content=twiml, media_type="application/xml")
@@ -1300,9 +1307,9 @@ async def handle_voice_fallback(
     if DialCallStatus in ("no-answer", "busy", "failed", "canceled"):
         twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="Polly.Joanna">Sorry, {rep_name} is unavailable right now. Leave a message after the tone and we'll get back to you quickly.</Say>
+  <Say>Sorry, {rep_name} is unavailable right now. Leave a message after the tone and we'll get back to you quickly.</Say>
   <Record maxLength="120" transcribe="true" transcribeCallback="{app_url}/api/webhooks/twilio/voicemail-transcription" />
-  <Say voice="Polly.Joanna">Thank you, talk soon!</Say>
+  <Say>Thank you, talk soon!</Say>
 </Response>"""
     else:
         twiml = """<?xml version="1.0" encoding="UTF-8"?><Response></Response>"""
