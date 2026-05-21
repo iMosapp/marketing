@@ -1552,11 +1552,20 @@ function ThreadScreen() {
       if (trackOpens) {
         // --- Tracked mode: upload to /api/media/upload-tracked, get tracked link ---
         const formData = new FormData();
-        formData.append('file', {
-          uri: selectedMedia.uri,
-          type: selectedMedia.type,
-          name: selectedMedia.name,
-        } as any);
+
+        // Web (browser/PWA) requires a real Blob/File — not a raw {uri, type, name} dict
+        if (IS_WEB && (selectedMedia.uri.startsWith('blob:') || selectedMedia.uri.startsWith('data:'))) {
+          const resp = await fetch(selectedMedia.uri);
+          const blob = await resp.blob();
+          const file = new File([blob], selectedMedia.name || 'photo.jpg', { type: selectedMedia.type || blob.type });
+          formData.append('file', file);
+        } else {
+          formData.append('file', {
+            uri: selectedMedia.uri,
+            type: selectedMedia.type,
+            name: selectedMedia.name,
+          } as any);
+        }
         formData.append('user_id', user._id);
         formData.append('contact_id', id as string);
         formData.append('contact_name', contact_name as string || '');
