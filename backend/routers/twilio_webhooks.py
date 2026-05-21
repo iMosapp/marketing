@@ -282,15 +282,16 @@ async def incoming_message(
         logger.info(f"Saved incoming message to conversation {conversation_id}")
 
         # ── Increment conversation-level unanswered count ──────────────────────
-        # This is the reliable source for YOU'RE NEEDED — works even when there
-        # is no campaign enrollment (conversation-level AI mode).
+        # Uses AFTER so we get the new incremented value, not the pre-increment value
+        from pymongo import ReturnDocument as _RD
         convo_update = await db.conversations.find_one_and_update(
             {"_id": ObjectId(conversation_id)},
             {"$inc": {"unanswered_customer_replies": 1}},
-            return_document=True,
+            return_document=_RD.AFTER,
             projection={"unanswered_customer_replies": 1, "ai_mode": 1, "ai_enabled": 1, "rep_sms_notified_at": 1}
         )
         conv_unanswered = (convo_update or {}).get("unanswered_customer_replies", 1) if convo_update else 1
+        logger.info(f"[Webhook] Unanswered count for conv {conversation_id}: {conv_unanswered}")
 
         # ── Log contact_event so wins feed + activity feed reflect the reply ─────
         if user_id and contact_id and Body and Body.strip():
@@ -317,78 +318,75 @@ async def incoming_message(
                 logger.debug(f"[Webhook] contact_event insert skipped: {_ce}")
 
         # ── SMS system notification to rep's personal cell ─────────────────────
-        # Sends via the rep's dedicated Twilio number so it arrives as a real text.
-        # Includes a direct link so the rep can tap and land on the conversation.
         if rep_user and not is_stop:
             try:
-                # Read rep's notification preferences (default: all on, 30-min throttle)
-                notif_prefs = rep_user.get("notification_settings", {})
-                sms_active_enabled  = notif_prefs.get("sms_active_conversation", True)
-                throttle_minutes    = int(notif_prefs.get("sms_active_throttle_minutes", 30))
-
+                notif_prefs        = rep_user.get("notification_settings", {})
+                sms_active_enabled = notif_prefs.get("sms_active_conversation", True)
+                throttle_minutes   = int(notif_prefs.get("sms_active_throttle_minutes", 30))
                 rep_personal_phone = (rep_user.get("phone") or "").strip()
                 rep_twilio_number  = (rep_user.get("twilio_number") or rep_user.get("mvpline_number") or "").strip()
 
-                if sms_active_enabled and rep_personal_phone and rep_twilio_number:
+                if not rep_personal_phone:
+                    logger.warning(f"[Webhook] SMS skipped — rep {rep_user.get('name','?')} has no personal phone set in profile")
+                elif not rep_twilio_number:
+                    logger.warning(f"[Webhook] SMS skipped — rep {rep_user.get('name','?')} has no Twilio number assigned")
+                elif sms_active_enabled:
                     rep_cell = normalize_phone(rep_personal_phone)
-                    # Don't text the rep if THEY are the one who just texted in
                     if rep_cell == normalize_phone(from_phone):
-                        raise ValueError("Rep texted themselves — skip notification")
+                        logger.debug(f"[Webhook] Active SMS skipped — rep texted their own number")
+                    else:
+                        app_url   = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+                        conv_link = f"{app_url}/thread/{conversation_id}"
+                        contact_display = contact.get("first_name") or contact.get("name") or from_phone[-4:]
 
-                    app_url   = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
-                    conv_link = f"{app_url}/thread/{conversation_id}"
-                    contact_display = (
-                        contact.get("first_name") or
-                        contact.get("name") or
-                        from_phone[-4:]
-                    )
+                        # Use convo_update for throttle check (has the freshest rep_sms_notified_at)
+                        fresh_conv    = convo_update or {}
+                        last_notified = fresh_conv.get("rep_sms_notified_at") or conversation.get("rep_sms_notified_at")
+                        throttled = (
+                            isinstance(last_notified, datetime) and
+                            (datetime.utcnow() - last_notified).total_seconds() < throttle_minutes * 60
+                        )
 
-                    # Rate-limit to throttle_minutes per conversation
-                    last_notified = conversation.get("rep_sms_notified_at")
-                    throttled = (
-                        isinstance(last_notified, datetime) and
-                        (datetime.utcnow() - last_notified).total_seconds() < throttle_minutes * 60
-                    )
-
-                    if not throttled:
-                        tw_sid   = os.environ.get("TWILIO_ACCOUNT_SID", "")
-                        tw_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
-                        if tw_sid and tw_token:
-                            preview_text = (Body or "").strip()[:60]
-                            notif_msg = (
-                                f"I'm On Social: {contact_display} replied to you.\n"
-                                f'"{preview_text}{"..." if len((Body or "")) > 60 else ""}"\n\n'
-                                f"Open conversation:\n{conv_link}"
-                            )
-                            # Fire-and-forget — NEVER await Twilio calls inside a webhook
-                            # Twilio requires a response within 15s; blocking here causes retries
-                            async def _send_active_sms(to=rep_cell, frm=rep_twilio_number, body=notif_msg, sid=tw_sid, tok=tw_token, conv_id=conversation_id):
+                        if throttled:
+                            logger.debug(f"[Webhook] Active SMS throttled for {conversation_id} ({throttle_minutes}m window)")
+                        else:
+                            tw_sid   = os.environ.get("TWILIO_ACCOUNT_SID", "")
+                            tw_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
+                            if not tw_sid or not tw_token:
+                                logger.warning("[Webhook] Active SMS skipped — TWILIO_ACCOUNT_SID or TWILIO_AUTH_TOKEN not set")
+                            else:
+                                preview_text = (Body or "").strip()[:60]
+                                notif_msg = (
+                                    f"I'm On Social: {contact_display} replied to you.\n"
+                                    f'"{preview_text}{"..." if len((Body or "")) > 60 else ""}"\n\n'
+                                    f"Open conversation:\n{conv_link}"
+                                )
+                                async def _send_active_sms(to=rep_cell, frm=rep_twilio_number, body=notif_msg, sid=tw_sid, tok=tw_token, conv_id=conversation_id):
+                                    try:
+                                        from twilio.rest import Client as _TC
+                                        _TC(sid, tok).messages.create(to=to, from_=frm, body=body)
+                                        await db.conversations.update_one(
+                                            {"_id": ObjectId(conv_id)},
+                                            {"$set": {"rep_sms_notified_at": datetime.utcnow()}}
+                                        )
+                                        logger.info(f"[Webhook] Active-conversation SMS sent to {to}")
+                                    except Exception as _e:
+                                        logger.warning(f"[Webhook] Active-conversation SMS FAILED to {to}: {_e}")
+                                asyncio.create_task(_send_active_sms())
+                                # Push notification
                                 try:
-                                    from twilio.rest import Client as _TC
-                                    _TC(sid, tok).messages.create(to=to, from_=frm, body=body)
-                                    await db.conversations.update_one(
-                                        {"_id": ObjectId(conv_id)},
-                                        {"$set": {"rep_sms_notified_at": datetime.utcnow()}}
-                                    )
-                                    logger.info(f"[Webhook] Sent active-conversation SMS to {to}")
-                                except Exception as _e:
-                                    logger.debug(f"[Webhook] Active SMS skipped: {_e}")
-                            asyncio.create_task(_send_active_sms())
-                            # Also send push notification (instant, works when app is open)
-                            try:
-                                from routers.push_notifications import send_push_to_user
-                                app_url_push = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
-                                asyncio.create_task(send_push_to_user(
-                                    user_id or rep_user_id or "",
-                                    f"{contact_display} replied",
-                                    (Body or "").strip()[:100],
-                                    f"{app_url_push}/thread/{conversation_id}",
-                                    "chatbubble"
-                                ))
-                            except Exception:
-                                pass
+                                    from routers.push_notifications import send_push_to_user
+                                    asyncio.create_task(send_push_to_user(
+                                        user_id or rep_user_id or "",
+                                        f"{contact_display} replied",
+                                        (Body or "").strip()[:100],
+                                        f"{app_url}/thread/{conversation_id}",
+                                        "chatbubble"
+                                    ))
+                                except Exception:
+                                    pass
             except Exception as sms_notif_err:
-                logger.debug(f"[Webhook] Rep SMS notification skipped: {sms_notif_err}")
+                logger.warning(f"[Webhook] Rep SMS notification error: {sms_notif_err}")
 
         # ── AUTO-ENROLL: new contacts OR existing with no active enrollment ──────
         if rep_user_id and not is_stop:
