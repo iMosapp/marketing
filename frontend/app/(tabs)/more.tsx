@@ -935,7 +935,10 @@ export default function MoreScreen() {
         )}
 
         {/* ── Profile Setup Banner — shown until photo + bio are complete ── */}
-        {!isImpersonating && (() => {
+        {(() => {
+          // Suppress banner if impersonating (either store flag or user flag after refresh)
+          const isImp = isImpersonating || (user as any)?.isImpersonating === true;
+          if (isImp) return null;
           const hasPhoto = !!(user?.photo_url || (user as any)?.photo_path);
           const hasBio   = !!((user as any)?.persona?.bio || (user as any)?.bio);
           const complete  = (user as any)?.onboarding_complete === true || (hasPhoto && hasBio);

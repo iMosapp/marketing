@@ -281,6 +281,30 @@ async def incoming_message(
         await db.messages.insert_one(message)
         logger.info(f"Saved incoming message to conversation {conversation_id}")
 
+        # ── Log contact_event so wins feed + activity feed reflect the reply ─────
+        if user_id and contact_id and Body and Body.strip():
+            try:
+                cname = contact.get("name") or f"{contact.get('first_name','')} {contact.get('last_name','')}".strip() or from_phone
+                await db.contact_events.insert_one({
+                    "user_id":      user_id,
+                    "contact_id":   contact_id,
+                    "contact_name": cname,
+                    "event_type":   "customer_reply",
+                    "category":     "inbound",
+                    "title":        f"{cname} replied via SMS",
+                    "description":  Body[:200],
+                    "channel":      "sms",
+                    "timestamp":    datetime.utcnow(),
+                })
+                # Bust the home screen cache so wins feed refreshes immediately
+                try:
+                    from routers.home_intelligence import _home_cache
+                    _home_cache.pop(user_id, None)
+                except Exception:
+                    pass
+            except Exception as _ce:
+                logger.debug(f"[Webhook] contact_event insert skipped: {_ce}")
+
         # ── AUTO-ENROLL: new contacts OR existing with no active enrollment ──────
         if rep_user_id and not is_stop:
             try:

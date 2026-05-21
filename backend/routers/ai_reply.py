@@ -49,24 +49,22 @@ STATUS_FAILED    = "failed"
 def get_human_delay(incoming_message: str = "") -> int:
     """
     Returns delay in seconds with a natural distribution:
-    - 45–60s  (15%) — quick glance at phone
-    - 60–120s (40%) — most natural, felt responsive
-    - 120–180s(30%) — in the middle of something
-    - 180–300s(15%) — legitimately busy
-    Longer incoming messages add slight extra time (reading time).
+    - 45–60s  (25%) — quick glance at phone
+    - 60–90s  (50%) — most natural, feels responsive
+    - 90–120s (25%) — in the middle of something
+    Longer messages add a tiny extra read-time delay.
     """
     rand = random.random()
-    if rand < 0.15:
+    if rand < 0.25:
         base = random.uniform(45, 60)
-    elif rand < 0.55:
-        base = random.uniform(60, 120)
-    elif rand < 0.85:
-        base = random.uniform(120, 180)
+    elif rand < 0.75:
+        base = random.uniform(60, 90)
     else:
-        base = random.uniform(180, 300)
+        base = random.uniform(90, 120)
 
-    if len(incoming_message) > 100:
-        base += random.uniform(10, 30)
+    # Add a few seconds for longer incoming messages (reading time)
+    if len(incoming_message) > 80:
+        base += random.uniform(5, 15)
 
     return int(base)
 
@@ -316,6 +314,23 @@ async def process_ai_reply_queue():
                 "timestamp":       now,
                 "status":          "sent" if not mocked else "sent_mock",
             })
+
+            # Log to contact_events so the wins feed + activity feed stay current
+            if item.get("contact_id"):
+                try:
+                    await db.contact_events.insert_one({
+                        "user_id":     item.get("assigned_user_id"),
+                        "contact_id":  item["contact_id"],
+                        "event_type":  "ai_reply_sent",
+                        "category":    "sent",
+                        "title":       "AI Auto-Reply Sent",
+                        "description": item["body"][:200],
+                        "channel":     "sms",
+                        "ai_generated": True,
+                        "timestamp":   now,
+                    })
+                except Exception:
+                    pass
 
             logger.info(f"[AIReply] Sent {'(MOCK) ' if mocked else ''}to {phone}")
 

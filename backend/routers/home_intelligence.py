@@ -422,13 +422,13 @@ async def get_wins_feed(user_id: str, db, limit: int = 15) -> list:
 # ── Combined endpoint ─────────────────────────────────────────────────────────
 
 from cachetools import TTLCache as _TTLCache
-_home_cache: _TTLCache = _TTLCache(maxsize=200, ttl=45)  # 45s cache — lightweight
+_home_cache: _TTLCache = _TTLCache(maxsize=200, ttl=30)  # 30s cache — short enough to feel live
 
 @router.get("/{user_id}")
 async def get_home_data(user_id: str):
     """
     Single endpoint for the home screen.
-    Cached 45s per user — prevents OOM from rapid refreshes.
+    Cached 30s per user — prevents OOM from rapid refreshes.
     """
     import asyncio
 
@@ -440,7 +440,6 @@ async def get_home_data(user_id: str):
     db = get_db()
 
     # Run all three in parallel with a hard 8s timeout
-    # If any sub-task fails/times out, return empty rather than crash
     try:
         streak_data, my3_data, wins_data = await asyncio.wait_for(
             asyncio.gather(
@@ -466,3 +465,10 @@ async def get_home_data(user_id: str):
     # Cache the result
     _home_cache[user_id] = result
     return result
+
+
+@router.delete("/{user_id}/cache")
+async def bust_home_cache(user_id: str):
+    """Force-expire the home cache for a user (called after activity events)."""
+    _home_cache.pop(user_id, None)
+    return {"cleared": True}
