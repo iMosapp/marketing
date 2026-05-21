@@ -2155,6 +2155,32 @@ function ThreadScreen() {
           onDismiss={() => setShowAISuggestion(false)}
         />
       )}
+
+      {/* "Re-enable Jessi" chip — shown after rep has replied and AI is off */}
+      {aiMode === 'off' && messages.some(m => m.sender === 'user') && (
+        <TouchableOpacity
+          onPress={async () => {
+            setAiMode('auto_reply');
+            const convId = actualConversationId || conversationId;
+            if (convId && user?._id) {
+              try {
+                await messagesAPI.updateConversation(user._id, convId, { ai_mode: 'auto_reply', ai_enabled: true });
+              } catch (e) { console.warn('Re-enable Jessi failed:', e); }
+            }
+          }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#34C75912', borderTopWidth: 1, borderTopColor: '#34C75930', paddingHorizontal: 16, paddingVertical: 10 }}
+          activeOpacity={0.75}
+          data-testid="reenable-jessi-thread-btn"
+        >
+          <Ionicons name="sparkles" size={14} color="#34C759" />
+          <Text style={{ fontSize: 13, color: '#34C759', fontWeight: '600', flex: 1 }}>
+            Re-enable Jessi for this conversation
+          </Text>
+          <View style={{ backgroundColor: '#34C759', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#000' }}>Turn On</Text>
+          </View>
+        </TouchableOpacity>
+      )}
       
       {/* Loading AI indicator */}
       {loadingAI && (

@@ -802,16 +802,42 @@ export default function InboxScreen() {
     };
     const next = cycle[currentMode || 'off'] || 'draft_only';
     const enabled = next !== 'off';
-    // Optimistic update
     setConversations(prev => prev.map(c =>
       c._id === conversationId ? { ...c, ai_mode: next, ai_enabled: enabled } : c
     ));
     try {
       await messagesAPI.updateConversation(user!._id, conversationId, { ai_mode: next, ai_enabled: enabled });
     } catch {
-      // revert
       setConversations(prev => prev.map(c =>
         c._id === conversationId ? { ...c, ai_mode: currentMode, ai_enabled: currentMode !== 'off' } : c
+      ));
+    }
+  };
+
+  // "Take Over" — turns AI off, badge stays until rep personally responds
+  const handleAiModeToggleOff = async (conversationId: string, currentMode: string | undefined) => {
+    setConversations(prev => prev.map(c =>
+      c._id === conversationId ? { ...c, ai_mode: 'off', ai_enabled: false } : c
+    ));
+    try {
+      await messagesAPI.updateConversation(user!._id, conversationId, { ai_mode: 'off', ai_enabled: false });
+    } catch {
+      setConversations(prev => prev.map(c =>
+        c._id === conversationId ? { ...c, ai_mode: currentMode, ai_enabled: currentMode !== 'off' } : c
+      ));
+    }
+  };
+
+  // "Re-enable Jessi" — turns AI back to auto_reply after rep has stepped in
+  const handleAiModeToggleOn = async (conversationId: string) => {
+    setConversations(prev => prev.map(c =>
+      c._id === conversationId ? { ...c, ai_mode: 'auto_reply', ai_enabled: true } : c
+    ));
+    try {
+      await messagesAPI.updateConversation(user!._id, conversationId, { ai_mode: 'auto_reply', ai_enabled: true });
+    } catch {
+      setConversations(prev => prev.map(c =>
+        c._id === conversationId ? { ...c, ai_mode: 'off', ai_enabled: false } : c
       ));
     }
   };
@@ -1023,11 +1049,43 @@ export default function InboxScreen() {
             return (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
                 {needsYou && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#FF3B3018', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, borderWidth: 1, borderColor: '#FF3B3040' }}>
-                    <Ionicons name="alert-circle" size={11} color="#FF3B30" />
-                    <Text style={{ fontSize: 11, fontWeight: '800', color: '#FF3B30', letterSpacing: 0.3 }}>
-                      YOU'RE NEEDED — {unanswered} msgs
-                    </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#FF3B3018', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, borderWidth: 1, borderColor: '#FF3B3040' }}>
+                      <Ionicons name="alert-circle" size={11} color="#FF3B30" />
+                      <Text style={{ fontSize: 11, fontWeight: '800', color: '#FF3B30', letterSpacing: 0.3 }}>
+                        YOU'RE NEEDED — {unanswered} msgs
+                      </Text>
+                    </View>
+                    {/* Take Over: turn AI off and keep the badge until rep actually replies */}
+                    {item.ai_enabled && item.ai_mode !== 'off' && (
+                      <TouchableOpacity
+                        onPress={async (e) => {
+                          e.stopPropagation?.();
+                          await handleAiModeToggleOff(item._id, item.ai_mode);
+                        }}
+                        style={{ backgroundColor: '#FF3B30', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, flexDirection: 'row', alignItems: 'center', gap: 3 }}
+                        activeOpacity={0.75}
+                        data-testid={`take-over-btn-${item._id}`}
+                      >
+                        <Ionicons name="person" size={10} color="#fff" />
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }}>Take Over</Text>
+                      </TouchableOpacity>
+                    )}
+                    {/* Re-enable Jessi: shown when AI is already off but badge still active */}
+                    {(!item.ai_enabled || item.ai_mode === 'off') && (
+                      <TouchableOpacity
+                        onPress={async (e) => {
+                          e.stopPropagation?.();
+                          await handleAiModeToggleOn(item._id);
+                        }}
+                        style={{ backgroundColor: '#34C75920', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, flexDirection: 'row', alignItems: 'center', gap: 3, borderWidth: 1, borderColor: '#34C75940' }}
+                        activeOpacity={0.75}
+                        data-testid={`reenable-jessi-btn-${item._id}`}
+                      >
+                        <Ionicons name="sparkles" size={10} color="#34C759" />
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#34C759' }}>Re-enable Jessi</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 )}
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
