@@ -1019,6 +1019,20 @@ async def handle_recording_complete(
         if rep:
             user_id = str(rep["_id"])
 
+    # Final fallback: infer from_phone from From field if not set
+    if not from_phone and From:
+        from_phone = normalize_phone(From)
+
+    # Resolve contact from phone if not found yet
+    if not contact_id and from_phone:
+        contact = await db.contacts.find_one({
+            "$or": [{"phone": from_phone}, {"phone": from_phone.lstrip("+")}]
+        })
+        if contact:
+            contact_id = str(contact["_id"])
+            if not user_id:
+                user_id = contact.get("user_id")
+
     contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}) if contact_id else None
     contact_name = (contact or {}).get("name") or f"Unknown ({(from_phone or '')[-4:]})"
 
