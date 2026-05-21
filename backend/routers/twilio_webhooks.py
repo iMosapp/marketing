@@ -910,22 +910,39 @@ async def initiate_outbound_call(request: Request):
 @router.post("/call-whisper")
 async def call_whisper(
     request: Request,
-    caller: str = Form(default=""),
-    name:   str = Form(default=""),
+    From:  str = Form(default=""),
+    To:    str = Form(default=""),
 ):
     """
-    Played to the REP when they answer their phone — before customer is connected.
-    So the rep hears "Incoming customer call from Bridger Ward" and knows it's legit.
-    This is the 'url' param on the <Number> in the inbound Dial TwiML.
+    Played to the REP when they answer — before the customer is connected.
+    Twilio sends the call's From/To in the POST body automatically.
     """
-    import urllib.parse
-    params      = dict(request.query_params)
-    caller_raw  = urllib.parse.unquote(params.get("caller", caller) or "")
-    name_raw    = urllib.parse.unquote(params.get("name", name) or "")
-    display     = name_raw or (f"a customer ending in {caller_raw[-4:]}" if caller_raw else "a customer")
+    db = get_db()
+    caller_phone = normalize_phone(From) if From else ""
+
+    # Try to find the contact's name
+    display = "a customer"
+    if caller_phone:
+        try:
+            contact = await db.contacts.find_one({
+                "$or": [{"phone": caller_phone}, {"phone": caller_phone.lstrip("+")}]
+            }, {"first_name": 1, "last_name": 1, "name": 1})
+            if contact:
+                full = f"{contact.get('first_name','')} {contact.get('last_name','')}".strip()
+                if not full or full in ("Contact", "Unknown"):
+                    full = contact.get("name", "") or ""
+                if full and full not in ("Contact", "Unknown"):
+                    display = full
+                else:
+                    display = f"a customer ending in {caller_phone[-4:]}"
+            else:
+                display = f"a customer ending in {caller_phone[-4:]}"
+        except Exception:
+            display = f"a customer ending in {caller_phone[-4:]}" if caller_phone else "a customer"
+
     twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say>I'm On Social. Incoming customer call from {display}.</Say>
+  <Say>I'm On Social. Incoming call from {display}.</Say>
 </Response>"""
     return Response(content=twiml, media_type="application/xml")
 
@@ -1248,32 +1265,34 @@ async def handle_inbound_voice(
         except Exception as _ce:
             logger.debug(f"[Voice] Event log skipped: {_ce}")
 
-    # Build TwiML — announce caller to rep via whisper, then record the call
-    import urllib.parse
-    app_url      = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
-    contact_enc  = urllib.parse.quote(from_phone)
-    cname_enc    = urllib.parse.quote(contact_name if not contact_name.startswith("Unknown") else f"a customer ending in {from_phone[-4:]}")
-    whisper_url  = f"{app_url}/api/webhooks/twilio/call-whisper?caller={contact_enc}&name={cname_enc}"
-    recording_cb = f"{app_url}/api/webhooks/twilio/recording-complete?from_phone={contact_enc}&user_id={user_id or ''}"
+    # Build TwiML — dial the rep's personal cell, plain and simple
+    app_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
 
     if rep_personal_phone:
+        # Rep whisper: Twilio calls the whisper URL when rep answers
+        # Use a simple inline URL — no complex query params
+        import urllib.parse as _up
+        whisper_url  = f"{app_url}/api/webhooks/twilio/call-whisper"
+        fallback_url = f"{app_url}/api/webhooks/twilio/voice-fallback"
+        recording_cb = f"{app_url}/api/webhooks/twilio/recording-complete"
+
         twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Dial callerId="{to_phone}" timeout="25"
         record="record-from-answer"
         recordingStatusCallback="{recording_cb}"
         recordingStatusCallbackMethod="POST"
-        action="{app_url}/api/webhooks/twilio/voice-fallback">
-    <Number url="{whisper_url}" method="GET">{rep_personal_phone}</Number>
+        action="{fallback_url}">
+    <Number url="{whisper_url}" method="POST">{rep_personal_phone}</Number>
   </Dial>
 </Response>"""
     else:
         twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say>Hi, you've reached {rep_name}. Please leave a message after the tone and we'll get back to you soon.</Say>
+  <Say>Hi, you've reached {rep_name}. Please leave a message after the tone.</Say>
   <Record maxLength="120" transcribe="true"
-          transcribeCallback="{recording_cb}"
-          recordingStatusCallback="{recording_cb}"
+          transcribeCallback="{app_url}/api/webhooks/twilio/recording-complete"
+          recordingStatusCallback="{app_url}/api/webhooks/twilio/recording-complete"
           recordingStatusCallbackMethod="POST" />
   <Say>Thank you. Goodbye!</Say>
 </Response>"""
