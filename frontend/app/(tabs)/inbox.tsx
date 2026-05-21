@@ -562,6 +562,13 @@ export default function InboxScreen() {
       const aUrgent = a.unread || a.needs_assistance ? 1 : 0;
       const bUrgent = b.unread || b.needs_assistance ? 1 : 0;
       if (bUrgent !== aUrgent) return bUrgent - aUrgent;
+
+      // Within Waiting tab: "You're Needed" conversations float to top
+      if (activeTab === 'waiting') {
+        const aNeeded = (a.unanswered_customer_replies || 0) >= 2 ? 1 : 0;
+        const bNeeded = (b.unanswered_customer_replies || 0) >= 2 ? 1 : 0;
+        if (bNeeded !== aNeeded) return bNeeded - aNeeded;
+      }
       
       const aTime = new Date(a.last_message?.timestamp || a.last_message_at || 0).getTime();
       const bTime = new Date(b.last_message?.timestamp || b.last_message_at || 0).getTime();
@@ -1011,15 +1018,27 @@ export default function InboxScreen() {
           {(() => {
             const info = getWaitingInfo(item);
             if (!info) return null;
+            const unanswered = item.unanswered_customer_replies || 0;
+            const needsYou = unanswered >= 2;
             return (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5 }}>
-                <Ionicons name="time" size={11} color={info.color} />
-                <Text style={{ fontSize: 11, fontWeight: '700', color: info.color, letterSpacing: 0.2 }}>
-                  {info.label}
-                </Text>
-                {info.urgent && (
-                  <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: info.color, marginLeft: 2 }} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5, flexWrap: 'wrap' }}>
+                {needsYou && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#FF3B3018', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, borderWidth: 1, borderColor: '#FF3B3040' }}>
+                    <Ionicons name="alert-circle" size={11} color="#FF3B30" />
+                    <Text style={{ fontSize: 11, fontWeight: '800', color: '#FF3B30', letterSpacing: 0.3 }}>
+                      YOU'RE NEEDED — {unanswered} msgs
+                    </Text>
+                  </View>
                 )}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Ionicons name="time" size={11} color={info.color} />
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: info.color, letterSpacing: 0.2 }}>
+                    {info.label}
+                  </Text>
+                  {info.urgent && (
+                    <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: info.color, marginLeft: 2 }} />
+                  )}
+                </View>
               </View>
             );
           })()}

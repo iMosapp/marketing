@@ -414,6 +414,9 @@ async def incoming_message(
             "contact_id": contact_id, "status": {"$in": ["active", "paused"]},
         }).to_list(10)
 
+        # Track whether escalation already fired for this conversation
+        max_reply_count = 0
+
         for enrollment in active_enrollments:
             campaign = None
             if enrollment.get("campaign_id"):
@@ -423,6 +426,7 @@ async def incoming_message(
                     pass
 
             new_reply_count = (enrollment.get("reply_count") or 0) + 1
+            max_reply_count = max(max_reply_count, new_reply_count)
             await db.campaign_enrollments.update_one(
                 {"_id": enrollment["_id"]},
                 {"$set": {
@@ -491,16 +495,57 @@ async def incoming_message(
                         logger.error(f"[Webhook] Conversation AI reply failed: {ce}")
                 asyncio.create_task(_fire_conv_ai())
 
+        # ── "You're Needed" escalation — fires when customer replies ≥2x unanswered ──
+        if max_reply_count >= 2 and not is_stop and user_id:
+            try:
+                cname_esc = contact.get("name") or f"{contact.get('first_name','')} {contact.get('last_name','')}".strip() or from_phone
+                # Mark conversation as needing rep attention
+                await db.conversations.update_one(
+                    {"_id": ObjectId(conversation_id)},
+                    {"$set": {
+                        "needs_assistance":          True,
+                        "unanswered_customer_replies": max_reply_count,
+                        "you_are_needed_at":         datetime.utcnow(),
+                    }}
+                )
+                # Bust home cache so urgency shows immediately
+                try:
+                    from routers.home_intelligence import _home_cache
+                    _home_cache.pop(user_id, None)
+                except Exception:
+                    pass
+                # Create high-priority "You're Needed" notification
+                await db.notifications.insert_one({
+                    "user_id":         user_id,
+                    "type":            "you_are_needed",
+                    "priority":        "urgent",
+                    "title":           f"{cname_esc} needs you — {max_reply_count} messages waiting",
+                    "message":         f"You have {max_reply_count} unanswered messages from {cname_esc}. The AI has been helping but your personal touch is needed.",
+                    "contact_id":      contact_id,
+                    "conversation_id": conversation_id,
+                    "reply_count":     max_reply_count,
+                    "read":            False,
+                    "dismissed":       False,
+                    "created_at":      datetime.utcnow(),
+                })
+                logger.info(f"[Webhook] 'You Are Needed' escalation for {contact_id} ({max_reply_count} replies)")
+            except Exception as esc_err:
+                logger.warning(f"[Webhook] Escalation notification failed: {esc_err}")
+
         # ── Notify assigned rep ───────────────────────────────────────────────
         if user_id:
             try:
                 cname = contact.get("name") or f"{contact.get('first_name','')} {contact.get('last_name','')}".strip() or from_phone
+                notif_type  = "you_are_needed" if max_reply_count >= 2 else "customer_reply"
+                notif_title = (f"{cname} needs you — {max_reply_count} unanswered" if max_reply_count >= 2
+                               else f"{cname} replied")
                 await db.notifications.insert_one({
-                    "user_id": user_id, "type": "customer_reply",
-                    "title": f"{cname} replied",
+                    "user_id": user_id, "type": notif_type,
+                    "title": notif_title,
                     "message": Body[:200],
                     "contact_id": contact_id, "conversation_id": conversation_id,
                     "campaign_paused": len(active_enrollments) > 0,
+                    "priority": "urgent" if max_reply_count >= 2 else "normal",
                     "read": False, "dismissed": False, "created_at": datetime.utcnow(),
                 })
             except Exception:

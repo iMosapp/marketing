@@ -368,6 +368,15 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
     _conv_cache.pop(f"{user_id}:True", None)
     _conv_cache.pop(f"{user_id}:False", None)
 
+    # Clear "You're Needed" flags — rep is now responding
+    try:
+        await get_db().conversations.update_one(
+            {"_id": ObjectId(conversation_id)},
+            {"$set": {"needs_assistance": False, "unanswered_customer_replies": 0}}
+        )
+    except Exception:
+        pass
+
     channel = message_data.channel or 'sms'
 
     if channel == 'email':

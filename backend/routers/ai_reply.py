@@ -331,6 +331,16 @@ async def process_ai_reply_queue():
                 except Exception:
                     pass
 
+            # Clear "You're Needed" flags since AI just responded
+            if item.get("conversation_id"):
+                try:
+                    await db.conversations.update_one(
+                        {"_id": ObjectId(item["conversation_id"])},
+                        {"$set": {"needs_assistance": False, "unanswered_customer_replies": 0}}
+                    )
+                except Exception:
+                    pass
+
             logger.info(f"[AIReply] Sent {'(MOCK) ' if mocked else ''}to {phone}")
 
         except Exception as e:

@@ -95,6 +95,33 @@ async def _build_notifications(user_id: str, limit: int, category: str) -> dict:
 
     user_teams = await _run_section(_get_user_teams(db, user_id), "teams", [])
 
+    # 0. "YOU'RE NEEDED" — highest priority: customer replied 2+ times without rep response
+    you_needed = await _run_section(
+        db.notifications.find({"user_id": user_id, "type": "you_are_needed", "dismissed": False, "read": False}).sort("created_at", -1).limit(10).to_list(10),
+        "you_are_needed"
+    )
+    for n in you_needed:
+        contact_id = n.get("contact_id", "")
+        conversation_id = n.get("conversation_id", "")
+        link = f"/thread/{conversation_id}" if conversation_id else (f"/contact/{contact_id}" if contact_id else None)
+        notifications.append({
+            "id": str(n["_id"]),
+            "type": "you_are_needed",
+            "category": "urgent",
+            "priority": -1,  # Sorts first — above everything else
+            "title": n.get("title", "You're needed"),
+            "body": n.get("message", "Customer needs your personal attention"),
+            "link": link,
+            "contact_id": contact_id,
+            "conversation_id": conversation_id,
+            "reply_count": n.get("reply_count", 2),
+            "color": "#FF3B30",
+            "icon": "alert-circle",
+            "timestamp": _ts(n.get("created_at")),
+            "read": False,
+            "source": "urgent",
+        })
+
     # 1. LEAD NOTIFICATIONS
     lead_query = {"$or": [{"user_id": user_id}, {"team_id": {"$in": user_teams}, "user_id": None}], "dismissed": False}
     leads = await _run_section(db.notifications.find(lead_query).sort("created_at", -1).limit(15).to_list(15), "leads")
