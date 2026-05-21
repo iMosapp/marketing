@@ -305,6 +305,64 @@ async def incoming_message(
             except Exception as _ce:
                 logger.debug(f"[Webhook] contact_event insert skipped: {_ce}")
 
+        # ── SMS system notification to rep's personal cell ─────────────────────
+        # Sends via the rep's dedicated Twilio number so it arrives as a real text.
+        # Includes a direct link so the rep can tap and land on the conversation.
+        if rep_user and not is_stop:
+            try:
+                rep_personal_phone = (rep_user.get("phone") or "").strip()
+                rep_twilio_number  = (rep_user.get("twilio_number") or rep_user.get("mvpline_number") or "").strip()
+
+                if rep_personal_phone and rep_twilio_number:
+                    from services.twilio_service import normalize_phone
+                    from twilio.rest import Client as _TwilioClient
+                    from datetime import timedelta
+
+                    rep_cell = normalize_phone(rep_personal_phone)
+                    # Don't text the rep if THEY are the one who just texted in
+                    if rep_cell == normalize_phone(from_phone):
+                        raise ValueError("Rep texted themselves — skip notification")
+
+                    app_url   = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+                    conv_link = f"{app_url}/thread/{conversation_id}"
+                    contact_display = (
+                        contact.get("first_name") or
+                        contact.get("name") or
+                        from_phone[-4:]
+                    )
+
+                    # Rate-limit "active conversation" SMS to once per 30 min per conversation
+                    last_notified = conversation.get("rep_sms_notified_at")
+                    throttled = (
+                        isinstance(last_notified, datetime) and
+                        (datetime.utcnow() - last_notified).total_seconds() < 1800
+                    )
+
+                    if not throttled:
+                        tw_sid   = os.environ.get("TWILIO_ACCOUNT_SID", "")
+                        tw_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
+                        if tw_sid and tw_token:
+                            preview_text = (Body or "").strip()[:60]
+                            notif_msg = (
+                                f"I'm On Social: {contact_display} replied to you.\n"
+                                f'"{preview_text}{"..." if len((Body or "")) > 60 else ""}"\n\n'
+                                f"Open conversation:\n{conv_link}"
+                            )
+                            client = _TwilioClient(tw_sid, tw_token)
+                            await asyncio.to_thread(
+                                client.messages.create,
+                                to=rep_cell,
+                                from_=rep_twilio_number,
+                                body=notif_msg,
+                            )
+                            await db.conversations.update_one(
+                                {"_id": ObjectId(conversation_id)},
+                                {"$set": {"rep_sms_notified_at": datetime.utcnow()}}
+                            )
+                            logger.info(f"[Webhook] Sent active-conversation SMS to rep {rep_cell}")
+            except Exception as sms_notif_err:
+                logger.debug(f"[Webhook] Rep SMS notification skipped: {sms_notif_err}")
+
         # ── AUTO-ENROLL: new contacts OR existing with no active enrollment ──────
         if rep_user_id and not is_stop:
             try:
@@ -529,6 +587,34 @@ async def incoming_message(
                     "created_at":      datetime.utcnow(),
                 })
                 logger.info(f"[Webhook] 'You Are Needed' escalation for {contact_id} ({max_reply_count} replies)")
+
+                # Send URGENT SMS to rep's personal cell — no rate limit on You're Needed
+                try:
+                    rep_personal_phone = (rep_user.get("phone") or "").strip() if rep_user else ""
+                    rep_twilio_number  = (rep_user.get("twilio_number") or rep_user.get("mvpline_number") or "").strip() if rep_user else ""
+                    if rep_personal_phone and rep_twilio_number:
+                        from services.twilio_service import normalize_phone
+                        from twilio.rest import Client as _TwilioClient2
+                        tw_sid   = os.environ.get("TWILIO_ACCOUNT_SID", "")
+                        tw_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
+                        if tw_sid and tw_token:
+                            app_url   = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+                            conv_link = f"{app_url}/thread/{conversation_id}"
+                            urgent_msg = (
+                                f"⚠️ I'm On Social: YOU'RE NEEDED\n"
+                                f"{cname_esc} has texted {max_reply_count} times without a reply.\n\n"
+                                f"Open now:\n{conv_link}"
+                            )
+                            client2 = _TwilioClient2(tw_sid, tw_token)
+                            await asyncio.to_thread(
+                                client2.messages.create,
+                                to=normalize_phone(rep_personal_phone),
+                                from_=rep_twilio_number,
+                                body=urgent_msg,
+                            )
+                            logger.info(f"[Webhook] Sent YOU'RE NEEDED SMS to rep for {contact_id}")
+                except Exception as urg_err:
+                    logger.warning(f"[Webhook] Urgent rep SMS failed: {urg_err}")
             except Exception as esc_err:
                 logger.warning(f"[Webhook] Escalation notification failed: {esc_err}")
 
