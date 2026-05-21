@@ -1207,7 +1207,6 @@ async def handle_inbound_voice(
     if rep_personal_phone:
         twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Say voice="Polly.Joanna">Please hold while I connect you.</Say>
   <Dial callerId="{to_phone}" timeout="25"
         record="record-from-answer"
         recordingStatusCallback="{recording_cb}"
