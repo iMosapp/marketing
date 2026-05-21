@@ -1073,6 +1073,36 @@ async def handle_recording_complete(
     asyncio.create_task(_extract_and_save())
 
     return Response(content="OK", media_type="text/plain")
+
+
+@router.post("/call-cancel")
+async def cancel_call(request: Request):
+    """Cancel an in-progress or ringing Twilio call (rep tapped Cancel in the app)."""
+    import asyncio as _aio
+    body = {}
+    try:
+        body = await request.json()
+    except Exception:
+        pass
+    call_sid = body.get("call_sid", "")
+    if not call_sid:
+        return {"success": False, "detail": "No call_sid provided"}
+    try:
+        tw_sid   = os.environ.get("TWILIO_ACCOUNT_SID", "")
+        tw_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
+        if tw_sid and tw_token:
+            from twilio.rest import Client as _TC
+            await _aio.to_thread(
+                _TC(tw_sid, tw_token).calls(call_sid).update,
+                status="canceled"
+            )
+            logger.info(f"[Voice] Call {call_sid} canceled by rep")
+    except Exception as e:
+        logger.warning(f"[Voice] Cancel call failed: {e}")
+    return {"success": True}
+
+
+@router.post("/call-bridge")
 async def call_bridge_twiml(
     request: Request,
     customer: str = Form(default=""),
