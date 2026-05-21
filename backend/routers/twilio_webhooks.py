@@ -949,153 +949,229 @@ async def call_whisper(
 
 @router.post("/recording-complete")
 async def handle_recording_complete(
-    request:         Request,
-    RecordingUrl:    str = Form(default=""),
-    RecordingSid:    str = Form(default=""),
-    CallSid:         str = Form(default=""),
-    TranscriptionText: str = Form(default=""),
+    request:           Request,
+    RecordingUrl:      str = Form(default=""),
+    RecordingSid:      str = Form(default=""),
+    RecordingStatus:   str = Form(default=""),
     RecordingDuration: str = Form(default="0"),
-    from_phone:      str = Form(default=""),
-    user_id:         str = Form(default=""),
+    CallSid:           str = Form(default=""),
+    TranscriptionText: str = Form(default=""),
+    From:              str = Form(default=""),
+    To:                str = Form(default=""),
 ):
     """
-    Called by Twilio when a call recording is ready (inbound or voicemail).
-    Saves the recording, requests AI transcription analysis, and stores as a contact note.
+    Called by Twilio when a call recording is ready.
+    1. Uses CallSid to look up who the call was between (from pending_calls or contact_events)
+    2. Downloads the recording and transcribes with Whisper
+    3. Extracts key info with GPT
+    4. Saves to contact record (call_logs + notes)
     """
-    import urllib.parse, asyncio as _aio
-    params      = dict(request.query_params)
-    from_phone  = urllib.parse.unquote(params.get("from_phone", from_phone) or "")
-    user_id     = urllib.parse.unquote(params.get("user_id",   user_id) or "")
+    import asyncio as _aio, os as _os
 
-    logger.info(f"[Voice] Recording complete: SID={RecordingSid} | duration={RecordingDuration}s | from={from_phone}")
-
-    if not RecordingUrl and not TranscriptionText:
+    # Only process completed recordings
+    if RecordingStatus and RecordingStatus not in ("completed", ""):
+        return Response(content="OK", media_type="text/plain")
+    if not RecordingUrl:
         return Response(content="OK", media_type="text/plain")
 
     db = get_db()
+    logger.info(f"[Voice] Recording ready: SID={RecordingSid} | CallSid={CallSid} | duration={RecordingDuration}s")
 
-    # Find contact
-    contact = None
-    if from_phone:
+    # ── Resolve call context from CallSid ─────────────────────────────────────
+    user_id    = None
+    contact_id = None
+    from_phone = normalize_phone(From) if From else ""
+    direction  = "inbound"
+
+    # Check pending_calls (outbound calls store context here)
+    if CallSid:
+        pending = await db.pending_calls.find_one({"call_sid": CallSid})
+        if pending:
+            user_id      = pending.get("user_id") or pending.get("rep_user_id")
+            contact_id   = pending.get("contact_id")
+            from_phone   = pending.get("customer_phone") or from_phone
+            direction    = "outbound"
+
+    # Check contact_events for inbound call that was logged
+    if not user_id and CallSid:
+        event = await db.contact_events.find_one({"call_sid": CallSid})
+        if event:
+            user_id    = event.get("user_id")
+            contact_id = event.get("contact_id")
+            direction  = event.get("category") or "inbound"
+
+    # Resolve contact if we have a phone but no contact_id yet
+    if not contact_id and from_phone:
         contact = await db.contacts.find_one({
             "$or": [{"phone": from_phone}, {"phone": from_phone.lstrip("+")}]
         })
-    contact_id   = str(contact["_id"]) if contact else None
-    contact_name = (contact or {}).get("name") or f"Unknown ({from_phone[-4:] if from_phone else '?'})"
+        if contact:
+            contact_id = str(contact["_id"])
+            if not user_id:
+                user_id = contact.get("user_id")
 
-    # If no transcription yet from Twilio, try to get it from the recording
-    transcript = TranscriptionText.strip()
+    # If still no user, find the rep who owns the To: number
+    if not user_id and To:
+        to_normalized = normalize_phone(To)
+        rep = await db.users.find_one({
+            "$or": [{"twilio_number": to_normalized}, {"mvpline_number": to_normalized}]
+        })
+        if rep:
+            user_id = str(rep["_id"])
 
-    # Run AI extraction in background (don't block Twilio webhook)
-    async def _extract_and_save():
-        nonlocal transcript
-        try:
-            # If no transcript provided, use GPT + recording URL or just use what we have
-            if transcript:
-                # Use GPT to extract key info from the transcript
-                from emergentintegrations.llm.chat import LlmChat, UserMessage
-                import os as _os
+    contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}) if contact_id else None
+    contact_name = (contact or {}).get("name") or f"Unknown ({(from_phone or '')[-4:]})"
+
+    logger.info(f"[Voice] Processing recording for contact={contact_name} | user={user_id} | direction={direction}")
+
+    # ── Transcribe + extract in background ────────────────────────────────────
+    async def _transcribe_and_save():
+        transcript = (TranscriptionText or "").strip()
+        ai_summary = ""
+        now        = datetime.utcnow()
+
+        # Transcribe with Whisper if no Twilio transcript provided
+        if not transcript and RecordingUrl:
+            try:
+                tw_sid   = _os.environ.get("TWILIO_ACCOUNT_SID", "")
+                tw_token = _os.environ.get("TWILIO_AUTH_TOKEN", "")
                 emergent_key = _os.environ.get("EMERGENT_LLM_KEY", "")
+
+                if tw_sid and tw_token and emergent_key:
+                    # Download recording from Twilio (requires Basic Auth)
+                    import httpx, tempfile, uuid as _uuid
+                    mp3_url = RecordingUrl if RecordingUrl.endswith(".mp3") else f"{RecordingUrl}.mp3"
+
+                    async with httpx.AsyncClient(auth=(tw_sid, tw_token), timeout=30) as client:
+                        resp = await client.get(mp3_url)
+
+                    if resp.status_code == 200:
+                        # Save to temp file and transcribe with Whisper
+                        tmp_path = f"/tmp/call_{_uuid.uuid4().hex}.mp3"
+                        with open(tmp_path, "wb") as f:
+                            f.write(resp.content)
+
+                        try:
+                            from emergentintegrations.llm.openai import OpenAISpeechToText
+                            stt = OpenAISpeechToText(api_key=emergent_key)
+                            transcript = await _aio.wait_for(
+                                stt.transcribe(tmp_path, language="en"),
+                                timeout=30.0
+                            )
+                            if hasattr(transcript, "text"):
+                                transcript = transcript.text
+                            transcript = (transcript or "").strip()
+                            logger.info(f"[Voice] Whisper transcript ({len(transcript)} chars) for {contact_name}")
+                        finally:
+                            import os as _ost
+                            try: _ost.remove(tmp_path)
+                            except: pass
+                    else:
+                        logger.warning(f"[Voice] Could not download recording: HTTP {resp.status_code}")
+            except Exception as transcribe_err:
+                logger.warning(f"[Voice] Transcription failed: {transcribe_err}")
+
+        # Extract key info with GPT
+        if transcript:
+            try:
+                from emergentintegrations.llm.chat import LlmChat, UserMessage
+                import uuid as _uuid2
                 chat = LlmChat(
-                    api_key=emergent_key,
-                    session_id=f"call-extract-{RecordingSid or RecordingUrl[-12:]}",
+                    api_key=_os.environ.get("EMERGENT_LLM_KEY", ""),
+                    session_id=f"call-ai-{_uuid2.uuid4().hex[:12]}",
                     system_message=(
-                        "You are a CRM assistant. Analyze this call transcript and extract:\n"
-                        "1. What the customer is looking for (specific product, model, color, year)\n"
-                        "2. Budget or price range mentioned\n"
-                        "3. Timeline (urgency)\n"
-                        "4. Any objections or concerns\n"
-                        "5. Next steps or commitments made\n"
-                        "Be brief, bullet-point format. If info isn't mentioned, omit it. Max 150 words."
+                        "You are a CRM assistant analyzing a sales call transcript.\n"
+                        "Extract these if mentioned — be brief and use bullet points:\n"
+                        "- What they're looking for (product, model, year, color)\n"
+                        "- Budget or price range\n"
+                        "- Timeline / urgency\n"
+                        "- Objections or concerns\n"
+                        "- Next steps or commitments\n"
+                        "Max 120 words. Skip any category not mentioned."
                     ),
                 ).with_model("openai", "gpt-5.2")
-                response = await _aio.wait_for(
-                    chat.send_message(UserMessage(text=f"Call transcript:\n{transcript}")),
-                    timeout=15.0,
+                resp = await _aio.wait_for(
+                    chat.send_message(UserMessage(text=f"Transcript:\n{transcript}")),
+                    timeout=15.0
                 )
-                ai_summary = (response.strip() if isinstance(response, str)
-                              else response.text.strip() if hasattr(response, "text")
-                              else "").strip()
-            else:
-                ai_summary = ""
+                ai_summary = (resp.strip() if isinstance(resp, str)
+                              else resp.text.strip() if hasattr(resp, "text") else "").strip()
+            except Exception as gpt_err:
+                logger.warning(f"[Voice] GPT extraction failed: {gpt_err}")
 
-            now = datetime.utcnow()
+        # ── Save everything ────────────────────────────────────────────────────
+        dur = int(RecordingDuration or 0)
 
-            # Save full call log to calls collection
-            call_doc = {
-                "user_id":          user_id or None,
-                "contact_id":       contact_id,
-                "contact_name":     contact_name,
-                "contact_phone":    from_phone,
-                "call_sid":         CallSid,
-                "recording_sid":    RecordingSid,
-                "recording_url":    RecordingUrl,
-                "duration_s":       int(RecordingDuration or 0),
-                "transcript":       transcript,
-                "ai_summary":       ai_summary,
-                "direction":        "inbound",
-                "timestamp":        now,
-                "created_at":       now,
-            }
-            await db.call_logs.insert_one(call_doc)
+        # call_logs collection
+        await db.call_logs.insert_one({
+            "user_id":          user_id,
+            "contact_id":       contact_id,
+            "contact_name":     contact_name,
+            "contact_phone":    from_phone,
+            "call_sid":         CallSid,
+            "recording_sid":    RecordingSid,
+            "recording_url":    RecordingUrl,
+            "duration_s":       dur,
+            "transcript":       transcript,
+            "ai_summary":       ai_summary,
+            "direction":        direction,
+            "timestamp":        now,
+            "created_at":       now,
+        })
 
-            # Save as a contact note so it appears in the activity feed
-            if contact_id:
-                note_body = f"📞 Call from {contact_name} ({int(RecordingDuration or 0)}s)"
-                if transcript:
-                    note_body += f"\n\nTranscript:\n{transcript[:500]}{'...' if len(transcript) > 500 else ''}"
-                if ai_summary:
-                    note_body += f"\n\nKey Info:\n{ai_summary}"
+        if contact_id:
+            # Note on contact record
+            note_body = f"{'📞' if direction == 'inbound' else '📱'} {'Inbound' if direction == 'inbound' else 'Outbound'} call — {dur}s"
+            if transcript:
+                note_body += f"\n\nTranscript:\n{transcript[:600]}{'...' if len(transcript) > 600 else ''}"
+            if ai_summary:
+                note_body += f"\n\nKey Info Extracted:\n{ai_summary}"
 
-                await db.notes.insert_one({
-                    "user_id":      user_id or None,
-                    "contact_id":   contact_id,
-                    "type":         "call_log",
-                    "body":         note_body,
-                    "ai_summary":   ai_summary,
-                    "recording_url": RecordingUrl,
-                    "transcript":   transcript,
-                    "duration_s":   int(RecordingDuration or 0),
-                    "call_sid":     CallSid,
-                    "timestamp":    now,
-                    "created_at":   now,
-                })
+            await db.notes.insert_one({
+                "user_id":       user_id,
+                "contact_id":    contact_id,
+                "type":          "call_log",
+                "body":          note_body,
+                "ai_summary":    ai_summary,
+                "recording_url": RecordingUrl,
+                "transcript":    transcript,
+                "duration_s":    dur,
+                "call_sid":      CallSid,
+                "direction":     direction,
+                "timestamp":     now,
+                "created_at":    now,
+            })
 
-                # Create a contact event for the activity feed
-                await db.contact_events.insert_one({
-                    "user_id":      user_id or None,
-                    "contact_id":   contact_id,
-                    "contact_name": contact_name,
-                    "event_type":   "inbound_call_recorded",
-                    "category":     "call",
-                    "title":        f"Call with {contact_name} — {int(RecordingDuration or 0)}s",
-                    "description":  ai_summary or transcript[:120] or "Call recorded",
-                    "recording_url": RecordingUrl,
-                    "channel":      "voice",
-                    "timestamp":    now,
-                })
+            # Contact event (shows in Activity feed)
+            await db.contact_events.update_one(
+                {"call_sid": CallSid, "event_type": {"$in": ["inbound_call", "outbound_call"]}},
+                {"$set": {
+                    "has_recording": True,
+                    "ai_summary":    ai_summary,
+                    "transcript":    transcript[:200] if transcript else "",
+                    "duration_s":    dur,
+                }},
+            )
 
-                # Notify rep
-                if user_id:
-                    await db.notifications.insert_one({
-                        "user_id":      user_id,
-                        "type":         "call_recorded",
-                        "title":        f"Call log ready — {contact_name}",
-                        "message":      ai_summary or "Call transcript available",
-                        "contact_id":   contact_id,
-                        "recording_url": RecordingUrl,
-                        "read":         False,
-                        "dismissed":    False,
-                        "created_at":   now,
-                    })
+        # Push notification to rep
+        if user_id:
+            notif_msg = ai_summary or (transcript[:100] if transcript else "Recording ready to review")
+            await db.notifications.insert_one({
+                "user_id":       user_id,
+                "type":          "call_recorded",
+                "priority":      "normal",
+                "title":         f"Call summary ready — {contact_name}",
+                "message":       notif_msg,
+                "contact_id":    contact_id,
+                "recording_url": RecordingUrl,
+                "read":          False,
+                "dismissed":     False,
+                "created_at":    now,
+            })
 
-            logger.info(f"[Voice] Recording saved + AI extraction complete for {contact_name}")
-        except Exception as _e:
-            logger.warning(f"[Voice] Recording extraction failed: {_e}")
+        logger.info(f"[Voice] Call log + AI summary saved for {contact_name} (transcript={len(transcript)} chars, summary={len(ai_summary)} chars)")
 
-    import asyncio
-    asyncio.create_task(_extract_and_save())
-
+    _aio.create_task(_transcribe_and_save())
     return Response(content="OK", media_type="text/plain")
 
 
