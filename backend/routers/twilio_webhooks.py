@@ -431,7 +431,9 @@ async def incoming_message(
                 }}
             )
 
-            ai_mode = (campaign or {}).get("ai_assist_mode", "off")
+            # Use campaign's ai_assist_mode, fall back to enrollment's stored mode
+            # (campaign may have been deleted — enrollment still knows its mode)
+            ai_mode = (campaign or {}).get("ai_assist_mode") or enrollment.get("ai_assist_mode") or "off"
             if ai_mode not in ("off", None):
                 # Fire-and-forget — don't block the webhook waiting for GPT
                 # The webhook must return to Twilio quickly to avoid retries
@@ -454,6 +456,40 @@ async def incoming_message(
                     except Exception as bg_err:
                         logger.error(f"[Webhook] Background AI reply failed: {bg_err}")
                 asyncio.create_task(_fire_ai_reply())
+
+        # ── CONVERSATION-LEVEL AI: definitive override ────────────────────────────
+        # If the rep set this conversation to Auto Reply, queue AI regardless of
+        # campaign enrollment state. This is what users actually expect when they
+        # toggle "Auto Reply" in Conversation Settings.
+        enrollment_ai_queued = any(
+            ((campaign or {}).get("ai_assist_mode") or e.get("ai_assist_mode") or "off") not in ("off", None)
+            for e in active_enrollments
+            for campaign in [None]  # campaign already fetched above, use enrollment fallback
+        ) if active_enrollments else False
+
+        if not enrollment_ai_queued and not is_stop:
+            conv_ai_mode    = conversation.get("ai_mode") or ""
+            conv_ai_enabled = conversation.get("ai_enabled", False)
+            if conv_ai_enabled and conv_ai_mode in ("auto_reply", "draft_only", "auto_with_approval"):
+                logger.info(f"[Webhook] Conversation-level AI ({conv_ai_mode}) queuing reply for {contact_id}")
+                async def _fire_conv_ai(mode=conv_ai_mode):
+                    try:
+                        from routers.ai_reply import queue_ai_reply
+                        await queue_ai_reply(
+                            contact_id=contact_id,
+                            conversation_id=conversation_id,
+                            enrollment_id="conversation_direct",
+                            campaign_id="",
+                            assigned_user_id=user_id or rep_user_id or "",
+                            incoming_message=Body,
+                            ai_assist_mode=mode,
+                            escalation_threshold=3,
+                            escalation_timeout_minutes=15,
+                            reply_count=1,
+                        )
+                    except Exception as ce:
+                        logger.error(f"[Webhook] Conversation AI reply failed: {ce}")
+                asyncio.create_task(_fire_conv_ai())
 
         # ── Notify assigned rep ───────────────────────────────────────────────
         if user_id:
