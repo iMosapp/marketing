@@ -338,7 +338,7 @@ async def incoming_message(
                 notif_prefs        = rep_user.get("notification_settings", {})
                 sms_active_enabled = notif_prefs.get("sms_active_conversation", True)
                 throttle_minutes   = int(notif_prefs.get("sms_active_throttle_minutes", 30))
-                rep_personal_phone = (rep_user.get("phone") or "").strip()
+                rep_personal_phone = normalize_phone((rep_user.get("phone") or "").strip())
                 rep_twilio_number  = (rep_user.get("twilio_number") or rep_user.get("mvpline_number") or "").strip()
 
                 if not rep_personal_phone:
@@ -661,7 +661,7 @@ async def incoming_message(
                 try:
                     notif_prefs2   = (rep_user or {}).get("notification_settings", {}) if rep_user else {}
                     sms_urn_enabled = notif_prefs2.get("sms_you_are_needed", True)
-                    rep_personal_phone = (rep_user.get("phone") or "").strip() if rep_user else ""
+                    rep_personal_phone = normalize_phone((rep_user.get("phone") or "").strip()) if rep_user else ""
                     rep_twilio_number  = (rep_user.get("twilio_number") or rep_user.get("mvpline_number") or "").strip() if rep_user else ""
                     if sms_urn_enabled and rep_personal_phone and rep_twilio_number:
                         tw_sid2   = os.environ.get("TWILIO_ACCOUNT_SID", "")
@@ -1177,7 +1177,7 @@ async def handle_inbound_voice(
         # Fallback: super admin
         rep_user = await db.users.find_one({"role": {"$in": ["super_admin", "org_admin"]}})
 
-    rep_personal_phone = (rep_user.get("phone") or "").strip() if rep_user else ""
+    rep_personal_phone = normalize_phone((rep_user.get("phone") or "").strip()) if rep_user else ""
     rep_name           = (rep_user.get("name") or "I'm On Social").split()[0] if rep_user else "I'm On Social"
     app_url            = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
 
