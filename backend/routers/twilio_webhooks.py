@@ -1244,7 +1244,10 @@ async def call_bridge_twiml(
     twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say>Connecting your call now.</Say>
-  <Dial callerId="{caller_number}" timeout="30">
+  <Dial callerId="{caller_number}" timeout="30"
+        record="record-from-answer"
+        recordingStatusCallback="{os.environ.get('PUBLIC_FACING_URL', os.environ.get('APP_URL', 'https://app.imonsocial.com'))}/api/webhooks/twilio/recording-complete"
+        recordingStatusCallbackMethod="POST">
     <Number>{customer_phone}</Number>
   </Dial>
 </Response>"""
