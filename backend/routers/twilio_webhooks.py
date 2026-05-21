@@ -281,6 +281,21 @@ async def incoming_message(
         await db.messages.insert_one(message)
         logger.info(f"Saved incoming message to conversation {conversation_id}")
 
+        # ── Auto-reopen closed conversation when customer replies ──────────────
+        # If the conversation was marked closed, reopen it so the rep sees it
+        # in their active inbox instead of the Closed tab.
+        if conversation.get("status") == "closed":
+            await db.conversations.update_one(
+                {"_id": ObjectId(conversation_id)},
+                {"$set": {
+                    "status":            "active",
+                    "reopened_at":       datetime.utcnow(),
+                    "reopened_reason":   "customer_replied",
+                    "needs_assistance":  True,   # Immediately flag for rep attention
+                }}
+            )
+            logger.info(f"[Webhook] Auto-reopened closed conversation {conversation_id} (customer replied)")
+
         # ── Increment conversation-level unanswered count ──────────────────────
         # Uses AFTER so we get the new incremented value, not the pre-increment value
         from pymongo import ReturnDocument as _RD

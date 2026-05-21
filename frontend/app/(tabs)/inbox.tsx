@@ -151,7 +151,7 @@ export default function InboxScreen() {
   const { showToast } = useToast();
   
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<'assigned' | 'waiting' | 'ai_active' | 'unassigned' | 'all'>('assigned');
+  const [activeTab, setActiveTab] = useState<'assigned' | 'waiting' | 'ai_active' | 'unassigned' | 'all' | 'closed'>('assigned');
   // Keep filter alias for any remaining references
   const filter = activeTab;
   const [conversations, setConversations] = useState<any[]>([]);
@@ -541,14 +541,16 @@ export default function InboxScreen() {
         (conv.last_message?.content || '').toLowerCase().includes(search.toLowerCase());
 
       const isAiActive   = conv.ai_enabled && conv.ai_mode && conv.ai_mode !== 'off';
-      const isWaiting    = conv.needs_assistance || conv.status === 'paused';
+      const isWaiting    = (conv.needs_assistance || conv.status === 'paused') && conv.status !== 'closed';
       const isUnassigned = !conv.user_id || conv.user_id === 'unassigned';
+      const isClosed     = conv.status === 'closed';
 
-      if (activeTab === 'assigned')   return matchesSearch && conv.status === 'active' && !isWaiting && !isUnassigned;
+      if (activeTab === 'assigned')   return matchesSearch && conv.status === 'active' && !isWaiting && !isUnassigned && !isClosed;
       if (activeTab === 'waiting')    return matchesSearch && isWaiting;
-      if (activeTab === 'ai_active')  return matchesSearch && isAiActive && conv.status !== 'closed';
-      if (activeTab === 'unassigned') return matchesSearch && (isUnassigned || conv.status === 'archived');
-      return matchesSearch; // 'all'
+      if (activeTab === 'ai_active')  return matchesSearch && isAiActive && !isClosed;
+      if (activeTab === 'unassigned') return matchesSearch && isUnassigned && !isClosed && conv.status !== 'archived';
+      if (activeTab === 'closed')     return matchesSearch && isClosed;
+      return matchesSearch && !isClosed; // 'all' — excludes closed (they live in their own tab)
     })
     .sort((a, b) => {
       const aUnacked = a.ai_outcome && !a.ai_outcome_acknowledged ? 1 : 0;
@@ -641,6 +643,19 @@ export default function InboxScreen() {
       // Revert on failure
       await loadConversations();
       showToast('Failed to archive', 'error', 2500);
+    }
+  };
+
+  const handleReopenConversation = async (conversationId: string) => {
+    setConversations(prev => prev.map(c =>
+      c._id === conversationId ? { ...c, status: 'active' } : c
+    ));
+    try {
+      await messagesAPI.updateConversation(user!._id, conversationId, { status: 'active' });
+      showToast('Conversation reopened', 'success');
+    } catch {
+      await loadConversations();
+      showToast('Failed to reopen', 'error');
     }
   };
 
@@ -1163,7 +1178,14 @@ export default function InboxScreen() {
               bgColor: '#AF52DE20',
               onPress: () => handleOpenTagPicker(item._id),
             },
-            {
+            item.status === 'closed' ? {
+              key: 'reopen',
+              icon: 'refresh-circle-outline',
+              label: 'Reopen',
+              color: '#34C759',
+              bgColor: '#34C75920',
+              onPress: () => handleReopenConversation(item._id),
+            } : {
               key: 'archive',
               icon: isArchived ? 'arrow-undo' : 'archive-outline',
               label: isArchived ? 'Restore' : 'Archive',
@@ -1520,18 +1542,20 @@ export default function InboxScreen() {
       {inboxView === 'my' && (() => {
         const all = conversations.filter(c => c);
         const counts = {
-          assigned:   all.filter(c => c.status === 'active' && !(c.needs_assistance || c.status === 'paused') && !(!c.user_id || c.user_id === 'unassigned')).length,
-          waiting:    all.filter(c => c.needs_assistance || c.status === 'paused').length,
+          assigned:   all.filter(c => c.status === 'active' && !(c.needs_assistance || c.status === 'paused') && !(!c.user_id || c.user_id === 'unassigned') && c.status !== 'closed').length,
+          waiting:    all.filter(c => (c.needs_assistance || c.status === 'paused') && c.status !== 'closed').length,
           ai_active:  all.filter(c => c.ai_enabled && c.ai_mode && c.ai_mode !== 'off' && c.status !== 'closed').length,
-          unassigned: all.filter(c => !c.user_id || c.user_id === 'unassigned').length,
-          all:        all.length,
+          unassigned: all.filter(c => (!c.user_id || c.user_id === 'unassigned') && c.status !== 'closed').length,
+          all:        all.filter(c => c.status !== 'closed').length,
+          closed:     all.filter(c => c.status === 'closed').length,
         };
         const tabs: { key: typeof activeTab; label: string; icon: string; activeColor: string }[] = [
-          { key: 'assigned',  label: 'Assigned',   icon: 'person-circle-outline', activeColor: '#007AFF' },
-          { key: 'waiting',   label: 'Waiting',    icon: 'time-outline',          activeColor: '#FF9500' },
-          { key: 'ai_active', label: 'AI Active',  icon: 'sparkles',              activeColor: '#34C759' },
-          { key: 'unassigned',label: 'Unassigned', icon: 'help-circle-outline',   activeColor: '#AF52DE' },
-          { key: 'all',       label: 'All',        icon: 'list-outline',          activeColor: '#C9A962' },
+          { key: 'assigned',  label: 'Active',    icon: 'person-circle-outline', activeColor: '#007AFF' },
+          { key: 'waiting',   label: 'Waiting',   icon: 'time-outline',          activeColor: '#FF9500' },
+          { key: 'ai_active', label: 'AI',        icon: 'sparkles',              activeColor: '#34C759' },
+          { key: 'unassigned',label: 'New',       icon: 'help-circle-outline',   activeColor: '#AF52DE' },
+          { key: 'all',       label: 'All',       icon: 'list-outline',          activeColor: '#C9A962' },
+          { key: 'closed',    label: 'Closed',    icon: 'checkmark-circle-outline', activeColor: '#8E8E93' },
         ];
         return (
           <View style={styles.tabBar}>
