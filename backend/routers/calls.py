@@ -105,3 +105,39 @@ async def initiate_call(user_id: str, data: dict):
         "call_id": call_dict['_id'],
         "status": "initiated"
     }
+
+
+@router.get("/{user_id}/contact/{contact_id}")
+async def get_contact_calls(user_id: str, contact_id: str):
+    """Get all call logs + recordings for a specific contact."""
+    db = get_db()
+    # Get regular call logs
+    call_logs = await db.calls.find(
+        {"contact_id": contact_id},
+        {"_id": 0}
+    ).sort("timestamp", -1).limit(50).to_list(50)
+
+    # Get recorded call logs (from twilio recordings)
+    recorded = await db.call_logs.find(
+        {"contact_id": contact_id},
+        {"_id": 0}
+    ).sort("timestamp", -1).limit(50).to_list(50)
+
+    # Get call notes (from voicemail/recording analysis)
+    notes = await db.notes.find(
+        {"contact_id": contact_id, "type": "call_log"},
+        {"_id": 0}
+    ).sort("timestamp", -1).limit(20).to_list(20)
+
+    # Serialize dates
+    for item in call_logs + recorded + notes:
+        for k in ["timestamp", "created_at"]:
+            if isinstance(item.get(k), datetime):
+                item[k] = item[k].isoformat()
+
+    return {
+        "calls":     call_logs,
+        "recordings": recorded,
+        "notes":     notes,
+        "total":     len(call_logs) + len(recorded),
+    }

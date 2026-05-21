@@ -202,7 +202,9 @@ function ContactDetailScreen() {
   const EVENT_PAGE_SIZE = 100;
 
   // Tab state for Feed vs Details
-  const [contactTab, setContactTab] = useState<'feed' | 'details'>('feed');
+  const [contactTab, setContactTab] = useState<'feed' | 'details' | 'calls'>('feed');
+  const [callLogs, setCallLogs] = useState<any[]>([]);
+  const [callLogsLoading, setCallLogsLoading] = useState(false);
 
   // Suggested actions & log reply
   const [suggestedActions, setSuggestedActions] = useState<any[]>([]);
@@ -2481,7 +2483,7 @@ function ContactDetailScreen() {
             </View>
           )}
 
-          {/* ===== FEED / DETAILS TAB BAR ===== */}
+          {/* ===== FEED / DETAILS / CALLS TAB BAR ===== */}
           {!isNewContact && !isEditing && (
             <View style={s.tabBar} data-testid="contact-tab-bar">
               <TouchableOpacity
@@ -2497,6 +2499,25 @@ function ContactDetailScreen() {
                 data-testid="tab-details"
               >
                 <Text style={[s.tabBtnText, contactTab === 'details' && s.tabBtnTextActive]}>Details</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.tabBtn, contactTab === 'calls' && s.tabBtnActive]}
+                onPress={async () => {
+                  setContactTab('calls');
+                  if (callLogs.length === 0 && !callLogsLoading) {
+                    setCallLogsLoading(true);
+                    try {
+                      const res = await api.get(`/calls/${user?._id}/contact/${id}`);
+                      const all = [...(res.data.recordings || []), ...(res.data.calls || [])];
+                      all.sort((a: any, b: any) => new Date(b.timestamp||b.created_at||0).getTime() - new Date(a.timestamp||a.created_at||0).getTime());
+                      setCallLogs(all);
+                    } catch {}
+                    setCallLogsLoading(false);
+                  }
+                }}
+                data-testid="tab-calls"
+              >
+                <Text style={[s.tabBtnText, contactTab === 'calls' && s.tabBtnTextActive]}>Calls</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -3516,6 +3537,63 @@ function ContactDetailScreen() {
                 </TouchableOpacity>
               )}
             </>
+          )}
+
+          {/* ===== CALLS TAB ===== */}
+          {!isNewContact && !isEditing && contactTab === 'calls' && (
+            <View style={{ padding: 16 }}>
+              {callLogsLoading ? (
+                <View style={{ alignItems: 'center', padding: 40 }}>
+                  <ActivityIndicator size="large" color={colors.accent} />
+                  <Text style={{ color: colors.textSecondary, marginTop: 8 }}>Loading call history...</Text>
+                </View>
+              ) : callLogs.length === 0 ? (
+                <View style={{ alignItems: 'center', padding: 40 }}>
+                  <Ionicons name="call-outline" size={48} color={colors.textSecondary} />
+                  <Text style={{ color: colors.text, fontSize: 17, fontWeight: '600', marginTop: 12 }}>No calls yet</Text>
+                  <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 4, textAlign: 'center' }}>
+                    Call logs and AI summaries will appear here after calls are made or received.
+                  </Text>
+                </View>
+              ) : (
+                callLogs.map((call: any, i: number) => {
+                  const ts = call.timestamp || call.created_at;
+                  const date = ts ? new Date(ts).toLocaleString() : '';
+                  const dur = call.duration_s || call.duration || 0;
+                  const durStr = dur > 0 ? `${Math.floor(dur/60)}m ${dur%60}s` : '';
+                  return (
+                    <View key={`call-${i}`} style={{ backgroundColor: colors.card, borderRadius: 14, padding: 14, marginBottom: 12 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                        <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#34C75920', alignItems: 'center', justifyContent: 'center' }}>
+                          <Ionicons name={call.direction === 'inbound' ? 'call' : 'call-outline'} size={16} color="#34C759" />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: colors.text, fontWeight: '700', fontSize: 14 }}>
+                            {call.direction === 'inbound' ? 'Inbound call' : 'Outbound call'}
+                            {durStr ? ` — ${durStr}` : ''}
+                          </Text>
+                          <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{date}</Text>
+                        </View>
+                      </View>
+                      {call.ai_summary ? (
+                        <View style={{ backgroundColor: colors.surface, borderRadius: 10, padding: 10, marginBottom: 8 }}>
+                          <Text style={{ color: '#C9A962', fontSize: 11, fontWeight: '700', marginBottom: 4 }}>AI KEY INFO</Text>
+                          <Text style={{ color: colors.text, fontSize: 13, lineHeight: 18 }}>{call.ai_summary}</Text>
+                        </View>
+                      ) : null}
+                      {call.transcript ? (
+                        <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8 }}>
+                          <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '700', marginBottom: 4 }}>TRANSCRIPT</Text>
+                          <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 17 }} numberOfLines={4}>
+                            {call.transcript}
+                          </Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  );
+                })
+              )}
+            </View>
           )}
 
           <View style={{ height: 140 }} />

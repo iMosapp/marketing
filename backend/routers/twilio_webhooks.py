@@ -886,7 +886,180 @@ async def initiate_outbound_call(request: Request):
         raise HTTPException(status_code=500, detail=f"Call failed: {str(e)}")
 
 
-@router.post("/call-bridge")
+@router.get("/call-whisper")
+@router.post("/call-whisper")
+async def call_whisper(
+    request: Request,
+    caller: str = Form(default=""),
+    name:   str = Form(default=""),
+):
+    """
+    Played to the REP when they answer their phone — before customer is connected.
+    So the rep hears "Incoming customer call from Bridger Ward" and knows it's legit.
+    This is the 'url' param on the <Number> in the inbound Dial TwiML.
+    """
+    import urllib.parse
+    params      = dict(request.query_params)
+    caller_raw  = urllib.parse.unquote(params.get("caller", caller) or "")
+    name_raw    = urllib.parse.unquote(params.get("name", name) or "")
+    display     = name_raw or (f"a customer ending in {caller_raw[-4:]}" if caller_raw else "a customer")
+    twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="Polly.Joanna">I'm On Social. Incoming customer call from {display}.</Say>
+</Response>"""
+    return Response(content=twiml, media_type="application/xml")
+
+
+@router.post("/recording-complete")
+async def handle_recording_complete(
+    request:         Request,
+    RecordingUrl:    str = Form(default=""),
+    RecordingSid:    str = Form(default=""),
+    CallSid:         str = Form(default=""),
+    TranscriptionText: str = Form(default=""),
+    RecordingDuration: str = Form(default="0"),
+    from_phone:      str = Form(default=""),
+    user_id:         str = Form(default=""),
+):
+    """
+    Called by Twilio when a call recording is ready (inbound or voicemail).
+    Saves the recording, requests AI transcription analysis, and stores as a contact note.
+    """
+    import urllib.parse, asyncio as _aio
+    params      = dict(request.query_params)
+    from_phone  = urllib.parse.unquote(params.get("from_phone", from_phone) or "")
+    user_id     = urllib.parse.unquote(params.get("user_id",   user_id) or "")
+
+    logger.info(f"[Voice] Recording complete: SID={RecordingSid} | duration={RecordingDuration}s | from={from_phone}")
+
+    if not RecordingUrl and not TranscriptionText:
+        return Response(content="OK", media_type="text/plain")
+
+    db = get_db()
+
+    # Find contact
+    contact = None
+    if from_phone:
+        contact = await db.contacts.find_one({
+            "$or": [{"phone": from_phone}, {"phone": from_phone.lstrip("+")}]
+        })
+    contact_id   = str(contact["_id"]) if contact else None
+    contact_name = (contact or {}).get("name") or f"Unknown ({from_phone[-4:] if from_phone else '?'})"
+
+    # If no transcription yet from Twilio, try to get it from the recording
+    transcript = TranscriptionText.strip()
+
+    # Run AI extraction in background (don't block Twilio webhook)
+    async def _extract_and_save():
+        nonlocal transcript
+        try:
+            # If no transcript provided, use GPT + recording URL or just use what we have
+            if transcript:
+                # Use GPT to extract key info from the transcript
+                from emergentintegrations.llm.chat import LlmChat, UserMessage
+                import os as _os
+                emergent_key = _os.environ.get("EMERGENT_LLM_KEY", "")
+                chat = LlmChat(
+                    api_key=emergent_key,
+                    session_id=f"call-extract-{RecordingSid or RecordingUrl[-12:]}",
+                    system_message=(
+                        "You are a CRM assistant. Analyze this call transcript and extract:\n"
+                        "1. What the customer is looking for (specific product, model, color, year)\n"
+                        "2. Budget or price range mentioned\n"
+                        "3. Timeline (urgency)\n"
+                        "4. Any objections or concerns\n"
+                        "5. Next steps or commitments made\n"
+                        "Be brief, bullet-point format. If info isn't mentioned, omit it. Max 150 words."
+                    ),
+                ).with_model("openai", "gpt-5.2")
+                response = await _aio.wait_for(
+                    chat.send_message(UserMessage(text=f"Call transcript:\n{transcript}")),
+                    timeout=15.0,
+                )
+                ai_summary = (response.strip() if isinstance(response, str)
+                              else response.text.strip() if hasattr(response, "text")
+                              else "").strip()
+            else:
+                ai_summary = ""
+
+            now = datetime.utcnow()
+
+            # Save full call log to calls collection
+            call_doc = {
+                "user_id":          user_id or None,
+                "contact_id":       contact_id,
+                "contact_name":     contact_name,
+                "contact_phone":    from_phone,
+                "call_sid":         CallSid,
+                "recording_sid":    RecordingSid,
+                "recording_url":    RecordingUrl,
+                "duration_s":       int(RecordingDuration or 0),
+                "transcript":       transcript,
+                "ai_summary":       ai_summary,
+                "direction":        "inbound",
+                "timestamp":        now,
+                "created_at":       now,
+            }
+            await db.call_logs.insert_one(call_doc)
+
+            # Save as a contact note so it appears in the activity feed
+            if contact_id:
+                note_body = f"📞 Call from {contact_name} ({int(RecordingDuration or 0)}s)"
+                if transcript:
+                    note_body += f"\n\nTranscript:\n{transcript[:500]}{'...' if len(transcript) > 500 else ''}"
+                if ai_summary:
+                    note_body += f"\n\nKey Info:\n{ai_summary}"
+
+                await db.notes.insert_one({
+                    "user_id":      user_id or None,
+                    "contact_id":   contact_id,
+                    "type":         "call_log",
+                    "body":         note_body,
+                    "ai_summary":   ai_summary,
+                    "recording_url": RecordingUrl,
+                    "transcript":   transcript,
+                    "duration_s":   int(RecordingDuration or 0),
+                    "call_sid":     CallSid,
+                    "timestamp":    now,
+                    "created_at":   now,
+                })
+
+                # Create a contact event for the activity feed
+                await db.contact_events.insert_one({
+                    "user_id":      user_id or None,
+                    "contact_id":   contact_id,
+                    "contact_name": contact_name,
+                    "event_type":   "inbound_call_recorded",
+                    "category":     "call",
+                    "title":        f"Call with {contact_name} — {int(RecordingDuration or 0)}s",
+                    "description":  ai_summary or transcript[:120] or "Call recorded",
+                    "recording_url": RecordingUrl,
+                    "channel":      "voice",
+                    "timestamp":    now,
+                })
+
+                # Notify rep
+                if user_id:
+                    await db.notifications.insert_one({
+                        "user_id":      user_id,
+                        "type":         "call_recorded",
+                        "title":        f"Call log ready — {contact_name}",
+                        "message":      ai_summary or "Call transcript available",
+                        "contact_id":   contact_id,
+                        "recording_url": RecordingUrl,
+                        "read":         False,
+                        "dismissed":    False,
+                        "created_at":   now,
+                    })
+
+            logger.info(f"[Voice] Recording saved + AI extraction complete for {contact_name}")
+        except Exception as _e:
+            logger.warning(f"[Voice] Recording extraction failed: {_e}")
+
+    import asyncio
+    asyncio.create_task(_extract_and_save())
+
+    return Response(content="OK", media_type="text/plain")
 async def call_bridge_twiml(
     request: Request,
     customer: str = Form(default=""),
@@ -1025,22 +1198,34 @@ async def handle_inbound_voice(
         except Exception as _ce:
             logger.debug(f"[Voice] Event log skipped: {_ce}")
 
-    # Build TwiML response
+    # Build TwiML — announce caller to rep via whisper, then record the call
+    import urllib.parse
+    app_url      = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+    contact_enc  = urllib.parse.quote(from_phone)
+    cname_enc    = urllib.parse.quote(contact_name if not contact_name.startswith("Unknown") else f"a customer ending in {from_phone[-4:]}")
+    whisper_url  = f"{app_url}/api/webhooks/twilio/call-whisper?caller={contact_enc}&name={cname_enc}"
+    recording_cb = f"{app_url}/api/webhooks/twilio/recording-complete?from_phone={contact_enc}&user_id={user_id or ''}"
+
     if rep_personal_phone:
-        # Forward the call to the rep's personal cell
         twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Joanna">Please hold while I connect you.</Say>
-  <Dial callerId="{to_phone}" timeout="25" action="{app_url}/api/webhooks/twilio/voice-fallback">
-    <Number>{rep_personal_phone}</Number>
+  <Dial callerId="{to_phone}" timeout="25"
+        record="record-from-answer"
+        recordingStatusCallback="{recording_cb}"
+        recordingStatusCallbackMethod="POST"
+        action="{app_url}/api/webhooks/twilio/voice-fallback">
+    <Number url="{whisper_url}" method="GET">{rep_personal_phone}</Number>
   </Dial>
 </Response>"""
     else:
-        # No personal phone — go straight to voicemail
         twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say voice="Polly.Joanna">Hi, you've reached {rep_name}. Please leave a message after the tone and we'll get back to you soon.</Say>
-  <Record maxLength="60" transcribe="true" transcribeCallback="{app_url}/api/webhooks/twilio/voicemail-transcription" />
+  <Record maxLength="120" transcribe="true"
+          transcribeCallback="{recording_cb}"
+          recordingStatusCallback="{recording_cb}"
+          recordingStatusCallbackMethod="POST" />
   <Say voice="Polly.Joanna">Thank you. Goodbye!</Say>
 </Response>"""
 
