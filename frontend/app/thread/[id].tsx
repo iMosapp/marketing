@@ -510,10 +510,21 @@ function ThreadScreen() {
     if (!id || !user?._id) return;
     
     try {
-      // First try to load the thread directly (assuming id is a conversation id)
-      const data = await messagesAPI.getThread(id as string);
+      // Load thread messages AND conversation metadata (ai_mode) in parallel
+      const [data, convInfo] = await Promise.all([
+        messagesAPI.getThread(id as string),
+        api.get(`/messages/conversation/${id}/info`).catch(() => null),
+      ]);
       setMessages(data || []);
       setActualConversationId(id as string);
+
+      // Restore saved ai_mode so it persists across sessions
+      const savedMode = convInfo?.data?.ai_mode;
+      if (savedMode && ['auto_reply', 'assisted', 'draft_only', 'off'].includes(savedMode)) {
+        setAiMode(savedMode as any);
+      } else if (convInfo?.data?.ai_enabled === false) {
+        setAiMode('off');
+      }
       
       // Auto-mark as read when opening a conversation
       try { await messagesAPI.markAsRead(id as string); } catch {}
@@ -531,6 +542,14 @@ function ThreadScreen() {
         });
         const convId = response.data._id;
         setActualConversationId(convId);
+        
+        // Also load ai_mode for new conversation
+        api.get(`/messages/conversation/${convId}/info`).then(convInfo => {
+          const savedMode = convInfo?.data?.ai_mode;
+          if (savedMode && ['auto_reply', 'assisted', 'draft_only', 'off'].includes(savedMode)) {
+            setAiMode(savedMode as any);
+          }
+        }).catch(() => {});
         
         // id is confirmed as a contact_id — set it for intel loading
         if (!contactIdForNav) {
