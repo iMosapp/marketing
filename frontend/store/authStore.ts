@@ -203,8 +203,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Register service worker AFTER successful login (never on login page)
       if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
         try {
-          navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
-            .catch((e) => console.warn('[Auth] SW registration failed:', e?.message));
+          const swReg = await navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' });
+          // Subscribe to push notifications after SW is ready
+          try {
+            const vapidKey = process.env.EXPO_PUBLIC_VAPID_KEY;
+            if (vapidKey && 'Notification' in window && Notification.permission !== 'denied') {
+              const permission = Notification.permission === 'granted'
+                ? 'granted'
+                : await Notification.requestPermission();
+              if (permission === 'granted') {
+                await swReg.ready;
+                let sub = await swReg.pushManager.getSubscription();
+                if (!sub) {
+                  sub = await swReg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: vapidKey,
+                  });
+                }
+                if (sub && user._id) {
+                  const { default: api } = await import('../services/api');
+                  await api.post(`/push/subscribe/${user._id}`, { subscription: sub.toJSON() }).catch(() => {});
+                }
+              }
+            }
+          } catch (pushErr: any) {
+            console.warn('[Auth] Push subscription skipped:', pushErr?.message);
+          }
         } catch (e: any) {
           console.warn('[Auth] SW registration threw:', e?.message);
         }

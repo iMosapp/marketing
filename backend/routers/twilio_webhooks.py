@@ -365,6 +365,19 @@ async def incoming_message(
                                 {"$set": {"rep_sms_notified_at": datetime.utcnow()}}
                             )
                             logger.info(f"[Webhook] Sent active-conversation SMS to rep {rep_cell}")
+                            # Also send push notification (instant, works when app is open)
+                            try:
+                                from routers.push_notifications import send_push_to_user
+                                app_url_push = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+                                asyncio.create_task(send_push_to_user(
+                                    user_id or rep_user_id or "",
+                                    f"{contact_display} replied",
+                                    (Body or "").strip()[:100],
+                                    f"{app_url_push}/thread/{conversation_id}",
+                                    "chatbubble"
+                                ))
+                            except Exception:
+                                pass
             except Exception as sms_notif_err:
                 logger.debug(f"[Webhook] Rep SMS notification skipped: {sms_notif_err}")
 
@@ -627,6 +640,19 @@ async def incoming_message(
                                 body=urgent_msg,
                             )
                             logger.info(f"[Webhook] Sent YOU'RE NEEDED SMS to rep for {contact_id}")
+                            # Push notification — fires even when app is closed
+                            try:
+                                from routers.push_notifications import send_push_to_user
+                                push_app_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+                                asyncio.create_task(send_push_to_user(
+                                    user_id,
+                                    f"⚠️ {cname_esc} needs you",
+                                    f"{max_reply_count} messages without a reply",
+                                    f"{push_app_url}/thread/{conversation_id}",
+                                    "alert-circle"
+                                ))
+                            except Exception:
+                                pass
                 except Exception as urg_err:
                     logger.warning(f"[Webhook] Urgent rep SMS failed: {urg_err}")
             except Exception as esc_err:

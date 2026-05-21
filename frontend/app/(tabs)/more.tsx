@@ -516,7 +516,40 @@ export default function MoreScreen() {
 
   const sections: Section[] = [];
   const isStoreManager = user?.role === 'store_manager';
-  const isPartner = !!(user?.partner_id) || user?.role === 'partner' || user?.role === 'reseller';
+  const isPartner = !!(user?.partner_id) || user?.role === 'partner' || user?.role === 'reseller' || user?.role === 'org_admin';
+
+  // ── PARTNER PORTAL SECTION ──────────────────────────────────────────────────
+  if (isPartner) {
+    sections.push({
+      id: 'partner_portal',
+      title: 'Partner Portal',
+      icon: 'briefcase',
+      color: '#C9A962',
+      items: [
+        {
+          icon: 'business',
+          title: 'My Accounts',
+          subtitle: 'Active & deactivated clients, W-9 status',
+          onPress: () => router.push('/admin/partner-portal' as any),
+          color: '#C9A962',
+        },
+        {
+          icon: 'document-text',
+          title: 'Create New Quote',
+          subtitle: 'Onboard a new client',
+          onPress: () => router.push('/admin/create-quote' as any),
+          color: '#34C759',
+        },
+        {
+          icon: 'receipt',
+          title: 'My Invoices',
+          subtitle: 'Commission statements & billing',
+          onPress: () => router.push('/admin/my-invoices' as any),
+          color: '#007AFF',
+        },
+      ],
+    });
+  }
 
   // ============================================================
   // SECTION 1: MY BRAND (Salesperson's personal command center)

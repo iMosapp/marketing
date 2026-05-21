@@ -2,7 +2,7 @@
 Subscriptions & Quotes Router
 Handles I'm On Social subscription plans, quotes, and Stripe billing
 """
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, UploadFile, File, Form
 from fastapi.responses import Response
 from bson import ObjectId
 from datetime import datetime, timedelta
@@ -360,11 +360,12 @@ async def _email_accepted_quote(quote: dict, quote_id: str) -> None:
     accepted_at = quote.get("accepted_at")
     accepted_str = accepted_at.strftime("%B %d, %Y") if isinstance(accepted_at, datetime) else str(accepted_at or "")
 
-    # ── TODO: Replace with live Stripe payment link ───────────────────────────
-    # When Stripe is configured, generate a payment link here:
-    # payment_link = await create_stripe_payment_link(quote, quote_id)
-    # For now, direct to a placeholder — your team will follow up manually.
-    payment_link = f"{_APP_URL}/subscription/pricing"  # TODO: Replace with Stripe link
+    # ── Payment + W-9 links ───────────────────────────────────────────────────
+    # Payment: TODO replace with live Stripe/merchant link once configured
+    payment_link = f"{_APP_URL}/subscription/pricing"  # TODO: Replace with merchant link
+    # W-9: unique upload link for this quote
+    w9_token  = quote.get("w9_token", "")
+    w9_link   = f"{_APP_URL}/w9/submit/{w9_token}" if w9_token else None
     # ─────────────────────────────────────────────────────────────────────────
 
     try:
@@ -376,6 +377,16 @@ async def _email_accepted_quote(quote: dict, quote_id: str) -> None:
 
     safe_name = _re.sub(r"[^a-zA-Z0-9_-]", "_", name)[:40]
     attachment = [{"filename": f"signed_quote_{safe_name}.pdf", "content": pdf_b64}] if pdf_b64 else []
+
+    # W-9 block — included only when w9_link is available
+    w9_html_block = (
+        f'<div style="background:#007AFF15;border-radius:12px;padding:24px;margin-bottom:28px;border:1px solid #007AFF;">'
+        f'<p style="font-size:16px;font-weight:700;color:#007AFF;margin:0 0 10px;">Also Required: W-9 Form</p>'
+        f'<p style="font-size:14px;color:#CCC;line-height:22px;margin:0 0 18px;">'
+        f'Please upload your completed W-9 so we can process your account. You can upload a PDF or a photo of the signed form.</p>'
+        f'<a href="{w9_link}" style="display:inline-block;background:#007AFF;color:#fff;font-size:16px;font-weight:700;padding:14px 32px;border-radius:10px;text-decoration:none;">'
+        f'Upload W-9 &rarr;</a></div>'
+    ) if w9_link else ""
 
     # ── Customer email ────────────────────────────────────────────────────────
     if to_email:
@@ -406,6 +417,7 @@ async def _email_accepted_quote(quote: dict, quote_id: str) -> None:
               Set Up Payment &rarr;
             </a>
           </div>
+          {w9_html_block}
           <p style="font-size:13px;color:#8E8E93;line-height:20px;margin-bottom:24px;">
             Your signed quote PDF is attached to this email. Keep it for your records.<br>
             Cancellation: 30 days written notice. Questions? Reply to this email.
@@ -1108,6 +1120,9 @@ async def accept_quote(quote_id: str, data: dict, request: Request):
         "agreed_to_terms": True,
     }
 
+    import secrets as _secrets
+    w9_token = _secrets.token_urlsafe(24)
+
     await db.subscription_quotes.update_one(
         {"_id": ObjectId(quote_id)},
         {"$set": {
@@ -1117,6 +1132,8 @@ async def accept_quote(quote_id: str, data: dict, request: Request):
             "digital_signature": digital_signature,
             "customer.name":     name,
             "customer.email":    email,
+            "w9_token":          w9_token,
+            "w9_status":         "pending",
         }}
     )
 
@@ -1574,3 +1591,133 @@ async def get_cancellation_status(email: str):
     cancellation["has_pending_cancellation"] = True
     
     return cancellation
+
+
+
+# ── W-9 Upload ────────────────────────────────────────────────────────────────
+
+@router.get("/w9/{token}")
+async def get_w9_quote_info(token: str):
+    """Return basic quote info for the W-9 upload page (public — no auth)."""
+    db = get_db()
+    quote = await db.subscription_quotes.find_one({"w9_token": token}, {"_id": 0, "w9_token": 0})
+    if not quote:
+        raise HTTPException(status_code=404, detail="Invalid or expired W-9 link")
+    customer = quote.get("customer") or {}
+    biz = quote.get("business_info") or {}
+    return {
+        "company_name":  biz.get("company_name") or customer.get("name") or "Your Company",
+        "plan_name":     quote.get("plan_name", ""),
+        "quote_number":  quote.get("quote_number", ""),
+        "w9_status":     quote.get("w9_status", "pending"),
+    }
+
+
+@router.post("/w9/{token}/upload")
+async def upload_w9(
+    token: str,
+    file: UploadFile = File(...),
+    name: str = Form(default=""),
+    email: str = Form(default=""),
+):
+    """Customer uploads their W-9 document. Public endpoint — no auth needed."""
+    from utils.image_storage import put_object, upload_image
+    import uuid as _uuid
+
+    db = get_db()
+    quote = await db.subscription_quotes.find_one({"w9_token": token})
+    if not quote:
+        raise HTTPException(status_code=404, detail="Invalid or expired W-9 link")
+
+    if quote.get("w9_status") == "submitted":
+        return {"success": True, "message": "W-9 already submitted. We'll review it shortly."}
+
+    content = await file.read()
+    content_type = file.content_type or "application/pdf"
+    quote_id = str(quote["_id"])
+    file_id  = _uuid.uuid4().hex
+
+    # Store in object storage
+    is_image = content_type.startswith("image/")
+    if is_image:
+        result = await upload_image(content, prefix="w9", entity_id=file_id)
+        w9_url = f"/api/images/{result['original_path']}" if result else None
+    else:
+        path = f"imos/w9/{quote_id}/{file_id}.pdf"
+        await asyncio.to_thread(put_object, path, content, content_type)
+        w9_url = f"/api/images/{path}"
+
+    if not w9_url:
+        raise HTTPException(status_code=500, detail="Upload failed — please try again")
+
+    now = datetime.utcnow()
+    await db.subscription_quotes.update_one(
+        {"_id": quote["_id"]},
+        {"$set": {
+            "w9_status":       "submitted",
+            "w9_file_url":     w9_url,
+            "w9_submitted_at": now,
+            "w9_submitter_name":  name or quote.get("customer", {}).get("name", ""),
+            "w9_submitter_email": email or quote.get("customer", {}).get("email", ""),
+        }}
+    )
+    logger.info(f"[W-9] Submitted for quote {quote_id}")
+
+    # Notify admin
+    try:
+        company = (quote.get("business_info") or {}).get("company_name") or name or "Customer"
+        await db.notifications.insert_one({
+            "user_id":    None,  # Super admin — picked up globally
+            "type":       "w9_submitted",
+            "title":      f"W-9 Received — {company}",
+            "message":    f"{company} submitted their W-9. Ready for review.",
+            "quote_id":   quote_id,
+            "read":       False,
+            "dismissed":  False,
+            "created_at": now,
+        })
+    except Exception:
+        pass
+
+    return {"success": True, "message": "W-9 submitted successfully. We'll review it shortly."}
+
+
+# ── Reseller / Partner Portal ─────────────────────────────────────────────────
+
+@router.get("/partner/accounts")
+async def get_partner_accounts(partner_id: str, include_deactivated: bool = True):
+    """
+    List all accounts (quotes) for a reseller/partner.
+    Returns both active and deactivated so partners have full visibility.
+    """
+    db = get_db()
+    query: dict = {"partner_id": partner_id}
+    if not include_deactivated:
+        query["status"] = {"$in": ["active", "accepted", "pending"]}
+
+    quotes = await db.subscription_quotes.find(
+        query,
+        {"w9_token": 0}  # Never expose w9 tokens in list views
+    ).sort("created_at", -1).limit(200).to_list(200)
+
+    result = []
+    for q in quotes:
+        q["_id"] = str(q["_id"])
+        # Serialize dates
+        for field in ["created_at", "accepted_at", "updated_at", "w9_submitted_at"]:
+            if isinstance(q.get(field), datetime):
+                q[field] = q[field].isoformat()
+        result.append(q)
+
+    # Summary counts
+    statuses = [q.get("status", "pending") for q in result]
+    return {
+        "accounts":    result,
+        "total":       len(result),
+        "active":      statuses.count("active"),
+        "accepted":    statuses.count("accepted"),
+        "pending":     statuses.count("pending"),
+        "deactivated": statuses.count("deactivated"),
+        "w9_pending":  sum(1 for q in result if q.get("w9_status") == "pending"),
+        "w9_submitted":sum(1 for q in result if q.get("w9_status") == "submitted"),
+    }
