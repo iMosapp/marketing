@@ -49,22 +49,21 @@ STATUS_FAILED    = "failed"
 def get_human_delay(incoming_message: str = "") -> int:
     """
     Returns delay in seconds with a natural distribution:
-    - 45–60s  (25%) — quick glance at phone
-    - 60–90s  (50%) — most natural, feels responsive
-    - 90–120s (25%) — in the middle of something
-    Longer messages add a tiny extra read-time delay.
+    - 30–45s  (30%) — quick glance at phone
+    - 45–70s  (50%) — most natural, feels responsive
+    - 70–90s  (20%) — slightly busy
     """
     rand = random.random()
-    if rand < 0.25:
-        base = random.uniform(45, 60)
-    elif rand < 0.75:
-        base = random.uniform(60, 90)
+    if rand < 0.30:
+        base = random.uniform(30, 45)
+    elif rand < 0.80:
+        base = random.uniform(45, 70)
     else:
-        base = random.uniform(90, 120)
+        base = random.uniform(70, 90)
 
-    # Add a few seconds for longer incoming messages (reading time)
+    # Add a few extra seconds for longer messages (reading time)
     if len(incoming_message) > 80:
-        base += random.uniform(5, 15)
+        base += random.uniform(5, 10)
 
     return int(base)
 
