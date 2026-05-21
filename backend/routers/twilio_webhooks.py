@@ -319,10 +319,6 @@ async def incoming_message(
                 rep_twilio_number  = (rep_user.get("twilio_number") or rep_user.get("mvpline_number") or "").strip()
 
                 if sms_active_enabled and rep_personal_phone and rep_twilio_number:
-                    from services.twilio_service import normalize_phone
-                    from twilio.rest import Client as _TwilioClient
-                    from datetime import timedelta
-
                     rep_cell = normalize_phone(rep_personal_phone)
                     # Don't text the rep if THEY are the one who just texted in
                     if rep_cell == normalize_phone(from_phone):
@@ -353,18 +349,20 @@ async def incoming_message(
                                 f'"{preview_text}{"..." if len((Body or "")) > 60 else ""}"\n\n'
                                 f"Open conversation:\n{conv_link}"
                             )
-                            client = _TwilioClient(tw_sid, tw_token)
-                            await asyncio.to_thread(
-                                client.messages.create,
-                                to=rep_cell,
-                                from_=rep_twilio_number,
-                                body=notif_msg,
-                            )
-                            await db.conversations.update_one(
-                                {"_id": ObjectId(conversation_id)},
-                                {"$set": {"rep_sms_notified_at": datetime.utcnow()}}
-                            )
-                            logger.info(f"[Webhook] Sent active-conversation SMS to rep {rep_cell}")
+                            # Fire-and-forget — NEVER await Twilio calls inside a webhook
+                            # Twilio requires a response within 15s; blocking here causes retries
+                            async def _send_active_sms(to=rep_cell, frm=rep_twilio_number, body=notif_msg, sid=tw_sid, tok=tw_token, conv_id=conversation_id):
+                                try:
+                                    from twilio.rest import Client as _TC
+                                    _TC(sid, tok).messages.create(to=to, from_=frm, body=body)
+                                    await db.conversations.update_one(
+                                        {"_id": ObjectId(conv_id)},
+                                        {"$set": {"rep_sms_notified_at": datetime.utcnow()}}
+                                    )
+                                    logger.info(f"[Webhook] Sent active-conversation SMS to {to}")
+                                except Exception as _e:
+                                    logger.debug(f"[Webhook] Active SMS skipped: {_e}")
+                            asyncio.create_task(_send_active_sms())
                             # Also send push notification (instant, works when app is open)
                             try:
                                 from routers.push_notifications import send_push_to_user
@@ -572,12 +570,10 @@ async def incoming_message(
                 asyncio.create_task(_fire_conv_ai())
 
         # ── "You're Needed" escalation — fires when customer replies ≥2x unanswered ──
-        if not is_stop and user_id:
-            # Read rep's preferred escalation threshold (default: 2 unanswered replies)
-            urn_threshold = 2
-            if rep_user:
-                notif_prefs_esc = rep_user.get("notification_settings", {})
-                urn_threshold = int(notif_prefs_esc.get("you_are_needed_threshold", 2))
+        urn_threshold = 2  # Always initialize before if-block to prevent UnboundLocalError
+        if not is_stop and user_id and rep_user:
+            notif_prefs_esc = rep_user.get("notification_settings", {})
+            urn_threshold = int(notif_prefs_esc.get("you_are_needed_threshold", 2))
 
         if max_reply_count >= urn_threshold and not is_stop and user_id:
             try:
@@ -613,34 +609,35 @@ async def incoming_message(
                 })
                 logger.info(f"[Webhook] 'You Are Needed' escalation for {contact_id} ({max_reply_count} replies)")
 
-                # Send URGENT SMS to rep's personal cell — no rate limit on You're Needed
+                # Send URGENT SMS to rep's personal cell — fire-and-forget, never block webhook
                 try:
                     notif_prefs2   = (rep_user or {}).get("notification_settings", {}) if rep_user else {}
                     sms_urn_enabled = notif_prefs2.get("sms_you_are_needed", True)
                     rep_personal_phone = (rep_user.get("phone") or "").strip() if rep_user else ""
                     rep_twilio_number  = (rep_user.get("twilio_number") or rep_user.get("mvpline_number") or "").strip() if rep_user else ""
                     if sms_urn_enabled and rep_personal_phone and rep_twilio_number:
-                        from services.twilio_service import normalize_phone
-                        from twilio.rest import Client as _TwilioClient2
-                        tw_sid   = os.environ.get("TWILIO_ACCOUNT_SID", "")
-                        tw_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
-                        if tw_sid and tw_token:
-                            app_url   = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
-                            conv_link = f"{app_url}/thread/{conversation_id}"
-                            urgent_msg = (
+                        tw_sid2   = os.environ.get("TWILIO_ACCOUNT_SID", "")
+                        tw_token2 = os.environ.get("TWILIO_AUTH_TOKEN", "")
+                        if tw_sid2 and tw_token2:
+                            app_url2  = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+                            conv_link2 = f"{app_url2}/thread/{conversation_id}"
+                            from services.twilio_service import normalize_phone as _np2
+                            urgent_to = _np2(rep_personal_phone)
+                            urgent_frm = rep_twilio_number
+                            urgent_body = (
                                 f"⚠️ I'm On Social: YOU'RE NEEDED\n"
                                 f"{cname_esc} has texted {max_reply_count} times without a reply.\n\n"
-                                f"Open now:\n{conv_link}"
+                                f"Open now:\n{conv_link2}"
                             )
-                            client2 = _TwilioClient2(tw_sid, tw_token)
-                            await asyncio.to_thread(
-                                client2.messages.create,
-                                to=normalize_phone(rep_personal_phone),
-                                from_=rep_twilio_number,
-                                body=urgent_msg,
-                            )
-                            logger.info(f"[Webhook] Sent YOU'RE NEEDED SMS to rep for {contact_id}")
-                            # Push notification — fires even when app is closed
+                            async def _send_urgent_sms(to=urgent_to, frm=urgent_frm, body=urgent_body, sid=tw_sid2, tok=tw_token2):
+                                try:
+                                    from twilio.rest import Client as _TC2
+                                    _TC2(sid, tok).messages.create(to=to, from_=frm, body=body)
+                                    logger.info(f"[Webhook] Sent YOU'RE NEEDED SMS to {to}")
+                                except Exception as _ue:
+                                    logger.warning(f"[Webhook] Urgent SMS failed: {_ue}")
+                            asyncio.create_task(_send_urgent_sms())
+                            # Push notification
                             try:
                                 from routers.push_notifications import send_push_to_user
                                 push_app_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
@@ -654,7 +651,7 @@ async def incoming_message(
                             except Exception:
                                 pass
                 except Exception as urg_err:
-                    logger.warning(f"[Webhook] Urgent rep SMS failed: {urg_err}")
+                    logger.warning(f"[Webhook] Urgent rep SMS setup failed: {urg_err}")
             except Exception as esc_err:
                 logger.warning(f"[Webhook] Escalation notification failed: {esc_err}")
 
