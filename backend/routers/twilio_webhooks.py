@@ -310,10 +310,15 @@ async def incoming_message(
         # Includes a direct link so the rep can tap and land on the conversation.
         if rep_user and not is_stop:
             try:
+                # Read rep's notification preferences (default: all on, 30-min throttle)
+                notif_prefs = rep_user.get("notification_settings", {})
+                sms_active_enabled  = notif_prefs.get("sms_active_conversation", True)
+                throttle_minutes    = int(notif_prefs.get("sms_active_throttle_minutes", 30))
+
                 rep_personal_phone = (rep_user.get("phone") or "").strip()
                 rep_twilio_number  = (rep_user.get("twilio_number") or rep_user.get("mvpline_number") or "").strip()
 
-                if rep_personal_phone and rep_twilio_number:
+                if sms_active_enabled and rep_personal_phone and rep_twilio_number:
                     from services.twilio_service import normalize_phone
                     from twilio.rest import Client as _TwilioClient
                     from datetime import timedelta
@@ -331,11 +336,11 @@ async def incoming_message(
                         from_phone[-4:]
                     )
 
-                    # Rate-limit "active conversation" SMS to once per 30 min per conversation
+                    # Rate-limit to throttle_minutes per conversation
                     last_notified = conversation.get("rep_sms_notified_at")
                     throttled = (
                         isinstance(last_notified, datetime) and
-                        (datetime.utcnow() - last_notified).total_seconds() < 1800
+                        (datetime.utcnow() - last_notified).total_seconds() < throttle_minutes * 60
                     )
 
                     if not throttled:
@@ -554,7 +559,14 @@ async def incoming_message(
                 asyncio.create_task(_fire_conv_ai())
 
         # ── "You're Needed" escalation — fires when customer replies ≥2x unanswered ──
-        if max_reply_count >= 2 and not is_stop and user_id:
+        if not is_stop and user_id:
+            # Read rep's preferred escalation threshold (default: 2 unanswered replies)
+            urn_threshold = 2
+            if rep_user:
+                notif_prefs_esc = rep_user.get("notification_settings", {})
+                urn_threshold = int(notif_prefs_esc.get("you_are_needed_threshold", 2))
+
+        if max_reply_count >= urn_threshold and not is_stop and user_id:
             try:
                 cname_esc = contact.get("name") or f"{contact.get('first_name','')} {contact.get('last_name','')}".strip() or from_phone
                 # Mark conversation as needing rep attention
@@ -590,9 +602,11 @@ async def incoming_message(
 
                 # Send URGENT SMS to rep's personal cell — no rate limit on You're Needed
                 try:
+                    notif_prefs2   = (rep_user or {}).get("notification_settings", {}) if rep_user else {}
+                    sms_urn_enabled = notif_prefs2.get("sms_you_are_needed", True)
                     rep_personal_phone = (rep_user.get("phone") or "").strip() if rep_user else ""
                     rep_twilio_number  = (rep_user.get("twilio_number") or rep_user.get("mvpline_number") or "").strip() if rep_user else ""
-                    if rep_personal_phone and rep_twilio_number:
+                    if sms_urn_enabled and rep_personal_phone and rep_twilio_number:
                         from services.twilio_service import normalize_phone
                         from twilio.rest import Client as _TwilioClient2
                         tw_sid   = os.environ.get("TWILIO_ACCOUNT_SID", "")

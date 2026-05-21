@@ -539,7 +539,8 @@ async def patch_user_profile(user_id: str, data: dict):
     """Update user profile fields. Photo updates must go through POST /profile/{user_id}/photo."""
     db = get_db()
     allowed_fields = ['name', 'phone', 'persona', 'settings', 'photo_url', 'bio', 'social_links',
-                      'timezone', 'address', 'city', 'state', 'zip_code', 'country']
+                      'timezone', 'address', 'city', 'state', 'zip_code', 'country',
+                      'notification_settings']
     update_dict = {k: v for k, v in data.items() if k in allowed_fields}
     
     if not update_dict:
