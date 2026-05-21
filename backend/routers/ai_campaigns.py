@@ -167,20 +167,45 @@ async def build_clone_system_prompt(user_id: str) -> str:
     persona = user.get("persona", {})
     user_name = user.get("name", "the salesperson")
     bio_parts = []
+
+    # Core bio / background
     if persona.get("bio"):
         bio_parts.append(persona["bio"])
-    if persona.get("hobbies"):
-        hobbies = persona["hobbies"] if isinstance(persona["hobbies"], list) else [persona["hobbies"]]
-        bio_parts.append(f"Hobbies: {', '.join(hobbies)}")
-    if persona.get("family_info"):
-        bio_parts.append(f"Family: {persona['family_info']}")
+    if persona.get("years_experience"):
+        bio_parts.append(f"Experience: {persona['years_experience']} years in the industry")
     if persona.get("hometown"):
         bio_parts.append(f"From: {persona['hometown']}")
-    if persona.get("years_experience"):
-        bio_parts.append(f"Experience: {persona['years_experience']} years")
+
+    # Personality / Voice
+    if persona.get("tone"):
+        tone = persona["tone"]
+        tone_str = ', '.join(tone) if isinstance(tone, list) else str(tone)
+        bio_parts.append(f"Communication style: {tone_str}")
+    if persona.get("specialties"):
+        specs = persona["specialties"] if isinstance(persona["specialties"], list) else [persona["specialties"]]
+        bio_parts.append(f"Specialties: {', '.join(str(s) for s in specs)}")
+    if persona.get("hobbies"):
+        hobbies = persona["hobbies"] if isinstance(persona["hobbies"], list) else [persona["hobbies"]]
+        bio_parts.append(f"Interests/hobbies: {', '.join(str(h) for h in hobbies)}")
+    if persona.get("family_info"):
+        bio_parts.append(f"Family: {persona['family_info']}")
     if persona.get("fun_facts"):
         facts = persona["fun_facts"] if isinstance(persona["fun_facts"], list) else [persona["fun_facts"]]
-        bio_parts.append(f"Fun facts: {', '.join(facts)}")
+        bio_parts.append(f"Fun facts: {', '.join(str(f) for f in facts)}")
+    if persona.get("personal_motto"):
+        bio_parts.append(f"Personal motto: {persona['personal_motto']}")
+    if persona.get("ideal_customer"):
+        bio_parts.append(f"Ideal customer: {persona['ideal_customer']}")
+
+    # Hard rules from profile
+    never_say_parts = []
+    if persona.get("never_say"):
+        ns = persona["never_say"] if isinstance(persona["never_say"], list) else [persona["never_say"]]
+        never_say_parts = [str(x) for x in ns if x]
+    custom_phrases = []
+    if persona.get("custom_phrases"):
+        cp = persona["custom_phrases"] if isinstance(persona["custom_phrases"], list) else [persona["custom_phrases"]]
+        custom_phrases = [str(x) for x in cp if x]
 
     user_bio = "\n".join(bio_parts) if bio_parts else f"{user_name} is a dedicated sales professional."
 
@@ -189,18 +214,29 @@ async def build_clone_system_prompt(user_id: str) -> str:
     store_info = ""
     store_name = "the dealership"
     if store_id:
-        store = await db.stores.find_one({"_id": ObjectId(store_id)})
-        if store:
-            store_name = store.get("name", "the dealership")
-            store_info = f"Store: {store_name}"
-            if store.get("address"):
-                store_info += f", located at {store['address']}"
+        try:
+            store = await db.stores.find_one({"_id": ObjectId(store_id)})
+            if store:
+                store_name = store.get("name", "the dealership")
+                store_info = f"Store: {store_name}"
+                if store.get("address"):
+                    store_info += f", located at {store['address']}"
+                if store.get("phone"):
+                    store_info += f". Store phone: {store['phone']}"
+        except Exception:
+            pass
 
     # Hydrate the template
     prompt = template.replace("{user_name}", user_name)
     prompt = prompt.replace("{user_bio}", user_bio)
     prompt = prompt.replace("{store_name}", store_name)
     prompt = prompt.replace("{store_info}", store_info)
+
+    # Append hard behavioral rules to the end of the prompt
+    if never_say_parts:
+        prompt += f"\n\nNEVER say or write these phrases: {', '.join(never_say_parts)}"
+    if custom_phrases:
+        prompt += f"\n\nGo-to phrases you naturally use: {', '.join(custom_phrases)}"
 
     return prompt
 

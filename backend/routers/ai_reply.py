@@ -128,9 +128,13 @@ async def queue_ai_reply(
         )
 
         emergent_key = os.environ.get("EMERGENT_LLM_KEY", "")
+        # Use a unique session ID per reply — conversation context is passed explicitly
+        # in the user_prompt, so reusing sessions would add stale/incorrect history
+        import uuid as _uuid
+        session_id = f"reply-{_uuid.uuid4().hex[:16]}"
         chat = LlmChat(
             api_key=emergent_key,
-            session_id=f"ai-reply-{assigned_user_id}-{contact_id}",
+            session_id=session_id,
             system_message=system_prompt,
         ).with_model("openai", "gpt-5.2")
 

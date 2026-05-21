@@ -899,6 +899,22 @@ async def startup_event():
         logger.info("Object storage ready")
     except Exception as e:
         logger.warning(f"Object storage init deferred (will retry on first upload): {e}")
+
+    # ── Clean up test/corrupted AI prompts ─────────────────────────────────────
+    # Removes any accidentally-stored test prompts from the ai_clone_prompts collection
+    try:
+        db = get_db()
+        deleted = await db.ai_clone_prompts.delete_many({
+            "scope": "global",
+            "$or": [
+                {"prompt": {"$regex": "^Test global prompt"}},
+                {"prompt": {"$regex": "^Test "}},
+            ]
+        })
+        if deleted.deleted_count:
+            logger.info(f"[Startup] Removed {deleted.deleted_count} test AI prompt(s) from DB — will use built-in DEFAULT_CLONE_PROMPT")
+    except Exception as e:
+        logger.warning(f"[Startup] AI prompt cleanup skipped: {e}")
     
     # Create database indexes for performance (non-blocking)
     try:
