@@ -49,6 +49,21 @@ export default function CallScreen() {
 
   const startCall = async () => {
     if (!user?._id) return;
+
+    // No Twilio number assigned → fall back to native dialer
+    if (!repTwilioNumber) {
+      const phoneUrl = `tel:${contactPhone}`;
+      if (Platform.OS === 'web') {
+        window.open(phoneUrl, '_self');
+      } else {
+        Linking.openURL(phoneUrl);
+      }
+      setCallState('ringing');
+      startTimeRef.current = Date.now();
+      setStatusMsg('Opening native dialer — call will not show Twilio number as caller ID');
+      return;
+    }
+
     setCallState('connecting');
     setStatusMsg('Initiating call...');
     try {
@@ -121,9 +136,15 @@ export default function CallScreen() {
           )}
           {callState === 'ready' && (
             <>
-              <Text style={st.readyHint}>Caller ID: {repTwilioNumber || 'your Twilio number'}</Text>
+              <Text style={st.readyHint}>
+                {repTwilioNumber
+                  ? `Caller ID: ${repTwilioNumber}`
+                  : 'No Twilio number — will open native dialer'}
+              </Text>
               <Text style={[st.readyHint, { fontSize: 12, marginTop: 4, color: '#666' }]}>
-                Your personal phone rings first, then connects to {contactName}
+                {repTwilioNumber
+                  ? `Your personal phone rings first, then connects to ${contactName}`
+                  : 'Assign a dedicated number in Admin → Phone Numbers to show your business number'}
               </Text>
             </>
           )}
