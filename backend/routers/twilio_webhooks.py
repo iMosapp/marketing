@@ -791,6 +791,186 @@ async def test_webhook():
     }
 
 
+
+@router.post("/voice")
+async def handle_inbound_voice(
+    request: Request,
+    To:     str = Form(default=""),
+    From:   str = Form(default=""),
+    CallSid: str = Form(default=""),
+):
+    """
+    Handles inbound voice calls to a rep's Twilio number.
+    - Looks up which rep owns the called number
+    - Dials the rep's personal cell phone
+    - If rep doesn't answer, records a voicemail
+    """
+    db   = get_db()
+    to_phone   = normalize_phone(To)
+    from_phone = normalize_phone(From)
+
+    logger.info(f"[Voice] Inbound call from {from_phone} to {to_phone} | SID={CallSid}")
+
+    # Find the rep who owns this Twilio number
+    rep_user = await db.users.find_one({
+        "$or": [{"twilio_number": to_phone}, {"mvpline_number": to_phone}],
+        "is_active": {"$ne": False},
+    })
+    if not rep_user:
+        # Fallback: super admin
+        rep_user = await db.users.find_one({"role": {"$in": ["super_admin", "org_admin"]}})
+
+    rep_personal_phone = (rep_user.get("phone") or "").strip() if rep_user else ""
+    rep_name           = (rep_user.get("name") or "I'm On Social").split()[0] if rep_user else "I'm On Social"
+    app_url            = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+
+    # Log the call attempt as a contact event
+    if rep_user:
+        try:
+            contact = await db.contacts.find_one({
+                "$or": [{"phone": from_phone}, {"phone": from_phone.lstrip("+")}]
+            })
+            contact_id  = str(contact["_id"]) if contact else None
+            contact_name = (contact or {}).get("name") or f"Unknown ({from_phone[-4:]})"
+            user_id = str(rep_user["_id"])
+            await db.contact_events.insert_one({
+                "user_id":      user_id,
+                "contact_id":   contact_id,
+                "contact_name": contact_name,
+                "event_type":   "inbound_call",
+                "category":     "call",
+                "title":        f"{contact_name} called",
+                "description":  f"Inbound call from {from_phone}",
+                "channel":      "voice",
+                "timestamp":    datetime.utcnow(),
+            })
+            # Find or create conversation and log
+            conv = await db.conversations.find_one({"contact_id": contact_id}) if contact_id else None
+            if conv:
+                await db.conversations.update_one(
+                    {"_id": conv["_id"]},
+                    {"$set": {"last_call_at": datetime.utcnow()}}
+                )
+        except Exception as _ce:
+            logger.debug(f"[Voice] Event log skipped: {_ce}")
+
+    # Build TwiML response
+    if rep_personal_phone:
+        # Forward the call to the rep's personal cell
+        twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="Polly.Joanna">Please hold while I connect you.</Say>
+  <Dial callerId="{to_phone}" timeout="25" action="{app_url}/api/webhooks/twilio/voice-fallback">
+    <Number>{rep_personal_phone}</Number>
+  </Dial>
+</Response>"""
+    else:
+        # No personal phone — go straight to voicemail
+        twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="Polly.Joanna">Hi, you've reached {rep_name}. Please leave a message after the tone and we'll get back to you soon.</Say>
+  <Record maxLength="60" transcribe="true" transcribeCallback="{app_url}/api/webhooks/twilio/voicemail-transcription" />
+  <Say voice="Polly.Joanna">Thank you. Goodbye!</Say>
+</Response>"""
+
+    return Response(content=twiml, media_type="application/xml")
+
+
+@router.post("/voice-fallback")
+async def handle_voice_fallback(
+    request: Request,
+    DialCallStatus: str = Form(default=""),
+    To:  str = Form(default=""),
+    From: str = Form(default=""),
+    CallSid: str = Form(default=""),
+):
+    """
+    Called by Twilio after the <Dial> completes.
+    If the rep didn't answer, record a voicemail.
+    """
+    from_phone = normalize_phone(From)
+    db = get_db()
+
+    rep_user = await db.users.find_one({
+        "$or": [{"twilio_number": normalize_phone(To)}, {"mvpline_number": normalize_phone(To)}],
+    })
+    rep_name = (rep_user.get("name") or "the team").split()[0] if rep_user else "the team"
+    app_url  = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+
+    logger.info(f"[Voice] Dial status={DialCallStatus} from {from_phone}")
+
+    if DialCallStatus in ("no-answer", "busy", "failed", "canceled"):
+        twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="Polly.Joanna">Sorry, {rep_name} is unavailable right now. Leave a message after the tone and we'll get back to you quickly.</Say>
+  <Record maxLength="120" transcribe="true" transcribeCallback="{app_url}/api/webhooks/twilio/voicemail-transcription" />
+  <Say voice="Polly.Joanna">Thank you, talk soon!</Say>
+</Response>"""
+    else:
+        twiml = """<?xml version="1.0" encoding="UTF-8"?><Response></Response>"""
+
+    return Response(content=twiml, media_type="application/xml")
+
+
+@router.post("/voicemail-transcription")
+async def handle_voicemail_transcription(
+    request: Request,
+    TranscriptionText: str = Form(default=""),
+    RecordingUrl:      str = Form(default=""),
+    CallSid:           str = Form(default=""),
+    From:              str = Form(default=""),
+    To:                str = Form(default=""),
+):
+    """Stores voicemail transcription and notifies the rep."""
+    db         = get_db()
+    from_phone = normalize_phone(From)
+    to_phone   = normalize_phone(To)
+
+    rep_user = await db.users.find_one({
+        "$or": [{"twilio_number": to_phone}, {"mvpline_number": to_phone}],
+    })
+    if not rep_user:
+        rep_user = await db.users.find_one({"role": "super_admin"})
+
+    contact = await db.contacts.find_one({
+        "$or": [{"phone": from_phone}, {"phone": from_phone.lstrip("+")}]
+    })
+    contact_name = (contact or {}).get("name") or f"Unknown ({from_phone[-4:]})"
+    user_id      = str(rep_user["_id"]) if rep_user else None
+
+    # Save voicemail as a message
+    await db.messages.insert_one({
+        "user_id":       user_id,
+        "contact_id":    str(contact["_id"]) if contact else None,
+        "contact_phone": from_phone,
+        "content":       TranscriptionText or "(Voicemail — no transcription)",
+        "recording_url": RecordingUrl,
+        "sender":        "contact",
+        "direction":     "inbound",
+        "channel":       "voicemail",
+        "call_sid":      CallSid,
+        "timestamp":     datetime.utcnow(),
+    })
+
+    # Notify rep
+    if user_id:
+        await db.notifications.insert_one({
+            "user_id":     user_id,
+            "type":        "voicemail",
+            "title":       f"Voicemail from {contact_name}",
+            "message":     TranscriptionText[:200] if TranscriptionText else "New voicemail",
+            "contact_id":  str(contact["_id"]) if contact else None,
+            "recording_url": RecordingUrl,
+            "read":        False,
+            "dismissed":   False,
+            "created_at":  datetime.utcnow(),
+        })
+        logger.info(f"[Voice] Voicemail saved from {from_phone} | transcription: {TranscriptionText[:50]}")
+
+    return Response(content="OK", media_type="text/plain")
+
+
+
 def normalize_phone(phone: str) -> str:
     """Normalize phone number to E.164 format"""
     if not phone:

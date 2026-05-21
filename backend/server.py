@@ -1122,24 +1122,29 @@ async def startup_event():
             if not tw_sid or not tw_token:
                 return  # Twilio not configured — skip silently
 
-            correct_url = f"{os.environ.get('PUBLIC_FACING_URL', os.environ.get('APP_URL', 'https://app.imonsocial.com'))}/api/webhooks/twilio/incoming"
+            base_url    = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+            sms_url     = f"{base_url}/api/webhooks/twilio/incoming"
+            voice_url   = f"{base_url}/api/webhooks/twilio/voice"
             client = _TwilioClient(tw_sid, tw_token)
             numbers = await _asyncio.to_thread(client.incoming_phone_numbers.list)
             fixed = 0
             for n in numbers:
-                current = n.sms_url or ""
-                if current != correct_url:
+                sms_ok   = (n.sms_url or "") == sms_url
+                voice_ok = (n.voice_url or "") == voice_url
+                if not sms_ok or not voice_ok:
                     await _asyncio.to_thread(
                         client.incoming_phone_numbers(n.sid).update,
-                        sms_url=correct_url,
+                        sms_url=sms_url,
                         sms_method="POST",
+                        voice_url=voice_url,
+                        voice_method="POST",
                     )
-                    logger.info(f"[Startup] Fixed webhook for {n.phone_number}: {current} → {correct_url}")
+                    logger.info(f"[Startup] Fixed webhooks for {n.phone_number} (sms={not sms_ok}, voice={not voice_ok})")
                     fixed += 1
             if fixed:
-                logger.info(f"[Startup] Fixed {fixed} Twilio webhook(s) to {correct_url}")
+                logger.info(f"[Startup] Fixed {fixed} Twilio number(s) — SMS + Voice URLs updated")
             else:
-                logger.info(f"[Startup] All Twilio webhooks already correct ({correct_url})")
+                logger.info(f"[Startup] All Twilio webhooks already correct")
         except Exception as e:
             logger.warning(f"[Startup] Twilio webhook auto-fix skipped: {e}")
 
