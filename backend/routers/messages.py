@@ -1082,10 +1082,84 @@ async def get_thread_messages(conversation_id: str):
 
 
 @router.post("/ai-suggest/{conversation_id}")
-async def get_ai_suggestion_simple(conversation_id: str):
-    """Get AI-generated response suggestion (simplified endpoint)"""
-    suggestion = random.choice(AI_SUGGESTIONS)
-    return {"suggestion": suggestion, "intent": "general"}
+async def get_ai_suggestion_smart(conversation_id: str):
+    """
+    Generate a contextual AI reply suggestion using the rep's VA persona +
+    full conversation history. Falls back to generic suggestion on error.
+    """
+    import asyncio, os
+    db = get_db()
+
+    try:
+        conv = await db.conversations.find_one({"_id": ObjectId(conversation_id)})
+        if not conv:
+            raise ValueError("Conversation not found")
+
+        user_id   = conv.get("user_id")
+        contact_id = conv.get("contact_id")
+
+        if not user_id:
+            raise ValueError("No user_id on conversation")
+
+        # Build system prompt from rep's VA profile
+        from routers.ai_campaigns import build_clone_system_prompt, get_contact_context
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        import uuid as _uuid
+
+        system_prompt = await build_clone_system_prompt(user_id)
+        system_prompt += (
+            "\n\nYou are drafting a SHORT reply suggestion for the rep to review. "
+            "1-2 sentences max. Read the conversation and write a natural, on-brand response. "
+            "Reply with ONLY the message text, nothing else."
+        )
+
+        # Get contact context
+        contact_ctx = ""
+        if contact_id:
+            try:
+                contact_ctx = await get_contact_context(user_id, contact_id)
+            except Exception:
+                pass
+
+        # Pull last 6 messages for context
+        recent_msgs = await db.messages.find(
+            {"conversation_id": conversation_id}
+        ).sort("timestamp", -1).limit(6).to_list(6)
+        recent_msgs.reverse()
+        conv_lines = "\n".join(
+            f"{'Me' if m.get('sender') in ('user','ai') else 'Customer'}: {(m.get('content') or '')[:200]}"
+            for m in recent_msgs if m.get('content')
+        )
+
+        user_prompt = (
+            (f"Customer context:\n{contact_ctx}\n\n" if contact_ctx else "") +
+            (f"Recent conversation:\n{conv_lines}\n\n" if conv_lines else "") +
+            "Draft my reply to the latest customer message. Just the reply text."
+        )
+
+        emergent_key = os.environ.get("EMERGENT_LLM_KEY", "")
+        chat = LlmChat(
+            api_key=emergent_key,
+            session_id=f"suggest-{_uuid.uuid4().hex[:12]}",
+            system_message=system_prompt,
+        ).with_model("openai", "gpt-5.2")
+
+        response = await asyncio.wait_for(
+            chat.send_message(UserMessage(text=user_prompt)),
+            timeout=10.0,
+        )
+        suggestion = (response.strip() if isinstance(response, str)
+                      else response.text.strip() if hasattr(response, "text")
+                      else str(response)).strip('"\'')
+
+        if suggestion:
+            return {"suggestion": suggestion, "intent": "contextual"}
+
+    except Exception as e:
+        logger.warning(f"[AISuggest] GPT fallback: {e}")
+
+    # Fallback to generic if GPT fails
+    return {"suggestion": random.choice(AI_SUGGESTIONS), "intent": "general"}
 
 
 @router.post("/send/{user_id}")

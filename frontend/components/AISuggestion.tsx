@@ -25,7 +25,7 @@ export default function AISuggestion({
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <Ionicons name="sparkles" size={16} color="#34C759" />
-          <Text style={styles.headerText}>MVP suggests:</Text>
+          <Text style={styles.headerText}>Jessi suggests:</Text>
         </View>
         <TouchableOpacity onPress={onDismiss}>
           <Ionicons name="close" size={20} color={colors.textSecondary} />

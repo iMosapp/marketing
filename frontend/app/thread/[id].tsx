@@ -1590,11 +1590,29 @@ function ThreadScreen() {
         // --- Standard MMS mode: raw attachment, no tracking ---
         const formData = new FormData();
         formData.append('content', message || '');
-        formData.append('media', {
-          uri: selectedMedia.uri,
-          type: selectedMedia.type,
-          name: selectedMedia.name,
-        } as any);
+
+        // Web (browser) requires a real Blob/File object — not a raw {uri, type, name} dict
+        if (IS_WEB && (selectedMedia.uri.startsWith('blob:') || selectedMedia.uri.startsWith('data:'))) {
+          try {
+            const resp = await fetch(selectedMedia.uri);
+            const blob = await resp.blob();
+            const file = new File([blob], selectedMedia.name || 'media', { type: selectedMedia.type || blob.type });
+            formData.append('media', file);
+          } catch {
+            // Fallback: append raw object for native
+            formData.append('media', {
+              uri: selectedMedia.uri,
+              type: selectedMedia.type,
+              name: selectedMedia.name,
+            } as any);
+          }
+        } else {
+          formData.append('media', {
+            uri: selectedMedia.uri,
+            type: selectedMedia.type,
+            name: selectedMedia.name,
+          } as any);
+        }
         
         const response = await api.post(
           `/messages/send-mms/${user._id}/${convId}`,
@@ -1621,8 +1639,12 @@ function ThreadScreen() {
       }
     } catch (error: any) {
       console.error('MMS send error:', error);
-      const errorMsg = error.response?.data?.detail || error.message || 'Failed to send';
-      showAlert('Error', errorMsg);
+      const detail = error.response?.data?.detail;
+      const errorMsg = typeof detail === 'string' ? detail
+        : Array.isArray(detail) ? (detail[0]?.msg || 'Validation error — check file type')
+        : detail ? 'Send failed — server error'
+        : error.message || 'Failed to send. Please try again.';
+      showAlert('Send Failed', errorMsg);
     } finally {
       setSendingMedia(false);
     }
