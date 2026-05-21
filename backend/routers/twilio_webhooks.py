@@ -281,6 +281,17 @@ async def incoming_message(
         await db.messages.insert_one(message)
         logger.info(f"Saved incoming message to conversation {conversation_id}")
 
+        # ── Increment conversation-level unanswered count ──────────────────────
+        # This is the reliable source for YOU'RE NEEDED — works even when there
+        # is no campaign enrollment (conversation-level AI mode).
+        convo_update = await db.conversations.find_one_and_update(
+            {"_id": ObjectId(conversation_id)},
+            {"$inc": {"unanswered_customer_replies": 1}},
+            return_document=True,
+            projection={"unanswered_customer_replies": 1, "ai_mode": 1, "ai_enabled": 1, "rep_sms_notified_at": 1}
+        )
+        conv_unanswered = (convo_update or {}).get("unanswered_customer_replies", 1) if convo_update else 1
+
         # ── Log contact_event so wins feed + activity feed reflect the reply ─────
         if user_id and contact_id and Body and Body.strip():
             try:
@@ -569,13 +580,17 @@ async def incoming_message(
                         logger.error(f"[Webhook] Conversation AI reply failed: {ce}")
                 asyncio.create_task(_fire_conv_ai())
 
-        # ── "You're Needed" escalation — fires when customer replies ≥2x unanswered ──
-        urn_threshold = 2  # Always initialize before if-block to prevent UnboundLocalError
+        # ── "You're Needed" escalation ─────────────────────────────────────────
+        # Uses BOTH enrollment count AND conversation-level unanswered count.
+        # This fires for everyone — even contacts with no campaign enrollment.
+        urn_threshold = 2  # Default — must be defined before the if block
         if not is_stop and user_id and rep_user:
             notif_prefs_esc = rep_user.get("notification_settings", {})
             urn_threshold = int(notif_prefs_esc.get("you_are_needed_threshold", 2))
 
-        if max_reply_count >= urn_threshold and not is_stop and user_id:
+        effective_reply_count = max(max_reply_count, conv_unanswered)
+
+        if effective_reply_count >= urn_threshold and not is_stop and user_id:
             try:
                 cname_esc = contact.get("name") or f"{contact.get('first_name','')} {contact.get('last_name','')}".strip() or from_phone
                 # Mark conversation as needing rep attention
@@ -598,8 +613,8 @@ async def incoming_message(
                     "user_id":         user_id,
                     "type":            "you_are_needed",
                     "priority":        "urgent",
-                    "title":           f"{cname_esc} needs you — {max_reply_count} messages waiting",
-                    "message":         f"You have {max_reply_count} unanswered messages from {cname_esc}. The AI has been helping but your personal touch is needed.",
+                    "title":           f"{cname_esc} needs you — {effective_reply_count} messages waiting",
+                    "message":         f"You have {effective_reply_count} unanswered messages from {cname_esc}. The AI has been helping but your personal touch is needed.",
                     "contact_id":      contact_id,
                     "conversation_id": conversation_id,
                     "reply_count":     max_reply_count,
@@ -626,7 +641,7 @@ async def incoming_message(
                             urgent_frm = rep_twilio_number
                             urgent_body = (
                                 f"⚠️ I'm On Social: YOU'RE NEEDED\n"
-                                f"{cname_esc} has texted {max_reply_count} times without a reply.\n\n"
+                                f"{cname_esc} has texted {effective_reply_count} times without a reply.\n\n"
                                 f"Open now:\n{conv_link2}"
                             )
                             async def _send_urgent_sms(to=urgent_to, frm=urgent_frm, body=urgent_body, sid=tw_sid2, tok=tw_token2):
