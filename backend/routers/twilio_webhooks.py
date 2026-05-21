@@ -593,6 +593,26 @@ async def incoming_message(
         if effective_reply_count >= urn_threshold and not is_stop and user_id:
             try:
                 cname_esc = contact.get("name") or f"{contact.get('first_name','')} {contact.get('last_name','')}".strip() or from_phone
+                # If the stored name is a generic auto-generated "Lead (XXXX)", try to find
+                # a real named contact that matches by phone number digits
+                if cname_esc.startswith("Lead (") or not cname_esc or cname_esc == from_phone:
+                    phone_tail = from_phone[-7:].lstrip("+0")
+                    better = await db.contacts.find_one({
+                        "user_id": user_id,
+                        "phone": {"$regex": phone_tail[-7:]},
+                        "name": {"$exists": True, "$not": {"$regex": "^Lead \\("}},
+                    })
+                    if not better:
+                        better = await db.contacts.find_one({
+                            "user_id": user_id,
+                            "$or": [
+                                {"phone": {"$regex": phone_tail[-4:]}},
+                                {"mobile": {"$regex": phone_tail[-4:]}},
+                            ],
+                            "name": {"$exists": True, "$not": {"$regex": "^Lead \\("}},
+                        })
+                    if better:
+                        cname_esc = better.get("name") or f"{better.get('first_name','')} {better.get('last_name','')}".strip() or cname_esc
                 # Mark conversation as needing rep attention
                 await db.conversations.update_one(
                     {"_id": ObjectId(conversation_id)},

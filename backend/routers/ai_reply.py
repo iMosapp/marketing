@@ -92,6 +92,60 @@ async def queue_ai_reply(
     if ai_assist_mode == AI_MODE_OFF:
         return None  # Caller already paused + notified rep
 
+    # ── Content-based immediate escalation ──────────────────────────────────
+    # If the customer's message is about specific inventory, pricing, color,
+    # or scheduling, flag the conversation for rep attention NOW — don't wait
+    # for a message-count threshold. Reply with a brief "let me check" then escalate.
+    ESCALATION_SIGNALS = [
+        "in stock", "available", "availability", "do you have",
+        "price", "pricing", "cost", "how much", "what does it cost", "what's the price",
+        "color", "colour", "black", "white", "blue", "red", "silver", "grey", "gray",
+        "appointment", "schedule", "test drive", "come in", "come by", "stop by",
+        "trade", "trade-in", "trade in", "trade value",
+        "finance", "financing", "payment", "monthly",
+        "vin", "specific", "which one", "which ones", "do you stock",
+    ]
+    msg_lower = (incoming_message or "").lower()
+    is_hot_topic = any(sig in msg_lower for sig in ESCALATION_SIGNALS)
+
+    if is_hot_topic:
+        logger.info(f"[AIReply] Hot topic detected in message — sending brief reply + escalating for {contact_id}")
+        # Generate a brief warm response and immediately flag for rep
+        hot_reply = "Good question, let me check on that and get back to you."
+        now = datetime.utcnow()
+        delay = 30  # Quick reply since we're escalating anyway
+        # Flag the conversation so the rep gets notified
+        try:
+            await db.conversations.update_one(
+                {"_id": ObjectId(conversation_id)},
+                {"$set": {
+                    "needs_assistance": True,
+                    "unanswered_customer_replies": 999,  # Forces YOU'RE NEEDED threshold
+                    "you_are_needed_at": now,
+                }}
+            )
+        except Exception:
+            pass
+        # Queue the brief reply
+        queue_item = {
+            "contact_id":       contact_id,
+            "conversation_id":  conversation_id,
+            "enrollment_id":    enrollment_id,
+            "campaign_id":      campaign_id,
+            "assigned_user_id": assigned_user_id,
+            "body":             hot_reply,
+            "send_at":          now + timedelta(seconds=delay),
+            "status":           "pending",
+            "requires_approval": False,
+            "ai_mode_used":     ai_assist_mode,
+            "created_at":       now,
+            "hot_topic_escalation": True,
+        }
+        result = await db.ai_reply_queue.insert_one(queue_item)
+        queue_item["_id"] = str(result.inserted_id)
+        logger.info(f"[AIReply] Hot topic brief reply queued + rep escalation triggered for {contact_id}")
+        return queue_item
+
     # ── Generate AI draft ──────────────────────────────────────────────────
     try:
         from routers.ai_campaigns import build_clone_system_prompt, get_contact_context
