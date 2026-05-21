@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Pressable,
   StyleSheet,
-  FlatList,
+  FlatList,  // Still used for the template/card picker lists below
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
@@ -124,7 +124,7 @@ function ThreadScreen() {
   const router = useRouter();
   const { id, contact_name, contact_phone, contact_email, contact_photo: paramPhoto, mode, prefill, event_type: paramEventType } = useLocalSearchParams();
   const user = useAuthStore((state) => state.user);
-  const flatListRef = useRef<FlatList>(null);
+  const flatListRef = useRef<ScrollView>(null);
   
   // Color mode state - theme-aware
   const [messageMode, setMessageMode] = useState<'sms' | 'email'>('sms');
@@ -168,7 +168,10 @@ function ThreadScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [sending, setSending] = useState(false);
-  const [showScrollBtn, setShowScrollBtn] = useState(false);  // Scroll-to-bottom button
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  // Track scroll container and content heights to compute top padding for bottom-anchoring
+  const [msgAreaHeight, setMsgAreaHeight] = useState(0);
+  const [msgContentHeight, setMsgContentHeight] = useState(0);
   const [aiMode, setAiMode] = useState<'auto_reply' | 'assisted' | 'draft_only' | 'off'>('assisted');
   const [showAISuggestion, setShowAISuggestion] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -620,17 +623,14 @@ function ThreadScreen() {
     }
   };
 
-  // Scroll to bottom when messages load or new messages arrive
-  // Uses a short timeout to let the FlatList finish rendering before scrolling
+  // ScrollView's onContentSizeChange handles initial scroll to bottom
+  // This effect handles scrolling on new messages arriving via WebSocket
   useEffect(() => {
     if (messages.length > 0 && !loading) {
-      const t = setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: false });
-        setShowScrollBtn(false);
-      }, 80);
-      return () => clearTimeout(t);
+      flatListRef.current?.scrollToEnd({ animated: true });
+      setShowScrollBtn(false);
     }
-  }, [messages.length, loading]);
+  }, [messages.length]);
 
   const loadAISuggestion = async () => {
     if (!conversationId || aiMode === 'off') return;
@@ -2033,12 +2033,11 @@ function ThreadScreen() {
           <ActivityIndicator size="large" color={colors.accent} />
         </View>
       ) : (
-        <FlatList
+        <ScrollView
           ref={flatListRef}
-          data={messages}
-          renderItem={renderMessage}
-          keyExtractor={(item) => item._id}
-          contentContainerStyle={[styles.messagesList, { flexGrow: 1 }]}
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.messagesList}
+          keyboardShouldPersistTaps="handled"
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -2046,22 +2045,29 @@ function ThreadScreen() {
               tintColor={colors.accent}
             />
           }
-          ListEmptyComponent={() => (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="chatbubble-outline" size={48} color={colors.textSecondary} />
-              <Text style={[styles.emptyText, { color: colors.textPrimary }]}>No messages yet</Text>
-              <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Start the conversation!</Text>
-            </View>
-          )}
-          keyboardShouldPersistTaps="handled"
-          maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+          onContentSizeChange={() => {
+            flatListRef.current?.scrollToEnd({ animated: false });
+            setShowScrollBtn(false);
+          }}
           onScroll={(e) => {
             const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
             const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
             setShowScrollBtn(distanceFromBottom > 120);
           }}
           scrollEventThrottle={100}
-        />
+        >
+          {messages.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons name="chatbubble-outline" size={48} color={colors.textSecondary} />
+              <Text style={[styles.emptyText, { color: colors.textPrimary }]}>No messages yet</Text>
+              <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Start the conversation!</Text>
+            </View>
+          ) : messages.map((item, index) => (
+            <React.Fragment key={item._id || String(index)}>
+              {renderMessage({ item, index })}
+            </React.Fragment>
+          ))}
+        </ScrollView>
       ))}
 
       {/* Scroll-to-bottom button — appears when user scrolls up */}
@@ -3228,9 +3234,8 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   messagesList: {
     padding: 12,
-    flexGrow: 1,
+    paddingBottom: 20,
     gap: 4,
-    justifyContent: 'flex-end',  // Messages anchor to bottom (like iMessage/WhatsApp)
   },
   emptyContainer: {
     flex: 1,

@@ -565,8 +565,29 @@ export default function InboxScreen() {
       
       const aTime = new Date(a.last_message?.timestamp || a.last_message_at || 0).getTime();
       const bTime = new Date(b.last_message?.timestamp || b.last_message_at || 0).getTime();
+      // Waiting tab: sort oldest-reply-first (longest waiting = most urgent at top)
+      if (activeTab === 'waiting') return aTime - bTime;
       return bTime - aTime;
     });
+
+  // Waiting time helper — how long has the customer been waiting?
+  const getWaitingInfo = (item: any): { label: string; color: string; urgent: boolean } | null => {
+    if (activeTab !== 'waiting') return null;
+    const ts = item.last_message?.timestamp || item.last_message_at || item.updated_at;
+    if (!ts) return null;
+    const ms = Date.now() - new Date(ts).getTime();
+    const mins = Math.floor(ms / 60000);
+    const hours = Math.floor(mins / 60);
+    const days  = Math.floor(hours / 24);
+    let label: string;
+    let color: string;
+    if (mins < 5)        { label = 'Just now';           color = '#34C759'; }
+    else if (mins < 60)  { label = `${mins}m waiting`;   color = '#FFD60A'; }
+    else if (hours < 4)  { label = `${hours}h ${mins % 60}m waiting`; color = '#FF9500'; }
+    else if (hours < 24) { label = `${hours}h waiting`;  color = '#FF3B30'; }
+    else                 { label = `${days}d waiting`;   color = '#FF3B30'; }
+    return { label, color, urgent: hours >= 1 };
+  };
   
   const formatTimestamp = (timestamp: string | Date | undefined) => {
     if (!timestamp) return '';
@@ -985,6 +1006,23 @@ export default function InboxScreen() {
             {item.last_message?.sender === 'user' ? 'You: ' : ''}
             {item.last_message?.content || 'No messages yet'}
           </Text>
+
+          {/* Waiting time badge — only on Waiting tab */}
+          {(() => {
+            const info = getWaitingInfo(item);
+            if (!info) return null;
+            return (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 5 }}>
+                <Ionicons name="time" size={11} color={info.color} />
+                <Text style={{ fontSize: 11, fontWeight: '700', color: info.color, letterSpacing: 0.2 }}>
+                  {info.label}
+                </Text>
+                {info.urgent && (
+                  <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: info.color, marginLeft: 2 }} />
+                )}
+              </View>
+            );
+          })()}
         </View>
         
         {hasAiOutcome && !isAcknowledged && (
