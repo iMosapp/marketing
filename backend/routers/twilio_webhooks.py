@@ -792,6 +792,177 @@ async def test_webhook():
 
 
 
+@router.post("/call")
+async def initiate_outbound_call(request: Request):
+    """
+    Click-to-Call: Rep taps Call in the app → their personal cell rings first →
+    when they answer, Twilio bridges them to the customer.
+    Customer's caller ID shows the rep's dedicated Twilio number (not the rep's personal cell).
+    
+    Body: { rep_user_id, customer_phone, contact_id (optional) }
+    """
+    import asyncio as _aio
+    body = await request.json()
+    rep_user_id   = body.get("rep_user_id", "")
+    customer_phone = body.get("customer_phone", "")
+    contact_id    = body.get("contact_id", "")
+
+    if not rep_user_id or not customer_phone:
+        raise HTTPException(status_code=400, detail="rep_user_id and customer_phone required")
+
+    db = get_db()
+    rep = await db.users.find_one({"_id": ObjectId(rep_user_id)})
+    if not rep:
+        raise HTTPException(status_code=404, detail="Rep not found")
+
+    rep_personal_phone = normalize_phone((rep.get("phone") or "").strip())
+    rep_twilio_number  = normalize_phone((rep.get("twilio_number") or rep.get("mvpline_number") or "").strip())
+    customer_phone_e164 = normalize_phone(customer_phone)
+
+    if not rep_personal_phone:
+        raise HTTPException(status_code=400, detail="Rep has no personal phone number set. Add it in your profile.")
+    if not rep_twilio_number:
+        raise HTTPException(status_code=400, detail="Rep has no dedicated Twilio number assigned.")
+    if not customer_phone_e164:
+        raise HTTPException(status_code=400, detail="Invalid customer phone number")
+
+    tw_sid   = os.environ.get("TWILIO_ACCOUNT_SID", "")
+    tw_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
+    if not tw_sid or not tw_token:
+        raise HTTPException(status_code=500, detail="Twilio credentials not configured")
+
+    # The TwiML that runs when the REP answers their personal phone
+    # It then dials the customer with the Twilio number as caller ID
+    app_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+
+    # Encode customer phone for URL (E.164 has + which needs escaping)
+    import urllib.parse
+    customer_encoded = urllib.parse.quote(customer_phone_e164)
+    rep_name = (rep.get("name") or "").split()[0] or "your rep"
+
+    # TwiML URL that connects the rep to the customer once rep picks up
+    bridge_twiml_url = f"{app_url}/api/webhooks/twilio/call-bridge?customer={customer_encoded}&caller_id={urllib.parse.quote(rep_twilio_number)}&rep_name={urllib.parse.quote(rep_name)}"
+
+    try:
+        from twilio.rest import Client as _TC
+        client = _TC(tw_sid, tw_token)
+        call = await _aio.to_thread(
+            client.calls.create,
+            to=rep_personal_phone,         # Ring the rep's personal cell first
+            from_=rep_twilio_number,        # Show the Twilio number to the rep too
+            url=bridge_twiml_url,
+            status_callback=f"{app_url}/api/webhooks/twilio/call-status",
+            status_callback_method="POST",
+        )
+        logger.info(f"[Voice] Outbound call initiated: rep={rep_personal_phone} → customer={customer_phone_e164} | SID={call.sid}")
+
+        # Log call event
+        try:
+            contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}) if contact_id else None
+            contact_name = (contact or {}).get("name") or f"({customer_phone[-4:]})"
+            await db.contact_events.insert_one({
+                "user_id":      rep_user_id,
+                "contact_id":   contact_id or None,
+                "contact_name": contact_name,
+                "event_type":   "outbound_call",
+                "category":     "call",
+                "title":        f"Called {contact_name}",
+                "description":  f"Outbound call to {customer_phone_e164} via {rep_twilio_number}",
+                "channel":      "voice",
+                "call_sid":     call.sid,
+                "timestamp":    datetime.utcnow(),
+            })
+        except Exception:
+            pass
+
+        return {
+            "success": True,
+            "call_sid": call.sid,
+            "status": call.status,
+            "message": f"Calling your phone ({rep_personal_phone[-4:]})... pick up to connect to {customer_phone_e164}",
+        }
+    except Exception as e:
+        logger.error(f"[Voice] Outbound call failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Call failed: {str(e)}")
+
+
+@router.post("/call-bridge")
+async def call_bridge_twiml(
+    request: Request,
+    customer: str = Form(default=""),
+    caller_id: str = Form(default=""),
+    rep_name: str = Form(default=""),
+):
+    """
+    TwiML returned when the REP answers their personal phone.
+    Bridges the rep to the customer with the Twilio number as caller ID.
+    Query params are set when the call was initiated.
+    """
+    # Also accept from query string (Twilio may GET this URL)
+    params = dict(request.query_params)
+    customer   = params.get("customer", customer)
+    caller_id  = params.get("caller_id", caller_id)
+    rep_name   = params.get("rep_name", rep_name)
+
+    if not customer:
+        return Response(
+            content='<?xml version="1.0" encoding="UTF-8"?><Response><Say>Configuration error. Goodbye.</Say></Response>',
+            media_type="application/xml"
+        )
+
+    import urllib.parse
+    customer_phone = urllib.parse.unquote(customer)
+    caller_number  = urllib.parse.unquote(caller_id) if caller_id else ""
+    name           = urllib.parse.unquote(rep_name) if rep_name else "the team"
+
+    twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Say voice="Polly.Joanna">Connecting you to the customer now.</Say>
+  <Dial callerId="{caller_number}" timeout="30">
+    <Number>{customer_phone}</Number>
+  </Dial>
+  <Say voice="Polly.Joanna">The call has ended.</Say>
+</Response>"""
+
+    return Response(content=twiml, media_type="application/xml")
+
+
+@router.get("/call-bridge")
+async def call_bridge_twiml_get(
+    request: Request,
+    customer: str = "",
+    caller_id: str = "",
+    rep_name: str = "",
+):
+    """GET version of call-bridge for Twilio's initial request."""
+    return await call_bridge_twiml(request, customer=customer, caller_id=caller_id, rep_name=rep_name)
+
+
+@router.post("/call-status")
+async def handle_call_status(
+    request: Request,
+    CallSid:    str = Form(default=""),
+    CallStatus: str = Form(default=""),
+    To:         str = Form(default=""),
+    From:       str = Form(default=""),
+    Duration:   str = Form(default="0"),
+):
+    """Updates call status in the DB (optional logging)."""
+    logger.info(f"[Voice] Call status: {CallSid} → {CallStatus} | duration={Duration}s")
+    if CallStatus in ("completed", "failed", "busy", "no-answer"):
+        db = get_db()
+        try:
+            await db.contact_events.update_one(
+                {"call_sid": CallSid},
+                {"$set": {"call_status": CallStatus, "call_duration_s": int(Duration or 0)}}
+            )
+        except Exception:
+            pass
+    return Response(content="OK", media_type="text/plain")
+
+
+
+
 @router.post("/voice")
 async def handle_inbound_voice(
     request: Request,
