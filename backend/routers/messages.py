@@ -196,10 +196,14 @@ async def get_conversations(user_id: str, personal_only: bool = True):
             )
             async for contact in contacts_cursor:
                 cid_str = str(contact['_id'])
+                full_name = f"{contact.get('first_name','')} {contact.get('last_name','')}".strip()
+                # If stored name is a placeholder, use contact.name or phone
+                if not full_name or full_name in ("Contact", "Unknown"):
+                    full_name = contact.get("name", "") or contact.get("phone", "") or "Unknown"
                 contact_map[cid_str] = {
                     "id": cid_str,
-                    "name": f"{contact['first_name']} {contact.get('last_name', '')}".strip(),
-                    "phone": contact['phone'],
+                    "name": full_name,
+                    "phone": contact.get('phone',''),
                     "email": _get_contact_email(contact),
                     "photo": contact.get('photo_thumbnail') or contact.get('photo_url'),
                     "photo_thumbnail": contact.get('photo_thumbnail'),
@@ -1035,7 +1039,33 @@ async def get_conversation_info(conversation_id: str):
     
     if not conv:
         raise HTTPException(status_code=404, detail="Conversation not found")
-    
+
+    # ── Resolve AI mode — never default to False ───────────────────────────────
+    # If ai_enabled is not explicitly stored, check if there are active enrollments
+    # with auto_reply to determine the true state.
+    stored_ai_mode    = conv.get("ai_mode") or ""
+    stored_ai_enabled = conv.get("ai_enabled")   # None = unset (not explicitly off)
+    if stored_ai_enabled is None:
+        # Check if there's an active enrollment with AI mode set
+        try:
+            contact_id_check = conv.get("contact_id")
+            if contact_id_check:
+                enroll = await db.campaign_enrollments.find_one({
+                    "contact_id": str(contact_id_check),
+                    "status": {"$in": ["active", "paused"]},
+                    "ai_assist_mode": {"$nin": ["off", None, ""]},
+                })
+                if enroll:
+                    stored_ai_enabled = True
+                    if not stored_ai_mode:
+                        stored_ai_mode = enroll.get("ai_assist_mode", "auto_reply")
+        except Exception:
+            pass
+    if stored_ai_enabled is None:
+        stored_ai_enabled = False
+    if not stored_ai_mode:
+        stored_ai_mode = "off" if not stored_ai_enabled else "auto_reply"
+
     result = {
         "_id": str(conv["_id"]),
         "contact_name": conv.get("contact_name"),
@@ -1043,11 +1073,11 @@ async def get_conversation_info(conversation_id: str):
         "contact_email": conv.get("contact_email"),
         "contact_photo": None,
         "status": conv.get("status", "active"),
-        "ai_mode": conv.get("ai_mode", "assisted"),
-        "ai_enabled": conv.get("ai_enabled", False),
+        "ai_mode":    stored_ai_mode,
+        "ai_enabled": stored_ai_enabled,
     }
-    
-    # Try to get contact photo and email
+
+    # ── Resolve best contact name + photo + email ──────────────────────────────
     contact_id = conv.get("contact_id")
     if contact_id:
         result["contact_id"] = str(contact_id)
@@ -1055,14 +1085,25 @@ async def get_conversation_info(conversation_id: str):
             contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"photo": 0})
             if contact:
                 result["contact_photo"] = contact.get("photo_thumbnail") or contact.get("photo_url")
-                result["contact_name"] = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip() or result["contact_name"]
+                # Build full name and skip generic placeholders like "Contact" or "Lead (XXXX)"
+                full = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip()
+                if not full or full in ("Contact", "Unknown"):
+                    full = contact.get("name", "") or ""
+                stored = result.get("contact_name") or ""
+                # Use the contact's actual name if it's better than the stored one
+                if full and full not in ("Contact", "Unknown") and len(full) > 2:
+                    result["contact_name"] = full
+                elif stored and stored not in ("Contact", "Unknown") and len(stored) > 2:
+                    pass  # keep stored
+                elif contact.get("phone"):
+                    result["contact_name"] = contact["phone"]
                 if not result["contact_email"]:
                     clean = _get_contact_email(contact)
                     if clean:
                         result["contact_email"] = clean
-        except:
+        except Exception:
             pass
-    
+
     return result
 
 

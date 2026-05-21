@@ -368,6 +368,18 @@ async def process_ai_reply_queue():
                 "status":          "sent" if not mocked else "sent_mock",
             })
 
+            # Sync conversation's AI mode so the UI reflects reality
+            # (new conversations default ai_enabled: False but AI is actually active)
+            if item.get("conversation_id") and item.get("ai_mode_used") and item["ai_mode_used"] != "off":
+                try:
+                    await db.conversations.update_one(
+                        {"_id": ObjectId(item["conversation_id"]),
+                         "$or": [{"ai_enabled": {"$ne": True}}, {"ai_mode": {"$in": [None, "", "off"]}}]},
+                        {"$set": {"ai_enabled": True, "ai_mode": item["ai_mode_used"]}}
+                    )
+                except Exception:
+                    pass
+
             # Log to contact_events so the wins feed + activity feed stay current
             if item.get("contact_id"):
                 try:
