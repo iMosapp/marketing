@@ -1,0 +1,459 @@
+import React, { useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter, useFocusEffect } from 'expo-router';
+import api from '../services/api';
+import { useAuthStore } from '../store/authStore';
+import { useThemeStore } from '../store/themeStore';
+import { UniversalShareModal } from '../components/UniversalShareModal';
+
+const FACTOR_ICONS: Record<string, string> = {
+  ai_identity:    'brain',
+  conversational: 'chatbubbles',
+  distribution:   'share-social',
+  citation:       'link',
+  freshness:      'flash',
+};
+
+const FACTOR_COLORS: Record<string, string> = {
+  ai_identity:    '#AF52DE',
+  conversational: '#007AFF',
+  distribution:   '#FF9500',
+  citation:       '#34C759',
+  freshness:      '#C9A962',
+};
+
+interface Factor {
+  score: number;
+  max: number;
+  label: string;
+  checks?: Record<string, boolean>;
+  details?: Record<string, any>;
+}
+
+interface Tip {
+  tip: string;
+  points: number;
+  route?: string;
+}
+
+interface TeamMember {
+  user_id: string;
+  name: string;
+  title: string;
+  score: number;
+  grade: string;
+  review_count: number;
+  card_visits: number;
+}
+
+interface HealthData {
+  total_score: number;
+  grade: string;
+  grade_color: string;
+  factors: Record<string, Factor>;
+  tips: Tip[];
+  user_name: string;
+}
+
+export default function GEOHealthScreen() {
+  const router = useRouter();
+  const { user } = useAuthStore();
+  const { theme } = useThemeStore();
+  const isDark = theme === 'dark';
+  const [data, setData] = useState<HealthData | null>(null);
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [tab, setTab] = useState<'my' | 'team'>('my');
+  const [error, setError] = useState(false);
+  const [showShare, setShowShare] = useState(false);
+
+  const isManager = user?.role === 'super_admin' || user?.role === 'admin' || user?.role === 'store_manager';
+
+  const fetchData = useCallback(async () => {
+    if (!user?._id) return;
+    setError(false);
+    try {
+      const res = await api.get(`/geo/health-score/${user._id}`);
+      if (res.data?.error) {
+        setError(true);
+      } else {
+        setData(res.data);
+      }
+      if (isManager && user?.store_id) {
+        try {
+          const teamRes = await api.get(`/geo/health-score/team/${user.store_id}`);
+          setTeam(teamRes.data.team || []);
+        } catch {}
+      }
+    } catch (e) {
+      console.error('SEO health fetch error:', e);
+      setError(true);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [user?._id, user?.store_id, isManager]);
+
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      fetchData();
+    }, [fetchData])
+  );
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchData();
+  };
+
+  const bg = isDark ? '#000' : '#F2F2F7';
+  const cardBg = isDark ? '#1C1C1E' : '#FFF';
+  const textPrimary = isDark ? '#FFF' : '#000';
+  const textSecondary = isDark ? '#8E8E93' : '#6C6C70';
+  const border = isDark ? '#2C2C2E' : '#E5E5EA';
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: bg }]}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} data-testid="geo-health-back-btn">
+            <Ionicons name="chevron-back" size={28} color={textPrimary} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: textPrimary }]}>GEO Health</Text>
+          <View style={{ width: 28 }} />
+        </View>
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color="#007AFF" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!data) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: bg }]}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} data-testid="geo-health-back-btn">
+            <Ionicons name="chevron-back" size={28} color={textPrimary} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: textPrimary }]}>GEO Health</Text>
+          <View style={{ width: 28 }} />
+        </View>
+        <View style={styles.loadingWrap}>
+          <Ionicons name="warning-outline" size={48} color={textSecondary} />
+          <Text style={{ color: textSecondary, fontSize: 17, marginTop: 12, textAlign: 'center' }}>
+            {error ? 'Unable to load GEO score. Pull down to retry.' : 'No data available'}
+          </Text>
+          <TouchableOpacity onPress={() => { setLoading(true); fetchData(); }} style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: '#007AFF', borderRadius: 10 }} data-testid="geo-retry-btn">
+            <Text style={{ color: '#FFF', fontWeight: '600' }}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const scoreAngle = (data.total_score / 100) * 360;
+
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: bg }]} data-testid="geo-health-screen">
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} data-testid="geo-health-back-btn">
+          <Ionicons name="chevron-back" size={28} color={textPrimary} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: textPrimary }]}>GEO Health</Text>
+        {data ? (
+          <TouchableOpacity onPress={() => setShowShare(true)} data-testid="geo-share-header-btn">
+            <Ionicons name="share-outline" size={24} color={textPrimary} />
+          </TouchableOpacity>
+        ) : (
+          <View style={{ width: 28 }} />
+        )}
+      </View>
+
+      {isManager && (
+        <View style={[styles.tabRow, { borderBottomColor: border }]}>
+          {['my', 'team'].map((t) => (
+            <TouchableOpacity
+              key={t}
+              style={[styles.tabBtn, tab === t && styles.tabActive]}
+              onPress={() => setTab(t as 'my' | 'team')}
+              data-testid={`geo-tab-${t}`}
+            >
+              <Text style={[styles.tabText, { color: tab === t ? '#007AFF' : textSecondary }]}>
+                {t === 'my' ? 'My Score' : 'Team'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        {tab === 'my' ? (
+          <>
+            {/* Score Circle */}
+            <View style={[styles.scoreCard, { backgroundColor: cardBg }]} data-testid="geo-score-card">
+              <View style={styles.scoreCircleWrap}>
+                <View style={[styles.scoreCircle, { borderColor: data.grade_color }]}>
+                  <Text style={[styles.scoreNum, { color: data.grade_color }]}>{data.total_score}</Text>
+                  <Text style={[styles.scoreOf, { color: textSecondary }]}>/ 100</Text>
+                </View>
+              </View>
+              <Text style={[styles.gradeText, { color: data.grade_color }]} data-testid="geo-grade">{data.grade}</Text>
+              <Text style={[styles.gradeSubtext, { color: textSecondary }]}>
+                {data.total_score >= 80
+                  ? "AI tools will confidently cite you in relevant searches."
+                  : data.total_score >= 60
+                  ? "Good foundation. A few improvements will get you into AI results."
+                  : data.total_score >= 40
+                  ? "You're building your AI presence. Keep going."
+                  : "Start with the quick wins below to get AI engines recognizing you."}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setShowShare(true)}
+                style={[styles.shareBtn, { borderColor: data.grade_color }]}
+                data-testid="seo-share-score-btn"
+              >
+                <Ionicons name="share-social-outline" size={16} color={data.grade_color} />
+                <Text style={[styles.shareBtnText, { color: data.grade_color }]}>Share My Score</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Factor Breakdown */}
+            <Text style={[styles.sectionTitle, { color: textPrimary }]}>Score Breakdown</Text>
+            {Object.entries(data.factors).map(([key, factor]) => (
+              <View key={key} style={[styles.factorCard, { backgroundColor: cardBg }]} data-testid={`seo-factor-${key}`}>
+                <View style={styles.factorHeader}>
+                  <View style={[styles.factorIcon, { backgroundColor: FACTOR_COLORS[key] + '20' }]}>
+                    <Ionicons name={FACTOR_ICONS[key] as any} size={20} color={FACTOR_COLORS[key]} />
+                  </View>
+                  <View style={styles.factorInfo}>
+                    <Text style={[styles.factorLabel, { color: textPrimary }]}>{factor.label}</Text>
+                    <Text style={[styles.factorScore, { color: textSecondary }]}>{factor.score} / {factor.max}</Text>
+                  </View>
+                </View>
+                <View style={[styles.progressBg, { backgroundColor: border }]}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      {
+                        backgroundColor: FACTOR_COLORS[key],
+                        width: `${(factor.score / factor.max) * 100}%`,
+                      },
+                    ]}
+                  />
+                </View>
+                {/* Checklist for profile */}
+                {factor.checks && (
+                  <View style={styles.checklist}>
+                    {Object.entries(factor.checks).map(([ck, val]) => (
+                      <View key={ck} style={styles.checkRow}>
+                        <Ionicons
+                          name={val ? 'checkmark-circle' : 'close-circle'}
+                          size={16}
+                          color={val ? '#34C759' : '#FF3B30'}
+                        />
+                        <Text style={[styles.checkLabel, { color: textSecondary }]}>
+                          {ck.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+                {/* Details for other factors */}
+                {factor.details && (
+                  <View style={styles.detailsRow}>
+                    {Object.entries(factor.details).map(([dk, dv]) => {
+                      if (typeof dv === 'boolean') {
+                        return (
+                          <View key={dk} style={styles.detailChip}>
+                            <Ionicons name={dv ? 'checkmark-circle' : 'close-circle'} size={12} color={dv ? '#34C759' : '#FF3B30'} />
+                            <Text style={[styles.detailText, { color: textSecondary }]}>{dk.replace(/_/g, ' ')}</Text>
+                          </View>
+                        );
+                      }
+                      return (
+                        <View key={dk} style={[styles.detailChip, { backgroundColor: isDark ? '#2C2C2E' : '#F2F2F7' }]}>
+                          <Text style={[styles.detailValue, { color: textPrimary }]}>{dv}</Text>
+                          <Text style={[styles.detailText, { color: textSecondary }]}>{dk.replace(/_/g, ' ')}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+            ))}
+
+            {/* How to Improve Link */}
+            <TouchableOpacity
+              onPress={() => router.push('/seo-guide' as any)}
+              style={[styles.guideBtn, { backgroundColor: cardBg, borderColor: border }]}
+              data-testid="seo-guide-link"
+            >
+              <View style={[styles.guideBtnIcon, { backgroundColor: '#007AFF18' }]}>
+                <Ionicons name="book" size={20} color="#007AFF" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.guideBtnTitle, { color: textPrimary }]}>How to Improve Your Score</Text>
+                <Text style={[styles.guideBtnSub, { color: textSecondary }]}>Step-by-step guide with direct links</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={textSecondary} />
+            </TouchableOpacity>
+
+            {/* Tips */}
+            {data.tips.length > 0 && (
+              <>
+                <Text style={[styles.sectionTitle, { color: textPrimary }]}>Quick Wins</Text>
+                <View style={[styles.tipsCard, { backgroundColor: cardBg }]} data-testid="seo-tips-card">
+                  {data.tips.map((tip, i) => (
+                    <View key={i} style={[styles.tipRow, i < data.tips.length - 1 && { borderBottomWidth: 1, borderBottomColor: border }]}>
+                      <View style={styles.tipBadge}>
+                        <Text style={styles.tipBadgeText}>+{tip.points}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.tipText, { color: textPrimary }]}>{tip.tip}</Text>
+                        {tip.route ? (
+                          <TouchableOpacity
+                            style={styles.fixBtn}
+                            onPress={() => router.push(tip.route as any)}
+                          >
+                            <Text style={styles.fixBtnText}>Fix This</Text>
+                            <Ionicons name="arrow-forward" size={12} color="#007AFF" />
+                          </TouchableOpacity>
+                        ) : null}
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Team Leaderboard */}
+            <Text style={[styles.sectionTitle, { color: textPrimary }]}>Team SEO Rankings</Text>
+            {team.length === 0 ? (
+              <View style={[styles.emptyCard, { backgroundColor: cardBg }]}>
+                <Text style={{ color: textSecondary }}>No team members found</Text>
+              </View>
+            ) : (
+              team.map((m, i) => (
+                <View key={m.user_id} style={[styles.teamRow, { backgroundColor: cardBg }]} data-testid={`team-member-${i}`}>
+                  <View style={styles.teamRank}>
+                    <Text style={[styles.teamRankNum, { color: i < 3 ? '#FFD60A' : textSecondary }]}>#{i + 1}</Text>
+                  </View>
+                  <View style={styles.teamInfo}>
+                    <Text style={[styles.teamName, { color: textPrimary }]}>{m.name}</Text>
+                    <Text style={[styles.teamTitle, { color: textSecondary }]}>{m.title || 'Team Member'}</Text>
+                  </View>
+                  <View style={styles.teamScoreWrap}>
+                    <Text style={[styles.teamScoreNum, {
+                      color: m.score >= 80 ? '#34C759' : m.score >= 60 ? '#007AFF' : m.score >= 40 ? '#FF9500' : '#FF3B30'
+                    }]}>{m.score}</Text>
+                    <Text style={[styles.teamGrade, { color: textSecondary }]}>{m.grade}</Text>
+                  </View>
+                </View>
+              ))
+            )}
+          </>
+        )}
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
+
+      {data && (
+        <UniversalShareModal
+          visible={showShare}
+          onClose={() => setShowShare(false)}
+          title="Share My SEO Score"
+          subtitle={`${data.total_score}/100 - ${data.grade}`}
+          shareUrl={`${process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'}/card/${user?._id}`}
+          shareText={`My GEO Health Score is ${data.total_score}/100 (${data.grade}) on I'm On Social! Check out my digital card: ${process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'}/card/${user?._id}`}
+          showPreview={true}
+          previewUrl={`${process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'}/card/${user?._id}`}
+          showQR={true}
+          userId={user?._id}
+          eventType="seo_score_shared"
+        />
+      )}
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
+  headerTitle: { fontSize: 19, fontWeight: '700' },
+  loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  tabRow: { flexDirection: 'row', borderBottomWidth: 1, marginHorizontal: 16 },
+  tabBtn: { flex: 1, alignItems: 'center', paddingVertical: 10 },
+  tabActive: { borderBottomWidth: 2, borderBottomColor: '#007AFF' },
+  tabText: { fontSize: 17, fontWeight: '600' },
+  scroll: { padding: 16 },
+  // Score Card
+  scoreCard: { borderRadius: 20, padding: 28, alignItems: 'center', marginBottom: 20 },
+  scoreCircleWrap: { marginBottom: 12 },
+  scoreCircle: { width: 120, height: 120, borderRadius: 60, borderWidth: 6, justifyContent: 'center', alignItems: 'center' },
+  scoreNum: { fontSize: 40, fontWeight: '900' },
+  scoreOf: { fontSize: 16, fontWeight: '500', marginTop: -4 },
+  gradeText: { fontSize: 21, fontWeight: '800', marginBottom: 4 },
+  gradeSubtext: { fontSize: 16, textAlign: 'center', lineHeight: 20 },
+  shareBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 16, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20, borderWidth: 1.5 },
+  shareBtnText: { fontSize: 16, fontWeight: '700' },
+  // Factors
+  sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12, marginTop: 4 },
+  factorCard: { borderRadius: 14, padding: 16, marginBottom: 10 },
+  factorHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  factorIcon: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  factorInfo: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  factorLabel: { fontSize: 17, fontWeight: '600' },
+  factorScore: { fontSize: 16, fontWeight: '600' },
+  progressBg: { height: 6, borderRadius: 3, overflow: 'hidden' },
+  progressFill: { height: 6, borderRadius: 3 },
+  // Checklist
+  checklist: { marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  checkRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingRight: 12 },
+  checkLabel: { fontSize: 14 },
+  // Details
+  detailsRow: { marginTop: 10, flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  detailChip: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+  detailValue: { fontSize: 16, fontWeight: '700' },
+  detailText: { fontSize: 13 },
+  // Tips
+  tipsCard: { borderRadius: 14, overflow: 'hidden' },
+  tipRow: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
+  tipBadge: { backgroundColor: '#34C75920', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, minWidth: 38, alignItems: 'center' },
+  tipBadgeText: { color: '#34C759', fontWeight: '800', fontSize: 15 },
+  tipText: { fontSize: 16, flex: 1, lineHeight: 19 },
+  fixBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, backgroundColor: '#007AFF12', alignSelf: 'flex-start', marginTop: 6 },
+  fixBtnText: { fontSize: 14, fontWeight: '700', color: '#007AFF' },
+  // Guide button
+  guideBtn: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 14, borderWidth: 1, marginBottom: 16 },
+  guideBtnIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  guideBtnTitle: { fontSize: 17, fontWeight: '600' },
+  guideBtnSub: { fontSize: 14, marginTop: 1 },
+  // Team
+  teamRow: { borderRadius: 14, padding: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
+  teamRank: { width: 36, alignItems: 'center' },
+  teamRankNum: { fontSize: 18, fontWeight: '800' },
+  teamInfo: { flex: 1, marginLeft: 8 },
+  teamName: { fontSize: 17, fontWeight: '600' },
+  teamTitle: { fontSize: 14, marginTop: 1 },
+  teamScoreWrap: { alignItems: 'flex-end' },
+  teamScoreNum: { fontSize: 22, fontWeight: '900' },
+  teamGrade: { fontSize: 13 },
+  emptyCard: { borderRadius: 14, padding: 24, alignItems: 'center' },
+});

@@ -641,6 +641,7 @@ export default function MoreScreen() {
       { permKey: 'activity_reports', icon: 'bar-chart', title: 'Activity Reports', subtitle: 'Detailed activity analytics', onPress: () => router.push('/reports/activity'), color: '#007AFF' },
       { permKey: 'email_analytics', icon: 'trending-up', title: 'Email Analytics', subtitle: 'Opens, clicks & engagement', onPress: () => router.push('/settings/email-analytics'), color: '#FF2D55' },
       { permKey: 'my_performance', icon: 'pulse', title: 'SEO Health', subtitle: 'Your online visibility score', onPress: () => router.push('/seo-health'), color: '#30D158' },
+      { permKey: 'geo_health', icon: 'brain', title: 'GEO Health', subtitle: 'Your AI citation score — ChatGPT, Gemini, Perplexity', onPress: () => router.push('/geo-health'), color: '#AF52DE' },
     ]);
     if (items.length > 0) sections.push({ id: 'performance', title: 'My Performance', icon: 'stats-chart', color: '#34C759', items });
   }
