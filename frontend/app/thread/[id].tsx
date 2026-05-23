@@ -3101,6 +3101,58 @@ function ThreadScreen() {
                 </Text>
               </View>
             </TouchableOpacity>
+
+            {/* Merge Conversations — surfaces when there might be a duplicate */}
+            <TouchableOpacity
+              style={styles.statusOption}
+              onPress={async () => {
+                setShowSettings(false);
+                const convId = actualConversationId || conversationId;
+                const phone  = contactPhone;
+                if (!convId || !user?._id) return;
+                try {
+                  const { default: apiInst } = await import('../../services/api');
+                  const res = await apiInst.get(`/messages/duplicate-check/${user._id}`);
+                  const dups = (res.data.duplicates || []).find((d: any) =>
+                    d.conversations.some((c: any) => c._id === convId)
+                  );
+                  if (!dups || dups.count < 2) {
+                    showSimpleAlert('No Duplicates', 'No duplicate conversations found for this contact.');
+                    return;
+                  }
+                  // Pick the other conversation to merge
+                  const other = dups.conversations.find((c: any) => c._id !== convId);
+                  const primaryName = dups.primary_name || 'this conversation';
+                  showConfirm(
+                    'Merge Conversations',
+                    `Found ${dups.count} conversations for the same phone number.\n\nMerge "${other?.contact_name || 'duplicate'}" into "${primaryName}"?\n\nAll messages will be combined.`,
+                    async () => {
+                      try {
+                        await apiInst.post('/messages/conversations/merge', {
+                          primary_id:   dups.primary_id,
+                          secondary_id: dups.conversations.find((c: any) => c._id !== dups.primary_id)?._id,
+                        });
+                        showToast('Conversations merged successfully', 'success');
+                        router.back();
+                      } catch (e: any) {
+                        showSimpleAlert('Error', e?.response?.data?.detail || 'Merge failed');
+                      }
+                    }
+                  );
+                } catch {
+                  showSimpleAlert('Error', 'Could not check for duplicates');
+                }
+              }}
+              data-testid="merge-conversations-btn"
+            >
+              <View style={[styles.modeIcon, { backgroundColor: '#FF950020' }]}>
+                <Ionicons name="git-merge-outline" size={20} color="#FF9500" />
+              </View>
+              <View style={styles.modeInfo}>
+                <Text style={styles.modeName}>Merge Duplicate Conversations</Text>
+                <Text style={styles.modeDesc}>Combine two threads for the same contact</Text>
+              </View>
+            </TouchableOpacity>
             
             <TouchableOpacity 
               style={styles.closeModalButton}

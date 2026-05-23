@@ -833,6 +833,136 @@ async def restore_conversation(conversation_id: str):
     return {"message": "Conversation restored"}
 
 
+
+@router.post("/conversations/merge")
+async def merge_conversations(data: dict):
+    """
+    Merge two conversations into one — moves all messages from the secondary
+    conversation into the primary, then closes the secondary.
+    Primary = the conversation to KEEP (with the real name / best contact).
+    Secondary = the duplicate conversation to close/absorb.
+    """
+    db = get_db()
+    primary_id   = data.get("primary_id", "")
+    secondary_id = data.get("secondary_id", "")
+
+    if not primary_id or not secondary_id:
+        raise HTTPException(status_code=400, detail="primary_id and secondary_id required")
+    if primary_id == secondary_id:
+        raise HTTPException(status_code=400, detail="Cannot merge a conversation with itself")
+
+    try:
+        primary   = await db.conversations.find_one({"_id": ObjectId(primary_id)})
+        secondary = await db.conversations.find_one({"_id": ObjectId(secondary_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid conversation ID")
+
+    if not primary or not secondary:
+        raise HTTPException(status_code=404, detail="One or both conversations not found")
+
+    # Move all messages from secondary → primary
+    msgs_result = await db.messages.update_many(
+        {"conversation_id": secondary_id},
+        {"$set": {"conversation_id": primary_id}}
+    )
+
+    # Move all notifications referencing secondary → primary
+    await db.notifications.update_many(
+        {"conversation_id": secondary_id},
+        {"$set": {"conversation_id": primary_id}}
+    )
+
+    # Move all contact_events referencing secondary → primary
+    await db.contact_events.update_many(
+        {"conversation_id": secondary_id},
+        {"$set": {"conversation_id": primary_id}}
+    )
+
+    # Move AI reply queue items
+    await db.ai_reply_queue.update_many(
+        {"conversation_id": secondary_id},
+        {"$set": {"conversation_id": primary_id}}
+    )
+
+    # Update primary with the latest last_message_at
+    sec_last = secondary.get("last_message_at")
+    pri_last = primary.get("last_message_at")
+    latest   = sec_last if (sec_last and (not pri_last or sec_last > pri_last)) else pri_last
+
+    await db.conversations.update_one(
+        {"_id": ObjectId(primary_id)},
+        {"$set": {
+            "last_message_at":    latest,
+            "merged_from":        secondary_id,
+            "needs_assistance":   primary.get("needs_assistance") or secondary.get("needs_assistance", False),
+        }}
+    )
+
+    # Close the secondary (don't delete — keep for audit trail)
+    await db.conversations.update_one(
+        {"_id": ObjectId(secondary_id)},
+        {"$set": {
+            "status":      "closed",
+            "merged_into": primary_id,
+            "merged_at":   datetime.utcnow(),
+        }}
+    )
+
+    # Bust conversation cache
+    _conv_cache.pop(f"{primary.get('user_id')}:True", None)
+    _conv_cache.pop(f"{primary.get('user_id')}:False", None)
+
+    return {
+        "success":       True,
+        "primary_id":    primary_id,
+        "secondary_id":  secondary_id,
+        "messages_moved": msgs_result.modified_count,
+        "message":       f"Merged {msgs_result.modified_count} messages into the primary conversation.",
+    }
+
+
+@router.get("/duplicate-check/{user_id}")
+async def find_duplicate_conversations(user_id: str):
+    """Find conversations with the same phone number — used for the merge UI."""
+    db = get_db()
+    # Get all conversations for this user
+    convs = await db.conversations.find(
+        {"user_id": user_id, "status": {"$nin": ["closed", "archived"]}, "contact_phone": {"$exists": True, "$ne": ""}},
+        {"_id": 1, "contact_id": 1, "contact_name": 1, "contact_phone": 1, "last_message_at": 1, "status": 1}
+    ).to_list(500)
+
+    # Group by phone number
+    by_phone: dict = {}
+    for c in convs:
+        phone = (c.get("contact_phone") or "").strip().replace(" ", "").replace("-", "")
+        # Normalize: strip +1 for comparison
+        phone_key = phone.lstrip("+").lstrip("1") if len(phone) >= 10 else phone
+        if phone_key not in by_phone:
+            by_phone[phone_key] = []
+        c["_id"] = str(c["_id"])
+        by_phone[phone_key].append(c)
+
+    # Return only groups with 2+ conversations
+    duplicates = []
+    for phone, group in by_phone.items():
+        if len(group) > 1:
+            # Sort: named contacts first, then by recency
+            group.sort(key=lambda x: (
+                0 if x.get("contact_name", "") in ("Contact", "Unknown", "", None) else 1,
+                str(x.get("last_message_at") or "")
+            ), reverse=True)
+            duplicates.append({
+                "phone":       phone,
+                "count":       len(group),
+                "conversations": group,
+                "primary_id":  group[0]["_id"],   # Best candidate for primary
+                "primary_name": group[0].get("contact_name", ""),
+            })
+
+    return {"duplicates": duplicates, "total": len(duplicates)}
+
+
+
 @router.put("/conversation/{conversation_id}/read")
 async def mark_conversation_read(conversation_id: str):
     """Mark a conversation as read"""

@@ -160,15 +160,35 @@ async def incoming_message(
         rep_user_id = str(rep_user["_id"]) if rep_user else None
         rep_name    = (rep_user.get("name") or "").split()[0] if rep_user else "your rep"
 
-        # ── Step 2: Find or create contact for the sender ────────────────────
+        # ── Step 2: Find or create contact — prefer named contacts ──────────────
+        # When multiple contacts share a phone, pick the one with a real name.
         alt_phone = from_phone.replace("+1", "") if from_phone.startswith("+1") else "+1" + from_phone.lstrip("+")
-        contact = await db.contacts.find_one({
+        all_matching = await db.contacts.find({
             "$or": [
                 {"phone": from_phone},
                 {"phone": alt_phone},
                 {"phone": from_phone.lstrip("+")},
             ]
-        })
+        }).to_list(10)
+
+        def _name_quality(c: dict) -> int:
+            """Higher = better name. Prefer named > phone-only > generic."""
+            n = (c.get("name") or f"{c.get('first_name','')} {c.get('last_name','')}".strip()).strip()
+            if not n or n in ("Contact", "Unknown", "New Lead"):
+                return 0
+            if n.startswith("Lead (") or n.startswith("New Lead"):
+                return 1
+            return 2  # Real name
+
+        if all_matching:
+            all_matching.sort(key=_name_quality, reverse=True)
+            contact = all_matching[0]
+            # If we found a better-named contact than others, mark the duplicates
+            if len(all_matching) > 1 and _name_quality(contact) > _name_quality(all_matching[-1]):
+                dup_ids = [str(c["_id"]) for c in all_matching[1:]]
+                logger.info(f"[Webhook] Multiple contacts for {from_phone}: using {contact.get('name')} (best), {len(dup_ids)} duplicates")
+        else:
+            contact = None
 
         is_new_contact = False
         if not contact:
@@ -190,7 +210,6 @@ async def incoming_message(
             contact["_id"] = result.inserted_id
             logger.info(f"[Webhook] New contact created for {from_phone}, assigned to {rep_user_id}")
         elif not contact.get("user_id") and rep_user_id:
-            # Assign orphan contact to the rep
             await db.contacts.update_one(
                 {"_id": contact["_id"]},
                 {"$set": {"user_id": rep_user_id}}
@@ -199,20 +218,41 @@ async def incoming_message(
 
         contact_id = str(contact["_id"])
         user_id    = contact.get("user_id") or rep_user_id
-        is_stop    = False   # will be set properly after message is saved
+        is_stop    = False
         
-        # Find or create conversation
-        conversation = await db.conversations.find_one({
-            "contact_id": contact_id
-        })
-        
+        # ── Find or create conversation — check by phone too to avoid duplicates ──
+        # First try exact contact_id match, then fall back to phone number.
+        # If we find a conversation linked to a worse contact, upgrade it.
+        conversation = await db.conversations.find_one({"contact_id": contact_id})
+
         if not conversation:
-            # Create new conversation
+            # Check if a conversation exists for this phone under a different contact_id
+            phone_variants = [from_phone, alt_phone, from_phone.lstrip("+")]
+            conv_by_phone = await db.conversations.find_one({
+                "user_id": rep_user_id,
+                "contact_phone": {"$in": phone_variants},
+            }, sort=[("last_message_at", -1)])
+            if conv_by_phone:
+                # Reuse existing conversation, upgrade it to the better contact
+                conversation = conv_by_phone
+                contact_name = (contact.get("name") or f"{contact.get('first_name','')} {contact.get('last_name','')}".strip()) if contact else ""
+                await db.conversations.update_one(
+                    {"_id": conversation["_id"]},
+                    {"$set": {
+                        "contact_id":   contact_id,
+                        "contact_name": contact_name or conversation.get("contact_name", ""),
+                        "contact_phone": from_phone,
+                    }}
+                )
+                logger.info(f"[Webhook] Relinked conversation {conversation['_id']} to better contact {contact_id} ({contact_name})")
+
+        if not conversation:
+            contact_name = (contact.get("name") or f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip())
             conversation = {
                 "user_id": user_id,
                 "contact_id": contact_id,
                 "contact_phone": from_phone,
-                "contact_name": contact.get("name") or f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip(),
+                "contact_name": contact_name,
                 "status": "active",
                 "ai_enabled": False,
                 "ai_mode": "suggest",
@@ -226,7 +266,6 @@ async def incoming_message(
             conversation["_id"] = result.inserted_id
             logger.info(f"Created new conversation for contact {contact_id}")
         else:
-            # Update existing conversation
             await db.conversations.update_one(
                 {"_id": conversation["_id"]},
                 {
