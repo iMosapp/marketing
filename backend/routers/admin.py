@@ -2048,6 +2048,55 @@ async def backfill_default_campaigns(x_user_id: str = Header(alias="X-User-ID"))
         raise HTTPException(status_code=403, detail="Super admin only")
 
     from services.seed_defaults import seed_user_defaults
+
+
+# ── System Logs ──────────────────────────────────────────────────────────────
+
+@router.get("/system-logs")
+async def get_system_logs(
+    level: str = "all",
+    category: str = "all",
+    limit: int = 100,
+    x_user_id: str = Header(None, alias="X-User-ID"),
+):
+    """Return recent system logs — errors, warnings, info from all backend services."""
+    caller = await get_user_by_id(x_user_id)
+    if not caller or caller.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super admin only")
+
+    db = get_db()
+    query: dict = {}
+    if level != "all":
+        query["level"] = level
+    if category != "all":
+        query["category"] = category
+
+    logs = await db.system_logs.find(query).sort("timestamp", -1).limit(min(limit, 500)).to_list(min(limit, 500))
+    for log in logs:
+        log["_id"] = str(log["_id"])
+        if hasattr(log.get("timestamp"), "isoformat"):
+            log["timestamp"] = log["timestamp"].isoformat()
+
+    categories = await db.system_logs.distinct("category")
+    counts = {
+        "error":   await db.system_logs.count_documents({"level": "error"}),
+        "warning": await db.system_logs.count_documents({"level": "warning"}),
+        "info":    await db.system_logs.count_documents({"level": "info"}),
+    }
+
+    return {"logs": logs, "total": len(logs), "categories": categories, "counts": counts}
+
+
+@router.delete("/system-logs")
+async def clear_system_logs(x_user_id: str = Header(None, alias="X-User-ID")):
+    """Clear all system logs."""
+    caller = await get_user_by_id(x_user_id)
+    if not caller or caller.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super admin only")
+    db = get_db()
+    result = await db.system_logs.delete_many({})
+    return {"deleted": result.deleted_count}
+
     db = get_db()
 
     users = await db.users.find(

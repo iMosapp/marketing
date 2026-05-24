@@ -1092,8 +1092,12 @@ async def handle_recording_complete(
 
                 if not tw_sid or not tw_token:
                     logger.warning("[Voice] Transcription skipped — Twilio credentials not set")
+                    from utils.system_logger import syslog
+                    await syslog.warning("voice_transcription", "Twilio credentials not set — cannot download recording")
                 elif not emergent_key:
                     logger.warning("[Voice] Transcription skipped — EMERGENT_LLM_KEY not set")
+                    from utils.system_logger import syslog
+                    await syslog.warning("voice_transcription", "EMERGENT_LLM_KEY not set — Whisper unavailable")
                 else:
                     import requests as _req, tempfile, uuid as _uuid
                     mp3_url = RecordingUrl if RecordingUrl.endswith(".mp3") else f"{RecordingUrl}.mp3"
@@ -1132,8 +1136,12 @@ async def handle_recording_complete(
                             except: pass
                     else:
                         logger.warning(f"[Voice] Recording download failed: HTTP {status_code} from {mp3_url[:60]}")
+                        from utils.system_logger import syslog
+                        await syslog.warning("voice_transcription", f"Recording download failed HTTP {status_code}", recording_url=mp3_url[:80], call_sid=CallSid)
             except Exception as transcribe_err:
                 logger.warning(f"[Voice] Transcription failed: {transcribe_err}", exc_info=True)
+                from utils.system_logger import syslog
+                await syslog.error("voice_transcription", "Whisper transcription failed", error=transcribe_err, call_sid=CallSid, contact=contact_name)
 
         # Extract key info with GPT
         if transcript:

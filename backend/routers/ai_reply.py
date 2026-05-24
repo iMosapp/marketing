@@ -199,6 +199,10 @@ async def queue_ai_reply(
 
     except Exception as e:
         logger.error(f"[AIReply] Draft generation failed for {contact_id}: {e}")
+        from utils.system_logger import syslog
+        await syslog.error("ai_reply", f"Draft generation failed", error=e,
+                           contact_id=contact_id, conversation_id=conversation_id,
+                           user_id=assigned_user_id)
         ai_body = None
 
     if not ai_body:
@@ -403,6 +407,9 @@ async def process_ai_reply_queue():
 
         except Exception as e:
             logger.error(f"[AIReply] Send failed for queue {qid}: {e}")
+            from utils.system_logger import syslog
+            await syslog.error("ai_reply_send", f"SMS send failed", error=e,
+                               queue_id=str(qid), contact_id=item.get("contact_id",""))
             await db.ai_reply_queue.update_one(
                 {"_id": qid}, {"$set": {"status": STATUS_FAILED, "error": str(e)}}
             )
