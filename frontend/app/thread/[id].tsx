@@ -1929,23 +1929,7 @@ function ThreadScreen() {
         </TouchableOpacity>
       </View>
       
-      {/* SMS Mode Indicator — email switching removed from inline composer */}
-      <View style={[
-        styles.modeBanner,
-        {
-          backgroundColor: messageMode === 'sms' ? '#007AFF15' : '#34C75915',
-          borderColor: messageMode === 'sms' ? '#007AFF30' : '#34C75930',
-        }
-      ]}>
-        <Ionicons
-          name={messageMode === 'sms' ? 'chatbubble' : 'mail'}
-          size={16}
-          color={messageMode === 'sms' ? '#007AFF' : '#34C759'}
-        />
-        <Text style={styles.modeBannerText}>
-          {messageMode === 'sms' ? 'Message Mode' : 'Email Mode'}
-        </Text>
-      </View>
+      {/* Mode banner removed — more room for messages */}
       
       {/* Inline Email Prompt */}
       {showEmailPrompt && (
