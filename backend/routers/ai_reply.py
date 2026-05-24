@@ -647,6 +647,141 @@ async def get_contact_reply_history(contact_id: str, limit: int = 20):
 
 async def send_silence_followups():
     """
+    Runs hourly — sends follow-ups at 10 AM in each rep's local timezone.
+    Targets conversations where:
+      - Customer replied 2+ times then went silent for 20-28h
+      - No reply has been sent after their last message
+      - Max 2 total follow-ups per conversation
+    """
+    import pytz
+    db  = get_db()
+    now_utc = datetime.now(timezone.utc)
+    now     = now_utc.replace(tzinfo=None)
+
+    window_start = now - timedelta(hours=28)
+    window_end   = now - timedelta(hours=20)
+
+    logger.info("[SilenceFollowup] Hourly check running...")
+
+    candidates = await db.conversations.find({
+        "ai_enabled":        True,
+        "ai_mode":           {"$nin": ["off", None, ""]},
+        "status":            {"$nin": ["closed", "archived"]},
+        "last_message_at":   {"$gte": window_start, "$lte": window_end},
+        "unanswered_customer_replies": {"$gte": 2},
+        "silence_followups_sent": {"$lt": 2},
+    }).limit(200).to_list(200)
+
+    sent = 0
+    skipped = 0
+
+    for conv in candidates:
+        conv_id    = str(conv["_id"])
+        contact_id = conv.get("contact_id")
+        user_id    = conv.get("user_id")
+
+        if not contact_id or not user_id:
+            skipped += 1
+            continue
+
+        # ── Check rep's local time — only send during their 10 AM hour ──────────
+        try:
+            rep = await db.users.find_one({"_id": ObjectId(user_id)}, {"timezone": 1})
+            rep_tz_str = (rep or {}).get("timezone", "America/Denver")
+            rep_tz     = pytz.timezone(rep_tz_str)
+            local_hour = now_utc.astimezone(rep_tz).hour
+            if local_hour != 10:
+                skipped += 1
+                continue   # Not 10 AM for this rep yet — check again next hour
+        except Exception:
+            # Fall back to Mountain Time if timezone lookup fails
+            try:
+                mt = pytz.timezone("America/Denver")
+                local_hour = now_utc.astimezone(mt).hour
+                if local_hour != 10:
+                    skipped += 1
+                    continue
+            except Exception:
+                pass
+
+        # ── Verify last message is from customer (not already replied to) ─────
+        last_msg = await db.messages.find_one(
+            {"conversation_id": conv_id},
+            sort=[("timestamp", -1)]
+        )
+        if not last_msg or last_msg.get("sender") not in ("contact", "inbound"):
+            skipped += 1
+            continue
+
+        # ── Generate warm follow-up ───────────────────────────────────────────
+        try:
+            from routers.ai_campaigns import build_clone_system_prompt
+            from emergentintegrations.llm.chat import LlmChat, UserMessage
+            import os, uuid as _uuid2
+
+            system_prompt = await build_clone_system_prompt(user_id)
+            system_prompt += (
+                "\n\nThis is a follow-up for someone who replied but then went quiet. "
+                "Be warm, brief, zero-pressure — 1 sentence only. "
+                "Something like 'Hey, just checking in!' or 'Hope things are going well!' "
+                "Never ask a sales question. Make it feel human, not automated."
+            )
+
+            recent = await db.messages.find({"conversation_id": conv_id}).sort("timestamp",-1).limit(4).to_list(4)
+            recent.reverse()
+            ctx = "\n".join(
+                f"{'Me' if m.get('sender') in ('user','ai') else 'Them'}: {(m.get('content') or '')[:100]}"
+                for m in recent if m.get("content")
+            )
+
+            chat = LlmChat(
+                api_key=os.environ.get("EMERGENT_LLM_KEY",""),
+                session_id=f"followup-{_uuid2.uuid4().hex[:10]}",
+                system_message=system_prompt,
+            ).with_model("openai","gpt-5.2")
+
+            result = await asyncio.wait_for(
+                chat.send_message(UserMessage(text=f"Recent conversation:\n{ctx}\n\nWrite one warm follow-up sentence.")),
+                timeout=10.0,
+            )
+            body = (result.strip() if isinstance(result, str)
+                    else result.text.strip() if hasattr(result,"text") else "").strip('"\'')
+
+            if not body:
+                skipped += 1
+                continue
+
+            delay = 60 + (sent * 30)  # stagger sends slightly
+            await db.ai_reply_queue.insert_one({
+                "contact_id":         contact_id,
+                "conversation_id":    conv_id,
+                "enrollment_id":      "silence_followup",
+                "campaign_id":        "",
+                "assigned_user_id":   user_id,
+                "body":               body,
+                "send_at":            now + timedelta(seconds=delay),
+                "status":             "pending",
+                "requires_approval":  False,
+                "ai_mode_used":       conv.get("ai_mode","auto_reply"),
+                "is_silence_followup": True,
+                "created_at":         now,
+            })
+
+            await db.conversations.update_one(
+                {"_id": conv["_id"]},
+                {"$inc": {"silence_followups_sent": 1},
+                 "$set": {"last_silence_followup_at": now}}
+            )
+            sent += 1
+
+        except Exception as e:
+            logger.warning(f"[SilenceFollowup] Failed for conv {conv_id}: {e}")
+            skipped += 1
+
+    if sent > 0:
+        logger.info(f"[SilenceFollowup] Sent {sent} follow-ups, {skipped} skipped (wrong hour or no gap)")
+    return {"sent": sent, "skipped": skipped}
+    """
     Daily job — finds conversations where:
       - Customer replied 2+ times (showed genuine interest)
       - Customer's last message was 20-28 hours ago (went silent)

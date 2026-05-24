@@ -1145,7 +1145,7 @@ def start_scheduler():
         misfire_grace_time=7200,
     )
 
-    # Daily at 10 AM UTC — follow up on conversations that went silent
+    # Hourly — send silence follow-ups at 10 AM in each rep's local timezone
     async def _run_silence_followups():
         try:
             from routers.ai_reply import send_silence_followups
@@ -1155,10 +1155,10 @@ def start_scheduler():
 
     scheduler.add_job(
         safe_job(_run_silence_followups),
-        CronTrigger(hour=10, minute=0),
+        IntervalTrigger(hours=1),
         id="silence_followup_daily",
         replace_existing=True,
-        misfire_grace_time=3600,
+        misfire_grace_time=1800,
     )
 
     scheduler.start()
