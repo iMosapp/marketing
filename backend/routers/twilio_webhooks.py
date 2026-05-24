@@ -1090,39 +1090,50 @@ async def handle_recording_complete(
                 tw_token = _os.environ.get("TWILIO_AUTH_TOKEN", "")
                 emergent_key = _os.environ.get("EMERGENT_LLM_KEY", "")
 
-                if tw_sid and tw_token and emergent_key:
-                    # Download recording from Twilio (requires Basic Auth)
-                    import httpx, tempfile, uuid as _uuid
+                if not tw_sid or not tw_token:
+                    logger.warning("[Voice] Transcription skipped — Twilio credentials not set")
+                elif not emergent_key:
+                    logger.warning("[Voice] Transcription skipped — EMERGENT_LLM_KEY not set")
+                else:
+                    import requests as _req, tempfile, uuid as _uuid
                     mp3_url = RecordingUrl if RecordingUrl.endswith(".mp3") else f"{RecordingUrl}.mp3"
+                    logger.info(f"[Voice] Downloading recording from Twilio: {mp3_url[:60]}...")
 
-                    async with httpx.AsyncClient(auth=(tw_sid, tw_token), timeout=30) as client:
-                        resp = await client.get(mp3_url)
+                    # Use synchronous requests in a thread to avoid httpx async complexity
+                    def _download():
+                        r = _req.get(mp3_url, auth=(tw_sid, tw_token), timeout=30)
+                        return r.status_code, r.content
 
-                    if resp.status_code == 200:
-                        # Save to temp file and transcribe with Whisper
+                    status_code, content = await _aio.to_thread(_download)
+
+                    if status_code == 200 and content:
                         tmp_path = f"/tmp/call_{_uuid.uuid4().hex}.mp3"
                         with open(tmp_path, "wb") as f:
-                            f.write(resp.content)
+                            f.write(content)
+                        logger.info(f"[Voice] Downloaded {len(content)} bytes — transcribing with Whisper...")
 
                         try:
                             from emergentintegrations.llm.openai import OpenAISpeechToText
                             stt = OpenAISpeechToText(api_key=emergent_key)
-                            transcript = await _aio.wait_for(
+                            result = await _aio.wait_for(
                                 stt.transcribe(tmp_path, language="en"),
-                                timeout=30.0
+                                timeout=60.0
                             )
-                            if hasattr(transcript, "text"):
-                                transcript = transcript.text
-                            transcript = (transcript or "").strip()
+                            if hasattr(result, "text"):
+                                transcript = result.text.strip()
+                            elif isinstance(result, str):
+                                transcript = result.strip()
+                            elif isinstance(result, dict):
+                                transcript = result.get("text", "").strip()
                             logger.info(f"[Voice] Whisper transcript ({len(transcript)} chars) for {contact_name}")
                         finally:
                             import os as _ost
                             try: _ost.remove(tmp_path)
                             except: pass
                     else:
-                        logger.warning(f"[Voice] Could not download recording: HTTP {resp.status_code}")
+                        logger.warning(f"[Voice] Recording download failed: HTTP {status_code} from {mp3_url[:60]}")
             except Exception as transcribe_err:
-                logger.warning(f"[Voice] Transcription failed: {transcribe_err}")
+                logger.warning(f"[Voice] Transcription failed: {transcribe_err}", exc_info=True)
 
         # Extract key info with GPT
         if transcript:
