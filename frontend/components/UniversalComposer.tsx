@@ -230,14 +230,18 @@ export default function UniversalComposer({
       fd.append('customer_name', `${contact?.first_name || ''} ${contact?.last_name || ''}`.trim());
       fd.append('card_type', cardType);
       if (contact?.phone) fd.append('customer_phone', contact.phone);
-      const r = await api.post('/congrats/create', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      // Do NOT manually set Content-Type — browser sets it with the correct boundary
+      const r = await api.post('/congrats/create', fd, {
+        headers: { 'X-User-ID': userId },
+      });
       if (r.data?.short_url) {
         setMessage(`Hey ${contact?.first_name || 'there'}! ${headline} ${r.data.short_url}`);
         setEventType(`${cardType}_card_sent`);
         setEventTitle(`'${headline}' Card Sent`);
       }
     } catch (e: any) {
-      showSimpleAlert('Error', e?.response?.data?.detail || 'Could not create card');
+      const detail = e?.response?.data?.detail;
+      showSimpleAlert('Error', typeof detail === 'string' ? detail : 'Could not create card. Please try again.');
     }
   };
 

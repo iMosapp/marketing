@@ -159,7 +159,10 @@ export default function CreateCardPage() {
           formData.append('photo', { uri: photo!.uri, type: photo!.type, name: photo!.name } as any);
         }
       }
-      const res = await api.post('/congrats/create', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const res = await api.post('/congrats/create', formData, {
+        headers: { 'X-User-ID': user._id },
+        // Do NOT set Content-Type manually — browser sets it with the correct boundary
+      });
       const cardId = res.data?.card_id;
       // Use the tracked short URL from the backend (enables contextual OG previews in iMessage)
       const shareUrl = res.data?.short_url || `${BASE_URL}/congrats/${cardId}${user?.ref_code ? `?ref=${user.ref_code}` : ''}`;
