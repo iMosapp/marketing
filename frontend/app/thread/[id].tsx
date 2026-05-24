@@ -684,8 +684,36 @@ function ThreadScreen() {
     }
   };
 
+  // ── Real-time message polling ──────────────────────────────────────────────
+  // Polls every 4 seconds while the thread is visible so new inbound messages
+  // appear instantly without closing and reopening the thread.
+  // Also uses the WebSocket hook if available.
+  const lastMessageCountRef = useRef(0);
+  useEffect(() => {
+    if (loading) return; // Don't poll while initial load is in progress
+    const convId = actualConversationId || id as string;
+    if (!convId) return;
+
+    const poll = async () => {
+      try {
+        const data = await messagesAPI.getThread(convId);
+        const incoming = data || [];
+        if (incoming.length !== lastMessageCountRef.current) {
+          lastMessageCountRef.current = incoming.length;
+          setMessages(incoming);
+        }
+      } catch {
+        // Non-fatal — silently skip failed polls
+      }
+    };
+
+    // Poll every 4 seconds
+    const interval = setInterval(poll, 4000);
+    return () => clearInterval(interval);
+  }, [actualConversationId, id, loading]);
+
   // ScrollView's onContentSizeChange handles initial scroll to bottom
-  // This effect handles scrolling on new messages arriving via WebSocket
+  // This effect handles scrolling on new messages arriving
   useEffect(() => {
     if (messages.length > 0 && !loading) {
       flatListRef.current?.scrollToEnd({ animated: true });

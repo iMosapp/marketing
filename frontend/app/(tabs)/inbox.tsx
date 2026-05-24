@@ -876,7 +876,7 @@ export default function InboxScreen() {
 
     const handlePress = () => {
       // Skip if this was a swipe gesture (not a tap)
-      if (wasRecentSwipe()) return;
+
       triggerHaptic('light');
       if (selectionMode) {
         toggleSelection(item._id);
@@ -1146,57 +1146,53 @@ export default function InboxScreen() {
       );
     }
 
-    // Web: use web-compatible swipe with all actions
+    // Web/PWA: no swipe — clean tap-based row with action menu button
+    // Swipe gestures conflict with scroll on mobile PWA and feel unnatural.
     if (IS_WEB && !selectionMode) {
       const isFlagged = item.flagged === true;
+      const [showActions, setShowActions] = React.useState(false);
       return (
-        <WebSwipeableItem
-          leftActions={[
-            {
-              key: 'flag',
-              icon: isFlagged ? 'flag' : 'flag-outline',
-              label: isFlagged ? 'Unflag' : 'Flag',
-              color: '#FF9500',
-              bgColor: '#FF950020',
-              onPress: () => handleFlagConversation(item._id),
-            },
-            {
-              key: 'task',
-              icon: 'checkbox-outline',
-              label: 'Task',
-              color: '#007AFF',
-              bgColor: '#007AFF20',
-              onPress: () => handleCreateTaskFromConversation(item._id),
-            },
-          ]}
-          rightActions={[
-            {
-              key: 'tag',
-              icon: 'pricetag-outline',
-              label: 'Tag',
-              color: '#AF52DE',
-              bgColor: '#AF52DE20',
-              onPress: () => handleOpenTagPicker(item._id),
-            },
-            item.status === 'closed' ? {
-              key: 'reopen',
-              icon: 'refresh-circle-outline',
-              label: 'Reopen',
-              color: '#34C759',
-              bgColor: '#34C75920',
-              onPress: () => handleReopenConversation(item._id),
-            } : {
-              key: 'archive',
-              icon: isArchived ? 'arrow-undo' : 'archive-outline',
-              label: isArchived ? 'Restore' : 'Archive',
-              color: colors.textSecondary,
-              bgColor: '#8E8E9320',
-              onPress: () => handleArchive(item._id),
-            },
-          ]}
-        >
+        <View style={{ position: 'relative' }}>
           {conversationContent}
-        </WebSwipeableItem>
+          {/* ⋯ Action button — appears on the right edge */}
+          <TouchableOpacity
+            onPress={(e) => { e.stopPropagation?.(); setShowActions(v => !v); }}
+            style={{ position: 'absolute', right: 8, top: '50%' as any, transform: [{ translateY: -18 }], width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surface + 'CC', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
+            data-testid={`conv-actions-btn-${item._id}`}
+          >
+            <Ionicons name="ellipsis-horizontal" size={16} color={colors.textSecondary} />
+          </TouchableOpacity>
+          {showActions && (
+            <TouchableOpacity
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 5 }}
+              onPress={() => setShowActions(false)}
+              activeOpacity={1}
+            />
+          )}
+          {showActions && (
+            <View style={{ position: 'absolute', right: 12, top: 40, backgroundColor: colors.card, borderRadius: 14, padding: 4, zIndex: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 8, minWidth: 180 }}>
+              {[
+                { icon: isFlagged ? 'flag' : 'flag-outline', label: isFlagged ? 'Unflag' : 'Flag', color: '#FF9500', onPress: () => { handleFlagConversation(item._id); setShowActions(false); } },
+                { icon: 'checkbox-outline', label: 'Add Task', color: '#007AFF', onPress: () => { handleCreateTaskFromConversation(item._id); setShowActions(false); } },
+                { icon: 'pricetag-outline', label: 'Add Tag', color: '#AF52DE', onPress: () => { handleOpenTagPicker(item._id); setShowActions(false); } },
+                item.status === 'closed'
+                  ? { icon: 'refresh-circle-outline', label: 'Reopen', color: '#34C759', onPress: () => { handleReopenConversation(item._id); setShowActions(false); } }
+                  : { icon: isArchived ? 'arrow-undo' : 'archive-outline', label: isArchived ? 'Restore' : 'Archive', color: colors.textSecondary, onPress: () => { handleArchive(item._id); setShowActions(false); } },
+                { icon: 'trash-outline', label: 'Delete', color: '#FF3B30', onPress: () => { handleDeleteConversation(item._id); setShowActions(false); } },
+              ].map((action) => (
+                <TouchableOpacity
+                  key={action.label}
+                  onPress={action.onPress}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 11 }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name={action.icon as any} size={18} color={action.color} />
+                  <Text style={{ fontSize: 15, color: colors.text, fontWeight: '500' }}>{action.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
       );
     }
 
@@ -1217,7 +1213,7 @@ export default function InboxScreen() {
     const isNew = item.status === 'new';
 
     const handlePress = () => {
-      if (wasRecentSwipe()) return;
+
       triggerHaptic('light');
       router.push({
         pathname: `/thread/${item.id}`,
