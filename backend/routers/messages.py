@@ -935,38 +935,62 @@ async def merge_conversations(data: dict):
 async def find_duplicate_conversations(user_id: str):
     """Find conversations with the same phone number — used for the merge UI."""
     db = get_db()
-    # Get all conversations for this user
     convs = await db.conversations.find(
-        {"user_id": user_id, "status": {"$nin": ["closed", "archived"]}, "contact_phone": {"$exists": True, "$ne": ""}},
+        {"user_id": user_id, "status": {"$nin": ["closed", "archived"]}},
         {"_id": 1, "contact_id": 1, "contact_name": 1, "contact_phone": 1, "last_message_at": 1, "status": 1}
     ).to_list(500)
+
+    # Resolve real contact names for conversations showing generic placeholders
+    contact_ids = [c.get("contact_id") for c in convs if c.get("contact_id") and not c.get("contact_name")]
+    name_map: dict = {}
+    if contact_ids:
+        try:
+            real_contacts = await db.contacts.find(
+                {"_id": {"$in": [ObjectId(cid) for cid in contact_ids if ObjectId.is_valid(str(cid))]}},
+                {"_id": 1, "name": 1, "first_name": 1, "last_name": 1}
+            ).to_list(200)
+            for rc in real_contacts:
+                n = rc.get("name") or f"{rc.get('first_name','')} {rc.get('last_name','')}".strip()
+                if n and n not in ("Contact", "Unknown"):
+                    name_map[str(rc["_id"])] = n
+        except Exception:
+            pass
 
     # Group by phone number
     by_phone: dict = {}
     for c in convs:
+        # Fill in real name if we found one
+        if not c.get("contact_name") and c.get("contact_id"):
+            c["contact_name"] = name_map.get(str(c["contact_id"]), "")
+
         phone = (c.get("contact_phone") or "").strip().replace(" ", "").replace("-", "")
-        # Normalize: strip +1 for comparison
+        if not phone:
+            continue
         phone_key = phone.lstrip("+").lstrip("1") if len(phone) >= 10 else phone
         if phone_key not in by_phone:
             by_phone[phone_key] = []
         c["_id"] = str(c["_id"])
         by_phone[phone_key].append(c)
 
-    # Return only groups with 2+ conversations
+    def _name_quality(c: dict) -> int:
+        n = (c.get("contact_name") or "").strip()
+        if not n or n in ("Contact", "Unknown", "New Lead") or n.startswith("Lead ("):
+            return 0
+        return 1
+
     duplicates = []
     for phone, group in by_phone.items():
         if len(group) > 1:
-            # Sort: named contacts first, then by recency
             group.sort(key=lambda x: (
-                0 if x.get("contact_name", "") in ("Contact", "Unknown", "", None) else 1,
+                _name_quality(x),
                 str(x.get("last_message_at") or "")
             ), reverse=True)
             duplicates.append({
-                "phone":       phone,
-                "count":       len(group),
+                "phone":        phone,
+                "count":        len(group),
                 "conversations": group,
-                "primary_id":  group[0]["_id"],   # Best candidate for primary
-                "primary_name": group[0].get("contact_name", ""),
+                "primary_id":   group[0]["_id"],
+                "primary_name": group[0].get("contact_name") or f"...{phone[-4:]}",
             })
 
     return {"duplicates": duplicates, "total": len(duplicates)}
