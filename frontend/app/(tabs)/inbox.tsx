@@ -895,8 +895,12 @@ export default function InboxScreen() {
     };
 
     const handleLongPress = () => {
-      if (!selectionMode) {
+      if (selectionMode) {
         enterSelectionMode(item._id);
+      } else {
+        // Long-press opens action strip (Telegram/Signal style)
+        triggerHaptic('medium');
+        toggleActionMenu(item._id);
       }
     };
     
@@ -1166,23 +1170,12 @@ export default function InboxScreen() {
 
       return (
         <View>
-          {/* Conversation row — ⋯ button overlaid on the right */}
+          {/* Conversation row — long-press to reveal actions */}
           <View>
             {conversationContent}
-            <TouchableOpacity
-              onPress={(e) => { e.stopPropagation?.(); toggleActionMenu(item._id); }}
-              style={{
-                position: 'absolute', right: 10, top: 12,
-                width: 32, height: 32, borderRadius: 16,
-                alignItems: 'center', justifyContent: 'center',
-              }}
-              data-testid={`conv-actions-btn-${item._id}`}
-            >
-              <Ionicons name="ellipsis-horizontal" size={18} color={colors.textSecondary} />
-            </TouchableOpacity>
           </View>
 
-          {/* Inline action strip — expands below the row when ⋯ is tapped */}
+          {/* Inline action strip — expands below the row when long-pressed */}
           {showActions && (
             <View style={{
               flexDirection: 'row',
