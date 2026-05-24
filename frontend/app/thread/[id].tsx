@@ -169,6 +169,38 @@ function ThreadScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [sending, setSending] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [isThreadRecording, setIsThreadRecording] = useState(false);
+  const threadRecordingRef = useRef<any>(null);
+
+  const startThreadVoiceNote = async () => {
+    try {
+      const { Audio } = await import('expo-av');
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') { showSimpleAlert('Microphone Access', 'Please allow microphone access to record voice notes.'); return; }
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+      const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      threadRecordingRef.current = recording;
+      setIsThreadRecording(true);
+    } catch (e) { showSimpleAlert('Error', 'Could not start recording'); }
+  };
+
+  const stopThreadVoiceNote = async () => {
+    setIsThreadRecording(false);
+    const recording = threadRecordingRef.current;
+    if (!recording) return;
+    try {
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      if (!uri || !user?._id) return;
+      const cid = contactIdForNav || (id as string);
+      const formData = new FormData();
+      const blob = await fetch(uri).then(r => r.blob());
+      formData.append('audio', new File([blob], 'voice-note.m4a', { type: 'audio/m4a' }));
+      await api.post(`/voice-notes/${user._id}/${cid}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      showToast('Voice note saved to contact', 'success');
+    } catch { showSimpleAlert('Error', 'Failed to save voice note'); }
+    threadRecordingRef.current = null;
+  };
   // Track scroll container and content heights to compute top padding for bottom-anchoring
   const [msgAreaHeight, setMsgAreaHeight] = useState(0);
   const [msgContentHeight, setMsgContentHeight] = useState(0);
@@ -1923,7 +1955,33 @@ function ThreadScreen() {
           </TouchableOpacity>
           <Text style={[styles.headerPhone, { color: colors.textSecondary }]}>{contactPhone}</Text>
         </View>
-        
+
+        {/* Phone + Voice Note action icons */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginRight: 4 }}>
+          <TouchableOpacity
+            onPress={() => {
+              const phone = contactPhone || '';
+              const cid   = contactIdForNav || (id as string) || '';
+              if (phone) {
+                router.push({ pathname: '/call-screen', params: { phone, contact_name: contactName, contact_id: cid } } as any);
+              } else {
+                showSimpleAlert('No Phone', 'No phone number for this contact.');
+              }
+            }}
+            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#007AFF', alignItems: 'center', justifyContent: 'center' }}
+            data-testid="thread-call-btn"
+          >
+            <Ionicons name="call" size={17} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={isThreadRecording ? stopThreadVoiceNote : startThreadVoiceNote}
+            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: isThreadRecording ? '#FF3B30' : '#34C759', alignItems: 'center', justifyContent: 'center' }}
+            data-testid="thread-mic-btn"
+          >
+            <Ionicons name={isThreadRecording ? 'stop' : 'mic'} size={17} color="#fff" />
+          </TouchableOpacity>
+        </View>
+
         <TouchableOpacity onPress={() => setShowSettings(true)} style={styles.settingsButton}>
           <Ionicons name="ellipsis-horizontal" size={24} color={colors.accent} />
         </TouchableOpacity>

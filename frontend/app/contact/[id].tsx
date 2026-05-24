@@ -2283,24 +2283,38 @@ function ContactDetailScreen() {
                 </View>
               </View>
 
-              {/* Quick Record Button */}
+              {/* Phone + Voice Note icons next to contact name */}
               {!isEditing && !isNewContact && (
-                <TouchableOpacity
-                  onPress={isRecording ? stopRecording : startRecording}
-                  activeOpacity={0.7}
-                  style={{
-                    width: 44, height: 44, borderRadius: 22,
-                    backgroundColor: isRecording ? '#FF3B30' : '#34C759',
-                    alignItems: 'center', justifyContent: 'center',
-                    shadowColor: isRecording ? '#FF3B30' : '#34C759',
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.4, shadowRadius: 6, elevation: 4,
-                    marginLeft: 8,
-                  }}
-                  data-testid="hero-record-btn"
-                >
-                  <Ionicons name={isRecording ? 'stop' : 'mic'} size={22} color="#FFF" />
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginLeft: 8 }}>
+                  {/* Click-to-Call */}
+                  <TouchableOpacity
+                    onPress={() => {
+                      const phone = contact?.phone || '';
+                      const name  = contact?.name || `${contact?.first_name || ''} ${contact?.last_name || ''}`.trim();
+                      const cid   = id as string;
+                      if (phone) {
+                        router.push({ pathname: '/call-screen', params: { phone, contact_name: name, contact_id: cid } } as any);
+                      } else {
+                        showSimpleAlert('No Phone', 'This contact has no phone number saved.');
+                      }
+                    }}
+                    activeOpacity={0.7}
+                    style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#007AFF', alignItems: 'center', justifyContent: 'center', shadowColor: '#007AFF', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6, elevation: 4 }}
+                    data-testid="hero-call-btn"
+                  >
+                    <Ionicons name="call" size={20} color="#FFF" />
+                  </TouchableOpacity>
+
+                  {/* Voice Note */}
+                  <TouchableOpacity
+                    onPress={isRecording ? stopRecording : startRecording}
+                    activeOpacity={0.7}
+                    style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: isRecording ? '#FF3B30' : '#34C759', alignItems: 'center', justifyContent: 'center', shadowColor: isRecording ? '#FF3B30' : '#34C759', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6, elevation: 4 }}
+                    data-testid="hero-record-btn"
+                  >
+                    <Ionicons name={isRecording ? 'stop' : 'mic'} size={22} color="#FFF" />
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
 
