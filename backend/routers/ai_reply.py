@@ -643,3 +643,124 @@ async def get_contact_reply_history(contact_id: str, limit: int = 20):
         "created_at":      i["created_at"].isoformat(),
         "escalated":       i.get("escalated_at") is not None,
     } for i in items]
+
+
+async def send_silence_followups():
+    """
+    Daily job — finds conversations where:
+      - Customer replied 2+ times (showed genuine interest)
+      - Customer's last message was 20-28 hours ago (went silent)
+      - No AI or rep reply was sent AFTER that last customer message
+      - Not already sent a follow-up today
+    Sends a single warm follow-up. Max 2 total follow-ups per conversation.
+    """
+    db  = get_db()
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    window_start = now - timedelta(hours=28)
+    window_end   = now - timedelta(hours=20)
+
+    logger.info("[SilenceFollowup] Running daily silence follow-up check...")
+
+    # Find conversations with recent customer activity that then went quiet
+    candidates = await db.conversations.find({
+        "ai_enabled":        True,
+        "ai_mode":           {"$nin": ["off", None, ""]},
+        "status":            {"$nin": ["closed", "archived"]},
+        "last_message_at":   {"$gte": window_start, "$lte": window_end},
+        "unanswered_customer_replies": {"$gte": 2},
+        "silence_followups_sent": {"$lt": 2},   # max 2 total
+    }).limit(100).to_list(100)
+
+    sent = 0
+    skipped = 0
+
+    for conv in candidates:
+        conv_id = str(conv["_id"])
+        contact_id = conv.get("contact_id")
+        user_id    = conv.get("user_id")
+
+        if not contact_id or not user_id:
+            skipped += 1
+            continue
+
+        # Verify: last message in this conversation is FROM the contact (not already replied)
+        last_msg = await db.messages.find_one(
+            {"conversation_id": conv_id},
+            sort=[("timestamp", -1)]
+        )
+        if not last_msg or last_msg.get("sender") not in ("contact", "inbound"):
+            skipped += 1  # Last message was already a reply — don't follow up
+            continue
+
+        # Get contact info for a personalized follow-up
+        contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"name":1,"first_name":1,"phone":1})
+        first_name = (contact or {}).get("first_name") or (contact or {}).get("name","").split()[0] if contact else ""
+
+        # Build a warm, non-pushy follow-up using the rep's VA
+        try:
+            from routers.ai_campaigns import build_clone_system_prompt
+            from emergentintegrations.llm.chat import LlmChat, UserMessage
+            import os, uuid as _uuid2
+
+            system_prompt = await build_clone_system_prompt(user_id)
+            system_prompt += (
+                "\n\nThis is a follow-up message for someone who replied but then went quiet. "
+                "Be warm, brief, and zero-pressure. Do NOT ask a sales question. "
+                "Something like 'Hey, just checking in!' or 'Hope things are going well!' "
+                "1 sentence max. Make it feel human, not automated."
+            )
+
+            # Get last few messages for context
+            recent = await db.messages.find({"conversation_id": conv_id}).sort("timestamp",-1).limit(4).to_list(4)
+            recent.reverse()
+            ctx = "\n".join(f"{'Me' if m.get('sender') in ('user','ai') else 'Them'}: {(m.get('content') or '')[:100]}" for m in recent if m.get("content"))
+
+            chat = LlmChat(
+                api_key=os.environ.get("EMERGENT_LLM_KEY",""),
+                session_id=f"followup-{_uuid2.uuid4().hex[:10]}",
+                system_message=system_prompt,
+            ).with_model("openai","gpt-5.2")
+
+            reply_text = await asyncio.wait_for(
+                chat.send_message(UserMessage(text=f"Recent conversation:\n{ctx}\n\nWrite one warm follow-up sentence.")),
+                timeout=10.0,
+            )
+            body = (reply_text.strip() if isinstance(reply_text, str)
+                    else reply_text.text.strip() if hasattr(reply_text,"text") else "").strip('"\'')
+
+            if not body:
+                skipped += 1
+                continue
+
+            # Queue with a small delay so it doesn't feel instant
+            delay = 300 + (sent * 60)   # stagger: 5min + 1min per prior send
+            await db.ai_reply_queue.insert_one({
+                "contact_id":      contact_id,
+                "conversation_id": conv_id,
+                "enrollment_id":   "silence_followup",
+                "campaign_id":     "",
+                "assigned_user_id":user_id,
+                "body":            body,
+                "send_at":         now + timedelta(seconds=delay),
+                "status":          "pending",
+                "requires_approval": False,
+                "ai_mode_used":    conv.get("ai_mode","auto_reply"),
+                "is_silence_followup": True,
+                "created_at":      now,
+            })
+
+            # Mark this conversation so we don't double-send
+            await db.conversations.update_one(
+                {"_id": conv["_id"]},
+                {"$inc": {"silence_followups_sent": 1},
+                 "$set": {"last_silence_followup_at": now}}
+            )
+            sent += 1
+
+        except Exception as e:
+            logger.warning(f"[SilenceFollowup] Failed for conv {conv_id}: {e}")
+            skipped += 1
+
+    logger.info(f"[SilenceFollowup] Done: {sent} follow-ups queued, {skipped} skipped")
+    return {"sent": sent, "skipped": skipped}
+

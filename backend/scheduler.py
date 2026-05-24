@@ -1145,8 +1145,24 @@ def start_scheduler():
         misfire_grace_time=7200,
     )
 
+    # Daily at 10 AM UTC — follow up on conversations that went silent
+    async def _run_silence_followups():
+        try:
+            from routers.ai_reply import send_silence_followups
+            await send_silence_followups()
+        except Exception as e:
+            logger.warning(f"[Scheduler] Silence follow-ups failed: {e}")
+
+    scheduler.add_job(
+        safe_job(_run_silence_followups),
+        CronTrigger(hour=10, minute=0),
+        id="silence_followup_daily",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+
     scheduler.start()
-    logger.info("[Scheduler] Started with 11 jobs: daily_system_tasks, daily_lifecycle_scan, daily_report_delivery, daily_date_triggers, campaign_step_processor (15m), weekly_power_rankings, daily_recent_tag_expiry, monthly_health_reports, sold_delivery_processor (5m), monthly_partner_invoices, internet_lead_processor (2m)")
+    logger.info("[Scheduler] Started with 12 jobs including daily silence follow-ups")
 
 
 def stop_scheduler():
