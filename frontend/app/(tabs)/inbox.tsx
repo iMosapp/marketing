@@ -151,12 +151,11 @@ export default function InboxScreen() {
   const { showToast } = useToast();
   
   const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState<'assigned' | 'waiting' | 'ai_active' | 'unassigned' | 'all' | 'closed'>('assigned');
+  const filter = activeTab; // alias for legacy references
   const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null);
-  // Toggle action menu for a conversation row — replaces swipe gestures
   const toggleActionMenu = (convId: string) =>
     setActiveActionMenu(prev => prev === convId ? null : convId);
-  // Keep filter alias for any remaining references
-  const filter = activeTab;
   const [conversations, setConversations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
