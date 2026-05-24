@@ -834,7 +834,7 @@ async def restore_conversation(conversation_id: str):
 
 
 
-@router.post("/conversations/merge")
+@router.post("/merge-conversations")
 async def merge_conversations(data: dict):
     """
     Merge two conversations into one — moves all messages from the secondary

@@ -3172,7 +3172,7 @@ function ThreadScreen() {
                     `Found ${dups.count} conversations for the same phone number.\n\nMerge "${other?.contact_name || 'duplicate'}" into "${primaryName}"?\n\nAll messages will be combined.`,
                     async () => {
                       try {
-                        await apiInst.post('/messages/conversations/merge', {
+                        await apiInst.post('/messages/merge-conversations', {
                           primary_id:   dups.primary_id,
                           secondary_id: dups.conversations.find((c: any) => c._id !== dups.primary_id)?._id,
                         });
