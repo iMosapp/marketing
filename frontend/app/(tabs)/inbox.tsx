@@ -1153,43 +1153,67 @@ export default function InboxScreen() {
     if (IS_WEB && !selectionMode) {
       const isFlagged = item.flagged === true;
       const showActions = activeActionMenu === item._id;
+
+      const actions = [
+        { icon: isFlagged ? 'flag' : 'flag-outline', label: isFlagged ? 'Unflag' : 'Flag', color: '#FF9500', onPress: () => { handleFlagConversation(item._id); setActiveActionMenu(null); } },
+        { icon: 'checkbox-outline', label: 'Task', color: '#007AFF', onPress: () => { handleCreateTaskFromConversation(item._id); setActiveActionMenu(null); } },
+        { icon: 'pricetag-outline', label: 'Tag', color: '#AF52DE', onPress: () => { handleOpenTagPicker(item._id); setActiveActionMenu(null); } },
+        item.status === 'closed'
+          ? { icon: 'refresh-circle-outline', label: 'Reopen', color: '#34C759', onPress: () => { handleReopenConversation(item._id); setActiveActionMenu(null); } }
+          : { icon: isArchived ? 'arrow-undo' : 'archive-outline', label: isArchived ? 'Restore' : 'Archive', color: colors.textSecondary, onPress: () => { handleArchive(item._id); setActiveActionMenu(null); } },
+        { icon: 'trash-outline', label: 'Delete', color: '#FF3B30', onPress: () => { handleDeleteConversation(item._id); setActiveActionMenu(null); } },
+      ];
+
       return (
-        <View style={{ position: 'relative' }}>
-          {conversationContent}
-          {/* ⋯ Action button — appears on the right edge */}
-          <TouchableOpacity
-            onPress={(e) => { e.stopPropagation?.(); toggleActionMenu(item._id); }}
-            style={{ position: 'absolute', right: 8, top: '50%' as any, transform: [{ translateY: -18 }], width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surface + 'CC', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
-            data-testid={`conv-actions-btn-${item._id}`}
-          >
-            <Ionicons name="ellipsis-horizontal" size={16} color={colors.textSecondary} />
-          </TouchableOpacity>
-          {showActions && (
+        <View>
+          {/* Conversation row — ⋯ button overlaid on the right */}
+          <View>
+            {conversationContent}
             <TouchableOpacity
-              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 5 }}
-              onPress={() => setActiveActionMenu(null)}
-              activeOpacity={1}
-            />
-          )}
+              onPress={(e) => { e.stopPropagation?.(); toggleActionMenu(item._id); }}
+              style={{
+                position: 'absolute', right: 10, top: 12,
+                width: 32, height: 32, borderRadius: 16,
+                alignItems: 'center', justifyContent: 'center',
+              }}
+              data-testid={`conv-actions-btn-${item._id}`}
+            >
+              <Ionicons name="ellipsis-horizontal" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Inline action strip — expands below the row when ⋯ is tapped */}
           {showActions && (
-            <View style={{ position: 'absolute', right: 12, top: 40, backgroundColor: colors.card, borderRadius: 14, padding: 4, zIndex: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 8, minWidth: 180 }}>
-              {[
-                { icon: isFlagged ? 'flag' : 'flag-outline', label: isFlagged ? 'Unflag' : 'Flag', color: '#FF9500', onPress: () => { handleFlagConversation(item._id); setActiveActionMenu(null); } },
-                { icon: 'checkbox-outline', label: 'Add Task', color: '#007AFF', onPress: () => { handleCreateTaskFromConversation(item._id); setActiveActionMenu(null); } },
-                { icon: 'pricetag-outline', label: 'Add Tag', color: '#AF52DE', onPress: () => { handleOpenTagPicker(item._id); setActiveActionMenu(null); } },
-                item.status === 'closed'
-                  ? { icon: 'refresh-circle-outline', label: 'Reopen', color: '#34C759', onPress: () => { handleReopenConversation(item._id); setActiveActionMenu(null); } }
-                  : { icon: isArchived ? 'arrow-undo' : 'archive-outline', label: isArchived ? 'Restore' : 'Archive', color: colors.textSecondary, onPress: () => { handleArchive(item._id); setActiveActionMenu(null); } },
-                { icon: 'trash-outline', label: 'Delete', color: '#FF3B30', onPress: () => { handleDeleteConversation(item._id); setActiveActionMenu(null); } },
-              ].map((action) => (
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-around',
+              paddingHorizontal: 12,
+              paddingVertical: 10,
+              marginHorizontal: 8,
+              marginBottom: 4,
+              borderRadius: 14,
+              backgroundColor: colors.card,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}>
+              {actions.map((action) => (
                 <TouchableOpacity
                   key={action.label}
                   onPress={action.onPress}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 11 }}
-                  activeOpacity={0.7}
+                  style={{ alignItems: 'center', gap: 4, flex: 1 }}
+                  activeOpacity={0.6}
                 >
-                  <Ionicons name={action.icon as any} size={18} color={action.color} />
-                  <Text style={{ fontSize: 15, color: colors.text, fontWeight: '500' }}>{action.label}</Text>
+                  <View style={{
+                    width: 36, height: 36, borderRadius: 18,
+                    backgroundColor: action.color + '18',
+                    alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <Ionicons name={action.icon as any} size={18} color={action.color} />
+                  </View>
+                  <Text style={{ fontSize: 10, fontWeight: '600', color: action.color === colors.textSecondary ? colors.textSecondary : action.color }}>
+                    {action.label}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
