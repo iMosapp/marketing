@@ -1781,56 +1781,124 @@ export default function InboxScreen() {
       </KeyboardAvoidingView>
       </Modal>
 
-      {/* Bulk Action Bar */}
+      {/* Bulk Action Bar — 4 focused actions, visible in dark + light */}
       {selectionMode && selectedIds.size > 0 && (
-        <View style={styles.bulkActionBar}>
+        <View style={[styles.bulkActionBar, {
+          backgroundColor: '#1A1A2E',
+          borderTopWidth: 1.5,
+          borderTopColor: '#007AFF50',
+        }]}>
           {bulkActionLoading ? (
-            <ActivityIndicator size="small" color={colors.text} />
+            <ActivityIndicator size="small" color="#007AFF" />
           ) : (
             <>
-              <TouchableOpacity 
-                style={styles.bulkActionButton} 
-                onPress={() => handleBulkAction('archive')}
+              {/* Enable AI */}
+              <TouchableOpacity
+                style={styles.bulkActionButton}
+                onPress={async () => {
+                  setBulkActionLoading(true);
+                  const ids = Array.from(selectedIds);
+                  try {
+                    await Promise.all(ids.map(id =>
+                      messagesAPI.updateConversation(user!._id, id, { ai_mode: 'auto_reply', ai_enabled: true })
+                    ));
+                    setConversations(prev => prev.map(c =>
+                      selectedIds.has(c._id) ? { ...c, ai_mode: 'auto_reply', ai_enabled: true } : c
+                    ));
+                    showToast(`AI enabled for ${ids.length} conversation${ids.length !== 1 ? 's' : ''}`, 'success');
+                  } catch { showToast('Failed', 'error'); }
+                  setBulkActionLoading(false);
+                  exitSelectionMode();
+                }}
                 activeOpacity={0.7}
-                data-testid="bulk-archive-btn"
+                data-testid="bulk-ai-btn"
               >
-                <View style={styles.bulkActionIcon}>
-                  <Ionicons name="archive" size={20} color={colors.text} />
+                <View style={[styles.bulkActionIcon, { backgroundColor: '#34C75930' }]}>
+                  <Ionicons name="sparkles" size={20} color="#34C759" />
                 </View>
-                <Text style={styles.bulkActionText}>Archive</Text>
+                <Text style={[styles.bulkActionText, { color: '#34C759' }]}>Enable AI</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.bulkActionButton} 
-                onPress={() => handleBulkAction('read')}
+
+              {/* Close */}
+              <TouchableOpacity
+                style={styles.bulkActionButton}
+                onPress={async () => {
+                  setBulkActionLoading(true);
+                  const ids = Array.from(selectedIds);
+                  try {
+                    await Promise.all(ids.map(id =>
+                      messagesAPI.updateConversation(user!._id, id, { status: 'closed' })
+                    ));
+                    setConversations(prev => prev.map(c =>
+                      selectedIds.has(c._id) ? { ...c, status: 'closed' } : c
+                    ));
+                    showToast(`${ids.length} conversation${ids.length !== 1 ? 's' : ''} closed`, 'success');
+                  } catch { showToast('Failed', 'error'); }
+                  setBulkActionLoading(false);
+                  exitSelectionMode();
+                }}
                 activeOpacity={0.7}
-                data-testid="bulk-read-btn"
+                data-testid="bulk-close-btn"
               >
-                <View style={styles.bulkActionIcon}>
-                  <Ionicons name="mail-open" size={20} color={colors.text} />
+                <View style={[styles.bulkActionIcon, { backgroundColor: '#8E8E9330' }]}>
+                  <Ionicons name="checkmark-done-circle" size={20} color="#8E8E93" />
                 </View>
-                <Text style={styles.bulkActionText}>Read</Text>
+                <Text style={[styles.bulkActionText, { color: '#8E8E93' }]}>Close</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.bulkActionButton} 
-                onPress={() => handleBulkAction('unread')}
+
+              {/* Tag */}
+              <TouchableOpacity
+                style={styles.bulkActionButton}
+                onPress={() => {
+                  const ids = Array.from(selectedIds);
+                  if (ids.length > 0) {
+                    // Reuse the tag picker — set first selected as target but apply to all
+                    setSwipeTagTarget(ids[0]);
+                    setShowSwipeTagPicker(true);
+                  }
+                }}
                 activeOpacity={0.7}
-                data-testid="bulk-unread-btn"
+                data-testid="bulk-tag-btn"
               >
-                <View style={styles.bulkActionIcon}>
-                  <Ionicons name="mail-unread" size={20} color={colors.text} />
+                <View style={[styles.bulkActionIcon, { backgroundColor: '#AF52DE30' }]}>
+                  <Ionicons name="pricetag" size={20} color="#AF52DE" />
                 </View>
-                <Text style={styles.bulkActionText}>Unread</Text>
+                <Text style={[styles.bulkActionText, { color: '#AF52DE' }]}>Tag</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.bulkActionButton} 
-                onPress={() => handleBulkAction('delete')}
+
+              {/* Follow-up reminder */}
+              <TouchableOpacity
+                style={styles.bulkActionButton}
+                onPress={async () => {
+                  setBulkActionLoading(true);
+                  const ids = Array.from(selectedIds);
+                  const tomorrow = new Date();
+                  tomorrow.setDate(tomorrow.getDate() + 1);
+                  tomorrow.setHours(10, 0, 0, 0);
+                  try {
+                    const convList = conversations.filter(c => selectedIds.has(c._id));
+                    await Promise.all(convList.map(conv =>
+                      api.post(`/tasks/${user!._id}`, {
+                        title: `Follow up with ${conv.contact?.name || conv.contact_name || 'contact'}`,
+                        due_date: tomorrow.toISOString(),
+                        conversation_id: conv._id,
+                        contact_id: conv.contact_id,
+                        priority: 'medium',
+                        type: 'follow_up',
+                      })
+                    ));
+                    showToast(`Follow-up reminders set for ${ids.length} contact${ids.length !== 1 ? 's' : ''}`, 'success');
+                  } catch { showToast('Failed to create reminders', 'error'); }
+                  setBulkActionLoading(false);
+                  exitSelectionMode();
+                }}
                 activeOpacity={0.7}
-                data-testid="bulk-delete-btn"
+                data-testid="bulk-followup-btn"
               >
-                <View style={[styles.bulkActionIcon, styles.bulkActionIconDanger]}>
-                  <Ionicons name="trash" size={20} color={colors.danger} />
+                <View style={[styles.bulkActionIcon, { backgroundColor: '#FF950030' }]}>
+                  <Ionicons name="alarm" size={20} color="#FF9500" />
                 </View>
-                <Text style={[styles.bulkActionText, styles.bulkActionTextDanger]}>Delete</Text>
+                <Text style={[styles.bulkActionText, { color: '#FF9500' }]}>Follow-up</Text>
               </TouchableOpacity>
             </>
           )}
