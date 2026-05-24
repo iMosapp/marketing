@@ -1929,54 +1929,22 @@ function ThreadScreen() {
         </TouchableOpacity>
       </View>
       
-      {/* SMS/Email Mode Indicator Banner */}
+      {/* SMS Mode Indicator — email switching removed from inline composer */}
       <View style={[
-        styles.modeBanner, 
-        { 
+        styles.modeBanner,
+        {
           backgroundColor: messageMode === 'sms' ? '#007AFF15' : '#34C75915',
           borderColor: messageMode === 'sms' ? '#007AFF30' : '#34C75930',
         }
       ]}>
-        <Ionicons 
-          name={messageMode === 'sms' ? 'chatbubble' : 'mail'} 
-          size={16} 
-          color={messageMode === 'sms' ? '#007AFF' : '#34C759'} 
+        <Ionicons
+          name={messageMode === 'sms' ? 'chatbubble' : 'mail'}
+          size={16}
+          color={messageMode === 'sms' ? '#007AFF' : '#34C759'}
         />
         <Text style={styles.modeBannerText}>
           {messageMode === 'sms' ? 'Message Mode' : 'Email Mode'}
         </Text>
-        <TouchableOpacity 
-          style={styles.modeSwitchButton}
-          onPress={async () => {
-            const newMode = messageMode === 'sms' ? 'email' : 'sms';
-            if (newMode === 'email' && !hasEmail) {
-              // Before showing prompt, try to load email from API one more time
-              try {
-                const res = await api.get(`/messages/conversation/${actualConversationId || id}/info`);
-                const loadedEmail = res.data?.contact_email;
-                if (loadedEmail) {
-                  setSavedContactEmail(loadedEmail);
-                  setMessageMode('email');
-                  AsyncStorage.setItem('message_mode', 'email');
-                  return;
-                }
-              } catch {}
-              setShowEmailPrompt(true);
-              return;
-            }
-            setMessageMode(newMode);
-            AsyncStorage.setItem('message_mode', newMode);
-          }}
-        >
-          <Text style={styles.modeSwitchText}>
-            Switch to {messageMode === 'sms' ? 'Email' : 'SMS'}
-          </Text>
-          <Ionicons 
-            name={messageMode === 'sms' ? 'mail-outline' : 'chatbubble-outline'} 
-            size={14} 
-            color={colors.textSecondary} 
-          />
-        </TouchableOpacity>
       </View>
       
       {/* Inline Email Prompt */}
@@ -2292,20 +2260,26 @@ function ThreadScreen() {
                 </WebToolButton>
                 
                 <WebToolButton
-                  onPress={handleVoiceToText}
-                  disabled={transcribing}
-                  isRecording={isRecording}
-                  testID="voice-to-text-btn"
+                  onPress={() => {
+                    const phone = contactPhone || '';
+                    const name  = (contact_name as string) || '';
+                    const cid   = contactIdForNav || (id as string) || '';
+                    if (phone) {
+                      router.push({
+                        pathname: '/call-screen',
+                        params: {
+                          phone,
+                          contact_name: name,
+                          contact_id:   cid,
+                        },
+                      } as any);
+                    } else {
+                      showSimpleAlert('No Phone Number', 'This contact does not have a phone number saved.');
+                    }
+                  }}
+                  testID="call-btn"
                 >
-                  {transcribing ? (
-                    <ActivityIndicator size="small" color={colors.accent} />
-                  ) : (
-                    <Ionicons
-                      name={isRecording ? 'stop-circle' : 'mic-outline'}
-                      size={22}
-                      color={isRecording ? '#FF3B30' : colors.textSecondary}
-                    />
-                  )}
+                  <Ionicons name="call-outline" size={22} color={colors.textSecondary} />
                 </WebToolButton>
                 
                 <WebToolButton
