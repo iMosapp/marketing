@@ -547,6 +547,13 @@ async def incoming_message(
             )
 
         # ── Pause campaign enrollments + trigger AI reply ─────────────────────
+        # Check conversation's ai_mode FIRST — rep's explicit override wins.
+        # If the rep turned AI off for this conversation, never queue AI regardless of campaign.
+        conv_ai_off = (
+            conversation.get("ai_enabled") is False or
+            conversation.get("ai_mode") in ("off", None, "")
+        )
+
         active_enrollments = await db.campaign_enrollments.find({
             "contact_id": contact_id, "status": {"$in": ["active", "paused"]},
         }).to_list(10)
@@ -574,7 +581,11 @@ async def incoming_message(
 
             # Use campaign's ai_assist_mode, fall back to enrollment's stored mode
             # (campaign may have been deleted — enrollment still knows its mode)
-            ai_mode = (campaign or {}).get("ai_assist_mode") or enrollment.get("ai_assist_mode") or "off"
+            # CRITICAL: Skip if the rep explicitly turned AI off on this conversation
+            if conv_ai_off:
+                ai_mode = "off"
+            else:
+                ai_mode = (campaign or {}).get("ai_assist_mode") or enrollment.get("ai_assist_mode") or "off"
             if ai_mode not in ("off", None):
                 # Fire-and-forget — don't block the webhook waiting for GPT
                 # The webhook must return to Twilio quickly to avoid retries
@@ -608,7 +619,7 @@ async def incoming_message(
             for campaign in [None]  # campaign already fetched above, use enrollment fallback
         ) if active_enrollments else False
 
-        if not enrollment_ai_queued and not is_stop:
+        if not conv_ai_off and not enrollment_ai_queued and not is_stop:
             conv_ai_mode    = conversation.get("ai_mode") or ""
             conv_ai_enabled = conversation.get("ai_enabled", False)
             if conv_ai_enabled and conv_ai_mode in ("auto_reply", "draft_only", "auto_with_approval"):

@@ -343,6 +343,27 @@ async def process_ai_reply_queue():
                 )
                 continue
 
+            # ── Rep override check — never send if AI was turned off AFTER this was queued ──
+            if item.get("conversation_id"):
+                try:
+                    conv = await db.conversations.find_one(
+                        {"_id": ObjectId(item["conversation_id"])},
+                        {"ai_enabled": 1, "ai_mode": 1}
+                    )
+                    if conv:
+                        ai_off = (
+                            conv.get("ai_enabled") is False or
+                            conv.get("ai_mode") in ("off", None, "")
+                        )
+                        if ai_off:
+                            logger.info(f"[AIReply] Skipping queued item — AI turned off on conversation {item['conversation_id']}")
+                            await db.ai_reply_queue.update_one(
+                                {"_id": qid}, {"$set": {"status": STATUS_CANCELLED, "cancel_reason": "ai_disabled_by_rep"}}
+                            )
+                            continue
+                except Exception:
+                    pass
+
             from services.twilio_service import send_sms
             result = await send_sms(phone, item["body"])
             mocked = result.get("mock", True)
