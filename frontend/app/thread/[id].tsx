@@ -3158,28 +3158,50 @@ function ThreadScreen() {
                   const { default: apiInst } = await import('../../services/api');
                   const res = await apiInst.get(`/messages/duplicate-check/${user._id}`);
                   const dups = (res.data.duplicates || []).find((d: any) =>
-                    d.conversations.some((c: any) => c._id === convId)
+                    d.conversations?.some((c: any) => c._id === convId)
                   );
                   if (!dups || dups.count < 2) {
-                    showSimpleAlert('No Duplicates', 'No duplicate conversations found for this contact.');
+                    showSimpleAlert('No Duplicates', 'No duplicate conversations found for this contact. They may have already been merged.');
                     return;
                   }
-                  // Pick the other conversation to merge
-                  const other = dups.conversations.find((c: any) => c._id !== convId);
-                  const primaryName = dups.primary_name || 'this conversation';
+
+                  // Identify primary (best name) and secondary (to be absorbed)
+                  const primaryId   = dups.primary_id;
+                  const secondaryConv = dups.conversations?.find((c: any) => c._id !== primaryId);
+                  const secondaryId = secondaryConv?._id;
+
+                  if (!primaryId || !secondaryId) {
+                    showSimpleAlert('Error', 'Could not identify which conversation to keep. Please try again.');
+                    return;
+                  }
+
+                  const primaryConv  = dups.conversations?.find((c: any) => c._id === primaryId);
+                  const keepName     = primaryConv?.contact_name || 'the named conversation';
+                  const dropName     = secondaryConv?.contact_name || 'the duplicate';
+
                   showConfirm(
                     'Merge Conversations',
-                    `Found ${dups.count} conversations for the same phone number.\n\nMerge "${other?.contact_name || 'duplicate'}" into "${primaryName}"?\n\nAll messages will be combined.`,
+                    `Merge "${dropName}" into "${keepName}"?\n\nAll messages will be combined into one thread. The duplicate will be closed.`,
                     async () => {
                       try {
-                        await apiInst.post('/messages/merge-conversations', {
-                          primary_id:   dups.primary_id,
-                          secondary_id: dups.conversations.find((c: any) => c._id !== dups.primary_id)?._id,
+                        const mergeRes = await apiInst.post('/messages/merge-conversations', {
+                          primary_id:   primaryId,
+                          secondary_id: secondaryId,
                         });
-                        showToast('Conversations merged successfully', 'success');
-                        router.back();
+                        const moved = mergeRes.data?.messages_moved || 0;
+                        showToast(`Merged — ${moved} message${moved !== 1 ? 's' : ''} combined`, 'success');
+                        // Navigate to the primary (kept) conversation, not the closed one
+                        setTimeout(() => {
+                          if (convId === primaryId) {
+                            // Already in primary — just reload
+                          } else {
+                            router.replace(`/thread/${primaryId}` as any);
+                          }
+                        }, 500);
                       } catch (e: any) {
-                        showSimpleAlert('Error', e?.response?.data?.detail || 'Merge failed');
+                        const detail = e?.response?.data?.detail;
+                        const msg = typeof detail === 'string' ? detail : 'Merge failed — please try again';
+                        showSimpleAlert('Error', msg);
                       }
                     }
                   );

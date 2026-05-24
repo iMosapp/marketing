@@ -860,6 +860,16 @@ async def merge_conversations(data: dict):
     if not primary or not secondary:
         raise HTTPException(status_code=404, detail="One or both conversations not found")
 
+    # Already merged? Return success instead of error
+    if secondary.get("merged_into") == primary_id:
+        return {
+            "success":        True,
+            "primary_id":     primary_id,
+            "secondary_id":   secondary_id,
+            "messages_moved": 0,
+            "message":        "Already merged — no changes needed.",
+        }
+
     # Move all messages from secondary → primary
     msgs_result = await db.messages.update_many(
         {"conversation_id": secondary_id},
