@@ -1573,25 +1573,42 @@ export default function InboxScreen() {
           { key: 'closed',    label: 'Closed',    icon: 'checkmark-circle-outline', activeColor: '#8E8E93' },
         ];
         return (
-          <View style={styles.tabBar}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}
+            contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 10, gap: 8 }}
+          >
             {tabs.map(({ key, label, icon, activeColor }) => {
               const isActive = activeTab === key;
               const count = counts[key];
               return (
                 <TouchableOpacity
                   key={key}
-                  style={[styles.tabItem, isActive && { borderBottomColor: activeColor, borderBottomWidth: 2 }]}
+                  style={{
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    paddingHorizontal: 16,
+                    paddingVertical: 10,
+                    borderRadius: 16,
+                    minWidth: 72,
+                    gap: 5,
+                    backgroundColor: isActive ? activeColor + '22' : colors.card,
+                    borderWidth: 1.5,
+                    borderColor: isActive ? activeColor : colors.border,
+                  }}
                   onPress={() => handleFilterPress(key)}
                   activeOpacity={0.7}
                   data-testid={`inbox-tab-${key}`}
                 >
-                  <Ionicons name={icon as any} size={15} color={isActive ? activeColor : colors.textSecondary} />
-                  <Text style={[styles.tabLabel, { color: isActive ? activeColor : colors.textSecondary }, isActive && { fontWeight: '700' }]}>
+                  <Ionicons name={icon as any} size={22} color={isActive ? activeColor : colors.textSecondary} />
+                  <Text style={{ fontSize: 12, fontWeight: isActive ? '800' : '500', color: isActive ? activeColor : colors.textSecondary, letterSpacing: 0.2 }}>
                     {label}
                   </Text>
                   {count > 0 && (
-                    <View style={[styles.tabBadge, { backgroundColor: isActive ? activeColor : colors.surface }]}>
-                      <Text style={[styles.tabBadgeText, { color: isActive ? '#fff' : colors.textSecondary }]}>
+                    <View style={{ minWidth: 20, height: 18, borderRadius: 9, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center', backgroundColor: isActive ? activeColor : colors.surface }}>
+                      <Text style={{ fontSize: 11, fontWeight: '800', color: isActive ? '#fff' : colors.textSecondary }}>
                         {count > 99 ? '99+' : count}
                       </Text>
                     </View>
@@ -1599,7 +1616,7 @@ export default function InboxScreen() {
                 </TouchableOpacity>
               );
             })}
-          </View>
+          </ScrollView>
         );
       })()}
 
