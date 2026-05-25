@@ -1164,8 +1164,8 @@ export default function InboxScreen() {
         { icon: 'pricetag-outline', label: 'Tag', color: '#AF52DE', onPress: () => { handleOpenTagPicker(item._id); setActiveActionMenu(null); } },
         item.status === 'closed'
           ? { icon: 'refresh-circle-outline', label: 'Reopen', color: '#34C759', onPress: () => { handleReopenConversation(item._id); setActiveActionMenu(null); } }
-          : { icon: isArchived ? 'arrow-undo' : 'archive-outline', label: isArchived ? 'Restore' : 'Archive', color: colors.textSecondary, onPress: () => { handleArchive(item._id); setActiveActionMenu(null); } },
-        { icon: 'trash-outline', label: 'Delete', color: '#FF3B30', onPress: () => { handleDeleteConversation(item._id); setActiveActionMenu(null); } },
+          : { icon: 'checkmark-done-circle-outline', label: 'Close', color: '#8E8E93', onPress: () => { messagesAPI.updateConversation(user!._id, item._id, { status: 'closed' }).then(() => { setConversations(prev => prev.map(c => c._id === item._id ? { ...c, status: 'closed' } : c)); }); setActiveActionMenu(null); } },
+        { icon: 'sparkles', label: item.ai_enabled ? 'AI: On' : 'Enable AI', color: '#34C759', onPress: () => { handleAiModeToggleOn(item._id); setActiveActionMenu(null); } },
       ];
 
       return (
