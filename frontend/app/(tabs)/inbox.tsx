@@ -1557,27 +1557,25 @@ export default function InboxScreen() {
       {inboxView === 'my' && (() => {
         const all = conversations.filter(c => c);
         const counts = {
-          assigned:   all.filter(c => c.status === 'active' && !(c.needs_assistance || c.status === 'paused') && !(!c.user_id || c.user_id === 'unassigned') && c.status !== 'closed').length,
+          all:        all.filter(c => c.status !== 'closed').length,
           waiting:    all.filter(c => (c.needs_assistance || c.status === 'paused') && c.status !== 'closed').length,
           ai_active:  all.filter(c => c.ai_enabled && c.ai_mode && c.ai_mode !== 'off' && c.status !== 'closed').length,
-          unassigned: all.filter(c => (!c.user_id || c.user_id === 'unassigned') && c.status !== 'closed').length,
-          all:        all.filter(c => c.status !== 'closed').length,
+          assigned:   all.filter(c => c.status === 'active' && !(c.needs_assistance || c.status === 'paused') && !(!c.user_id || c.user_id === 'unassigned') && c.status !== 'closed').length,
           closed:     all.filter(c => c.status === 'closed').length,
         };
         const tabs: { key: typeof activeTab; label: string; icon: string; activeColor: string }[] = [
-          { key: 'assigned',  label: 'Active',    icon: 'person-circle-outline', activeColor: '#007AFF' },
-          { key: 'waiting',   label: 'Waiting',   icon: 'time-outline',          activeColor: '#FF9500' },
-          { key: 'ai_active', label: 'AI',        icon: 'sparkles',              activeColor: '#34C759' },
-          { key: 'unassigned',label: 'New',       icon: 'help-circle-outline',   activeColor: '#AF52DE' },
-          { key: 'all',       label: 'All',       icon: 'list-outline',          activeColor: '#C9A962' },
-          { key: 'closed',    label: 'Closed',    icon: 'checkmark-circle-outline', activeColor: '#8E8E93' },
+          { key: 'all',       label: 'All',     icon: 'list-outline',              activeColor: '#C9A962' },
+          { key: 'waiting',   label: 'Waiting', icon: 'time-outline',              activeColor: '#FF9500' },
+          { key: 'ai_active', label: 'AI',      icon: 'sparkles',                  activeColor: '#34C759' },
+          { key: 'assigned',  label: 'Active',  icon: 'person-circle-outline',     activeColor: '#007AFF' },
+          { key: 'closed',    label: 'Closed',  icon: 'checkmark-circle-outline',  activeColor: '#8E8E93' },
         ];
         return (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}
-            contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 8, gap: 7, alignItems: 'center' }}
+            contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 8, gap: 7 }}
           >
             {tabs.map(({ key, label, icon, activeColor }) => {
               const isActive = activeTab === key;
