@@ -1574,8 +1574,8 @@ export default function InboxScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={{ borderBottomWidth: 1, borderBottomColor: colors.border }}
-            contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 8, gap: 7 }}
+            style={{ borderBottomWidth: 1, borderBottomColor: colors.border, maxHeight: 52 }}
+            contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 7, gap: 7 }}
           >
             {tabs.map(({ key, label, icon, activeColor }) => {
               const isActive = activeTab === key;
