@@ -649,7 +649,11 @@ async def incoming_message(
         urn_threshold = 2  # Default — must be defined before the if block
         if not is_stop and user_id and rep_user:
             notif_prefs_esc = rep_user.get("notification_settings", {})
-            urn_threshold = int(notif_prefs_esc.get("you_are_needed_threshold", 2))
+            configured_threshold = int(notif_prefs_esc.get("you_are_needed_threshold", 2))
+            # If rep has personally replied before, drop threshold to 1
+            # (they've been involved — notify immediately on next customer reply)
+            rep_engaged = conversation.get("rep_engaged", False)
+            urn_threshold = 1 if rep_engaged else configured_threshold
 
         effective_reply_count = max(max_reply_count, conv_unanswered)
 

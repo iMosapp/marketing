@@ -373,10 +373,16 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
     _conv_cache.pop(f"{user_id}:False", None)
 
     # Clear "You're Needed" flags — rep is now responding
+    # Also lower future escalation threshold to 1 (rep has been personally involved)
     try:
         await get_db().conversations.update_one(
             {"_id": ObjectId(conversation_id)},
-            {"$set": {"needs_assistance": False, "unanswered_customer_replies": 0}}
+            {"$set": {
+                "needs_assistance":            False,
+                "unanswered_customer_replies": 0,
+                "rep_engaged":                 True,
+                "rep_last_replied_at":         datetime.now(timezone.utc),
+            }}
         )
     except Exception:
         pass
@@ -1464,8 +1470,28 @@ async def send_message_simple(user_id: str, message_data: dict):
     result = await db.messages.insert_one(message)
     message_id = str(result.inserted_id)
     message['_id'] = message_id
-    
-    # Route based on channel
+
+    # ── Rep replied: clear YOU'RE NEEDED + lower future threshold to 1 ─────
+    # Once a rep personally replies, they want to know about the NEXT message
+    # immediately (not after 2+). Set rep_engaged=True so the webhook uses 1.
+    try:
+        await db.conversations.update_one(
+            {"_id": ObjectId(conversation_id)},
+            {"$set": {
+                "needs_assistance":          False,
+                "unanswered_customer_replies": 0,
+                "rep_engaged":               True,   # lower future threshold to 1
+                "rep_last_replied_at":       datetime.now(timezone.utc),
+            }}
+        )
+        # Also clear from home cache so wins feed updates
+        try:
+            from routers.home_intelligence import _home_cache
+            _home_cache.pop(user_id, None)
+        except Exception:
+            pass
+    except Exception:
+        pass
     if channel == 'email':
         # Send via Resend with branded template
         logger.info(f"[EMAIL-FLOW] Starting email send for user={user_id}, conv={conversation_id}")
