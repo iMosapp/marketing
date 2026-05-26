@@ -251,10 +251,10 @@ export default function InboxScreen() {
   const loadTeamConversations = async () => {
     if (!user) return;
     setLoadingTeam(true);
+    const isManager = ['super_admin','org_admin','store_manager'].includes(user.role || '');
     try {
       const allTeamConversations: any[] = [];
 
-      // 1. Load chat widget leads (Jessi conversations) — always available
       try {
         const chatRes = await fetch(
           `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '')}/api/chat/leads?user_id=${user._id}`
@@ -270,7 +270,6 @@ export default function InboxScreen() {
         console.log('No chat leads');
       }
 
-      // 2. Load shared inbox / team conversations
       try {
         const teamsResponse = await fetch(
           `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '')}/api/admin/team/shared-inboxes?user_id=${user._id}`
@@ -299,7 +298,27 @@ export default function InboxScreen() {
         console.log('No shared inboxes');
       }
 
-      setTeamConversations(allTeamConversations);
+      // Visibility filter:
+      // - Managers/admins: see everything
+      // - Regular reps: see unclaimed (Jump Ball) + conversations they personally claimed
+      const visible = isManager
+        ? allTeamConversations
+        : allTeamConversations.filter(c =>
+            !c.claimed ||                          // unclaimed = Jump Ball, everyone sees
+            c.claimed_by === user._id ||            // claimed by me
+            c.claimed_by === user._id?.toString()   // string id match
+          );
+
+      // Sort: unclaimed first, then most recent
+      visible.sort((a, b) => {
+        const aUnclaimed = !a.claimed ? 1 : 0;
+        const bUnclaimed = !b.claimed ? 1 : 0;
+        if (bUnclaimed !== aUnclaimed) return bUnclaimed - aUnclaimed;
+        return new Date(b.updated_at || b.created_at || 0).getTime() -
+               new Date(a.updated_at || a.created_at || 0).getTime();
+      });
+
+      setTeamConversations(visible);
     } catch (error) {
       console.error('Failed to load team conversations:', error);
       setTeamConversations([]);

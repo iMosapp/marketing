@@ -384,6 +384,18 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
                 "rep_last_replied_at":         datetime.now(timezone.utc),
             }}
         )
+        # Auto-claim in Team Inbox: first reply = claim (no button tap needed)
+        conv_doc = await get_db().conversations.find_one({"_id": ObjectId(conversation_id)}, {"claimed": 1, "claimed_by": 1})
+        if conv_doc and not conv_doc.get("claimed"):
+            await get_db().conversations.update_one(
+                {"_id": ObjectId(conversation_id)},
+                {"$set": {
+                    "claimed":    True,
+                    "claimed_by": user_id,
+                    "claimed_at": datetime.now(timezone.utc),
+                }}
+            )
+            logger.info(f"[Inbox] Auto-claimed conversation {conversation_id} by {user_id} on first reply")
     except Exception:
         pass
 
