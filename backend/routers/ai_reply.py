@@ -97,6 +97,7 @@ async def queue_ai_reply(
     # or scheduling, flag the conversation for rep attention NOW — don't wait
     # for a message-count threshold. Reply with a brief "let me check" then escalate.
     ESCALATION_SIGNALS = [
+        # Inventory / pricing
         "in stock", "available", "availability", "do you have",
         "price", "pricing", "cost", "how much", "what does it cost", "what's the price",
         "color", "colour", "black", "white", "blue", "red", "silver", "grey", "gray",
@@ -104,6 +105,11 @@ async def queue_ai_reply(
         "trade", "trade-in", "trade in", "trade value",
         "finance", "financing", "payment", "monthly",
         "vin", "specific", "which one", "which ones", "do you stock",
+        # Customer suspects AI — rep MUST take over immediately
+        "robot", "are you a robot", "is this ai", "is this a bot", "are you real",
+        "talking to a person", "real person", "automated", "chatbot", "ai bot",
+        "computer", "are you human", "is this automated", "machine", "is this jessi",
+        "who is this", "who am i talking to",
     ]
     msg_lower = (incoming_message or "").lower()
     is_hot_topic = any(sig in msg_lower for sig in ESCALATION_SIGNALS)
