@@ -1347,44 +1347,77 @@ export default function InboxScreen() {
       </TouchableOpacity>
     );
 
-    // Web: wrap with swipe actions
+    // Web: long-press for action strip (same as My Inbox)
     if (IS_WEB) {
-      const leftActions = [];
-      if (!isClaimed) {
-        leftActions.push({
-          key: 'claim',
-          icon: 'hand-right-outline',
-          label: 'Claim',
-          color: '#34C759',
-          bgColor: '#34C75920',
-          onPress: handleClaim,
-        });
-      }
-      leftActions.push({
-        key: 'task',
-        icon: 'checkbox-outline',
-        label: 'Task',
-        color: '#007AFF',
-        bgColor: '#007AFF20',
-        onPress: () => handleCreateTaskFromConversation(item.id),
-      });
-
+      const showTeamActions = activeActionMenu === item.id;
       return (
-        <WebSwipeableItem
-          leftActions={leftActions}
-          rightActions={[
-            {
-              key: 'tag',
-              icon: 'pricetag-outline',
-              label: 'Tag',
-              color: '#AF52DE',
-              bgColor: '#AF52DE20',
-              onPress: () => handleOpenTagPicker(item.id),
-            },
-          ]}
-        >
-          {teamItemContent}
-        </WebSwipeableItem>
+        <View>
+          <TouchableOpacity
+            style={[
+              styles.conversationItem,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+              !isClaimed && styles.teamConversationUnclaimed,
+            ]}
+            onPress={handlePress}
+            onLongPress={() => { triggerHaptic('medium'); toggleActionMenu(item.id); }}
+            activeOpacity={0.7}
+            data-testid={`team-conversation-${item.id}`}
+          >
+            <View style={styles.avatarContainer}>
+              {contactPhoto ? (
+                <Image source={{ uri: contactPhoto }} style={[styles.avatarPhoto, !isClaimed && { borderWidth: 2, borderColor: '#FF9500' }]} />
+              ) : (
+                <View style={[styles.avatar, !isClaimed && { backgroundColor: '#FF9500' }]}>
+                  <Text style={styles.avatarText}>{contactInitials}</Text>
+                </View>
+              )}
+              {isNew && !isClaimed && (
+                <View style={styles.newLeadBadge}>
+                  <Ionicons name="flash" size={10} color={colors.text} />
+                </View>
+              )}
+            </View>
+            {/* reuse inner content */}
+            <View style={styles.conversationContent}>
+              <View style={styles.conversationHeader}>
+                <View style={styles.nameRow}>
+                  <Text style={[styles.contactName, { color: colors.textPrimary }]} numberOfLines={1}>{contactName}</Text>
+                </View>
+              </View>
+              {isClaimed ? (
+                <View style={styles.claimedBadge}>
+                  <Ionicons name="checkmark-circle" size={12} color="#34C759" />
+                  <Text style={styles.claimedBadgeText}>Claimed{item.claimed_by === user?._id ? ' by you' : ''}</Text>
+                </View>
+              ) : (
+                <View style={styles.unclaimedBadge}>
+                  <Ionicons name="flash" size={12} color="#FF9500" />
+                  <Text style={styles.unclaimedBadgeText}>Jump Ball — hold to act</Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+
+          {showTeamActions && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingHorizontal: 12, paddingVertical: 10, marginHorizontal: 8, marginBottom: 4, borderRadius: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
+              {[
+                !isClaimed
+                  ? { icon: 'hand-right-outline', label: 'Claim', color: '#34C759', onPress: () => { handleClaim(); setActiveActionMenu(null); } }
+                  : { icon: 'person-remove-outline', label: 'Unclaim', color: '#FF9500', onPress: () => { setActiveActionMenu(null); } },
+                { icon: 'checkbox-outline', label: 'Task', color: '#007AFF', onPress: () => { handleCreateTaskFromConversation(item.id); setActiveActionMenu(null); } },
+                { icon: 'pricetag-outline', label: 'Tag', color: '#AF52DE', onPress: () => { handleOpenTagPicker(item.id); setActiveActionMenu(null); } },
+                { icon: 'flag-outline', label: 'Flag', color: '#FF9500', onPress: () => { handleFlagConversation(item.id); setActiveActionMenu(null); } },
+              ].map((action) => (
+                <TouchableOpacity key={action.label} onPress={action.onPress} style={{ alignItems: 'center', gap: 4, flex: 1 }} activeOpacity={0.6}>
+                  <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: action.color + '18', alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name={action.icon as any} size={18} color={action.color} />
+                  </View>
+                  <Text style={{ fontSize: 10, fontWeight: '600', color: action.color }}>{action.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
       );
     }
 
