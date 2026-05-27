@@ -100,17 +100,19 @@ async def list_shared_inboxes(user_id: str):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Build filter based on role
+    # Build filter based on role — always exclude deleted/inactive inboxes
     role = user.get('role', 'user')
+    base_filter = {"is_active": {"$ne": False}}   # exclude soft-deleted
+
     if role == 'super_admin':
-        query = {}
+        query = {**base_filter}
     elif role == 'org_admin':
-        query = {"organization_id": user.get('organization_id')}
+        query = {"organization_id": user.get('organization_id'), **base_filter}
     elif role == 'store_manager':
-        query = {"store_id": user.get('store_id')}
+        query = {"store_id": user.get('store_id'), **base_filter}
     else:
         # Regular users see inboxes they're assigned to
-        query = {"assigned_user_ids": user_id}
+        query = {"assigned_user_ids": user_id, **base_filter}
     
     inboxes = await db.shared_inboxes.find(query).to_list(100)
     
@@ -251,14 +253,11 @@ async def delete_shared_inbox(inbox_id: str, user_id: str):
         {"shared_inbox_ids": inbox_id},
         {"$pull": {"shared_inbox_ids": inbox_id}}
     )
-    
-    # Soft delete - mark as inactive
-    await db.shared_inboxes.update_one(
-        {"_id": ObjectId(inbox_id)},
-        {"$set": {"is_active": False, "deleted_at": datetime.utcnow()}}
-    )
-    
-    return {"message": "Shared inbox deactivated"}
+
+    # Hard delete — user expects it to disappear immediately
+    await db.shared_inboxes.delete_one({"_id": ObjectId(inbox_id)})
+
+    return {"message": "Shared inbox deleted", "id": inbox_id}
 
 
 @router.post("/shared-inboxes/{inbox_id}/assign")
@@ -501,18 +500,18 @@ async def list_users_for_assignment(user_id: str, search: Optional[str] = None):
     
     # Build filter — primary: account_id; fallback: org/store for legacy data
     role     = user.get('role', 'user')
-    acct_id  = user.get('account_id') or str(user['_id'])   # super_admin's own _id = their account
+    acct_id  = user.get('account_id') or str(user['_id'])
     org_id   = user.get('organization_id')
     store_id = user.get('store_id')
-    query    = {"_id": {"$ne": ObjectId(user_id)}}  # Exclude self
+    # Note: do NOT exclude self — admins should be able to add themselves to inboxes
+    query    = {}
 
     if role not in ('super_admin', 'org_admin', 'store_manager'):
         raise HTTPException(status_code=403, detail="Admin access required")
 
-    # Prefer account_id scope (cleanest); fall back to org/store for legacy users
+    # Prefer account_id scope; fall back to org/store for legacy users
     query['$or'] = [
         {"account_id": acct_id},
-        # Legacy users created before account_id existed
         *(
             [{"organization_id": org_id}] if org_id else
             [{"store_id": store_id}] if store_id else
