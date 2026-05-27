@@ -32,6 +32,8 @@ interface SharedInbox {
   description?: string;
   assigned_users: { id: string; name: string; email: string }[];
   is_active: boolean;
+  va_profile_id?: string;
+  va_prompt_override?: string;
   created_at?: string;
 }
 
@@ -244,7 +246,7 @@ export default function SharedInboxesPage() {
           )}
         </View>
         {/* Action buttons */}
-        <View style={{ flexDirection: 'row', gap: 6 }}>
+        <View style={{ flexDirection: 'row', gap: 6, flexShrink: 0 }}>
           <TouchableOpacity
             onPress={() => openEdit(inbox)}
             style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: '#007AFF15', alignItems: 'center', justifyContent: 'center' }}

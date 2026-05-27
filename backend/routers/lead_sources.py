@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from typing import Optional, List, Literal
 from datetime import datetime, timezone
 from bson import ObjectId
+import os
 import secrets
 import logging
 
@@ -45,6 +46,7 @@ class WorkflowConfig(BaseModel):
     intake_text: str = ""                       # Template with {{first_name}}, {{vehicle}}, etc.
     intake_delay_seconds: int = 0               # 0 = instant
     va_enabled: bool = True                     # Enable AI auto-reply
+    va_profile_id: Optional[str] = None         # VA Library profile to use
     va_prompt_override: Optional[str] = None    # Custom VA prompt for this source
     workflow_user_ids: List[str] = []           # Reps to notify & call on new lead
     auto_call_on_claim: bool = False            # Auto-dial customer when rep claims
@@ -96,6 +98,7 @@ def serialize_lead_source(source: dict) -> dict:
             "intake_text":             source.get("intake_text", ""),
             "intake_delay_seconds":    source.get("intake_delay_seconds", 0),
             "va_enabled":              source.get("va_enabled", True),
+            "va_profile_id":           source.get("va_profile_id"),
             "va_prompt_override":      source.get("va_prompt_override"),
             "workflow_user_ids":       source.get("workflow_user_ids", []),
             "auto_call_on_claim":      source.get("auto_call_on_claim", False),
@@ -644,6 +647,7 @@ async def save_workflow_config(source_id: str, config: WorkflowConfig):
             "intake_text":             config.intake_text,
             "intake_delay_seconds":    config.intake_delay_seconds,
             "va_enabled":              config.va_enabled,
+            "va_profile_id":           config.va_profile_id,
             "va_prompt_override":      config.va_prompt_override,
             "workflow_user_ids":       config.workflow_user_ids,
             "auto_call_on_claim":      config.auto_call_on_claim,

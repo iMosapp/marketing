@@ -349,13 +349,14 @@ Extract `admin.py` (4,000 lines) into:
 
 ## Prioritized Backlog — Updated May 20, 2026
 
+## Prioritized Backlog — Updated May 27, 2026
+
 ### P0 — This Week
 - **App Store / TestFlight Launch** — Blocked on Apple Team ID + bundle ID. See App Store Roadmap below.
 - **Twilio 10DLC Integration** — LLC/business docs ready. Phase 1: remove mock mode, STOP/UNSTOP webhooks, Messaging Service SID. Registration URLs now live: `/terms`, `/privacy`, `/sms-terms` on `imonsocial.com`.
 
 ### P1 — Next Sprint
 - **Payment Collection — Stripe vs Elavon** — HOLD, user decision pending. Stub exists at `/subscriptions/quotes/{id}/create-payment`.
-- **Inbox Redesign** — P1, not starting yet. Documented: 5-view structure (Assigned/Unassigned/AI Active/Waiting/All), right panel (bottom sheet on mobile), AI/Human/Hybrid mode toggle, priority scoring.
 - **Virtual Assistant → Inbox Wiring** — Phase 2 of VA: wire the clone to pre-load a draft reply in the composer (Assist mode). Foundation built (persona + `/api/auth/persona/{id}/sample-message` endpoint working).
 - **Reseller Portal for Quotes** — Resellers can't create quotes themselves yet. Admin-only for now.
 - **Push Notifications** — Mobile alerts for new leads, messages, campaign triggers.
@@ -568,6 +569,21 @@ When a rep is terminated (deactivated), their dedicated Twilio number is automat
 **Frontend:**
 - Deactivation dialog shows Twilio number and pool notice.
 - Reactivation toast mentions pooled number if still available.
+
+
+## Shared Inbox Edit/Webhook + VA Picker (May 27, 2026) — VERIFIED ✅
+
+**Bug fixes:**
+- Fixed backend crash: added `from fastapi import Request` to `shared_inboxes.py` (NameError on startup)
+- Fixed delete endpoint: added missing `@router.delete("/shared-inboxes/{inbox_id}")` decorator
+- Fixed list response: now returns `va_profile_id` and `va_prompt_override` so Edit modal pre-fills correctly
+
+**New features:**
+- `va_profile_id` added to `WorkflowConfig`, `serialize_lead_source`, and `save_workflow_config` in `lead_sources.py`
+- Lead Sources workflow page now shows a proper VA picker (list of VA Library profiles with avatars) instead of just a "Manage VA Library →" link
+
+**Verified:** Full CRUD curl tests pass (create, list, edit with va_profile_id, webhook-info, delete). Backend healthy.
+
 
 ## Inbox 5-Tab Redesign (May 20, 2026) — TESTED 10/10 PASS
 

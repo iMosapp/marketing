@@ -107,6 +107,7 @@ export default function LeadSourceDetailScreen() {
     intake_text: '',
     intake_delay_seconds: 0,
     va_enabled: true,
+    va_profile_id: '',
     va_prompt_override: '',
     workflow_user_ids: [] as string[],
     auto_call_on_claim: false,
@@ -114,6 +115,7 @@ export default function LeadSourceDetailScreen() {
     notify_all_on_intake: true,
   });
   const [workflowUsers, setWorkflowUsers] = useState<any[]>([]);  // All reps to choose from
+  const [vaProfiles, setVaProfiles] = useState<any[]>([]);
   const [savingWorkflow, setSavingWorkflow] = useState(false);
   const [showWorkflow, setShowWorkflow] = useState(false);
 
@@ -155,12 +157,13 @@ export default function LeadSourceDetailScreen() {
 
   const fetchData = async () => {
     try {
-      const [sourceRes, statsRes, teamsRes, workflowRes, usersRes] = await Promise.all([
+      const [sourceRes, statsRes, teamsRes, workflowRes, usersRes, vaRes] = await Promise.all([
         api.get(`/lead-sources/${id}`),
         api.get(`/lead-sources/stats/${id}`),
         api.get(`/admin/team/shared-inboxes?user_id=${user?._id}`),
         api.get(`/lead-sources/${id}/workflow`).catch(() => ({ data: {} })),
         api.get(`/admin/team/users?user_id=${user?._id}`, { headers: { 'X-User-ID': user?._id } }).catch(() => ({ data: [] })),
+        api.get('/va-profiles', { headers: { 'X-User-ID': user?._id } }).catch(() => ({ data: { profiles: [] } })),
       ]);
       
       if (sourceRes.data.success) {
@@ -188,6 +191,9 @@ export default function LeadSourceDetailScreen() {
       const usersArr = Array.isArray(usersRes.data) ? usersRes.data : (usersRes.data?.users || []);
       // Normalize id field — /admin/team/users returns {id} not {_id}
       setWorkflowUsers(usersArr.map((u: any) => ({ ...u, _id: u._id || u.id })));
+      
+      // Load VA profiles
+      setVaProfiles(vaRes.data?.profiles || []);
       
       // Teams data is an array directly
       const teamsData = Array.isArray(teamsRes.data) ? teamsRes.data : [];
@@ -705,21 +711,64 @@ export default function LeadSourceDetailScreen() {
                 <View>
                   <Text style={styles.label}>VA Profile for this Source</Text>
                   <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 8 }}>
-                    Pick a VA from your library, or write a custom prompt below.
+                    Pick a VA persona to handle leads from this source.
                   </Text>
-                  <TouchableOpacity
-                    onPress={() => router.push('/admin/va-library')}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.surface, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: colors.border, marginBottom: 10 }}
-                  >
-                    <Ionicons name="person-circle-outline" size={18} color={colors.accent} />
-                    <Text style={{ color: colors.accent, fontWeight: '600', fontSize: 14 }}>Manage VA Library →</Text>
-                  </TouchableOpacity>
+
+                  {vaProfiles.length === 0 ? (
+                    <TouchableOpacity
+                      onPress={() => router.push('/admin/va-library')}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.surface, borderRadius: 10, padding: 12, borderWidth: 1, borderColor: colors.border, marginBottom: 10 }}
+                    >
+                      <Ionicons name="person-circle-outline" size={18} color={colors.accent} />
+                      <Text style={{ color: colors.accent, fontWeight: '600', fontSize: 14 }}>Create a VA in VA Library first →</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={{ gap: 8, marginBottom: 12 }}>
+                      {/* "No VA" option */}
+                      <TouchableOpacity
+                        onPress={() => setWorkflow(prev => ({ ...prev, va_profile_id: '' }))}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: 10, backgroundColor: !workflow.va_profile_id ? colors.accent + '20' : colors.surface, borderWidth: 1, borderColor: !workflow.va_profile_id ? colors.accent : colors.border }}
+                        data-testid="va-none-option"
+                      >
+                        <Ionicons name="close-circle-outline" size={18} color={!workflow.va_profile_id ? colors.accent : colors.textSecondary} />
+                        <Text style={{ color: !workflow.va_profile_id ? colors.accent : colors.text, fontWeight: '600' }}>No VA (use default Jessi)</Text>
+                      </TouchableOpacity>
+
+                      {vaProfiles.map((va: any) => (
+                        <TouchableOpacity
+                          key={va._id}
+                          onPress={() => setWorkflow(prev => ({ ...prev, va_profile_id: va._id }))}
+                          style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: 10, backgroundColor: workflow.va_profile_id === va._id ? (va.avatar_color || colors.accent) + '20' : colors.surface, borderWidth: 1, borderColor: workflow.va_profile_id === va._id ? (va.avatar_color || colors.accent) : colors.border }}
+                          data-testid={`va-option-${va._id}`}
+                        >
+                          <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: (va.avatar_color || '#C9A962') + '30', alignItems: 'center', justifyContent: 'center' }}>
+                            <Text style={{ color: va.avatar_color || '#C9A962', fontWeight: '800', fontSize: 14 }}>{(va.name || 'V').charAt(0)}</Text>
+                          </View>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ color: colors.text, fontWeight: '600' }}>{va.name}</Text>
+                            {va.tagline ? <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{va.tagline}</Text> : null}
+                          </View>
+                          {workflow.va_profile_id === va._id && <Ionicons name="checkmark-circle" size={20} color={va.avatar_color || colors.accent} />}
+                        </TouchableOpacity>
+                      ))}
+
+                      <TouchableOpacity
+                        onPress={() => router.push('/admin/va-library')}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingTop: 4 }}
+                      >
+                        <Ionicons name="add-circle-outline" size={15} color={colors.textSecondary} />
+                        <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Manage VA Library</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  <Text style={[styles.label, { fontSize: 13, marginTop: 0 }]}>Custom Instructions (optional)</Text>
                   <TextInput
                     style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
                     value={workflow.va_prompt_override || ''}
                     onChangeText={v => setWorkflow(prev => ({ ...prev, va_prompt_override: v }))}
                     multiline
-                    placeholder="Optional: paste VA profile prompt or custom instructions specific to this lead source (e.g. 'These are trade-in leads — focus on current vehicle and timeline')."
+                    placeholder="Optional: extra context specific to this lead source (e.g. 'These are trade-in leads — focus on current vehicle and timeline')."
                     placeholderTextColor={colors.textSecondary}
                   />
                 </View>

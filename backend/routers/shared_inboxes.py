@@ -139,6 +139,8 @@ async def list_shared_inboxes(user_id: str):
             "description": inbox.get('description'),
             "assigned_users": assigned_users,
             "is_active": inbox.get('is_active', True),
+            "va_profile_id": inbox.get('va_profile_id', ''),
+            "va_prompt_override": inbox.get('va_prompt_override', ''),
             "created_at": inbox.get('created_at').isoformat() if inbox.get('created_at') else None
         })
     
@@ -370,6 +372,7 @@ async def get_webhook_info(inbox_id: str, user_id: str):
     }
 
 
+@router.delete("/shared-inboxes/{inbox_id}")
 async def delete_shared_inbox(inbox_id: str, user_id: str):
     """Delete (deactivate) a shared inbox"""
     db = get_db()
