@@ -160,7 +160,7 @@ export default function LeadSourceDetailScreen() {
         api.get(`/lead-sources/stats/${id}`),
         api.get(`/admin/team/shared-inboxes?user_id=${user?._id}`),
         api.get(`/lead-sources/${id}/workflow`).catch(() => ({ data: {} })),
-        api.get(`/admin/users?limit=100`, { headers: { 'X-User-ID': user?._id } }).catch(() => ({ data: [] })),
+        api.get(`/admin/team/users?user_id=${user?._id}`, { headers: { 'X-User-ID': user?._id } }).catch(() => ({ data: [] })),
       ]);
       
       if (sourceRes.data.success) {
@@ -184,9 +184,10 @@ export default function LeadSourceDetailScreen() {
         setWorkflow(prev => ({ ...prev, ...workflowRes.data }));
       }
 
-      // Load all reps for workflow assignment
+      // Load all reps for workflow assignment (scoped to same account)
       const usersArr = Array.isArray(usersRes.data) ? usersRes.data : (usersRes.data?.users || []);
-      setWorkflowUsers(usersArr);
+      // Normalize id field — /admin/team/users returns {id} not {_id}
+      setWorkflowUsers(usersArr.map((u: any) => ({ ...u, _id: u._id || u.id })));
       
       // Teams data is an array directly
       const teamsData = Array.isArray(teamsRes.data) ? teamsRes.data : [];
