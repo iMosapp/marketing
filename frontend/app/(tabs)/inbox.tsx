@@ -263,7 +263,7 @@ export default function InboxScreen() {
         if (chatData.conversations) {
           allTeamConversations.push(...chatData.conversations.map((c: any) => ({
             ...c,
-            team_name: 'Website Leads',
+            team_name: 'Website Lead Source',
           })));
         }
       } catch (e) {

@@ -18,7 +18,7 @@ import { useThemeStore } from '../../store/themeStore';
 const CATEGORIES = [
   { key: 'all', label: 'All', icon: 'apps' },
   { key: 'engagement', label: 'Engagement', icon: 'flame' },
-  { key: 'leads', label: 'Leads', icon: 'person-add' },
+  { key: 'leads', label: 'Lead Sources', icon: 'person-add' },
   { key: 'tasks', label: 'Tasks', icon: 'checkbox' },
   { key: 'messages', label: 'Messages', icon: 'chatbubble' },
   { key: 'campaigns', label: 'Campaigns', icon: 'megaphone' },
