@@ -113,6 +113,14 @@ async def create_admin_user(user_data: dict, x_user_id: str = Header(None, alias
     
     result = await get_db().users.insert_one(user_dict)
     user_dict['_id'] = str(result.inserted_id)
+
+    # Super admins own their own account — account_id = their _id
+    # This keeps each client account completely isolated from the creator's account
+    if user_dict.get('role') == 'super_admin':
+        await get_db().users.update_one(
+            {"_id": result.inserted_id},
+            {"$set": {"account_id": str(result.inserted_id)}}
+        )
     
     # Seed all default templates, campaigns, and triggers
     try:
@@ -241,6 +249,13 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
     
     result = await get_db().users.insert_one(user_dict)
     user_id = str(result.inserted_id)
+
+    # Super admins own their own account
+    if user_dict.get('role') == 'super_admin':
+        await get_db().users.update_one(
+            {"_id": result.inserted_id},
+            {"$set": {"account_id": user_id}}
+        )
     
     # Seed all default templates, campaigns, and triggers
     try:
