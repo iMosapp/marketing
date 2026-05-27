@@ -424,17 +424,28 @@ SEED_TRACKS = [
     },
 ]
 
+# Internal training tracks (Support, Onboarding, Billing, Sales, etc.)
+# Defined in scripts/seed_internal_training.py — imported here so they auto-seed on every environment
+try:
+    import sys as _sys, os as _os
+    _sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+    from scripts.seed_internal_training import INTERNAL_TRACKS as _INTERNAL_TRACKS
+except Exception:
+    _INTERNAL_TRACKS = []
+
+ALL_TRACKS = SEED_TRACKS + _INTERNAL_TRACKS
+
 
 @router.post("/seed")
 async def seed_training_content():
     """Seed the training tracks with placeholder content"""
     db = get_db()
     created = 0
-    for track_data in SEED_TRACKS:
+    for track_data in ALL_TRACKS:
         existing = await db.training_tracks.find_one({"slug": track_data["slug"]})
         if existing:
             continue
-        lessons = track_data.pop("lessons")
+        lessons = track_data.pop("lessons", [])
         track_data["created_at"] = datetime.now(timezone.utc)
         track_data["updated_at"] = datetime.now(timezone.utc)
         result = await db.training_tracks.insert_one(track_data)
@@ -445,7 +456,7 @@ async def seed_training_content():
             lesson["updated_at"] = datetime.now(timezone.utc)
             await db.training_lessons.insert_one(lesson)
         created += 1
-    return {"seeded": created, "total_tracks": len(SEED_TRACKS)}
+    return {"seeded": created, "total_tracks": len(ALL_TRACKS)}
 
 
 @router.get("/tracks")
@@ -457,10 +468,10 @@ async def get_tracks(request: Request, role: Optional[str] = Query(None)):
     # Auto-seed missing tracks (not just when zero)
     existing_slugs_cursor = db.training_tracks.find({}, {"slug": 1, "_id": 0})
     existing_slugs = {doc["slug"] async for doc in existing_slugs_cursor}
-    seed_slugs = {t["slug"] for t in SEED_TRACKS}
+    seed_slugs = {t["slug"] for t in ALL_TRACKS}
     missing = seed_slugs - existing_slugs
     if missing:
-        for track_data in SEED_TRACKS:
+        for track_data in ALL_TRACKS:
             if track_data["slug"] not in missing:
                 continue
             td = {k: v for k, v in track_data.items() if k != "lessons"}
@@ -952,7 +963,7 @@ async def reseed_new_tracks():
     """Seed only new tracks that don't already exist in the DB"""
     db = get_db()
     created = 0
-    for track_data in SEED_TRACKS:
+    for track_data in ALL_TRACKS:
         existing = await db.training_tracks.find_one({"slug": track_data["slug"]})
         if existing:
             continue
