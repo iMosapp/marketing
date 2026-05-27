@@ -100,9 +100,9 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
     .mob-direct:hover{color:var(--blue)}
   
     /* DEMO MODAL */
-    .demo-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:2000;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:24px}
+    .demo-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:2000;background:rgba(0,0,0,.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);display:none;align-items:flex-start;justify-content:center;padding:24px;overflow-y:auto}
     .demo-overlay.active{display:flex}
-    .demo-modal{background:#FFF;border:1px solid var(--border-2);border-radius:24px;padding:40px;max-width:480px;width:100%;position:relative;box-shadow:0 24px 80px rgba(0,0,0,.2)}
+    .demo-modal{background:#FFF;border:1px solid var(--border-2);border-radius:24px;padding:40px;max-width:480px;width:100%;position:relative;box-shadow:0 24px 80px rgba(0,0,0,.2);margin:24px auto}
     .demo-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:50%;background:var(--bg-2);border:1px solid var(--border);color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s}
     .demo-close:hover{background:var(--border)}
     .dm-field{margin-bottom:14px}
