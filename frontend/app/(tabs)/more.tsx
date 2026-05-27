@@ -643,6 +643,7 @@ export default function MoreScreen() {
       { permKey: 'system_logs', icon: 'bug-outline', title: 'System Logs', subtitle: 'Errors, warnings and diagnostics', onPress: () => router.push('/admin/system-logs'), color: '#FF3B30' },
       { permKey: 'my_performance', icon: 'pulse', title: 'SEO Health', subtitle: 'Your online visibility score', onPress: () => router.push('/seo-health'), color: '#30D158' },
       { permKey: 'geo_health', icon: 'brain', title: 'GEO Health', subtitle: 'Your AI citation score — ChatGPT, Gemini, Perplexity', onPress: () => router.push('/geo-health'), color: '#AF52DE' },
+      { permKey: 'va_library', icon: 'person-circle', title: 'VA Library', subtitle: 'Build and manage named Virtual Assistant personas', onPress: () => router.push('/admin/va-library'), color: '#C9A962' },
     ]);
     if (items.length > 0) sections.push({ id: 'performance', title: 'My Performance', icon: 'stats-chart', color: '#34C759', items });
   }

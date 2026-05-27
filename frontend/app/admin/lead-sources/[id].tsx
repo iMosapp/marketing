@@ -702,16 +702,23 @@ export default function LeadSourceDetailScreen() {
               {/* ── Custom VA Prompt for this Source ──────────────── */}
               {workflow.va_enabled && (
                 <View>
-                  <Text style={styles.label}>Custom VA Prompt (optional)</Text>
+                  <Text style={styles.label}>VA Profile for this Source</Text>
                   <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 8 }}>
-                    Override the default VA behavior specifically for this lead source.
+                    Pick a VA from your library, or write a custom prompt below.
                   </Text>
+                  <TouchableOpacity
+                    onPress={() => router.push('/admin/va-library')}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.surface, borderRadius: 10, padding: 10, borderWidth: 1, borderColor: colors.border, marginBottom: 10 }}
+                  >
+                    <Ionicons name="person-circle-outline" size={18} color={colors.accent} />
+                    <Text style={{ color: colors.accent, fontWeight: '600', fontSize: 14 }}>Manage VA Library →</Text>
+                  </TouchableOpacity>
                   <TextInput
                     style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
                     value={workflow.va_prompt_override || ''}
                     onChangeText={v => setWorkflow(prev => ({ ...prev, va_prompt_override: v }))}
                     multiline
-                    placeholder="E.g. 'Focus on trade-in value and service dept. leads from this source tend to be hot. Be warm and respond fast.'"
+                    placeholder="Optional: paste VA profile prompt or custom instructions specific to this lead source (e.g. 'These are trade-in leads — focus on current vehicle and timeline')."
                     placeholderTextColor={colors.textSecondary}
                   />
                 </View>
