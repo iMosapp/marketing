@@ -665,6 +665,7 @@ export default function MoreScreen() {
       { permKey: 'admin', icon: 'call', title: 'Phone Numbers', subtitle: 'Twilio inventory & billing', onPress: () => router.push('/admin/twilio-numbers'), color: '#34C759' },
       { permKey: 'contact_tags', icon: 'megaphone', title: 'Lead Source Config', subtitle: 'Configure ADF webhooks & sources', onPress: () => router.push('/admin/lead-sources'), color: '#5856D6' },
       { permKey: 'users', icon: 'people', title: 'Team Members', subtitle: 'Manage users & permissions', onPress: () => router.push('/admin/users'), color: '#007AFF' },
+      { permKey: 'users', icon: 'radio-button-on', title: 'Team Availability', subtitle: 'Who\'s on shift right now', onPress: () => router.push('/admin/team-availability'), color: '#34C759' },
       { permKey: 'invite_team', icon: 'person-add', title: 'Invite Team', subtitle: 'Send invitations', onPress: () => router.push('/settings/invite-team'), color: '#C9A962' },
       { permKey: 'integrations', icon: 'git-network', title: 'Integrations', subtitle: 'API keys & webhooks', onPress: () => router.push('/settings/integrations'), color: '#5856D6' },
     ];

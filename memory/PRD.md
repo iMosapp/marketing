@@ -571,6 +571,24 @@ When a rep is terminated (deactivated), their dedicated Twilio number is automat
 - Reactivation toast mentions pooled number if still available.
 
 
+## Team Availability Admin View (May 27, 2026) — VERIFIED ✅
+
+**Backend (`user_schedule.py`):**
+- `GET /schedule/team` enriched: returns `role`, `today_blocks`, `next_window`, `override_until`, `quiet_mode`, `has_schedule` for every teammate
+- All 59 availability checks now run in-memory (no N+1 DB calls per user) — batch-loaded schedules via single `find()`
+- Sorted: on-shift first, then alphabetically
+
+**Frontend (`/admin/team-availability`):**
+- Summary bar: On Shift / Off Shift / Total counts
+- Per-rep row: initials avatar (green = on shift, grey = off), name, role badge, status
+- Shows: "On shift", "Override active until X:XX", or "Off shift" + "Next: Wednesday 09:00"
+- Calendar icon → jumps to their schedule page
+- Auto-refreshes every 30 seconds; manual refresh button
+- "Updated HH:MM" timestamp so admin knows how fresh the data is
+- Accessible from Hub → Set Up → "Team Availability"
+
+
+
 ## Agent Scheduling + Notification Quiet Hours (May 27, 2026) — VERIFIED ✅
 
 **Backend: `/app/backend/routers/user_schedule.py` (new)**

@@ -295,7 +295,7 @@ async def get_user_availability(user_id: str):
 
 @router.get("/team")
 async def get_team_availability(x_user_id: str = Header(None, alias="X-User-ID")):
-    """Get current availability for all users in same account. Admin use."""
+    """Get current availability + today's hours for all users in same account. Admin use."""
     db = get_db()
     user = await db.users.find_one({"_id": ObjectId(x_user_id)}, {"account_id": 1, "store_id": 1, "organization_id": 1})
     if not user:
@@ -303,13 +303,93 @@ async def get_team_availability(x_user_id: str = Header(None, alias="X-User-ID")
 
     acct = user.get("account_id") or str(user["_id"])
     teammates = await db.users.find(
-        {"$or": [{"account_id": acct}, {"store_id": user.get("store_id")}], "status": {"$ne": "deactivated"}},
-        {"_id": 1, "name": 1, "timezone": 1}
+        {
+            "$or": [{"account_id": acct}, {"store_id": user.get("store_id")}],
+            "status": {"$ne": "deactivated"},
+        },
+        {"_id": 1, "name": 1, "timezone": 1, "role": 1, "photo_url": 1}
     ).to_list(100)
 
+    # Load all schedules in one batch
+    user_ids = [str(t["_id"]) for t in teammates]
+    schedules = {s["user_id"]: s async for s in db.user_schedules.find({"user_id": {"$in": user_ids}})}
+
+    import pytz
     result = []
+    now_utc = __import__("datetime").datetime.now(__import__("datetime").timezone.utc)
+
     for t in teammates:
         uid = str(t["_id"])
-        avail = await is_user_available(uid)
-        result.append({"user_id": uid, "name": t.get("name"), "available": avail})
+        sched = schedules.get(uid, {})
+
+        # Inline availability check (no extra DB call per user)
+        avail = True
+        next_w = None
+        today_blocks = []
+        override_until = sched.get("available_override_until")
+
+        if sched and sched.get("notification_quiet", False):
+            # Check override first
+            if override_until:
+                try:
+                    override_dt = __import__("datetime").datetime.fromisoformat(override_until.replace("Z", "+00:00"))
+                    if now_utc >= override_dt:
+                        override_until = None  # expired
+                except Exception:
+                    pass
+
+            if override_until:
+                avail = True
+            else:
+                # Check schedule
+                try:
+                    tz_str = sched.get("timezone", "America/Denver")
+                    tz = pytz.timezone(tz_str)
+                    local_now = now_utc.astimezone(tz)
+                    day_name = DAYS[local_now.weekday()]
+
+                    weekly = sched.get("weekly_schedule", {})
+                    if sched.get("rotation_enabled") and sched.get("rotation_anchor"):
+                        weekly = sched.get("schedule_b") if _is_week_b(sched, local_now) else weekly
+
+                    today_blocks = weekly.get(day_name, [])
+                    if not today_blocks:
+                        avail = False
+                    else:
+                        cur = local_now.strftime("%H:%M")
+                        avail = any(b.get("start","00:00") <= cur < b.get("end","23:59") for b in today_blocks)
+
+                    if not avail:
+                        # Find next window in remaining days
+                        for offset in range(0, 8):
+                            chk_day = DAYS[(local_now.weekday() + offset) % 7]
+                            chk_blocks = weekly.get(chk_day, [])
+                            if not chk_blocks:
+                                continue
+                            sorted_b = sorted(chk_blocks, key=lambda b: b.get("start",""))
+                            if offset == 0:
+                                future = [b for b in sorted_b if b.get("start","") > cur]
+                                if future:
+                                    next_w = future[0]["start"]
+                                    break
+                            else:
+                                next_w = f"{chk_day.capitalize()} {sorted_b[0]['start']}"
+                                break
+                except Exception:
+                    avail = True
+
+        result.append({
+            "user_id":        uid,
+            "name":           t.get("name", "Unknown"),
+            "role":           t.get("role", "user"),
+            "available":      avail,
+            "today_blocks":   today_blocks,
+            "next_window":    next_w,
+            "override_until": override_until,
+            "quiet_mode":     sched.get("notification_quiet", False),
+            "has_schedule":   bool(sched),
+        })
+
+    # Sort: available first, then alpha
+    result.sort(key=lambda x: (0 if x["available"] else 1, (x["name"] or "").lower()))
     return result
