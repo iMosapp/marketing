@@ -132,6 +132,21 @@ async def queue_ai_reply(
             )
         except Exception:
             pass
+        # Push the rep immediately — hot topic can't wait
+        if assigned_user_id:
+            try:
+                contact_doc = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"first_name": 1, "last_name": 1})
+                cname_hot = f"{contact_doc.get('first_name','')} {contact_doc.get('last_name','')}".strip() if contact_doc else "a customer"
+                from routers.push_notifications import send_push_to_user
+                asyncio.create_task(send_push_to_user(
+                    assigned_user_id,
+                    f"You're Needed — {cname_hot}",
+                    f"Asked: \"{(incoming_message or '')[:80]}\" — Jessi passed it to you.",
+                    f"/thread/{conversation_id}",
+                    "alert-circle",
+                ))
+            except Exception:
+                pass
         # Queue the brief reply
         queue_item = {
             "contact_id":       contact_id,
@@ -292,6 +307,20 @@ async def queue_ai_reply(
             "dismissed":       False,
             "created_at":      now,
         })
+
+        # Push notification — only fire for "You're Needed" scenarios, not routine AI replies
+        if needs_approval:
+            try:
+                from routers.push_notifications import send_push_to_user
+                asyncio.create_task(send_push_to_user(
+                    assigned_user_id,
+                    f"You're Needed — {cname}",
+                    f"Jessi needs your help. Review the AI draft before it sends.",
+                    f"/thread/{conversation_id}",
+                    "alert-circle",
+                ))
+            except Exception:
+                pass
     except Exception as e:
         logger.warning(f"[AIReply] Notification failed (non-fatal): {e}")
 
@@ -508,6 +537,18 @@ async def process_ai_reply_escalations():
                 "dismissed":       False,
                 "created_at":      now,
             })
+            # Push the manager immediately
+            try:
+                from routers.push_notifications import send_push_to_user
+                asyncio.create_task(send_push_to_user(
+                    manager_id,
+                    f"Escalation: {cname} is waiting",
+                    f"{rep_name} hasn't responded in {timeout_min}m. Customer needs a reply.",
+                    f"/thread/{item.get('conversation_id', '')}",
+                    "alert-circle",
+                ))
+            except Exception:
+                pass
             logger.info(f"[AIReply] Escalated queue {item['_id']} to manager {manager_id}")
 
 

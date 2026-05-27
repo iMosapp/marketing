@@ -571,6 +571,20 @@ When a rep is terminated (deactivated), their dedicated Twilio number is automat
 - Reactivation toast mentions pooled number if still available.
 
 
+## "You're Needed" Escalation Push (May 27, 2026) — VERIFIED ✅
+
+Push notifications now fire at every escalation trigger point, regardless of SMS/phone settings.
+
+**3 trigger points in `ai_reply.py`:**
+1. **Hot-topic immediate** — when customer asks about inventory/pricing/scheduling/color, Jessi says "let me check" and fires push immediately: `"You're Needed — {name}" / "Asked: '{question}' — Jessi passed it to you."`
+2. **Reply-count threshold** — when `needs_approval=True` (rep hasn't responded after N replies): `"You're Needed — {name}" / "Jessi needs your help. Review AI draft before it sends."`
+3. **Manager escalation** — when rep times out (15 min default), manager gets: `"Escalation: {name} is waiting" / "{rep} hasn't responded in Xm."`
+
+**Fix in `twilio_webhooks.py`:**
+- "You're Needed" push was buried inside `if sms_urn_enabled and rep_personal_phone and rep_twilio_number` → moved to fire unconditionally after the notification insert. Removed duplicate nested push to prevent double-firing.
+
+
+
 ## Stripe Quote Payment Integration (May 27, 2026) — VERIFIED ✅
 
 **What was built:**

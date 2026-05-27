@@ -711,6 +711,19 @@ async def incoming_message(
                 })
                 logger.info(f"[Webhook] 'You Are Needed' escalation for {contact_id} ({max_reply_count} replies)")
 
+                # Always push the rep — regardless of SMS/phone settings
+                try:
+                    from routers.push_notifications import send_push_to_user
+                    asyncio.create_task(send_push_to_user(
+                        user_id,
+                        f"You're Needed — {cname_esc}",
+                        f"{effective_reply_count} messages without a reply. Jessi needs you.",
+                        f"/thread/{conversation_id}",
+                        "alert-circle",
+                    ))
+                except Exception:
+                    pass
+
                 # Send URGENT SMS to rep's personal cell — fire-and-forget, never block webhook
                 try:
                     notif_prefs2   = (rep_user or {}).get("notification_settings", {}) if rep_user else {}
@@ -739,19 +752,6 @@ async def incoming_message(
                                 except Exception as _ue:
                                     logger.warning(f"[Webhook] Urgent SMS failed: {_ue}")
                             asyncio.create_task(_send_urgent_sms())
-                            # Push notification
-                            try:
-                                from routers.push_notifications import send_push_to_user
-                                push_app_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
-                                asyncio.create_task(send_push_to_user(
-                                    user_id,
-                                    f"⚠️ {cname_esc} needs you",
-                                    f"{max_reply_count} messages without a reply",
-                                    f"{push_app_url}/thread/{conversation_id}",
-                                    "alert-circle"
-                                ))
-                            except Exception:
-                                pass
                 except Exception as urg_err:
                     logger.warning(f"[Webhook] Urgent rep SMS setup failed: {urg_err}")
             except Exception as esc_err:
