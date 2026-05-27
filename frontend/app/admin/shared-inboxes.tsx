@@ -63,12 +63,26 @@ export default function SharedInboxesPage() {
     phone_number: '',
     description: '',
   });
+  const [twilioNumbers, setTwilioNumbers] = useState<any[]>([]);
+  const [showNumberPicker, setShowNumberPicker] = useState(false);
 
   useEffect(() => {
     if (user?._id) {
       loadData();
+      loadTwilioNumbers();
     }
   }, [user?._id]);
+
+  const loadTwilioNumbers = async () => {
+    try {
+      const res = await api.get('/admin/twilio/numbers', {
+        headers: { 'X-User-ID': user?._id },
+      });
+      setTwilioNumbers(res.data.numbers || []);
+    } catch {
+      setTwilioNumbers([]);
+    }
+  };
 
   const loadData = async () => {
     if (!user?._id) {
@@ -324,15 +338,61 @@ export default function SharedInboxesPage() {
                 />
                 
                 <Text style={styles.inputLabel}>Phone Number *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={newInbox.phone_number}
-                  onChangeText={(text) => setNewInbox({...newInbox, phone_number: text})}
-                  placeholder="+1 555 123 4567"
-                  placeholderTextColor={colors.textSecondary}
-                  keyboardType="phone-pad"
-                  data-testid="inbox-phone-input"
-                />
+                {/* Dropdown from your Twilio numbers */}
+                <TouchableOpacity
+                  style={[styles.input, { justifyContent: 'space-between', flexDirection: 'row', alignItems: 'center' }]}
+                  onPress={() => setShowNumberPicker(v => !v)}
+                  data-testid="inbox-phone-picker"
+                >
+                  <Text style={{ color: newInbox.phone_number ? colors.text : colors.textSecondary, fontSize: 16 }}>
+                    {newInbox.phone_number || 'Select a Twilio number...'}
+                  </Text>
+                  <Ionicons name="chevron-down" size={16} color={colors.textSecondary} />
+                </TouchableOpacity>
+                {showNumberPicker && (
+                  <View style={{ backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, marginTop: 4, overflow: 'hidden' }}>
+                    {twilioNumbers.length === 0 ? (
+                      <View style={{ padding: 16 }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 14 }}>
+                          No Twilio numbers available. Purchase one in Admin → Phone Numbers.
+                        </Text>
+                      </View>
+                    ) : (
+                      twilioNumbers.map((num: any) => {
+                        const alreadyAssigned = num.assigned_to && num.status === 'assigned';
+                        return (
+                          <TouchableOpacity
+                            key={num.phone_number}
+                            onPress={() => {
+                              setNewInbox({ ...newInbox, phone_number: num.phone_number });
+                              setShowNumberPicker(false);
+                            }}
+                            style={{ paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                          >
+                            <View>
+                              <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>{num.phone_number}</Text>
+                              <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>
+                                {alreadyAssigned ? `Assigned to ${num.assigned_to?.name || 'rep'}` : (num.status === 'pool' ? 'In pool — available' : 'Available')}
+                              </Text>
+                            </View>
+                            {newInbox.phone_number === num.phone_number && (
+                              <Ionicons name="checkmark-circle" size={20} color={colors.accent} />
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })
+                    )}
+                  </View>
+                )}
+                {/* Manual entry fallback */}
+                {showNumberPicker === false && !newInbox.phone_number && (
+                  <TouchableOpacity onPress={() => {
+                    const manual = prompt('Enter phone number manually (E.164 format, e.g. +14351234567):');
+                    if (manual) setNewInbox({ ...newInbox, phone_number: manual });
+                  }} style={{ marginTop: 6 }}>
+                    <Text style={{ color: colors.accent, fontSize: 13 }}>+ Enter number manually</Text>
+                  </TouchableOpacity>
+                )}
                 
                 <Text style={styles.inputLabel}>Description</Text>
                 <TextInput
