@@ -571,6 +571,35 @@ When a rep is terminated (deactivated), their dedicated Twilio number is automat
 - Reactivation toast mentions pooled number if still available.
 
 
+## Agent Scheduling + Notification Quiet Hours (May 27, 2026) — VERIFIED ✅
+
+**Backend: `/app/backend/routers/user_schedule.py` (new)**
+- `user_schedules` DB collection per user
+- Per-day time blocks (multiple shifts per day for split schedules)
+- Rotating Week A / Week B (anchor date determines which week is active)
+- `is_user_available(user_id)` — timezone-aware, checks override first
+- `next_available_window()` — returns human-readable "Next: Wednesday 09:00"
+- `POST /schedule/me/override` — force-available for +2h / +4h / EOD / clear
+- `GET /schedule/status/{user_id}` — live availability check
+- `GET /schedule/team` — team-wide availability for admins
+
+**Push integration:**
+- `send_push_to_user()` in `push_notifications.py` now checks `is_user_available()` before sending
+- Off-shift reps skip all push notifications (You're Needed, new lead, customer reply, etc.)
+
+**Frontend: `/app/frontend/app/settings/schedule.tsx` (new)**
+- Live status pill (green=available, red=off-shift) with override time
+- "Respect My Schedule" quiet mode toggle
+- Timezone display (auto-detected from account)
+- Rotating Schedule toggle + Week A/B tabs + anchor date field
+- 4 quick presets (Mon–Fri 9–5, Mon–Fri 8–6, Mon–Sat 9–5, Clear All)
+- Day grid — tap any day to edit hours (add multiple shifts per day)
+- Day editor: Add Shift, Mark as Off, time input with validation
+- Override buttons: +2h, +4h, End of day, Turn off override
+- Accessible from Hub → Settings → "My Schedule"
+
+
+
 ## "You're Needed" Escalation Push (May 27, 2026) — VERIFIED ✅
 
 Push notifications now fire at every escalation trigger point, regardless of SMS/phone settings.

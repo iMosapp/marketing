@@ -20,6 +20,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="showcase-approvals" />
       <Stack.Screen name="messaging-channels" />
       <Stack.Screen name="notifications" />
+      <Stack.Screen name="schedule" />
     </Stack>
   );
 }

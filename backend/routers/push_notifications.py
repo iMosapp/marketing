@@ -72,10 +72,19 @@ async def test_push(user_id: str):
 
 
 async def send_push_to_user(user_id: str, title: str, body: str, url: str = "/touchpoints/performance", icon: str = "flame"):
-    """Send a push notification to all subscriptions for a user."""
+    """Send a push notification to all subscriptions for a user, respecting their schedule."""
     if not VAPID_PRIVATE_KEY:
         logger.warning("VAPID_PRIVATE_KEY not set — skipping push")
         return 0
+
+    # Respect quiet-hours schedule
+    try:
+        from routers.user_schedule import is_user_available
+        if not await is_user_available(user_id):
+            logger.info(f"[Push] Skipped for {user_id} — outside scheduled hours")
+            return 0
+    except Exception as e:
+        logger.debug(f"[Push] Schedule check failed (non-fatal): {e}")
 
     db = get_db()
     subs = await db.push_subscriptions.find({"user_id": user_id}).to_list(20)
