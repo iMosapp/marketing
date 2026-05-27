@@ -571,6 +571,33 @@ When a rep is terminated (deactivated), their dedicated Twilio number is automat
 - Reactivation toast mentions pooled number if still available.
 
 
+## Internal Training Curriculum (May 27, 2026) — LIVE ✅
+
+Seeded 8 comprehensive training tracks (53 lessons) into the existing Training Hub LMS. Now shows **85 total lessons** (includes the 5 pre-existing tracks).
+
+### New Tracks Added
+| Track | Audience | Lessons |
+|---|---|---|
+| Platform Setup & Configuration | Admin/Manager | 8 |
+| Customer Support Playbook | Admin/Manager | 6 |
+| Account Onboarding | Admin/Manager | 8 |
+| Account Management | Admin/Manager | 5 |
+| Billing & Subscriptions | Admin/Super Admin | 6 |
+| Technical Reference | Super Admin only | 7 |
+| Sales Process | All roles | 7 |
+| Marketing Playbook | Admin/Super Admin | 6 |
+
+**Delivery system:** Training Hub (`/training-hub`) — role-gated, progress tracked per user, completion checkboxes, video-ready (add YouTube URLs via Manage Training)
+
+**Seed script:** `/app/backend/scripts/seed_internal_training.py` — re-runnable (skips existing tracks)
+
+**Next steps for user:**
+1. Redeploy to production
+2. Add YouTube training videos via Hub → Learning → Manage Training → edit each lesson
+3. Assign tracks to new hires as part of onboarding checklist
+
+
+
 ## Demo Lead Email Link Fix (May 27, 2026) — VERIFIED ✅
 
 **Problem:** Email "View in Dashboard →" linked to `/admin/hot-leads` (Engagement Intelligence page — wrong!). No conv_id was passed so the email couldn't link to the actual thread.
