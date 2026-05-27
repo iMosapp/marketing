@@ -101,7 +101,44 @@ export default function LeadSourceDetailScreen() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  
+
+  // ── Workflow automation state ──────────────────────────────────────────────
+  const [workflow, setWorkflow] = useState({
+    intake_text: '',
+    intake_delay_seconds: 0,
+    va_enabled: true,
+    va_prompt_override: '',
+    workflow_user_ids: [] as string[],
+    auto_call_on_claim: false,
+    claim_timeout_minutes: 5,
+    notify_all_on_intake: true,
+  });
+  const [workflowUsers, setWorkflowUsers] = useState<any[]>([]);  // All reps to choose from
+  const [savingWorkflow, setSavingWorkflow] = useState(false);
+  const [showWorkflow, setShowWorkflow] = useState(false);
+
+  const MERGE_FIELDS = [
+    { label: '{{first_name}}', desc: "Customer's first name" },
+    { label: '{{full_name}}',  desc: 'Full name' },
+    { label: '{{vehicle}}',    desc: 'Vehicle of interest' },
+    { label: '{{make}}',       desc: 'Vehicle make' },
+    { label: '{{model}}',      desc: 'Vehicle model' },
+    { label: '{{year}}',       desc: 'Model year' },
+    { label: '{{lead_source}}',desc: 'Source name' },
+  ];
+
+  const saveWorkflow = async () => {
+    setSavingWorkflow(true);
+    try {
+      await api.put(`/lead-sources/${id}/workflow`, workflow);
+      showToast('Workflow saved', 'success');
+    } catch (e: any) {
+      showToast(e?.response?.data?.detail || 'Failed to save workflow', 'error');
+    } finally {
+      setSavingWorkflow(false);
+    }
+  };
+
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -118,10 +155,12 @@ export default function LeadSourceDetailScreen() {
 
   const fetchData = async () => {
     try {
-      const [sourceRes, statsRes, teamsRes] = await Promise.all([
+      const [sourceRes, statsRes, teamsRes, workflowRes, usersRes] = await Promise.all([
         api.get(`/lead-sources/${id}`),
         api.get(`/lead-sources/stats/${id}`),
         api.get(`/admin/team/shared-inboxes?user_id=${user?._id}`),
+        api.get(`/lead-sources/${id}/workflow`).catch(() => ({ data: {} })),
+        api.get(`/admin/users?limit=100`, { headers: { 'X-User-ID': user?._id } }).catch(() => ({ data: [] })),
       ]);
       
       if (sourceRes.data.success) {
@@ -139,6 +178,15 @@ export default function LeadSourceDetailScreen() {
       if (statsRes.data.success) {
         setStats(statsRes.data.stats);
       }
+
+      // Load workflow config
+      if (workflowRes.data && Object.keys(workflowRes.data).length > 0) {
+        setWorkflow(prev => ({ ...prev, ...workflowRes.data }));
+      }
+
+      // Load all reps for workflow assignment
+      const usersArr = Array.isArray(usersRes.data) ? usersRes.data : (usersRes.data?.users || []);
+      setWorkflowUsers(usersArr);
       
       // Teams data is an array directly
       const teamsData = Array.isArray(teamsRes.data) ? teamsRes.data : [];
@@ -536,6 +584,156 @@ export default function LeadSourceDetailScreen() {
             </WebButton>
           </>
         )}
+
+        {/* ── WORKFLOW AUTOMATION SECTION ────────────────────────────────── */}
+        <View style={[styles.section, { marginTop: 8 }]}>
+          <TouchableOpacity
+            onPress={() => setShowWorkflow(v => !v)}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+            data-testid="workflow-toggle"
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#C9A96220', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="flash" size={18} color="#C9A962" />
+              </View>
+              <View>
+                <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Response Workflow</Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                  {workflow.intake_text ? '✓ Intake text set' : 'No intake text'} · {workflow.workflow_user_ids.length} reps · {workflow.auto_call_on_claim ? 'Auto-call on' : 'No auto-call'}
+                </Text>
+              </View>
+            </View>
+            <Ionicons name={showWorkflow ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+
+          {showWorkflow && (
+            <View style={{ marginTop: 16, gap: 20 }}>
+
+              {/* ── Instant Intake Text ───────────────────────────── */}
+              <View>
+                <Text style={styles.label}>Instant Intake Text</Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 8 }}>
+                  Sent the moment a lead arrives. Tap a field below to insert it.
+                </Text>
+                {/* Merge field chips */}
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                  {MERGE_FIELDS.map(f => (
+                    <TouchableOpacity
+                      key={f.label}
+                      onPress={() => setWorkflow(prev => ({ ...prev, intake_text: (prev.intake_text || '') + f.label }))}
+                      style={{ backgroundColor: colors.surface, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: colors.border }}
+                    >
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: '#C9A962', fontFamily: 'monospace' }}>{f.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TextInput
+                  style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
+                  value={workflow.intake_text}
+                  onChangeText={v => setWorkflow(prev => ({ ...prev, intake_text: v }))}
+                  multiline
+                  placeholder={`Hey {{first_name}}! I saw you were interested in the {{vehicle}}. This is {{rep_name}} from the dealership — what questions do you have?`}
+                  placeholderTextColor={colors.textSecondary}
+                  data-testid="intake-text-input"
+                />
+              </View>
+
+              {/* ── Workflow Reps ─────────────────────────────────── */}
+              <View>
+                <Text style={styles.label}>Notify These Reps (first to reply claims the lead)</Text>
+                {workflowUsers.filter((u: any) => u.role !== 'super_admin' || u._id === user?._id).map((u: any) => {
+                  const uid = u._id || u.id;
+                  const isSelected = workflow.workflow_user_ids.includes(uid);
+                  return (
+                    <TouchableOpacity
+                      key={uid}
+                      onPress={() => setWorkflow(prev => ({
+                        ...prev,
+                        workflow_user_ids: isSelected
+                          ? prev.workflow_user_ids.filter(id => id !== uid)
+                          : [...prev.workflow_user_ids, uid],
+                      }))}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border }}
+                    >
+                      <View style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: isSelected ? '#34C759' : colors.surface, borderWidth: 1.5, borderColor: isSelected ? '#34C759' : colors.border, alignItems: 'center', justifyContent: 'center' }}>
+                        {isSelected && <Ionicons name="checkmark" size={14} color="#fff" />}
+                      </View>
+                      <Text style={{ color: colors.text, fontSize: 15, flex: 1 }}>{u.name || u.email}</Text>
+                      <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{u.role}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* ── Auto-Call Toggle ──────────────────────────────── */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.label}>Auto-Call on Claim</Text>
+                  <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                    When a rep claims this lead, Twilio immediately bridges them to the customer
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => setWorkflow(prev => ({ ...prev, auto_call_on_claim: !prev.auto_call_on_claim }))}
+                  style={{ width: 50, height: 28, borderRadius: 14, backgroundColor: workflow.auto_call_on_claim ? '#34C759' : colors.surface, borderWidth: 1, borderColor: workflow.auto_call_on_claim ? '#34C759' : colors.border, justifyContent: 'center', paddingHorizontal: 3 }}
+                  data-testid="auto-call-toggle"
+                >
+                  <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff', transform: [{ translateX: workflow.auto_call_on_claim ? 22 : 0 }] }} />
+                </TouchableOpacity>
+              </View>
+
+              {/* ── VA Toggle ─────────────────────────────────────── */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.label}>Enable AI Auto-Reply (Jessi)</Text>
+                  <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                    AI handles the conversation after intake text fires
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => setWorkflow(prev => ({ ...prev, va_enabled: !prev.va_enabled }))}
+                  style={{ width: 50, height: 28, borderRadius: 14, backgroundColor: workflow.va_enabled ? '#007AFF' : colors.surface, borderWidth: 1, borderColor: workflow.va_enabled ? '#007AFF' : colors.border, justifyContent: 'center', paddingHorizontal: 3 }}
+                  data-testid="va-enabled-toggle"
+                >
+                  <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff', transform: [{ translateX: workflow.va_enabled ? 22 : 0 }] }} />
+                </TouchableOpacity>
+              </View>
+
+              {/* ── Custom VA Prompt for this Source ──────────────── */}
+              {workflow.va_enabled && (
+                <View>
+                  <Text style={styles.label}>Custom VA Prompt (optional)</Text>
+                  <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 8 }}>
+                    Override the default VA behavior specifically for this lead source.
+                  </Text>
+                  <TextInput
+                    style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
+                    value={workflow.va_prompt_override || ''}
+                    onChangeText={v => setWorkflow(prev => ({ ...prev, va_prompt_override: v }))}
+                    multiline
+                    placeholder="E.g. 'Focus on trade-in value and service dept. leads from this source tend to be hot. Be warm and respond fast.'"
+                    placeholderTextColor={colors.textSecondary}
+                  />
+                </View>
+              )}
+
+              {/* ── Save Button ───────────────────────────────────── */}
+              <WebButton
+                onPress={saveWorkflow}
+                disabled={savingWorkflow}
+                style={{ backgroundColor: '#C9A962', borderRadius: 12, padding: 14, alignItems: 'center' }}
+                testID="save-workflow-btn"
+              >
+                {savingWorkflow
+                  ? <ActivityIndicator size="small" color="#000" />
+                  : <Text style={{ color: '#000', fontWeight: '700', fontSize: 15 }}>Save Workflow</Text>
+                }
+              </WebButton>
+
+            </View>
+          )}
+        </View>
+
       </ScrollView>
 
       {/* Delete Confirmation Modal (for web) */}

@@ -40,6 +40,41 @@ class InboundLead(BaseModel):
     vehicle_interest: Optional[str] = None
     custom_fields: Optional[dict] = None
 
+class WorkflowConfig(BaseModel):
+    """Configuration for automated lead response workflow."""
+    intake_text: str = ""                       # Template with {{first_name}}, {{vehicle}}, etc.
+    intake_delay_seconds: int = 0               # 0 = instant
+    va_enabled: bool = True                     # Enable AI auto-reply
+    va_prompt_override: Optional[str] = None    # Custom VA prompt for this source
+    workflow_user_ids: List[str] = []           # Reps to notify & call on new lead
+    auto_call_on_claim: bool = False            # Auto-dial customer when rep claims
+    claim_timeout_minutes: int = 5             # Before escalating to next rep
+    notify_all_on_intake: bool = True           # Blast all workflow reps with push
+
+MERGE_FIELDS = ["first_name", "last_name", "full_name", "vehicle", "year", "make", "model", "lead_source", "phone", "rep_name"]
+
+def hydrate_intake_text(template: str, lead_data: dict, source_name: str = "", rep_name: str = "") -> str:
+    """Replace {{field}} placeholders with actual lead data."""
+    text = template
+    vehicle = lead_data.get("vehicle_interest") or " ".join(filter(None, [
+        lead_data.get("vehicle_year"), lead_data.get("vehicle_make"), lead_data.get("vehicle_model")
+    ]))
+    replacements = {
+        "first_name":   lead_data.get("first_name", "there"),
+        "last_name":    lead_data.get("last_name", ""),
+        "full_name":    lead_data.get("full_name") or f"{lead_data.get('first_name','')} {lead_data.get('last_name','')}".strip() or "there",
+        "vehicle":      vehicle or "vehicle",
+        "year":         lead_data.get("vehicle_year", ""),
+        "make":         lead_data.get("vehicle_make", ""),
+        "model":        lead_data.get("vehicle_model", ""),
+        "lead_source":  source_name,
+        "phone":        lead_data.get("phone", ""),
+        "rep_name":     rep_name or "the team",
+    }
+    for key, value in replacements.items():
+        text = text.replace(f"{{{{{key}}}}}", str(value))
+    return text.strip()
+
 def serialize_lead_source(source: dict) -> dict:
     """Convert MongoDB document to JSON-serializable dict"""
     return {
@@ -56,6 +91,17 @@ def serialize_lead_source(source: dict) -> dict:
         "lead_count": source.get("lead_count", 0),
         "created_at": source.get("created_at"),
         "updated_at": source.get("updated_at"),
+        # Workflow config
+        "workflow": {
+            "intake_text":             source.get("intake_text", ""),
+            "intake_delay_seconds":    source.get("intake_delay_seconds", 0),
+            "va_enabled":              source.get("va_enabled", True),
+            "va_prompt_override":      source.get("va_prompt_override"),
+            "workflow_user_ids":       source.get("workflow_user_ids", []),
+            "auto_call_on_claim":      source.get("auto_call_on_claim", False),
+            "claim_timeout_minutes":   source.get("claim_timeout_minutes", 5),
+            "notify_all_on_intake":    source.get("notify_all_on_intake", True),
+        },
     }
 
 # ============ LEAD SOURCE MANAGEMENT ============
@@ -573,3 +619,116 @@ async def claim_lead(conversation_id: str, user_id: str):
         "claimed_by": user_id
     }
 
+
+
+@router.get("/{source_id}/workflow")
+async def get_workflow_config(source_id: str):
+    """Get the workflow automation config for a lead source."""
+    db = get_db()
+    source = await db.lead_sources.find_one({"_id": ObjectId(source_id)})
+    if not source:
+        raise HTTPException(status_code=404, detail="Lead source not found")
+    return serialize_lead_source(source).get("workflow", {})
+
+
+@router.put("/{source_id}/workflow")
+async def save_workflow_config(source_id: str, config: WorkflowConfig):
+    """Save the workflow automation config for a lead source."""
+    db = get_db()
+    source = await db.lead_sources.find_one({"_id": ObjectId(source_id)})
+    if not source:
+        raise HTTPException(status_code=404, detail="Lead source not found")
+    await db.lead_sources.update_one(
+        {"_id": ObjectId(source_id)},
+        {"$set": {
+            "intake_text":             config.intake_text,
+            "intake_delay_seconds":    config.intake_delay_seconds,
+            "va_enabled":              config.va_enabled,
+            "va_prompt_override":      config.va_prompt_override,
+            "workflow_user_ids":       config.workflow_user_ids,
+            "auto_call_on_claim":      config.auto_call_on_claim,
+            "claim_timeout_minutes":   config.claim_timeout_minutes,
+            "notify_all_on_intake":    config.notify_all_on_intake,
+            "updated_at":              datetime.now(timezone.utc),
+        }}
+    )
+    return {"success": True, "message": "Workflow config saved"}
+
+
+@router.post("/claim-and-call/{conversation_id}")
+async def claim_and_call(conversation_id: str, user_id: str):
+    """
+    Claim a lead AND immediately call the customer.
+    Called when a rep taps 'Claim & Call' on a Jump Ball lead.
+    """
+    import os, asyncio as _aio
+    db = get_db()
+
+    conv = await db.conversations.find_one({"_id": ObjectId(conversation_id)})
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+
+    # Claim the conversation
+    await db.conversations.update_one(
+        {"_id": ObjectId(conversation_id)},
+        {"$set": {"claimed": True, "claimed_by": user_id, "claimed_at": datetime.now(timezone.utc)}}
+    )
+
+    # Get lead source workflow config for auto_call setting
+    source_id = conv.get("lead_source_id")
+    auto_call = False
+    if source_id:
+        source = await db.lead_sources.find_one({"_id": ObjectId(source_id)})
+        auto_call = (source or {}).get("auto_call_on_claim", False)
+
+    call_result = None
+    if auto_call:
+        rep = await db.users.find_one({"_id": ObjectId(user_id)})
+        rep_phone   = (rep or {}).get("phone", "").strip()
+        rep_twilio  = (rep or {}).get("twilio_number") or (rep or {}).get("mvpline_number", "")
+        customer_phone = conv.get("contact_phone", "")
+
+        if rep_phone and rep_twilio and customer_phone:
+            try:
+                from twilio.rest import Client as _TC
+                tw_sid   = os.environ.get("TWILIO_ACCOUNT_SID", "")
+                tw_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
+                if tw_sid and tw_token:
+                    app_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+                    # Store pending call for bridge
+                    from datetime import datetime as _dt
+                    pending_doc = {
+                        "customer_phone":    customer_phone,
+                        "rep_twilio_number": rep_twilio,
+                        "rep_name":          (rep or {}).get("name", ""),
+                        "user_id":           user_id,
+                        "rep_user_id":       user_id,
+                        "contact_id":        conv.get("contact_id"),
+                        "created_at":        _dt.now(),
+                    }
+                    client = _TC(tw_sid, tw_token)
+                    from normalize_phone import normalize_phone as _np
+                    try:
+                        from routers.twilio_webhooks import normalize_phone as _np
+                    except Exception:
+                        _np = lambda x: x
+                    call = await _aio.to_thread(
+                        client.calls.create,
+                        to=_np(rep_phone),
+                        from_=rep_twilio,
+                        url=f"{app_url}/api/webhooks/twilio/call-bridge",
+                    )
+                    pending_doc["call_sid"] = call.sid
+                    await db.pending_calls.insert_one(pending_doc)
+                    call_result = {"call_sid": call.sid, "status": call.status}
+            except Exception as e:
+                logger.warning(f"[LeadSource] Auto-call failed: {e}")
+                call_result = {"error": str(e)}
+
+    return {
+        "success": True,
+        "claimed": True,
+        "claimed_by": user_id,
+        "auto_call_placed": call_result is not None and "error" not in (call_result or {}),
+        "call_result": call_result,
+    }

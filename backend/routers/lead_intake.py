@@ -557,6 +557,14 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
             {"_id": source["_id"]}, {"$inc": {"lead_count": 1}}
         )
 
+    # ── Fire Workflow Automation ───────────────────────────────────────────────
+    # Sends instant intake text, blasts all workflow reps with push notifications
+    asyncio.create_task(_fire_intake_workflow(
+        source=source, lead_doc=lead_doc, conv_id=conv_id,
+        contact_id=contact_id, phone_e164=phone_e164,
+        normalized=normalized, db=db, now=now,
+    ))
+
     logger.info(
         f"[LeadIntake] Lead received: {full_name} | {phone_e164} | "
         f"source={source.get('name')} | send_at={scheduled_send_at.isoformat()} | "
@@ -896,6 +904,150 @@ async def retry_lead(lead_id: str):
         {"$set": {"status": "queued", "scheduled_send_at": now + timedelta(seconds=30), "error": None}}
     )
     return {"success": True, "message": "Lead re-queued"}
+
+
+
+async def _fire_intake_workflow(source, lead_doc, conv_id, contact_id, phone_e164, normalized, db, now):
+    """
+    Fires instantly when a lead arrives:
+    1. Sends the instant intake text (with merge fields) if configured
+    2. Blasts all workflow reps with push + in-app notification
+    """
+    try:
+        source_name         = source.get("name", "Lead Source")
+        intake_text         = source.get("intake_text", "").strip()
+        workflow_user_ids   = source.get("workflow_user_ids", [])
+        notify_all          = source.get("notify_all_on_intake", True)
+
+        # ── 1. Send instant intake text ──────────────────────────────────────
+        if intake_text and phone_e164:
+            from routers.lead_sources import hydrate_intake_text
+            lead_data = {
+                "first_name":    normalized.get("first_name", ""),
+                "last_name":     normalized.get("last_name", ""),
+                "full_name":     normalized.get("full_name", ""),
+                "vehicle_interest": normalized.get("vehicle_interest", ""),
+                "vehicle_year":  normalized.get("vehicle_year", ""),
+                "vehicle_make":  normalized.get("vehicle_make", ""),
+                "vehicle_model": normalized.get("vehicle_model", ""),
+                "phone":         phone_e164,
+            }
+            message_body = hydrate_intake_text(intake_text, lead_data, source_name)
+
+            # Find a Twilio number to send from (workflow rep's number or store number)
+            from_number = None
+            if workflow_user_ids:
+                rep = await db.users.find_one(
+                    {"_id": ObjectId(workflow_user_ids[0])},
+                    {"twilio_number": 1, "mvpline_number": 1}
+                )
+                from_number = (rep or {}).get("twilio_number") or (rep or {}).get("mvpline_number")
+
+            if not from_number:
+                from_number = os.environ.get("TWILIO_PHONE_NUMBER", "")
+
+            if from_number and message_body:
+                try:
+                    import asyncio as _aio
+                    from twilio.rest import Client as _TC
+                    tw_sid   = os.environ.get("TWILIO_ACCOUNT_SID", "")
+                    tw_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
+                    if tw_sid and tw_token:
+                        client = _TC(tw_sid, tw_token)
+                        await _aio.to_thread(
+                            client.messages.create,
+                            to=phone_e164,
+                            from_=from_number,
+                            body=message_body,
+                        )
+                        # Save as a message in the conversation
+                        await db.messages.insert_one({
+                            "conversation_id": conv_id,
+                            "content":         message_body,
+                            "sender":          "ai",
+                            "direction":       "outbound",
+                            "channel":         "sms",
+                            "ai_generated":    True,
+                            "is_intake_text":  True,
+                            "timestamp":       now,
+                        })
+                        logger.info(f"[IntakeWorkflow] Intake text sent to {phone_e164}")
+                except Exception as send_err:
+                    logger.warning(f"[IntakeWorkflow] Intake text send failed: {send_err}")
+
+        # ── 2. Blast workflow reps with notification ──────────────────────────
+        if notify_all and workflow_user_ids:
+            full_name = normalized.get("full_name", "") or f"{normalized.get('first_name','')} {normalized.get('last_name','')}".strip() or "New Lead"
+            vehicle   = normalized.get("vehicle_interest", "") or " ".join(filter(None, [normalized.get("vehicle_year"), normalized.get("vehicle_make"), normalized.get("vehicle_model")]))
+            notif_title = f"New Lead: {full_name}"
+            notif_body  = f"{source_name} | {vehicle}" if vehicle else source_name
+            app_url     = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+            conv_link   = f"{app_url}/thread/{conv_id}"
+
+            for uid in workflow_user_ids:
+                try:
+                    await db.notifications.insert_one({
+                        "user_id":         uid,
+                        "type":            "new_lead",
+                        "priority":        "urgent",
+                        "title":           notif_title,
+                        "message":         notif_body,
+                        "contact_id":      contact_id,
+                        "conversation_id": conv_id,
+                        "link":            conv_link,
+                        "read":            False,
+                        "dismissed":       False,
+                        "created_at":      now,
+                    })
+                    # Push notification
+                    try:
+                        from routers.push_notifications import send_push_to_user
+                        import asyncio as _aio2
+                        _aio2.create_task(send_push_to_user(
+                            uid, notif_title, f"{notif_body} — tap to claim",
+                            conv_link, "flash"
+                        ))
+                    except Exception:
+                        pass
+
+                    # SMS to rep's personal phone
+                    rep = await db.users.find_one(
+                        {"_id": ObjectId(uid)},
+                        {"phone": 1, "twilio_number": 1, "mvpline_number": 1, "name": 1, "notification_settings": 1}
+                    )
+                    rep_phone  = (rep or {}).get("phone", "").strip()
+                    rep_twilio = (rep or {}).get("twilio_number") or (rep or {}).get("mvpline_number", "")
+                    notif_prefs = (rep or {}).get("notification_settings", {})
+                    sms_enabled = notif_prefs.get("sms_active_conversation", True)
+
+                    if rep_phone and rep_twilio and sms_enabled:
+                        try:
+                            from twilio.rest import Client as _TC2
+                            tw_sid   = os.environ.get("TWILIO_ACCOUNT_SID", "")
+                            tw_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
+                            if tw_sid and tw_token:
+                                sms_body = (
+                                    f"I'm On Social: New Lead! {full_name}"
+                                    + (f" — {vehicle}" if vehicle else "")
+                                    + f"\n\nSource: {source_name}"
+                                    + f"\n\nClaim it: {conv_link}"
+                                )
+                                import asyncio as _aio3
+                                async def _sms(to=rep_phone, frm=rep_twilio, body=sms_body, sid=tw_sid, tok=tw_token):
+                                    try:
+                                        _TC2(sid, tok).messages.create(to=to, from_=frm, body=body)
+                                    except Exception as _e:
+                                        logger.debug(f"[IntakeWorkflow] Rep SMS failed: {_e}")
+                                _aio3.create_task(_sms())
+                        except Exception:
+                            pass
+                except Exception as notif_err:
+                    logger.debug(f"[IntakeWorkflow] Notification failed for {uid}: {notif_err}")
+
+        logger.info(f"[IntakeWorkflow] Complete for {phone_e164} | reps_notified={len(workflow_user_ids)}")
+    except Exception as e:
+        logger.warning(f"[IntakeWorkflow] Workflow fire failed: {e}")
+
 
 
 @router.post("/test-adf")
