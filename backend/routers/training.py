@@ -764,6 +764,189 @@ async def admin_delete_lesson(lesson_id: str):
     return {"success": True}
 
 
+
+# ──────────────────────────────────────────────────────────────────────────────
+# CERTIFICATES
+# ──────────────────────────────────────────────────────────────────────────────
+
+def _generate_certificate_pdf(user_name: str, track_title: str, completed_at: str, cert_id: str) -> bytes:
+    """Generate a professional completion certificate PDF using fpdf2."""
+    from fpdf import FPDF
+
+    class Cert(FPDF):
+        pass
+
+    pdf = Cert(orientation="L", unit="mm", format="A4")  # Landscape A4
+    pdf.add_page()
+    W, H = pdf.w, pdf.h   # 297 × 210 mm landscape
+
+    # ── Gold border frame ────────────────────────────────────────────────────
+    pdf.set_fill_color(201, 169, 98)   # #C9A962 gold
+    pdf.rect(0, 0, W, 8, "F")          # top bar
+    pdf.rect(0, H - 8, W, 8, "F")     # bottom bar
+    pdf.rect(0, 0, 8, H, "F")          # left bar
+    pdf.rect(W - 8, 0, 8, H, "F")     # right bar
+
+    # ── Inner thin rule lines ────────────────────────────────────────────────
+    pdf.set_draw_color(201, 169, 98)
+    pdf.set_line_width(0.4)
+    pdf.rect(12, 12, W - 24, H - 24)
+
+    # ── Header — company name ────────────────────────────────────────────────
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.set_text_color(201, 169, 98)
+    pdf.set_xy(0, 18)
+    pdf.cell(W, 8, "I'M ON SOCIAL", align="C")
+
+    # ── Certificate of Completion ────────────────────────────────────────────
+    pdf.set_font("Helvetica", "", 13)
+    pdf.set_text_color(100, 100, 100)
+    pdf.set_xy(0, 30)
+    pdf.cell(W, 8, "CERTIFICATE OF COMPLETION", align="C")
+
+    # ── Decorative rule ──────────────────────────────────────────────────────
+    pdf.set_draw_color(201, 169, 98)
+    pdf.set_line_width(0.6)
+    cx = W / 2
+    pdf.line(cx - 60, 42, cx + 60, 42)
+
+    # ── "This certifies that" ────────────────────────────────────────────────
+    pdf.set_font("Helvetica", "", 10)
+    pdf.set_text_color(120, 120, 120)
+    pdf.set_xy(0, 48)
+    pdf.cell(W, 7, "This certifies that", align="C")
+
+    # ── Recipient name ───────────────────────────────────────────────────────
+    pdf.set_font("Helvetica", "B", 32)
+    pdf.set_text_color(20, 20, 20)
+    pdf.set_xy(0, 58)
+    pdf.cell(W, 16, _qt_cert(user_name), align="C")
+
+    # ── "has successfully completed" ────────────────────────────────────────
+    pdf.set_font("Helvetica", "", 10)
+    pdf.set_text_color(120, 120, 120)
+    pdf.set_xy(0, 78)
+    pdf.cell(W, 7, "has successfully completed all lessons in", align="C")
+
+    # ── Track title ──────────────────────────────────────────────────────────
+    pdf.set_font("Helvetica", "B", 20)
+    pdf.set_text_color(201, 169, 98)
+    pdf.set_xy(0, 88)
+    pdf.cell(W, 12, _qt_cert(track_title), align="C")
+
+    # ── Second rule ──────────────────────────────────────────────────────────
+    pdf.set_draw_color(201, 169, 98)
+    pdf.set_line_width(0.6)
+    pdf.line(cx - 60, 104, cx + 60, 104)
+
+    # ── Date ─────────────────────────────────────────────────────────────────
+    pdf.set_font("Helvetica", "", 10)
+    pdf.set_text_color(120, 120, 120)
+    pdf.set_xy(0, 108)
+    pdf.cell(W, 7, f"Completed: {completed_at}", align="C")
+
+    # ── Cert ID (small, bottom) ──────────────────────────────────────────────
+    pdf.set_font("Helvetica", "", 7)
+    pdf.set_text_color(180, 180, 180)
+    pdf.set_xy(0, H - 16)
+    pdf.cell(W, 5, f"Certificate ID: {cert_id}  |  Powered by VI Ventures Group LLC  |  imonsocial.com", align="C")
+
+    return bytes(pdf.output())
+
+
+def _qt_cert(text: str) -> str:
+    """Encode text to latin-1 for fpdf2, stripping unsupported chars."""
+    import re as _re
+    text = str(text)
+    for src, dst in [("\u2018", "'"), ("\u2019", "'"), ("\u201c", '"'), ("\u201d", '"'), ("\u2014", "--"), ("\u2013", "-"), ("\u00a0", " ")]:
+        text = text.replace(src, dst)
+    return text.encode("latin-1", errors="replace").decode("latin-1")
+
+
+@router.get("/certificate/{track_id}")
+async def get_or_create_certificate(track_id: str, request: Request):
+    """
+    Generate and return a PDF certificate if the user has completed all lessons.
+    Also saves the certificate record to the DB (idempotent — same cert ID on repeat calls).
+    """
+    import secrets as _sec
+    from fastapi.responses import Response as _Resp
+
+    db = get_db()
+    user_id = request.headers.get("X-User-ID")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="X-User-ID header required")
+
+    # Verify track exists
+    track = await db.training_tracks.find_one({"_id": ObjectId(track_id)})
+    if not track:
+        raise HTTPException(status_code=404, detail="Track not found")
+
+    # Check all lessons complete
+    lesson_count = await db.training_lessons.count_documents({"track_id": track_id})
+    if lesson_count == 0:
+        raise HTTPException(status_code=400, detail="Track has no lessons")
+
+    completed = await db.training_progress.count_documents({
+        "user_id": user_id, "track_id": track_id, "completed": True
+    })
+    if completed < lesson_count:
+        raise HTTPException(status_code=403, detail=f"Track not complete ({completed}/{lesson_count} lessons done)")
+
+    # Look up or create certificate record
+    existing_cert = await db.training_certificates.find_one({"user_id": user_id, "track_id": track_id})
+    if existing_cert:
+        cert_id       = existing_cert["cert_id"]
+        completed_str = existing_cert.get("completed_at_str", "")
+        user_name     = existing_cert.get("user_name", "")
+    else:
+        # Get user name
+        user_doc  = await db.users.find_one({"_id": ObjectId(user_id)}, {"name": 1})
+        user_name = (user_doc or {}).get("name", "Team Member")
+        cert_id   = _sec.token_hex(8).upper()
+        completed_str = datetime.now(timezone.utc).strftime("%B %d, %Y")
+        await db.training_certificates.insert_one({
+            "user_id":         user_id,
+            "track_id":        track_id,
+            "track_title":     track.get("title", ""),
+            "user_name":       user_name,
+            "cert_id":         cert_id,
+            "completed_at_str": completed_str,
+            "created_at":      datetime.now(timezone.utc),
+        })
+
+    # Generate PDF
+    try:
+        pdf_bytes = await __import__("asyncio").to_thread(
+            _generate_certificate_pdf,
+            user_name,
+            track.get("title", "Training Course"),
+            completed_str,
+            cert_id,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF generation failed: {e}")
+
+    safe_title = track.get("title", "certificate").lower().replace(" ", "-").replace("&", "and")
+    filename   = f"certificate-{safe_title}.pdf"
+
+    return _Resp(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/certificates/{user_id}")
+async def list_user_certificates(user_id: str):
+    """List all certificates earned by a user."""
+    db = get_db()
+    certs = await db.training_certificates.find(
+        {"user_id": user_id}, {"_id": 0}
+    ).sort("created_at", -1).to_list(50)
+    return certs
+
+
 @router.post("/reseed")
 async def reseed_new_tracks():
     """Seed only new tracks that don't already exist in the DB"""

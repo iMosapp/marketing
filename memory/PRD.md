@@ -571,6 +571,24 @@ When a rep is terminated (deactivated), their dedicated Twilio number is automat
 - Reactivation toast mentions pooled number if still available.
 
 
+## Training Completion Certificates (May 27, 2026) — VERIFIED ✅
+
+**Backend (`training.py`):**
+- `GET /training/certificate/{track_id}` — verifies 100% completion, generates A4 landscape PDF, saves record idempotently (same cert_id on repeat downloads)
+- `GET /training/certificates/{user_id}` — list all earned certificates
+- PDF design: gold border frame, employee name (large), track name in gold, completion date, unique cert ID footer with "Powered by VI Ventures Group LLC"
+- `training_certificates` collection stores: user_id, track_id, track_title, user_name, cert_id, completed_at_str
+
+**Frontend (`training-hub.tsx`):**
+- Track list card: "Certificate" gold pill appears below track title when 100% complete
+- Lesson list: "Get Your Certificate" full-width gold button at top when all lessons done
+- Celebration modal: pops automatically when last lesson is marked complete — ribbon icon, track name, "Download Certificate" button
+- Web: triggers PDF download via Blob URL; Native: opens PDF URL via Linking
+
+**Verified:** PDF generates correctly (1943 bytes, valid `%PDF-1.3` header). Certificate record saved to DB with cert_id `CC2C5F40FA2A201B`. Manager's Playbook shows 100% + green checkmark on track list.
+
+
+
 ## Internal Training Curriculum (May 27, 2026) — LIVE ✅
 
 Seeded 8 comprehensive training tracks (53 lessons) into the existing Training Hub LMS. Now shows **85 total lessons** (includes the 5 pre-existing tracks).

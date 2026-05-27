@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
-  ActivityIndicator, RefreshControl, Platform, Linking,
+  ActivityIndicator, RefreshControl, Platform, Linking, Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -42,6 +42,32 @@ export default function TrainingHubScreen() {
   const [progress, setProgress] = useState<Record<string, boolean>>({});
   const user = useAuthStore((state) => state.user);
   const [saving, setSaving] = useState(false);
+  const [certModal, setCertModal] = useState<{ visible: boolean; trackTitle: string; trackId: string } | null>(null);
+  const [downloading, setDownloading] = useState(false);
+
+  const downloadCertificate = async (trackId: string) => {
+    if (!user?._id) return;
+    setDownloading(true);
+    try {
+      const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || '';
+      const url = `${backendUrl}/api/training/certificate/${trackId}`;
+      if (IS_WEB) {
+        const res = await fetch(url, { headers: { 'X-User-ID': user._id } });
+        if (!res.ok) throw new Error(await res.text());
+        const blob = await res.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `certificate.pdf`;
+        a.click();
+      } else {
+        Linking.openURL(`${url}?user_id=${user._id}`);
+      }
+    } catch (e) {
+      console.warn('Certificate download failed:', e);
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   useEffect(() => { loadData(); }, [user?._id]);
 
@@ -79,11 +105,19 @@ export default function TrainingHubScreen() {
       setProgress(prev => ({ ...prev, [lessonId]: !current }));
       // Update track counts
       setTracks(prev => prev.map(t => t.id === trackId ? { ...t, completed_count: t.completed_count + (current ? -1 : 1) } : t));
+
+      // Check if track is now 100% complete (just marked last lesson done)
+      if (!current && selectedTrack && selectedTrack.id === trackId) {
+        const newCompleted = selectedTrack.lessons.filter(l => progress[l.id] || l.id === lessonId).length;
+        if (newCompleted === selectedTrack.lessons.length) {
+          setTimeout(() => setCertModal({ visible: true, trackTitle: selectedTrack.title, trackId }), 600);
+        }
+      }
     } catch (e) { console.error(e); }
     finally { setSaving(false); }
   };
 
-  // Track video views — fires once per lesson open (deduped server-side per hour)
+  // Track video views — fired once per lesson open (deduped server-side per hour)
   const trackedLessons = React.useRef<Set<string>>(new Set());
   const trackVideoView = React.useCallback((lesson: Lesson, trackId: string) => {
     if (!lesson.video_url || !user?._id) return;
@@ -172,6 +206,16 @@ export default function TrainingHubScreen() {
                   <View style={[s.progressBar, { flex: 1, height: 4 }]}><View style={[s.progressFill, { width: `${pct}%`, backgroundColor: track.color }]} /></View>
                   <Text style={{ fontSize: 14, fontWeight: '600', color: track.color }}>{pct}%</Text>
                 </View>
+                {allDone && (
+                  <TouchableOpacity
+                    onPress={(e) => { e.stopPropagation?.(); setCertModal({ visible: true, trackTitle: track.title, trackId: track.id }); }}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, alignSelf: 'flex-start', backgroundColor: '#C9A96215', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: '#C9A962' }}
+                    data-testid={`cert-btn-${track.slug}`}
+                  >
+                    <Ionicons name="ribbon" size={14} color="#C9A962" />
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#C9A962' }}>Certificate</Text>
+                  </TouchableOpacity>
+                )}
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
             </View>
@@ -193,6 +237,17 @@ export default function TrainingHubScreen() {
         </TouchableOpacity>
         <Text style={s.sectionTitle}>{selectedTrack.title}</Text>
         <Text style={{ fontSize: 15, color: colors.textSecondary, marginBottom: 16 }}>{completedCount}/{selectedTrack.lessons.length} lessons completed</Text>
+        {/* Certificate button — shown when all lessons complete */}
+        {completedCount === selectedTrack.lessons.length && completedCount > 0 && (
+          <TouchableOpacity
+            onPress={() => setCertModal({ visible: true, trackTitle: selectedTrack.title, trackId: selectedTrack.id })}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#C9A96220', borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1.5, borderColor: '#C9A962' }}
+            data-testid="get-certificate-btn"
+          >
+            <Ionicons name="ribbon" size={22} color="#C9A962" />
+            <Text style={{ fontSize: 17, fontWeight: '800', color: '#C9A962' }}>Get Your Certificate</Text>
+          </TouchableOpacity>
+        )}
         {selectedTrack.lessons.map((lesson, idx) => {
           const done = progress[lesson.id] || false;
           return (
@@ -352,6 +407,46 @@ export default function TrainingHubScreen() {
         showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {selectedLesson ? renderLessonDetail() : selectedTrack ? renderLessonList() : renderTrackList()}
       </ScrollView>
+
+      {/* Certificate celebration modal */}
+      <Modal visible={!!certModal?.visible} transparent animationType="fade">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <View style={{ backgroundColor: colors.card, borderRadius: 24, padding: 32, alignItems: 'center', maxWidth: 360, width: '100%', borderWidth: 2, borderColor: '#C9A962' }}>
+            <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#C9A96220', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+              <Ionicons name="ribbon" size={44} color="#C9A962" />
+            </View>
+            <Text style={{ fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 8, textAlign: 'center' }}>
+              Track Complete!
+            </Text>
+            <Text style={{ fontSize: 16, color: colors.textSecondary, textAlign: 'center', marginBottom: 8, lineHeight: 22 }}>
+              You've completed all lessons in
+            </Text>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: '#C9A962', textAlign: 'center', marginBottom: 24 }}>
+              {certModal?.trackTitle}
+            </Text>
+            <TouchableOpacity
+              onPress={async () => {
+                if (certModal?.trackId) await downloadCertificate(certModal.trackId);
+                setCertModal(null);
+              }}
+              disabled={downloading}
+              style={{ backgroundColor: '#C9A962', borderRadius: 14, paddingVertical: 14, paddingHorizontal: 32, flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12, width: '100%', justifyContent: 'center' }}
+              data-testid="download-cert-btn"
+            >
+              {downloading
+                ? <ActivityIndicator color="#000" size="small" />
+                : <Ionicons name="download" size={20} color="#000" />}
+              <Text style={{ color: '#000', fontWeight: '800', fontSize: 17 }}>
+                {downloading ? 'Generating...' : 'Download Certificate'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setCertModal(null)} style={{ paddingVertical: 10 }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 15 }}>Maybe later</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 }
