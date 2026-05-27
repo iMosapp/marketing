@@ -28,6 +28,7 @@ import { resolveUserPhotoUrlHiRes, resolvePhotoUrl } from '../../utils/photoUrl'
 import { NotificationBell } from '../../components/notifications/NotificationBell';
 import { WebModal } from '../../components/WebModal';
 import { BRAND } from '../../config/brand';
+import { usePushNotifications } from '../../hooks/usePushNotifications';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -44,6 +45,7 @@ type MenuItem = {
   onPress: () => void;
   color: string;
   badge?: number;
+  statusDot?: 'green' | 'red' | 'grey';
 };
 
 type Section = {
@@ -62,6 +64,7 @@ export default function MoreScreen() {
   const { user, logout, isImpersonating, stopImpersonation, originalUser, partnerBranding } = useAuthStore();
   const themeMode = useThemeStore((s) => s.mode);
   const toggleTheme = useThemeStore((s) => s.toggle);
+  const { status: pushStatus, enable: enablePush, disable: disablePush, subscribing: pushSubscribing, isSupported: pushSupported } = usePushNotifications();
   const [pendingUsersCount, setPendingUsersCount] = useState(0);
   const [exitingImpersonation, setExitingImpersonation] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
@@ -752,6 +755,25 @@ export default function MoreScreen() {
       { icon: 'shield-checkmark', title: 'Security', subtitle: 'Passwords & Face ID', onPress: () => router.push('/settings/security'), color: '#FF3B30' },
       { icon: 'calendar-outline', title: 'Calendar', subtitle: 'Connect calendars', onPress: () => router.push('/settings/calendar'), color: '#007AFF' },
       { icon: 'help-circle-outline', title: 'Help Center', subtitle: 'How-to guides & FAQs', onPress: () => router.push('/help' as any), color: '#007AFF' },
+      ...(pushSupported ? [{
+        icon: 'notifications-outline' as string,
+        title: 'Push Notifications',
+        subtitle: pushStatus === 'granted' ? 'On — leads, messages & tasks' : pushStatus === 'denied' ? 'Blocked in browser settings' : 'Get alerts for leads & messages',
+        color: '#FF9500' as string,
+        statusDot: (pushStatus === 'granted' ? 'green' : pushStatus === 'denied' ? 'red' : 'grey') as 'green' | 'red' | 'grey',
+        onPress: async () => {
+          if (pushStatus === 'granted') {
+            await disablePush();
+            showSimpleAlert('Notifications Off', 'Push notifications have been disabled.');
+          } else if (pushStatus === 'denied') {
+            showSimpleAlert('Blocked', 'Push notifications are blocked. Go to your browser settings → Site Settings → Notifications and allow them for this site.');
+          } else {
+            const ok = await enablePush();
+            if (ok) showSimpleAlert('Notifications Enabled!', "You'll now receive alerts for new leads, customer replies, and your daily touchpoints.");
+            else showSimpleAlert('Not Enabled', 'Could not enable notifications. Make sure you\'re using the app in a browser that supports push notifications.');
+          }
+        },
+      }] : []),
     ],
   });
 
@@ -871,6 +893,9 @@ export default function MoreScreen() {
         <View style={styles.notificationBadge}>
           <Text style={styles.notificationBadgeText}>{item.badge}</Text>
         </View>
+      )}
+      {item.statusDot && (
+        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: item.statusDot === 'green' ? '#34C759' : item.statusDot === 'red' ? '#FF3B30' : '#8E8E93', marginRight: 8 }} />
       )}
       <TouchableOpacity
         onPress={(e) => {

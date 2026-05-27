@@ -869,8 +869,16 @@ async def process_pending_campaign_steps():
 
 
 
-async def generate_daily_system_tasks():
-    """Daily job: generate system tasks (dormant contacts, birthdays, anniversaries) for all active users."""
+async def send_morning_push_digest():
+    """Daily at 2pm UTC: push each user their pending touchpoint count for today."""
+    try:
+        from routers.push_notifications import send_daily_task_digest
+        await send_daily_task_digest()
+    except Exception as e:
+        logger.error(f"[Scheduler] Morning push digest error: {e}")
+
+
+async def generate_daily_system_tasks():    """Daily job: generate system tasks (dormant contacts, birthdays, anniversaries) for all active users."""
     from routers.database import get_db
     logger.info("[Scheduler] Generating daily system tasks...")
     db = get_db()
@@ -1049,6 +1057,15 @@ def start_scheduler():
         safe_job(generate_daily_system_tasks),
         CronTrigger(hour=5, minute=30),
         id="daily_system_tasks",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+
+    # Daily at 2 PM UTC (~7 AM PDT / 9 AM CDT) — morning push digest with today's touchpoints
+    scheduler.add_job(
+        safe_job(send_morning_push_digest),
+        CronTrigger(hour=14, minute=0),
+        id="morning_push_digest",
         replace_existing=True,
         misfire_grace_time=3600,
     )

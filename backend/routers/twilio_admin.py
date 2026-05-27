@@ -205,7 +205,64 @@ async def get_twilio_stats():
     }
 
 
-# ── Search & Purchase ─────────────────────────────────────────────────────────
+@router.get("/status")
+async def get_twilio_live_status():
+    """Full Twilio configuration status — LIVE vs MOCK, compliance checks."""
+    from services.twilio_service import TWILIO_ENABLED, USE_MESSAGING_SERVICE, TWILIO_PHONE_NUMBER, TWILIO_MESSAGING_SERVICE_SID
+    db = get_db()
+
+    # Count push subscriptions
+    push_subs = await db.push_subscriptions.count_documents({})
+    # Recent SMS (last 24h)
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+    recent_sms = await db.messages.count_documents({
+        "timestamp": {"$gte": cutoff.replace(tzinfo=None)},
+        "channel": {"$in": ["sms", "mms"]},
+    })
+    # Count mock vs live
+    mock_sms = await db.messages.count_documents({
+        "status": "sent_mock",
+        "timestamp": {"$gte": cutoff.replace(tzinfo=None)},
+    })
+
+    return {
+        "twilio_sms": {
+            "status": "LIVE" if TWILIO_ENABLED else "MOCK",
+            "enabled": TWILIO_ENABLED,
+            "sender": "Messaging Service (A2P 10DLC)" if USE_MESSAGING_SERVICE else "Direct Phone Number",
+            "phone_number": TWILIO_PHONE_NUMBER,
+            "messaging_service_sid": TWILIO_MESSAGING_SERVICE_SID,
+            "a2p_compliant": USE_MESSAGING_SERVICE,
+        },
+        "sms_stats_24h": {
+            "total": recent_sms,
+            "mock": mock_sms,
+            "live": recent_sms - mock_sms,
+        },
+        "push_notifications": {
+            "vapid_configured": bool(os.environ.get("VAPID_PRIVATE_KEY")),
+            "active_subscriptions": push_subs,
+        },
+    }
+
+
+@router.post("/test-sms")
+async def send_test_sms(request: Request):
+    """Send a test SMS to verify Twilio is live. Admin only."""
+    data = await request.json()
+    to_phone = data.get("to_phone", "").strip()
+    if not to_phone:
+        raise HTTPException(status_code=400, detail="to_phone required")
+    from services.twilio_service import send_sms
+    result = await send_sms(to_phone, "I'm On Social test SMS — Twilio is live and working!")
+    return {
+        "success": result.get("success"),
+        "mock": result.get("mock", False),
+        "message_sid": result.get("message_sid"),
+        "error": result.get("error"),
+    }
+
+
 
 @router.get("/numbers/search")
 async def search_available_numbers(

@@ -571,6 +571,24 @@ When a rep is terminated (deactivated), their dedicated Twilio number is automat
 - Reactivation toast mentions pooled number if still available.
 
 
+## Twilio 10DLC Live + Push Notifications (May 27, 2026) — VERIFIED ✅
+
+**Twilio:**
+- Updated `docs.py` — Twilio label: "DEVELOPMENT MODE" → "LIVE (A2P 10DLC)"
+- Added `GET /api/admin/twilio/status` — full live status, A2P compliance, push subscription count
+- Added `POST /api/admin/twilio/test-sms` — admin test button to verify SMS delivery
+
+**Push Notifications:**
+- New `hooks/usePushNotifications.ts` — browser permission state, enable/disable, subscription
+- Hub → Settings section: Push Notifications item with green/red/grey status dot
+- `send_daily_task_digest()` in `push_notifications.py` — morning push with today's touchpoint count
+- `send_push_to_users()` broadcast helper
+- `morning_push_digest` scheduler job — daily at 2pm UTC (7am PDT)
+
+**Status:** Twilio LIVE + A2P 10DLC confirmed. 6 active push subscriptions in production DB.
+
+
+
 ## Shared Inbox Edit/Webhook + VA Picker (May 27, 2026) — VERIFIED ✅
 
 **Bug fixes:**

@@ -167,3 +167,63 @@ async def check_and_notify_milestones(user_id: str, streak: int, level_title: st
         logger.info(f"[Push] Sent milestone notification to {user_id}: {n['title']}")
 
     return len(notifications)
+
+
+
+async def send_daily_task_digest():
+    """
+    Morning push digest — called by scheduler at 2pm UTC (~7am PDT / 9am CDT).
+    Sends each active user a push notification with their pending touchpoints for today.
+    Only fires if they have push subscriptions and pending tasks.
+    """
+    db = get_db()
+    if not VAPID_PRIVATE_KEY:
+        logger.info("[Push Digest] VAPID not configured, skipping")
+        return
+
+    from datetime import date
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    today_end   = today_start.replace(hour=23, minute=59, second=59)
+
+    # Get users who have push subscriptions
+    subs = await db.push_subscriptions.find({}, {"user_id": 1}).to_list(500)
+    user_ids_with_push = list({s["user_id"] for s in subs})
+
+    sent = 0
+    for user_id in user_ids_with_push:
+        try:
+            # Count pending tasks due today
+            count = await db.tasks.count_documents({
+                "user_id": user_id,
+                "status": {"$in": ["pending", "pending_user_action"]},
+                "$or": [
+                    {"due_date": {"$gte": today_start.replace(tzinfo=None), "$lte": today_end.replace(tzinfo=None)}},
+                    {"due_date": {"$exists": False}},  # undated tasks always show
+                ],
+            })
+            if count == 0:
+                continue
+
+            label = "touchpoint" if count == 1 else "touchpoints"
+            n = await send_push_to_user(
+                user_id,
+                f"You have {count} {label} today",
+                "Tap to open your Touchpoints and get started.",
+                "/touchpoints",
+                "checkmark-circle",
+            )
+            if n > 0:
+                sent += 1
+        except Exception as e:
+            logger.warning(f"[Push Digest] Error for {user_id}: {e}")
+
+    logger.info(f"[Push Digest] Morning digest sent to {sent}/{len(user_ids_with_push)} users")
+    return sent
+
+
+async def send_push_to_users(user_ids: list, title: str, body: str, url: str = "/", icon: str = "flame"):
+    """Broadcast a push notification to multiple users at once."""
+    sent = 0
+    for uid in user_ids:
+        sent += await send_push_to_user(uid, title, body, url, icon)
+    return sent
