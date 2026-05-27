@@ -396,14 +396,19 @@ function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      if (user?._id) { loadAllData(); loadHomeIntelligence(); }
+      if (user?._id) {
+        loadAllData();
+        // Stagger home intelligence 1s to avoid simultaneous OOM on server
+        const t = setTimeout(() => loadHomeIntelligence(), 1000);
+        return () => clearTimeout(t);
+      }
     }, [user?._id])
   );
 
-  // Auto-refresh every 30 seconds (silent — no loading flash)
+  // Auto-refresh every 60 seconds (was 30s) — halves server polling load
   useEffect(() => {
     if (!user?._id) return;
-    const interval = setInterval(() => { loadAllData(true); loadHomeIntelligence(true); }, 30000);
+    const interval = setInterval(() => { loadAllData(true); loadHomeIntelligence(true); }, 60000);
     return () => clearInterval(interval);
   }, [user?._id]);
 
@@ -423,17 +428,26 @@ function HomeScreen() {
     if (!user?._id) return;
     if (!silent) setLoadingTasks(true);
     try {
-      const [actRes, taskRes, summRes, seoRes] = await Promise.all([
+      // Load sequentially in priority order — prevents simultaneous OOM on server
+      // Activity + tasks first (most visible), then SEO score (least critical)
+      const [actRes, taskRes, summRes] = await Promise.all([
         api.get(`/activity/${user._id}?limit=10`).catch(() => ({ data: { activities: [] } })),
         api.get(`/tasks/${user._id}?filter=today`).catch(() => ({ data: [] })),
         api.get(`/tasks/${user._id}/summary`).catch(() => ({ data: null })),
-        api.get(`/seo/health-score/${user._id}`).catch(() => ({ data: null })),
       ]);
       setRecentActivity(actRes.data.activities || []);
       const tasks = Array.isArray(taskRes.data) ? taskRes.data : [];
       setPendingTasks(tasks.sort((a: any, b: any) => (a.priority_order || 3) - (b.priority_order || 3) || new Date(a.due_date).getTime() - new Date(b.due_date).getTime()));
       setTaskSummary(summRes.data);
-      setSeoScore(seoRes.data);
+
+      // Stagger SEO score load by 2s — low priority, prevents request avalanche
+      setTimeout(async () => {
+        try {
+          const seoRes = await api.get(`/seo/health-score/${user._id}`).catch(() => ({ data: null }));
+          setSeoScore(seoRes.data);
+        } catch {}
+      }, 2000);
+
       // Load store slug (sync, not parallel — depends on user data)
       if (!storeSlug) {
         if (user?.store_slug) { setStoreSlug(user.store_slug); }

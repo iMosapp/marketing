@@ -1514,8 +1514,13 @@ async def _build_campaign_journey(user_id: str, contact_id: str):
             continue
 
         sequences     = campaign.get("sequences", [])
+        # Guard: sequences may be stored as int 0 instead of [] in some documents
+        if not isinstance(sequences, list):
+            sequences = []
         current_step = enrollment.get("current_step", 1)
         messages_sent = enrollment.get("messages_sent", [])
+        if not isinstance(messages_sent, list):
+            messages_sent = []
         status = enrollment.get("status", "active")
         delivery_mode = campaign.get("delivery_mode", "manual")
 

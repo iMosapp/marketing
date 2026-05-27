@@ -672,7 +672,13 @@ async def get_campaigns(user_id: str):
                 "enrollments_total": {"$sum": 1},
                 "enrollments_active": {"$sum": {"$cond": [{"$eq": ["$status", "active"]}, 1, 0]}},
                 "enrollments_completed": {"$sum": {"$cond": [{"$eq": ["$status", "completed"]}, 1, 0]}},
-                "messages_sent_count": {"$sum": {"$size": {"$ifNull": ["$messages_sent", []]}}},
+                # Guard: $size fails if messages_sent is an int instead of array (data inconsistency)
+                # Use $cond to check type before $size
+                "messages_sent_count": {"$sum": {"$cond": [
+                    {"$isArray": {"$ifNull": ["$messages_sent", []]}},
+                    {"$size": {"$ifNull": ["$messages_sent", []]}},
+                    0
+                ]}},
                 "last_sent_at": {"$max": {"$arrayElemAt": [{"$ifNull": ["$messages_sent.sent_at", []]}, -1]}},
             }}
         ]
