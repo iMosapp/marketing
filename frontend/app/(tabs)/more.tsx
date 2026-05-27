@@ -695,6 +695,7 @@ export default function MoreScreen() {
       { icon: 'pulse', title: 'Activity Feed', subtitle: 'Team activity across accounts', onPress: () => router.push('/(tabs)/activity-feed' as any), color: '#5856D6' },
       ...(isSuperAdmin ? [
         { icon: 'analytics', title: 'Lead Attribution', subtitle: 'Demo requests & referrals', onPress: () => router.push('/admin/lead-tracking'), color: '#C9A962' },
+        { icon: 'flame', title: 'Hot Leads', subtitle: 'Website demo requests — new leads', onPress: () => router.push('/admin/hot-leads'), color: '#FF3B30' },
       ] : []),
     ];
     sections.push({ id: 'account_mgmt', title: 'Account Management', icon: 'briefcase', color: '#007AFF', items });

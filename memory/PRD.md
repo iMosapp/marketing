@@ -571,6 +571,21 @@ When a rep is terminated (deactivated), their dedicated Twilio number is automat
 - Reactivation toast mentions pooled number if still available.
 
 
+## Demo Request Lead Routing to sales@imonsocial.com (May 27, 2026) — VERIFIED ✅
+
+**Problem:** Demo requests from imonsocial.com were saved to DB and creating in-app notifications, but no email alert was going out. Leads were landing in Admin → Hot Leads page which wasn't in the navigation.
+
+**Fixes:**
+1. **Email notification added** — `_email_new_lead()` in `demo_requests.py` sends a clean HTML email to `sales@imonsocial.com` on every new form submission. Includes name, email (clickable), phone (clickable), company, industry, message, source, UTM params, and a "View in Dashboard →" button linking to `/admin/hot-leads`.
+2. **`SALES_EMAIL=sales@imonsocial.com`** added to `backend/.env` (separate from `ADMIN_EMAIL=forest@imonsocial.com`)
+3. **Hot Leads added to Hub nav** — Account Management section now shows "Hot Leads" (flame icon) for super admins linking directly to `/admin/hot-leads`
+
+**Email sender:** `I'm On Social Leads <noreply@imonsocial.com>` with `reply-to` set to the lead's email address so replying directly goes to the prospect.
+
+**Action required:** Redeploy to push to production.
+
+
+
 ## Team Availability Admin View (May 27, 2026) — VERIFIED ✅
 
 **Backend (`user_schedule.py`):**

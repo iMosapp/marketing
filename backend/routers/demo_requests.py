@@ -6,10 +6,22 @@ from fastapi import APIRouter
 from bson import ObjectId
 from datetime import datetime, timezone, timedelta
 from typing import Optional
+import os
+import asyncio
+import logging
+
+import resend as _resend
 
 from routers.database import get_db
 
 router = APIRouter(prefix="/demo-requests", tags=["demo-requests"])
+logger = logging.getLogger(__name__)
+
+_RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
+_SALES_EMAIL    = os.environ.get("SALES_EMAIL", os.environ.get("ADMIN_EMAIL", "sales@imonsocial.com"))
+
+if _RESEND_API_KEY:
+    _resend.api_key = _RESEND_API_KEY
 
 # Channel classification based on UTM or source
 CHANNEL_MAP = {
@@ -87,6 +99,77 @@ def _classify_referrer_type(ref_code: str, role: str) -> str:
     if role in ("super_admin", "admin"):
         return "internal"
     return "user"
+
+
+async def _email_new_lead(demo: dict) -> None:
+    """Send an immediate email alert to sales@imonsocial.com for every new demo request."""
+    if not _RESEND_API_KEY:
+        logger.warning("[DemoRequest] RESEND_API_KEY not set — skipping lead email")
+        return
+
+    name         = demo.get("name", "Unknown")
+    email        = demo.get("email", "")
+    phone        = demo.get("phone", "")
+    company      = demo.get("company", "")
+    biz_type     = demo.get("business_type", "")
+    message      = demo.get("message", "")
+    source       = demo.get("source", "direct")
+    channel      = demo.get("channel", "")
+    utm_source   = demo.get("utm_source", "")
+    utm_campaign = demo.get("utm_campaign", "")
+    submitted_at = datetime.now(timezone.utc).strftime("%B %d, %Y at %I:%M %p UTC")
+
+    rows = ""
+    def row(label, val):
+        if not val: return ""
+        return f'<tr><td style="padding:8px 12px;font-size:13px;color:#8E8E93;font-weight:600;width:140px;vertical-align:top">{label}</td><td style="padding:8px 12px;font-size:14px;color:#1C1C1E">{val}</td></tr>'
+
+    rows  = row("Name",       name)
+    rows += row("Email",      f'<a href="mailto:{email}" style="color:#007AFF">{email}</a>')
+    rows += row("Phone",      f'<a href="tel:{phone}" style="color:#007AFF">{phone}</a>')
+    rows += row("Company",    company)
+    rows += row("Industry",   biz_type)
+    rows += row("Message",    message[:300] if message else "")
+    rows += row("Source",     source)
+    rows += row("Channel",    channel)
+    rows += row("UTM Source", utm_source)
+    rows += row("Campaign",   utm_campaign)
+    rows += row("Submitted",  submitted_at)
+
+    html = f"""
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)">
+      <div style="background:#007AFF;padding:28px 32px">
+        <h1 style="margin:0;font-size:22px;font-weight:800;color:#fff">New Demo Request</h1>
+        <p style="margin:6px 0 0;font-size:15px;color:rgba(255,255,255,.85)">Someone wants to see I'm On Social in action</p>
+      </div>
+      <div style="padding:24px 32px">
+        <table style="width:100%;border-collapse:collapse;background:#F8F8F8;border-radius:12px;overflow:hidden">
+          {rows}
+        </table>
+        <div style="margin-top:24px;text-align:center">
+          <a href="https://app.imonsocial.com/admin/hot-leads"
+             style="display:inline-block;background:#007AFF;color:#fff;font-size:15px;font-weight:700;padding:14px 32px;border-radius:980px;text-decoration:none">
+            View in Dashboard &rarr;
+          </a>
+        </div>
+      </div>
+      <div style="background:#F2F2F7;padding:16px 32px;text-align:center">
+        <p style="margin:0;font-size:12px;color:#8E8E93">I'm On Social &middot; <a href="https://app.imonsocial.com" style="color:#007AFF">app.imonsocial.com</a></p>
+      </div>
+    </div>
+    """
+
+    try:
+        await asyncio.to_thread(_resend.Emails.send, {
+            "from":    "I'm On Social Leads <noreply@imonsocial.com>",
+            "to":      [_SALES_EMAIL],
+            "reply_to": email if email else "noreply@imonsocial.com",
+            "subject": f"New Demo Request: {name}{' — ' + company if company else ''}",
+            "html":    html,
+        })
+        logger.info(f"[DemoRequest] Lead email sent to {_SALES_EMAIL} for {name}")
+    except Exception as e:
+        logger.error(f"[DemoRequest] Lead email failed: {e}")
 
 
 @router.post("")
@@ -216,6 +299,9 @@ async def create_demo_request(data: dict):
             )
         except Exception:
             pass
+
+    # === FIRE EMAIL TO SALES@IMONSOCIAL.COM ===
+    asyncio.create_task(_email_new_lead(demo))
 
     # === CREATE CONTACT + INBOX THREAD FOR FAST RESPONSE ===
     try:
