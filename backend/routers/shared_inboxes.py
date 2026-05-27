@@ -5,7 +5,7 @@ Features:
 1. Shared Inboxes - Assign multiple users to a single phone number/inbox
 2. Bulk Customer Transfers - Transfer all contacts/conversations from one user to another
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from bson import ObjectId
 from datetime import datetime
@@ -29,9 +29,12 @@ class SharedInboxCreate(BaseModel):
 
 class SharedInboxUpdate(BaseModel):
     name: Optional[str] = None
+    phone_number: Optional[str] = None
     description: Optional[str] = None
     assigned_user_ids: Optional[List[str]] = None
     is_active: Optional[bool] = None
+    va_profile_id: Optional[str] = None    # VA persona from VA Library
+    va_prompt_override: Optional[str] = None  # Custom prompt for this inbox
 
 
 class BulkTransferRequest(BaseModel):
@@ -199,10 +202,16 @@ async def update_shared_inbox(inbox_id: str, update: SharedInboxUpdate, user_id:
     
     if update.name is not None:
         update_dict['name'] = update.name
+    if update.phone_number is not None:
+        update_dict['phone_number'] = update.phone_number
     if update.description is not None:
         update_dict['description'] = update.description
     if update.is_active is not None:
         update_dict['is_active'] = update.is_active
+    if update.va_profile_id is not None:
+        update_dict['va_profile_id'] = update.va_profile_id
+    if update.va_prompt_override is not None:
+        update_dict['va_prompt_override'] = update.va_prompt_override
     
     # Handle user assignment changes
     if update.assigned_user_ids is not None:
@@ -235,7 +244,132 @@ async def update_shared_inbox(inbox_id: str, update: SharedInboxUpdate, user_id:
     return {"message": "Shared inbox updated successfully"}
 
 
-@router.delete("/shared-inboxes/{inbox_id}")
+@router.post("/shared-inboxes/{inbox_id}/webhook")
+async def inbox_webhook(inbox_id: str, request: Request):
+    """
+    Webhook endpoint for receiving leads from external sources (website forms, etc).
+    Include this URL in your web form or CRM integration.
+    Accepts JSON: { first_name, last_name, phone, email, message, vehicle, source }
+    """
+    import asyncio as _aio
+    db = get_db()
+
+    inbox = await db.shared_inboxes.find_one({"_id": ObjectId(inbox_id)})
+    if not inbox or inbox.get('is_active') is False:
+        raise HTTPException(status_code=404, detail="Inbox not found or inactive")
+
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+
+    first_name  = data.get('first_name', '')
+    last_name   = data.get('last_name', '')
+    phone       = data.get('phone') or data.get('phone_number') or ''
+    email       = data.get('email', '')
+    message     = data.get('message', '')
+    vehicle     = data.get('vehicle') or data.get('vehicle_interest', '')
+    source_name = data.get('source') or inbox.get('name', 'Inbox Lead')
+
+    if not phone:
+        raise HTTPException(status_code=400, detail="phone is required")
+
+    full_name = f"{first_name} {last_name}".strip() or "New Lead"
+
+    # Route to the lead intake system
+    from routers.lead_intake import process_inbound_lead as _pil
+    from routers.lead_sources import hydrate_intake_text
+
+    # Find or create the matching lead source
+    source = {
+        "_id":          inbox["_id"],
+        "name":         inbox.get("name"),
+        "phone_number": inbox.get("phone_number"),
+        "intake_text":  inbox.get("intake_text", ""),
+        "workflow_user_ids": inbox.get("assigned_user_ids", []),
+        "notify_all_on_intake": True,
+        "auto_call_on_claim": inbox.get("auto_call_on_claim", False),
+        "va_enabled":   True,
+        "va_prompt_override": inbox.get("va_prompt_override"),
+    }
+
+    normalized = {
+        "first_name":     first_name,
+        "last_name":      last_name,
+        "full_name":      full_name,
+        "phone":          phone,
+        "email":          email,
+        "vehicle_interest": vehicle,
+        "comments":       message,
+    }
+
+    try:
+        result = await _pil(
+            normalized=normalized,
+            source=source,
+            raw_data=data,
+        )
+        logger.info(f"[InboxWebhook] Lead {full_name} routed to {inbox.get('name')}")
+        return {"success": True, "lead_id": str(result.get('_id', '')), "message": "Lead received"}
+    except Exception as e:
+        logger.error(f"[InboxWebhook] Failed: {e}")
+        # Fallback: create contact + conversation manually
+        try:
+            from datetime import datetime as _dt
+            from routers.twilio_webhooks import normalize_phone
+            phone_e164 = normalize_phone(phone)
+            # Create contact
+            contact = await db.contacts.find_one({"phone": phone_e164})
+            if not contact:
+                res = await db.contacts.insert_one({
+                    "phone": phone_e164, "first_name": first_name, "last_name": last_name,
+                    "name": full_name, "email": email, "source": source_name,
+                    "tags": ["Inbound Lead"], "status": "active",
+                    "created_at": _dt.utcnow(),
+                })
+                contact_id = str(res.inserted_id)
+            else:
+                contact_id = str(contact["_id"])
+            # Notify assigned users
+            from routers.lead_sources import hydrate_intake_text
+            intake_text = inbox.get("intake_text", "")
+            for uid in inbox.get("assigned_user_ids", []):
+                await db.notifications.insert_one({
+                    "user_id": uid, "type": "new_lead", "priority": "urgent",
+                    "title": f"New Lead: {full_name}", "message": vehicle or source_name,
+                    "contact_id": contact_id, "read": False, "created_at": _dt.utcnow(),
+                })
+            return {"success": True, "contact_id": contact_id, "message": "Lead received (fallback)"}
+        except Exception as fb_err:
+            raise HTTPException(status_code=500, detail=f"Lead intake failed: {fb_err}")
+
+
+@router.get("/shared-inboxes/{inbox_id}/webhook-info")
+async def get_webhook_info(inbox_id: str, user_id: str):
+    """Return the webhook URL and example payload for this inbox."""
+    db = get_db()
+    inbox = await db.shared_inboxes.find_one({"_id": ObjectId(inbox_id)})
+    if not inbox:
+        raise HTTPException(status_code=404, detail="Inbox not found")
+    import os
+    base = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+    webhook_url = f"{base}/api/admin/team/shared-inboxes/{inbox_id}/webhook"
+    return {
+        "webhook_url": webhook_url,
+        "method": "POST",
+        "content_type": "application/json",
+        "example_payload": {
+            "first_name": "John",
+            "last_name": "Smith",
+            "phone": "+18015551234",
+            "email": "john@email.com",
+            "vehicle": "2024 Ford F-150",
+            "message": "Interested in this truck",
+            "source": inbox.get("name", "Website"),
+        }
+    }
+
+
 async def delete_shared_inbox(inbox_id: str, user_id: str):
     """Delete (deactivate) a shared inbox"""
     db = get_db()

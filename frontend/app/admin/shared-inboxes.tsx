@@ -11,6 +11,7 @@ import {
   RefreshControl,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { showSimpleAlert, showConfirm } from '../../services/alert';
+import { useToast } from '../../components/common/Toast';
 import { WebModal } from '../../components/WebModal';
 
 import { useThemeStore } from '../../store/themeStore';
@@ -47,6 +49,7 @@ export default function SharedInboxesPage() {
   const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [inboxes, setInboxes] = useState<SharedInbox[]>([]);
@@ -58,30 +61,72 @@ export default function SharedInboxesPage() {
   const [selectedInbox, setSelectedInbox] = useState<SharedInbox | null>(null);
   
   // Create form
-  const [newInbox, setNewInbox] = useState({
-    name: '',
-    phone_number: '',
-    description: '',
-  });
+  const [newInbox, setNewInbox] = useState({ name: '', phone_number: '', description: '' });
   const [twilioNumbers, setTwilioNumbers] = useState<any[]>([]);
   const [showNumberPicker, setShowNumberPicker] = useState(false);
+
+  // Edit modal
+  const [editingInbox, setEditingInbox] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', phone_number: '', description: '', va_profile_id: '', va_prompt_override: '' });
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [vaProfiles, setVaProfiles] = useState<any[]>([]);
+  const [showWebhook, setShowWebhook] = useState<string | null>(null);
+  const [webhookInfo, setWebhookInfo] = useState<any | null>(null);
 
   useEffect(() => {
     if (user?._id) {
       loadData();
       loadTwilioNumbers();
+      loadVaProfiles();
     }
   }, [user?._id]);
 
+  const loadVaProfiles = async () => {
+    try {
+      const res = await api.get('/va-profiles', { headers: { 'X-User-ID': user?._id } });
+      setVaProfiles(res.data.profiles || []);
+    } catch { setVaProfiles([]); }
+  };
+
+  const openEdit = (inbox: any) => {
+    setEditingInbox(inbox);
+    setEditForm({
+      name: inbox.name || '',
+      phone_number: inbox.phone_number || '',
+      description: inbox.description || '',
+      va_profile_id: inbox.va_profile_id || '',
+      va_prompt_override: inbox.va_prompt_override || '',
+    });
+    setShowEditModal(true);
+  };
+
+  const saveEdit = async () => {
+    if (!editingInbox) return;
+    setSavingEdit(true);
+    try {
+      await api.put(`/admin/team/shared-inboxes/${editingInbox.id}?user_id=${user?._id}`, editForm);
+      setShowEditModal(false);
+      showToast('Inbox updated', 'success');
+      await loadData();
+    } catch (e: any) {
+      showToast(e?.response?.data?.detail || 'Save failed', 'error');
+    } finally { setSavingEdit(false); }
+  };
+
+  const loadWebhookInfo = async (inboxId: string) => {
+    try {
+      const res = await api.get(`/admin/team/shared-inboxes/${inboxId}/webhook-info?user_id=${user?._id}`);
+      setWebhookInfo(res.data);
+      setShowWebhook(inboxId);
+    } catch { showToast('Failed to load webhook info', 'error'); }
+  };
+
   const loadTwilioNumbers = async () => {
     try {
-      const res = await api.get('/admin/twilio/numbers', {
-        headers: { 'X-User-ID': user?._id },
-      });
+      const res = await api.get('/admin/twilio/numbers', { headers: { 'X-User-ID': user?._id } });
       setTwilioNumbers(res.data.numbers || []);
-    } catch {
-      setTwilioNumbers([]);
-    }
+    } catch { setTwilioNumbers([]); }
   };
 
   const loadData = async () => {
@@ -198,15 +243,52 @@ export default function SharedInboxesPage() {
             <Text style={styles.inboxDescription}>{inbox.description}</Text>
           )}
         </View>
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={() => handleDeleteInbox(inbox)}
-          data-testid={`delete-inbox-${inbox.id}`}
-        >
-          <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-        </TouchableOpacity>
+        {/* Action buttons */}
+        <View style={{ flexDirection: 'row', gap: 6 }}>
+          <TouchableOpacity
+            onPress={() => openEdit(inbox)}
+            style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: '#007AFF15', alignItems: 'center', justifyContent: 'center' }}
+            data-testid={`edit-inbox-${inbox.id}`}
+          >
+            <Ionicons name="create-outline" size={17} color="#007AFF" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => loadWebhookInfo(inbox.id)}
+            style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: '#C9A96215', alignItems: 'center', justifyContent: 'center' }}
+            data-testid={`webhook-inbox-${inbox.id}`}
+          >
+            <Ionicons name="link-outline" size={17} color="#C9A962" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => handleDeleteInbox(inbox)}
+            data-testid={`delete-inbox-${inbox.id}`}
+          >
+            <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+          </TouchableOpacity>
+        </View>
       </View>
-      
+
+      {/* Webhook info panel */}
+      {showWebhook === inbox.id && webhookInfo && (
+        <View style={{ backgroundColor: colors.surface, borderRadius: 10, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: '#C9A96230' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+            <Ionicons name="link" size={14} color="#C9A962" />
+            <Text style={{ fontSize: 12, fontWeight: '700', color: '#C9A962', textTransform: 'uppercase', letterSpacing: 0.5 }}>WEBHOOK URL</Text>
+            <TouchableOpacity onPress={() => setShowWebhook(null)} style={{ marginLeft: 'auto' as any }}>
+              <Ionicons name="close" size={14} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+          <Text style={{ fontSize: 11, color: colors.text, fontFamily: 'monospace', backgroundColor: colors.card, borderRadius: 6, padding: 8, marginBottom: 8 }} selectable>
+            {webhookInfo.webhook_url}
+          </Text>
+          <Text style={{ fontSize: 11, color: colors.textSecondary, marginBottom: 6 }}>POST this JSON from your web form:</Text>
+          <Text style={{ fontSize: 10, color: colors.textSecondary, fontFamily: 'monospace', backgroundColor: colors.card, borderRadius: 6, padding: 8 }} selectable>
+            {JSON.stringify(webhookInfo.example_payload, null, 2)}
+          </Text>
+        </View>
+      )}
+
       {/* Assigned Users */}
       <View style={styles.assignedSection}>
         <View style={styles.assignedHeader}>
@@ -532,6 +614,81 @@ export default function SharedInboxesPage() {
           </Pressable>
         </Pressable>
       </WebModal>
+
+      {/* ── Edit Inbox Modal ─────────────────────────────────────────────── */}
+      <Modal visible={showEditModal} animationType="slide" presentationStyle="pageSheet">
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+            <TouchableOpacity onPress={() => setShowEditModal(false)}>
+              <Text style={{ color: '#FF3B30', fontSize: 16, fontWeight: '600' }}>Cancel</Text>
+            </TouchableOpacity>
+            <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>Edit Inbox</Text>
+            <TouchableOpacity onPress={saveEdit} disabled={savingEdit} data-testid="save-edit-inbox-btn">
+              {savingEdit ? <ActivityIndicator size="small" color="#007AFF" /> : <Text style={{ color: '#007AFF', fontSize: 16, fontWeight: '700' }}>Save</Text>}
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView contentContainerStyle={{ padding: 20, gap: 18, paddingBottom: 60 }}>
+            <View>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Inbox Name</Text>
+              <TextInput style={[styles.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]} value={editForm.name} onChangeText={v => setEditForm(p => ({ ...p, name: v }))} placeholder="KSL Inbox" placeholderTextColor={colors.textSecondary} />
+            </View>
+            <View>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Phone Number</Text>
+              <TextInput style={[styles.input, { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]} value={editForm.phone_number} onChangeText={v => setEditForm(p => ({ ...p, phone_number: v }))} placeholder="+13854443045" placeholderTextColor={colors.textSecondary} keyboardType="phone-pad" />
+            </View>
+            <View>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Description</Text>
+              <TextInput style={[styles.input, { height: 70, textAlignVertical: 'top', color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]} value={editForm.description} onChangeText={v => setEditForm(p => ({ ...p, description: v }))} multiline placeholder="What is this inbox for?" placeholderTextColor={colors.textSecondary} />
+            </View>
+
+            {/* VA Profile */}
+            <View>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>VA Profile</Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 8 }}>Assign a Virtual Assistant from your VA Library to handle leads from this inbox.</Text>
+              {vaProfiles.length === 0 ? (
+                <TouchableOpacity onPress={() => { setShowEditModal(false); router.push('/admin/va-library' as any); }} style={{ borderRadius: 10, borderWidth: 1, borderColor: colors.border, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name="person-circle-outline" size={18} color="#C9A962" />
+                  <Text style={{ color: '#C9A962', fontWeight: '600' }}>Create a VA in VA Library first →</Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={{ gap: 8 }}>
+                  <TouchableOpacity
+                    onPress={() => setEditForm(p => ({ ...p, va_profile_id: '' }))}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 10, backgroundColor: !editForm.va_profile_id ? colors.accent + '20' : colors.surface, borderWidth: 1, borderColor: !editForm.va_profile_id ? colors.accent : colors.border }}
+                  >
+                    <Ionicons name="close-circle-outline" size={18} color={!editForm.va_profile_id ? colors.accent : colors.textSecondary} />
+                    <Text style={{ color: !editForm.va_profile_id ? colors.accent : colors.text, fontWeight: '600' }}>No VA (manual only)</Text>
+                  </TouchableOpacity>
+                  {vaProfiles.map((va: any) => (
+                    <TouchableOpacity
+                      key={va._id}
+                      onPress={() => setEditForm(p => ({ ...p, va_profile_id: va._id }))}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: 10, backgroundColor: editForm.va_profile_id === va._id ? va.avatar_color + '20' : colors.surface, borderWidth: 1, borderColor: editForm.va_profile_id === va._id ? va.avatar_color : colors.border }}
+                    >
+                      <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: va.avatar_color + '30', alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ color: va.avatar_color, fontWeight: '800', fontSize: 14 }}>{va.name.charAt(0)}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: colors.text, fontWeight: '600' }}>{va.name}</Text>
+                        {va.tagline ? <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{va.tagline}</Text> : null}
+                      </View>
+                      {editForm.va_profile_id === va._id && <Ionicons name="checkmark-circle" size={20} color={va.avatar_color} />}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            {/* Custom prompt override */}
+            <View>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Custom VA Instructions (optional)</Text>
+              <TextInput style={[styles.input, { height: 80, textAlignVertical: 'top', color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]} value={editForm.va_prompt_override} onChangeText={v => setEditForm(p => ({ ...p, va_prompt_override: v }))} multiline placeholder="E.g. 'These are KSL classified leads, focus on price and availability first'" placeholderTextColor={colors.textSecondary} />
+            </View>
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
     </SafeAreaView>
   );
 }
