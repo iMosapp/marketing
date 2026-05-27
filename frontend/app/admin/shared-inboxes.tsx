@@ -12,6 +12,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Modal,
+  Switch,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -34,6 +35,7 @@ interface SharedInbox {
   is_active: boolean;
   va_profile_id?: string;
   va_prompt_override?: string;
+  receives_demo_requests?: boolean;
   created_at?: string;
 }
 
@@ -69,7 +71,7 @@ export default function SharedInboxesPage() {
 
   // Edit modal
   const [editingInbox, setEditingInbox] = useState<any | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', phone_number: '', description: '', va_profile_id: '', va_prompt_override: '' });
+  const [editForm, setEditForm] = useState({ name: '', phone_number: '', description: '', va_profile_id: '', va_prompt_override: '', receives_demo_requests: false });
   const [savingEdit, setSavingEdit] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [vaProfiles, setVaProfiles] = useState<any[]>([]);
@@ -99,6 +101,7 @@ export default function SharedInboxesPage() {
       description: inbox.description || '',
       va_profile_id: inbox.va_profile_id || '',
       va_prompt_override: inbox.va_prompt_override || '',
+      receives_demo_requests: inbox.receives_demo_requests || false,
     });
     setShowEditModal(true);
   };
@@ -243,6 +246,12 @@ export default function SharedInboxesPage() {
           <Text style={styles.inboxPhone}>{inbox.phone_number}</Text>
           {inbox.description && (
             <Text style={styles.inboxDescription}>{inbox.description}</Text>
+          )}
+          {inbox.receives_demo_requests && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+              <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: '#34C759' }} />
+              <Text style={{ fontSize: 11, color: '#34C759', fontWeight: '700' }}>Receiving website leads</Text>
+            </View>
           )}
         </View>
         {/* Action buttons */}
@@ -642,6 +651,34 @@ export default function SharedInboxesPage() {
             <View>
               <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Description</Text>
               <TextInput style={[styles.input, { height: 70, textAlignVertical: 'top', color: colors.text, backgroundColor: colors.surface, borderColor: colors.border }]} value={editForm.description} onChangeText={v => setEditForm(p => ({ ...p, description: v }))} multiline placeholder="What is this inbox for?" placeholderTextColor={colors.textSecondary} />
+            </View>
+
+            {/* Website Lead Routing */}
+            <View style={{ backgroundColor: editForm.receives_demo_requests ? '#34C75915' : colors.surface, borderRadius: 12, padding: 14, borderWidth: 1.5, borderColor: editForm.receives_demo_requests ? '#34C759' : colors.border }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flex: 1, marginRight: 12 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 3 }}>
+                    Receive Website Leads
+                  </Text>
+                  <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>
+                    Route demo requests from imonsocial.com to this inbox. Only one inbox can be active at a time.
+                  </Text>
+                </View>
+                <Switch
+                  value={editForm.receives_demo_requests}
+                  onValueChange={v => setEditForm(p => ({ ...p, receives_demo_requests: v }))}
+                  trackColor={{ true: '#34C759' }}
+                  data-testid="receives-demo-toggle"
+                />
+              </View>
+              {editForm.receives_demo_requests && (
+                <View style={{ marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Ionicons name="checkmark-circle" size={14} color="#34C759" />
+                  <Text style={{ fontSize: 12, color: '#34C759', fontWeight: '600' }}>
+                    Website leads will flow to assigned reps with intake text + VA
+                  </Text>
+                </View>
+              )}
             </View>
 
             {/* VA Profile */}

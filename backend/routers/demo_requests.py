@@ -172,6 +172,55 @@ async def _email_new_lead(demo: dict) -> None:
         logger.error(f"[DemoRequest] Lead email failed: {e}")
 
 
+async def _route_demo_to_inbox(demo: dict) -> None:
+    """
+    If a shared inbox has receives_demo_requests=True, route this website lead
+    through its full workflow: assigned reps notified, intake text fires, VA handles.
+    """
+    try:
+        db = get_db()
+        inbox = await db.shared_inboxes.find_one(
+            {"receives_demo_requests": True, "is_active": {"$ne": False}}
+        )
+        if not inbox:
+            return
+
+        # Build normalized lead from demo data
+        name_parts = demo.get("name", "").strip().split(" ", 1)
+        normalized = {
+            "first_name":       name_parts[0] if name_parts else "",
+            "last_name":        name_parts[1] if len(name_parts) > 1 else "",
+            "full_name":        demo.get("name", ""),
+            "phone":            demo.get("phone", ""),
+            "email":            demo.get("email", ""),
+            "vehicle_interest": demo.get("business_type", ""),
+            "comments":         demo.get("message", ""),
+        }
+
+        if not normalized["phone"] and not normalized["email"]:
+            logger.info("[DemoInbox] Lead has no phone/email — skipping inbox routing")
+            return
+
+        source = {
+            "_id":                  inbox["_id"],
+            "name":                 inbox.get("name", "Website Demo"),
+            "phone_number":         inbox.get("phone_number", ""),
+            "intake_text":          inbox.get("intake_text", ""),
+            "workflow_user_ids":    inbox.get("assigned_user_ids", []),
+            "notify_all_on_intake": True,
+            "auto_call_on_claim":   inbox.get("auto_call_on_claim", False),
+            "va_enabled":           True,
+            "va_profile_id":        inbox.get("va_profile_id"),
+            "va_prompt_override":   inbox.get("va_prompt_override"),
+        }
+
+        from routers.lead_intake import process_inbound_lead
+        result = await process_inbound_lead(normalized, source, db)
+        logger.info(f"[DemoInbox] Lead '{demo.get('name')}' routed to inbox '{inbox.get('name')}'")
+    except Exception as e:
+        logger.error(f"[DemoInbox] Inbox routing failed (non-fatal): {e}")
+
+
 @router.post("")
 async def create_demo_request(data: dict):
     """Capture a demo request with full attribution tracking."""
@@ -302,6 +351,9 @@ async def create_demo_request(data: dict):
 
     # === FIRE EMAIL TO SALES@IMONSOCIAL.COM ===
     asyncio.create_task(_email_new_lead(demo))
+
+    # === ROUTE TO SHARED INBOX (if one is configured to receive website leads) ===
+    asyncio.create_task(_route_demo_to_inbox(demo))
 
     # === CREATE CONTACT + INBOX THREAD FOR FAST RESPONSE ===
     try:

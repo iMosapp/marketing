@@ -571,6 +571,56 @@ When a rep is terminated (deactivated), their dedicated Twilio number is automat
 - Reactivation toast mentions pooled number if still available.
 
 
+## Smart Lead Routing — On-Shift Reps Only (May 27, 2026) — VERIFIED ✅
+
+**What changed in `lead_intake.py`:**
+
+New helper `_get_on_shift_reps(user_ids, fallback_all=True)`:
+- Checks each rep's schedule via `is_user_available()`
+- Returns only on-shift reps if any exist
+- **Falls back to all reps if 0 are on shift** — lead is never silently dropped
+- Fully non-blocking with exception guard
+
+**3 places updated:**
+1. **Notification blast** (`_fire_intake_workflow`) — `notif_recipients = await _get_on_shift_reps(workflow_user_ids)` — only on-shift reps get push + SMS + in-app
+2. **Intake text sender** — uses first on-shift rep's Twilio number (not always rep[0])
+3. **Round-robin / weighted assignment** (`_resolve_assignment`) — skips off-shift members
+
+**Verified via live logs:**
+- `[SmartRoute] 1/1 reps on shift → routing to on-shift only` (rep available)
+- `[SmartRoute] 0/1 reps on shift → falling back to all reps` (rep off-shift, safe fallback)
+- Log format: `reps_notified=1/1` (on-shift notified / total)
+
+
+
+## Website Leads → Shared Inbox Routing (May 27, 2026) — VERIFIED ✅
+
+**How it works:**
+1. Admin opens a shared inbox → Edit → toggles **"Receive Website Leads"** ON
+2. Only one inbox can have this flag (toggling ON auto-clears all others)
+3. Every demo request from imonsocial.com now routes through that inbox's full workflow:
+   - Assigned reps get notified (in-app + push + SMS if configured)
+   - Intake text fires automatically
+   - VA profile handles the conversation
+   - Jump Ball / round-robin assignment applies
+
+**Backend changes:**
+- `SharedInboxUpdate` model: added `receives_demo_requests: Optional[bool]`
+- `update_shared_inbox`: when set to True, auto-clears all other inboxes (exclusive)
+- List response: includes `receives_demo_requests` flag
+- `demo_requests.py`: added `_route_demo_to_inbox()` — finds inbox with flag=True, builds normalized lead + source dict, calls `process_inbound_lead()`
+- Fully non-blocking (asyncio.create_task) — demo form always returns success instantly
+
+**Frontend changes:**
+- `shared-inboxes.tsx`: "Receive Website Leads" toggle in Edit modal (green card when active)
+- Inbox card shows "● Receiving website leads" badge when active
+
+**Verified:** Full curl test — submitted demo request → backend logs confirmed routing to 'Website Demo Leads' inbox via lead_intake pipeline.
+
+**Action required:** Redeploy to push to production.
+
+
+
 ## Demo Request Lead Routing to sales@imonsocial.com (May 27, 2026) — VERIFIED ✅
 
 **Problem:** Demo requests from imonsocial.com were saved to DB and creating in-app notifications, but no email alert was going out. Leads were landing in Admin → Hot Leads page which wasn't in the navigation.

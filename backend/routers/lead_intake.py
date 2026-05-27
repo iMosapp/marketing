@@ -584,7 +584,8 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
 
 
 async def _resolve_assignment(db, source: dict) -> Optional[str]:
-    """Resolve assignment from source's method. Returns user_id or None."""
+    """Resolve assignment from source's method. Returns user_id or None.
+    Prefers on-shift reps for round-robin; falls back to all if none on shift."""
     method  = source.get("assignment_method", "jump_ball")
     team_id = source.get("team_id")
     if not team_id or method == "jump_ball":
@@ -593,7 +594,9 @@ async def _resolve_assignment(db, source: dict) -> Optional[str]:
         team = await db.teams.find_one({"_id": ObjectId(team_id)})
         if not team or not team.get("members"):
             return None
-        members = team["members"]
+        all_members = team["members"]
+        # Prefer on-shift members, fall back to all
+        members = await _get_on_shift_reps(all_members, fallback_all=True)
         if method == "round_robin":
             idx = source.get("round_robin_index", 0)
             user_id = members[idx % len(members)]
@@ -907,6 +910,28 @@ async def retry_lead(lead_id: str):
 
 
 
+async def _get_on_shift_reps(user_ids: list, fallback_all: bool = True) -> list:
+    """
+    Filter user_ids to those currently on shift per their schedule.
+    If none are on shift (or no schedules set), returns all user_ids so
+    the lead is never silently dropped.
+    """
+    if not user_ids:
+        return user_ids
+    try:
+        from routers.user_schedule import is_user_available
+        on_shift = [uid for uid in user_ids if await is_user_available(uid)]
+        if on_shift:
+            logger.info(f"[SmartRoute] {len(on_shift)}/{len(user_ids)} reps on shift → routing to on-shift only")
+            return on_shift
+        # No one on shift — fall back so lead is never dropped
+        logger.info(f"[SmartRoute] 0/{len(user_ids)} reps on shift → falling back to all reps")
+        return user_ids if fallback_all else []
+    except Exception as e:
+        logger.warning(f"[SmartRoute] Schedule check failed (non-fatal): {e}")
+        return user_ids   # safe fallback
+
+
 async def _fire_intake_workflow(source, lead_doc, conv_id, contact_id, phone_e164, normalized, db, now):
     """
     Fires instantly when a lead arrives:
@@ -934,11 +959,13 @@ async def _fire_intake_workflow(source, lead_doc, conv_id, contact_id, phone_e16
             }
             message_body = hydrate_intake_text(intake_text, lead_data, source_name)
 
-            # Find a Twilio number to send from (workflow rep's number or store number)
+            # Find a Twilio number to send from — prefer first on-shift rep's number
             from_number = None
             if workflow_user_ids:
+                # Get on-shift reps to pick a sender from
+                sender_pool = await _get_on_shift_reps(workflow_user_ids, fallback_all=True)
                 rep = await db.users.find_one(
-                    {"_id": ObjectId(workflow_user_ids[0])},
+                    {"_id": ObjectId(sender_pool[0])},
                     {"twilio_number": 1, "mvpline_number": 1}
                 )
                 from_number = (rep or {}).get("twilio_number") or (rep or {}).get("mvpline_number")
@@ -984,7 +1011,10 @@ async def _fire_intake_workflow(source, lead_doc, conv_id, contact_id, phone_e16
             app_url     = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
             conv_link   = f"{app_url}/thread/{conv_id}"
 
-            for uid in workflow_user_ids:
+            # Only notify reps currently on shift (falls back to all if none on shift)
+            notif_recipients = await _get_on_shift_reps(workflow_user_ids)
+
+            for uid in notif_recipients:
                 try:
                     await db.notifications.insert_one({
                         "user_id":         uid,
@@ -1044,7 +1074,7 @@ async def _fire_intake_workflow(source, lead_doc, conv_id, contact_id, phone_e16
                 except Exception as notif_err:
                     logger.debug(f"[IntakeWorkflow] Notification failed for {uid}: {notif_err}")
 
-        logger.info(f"[IntakeWorkflow] Complete for {phone_e164} | reps_notified={len(workflow_user_ids)}")
+        logger.info(f"[IntakeWorkflow] Complete for {phone_e164} | reps_notified={len(notif_recipients if notify_all and workflow_user_ids else workflow_user_ids)}/{len(workflow_user_ids)}")
     except Exception as e:
         logger.warning(f"[IntakeWorkflow] Workflow fire failed: {e}")
 

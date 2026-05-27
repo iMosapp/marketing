@@ -35,6 +35,7 @@ class SharedInboxUpdate(BaseModel):
     is_active: Optional[bool] = None
     va_profile_id: Optional[str] = None    # VA persona from VA Library
     va_prompt_override: Optional[str] = None  # Custom prompt for this inbox
+    receives_demo_requests: Optional[bool] = None  # Route website leads to this inbox
 
 
 class BulkTransferRequest(BaseModel):
@@ -141,6 +142,7 @@ async def list_shared_inboxes(user_id: str):
             "is_active": inbox.get('is_active', True),
             "va_profile_id": inbox.get('va_profile_id', ''),
             "va_prompt_override": inbox.get('va_prompt_override', ''),
+            "receives_demo_requests": inbox.get('receives_demo_requests', False),
             "created_at": inbox.get('created_at').isoformat() if inbox.get('created_at') else None
         })
     
@@ -214,6 +216,14 @@ async def update_shared_inbox(inbox_id: str, update: SharedInboxUpdate, user_id:
         update_dict['va_profile_id'] = update.va_profile_id
     if update.va_prompt_override is not None:
         update_dict['va_prompt_override'] = update.va_prompt_override
+    if update.receives_demo_requests is not None:
+        # Only one inbox can be the website lead receiver — clear others first
+        if update.receives_demo_requests:
+            await db.shared_inboxes.update_many(
+                {"_id": {"$ne": ObjectId(inbox_id)}},
+                {"$set": {"receives_demo_requests": False}}
+            )
+        update_dict['receives_demo_requests'] = update.receives_demo_requests
     
     # Handle user assignment changes
     if update.assigned_user_ids is not None:
