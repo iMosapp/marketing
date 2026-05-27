@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  TextInput, ActivityIndicator, Platform,
+  TextInput, ActivityIndicator, Platform, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,13 +9,18 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from '../../../services/api';
 import { showSimpleAlert } from '../../../services/alert';
 
+const IS_WEB = Platform.OS === 'web';
+
 export default function QuoteAcceptPage() {
-  const { quoteId } = useLocalSearchParams<{ quoteId: string }>();
+  const { quoteId, payment, session_id } = useLocalSearchParams<{ quoteId: string; payment?: string; session_id?: string }>();
   const router = useRouter();
 
-  const [loading, setLoading]     = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [quote, setQuote]         = useState<any>(null);
+  const [loading, setLoading]       = useState(true);
+  const [submitting, setSubmitting]  = useState(false);
+  const [quote, setQuote]            = useState<any>(null);
+  const [payStatus, setPayStatus]    = useState<'idle' | 'checking' | 'paid' | 'cancelled'>('idle');
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
+  const [creatingPayment, setCreatingPayment] = useState(false);
 
   // Signature form
   const [name, setName]           = useState('');
@@ -25,12 +30,40 @@ export default function QuoteAcceptPage() {
 
   useEffect(() => { loadQuote(); }, [quoteId]);
 
+  // Handle return from Stripe (payment=success or payment=cancelled in URL)
+  useEffect(() => {
+    if (payment === 'success' && session_id) {
+      setPayStatus('checking');
+      pollPaymentStatus(session_id as string);
+    } else if (payment === 'cancelled') {
+      setPayStatus('cancelled');
+    }
+  }, [payment, session_id]);
+
+  const pollPaymentStatus = useCallback(async (sid: string, attempts = 0) => {
+    if (attempts >= 6) { setPayStatus('idle'); return; }
+    try {
+      const res = await api.get(`/subscriptions/quotes/${quoteId}/payment-status?session_id=${sid}`);
+      if (res.data.payment_status === 'paid') {
+        setPayStatus('paid');
+        await loadQuote();
+      } else {
+        setTimeout(() => pollPaymentStatus(sid, attempts + 1), 2000);
+      }
+    } catch {
+      setTimeout(() => pollPaymentStatus(sid, attempts + 1), 2000);
+    }
+  }, [quoteId]);
+
   const loadQuote = async () => {
     try {
       const res = await api.get(`/subscriptions/quotes/${quoteId}/public`);
       setQuote(res.data);
       if (res.data.customer?.name)  setName(res.data.customer.name);
       if (res.data.customer?.email) setEmail(res.data.customer.email);
+      // Restore checkout URL from quote if already generated
+      if (res.data.stripe_checkout_url) setCheckoutUrl(res.data.stripe_checkout_url);
+      if (res.data.payment_status === 'paid') setPayStatus('paid');
     } catch {
       showSimpleAlert('Error', 'This quote could not be found or has expired.');
     } finally {
@@ -46,12 +79,36 @@ export default function QuoteAcceptPage() {
 
     setSubmitting(true);
     try {
-      await api.post(`/subscriptions/quotes/${quoteId}/accept`, { name, email, signature });
+      const res = await api.post(`/subscriptions/quotes/${quoteId}/accept`, { name, email, signature });
+      if (res.data.stripe_checkout_url) setCheckoutUrl(res.data.stripe_checkout_url);
       await loadQuote(); // reload to show accepted state
     } catch (e: any) {
       showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to submit. Please try again.');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleSetUpPayment = async () => {
+    const url = checkoutUrl || quote?.stripe_checkout_url;
+    if (url) {
+      if (IS_WEB) { window.location.href = url; }
+      else { Linking.openURL(url); }
+      return;
+    }
+    // Regenerate if no URL yet
+    setCreatingPayment(true);
+    try {
+      const res = await api.post(`/subscriptions/quotes/${quoteId}/create-payment`);
+      if (res.data.already_paid) { setPayStatus('paid'); return; }
+      const newUrl = res.data.checkout_url;
+      setCheckoutUrl(newUrl);
+      if (IS_WEB) { window.location.href = newUrl; }
+      else { Linking.openURL(newUrl); }
+    } catch (e: any) {
+      showSimpleAlert('Error', e?.response?.data?.detail || 'Could not create payment link. Contact support@imonsocial.com');
+    } finally {
+      setCreatingPayment(false);
     }
   };
 
@@ -77,6 +134,8 @@ export default function QuoteAcceptPage() {
   // ── Accepted state ──────────────────────────────────────────────────────────
   if (quote.status === 'accepted') {
     const sig = quote.digital_signature || {};
+    const isPaid = payStatus === 'paid' || quote.payment_status === 'paid';
+
     return (
       <View style={s.dark}>
         <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1 }}>
@@ -84,7 +143,11 @@ export default function QuoteAcceptPage() {
             <View style={{ alignItems: 'center', marginBottom: 32 }}>
               <Ionicons name="checkmark-circle" size={88} color="#34C759" />
               <Text style={s.acceptedTitle}>Quote Accepted!</Text>
-              <Text style={s.acceptedSub}>Check your email for your signed copy and payment setup link.</Text>
+              <Text style={s.acceptedSub}>
+                {isPaid
+                  ? 'Your monthly subscription is active. Welcome aboard!'
+                  : 'One last step — set up your monthly payment below.'}
+              </Text>
             </View>
 
             <View style={s.darkCard}>
@@ -92,14 +155,68 @@ export default function QuoteAcceptPage() {
               <Row label="Plan"    value={quote.plan_name} />
               <Row label="Total"   value={`$${quote.pricing?.final_price?.toFixed(2)}/${quote.pricing?.interval}`} green />
               {sig.signed_at && <Row label="Signed"  value={new Date(sig.signed_at).toLocaleString()} />}
+              {isPaid && <Row label="Payment" value="Complete" green />}
             </View>
 
-            <View style={[s.darkCard, { marginTop: 16, borderColor: '#FF9500', borderWidth: 1 }]}>
-              <Text style={{ fontSize: 15, fontWeight: '700', color: '#FF9500', marginBottom: 8 }}>Next Step: Set Up Payment</Text>
-              <Text style={{ fontSize: 14, color: '#CCC', lineHeight: 20 }}>
-                A payment setup link has been sent to your email and phone. You'll need to complete this before your trial ends.
-              </Text>
-            </View>
+            {/* Payment Section */}
+            {isPaid ? (
+              <View style={[s.darkCard, { marginTop: 16, borderColor: '#34C759', borderWidth: 1 }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <Ionicons name="checkmark-circle" size={24} color="#34C759" />
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: '#34C759' }}>Payment Complete</Text>
+                </View>
+                <Text style={{ fontSize: 14, color: '#8E8E93', marginTop: 8, lineHeight: 20 }}>
+                  Your monthly subscription of ${quote.pricing?.final_price?.toFixed(2)}/month is active.
+                </Text>
+              </View>
+            ) : payStatus === 'checking' ? (
+              <View style={[s.darkCard, { marginTop: 16, alignItems: 'center' }]}>
+                <ActivityIndicator color="#C9A962" />
+                <Text style={{ color: '#8E8E93', marginTop: 8 }}>Confirming your payment...</Text>
+              </View>
+            ) : payStatus === 'cancelled' ? (
+              <View style={[s.darkCard, { marginTop: 16, borderColor: '#FF3B30', borderWidth: 1 }]}>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: '#FF3B30', marginBottom: 8 }}>Payment Not Completed</Text>
+                <Text style={{ fontSize: 14, color: '#CCC', lineHeight: 20, marginBottom: 16 }}>
+                  No worries — your quote is still signed. Complete payment whenever you're ready.
+                </Text>
+                <TouchableOpacity
+                  onPress={handleSetUpPayment}
+                  disabled={creatingPayment}
+                  style={{ backgroundColor: '#FF9500', borderRadius: 12, padding: 16, alignItems: 'center' }}
+                  data-testid="retry-payment-btn"
+                >
+                  {creatingPayment
+                    ? <ActivityIndicator color="#000" />
+                    : <Text style={{ color: '#000', fontWeight: '700', fontSize: 16 }}>Try Payment Again</Text>}
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={[s.darkCard, { marginTop: 16, borderColor: '#FF9500', borderWidth: 1 }]}>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: '#FF9500', marginBottom: 8 }}>
+                  Set Up Monthly Payment
+                </Text>
+                <Text style={{ fontSize: 14, color: '#CCC', lineHeight: 20, marginBottom: 16 }}>
+                  Complete your ${quote.pricing?.final_price?.toFixed(2)}/month payment to activate your account.
+                  A payment link was also sent to your email and phone.
+                </Text>
+                <TouchableOpacity
+                  onPress={handleSetUpPayment}
+                  disabled={creatingPayment}
+                  style={{ backgroundColor: '#FF9500', borderRadius: 12, padding: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}
+                  data-testid="setup-payment-btn"
+                >
+                  {creatingPayment
+                    ? <ActivityIndicator color="#000" />
+                    : <>
+                        <Ionicons name="card" size={20} color="#000" />
+                        <Text style={{ color: '#000', fontWeight: '700', fontSize: 16 }}>
+                          Pay ${quote.pricing?.final_price?.toFixed(2)}/month
+                        </Text>
+                      </>}
+                </TouchableOpacity>
+              </View>
+            )}
 
             <Text style={s.footerNote}>Questions? support@imonsocial.com</Text>
           </ScrollView>

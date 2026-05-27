@@ -822,7 +822,26 @@ async def stripe_webhook(request: Request):
             # If payment was successful and it's for a partner agreement
             if webhook_response.payment_status == "paid":
                 metadata = webhook_response.metadata or {}
-                if metadata.get("type") == "partner_agreement":
+
+                # ── Quote payment ────────────────────────────────────────────
+                if metadata.get("type") == "quote_payment":
+                    quote_id = metadata.get("quote_id")
+                    if quote_id:
+                        try:
+                            await db.subscription_quotes.update_one(
+                                {"_id": ObjectId(quote_id)},
+                                {"$set": {
+                                    "payment_status": "paid",
+                                    "paid_at":        datetime.utcnow(),
+                                    "payment_session_id": webhook_response.session_id,
+                                }}
+                            )
+                            logger.info(f"[Stripe] Quote {quote_id} marked as paid via webhook")
+                        except Exception as qe:
+                            logger.error(f"[Stripe] Quote payment update failed for {quote_id}: {qe}")
+
+                # ── Partner agreement payment ────────────────────────────────
+                elif metadata.get("type") == "partner_agreement":
                     agreement_id = metadata.get("agreement_id")
                     if agreement_id:
                         # Update agreement status

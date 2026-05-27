@@ -331,7 +331,85 @@ async def _send_quote_link_email(quote: dict, quote_id: str) -> None:
         logger.error(f"[Quotes] Failed to email quote link to {to_email}: {e}")
 
 
-async def _email_accepted_quote(quote: dict, quote_id: str) -> None:
+async def _create_quote_payment_session(quote: dict, quote_id: str) -> str | None:
+    """
+    Create a Stripe Checkout Session for the quote's monthly amount.
+    Returns the checkout URL or None if Stripe is not configured.
+    """
+    api_key = os.environ.get("STRIPE_API_KEY")
+    if not api_key:
+        logger.info("[Quotes] STRIPE_API_KEY not set — skipping Stripe session creation")
+        return None
+
+    try:
+        from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionRequest
+
+        pricing     = quote.get("pricing") or {}
+        final_price = float(pricing.get("final_price", 0))
+        if final_price <= 0:
+            return None
+
+        customer    = quote.get("customer") or {}
+        plan_name   = quote.get("plan_name", "I'm On Social")
+        quote_num   = quote.get("quote_number", "")
+
+        success_url = f"{_APP_URL}/quote/accept/{quote_id}?payment=success&session_id={{CHECKOUT_SESSION_ID}}"
+        cancel_url  = f"{_APP_URL}/quote/accept/{quote_id}?payment=cancelled"
+
+        stripe_checkout = StripeCheckout(api_key=api_key, webhook_url=f"{_APP_URL}/api/webhook/stripe")
+
+        session = await stripe_checkout.create_checkout_session(
+            CheckoutSessionRequest(
+                amount=final_price,
+                currency="usd",
+                success_url=success_url,
+                cancel_url=cancel_url,
+                metadata={
+                    "type":          "quote_payment",
+                    "quote_id":      quote_id,
+                    "quote_number":  quote_num,
+                    "plan_name":     plan_name,
+                    "customer_email": customer.get("email", ""),
+                },
+            )
+        )
+
+        # Record in payment_transactions
+        db = get_db()
+        await db.payment_transactions.insert_one({
+            "session_id":      session.session_id,
+            "type":            "quote_payment",
+            "quote_id":        quote_id,
+            "quote_number":    quote_num,
+            "amount":          final_price,
+            "currency":        "usd",
+            "customer_email":  customer.get("email", ""),
+            "plan_name":       plan_name,
+            "status":          "initiated",
+            "payment_status":  "pending",
+            "checkout_url":    session.url,
+            "created_at":      datetime.utcnow(),
+        })
+
+        # Store URL on the quote itself
+        await db.subscription_quotes.update_one(
+            {"_id": ObjectId(quote_id)},
+            {"$set": {
+                "stripe_checkout_url":    session.url,
+                "stripe_session_id":      session.session_id,
+                "payment_status":         "pending",
+            }}
+        )
+
+        logger.info(f"[Quotes] Stripe session created for {quote_id}: {session.session_id}")
+        return session.url
+
+    except Exception as e:
+        logger.error(f"[Quotes] Stripe session creation failed for {quote_id}: {e}")
+        return None
+
+
+async def _email_accepted_quote(quote: dict, quote_id: str, stripe_url: str | None = None) -> None:
     """
     After a customer signs:
     1. Generate signed PDF
@@ -361,8 +439,8 @@ async def _email_accepted_quote(quote: dict, quote_id: str) -> None:
     accepted_str = accepted_at.strftime("%B %d, %Y") if isinstance(accepted_at, datetime) else str(accepted_at or "")
 
     # ── Payment + W-9 links ───────────────────────────────────────────────────
-    # Payment: TODO replace with live Stripe/merchant link once configured
-    payment_link = f"{_APP_URL}/subscription/pricing"  # TODO: Replace with merchant link
+    # Use live Stripe checkout URL if available, otherwise fall back to pricing page
+    payment_link = stripe_url or quote.get("stripe_checkout_url") or f"{_APP_URL}/subscription/pricing"
     # W-9: unique upload link for this quote
     w9_token  = quote.get("w9_token", "")
     w9_link   = f"{_APP_URL}/w9/submit/{w9_token}" if w9_token else None
@@ -1077,6 +1155,8 @@ async def get_quote_public(quote_id: str):
         "valid_until": valid_until.isoformat() if isinstance(valid_until, datetime) else str(valid_until or ""),
         "digital_signature": quote.get("digital_signature"),
         "accepted_at": quote.get("accepted_at").isoformat() if isinstance(quote.get("accepted_at"), datetime) else None,
+        "stripe_checkout_url": quote.get("stripe_checkout_url"),
+        "payment_status": quote.get("payment_status", "pending"),
     }
 
 
@@ -1138,18 +1218,82 @@ async def accept_quote(quote_id: str, data: dict, request: Request):
     )
 
     # Reload with updated data for email/PDF
+    stripe_url = None
     updated = await db.subscription_quotes.find_one({"_id": ObjectId(quote_id)})
     if updated:
-        asyncio.create_task(_email_accepted_quote(updated, quote_id))
+        # Generate Stripe checkout session for the quote amount (monthly recurring)
+        stripe_url = await _create_quote_payment_session(updated, quote_id)
+        asyncio.create_task(_email_accepted_quote(updated, quote_id, stripe_url))
 
     return {
-        "success": True,
-        "status":  "accepted",
-        "message": "Quote accepted. Check your email for your signed copy and next steps.",
+        "success":             True,
+        "status":              "accepted",
+        "stripe_checkout_url": stripe_url,
+        "message": "Quote accepted. Check your email for your signed copy and payment setup link.",
     }
 
 
-@router.get("/quotes/{quote_id}/pdf")
+@router.post("/quotes/{quote_id}/create-payment")
+async def create_quote_payment(quote_id: str):
+    """
+    Generate (or regenerate) a Stripe checkout session for an accepted quote.
+    Called when customer clicks 'Set Up Monthly Payment' after signing.
+    """
+    db = get_db()
+    quote = await db.subscription_quotes.find_one({"_id": ObjectId(quote_id)})
+    if not quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    if quote.get("status") != "accepted":
+        raise HTTPException(status_code=400, detail="Quote must be accepted before payment can be set up")
+    if quote.get("payment_status") == "paid":
+        return {"success": True, "already_paid": True, "message": "Payment already completed"}
+
+    stripe_url = await _create_quote_payment_session(quote, quote_id)
+    if not stripe_url:
+        raise HTTPException(status_code=503, detail="Payment system not configured. Contact support@imonsocial.com")
+
+    return {"success": True, "checkout_url": stripe_url}
+
+
+@router.get("/quotes/{quote_id}/payment-status")
+async def get_quote_payment_status(quote_id: str, session_id: str | None = None):
+    """Poll payment status after returning from Stripe."""
+    db = get_db()
+    quote = await db.subscription_quotes.find_one(
+        {"_id": ObjectId(quote_id)},
+        {"payment_status": 1, "stripe_checkout_url": 1, "stripe_session_id": 1, "status": 1}
+    )
+    if not quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+
+    # If session_id provided, check with Stripe directly
+    if session_id:
+        api_key = os.environ.get("STRIPE_API_KEY")
+        if api_key:
+            try:
+                from emergentintegrations.payments.stripe.checkout import StripeCheckout
+                sc = StripeCheckout(api_key=api_key, webhook_url="")
+                result = await sc.get_checkout_status(session_id)
+                if result.payment_status == "paid":
+                    await db.subscription_quotes.update_one(
+                        {"_id": ObjectId(quote_id)},
+                        {"$set": {"payment_status": "paid", "paid_at": datetime.utcnow()}}
+                    )
+                    await db.payment_transactions.update_one(
+                        {"session_id": session_id},
+                        {"$set": {"status": "paid", "payment_status": "paid", "updated_at": datetime.utcnow()}}
+                    )
+                    return {"payment_status": "paid", "status": quote.get("status")}
+            except Exception as e:
+                logger.warning(f"[Quotes] Payment status check failed: {e}")
+
+    return {
+        "payment_status":      quote.get("payment_status", "pending"),
+        "status":              quote.get("status"),
+        "stripe_checkout_url": quote.get("stripe_checkout_url"),
+    }
+
+
 async def download_quote_pdf(quote_id: str):
     """Generate and stream the accepted quote as a signed PDF."""
     db = get_db()

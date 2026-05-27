@@ -571,6 +571,31 @@ When a rep is terminated (deactivated), their dedicated Twilio number is automat
 - Reactivation toast mentions pooled number if still available.
 
 
+## Stripe Quote Payment Integration (May 27, 2026) — VERIFIED ✅
+
+**What was built:**
+When a customer digitally signs a quote, a Stripe Checkout Session is **automatically generated** for the exact monthly amount and sent in the email + SMS.
+
+**Backend changes (`subscriptions.py`):**
+- `_create_quote_payment_session()` — creates Stripe checkout session from `quote.pricing.final_price`, stores in `payment_transactions`, saves `stripe_checkout_url` + `stripe_session_id` on the quote
+- `accept_quote` — now awaits Stripe session creation and returns `stripe_checkout_url` in the response
+- `_email_accepted_quote` — replaced the TODO payment link with the live Stripe URL
+- `GET /subscriptions/quotes/{id}/public` — now exposes `stripe_checkout_url` and `payment_status`
+- `POST /subscriptions/quotes/{id}/create-payment` — "Pay Now" button can regenerate session
+- `GET /subscriptions/quotes/{id}/payment-status?session_id=...` — polls Stripe and updates DB
+- `server.py` Stripe webhook — handles `type="quote_payment"` to mark quote as paid
+
+**Frontend changes (`quote/accept/[quoteId].tsx`):**
+- Accepted state shows **"Pay $X/month" button** (orange, prominent)
+- Handles `?payment=success&session_id=...` URL params returned from Stripe
+- Polls payment status after return — transitions to "Payment Complete" state
+- Handles `?payment=cancelled` — shows retry button
+- `stripe_checkout_url` stored so button works even on page refresh
+
+**Requires:** `STRIPE_API_KEY=sk_live_...` in production secrets (already configured by user).
+
+
+
 ## Twilio 10DLC Live + Push Notifications (May 27, 2026) — VERIFIED ✅
 
 **Twilio:**
