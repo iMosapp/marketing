@@ -101,7 +101,7 @@ def _classify_referrer_type(ref_code: str, role: str) -> str:
     return "user"
 
 
-async def _email_new_lead(demo: dict) -> None:
+async def _email_new_lead(demo: dict, conv_id: str = "") -> None:
     """Send an immediate email alert to sales@imonsocial.com for every new demo request."""
     if not _RESEND_API_KEY:
         logger.warning("[DemoRequest] RESEND_API_KEY not set — skipping lead email")
@@ -136,6 +136,11 @@ async def _email_new_lead(demo: dict) -> None:
     rows += row("Campaign",   utm_campaign)
     rows += row("Submitted",  submitted_at)
 
+    # Link directly to the conversation thread if we have it, else fall back to inbox
+    _app = "https://app.imonsocial.com"
+    thread_url  = f"{_app}/thread/{conv_id}" if conv_id else f"{_app}/inbox"
+    thread_label = "Open Conversation Thread &rarr;" if conv_id else "Open Inbox &rarr;"
+
     html = f"""
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)">
       <div style="background:#007AFF;padding:28px 32px">
@@ -147,9 +152,9 @@ async def _email_new_lead(demo: dict) -> None:
           {rows}
         </table>
         <div style="margin-top:24px;text-align:center">
-          <a href="https://app.imonsocial.com/admin/hot-leads"
+          <a href="{thread_url}"
              style="display:inline-block;background:#007AFF;color:#fff;font-size:15px;font-weight:700;padding:14px 32px;border-radius:980px;text-decoration:none">
-            View in Dashboard &rarr;
+            {thread_label}
           </a>
         </div>
       </div>
@@ -344,18 +349,20 @@ async def create_demo_request(data: dict):
             from routers.push_notifications import send_push_to_user
             import asyncio
             asyncio.create_task(
-                send_push_to_user(uid, f"New Lead: {lead_name}", notif_body, "/admin/hot-leads", "person.fill.badge.plus")
+                send_push_to_user(uid, f"New Lead: {lead_name}", notif_body, "/inbox", "person.fill.badge.plus")
             )
         except Exception:
             pass
 
     # === FIRE EMAIL TO SALES@IMONSOCIAL.COM ===
-    asyncio.create_task(_email_new_lead(demo))
+    # NOTE: Fired AFTER conversation is created below so we can pass the thread link.
+    # _email_and_route is called at the bottom with conv_id.
 
     # === ROUTE TO SHARED INBOX (if one is configured to receive website leads) ===
     asyncio.create_task(_route_demo_to_inbox(demo))
 
     # === CREATE CONTACT + INBOX THREAD FOR FAST RESPONSE ===
+    conv_id = ""  # will be set if conversation is created successfully
     try:
         # Pretty source name for display
         source_labels = {
@@ -474,10 +481,23 @@ async def create_demo_request(data: dict):
                 "created_at": datetime.now(timezone.utc),
             })
 
+            # Update push notifications for all admins to link to the real thread
+            _app_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+            thread_url = f"{_app_url}/thread/{conv_id}"
+            for uid in notify_user_ids:
+                try:
+                    from routers.push_notifications import send_push_to_user as _push
+                    asyncio.create_task(_push(uid, f"New Lead: {lead_name}", notif_body, thread_url, "person.fill.badge.plus"))
+                except Exception:
+                    pass
+
     except Exception as e:
         # Don't fail the demo request if inbox creation fails
         import traceback
         traceback.print_exc()
+
+    # === FIRE EMAIL with real thread link (or inbox fallback) ===
+    asyncio.create_task(_email_new_lead(demo, conv_id=conv_id))
 
     return {"status": "success", "message": "Demo request received! We'll be in touch soon."}
 

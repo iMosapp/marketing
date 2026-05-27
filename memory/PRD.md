@@ -571,6 +571,24 @@ When a rep is terminated (deactivated), their dedicated Twilio number is automat
 - Reactivation toast mentions pooled number if still available.
 
 
+## Demo Lead Email Link Fix (May 27, 2026) — VERIFIED ✅
+
+**Problem:** Email "View in Dashboard →" linked to `/admin/hot-leads` (Engagement Intelligence page — wrong!). No conv_id was passed so the email couldn't link to the actual thread.
+
+**Fix in `demo_requests.py`:**
+- `conv_id = ""` initialized before try block so it's always in scope
+- Email now fires AFTER contact + conversation is created → `conv_id` is available
+- `_email_new_lead(demo, conv_id=conv_id)` passes the real thread ID
+- Button in email: `"Open Conversation Thread →"` → links to `/thread/{conv_id}`
+- If no conv_id (error): falls back to `"Open Inbox →"` → `/inbox`
+- Push notification link updated from `/admin/hot-leads` → `/inbox`
+
+**Action required for production:**
+1. **Redeploy** to push fix to `app.imonsocial.com`
+2. **Configure shared inbox**: App → Hub → Set Up → Shared Inboxes → Edit inbox → toggle "Receive Website Leads" ON → Save
+
+
+
 ## Smart Lead Routing — On-Shift Reps Only (May 27, 2026) — VERIFIED ✅
 
 **What changed in `lead_intake.py`:**
