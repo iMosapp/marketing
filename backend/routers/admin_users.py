@@ -84,6 +84,9 @@ async def create_admin_user(user_data: dict, x_user_id: str = Header(None, alias
         "created_at": datetime.utcnow(),
         "onboarding_complete": user_data.get('onboarding_complete', True),
         "needs_password_change": user_data.get('needs_password_change', False),
+        # account_id — the root super_admin who owns this account
+        # Inherited from the creator so all users stay in the same account bucket
+        "account_id": requesting_user.get('account_id') or str(requesting_user['_id']),
         "stats": {
             'contacts_added': 0,
             'messages_sent': 0,

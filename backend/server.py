@@ -903,7 +903,55 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"Object storage init deferred (will retry on first upload): {e}")
 
-    # ── One-phone-one-contact consolidation ───────────────────────────────────
+    # ── Backfill account_id for existing users ────────────────────────────────
+    # One-time migration: super_admins get account_id = their own _id,
+    # other users get account_id from their creator's account (approx via org/store match).
+    async def _backfill_account_ids():
+        try:
+            db = get_db()
+            # 1. Stamp super_admins who have no account_id
+            admins = await db.users.find(
+                {"role": "super_admin", "account_id": {"$exists": False}},
+                {"_id": 1}
+            ).to_list(500)
+            for a in admins:
+                await db.users.update_one(
+                    {"_id": a["_id"]},
+                    {"$set": {"account_id": str(a["_id"])}}
+                )
+
+            # 2. Stamp other users based on who created them (org/store match with a super_admin)
+            super_admins = await db.users.find(
+                {"role": "super_admin"},
+                {"_id": 1, "account_id": 1, "organization_id": 1, "store_id": 1}
+            ).to_list(200)
+
+            unstamped = await db.users.count_documents(
+                {"account_id": {"$exists": False}, "role": {"$ne": "super_admin"}}
+            )
+            if unstamped > 0:
+                for sa in super_admins:
+                    sa_account = sa.get("account_id") or str(sa["_id"])
+                    match: dict = {"account_id": {"$exists": False}}
+                    if sa.get("organization_id"):
+                        match["organization_id"] = sa["organization_id"]
+                    elif sa.get("store_id"):
+                        match["store_id"] = sa["store_id"]
+                    else:
+                        # Super admin with no org — match users with no org
+                        match["$or"] = [
+                            {"organization_id": {"$in": [None, ""]}},
+                            {"organization_id": {"$exists": False}},
+                        ]
+                    await db.users.update_many(match, {"$set": {"account_id": sa_account}})
+
+            stamped = await db.users.count_documents({"account_id": {"$exists": True}})
+            logger.info(f"[Startup] account_id backfill: {stamped} users now have account_id")
+        except Exception as e:
+            logger.warning(f"[Startup] account_id backfill skipped: {e}")
+
+    import asyncio as _aio3
+    _aio3.create_task(_backfill_account_ids())
     # Enforces: one phone number = one named contact = one conversation.
     # Safe to run on every startup — skips already-merged contacts.
     async def _consolidate_phone_contacts():

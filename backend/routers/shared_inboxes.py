@@ -69,6 +69,7 @@ async def create_shared_inbox(inbox: SharedInboxCreate, user_id: str):
         "assigned_user_ids": inbox.assigned_user_ids,
         "organization_id": user.get('organization_id'),
         "store_id": user.get('store_id'),
+        "account_id": user.get('account_id') or str(user['_id']),  # Account-level scoping
         "created_by": user_id,
         "is_active": True,
         "created_at": datetime.utcnow(),
@@ -498,37 +499,28 @@ async def list_users_for_assignment(user_id: str, search: Optional[str] = None):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Build filter based on role — always scope to same account
-    role = user.get('role', 'user')
+    # Build filter — primary: account_id; fallback: org/store for legacy data
+    role     = user.get('role', 'user')
+    acct_id  = user.get('account_id') or str(user['_id'])   # super_admin's own _id = their account
     org_id   = user.get('organization_id')
     store_id = user.get('store_id')
-    query = {"_id": {"$ne": ObjectId(user_id)}}  # Exclude self
+    query    = {"_id": {"$ne": ObjectId(user_id)}}  # Exclude self
 
-    if role == 'super_admin':
-        if org_id:
-            query['organization_id'] = org_id
-        elif store_id:
-            query['store_id'] = store_id
-        else:
-            # Super admin with no org — only show users without a different org
-            # (keeps I'm On Social employees together, excludes other account's users)
-            query['$or'] = [
-                {"organization_id": {"$exists": False}},
-                {"organization_id": None},
-                {"organization_id": ""},
-            ]
-    elif role == 'org_admin':
-        if not org_id:
-            raise HTTPException(status_code=400, detail="No organization assigned")
-        query['organization_id'] = org_id
-    elif role == 'store_manager':
-        if not store_id:
-            raise HTTPException(status_code=400, detail="No store assigned")
-        query['store_id'] = store_id
-    else:
+    if role not in ('super_admin', 'org_admin', 'store_manager'):
         raise HTTPException(status_code=403, detail="Admin access required")
 
-    # Only show active, non-deactivated users
+    # Prefer account_id scope (cleanest); fall back to org/store for legacy users
+    query['$or'] = [
+        {"account_id": acct_id},
+        # Legacy users created before account_id existed
+        *(
+            [{"organization_id": org_id}] if org_id else
+            [{"store_id": store_id}] if store_id else
+            [{"organization_id": {"$in": [None, ""]}, "account_id": {"$exists": False}}]
+        ),
+    ]
+
+    # Only show active users
     query['status'] = {'$ne': 'deactivated'}
     
     # Add search filter
