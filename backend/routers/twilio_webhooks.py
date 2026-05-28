@@ -110,14 +110,31 @@ async def incoming_message(
     to_phone   = normalize_phone(To)
     
     # ── Deduplication: reject Twilio retries for the same MessageSid ──────────
+    # Use an atomic upsert so parallel webhook retries can't both slip through.
     if MessageSid:
-        already = await db.messages.find_one({"twilio_sid": MessageSid})
-        if already:
-            logger.warning(f"[Webhook] Duplicate MessageSid {MessageSid} — ignoring Twilio retry")
-            return Response(
-                content='<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
-                media_type="application/xml"
+        try:
+            dup_result = await db.inbound_message_dedup.update_one(
+                {"message_sid": MessageSid},
+                {"$setOnInsert": {"message_sid": MessageSid, "created_at": __import__("datetime").datetime.utcnow()}},
+                upsert=True,
             )
+            if not dup_result.upserted_id:
+                # Already in the table — this is a Twilio retry
+                logger.warning(f"[Webhook] Duplicate MessageSid {MessageSid} (atomic check) — ignoring Twilio retry")
+                return Response(
+                    content='<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+                    media_type="application/xml"
+                )
+        except Exception as dedup_err:
+            # Fall back to the legacy messages check if upsert fails
+            logger.warning(f"[Webhook] Atomic dedup failed, falling back: {dedup_err}")
+            already = await db.messages.find_one({"twilio_sid": MessageSid})
+            if already:
+                logger.warning(f"[Webhook] Duplicate MessageSid {MessageSid} (legacy check) — ignoring")
+                return Response(
+                    content='<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+                    media_type="application/xml"
+                )
     
     # Collect media URLs
     media_urls  = []

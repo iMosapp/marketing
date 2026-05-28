@@ -97,11 +97,16 @@ async def queue_ai_reply(
     # or scheduling, flag the conversation for rep attention NOW — don't wait
     # for a message-count threshold. Reply with a brief "let me check" then escalate.
     ESCALATION_SIGNALS = [
-        # Inventory / pricing
+        # Inventory / pricing — require specific question phrasing
         "in stock", "available", "availability", "do you have",
         "price", "pricing", "cost", "how much", "what does it cost", "what's the price",
-        "color", "colour", "black", "white", "blue", "red", "silver", "grey", "gray",
+        # Color questions (requires the word "color/colour" OR question phrasing with a color)
+        "what color", "what colour", "which color", "which colour",
+        "do you have it in", "come in ", "does it come",
+        "color name", "colour name",
+        # Scheduling / visit intent
         "appointment", "schedule", "test drive", "come in", "come by", "stop by",
+        # Trade / finance
         "trade", "trade-in", "trade in", "trade value",
         "finance", "financing", "payment", "monthly",
         "vin", "specific", "which one", "which ones", "do you stock",
@@ -147,7 +152,17 @@ async def queue_ai_reply(
                 ))
             except Exception:
                 pass
-        # Queue the brief reply
+        # Queue the brief reply — but only if no hot-topic reply is already pending
+        # (prevents sending 3x when Twilio retries the webhook before the first is saved)
+        existing_hot = await db.ai_reply_queue.find_one({
+            "conversation_id": conversation_id,
+            "status":          "pending",
+            "hot_topic_escalation": True,
+        })
+        if existing_hot:
+            logger.info(f"[AIReply] Hot topic already queued for {conversation_id} — skipping duplicate")
+            return existing_hot
+
         queue_item = {
             "contact_id":       contact_id,
             "conversation_id":  conversation_id,
@@ -333,9 +348,37 @@ async def process_ai_reply_queue():
     """
     Called every 60 seconds by the scheduler.
     Uses atomic find_one_and_update to claim items — prevents double-send race condition.
+    Also cancels stale duplicate items for the same conversation before claiming.
     """
     db  = get_db()
     now = datetime.now(timezone.utc)
+
+    # ── Cancel stale duplicates first ─────────────────────────────────────────
+    # If multiple pending items exist for the same conversation, keep only the
+    # most recently created one. This handles backed-up queues after outages.
+    try:
+        pipeline = [
+            {"$match": {"status": STATUS_PENDING, "requires_approval": False, "send_at": {"$lte": now}}},
+            {"$sort": {"created_at": -1}},
+            {"$group": {
+                "_id": "$conversation_id",
+                "latest_id": {"$first": "$_id"},
+                "all_ids":   {"$push": "$_id"},
+                "count":     {"$sum": 1},
+            }},
+            {"$match": {"count": {"$gt": 1}}},
+        ]
+        dupes = await db.ai_reply_queue.aggregate(pipeline).to_list(50)
+        for group in dupes:
+            stale_ids = [i for i in group["all_ids"] if i != group["latest_id"]]
+            if stale_ids:
+                await db.ai_reply_queue.update_many(
+                    {"_id": {"$in": stale_ids}},
+                    {"$set": {"status": STATUS_CANCELLED, "cancel_reason": "stale_duplicate_cancelled"}},
+                )
+                logger.info(f"[AIReply] Cancelled {len(stale_ids)} stale duplicates for conv {group['_id']}")
+    except Exception as dedup_err:
+        logger.warning(f"[AIReply] Stale dedup step failed (non-fatal): {dedup_err}")
 
     # Atomically claim due items one at a time using findOneAndUpdate
     # This is the ONLY safe way to prevent two scheduler runs from sending the same message twice

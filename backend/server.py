@@ -1248,6 +1248,20 @@ async def startup_event():
                     logger.info("TTL indexes created — data auto-expires to prevent unbounded growth")
                 except Exception as ttl_err:
                     logger.warning(f"TTL index creation failed (non-critical): {ttl_err}")
+
+                # Unique index on inbound_message_dedup.message_sid — enables atomic Twilio retry dedup
+                try:
+                    await db.inbound_message_dedup.create_index(
+                        "message_sid", unique=True, background=True
+                    )
+                    await db.inbound_message_dedup.create_index(
+                        "created_at",
+                        expireAfterSeconds=3600,  # Auto-clean dedup records after 1 hour
+                        background=True,
+                    )
+                    logger.info("inbound_message_dedup index created — Twilio retry dedup active")
+                except Exception as dedup_idx_err:
+                    logger.warning(f"inbound_message_dedup index skipped: {dedup_idx_err}")
             except asyncio.TimeoutError:
                 logger.warning("Index creation timed out - will retry on first request")
     except Exception as e:
