@@ -443,7 +443,22 @@ async def process_ai_reply_queue():
                     pass
 
             from services.twilio_service import send_sms
-            result = await send_sms(phone, item["body"])
+
+            # Always send from the rep's dedicated Twilio number — never let Twilio
+            # pick a random number from the Messaging Service pool.
+            rep_twilio_number = None
+            rep_uid = item.get("assigned_user_id")
+            if rep_uid:
+                try:
+                    rep_doc = await db.users.find_one(
+                        {"_id": ObjectId(rep_uid)},
+                        {"twilio_number": 1, "mvpline_number": 1}
+                    )
+                    rep_twilio_number = (rep_doc or {}).get("twilio_number") or (rep_doc or {}).get("mvpline_number")
+                except Exception:
+                    pass
+
+            result = await send_sms(phone, item["body"], from_phone=rep_twilio_number)
             mocked = result.get("mock", True)
 
             await db.ai_reply_queue.update_one(
@@ -658,7 +673,19 @@ async def approve_ai_reply(queue_id: str, request: Request):
         raise HTTPException(status_code=400, detail="No phone number on contact")
 
     from services.twilio_service import send_sms
-    result = await send_sms(phone, body)
+    # Use the rep's dedicated number — look up via assigned_user_id or approving user
+    rep_twilio_number = None
+    try:
+        rep_uid = item.get("assigned_user_id") or user_id
+        if rep_uid:
+            rep_doc = await db.users.find_one(
+                {"_id": ObjectId(rep_uid)},
+                {"twilio_number": 1, "mvpline_number": 1}
+            )
+            rep_twilio_number = (rep_doc or {}).get("twilio_number") or (rep_doc or {}).get("mvpline_number")
+    except Exception:
+        pass
+    result = await send_sms(phone, body, from_phone=rep_twilio_number)
 
     await db.ai_reply_queue.update_one(
         {"_id": ObjectId(queue_id)},

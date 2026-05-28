@@ -43,25 +43,25 @@ async def send_sms(
     to_phone: str,
     message: str,
     media_urls: Optional[List[str]] = None,
+    from_phone: Optional[str] = None,  # Rep's dedicated number — overrides Messaging Service
 ) -> dict:
     """
     Send an SMS or MMS message via Twilio.
 
-    Uses Messaging Service SID for A2P 10DLC compliance when configured.
-    Falls back to direct phone number otherwise.
+    When from_phone is provided (rep's dedicated Twilio number), sends directly
+    from that number to maintain consistent sender identity.
+    Falls back to Messaging Service SID for A2P compliance when no from_phone given.
 
     Args:
         to_phone:   Recipient phone number (any format — normalized to E.164)
         message:    Text message body
         media_urls: Optional media URLs for MMS (images, PDFs)
-
-    Returns:
-        dict with success, message_sid, mock (bool), and any error info
+        from_phone: Rep's dedicated Twilio number — ALWAYS pass this for rep-to-customer sends
     """
     to_phone = normalize_phone(to_phone)
 
     if not TWILIO_ENABLED or not twilio_client:
-        logger.info(f"[MOCK SMS] To: {to_phone} | {message[:60]}...")
+        logger.info(f"[MOCK SMS] To: {to_phone} | from: {from_phone or 'messaging_svc'} | {message[:60]}...")
         if media_urls:
             logger.info(f"[MOCK MMS] Media: {media_urls}")
         return {
@@ -73,8 +73,12 @@ async def send_sms(
     try:
         params: dict = {"body": message, "to": to_phone}
 
-        if USE_MESSAGING_SERVICE:
-            # A2P 10DLC compliant — messages sent through registered campaign
+        if from_phone:
+            # Rep's dedicated number — use directly to maintain consistent sender identity
+            params["from_"] = normalize_phone(from_phone)
+            logger.debug(f"[SMS] Sending from rep number {from_phone}")
+        elif USE_MESSAGING_SERVICE:
+            # A2P 10DLC compliant — only for generic sends with no specific rep context
             params["messaging_service_sid"] = TWILIO_MESSAGING_SERVICE_SID
         else:
             params["from_"] = TWILIO_PHONE_NUMBER
@@ -83,7 +87,7 @@ async def send_sms(
             params["media_url"] = media_urls
 
         msg = twilio_client.messages.create(**params)
-        logger.info(f"Twilio sent: {msg.sid} → {to_phone} | status={msg.status}")
+        logger.info(f"Twilio sent: {msg.sid} → {to_phone} from {params.get('from_', 'messaging_svc')} | status={msg.status}")
 
         return {
             "success":     True,

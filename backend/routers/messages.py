@@ -540,9 +540,19 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
                 except Exception:
                     pass
     elif to_phone:
-        # Send via Twilio (SMS)
+        # Send via Twilio (SMS) — always use the rep's dedicated number
         message['channel'] = 'sms'
-        sms_result = await send_sms(to_phone, message_data.content)
+        # Look up the rep's dedicated Twilio number so we never send from a pooled number
+        rep_twilio_number = None
+        try:
+            rep_doc = await get_db().users.find_one(
+                {"_id": ObjectId(user_id)},
+                {"twilio_number": 1, "mvpline_number": 1}
+            )
+            rep_twilio_number = (rep_doc or {}).get("twilio_number") or (rep_doc or {}).get("mvpline_number")
+        except Exception:
+            pass
+        sms_result = await send_sms(to_phone, message_data.content, from_phone=rep_twilio_number)
         
         if sms_result.get('success'):
             message['status'] = 'sent'
@@ -628,7 +638,17 @@ async def send_via_twilio(request: Request):
     event_type = data.get("event_type", "personal_sms")
     if not to_phone or not body:
         raise HTTPException(status_code=400, detail="to and body are required")
-    result = await send_sms(to_phone, body)
+    # Always use the rep's dedicated Twilio number
+    rep_twilio_number = None
+    try:
+        rep_doc = await db.users.find_one(
+            {"_id": ObjectId(user_id)},
+            {"twilio_number": 1, "mvpline_number": 1}
+        )
+        rep_twilio_number = (rep_doc or {}).get("twilio_number") or (rep_doc or {}).get("mvpline_number")
+    except Exception:
+        pass
+    result = await send_sms(to_phone, body, from_phone=rep_twilio_number)
     if not result.get("success"):
         raise HTTPException(status_code=500, detail=result.get("error", "Send failed"))
     now = datetime.utcnow()
@@ -763,9 +783,18 @@ async def send_mms_message(
     result = await db.messages.insert_one(message)
     message['_id'] = str(result.inserted_id)
     
-    # Send via Twilio with public URL
+    # Send via Twilio with public URL — use rep's dedicated number
     media_urls = [media_image_url]
-    sms_result = await send_sms(to_phone, content or "\U0001f4f7", media_urls)
+    rep_twilio_number = None
+    try:
+        rep_doc = await db.users.find_one(
+            {"_id": ObjectId(user_id)},
+            {"twilio_number": 1, "mvpline_number": 1}
+        )
+        rep_twilio_number = (rep_doc or {}).get("twilio_number") or (rep_doc or {}).get("mvpline_number")
+    except Exception:
+        pass
+    sms_result = await send_sms(to_phone, content or "📷", media_urls, from_phone=rep_twilio_number)
     
     if sms_result.get('success'):
         message['status'] = 'sent'
@@ -1626,9 +1655,18 @@ async def send_message_simple(user_id: str, message_data: dict):
             })
     
     else:
-        # SMS via Twilio
+        # SMS via Twilio — use rep's dedicated number
         if to_phone:
-            sms_result = await send_sms(to_phone, content)
+            rep_twilio_number = None
+            try:
+                rep_doc = await db.users.find_one(
+                    {"_id": ObjectId(user_id)},
+                    {"twilio_number": 1, "mvpline_number": 1}
+                )
+                rep_twilio_number = (rep_doc or {}).get("twilio_number") or (rep_doc or {}).get("mvpline_number")
+            except Exception:
+                pass
+            sms_result = await send_sms(to_phone, content, from_phone=rep_twilio_number)
             
             if sms_result.get('success'):
                 message['status'] = 'sent'
