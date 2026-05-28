@@ -345,11 +345,18 @@ async def get_wins_feed(user_id: str, db, limit: int = 15) -> list:
         own_email = (user.get("email") or "").strip().lower() if user else ""
         own_contact_ids: set = set()
         if own_email:
-            self_contacts = await db.contact_events.find(
+            # Find contacts with the rep's own email — these are self-test contacts
+            self_contacts_direct = await db.contacts.find(
+                {"user_id": user_id, "email": own_email},
+                {"_id": 1}
+            ).limit(10).to_list(10)
+            own_contact_ids = {str(c["_id"]) for c in self_contacts_direct}
+            # Also check via contact_events (legacy path)
+            self_events = await db.contact_events.find(
                 {"user_id": user_id, "contact_email": own_email},
                 {"contact_id": 1}
             ).limit(5).to_list(5)
-            own_contact_ids = {str(c["contact_id"]) for c in self_contacts if c.get("contact_id")}
+            own_contact_ids.update({str(c["contact_id"]) for c in self_events if c.get("contact_id")})
 
         # Use naive UTC to match stored timestamps (stored with datetime.utcnow())
         from datetime import datetime as _dt
@@ -386,10 +393,9 @@ async def get_wins_feed(user_id: str, db, limit: int = 15) -> list:
             if not cname:
                 cname = "Someone"
 
-            # Skip self-actions (but allow "Someone" through)
+            # Skip self-actions: only filter contacts whose email matches the rep's own email
+            # (Do NOT filter by name — too easy to accidentally match real customers)
             if cid and cid in own_contact_ids:
-                continue
-            if own_name and cname.strip().lower() == own_name:
                 continue
 
             # Dedupe: same contact + same event type shown max once per feed

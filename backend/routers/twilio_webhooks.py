@@ -386,7 +386,7 @@ async def incoming_message(
                 except Exception:
                     pass
             except Exception as _ce:
-                logger.debug(f"[Webhook] contact_event insert skipped: {_ce}")
+                logger.warning(f"[Webhook] contact_event insert FAILED (wins feed affected): {_ce}")
 
         # ── SMS system notification to rep's personal cell ─────────────────────
         if rep_user and not is_stop:
