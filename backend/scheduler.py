@@ -1180,7 +1180,18 @@ def start_scheduler():
     )
 
     scheduler.start()
-    logger.info("[Scheduler] Started with 12 jobs including daily silence follow-ups")
+
+    # ── Watchdog: verify jobs registered correctly ────────────────────────────
+    job_count = len(scheduler.get_jobs())
+    if job_count < 8:
+        logger.critical(
+            f"[Scheduler] STARTUP WARNING: only {job_count} jobs registered (expected 12+). "
+            "This usually means a syntax/import error prevented some job functions from loading. "
+            "Campaigns, AI auto-replies, and push digests will NOT fire. "
+            "Check /api/health/deep for details."
+        )
+    else:
+        logger.info(f"[Scheduler] Started with {job_count} jobs including daily silence follow-ups")
 
 
 def stop_scheduler():

@@ -264,17 +264,44 @@ async def backfill_user_contact_links(request: Request):
 
 @api_router.get("/health/deep")
 async def api_health_deep():
-    """Deep health check including MongoDB ping — use for monitoring only, NOT as a liveness probe."""
+    """
+    Deep health check: DB + scheduler validation.
+    Returns 503 if the scheduler is broken — use this for deploy verification.
+    """
+    issues = []
+    details: dict = {}
+
+    # DB ping
     try:
         db = get_db()
         await db.command("ping")
-        return {"status": "healthy", "db": "connected"}
+        details["db"] = "connected"
     except Exception as e:
+        issues.append(f"DB unreachable: {e!s:.80}")
+        details["db"] = "unreachable"
+
+    # Scheduler check
+    try:
+        from scheduler import scheduler
+        if not scheduler.running:
+            issues.append("Scheduler is not running")
+            details["scheduler"] = "stopped"
+        else:
+            job_count = len(scheduler.get_jobs())
+            details["scheduler"] = f"running ({job_count} jobs)"
+            if job_count < 8:   # Should have 12+ jobs; <8 = something is very wrong
+                issues.append(f"Scheduler has only {job_count} jobs (expected 12+) — likely a startup error")
+    except Exception as e:
+        issues.append(f"Scheduler check failed: {e!s:.80}")
+        details["scheduler"] = "unknown"
+
+    if issues:
         from fastapi.responses import JSONResponse
         return JSONResponse(
             status_code=503,
-            content={"status": "degraded", "db": "unreachable", "error": str(e)[:100]}
+            content={"status": "degraded", "issues": issues, **details}
         )
+    return {"status": "healthy", **details}
 
 @api_router.get("/build-version")
 async def build_version():

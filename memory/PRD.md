@@ -571,6 +571,29 @@ When a rep is terminated (deactivated), their dedicated Twilio number is automat
 - Reactivation toast mentions pooled number if still available.
 
 
+## Pre-Deploy Safety System (May 27, 2026) — VERIFIED ✅
+
+**Root cause fixed:** `scheduler.py` line 881 had a merged docstring (`async def f():    """docstring"""` on one line) causing IndentationError on import → ALL 16 background jobs failed silently. This broke campaigns, AI auto-replies, push digests, and AI escalations.
+
+**Three safeguards added to prevent recurrence:**
+
+1. **`/app/backend/scripts/pre_deploy.py`** — run before every deploy:
+   - Syntax-checks all 355 Python files (`py_compile`)
+   - Imports all critical modules (scheduler, server, 8 routers)
+   - Validates backend is healthy
+   - Checks critical function signatures exist
+   - Exit code 0 = safe to deploy / Exit code 1 = DO NOT DEPLOY
+   - Run: `cd /app/backend && python3 scripts/pre_deploy.py`
+
+2. **`GET /api/health/deep`** — now returns 503 if scheduler has < 8 jobs:
+   - Returns: `{"status": "healthy", "db": "connected", "scheduler": "running (16 jobs)"}`
+   - Or: `{"status": "degraded", "issues": ["Scheduler has only X jobs"]}`
+   - Use this after every deploy to verify the scheduler started correctly
+
+3. **Scheduler watchdog in `scheduler.py`** — logs CRITICAL if < 8 jobs registered at startup. Visible in System Logs.
+
+
+
 ## Training Completion Certificates (May 27, 2026) — VERIFIED ✅
 
 **Backend (`training.py`):**
