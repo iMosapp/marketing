@@ -878,7 +878,8 @@ async def send_morning_push_digest():
         logger.error(f"[Scheduler] Morning push digest error: {e}")
 
 
-async def generate_daily_system_tasks():    """Daily job: generate system tasks (dormant contacts, birthdays, anniversaries) for all active users."""
+async def generate_daily_system_tasks():
+    """Daily job: generate system tasks (dormant contacts, birthdays, anniversaries) for all active users."""
     from routers.database import get_db
     logger.info("[Scheduler] Generating daily system tasks...")
     db = get_db()
