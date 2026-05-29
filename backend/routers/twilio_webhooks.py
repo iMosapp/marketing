@@ -1177,10 +1177,12 @@ async def handle_recording_complete(
                         try:
                             from emergentintegrations.llm.openai import OpenAISpeechToText
                             stt = OpenAISpeechToText(api_key=emergent_key)
-                            result = await _aio.wait_for(
-                                stt.transcribe(tmp_path, language="en"),
-                                timeout=60.0
-                            )
+                            # Must pass an opened binary file object — litellm rejects bare path strings
+                            with open(tmp_path, "rb") as audio_file:
+                                result = await _aio.wait_for(
+                                    stt.transcribe(audio_file, language="en"),
+                                    timeout=60.0
+                                )
                             if hasattr(result, "text"):
                                 transcript = result.text.strip()
                             elif isinstance(result, str):

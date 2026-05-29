@@ -141,3 +141,106 @@ async def get_contact_calls(user_id: str, contact_id: str):
         "notes":     notes,
         "total":     len(call_logs) + len(recorded),
     }
+
+
+
+@router.post("/retry-transcription/{call_sid}")
+async def retry_transcription(call_sid: str, x_user_id: str = None):
+    """
+    Re-run Whisper transcription + GPT summary for a call log that failed.
+    Used to recover past calls where transcription silently failed.
+    """
+    import os, asyncio
+    db = get_db()
+    
+    log = await db.call_logs.find_one({"call_sid": call_sid})
+    if not log:
+        raise HTTPException(status_code=404, detail="Call log not found for this call_sid")
+    
+    if log.get("transcript"):
+        return {"status": "already_transcribed", "transcript_length": len(log["transcript"])}
+    
+    recording_url = log.get("recording_url", "")
+    if not recording_url:
+        raise HTTPException(status_code=400, detail="No recording URL on this call log")
+    
+    emergent_key = os.environ.get("EMERGENT_LLM_KEY", "")
+    tw_sid   = os.environ.get("TWILIO_ACCOUNT_SID", "")
+    tw_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
+    
+    if not emergent_key or not tw_sid:
+        raise HTTPException(status_code=500, detail="Missing EMERGENT_LLM_KEY or Twilio credentials")
+    
+    try:
+        import requests as _req, uuid as _uuid
+        mp3_url = recording_url if recording_url.endswith(".mp3") else f"{recording_url}.mp3"
+        resp = _req.get(mp3_url, auth=(tw_sid, tw_token), timeout=30)
+        if resp.status_code != 200:
+            raise HTTPException(status_code=502, detail=f"Recording download failed: HTTP {resp.status_code}")
+        
+        tmp_path = f"/tmp/retry_{_uuid.uuid4().hex}.mp3"
+        with open(tmp_path, "wb") as f:
+            f.write(resp.content)
+        
+        from emergentintegrations.llm.openai import OpenAISpeechToText
+        stt = OpenAISpeechToText(api_key=emergent_key)
+        with open(tmp_path, "rb") as audio_file:
+            result = await asyncio.wait_for(stt.transcribe(audio_file, language="en"), timeout=90.0)
+        
+        transcript = ""
+        if hasattr(result, "text"):
+            transcript = result.text.strip()
+        elif isinstance(result, str):
+            transcript = result.strip()
+        
+        try: os.remove(tmp_path)
+        except: pass
+        
+        if not transcript:
+            return {"status": "empty_transcript", "message": "Whisper returned empty — call may have been silent"}
+        
+        # Generate GPT summary
+        ai_summary = ""
+        try:
+            from emergentintegrations.llm.chat import LlmChat, UserMessage
+            chat = LlmChat(
+                api_key=emergent_key,
+                session_id=f"retry-call-{_uuid.uuid4().hex[:12]}",
+                system_message=(
+                    "You are a CRM assistant analyzing a sales call transcript.\n"
+                    "Extract these if mentioned — be brief and use bullet points:\n"
+                    "- What they're looking for\n- Timeline or urgency\n- Objections or concerns\n"
+                    "- Next steps or commitments\nMax 120 words."
+                ),
+            ).with_model("openai", "gpt-5.2")
+            resp2 = await asyncio.wait_for(
+                chat.send_message(UserMessage(text=f"Transcript:\n{transcript}")),
+                timeout=15.0
+            )
+            ai_summary = (resp2.strip() if isinstance(resp2, str) else resp2.text.strip() if hasattr(resp2, "text") else "").strip()
+        except Exception:
+            pass
+        
+        # Update call_log + contact_event
+        await db.call_logs.update_one(
+            {"call_sid": call_sid},
+            {"$set": {"transcript": transcript, "ai_summary": ai_summary}}
+        )
+        await db.contact_events.update_one(
+            {"call_sid": call_sid},
+            {"$set": {"has_recording": True, "ai_summary": ai_summary, "transcript": transcript[:200]}}
+        )
+        
+        logger.info(f"[Calls] Retry transcription succeeded for {call_sid}: {len(transcript)} chars")
+        return {
+            "status": "success",
+            "transcript_length": len(transcript),
+            "has_summary": bool(ai_summary),
+            "transcript_preview": transcript[:200],
+            "ai_summary": ai_summary,
+        }
+    
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=504, detail="Whisper transcription timed out (90s)")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
