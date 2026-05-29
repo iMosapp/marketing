@@ -885,13 +885,14 @@ async def initiate_outbound_call(request: Request):
     when they answer, Twilio bridges them to the customer.
     Customer's caller ID shows the rep's dedicated Twilio number (not the rep's personal cell).
     
-    Body: { rep_user_id, customer_phone, contact_id (optional) }
+    Body: { rep_user_id, customer_phone, contact_id (optional), conversation_id (optional) }
     """
     import asyncio as _aio
     body = await request.json()
-    rep_user_id   = body.get("rep_user_id", "")
+    rep_user_id    = body.get("rep_user_id", "")
     customer_phone = body.get("customer_phone", "")
-    contact_id    = body.get("contact_id", "")
+    contact_id     = body.get("contact_id", "")
+    conversation_id = body.get("conversation_id", "")  # thread to log the call in
 
     if not rep_user_id or not customer_phone:
         raise HTTPException(status_code=400, detail="rep_user_id and customer_phone required")
@@ -921,14 +922,14 @@ async def initiate_outbound_call(request: Request):
     rep_name = (rep.get("name") or "").split()[0] or "your rep"
 
     # Store call context in DB — retrieved by CallSid when the bridge fires.
-    # This is more reliable than passing phone numbers in URL query params
-    # (Twilio can mangle URL encoding on some account tiers).
+    # Also store conversation_id so we can add a call entry to the thread.
     pending_call_doc = {
-        "customer_phone":   customer_phone_e164,
+        "customer_phone":    customer_phone_e164,
         "rep_twilio_number": rep_twilio_number,
         "rep_name":          rep_name,
         "rep_user_id":       rep_user_id,
         "contact_id":        contact_id or None,
+        "conversation_id":   conversation_id or None,
         "created_at":        datetime.utcnow(),
     }
 
@@ -949,24 +950,47 @@ async def initiate_outbound_call(request: Request):
 
         logger.info(f"[Voice] Outbound call: rep={rep_personal_phone} → customer={customer_phone_e164} | SID={call.sid}")
 
-        # Log call event
+        # Log call event in contact_events (Activity feed)
         try:
             contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}) if contact_id else None
             contact_name = (contact or {}).get("name") or f"({customer_phone[-4:]})"
             await db.contact_events.insert_one({
-                "user_id":      rep_user_id,
-                "contact_id":   contact_id or None,
-                "contact_name": contact_name,
-                "event_type":   "outbound_call",
-                "category":     "call",
-                "title":        f"Called {contact_name}",
-                "description":  f"Outbound call to {customer_phone_e164} via {rep_twilio_number}",
-                "channel":      "voice",
-                "call_sid":     call.sid,
-                "timestamp":    datetime.utcnow(),
+                "user_id":       rep_user_id,
+                "contact_id":    contact_id or None,
+                "contact_name":  contact_name,
+                "event_type":    "outbound_call",
+                "category":      "call",
+                "title":         f"Called {contact_name}",
+                "description":   f"Outbound call to {customer_phone_e164} via {rep_twilio_number}",
+                "channel":       "voice",
+                "call_sid":      call.sid,
+                "timestamp":     datetime.utcnow(),
             })
         except Exception:
             pass
+
+        # Write a "Call Placed" entry to the inbox thread so the call is visible there too
+        if conversation_id:
+            try:
+                await db.messages.insert_one({
+                    "conversation_id": conversation_id,
+                    "user_id":         rep_user_id,
+                    "contact_id":      contact_id or None,
+                    "sender":          "user",
+                    "direction":       "outbound",
+                    "channel":         "voice",
+                    "type":            "call_log",
+                    "content":         f"📱 Outbound call placed to {customer_phone_e164}",
+                    "call_sid":        call.sid,
+                    "call_status":     "placed",
+                    "duration_s":      0,
+                    "has_recording":   False,
+                    "timestamp":       datetime.utcnow(),
+                    "status":          "sent",
+                })
+                logger.info(f"[Voice] Call message added to thread {conversation_id}")
+            except Exception as _me:
+                logger.warning(f"[Voice] Failed to add call message to thread: {_me}")
 
         return {
             "success":  True,
@@ -1258,6 +1282,29 @@ async def handle_recording_complete(
                     "duration_s":    dur,
                 }},
             )
+
+            # Update the thread message with recording + summary (so inbox shows the full call card)
+            pending = await db.pending_calls.find_one({"call_sid": CallSid})
+            conv_id_for_update = (pending or {}).get("conversation_id")
+            if conv_id_for_update:
+                duration_label = f"{dur // 60}m {dur % 60}s" if dur >= 60 else f"{dur}s"
+                call_content = f"📱 Outbound call — {duration_label}"
+                if ai_summary:
+                    call_content += f"\n\n{ai_summary}"
+                await db.messages.update_one(
+                    {"call_sid": CallSid, "type": "call_log"},
+                    {"$set": {
+                        "content":       call_content,
+                        "call_status":   "completed",
+                        "duration_s":    dur,
+                        "has_recording": True,
+                        "recording_url": RecordingUrl,
+                        "transcript":    transcript,
+                        "ai_summary":    ai_summary,
+                    }},
+                    upsert=False,
+                )
+                logger.info(f"[Voice] Thread message updated with recording for conv {conv_id_for_update}")
 
         # Push notification to rep
         if user_id:

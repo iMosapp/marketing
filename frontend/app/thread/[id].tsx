@@ -1861,6 +1861,71 @@ function ThreadScreen() {
       richIcon = cardDisplay.icon; richColor = cardDisplay.color; richLabel = cardDisplay.label;
     }
     
+    // ── Call log message — renders as a rich call card ───────────────────────
+    const isCallLog = (item as any).type === 'call_log' || (item as any).channel === 'voice';
+    if (isCallLog) {
+      const callItem = item as any;
+      const hasRecording = callItem.has_recording;
+      const aiSummary    = callItem.ai_summary || '';
+      const dur          = callItem.duration_s || 0;
+      const durLabel     = dur >= 60 ? `${Math.floor(dur/60)}m ${dur%60}s` : dur > 0 ? `${dur}s` : '';
+      const isOutbound   = callItem.direction === 'outbound';
+      const callStatus   = callItem.call_status || 'placed';
+      const callColor    = '#30D158';
+
+      return (
+        <View style={{ marginVertical: 6, marginHorizontal: 16 }}>
+          <Text style={{ fontSize: 12, color: '#8E8E93', marginBottom: 4, textAlign: 'center' }}>
+            {format(timestamp, 'h:mm a')}
+          </Text>
+          <View style={{ backgroundColor: '#F2F9F4', borderRadius: 14, borderWidth: 1.5, borderColor: callColor, padding: 14 }}>
+            {/* Call header */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: aiSummary ? 10 : 0 }}>
+              <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: callColor + '20', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name={isOutbound ? 'call' : 'call-outline'} size={18} color={callColor} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: '#1C1C1E' }}>
+                  {isOutbound ? 'Outbound Call' : 'Inbound Call'}{durLabel ? ` · ${durLabel}` : ''}
+                </Text>
+                <Text style={{ fontSize: 12, color: '#8E8E93', marginTop: 1 }}>
+                  {callStatus === 'placed' ? 'Call placed — waiting for recording...' : callStatus === 'completed' ? 'Call completed' : callStatus}
+                </Text>
+              </View>
+              {hasRecording && (
+                <View style={{ backgroundColor: callColor + '20', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                  <Text style={{ fontSize: 11, color: callColor, fontWeight: '700' }}>✓ Recorded</Text>
+                </View>
+              )}
+            </View>
+
+            {/* AI Summary */}
+            {!!aiSummary && (
+              <View style={{ backgroundColor: '#fff', borderRadius: 10, padding: 10, borderWidth: 1, borderColor: '#E5E5EA' }}>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#8E8E93', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Call Summary</Text>
+                <Text style={{ fontSize: 13, color: '#1C1C1E', lineHeight: 18 }}>{aiSummary}</Text>
+              </View>
+            )}
+
+            {/* Recording link */}
+            {hasRecording && callItem.recording_url && (
+              <TouchableOpacity
+                onPress={() => {
+                  const url = callItem.recording_url;
+                  if (Platform.OS === 'web') { window.open(url, '_blank'); }
+                  else { Linking.openURL(url); }
+                }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#E5E5EA' }}
+              >
+                <Ionicons name="play-circle" size={18} color={callColor} />
+                <Text style={{ fontSize: 13, color: callColor, fontWeight: '600' }}>Listen to Recording</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      );
+    }
+
     return (
       <View
         style={[
@@ -1991,7 +2056,7 @@ function ThreadScreen() {
               const phone = contactPhone || '';
               const cid   = contactIdForNav || (id as string) || '';
               if (phone) {
-                router.push({ pathname: '/call-screen', params: { phone, contact_name: contactName, contact_id: cid } } as any);
+                router.push({ pathname: '/call-screen', params: { phone, contact_name: contactName, contact_id: cid, conversation_id: id as string } } as any);
               } else {
                 showSimpleAlert('No Phone', 'No phone number for this contact.');
               }

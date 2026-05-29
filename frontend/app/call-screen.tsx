@@ -16,9 +16,10 @@ export default function CallScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
 
-  const contactId    = (useLocalSearchParams().contact_id   as string) || '';
-  const contactName  = (useLocalSearchParams().contact_name as string) || 'Unknown';
-  const contactPhone = (useLocalSearchParams().phone        as string) || '';
+  const contactId    = (useLocalSearchParams().contact_id    as string) || '';
+  const contactName  = (useLocalSearchParams().contact_name  as string) || 'Unknown';
+  const contactPhone = (useLocalSearchParams().phone         as string) || '';
+  const conversationId = (useLocalSearchParams().conversation_id as string) || '';
 
   const rep             = user as any;
   const repTwilioNumber = rep?.twilio_number || rep?.mvpline_number || '';
@@ -42,9 +43,10 @@ export default function CallScreen() {
     setStatusMsg('');
     try {
       const res = await api.post('/webhooks/twilio/call', {
-        rep_user_id:    user._id,
-        customer_phone: contactPhone,
-        contact_id:     contactId,
+        rep_user_id:     user._id,
+        customer_phone:  contactPhone,
+        contact_id:      contactId,
+        conversation_id: conversationId,  // links call to inbox thread
       });
       setCallSid(res.data.call_sid || '');
       setCallState('ringing');
