@@ -375,6 +375,10 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
     # Clear "You're Needed" flags — rep is now responding
     # Also lower future escalation threshold to 1 (rep has been personally involved)
     try:
+        conv_doc = await get_db().conversations.find_one(
+            {"_id": ObjectId(conversation_id)},
+            {"claimed": 1, "claimed_by": 1, "contact_id": 1}
+        )
         await get_db().conversations.update_one(
             {"_id": ObjectId(conversation_id)},
             {"$set": {
@@ -384,8 +388,16 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
                 "rep_last_replied_at":         datetime.now(timezone.utc),
             }}
         )
+        # Reset campaign enrollment reply_count so AI escalation threshold starts fresh.
+        # Without this, a customer with 28 historical replies would trigger "You're Needed"
+        # on their very next message, even if the rep just personally responded.
+        contact_id_for_reset = (conv_doc or {}).get("contact_id") if conv_doc else None
+        if contact_id_for_reset:
+            await get_db().campaign_enrollments.update_many(
+                {"contact_id": contact_id_for_reset, "status": {"$in": ["active", "paused"]}},
+                {"$set": {"reply_count": 0}}
+            )
         # Auto-claim in Team Inbox: first reply = claim (no button tap needed)
-        conv_doc = await get_db().conversations.find_one({"_id": ObjectId(conversation_id)}, {"claimed": 1, "claimed_by": 1})
         if conv_doc and not conv_doc.get("claimed"):
             await get_db().conversations.update_one(
                 {"_id": ObjectId(conversation_id)},
@@ -1515,16 +1527,25 @@ async def send_message_simple(user_id: str, message_data: dict):
     # ── Rep replied: clear YOU'RE NEEDED + lower future threshold to 1 ─────
     # Once a rep personally replies, they want to know about the NEXT message
     # immediately (not after 2+). Set rep_engaged=True so the webhook uses 1.
+    # Also reset campaign enrollment reply_count so the AI escalation counter starts fresh.
     try:
         await db.conversations.update_one(
             {"_id": ObjectId(conversation_id)},
             {"$set": {
                 "needs_assistance":          False,
                 "unanswered_customer_replies": 0,
-                "rep_engaged":               True,   # lower future threshold to 1
+                "rep_engaged":               True,
                 "rep_last_replied_at":       datetime.now(timezone.utc),
             }}
         )
+        # Reset campaign enrollment reply_count for this contact
+        conv_data = await db.conversations.find_one({"_id": ObjectId(conversation_id)}, {"contact_id": 1})
+        contact_id_for_reset = (conv_data or {}).get("contact_id")
+        if contact_id_for_reset:
+            await db.campaign_enrollments.update_many(
+                {"contact_id": contact_id_for_reset, "status": {"$in": ["active", "paused"]}},
+                {"$set": {"reply_count": 0}}
+            )
         # Also clear from home cache so wins feed updates
         try:
             from routers.home_intelligence import _home_cache

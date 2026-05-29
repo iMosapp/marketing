@@ -697,12 +697,14 @@ async def incoming_message(
                         })
                     if better:
                         cname_esc = better.get("name") or f"{better.get('first_name','')} {better.get('last_name','')}".strip() or cname_esc
-                # Mark conversation as needing rep attention
+                # Mark conversation as needing rep attention.
+                # Use conv_unanswered (current unanswered count since rep's last reply)
+                # NOT max_reply_count (lifetime campaign total — never resets).
                 await db.conversations.update_one(
                     {"_id": ObjectId(conversation_id)},
                     {"$set": {
                         "needs_assistance":          True,
-                        "unanswered_customer_replies": max_reply_count,
+                        "unanswered_customer_replies": conv_unanswered,
                         "you_are_needed_at":         datetime.utcnow(),
                     }}
                 )
