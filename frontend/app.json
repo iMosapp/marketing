@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "iMos",
+    "name": "I'm On Social",
     "slug": "imos",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,16 +9,64 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.imonsocial.app",
       "buildNumber": "1",
       "infoPlist": {
         "NSCameraUsageDescription": "Take photos of contacts and for your profile",
         "NSPhotoLibraryUsageDescription": "Select photos for contacts, your profile, and cards",
-        "NSContactsUsageDescription": "Import contacts from your address book",
-        "NSMicrophoneUsageDescription": "Record voice notes for contacts"
+        "NSContactsUsageDescription": "Import contacts from your address book to connect with clients",
+        "NSMicrophoneUsageDescription": "Record voice notes and calls for contacts"
       }
     },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#000"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_CONTACTS"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#000"
+        }
+      ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Allow I'm On Social to access your contacts to import them."
+        }
+      ],
+      [
+        "expo-document-picker",
+        {
+          "iCloudContainerEnvironment": "Production"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",

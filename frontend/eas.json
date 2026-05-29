@@ -27,9 +27,9 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "YOUR_APPLE_ID_EMAIL",
-        "ascAppId": "YOUR_APP_STORE_CONNECT_APP_ID",
-        "appleTeamId": "YOUR_APPLE_TEAM_ID"
+        "appleId": "forest@imonsocial.com",
+        "appleTeamId": "2JDV2RY89J",
+        "ascAppId": "REPLACE_WITH_APP_STORE_CONNECT_APP_ID"
       }
     }
   }
