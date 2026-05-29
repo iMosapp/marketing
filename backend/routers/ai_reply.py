@@ -153,7 +153,7 @@ async def queue_ai_reply(
             except Exception:
                 pass
         # Queue the brief reply — but only if no hot-topic reply is already pending
-        # (prevents sending 3x when Twilio retries the webhook before the first is saved)
+        # Also cancel any normal pending reply so we don't send TWO responses
         existing_hot = await db.ai_reply_queue.find_one({
             "conversation_id": conversation_id,
             "status":          "pending",
@@ -162,6 +162,16 @@ async def queue_ai_reply(
         if existing_hot:
             logger.info(f"[AIReply] Hot topic already queued for {conversation_id} — skipping duplicate")
             return existing_hot
+
+        # Cancel any normal (non-hot-topic) pending reply so only one response goes out
+        await db.ai_reply_queue.update_many(
+            {
+                "conversation_id": conversation_id,
+                "status":          STATUS_PENDING,
+                "hot_topic_escalation": {"$ne": True},
+            },
+            {"$set": {"status": STATUS_CANCELLED, "cancel_reason": "superseded_by_hot_topic"}}
+        )
 
         queue_item = {
             "contact_id":       contact_id,
@@ -253,6 +263,21 @@ async def queue_ai_reply(
 
     # ── Calculate send_at ─────────────────────────────────────────────────────
     delay = get_human_delay(incoming_message)
+
+    # If the customer sent multiple messages recently (rapid-fire), add a short
+    # extra buffer so any in-flight messages can arrive before the reply goes out.
+    try:
+        recent_inbound_count = await db.messages.count_documents({
+            "conversation_id": conversation_id,
+            "sender":          {"$in": ["contact", "inbound"]},
+            "timestamp":       {"$gte": datetime.now(timezone.utc) - timedelta(seconds=30)},
+        })
+        if recent_inbound_count > 1:
+            delay = max(delay, 45)   # Always wait at least 45s when customer is sending fast
+            logger.info(f"[AIReply] {recent_inbound_count} rapid messages detected — extended delay to {delay}s")
+    except Exception:
+        pass
+
     send_at = datetime.now(timezone.utc) + timedelta(seconds=delay)
 
     # ── Build queue doc ───────────────────────────────────────────────────────
@@ -281,6 +306,19 @@ async def queue_ai_reply(
         "created_at":                  now,
     }
 
+    # ── Cancel any existing pending reply for this conversation ─────────────────
+    # When the customer sends multiple messages quickly, this ensures only ONE
+    # consolidated reply goes out — the one with the full context of all messages.
+    cancelled = await db.ai_reply_queue.update_many(
+        {
+            "conversation_id": conversation_id,
+            "status":          STATUS_PENDING,
+        },
+        {"$set": {"status": STATUS_CANCELLED, "cancel_reason": "superseded_by_newer_message"}}
+    )
+    if cancelled.modified_count:
+        logger.info(f"[AIReply] Cancelled {cancelled.modified_count} stale pending reply(s) for conv {conversation_id} — consolidating into one response")
+
     result = await db.ai_reply_queue.insert_one(queue_doc)
     queue_doc["_id"] = str(result.inserted_id)
     queue_doc["id"]  = str(result.inserted_id)
@@ -289,8 +327,6 @@ async def queue_ai_reply(
         f"[AIReply] Queued reply for contact={contact_id} | "
         f"delay={delay}s | needs_approval={needs_approval} | mode={ai_assist_mode}"
     )
-
-    # ── Notify rep of incoming + draft ────────────────────────────────────────
     try:
         contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"first_name": 1, "last_name": 1})
         cname = f"{contact.get('first_name','')} {contact.get('last_name','')}".strip() if contact else "Customer"
