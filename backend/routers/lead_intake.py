@@ -649,7 +649,16 @@ async def process_queued_leads():
 
             if phone and message:
                 from services.twilio_service import send_sms, TWILIO_ENABLED
-                result = await send_sms(phone, message)
+                # Use the rep's dedicated number for this lead if available
+                rep_twilio_num = None
+                rep_uid = lead.get("assigned_to") or lead.get("user_id")
+                if rep_uid:
+                    try:
+                        rep = await db.users.find_one({"_id": ObjectId(rep_uid)}, {"twilio_number": 1, "mvpline_number": 1})
+                        rep_twilio_num = (rep or {}).get("twilio_number") or (rep or {}).get("mvpline_number")
+                    except Exception:
+                        pass
+                result = await send_sms(phone, message, from_phone=rep_twilio_num)
                 mocked = result.get("mock", True)
             else:
                 mocked = True

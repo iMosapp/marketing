@@ -782,7 +782,9 @@ function ThreadScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     // Check if user has a Twilio number for SMS mode
-    const hasTwilioNumber = !!(user as any).mvpline_number;
+    // Must check BOTH twilio_number AND mvpline_number — reps may have either
+    const repTwilioNumber = (user as any).mvpline_number || (user as any).twilio_number;
+    const hasTwilioNumber = !!repTwilioNumber;
     const isPersonalSMS = messageMode === 'sms' && !hasTwilioNumber;
     
     // PERSONAL SMS FLOW: Log the event reliably BEFORE opening native SMS.
@@ -2437,14 +2439,14 @@ function ThreadScreen() {
                   onClick={() => selectedMedia ? sendMMS() : handleSend()}
                   disabled={(!message.trim() && !selectedMedia) || sending || sendingMedia}
                   data-testid="send-message-btn"
-                  title={messageMode === 'sms' && !(user as any)?.mvpline_number ? 'Copy & open your messaging app' : 'Send message'}
+                  title={messageMode === 'sms' && !((user as any)?.mvpline_number || (user as any)?.twilio_number) ? 'Copy & open your messaging app' : 'Send message'}
                   style={{
                     width: 36,
                     height: 36,
                     borderRadius: 18,
                     backgroundColor: (message.trim() || selectedMedia) && !sending && !sendingMedia 
                       ? (messageMode === 'sms' 
-                          ? ((user as any)?.mvpline_number ? '#007AFF' : '#FF9500') 
+                          ? (((user as any)?.mvpline_number || (user as any)?.twilio_number) ? '#007AFF' : '#FF9500') 
                           : '#34C759') 
                       : colors.borderLight,
                     border: 'none',
@@ -2459,7 +2461,7 @@ function ThreadScreen() {
                   ) : (
                     <Ionicons
                       name={messageMode === 'sms' 
-                        ? ((user as any)?.mvpline_number ? 'send' : 'open-outline') 
+                        ? (((user as any)?.mvpline_number || (user as any)?.twilio_number) ? 'send' : 'open-outline') 
                         : 'mail'}
                       size={18}
                       color={(message.trim() || selectedMedia) ? '#FFF' : '#6E6E73'}
@@ -2471,7 +2473,7 @@ function ThreadScreen() {
                   style={[
                     styles.composerSendButton, 
                     { backgroundColor: messageMode === 'sms' 
-                        ? ((user as any)?.mvpline_number ? '#007AFF' : '#FF9500') 
+                        ? (((user as any)?.mvpline_number || (user as any)?.twilio_number) ? '#007AFF' : '#FF9500') 
                         : '#34C759' },
                     ((!message.trim() && !selectedMedia) || sending || sendingMedia) && styles.composerSendButtonDisabled
                   ]}
@@ -2483,7 +2485,7 @@ function ThreadScreen() {
                   ) : (
                     <Ionicons
                       name={messageMode === 'sms' 
-                        ? ((user as any)?.mvpline_number ? 'send' : 'open-outline') 
+                        ? (((user as any)?.mvpline_number || (user as any)?.twilio_number) ? 'send' : 'open-outline') 
                         : 'mail'}
                       size={18}
                       color={(message.trim() || selectedMedia) ? '#FFF' : '#6E6E73'}
