@@ -478,6 +478,31 @@ async def process_ai_reply_queue():
                 except Exception:
                     pass
 
+            # ── Cooldown check — don't send if AI already replied within the last 90 seconds ──
+            # This catches the race condition where two replies are queued close together
+            # and the first fires before the cancel-and-replace can clean up the second.
+            if item.get("conversation_id"):
+                try:
+                    cooldown_cutoff = now - timedelta(seconds=90)
+                    recent_ai_send = await db.messages.find_one({
+                        "conversation_id": item["conversation_id"],
+                        "sender":          "ai",
+                        "ai_generated":    True,
+                        "timestamp":       {"$gte": cooldown_cutoff},
+                    })
+                    if recent_ai_send:
+                        logger.info(
+                            f"[AIReply] Cooldown — AI already sent to conv {item['conversation_id']} "
+                            f"within 90s ({str(recent_ai_send.get('timestamp',''))[:19]}). Cancelling duplicate."
+                        )
+                        await db.ai_reply_queue.update_one(
+                            {"_id": qid},
+                            {"$set": {"status": STATUS_CANCELLED, "cancel_reason": "cooldown_90s"}}
+                        )
+                        continue
+                except Exception as cooldown_err:
+                    logger.debug(f"[AIReply] Cooldown check failed (non-fatal): {cooldown_err}")
+
             from services.twilio_service import send_sms
 
             # Always send from the rep's dedicated Twilio number — never let Twilio
@@ -506,6 +531,23 @@ async def process_ai_reply_queue():
                     "mocked":      mocked,
                 }}
             )
+
+            # ── Post-send cleanup: cancel any remaining pending items for this conversation ──
+            # Prevents a second reply from firing if it was queued but not yet claimed.
+            if item.get("conversation_id"):
+                try:
+                    cleaned = await db.ai_reply_queue.update_many(
+                        {
+                            "conversation_id": item["conversation_id"],
+                            "status":          STATUS_PENDING,
+                            "_id":             {"$ne": qid},
+                        },
+                        {"$set": {"status": STATUS_CANCELLED, "cancel_reason": "cancelled_after_send"}}
+                    )
+                    if cleaned.modified_count:
+                        logger.info(f"[AIReply] Post-send: cancelled {cleaned.modified_count} pending item(s) for conv {item['conversation_id']}")
+                except Exception:
+                    pass
 
             # Log message to conversation
             await db.messages.insert_one({
