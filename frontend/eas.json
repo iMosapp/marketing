@@ -19,6 +19,10 @@
     },
     "production": {
       "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_BACKEND_URL": "https://app.imonsocial.com",
+        "EXPO_PUBLIC_APP_URL": "https://app.imonsocial.com"
+      },
       "ios": {
         "resourceClass": "m-medium"
       }
