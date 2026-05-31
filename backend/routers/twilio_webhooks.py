@@ -1470,7 +1470,19 @@ async def handle_inbound_voice(
     app_url            = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
 
     # Log the call attempt as a contact event
-    if rep_user:
+    # Skip logging if FROM is a rep's own Twilio number (bridge-back call, not a real customer)
+    is_bridge_back_call = False
+    try:
+        rep_with_this_number = await db.users.find_one({
+            "$or": [{"twilio_number": from_phone}, {"mvpline_number": from_phone}]
+        }, {"_id": 1})
+        if rep_with_this_number:
+            is_bridge_back_call = True
+            logger.info(f"[Voice] Skipping inbound_call log — from_phone {from_phone} is a rep's Twilio number (bridge-back)")
+    except Exception:
+        pass
+
+    if rep_user and not is_bridge_back_call:
         try:
             contact = await db.contacts.find_one({
                 "$or": [{"phone": from_phone}, {"phone": from_phone.lstrip("+")}]

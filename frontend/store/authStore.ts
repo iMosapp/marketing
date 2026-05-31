@@ -233,6 +233,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           console.warn('[Auth] SW registration threw:', e?.message);
         }
       }
+
+      // Native iOS push notifications (expo-notifications)
+      const { Platform } = await import('react-native');
+      if (Platform.OS !== 'web') {
+        try {
+          const Notifications = await import('expo-notifications');
+          const { status: existingStatus } = await Notifications.getPermissionsAsync();
+          let finalStatus = existingStatus;
+          if (existingStatus !== 'granted') {
+            const { status } = await Notifications.requestPermissionsAsync();
+            finalStatus = status;
+          }
+          if (finalStatus === 'granted') {
+            const { default: api } = await import('../services/api');
+            const tokenData = await Notifications.getExpoPushTokenAsync().catch(() => null);
+            if (tokenData?.data && user._id) {
+              await api.post(`/push/subscribe-native/${user._id}`, {
+                expo_push_token: tokenData.data,
+                platform: Platform.OS,
+              }).catch(() => {});
+            }
+          }
+        } catch (nativePushErr: any) {
+          console.warn('[Auth] Native push setup skipped:', nativePushErr?.message);
+        }
+      }
     } catch (error) {
       set({ isLoading: false });
       throw error;

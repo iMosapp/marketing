@@ -6,7 +6,7 @@ import os
 import json
 import logging
 from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pywebpush import webpush, WebPushException
 
 from routers.database import get_db
@@ -168,12 +168,59 @@ async def check_and_notify_milestones(user_id: str, streak: int, level_title: st
         await db.notifications.insert_one({
             "user_id": user_id,
             "title": n["title"],
-            "body": n["body"],
+            "message": n["body"],
             "type": "milestone",
             "read": False,
             "created_at": datetime.now(timezone.utc),
         })
-        logger.info(f"[Push] Sent milestone notification to {user_id}: {n['title']}")
+
+
+@router.post("/subscribe-native/{user_id}")
+async def subscribe_native_push(user_id: str, request: Request):
+    """Store Expo push token for native iOS/Android push notifications."""
+    db = get_db()
+    data = await request.json()
+    expo_token = data.get("expo_push_token", "")
+    platform = data.get("platform", "ios")
+    if not expo_token:
+        raise HTTPException(status_code=400, detail="expo_push_token required")
+    # Upsert so re-installs don't create duplicates
+    await db.expo_push_tokens.update_one(
+        {"user_id": user_id, "expo_push_token": expo_token},
+        {"$set": {
+            "user_id":          user_id,
+            "expo_push_token":  expo_token,
+            "platform":         platform,
+            "updated_at":       datetime.now(timezone.utc),
+        }, "$setOnInsert": {"created_at": datetime.now(timezone.utc)}},
+        upsert=True,
+    )
+    logger.info(f"[Push] Native Expo token registered for user {user_id} ({platform})")
+    return {"success": True}
+
+
+async def send_push_native(user_id: str, title: str, body: str, data: dict = None):
+    """Send push notification to native iOS/Android via Expo Push API."""
+    db = get_db()
+    tokens = await db.expo_push_tokens.find({"user_id": user_id}).to_list(10)
+    if not tokens:
+        return 0
+    import httpx
+    messages = [{"to": t["expo_push_token"], "title": title, "body": body, "data": data or {}, "sound": "default"} for t in tokens]
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                "https://exp.host/--/api/v2/push/send",
+                json=messages,
+                headers={"Accept": "application/json", "Accept-Encoding": "gzip, deflate", "Content-Type": "application/json"},
+                timeout=10.0,
+            )
+            logger.info(f"[Push] Expo native push sent to {len(messages)} devices for user {user_id}")
+            return len(messages)
+    except Exception as e:
+        logger.warning(f"[Push] Expo native push failed: {e}")
+        return 0
+
 
     return len(notifications)
 

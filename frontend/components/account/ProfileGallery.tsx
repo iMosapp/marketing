@@ -49,12 +49,39 @@ export function ProfileGallery({ userId, colors, onSetProfilePhoto }: Props) {
   useEffect(() => { load(); }, [userId]);
 
   // ── Upload ────────────────────────────────────────────────────────────────
-  function handleAdd() {
+  async function handleAdd() {
     if (Platform.OS !== 'web') {
-      showSimpleAlert('Upload', 'Photo upload is available on the web version.');
+      // Native: use expo-image-picker
+      try {
+        const { launchImageLibraryAsync, MediaTypeOptions, requestMediaLibraryPermissionsAsync } = await import('expo-image-picker');
+        const { status } = await requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          showSimpleAlert('Permission Needed', 'Please allow access to your photo library in Settings.');
+          return;
+        }
+        const result = await launchImageLibraryAsync({
+          mediaTypes: MediaTypeOptions.Images,
+          allowsEditing: true,
+          quality: 0.85,
+        });
+        if (result.canceled || !result.assets?.[0]) return;
+        const asset = result.assets[0];
+        setUploading(true);
+        try {
+          const fd = new FormData();
+          fd.append('file', { uri: asset.uri, type: 'image/jpeg', name: 'photo.jpg' } as any);
+          const res = await api.post(`/profile/${userId}/gallery`, fd, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+          if (res.data?.photo_url) {
+            setPhotos(prev => [{ photo_id: res.data.photo_id, photo_url: res.data.photo_url, thumbnail_url: res.data.photo_url, created_at: new Date().toISOString() }, ...prev]);
+          }
+        } catch { showSimpleAlert('Error', 'Upload failed. Please try again.'); }
+        finally { setUploading(false); }
+      } catch { showSimpleAlert('Error', 'Could not open photo library.'); }
       return;
     }
-    // Synchronous trigger — iOS Safari blocks input.click() from async contexts
+    // Web: use file input
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
