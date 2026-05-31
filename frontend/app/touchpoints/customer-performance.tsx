@@ -213,9 +213,9 @@ export default function CustomerPerformanceScreen() {
 
                   {/* Contact Info */}
                   <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text, flexShrink: 1 }} numberOfLines={1}>{contact.name}</Text>
-                      <Text style={{ fontSize: 12, fontWeight: '700', color: heatColor, backgroundColor: `${heatColor}18`, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8, overflow: 'hidden' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, gap: 6 }}>
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, flex: 1 }} numberOfLines={1}>{contact.name}</Text>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: heatColor, backgroundColor: `${heatColor}18`, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>
                         {heatLabel}
                       </Text>
                     </View>

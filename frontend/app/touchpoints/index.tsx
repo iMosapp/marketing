@@ -259,16 +259,16 @@ function TouchpointsScreen() {
           <View style={{ paddingTop: 16, paddingBottom: 12 }}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 6 }}>
               {SCORE_ITEMS_ACTIONS.map(s => (
-                <View key={s.key} style={{ width: 68, backgroundColor: colors.card, borderRadius: 12, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: colors.border }}>
+                <View key={s.key} style={{ minWidth: 72, backgroundColor: colors.card, borderRadius: 12, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: colors.border }}>
                   <Text style={{ fontSize: 21, fontWeight: '700', color: s.color }}>{scoreValues[s.key]}</Text>
-                  <Text style={{ fontSize: 9, color: colors.textSecondary, fontWeight: '600', letterSpacing: 0.3, marginTop: 1 }}>{s.label}</Text>
+                  <Text numberOfLines={1} style={{ fontSize: 9, color: colors.textSecondary, fontWeight: '600', letterSpacing: 0.3, marginTop: 1 }}>{s.label}</Text>
                 </View>
               ))}
               <View style={{ width: 1, backgroundColor: colors.border, marginHorizontal: 4 }} />
               {SCORE_ITEMS_ENGAGE.map(s => (
-                <View key={s.key} style={{ width: 68, backgroundColor: colors.card, borderRadius: 12, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: colors.border }}>
+                <View key={s.key} style={{ minWidth: 72, backgroundColor: colors.card, borderRadius: 12, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: colors.border }}>
                   <Text style={{ fontSize: 21, fontWeight: '700', color: s.color }}>{scoreValues[s.key]}</Text>
-                  <Text style={{ fontSize: 9, color: colors.textSecondary, fontWeight: '600', letterSpacing: 0.3, marginTop: 1 }}>{s.label}</Text>
+                  <Text numberOfLines={1} style={{ fontSize: 9, color: colors.textSecondary, fontWeight: '600', letterSpacing: 0.3, marginTop: 1 }}>{s.label}</Text>
                 </View>
               ))}
             </ScrollView>

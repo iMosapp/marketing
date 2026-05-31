@@ -321,7 +321,7 @@ function StatCard({ icon, iconColor, iconBg, value, label, colors, onPress }: an
         <Ionicons name={icon} size={18} color={iconColor} />
       </View>
       <Text style={{ fontSize: 22, fontWeight: '700', color: colors.text }}>{value}</Text>
-      <Text style={{ fontSize: 12, color: '#636366', fontWeight: '600', marginTop: 2 }}>{label}</Text>
+      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ fontSize: 11, color: '#636366', fontWeight: '600', marginTop: 2, textAlign: 'center' }}>{label}</Text>
     </TouchableOpacity>
   );
 }
