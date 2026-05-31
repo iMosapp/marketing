@@ -7,7 +7,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
-import api from '../../services/api';
+import api, { smartSendSMS } from '../../services/api';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -338,25 +338,44 @@ export default function QuickSendPage() {
           await api.post(`/contacts/${userId}/${contactId}/events`, {
             event_type: config.eventType,
             title: config.previewTitle,
-            description: `Sent via personal SMS to ${firstName}`,
-            channel: 'sms_personal',
+            description: `Sent via SMS to ${firstName}`,
+            channel: 'sms',
             category: 'outreach',
             icon: 'chatbubble',
             color: '#007AFF',
           }).catch(() => {});
         }
 
-        // Open native SMS app with pre-populated message
-        openNativeSMS(phone, finalMessage);
+        // Try Twilio first (dedicated business number) — fall back to native SMS only if needed
+        const repTwilioNumber = (user as any)?.twilio_number || (user as any)?.mvpline_number;
+        let sentViaTwilio = false;
+        if (repTwilioNumber && phone) {
+          try {
+            const result = await smartSendSMS({
+              to:          phone,
+              body:        finalMessage,
+              userId:      userId,
+              twilioNumber: repTwilioNumber,
+              contactId:   contactId,
+              eventType:   config.eventType,
+              platform:    Platform.OS,
+            });
+            sentViaTwilio = result.usedTwilio;
+          } catch {}
+        }
 
-        // Show confirmation after a brief delay (to let SMS app open)
+        if (!sentViaTwilio) {
+          // No Twilio number or send failed — open native SMS as fallback
+          openNativeSMS(phone, finalMessage);
+        }
+
         setTimeout(() => {
           setStep('done');
           setTimeout(() => {
             if (contactId) router.replace(`/contact/${contactId}` as any);
             else router.back();
           }, 2000);
-        }, 500);
+        }, sentViaTwilio ? 100 : 500);
 
       } else if (sendMethod === 'email') {
         if (email) {
