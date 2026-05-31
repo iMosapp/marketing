@@ -971,7 +971,8 @@ function ContactDetailScreen() {
       } else {
         const { status } = await Audio.requestPermissionsAsync();
         if (status !== 'granted') {
-          showSimpleAlert('Permission Denied', 'Microphone permission is required.');
+          import('expo-linking').then(L => L.openSettings?.()).catch(() => {});
+          showSimpleAlert('Microphone Blocked', 'Enable microphone in Settings → Im On Social → Microphone, then try again.');
           return;
         }
         await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
@@ -1124,7 +1125,8 @@ function ContactDetailScreen() {
       } else {
         const { status } = await Audio.requestPermissionsAsync();
         if (status !== 'granted') {
-          showSimpleAlert('Permission Denied', 'Microphone permission is required.');
+          import('expo-linking').then(L => L.openSettings?.()).catch(() => {});
+          showSimpleAlert('Microphone Blocked', 'Enable microphone in Settings → Im On Social → Microphone, then try again.');
           return;
         }
         await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
@@ -3743,24 +3745,18 @@ function ContactDetailScreen() {
                 </View>
               )}
               <TextInput
-                style={[s.composerInput, { color: colors.text, height: Math.max(36, Math.min(composerInputHeight, 150)) }]}
+                style={[s.composerInput, { color: colors.text, height: Math.max(44, Math.min(composerInputHeight, 200)) }]}
                 placeholder="Type your message..."
                 placeholderTextColor={colors.textTertiary}
                 value={composerMessage}
                 onChangeText={setComposerMessage}
                 multiline
-                numberOfLines={1}
-                maxLength={1000}
+                maxLength={1600}
                 onContentSizeChange={(e) => {
                   const h = e.nativeEvent.contentSize.height;
-                  // Only grow when user has content; reset to min when empty
-                  if (composerMessage.trim()) {
-                    setComposerInputHeight(h);
-                  } else {
-                    setComposerInputHeight(36);
-                  }
+                  setComposerInputHeight(Math.max(44, h));
                 }}
-                scrollEnabled={composerInputHeight > 150}
+                scrollEnabled={composerInputHeight >= 200}
                 data-testid="composer-input"
               />
               <View style={[s.composerToolbar, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>

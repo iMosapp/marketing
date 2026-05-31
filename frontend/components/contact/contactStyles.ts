@@ -128,7 +128,7 @@ export const getS = (colors: any) => StyleSheet.create({
   composerModeBtnText: { fontSize: 14, fontWeight: '600', color: colors.text },
   composerCallBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#32ADE615', alignItems: 'center', justifyContent: 'center' },
   composerBox: { borderRadius: 16, borderWidth: 1, overflow: 'hidden' },
-  composerInput: { fontSize: 18, color: colors.text, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10, textAlignVertical: 'top' },
+  composerInput: { fontSize: 15, color: colors.text, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10, textAlignVertical: 'top', minHeight: 44 },
   composerToolbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8, paddingVertical: 6, borderTopWidth: 1 },
   composerTools: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   composerToolBtn: { width: 38, height: 34, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
