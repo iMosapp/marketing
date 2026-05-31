@@ -23,7 +23,26 @@
         "NSCameraUsageDescription": "Take photos of contacts and for your profile",
         "NSPhotoLibraryUsageDescription": "Select photos for contacts, your profile, and cards",
         "NSContactsUsageDescription": "Import contacts from your address book to connect with clients",
-        "NSMicrophoneUsageDescription": "Record voice notes and calls for contacts"
+        "NSMicrophoneUsageDescription": "Record voice notes and calls for contacts",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false,
+          "NSExceptionDomains": {
+            "app.imonsocial.com": {
+              "NSExceptionAllowsInsecureHTTPLoads": false,
+              "NSExceptionRequiresForwardSecrecy": true,
+              "NSExceptionMinimumTLSVersion": "TLSv1.2",
+              "NSIncludesSubdomains": true,
+              "NSRequiresCertificateTransparency": false
+            },
+            "imonsocial.com": {
+              "NSExceptionAllowsInsecureHTTPLoads": false,
+              "NSExceptionRequiresForwardSecrecy": true,
+              "NSExceptionMinimumTLSVersion": "TLSv1.2",
+              "NSIncludesSubdomains": true,
+              "NSRequiresCertificateTransparency": false
+            }
+          }
+        }
       }
     },
     "android": {
