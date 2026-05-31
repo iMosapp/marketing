@@ -10,11 +10,12 @@ const getBackendUrl = () => {
     return '/api';
   }
   // On native (iOS/Android), use the configured backend URL
-  const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || Constants.expoConfig?.extra?.backendUrl;
-  if (backendUrl) {
-    return `${backendUrl}/api`;
-  }
-  return '/api';
+  // Priority: EXPO_PUBLIC_BACKEND_URL env var > app.json extra.backendUrl > hardcoded production
+  const backendUrl =
+    process.env.EXPO_PUBLIC_BACKEND_URL ||
+    Constants.expoConfig?.extra?.backendUrl ||
+    'https://app.imonsocial.com';   // hardcoded production fallback — never falls back to localhost
+  return `${backendUrl}/api`;
 };
 
 const BACKEND_URL = getBackendUrl();

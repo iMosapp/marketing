@@ -8,6 +8,13 @@
     "scheme": "imos",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "extra": {
+      "backendUrl": "https://app.imonsocial.com",
+      "appUrl": "https://app.imonsocial.com",
+      "eas": {
+        "projectId": "178e2029-a577-4d78-9611-bd7ebec83c91"
+      }
+    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.imonsocial.app",
