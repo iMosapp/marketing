@@ -761,19 +761,23 @@ export default function MoreScreen() {
       ...(pushSupported ? [{
         icon: 'notifications-outline' as string,
         title: 'Push Notifications',
-        subtitle: pushStatus === 'granted' ? 'On — leads, messages & tasks' : pushStatus === 'denied' ? 'Blocked in browser settings' : 'Get alerts for leads & messages',
+        subtitle: pushStatus === 'granted' ? 'On — leads, messages & tasks' : pushStatus === 'denied' ? 'Blocked — tap to open Settings' : 'Get alerts for leads & messages',
         color: '#FF9500' as string,
         statusDot: (pushStatus === 'granted' ? 'green' : pushStatus === 'denied' ? 'red' : 'grey') as 'green' | 'red' | 'grey',
         onPress: async () => {
           if (pushStatus === 'granted') {
-            await disablePush();
-            showSimpleAlert('Notifications Off', 'Push notifications have been disabled.');
+            if (Platform.OS !== 'web') {
+              showSimpleAlert('Notifications On', 'Push notifications are enabled. To disable, go to iOS Settings → Im On Social → Notifications.');
+            } else {
+              await disablePush();
+              showSimpleAlert('Notifications Off', 'Push notifications have been disabled.');
+            }
           } else if (pushStatus === 'denied') {
-            showSimpleAlert('Blocked', 'Push notifications are blocked. Go to your browser settings → Site Settings → Notifications and allow them for this site.');
+            showSimpleAlert('Notifications Blocked', 'Push notifications were blocked. Go to iOS Settings → Im On Social → Notifications and enable them.');
           } else {
             const ok = await enablePush();
             if (ok) showSimpleAlert('Notifications Enabled!', "You'll now receive alerts for new leads, customer replies, and your daily touchpoints.");
-            else showSimpleAlert('Not Enabled', 'Could not enable notifications. Make sure you\'re using the app in a browser that supports push notifications.');
+            else if (pushStatus !== 'denied') showSimpleAlert('Not Enabled', 'Could not enable notifications. Check your device settings.');
           }
         },
       }] : []),
