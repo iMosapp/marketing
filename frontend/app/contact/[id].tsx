@@ -1881,23 +1881,22 @@ function ContactDetailScreen() {
         const uri = nativeRecording.getURI();
         setNativeRecording(null);
         await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
-        if (uri) {
-          // Use FormData with URI directly — React Native handles the file read internally
-          // (fetch + blob approach doesn't work with iOS file:// URIs)
-          const fd = new FormData();
-          fd.append('file', { uri, type: 'audio/m4a', name: 'voice_note.m4a' } as any);
-          if (!user) return;
+        if (uri && user) {
           setUploadingVoiceNote(true);
           try {
+            // React Native FormData: pass URI object directly — RN handles the file read
+            const fd = new FormData();
+            fd.append('audio', { uri, type: 'audio/m4a', name: 'voice_note.m4a' } as any);
+            fd.append('duration', String(recordingTime));
+            // Use the correct endpoint: /voice-notes/{userId}/{contactId}
             const res = await api.post(
-              `/contacts/${user._id}/${id}/voice-notes`,
+              `/voice-notes/${user._id}/${id}`,
               fd,
               { headers: { 'Content-Type': 'multipart/form-data' } }
             );
-            if (res.data?.voice_note_id) {
-              await loadVoiceNotes();
-            }
-          } catch {
+            if (res.data) await loadVoiceNotes();
+          } catch (uploadErr: any) {
+            console.error('[VoiceNote] Upload error:', uploadErr?.response?.data || uploadErr?.message);
             showSimpleAlert('Error', 'Failed to save voice note. Please try again.');
           } finally {
             setUploadingVoiceNote(false);
@@ -1905,8 +1904,8 @@ function ContactDetailScreen() {
         }
       } catch (e) {
         console.error('Native stop recording failed:', e);
-        showSimpleAlert('Error', 'Failed to stop recording. Please try again.');
         await Audio.setAudioModeAsync({ allowsRecordingIOS: false }).catch(() => {});
+        showSimpleAlert('Error', 'Recording stopped unexpectedly. Please try again.');
       }
       setRecordingTime(0);
       return;
@@ -2251,8 +2250,12 @@ function ContactDetailScreen() {
 
   return (
     <ContactProvider value={contextValue as any}>
-    <SafeAreaView style={[s.container, { backgroundColor: colors.bg }]} edges={['top']}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+    <SafeAreaView style={[s.container, { backgroundColor: colors.bg }]} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={0}
+      >
         {/* HEADER */}
         <View style={[s.header, { borderBottomColor: colors.border }]} data-testid="contact-detail-header">
           <TouchableOpacity onPress={() => router.back()} style={s.headerBtn} data-testid="contact-back-button">
@@ -3733,6 +3736,10 @@ function ContactDetailScreen() {
 
         {/* ===== INLINE COMPOSER (Inbox-Style) ===== */}
         {!isNewContact && !isEditing && (
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={0}
+          >
           <View style={s.composerContainer} data-testid="contact-composer">
             {/* SMS/Email mode toggle */}
             <View style={s.composerModeRow}>
@@ -3917,6 +3924,7 @@ function ContactDetailScreen() {
               </View>
             </View>
           </View>
+          </KeyboardAvoidingView>
         )}
       </KeyboardAvoidingView>
 
