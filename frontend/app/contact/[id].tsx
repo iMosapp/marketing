@@ -1880,17 +1880,35 @@ function ContactDetailScreen() {
         await nativeRecording.stopAndUnloadAsync();
         const uri = nativeRecording.getURI();
         setNativeRecording(null);
+        await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
         if (uri) {
-          // Convert URI to blob for upload
-          const resp = await fetch(uri);
-          const blob = await resp.blob();
-          await uploadVoiceNote(blob);
+          // Use FormData with URI directly — React Native handles the file read internally
+          // (fetch + blob approach doesn't work with iOS file:// URIs)
+          const fd = new FormData();
+          fd.append('file', { uri, type: 'audio/m4a', name: 'voice_note.m4a' } as any);
+          if (!user) return;
+          setUploadingVoiceNote(true);
+          try {
+            const res = await api.post(
+              `/contacts/${user._id}/${id}/voice-notes`,
+              fd,
+              { headers: { 'Content-Type': 'multipart/form-data' } }
+            );
+            if (res.data?.voice_note_id) {
+              await loadVoiceNotes();
+            }
+          } catch {
+            showSimpleAlert('Error', 'Failed to save voice note. Please try again.');
+          } finally {
+            setUploadingVoiceNote(false);
+          }
         }
       } catch (e) {
         console.error('Native stop recording failed:', e);
-        showSimpleAlert('Error', 'Failed to save voice note. Please try again.');
+        showSimpleAlert('Error', 'Failed to stop recording. Please try again.');
+        await Audio.setAudioModeAsync({ allowsRecordingIOS: false }).catch(() => {});
       }
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+      setRecordingTime(0);
       return;
     }
     // Web path
