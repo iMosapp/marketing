@@ -173,6 +173,7 @@ function ContactDetailScreen() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [nativeRecording, setNativeRecording] = useState<any>(null);
   const [voiceNotesLoading, setVoiceNotesLoading] = useState(false);
   const [uploadingVoiceNote, setUploadingVoiceNote] = useState(false);
   const [playingNoteId, setPlayingNoteId] = useState<string | null>(null);
@@ -1808,8 +1809,36 @@ function ContactDetailScreen() {
   }, [id, user, isNewContact]);
 
   const startRecording = async () => {
-    if (Platform.OS !== 'web') return;
-    try {
+    // ── Native (iOS/Android) — use expo-av ───────────────────────────────────
+    if (Platform.OS !== 'web') {
+      try {
+        const { status } = await Audio.requestPermissionsAsync();
+        if (status !== 'granted') {
+          import('expo-linking').then(L => L.openSettings?.()).catch(() => {});
+          showSimpleAlert('Microphone Blocked', 'Enable microphone in Settings → Im On Social → Microphone, then try again.');
+          return;
+        }
+        await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+        const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+        setNativeRecording(recording);
+        setIsRecording(true);
+        setRecordingTime(0);
+        recordingTimerRef.current = setInterval(() => {
+          setRecordingTime(prev => {
+            if (prev >= MAX_RECORDING_SECONDS - 1) {
+              stopRecording();
+              return MAX_RECORDING_SECONDS;
+            }
+            return prev + 1;
+          });
+        }, 1000);
+      } catch (e: any) {
+        console.error('Native recording failed:', e);
+        showSimpleAlert('Recording Error', 'Could not start recording. Please try again.');
+      }
+      return;
+    }
+    // ── Web — use MediaRecorder API ──────────────────────────────────────────
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
       const chunks: Blob[] = [];
@@ -1838,14 +1867,34 @@ function ContactDetailScreen() {
     }
   };
 
-  const stopRecording = () => {
-    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-      mediaRecorder.stop();
-    }
+  const stopRecording = async () => {
     setIsRecording(false);
     if (recordingTimerRef.current) {
       clearInterval(recordingTimerRef.current);
       recordingTimerRef.current = null;
+    }
+    // Native path
+    if (Platform.OS !== 'web' && nativeRecording) {
+      try {
+        await nativeRecording.stopAndUnloadAsync();
+        const uri = nativeRecording.getURI();
+        setNativeRecording(null);
+        if (uri) {
+          // Convert URI to blob for upload
+          const resp = await fetch(uri);
+          const blob = await resp.blob();
+          await uploadVoiceNote(blob);
+        }
+      } catch (e) {
+        console.error('Native stop recording failed:', e);
+        showSimpleAlert('Error', 'Failed to save voice note. Please try again.');
+      }
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+      return;
+    }
+    // Web path
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
     }
   };
 
@@ -2307,11 +2356,12 @@ function ContactDetailScreen() {
                     <Ionicons name="call" size={20} color="#FFF" />
                   </TouchableOpacity>
 
-                  {/* Voice Note */}
+                  {/* Voice Note — green mic button */}
                   <TouchableOpacity
                     onPress={isRecording ? stopRecording : startRecording}
                     activeOpacity={0.7}
-                    style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: isRecording ? '#FF3B30' : '#34C759', alignItems: 'center', justifyContent: 'center', shadowColor: isRecording ? '#FF3B30' : '#34C759', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6, elevation: 4 }}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: isRecording ? '#FF3B30' : '#34C759', alignItems: 'center', justifyContent: 'center', shadowColor: isRecording ? '#FF3B30' : '#34C759', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6, elevation: 4, zIndex: 10 }}
                     data-testid="hero-record-btn"
                   >
                     <Ionicons name={isRecording ? 'stop' : 'mic'} size={22} color="#FFF" />

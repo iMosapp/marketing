@@ -282,18 +282,17 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   markAllText: { fontSize: 15, color: '#007AFF', fontWeight: '600' },
   tabBar: {
-    paddingHorizontal: 12, paddingVertical: 10,
+    paddingHorizontal: 12, paddingVertical: 8,
     borderBottomWidth: 1, borderBottomColor: colors.card,
-    maxHeight: 52,
   },
   tab: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
-    paddingHorizontal: 14, paddingVertical: 7,
+    paddingHorizontal: 16, paddingVertical: 8,
     borderRadius: 20, backgroundColor: colors.card,
     marginRight: 8,
   },
   tabActive: { backgroundColor: '#007AFF' },
-  tabText: { fontSize: 15, color: colors.textSecondary, fontWeight: '500' },
+  tabText: { fontSize: 13, color: colors.textSecondary, fontWeight: '600' },
   tabTextActive: { color: colors.text },
   tabBadge: {
     minWidth: 18, height: 18, borderRadius: 9,
