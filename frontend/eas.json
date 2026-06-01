@@ -34,6 +34,10 @@
         "appleId": "forest@imonsocial.com",
         "appleTeamId": "2JDV2RY89J",
         "ascAppId": "6774618559"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-service-account.json",
+        "track": "internal"
       }
     }
   }
