@@ -10,7 +10,6 @@ config.cacheStores = [
 ];
 
 config.watcher = {
-  watchman: { enabled: false },
   healthCheck: { enabled: false },
 };
 

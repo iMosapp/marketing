@@ -59,6 +59,10 @@
         "READ_CONTACTS"
       ]
     },
+    "androidStatusBar": {
+      "backgroundColor": "#000000",
+      "barStyle": "light-content"
+    },
     "web": {
       "bundler": "metro",
       "output": "static",
