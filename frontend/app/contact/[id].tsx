@@ -774,8 +774,8 @@ function ContactDetailScreen() {
       setShowPhotoOptionsModal(true);
       return;
     }
-    showAlert('Add Photo', undefined, [
-      { text: 'Add a Photo', onPress: async () => {
+    showAlert('Attach', undefined, [
+      { text: 'Photo from Library', onPress: async () => {
         const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, quality: 0.7 });
         if (!result.canceled && result.assets[0]?.uri) setSelectedMedia(result.assets[0]);
       }},
