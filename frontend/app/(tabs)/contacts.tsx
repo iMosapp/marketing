@@ -355,11 +355,16 @@ export default function ContactsScreen() {
         <Text style={[styles.contactPhone, { color: colors.textSecondary }]} dataDetectorType="none">{item.phone}</Text>
         {contactTags.length > 0 && (
           <View style={styles.tags}>
-            {contactTags.map((tag: { name: string; color: string }, index: number) => (
+            {contactTags.slice(0, 3).map((tag: { name: string; color: string }, index: number) => (
               <View key={index} style={[styles.tag, { backgroundColor: tag.color + '20' }]}>
                 <Text style={[styles.tagText, { color: tag.color }]}>{tag.name}</Text>
               </View>
             ))}
+            {contactTags.length > 3 && (
+              <View style={[styles.tag, { backgroundColor: colors.surface }]}>
+                <Text style={[styles.tagText, { color: colors.textSecondary }]}>+{contactTags.length - 3}</Text>
+              </View>
+            )}
           </View>
         )}
       </View>
@@ -815,39 +820,41 @@ const getStyles = (colors: any) => StyleSheet.create({
   contactItem: {
     flexDirection: 'row',
     padding: 16,
-    alignItems: 'center',
+    alignItems: 'flex-start',   // photo pins to top, not centered with tags
   },
   avatar: {
-    width: 48,
-    height: 48,
+    width: 46,
+    height: 46,
     borderRadius: 12,
     backgroundColor: '#007AFF',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+    marginTop: 2,               // slight nudge to align with name text
   },
   photoAvatar: {
-    width: 48,
-    height: 48,
+    width: 46,
+    height: 46,
     borderRadius: 12,
     marginRight: 12,
+    marginTop: 2,
     resizeMode: 'cover',
   },
   avatarText: {
     color: colors.text,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
   },
   contactInfo: {
     flex: 1,
   },
   contactName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     marginBottom: 2,
   },
   contactPhone: {
-    fontSize: 16,
+    fontSize: 14,
     marginBottom: 4,
     textDecorationLine: 'none',
   },
@@ -855,14 +862,15 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     gap: 4,
     flexWrap: 'wrap',
+    marginTop: 2,
   },
   tag: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 8,
   },
   tagText: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#007AFF',
     fontWeight: '600',
   },
