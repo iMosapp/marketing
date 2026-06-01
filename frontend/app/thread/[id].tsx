@@ -2048,7 +2048,15 @@ function ThreadScreen() {
           <TouchableOpacity onPress={() => router.push(`/contact/${contactIdForNav || id}` as any)} data-testid="thread-contact-name-link">
             <Text style={[styles.headerName, { color: colors.textPrimary }]}>{contactName}</Text>
           </TouchableOpacity>
-          <Text style={[styles.headerPhone, { color: colors.textSecondary }]}>{contactPhone}</Text>
+          {conversationStatus === 'closed' ? (
+            <TouchableOpacity onPress={toggleConversationStatus} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
+              <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: '#8E8E93' }} />
+              <Text style={{ fontSize: 12, color: '#8E8E93', fontWeight: '600' }}>Closed</Text>
+              <Text style={{ fontSize: 12, color: '#34C759', fontWeight: '600' }}>· Tap to Reopen</Text>
+            </TouchableOpacity>
+          ) : (
+            <Text style={[styles.headerPhone, { color: colors.textSecondary }]}>{contactPhone}</Text>
+          )}
         </View>
 
         {/* Phone + Voice Note action icons */}
@@ -3110,14 +3118,27 @@ function ThreadScreen() {
       <Modal
         visible={showSettings}
         animationType="slide"
-        presentationStyle="pageSheet"
         transparent={true}
+        onRequestClose={() => setShowSettings(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHandle} />
-            
-            <Text style={styles.modalTitle}>Conversation Settings</Text>
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}
+          activeOpacity={1}
+          onPress={() => setShowSettings(false)}
+        >
+          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
+            <View style={[styles.modalContent, { maxHeight: '85%' }]}>
+              <View style={styles.modalHandle} />
+
+              {/* Close button for native */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                <Text style={styles.modalTitle}>Conversation Settings</Text>
+                <TouchableOpacity onPress={() => setShowSettings(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                  <Ionicons name="close-circle" size={26} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView showsVerticalScrollIndicator={false} bounces={true} keyboardShouldPersistTaps="handled">
             
             {/* AI Mode Selection */}
             <Text style={styles.modalSectionTitle}>AI Assistant Mode</Text>
@@ -3307,8 +3328,10 @@ function ThreadScreen() {
             >
               <Text style={styles.closeModalText}>Done</Text>
             </TouchableOpacity>
-          </View>
-        </View>
+              </ScrollView>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
       <ChannelPicker
         message={channelPicker.message}
