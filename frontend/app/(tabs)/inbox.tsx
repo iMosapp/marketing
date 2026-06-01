@@ -26,6 +26,7 @@ import { format } from 'date-fns';
 import { NotificationBell } from '../../components/notifications/NotificationBell';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Image } from 'expo-image';
+import { resolvePhotoUrl } from '../../utils/photoUrl';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { messagesAPI, contactsAPI, emailAPI, tasksAPI, tagsAPI } from '../../services/api';
@@ -880,7 +881,7 @@ export default function InboxScreen() {
   
   const renderConversation = ({ item }: { item: any }) => {
     const contactName = item.contact?.name || 'Unknown';
-    const contactPhoto = item.contact?.photo_thumbnail || item.contact?.photo_url || null;
+    const contactPhoto = resolvePhotoUrl(item.contact?.photo_thumbnail || item.contact?.photo_url || null);
     const contactInitials = contactName
       .split(' ')
       .map((n: string) => n[0] || '')
@@ -1240,7 +1241,7 @@ export default function InboxScreen() {
   // Render team conversation item
   const renderTeamConversation = ({ item }: { item: any }) => {
     const contactName = item.contact_name || 'Unknown';
-    const contactPhoto = item.contact_photo || null;
+    const contactPhoto = resolvePhotoUrl(item.contact_photo || null);
     const contactInitials = contactName
       .split(' ')
       .map((n: string) => n[0] || '')
