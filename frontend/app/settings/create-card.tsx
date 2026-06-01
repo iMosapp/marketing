@@ -267,8 +267,22 @@ export default function CreateCardPage() {
           return;
         }
 
+        // Find or create a conversation for this contact so the thread send works
+        let threadId = contactId;
+        try {
+          const convRes = await api.get(`/messages/conversations/${user._id}`, { params: { contact_id: contactId } });
+          const conversations = Array.isArray(convRes.data) ? convRes.data : convRes.data?.conversations || [];
+          if (conversations.length > 0) {
+            threadId = conversations[0].id || conversations[0]._id || contactId;
+          } else {
+            // Create conversation if none exists
+            const newConv = await api.post(`/messages/conversations/${user._id}`, { contact_id: contactId, contact_phone: cPhone });
+            threadId = newConv.data?.id || newConv.data?._id || contactId;
+          }
+        } catch { threadId = contactId; }
+
         // Navigate to inbox thread with pre-filled message
-        navigateToThread(contactId, cName, cPhone, cEmail, platform, text);
+        navigateToThread(threadId, cName, cPhone, cEmail, platform, text);
       } catch (err: any) {
         const detail = err?.response?.data?.detail || '';
         if (detail.includes('Phone or email')) {
@@ -553,14 +567,13 @@ export default function CreateCardPage() {
               onPress={() => setShowTypePicker(false)}
             />
             {/* Modal sheet — plain View, no touch wrapper that conflicts with ScrollView */}
-            <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 20, paddingHorizontal: 20, maxHeight: '80%' }}>
+            <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 20, paddingHorizontal: 20, maxHeight: '80%', paddingBottom: 30 }}>
               <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 16 }}>Choose Card Type</Text>
               <ScrollView
                 showsVerticalScrollIndicator={true}
-                bounces={false}
-                style={{ flex: 1 }}
-                contentContainerStyle={{ paddingBottom: 36 }}
+                bounces={true}
                 keyboardShouldPersistTaps="handled"
+                contentContainerStyle={{ paddingBottom: 20 }}
               >
                   {Object.entries(TYPE_META).map(([key, t]) => (
                     <TouchableOpacity
