@@ -1934,9 +1934,14 @@ function ContactDetailScreen() {
     }
   };
 
-  const playVoiceNote = (noteId: string, audioUrl: string) => {
-    if (Platform.OS !== 'web') return;
-    // Stop current playback
+  const nativeSoundRef = React.useRef<any>(null);
+
+  const playVoiceNote = async (noteId: string, audioUrl: string) => {
+    // Stop any current playback
+    if (nativeSoundRef.current) {
+      try { await nativeSoundRef.current.unloadAsync(); } catch {}
+      nativeSoundRef.current = null;
+    }
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
@@ -1945,7 +1950,36 @@ function ContactDetailScreen() {
       setPlayingNoteId(null);
       return;
     }
-    const audio = new Audio(audioUrl);
+
+    // Resolve to absolute URL for native
+    const { resolvePhotoUrl } = await import('../../utils/photoUrl');
+    const resolvedUrl = audioUrl.startsWith('http') ? audioUrl : resolvePhotoUrl(audioUrl) || audioUrl;
+
+    if (Platform.OS !== 'web') {
+      // Native: use expo-av Sound
+      try {
+        await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true });
+        const { sound } = await Audio.Sound.createAsync(
+          { uri: resolvedUrl },
+          { shouldPlay: true },
+          (status: any) => {
+            if (status.didJustFinish || !status.isLoaded) {
+              setPlayingNoteId(null);
+              nativeSoundRef.current = null;
+            }
+          }
+        );
+        nativeSoundRef.current = sound;
+        setPlayingNoteId(noteId);
+      } catch (e) {
+        console.error('[VoiceNote] Playback error:', e);
+        showSimpleAlert('Error', 'Failed to play audio. Please try again.');
+      }
+      return;
+    }
+
+    // Web: use HTML5 Audio
+    const audio = new Audio(resolvedUrl);
     audio.onended = () => setPlayingNoteId(null);
     audio.onerror = () => { setPlayingNoteId(null); showSimpleAlert('Error', 'Failed to play audio'); };
     audio.play();

@@ -86,7 +86,7 @@ export const getS = (colors: any) => StyleSheet.create({
   heroTagsStripTitle: { fontSize: 13, fontWeight: '700', color: '#FF9500', textTransform: 'uppercase', letterSpacing: 0.5, flex: 1 },
   heroTagsStripAdd: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#007AFF15', alignItems: 'center', justifyContent: 'center' },
   heroTagChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 14, borderWidth: 1 },
-  heroTagChipText: { fontSize: 14, fontWeight: '600', maxWidth: 120, color: colors.text },
+  heroTagChipText: { fontSize: 13, fontWeight: '600', maxWidth: 140, color: colors.text },
   heroTagsEmpty: { fontSize: 14, color: colors.textTertiary, fontStyle: 'italic', paddingBottom: 4 },
 
   heroCampaignsStrip: { paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4, borderTopWidth: 1, borderTopColor: colors.border },
