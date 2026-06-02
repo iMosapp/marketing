@@ -571,6 +571,21 @@ When a rep is terminated (deactivated), their dedicated Twilio number is automat
 - Reactivation toast mentions pooled number if still available.
 
 
+## Android Play Store Setup (June 1, 2026) — INTERNAL TESTING ✅
+
+- Google Play Console account created under VI Ventures Group LLC
+- App listing created: `com.imonsocial.app` — "Im On Social"
+- Android AAB built via EAS (Build versionCode 2)
+- Uploaded to Internal Testing track manually (service account JSON blocked by org policy)
+- **Pending:** Full store listing (screenshots, description, content rating) for public release
+
+**For future Android submissions:**
+- `eas build --platform android --profile production` → downloads .aab
+- Upload manually to Google Play Console → Testing → Internal testing → Create release
+- Service account JSON method blocked by imonsocial.com org policy — use manual upload
+
+
+
 ## Pre-Deploy Safety System (May 27, 2026) — VERIFIED ✅
 
 **Root cause fixed:** `scheduler.py` line 881 had a merged docstring (`async def f():    """docstring"""` on one line) causing IndentationError on import → ALL 16 background jobs failed silently. This broke campaigns, AI auto-replies, push digests, and AI escalations.
