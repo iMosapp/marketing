@@ -1078,8 +1078,20 @@ export default function InboxScreen() {
             numberOfLines={1}
           >
             {item.last_message?.sender === 'user' ? 'You: ' : ''}
-            {item.last_message?.content || 'No messages yet'}
+            {item.last_message?.content || (item.status === 'closed' ? 'Closed conversation' : 'No messages yet')}
           </Text>
+
+          {/* Closed — show visible Reopen tap */}
+          {item.status === 'closed' && !item.last_message?.content && (
+            <TouchableOpacity
+              onPress={() => handleReopenConversation(item._id)}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3, alignSelf: 'flex-start', backgroundColor: '#34C75915', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: '#34C75940' }}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            >
+              <Ionicons name="refresh-circle-outline" size={12} color="#34C759" />
+              <Text style={{ fontSize: 11, color: '#34C759', fontWeight: '700' }}>Tap to Reopen</Text>
+            </TouchableOpacity>
+          )}
 
           {/* Waiting time badge — only on Waiting tab */}
           {(() => {
@@ -1500,7 +1512,7 @@ export default function InboxScreen() {
 
     if (Platform.OS !== 'web') {
       return (
-        <BlurView intensity={80} tint={messageMode === 'email' ? 'light' : 'dark'} style={[styles.header, { backgroundColor: colors.background }]}>
+        <BlurView intensity={80} tint={themeMode === 'dark' ? 'dark' : 'light'} style={[styles.header, { backgroundColor: colors.background + 'CC' }]}>
           {headerContent}
         </BlurView>
       );

@@ -210,25 +210,33 @@ async def get_conversations(user_id: str, personal_only: bool = True):
                     "photo_url": contact.get('photo_url'),
                 }
     
-    # Single query for last messages (one per conversation using aggregation)
+    # Single query for last messages — match both string and ObjectId conversation_id formats
     last_msg_map = {}
     if conv_ids:
+        # Include both ObjectId and string versions to handle mixed storage formats
+        conv_id_strings = [str(c) for c in conv_ids]
         pipeline = [
-            {"$match": {"conversation_id": {"$in": conv_ids}}},
+            {"$match": {"conversation_id": {"$in": conv_ids + conv_id_strings}}},
             {"$sort": {"timestamp": -1}},
             {"$group": {
                 "_id": "$conversation_id",
                 "content": {"$first": "$content"},
                 "timestamp": {"$first": "$timestamp"},
                 "sender": {"$first": "$sender"},
+                "channel": {"$first": "$channel"},
+                "type": {"$first": "$type"},
             }}
         ]
         async for msg in db.messages.aggregate(pipeline):
-            last_msg_map[msg['_id']] = {
-                "content": msg['content'],
+            # Store under both string and ObjectId key for lookup
+            key = msg['_id']
+            entry = {
+                "content": msg.get('content') or ('[Call]' if msg.get('type') == 'call_log' or msg.get('channel') == 'voice' else ''),
                 "timestamp": msg['timestamp'],
                 "sender": msg['sender'],
             }
+            last_msg_map[key]       = entry
+            last_msg_map[str(key)]  = entry
     
     # Assemble results
     result = []
