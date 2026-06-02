@@ -208,10 +208,13 @@ async def incoming_message(
             enriched_last  = "Lead"
             try:
                 any_contact = await db.contacts.find_one(
-                    {"$or": [{"phone": from_phone}, {"phone": alt_phone}, {"phone": from_phone.lstrip("+")}]},
+                    {
+                        "$or": [{"phone": from_phone}, {"phone": alt_phone}, {"phone": from_phone.lstrip("+")}],
+                        "name": {"$nin": ["Contact", "Unknown", "New Lead", "", None], "$not": {"$regex": "^Lead \\("}}
+                    },
                     {"name": 1, "first_name": 1, "last_name": 1, "photo_url": 1, "photo_thumbnail": 1}
                 )
-                if any_contact and any_contact.get("name") and not any_contact["name"].startswith("Lead ("):
+                if any_contact and any_contact.get("name"):
                     enriched_name  = any_contact["name"]
                     enriched_first = any_contact.get("first_name") or enriched_name.split()[0]
                     enriched_last  = any_contact.get("last_name")  or (" ".join(enriched_name.split()[1:]) if " " in enriched_name else "")
