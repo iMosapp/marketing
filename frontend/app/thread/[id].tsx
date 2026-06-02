@@ -484,7 +484,10 @@ function ThreadScreen() {
   };
 
   const conversationId = id as string;
-  const contactName = (contact_name as string) || 'Contact';
+  // Contact name: use param → phone lookup → fallback
+  const contactName = (contact_name as string)?.trim() && (contact_name as string).trim() !== 'Contact'
+    ? (contact_name as string).trim()
+    : (contact_phone ? `(${(contact_phone as string).slice(-4)})` : 'Contact');
   const contactPhone = (contact_phone as string) || '';
   const [actualConversationId, setActualConversationId] = useState<string | null>(null);
   // Initialize with param photo if available, will be overwritten by API if different

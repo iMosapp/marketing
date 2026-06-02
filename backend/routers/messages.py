@@ -1025,6 +1025,7 @@ async def cleanup_all_conversations(request: Request):
     # Any conversation where contact_name is null/empty/"Contact"/"Unknown"/Lead(XXXX)
     bad_name_convs = await db.conversations.find({
         "$or": [
+            {"contact_name": {"$exists": False}},   # missing field entirely
             {"contact_name": None},
             {"contact_name": ""},
             {"contact_name": "Contact"},
@@ -1077,7 +1078,7 @@ async def cleanup_all_conversations(request: Request):
 
     # ── Step 2: Backfill rep_phone ─────────────────────────────────────────────
     all_convs_no_rep = await db.conversations.find(
-        {"rep_phone": {"$exists": False}},
+        {"$or": [{"rep_phone": {"$exists": False}}, {"rep_phone": None}, {"rep_phone": ""}]},
         {"_id": 1, "user_id": 1}
     ).to_list(2000)
 
