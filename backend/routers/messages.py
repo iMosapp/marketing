@@ -284,41 +284,64 @@ async def get_conversation(user_id: str, conversation_id: str):
 
 @router.post("/conversations/{user_id}")
 async def create_conversation(user_id: str, data: dict):
-    """Create or get existing conversation with a contact"""
-    contact_id = data.get('contact_id')
+    """Create or get existing conversation with a contact. Always stamps rep_phone."""
+    db = get_db()
+    contact_id    = data.get('contact_id')
     contact_phone = data.get('contact_phone')
-    
-    # Try to find existing conversation
-    if contact_id:
-        existing = await get_db().conversations.find_one({
-            "user_id": user_id,
-            "contact_id": contact_id
-        })
-        if existing:
-            existing['_id'] = str(existing['_id'])
-            return existing
-    
-    # Create new conversation
+
+    # Look up the rep's Twilio number — this becomes the permanent routing key
+    rep = await db.users.find_one({"_id": ObjectId(user_id)}, {"twilio_number": 1, "mvpline_number": 1})
+    rep_phone = (rep or {}).get("twilio_number") or (rep or {}).get("mvpline_number")
+
+    # Look up contact name from the contacts collection (source of truth)
+    contact_name = data.get('contact_name', '')
+    if not contact_name and contact_id:
+        try:
+            c = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"name": 1, "first_name": 1, "last_name": 1})
+            if c:
+                contact_name = c.get("name") or f"{c.get('first_name','')} {c.get('last_name','')}".strip()
+        except Exception:
+            pass
+
+    # Try to find existing conversation — by rep_phone+contact_phone (preferred) or contact_id
+    existing = None
+    if rep_phone and contact_phone:
+        existing = await db.conversations.find_one({"rep_phone": rep_phone, "contact_phone": contact_phone})
+    if not existing and contact_id:
+        existing = await db.conversations.find_one({"user_id": user_id, "contact_id": contact_id})
+    if existing:
+        # Backfill rep_phone and contact_name if missing
+        updates = {}
+        if rep_phone and not existing.get("rep_phone"):
+            updates["rep_phone"] = rep_phone
+        if contact_name and (not existing.get("contact_name") or existing.get("contact_name") in ("Contact", "Unknown")):
+            updates["contact_name"] = contact_name
+        if updates:
+            await db.conversations.update_one({"_id": existing["_id"]}, {"$set": updates})
+        existing['_id'] = str(existing['_id'])
+        return existing
+
+    # Create new conversation — always with rep_phone for proper routing
     conv = {
-        "user_id": user_id,
-        "contact_id": contact_id,
+        "user_id":       user_id,
+        "rep_phone":     rep_phone,       # THE ROUTING KEY — which rep's Twilio number
+        "contact_id":    contact_id,
         "contact_phone": contact_phone,
-        "status": "active",
-        "ai_enabled": False,
-        "ai_mode": "suggest",
-        "ai_handled": False,  # Has AI communicated in this conversation
-        "ai_outcome": None,   # Current AI-detected outcome type
-        "ai_outcome_priority": 999,  # Priority for sorting (lower = more important)
-        "unread": False,
-        "unread_count": 0,
+        "contact_name":  contact_name,
+        "status":        "active",
+        "ai_enabled":    False,
+        "ai_mode":       "suggest",
+        "ai_handled":    False,
+        "ai_outcome":    None,
+        "ai_outcome_priority": 999,
+        "unread":        False,
+        "unread_count":  0,
         "needs_assistance": False,
-        "created_at": datetime.now(timezone.utc),
-        "last_message_at": datetime.now(timezone.utc)
+        "created_at":    datetime.now(timezone.utc),
+        "last_message_at": datetime.now(timezone.utc),
     }
-    
-    result = await get_db().conversations.insert_one(conv)
+    result = await db.conversations.insert_one(conv)
     conv['_id'] = str(result.inserted_id)
-    
     return conv
 
 @router.post("/send/{user_id}/{conversation_id}")
@@ -702,21 +725,25 @@ async def send_mms_message(
         if not conv:
             contact = await db.contacts.find_one({"_id": ObjectId(conversation_id)})
             if contact:
-                # Create new conversation for this contact
+                # Look up rep's Twilio number for proper routing key
+                rep_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"twilio_number": 1, "mvpline_number": 1})
+                rep_phone_for_conv = (rep_doc or {}).get("twilio_number") or (rep_doc or {}).get("mvpline_number")
+                cname = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip() or contact.get('name', '')
                 conv = {
-                    "user_id": user_id,
-                    "contact_id": conversation_id,
+                    "user_id":       user_id,
+                    "rep_phone":     rep_phone_for_conv,   # Routing key
+                    "contact_id":    conversation_id,
                     "contact_phone": contact.get('phone'),
-                    "contact_name": f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip() or contact.get('name'),
-                    "status": "active",
-                    "ai_enabled": False,
-                    "ai_mode": "suggest",
-                    "created_at": datetime.now(timezone.utc),
+                    "contact_name":  cname,
+                    "status":        "active",
+                    "ai_enabled":    False,
+                    "ai_mode":       "suggest",
+                    "created_at":    datetime.now(timezone.utc),
                     "last_message_at": datetime.now(timezone.utc)
                 }
                 result = await db.conversations.insert_one(conv)
                 conv['_id'] = result.inserted_id
-                logger.info(f"Created new conversation for contact {conversation_id}")
+                logger.info(f"[Messages] Created conversation for contact {conversation_id} with rep_phone={rep_phone_for_conv}")
             else:
                 raise HTTPException(status_code=404, detail="Contact not found")
     
@@ -893,7 +920,55 @@ async def restore_conversation(conversation_id: str):
 
 
 
-@router.post("/merge-conversations")
+@router.post("/merge-duplicates/{user_id}")
+async def merge_duplicate_conversations_for_user(user_id: str):
+    """
+    Find and merge duplicate conversations for a user.
+    Duplicates = same (user_id, contact_phone) with different conversation IDs.
+    Keeps the conversation with the most messages; moves all messages into it.
+    """
+    db = get_db()
+    pipeline = [
+        {"$match": {"user_id": user_id, "contact_phone": {"$exists": True, "$ne": None}}},
+        {"$group": {
+            "_id": "$contact_phone",
+            "conv_ids": {"$push": "$_id"},
+            "count": {"$sum": 1},
+        }},
+        {"$match": {"count": {"$gt": 1}}},
+    ]
+    groups = await db.conversations.aggregate(pipeline).to_list(100)
+    merged = 0
+    for g in groups:
+        convs = await db.conversations.find(
+            {"_id": {"$in": g["conv_ids"]}}
+        ).sort("last_message_at", -1).to_list(10)
+        if len(convs) < 2:
+            continue
+        # Keep the most recently active conversation
+        keeper = convs[0]
+        dupes  = convs[1:]
+        keeper_id = str(keeper["_id"])
+        # Backfill rep_phone on keeper if missing
+        if not keeper.get("rep_phone"):
+            rep = await db.users.find_one({"_id": ObjectId(user_id)}, {"twilio_number": 1, "mvpline_number": 1})
+            rep_ph = (rep or {}).get("twilio_number") or (rep or {}).get("mvpline_number")
+            if rep_ph:
+                await db.conversations.update_one({"_id": keeper["_id"]}, {"$set": {"rep_phone": rep_ph}})
+        for dupe in dupes:
+            dupe_id = str(dupe["_id"])
+            # Move all messages from dupe → keeper
+            await db.messages.update_many(
+                {"conversation_id": dupe_id},
+                {"$set": {"conversation_id": keeper_id}}
+            )
+            # Delete the duplicate
+            await db.conversations.delete_one({"_id": dupe["_id"]})
+            merged += 1
+            logger.info(f"[Merge] Merged {dupe_id} → {keeper_id} for phone {g['_id']}")
+    return {"merged": merged, "groups_processed": len(groups)}
+
+
 async def merge_conversations(data: dict):
     """
     Merge two conversations into one — moves all messages from the secondary
