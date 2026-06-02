@@ -3855,18 +3855,18 @@ function ContactDetailScreen() {
                 </View>
               )}
               <TextInput
-                style={[s.composerInput, { color: colors.text, height: Math.max(44, Math.min(composerInputHeight, 200)) }]}
+                style={[s.composerInput, {
+                  color: colors.text,
+                  minHeight: 44,
+                  maxHeight: 180,
+                }]}
                 placeholder="Type your message..."
                 placeholderTextColor={colors.textTertiary}
                 value={composerMessage}
                 onChangeText={setComposerMessage}
                 multiline
                 maxLength={1600}
-                onContentSizeChange={(e) => {
-                  const h = e.nativeEvent.contentSize.height;
-                  setComposerInputHeight(Math.max(44, h));
-                }}
-                scrollEnabled={composerInputHeight >= 200}
+                scrollEnabled
                 data-testid="composer-input"
               />
               <View style={[s.composerToolbar, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>

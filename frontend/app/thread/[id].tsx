@@ -2362,18 +2362,18 @@ function ThreadScreen() {
             
             {/* Text input area */}
             <TextInput
-              style={[styles.composerInput, { color: colors.textPrimary, height: Math.max(44, Math.min(inputHeight, 180)) }]}
+              style={[styles.composerInput, {
+                color: colors.textPrimary,
+                minHeight: 44,
+                maxHeight: 180,
+              }]}
               placeholder={selectedMedia ? "Add a caption (optional)..." : "Type your message..."}
               placeholderTextColor={colors.textSecondary}
               value={message}
               onChangeText={setMessage}
               multiline
+              scrollEnabled
               maxLength={1600}
-              onContentSizeChange={(e) => {
-                const h = e.nativeEvent.contentSize.height;
-                setInputHeight(Math.max(44, h));
-              }}
-              scrollEnabled={inputHeight >= 180}
               returnKeyType="default"
               blurOnSubmit={false}
             />
