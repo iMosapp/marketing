@@ -200,13 +200,34 @@ async def incoming_message(
         is_new_contact = False
         if not contact:
             is_new_contact = True
+            # Enrich: try to find the contact's real name from any other rep's namespace
+            # This prevents "Lead (9122)" when "Forest Ward" is already known in the system
+            enriched_name = f"Lead ({from_phone[-4:]})"
+            enriched_photo = None
+            enriched_first = "New"
+            enriched_last  = "Lead"
+            try:
+                any_contact = await db.contacts.find_one(
+                    {"$or": [{"phone": from_phone}, {"phone": alt_phone}, {"phone": from_phone.lstrip("+")}]},
+                    {"name": 1, "first_name": 1, "last_name": 1, "photo_url": 1, "photo_thumbnail": 1}
+                )
+                if any_contact and any_contact.get("name") and not any_contact["name"].startswith("Lead ("):
+                    enriched_name  = any_contact["name"]
+                    enriched_first = any_contact.get("first_name") or enriched_name.split()[0]
+                    enriched_last  = any_contact.get("last_name")  or (" ".join(enriched_name.split()[1:]) if " " in enriched_name else "")
+                    enriched_photo = any_contact.get("photo_url") or any_contact.get("photo_thumbnail")
+                    logger.info(f"[Webhook] Enriched new contact name from system: {enriched_name}")
+            except Exception:
+                pass
+
             contact = {
                 "phone":       from_phone,
-                "first_name":  "New",
-                "last_name":   "Lead",
-                "name":        f"Lead ({from_phone[-4:]})",
+                "first_name":  enriched_first,
+                "last_name":   enriched_last,
+                "name":        enriched_name,
+                "photo_url":   enriched_photo,
                 "source":      "sms_inbound",
-                "user_id":     rep_user_id,   # Always the rep who owns the Twilio number
+                "user_id":     rep_user_id,
                 "original_user_id": rep_user_id,
                 "tags":        ["Inbound Lead"],
                 "status":      "active",
@@ -215,7 +236,7 @@ async def incoming_message(
             }
             result = await db.contacts.insert_one(contact)
             contact["_id"] = result.inserted_id
-            logger.info(f"[Webhook] New contact created for {from_phone} in rep {rep_user_id}'s namespace")
+            logger.info(f"[Webhook] New contact '{enriched_name}' created for {from_phone} in rep {rep_user_id}'s namespace")
 
         contact_id = str(contact["_id"])
         user_id    = rep_user_id   # ALWAYS use the number owner's user_id — never the contact's stored user_id
@@ -245,6 +266,8 @@ async def incoming_message(
                 }, sort=[("last_message_at", -1)])
             if conversation:
                 # Backfill rep_phone so future lookups use the fast path
+                # Also update contact_name in case it was "Contact" or "Lead (XXXX)"
+                updated_name = contact.get("name") or conversation.get("contact_name", "")
                 await db.conversations.update_one(
                     {"_id": conversation["_id"]},
                     {"$set": {
@@ -252,17 +275,18 @@ async def incoming_message(
                         "contact_phone": from_phone,
                         "user_id":       rep_user_id,
                         "contact_id":    contact_id,
+                        "contact_name":  updated_name if updated_name and not updated_name.startswith("Lead (") else conversation.get("contact_name", updated_name),
                     }}
                 )
                 logger.info(f"[Webhook] Backfilled rep_phone={to_phone} on existing conversation {conversation['_id']}")
 
         if not conversation:
-            contact_name = (contact.get("name") or f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip())
+            contact_name = (contact.get("name") or f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip() or f"({from_phone[-4:]})")
             conversation = {
-                "user_id":       rep_user_id,    # The rep who owns the Twilio number
-                "rep_phone":     to_phone,        # THE TWILIO NUMBER — immutable routing key
+                "user_id":       rep_user_id,
+                "rep_phone":     to_phone,
                 "contact_id":    contact_id,
-                "contact_phone": from_phone,      # Customer's phone — immutable routing key
+                "contact_phone": from_phone,
                 "contact_name":  contact_name,
                 "status":        "active",
                 "ai_enabled":    False,
