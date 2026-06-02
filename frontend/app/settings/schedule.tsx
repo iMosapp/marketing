@@ -64,6 +64,7 @@ export default function SchedulePage() {
   const [loading, setLoading]     = useState(true);
   const [saving, setSaving]       = useState(false);
   const [quietMode, setQuietMode] = useState(false);
+  const [smsUrgentEnabled, setSmsUrgentEnabled] = useState(true);
   const [timezone, setTimezone]   = useState('America/Denver');
   const [rotationEnabled, setRotationEnabled] = useState(false);
   const [rotationAnchor, setRotationAnchor]   = useState('');
@@ -90,6 +91,7 @@ export default function SchedulePage() {
       ]);
       const d = schedRes.data;
       setQuietMode(d.notification_quiet || false);
+      setSmsUrgentEnabled(d.sms_you_are_needed !== false); // default true
       setTimezone(d.timezone || 'America/Denver');
       setRotationEnabled(d.rotation_enabled || false);
       setRotationAnchor(d.rotation_anchor || '');
@@ -115,6 +117,10 @@ export default function SchedulePage() {
         rotation_anchor: rotationAnchor || null,
         schedule_b: scheduleB,
       }, { headers: { 'X-User-ID': user?._id } });
+      // Save SMS urgent setting to user's notification_settings
+      await api.patch(`/users/${user?._id}`, {
+        notification_settings: { sms_you_are_needed: smsUrgentEnabled }
+      }).catch(() => {});
       showToast('Schedule saved', 'success');
       // Refresh availability
       const r = await api.get(`/schedule/status/${user?._id}`);
@@ -210,6 +216,22 @@ export default function SchedulePage() {
               onValueChange={setQuietMode}
               trackColor={{ true: colors.accent }}
               data-testid="quiet-mode-toggle"
+            />
+          </View>
+        </View>
+
+        {/* SMS YOU'RE NEEDED toggle */}
+        <View style={s.card}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.cardTitle}>SMS Urgent Alerts</Text>
+              <Text style={s.cardSub}>Get a text to your personal phone when a customer is waiting</Text>
+            </View>
+            <Switch
+              value={smsUrgentEnabled}
+              onValueChange={setSmsUrgentEnabled}
+              trackColor={{ true: '#FF9500' }}
+              data-testid="sms-urgent-toggle"
             />
           </View>
         </View>

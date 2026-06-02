@@ -425,7 +425,8 @@ async def incoming_message(
                         logger.debug(f"[Webhook] Active SMS skipped — rep texted their own number")
                     else:
                         app_url   = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
-                        conv_link = f"{app_url}/thread/{conversation_id}"
+                        conv_link = f"imos://thread/{conversation_id}"   # Deep link opens iOS app directly
+                        conv_link_web = f"{app_url}/thread/{conversation_id}"  # Web fallback
                         contact_display = contact.get("first_name") or contact.get("name") or from_phone[-4:]
 
                         # Use convo_update for throttle check (has the freshest rep_sms_notified_at)
@@ -772,14 +773,16 @@ async def incoming_message(
                         tw_token2 = os.environ.get("TWILIO_AUTH_TOKEN", "")
                         if tw_sid2 and tw_token2:
                             app_url2  = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
-                            conv_link2 = f"{app_url2}/thread/{conversation_id}"
+                            deep_link2 = f"imos://thread/{conversation_id}"
+                            web_link2  = f"{app_url2}/thread/{conversation_id}"
                             from services.twilio_service import normalize_phone as _np2
                             urgent_to = _np2(rep_personal_phone)
                             urgent_frm = rep_twilio_number
                             urgent_body = (
                                 f"⚠️ I'm On Social: YOU'RE NEEDED\n"
                                 f"{cname_esc} has texted {effective_reply_count} times without a reply.\n\n"
-                                f"Open now:\n{conv_link2}"
+                                f"Open app: {deep_link2}\n"
+                                f"Or web: {web_link2}"
                             )
                             async def _send_urgent_sms(to=urgent_to, frm=urgent_frm, body=urgent_body, sid=tw_sid2, tok=tw_token2):
                                 try:
