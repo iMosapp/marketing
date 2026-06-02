@@ -160,7 +160,7 @@ function ThreadScreen() {
   const styles = getStyles(colors);
   
   const [message, setMessage] = useState('');
-  const [inputHeight, setInputHeight] = useState(36);
+  const [inputHeight, setInputHeight] = useState(44);
   const [pendingEventType, setPendingEventType] = useState<string | null>(
     typeof paramEventType === 'string' ? paramEventType : null
   );
@@ -2362,7 +2362,7 @@ function ThreadScreen() {
             
             {/* Text input area */}
             <TextInput
-              style={[styles.composerInput, { color: colors.textPrimary, height: Math.max(40, Math.min(inputHeight, 180)) }]}
+              style={[styles.composerInput, { color: colors.textPrimary, height: Math.max(44, Math.min(inputHeight, 180)) }]}
               placeholder={selectedMedia ? "Add a caption (optional)..." : "Type your message..."}
               placeholderTextColor={colors.textSecondary}
               value={message}
@@ -2371,12 +2371,11 @@ function ThreadScreen() {
               maxLength={1600}
               onContentSizeChange={(e) => {
                 const h = e.nativeEvent.contentSize.height;
-                setInputHeight(Math.max(40, h));
+                setInputHeight(Math.max(44, h));
               }}
               scrollEnabled={inputHeight >= 180}
               returnKeyType="default"
               blurOnSubmit={false}
-              scrollEnabled={inputHeight > 150}
             />
             
             {/* Bottom toolbar inside the box */}

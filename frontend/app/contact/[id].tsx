@@ -423,7 +423,7 @@ function ContactDetailScreen() {
 
   // Composer state (inline inbox)
   const [composerMessage, setComposerMessage] = useState('');
-  const [composerInputHeight, setComposerInputHeight] = useState(36);
+  const [composerInputHeight, setComposerInputHeight] = useState(44);
   const [composerMode, setComposerMode] = useState<'sms' | 'email'>('sms');
   const [composerSending, setComposerSending] = useState(false);
   const [composerEventType, setComposerEventType] = useState<string | null>(null);
