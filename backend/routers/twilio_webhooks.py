@@ -183,35 +183,19 @@ async def incoming_message(
         rep_user_id = str(rep_user["_id"]) if rep_user else None
         rep_name    = (rep_user.get("name") or "").split()[0] if rep_user else "your rep"
 
-        # ── Step 2: Find or create contact — prefer named contacts ──────────────
-        # When multiple contacts share a phone, pick the one with a real name.
+        # ── Step 2: Find or create contact — STRICT REP NAMESPACE ───────────────
+        # CRITICAL: Only look in the rep's namespace (user_id = rep_user_id).
+        # Never look at other reps' contacts — the same customer phone number
+        # exists in multiple reps' contact books and MUST stay isolated.
         alt_phone = from_phone.replace("+1", "") if from_phone.startswith("+1") else "+1" + from_phone.lstrip("+")
-        all_matching = await db.contacts.find({
+        contact = await db.contacts.find_one({
+            "user_id": rep_user_id,
             "$or": [
                 {"phone": from_phone},
                 {"phone": alt_phone},
                 {"phone": from_phone.lstrip("+")},
             ]
-        }).to_list(10)
-
-        def _name_quality(c: dict) -> int:
-            """Higher = better name. Prefer named > phone-only > generic."""
-            n = (c.get("name") or f"{c.get('first_name','')} {c.get('last_name','')}".strip()).strip()
-            if not n or n in ("Contact", "Unknown", "New Lead"):
-                return 0
-            if n.startswith("Lead (") or n.startswith("New Lead"):
-                return 1
-            return 2  # Real name
-
-        if all_matching:
-            all_matching.sort(key=_name_quality, reverse=True)
-            contact = all_matching[0]
-            # If we found a better-named contact than others, mark the duplicates
-            if len(all_matching) > 1 and _name_quality(contact) > _name_quality(all_matching[-1]):
-                dup_ids = [str(c["_id"]) for c in all_matching[1:]]
-                logger.info(f"[Webhook] Multiple contacts for {from_phone}: using {contact.get('name')} (best), {len(dup_ids)} duplicates")
-        else:
-            contact = None
+        })
 
         is_new_contact = False
         if not contact:
@@ -222,7 +206,7 @@ async def incoming_message(
                 "last_name":   "Lead",
                 "name":        f"Lead ({from_phone[-4:]})",
                 "source":      "sms_inbound",
-                "user_id":     rep_user_id,
+                "user_id":     rep_user_id,   # Always the rep who owns the Twilio number
                 "original_user_id": rep_user_id,
                 "tags":        ["Inbound Lead"],
                 "status":      "active",
@@ -231,63 +215,67 @@ async def incoming_message(
             }
             result = await db.contacts.insert_one(contact)
             contact["_id"] = result.inserted_id
-            logger.info(f"[Webhook] New contact created for {from_phone}, assigned to {rep_user_id}")
-        elif not contact.get("user_id") and rep_user_id:
-            await db.contacts.update_one(
-                {"_id": contact["_id"]},
-                {"$set": {"user_id": rep_user_id}}
-            )
-            contact["user_id"] = rep_user_id
+            logger.info(f"[Webhook] New contact created for {from_phone} in rep {rep_user_id}'s namespace")
 
         contact_id = str(contact["_id"])
-        user_id    = contact.get("user_id") or rep_user_id
-        is_stop    = False
-        
-        # ── Find or create conversation — check by phone too to avoid duplicates ──
-        # First try exact contact_id match, then fall back to phone number.
-        # If we find a conversation linked to a worse contact, upgrade it.
-        conversation = await db.conversations.find_one({"contact_id": contact_id})
+        user_id    = rep_user_id   # ALWAYS use the number owner's user_id — never the contact's stored user_id
+
+        is_stop = False
+
+        # ── Step 3: Find or create conversation — PRIMARY KEY: (rep_phone, contact_phone) ──
+        # This is the ONLY correct key. The same customer can have conversations
+        # with 100 different reps — each is completely isolated by rep_phone.
+        conversation = await db.conversations.find_one({
+            "rep_phone":     to_phone,     # Jessi's +13854443045 — the number the customer texted
+            "contact_phone": from_phone,   # The customer's phone
+        })
 
         if not conversation:
-            # Check if a conversation exists for this phone under a different contact_id
+            # Backfill: check old-model conversations for this rep+contact pair
             phone_variants = [from_phone, alt_phone, from_phone.lstrip("+")]
-            conv_by_phone = await db.conversations.find_one({
-                "user_id": rep_user_id,
-                "contact_phone": {"$in": phone_variants},
-            }, sort=[("last_message_at", -1)])
-            if conv_by_phone:
-                # Reuse existing conversation, upgrade it to the better contact
-                conversation = conv_by_phone
-                contact_name = (contact.get("name") or f"{contact.get('first_name','')} {contact.get('last_name','')}".strip()) if contact else ""
+            conversation = await db.conversations.find_one({
+                "user_id":      rep_user_id,
+                "contact_id":   contact_id,
+            })
+            if not conversation:
+                # Also try by phone (catches conversations before this rep was assigned)
+                conversation = await db.conversations.find_one({
+                    "user_id":       rep_user_id,
+                    "contact_phone": {"$in": phone_variants},
+                }, sort=[("last_message_at", -1)])
+            if conversation:
+                # Backfill rep_phone so future lookups use the fast path
                 await db.conversations.update_one(
                     {"_id": conversation["_id"]},
                     {"$set": {
-                        "contact_id":   contact_id,
-                        "contact_name": contact_name or conversation.get("contact_name", ""),
+                        "rep_phone":     to_phone,
                         "contact_phone": from_phone,
+                        "user_id":       rep_user_id,
+                        "contact_id":    contact_id,
                     }}
                 )
-                logger.info(f"[Webhook] Relinked conversation {conversation['_id']} to better contact {contact_id} ({contact_name})")
+                logger.info(f"[Webhook] Backfilled rep_phone={to_phone} on existing conversation {conversation['_id']}")
 
         if not conversation:
             contact_name = (contact.get("name") or f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip())
             conversation = {
-                "user_id": user_id,
-                "contact_id": contact_id,
-                "contact_phone": from_phone,
-                "contact_name": contact_name,
-                "status": "active",
-                "ai_enabled": False,
-                "ai_mode": "suggest",
-                "unread": True,
-                "unread_count": 1,
+                "user_id":       rep_user_id,    # The rep who owns the Twilio number
+                "rep_phone":     to_phone,        # THE TWILIO NUMBER — immutable routing key
+                "contact_id":    contact_id,
+                "contact_phone": from_phone,      # Customer's phone — immutable routing key
+                "contact_name":  contact_name,
+                "status":        "active",
+                "ai_enabled":    False,
+                "ai_mode":       "suggest",
+                "unread":        True,
+                "unread_count":  1,
                 "needs_assistance": False,
-                "created_at": datetime.utcnow(),
+                "created_at":    datetime.utcnow(),
                 "last_message_at": datetime.utcnow()
             }
             result = await db.conversations.insert_one(conversation)
             conversation["_id"] = result.inserted_id
-            logger.info(f"Created new conversation for contact {contact_id}")
+            logger.info(f"[Webhook] New conversation: rep_phone={to_phone} contact_phone={from_phone} user={rep_user_id}")
         else:
             await db.conversations.update_one(
                 {"_id": conversation["_id"]},
@@ -1462,21 +1450,21 @@ async def handle_inbound_voice(
 
     logger.info(f"[Voice] Inbound call from {from_phone} to {to_phone} | SID={CallSid}")
 
-    # Find the rep who owns this Twilio number
+    # Find the rep who owns this Twilio number — same strict lookup as SMS
     rep_user = await db.users.find_one({
         "$or": [{"twilio_number": to_phone}, {"mvpline_number": to_phone}],
-        "is_active": {"$ne": False},
+        "status": {"$ne": "deactivated"},   # Same rule as SMS — only exclude hard-deactivated
     })
     if not rep_user:
-        # Fallback: super admin
         rep_user = await db.users.find_one({"role": {"$in": ["super_admin", "org_admin"]}})
+        if rep_user:
+            logger.warning(f"[Voice] No rep found for {to_phone} — falling back to super_admin ({rep_user.get('name')})")
 
     rep_personal_phone = normalize_phone((rep_user.get("phone") or "").strip()) if rep_user else ""
     rep_name           = (rep_user.get("name") or "I'm On Social").split()[0] if rep_user else "I'm On Social"
     app_url            = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
 
-    # Log the call attempt as a contact event
-    # Skip logging if FROM is a rep's own Twilio number (bridge-back call, not a real customer)
+    # Log the call — strict rep namespace (same as SMS)
     is_bridge_back_call = False
     try:
         rep_with_this_number = await db.users.find_one({
@@ -1490,32 +1478,41 @@ async def handle_inbound_voice(
 
     if rep_user and not is_bridge_back_call:
         try:
+            rep_user_id = str(rep_user["_id"])
+            # Strict namespace: only look for contact in THIS rep's contacts
             contact = await db.contacts.find_one({
+                "user_id": rep_user_id,
                 "$or": [{"phone": from_phone}, {"phone": from_phone.lstrip("+")}]
             })
-            contact_id  = str(contact["_id"]) if contact else None
-            contact_name = (contact or {}).get("name") or f"Unknown ({from_phone[-4:]})"
-            user_id = str(rep_user["_id"])
+            if not contact:
+                contact = None
+            contact_id   = str(contact["_id"]) if contact else None
+            contact_name = (contact or {}).get("name") or f"({from_phone[-4:]})"
             await db.contact_events.insert_one({
-                "user_id":      user_id,
+                "user_id":      rep_user_id,
                 "contact_id":   contact_id,
                 "contact_name": contact_name,
                 "event_type":   "inbound_call",
                 "category":     "call",
                 "title":        f"{contact_name} called",
-                "description":  f"Inbound call from {from_phone}",
+                "description":  f"Inbound call from {from_phone} to {to_phone}",
                 "channel":      "voice",
+                "rep_phone":    to_phone,       # The Twilio number that received the call
+                "call_sid":     CallSid,
                 "timestamp":    datetime.utcnow(),
             })
-            # Find or create conversation and log
-            conv = await db.conversations.find_one({"contact_id": contact_id}) if contact_id else None
+            # Find conversation using the strict key: (rep_phone, contact_phone)
+            conv = await db.conversations.find_one({
+                "rep_phone":     to_phone,
+                "contact_phone": from_phone,
+            })
             if conv:
                 await db.conversations.update_one(
                     {"_id": conv["_id"]},
                     {"$set": {"last_call_at": datetime.utcnow()}}
                 )
         except Exception as _ce:
-            logger.debug(f"[Voice] Event log skipped: {_ce}")
+            logger.warning(f"[Voice] Event log error: {_ce}")
 
     # Build TwiML — dial the rep's personal cell, plain and simple
     app_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
