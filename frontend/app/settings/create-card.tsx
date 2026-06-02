@@ -552,29 +552,36 @@ export default function CreateCardPage() {
           </View>
         </TouchableOpacity>
 
-        {/* Type picker — uses Modal so it renders above ScrollView on all platforms */}
+        {/* Type picker modal */}
         <Modal
           visible={showTypePicker}
           animationType="slide"
           transparent
           onRequestClose={() => setShowTypePicker(false)}
         >
-          <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-            {/* Tap-to-dismiss backdrop — separate from the sheet so it doesn't fight scroll */}
-            <TouchableOpacity
-              style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.7)' } as any}
-              activeOpacity={1}
-              onPress={() => setShowTypePicker(false)}
-            />
-            {/* Modal sheet — plain View, no touch wrapper that conflicts with ScrollView */}
-            <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingTop: 20, paddingHorizontal: 20, maxHeight: '80%', paddingBottom: 30 }}>
-              <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, marginBottom: 16 }}>Choose Card Type</Text>
-              <ScrollView
-                showsVerticalScrollIndicator={true}
-                bounces={true}
-                keyboardShouldPersistTaps="handled"
-                contentContainerStyle={{ paddingBottom: 20 }}
-              >
+          <TouchableOpacity
+            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}
+            activeOpacity={1}
+            onPress={() => setShowTypePicker(false)}
+          >
+            <TouchableOpacity activeOpacity={1} onPress={() => {}}>
+              <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 12, paddingHorizontal: 20, paddingBottom: 40, maxHeight: 560 }}>
+                {/* Drag handle */}
+                <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 16 }} />
+                {/* Header with close button */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                  <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text }}>Choose Card Type</Text>
+                  <TouchableOpacity onPress={() => setShowTypePicker(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <Ionicons name="close-circle" size={28} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView
+                  showsVerticalScrollIndicator={true}
+                  bounces={true}
+                  keyboardShouldPersistTaps="handled"
+                  nestedScrollEnabled={true}
+                  contentContainerStyle={{ paddingBottom: 20 }}
+                >
                   {Object.entries(TYPE_META).map(([key, t]) => (
                     <TouchableOpacity
                       key={key}
@@ -623,8 +630,9 @@ export default function CreateCardPage() {
                     <Text style={{ fontSize: 17, color: colors.textSecondary }}>Cancel</Text>
                   </TouchableOpacity>
                 </ScrollView>
-            </View>
-          </View>
+              </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
         </Modal>
         <Text style={s.fieldLabel}>{isGeneric ? 'CARD PHOTO (OPTIONAL)' : 'RECIPIENT PHOTO *'}</Text>
         <TouchableOpacity style={s.photoPicker} onPress={pickPhoto} data-testid="card-pick-photo">
