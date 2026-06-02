@@ -282,12 +282,31 @@ async def queue_ai_reply(
 
     # ── Build queue doc ───────────────────────────────────────────────────────
     now = datetime.now(timezone.utc)
+
+    # Determine the rep's Twilio number NOW (at queue time) so the reply always
+    # goes from the correct number — even if the conversation's user_id is stale.
+    # Priority: look up by assigned_user_id, then fall back to conversation's user_id.
+    rep_send_from = None
+    for uid_to_check in [assigned_user_id]:
+        if uid_to_check:
+            try:
+                rep_doc = await db.users.find_one(
+                    {"_id": ObjectId(uid_to_check)},
+                    {"twilio_number": 1, "mvpline_number": 1}
+                )
+                rep_send_from = (rep_doc or {}).get("twilio_number") or (rep_doc or {}).get("mvpline_number")
+                if rep_send_from:
+                    break
+            except Exception:
+                pass
+
     queue_doc = {
         "enrollment_id":               enrollment_id,
         "campaign_id":                 campaign_id,
         "contact_id":                  contact_id,
         "conversation_id":             conversation_id,
         "assigned_user_id":            assigned_user_id,
+        "rep_twilio_number":           rep_send_from,   # stored at queue time — always correct
         "body":                        ai_body,
         "send_at":                     send_at,
         "status":                      STATUS_PENDING,
@@ -505,20 +524,20 @@ async def process_ai_reply_queue():
 
             from services.twilio_service import send_sms
 
-            # Always send from the rep's dedicated Twilio number — never let Twilio
-            # pick a random number from the Messaging Service pool.
-            rep_twilio_number = None
-            rep_uid = item.get("assigned_user_id")
-            if rep_uid:
-                try:
-                    rep_doc = await db.users.find_one(
-                        {"_id": ObjectId(rep_uid)},
-                        {"twilio_number": 1, "mvpline_number": 1}
-                    )
-                    rep_twilio_number = (rep_doc or {}).get("twilio_number") or (rep_doc or {}).get("mvpline_number")
-                except Exception:
-                    pass
-
+            # Use rep_twilio_number stored at queue time first (most accurate)
+            # Fall back to looking up assigned_user_id's number
+            rep_twilio_number = item.get("rep_twilio_number")
+            if not rep_twilio_number:
+                rep_uid = item.get("assigned_user_id")
+                if rep_uid:
+                    try:
+                        rep_doc = await db.users.find_one(
+                            {"_id": ObjectId(rep_uid)},
+                            {"twilio_number": 1, "mvpline_number": 1}
+                        )
+                        rep_twilio_number = (rep_doc or {}).get("twilio_number") or (rep_doc or {}).get("mvpline_number")
+                    except Exception:
+                        pass
             result = await send_sms(phone, item["body"], from_phone=rep_twilio_number)
             mocked = result.get("mock", True)
 
