@@ -1001,15 +1001,131 @@ async def merge_conversations(data: dict):
 @router.post("/admin/cleanup-all-conversations")
 async def cleanup_all_conversations(request: Request):
     """
-    Super-admin: backfill rep_phone on all conversations + merge duplicates for all users.
-    Run once after deploying the conversation isolation fix.
+    Super-admin: backfill rep_phone + fix contact names + merge duplicates.
     """
     db = get_db()
     x_user_id = request.headers.get("X-User-ID")
-    # Verify super admin
     user = await db.users.find_one({"_id": ObjectId(x_user_id)}, {"role": 1})
     if not user or user.get("role") not in ("super_admin", "org_admin"):
         raise HTTPException(status_code=403, detail="Super admin required")
+
+    fixed_names   = 0
+    backfilled    = 0
+    total_merged  = 0
+
+    # ── Step 1: Fix contact names ──────────────────────────────────────────────
+    # Any conversation where contact_name is null/empty/"Contact"/"Unknown"/Lead(XXXX)
+    bad_name_convs = await db.conversations.find({
+        "$or": [
+            {"contact_name": None},
+            {"contact_name": ""},
+            {"contact_name": "Contact"},
+            {"contact_name": "Unknown"},
+            {"contact_name": {"$regex": "^Lead \\("}},
+        ]
+    }).to_list(1000)
+
+    for conv in bad_name_convs:
+        contact_phone = conv.get("contact_phone")
+        user_id = str(conv.get("user_id", ""))
+        contact_id = conv.get("contact_id")
+        new_name = None
+
+        # Try by contact_id first
+        if contact_id:
+            try:
+                c = await db.contacts.find_one(
+                    {"$or": [{"_id": ObjectId(str(contact_id))}, {"_id": str(contact_id)}]},
+                    {"name": 1, "first_name": 1, "last_name": 1}
+                )
+                if c:
+                    new_name = c.get("name") or f"{c.get('first_name','')} {c.get('last_name','')}".strip()
+            except Exception:
+                pass
+
+        # Try by phone in the user's contacts
+        if not new_name and contact_phone and user_id:
+            phone_variants = [contact_phone, contact_phone.lstrip("+"), "+1" + contact_phone.lstrip("+1")]
+            c = await db.contacts.find_one({
+                "user_id": user_id,
+                "phone": {"$in": phone_variants},
+                "name": {"$exists": True, "$ne": None, "$not": {"$regex": "^Lead \\("}}
+            })
+            if not c:
+                # Try across all users
+                c = await db.contacts.find_one({
+                    "phone": {"$in": phone_variants},
+                    "name": {"$exists": True, "$ne": None, "$not": {"$regex": "^Lead \\("}}
+                })
+            if c:
+                new_name = c.get("name") or f"{c.get('first_name','')} {c.get('last_name','')}".strip()
+
+        if new_name and new_name not in ("Contact", "Unknown"):
+            await db.conversations.update_one(
+                {"_id": conv["_id"]},
+                {"$set": {"contact_name": new_name}}
+            )
+            fixed_names += 1
+
+    # ── Step 2: Backfill rep_phone ─────────────────────────────────────────────
+    all_convs_no_rep = await db.conversations.find(
+        {"rep_phone": {"$exists": False}},
+        {"_id": 1, "user_id": 1}
+    ).to_list(2000)
+
+    user_phone_cache = {}
+    for conv in all_convs_no_rep:
+        uid = str(conv.get("user_id", ""))
+        if not uid:
+            continue
+        if uid not in user_phone_cache:
+            try:
+                rep = await db.users.find_one(
+                    {"$or": [{"_id": ObjectId(uid)}, {"_id": uid}]},
+                    {"twilio_number": 1, "mvpline_number": 1}
+                )
+                user_phone_cache[uid] = (rep or {}).get("twilio_number") or (rep or {}).get("mvpline_number")
+            except Exception:
+                user_phone_cache[uid] = None
+        rep_phone = user_phone_cache[uid]
+        if rep_phone:
+            await db.conversations.update_one(
+                {"_id": conv["_id"]},
+                {"$set": {"rep_phone": rep_phone}}
+            )
+            backfilled += 1
+
+    # ── Step 3: Merge duplicates (same user_id + contact_phone) ───────────────
+    all_users = await db.users.find({}, {"_id": 1}).to_list(500)
+    for u in all_users:
+        uid = str(u["_id"])
+        pipeline = [
+            {"$match": {"$or": [{"user_id": uid}, {"user_id": ObjectId(uid)}], "contact_phone": {"$exists": True, "$ne": None}}},
+            {"$group": {"_id": "$contact_phone", "conv_ids": {"$push": "$_id"}, "count": {"$sum": 1}}},
+            {"$match": {"count": {"$gt": 1}}},
+        ]
+        groups = await db.conversations.aggregate(pipeline).to_list(100)
+        for g in groups:
+            convs = await db.conversations.find(
+                {"_id": {"$in": g["conv_ids"]}}
+            ).sort("last_message_at", -1).to_list(10)
+            if len(convs) < 2:
+                continue
+            keeper    = convs[0]
+            keeper_id = str(keeper["_id"])
+            for dupe in convs[1:]:
+                dupe_id = str(dupe["_id"])
+                await db.messages.update_many({"conversation_id": dupe_id}, {"$set": {"conversation_id": keeper_id}})
+                await db.conversations.delete_one({"_id": dupe["_id"]})
+                total_merged += 1
+
+    logger.info(f"[Cleanup] Fixed {fixed_names} names, backfilled {backfilled} rep_phones, merged {total_merged} duplicates")
+    return {
+        "status": "complete",
+        "contact_names_fixed": fixed_names,
+        "conversations_backfilled_with_rep_phone": backfilled,
+        "duplicate_conversations_merged": total_merged,
+    }
 
     # Step 1: Backfill rep_phone on all conversations missing it
     backfilled = 0
