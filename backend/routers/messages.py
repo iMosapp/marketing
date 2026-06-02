@@ -1023,8 +1023,9 @@ async def cleanup_all_conversations(request: Request):
         rep_phone = u.get("twilio_number") or u.get("mvpline_number")
         if not rep_phone:
             continue
+        # Match both string and ObjectId user_id formats
         result = await db.conversations.update_many(
-            {"user_id": uid, "rep_phone": {"$exists": False}},
+            {"$or": [{"user_id": uid}, {"user_id": ObjectId(uid)}], "rep_phone": {"$exists": False}},
             {"$set": {"rep_phone": rep_phone}}
         )
         if result.modified_count:
@@ -1036,7 +1037,7 @@ async def cleanup_all_conversations(request: Request):
     for u in all_users:
         uid = str(u["_id"])
         pipeline = [
-            {"$match": {"user_id": uid, "contact_phone": {"$exists": True, "$ne": None}}},
+            {"$match": {"$or": [{"user_id": uid}, {"user_id": ObjectId(uid)}], "contact_phone": {"$exists": True, "$ne": None}}},
             {"$group": {"_id": "$contact_phone", "conv_ids": {"$push": "$_id"}, "count": {"$sum": 1}}},
             {"$match": {"count": {"$gt": 1}}},
         ]
