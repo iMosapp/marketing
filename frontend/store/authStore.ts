@@ -235,29 +235,36 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       // Native iOS push notifications (expo-notifications)
+      // Fire AFTER navigation completes — never block or run concurrently with router.replace
       const { Platform } = await import('react-native');
       if (Platform.OS !== 'web') {
-        try {
-          const Notifications = await import('expo-notifications');
-          const { status: existingStatus } = await Notifications.getPermissionsAsync();
-          let finalStatus = existingStatus;
-          if (existingStatus !== 'granted') {
-            const { status } = await Notifications.requestPermissionsAsync();
-            finalStatus = status;
-          }
-          if (finalStatus === 'granted') {
-            const { default: api } = await import('../services/api');
-            const tokenData = await Notifications.getExpoPushTokenAsync().catch(() => null);
-            if (tokenData?.data && user._id) {
-              await api.post(`/push/subscribe-native/${user._id}`, {
-                expo_push_token: tokenData.data,
-                platform: Platform.OS,
-              }).catch(() => {});
+        setTimeout(async () => {
+          try {
+            const Notifications = await import('expo-notifications');
+            const { status: existingStatus } = await Notifications.getPermissionsAsync();
+            let finalStatus = existingStatus;
+            if (existingStatus !== 'granted') {
+              // Small delay so the login screen has fully navigated away before showing dialog
+              await new Promise(r => setTimeout(r, 1500));
+              const { status } = await Notifications.requestPermissionsAsync();
+              finalStatus = status;
             }
+            if (finalStatus === 'granted') {
+              const Constants = await import('expo-constants');
+              const projectId = Constants.default.expoConfig?.extra?.eas?.projectId || '178e2029-a577-4d78-9611-bd7ebec83c91';
+              const tokenData = await Notifications.getExpoPushTokenAsync({ projectId }).catch(() => null);
+              if (tokenData?.data && user._id) {
+                const { default: apiInstance } = await import('../services/api');
+                await apiInstance.post(`/push/subscribe-native/${user._id}`, {
+                  expo_push_token: tokenData.data,
+                  platform: Platform.OS,
+                }).catch(() => {});
+              }
+            }
+          } catch (nativePushErr: any) {
+            console.warn('[Auth] Native push setup skipped:', nativePushErr?.message);
           }
-        } catch (nativePushErr: any) {
-          console.warn('[Auth] Native push setup skipped:', nativePushErr?.message);
-        }
+        }, 2000); // Wait 2s after login before requesting permission
       }
     } catch (error) {
       set({ isLoading: false });
