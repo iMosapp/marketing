@@ -147,10 +147,16 @@ async def incoming_message(
     
     try:
         # ── Step 1: Route by To: number → find the rep who owns this number ──
+        # Important: do NOT filter by is_active here — a rep's dedicated number
+        # should always route to them even if their account isn't fully active yet.
         rep_user = await db.users.find_one({
             "$or": [{"twilio_number": to_phone}, {"mvpline_number": to_phone}],
-            "is_active": {"$ne": False},
+            "status": {"$ne": "deactivated"},  # only exclude hard-deactivated accounts
         })
+        if rep_user:
+            logger.info(f"[Webhook] Inbound {to_phone} → rep={rep_user.get('name')} ({rep_user.get('_id')})")
+        else:
+            logger.warning(f"[Webhook] No rep found for {to_phone} — will fall back to pool/super_admin")
         if not rep_user:
             # Check if this is a pooled number (rep was terminated)
             pool_entry = await db.phone_number_pool.find_one({
