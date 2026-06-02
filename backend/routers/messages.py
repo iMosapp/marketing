@@ -996,13 +996,75 @@ async def merge_conversations(data: dict):
 
     # Already merged? Return success instead of error
     if secondary.get("merged_into") == primary_id:
-        return {
-            "success":        True,
-            "primary_id":     primary_id,
-            "secondary_id":   secondary_id,
-            "messages_moved": 0,
-            "message":        "Already merged — no changes needed.",
-        }
+        return {"status": "already_merged"}
+
+@router.post("/admin/cleanup-all-conversations")
+async def cleanup_all_conversations(request: Request):
+    """
+    Super-admin: backfill rep_phone on all conversations + merge duplicates for all users.
+    Run once after deploying the conversation isolation fix.
+    """
+    db = get_db()
+    x_user_id = request.headers.get("X-User-ID")
+    # Verify super admin
+    user = await db.users.find_one({"_id": ObjectId(x_user_id)}, {"role": 1})
+    if not user or user.get("role") not in ("super_admin", "org_admin"):
+        raise HTTPException(status_code=403, detail="Super admin required")
+
+    # Step 1: Backfill rep_phone on all conversations missing it
+    backfilled = 0
+    users = await db.users.find(
+        {"$or": [{"twilio_number": {"$exists": True}}, {"mvpline_number": {"$exists": True}}]},
+        {"_id": 1, "twilio_number": 1, "mvpline_number": 1}
+    ).to_list(200)
+
+    for u in users:
+        uid = str(u["_id"])
+        rep_phone = u.get("twilio_number") or u.get("mvpline_number")
+        if not rep_phone:
+            continue
+        result = await db.conversations.update_many(
+            {"user_id": uid, "rep_phone": {"$exists": False}},
+            {"$set": {"rep_phone": rep_phone}}
+        )
+        if result.modified_count:
+            backfilled += result.modified_count
+
+    # Step 2: Merge duplicate conversations for all users
+    total_merged = 0
+    all_users = await db.users.find({}, {"_id": 1}).to_list(500)
+    for u in all_users:
+        uid = str(u["_id"])
+        pipeline = [
+            {"$match": {"user_id": uid, "contact_phone": {"$exists": True, "$ne": None}}},
+            {"$group": {"_id": "$contact_phone", "conv_ids": {"$push": "$_id"}, "count": {"$sum": 1}}},
+            {"$match": {"count": {"$gt": 1}}},
+        ]
+        groups = await db.conversations.aggregate(pipeline).to_list(100)
+        for g in groups:
+            convs = await db.conversations.find(
+                {"_id": {"$in": g["conv_ids"]}}
+            ).sort("last_message_at", -1).to_list(10)
+            if len(convs) < 2:
+                continue
+            keeper = convs[0]
+            keeper_id = str(keeper["_id"])
+            for dupe in convs[1:]:
+                dupe_id = str(dupe["_id"])
+                await db.messages.update_many(
+                    {"conversation_id": dupe_id},
+                    {"$set": {"conversation_id": keeper_id}}
+                )
+                await db.conversations.delete_one({"_id": dupe["_id"]})
+                total_merged += 1
+
+    logger.info(f"[Cleanup] Backfilled {backfilled} conversations, merged {total_merged} duplicates")
+    return {
+        "status": "complete",
+        "conversations_backfilled_with_rep_phone": backfilled,
+        "duplicate_conversations_merged": total_merged,
+    }
+
 
     # Move all messages from secondary → primary
     msgs_result = await db.messages.update_many(
