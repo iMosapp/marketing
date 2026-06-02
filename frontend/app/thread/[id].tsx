@@ -484,10 +484,12 @@ function ThreadScreen() {
   };
 
   const conversationId = id as string;
-  // Contact name: use param → phone lookup → fallback
-  const contactName = (contact_name as string)?.trim() && (contact_name as string).trim() !== 'Contact'
-    ? (contact_name as string).trim()
-    : (contact_phone ? `(${(contact_phone as string).slice(-4)})` : 'Contact');
+  const [displayContactName, setDisplayContactName] = useState<string | null>(null);
+
+  // Resolved contact name — param takes priority, then loaded from conversation, then phone fallback
+  const contactName = displayContactName
+    || ((contact_name as string)?.trim() && (contact_name as string).trim() !== 'Contact' ? (contact_name as string).trim() : null)
+    || (contact_phone ? `(${(contact_phone as string).slice(-4)})` : 'Contact');
   const contactPhone = (contact_phone as string) || '';
   const [actualConversationId, setActualConversationId] = useState<string | null>(null);
   // Initialize with param photo if available, will be overwritten by API if different
@@ -508,6 +510,10 @@ function ThreadScreen() {
       const response = await api.get(`/messages/conversation/${id}/info`);
       if (response.data?.contact_id) {
         setContactIdForNav(response.data.contact_id);
+      }
+      // Load real contact name from conversation if not passed via URL params
+      if (response.data?.contact_name && response.data.contact_name !== 'Contact') {
+        setDisplayContactName(response.data.contact_name);
       }
       if (response.data?.contact_photo) {
         setContactPhoto(response.data.contact_photo);
@@ -2356,22 +2362,20 @@ function ThreadScreen() {
             
             {/* Text input area */}
             <TextInput
-              style={[styles.composerInput, { color: colors.textPrimary, height: Math.max(36, Math.min(inputHeight, 150)) }]}
+              style={[styles.composerInput, { color: colors.textPrimary, height: Math.max(40, Math.min(inputHeight, 180)) }]}
               placeholder={selectedMedia ? "Add a caption (optional)..." : "Type your message..."}
               placeholderTextColor={colors.textSecondary}
               value={message}
               onChangeText={setMessage}
               multiline
-              numberOfLines={1}
-              maxLength={1000}
+              maxLength={1600}
               onContentSizeChange={(e) => {
                 const h = e.nativeEvent.contentSize.height;
-                if (message.trim()) {
-                  setInputHeight(h);
-                } else {
-                  setInputHeight(36);
-                }
+                setInputHeight(Math.max(40, h));
               }}
+              scrollEnabled={inputHeight >= 180}
+              returnKeyType="default"
+              blurOnSubmit={false}
               scrollEnabled={inputHeight > 150}
             />
             
@@ -3949,7 +3953,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.textSecondary,
   },
   composerInput: {
-    fontSize: 18,
+    fontSize: 15,
     color: colors.textPrimary,
     paddingHorizontal: 16,
     paddingTop: 10,
