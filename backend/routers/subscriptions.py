@@ -552,7 +552,7 @@ async def _email_accepted_quote(quote: dict, quote_id: str, stripe_url: str | No
         logger.error(f"[Quotes] Failed to email admin: {e}")
 
     # ── SMS (Twilio — falls back to mock if not configured) ───────────────────
-    # TODO: Replace payment_link with live Stripe payment link when ready
+    # Send payment link SMS from the rep/admin's Twilio number
     if to_phone:
         try:
             from services.twilio_service import send_sms
@@ -560,7 +560,16 @@ async def _email_accepted_quote(quote: dict, quote_id: str, stripe_url: str | No
                 f"Hi {name.split()[0]}! Your I'm On Social quote is signed. "
                 f"Final step: set up payment to activate your account: {payment_link}"
             )
-            result = await send_sms(to_phone, sms_body)
+            # Use the quote owner's Twilio number if available
+            rep_twilio_num = None
+            try:
+                quote_owner_id = quote.get("created_by") or quote.get("user_id")
+                if quote_owner_id:
+                    owner = await db.users.find_one({"_id": ObjectId(str(quote_owner_id))}, {"twilio_number": 1, "mvpline_number": 1})
+                    rep_twilio_num = (owner or {}).get("twilio_number") or (owner or {}).get("mvpline_number")
+            except Exception:
+                pass
+            result = await send_sms(to_phone, sms_body, from_phone=rep_twilio_num)
             logger.info(f"[Quotes] Payment SMS sent to {to_phone}: {result}")
         except Exception as e:
             logger.warning(f"[Quotes] SMS send failed (non-fatal): {e}")

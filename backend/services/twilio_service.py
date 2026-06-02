@@ -39,6 +39,26 @@ else:
     logger.warning("Twilio not configured — SMS/MMS will be mocked")
 
 
+async def get_rep_twilio_number(user_id: str) -> str | None:
+    """
+    Look up a rep's dedicated Twilio number by user_id.
+    Always call this before send_sms() for rep-to-customer communications.
+    Returns None if the rep has no dedicated number (falls back to Messaging Service).
+    """
+    try:
+        from routers.database import get_db
+        from bson import ObjectId
+        db = get_db()
+        rep = await db.users.find_one(
+            {"_id": ObjectId(user_id)},
+            {"twilio_number": 1, "mvpline_number": 1}
+        )
+        return (rep or {}).get("twilio_number") or (rep or {}).get("mvpline_number")
+    except Exception:
+        return None
+
+
+
 async def send_sms(
     to_phone: str,
     message: str,
