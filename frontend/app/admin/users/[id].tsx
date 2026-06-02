@@ -146,19 +146,20 @@ export default function UserDetailScreen() {
   const [contactEditValue, setContactEditValue] = useState('');
   const contactSavingRef = React.useRef(false); // Prevents double-save from onSubmitEditing + onBlur
 
-  const saveContactField = async (field: 'phone' | 'email', value: string) => {
+  const saveContactField = async (field: 'phone' | 'email' | 'title' | 'bio', value: string) => {
     if (contactSavingRef.current) return;
     const trimmed = value.trim();
-    if (!trimmed) { setEditingContactField(null); return; } // Don't save empty value
+    if (!trimmed) { setEditingContactField(null); return; }
     contactSavingRef.current = true;
     try {
-      const payload = field === 'email'
-        ? { email: trimmed.toLowerCase() }
-        : { phone: trimmed };
+      const payload: any = {};
+      if (field === 'email') payload.email = trimmed.toLowerCase();
+      else if (field === 'phone') payload.phone = trimmed;
+      else payload[field] = trimmed;
       await adminAPI.updateUser(user!._id, payload);
       setUser((prev: any) => prev ? { ...prev, ...payload } : prev);
       setEditingContactField(null);
-      showToast(`${field === 'email' ? 'Email' : 'Phone'} updated ✓`);
+      showToast(`${field.charAt(0).toUpperCase() + field.slice(1)} updated ✓`);
     } catch (e: any) {
       // Show the actual backend error message so we can debug
       const detail = e?.response?.data?.detail;
@@ -229,15 +230,22 @@ export default function UserDetailScreen() {
       setStores(data.stores || []);
       setAvailableStores(data.available_stores || []);
       
-      // Calculate profile completeness
+      // Calculate profile completeness — read the actual field names the API returns
       const u = data.user;
-      const hasSocialLinks = u.social_links && Object.values(u.social_links).some((v: any) => v);
+      const hasSocialLinks = 
+        (u.social_links && Object.values(u.social_links).some((v: any) => !!v)) ||
+        !!u.social_instagram || !!u.social_facebook || !!u.social_linkedin || !!u.social_twitter;
+      // AI persona: API returns u.persona (not u.ai_persona)
+      const hasPersona = !!(
+        u.persona?.instructions || u.persona?.bio || u.persona?.communication_style ||
+        u.ai_persona?.instructions || u.va_profile_id || u.jessie_profile_id
+      );
       const checks = {
-        photo: !!u.photo_url,
-        bio: !!u.bio && u.bio.length > 10,
-        title: !!u.title,
-        phone: !!u.phone || !!u.twilio_phone_number,
-        ai_persona: !!u.ai_persona?.instructions,
+        photo:        !!u.photo_url || !!u.photo_path,
+        bio:          !!(u.bio && u.bio.trim().length > 0),   // any non-empty bio counts
+        title:        !!(u.title && u.title.trim().length > 0),
+        phone:        !!(u.phone || u.twilio_number || u.mvpline_number || u.twilio_phone_number),
+        ai_persona:   hasPersona,
         social_links: hasSocialLinks,
       };
       const completed = Object.values(checks).filter(Boolean).length;
@@ -540,7 +548,24 @@ export default function UserDetailScreen() {
             )}
             <View style={styles.profileInfo}>
               <Text style={styles.userName}>{user.name}</Text>
-              <Text style={styles.userTitle}>{user.title || 'No title set'}</Text>
+              {/* Inline-editable title */}
+              {editingContactField === 'title' ? (
+                <TextInput
+                  style={[styles.userTitle, { borderBottomWidth: 1, borderBottomColor: '#007AFF', minWidth: 160, paddingVertical: 2 }]}
+                  value={contactEditValue}
+                  onChangeText={setContactEditValue}
+                  autoFocus
+                  placeholder="e.g. Sales Manager"
+                  onSubmitEditing={() => saveContactField('title' as any, contactEditValue)}
+                  onBlur={() => saveContactField('title' as any, contactEditValue)}
+                  returnKeyType="done"
+                />
+              ) : (
+                <TouchableOpacity onPress={() => { setEditingContactField('title' as any); setContactEditValue(user.title || ''); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Text style={[styles.userTitle, !user.title && { color: '#FF9500' }]}>{user.title || 'Tap to set title'}</Text>
+                  <Ionicons name="pencil" size={12} color="#007AFF" />
+                </TouchableOpacity>
+              )}
               <View style={styles.roleBadgeContainer}>
                 <View style={[styles.roleBadge, { backgroundColor: getRoleColor(user.role) + '20' }]}>
                   <Text style={[styles.roleBadgeText, { color: getRoleColor(user.role) }]}>
