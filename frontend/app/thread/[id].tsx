@@ -2306,7 +2306,12 @@ function ThreadScreen() {
             setAiMode('off');
             const convId = actualConversationId || conversationId;
             if (convId && user?._id) {
-              try { await messagesAPI.updateConversation(user._id, convId, { ai_mode: 'off', ai_enabled: false }); } catch {}
+              try {
+                await messagesAPI.updateConversation(user._id, convId, { ai_mode: 'off', ai_enabled: false });
+              } catch (e) {
+                console.warn('Take Over failed:', e);
+                setAiMode('auto_reply'); // revert on failure
+              }
             }
           }}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#007AFF12', borderTopWidth: 1, borderTopColor: '#007AFF30', paddingHorizontal: 16, paddingVertical: 10 }}

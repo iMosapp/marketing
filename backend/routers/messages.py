@@ -1516,12 +1516,10 @@ async def bulk_delete_conversations(data: dict):
 @router.put("/conversations/{user_id}/{conversation_id}")
 async def update_conversation(user_id: str, conversation_id: str, data: dict):
     """Update conversation settings (AI mode, status, etc.)"""
-    base_filter = await get_data_filter(user_id)
-    
+    db = get_db()
     allowed_fields = ['ai_enabled', 'ai_mode', 'status', 'unread', 'unread_count', 'needs_assistance', 'ai_handled', 'ai_outcome', 'ai_outcome_priority', 'ai_outcome_acknowledged', 'flagged']
     update_dict = {k: v for k, v in data.items() if k in allowed_fields}
-    
-    # If setting ai_outcome, auto-set the priority
+
     if 'ai_outcome' in update_dict:
         outcome = update_dict['ai_outcome']
         if outcome and outcome in AI_OUTCOMES:
@@ -1529,18 +1527,32 @@ async def update_conversation(user_id: str, conversation_id: str, data: dict):
             update_dict['ai_handled'] = True
         elif outcome is None:
             update_dict['ai_outcome_priority'] = 999
-    
+
     if not update_dict:
         raise HTTPException(status_code=400, detail="No valid fields to update")
-    
-    result = await get_db().conversations.update_one(
-        {"$and": [{"_id": ObjectId(conversation_id)}, base_filter]},
+
+    # When AI is turned OFF — also clear the Waiting queue state so it
+    # moves from Waiting → All and stops nagging the rep
+    if update_dict.get('ai_mode') == 'off' or update_dict.get('ai_enabled') is False:
+        update_dict['needs_assistance']         = False
+        update_dict['unanswered_customer_replies'] = 0
+        update_dict['rep_engaged']              = True
+
+    # Try conversation lookup without strict user_id filter — our new routing
+    # uses rep_phone as the primary key, so user_id may not always match.
+    try:
+        oid = ObjectId(conversation_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid conversation ID")
+
+    result = await db.conversations.update_one(
+        {"_id": oid},
         {"$set": update_dict}
     )
-    
+
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Conversation not found")
-    
+
     return {"message": "Conversation updated"}
 
 
