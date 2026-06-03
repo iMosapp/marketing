@@ -2278,28 +2278,47 @@ function ThreadScreen() {
         />
       )}
 
-      {/* "Re-enable Jessi" chip — shown after rep has replied and AI is off */}
-      {aiMode === 'off' && messages.some(m => m.sender === 'user') && (
+      {/* Persistent AI mode banner — always visible so rep can toggle any time */}
+      {aiMode === 'off' ? (
         <TouchableOpacity
           onPress={async () => {
             setAiMode('auto_reply');
             const convId = actualConversationId || conversationId;
             if (convId && user?._id) {
-              try {
-                await messagesAPI.updateConversation(user._id, convId, { ai_mode: 'auto_reply', ai_enabled: true });
-              } catch (e) { console.warn('Re-enable Jessi failed:', e); }
+              try { await messagesAPI.updateConversation(user._id, convId, { ai_mode: 'auto_reply', ai_enabled: true }); } catch {}
             }
           }}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#34C75912', borderTopWidth: 1, borderTopColor: '#34C75930', paddingHorizontal: 16, paddingVertical: 10 }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#34C75912', borderTopWidth: 1, borderTopColor: '#34C75930', paddingHorizontal: 16, paddingVertical: 10 }}
           activeOpacity={0.75}
           data-testid="reenable-jessi-thread-btn"
         >
-          <Ionicons name="sparkles" size={14} color="#34C759" />
+          <Ionicons name="sparkles" size={15} color="#34C759" />
           <Text style={{ fontSize: 13, color: '#34C759', fontWeight: '600', flex: 1 }}>
-            Re-enable Jessi for this conversation
+            Jessi is off — re-enable AI
           </Text>
-          <View style={{ backgroundColor: '#34C759', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: '#000' }}>Turn On</Text>
+          <View style={{ backgroundColor: '#34C759', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 }}>
+            <Text style={{ fontSize: 12, fontWeight: '800', color: '#000' }}>Turn On</Text>
+          </View>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity
+          onPress={async () => {
+            setAiMode('off');
+            const convId = actualConversationId || conversationId;
+            if (convId && user?._id) {
+              try { await messagesAPI.updateConversation(user._id, convId, { ai_mode: 'off', ai_enabled: false }); } catch {}
+            }
+          }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#007AFF12', borderTopWidth: 1, borderTopColor: '#007AFF30', paddingHorizontal: 16, paddingVertical: 10 }}
+          activeOpacity={0.75}
+          data-testid="takeover-jessi-thread-btn"
+        >
+          <Ionicons name="sparkles" size={15} color="#007AFF" />
+          <Text style={{ fontSize: 13, color: '#007AFF', fontWeight: '600', flex: 1 }}>
+            {aiMode === 'auto_reply' ? 'Jessi is handling this' : 'AI in assist mode'}
+          </Text>
+          <View style={{ backgroundColor: '#007AFF', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 }}>
+            <Text style={{ fontSize: 12, fontWeight: '800', color: '#fff' }}>Take Over</Text>
           </View>
         </TouchableOpacity>
       )}
@@ -3650,9 +3669,9 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontWeight: '600',
   },
   messageText: {
-    fontSize: 17,
-    color: colors.contactBubbleText,  // Default to contact text color; user overrides inline
-    lineHeight: 21,
+    fontSize: 15,
+    color: colors.contactBubbleText,
+    lineHeight: 20,
   },
   userMessageText: {
     color: colors.userBubbleText,
