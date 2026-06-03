@@ -4465,38 +4465,53 @@ function ContactDetailScreen() {
         </SafeAreaView>
       </Modal>
 
-      <Modal visible={showCardTemplatePicker} animationType="fade" transparent onRequestClose={() => setShowCardTemplatePicker(false)}>
+      <Modal visible={showCardTemplatePicker} animationType="slide" transparent onRequestClose={() => setShowCardTemplatePicker(false)}>
         <TouchableOpacity style={s.sendPickerOverlay} activeOpacity={1} onPress={() => setShowCardTemplatePicker(false)}>
-          <View style={s.sendPickerSheet} onStartShouldSetResponder={() => true}>
-            <View style={s.sendPickerHandle} />
-            <Text style={s.sendPickerTitle}>Choose a Card Template</Text>
-            {[
-              { type: 'congrats', label: 'Congratulations', sub: 'Celebrate a purchase or milestone', color: '#C9A962', icon: 'trophy' },
-              { type: 'birthday', label: 'Happy Birthday', sub: 'Send birthday wishes', color: '#FF2D55', icon: 'gift' },
-              { type: 'anniversary', label: 'Anniversary', sub: 'Celebrate their anniversary', color: '#FF6B6B', icon: 'heart' },
-              { type: 'thankyou', label: 'Thank You', sub: 'Show your appreciation', color: '#34C759', icon: 'thumbs-up' },
-              { type: 'welcome', label: 'Welcome', sub: 'Welcome a new customer', color: '#007AFF', icon: 'hand-left' },
-              { type: 'holiday', label: 'Holiday', sub: 'Seasonal greetings', color: '#5AC8FA', icon: 'snow' },
-              ...customCardTypes,
-            ].map(item => (
-              <TouchableOpacity
-                key={item.type}
-                style={s.sendPickerItem}
-                onPress={() => handleCardTemplateSelect(item.type)}
-                activeOpacity={0.7}
-                data-testid={`card-template-${item.type}`}
+          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
+            <View style={[s.sendPickerSheet, { maxHeight: '85%' }]}>
+              <View style={s.sendPickerHandle} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 10 }}>
+                <Text style={s.sendPickerTitle}>Choose a Card Template</Text>
+                <TouchableOpacity onPress={() => setShowCardTemplatePicker(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                  <Ionicons name="close-circle" size={24} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView
+                bounces={true}
+                showsVerticalScrollIndicator={true}
+                keyboardShouldPersistTaps="handled"
+                nestedScrollEnabled={true}
+                contentContainerStyle={{ paddingBottom: 30 }}
               >
-                <View style={[s.sendPickerIcon, { backgroundColor: `${item.color}20` }]}>
-                  <Ionicons name={item.icon as any} size={20} color={item.color} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.sendPickerLabel}>{item.label}</Text>
-                  <Text style={s.sendPickerSub}>{item.sub}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.borderLight} />
-              </TouchableOpacity>
-            ))}
-          </View>
+              {[
+                { type: 'congrats', label: 'Congratulations', sub: 'Celebrate a purchase or milestone', color: '#C9A962', icon: 'trophy' },
+                { type: 'birthday', label: 'Happy Birthday', sub: 'Send birthday wishes', color: '#FF2D55', icon: 'gift' },
+                { type: 'anniversary', label: 'Anniversary', sub: 'Celebrate their anniversary', color: '#FF6B6B', icon: 'heart' },
+                { type: 'thankyou', label: 'Thank You', sub: 'Show your appreciation', color: '#34C759', icon: 'thumbs-up' },
+                { type: 'welcome', label: 'Welcome', sub: 'Welcome a new customer', color: '#007AFF', icon: 'hand-left' },
+                { type: 'holiday', label: 'Holiday', sub: 'Seasonal greetings', color: '#5AC8FA', icon: 'snow' },
+                ...customCardTypes,
+              ].map(item => (
+                <TouchableOpacity
+                  key={item.type}
+                  style={s.sendPickerItem}
+                  onPress={() => handleCardTemplateSelect(item.type)}
+                  activeOpacity={0.7}
+                  data-testid={`card-template-${item.type}`}
+                >
+                  <View style={[s.sendPickerIcon, { backgroundColor: `${item.color}20` }]}>
+                    <Ionicons name={item.icon as any} size={20} color={item.color} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.sendPickerLabel}>{item.label}</Text>
+                    <Text style={s.sendPickerSub}>{item.sub}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={16} color={colors.borderLight} />
+                </TouchableOpacity>
+              ))}
+              </ScrollView>
+            </View>
+          </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
 
