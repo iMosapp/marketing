@@ -695,15 +695,55 @@ async def send_via_twilio(request: Request):
     if not result.get("success"):
         raise HTTPException(status_code=500, detail=result.get("error", "Send failed"))
     now = datetime.utcnow()
-    conv = await db.conversations.find_one({"user_id": user_id, "contact_phone": to_phone})
+    # Find conversation — try new key first (rep_phone+contact_phone), fall back to old
+    conv = await db.conversations.find_one({"rep_phone": rep_twilio_number, "contact_phone": to_phone})
     if not conv:
-        r = await db.conversations.insert_one({"user_id": user_id, "contact_id": contact_id, "contact_phone": to_phone, "status": "active", "created_at": now, "updated_at": now, "last_message_at": now})
+        conv = await db.conversations.find_one({"$or": [{"user_id": user_id}, {"user_id": ObjectId(user_id)}], "contact_phone": to_phone})
+    if not conv:
+        r = await db.conversations.insert_one({
+            "user_id": user_id,
+            "rep_phone": rep_twilio_number,
+            "contact_id": contact_id,
+            "contact_phone": to_phone,
+            "status": "active",
+            "created_at": now,
+            "updated_at": now,
+            "last_message_at": now,
+        })
         conv_id = str(r.inserted_id)
     else:
         conv_id = str(conv["_id"])
-        await db.conversations.update_one({"_id": conv["_id"]}, {"$set": {"last_message_at": now}})
-    await db.messages.insert_one({"conversation_id": conv_id, "user_id": user_id, "contact_id": contact_id, "content": body, "direction": "outbound", "channel": "sms", "sender": "user", "twilio_sid": result.get("message_sid"), "status": "sent" if not result.get("mock") else "sent_mock", "event_type": event_type, "timestamp": now})
-    return {"success": True, "message_sid": result.get("message_sid"), "mock": result.get("mock", False)}
+        # ── CRITICAL: Reset YOU'RE NEEDED flags when rep manually replies ──────
+        await db.conversations.update_one(
+            {"_id": conv["_id"]},
+            {"$set": {
+                "last_message_at":         now,
+                "needs_assistance":         False,
+                "unanswered_customer_replies": 0,
+                "rep_engaged":              True,
+                "rep_last_replied_at":      now,
+            }}
+        )
+        # Reset campaign enrollment reply_count so escalation threshold resets fresh
+        if contact_id:
+            await db.campaign_enrollments.update_many(
+                {"contact_id": contact_id, "status": {"$in": ["active", "paused"]}},
+                {"$set": {"reply_count": 0}}
+            )
+    await db.messages.insert_one({
+        "conversation_id": conv_id,
+        "user_id": user_id,
+        "contact_id": contact_id,
+        "content": body,
+        "direction": "outbound",
+        "channel": "sms",
+        "sender": "user",
+        "twilio_sid": result.get("message_sid"),
+        "status": "sent" if not result.get("mock") else "sent_mock",
+        "event_type": event_type,
+        "timestamp": now,
+    })
+    return {"success": True, "message_sid": result.get("message_sid"), "mock": result.get("mock", False), "conversation_id": conv_id}
 
 
 @router.post("/send-mms/{user_id}/{conversation_id}")
