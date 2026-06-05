@@ -459,8 +459,11 @@ async def get_contacts(
                 cid = str(c.get("_id", ""))
                 c["_last_activity"] = activity_map.get(cid, c.get("updated_at", c.get("created_at", epoch)))
             all_contacts.sort(key=lambda c: c.get("_last_activity", epoch), reverse=True)
+            # Expose last_activity_at so frontend can show "14 days ago" etc.
             for c in all_contacts:
-                c.pop("_last_activity", None)
+                la = c.pop("_last_activity", None)
+                if la:
+                    c["last_activity_at"] = la.isoformat() if hasattr(la, 'isoformat') else str(la)
             total = len(all_contacts)
             contacts = all_contacts[skip: skip + limit]
     else:

@@ -625,6 +625,15 @@ function ThreadScreen() {
     }
   };
 
+  // Auto-load cached intel when contact is known (for summary card at thread top)
+  useEffect(() => {
+    if (contactIdForNav && user?._id && !intelData) {
+      api.get(`/contact-intel/${user._id}/${contactIdForNav}`).then(r => {
+        if (r.data?.summary) setIntelData(r.data);
+      }).catch(() => {});
+    }
+  }, [contactIdForNav, user?._id]);
+
   // Relationship Intel functions
   const loadIntel = async () => {
     if (!user?._id || !contactIdForNav) return;
@@ -2238,6 +2247,21 @@ function ThreadScreen() {
           }}
           scrollEventThrottle={100}
         >
+          {/* Relationship summary card — shows at top of thread when intel is cached */}
+          {intelData?.summary && !loading ? (
+            <View style={{ margin: 12, padding: 12, backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                <Ionicons name="sparkles" size={13} color="#C9A962" />
+                <Text style={{ fontSize: 11, fontWeight: '700', color: '#C9A962', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                  About {contactName.split(' ')[0]}
+                </Text>
+              </View>
+              <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18, fontStyle: 'italic' }} numberOfLines={4}>
+                {intelData.summary.split('\n')[0]}
+              </Text>
+            </View>
+          ) : null}
+
           {messages.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Ionicons name="chatbubble-outline" size={48} color={colors.textSecondary} />

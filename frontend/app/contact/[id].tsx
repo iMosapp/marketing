@@ -187,6 +187,14 @@ function ContactDetailScreen() {
   const [intelData, setIntelData] = useState<any>(null);
   const [intelLoading, setIntelLoading] = useState(false);
   const [intelGenerating, setIntelGenerating] = useState(false);
+
+  // Auto-load cached intel so summary shows immediately under the name
+  useEffect(() => {
+    if (!user?._id || !id || intelData) return;
+    api.get(`/intel/${user._id}/${id}`).then(r => {
+      if (r.data?.summary) setIntelData(r.data);
+    }).catch(() => {});
+  }, [user?._id, id]);
   const [showIntel, setShowIntel] = useState(false);
 
   // Events & stats
@@ -2480,6 +2488,19 @@ function ContactDetailScreen() {
                 </View>
               </View>
             )}
+
+            {/* AI Relationship Summary — auto-displays below name when intel is cached */}
+            {!isNewContact && intelData?.summary ? (
+              <View style={{ marginHorizontal: 16, marginTop: 4, marginBottom: 4 }}>
+                <Text
+                  style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18, textAlign: 'center', fontStyle: 'italic' }}
+                  numberOfLines={3}
+                  data-testid="contact-intel-summary"
+                >
+                  {intelData.summary.split('\n')[0]}
+                </Text>
+              </View>
+            ) : null}
 
             {/* Tags + Automations Strip (merged) */}
             {!isNewContact && (

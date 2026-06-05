@@ -353,20 +353,54 @@ export default function ContactsScreen() {
           </Text>
         ) : null}
         <Text style={[styles.contactPhone, { color: colors.textSecondary }]} dataDetectorType="none">{item.phone}</Text>
-        {contactTags.length > 0 && (
-          <View style={styles.tags}>
-            {contactTags.slice(0, 3).map((tag: { name: string; color: string }, index: number) => (
-              <View key={index} style={[styles.tag, { backgroundColor: tag.color + '20' }]}>
-                <Text style={[styles.tagText, { color: tag.color }]}>{tag.name}</Text>
-              </View>
-            ))}
-            {contactTags.length > 3 && (
-              <View style={[styles.tag, { backgroundColor: colors.surface }]}>
-                <Text style={[styles.tagText, { color: colors.textSecondary }]}>+{contactTags.length - 3}</Text>
-              </View>
-            )}
-          </View>
-        )}
+        {/* Key relationship facts: what was sold + last touchpoint + human status */}
+        {(() => {
+          // Human-readable status from tags
+          const tags = item.tags || [];
+          const status = tags.includes('VIP') ? 'VIP'
+            : tags.includes('sold') ? 'Sold'
+            : tags.includes('hot') ? 'Hot Lead'
+            : tags.includes('referral') ? 'Referral'
+            : tags.includes('prospect') ? 'Prospect'
+            : null;
+
+          // Last touchpoint — use last_activity_at or updated_at
+          const lastTouch = item.last_activity_at || item.updated_at;
+          const daysAgo = lastTouch ? Math.floor((Date.now() - new Date(lastTouch).getTime()) / 86400000) : null;
+          const lastTouchLabel = daysAgo === null ? null
+            : daysAgo === 0 ? 'Today'
+            : daysAgo === 1 ? 'Yesterday'
+            : daysAgo < 30 ? `${daysAgo}d ago`
+            : daysAgo < 365 ? `${Math.floor(daysAgo / 30)}mo ago`
+            : `${Math.floor(daysAgo / 365)}yr ago`;
+
+          const vehicle = item.vehicle?.trim();
+          const facts = [vehicle, lastTouchLabel, status].filter(Boolean);
+          if (facts.length === 0) return null;
+
+          return (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 4 }}>
+              {vehicle ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                  <Ionicons name="car-outline" size={11} color={colors.textSecondary} />
+                  <Text style={{ fontSize: 12, color: colors.textSecondary }}>{vehicle}</Text>
+                </View>
+              ) : null}
+              {lastTouchLabel ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                  {vehicle ? <Text style={{ fontSize: 12, color: colors.border }}>·</Text> : null}
+                  <Ionicons name="time-outline" size={11} color={colors.textSecondary} />
+                  <Text style={{ fontSize: 12, color: colors.textSecondary }}>{lastTouchLabel}</Text>
+                </View>
+              ) : null}
+              {status ? (
+                <View style={{ backgroundColor: status === 'VIP' ? '#C9A96220' : status === 'Sold' ? '#34C75920' : '#007AFF20', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '700', color: status === 'VIP' ? '#C9A962' : status === 'Sold' ? '#34C759' : '#007AFF' }}>{status}</Text>
+                </View>
+              ) : null}
+            </View>
+          );
+        })()}
       </View>
       
       {/* Action buttons: hidden in team view for other users' contacts */}
