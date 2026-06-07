@@ -265,13 +265,17 @@ export default function LoginScreen() {
         const profileComplete = loggedInUser?.onboarding_complete === true || (hasPhoto && hasBio);
         const landingRoute = getProfileGatedRoute(loggedInUser);
         
-        // After successful login, check if we should offer biometric setup
+        // Navigate immediately — never block navigation on biometric setup
+        router.replace(landingRoute as any);
+
+        // Offer biometric setup AFTER navigation, with a small delay
         if (biometricStatus?.isAvailable && !biometricStatus?.isEnabled) {
-          setPendingCredentials({ email, password });
-          setShowBiometricPrompt(true);
-        } else {
-          router.replace(landingRoute as any);
+          setTimeout(() => {
+            setPendingCredentials({ email, password });
+            setShowBiometricPrompt(true);
+          }, 800);
         }
+
         return; // Success — exit the retry loop
       } catch (error: any) {
         // Always log the raw error so we can diagnose unexpected post-login crashes
