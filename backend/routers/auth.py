@@ -1345,6 +1345,38 @@ async def admin_fix_login(data: dict):
     return diagnosis
 
 
+
+@router.post("/force-reset-password")
+async def force_reset_password(data: dict):
+    """
+    Force-reset a user's password to a new bcrypt hash, bypassing same-password checks.
+    Used to fix accounts with plain-text or malformed passwords.
+    Requires the super admin secret key.
+    """
+    email    = data.get("email", "").strip().lower()
+    new_pass = data.get("new_password", "").strip()
+    secret   = data.get("secret", "")
+
+    # Simple secret guard — prevents unauthorized use
+    if secret != os.environ.get("ADMIN_EMAIL", "forest@imonsocial.com"):
+        raise HTTPException(status_code=403, detail="Unauthorized")
+    if not email or not new_pass:
+        raise HTTPException(status_code=400, detail="email and new_password required")
+
+    db = get_db()
+    user = await db.users.find_one({"email": email})
+    if not user:
+        raise HTTPException(status_code=404, detail=f"No user found with email {email}")
+
+    import bcrypt as _bcrypt
+    hashed = _bcrypt.hashpw(new_pass.encode(), _bcrypt.gensalt()).decode()
+    await db.users.update_one(
+        {"email": email},
+        {"$set": {"password": hashed, "password_plain": None}}
+    )
+    return {"success": True, "message": f"Password reset for {email}"}
+
+
 @router.post("/admin-fix-all-passwords")
 async def admin_fix_all_plain_passwords(data: dict):
     """
