@@ -28,6 +28,27 @@ const api = axios.create({
   },
 });
 
+// Automatic retry on network error (PWA wakeup from sleep causes brief connection drops)
+api.interceptors.response.use(
+  response => response,
+  async (error) => {
+    const config = error.config;
+    // Only retry GET requests on network errors (not 4xx/5xx server errors)
+    if (
+      config &&
+      !config._retried &&
+      config.method === 'get' &&
+      (!error.response || error.code === 'ERR_NETWORK' || error.message?.includes('Network Error'))
+    ) {
+      config._retried = true;
+      // Wait 1.5 seconds then retry once — handles PWA waking from iOS background
+      await new Promise(r => setTimeout(r, 1500));
+      return api(config);
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Request interceptor to add auth token and user ID
 // Uses in-memory Zustand state first (instant), falls back to AsyncStorage only if needed
 api.interceptors.request.use(
