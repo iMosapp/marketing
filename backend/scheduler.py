@@ -709,6 +709,29 @@ async def process_pending_campaign_steps():
 
                 # ── DELIVERY ──
                 if delivery_mode == "automated":
+                    media_urls = send_doc.get("media_urls") or []
+
+                    # VCF step: attach the rep's contact card as MMS so the customer saves the number first
+                    if send_doc.get("media_type") == "vcf":
+                        app_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+                        vcf_url = f"{app_url}/api/profile/{user_id}/vcard.vcf"
+                        media_urls = [vcf_url]
+
+                    # Send SMS/MMS via Twilio using rep's dedicated number
+                    if contact_phone and channel in ("sms", "mms"):
+                        try:
+                            from services.twilio_service import send_sms, get_rep_twilio_number
+                            rep_number = await get_rep_twilio_number(user_id)
+                            sms_result = await send_sms(
+                                contact_phone, message_content,
+                                media_urls=media_urls if media_urls else None,
+                                from_phone=rep_number
+                            )
+                            if not sms_result.get("success"):
+                                logger.error(f"[Scheduler] Campaign SMS failed for step {current_step}: {sms_result.get('error')}")
+                        except Exception as sms_err:
+                            logger.error(f"[Scheduler] Campaign SMS send error step {current_step}: {sms_err}")
+
                     conv_id = f"campaign_{user_id}_{contact_id}"
                     await db.messages.insert_one({
                         "conversation_id": conv_id, "sender": "user",
@@ -716,6 +739,7 @@ async def process_pending_campaign_steps():
                         "auto_sent": True, "campaign_id": send_doc.get("campaign_id"),
                         "campaign_step": current_step, "channel": channel,
                         "user_id": user_id, "contact_id": contact_id,
+                        "media_urls": media_urls,
                     })
                     event_type = "email_sent" if channel == "email" else "sms_sent"
                     await db.contact_events.insert_one({

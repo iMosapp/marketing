@@ -161,11 +161,16 @@ DEFAULT_CAMPAIGNS = [
         "description": "Reviews, referrals, service retention and relationship building. Trigger: Sold tag.",
         "scope": "personal",
         "sequences": [
-            {"step": 1, "delay_days": 0, "delay_minutes": 0,  "channel": "sms", "message_template": "Congratulations again {{name}}. It was great working with you today. Let me know if you need anything at all as you get used to your new {{vehicle}}."},
-            {"step": 2, "delay_days": 0, "delay_minutes": 15, "channel": "sms", "message_template": "Here's my digital card so you always have my contact info handy. If you ever need anything just text me here. {{card_link}}"},
-            {"step": 3, "delay_days": 0, "delay_minutes": 30, "channel": "sms", "message_template": "One quick favor. Reviews really help customers know who to work with. If you wouldn't mind leaving a quick one I'd really appreciate it. {{review_link}}"},
+            # Step 0: VCF attachment — sent first so the number gets saved before anything else
+            # Once saved, all future texts show the rep's name and never get flagged as spam
+            {"step": 1, "delay_days": 0, "delay_minutes": 0, "channel": "sms",
+             "message_template": "Congratulations again {{name}}! This is {{salesperson_name}} — it was great working with you today. Tap the contact card below to save my number so you always have it.",
+             "media_type": "vcf",   # scheduler sends VCF as MMS attachment
+            },
+            {"step": 2, "delay_days": 0, "delay_minutes": 3, "channel": "sms", "message_template": "Here's my digital card so you have everything in one place. {{card_link}}"},
+            {"step": 3, "delay_days": 0, "delay_minutes": 30, "channel": "sms", "message_template": "One quick favor — if you wouldn't mind leaving a quick review I'd really appreciate it. {{review_link}}"},
             {"step": 4, "delay_days": 7,  "channel": "sms", "message_template": "Just checking in to see how everything is going with the {{vehicle}} so far."},
-            {"step": 5, "delay_days": 21, "channel": "sms", "message_template": "Random question. Do you know anyone else looking for a vehicle right now? I'd be happy to help them the same way."},
+            {"step": 5, "delay_days": 21, "channel": "sms", "message_template": "Random question — do you know anyone else looking for a vehicle right now? I'd be happy to help them the same way."},
             {"step": 6, "delay_days": 75, "channel": "sms", "message_template": "Your first service will probably be coming up soon. If you'd like I can help get that scheduled for you."},
             {"step": 7, "delay_days": 0, "delay_months": 6,  "channel": "sms", "message_template": "Hope you're still loving the {{vehicle}}. If you ever need anything just reach out."},
             {"step": 8, "delay_days": 0, "delay_months": 12, "channel": "sms", "message_template": "Hard to believe it's already been a year since you got your {{vehicle}}. Hope you're still loving it. If you ever need anything just reach out."},

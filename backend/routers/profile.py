@@ -40,7 +40,7 @@ async def get_vcard(user_id: str):
     first       = parts[0] if parts else ""
     last        = parts[1] if len(parts) > 1 else ""
     title       = persona.get("title") or user.get("title", "")
-    phone       = re.sub(r"\D", "", user.get("phone") or user.get("mvpline_number") or "")
+    phone       = re.sub(r"\D", "", user.get("twilio_number") or user.get("mvpline_number") or user.get("phone") or "")
     email       = user.get("email", "")
     card_url    = f"{_APP_URL}/card/{user_id}"
 

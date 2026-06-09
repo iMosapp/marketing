@@ -282,6 +282,23 @@ export default function CreateCardPage() {
         } catch { threadId = contactId; }
 
         // Navigate to inbox thread with pre-filled message
+        // VCF sends first (saves number), then card link follows 2 min later
+        const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com';
+        const vcfUrl = `${backendUrl}/api/profile/${user._id}/vcard.vcf`;
+
+        if (platform === 'sms' && cPhone) {
+          // Send VCF immediately so customer saves number first
+          await api.post('/messages/twilio-send', {
+            to: cPhone,
+            body: `Hi${cName ? ` ${cName.split(' ')[0]}` : ''}! This is ${user.name} — tap to save my number so you always have it.`,
+            user_id: user._id,
+            contact_id: contactId,
+            media_urls: [vcfUrl],
+            event_type: 'vcf_sent',
+          }).catch(() => {});
+        }
+
+        // Navigate to thread — card link goes out 2 min later via the thread
         navigateToThread(threadId, cName, cPhone, cEmail, platform, text);
       } catch (err: any) {
         const detail = err?.response?.data?.detail || '';
