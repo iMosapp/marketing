@@ -351,7 +351,11 @@ Extract `admin.py` (4,000 lines) into:
 
 ## Prioritized Backlog — Updated May 27, 2026
 
+## Prioritized Backlog — Updated June 9, 2026
+
 ### P0 — This Week
+- **SOLD Wizard** ✅ DONE — 3-step delivery flow (Photo → Notes → Confirm). Gold "SOLD!" button on every contact page (hidden if already sold). Applies Sold tag → auto-starts Sold campaign. Photo saves to camera roll on native.
+- **VCF Auto-Queue** ✅ DONE — create-card.tsx "Via Text" now: VCF sends immediately, card link auto-schedules for 2 min later via `/messages/schedule-delayed`. No manual thread tap required.
 - **App Store / TestFlight Launch** — Blocked on Apple Team ID + bundle ID. See App Store Roadmap below.
 - **Twilio 10DLC Integration** — LLC/business docs ready. Phase 1: remove mock mode, STOP/UNSTOP webhooks, Messaging Service SID. Registration URLs now live: `/terms`, `/privacy`, `/sms-terms` on `imonsocial.com`.
 
@@ -378,7 +382,35 @@ Extract `admin.py` (4,000 lines) into:
 
 ## Completed Work — May 2026 Sprint
 
-### Partner Agreements
+### SOLD Wizard + VCF Auto-Queue (June 9, 2026) — TESTED 14/14 PASS ✅
+
+### SOLD Wizard
+One-tap delivery flow from the contact page:
+- Gold "SOLD!" button appears on every existing contact that doesn't already have the Sold tag
+- **Step 1 — Delivery Moment**: Take photo with camera or pick from library. Photo saves to camera roll on native iOS. Uploaded as `delivery_photo` event on the contact.
+- **Step 2 — Quick Notes**: Vehicle sold + optional delivery note. Stored as `note_added` event.
+- **Step 3 — Confirm**: Shows contact name, photo preview, and campaign timeline (VCF → 3 min card → 30 min review → 7 day check-in → 21 day referral). Big "MARK SOLD!" button.
+- **Success screen**: Animated checkmark + "SOLD!" title + live timeline showing VCF sent.
+- On confirm: applies "Sold" tag → backend auto-enrolls in Sold campaign → VCF + card + review sequence starts automatically.
+
+### VCF Auto-Queue (create-card.tsx)
+When rep taps "Via Text" on a card's share screen:
+1. VCF sent immediately via Twilio (customer saves the number)
+2. Card link scheduled for 2 min later via `POST /api/messages/schedule-delayed`
+3. No manual send required — scheduler picks it up automatically
+
+### New Backend Endpoints
+- `POST /api/messages/schedule-delayed` — inserts into `campaign_pending_sends` with `delivery_mode=automated`, `send_at=now+delay`. Scheduler processes it within 5 min.
+- `POST /api/contacts/{uid}/{cid}/log-event` — log a text event on a contact
+- `POST /api/contacts/{uid}/{cid}/log-event-photo` — upload delivery photo + log event
+
+### New Frontend Files
+- `/app/frontend/app/contact/sold-wizard.tsx` — full 3-step wizard screen (485 lines)
+
+### Photo Saving Note
+On web PWA: photos cannot be saved to camera roll (browser security limitation). On native App Store version: photos DO save automatically to the camera roll via `MediaLibrary.saveToLibraryAsync` after card creation.
+
+
 - PDF generation + download button (admin detail page)
 - Auto-email signed PDF + partner copy on W-9 verification
 - "Send Link via Text" → creates contact, opens native SMS pre-filled
