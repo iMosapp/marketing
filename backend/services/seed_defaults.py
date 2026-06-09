@@ -156,7 +156,7 @@ DEFAULT_CAMPAIGNS = [
         "type": "sold_followup",
         "trigger_tag": "Sold",
         "active": True,
-        "delivery_mode": "manual",
+        "delivery_mode": "auto",      # fires automatically — no rep action needed
         "ai_enabled": False,
         "description": "Reviews, referrals, service retention and relationship building. Trigger: Sold tag.",
         "scope": "personal",

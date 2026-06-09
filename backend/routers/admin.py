@@ -2050,11 +2050,12 @@ async def delete_preloaded_campaigns(x_user_id: str = Header(alias="X-User-ID"))
     if not caller or caller.get("role") != "super_admin":
         raise HTTPException(status_code=403, detail="Super admin only")
 
-    # These are the names of campaigns that were auto-seeded
+    # These are the names of campaigns that were auto-seeded (all variations)
     PRELOADED_NAMES = [
         "Working", "Met", "Birthday", "Lost Contact",
         "Five-Year Relationship", "New Inbound Lead", "New Account Onboarding",
         "New Inbound Lead (AI)", "Inbound Auto-Reply",
+        "Sold Follow-Up", "Sold Follow Up",   # old name variants
     ]
 
     # Find all campaigns with these names
@@ -2088,6 +2089,28 @@ async def delete_preloaded_campaigns(x_user_id: str = Header(alias="X-User-ID"))
         "enrollments_cancelled": enroll_result.modified_count,
         "campaigns_removed": [c["name"] for c in campaigns_to_delete],
         "message": "Preloaded campaigns removed. Sold campaign and all user-created campaigns preserved."
+    }
+
+
+@router.post("/set-campaigns-auto")
+async def set_campaigns_auto_mode(x_user_id: str = Header(alias="X-User-ID")):
+    """
+    Migrate all 'Sold' campaigns to delivery_mode=auto so they fire
+    automatically when the tag is applied — no rep action required.
+    """
+    db = get_db()
+    caller = await db.users.find_one({"_id": ObjectId(x_user_id)}, {"role": 1})
+    if not caller or caller.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super admin only")
+
+    result = await db.campaigns.update_many(
+        {"name": "Sold", "delivery_mode": {"$ne": "auto"}},
+        {"$set": {"delivery_mode": "auto"}}
+    )
+    logger.info(f"[Admin] Updated {result.modified_count} Sold campaigns to auto mode")
+    return {
+        "updated": result.modified_count,
+        "message": "All Sold campaigns now auto-fire when Sold tag is applied."
     }
 
 
