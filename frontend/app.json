@@ -8,6 +8,14 @@
     "scheme": "imos",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/178e2029-a577-4d78-9611-bd7ebec83c91",
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD"
+    },
     "extra": {
       "backendUrl": "https://app.imonsocial.com",
       "appUrl": "https://app.imonsocial.com",
@@ -72,6 +80,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-updates",
       "expo-notifications",
       [
         "expo-splash-screen",
