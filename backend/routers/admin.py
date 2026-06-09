@@ -2038,6 +2038,60 @@ async def backfill_onboarding(x_user_id: str = Header(alias="X-User-ID")):
 
 
 
+@router.post("/delete-preloaded-campaigns")
+async def delete_preloaded_campaigns(x_user_id: str = Header(alias="X-User-ID")):
+    """
+    One-time cleanup: delete all preloaded default campaigns except 'Sold'.
+    Keeps any campaigns the user manually created.
+    Cancels all pending enrollments for the removed campaigns.
+    """
+    db = get_db()
+    caller = await db.users.find_one({"_id": ObjectId(x_user_id)}, {"role": 1})
+    if not caller or caller.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super admin only")
+
+    # These are the names of campaigns that were auto-seeded
+    PRELOADED_NAMES = [
+        "Working", "Met", "Birthday", "Lost Contact",
+        "Five-Year Relationship", "New Inbound Lead", "New Account Onboarding",
+        "New Inbound Lead (AI)", "Inbound Auto-Reply",
+    ]
+
+    # Find all campaigns with these names
+    campaigns_to_delete = await db.campaigns.find(
+        {"name": {"$in": PRELOADED_NAMES}},
+        {"_id": 1, "name": 1, "user_id": 1}
+    ).to_list(10000)
+
+    campaign_ids = [c["_id"] for c in campaigns_to_delete]
+    campaign_id_strs = [str(c["_id"]) for c in campaigns_to_delete]
+
+    if not campaign_ids:
+        return {"deleted": 0, "enrollments_cancelled": 0, "message": "No preloaded campaigns found to delete"}
+
+    # Cancel all pending enrollments for these campaigns
+    enroll_result = await db.campaign_enrollments.update_many(
+        {"campaign_id": {"$in": campaign_id_strs}, "status": {"$in": ["active", "paused"]}},
+        {"$set": {"status": "cancelled"}}
+    )
+    # Cancel pending sends
+    await db.campaign_pending_sends.update_many(
+        {"campaign_id": {"$in": campaign_id_strs}, "status": "pending"},
+        {"$set": {"status": "cancelled"}}
+    )
+    # Delete the campaigns
+    del_result = await db.campaigns.delete_many({"_id": {"$in": campaign_ids}})
+
+    logger.info(f"[Admin] Deleted {del_result.deleted_count} preloaded campaigns, cancelled {enroll_result.modified_count} enrollments")
+    return {
+        "deleted": del_result.deleted_count,
+        "enrollments_cancelled": enroll_result.modified_count,
+        "campaigns_removed": [c["name"] for c in campaigns_to_delete],
+        "message": "Preloaded campaigns removed. Sold campaign and all user-created campaigns preserved."
+    }
+
+
+
 @router.post("/backfill-default-campaigns")
 async def backfill_default_campaigns(x_user_id: str = Header(alias="X-User-ID")):
     """Seed the new turnkey campaigns (Working, Sold, Met, Birthday, Lost Contact, Five-Year)

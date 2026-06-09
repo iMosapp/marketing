@@ -150,25 +150,7 @@ DEFAULT_SOCIAL_TEMPLATES = [
 
 DEFAULT_CAMPAIGNS = [
 
-    # Campaign 1: Working — Active Shopper
-    {
-        "name": "Working",
-        "type": "nurture",
-        "trigger_tag": "Working",
-        "active": True,
-        "delivery_mode": "manual",
-        "ai_enabled": False,
-        "description": "Keep the conversation alive and move toward a purchase. Trigger: Working tag.",
-        "scope": "personal",
-        "sequences": [
-            {"step": 1, "delay_days": 0, "delay_minutes": 0, "channel": "sms", "message_template": "Hey {{name}}, this is {{salesperson_name}}. Thanks again for chatting with me today. If you need anything while you're looking things over just shoot me a message. Happy to help."},
-            {"step": 2, "delay_days": 1, "channel": "sms", "message_template": "Just checking in to see if you had any questions after looking things over. I can also send more photos or videos if that helps."},
-            {"step": 3, "delay_days": 3, "channel": "sms", "message_template": "Quick question for you. Are you still considering this or did you end up going another direction?"},
-            {"step": 4, "delay_days": 7, "channel": "sms", "message_template": "I didn't want to lose track of you. If you're still in the market I'd be happy to help whenever you're ready."},
-        ],
-    },
-
-    # Campaign 2: Sold — Year 1 Relationship
+    # Sold — Year 1 Relationship (the only default campaign)
     {
         "name": "Sold",
         "type": "sold_followup",
@@ -189,116 +171,8 @@ DEFAULT_CAMPAIGNS = [
             {"step": 8, "delay_days": 0, "delay_months": 12, "channel": "sms", "message_template": "Hard to believe it's already been a year since you got your {{vehicle}}. Hope you're still loving it. If you ever need anything just reach out."},
         ],
     },
-
-    # Campaign 3: Met — Networking / Events
-    {
-        "name": "Met",
-        "type": "nurture",
-        "trigger_tag": "Met",
-        "active": True,
-        "delivery_mode": "manual",
-        "ai_enabled": False,
-        "description": "Follow up after meeting someone at an event or networking. Trigger: Met tag.",
-        "scope": "personal",
-        "sequences": [
-            {"step": 1, "delay_days": 0, "channel": "sms", "message_template": "Great meeting you today {{name}}. Always nice connecting with good people. Let's stay in touch."},
-            {"step": 2, "delay_days": 2,  "channel": "sms", "message_template": "Just wanted to follow up after we met. If there's anything I can ever help with feel free to reach out."},
-            {"step": 3, "delay_days": 30, "channel": "sms", "message_template": "Random check in. Hope everything is going well on your end."},
-        ],
-    },
-
-    # Campaign 4: Birthday
-    {
-        "name": "Birthday",
-        "type": "birthday",
-        "trigger_tag": "Birthday",
-        "active": True,
-        "delivery_mode": "manual",
-        "ai_enabled": False,
-        "description": "Birthday message. Trigger: Birthday date field.",
-        "scope": "personal",
-        "sequences": [
-            {"step": 1, "delay_days": 0, "channel": "sms", "message_template": "Happy Birthday {{name}}. Hope you have an awesome day."},
-        ],
-    },
-
-    # Campaign 5: Lost Contact — Re-Engagement
-    {
-        "name": "Lost Contact",
-        "type": "re_engagement",
-        "trigger_tag": "Lost Contact",
-        "active": True,
-        "delivery_mode": "manual",
-        "ai_enabled": False,
-        "description": "Re-engage contacts after 60–90 days of silence. Trigger: Lost Contact tag.",
-        "scope": "personal",
-        "sequences": [
-            {"step": 1, "delay_days": 0, "channel": "sms", "message_template": "Hey {{name}}, just wanted to check in. If you're still looking or need anything at all I'd be happy to help."},
-        ],
-    },
-
-    # Campaign 6: Five-Year Relationship (Year 2–5)
-    # Designed to run alongside the Sold campaign — picks up after Year 1
-    {
-        "name": "Five-Year Relationship",
-        "type": "long_term",
-        "trigger_tag": "Sold",
-        "active": True,
-        "delivery_mode": "manual",
-        "ai_enabled": False,
-        "description": "Long-term relationship building, referrals, repeat sales. Years 2–5 after purchase.",
-        "scope": "personal",
-        "sequences": [
-            # Year 2
-            {"step": 1,  "delay_months": 18, "channel": "sms", "message_template": "Random check in. How has the {{vehicle}} been treating you?"},
-            {"step": 2,  "delay_months": 24, "channel": "sms", "message_template": "It's been two years since you got your {{vehicle}}. If you ever want to see what trade value looks like I'd be happy to run the numbers."},
-            {"step": 3,  "delay_months": 24, "channel": "sms", "message_template": "Just wanted to say Happy Holidays {{name}}. Appreciate you being one of my customers."},
-            # Year 3
-            {"step": 4,  "delay_months": 30, "channel": "sms", "message_template": "Quick question. Are you still loving the {{vehicle}} or starting to think about something different?"},
-            {"step": 5,  "delay_months": 36, "channel": "sms", "message_template": "Three years already since you picked up your {{vehicle}}. If you ever want to explore upgrading I'd be happy to help."},
-            {"step": 6,  "delay_months": 38, "channel": "sms", "message_template": "By the way if you ever have a friend or family member looking for a vehicle feel free to send them my way. I'll take great care of them."},
-            # Year 4
-            {"step": 7,  "delay_months": 48, "channel": "sms", "message_template": "Just realized it's been four years since you got your {{vehicle}}. Time flies. Hope everything has been great with it."},
-            {"step": 8,  "delay_months": 50, "channel": "sms", "message_template": "Haven't talked in a while so I figured I'd check in and say hello."},
-            # Year 5
-            {"step": 9,  "delay_months": 54, "channel": "sms", "message_template": "Random question. Are you planning on keeping the {{vehicle}} long term or thinking about replacing it sometime soon?"},
-            {"step": 10, "delay_months": 60, "channel": "sms", "message_template": "Hard to believe it's been five years since you got your {{vehicle}}. If you'd ever like to look at upgrading or see what trade value looks like I'd be happy to help."},
-        ],
-    },
-
-    # Campaign 7: New Inbound Lead — AI Auto Reply (default for inbound SMS)
-    {
-        "name": "New Inbound Lead",
-        "type": "inbound_auto",
-        "trigger_tag": "Inbound Lead",
-        "active": True,
-        "delivery_mode": "auto",
-        "ai_enabled": True,
-        "ai_assist_mode": "auto_reply",
-        "is_inbound_default": True,
-        "description": "Auto-reply to new inbound SMS leads in your voice. AI responds with a natural delay.",
-        "scope": "personal",
-        "sequences": [
-            {"step": 1, "delay_days": 0, "delay_minutes": 0, "channel": "sms",
-             "message": "Hey {{firstName}}! Thanks for reaching out. I'm {{salespersonName}} — what can I help you with today?"},
-        ],
-    },
-
-    # Legacy Onboarding — kept for backward compat but deactivated
-    {
-        "name": "New Account Onboarding",
-        "type": "onboarding",
-        "trigger_tag": "",
-        "active": False,
-        "delivery_mode": "manual",
-        "ai_enabled": False,
-        "description": "Legacy onboarding flow. Replaced by the new turnkey campaigns above.",
-        "scope": "personal",
-        "sequences": [
-            {"step": 1, "action_type": "message", "channel": "email", "delay_days": 0, "message_template": "Welcome! Your first step: set up your digital card at {settings_link}"},
-        ],
-    },
 ]
+
 
 # ==================== DEFAULT TAGS (5 core + 5 optional) ====================
 # These are seeded at the USER level for every new account.
