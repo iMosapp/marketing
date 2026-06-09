@@ -1556,6 +1556,79 @@ async def update_conversation(user_id: str, conversation_id: str, data: dict):
     return {"message": "Conversation updated"}
 
 
+@router.post("/schedule-delayed")
+async def schedule_delayed_message(request: Request):
+    """
+    Schedule an automated SMS to send after a delay.
+    Inserts into campaign_pending_sends queue — picked up by the scheduler every 5 min.
+    Use for VCF → card link sequencing, SOLD wizard follow-ups, etc.
+    """
+    from datetime import timedelta
+    data = await request.json()
+    user_id    = data.get("user_id", "")
+    to_phone   = data.get("to", "")
+    body       = data.get("body", "")
+    delay_s    = int(data.get("delay_seconds", 120))
+    contact_id = data.get("contact_id", "")
+    contact_name = data.get("contact_name", "")
+    media_urls = data.get("media_urls", [])
+    event_type = data.get("event_type", "sms_sent")
+
+    if not user_id or not to_phone or not body:
+        raise HTTPException(status_code=400, detail="user_id, to, body required")
+
+    db = get_db()
+    now = datetime.now(timezone.utc)
+    send_at = now + timedelta(seconds=delay_s)
+    # scheduler queries naive datetimes
+    send_at_naive = send_at.replace(tzinfo=None)
+
+    # Rep's dedicated Twilio number
+    rep_phone = None
+    try:
+        rep_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"twilio_number": 1, "mvpline_number": 1})
+        rep_phone = (rep_doc or {}).get("twilio_number") or (rep_doc or {}).get("mvpline_number")
+    except Exception:
+        pass
+
+    # Enrich contact name if missing
+    if not contact_name and contact_id:
+        try:
+            c = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"first_name": 1, "last_name": 1, "name": 1})
+            if c:
+                contact_name = c.get("name") or f"{c.get('first_name', '')} {c.get('last_name', '')}".strip()
+        except Exception:
+            pass
+
+    doc = {
+        "user_id":        user_id,
+        "contact_id":     contact_id,
+        "contact_name":   contact_name,
+        "contact_phone":  to_phone,
+        "rep_phone":      rep_phone,
+        "message_template": body,
+        "channel":        "sms",
+        "delivery_mode":  "automated",
+        "send_at":        send_at_naive,
+        "status":         "pending",
+        "step":           0,
+        "enrollment_id":  "",
+        "campaign_id":    "",
+        "campaign_name":  "Direct Send",
+        "media_urls":     media_urls,
+        "event_type":     event_type,
+        "created_at":     now,
+        "type":           "direct_scheduled",
+    }
+    result = await db.campaign_pending_sends.insert_one(doc)
+    logger.info(f"[ScheduleDelayed] Queued SMS to {to_phone} at {send_at.isoformat()} (id={result.inserted_id})")
+    return {
+        "status":          "scheduled",
+        "send_at":         send_at.isoformat(),
+        "pending_send_id": str(result.inserted_id),
+    }
+
+
 @router.get("/ai-suggest/{user_id}/{conversation_id}")
 async def get_ai_suggestion(user_id: str, conversation_id: str):
     """Get AI-generated response suggestion (mocked)"""

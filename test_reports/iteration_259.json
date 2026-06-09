@@ -1,0 +1,71 @@
+{
+  "summary": "Tested SOLD Wizard P0 feature and schedule-delayed endpoint. All critical features work correctly. Found and fixed stale Metro bundler cache causing SOLD button to not appear on contact page. After frontend restart, the SOLD wizard button appears, 3-step wizard flow works end-to-end, Sold tag is applied, campaigns auto-start. Backend APIs (schedule-delayed, log-event, health/scheduler) all pass 14/14 tests.",
+
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "GET /api/intel/{user_id}/{contact_id}",
+        "issue": "Returns 404 when no intel exists (expected behavior but logs to browser console as 'API Error: {detail: Not Found}'). The catch block silences this but the API interceptor still logs it."
+      }
+    ]
+  },
+
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "SOLD wizard button visibility",
+        "issue": "STALE METRO BUNDLE: The button was not appearing on the contact page because the Expo Metro bundler was serving a cached/stale JavaScript bundle compiled before the SOLD wizard button code was added to [id].tsx. FIXED by restarting the frontend server (sudo supervisorctl restart frontend). After restart, the bundle correctly included the SOLD! button at line 2597-2619.",
+        "affected_selectors": ["[data-testid='sold-wizard-btn']", "text=SOLD!"]
+      }
+    ],
+    "design_issues": [
+      {
+        "screen": "SOLD Wizard - All screens",
+        "issues": ["Clean, well-designed 3-step wizard with proper progress indicators. Gold theme consistent with brand. No design issues found."]
+      }
+    ]
+  },
+
+  "test_report_links": [
+    "/app/backend/tests/test_sold_wizard_schedule_delayed.py",
+    "/app/test_reports/pytest/pytest_sold_wizard.xml"
+  ],
+
+  "action_items": [
+    "LOW PRIORITY: Consider adding explicit testID prop (React Native convention) alongside data-testid on TouchableOpacity components in [id].tsx for better testing support. Currently data-testid works via React Native Web passthrough but is not guaranteed.",
+    "LOW PRIORITY: Consider clearing Metro bundler cache on deploy to avoid stale bundle issues in future. The bundle serves fresh after restart but was stale before."
+  ],
+
+  "critical_code_review_comments": [
+    "STALE BUNDLE ISSUE: The Expo Metro bundler serves cached JS modules. After adding new code to [id].tsx (SOLD wizard button), the bundle was not automatically invalidated. This means the SOLD button was in the source file but NOT in the running JavaScript. Fixed by frontend restart.",
+    "create-card.tsx SMS flow correctly implements schedule-delayed: sends VCF immediately, schedules card link for 2 minutes later via /messages/schedule-delayed, then navigates to thread. Code at lines 284-313.",
+    "The loadContact function in [id].tsx does not include sold_workflow_status in setContact call - but this field IS referenced in the details tab (line 3061). The initial state doesn't have it either. This might cause issues if the API returns it. No breaking bug but worth noting.",
+    "404 console errors from /api/intel endpoint are expected behavior (no intel for new contacts) but create noise. Consider adding a specific 404 suppression or a HEAD check before GET."
+  ],
+
+  "updated_files": [
+    "/app/backend/tests/test_sold_wizard_schedule_delayed.py"
+  ],
+
+  "success_rate": {
+    "backend": "100% (14/14 tests passed)",
+    "frontend": "100% (all 6 test scenarios verified)"
+  },
+
+  "test_credentials": {
+    "super_admin": "forest@imosapp.com / Admin123!",
+    "user_id": "69a0b7095fddcede09591667"
+  },
+
+  "seed_data_creation": "Used John Dealer (6a1674b90499641528e11bfb) to test SOLD wizard. Applied 'Sold' tag to John Dealer during testing - contact now has tags ['new-lead', 'demo-request', 'Sold'] and is enrolled in Sold campaign.",
+
+  "retest_needed": false,
+
+  "should_main_agent_self_test": false,
+
+  "context_for_next_testing_agent": "All SOLD Wizard P0 features work correctly after frontend restart (stale Metro bundle was the key issue). Backend has 16 scheduler jobs running. POST /api/messages/schedule-delayed returns {status, send_at, pending_send_id}. POST /api/contacts/{uid}/{cid}/log-event returns {success:true}. Frontend frontend was restarted at ~03:05 UTC to clear stale bundle. John Dealer (6a1674b90499641528e11bfb) has the Sold tag applied from testing. SOLD wizard button only appears on contacts WITHOUT the Sold tag (correct). The sold-wizard route is at /contact/sold-wizard with params: contact_id, contact_name, contact_phone, contact_vehicle.",
+
+  "rca_of_issue": "STALE METRO BUNDLE BUG: The Expo Metro bundler (dev server) serves JavaScript from an on-disk cache indexed by file content hashes. When [id].tsx was modified to add the SOLD wizard button (lines 2597-2619), the Metro bundler's cache was not properly invalidated (the bundle at /node_modules/expo-router/entry.bundle was stale - 19085590 bytes vs 19135466 bytes new). The old bundle contained showSoldModal state and other SOLD workflow features (added earlier) but NOT the new SOLD wizard button. Hot reload did not trigger a re-bundle. Fix: sudo supervisorctl restart frontend forces Metro to rebuild all module caches. Prevention: E1 should restart the frontend server when adding significant new code to large files, or use --clear flag with expo start."
+}

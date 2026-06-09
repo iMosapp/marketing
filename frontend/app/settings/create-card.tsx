@@ -281,13 +281,12 @@ export default function CreateCardPage() {
           }
         } catch { threadId = contactId; }
 
-        // Navigate to inbox thread with pre-filled message
-        // VCF sends first (saves number), then card link follows 2 min later
-        const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com';
-        const vcfUrl = `${backendUrl}/api/profile/${user._id}/vcard.vcf`;
-
+        // SMS flow: VCF first, then auto-schedule the card link 2 minutes later
         if (platform === 'sms' && cPhone) {
-          // Send VCF immediately so customer saves number first
+          const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com';
+          const vcfUrl = `${backendUrl}/api/profile/${user._id}/vcard.vcf`;
+
+          // Step 1: Send VCF immediately — customer saves number first
           await api.post('/messages/twilio-send', {
             to: cPhone,
             body: `Hi${cName ? ` ${cName.split(' ')[0]}` : ''}! This is ${user.name} — tap to save my number so you always have it.`,
@@ -296,9 +295,24 @@ export default function CreateCardPage() {
             media_urls: [vcfUrl],
             event_type: 'vcf_sent',
           }).catch(() => {});
+
+          // Step 2: Schedule card link for 2 minutes later (fully automatic — no thread tap needed)
+          await api.post('/messages/schedule-delayed', {
+            to: cPhone,
+            body: text,
+            user_id: user._id,
+            contact_id: contactId,
+            contact_name: cName,
+            delay_seconds: 120,
+            event_type: 'congrats_card_sent',
+          }).catch(() => {});
+
+          // Navigate to thread so rep can see the conversation was started
+          navigateToThread(threadId, cName, cPhone, cEmail, platform, text);
+          return;
         }
 
-        // Navigate to thread — card link goes out 2 min later via the thread
+        // Email: navigate to thread as normal
         navigateToThread(threadId, cName, cPhone, cEmail, platform, text);
       } catch (err: any) {
         const detail = err?.response?.data?.detail || '';

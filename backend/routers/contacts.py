@@ -1,7 +1,7 @@
 """
 Contacts router - handles contact CRUD operations
 """
-from fastapi import APIRouter, HTTPException, Body
+from fastapi import APIRouter, HTTPException, Body, UploadFile, File, Form, Request
 from bson import ObjectId
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional
@@ -1828,3 +1828,62 @@ async def remove_campaign_enrollment(user_id: str, contact_id: str, data: dict =
         "cancelled_pending_sends": cancelled.modified_count,
         "dismissed_tasks": dismissed_tasks.modified_count,
     }
+
+
+@router.post("/{user_id}/{contact_id}/log-event")
+async def log_contact_event_simple(user_id: str, contact_id: str, data: dict):
+    """Log a simple text event on a contact (used by SOLD wizard for notes, etc.)."""
+    db = get_db()
+    event_type = data.get("event_type", "note_added")
+    description = data.get("description", "")
+    icon = data.get("icon", "document-text")
+    color = data.get("color", "#C9A962")
+    if not description:
+        raise HTTPException(status_code=400, detail="description required")
+    now = datetime.now(timezone.utc)
+    await db.contact_events.insert_one({
+        "contact_id": contact_id,
+        "user_id": user_id,
+        "event_type": event_type,
+        "description": description,
+        "icon": icon,
+        "color": color,
+        "timestamp": now,
+    })
+    return {"success": True}
+
+
+@router.post("/{user_id}/{contact_id}/log-event-photo")
+async def log_contact_event_photo(
+    user_id: str,
+    contact_id: str,
+    event_type: str = Form(default="delivery_photo"),
+    description: str = Form(default=""),
+    color: str = Form(default="#34C759"),
+    photo: UploadFile = File(...),
+):
+    """Upload a delivery photo and log it as a contact event."""
+    from utils.image_storage import upload_image
+    import os
+    db = get_db()
+    now = datetime.now(timezone.utc)
+    photo_content = await photo.read()
+    upload_result = await upload_image(photo_content, prefix="delivery", entity_id=contact_id)
+    public_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+    photo_url = ""
+    if upload_result:
+        photo_url = f"{public_url}/api/images/{upload_result['original_path']}"
+    event_doc = {
+        "contact_id": contact_id,
+        "user_id": user_id,
+        "event_type": event_type,
+        "description": description or "Delivery photo",
+        "photo_url": photo_url,
+        "icon": "camera",
+        "color": color,
+        "timestamp": now,
+        "category": "media",
+    }
+    await db.contact_events.insert_one(event_doc)
+    return {"success": True, "photo_url": photo_url}
+

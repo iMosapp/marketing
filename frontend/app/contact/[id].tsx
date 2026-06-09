@@ -2594,6 +2594,30 @@ function ContactDetailScreen() {
             )}
           </View>
 
+          {/* ===== SOLD WIZARD BUTTON ===== */}
+          {!isNewContact && !isEditing && !contact.tags.includes('Sold') && (
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+                marginHorizontal: 16, marginBottom: 10, marginTop: 4,
+                backgroundColor: '#C9A962', borderRadius: 14, paddingVertical: 16,
+              }}
+              onPress={() => {
+                const params = new URLSearchParams();
+                params.set('contact_id', id as string);
+                if (contact.first_name || contact.last_name)
+                  params.set('contact_name', `${contact.first_name || ''} ${contact.last_name || ''}`.trim());
+                if (contact.phone) params.set('contact_phone', contact.phone);
+                if (contact.vehicle) params.set('contact_vehicle', contact.vehicle);
+                router.push(`/contact/sold-wizard?${params.toString()}` as any);
+              }}
+              data-testid="sold-wizard-btn"
+            >
+              <Ionicons name="checkmark-circle" size={22} color="#000" />
+              <Text style={{ fontSize: 18, fontWeight: '800', color: '#000', letterSpacing: 0.3 }}>SOLD!</Text>
+            </TouchableOpacity>
+          )}
+
           {/* ===== ACTION PROGRESS TRACKER (above tabs) ===== */}
           {!isNewContact && !isEditing && actionProgress.length > 0 && (
             <View style={s.progressSection} data-testid="action-progress">
