@@ -1760,7 +1760,46 @@ async def remove_campaign_enrollment(user_id: str, contact_id: str, data: dict =
     }
 
 
-@router.post("/{user_id}/{contact_id}/log-event")
+@router.get("/{user_id}/by-tag/{tag_name}")
+async def get_contacts_by_tag(user_id: str, tag_name: str, skip: int = 0, limit: int = 200):
+    """Return all contacts for a user that have a specific tag applied."""
+    db = get_db()
+    contacts = await db.contacts.find(
+        {"user_id": user_id, "tags": {"$elemMatch": {"$regex": f"^{tag_name}$", "$options": "i"}}},
+        {"_id": 1, "first_name": 1, "last_name": 1, "name": 1, "phone": 1, "email": 1,
+         "tags": 1, "photo_thumbnail": 1, "photo_url": 1, "vehicle": 1, "updated_at": 1}
+    ).skip(skip).limit(limit).to_list(limit)
+    result = []
+    for c in contacts:
+        result.append({
+            "_id": str(c["_id"]),
+            "name": c.get("name") or f"{c.get('first_name','')} {c.get('last_name','')}".strip(),
+            "phone": c.get("phone", ""),
+            "email": c.get("email", ""),
+            "tags": c.get("tags", []),
+            "photo_thumbnail": c.get("photo_thumbnail") or c.get("photo_url"),
+            "vehicle": c.get("vehicle", ""),
+        })
+    return {"contacts": result, "total": len(result), "tag": tag_name}
+
+
+@router.patch("/{user_id}/{contact_id}/remove-tag/{tag_name}")
+async def remove_tag_from_contact(user_id: str, contact_id: str, tag_name: str):
+    """Remove a single tag from a contact (case-insensitive match)."""
+    db = get_db()
+    contact = await db.contacts.find_one({"_id": ObjectId(contact_id), "user_id": user_id}, {"tags": 1})
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    # Remove case-insensitively
+    current_tags = contact.get("tags", [])
+    updated_tags = [t for t in current_tags if t.lower() != tag_name.lower()]
+    await db.contacts.update_one(
+        {"_id": ObjectId(contact_id)},
+        {"$set": {"tags": updated_tags, "updated_at": datetime.now(timezone.utc)}}
+    )
+    return {"success": True, "tags": updated_tags}
+
+
 async def log_contact_event_simple(user_id: str, contact_id: str, data: dict):
     """Log a simple text event on a contact (used by SOLD wizard for notes, etc.)."""
     db = get_db()

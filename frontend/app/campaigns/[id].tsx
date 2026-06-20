@@ -48,6 +48,7 @@ interface SequenceStep {
 
 interface Enrollment {
   _id: string;
+  contact_id: string;
   contact_name: string;
   contact_phone: string;
   current_step: number;
@@ -1101,10 +1102,41 @@ const { showToast } = useToast();
         
         {/* Enrollments Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>
-            Enrollments ({enrollments.length})
-          </Text>
-          
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <Text style={styles.sectionLabel}>
+              Enrolled ({enrollments.filter(e => e.status === 'active' || e.status === 'paused').length} active)
+            </Text>
+            {enrollments.some(e => e.status === 'active' || e.status === 'paused') && (
+              <TouchableOpacity
+                onPress={() => showAlert(
+                  'Remove Everyone?',
+                  `This cancels all ${enrollments.filter(e => e.status === 'active' || e.status === 'paused').length} active enrollments and stops all pending texts. Cannot be undone.`,
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Remove All', style: 'destructive',
+                      onPress: async () => {
+                        try {
+                          await api.delete(`/campaigns/${user._id}/${id}/enrollments`);
+                          setEnrollments(prev => prev.map(e =>
+                            e.status === 'active' || e.status === 'paused'
+                              ? { ...e, status: 'cancelled' } : e
+                          ));
+                          showToast('All enrollments cancelled');
+                        } catch { showSimpleAlert('Error', 'Failed to remove all'); }
+                      }
+                    }
+                  ]
+                )}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FF3B3015', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}
+                data-testid="remove-all-enrollments-btn"
+              >
+                <Ionicons name="trash-outline" size={14} color="#FF3B30" />
+                <Text style={{ fontSize: 13, fontWeight: '700', color: '#FF3B30' }}>Remove All</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
           {enrollments.length === 0 ? (
             <View style={styles.emptyEnrollments}>
               <Ionicons name="people-outline" size={32} color={colors.borderLight} />
@@ -1112,27 +1144,57 @@ const { showToast } = useToast();
             </View>
           ) : (
             <View style={styles.enrollmentsList}>
-              {enrollments.slice(0, 5).map((enrollment) => (
-                <TouchableOpacity 
-                  key={enrollment._id} 
-                  style={styles.enrollmentCard}
-                  onPress={() => router.push(`/contact/${enrollment.contact_id}`)}
+              {enrollments
+                .filter(e => e.status === 'active' || e.status === 'paused')
+                .map((enrollment) => (
+                <View
+                  key={enrollment._id}
+                  style={[styles.enrollmentCard, { flexDirection: 'row', alignItems: 'center' }]}
                 >
-                  <View style={styles.enrollmentInfo}>
-                    <Text style={styles.enrollmentName}>{enrollment.contact_name}</Text>
-                    <Text style={styles.enrollmentPhone}>{enrollment.contact_phone}</Text>
-                  </View>
-                  <View style={[styles.statusDot, { backgroundColor: getStatusColor(enrollment.status) }]} />
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}
+                    onPress={() => router.push(`/contact/${enrollment.contact_id}`)}
+                  >
+                    <View style={[styles.statusDot, { backgroundColor: getStatusColor(enrollment.status) }]} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.enrollmentName}>{enrollment.contact_name || 'Unknown'}</Text>
+                      <Text style={styles.enrollmentPhone}>
+                        Step {enrollment.current_step} · {enrollment.status}
+                        {enrollment.next_send_at ? ` · Next: ${new Date(enrollment.next_send_at).toLocaleDateString()}` : ''}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => showAlert(
+                      'Remove Contact?',
+                      `Remove ${enrollment.contact_name} from this campaign? Their pending texts will be cancelled.`,
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Remove', style: 'destructive',
+                          onPress: async () => {
+                            try {
+                              await api.delete(`/campaigns/${user._id}/${id}/enrollments/${enrollment._id}`);
+                              setEnrollments(prev => prev.filter(e => e._id !== enrollment._id));
+                              showToast(`${enrollment.contact_name} removed`);
+                            } catch { showSimpleAlert('Error', 'Failed to remove'); }
+                          }
+                        }
+                      ]
+                    )}
+                    style={{ padding: 8 }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    data-testid={`remove-enrollment-${enrollment._id}`}
+                  >
+                    <Ionicons name="close-circle" size={22} color="#FF3B30" />
+                  </TouchableOpacity>
+                </View>
               ))}
-              
-              {enrollments.length > 5 && (
-                <TouchableOpacity 
-                  style={styles.viewAllButton}
-                  onPress={() => router.push('/campaigns/dashboard')}
-                >
-                  <Text style={styles.viewAllText}>View All ({enrollments.length})</Text>
-                </TouchableOpacity>
+
+              {enrollments.filter(e => e.status === 'cancelled').length > 0 && (
+                <Text style={{ fontSize: 12, color: colors.textTertiary, marginTop: 8, textAlign: 'center' }}>
+                  + {enrollments.filter(e => e.status === 'cancelled').length} previously removed
+                </Text>
               )}
             </View>
           )}

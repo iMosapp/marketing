@@ -1057,18 +1057,57 @@ async def get_campaign_enrollments(user_id: str, campaign_id: str, status: str =
 
 @router.delete("/{user_id}/{campaign_id}/enrollments/{enrollment_id}")
 async def cancel_enrollment(user_id: str, campaign_id: str, enrollment_id: str):
-    """Cancel a campaign enrollment with role-based access check"""
+    """Cancel a campaign enrollment and all its pending sends."""
+    db = get_db()
     base_filter = await get_data_filter(user_id)
-    
-    result = await get_db().campaign_enrollments.update_one(
+    now = datetime.utcnow()
+
+    result = await db.campaign_enrollments.update_one(
         {"$and": [{"_id": ObjectId(enrollment_id)}, base_filter]},
-        {"$set": {"status": "cancelled"}}
+        {"$set": {"status": "cancelled", "cancelled_at": now}}
     )
-    
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Enrollment not found")
-    
-    return {"message": "Enrollment cancelled"}
+
+    # Cancel all pending sends for this enrollment
+    await db.campaign_pending_sends.update_many(
+        {"enrollment_id": enrollment_id, "status": {"$in": ["pending", "processing"]}},
+        {"$set": {"status": "cancelled", "cancelled_at": now}}
+    )
+    return {"success": True, "message": "Enrollment cancelled"}
+
+
+@router.delete("/{user_id}/{campaign_id}/enrollments")
+async def cancel_all_enrollments(user_id: str, campaign_id: str):
+    """Cancel ALL active enrollments for a campaign and their pending sends.
+    Used for the 'Remove Everyone' bulk action before migration.
+    """
+    db = get_db()
+    base_filter = await get_data_filter(user_id)
+    now = datetime.utcnow()
+
+    # Get all active enrollment IDs for this campaign
+    active = await db.campaign_enrollments.find(
+        {"$and": [{"campaign_id": campaign_id, "status": {"$in": ["active", "paused"]}}, base_filter]},
+        {"_id": 1}
+    ).to_list(5000)
+    enrollment_ids = [str(e["_id"]) for e in active]
+
+    # Cancel enrollments
+    enr_result = await db.campaign_enrollments.update_many(
+        {"campaign_id": campaign_id, "status": {"$in": ["active", "paused"]}},
+        {"$set": {"status": "cancelled", "cancelled_at": now}}
+    )
+    # Cancel pending sends
+    sends_result = await db.campaign_pending_sends.update_many(
+        {"enrollment_id": {"$in": enrollment_ids}, "status": {"$in": ["pending", "processing"]}},
+        {"$set": {"status": "cancelled", "cancelled_at": now}}
+    )
+    return {
+        "success": True,
+        "enrollments_cancelled": enr_result.modified_count,
+        "pending_sends_cancelled": sends_result.modified_count,
+    }
 
 # ============= SCHEDULER ENDPOINTS =============
 @router.post("/scheduler/trigger")

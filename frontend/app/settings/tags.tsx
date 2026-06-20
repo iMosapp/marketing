@@ -16,6 +16,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { tagsAPI } from '../../services/api';
+import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 
 import { useThemeStore } from '../../store/themeStore';
@@ -111,6 +112,11 @@ export default function TagsSettings() {
   const [formIcon, setFormIcon] = useState('pricetag');
   const [formScope, setFormScope] = useState<'personal' | 'account' | 'org'>('personal');
   const [saving, setSaving] = useState(false);
+
+  // Tag contact list panel
+  const [contactListTag, setContactListTag] = useState<Tag | null>(null);
+  const [tagContacts, setTagContacts] = useState<any[]>([]);
+  const [tagContactsLoading, setTagContactsLoading] = useState(false);
 
   const isAdmin = user?.role === 'super_admin' || user?.role === 'org_admin' || user?.role === 'store_manager' || user?.role === 'admin';
   const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'org_admin';
@@ -270,6 +276,25 @@ export default function TagsSettings() {
   }
 
 
+  const openTagContacts = async (tag: Tag) => {
+    setContactListTag(tag);
+    setTagContacts([]);
+    setTagContactsLoading(true);
+    try {
+      const res = await api.get(`/contacts/${user!._id}/by-tag/${encodeURIComponent(tag.name)}`);
+      setTagContacts(res.data.contacts || []);
+    } catch { setTagContacts([]); }
+    finally { setTagContactsLoading(false); }
+  };
+
+  const removeTagFromContact = async (contactId: string, tagName: string) => {
+    try {
+      await api.patch(`/contacts/${user!._id}/${contactId}/remove-tag/${encodeURIComponent(tagName)}`);
+      setTagContacts(prev => prev.filter(c => c._id !== contactId));
+      setTags(prev => prev.map(t => t.name === tagName ? { ...t, contact_count: Math.max(0, t.contact_count - 1) } : t));
+    } catch { showAlert('Error', 'Failed to remove tag'); }
+  };
+
   const renderTagRow = (tag: Tag) => (
     <TouchableOpacity key={tag._id} style={styles.tagCard} onPress={() => openEditModal(tag)} activeOpacity={0.7}>
       <View style={[styles.tagIcon, { backgroundColor: tag.color + '20' }]}>
@@ -277,7 +302,15 @@ export default function TagsSettings() {
       </View>
       <View style={styles.tagInfo}>
         <Text style={styles.tagName}>{tag.name}</Text>
-        <Text style={styles.tagCount}>{tag.contact_count} contact{tag.contact_count !== 1 ? 's' : ''}</Text>
+        <TouchableOpacity
+          onPress={(e) => { e.stopPropagation?.(); openTagContacts(tag); }}
+          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+          data-testid={`tag-contacts-btn-${tag.name}`}
+        >
+          <Text style={[styles.tagCount, tag.contact_count > 0 && { color: tag.color, fontWeight: '600' }]}>
+            {tag.contact_count} contact{tag.contact_count !== 1 ? 's' : ''} {tag.contact_count > 0 ? '→' : ''}
+          </Text>
+        </TouchableOpacity>
       </View>
       <View style={[styles.colorDot, { backgroundColor: tag.color }]} />
       <TouchableOpacity style={styles.deleteButton} onPress={() => handleDelete(tag)}>
@@ -396,6 +429,83 @@ export default function TagsSettings() {
         presentationStyle="pageSheet"
         onRequestClose={() => setShowModal(false)}
       >
+
+      {/* Tag Contacts Panel */}
+      <Modal
+        visible={!!contactListTag}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setContactListTag(null)}
+      >
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '80%', paddingBottom: insets.bottom + 16 }}>
+            {/* Handle */}
+            <View style={{ width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 }} />
+            {/* Header */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                {contactListTag && (
+                  <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: contactListTag.color + '20', alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name={(contactListTag.icon || 'pricetag') as any} size={16} color={contactListTag.color} />
+                  </View>
+                )}
+                <View>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>{contactListTag?.name}</Text>
+                  <Text style={{ fontSize: 13, color: colors.textSecondary }}>{tagContacts.length} contact{tagContacts.length !== 1 ? 's' : ''}</Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={() => setContactListTag(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Ionicons name="close-circle" size={26} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+            {/* Contact list */}
+            {tagContactsLoading ? (
+              <View style={{ padding: 40, alignItems: 'center' }}>
+                <ActivityIndicator size="large" color={contactListTag?.color || '#007AFF'} />
+              </View>
+            ) : tagContacts.length === 0 ? (
+              <View style={{ padding: 40, alignItems: 'center' }}>
+                <Ionicons name="people-outline" size={40} color={colors.borderLight} />
+                <Text style={{ color: colors.textSecondary, marginTop: 12, fontSize: 16 }}>No contacts with this tag</Text>
+              </View>
+            ) : (
+              <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: 8 }}>
+                {tagContacts.map(contact => (
+                  <View key={contact._id} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.surface }}>
+                    {/* Avatar */}
+                    <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: (contactListTag?.color || '#007AFF') + '20', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                      <Text style={{ fontSize: 17, fontWeight: '700', color: contactListTag?.color || '#007AFF' }}>
+                        {(contact.name || '?')[0].toUpperCase()}
+                      </Text>
+                    </View>
+                    {/* Info */}
+                    <TouchableOpacity style={{ flex: 1 }} onPress={() => { setContactListTag(null); router.push(`/contact/${contact._id}` as any); }}>
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>{contact.name || 'Unknown'}</Text>
+                      <Text style={{ fontSize: 13, color: colors.textSecondary }}>{contact.phone || contact.vehicle || ''}</Text>
+                    </TouchableOpacity>
+                    {/* Remove tag X */}
+                    <TouchableOpacity
+                      onPress={() => showAlert(
+                        'Remove Tag?',
+                        `Remove "${contactListTag?.name}" from ${contact.name}?`,
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          { text: 'Remove', style: 'destructive', onPress: () => removeTagFromContact(contact._id, contactListTag!.name) }
+                        ]
+                      )}
+                      style={{ padding: 8 }}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                      data-testid={`remove-tag-contact-${contact._id}`}
+                    >
+                      <Ionicons name="close-circle" size={22} color="#FF3B30" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
         <View style={styles.modalContainer}>
           <View style={[styles.modalHeader, { paddingTop: Math.max(insets.top, 20) + 8 }]}>
             <TouchableOpacity onPress={() => setShowModal(false)}>
