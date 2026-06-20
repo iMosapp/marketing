@@ -587,7 +587,12 @@ async def process_pending_campaign_steps():
                     current_step = enr.get("current_step", 1)
                     remaining = sequences[current_step - 1:]
 
-                    base = now_naive
+                    # Use enrolled_at as base so delays are relative to original enrollment
+                    enrolled_at = enr.get("enrolled_at") or now_naive
+                    base = enrolled_at if isinstance(enrolled_at, datetime) else now_naive
+                    if hasattr(base, 'tzinfo') and base.tzinfo:
+                        base = base.replace(tzinfo=None)
+                    delivery_mode = campaign.get("delivery_mode", "manual")
                     docs = []
                     for i, step in enumerate(remaining):
                         # ABSOLUTE from enrollment date
@@ -608,7 +613,8 @@ async def process_pending_campaign_steps():
                             "message_template": step.get("message_template") or step.get("message", ""),
                             "media_urls": step.get("media_urls", []),
                             "channel": step.get("channel", "sms"),
-                            "delivery_mode": campaign.get("delivery_mode", "manual"),
+                            "delivery_mode": delivery_mode,
+                            "media_type": step.get("media_type", ""),
                             "ai_enabled": campaign.get("ai_enabled", False),
                             "send_at": base + absolute_offset,
                             "status": "pending",
@@ -708,7 +714,7 @@ async def process_pending_campaign_steps():
                     message_content = f"Hi {send_doc.get('contact_name', 'there')}!"
 
                 # ── DELIVERY ──
-                if delivery_mode == "automated":
+                if delivery_mode in ("automated", "auto"):
                     media_urls = send_doc.get("media_urls") or []
 
                     # VCF step: attach the rep's contact card as MMS so the customer saves the number first

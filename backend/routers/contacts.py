@@ -16,23 +16,25 @@ logger = logging.getLogger(__name__)
 
 async def _check_tag_campaign_enrollment(user_id: str, contact_id: str, contact_data: dict):
     """Auto-enroll contact in campaigns whose trigger_tag matches any of the contact's tags.
-    Also immediately creates the first touchpoint task so it appears in Today's Touchpoints."""
+    Pre-schedules ALL steps into campaign_pending_sends at enrollment time."""
     db = get_db()
     contact_tags = contact_data.get('tags', [])
     if not contact_tags:
         return
     
     try:
-        # Find active campaigns with trigger_tags matching this contact's tags
-        campaigns = await db.campaigns.find({
+        # Find active campaigns with trigger_tags matching this contact's tags (case-insensitive)
+        contact_tags_lower = [t.lower() for t in contact_tags]
+        all_campaigns = await db.campaigns.find({
             "user_id": user_id,
             "active": True,
-            "trigger_tag": {"$in": contact_tags}
+            "trigger_tag": {"$exists": True, "$ne": ""}
         }).to_list(50)
+        campaigns = [c for c in all_campaigns if c.get('trigger_tag', '').lower() in contact_tags_lower]
         
         for campaign in campaigns:
             campaign_id = str(campaign['_id'])
-            # Check if already enrolled
+            # Check if already enrolled (skip duplicates)
             existing = await db.campaign_enrollments.find_one({
                 "campaign_id": campaign_id,
                 "contact_id": contact_id,
@@ -41,25 +43,13 @@ async def _check_tag_campaign_enrollment(user_id: str, contact_id: str, contact_
             if existing:
                 continue
             
-            # Get contact info for enrollment
-            contact = contact_data
-            contact_name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip()
-            
+            contact_name = f"{contact_data.get('first_name', '')} {contact_data.get('last_name', '')}".strip() or contact_data.get('name', '')
             sequences = campaign.get('sequences', [])
-            now = datetime.utcnow()
+            if not sequences:
+                continue
 
-            # Calculate first step send time
-            first_step = sequences[0] if sequences else None
-            if first_step:
-                delay_h = first_step.get('delay_hours', 0)
-                delay_d = first_step.get('delay_days', 0)
-                delay_m = first_step.get('delay_months', 0)
-                if delay_h or delay_d or delay_m:
-                    first_send = now + timedelta(hours=delay_h, days=delay_d + delay_m * 30)
-                else:
-                    first_send = now  # immediate
-            else:
-                first_send = now
+            delivery_mode = campaign.get('delivery_mode', 'manual')
+            now = datetime.utcnow()
 
             enrollment = {
                 "user_id": user_id,
@@ -67,116 +57,56 @@ async def _check_tag_campaign_enrollment(user_id: str, contact_id: str, contact_
                 "campaign_name": campaign.get('name', ''),
                 "contact_id": contact_id,
                 "contact_name": contact_name,
-                "contact_phone": contact.get('phone', ''),
+                "contact_phone": contact_data.get('phone', ''),
                 "current_step": 1,
                 "total_steps": len(sequences),
                 "status": "active",
                 "enrolled_at": now,
-                "next_send_at": first_send,
+                "next_send_at": now,
                 "messages_sent": [],
                 "trigger_type": "tag",
                 "trigger_tag": campaign.get('trigger_tag', '')
             }
             enroll_result = await db.campaign_enrollments.insert_one(enrollment)
+            enrollment_id = str(enroll_result.inserted_id)
             logger.info(f"Auto-enrolled {contact_name} in campaign '{campaign.get('name')}' via tag '{campaign.get('trigger_tag')}'")
 
-            # --- Immediately create task for the first step if due now ---
-            if first_step and first_send <= now:
-                delivery_mode = campaign.get('delivery_mode', 'manual')
-                if delivery_mode != 'automated':
-                    action_type = first_step.get('action_type', 'message')
-                    channel = first_step.get('channel', 'sms')
-                    message_content = first_step.get('message_template', first_step.get('message', ''))
+            # ── Pre-schedule ALL steps upfront (base = enrollment time) ──
+            pending_docs = []
+            for i, step in enumerate(sequences):
+                step_num = i + 1
+                delay_offset = timedelta(
+                    minutes=int(step.get('delay_minutes', 0) or 0),
+                    hours=int(step.get('delay_hours', 0) or 0),
+                    days=int(step.get('delay_days', 0) or 0) + int(step.get('delay_months', 0) or 0) * 30
+                )
+                send_at = now + delay_offset
+                pending_docs.append({
+                    "user_id": user_id,
+                    "campaign_id": campaign_id,
+                    "campaign_name": campaign.get('name', ''),
+                    "contact_id": contact_id,
+                    "contact_name": contact_name,
+                    "contact_phone": contact_data.get('phone', ''),
+                    "enrollment_id": enrollment_id,
+                    "step": step_num,
+                    "message_template": step.get('message_template') or step.get('message', ''),
+                    "media_type": step.get('media_type', ''),
+                    "media_urls": step.get('media_urls', []),
+                    "channel": step.get('channel', 'sms'),
+                    "delivery_mode": delivery_mode,
+                    "ai_enabled": campaign.get('ai_enabled', False),
+                    "send_at": send_at,
+                    "status": "pending",
+                    "created_at": now,
+                })
 
-                    if action_type == 'send_card':
-                        card_type = first_step.get('card_type', 'congrats')
-                        card_labels = {
-                            'congrats': 'Congrats Card', 'birthday': 'Birthday Card',
-                            'anniversary': 'Anniversary Card', 'thankyou': 'Thank You Card',
-                            'welcome': 'Welcome Card', 'holiday': 'Holiday Card',
-                        }
-                        title = f"Send {card_labels.get(card_type, card_type.title() + ' Card')} to {contact_name}"
-                        desc = f"Campaign '{campaign.get('name', '')}' step 1: {title}"
-                        task_message = title
-                    else:
-                        title = f"Send {channel.upper()} to {contact_name}"
-                        desc = f"Campaign '{campaign.get('name', '')}' step 1: {message_content[:200]}"
-                        task_message = message_content
+            if pending_docs:
+                await db.campaign_pending_sends.insert_many(pending_docs)
+                logger.info(f"Pre-scheduled {len(pending_docs)} sends for '{campaign.get('name')}' → {contact_name} (mode={delivery_mode})")
 
-                    pending_result = await db.campaign_pending_sends.insert_one({
-                        "user_id": user_id,
-                        "campaign_id": campaign_id,
-                        "campaign_name": campaign.get('name', ''),
-                        "contact_id": contact_id,
-                        "contact_name": contact_name,
-                        "contact_phone": contact.get('phone', ''),
-                        "step": 1,
-                        "action_type": action_type,
-                        "message": task_message,
-                        "channel": channel,
-                        "status": "pending",
-                        "created_at": now,
-                    })
-                    await db.tasks.insert_one({
-                        "user_id": user_id,
-                        "contact_id": contact_id,
-                        "type": "campaign_send",
-                        "title": title,
-                        "description": desc,
-                        "due_date": now,
-                        "priority": "high",
-                        "priority_order": 1,
-                        "status": "pending",
-                        "completed": False,
-                        "source": "campaign",
-                        "campaign_id": campaign_id,
-                        "contact_name": contact_name,
-                        "contact_phone": contact.get('phone', ''),
-                        "pending_send_id": str(pending_result.inserted_id),
-                        "channel": channel,
-                        "created_at": now,
-                    })
-                    await db.notifications.insert_one({
-                        "user_id": user_id,
-                        "type": "campaign_send",
-                        "title": f"Campaign: {campaign.get('name', '')}",
-                        "message": f"Time to send step 1 to {contact_name}",
-                        "contact_name": contact_name,
-                        "contact_id": contact_id,
-                        "campaign_id": campaign_id,
-                        "pending_send_step": 1,
-                        "action_required": True,
-                        "read": False,
-                        "dismissed": False,
-                        "created_at": now,
-                    })
-
-                    # Advance enrollment to step 2 so the scheduler doesn't double-fire step 1
-                    next_send = None
-                    if len(sequences) > 1:
-                        s2 = sequences[1]
-                        dh = s2.get('delay_hours', 0)
-                        dd = s2.get('delay_days', 0)
-                        dm = s2.get('delay_months', 0)
-                        next_send = now + timedelta(hours=dh, days=dd + dm * 30) if (dh or dd or dm) else now
-
-                    update_set = {"current_step": 2, "last_sent_at": now}
-                    if next_send and len(sequences) > 1:
-                        update_set["next_send_at"] = next_send
-                    else:
-                        update_set["status"] = "completed"
-                        update_set["next_send_at"] = None
-
-                    await db.campaign_enrollments.update_one(
-                        {"_id": enroll_result.inserted_id},
-                        {
-                            "$set": update_set,
-                            "$push": {"messages_sent": {"step": 1, "action_type": action_type, "sent_at": now, "content": message_content[:100]}}
-                        }
-                    )
-                    logger.info(f"Immediately created task for step 1 of '{campaign.get('name')}' → {contact_name}")
     except Exception as e:
-        logger.error(f"Tag campaign enrollment check failed: {e}")
+        logger.error(f"Tag campaign enrollment check failed: {e}", exc_info=True)
 
 
 async def _check_date_campaign_enrollment(user_id: str, contact_id: str, contact_data: dict):

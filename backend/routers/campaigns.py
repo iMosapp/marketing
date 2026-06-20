@@ -1569,3 +1569,56 @@ async def clear_inbound_default_campaign(user_id: str, campaign_id: str):
         {"$unset": {"is_inbound_default": ""}}
     )
     return {"success": True, "message": "Inbound default cleared."}
+
+
+@router.patch("/{user_id}/{campaign_id}/delivery-mode")
+async def set_campaign_delivery_mode(user_id: str, campaign_id: str, data: dict):
+    """Set a campaign's delivery_mode to 'auto' or 'manual'.
+    Also updates all pending (not yet sent) sends for this campaign's active enrollments.
+    """
+    db = get_db()
+    mode = data.get("delivery_mode", "manual")
+    if mode not in ("auto", "manual", "automated"):
+        raise HTTPException(status_code=400, detail="delivery_mode must be 'auto' or 'manual'")
+
+    # Normalise: always store as "auto" or "manual"
+    mode = "auto" if mode in ("auto", "automated") else "manual"
+
+    await db.campaigns.update_one(
+        {"_id": ObjectId(campaign_id), "user_id": user_id},
+        {"$set": {"delivery_mode": mode}}
+    )
+    # Backfill pending sends for active enrollments of this campaign
+    result = await db.campaign_pending_sends.update_many(
+        {"campaign_id": campaign_id, "status": "pending"},
+        {"$set": {"delivery_mode": mode}}
+    )
+    return {"success": True, "delivery_mode": mode, "pending_sends_updated": result.modified_count}
+
+
+@router.post("/admin/{user_id}/fix-delivery-modes")
+async def fix_all_campaign_delivery_modes(user_id: str, data: dict = None):
+    """Admin helper: set all of a user's active tag-triggered campaigns to 'auto'.
+    Run once to migrate legacy 'manual' campaigns that should fire automatically.
+    """
+    db = get_db()
+    data = data or {}
+    mode = data.get("delivery_mode", "auto")
+    mode = "auto" if mode in ("auto", "automated") else "manual"
+
+    # Update all tag-triggered campaigns for this user
+    camps_result = await db.campaigns.update_many(
+        {"user_id": user_id, "active": True, "trigger_tag": {"$exists": True, "$ne": ""}},
+        {"$set": {"delivery_mode": mode}}
+    )
+    # Backfill all their pending sends
+    sends_result = await db.campaign_pending_sends.update_many(
+        {"user_id": user_id, "status": "pending"},
+        {"$set": {"delivery_mode": mode}}
+    )
+    return {
+        "success": True,
+        "delivery_mode": mode,
+        "campaigns_updated": camps_result.modified_count,
+        "pending_sends_updated": sends_result.modified_count,
+    }
