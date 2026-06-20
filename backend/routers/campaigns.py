@@ -1599,26 +1599,127 @@ async def set_campaign_delivery_mode(user_id: str, campaign_id: str, data: dict)
 @router.post("/admin/{user_id}/fix-delivery-modes")
 async def fix_all_campaign_delivery_modes(user_id: str, data: dict = None):
     """Admin helper: set all of a user's active tag-triggered campaigns to 'auto'.
-    Run once to migrate legacy 'manual' campaigns that should fire automatically.
+    SAFE MODE (default): only updates FUTURE pending sends (send_at > now).
+    Overdue sends stay as 'manual' — they create tasks, never auto-blast.
+    Pass safe_mode=false to also update overdue sends (use with caution).
     """
     db = get_db()
     data = data or {}
     mode = data.get("delivery_mode", "auto")
+    safe_mode = data.get("safe_mode", True)  # default: protect overdue sends
     mode = "auto" if mode in ("auto", "automated") else "manual"
+    now = datetime.utcnow()
 
-    # Update all tag-triggered campaigns for this user
+    # Update campaigns
     camps_result = await db.campaigns.update_many(
         {"user_id": user_id, "active": True, "trigger_tag": {"$exists": True, "$ne": ""}},
         {"$set": {"delivery_mode": mode}}
     )
-    # Backfill all their pending sends
+
+    # Update pending sends — future only in safe mode
+    sends_filter = {"user_id": user_id, "status": "pending"}
+    if safe_mode:
+        sends_filter["send_at"] = {"$gt": now}  # only future sends
+
     sends_result = await db.campaign_pending_sends.update_many(
-        {"user_id": user_id, "status": "pending"},
+        sends_filter,
         {"$set": {"delivery_mode": mode}}
     )
+
+    # Count overdue sends left as manual (safe_mode only)
+    overdue_protected = 0
+    if safe_mode:
+        overdue_protected = await db.campaign_pending_sends.count_documents({
+            "user_id": user_id, "status": "pending",
+            "delivery_mode": {"$ne": "auto"},
+            "send_at": {"$lte": now}
+        })
+
     return {
         "success": True,
         "delivery_mode": mode,
+        "safe_mode": safe_mode,
         "campaigns_updated": camps_result.modified_count,
-        "pending_sends_updated": sends_result.modified_count,
+        "future_sends_updated": sends_result.modified_count,
+        "overdue_sends_protected": overdue_protected,
+    }
+
+
+@router.get("/admin/{user_id}/campaign-audit")
+async def campaign_audit(user_id: str):
+    """Audit report: shows overdue sends, affected contacts, and enrollment counts.
+    Run this BEFORE enabling auto-fire to understand what would blast immediately.
+    """
+    db = get_db()
+    now = datetime.utcnow()
+
+    # Overdue auto sends (would fire immediately)
+    overdue = await db.campaign_pending_sends.find(
+        {"user_id": user_id, "status": "pending", "delivery_mode": "auto",
+         "send_at": {"$lte": now}},
+        {"contact_name": 1, "contact_phone": 1, "campaign_name": 1, "step": 1, "send_at": 1}
+    ).to_list(500)
+
+    # Future auto sends (safe)
+    future_count = await db.campaign_pending_sends.count_documents({
+        "user_id": user_id, "status": "pending", "delivery_mode": "auto",
+        "send_at": {"$gt": now}
+    })
+
+    # Active enrollments
+    active_enrollments = await db.campaign_enrollments.count_documents({
+        "user_id": user_id, "status": "active"
+    })
+
+    # Group overdue by contact
+    contacts_at_risk = {}
+    for d in overdue:
+        key = d.get("contact_phone") or d.get("contact_name", "unknown")
+        if key not in contacts_at_risk:
+            contacts_at_risk[key] = {
+                "contact_name": d.get("contact_name", "Unknown"),
+                "contact_phone": d.get("contact_phone", ""),
+                "campaigns": [],
+                "step_numbers": [],
+            }
+        contacts_at_risk[key]["campaigns"].append(d.get("campaign_name", "?"))
+        contacts_at_risk[key]["step_numbers"].append(d.get("step", 0))
+
+    return {
+        "overdue_sends_count": len(overdue),
+        "overdue_contacts_count": len(contacts_at_risk),
+        "future_sends_count": future_count,
+        "active_enrollments": active_enrollments,
+        "at_risk_contacts": list(contacts_at_risk.values())[:50],
+        "warning": "These contacts would receive texts IMMEDIATELY if you run fix-delivery-modes without safe_mode=true" if overdue else "No overdue sends — safe to migrate.",
+    }
+
+
+@router.post("/admin/{user_id}/cancel-overdue-sends")
+async def cancel_overdue_sends(user_id: str, data: dict = None):
+    """Cancel all overdue pending sends (send_at in the past) for a user.
+    Use this BEFORE enabling auto-fire to prevent old contacts from being blasted.
+    Their enrollments stay active — only future steps will fire.
+    """
+    db = get_db()
+    data = data or {}
+    now = datetime.utcnow()
+    campaign_id = data.get("campaign_id")  # optional: limit to one campaign
+
+    sends_filter = {
+        "user_id": user_id, "status": "pending",
+        "send_at": {"$lte": now}
+    }
+    if campaign_id:
+        sends_filter["campaign_id"] = campaign_id
+
+    result = await db.campaign_pending_sends.update_many(
+        sends_filter,
+        {"$set": {"status": "cancelled", "cancelled_reason": "admin_overdue_cleanup",
+                  "cancelled_at": now}}
+    )
+    return {
+        "success": True,
+        "cancelled_count": result.modified_count,
+        "message": f"Cancelled {result.modified_count} overdue pending sends. Future steps will still fire on schedule.",
     }
