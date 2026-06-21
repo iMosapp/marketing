@@ -313,7 +313,8 @@ export default function CreateCardPage() {
             try {
               const rlRes = await api.get(`/users/${user._id}/review-links`);
               const rl = rlRes.data?.review_links || {};
-              const reviewUrl = rl.google || rl.yelp || rl.facebook || (user as any).review_url || '';
+              // Use the pre-resolved best_url from the backend, fallback chain covers all sources
+              const reviewUrl = rlRes.data?.review_url || rl.google || rl.yelp || rl.facebook || (user as any).review_url || '';
               if (reviewUrl) {
                 await api.post('/messages/schedule-delayed', {
                   to: cPhone,
@@ -324,6 +325,8 @@ export default function CreateCardPage() {
                   delay_seconds: 300,
                   event_type: 'review_request_sent',
                 }).catch(() => {});
+              } else {
+                console.warn('[SOLD flow] No review URL found — skipping step 3. Set review link in Hub → Settings → Review Links.');
               }
 
               // Apply "Sold" tag → starts long-term campaign (day 7 check-in, etc.)
