@@ -359,7 +359,7 @@ function TouchpointsScreen() {
                   style={{ backgroundColor: '#FF9500', borderRadius: 10, paddingVertical: 10, alignItems: 'center' }}
                   onPress={async () => {
                     try {
-                      const res = await api.delete('/tasks/me/clear-dormant', { headers: { 'X-User-ID': user?._id } });
+                      const res = await api.delete(`/tasks/${user?._id}/system-tasks/dormant`);
                       showSimpleAlert('Cleared!', `Removed ${res.data?.deleted || dormantCount} auto-generated reminders.`);
                       loadTasks();
                     } catch { showSimpleAlert('Error', 'Could not clear reminders. Try again.'); }
