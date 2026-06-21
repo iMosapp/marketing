@@ -365,7 +365,7 @@ async def save_store_template(store_id: str, data: dict):
 async def delete_store_template(store_id: str, card_type: str):
     """Delete a card template. Protected types (congrats, birthday, anniversary) cannot be deleted."""
     db = get_db()
-    PROTECTED = {"congrats", "birthday", "anniversary"}
+    PROTECTED = {"congrats", "birthday", "anniversary", "thankyou"}
     if card_type in PROTECTED:
         raise HTTPException(status_code=400, detail=f"The '{card_type}' template is a core card and cannot be deleted.")
     result = await db.congrats_templates.delete_one({"store_id": store_id, "card_type": card_type})

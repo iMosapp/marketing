@@ -48,7 +48,7 @@ interface Template {
 }
 
 // These 3 are always kept — everything else is deletable
-const PROTECTED_TYPES = new Set(['congrats', 'birthday', 'anniversary']);
+const PROTECTED_TYPES = new Set(['congrats', 'birthday', 'anniversary', 'thankyou']);
 
 export default function ManageCardTemplatesPage() {
   const { colors } = useThemeStore();
