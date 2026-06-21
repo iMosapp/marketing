@@ -488,42 +488,56 @@ async def update_leaderboard_settings(user_id: str, settings: dict):
 # ============= REVIEW LINKS ENDPOINTS =============
 @api_router.get("/users/{user_id}/review-links")
 async def get_review_links(user_id: str):
-    """Get user's review links. Returns structured links AND the flat review_url field.
-    Also falls back to store-level review links if user has none."""
+    """Get user's review links. Returns the I'm On Social review landing page URL as first choice,
+    structured links, and the flat review_url field. Falls back through store → direct."""
     db = get_db()
+    APP_BASE = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+
     user = await db.users.find_one(
         {"_id": ObjectId(user_id)},
-        {"review_links": 1, "review_url": 1, "custom_link_name": 1, "store_id": 1}
+        {"review_links": 1, "review_url": 1, "custom_link_name": 1, "store_id": 1, "store_slug": 1}
     )
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     review_links = user.get("review_links") or {}
     review_url   = user.get("review_url", "") or ""
+    store_slug   = user.get("store_slug", "") or ""
 
-    # Fall back to store-level review links if user has none
-    if not review_url and not any(review_links.values()):
-        store_id = user.get("store_id")
-        if store_id:
-            try:
-                store = await db.stores.find_one({"_id": ObjectId(str(store_id))}, {"review_links": 1})
-                if store:
+    # Try to get store slug from store document if not on user
+    if not store_slug and user.get("store_id"):
+        try:
+            store = await db.stores.find_one(
+                {"_id": ObjectId(str(user["store_id"]))},
+                {"slug": 1, "review_links": 1}
+            )
+            if store:
+                store_slug = store.get("slug", "") or ""
+                if not review_links and not review_url:
                     sl = store.get("review_links") or {}
                     review_url = sl.get("google", "") or sl.get("yelp", "") or sl.get("facebook", "") or ""
-                    if not review_links:
-                        review_links = sl
-            except Exception:
-                pass
+                    review_links = sl
+        except Exception:
+            pass
 
-    # Pick the best single URL across all sources
-    best_url = (
+    # Build the I'm On Social review landing page URL (preferred — shows Google/Yelp/Facebook options)
+    if store_slug:
+        imos_review_url = f"{APP_BASE}/review/{store_slug}?sp={user_id}"
+    else:
+        # No store slug — fall back to direct review URL
+        imos_review_url = review_url or review_links.get("google", "") or review_links.get("yelp", "") or ""
+
+    # Best single direct URL (fallback for platforms that can't load the landing page)
+    best_direct_url = (
         review_links.get("google") or review_links.get("yelp") or
         review_links.get("facebook") or review_url or ""
     )
 
     return {
+        "imos_review_url": imos_review_url,   # ← USE THIS: the I'm On Social review page
         "review_links": review_links,
-        "review_url": best_url,          # always the best available URL
+        "review_url": best_direct_url,        # direct fallback
+        "store_slug": store_slug,
         "custom_link_name": user.get("custom_link_name", "")
     }
 

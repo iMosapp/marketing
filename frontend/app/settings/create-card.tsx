@@ -313,8 +313,8 @@ export default function CreateCardPage() {
             try {
               const rlRes = await api.get(`/users/${user._id}/review-links`);
               const rl = rlRes.data?.review_links || {};
-              // Use the pre-resolved best_url from the backend, fallback chain covers all sources
-              const reviewUrl = rlRes.data?.review_url || rl.google || rl.yelp || rl.facebook || (user as any).review_url || '';
+              // Prefer the I'm On Social review landing page (shows Google/Yelp/Facebook options + tracked)
+              const reviewUrl = rlRes.data?.imos_review_url || rlRes.data?.review_url || rl.google || rl.yelp || rl.facebook || (user as any).review_url || '';
               if (reviewUrl) {
                 await api.post('/messages/schedule-delayed', {
                   to: cPhone,
