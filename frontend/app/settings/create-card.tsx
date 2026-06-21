@@ -38,7 +38,11 @@ export default function CreateCardPage() {
   // isSoldFlow = true when launched from the SOLD button (regardless of card type chosen)
   const isSoldFlowIntent = soldFlowParam === 'true' || !!for_contact;
 
-  const [isGeneric, setIsGeneric] = useState(genericParam === 'true' || (!prefillName && !prefillPhone && !isFromContact));
+  const [isGeneric, setIsGeneric] = useState(
+    genericParam === 'true' ||
+    // Only auto-check generic if: no prefill, not from contact, and NOT a SOLD flow
+    (!prefillName && !prefillPhone && !isFromContact && !isSoldFlowIntent)
+  );
   const [selectedType, setSelectedType] = useState(cardType);
   const [showTypePicker, setShowTypePicker] = useState(false);
   const [customTemplates, setCustomTemplates] = useState<any[]>([]);
@@ -83,6 +87,7 @@ export default function CreateCardPage() {
   const [matchModalVisible, setMatchModalVisible] = useState(false);
   const [matchInfo, setMatchInfo] = useState(null);
   const [pendingSharePlatform, setPendingSharePlatform] = useState(null);
+  const [lookingUpContact, setLookingUpContact] = useState(false);
 
   // Tag picker state
   const [availableTags, setAvailableTags] = useState([]);
@@ -114,6 +119,30 @@ export default function CreateCardPage() {
       .catch(() => {})
       .finally(() => setLoadingTags(false));
   }, [user?._id]);
+
+  // Auto-lookup contact by phone number as user types
+  useEffect(() => {
+    if (!user?._id || !customerPhone || customerPhone.replace(/\D/g, '').length < 10) return;
+    if (customerName) return; // don't overwrite if name already filled
+    const digits = customerPhone.replace(/\D/g, '');
+    if (digits.length < 10) return;
+    const timer = setTimeout(async () => {
+      try {
+        setLookingUpContact(true);
+        const res = await api.get(`/contacts/${user._id}/check-duplicate?phone=${encodeURIComponent(customerPhone)}`);
+        const matches = res.data?.matches || [];
+        if (matches.length > 0) {
+          const m = matches[0];
+          const name = `${m.first_name || ''} ${m.last_name || ''}`.trim();
+          if (name) setCustomerName(name);
+          if (m.email && !customerEmail) setCustomerEmail(m.email);
+          setIsGeneric(false); // definitely not generic — we found a real person
+        }
+      } catch {}
+      finally { setLookingUpContact(false); }
+    }, 600); // 600ms debounce
+    return () => clearTimeout(timer);
+  }, [customerPhone, user?._id]);
 
   const pickPhoto = async () => {
     if (!IS_WEB) {
@@ -809,7 +838,10 @@ export default function CreateCardPage() {
                 <Text style={s.fieldLabel}>RECIPIENT NAME <Text style={{ color: colors.textTertiary, fontWeight: '400' }}>(optional — leave blank to share with anyone)</Text></Text>
                 <TextInput style={s.input} value={customerName} onChangeText={setCustomerName} placeholder="Recipient Name" placeholderTextColor={colors.textSecondary} data-testid="card-recipient-name" />
                 <Text style={[s.fieldLabel, { marginTop: 16 }]}>SEND TO (OPTIONAL)</Text>
-                <TextInput style={s.input} value={customerPhone} onChangeText={setCustomerPhone} placeholder="Phone" placeholderTextColor={colors.textSecondary} keyboardType="phone-pad" />
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <TextInput style={[s.input, { flex: 1 }]} value={customerPhone} onChangeText={setCustomerPhone} placeholder="Phone" placeholderTextColor={colors.textSecondary} keyboardType="phone-pad" />
+                  {lookingUpContact && <ActivityIndicator size="small" color={colors.textSecondary} />}
+                </View>
                 <TextInput style={[s.input, { marginTop: 8 }]} value={customerEmail} onChangeText={setCustomerEmail} placeholder="Email" placeholderTextColor={colors.textSecondary} keyboardType="email-address" autoCapitalize="none" />
               </>
             )}
