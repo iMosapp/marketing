@@ -47,6 +47,9 @@ interface Template {
   footer_text: string;
 }
 
+// These 3 are always kept — everything else is deletable
+const PROTECTED_TYPES = new Set(['congrats', 'birthday', 'anniversary']);
+
 export default function ManageCardTemplatesPage() {
   const { colors } = useThemeStore();
   const s = getS(colors);
@@ -105,21 +108,24 @@ export default function ManageCardTemplatesPage() {
   };
 
   const deleteTemplate = async (template: Template) => {
-    if (!user?.store_id) return;
-    if (!template.card_type.startsWith('custom_')) {
-      showSimpleAlert('Cannot Delete', 'Only custom card types can be deleted. You can edit the message instead.');
+    const storeId = user?.store_id || (user as any)?.store_ids?.[0];
+    if (!storeId) return;
+    if (PROTECTED_TYPES.has(template.card_type)) {
+      showSimpleAlert('Protected', 'Sold (Congrats), Birthday, and Anniversary cards are permanent and cannot be deleted.');
       return;
     }
     const doDelete = async () => {
       try {
-        await api.delete(`/congrats/template/${user.store_id}/${template.card_type}`);
-        fetchTemplates();
-      } catch { showSimpleAlert('Error', 'Failed to delete template'); }
+        await api.delete(`/congrats/template/${storeId}/${template.card_type}`);
+        setTemplates(prev => prev.filter(t => t.card_type !== template.card_type));
+      } catch (e: any) {
+        showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to delete template');
+      }
     };
     if (Platform.OS === 'web') {
       if (window.confirm(`Delete "${template.headline}" card template?`)) doDelete();
     } else {
-      showAlert('Delete Card Template', `Delete "${template.headline}"?`, [
+      showAlert('Delete Card Template', `Delete "${template.headline}"? This cannot be undone.`, [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Delete', style: 'destructive', onPress: doDelete },
       ]);
@@ -271,7 +277,9 @@ export default function ManageCardTemplatesPage() {
             </Text>
           )}
 
-          {templates.map(t => (
+          {templates.map(t => {
+            const isProtected = PROTECTED_TYPES.has(t.card_type);
+            return (
             <View key={t.card_type} style={s.card}>
               <TouchableOpacity
                 style={s.cardMain}
@@ -284,7 +292,13 @@ export default function ManageCardTemplatesPage() {
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <Text style={s.cardTitle}>{t.headline}</Text>
-                    {t.customized && (
+                    {isProtected && (
+                      <View style={{ backgroundColor: '#34C75918', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1, flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                        <Ionicons name="shield-checkmark" size={10} color="#34C759" />
+                        <Text style={{ fontSize: 10, color: '#34C759', fontWeight: '700' }}>Default</Text>
+                      </View>
+                    )}
+                    {t.customized && !isProtected && (
                       <View style={{ backgroundColor: '#C9A96220', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1 }}>
                         <Text style={{ fontSize: 11, color: '#C9A962', fontWeight: '700' }}>Custom</Text>
                       </View>
@@ -295,13 +309,19 @@ export default function ManageCardTemplatesPage() {
                 <Ionicons name="create-outline" size={18} color={colors.textTertiary} />
               </TouchableOpacity>
 
-              {t.card_type.startsWith('custom_') && (
-                <TouchableOpacity onPress={() => deleteTemplate(t)} style={s.deleteBtn}>
+              {!isProtected && (
+                <TouchableOpacity
+                  onPress={() => deleteTemplate(t)}
+                  style={s.deleteBtn}
+                  data-testid={`delete-template-${t.card_type}`}
+                >
                   <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+                  <Text style={{ fontSize: 13, color: '#FF3B30', fontWeight: '600', marginLeft: 4 }}>Delete</Text>
                 </TouchableOpacity>
               )}
             </View>
-          ))}
+            );
+          })}
 
           <View style={{ height: 40 }} />
         </ScrollView>
@@ -326,7 +346,7 @@ const getS = (colors: any) => StyleSheet.create({
   cardIcon:        { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   cardTitle:       { fontSize: 16, fontWeight: '700', color: colors.text },
   cardMsg:         { fontSize: 14, color: colors.textSecondary, marginTop: 2 },
-  deleteBtn:       { borderTopWidth: 1, borderTopColor: colors.border, padding: 12, alignItems: 'center' },
+  deleteBtn:       { borderTopWidth: 1, borderTopColor: colors.border, padding: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' },
   // Edit form
   previewBox:      { backgroundColor: '#1A1A1A', borderRadius: 16, padding: 20, marginBottom: 20, borderWidth: 1.5, alignItems: 'center' },
   previewHL:       { fontSize: 22, fontWeight: '800', marginBottom: 10, textAlign: 'center' },
