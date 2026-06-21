@@ -995,7 +995,8 @@ async def get_performance_detail(user_id: str, category: str, period: str = "wee
 async def generate_system_tasks(user_id: str):
     """
     Generate system tasks: dormant contacts (90+ days), upcoming birthdays, purchase anniversaries.
-    Uses idempotency keys to prevent duplicates.
+    Uses contact-level idempotency keys (NOT date-based) so tasks don't stack up daily.
+    Dormant tasks only created for contacts with real interaction history — not just imported contacts.
     """
     db = get_db()
     now = datetime.now(timezone.utc)
@@ -1007,14 +1008,13 @@ async def generate_system_tasks(user_id: str):
         raise HTTPException(status_code=404, detail="User not found")
 
     # === DORMANT CONTACTS (no event in 90+ days) ===
-    # CRITICAL: Only use the user's OWN contacts, not org-wide contacts
-    # Each user's system tasks must be based solely on their own contact list
+    # Only contacts with REAL interaction history — skip contacts that were never touched
     cutoff = now - timedelta(days=90)
     contacts = await db.contacts.find({
         "user_id": user_id,
         "phone": {"$exists": True, "$ne": ""},
         "status": {"$nin": ["hidden", "merged", "deleted"]},
-    }).to_list(500)
+    }, {"_id": 1, "first_name": 1, "last_name": 1, "phone": 1, "created_at": 1}).to_list(500)
 
     for contact in contacts:
         cid = str(contact["_id"])
@@ -1026,15 +1026,23 @@ async def generate_system_tasks(user_id: str):
             {"contact_id": cid, "user_id": user_id},
             sort=[("timestamp", -1)]
         )
-        last_ts = (last or {}).get("timestamp") or contact.get("created_at")
+
+        # ONLY flag as dormant if there is real interaction history
+        # Skip contacts that were imported/created but never actually touched
+        if not last:
+            continue
+
+        last_ts = last.get("timestamp")
         if not last_ts or not isinstance(last_ts, datetime):
             continue
 
         if last_ts.tzinfo is None:
             last_ts = last_ts.replace(tzinfo=timezone.utc)
+
         if last_ts < cutoff:
-            idem = f"dormant_{user_id}_{cid}_{today_start.strftime('%Y-%m-%d')}"
-            if await db.tasks.find_one({"idempotency_key": idem}):
+            # Contact-level idempotency (not date-based) — one task per contact, no stacking
+            idem = f"dormant_{user_id}_{cid}"
+            if await db.tasks.find_one({"idempotency_key": idem, "status": {"$nin": ["completed", "dismissed", "done"]}}):
                 continue
             days = (now - last_ts).days
             await db.tasks.insert_one({
@@ -1126,3 +1134,15 @@ async def generate_system_tasks(user_id: str):
 
     logger.info(f"System tasks generated for {user_id}: {created} new")
     return {"created": created, "user_id": user_id}
+
+
+@router.delete("/{user_id}/system-tasks/dormant")
+async def delete_dormant_system_tasks(user_id: str):
+    """Delete all dormant 'reconnect' system-generated tasks for a user."""
+    db = get_db()
+    result = await db.tasks.delete_many({
+        "user_id": user_id,
+        "source": "system",
+        "type": "follow_up",
+    })
+    return {"deleted": result.deleted_count}
