@@ -86,7 +86,8 @@ export default function CreateCardPage() {
 
   // Tag picker state
   const [availableTags, setAvailableTags] = useState([]);
-  const [selectedTags, setSelectedTags] = useState([]);
+  // Pre-select "Sold" tag when opened from the SOLD button — user can deselect if needed
+  const [selectedTags, setSelectedTags] = useState<string[]>(isSoldFlowIntent ? ['Sold'] : []);
   const [startCampaign, setStartCampaign] = useState(true);
   const [loadingTags, setLoadingTags] = useState(false);
 
@@ -151,6 +152,9 @@ export default function CreateCardPage() {
         formData.append('tags', JSON.stringify(selectedTags));
         if (!startCampaign) formData.append('skip_campaign', 'true');
       }
+      // Pass existing contact_id when coming from a contact page — ensures tags
+      // are applied to the exact contact, not a phone-matched lookup
+      if (for_contact) formData.append('contact_id', for_contact);
       // Photo is optional for generic cards
       if (photo) {
         if (IS_WEB) {
@@ -332,16 +336,9 @@ export default function CreateCardPage() {
                 console.warn('[SOLD flow] No review URL found — skipping step 3. Set review link in Hub → Settings → Review Links.');
               }
 
-              // Apply "Sold" tag → starts long-term campaign (day 7 check-in, etc.)
-              // Prefer the existing contact ID from the contact page if available
-              const tagContactId = for_contact || contactId;
-              const contactRes = await api.get(`/contacts/${user._id}/${tagContactId}`).catch(() => ({ data: {} }));
-              const existingTags: string[] = contactRes.data?.tags || [];
-              if (!existingTags.includes('Sold')) {
-                await api.patch(`/contacts/${user._id}/${tagContactId}/tags`, {
-                  tags: [...existingTags, 'Sold'],
-                }).catch(() => {});
-              }
+              // Note: Sold tag + long-term campaign is handled by the tag picker selection above.
+              // If user selected "Sold" in the tag picker, it's applied via createCard() → tags param.
+              // We do NOT force-apply it here — the user controls it via the tag picker.
             } catch (e) {
               console.log('Review/tag step failed (non-fatal):', e);
             }

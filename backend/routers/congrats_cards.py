@@ -423,6 +423,7 @@ async def create_congrats_card(
     salesman_id: Optional[str] = Form(None),   # Optional — falls back to X-User-ID header
     customer_name: str = Form(""),          # Optional for generic cards
     customer_phone: str = Form(None),
+    contact_id: Optional[str] = Form(None),  # Direct contact ID — overrides phone lookup
     custom_message: str = Form(None),
     card_type: str = Form("congrats"),
     tags: str = Form(None),
@@ -649,35 +650,43 @@ async def create_congrats_card(
         except Exception:
             tag_list = [t.strip() for t in tags.split(",") if t.strip()]
         
-        if tag_list and customer_phone:
-            # Find the contact
+        # Find contact: use direct contact_id first, then fall back to phone lookup
+        tag_contact = None
+        tag_contact_id = None
+        if contact_id:
+            try:
+                tag_contact = await db.contacts.find_one({"_id": ObjectId(contact_id), "user_id": salesman_id})
+                if tag_contact:
+                    tag_contact_id = str(tag_contact["_id"])
+            except Exception:
+                pass
+        
+        if not tag_contact and customer_phone:
             normalized_phone = customer_phone.replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
-            contact = await db.contacts.find_one({
+            tag_contact = await db.contacts.find_one({
                 "$or": [
                     {"phone": customer_phone},
                     {"phone": {"$regex": normalized_phone[-10:] if len(normalized_phone) >= 10 else normalized_phone}},
                 ],
                 "user_id": salesman_id,
             })
-            
-            if contact:
-                contact_id = str(contact["_id"])
-                for tag_name in tag_list:
-                    # Add tag to contact
-                    await db.contacts.update_one(
-                        {"_id": contact["_id"], "tags": {"$ne": tag_name}},
-                        {"$push": {"tags": tag_name}},
-                    )
-                    applied_tags.append(tag_name)
-                
-                # Trigger campaign enrollment for applied tags (unless skipped)
-                should_skip = skip_campaign and skip_campaign.lower() in ("true", "1", "yes")
-                if applied_tags and not should_skip:
-                    # Lazy import intentional: breaks circular dependency with tags.py
-                    # (tags.py also imports from congrats_cards.py).
-                    from routers.tags import auto_enroll_contacts_in_campaign
-                    for tag_name in applied_tags:
-                        await auto_enroll_contacts_in_campaign(salesman_id, tag_name, [contact_id])
+            if tag_contact:
+                tag_contact_id = str(tag_contact["_id"])
+
+        if tag_list and tag_contact and tag_contact_id:
+            for tag_name in tag_list:
+                await db.contacts.update_one(
+                    {"_id": tag_contact["_id"], "tags": {"$ne": tag_name}},
+                    {"$push": {"tags": tag_name}},
+                )
+                applied_tags.append(tag_name)
+
+            # Trigger campaign enrollment for applied tags (unless skipped)
+            should_skip = skip_campaign and skip_campaign.lower() in ("true", "1", "yes")
+            if applied_tags and not should_skip:
+                from routers.tags import auto_enroll_contacts_in_campaign
+                for tag_name in applied_tags:
+                    await auto_enroll_contacts_in_campaign(salesman_id, tag_name, [tag_contact_id])
     
     # Auto-apply "Recent" tag to the contact (if contact found by phone)
     recent_tag_applied = False
