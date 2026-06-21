@@ -342,6 +342,36 @@ function TouchpointsScreen() {
             })}
           </ScrollView>
 
+          {/* Dormant System Task Cleanup Banner */}
+          {(() => {
+            const dormantCount = tasks.filter(t => t.source === 'system' && t.type === 'follow_up').length;
+            if (dormantCount < 5) return null;
+            return (
+              <View style={{ marginHorizontal: 16, marginBottom: 12, backgroundColor: '#FF950012', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#FF950040' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <Ionicons name="warning-outline" size={18} color="#FF9500" />
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: '#FF9500' }}>{dormantCount} auto-generated reminders</Text>
+                </View>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 10, lineHeight: 18 }}>
+                  These were created automatically for contacts with no activity in 90+ days. Tap below to clear them all at once.
+                </Text>
+                <TouchableOpacity
+                  style={{ backgroundColor: '#FF9500', borderRadius: 10, paddingVertical: 10, alignItems: 'center' }}
+                  onPress={async () => {
+                    try {
+                      const res = await api.delete('/tasks/me/clear-dormant', { headers: { 'X-User-ID': user?._id } });
+                      showSimpleAlert('Cleared!', `Removed ${res.data?.deleted || dormantCount} auto-generated reminders.`);
+                      loadTasks();
+                    } catch { showSimpleAlert('Error', 'Could not clear reminders. Try again.'); }
+                  }}
+                  data-testid="clear-dormant-tasks-btn"
+                >
+                  <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 15 }}>Clear All Auto-Generated Reminders</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          })()}
+
           {/* Overdue Section */}
           {overdueTasks.length > 0 && (
             <>

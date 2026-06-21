@@ -8,7 +8,7 @@ Tasks come from 3 sources:
 3. Manual (user creates follow-up reminders on a contact)
 Plus system-generated tasks for dormant contacts.
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from bson import ObjectId
 from datetime import datetime, timezone, timedelta
 from typing import Optional
@@ -238,6 +238,27 @@ def _serialize(task: dict) -> dict:
     if not task.get("status"):
         task["status"] = "pending"
     return task
+
+
+
+@router.delete("/me/clear-dormant")
+async def clear_my_dormant_tasks(request: Request):
+    """
+    Clear all dormant 'reconnect' system tasks for the currently logged-in user.
+    Uses the X-User-ID header (set automatically by the frontend) — no user_id in URL needed.
+    """
+    db = get_db()
+    user_id = request.headers.get("X-User-ID") or request.headers.get("x-user-id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="X-User-ID header required")
+    result = await db.tasks.delete_many({
+        "user_id": user_id,
+        "source": "system",
+        "type": "follow_up",
+    })
+    logger.info(f"[Tasks] Cleared {result.deleted_count} dormant system tasks for {user_id}")
+    return {"deleted": result.deleted_count, "message": f"Cleared {result.deleted_count} dormant touchpoint reminders."}
+
 
 
 @router.get("/{user_id}")
