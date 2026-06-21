@@ -106,12 +106,14 @@ const { showToast } = useToast();
     schedule: false,
   });
 
+  // Jessi AI replies
+  const [jessiReplies, setJessiReplies] = useState(false);
+
   useEffect(() => {
     fetchTags();
   }, []);
 
   useEffect(() => {
-    // Debounce preview
     const timeout = setTimeout(() => {
       previewRecipients();
     }, 500);
@@ -119,11 +121,16 @@ const { showToast } = useToast();
   }, [filters]);
 
   const fetchTags = async () => {
+    if (!user?._id) return;
     try {
-      const res = await api.get(`/tags?user_id=${user?._id}`);
-      if (res.data.success) {
-        setAvailableTags(res.data.tags);
-      }
+      const res = await api.get(`/tags/${user._id}`);
+      // Tags endpoint returns a direct array
+      const tagList = Array.isArray(res.data) ? res.data : (res.data?.tags || []);
+      setAvailableTags(tagList.map((t: any) => ({
+        id: t._id || t.id,
+        name: t.name,
+        color: t.color || '#007AFF',
+      })));
     } catch (error) {
       console.error('Error fetching tags:', error);
     }
@@ -248,6 +255,8 @@ const { showToast } = useToast();
         filters,
         media_urls: uploadedUrls,
         scheduled_at: scheduleType === 'later' ? scheduledDate.toISOString() : null,
+        jessi_replies: jessiReplies,
+        stagger_seconds: 10,
       };
       
       const res = await api.post(`/broadcast?user_id=${user?._id}`, broadcastData);
@@ -365,7 +374,25 @@ const { showToast } = useToast();
 
         {/* Tags Section */}
         <View style={styles.section}>
-          <SectionHeader title="Filter by Tags" section="tags" icon="pricetags-outline" />
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, paddingBottom: 0 }}>
+            <Pressable
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}
+              onPress={() => toggleSection('tags')}
+              testID="section-tags"
+            >
+              <Ionicons name="pricetags-outline" size={20} color="#007AFF" />
+              <Text style={styles.sectionTitle}>Filter by Tags (Lists)</Text>
+              <Ionicons name={expandedSections.tags ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textSecondary} />
+            </Pressable>
+            <Pressable
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#34C75915', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 }}
+              onPress={() => router.push('/contacts/import' as any)}
+              testID="csv-import-btn"
+            >
+              <Ionicons name="cloud-upload-outline" size={15} color="#34C759" />
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#34C759' }}>CSV Import</Text>
+            </Pressable>
+          </View>
           {expandedSections.tags && (
             <View style={styles.sectionContent}>
               {availableTags.length === 0 ? (
@@ -419,6 +446,35 @@ const { showToast } = useToast();
               )}
             </View>
           )}
+        </View>
+
+        {/* Jessi AI Replies */}
+        <View style={[styles.section, { marginBottom: 16 }]}>
+          <Pressable
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 }}
+            onPress={() => setJessiReplies(v => !v)}
+            testID="jessi-replies-toggle"
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+              <Ionicons name="sparkles" size={20} color="#AF52DE" />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.sectionTitle, { fontSize: 16 }]}>Let Jessi Handle Replies</Text>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
+                  Jessi auto-responds to everyone who replies, in your voice
+                </Text>
+              </View>
+            </View>
+            <View style={{
+              width: 48, height: 28, borderRadius: 14,
+              backgroundColor: jessiReplies ? '#AF52DE' : colors.surface,
+              justifyContent: 'center', paddingHorizontal: 2,
+            }}>
+              <View style={{
+                width: 24, height: 24, borderRadius: 12, backgroundColor: '#FFF',
+                alignSelf: jessiReplies ? 'flex-end' : 'flex-start',
+              }} />
+            </View>
+          </Pressable>
         </View>
 
         {/* Date Filters Section */}
