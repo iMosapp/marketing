@@ -99,16 +99,34 @@ async def get_my_3(user_id: str, db) -> list:
     """
     AI-powered daily contact recommendations.
     Returns up to 3 contacts with reason, context, and a suggested action.
-    Scoring:
-      - Hot signals (recent card view, warm reply) = 10
-      - Birthday/anniversary within 3 days = 9/8
-      - Review link click = 7
-      - Recent purchase follow-up = 6
-      - Days since last contact (overdue) = 5
+    Optimised: batch contact lookups, lean projections — no N+1 queries, no photo blobs.
     """
     now       = datetime.now(timezone.utc)
     scored: list = []
     seen_ids: set = set()
+
+    # Minimal projection — never load the heavy photo/photo_data blob
+    CONTACT_PROJ = {
+        "_id": 1, "first_name": 1, "last_name": 1, "phone": 1, "email": 1,
+        "photo_url": 1, "photo_thumbnail": 1, "photo_path": 1,
+        "tags": 1, "vehicle": 1, "birthday": 1, "anniversary": 1,
+        "last_contacted_at": 1, "last_activity_at": 1, "updated_at": 1, "created_at": 1,
+    }
+
+    async def batch_contacts(ids: list) -> dict:
+        """Fetch multiple contacts by ID in one query. Returns {str_id: doc}."""
+        if not ids:
+            return {}
+        oids = []
+        for cid in ids:
+            try:
+                oids.append(ObjectId(cid))
+            except Exception:
+                pass
+        if not oids:
+            return {}
+        docs = await db.contacts.find({"_id": {"$in": oids}}, CONTACT_PROJ).to_list(len(oids))
+        return {str(d["_id"]): d for d in docs}
 
     async def add(contact, reason_key: str, extra_label: str = "", score: int = 0):
         cid = str(contact["_id"])
@@ -137,45 +155,38 @@ async def get_my_3(user_id: str, db) -> list:
             "user_id":  user_id,
             "status":   {"$in": ["pending", "active", None]},
             "due_date": {"$lte": now},
-        }).sort("due_date", 1).limit(10).to_list(10)
+        }, {"contact_id": 1, "title": 1, "due_date": 1}).sort("due_date", 1).limit(10).to_list(10)
 
-        for task in overdue_tasks:
-            if not task.get("contact_id"):
-                continue
-            try:
-                c = await db.contacts.find_one({"_id": ObjectId(task["contact_id"])})
-                if not c:
-                    continue
-                due = task.get("due_date")
-                if due:
-                    if due.tzinfo is None:
-                        due = due.replace(tzinfo=timezone.utc)
-                    days_late = (now - due).days
-                    label = f"Overdue task: {task.get('title','Follow up')}" if days_late == 0 else f"{days_late}d overdue: {task.get('title','Follow up')}"
-                else:
-                    label = f"Task due: {task.get('title','Follow up')}"
-                await add(c, "cooling_down", label, 9)
-            except Exception:
-                pass
-
-        # Also grab due TODAY tasks (not yet overdue)
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
         today_end   = today_start + timedelta(days=1)
         today_tasks = await db.tasks.find({
             "user_id":  user_id,
             "status":   {"$in": ["pending", "active", None]},
             "due_date": {"$gte": today_start, "$lt": today_end},
-        }).sort("due_date", 1).limit(5).to_list(5)
+        }, {"contact_id": 1, "title": 1}).sort("due_date", 1).limit(5).to_list(5)
+
+        # Batch fetch contacts for tasks
+        task_contact_ids = list({t["contact_id"] for t in overdue_tasks + today_tasks if t.get("contact_id")})
+        task_contacts = await batch_contacts(task_contact_ids)
+
+        for task in overdue_tasks:
+            c = task_contacts.get(str(task.get("contact_id", "")))
+            if not c:
+                continue
+            due = task.get("due_date")
+            if due:
+                if due.tzinfo is None:
+                    due = due.replace(tzinfo=timezone.utc)
+                days_late = (now - due).days
+                label = f"Overdue task: {task.get('title','Follow up')}" if days_late == 0 else f"{days_late}d overdue: {task.get('title','Follow up')}"
+            else:
+                label = f"Task due: {task.get('title','Follow up')}"
+            await add(c, "cooling_down", label, 9)
 
         for task in today_tasks:
-            if not task.get("contact_id"):
-                continue
-            try:
-                c = await db.contacts.find_one({"_id": ObjectId(task["contact_id"])})
-                if c:
-                    await add(c, "cooling_down", f"Due today: {task.get('title','Follow up')}", 8)
-            except Exception:
-                pass
+            c = task_contacts.get(str(task.get("contact_id", "")))
+            if c:
+                await add(c, "cooling_down", f"Due today: {task.get('title','Follow up')}", 8)
 
         # 1. Viewed your card in the last 48 hours
         cutoff_48h = now - timedelta(hours=48)
@@ -183,39 +194,38 @@ async def get_my_3(user_id: str, db) -> list:
             "user_id":    user_id,
             "event_type": {"$in": ["card_viewed", "link_clicked", "digital_card_viewed"]},
             "timestamp":  {"$gte": cutoff_48h},
-        }).sort("timestamp", -1).limit(10).to_list(10)
+        }, {"contact_id": 1, "timestamp": 1}).sort("timestamp", -1).limit(10).to_list(10)
+
+        view_contact_ids = list({str(e["contact_id"]) for e in views if e.get("contact_id")})
+        view_contacts = await batch_contacts(view_contact_ids)
         for evt in views:
-            if evt.get("contact_id"):
-                try:
-                    c = await db.contacts.find_one({"_id": ObjectId(evt["contact_id"])})
-                    if c:
-                        h = int((now - evt["timestamp"].replace(tzinfo=timezone.utc)).total_seconds() / 3600)
-                        label = f"Viewed your card {h}h ago" if h > 0 else "Just viewed your card"
-                        await add(c, "card_viewed", label, 10)
-                except Exception:
-                    pass
+            c = view_contacts.get(str(evt.get("contact_id", "")))
+            if c:
+                ts = evt.get("timestamp")
+                h = int((now - ts.replace(tzinfo=timezone.utc)).total_seconds() / 3600) if ts else 0
+                label = f"Viewed your card {h}h ago" if h > 0 else "Just viewed your card"
+                await add(c, "card_viewed", label, 10)
 
         # 2. Replied to a campaign (paused enrollments)
         paused = await db.campaign_enrollments.find({
             "user_id": user_id,
             "status":  "paused",
             "paused_reason": "customer_replied",
-        }).sort("last_reply_at", -1).limit(5).to_list(5)
-        for enroll in paused:
-            if enroll.get("contact_id"):
-                try:
-                    c = await db.contacts.find_one({"_id": ObjectId(enroll["contact_id"])})
-                    if c:
-                        await add(c, "campaign_reply", score=10)
-                except Exception:
-                    pass
+        }, {"contact_id": 1}).sort("last_reply_at", -1).limit(5).to_list(5)
 
-        # 3. Birthday within 3 days
-        today_md  = (now.month, now.day)  # noqa
+        paused_contact_ids = list({str(e["contact_id"]) for e in paused if e.get("contact_id")})
+        paused_contacts = await batch_contacts(paused_contact_ids)
+        for enroll in paused:
+            c = paused_contacts.get(str(enroll.get("contact_id", "")))
+            if c:
+                await add(c, "campaign_reply", score=10)
+
+        # 3. Birthday within 3 days — lean projection, tight limit
         bday_contacts = await db.contacts.find({
             "user_id": user_id,
             "birthday": {"$exists": True, "$ne": None},
-        }).limit(200).to_list(200)
+        }, CONTACT_PROJ).limit(50).to_list(50)
+
         for c in bday_contacts:
             try:
                 bd = c.get("birthday")
@@ -238,15 +248,14 @@ async def get_my_3(user_id: str, db) -> list:
             "user_id":    user_id,
             "event_type": {"$in": ["review_link_clicked", "review_request_sent"]},
             "timestamp":  {"$gte": cutoff_7d},
-        }).sort("timestamp", -1).limit(5).to_list(5)
+        }, {"contact_id": 1}).sort("timestamp", -1).limit(5).to_list(5)
+
+        review_contact_ids = list({str(e["contact_id"]) for e in review_clicks if e.get("contact_id")})
+        review_contacts = await batch_contacts(review_contact_ids)
         for evt in review_clicks:
-            if evt.get("contact_id"):
-                try:
-                    c = await db.contacts.find_one({"_id": ObjectId(evt["contact_id"])})
-                    if c:
-                        await add(c, "review_click", score=7)
-                except Exception:
-                    pass
+            c = review_contacts.get(str(evt.get("contact_id", "")))
+            if c:
+                await add(c, "review_click", score=7)
 
         # 5. Purchased recently — prime for referral ask
         ref_start = now - timedelta(days=365)
@@ -255,32 +264,32 @@ async def get_my_3(user_id: str, db) -> list:
             "user_id": user_id,
             "tags":    {"$in": ["sold", "purchased", "customer", "Sold"]},
             "updated_at": {"$gte": ref_start, "$lte": ref_end},
-        }).limit(20).to_list(20)
+        }, CONTACT_PROJ).limit(20).to_list(20)
         for c in sold_contacts:
             await add(c, "purchase_followup", score=6)
 
-        # 6. Cooling down — contacts with no recent activity (broadened query)
+        # 6. Cooling down — contacts with no recent activity
         if len(scored) < 6:
-            # Get IDs of contacts touched in last 14 days (any event type)
+            # Fetch only contact_ids from events (no full docs) — 100 events max
             cutoff_14d = now - timedelta(days=14)
             recent_events = await db.contact_events.find({
                 "user_id":   user_id,
                 "timestamp": {"$gte": cutoff_14d},
-            }).limit(500).to_list(500)
+            }, {"contact_id": 1}).limit(100).to_list(100)
             recently_active = {str(e["contact_id"]) for e in recent_events if e.get("contact_id")}
 
-            # Get recent task interactions too
             recent_tasks_done = await db.tasks.find({
-                "user_id":     user_id,
-                "status":      {"$in": ["completed", "done"]},
-                "completed_at":{"$gte": cutoff_14d},
-            }).limit(200).to_list(200)
+                "user_id":      user_id,
+                "status":       {"$in": ["completed", "done"]},
+                "completed_at": {"$gte": cutoff_14d},
+            }, {"contact_id": 1}).limit(50).to_list(50)
             recently_active.update({str(t["contact_id"]) for t in recent_tasks_done if t.get("contact_id")})
 
-            # Find contacts NOT recently active — no status filter so we don't miss anyone
+            # Lean contact fetch — always exclude photo blob
             all_contacts = await db.contacts.find(
                 {"user_id": user_id},
-            ).sort("created_at", -1).limit(100).to_list(100)
+                CONTACT_PROJ,
+            ).sort("created_at", -1).limit(50).to_list(50)
 
             for c in all_contacts:
                 if len(scored) >= 9:
@@ -288,7 +297,6 @@ async def get_my_3(user_id: str, db) -> list:
                 cid = str(c["_id"])
                 if cid in recently_active or cid in seen_ids:
                     continue
-                # Use any date field available
                 last = (c.get("last_contacted_at") or
                         c.get("last_activity_at") or
                         c.get("updated_at") or
@@ -297,7 +305,7 @@ async def get_my_3(user_id: str, db) -> list:
                     if last.tzinfo is None:
                         last = last.replace(tzinfo=timezone.utc)
                     days = (now - last).days
-                    if days >= 7:  # Lowered from 14 to catch more
+                    if days >= 7:
                         await add(c, "cooling_down",
                                   f"{days} days since last contact",
                                   max(3, 7 - (days // 14)))
@@ -366,7 +374,22 @@ async def get_wins_feed(user_id: str, db, limit: int = 15) -> list:
             "user_id":    user_id,
             "event_type": {"$in": list(WIN_TYPES.keys())},
             "timestamp":  {"$gte": cutoff},
-        }).sort("timestamp", -1).limit(limit * 3).to_list(limit * 3)
+        }, {"contact_id": 1, "contact_name": 1, "event_type": 1, "timestamp": 1}).sort("timestamp", -1).limit(limit * 3).to_list(limit * 3)
+
+        # Batch fetch all missing contact names in one query
+        missing_name_ids = [str(e["contact_id"]) for e in events if not (e.get("contact_name") or "").strip() and e.get("contact_id")]
+        name_map: dict = {}
+        if missing_name_ids:
+            oids = []
+            for cid in missing_name_ids:
+                try:
+                    oids.append(ObjectId(cid))
+                except Exception:
+                    pass
+            if oids:
+                docs = await db.contacts.find({"_id": {"$in": oids}}, {"_id": 1, "first_name": 1, "last_name": 1}).to_list(len(oids))
+                for d in docs:
+                    name_map[str(d["_id"])] = f"{d.get('first_name','')} {d.get('last_name','')}".strip()
 
         seen_contact_event: set = set()  # dedupe same contact+event within feed
 
@@ -378,17 +401,9 @@ async def get_wins_feed(user_id: str, db, limit: int = 15) -> list:
             cid   = str(evt.get("contact_id") or "")
             cname = (evt.get("contact_name") or "").strip()
 
-            # Resolve name if missing
+            # Resolve name from batch map if missing
             if not cname and cid:
-                try:
-                    c = await db.contacts.find_one(
-                        {"_id": ObjectId(cid)},
-                        {"first_name": 1, "last_name": 1}
-                    )
-                    if c:
-                        cname = f"{c.get('first_name','')} {c.get('last_name','')}".strip()
-                except Exception:
-                    pass
+                cname = name_map.get(cid, "")
 
             if not cname:
                 cname = "Someone"
