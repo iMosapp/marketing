@@ -330,10 +330,12 @@ export default function CreateCardPage() {
               }
 
               // Apply "Sold" tag → starts long-term campaign (day 7 check-in, etc.)
-              const contactRes = await api.get(`/contacts/${user._id}/${contactId}`);
+              // Prefer the existing contact ID from the contact page if available
+              const tagContactId = for_contact || contactId;
+              const contactRes = await api.get(`/contacts/${user._id}/${tagContactId}`).catch(() => ({ data: {} }));
               const existingTags: string[] = contactRes.data?.tags || [];
               if (!existingTags.includes('Sold')) {
-                await api.patch(`/contacts/${user._id}/${contactId}/tags`, {
+                await api.patch(`/contacts/${user._id}/${tagContactId}/tags`, {
                   tags: [...existingTags, 'Sold'],
                 }).catch(() => {});
               }
@@ -456,10 +458,22 @@ export default function CreateCardPage() {
             </View>
             <TouchableOpacity
               style={{ marginTop: 24, backgroundColor: '#C9A962', borderRadius: 14, paddingVertical: 18, width: '100%', alignItems: 'center' }}
-              onPress={() => { setCreatedCard(null); setShowPreview(false); setPhoto(null); setCustomerName(''); setCustomMessage(''); setCustomerPhone(''); setCustomerEmail(''); setSelectedTags([]); setStartCampaign(true); router.back(); }}
+              onPress={() => {
+                setCreatedCard(null); setShowPreview(false); setPhoto(null);
+                setCustomerName(''); setCustomMessage(''); setCustomerPhone(''); setCustomerEmail('');
+                setSelectedTags([]); setStartCampaign(true);
+                // If came from a contact page, go back to that contact
+                if (for_contact) {
+                  router.replace(`/contact/${for_contact}` as any);
+                } else {
+                  router.back();
+                }
+              }}
               data-testid="sold-success-done"
             >
-              <Text style={{ fontSize: 17, fontWeight: '700', color: '#000' }}>Done — Back to Home</Text>
+              <Text style={{ fontSize: 17, fontWeight: '700', color: '#000' }}>
+                {for_contact ? 'Done — Back to Contact' : 'Done — Back to Home'}
+              </Text>
             </TouchableOpacity>
           </View>
         </SafeAreaView>

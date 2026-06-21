@@ -2605,13 +2605,19 @@ function ContactDetailScreen() {
                 backgroundColor: '#C9A962', borderRadius: 14, paddingVertical: 16,
               }}
               onPress={() => {
+                // Route to create-card (congrats) — same flow as home screen SOLD tile.
+                // Pre-fills the contact's name + phone so "Via Text" fires
+                // VCF → card (2 min) → review (5 min) → Sold tag automatically.
                 const params = new URLSearchParams();
-                params.set('contact_id', id as string);
-                if (contact.first_name || contact.last_name)
-                  params.set('contact_name', `${contact.first_name || ''} ${contact.last_name || ''}`.trim());
-                if (contact.phone) params.set('contact_phone', contact.phone);
-                if (contact.vehicle) params.set('contact_vehicle', contact.vehicle);
-                router.push(`/contact/sold-wizard?${params.toString()}` as any);
+                params.set('type', 'congrats');
+                const contactName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim();
+                if (contactName) params.set('prefillName', contactName);
+                if (contact.phone) params.set('prefillPhone', contact.phone);
+                if (contact.email) params.set('prefillEmail', contact.email);
+                // Pass contact_id so Sold tag gets applied to THIS existing contact
+                params.set('for_contact', id as string);
+                params.set('return_to_contact', 'true');
+                router.push(`/settings/create-card?${params.toString()}` as any);
               }}
               data-testid="sold-wizard-btn"
             >
