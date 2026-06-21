@@ -1072,7 +1072,7 @@ async def generate_system_tasks(user_id: str):
                 "type": "follow_up", "source": "system",
                 "title": f"Reconnect with {name}",
                 "description": f"It's been {days} days since your last interaction.",
-                "suggested_message": f"Hey {contact.get('first_name','there')}! It's been a while — just wanted to check in and see how things are going!",
+                "suggested_message": f"Hey {contact.get('first_name','there')}! It has been a while, just wanted to check in and see how things are going!",
                 "action_type": "text", "priority": "medium", "priority_order": 2,
                 "status": "pending", "completed": False,
                 "due_date": now, "channel": "sms",

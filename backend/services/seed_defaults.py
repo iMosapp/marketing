@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # ==================== SMS TEMPLATES (12) ====================
 DEFAULT_SMS_TEMPLATES = [
     {"name": "Welcome", "content": "Hey {name}! Thanks for connecting. I just set up my digital card — tap here to save my info: {card_link}", "category": "greeting", "is_default": True},
-    {"name": "Add Socials Nudge", "content": "Hey {name}, quick heads up — follow us for tips, deals, and behind-the-scenes content: {social_link}", "category": "social", "is_default": True},
+    {"name": "Add Socials Nudge", "content": "Hey {name}, quick heads up, follow us for tips, deals, and behind-the-scenes content: {social_link}", "category": "social", "is_default": True},
     {"name": "Review Ask", "content": "Hey {name}, if you've got 20 seconds, would you mind leaving a quick review? It really helps: {review_link} — appreciate you.", "category": "review", "is_default": True},
     {"name": "Review Follow-Up", "content": "Hey {name}, just bumping this in case it got buried. If you had a good experience, a quick review means the world: {review_link}", "category": "review", "is_default": True},
     {"name": "Referral Ask", "content": "Hey {name}, know anyone who could use our help? I'd love an introduction — referrals mean more than you know. Thanks!", "category": "referral", "is_default": True},
@@ -162,7 +162,7 @@ DEFAULT_CAMPAIGNS = [
         "scope": "personal",
         "sequences": [
             {"step": 1, "delay_days": 7, "channel": "sms", "message_template": "Just checking in to see how everything is going with the {{vehicle}} so far. Let me know if you need anything!"},
-            {"step": 2, "delay_days": 21, "channel": "sms", "message_template": "Random question — do you know anyone else looking for a vehicle right now? I'd be happy to help them the same way."},
+            {"step": 2, "delay_days": 21, "channel": "sms", "message_template": "Random question, do you know anyone else looking for a vehicle right now? I would be happy to help them the same way."},
             {"step": 3, "delay_days": 75, "channel": "sms", "message_template": "Your first service will probably be coming up soon. If you'd like I can help get that scheduled for you."},
             {"step": 4, "delay_days": 0, "delay_months": 6, "channel": "sms", "message_template": "Hope you're still loving the {{vehicle}}. If you ever need anything just reach out."},
             {"step": 5, "delay_days": 0, "delay_months": 12, "channel": "sms", "message_template": "Hard to believe it's already been a year since you got your {{vehicle}}. Hope you're still loving it. If you ever need anything just reach out."},
@@ -201,7 +201,7 @@ DEFAULT_DATE_TRIGGERS = [
         "trigger_type": "anniversary",
         "enabled": True,
         "delivery_method": "sms",
-        "message_template": "Happy Anniversary, {name}! Time flies. Grateful to know you — reach out if you ever need anything.",
+        "message_template": "Happy Anniversary, {name}! Time flies. Grateful to know you, reach out if you ever need anything.",
         "include_birthday_card": False,
     },
     {

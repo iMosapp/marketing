@@ -290,7 +290,7 @@ export default function CreateCardPage() {
           // Step 1: VCF immediately — customer saves number first
           await api.post('/messages/twilio-send', {
             to: cPhone,
-            body: `Hi${cName ? ` ${cName.split(' ')[0]}` : ''}! This is ${user.name} — tap to save my number so you always have it.`,
+            body: `Hi${cName ? ` ${cName.split(' ')[0]}` : ''}! This is ${user.name}, tap to save my number so you always have it.`,
             user_id: user._id,
             contact_id: contactId,
             media_urls: [vcfUrl],
