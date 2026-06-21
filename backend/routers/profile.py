@@ -27,8 +27,11 @@ _APP_URL = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https:
 async def get_vcard(user_id: str):
     """
     Generate and return the user's contact info as a vCard 3.0 (.vcf) file.
-    When tapped on iPhone/Android, offers to add the person to Contacts.
+    Photo is embedded as base64 JPEG so iOS/Android show it when saving the contact.
     """
+    import httpx, base64, io
+    from PIL import Image as PILImage
+
     db = get_db()
     user = await db.users.find_one({"_id": ObjectId(user_id)}, {"password": 0})
     if not user:
@@ -44,17 +47,43 @@ async def get_vcard(user_id: str):
     email       = user.get("email", "")
     card_url    = f"{_APP_URL}/card/{user_id}"
 
-    # Build photo line — embed if we have a resolvable URL
+    # Build photo line — embed as base64 JPEG (required by iOS to show photo on contact save)
     photo_line = ""
-    photo_path = user.get("photo_url") or user.get("photo_path") or ""
-    if photo_path and photo_path.startswith("/api/"):
-        photo_line = f"PHOTO;VALUE=URL:{_APP_URL}{photo_path}\n"
-    elif photo_path and photo_path.startswith("http"):
-        photo_line = f"PHOTO;VALUE=URL:{photo_path}\n"
+    photo_path = user.get("photo_url") or user.get("photo_path") or user.get("photo_thumbnail") or ""
+    if photo_path:
+        try:
+            if photo_path.startswith("/api/"):
+                photo_url_abs = f"{_APP_URL}{photo_path}"
+            elif photo_path.startswith("http"):
+                photo_url_abs = photo_path
+            else:
+                photo_url_abs = ""
 
-    phone_line = f"TEL;TYPE=CELL:{phone}\n" if phone else ""
-    email_line = f"EMAIL:{email}\n" if email else ""
-    title_line = f"TITLE:{title}\n" if title else ""
+            if photo_url_abs:
+                async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
+                    resp = await client.get(photo_url_abs)
+                if resp.status_code == 200:
+                    img_bytes = resp.content
+                    # Convert to JPEG (handles WebP, PNG, etc.) and resize to 300×300 max
+                    img = PILImage.open(io.BytesIO(img_bytes)).convert("RGB")
+                    img.thumbnail((300, 300), PILImage.LANCZOS)
+                    buf = io.BytesIO()
+                    img.save(buf, format="JPEG", quality=85)
+                    b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+                    # vCard 3.0 requires lines folded at 75 chars (continuation with space)
+                    folded = "\r\n ".join([b64[i:i+74] for i in range(0, len(b64), 74)])
+                    photo_line = f"PHOTO;ENCODING=b;TYPE=JPEG:\r\n {folded}\r\n"
+        except Exception as photo_err:
+            logger.warning(f"[vCard] Photo embed failed for {user_id}: {photo_err}")
+            # Fall back to URL reference
+            if photo_path.startswith("/api/"):
+                photo_line = f"PHOTO;VALUE=URL:{_APP_URL}{photo_path}\r\n"
+            elif photo_path.startswith("http"):
+                photo_line = f"PHOTO;VALUE=URL:{photo_path}\r\n"
+
+    phone_line = f"TEL;TYPE=CELL:{phone}\r\n" if phone else ""
+    email_line = f"EMAIL:{email}\r\n" if email else ""
+    title_line = f"TITLE:{title}\r\n" if title else ""
 
     org = ""
     store_id = user.get("store_id")
@@ -65,24 +94,23 @@ async def get_vcard(user_id: str):
                 org = store.get("name", "")
         except Exception:
             pass
-    org_line = f"ORG:{org}\n" if org else ""
+    org_line = f"ORG:{org}\r\n" if org else ""
 
     safe_name = re.sub(r"[^a-zA-Z0-9_-]", "_", name)[:40] or "contact"
 
     vcf = (
-        "BEGIN:VCARD\n"
-        "VERSION:3.0\n"
-        f"N:{last};{first};;;\n"
-        f"FN:{name}\n"
+        "BEGIN:VCARD\r\n"
+        "VERSION:3.0\r\n"
+        f"N:{last};{first};;;\r\n"
+        f"FN:{name}\r\n"
         f"{title_line}"
         f"{org_line}"
         f"{phone_line}"
         f"{email_line}"
         f"{photo_line}"
-        f"URL:{card_url}\n"
-        f"NOTE:Connect with me — digital card: {card_url}\n"
-        f"X-SOCIALPROFILE;type=digitalcard:{card_url}\n"
-        "END:VCARD\n"
+        f"URL:{card_url}\r\n"
+        f"NOTE:Digital card: {card_url}\r\n"
+        "END:VCARD\r\n"
     )
 
     return Response(
@@ -90,7 +118,7 @@ async def get_vcard(user_id: str):
         media_type="text/vcard",
         headers={
             "Content-Disposition": f'attachment; filename="{safe_name}.vcf"',
-            "Cache-Control": "public, max-age=3600",
+            "Cache-Control": "no-cache",  # Don't cache — photo may change
         },
     )
 
