@@ -1209,6 +1209,15 @@ def start_scheduler():
         misfire_grace_time=1800,
     )
 
+    # Every 5 minutes — fire any scheduled broadcasts that are due
+    scheduler.add_job(
+        safe_job(process_scheduled_broadcasts),
+        IntervalTrigger(minutes=5),
+        id="scheduled_broadcast_processor",
+        replace_existing=True,
+        misfire_grace_time=300,
+    )
+
     scheduler.start()
 
     # ── Watchdog: verify jobs registered correctly ────────────────────────────
@@ -1222,6 +1231,110 @@ def start_scheduler():
         )
     else:
         logger.info(f"[Scheduler] Started with {job_count} jobs including daily silence follow-ups")
+
+
+async def process_scheduled_broadcasts():
+    """
+    Every 5 min: find broadcasts with status='scheduled' and scheduled_at <= now.
+    Trigger the send by queuing all recipients into campaign_pending_sends with staggering.
+    """
+    db = get_db()
+    if db is None:
+        return
+    now = datetime.now(timezone.utc)
+    now_naive = datetime.utcnow()
+    try:
+        due = await db.broadcasts.find(
+            {"status": "scheduled", "scheduled_at": {"$lte": now.isoformat()}}
+        ).to_list(20)
+
+        if not due:
+            return
+
+        logger.info(f"[Scheduler] Processing {len(due)} scheduled broadcasts")
+
+        for broadcast in due:
+            broadcast_id = str(broadcast["_id"])
+            user_id = broadcast.get("created_by", "")
+            try:
+                from services.twilio_service import get_rep_twilio_number
+                rep_twilio_number = await get_rep_twilio_number(user_id)
+
+                stagger = int(broadcast.get("stagger_seconds", 10))
+                jessi_on = broadcast.get("jessi_replies", False)
+                message_template = broadcast.get("message", "")
+                media_urls = broadcast.get("media_urls", [])
+
+                recipient_ids = broadcast.get("recipients", [])
+                contacts = await db.contacts.find(
+                    {"_id": {"$in": [ObjectId(rid) for rid in recipient_ids]}},
+                    {"_id": 1, "phone": 1, "first_name": 1, "last_name": 1}
+                ).to_list(5000)
+
+                pending_docs = []
+                for i, contact in enumerate(contacts):
+                    phone = contact.get("phone", "")
+                    if not phone:
+                        continue
+                    first_name = contact.get("first_name", "there")
+                    personalised = message_template.replace("{first_name}", first_name).replace("{name}", first_name)
+                    contact_id = str(contact["_id"])
+                    send_at = now_naive + timedelta(seconds=i * stagger)
+                    pending_docs.append({
+                        "user_id": user_id,
+                        "contact_id": contact_id,
+                        "contact_name": f"{contact.get('first_name','')} {contact.get('last_name','')}".strip(),
+                        "contact_phone": phone,
+                        "rep_phone": rep_twilio_number,
+                        "message_template": personalised,
+                        "media_urls": media_urls,
+                        "channel": "sms",
+                        "delivery_mode": "auto",
+                        "send_at": send_at,
+                        "status": "pending",
+                        "step": 0,
+                        "enrollment_id": "",
+                        "campaign_id": "",
+                        "campaign_name": broadcast.get("name", "Broadcast"),
+                        "broadcast_id": broadcast_id,
+                        "type": "broadcast",
+                        "created_at": now_naive,
+                    })
+
+                if pending_docs:
+                    await db.campaign_pending_sends.insert_many(pending_docs)
+
+                # Enable Jessi for all recipients if requested
+                if jessi_on:
+                    for contact in contacts:
+                        if not contact.get("phone"):
+                            continue
+                        conv = await db.conversations.find_one({
+                            "$or": [
+                                {"rep_phone": rep_twilio_number, "contact_phone": contact["phone"]},
+                                {"user_id": user_id, "contact_id": str(contact["_id"])},
+                            ]
+                        })
+                        if conv:
+                            await db.conversations.update_one(
+                                {"_id": conv["_id"]},
+                                {"$set": {"ai_enabled": True, "ai_mode": "auto"}}
+                            )
+
+                await db.broadcasts.update_one(
+                    {"_id": broadcast["_id"]},
+                    {"$set": {"status": "sending", "sent_at": now.isoformat(), "queued_count": len(pending_docs)}}
+                )
+                logger.info(f"[Scheduler] Broadcast '{broadcast.get('name')}' queued {len(pending_docs)} sends")
+
+            except Exception as e:
+                logger.error(f"[Scheduler] Failed to send scheduled broadcast {broadcast_id}: {e}")
+                await db.broadcasts.update_one(
+                    {"_id": broadcast["_id"]},
+                    {"$set": {"status": "failed", "error": str(e)}}
+                )
+    except Exception as e:
+        logger.error(f"[Scheduler] Broadcast processor error: {e}")
 
 
 def stop_scheduler():

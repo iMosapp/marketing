@@ -260,14 +260,16 @@ const { showToast } = useToast();
       };
       
       const res = await api.post(`/broadcast?user_id=${user?._id}`, broadcastData);
-      
+
       if (res.data.success) {
-        if (sendNow) {
+        if (sendNow && scheduleType !== 'later') {
           // Send immediately
           await api.post(`/broadcast/${res.data.broadcast.id}/send?user_id=${user?._id}`);
-          showToast('Broadcast sent successfully!');
+          showToast(`Broadcast queued for ${previewCount} contacts!`);
+        } else if (scheduleType === 'later') {
+          showToast(`Scheduled for ${scheduledDate.toLocaleDateString()} at ${scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
         } else {
-          showAlert('Success', scheduleType === 'later' ? 'Broadcast scheduled!' : 'Broadcast saved as draft');
+          showToast('Saved as draft');
         }
         router.back();
       }
@@ -563,7 +565,7 @@ const { showToast } = useToast();
 
         {/* Schedule Section */}
         <View style={styles.section}>
-          <SectionHeader title="Schedule" section="schedule" icon="time-outline" />
+          <SectionHeader title="When to Send" section="schedule" icon="time-outline" />
           {expandedSections.schedule && (
             <View style={styles.sectionContent}>
               <View style={styles.scheduleOptions}>
@@ -577,11 +579,16 @@ const { showToast } = useToast();
                     size={20}
                     color={scheduleType === 'now' ? '#007AFF' : colors.textSecondary}
                   />
-                  <Text style={[styles.scheduleOptionText, scheduleType === 'now' && styles.scheduleOptionTextActive]}>
-                    Save as draft (send manually)
-                  </Text>
+                  <View>
+                    <Text style={[styles.scheduleOptionText, scheduleType === 'now' && styles.scheduleOptionTextActive]}>
+                      Send Now
+                    </Text>
+                    <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                      Starts delivering immediately, staggered by 10s each
+                    </Text>
+                  </View>
                 </Pressable>
-                
+
                 <Pressable
                   style={[styles.scheduleOption, scheduleType === 'later' && styles.scheduleOptionActive]}
                   onPress={() => setScheduleType('later')}
@@ -590,38 +597,58 @@ const { showToast } = useToast();
                   <Ionicons
                     name={scheduleType === 'later' ? 'radio-button-on' : 'radio-button-off'}
                     size={20}
-                    color={scheduleType === 'later' ? '#007AFF' : colors.textSecondary}
+                    color={scheduleType === 'later' ? '#34C759' : colors.textSecondary}
                   />
-                  <Text style={[styles.scheduleOptionText, scheduleType === 'later' && styles.scheduleOptionTextActive]}>
-                    Schedule for later
-                  </Text>
+                  <View>
+                    <Text style={[styles.scheduleOptionText, scheduleType === 'later' && { color: '#34C759', fontWeight: '700' }]}>
+                      Schedule for Later
+                    </Text>
+                    <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                      Auto-fires at the exact time you pick
+                    </Text>
+                  </View>
                 </Pressable>
               </View>
-              
+
               {scheduleType === 'later' && (
-                <View style={styles.dateTimeContainer}>
-                  <Pressable
-                    style={styles.dateTimeButton}
-                    onPress={() => setShowDatePicker(true)}
-                    testID="date-picker-btn"
-                  >
-                    <Ionicons name="calendar" size={20} color="#007AFF" />
-                    <Text style={styles.dateTimeText}>
-                      {scheduledDate.toLocaleDateString()}
+                <>
+                  <View style={styles.dateTimeContainer}>
+                    <Pressable
+                      style={styles.dateTimeButton}
+                      onPress={() => setShowDatePicker(true)}
+                      testID="date-picker-btn"
+                    >
+                      <Ionicons name="calendar" size={20} color="#34C759" />
+                      <Text style={styles.dateTimeText}>
+                        {scheduledDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      style={styles.dateTimeButton}
+                      onPress={() => setShowTimePicker(true)}
+                      testID="time-picker-btn"
+                    >
+                      <Ionicons name="time" size={20} color="#34C759" />
+                      <Text style={styles.dateTimeText}>
+                        {scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </Text>
+                    </Pressable>
+                  </View>
+
+                  {/* Confirmation banner */}
+                  <View style={{ backgroundColor: '#34C75912', borderRadius: 10, padding: 12, marginTop: 10, flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+                    <Ionicons name="checkmark-circle" size={18} color="#34C759" />
+                    <Text style={{ fontSize: 13, color: '#34C759', flex: 1 }}>
+                      Will auto-send on{' '}
+                      <Text style={{ fontWeight: '700' }}>
+                        {scheduledDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} at{' '}
+                        {scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </Text>
+                      {previewCount ? ` to ${previewCount} contacts` : ''}
                     </Text>
-                  </Pressable>
-                  
-                  <Pressable
-                    style={styles.dateTimeButton}
-                    onPress={() => setShowTimePicker(true)}
-                    testID="time-picker-btn"
-                  >
-                    <Ionicons name="time" size={20} color="#007AFF" />
-                    <Text style={styles.dateTimeText}>
-                      {scheduledDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </Text>
-                  </Pressable>
-                </View>
+                  </View>
+                </>
               )}
               
               {showDatePicker && (
@@ -680,25 +707,31 @@ const { showToast } = useToast();
             ) : (
               <>
                 <Ionicons name="save-outline" size={20} color="#007AFF" />
-                <Text style={styles.saveButtonText}>
-                  {scheduleType === 'later' ? 'Schedule' : 'Save Draft'}
-                </Text>
+                <Text style={styles.saveButtonText}>Save Draft</Text>
               </>
             )}
           </Pressable>
-          
+
           <Pressable
-            style={[styles.sendButton, (previewCount === 0 || submitting) && styles.sendButtonDisabled]}
+            style={[
+              styles.sendButton,
+              scheduleType === 'later' && { backgroundColor: '#34C759' },
+              (submitting) && styles.sendButtonDisabled,
+            ]}
             onPress={() => handleSubmit(true)}
-            disabled={previewCount === 0 || submitting}
+            disabled={submitting}
             testID="send-now-btn"
           >
             {submitting ? (
               <ActivityIndicator size="small" color={colors.text} />
             ) : (
               <>
-                <Ionicons name="send" size={20} color={colors.text} />
-                <Text style={styles.sendButtonText}>Send Now</Text>
+                <Ionicons name={scheduleType === 'later' ? 'calendar' : 'send'} size={20} color={colors.text} />
+                <Text style={styles.sendButtonText}>
+                  {scheduleType === 'later'
+                    ? `Schedule (${previewCount ?? '?'} contacts)`
+                    : `Send Now (${previewCount ?? '?'})`}
+                </Text>
               </>
             )}
           </Pressable>
