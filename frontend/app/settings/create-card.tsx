@@ -281,12 +281,13 @@ export default function CreateCardPage() {
           }
         } catch { threadId = contactId; }
 
-        // SMS flow: VCF first, then auto-schedule the card link 2 minutes later
+        // SMS flow: VCF → card (2 min) → review (5 min) for congrats/sold type
         if (platform === 'sms' && cPhone) {
           const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com';
           const vcfUrl = `${backendUrl}/api/profile/${user._id}/vcard.vcf`;
+          const isSoldFlow = selectedType === 'congrats';
 
-          // Step 1: Send VCF immediately — customer saves number first
+          // Step 1: VCF immediately — customer saves number first
           await api.post('/messages/twilio-send', {
             to: cPhone,
             body: `Hi${cName ? ` ${cName.split(' ')[0]}` : ''}! This is ${user.name} — tap to save my number so you always have it.`,
@@ -296,7 +297,7 @@ export default function CreateCardPage() {
             event_type: 'vcf_sent',
           }).catch(() => {});
 
-          // Step 2: Schedule card link for 2 minutes later (fully automatic — no thread tap needed)
+          // Step 2: Congrats card — 2 minutes later
           await api.post('/messages/schedule-delayed', {
             to: cPhone,
             body: text,
@@ -307,7 +308,47 @@ export default function CreateCardPage() {
             event_type: 'congrats_card_sent',
           }).catch(() => {});
 
-          // Navigate to thread so rep can see the conversation was started
+          // Step 3 (congrats/sold only): Review link — 5 minutes later
+          if (isSoldFlow) {
+            try {
+              const rlRes = await api.get(`/users/${user._id}/review-links`);
+              const rl = rlRes.data?.review_links || {};
+              const reviewUrl = rl.google || rl.yelp || rl.facebook || (user as any).review_url || '';
+              if (reviewUrl) {
+                await api.post('/messages/schedule-delayed', {
+                  to: cPhone,
+                  body: `${cName ? `Hey ${cName.split(' ')[0]}! ` : ''}If you wouldn't mind leaving a quick review I'd really appreciate it! ${reviewUrl}`,
+                  user_id: user._id,
+                  contact_id: contactId,
+                  contact_name: cName,
+                  delay_seconds: 300,
+                  event_type: 'review_request_sent',
+                }).catch(() => {});
+              }
+
+              // Apply "Sold" tag → starts long-term campaign (day 7 check-in, etc.)
+              const contactRes = await api.get(`/contacts/${user._id}/${contactId}`);
+              const existingTags: string[] = contactRes.data?.tags || [];
+              if (!existingTags.includes('Sold')) {
+                await api.patch(`/contacts/${user._id}/${contactId}/tags`, {
+                  tags: [...existingTags, 'Sold'],
+                }).catch(() => {});
+              }
+            } catch (e) {
+              console.log('Review/tag step failed (non-fatal):', e);
+            }
+
+            // Show sold success screen
+            setCreatedCard({
+              card_id: createdCard?.card_id || '',
+              share_url: url,
+              sold_sequence: true,
+              recipient_name: cName,
+            } as any);
+            return;
+          }
+
+          // Non-congrats: navigate to thread
           navigateToThread(threadId, cName, cPhone, cEmail, platform, text);
           return;
         }
@@ -371,6 +412,57 @@ export default function CreateCardPage() {
 
   // ---- Created: share screen matching UniversalShareModal style ----
   if (createdCard) {
+    // SOLD SEQUENCE SUCCESS SCREEN
+    if ((createdCard as any).sold_sequence) {
+      const recipientName = (createdCard as any).recipient_name || customerName;
+      const firstName = recipientName.split(' ')[0];
+      return (
+        <SafeAreaView style={s.container} edges={['top', 'bottom']}>
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28 }}>
+            <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: '#34C75920', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+              <Ionicons name="checkmark-circle" size={60} color="#34C759" />
+            </View>
+            <Text style={{ fontSize: 30, fontWeight: '900', color: '#C9A962', marginBottom: 6 }}>SOLD!</Text>
+            <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text, marginBottom: 4, textAlign: 'center' }}>
+              Sequence started for {recipientName}
+            </Text>
+            <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginBottom: 28 }}>
+              3 texts will go out automatically — no action needed
+            </Text>
+            {/* Sequence timeline */}
+            <View style={{ width: '100%', backgroundColor: colors.card, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: '#C9A96230' }}>
+              {[
+                { icon: 'card-outline', color: '#007AFF', label: `VCF sent to ${firstName}`, time: 'Right now', done: true },
+                { icon: 'gift-outline', color: '#C9A962', label: 'Congrats card link', time: '~2 minutes', done: false },
+                { icon: 'star-outline', color: '#FF9500', label: 'Review request', time: '~5 minutes', done: false },
+                { icon: 'chatbubble-outline', color: '#34C759', label: '7-day check-in', time: '1 week', done: false },
+                { icon: 'people-outline', color: '#AF52DE', label: 'Referral ask', time: '3 weeks', done: false },
+              ].map((item, i) => (
+                <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: i < 4 ? 14 : 0 }}>
+                  <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: item.color + '20', alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name={item.icon as any} size={18} color={item.color} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>{item.label}</Text>
+                  </View>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: item.done ? '#34C759' : item.color }}>
+                    {item.done ? 'Sent ✓' : item.time}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            <TouchableOpacity
+              style={{ marginTop: 24, backgroundColor: '#C9A962', borderRadius: 14, paddingVertical: 18, width: '100%', alignItems: 'center' }}
+              onPress={() => { setCreatedCard(null); setShowPreview(false); setPhoto(null); setCustomerName(''); setCustomMessage(''); setCustomerPhone(''); setCustomerEmail(''); setSelectedTags([]); setStartCampaign(true); router.back(); }}
+              data-testid="sold-success-done"
+            >
+              <Text style={{ fontSize: 17, fontWeight: '700', color: '#000' }}>Done — Back to Home</Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      );
+    }
+
     const shareUrl = createdCard.share_url;
     const defaultShareText = `Check out this ${meta.label.toLowerCase()} for ${customerName}! ${shareUrl}`;
 

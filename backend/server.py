@@ -210,6 +210,14 @@ async def backfill_last_activity(request: Request):
     return {"success": True, **result}
 
 
+@api_router.post("/admin/migrate-sold-campaign")
+async def migrate_sold_campaign_endpoint():
+    """One-time migration: update all Sold campaigns to long-term only (day 7+). Run once after deploying the SOLD wizard."""
+    from services.seed_defaults import migrate_sold_campaign_remove_immediate_steps
+    result = await migrate_sold_campaign_remove_immediate_steps()
+    return result
+
+
 @api_router.post("/admin/backfill-user-contact-links")
 async def backfill_user_contact_links(request: Request):
     """

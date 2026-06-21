@@ -150,30 +150,22 @@ DEFAULT_SOCIAL_TEMPLATES = [
 
 DEFAULT_CAMPAIGNS = [
 
-    # Sold — Year 1 Relationship (the only default campaign)
+    # Sold — Long-term Relationship (immediate texts handled by the SOLD card wizard)
     {
         "name": "Sold",
         "type": "sold_followup",
         "trigger_tag": "Sold",
         "active": True,
-        "delivery_mode": "auto",      # fires automatically — no rep action needed
+        "delivery_mode": "auto",
         "ai_enabled": False,
-        "description": "Reviews, referrals, service retention and relationship building. Trigger: Sold tag.",
+        "description": "Long-term relationship after sale. Steps 1-3 (VCF, card, review) are sent by the SOLD wizard. This campaign handles day 7+.",
         "scope": "personal",
         "sequences": [
-            # Step 0: VCF attachment — sent first so the number gets saved before anything else
-            # Once saved, all future texts show the rep's name and never get flagged as spam
-            {"step": 1, "delay_days": 0, "delay_minutes": 0, "channel": "sms",
-             "message_template": "Congratulations again {{name}}! This is {{salesperson_name}} — it was great working with you today. Tap the contact card below to save my number so you always have it.",
-             "media_type": "vcf",   # scheduler sends VCF as MMS attachment
-            },
-            {"step": 2, "delay_days": 0, "delay_minutes": 3, "channel": "sms", "message_template": "Here's my digital card so you have everything in one place. {{card_link}}"},
-            {"step": 3, "delay_days": 0, "delay_minutes": 30, "channel": "sms", "message_template": "One quick favor — if you wouldn't mind leaving a quick review I'd really appreciate it. {{review_link}}"},
-            {"step": 4, "delay_days": 7,  "channel": "sms", "message_template": "Just checking in to see how everything is going with the {{vehicle}} so far."},
-            {"step": 5, "delay_days": 21, "channel": "sms", "message_template": "Random question — do you know anyone else looking for a vehicle right now? I'd be happy to help them the same way."},
-            {"step": 6, "delay_days": 75, "channel": "sms", "message_template": "Your first service will probably be coming up soon. If you'd like I can help get that scheduled for you."},
-            {"step": 7, "delay_days": 0, "delay_months": 6,  "channel": "sms", "message_template": "Hope you're still loving the {{vehicle}}. If you ever need anything just reach out."},
-            {"step": 8, "delay_days": 0, "delay_months": 12, "channel": "sms", "message_template": "Hard to believe it's already been a year since you got your {{vehicle}}. Hope you're still loving it. If you ever need anything just reach out."},
+            {"step": 1, "delay_days": 7, "channel": "sms", "message_template": "Just checking in to see how everything is going with the {{vehicle}} so far. Let me know if you need anything!"},
+            {"step": 2, "delay_days": 21, "channel": "sms", "message_template": "Random question — do you know anyone else looking for a vehicle right now? I'd be happy to help them the same way."},
+            {"step": 3, "delay_days": 75, "channel": "sms", "message_template": "Your first service will probably be coming up soon. If you'd like I can help get that scheduled for you."},
+            {"step": 4, "delay_days": 0, "delay_months": 6, "channel": "sms", "message_template": "Hope you're still loving the {{vehicle}}. If you ever need anything just reach out."},
+            {"step": 5, "delay_days": 0, "delay_months": 12, "channel": "sms", "message_template": "Hard to believe it's already been a year since you got your {{vehicle}}. Hope you're still loving it. If you ever need anything just reach out."},
         ],
     },
 ]
@@ -437,3 +429,43 @@ async def backfill_all_users():
             logger.error(f"Backfill error for store {store.get('_id')}: {e}")
 
     return total
+
+
+async def migrate_sold_campaign_remove_immediate_steps():
+    """
+    One-time migration: update all existing 'Sold' campaigns to remove steps 1-3
+    (VCF, card, review) which are now handled by the SOLD card wizard.
+    Keeps only the long-term steps (day 7 check-in onward).
+    Also cancels any pending sends for steps 1-3 that haven't fired yet.
+    """
+    db = get_db()
+    now = datetime.now(timezone.utc)
+    long_term_sequences = [
+        {"step": 1, "delay_days": 7, "channel": "sms", "message_template": "Just checking in to see how everything is going with the {{vehicle}} so far. Let me know if you need anything!"},
+        {"step": 2, "delay_days": 21, "channel": "sms", "message_template": "Random question — do you know anyone else looking for a vehicle right now? I'd be happy to help them the same way."},
+        {"step": 3, "delay_days": 75, "channel": "sms", "message_template": "Your first service will probably be coming up soon. If you'd like I can help get that scheduled for you."},
+        {"step": 4, "delay_days": 0, "delay_months": 6, "channel": "sms", "message_template": "Hope you're still loving the {{vehicle}}. If you ever need anything just reach out."},
+        {"step": 5, "delay_days": 0, "delay_months": 12, "channel": "sms", "message_template": "Hard to believe it's already been a year since you got your {{vehicle}}. Hope you're still loving it. If you ever need anything just reach out."},
+    ]
+    # Find all Sold campaigns with 6+ steps (old format with immediate steps)
+    sold_camps = await db.campaigns.find({
+        "type": "sold_followup",
+        "trigger_tag": {"$in": ["Sold", "sold"]},
+    }).to_list(5000)
+
+    updated = 0
+    for camp in sold_camps:
+        seqs = camp.get("sequences", [])
+        if len(seqs) <= 5:
+            continue  # already updated
+        # Replace with long-term only
+        result = await db.campaigns.update_one(
+            {"_id": camp["_id"]},
+            {"$set": {"sequences": long_term_sequences, "total_steps": 5, "description": "Long-term relationship after sale. Immediate texts handled by SOLD wizard."}}
+        )
+        if result.modified_count:
+            updated += 1
+
+    logger.info(f"[Migration] Updated {updated} Sold campaigns to long-term only")
+    return {"campaigns_updated": updated}
+
