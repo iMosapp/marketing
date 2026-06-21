@@ -679,6 +679,7 @@ async def send_via_twilio(request: Request):
     body       = data.get("body", "")
     contact_id = data.get("contact_id")
     event_type = data.get("event_type", "personal_sms")
+    media_urls = data.get("media_urls") or []          # ← MMS support
     if not to_phone or not body:
         raise HTTPException(status_code=400, detail="to and body are required")
     # Always use the rep's dedicated Twilio number
@@ -691,7 +692,7 @@ async def send_via_twilio(request: Request):
         rep_twilio_number = (rep_doc or {}).get("twilio_number") or (rep_doc or {}).get("mvpline_number")
     except Exception:
         pass
-    result = await send_sms(to_phone, body, from_phone=rep_twilio_number)
+    result = await send_sms(to_phone, body, media_urls=media_urls if media_urls else None, from_phone=rep_twilio_number)
     if not result.get("success"):
         raise HTTPException(status_code=500, detail=result.get("error", "Send failed"))
     now = datetime.utcnow()
@@ -741,6 +742,8 @@ async def send_via_twilio(request: Request):
         "twilio_sid": result.get("message_sid"),
         "status": "sent" if not result.get("mock") else "sent_mock",
         "event_type": event_type,
+        "has_media": bool(media_urls),
+        "media_urls": media_urls,
         "timestamp": now,
     })
     return {"success": True, "message_sid": result.get("message_sid"), "mock": result.get("mock", False), "conversation_id": conv_id}

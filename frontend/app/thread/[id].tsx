@@ -226,7 +226,7 @@ function ThreadScreen() {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedMedia, setSelectedMedia] = useState<{uri: string, type: string, name: string} | null>(null);
   const [sendingMedia, setSendingMedia] = useState(false);
-  const [trackOpens, setTrackOpens] = useState(true);
+  const [trackOpens, setTrackOpens] = useState(false);
   
   // Load message preferences or use navigation mode
   useEffect(() => {

@@ -1408,8 +1408,8 @@ function ContactDetailScreen() {
     
     setComposerSending(true);
     try {
-      // Upload photo if attached
-      let photoUrl = '';
+      // Upload photo if attached — send as MMS media_urls, NOT as a URL in the text body
+      let mediaUrls: string[] = [];
       if (selectedMedia?.uri) {
         try {
           const formData = new FormData();
@@ -1421,19 +1421,20 @@ function ContactDetailScreen() {
             formData.append('file', { uri: selectedMedia.uri, type: 'image/jpeg', name: 'photo.jpg' } as any);
           }
           const uploadRes = await api.post('/images/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-          photoUrl = uploadRes.data?.original_url || uploadRes.data?.url || uploadRes.data?.file_url || '';
+          let photoUrl = uploadRes.data?.original_url || uploadRes.data?.url || uploadRes.data?.file_url || '';
+          // Make absolute URL (Twilio needs to fetch it from a public URL)
+          if (photoUrl && photoUrl.startsWith('/')) {
+            const baseUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com';
+            photoUrl = `${baseUrl}${photoUrl}`;
+          }
+          if (photoUrl) mediaUrls = [photoUrl];
         } catch (uploadErr) {
           console.warn('Photo upload failed, sending text only:', uploadErr);
         }
       }
 
-      // Make photo URL absolute so it's a clickable link in SMS
-      let absolutePhotoUrl = photoUrl;
-      if (photoUrl && photoUrl.startsWith('/')) {
-        const baseUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com';
-        absolutePhotoUrl = `${baseUrl}${photoUrl}`;
-      }
-      const messageContent = absolutePhotoUrl ? `${content || ''}\n${absolutePhotoUrl}`.trim() : (content || '');
+      const messageContent = content || '';
+      if (!messageContent && mediaUrls.length === 0) return;
       
       // Create or get existing conversation for this contact
       const conv = await messagesAPI.createConversation(user._id, {
@@ -1466,8 +1467,9 @@ function ContactDetailScreen() {
               userId:      user._id,
               twilioNumber,
               contactId:   id as string,
-              eventType:   composerEventType || 'personal_sms',
+              eventType:   composerEventType || (mediaUrls.length > 0 ? 'mms_sent' : 'personal_sms'),
               platform:    Platform.OS,
+              mediaUrls,   // ← native photo, not a URL in text
             });
             if (result.usedTwilio) {
               showToast(`Sent from ${twilioNumber}`, 'success');

@@ -1029,22 +1029,27 @@ export async function smartSendSMS(params: {
   contactId?: string;
   eventType?: string;
   platform: string;        // Platform.OS
+  mediaUrls?: string[];    // optional MMS photo attachments
 }): Promise<{ sent: boolean; usedTwilio: boolean; mock?: boolean }> {
-  const { to, body, userId, twilioNumber, contactId, eventType, platform } = params;
+  const { to, body, userId, twilioNumber, contactId, eventType, platform, mediaUrls } = params;
   const phone = to.replace(/\D/g, '');
   const e164  = phone.length === 10 ? `+1${phone}` : `+${phone}`;
 
   // If user has a dedicated Twilio number → send through backend
   if (twilioNumber) {
     try {
-      const res = await api.post('/messages/twilio-send', {
+      const payload: any = {
         user_id:    userId,
         to:         e164,
         body,
         contact_id: contactId,
         event_type: eventType || 'personal_sms',
         from_number: twilioNumber,
-      });
+      };
+      if (mediaUrls && mediaUrls.length > 0) {
+        payload.media_urls = mediaUrls;
+      }
+      const res = await api.post('/messages/twilio-send', payload);
       return { sent: true, usedTwilio: true, mock: res.data.mock };
     } catch (err) {
       // If Twilio fails, fall through to native SMS so message still goes
