@@ -909,11 +909,15 @@ async def update_contact_tags(user_id: str, contact_id: str, data: dict = Body(.
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Contact not found")
 
-    # Trigger campaign enrollment for any new tags
+    # Trigger campaign enrollment ONLY for newly added tags (not all existing)
     contact = await db.contacts.find_one({"_id": ObjectId(contact_id)})
     if contact:
         contact["_id"] = str(contact["_id"])
-        await _check_tag_campaign_enrollment(user_id, contact_id, contact)
+        newly_added = [t for t in tags if t not in old_tags]
+        if newly_added:
+            await _check_tag_campaign_enrollment(
+                user_id, contact_id, {**contact, "tags": newly_added}
+            )
 
     # Sold workflow hook — runs AFTER tag save, never blocks it
     sold_result = None

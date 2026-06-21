@@ -717,6 +717,18 @@ async def process_pending_campaign_steps():
                 if delivery_mode in ("automated", "auto"):
                     media_urls = send_doc.get("media_urls") or []
 
+                    # Resolve template variables ({first_name}, {name}, {vehicle}, etc.)
+                    try:
+                        message_content = await resolve_template_variables(
+                            db, message_content,
+                            {"contact_id": contact_id, "first_name": send_doc.get("contact_name", "").split()[0] if send_doc.get("contact_name") else "there"},
+                            user_id
+                        )
+                    except Exception:
+                        # Fallback: replace just {first_name}/{name} manually
+                        first = (send_doc.get("contact_name") or "there").split()[0]
+                        message_content = message_content.replace("{first_name}", first).replace("{name}", first).replace("{{name}}", first).replace("{{first_name}}", first)
+
                     # VCF step: attach the rep's contact card as MMS so the customer saves the number first
                     if send_doc.get("media_type") == "vcf":
                         app_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
