@@ -144,7 +144,24 @@ async def incoming_message(
         if MediaUrl0: media_urls.append(MediaUrl0); media_types.append(MediaContentType0 or 'image/jpeg')
         if MediaUrl1: media_urls.append(MediaUrl1); media_types.append(MediaContentType1 or 'image/jpeg')
         if MediaUrl2: media_urls.append(MediaUrl2); media_types.append(MediaContentType2 or 'image/jpeg')
-    
+
+    # ── iMessage Tapback / Reaction Filter ──────────────────────────────────────
+    # When an iPhone user "hearts", "likes", or reacts to a message, iOS sends a
+    # special SMS like: Liked "your message text"
+    # These are NOT real replies — silently ignore them so Jessi never responds.
+    _TAPBACK_PREFIXES = (
+        'liked "', 'loved "', 'disliked "', 'laughed at "',
+        'emphasized "', 'questioned "',
+        "liked \u201c", "loved \u201c", "disliked \u201c",  # curly quotes
+        "laughed at \u201c", "emphasized \u201c", "questioned \u201c",
+    )
+    if Body and Body.lower().strip().startswith(_TAPBACK_PREFIXES):
+        logger.info(f"[Webhook] iMessage tapback ignored from {from_phone}: {Body[:60]}")
+        return Response(
+            content='<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
+            media_type="application/xml"
+        )
+
     try:
         # ── Step 1: Route by To: number → find the rep who owns this number ──
         # Important: do NOT filter by is_active here — a rep's dedicated number
