@@ -111,24 +111,15 @@ export default function ManageCardTemplatesPage() {
     const storeId = user?.store_id || (user as any)?.store_ids?.[0];
     if (!storeId) return;
     if (PROTECTED_TYPES.has(template.card_type)) {
-      showSimpleAlert('Protected', 'Sold (Congrats), Birthday, and Anniversary cards are permanent and cannot be deleted.');
+      showSimpleAlert('Protected', 'Sold (Congrats), Birthday, Anniversary, and Thank You cards are permanent and cannot be deleted.');
       return;
     }
-    const doDelete = async () => {
-      try {
-        await api.delete(`/congrats/template/${storeId}/${template.card_type}`);
-        setTemplates(prev => prev.filter(t => t.card_type !== template.card_type));
-      } catch (e: any) {
-        showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to delete template');
-      }
-    };
-    if (Platform.OS === 'web') {
-      if (window.confirm(`Delete "${template.headline}" card template?`)) doDelete();
-    } else {
-      showAlert('Delete Card Template', `Delete "${template.headline}"? This cannot be undone.`, [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: doDelete },
-      ]);
+    try {
+      await api.delete(`/congrats/template/${storeId}/${template.card_type}`);
+      setTemplates(prev => prev.filter(t => t.card_type !== template.card_type));
+      setEditing(null); // go back to list
+    } catch (e: any) {
+      showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to delete template');
     }
   };
 
@@ -221,7 +212,7 @@ export default function ManageCardTemplatesPage() {
               data-testid="template-footer"
             />
 
-            {/* Bottom save button — also here for convenience */}
+              {/* Bottom save button — also here for convenience */}
             <TouchableOpacity
               style={[s.saveBtn, { backgroundColor: editing.accent_color }, saving && { opacity: 0.5 }]}
               onPress={saveTemplate}
@@ -233,6 +224,27 @@ export default function ManageCardTemplatesPage() {
                 : <><Ionicons name="checkmark-circle" size={20} color="#fff" /><Text style={s.saveBtnText}>Save Template</Text></>
               }
             </TouchableOpacity>
+
+            {/* Delete — only shown for non-protected templates */}
+            {!PROTECTED_TYPES.has(editing.card_type) && (
+              <TouchableOpacity
+                style={s.deleteInsideBtn}
+                onPress={() => {
+                  if (Platform.OS === 'web') {
+                    if (window.confirm(`Delete "${editing.headline}" card template?`)) deleteTemplate(editing);
+                  } else {
+                    showAlert('Delete Card Template', `Delete "${editing.headline}"? This cannot be undone.`, [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Delete', style: 'destructive', onPress: () => deleteTemplate(editing) },
+                    ]);
+                  }
+                }}
+                data-testid="template-delete-inside"
+              >
+                <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+                <Text style={s.deleteInsideBtnText}>Delete Template</Text>
+              </TouchableOpacity>
+            )}
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -311,13 +323,17 @@ export default function ManageCardTemplatesPage() {
 
               {!isProtected && (
                 <TouchableOpacity
-                  onPress={() => deleteTemplate(t)}
-                  style={s.deleteBtn}
+                  onPress={() => showAlert(
+                    'Delete Card Template',
+                    `Delete "${t.headline}"? This cannot be undone.`,
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Delete', style: 'destructive', onPress: () => deleteTemplate(t) }
+                    ]
+                  )}
+                  style={{ display: 'none' }}  // hidden — delete is inside the edit screen
                   data-testid={`delete-template-${t.card_type}`}
-                >
-                  <Ionicons name="trash-outline" size={18} color="#FF3B30" />
-                  <Text style={{ fontSize: 13, color: '#FF3B30', fontWeight: '600', marginLeft: 4 }}>Delete</Text>
-                </TouchableOpacity>
+                />
               )}
             </View>
             );
@@ -347,6 +363,8 @@ const getS = (colors: any) => StyleSheet.create({
   cardTitle:       { fontSize: 16, fontWeight: '700', color: colors.text },
   cardMsg:         { fontSize: 14, color: colors.textSecondary, marginTop: 2 },
   deleteBtn:       { borderTopWidth: 1, borderTopColor: colors.border, padding: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' },
+  deleteInsideBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 14, marginTop: 12, marginBottom: 40, borderWidth: 1.5, borderColor: '#FF3B3040', backgroundColor: '#FF3B3008' },
+  deleteInsideBtnText: { fontSize: 16, fontWeight: '600', color: '#FF3B30' },
   // Edit form
   previewBox:      { backgroundColor: '#1A1A1A', borderRadius: 16, padding: 20, marginBottom: 20, borderWidth: 1.5, alignItems: 'center' },
   previewHL:       { fontSize: 22, fontWeight: '800', marginBottom: 10, textAlign: 'center' },

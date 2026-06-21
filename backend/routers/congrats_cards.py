@@ -295,7 +295,7 @@ async def get_store_template(store_id: str, card_type: str = "congrats"):
 
 @router.get("/templates/all/{store_id}")
 async def get_all_store_templates(store_id: str):
-    """Get all card templates for a store (for template management UI)."""
+    """Get all card templates for a store (for template management UI). Skips deleted ones."""
     db = get_db()
     templates = await db.congrats_templates.find({"store_id": store_id}).to_list(50)
     template_map = {t.get("card_type", "congrats"): t for t in templates}
@@ -303,9 +303,12 @@ async def get_all_store_templates(store_id: str):
     result = []
     for card_type, defaults in CARD_TYPE_DEFAULTS.items():
         t = template_map.get(card_type)
+        # Skip templates explicitly deleted for this store
+        if t and t.get("deleted"):
+            continue
         result.append({
             "card_type": card_type,
-            "customized": t is not None,
+            "customized": t is not None and not t.get("deleted"),
             "headline": t.get("headline", defaults["headline"]) if t else defaults["headline"],
             "message": t.get("message", defaults["message"]) if t else defaults["message"],
             "accent_color": t.get("accent_color", defaults["accent_color"]) if t else defaults["accent_color"],
@@ -316,7 +319,7 @@ async def get_all_store_templates(store_id: str):
     # Include custom card types not in CARD_TYPE_DEFAULTS
     congrats_defaults = CARD_TYPE_DEFAULTS["congrats"]
     for card_type, t in template_map.items():
-        if card_type not in CARD_TYPE_DEFAULTS:
+        if card_type not in CARD_TYPE_DEFAULTS and not t.get("deleted"):
             result.append({
                 "card_type": card_type,
                 "customized": True,
@@ -363,15 +366,27 @@ async def save_store_template(store_id: str, data: dict):
 
 @router.delete("/template/{store_id}/{card_type}")
 async def delete_store_template(store_id: str, card_type: str):
-    """Delete a card template. Protected types (congrats, birthday, anniversary) cannot be deleted."""
+    """Delete a card template. Protected types cannot be deleted.
+    For built-in types with no DB record, inserts a 'deleted' marker so they're hidden.
+    """
     db = get_db()
     PROTECTED = {"congrats", "birthday", "anniversary", "thankyou"}
     if card_type in PROTECTED:
         raise HTTPException(status_code=400, detail=f"The '{card_type}' template is a core card and cannot be deleted.")
-    result = await db.congrats_templates.delete_one({"store_id": store_id, "card_type": card_type})
-    if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Template not found")
-    return {"success": True, "message": f"Card template '{card_type}' deleted"}
+    now = datetime.now(timezone.utc)
+    # Try deleting a real record first
+    result = await db.congrats_templates.delete_one(
+        {"store_id": store_id, "card_type": card_type, "deleted": {"$ne": True}}
+    )
+    if result.deleted_count > 0:
+        return {"success": True, "message": f"Card template '{card_type}' deleted"}
+    # No real record — upsert a hidden marker so built-in defaults don't reappear
+    await db.congrats_templates.update_one(
+        {"store_id": store_id, "card_type": card_type},
+        {"$set": {"store_id": store_id, "card_type": card_type, "deleted": True, "deleted_at": now}},
+        upsert=True
+    )
+    return {"success": True, "message": f"Card template '{card_type}' hidden"}
 
 
 @router.post("/templates/backfill")
