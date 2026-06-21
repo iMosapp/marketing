@@ -30,11 +30,13 @@ export default function CreateCardPage() {
   const { colors } = useThemeStore();
   const s = getS(colors);
   const router = useRouter();
-  const { type, prefillName, prefillPhone, prefillEmail, returnToThread, for_contact, return_to_contact, generic: genericParam } = useLocalSearchParams<{ type: string; prefillName: string; prefillPhone: string; prefillEmail: string; returnToThread: string; for_contact: string; return_to_contact: string; generic: string }>();
+  const { type, prefillName, prefillPhone, prefillEmail, returnToThread, for_contact, return_to_contact, generic: genericParam, sold_flow: soldFlowParam } = useLocalSearchParams<{ type: string; prefillName: string; prefillPhone: string; prefillEmail: string; returnToThread: string; for_contact: string; return_to_contact: string; generic: string; sold_flow: string }>();
   const { user } = useAuthStore();
   const cardType = type || 'congrats';
   const baseMeta = TYPE_META[cardType] || { label: cardType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) + ' Card', icon: 'create-outline', accent: '#C9A962', headline: cardType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), message: 'A special card for {name}!' };
   const isFromContact = !!return_to_contact || !!returnToThread;
+  // isSoldFlow = true when launched from the SOLD button (regardless of card type chosen)
+  const isSoldFlowIntent = soldFlowParam === 'true' || !!for_contact;
 
   const [isGeneric, setIsGeneric] = useState(genericParam === 'true' || (!prefillName && !prefillPhone && !isFromContact));
   const [selectedType, setSelectedType] = useState(cardType);
@@ -285,7 +287,8 @@ export default function CreateCardPage() {
         if (platform === 'sms' && cPhone) {
           const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com';
           const vcfUrl = `${backendUrl}/api/profile/${user._id}/vcard.vcf`;
-          const isSoldFlow = selectedType === 'congrats';
+          // SOLD flow = launched from SOLD button (any card type) OR congrats type from home screen
+          const isSoldFlow = isSoldFlowIntent || selectedType === 'congrats';
 
           // Step 1: VCF immediately — customer saves number first
           await api.post('/messages/twilio-send', {

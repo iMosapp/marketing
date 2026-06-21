@@ -2617,6 +2617,7 @@ function ContactDetailScreen() {
                 // Pass contact_id so Sold tag gets applied to THIS existing contact
                 params.set('for_contact', id as string);
                 params.set('return_to_contact', 'true');
+                params.set('sold_flow', 'true');
                 router.push(`/settings/create-card?${params.toString()}` as any);
               }}
               data-testid="sold-wizard-btn"
