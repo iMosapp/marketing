@@ -136,7 +136,7 @@ export default function SignupScreen() {
   const handleSignup = async () => {
     console.log('[Signup] handleSignup called');
     
-    if (!name || !email || !phone || !password) {
+    if (!name || !email || !password) {
       showAlert('Error', 'Please fill in all required fields');
       return;
     }
@@ -271,7 +271,7 @@ export default function SignupScreen() {
             
             <TextInput
               style={styles.input}
-              placeholder="Phone Number *"
+              placeholder="Phone Number (optional)"
               placeholderTextColor={colors.textSecondary}
               value={phone}
               onChangeText={setPhone}

@@ -458,6 +458,40 @@ export default function MoreScreen() {
       router.replace('/auth/login');
     }
   };
+
+  const handleDeleteAccount = () => {
+    showAlert(
+      'Delete Account',
+      'This will permanently delete your account, all your contacts, messages, and data. This cannot be undone.\n\nAre you sure you want to continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete My Account', style: 'destructive',
+          onPress: () => {
+            showAlert(
+              'Final Confirmation',
+              'Type "DELETE" to confirm permanent account deletion.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Permanently Delete', style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      await api.delete(`/admin/users/${user?._id}`, { headers: { 'X-User-ID': user?._id } });
+                      await logout();
+                      router.replace('/auth/login');
+                    } catch (e: any) {
+                      showSimpleAlert('Error', 'Account deletion failed. Please contact support@imonsocial.com to delete your account.');
+                    }
+                  }
+                }
+              ]
+            );
+          }
+        }
+      ]
+    );
+  };
   
   const toggleSection = (sectionId: string) => {
     const ref = sectionRefs.current[sectionId];

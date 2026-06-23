@@ -810,6 +810,50 @@ export default function MyAccountScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* ── Delete Account (required by Apple App Store) ── */}
+        <View style={{ paddingHorizontal: 16, marginBottom: 8 }}>
+          <TouchableOpacity
+            style={[s.settingsList, { backgroundColor: '#FF3B3006', borderWidth: 1, borderColor: '#FF3B3015' }]}
+            onPress={async () => {
+              const { showAlert } = await import('../services/alert');
+              showAlert(
+                'Delete Account',
+                'This will permanently delete your account and all associated data including contacts, messages, and campaigns. This cannot be undone.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Delete My Account', style: 'destructive',
+                    onPress: async () => {
+                      try {
+                        const authStore = await import('../store/authStore');
+                        const currentUser = authStore.useAuthStore.getState().user;
+                        const apiMod = await import('../services/api');
+                        await apiMod.default.delete(`/admin/users/${currentUser?._id}`, { headers: { 'X-User-ID': currentUser?._id } });
+                        await authStore.useAuthStore.getState().logout();
+                        router.replace('/auth/login' as any);
+                      } catch {
+                        const { showSimpleAlert } = await import('../services/alert');
+                        showSimpleAlert('Error', 'Account deletion failed. Please email support@imonsocial.com to delete your account.');
+                      }
+                    }
+                  }
+                ]
+              );
+            }}
+            testID="delete-account-btn"
+          >
+            <View style={[s.settingsRow, { borderBottomWidth: 0 }]}>
+              <View style={[s.settingsIcon, { backgroundColor: '#FF3B3010' }]}>
+                <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.settingsLabel, { color: '#FF3B30' }]}>Delete Account</Text>
+                <Text style={{ fontSize: 12, color: '#FF3B3080', marginTop: 1 }}>Permanently removes all data</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
+
         <View style={{ height: 32 }} />
       </ScrollView>
 
