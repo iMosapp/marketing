@@ -2,7 +2,13 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { Platform } from 'react-native';
 import { useAuthStore } from '../store/authStore';
 
-const BACKEND_URL = Platform.OS === 'web' ? '' : (process.env.REACT_APP_BACKEND_URL || '');
+const BACKEND_URL = Platform.OS === 'web'
+  ? ''
+  : (
+      process.env.EXPO_PUBLIC_BACKEND_URL ||
+      process.env.REACT_APP_BACKEND_URL ||
+      'https://app.imonsocial.com'
+    );
 
 interface WebSocketMessage {
   type: string;
@@ -28,6 +34,8 @@ export function useWebSocket() {
   const connect = useCallback(() => {
     if (!user?._id || !isAuthenticated) return;
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    // Don't attempt WebSocket on native if URL is empty or invalid
+    if (!BACKEND_URL || BACKEND_URL.startsWith('/')) return;
 
     const wsUrl = BACKEND_URL
       .replace(/^https:/, 'wss:')

@@ -20,7 +20,7 @@ import { showAlert, showSimpleAlert } from '../../services/alert';
 import { useThemeStore } from '../../store/themeStore';
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_BACKEND_URL || '';
+const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com';
 
 interface PhoneContact {
   id: string;

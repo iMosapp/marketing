@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useThemeStore } from '../store/themeStore';
 
-const API = process.env.REACT_APP_BACKEND_URL || '';
+const API = process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com';
 
 interface HelpArticle {
   id: string;
