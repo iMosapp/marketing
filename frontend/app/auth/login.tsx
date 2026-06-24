@@ -266,7 +266,12 @@ export default function LoginScreen() {
         const landingRoute = getProfileGatedRoute(loggedInUser);
         
         // Navigate immediately — never block navigation on biometric setup
-        router.replace(landingRoute as any);
+        try {
+          router.replace(landingRoute as any);
+        } catch (navErr) {
+          console.error('[Login] Navigation error:', navErr);
+          router.replace('/(tabs)/home' as any);
+        }
 
         // Offer biometric setup AFTER navigation, with a small delay
         if (biometricStatus?.isAvailable && !biometricStatus?.isEnabled) {
@@ -358,10 +363,11 @@ export default function LoginScreen() {
         }
         
         router.replace(getProfileGatedRoute(loggedInUser) as any);
-        // Only show error if user didn't cancel
-        if (!result.error.includes('cancel') && !result.error.includes('Cancel')) {
-          showAlert('Authentication Failed', result.error);
-        }
+        return;
+      }
+      // Only show error if user didn't cancel
+      if (result.error && !result.error.includes('cancel') && !result.error.includes('Cancel')) {
+        showAlert('Authentication Failed', result.error);
       }
     } catch (error: any) {
       console.error('Biometric login error:', error);
@@ -552,6 +558,8 @@ export default function LoginScreen() {
                 </TouchableOpacity>
               )}
               
+              {/* Sign Up — web only. iOS: accounts are provisioned by your employer. */}
+              {Platform.OS === 'web' && (
               <View style={styles.signupContainer}>
                 <Text style={styles.signupText}>Don't have an account?</Text>
                 <WebSafeButton
@@ -564,6 +572,7 @@ export default function LoginScreen() {
                   style={{ marginTop: 12 }}
                 />
               </View>
+              )}
               
               {Platform.OS === 'web' && (
                 <View style={{ alignItems: 'center', gap: 8 }}>

@@ -242,7 +242,7 @@ export default function SignupScreen() {
               />
             </View>
             <Text style={{ fontSize: 15, color: '#6E6E73', textAlign: 'center', marginTop: 8, lineHeight: 18 }}>
-              No charge for 14 days. Cancel anytime before your trial ends and you won't be billed. After your trial, your plan auto-renews monthly until you cancel.
+              Create your account to get started. Contact your account manager for pricing details.
             </Text>
           </View>
           
@@ -519,7 +519,7 @@ export default function SignupScreen() {
             )}
             
             <Text style={{ fontSize: 13, color: '#AEAEB2', textAlign: 'center', marginTop: 8, lineHeight: 16 }}>
-              By starting your trial, you agree to our Terms of Service. Your plan will auto-renew at the selected rate after 14 days unless you cancel.
+              By creating an account, you agree to our Terms of Service and Privacy Policy.
             </Text>
             
             <TouchableOpacity
