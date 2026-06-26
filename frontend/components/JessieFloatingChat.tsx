@@ -123,7 +123,7 @@ export default function JessieFloatingChat() {
         soundRef.current = null;
       }
       setSpeaking(true);
-      const backendUrl = process.env.REACT_APP_BACKEND_URL || '';
+      const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com';
       const res = await fetch(`${backendUrl}/api/jessie/tts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

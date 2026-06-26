@@ -73,6 +73,17 @@ export default function ImportContactsScreen() {
   };
 
   const loadPhoneContacts = async () => {
+    // Apple 5.1.2(iv): Explicit consent required before uploading third-party contact data
+    await new Promise<void>((resolve, reject) => {
+      showAlert(
+        'Import Contacts',
+        'I\'m On Social will read your phone contacts and upload names, phone numbers, and email addresses to our secure servers. This data is used only for your relationship management and is never sold or shared with third parties.\n\nDo you consent to this?',
+        [
+          { text: 'Cancel', style: 'cancel', onPress: () => reject(new Error('cancelled')) },
+          { text: 'I Agree', style: 'default', onPress: () => resolve() },
+        ]
+      );
+    }).catch(() => null);
     const hasPermission = await requestContactsPermission();
     if (!hasPermission) return;
     setLoading(true);
