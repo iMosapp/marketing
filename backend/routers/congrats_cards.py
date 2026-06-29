@@ -478,8 +478,8 @@ async def create_congrats_card(
 
     if photo and photo.filename:
         contents = await photo.read()
-        if len(contents) > 10 * 1024 * 1024:
-            raise HTTPException(status_code=400, detail="Image must be less than 10MB")
+        if len(contents) > 25 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Image must be less than 25MB")
         try:
             test_img = Image.open(io.BytesIO(contents))
             test_img.verify()

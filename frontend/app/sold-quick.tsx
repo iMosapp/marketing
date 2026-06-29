@@ -55,7 +55,7 @@ export default function SoldQuickScreen() {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') { showSimpleAlert('Permission Needed', 'Camera access is required.'); return; }
       }
-      const result = await ImagePicker.launchCameraAsync({ quality: 0.85, allowsEditing: false });
+      const result = await ImagePicker.launchCameraAsync({ quality: 0.5, allowsEditing: false });
       if (!result.canceled && result.assets[0]) {
         const a = result.assets[0];
         // Save to camera roll immediately
@@ -76,7 +76,7 @@ export default function SoldQuickScreen() {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') { showSimpleAlert('Permission Needed', 'Photo library access is required.'); return; }
       }
-      const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.85, allowsEditing: false });
+      const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.5, allowsEditing: false });
       if (!result.canceled && result.assets[0]) {
         const a = result.assets[0];
         setPhoto({ uri: a.uri, type: a.mimeType || 'image/jpeg', name: a.fileName || 'delivery.jpg' });
