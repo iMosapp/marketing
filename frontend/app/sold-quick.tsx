@@ -8,7 +8,6 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
-import * as ImageManipulator from 'expo-image-manipulator';
 import { useThemeStore } from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
@@ -50,18 +49,11 @@ export default function SoldQuickScreen() {
     return () => clearTimeout(timer);
   }, [customerPhone, user?._id]);
 
-  // Convert any image (HEIC, PNG, etc.) to JPEG before using
-  const toJpeg = async (uri: string): Promise<{ uri: string; type: string; name: string }> => {
-    try {
-      const result = await ImageManipulator.manipulateAsync(
-        uri,
-        [],
-        { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
-      );
-      return { uri: result.uri, type: 'image/jpeg', name: 'delivery.jpg' };
-    } catch {
-      return { uri, type: 'image/jpeg', name: 'delivery.jpg' };
-    }
+  // Read any image (HEIC/PNG/JPEG) as blob and force JPEG type
+  const toJpegBlob = async (uri: string): Promise<{ uri: string; type: string; name: string }> => {
+    // On iOS, expo-image-picker with quality set converts to JPEG internally
+    // Return the uri directly — FormData will handle it
+    return { uri, type: 'image/jpeg', name: 'delivery.jpg' };
   };
 
   const takePhoto = async () => {
@@ -70,7 +62,7 @@ export default function SoldQuickScreen() {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== 'granted') { showSimpleAlert('Permission Needed', 'Camera access is required.'); return; }
       }
-      const result = await ImagePicker.launchCameraAsync({ quality: 0.5, allowsEditing: false });
+      const result = await ImagePicker.launchCameraAsync({ quality: 0.6, allowsEditing: false, exif: false });
       if (!result.canceled && result.assets[0]) {
         const a = result.assets[0];
         // Save to camera roll immediately
@@ -80,7 +72,7 @@ export default function SoldQuickScreen() {
             if (status === 'granted') await MediaLibrary.saveToLibraryAsync(a.uri);
           } catch {}
         }
-        const converted = await toJpeg(a.uri);
+        const converted = await toJpegBlob(a.uri);
         setPhoto(converted);
       }
     } catch (e) { showSimpleAlert('Error', 'Could not open camera.'); }
@@ -92,10 +84,11 @@ export default function SoldQuickScreen() {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') { showSimpleAlert('Permission Needed', 'Photo library access is required.'); return; }
       }
-      const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.5, allowsEditing: false });
+      // quality:0.6 forces iOS to export as JPEG regardless of source format (HEIC etc.)
+      const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.6, allowsEditing: false, exif: false });
       if (!result.canceled && result.assets[0]) {
         const a = result.assets[0];
-        const converted = await toJpeg(a.uri);
+        const converted = await toJpegBlob(a.uri);
         setPhoto(converted);
       }
     } catch (e) { showSimpleAlert('Error', 'Could not open photo library.'); }
@@ -129,14 +122,18 @@ export default function SoldQuickScreen() {
         if (IS_WEB) {
           const resp = await fetch(photo.uri);
           const blob = await resp.blob();
-          formData.append('photo', blob, photo.name);
+          formData.append('photo', blob, 'delivery.jpg');
         } else {
-          // Force JPEG — handles HEIC and any other iPhone format
-          formData.append('photo', {
-            uri: photo.uri,
-            type: 'image/jpeg',
-            name: 'delivery.jpg',
-          } as any);
+          // fetch() on iOS reads the local file and returns actual JPEG bytes
+          // (expo-image-picker with quality set converts HEIC→JPEG automatically)
+          try {
+            const resp = await fetch(photo.uri);
+            const blob = await resp.blob();
+            formData.append('photo', blob, 'delivery.jpg');
+          } catch {
+            // Fallback to direct URI if fetch fails
+            formData.append('photo', { uri: photo.uri, type: 'image/jpeg', name: 'delivery.jpg' } as any);
+          }
         }
       }
       const cardRes = await api.post('/congrats/create', formData, { headers: { 'X-User-ID': user._id } });
