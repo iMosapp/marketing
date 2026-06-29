@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { useThemeStore } from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
@@ -49,6 +50,20 @@ export default function SoldQuickScreen() {
     return () => clearTimeout(timer);
   }, [customerPhone, user?._id]);
 
+  // Convert any image (HEIC, PNG, etc.) to JPEG before using
+  const toJpeg = async (uri: string): Promise<{ uri: string; type: string; name: string }> => {
+    try {
+      const result = await ImageManipulator.manipulateAsync(
+        uri,
+        [],
+        { compress: 0.6, format: ImageManipulator.SaveFormat.JPEG }
+      );
+      return { uri: result.uri, type: 'image/jpeg', name: 'delivery.jpg' };
+    } catch {
+      return { uri, type: 'image/jpeg', name: 'delivery.jpg' };
+    }
+  };
+
   const takePhoto = async () => {
     try {
       if (!IS_WEB) {
@@ -65,7 +80,8 @@ export default function SoldQuickScreen() {
             if (status === 'granted') await MediaLibrary.saveToLibraryAsync(a.uri);
           } catch {}
         }
-        setPhoto({ uri: a.uri, type: a.mimeType || 'image/jpeg', name: a.fileName || 'delivery.jpg' });
+        const converted = await toJpeg(a.uri);
+        setPhoto(converted);
       }
     } catch (e) { showSimpleAlert('Error', 'Could not open camera.'); }
   };
@@ -79,7 +95,8 @@ export default function SoldQuickScreen() {
       const result = await ImagePicker.launchImageLibraryAsync({ quality: 0.5, allowsEditing: false });
       if (!result.canceled && result.assets[0]) {
         const a = result.assets[0];
-        setPhoto({ uri: a.uri, type: a.mimeType || 'image/jpeg', name: a.fileName || 'delivery.jpg' });
+        const converted = await toJpeg(a.uri);
+        setPhoto(converted);
       }
     } catch (e) { showSimpleAlert('Error', 'Could not open photo library.'); }
   };
