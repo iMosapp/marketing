@@ -114,7 +114,12 @@ export default function SoldQuickScreen() {
           const blob = await resp.blob();
           formData.append('photo', blob, photo.name);
         } else {
-          formData.append('photo', { uri: photo.uri, type: photo.type, name: photo.name } as any);
+          // Force JPEG — handles HEIC and any other iPhone format
+          formData.append('photo', {
+            uri: photo.uri,
+            type: 'image/jpeg',
+            name: 'delivery.jpg',
+          } as any);
         }
       }
       const cardRes = await api.post('/congrats/create', formData, { headers: { 'X-User-ID': user._id } });

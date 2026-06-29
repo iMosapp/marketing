@@ -481,9 +481,15 @@ async def create_congrats_card(
         if len(contents) > 25 * 1024 * 1024:
             raise HTTPException(status_code=400, detail="Image must be less than 25MB")
         try:
-            test_img = Image.open(io.BytesIO(contents))
-            test_img.verify()
-            del test_img
+            # Try to open and convert — handles HEIC, PNG, WebP, JPEG
+            img = Image.open(io.BytesIO(contents))
+            # Convert to RGB JPEG so all formats are accepted
+            if img.mode not in ('RGB', 'L'):
+                img = img.convert('RGB')
+            buf = io.BytesIO()
+            img.save(buf, format='JPEG', quality=85)
+            contents = buf.getvalue()
+            del img, buf
         except Exception:
             raise HTTPException(status_code=400, detail="Invalid image file")
         card_id = str(uuid.uuid4())[:12]
