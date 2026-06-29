@@ -139,7 +139,7 @@ export default function SoldQuickScreen() {
       // Step 5: Card link — 2 minutes
       await api.post('/messages/schedule-delayed', {
         to: customerPhone.trim(),
-        body: `Congratulations ${firstName}! So excited for you. Here's my digital card with everything in one place: ${cardUrl}`,
+        body: `Congratulations ${firstName}! It was a pleasure working with you today. Here is your delivery card to celebrate the big day! ${cardUrl}`,
         user_id: user._id,
         contact_id: contactId,
         contact_name: customerName.trim(),
