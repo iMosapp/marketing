@@ -1828,9 +1828,27 @@ function ContactDetailScreen() {
           showSimpleAlert('Microphone Blocked', 'Enable microphone in Settings → Im On Social → Microphone, then try again.');
           return;
         }
-        await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
-        const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-        setNativeRecording(recording);
+        // Reset audio session before recording — fixes iOS audio session conflicts
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+        });
+        // Small delay to let audio session settle
+        await new Promise(r => setTimeout(r, 100));
+        let recordingInstance: Audio.Recording | null = null;
+        try {
+          const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+          recordingInstance = recording;
+        } catch {
+          // Retry once after resetting the session
+          await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true });
+          await new Promise(r => setTimeout(r, 200));
+          await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+          const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+          recordingInstance = recording;
+        }
+        setNativeRecording(recordingInstance);
         setIsRecording(true);
         setRecordingTime(0);
         recordingTimerRef.current = setInterval(() => {
@@ -1844,7 +1862,7 @@ function ContactDetailScreen() {
         }, 1000);
       } catch (e: any) {
         console.error('Native recording failed:', e);
-        showSimpleAlert('Recording Error', 'Could not start recording. Please try again.');
+        showSimpleAlert('Recording Error', 'Could not start recording. Please check that Im On Social has microphone access in your iPhone Settings.');
       }
       return;
     }

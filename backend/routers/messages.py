@@ -832,11 +832,11 @@ async def send_mms_message(
     upload_result = await upload_image(media_content, prefix="mms", entity_id=actual_conv_id)
     
     if upload_result:
-        # Use object storage URL (compressed WebP)
+        # Use object storage URL — append ?format=jpeg for Twilio MMS compatibility
         public_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
-        media_image_url = f"{public_url}/api/images/{upload_result['original_path']}"
+        media_image_url = f"{public_url}/api/images/{upload_result['original_path']}?format=jpeg"
         media_thumb_url = f"{public_url}/api/images/{upload_result['thumbnail_path']}"
-        # Store paths for display
+        # Store display URLs without format param (WebP for app display)
         display_url = f"/api/images/{upload_result['original_path']}"
         thumb_url = f"/api/images/{upload_result['thumbnail_path']}"
     else:

@@ -481,6 +481,12 @@ async def create_congrats_card(
         if len(contents) > 25 * 1024 * 1024:
             raise HTTPException(status_code=400, detail="Image must be less than 25MB")
         try:
+            # Register HEIC support (pillow-heif) if available
+            try:
+                import pillow_heif
+                pillow_heif.register_heif_opener()
+            except ImportError:
+                pass
             # Try to open and convert — handles HEIC, PNG, WebP, JPEG
             img = Image.open(io.BytesIO(contents))
             # Convert to RGB JPEG so all formats are accepted
