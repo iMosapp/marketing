@@ -18,16 +18,15 @@ router = APIRouter(prefix="/webhooks/twilio", tags=["Twilio Webhooks"])
 logger = logging.getLogger(__name__)
 
 # Backend URL for constructing media URLs
-BACKEND_URL = os.environ.get("REACT_APP_BACKEND_URL", "")
+BACKEND_URL = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", os.environ.get("REACT_APP_BACKEND_URL", "https://app.imonsocial.com")))
 
 
 async def download_and_store_media(media_url: str, media_type: str) -> Optional[str]:
     """
-    Download media from Twilio URL and store it in our database.
-    Returns the media_id for our own endpoint.
+    Download media from Twilio URL and store it in object storage.
+    Returns a publicly accessible URL for display.
     """
     try:
-        # Twilio requires authentication to download media
         twilio_sid = os.environ.get("TWILIO_ACCOUNT_SID")
         twilio_token = os.environ.get("TWILIO_AUTH_TOKEN")
         
@@ -47,28 +46,34 @@ async def download_and_store_media(media_url: str, media_type: str) -> Optional[
                 logger.error(f"Failed to download media: {response.status_code}")
                 return None
             
-            # Convert to base64
             media_bytes = response.content
-            base64_data = base64.b64encode(media_bytes).decode('utf-8')
-            
-            # Create data URL
-            data_url = f"data:{media_type};base64,{base64_data}"
-            
-            # Store in database
-            media_doc = {
-                "data": data_url,
-                "content_type": media_type,
-                "size": len(media_bytes),
-                "source": "twilio_inbound",
-                "original_url": media_url,
-                "created_at": datetime.utcnow()
-            }
-            
-            result = await get_db().media.insert_one(media_doc)
-            media_id = str(result.inserted_id)
-            
-            logger.info(f"Stored inbound media: {media_id} ({len(media_bytes)} bytes)")
-            return media_id
+
+        # Try object storage first (preferred — publicly accessible)
+        try:
+            from utils.image_storage import upload_image
+            upload_result = await upload_image(media_bytes, prefix="inbound_mms", entity_id="twilio")
+            if upload_result:
+                public_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+                return f"{public_url}/api/images/{upload_result['original_path']}"
+        except Exception as img_err:
+            logger.warning(f"Object storage upload failed, falling back to DB: {img_err}")
+
+        # Fallback: store in MongoDB
+        base64_data = base64.b64encode(media_bytes).decode('utf-8')
+        data_url = f"data:{media_type};base64,{base64_data}"
+        media_doc = {
+            "data": data_url,
+            "content_type": media_type,
+            "size": len(media_bytes),
+            "source": "twilio_inbound",
+            "original_url": media_url,
+            "created_at": datetime.utcnow()
+        }
+        result = await get_db().media.insert_one(media_doc)
+        media_id = str(result.inserted_id)
+        logger.info(f"Stored inbound media in DB: {media_id}")
+        public_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+        return f"{public_url}/api/messages/media/{media_id}"
             
     except Exception as e:
         logger.error(f"Error downloading/storing media: {str(e)}")
