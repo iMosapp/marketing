@@ -50,6 +50,7 @@ export default function DuplicatesScreen() {
   const [loading, setLoading] = useState(true);
   const [merging, setMerging] = useState<string | null>(null);
   const [repairing, setRepairing] = useState<string | null>(null);
+  const [normalizing, setNormalizing] = useState(false);
 
   const fetchDuplicates = useCallback(async () => {
     if (!userId) return;
@@ -97,7 +98,23 @@ export default function DuplicatesScreen() {
 
   useFocusEffect(useCallback(() => { fetchDuplicates(); }, [fetchDuplicates]));
 
-  const handleMerge = (primaryId: string, duplicateId: string, primaryName: string, dupName: string) => {
+  const handleNormalizeAll = async () => {
+    if (!userId) return;
+    try {
+      setNormalizing(true);
+      const res = await api.post(`/contacts/admin/${userId}/normalize-phones`);
+      const d = res.data;
+      showSimpleAlert(
+        `Fixed! ${d.phones_normalized} phone numbers standardized, ${d.duplicates_merged} duplicates auto-merged.`,
+        'success'
+      );
+      fetchDuplicates();
+    } catch (e: any) {
+      showSimpleAlert(e?.response?.data?.detail || 'Normalize failed', 'error');
+    } finally {
+      setNormalizing(false);
+    }
+  }; = (primaryId: string, duplicateId: string, primaryName: string, dupName: string) => {
     showConfirm(
       'Merge Contacts',
       `Keep "${primaryName}" and merge "${dupName}" into it?\n\nAll activity, messages, cards, and tags from "${dupName}" will be moved to "${primaryName}". This cannot be undone.`,
@@ -243,10 +260,19 @@ export default function DuplicatesScreen() {
         </TouchableOpacity>
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text style={styles.title}>Duplicate Contacts</Text>
-          <Text style={styles.subtitle}>
-            Same phone number, same salesperson
-          </Text>
+          <Text style={styles.subtitle}>Same phone number, same salesperson</Text>
         </View>
+        <TouchableOpacity
+          onPress={handleNormalizeAll}
+          disabled={normalizing}
+          style={{ marginRight: 8, backgroundColor: '#C9A96220', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 }}
+          data-testid="normalize-phones-btn"
+        >
+          {normalizing
+            ? <ActivityIndicator size="small" color="#C9A962" />
+            : <Text style={{ fontSize: 13, fontWeight: '700', color: '#C9A962' }}>Fix All</Text>
+          }
+        </TouchableOpacity>
         <TouchableOpacity onPress={fetchDuplicates} data-testid="duplicates-refresh-btn">
           <Ionicons name="refresh-outline" size={22} color={colors.textSecondary} />
         </TouchableOpacity>

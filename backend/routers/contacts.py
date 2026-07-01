@@ -330,12 +330,8 @@ async def get_contacts(
     role = user.get("role", "user")
     is_manager = role in ("super_admin", "org_admin", "store_manager")
     
-    # Status filter (reusable)
-    status_filter = {"$or": [
-        {"status": {"$nin": ["hidden", "merged", "deleted"]}},
-        {"status": {"$exists": False}},
-        {"original_user_id": user_id, "status": {"$nin": ["merged", "deleted"]}},
-    ]}
+    # Status filter — always exclude merged/hidden/deleted
+    status_filter = {"status": {"$nin": ["hidden", "merged", "deleted"]}}
     
     if view_mode == "team" and is_manager:
         # Team view: all org contacts from accessible users (excluding personal)
