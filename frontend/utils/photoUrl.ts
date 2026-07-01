@@ -14,7 +14,7 @@ import { Platform } from 'react-native';
 const BACKEND_URL =
   Platform.OS === 'web'
     ? ''
-    : process.env.EXPO_PUBLIC_BACKEND_URL || '';
+    : (process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com');
 
 /**
  * Resolves any photo value (relative path, absolute URL, base64, null)

@@ -258,7 +258,7 @@ export default function InboxScreen() {
 
       try {
         const chatRes = await fetch(
-          `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '')}/api/chat/leads?user_id=${user._id}`
+          `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com')}/api/chat/leads?user_id=${user._id}`
         );
         const chatData = await chatRes.json();
         if (chatData.conversations) {
@@ -273,7 +273,7 @@ export default function InboxScreen() {
 
       try {
         const teamsResponse = await fetch(
-          `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '')}/api/admin/team/shared-inboxes?user_id=${user._id}`
+          `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com')}/api/admin/team/shared-inboxes?user_id=${user._id}`
         );
         const teamsData = await teamsResponse.json();
         const teams = Array.isArray(teamsData) ? teamsData : (teamsData.inboxes || []);
@@ -282,7 +282,7 @@ export default function InboxScreen() {
           const teamId = team._id || team.id;
           try {
             const convResponse = await fetch(
-              `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '')}/api/lead-sources/team-inbox/${teamId}?include_claimed=true`
+              `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com')}/api/lead-sources/team-inbox/${teamId}?include_claimed=true`
             );
             const convData = await convResponse.json();
             if (convData.conversations) {
@@ -1284,8 +1284,8 @@ export default function InboxScreen() {
         // Use chat widget claim endpoint for Jessi leads, lead-sources for others
         const isJessiLead = item.lead_source_name && item.lead_source_name.startsWith('Jessi Chat');
         const claimUrl = isJessiLead
-          ? `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '')}/api/chat/claim/${item.id}?user_id=${user._id}`
-          : `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '')}/api/lead-sources/claim/${item.id}?user_id=${user._id}`;
+          ? `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com')}/api/chat/claim/${item.id}?user_id=${user._id}`
+          : `${Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com')}/api/lead-sources/claim/${item.id}?user_id=${user._id}`;
         const response = await fetch(claimUrl, { method: 'POST' });
         const data = await response.json();
         if (data.success) {

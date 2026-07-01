@@ -867,7 +867,7 @@ function ThreadScreen() {
       if (!eventLogged) {
         const cid = contactIdForNav || (id as string);
         if (cid) {
-          const apiBase = IS_WEB ? '/api' : `${process.env.EXPO_PUBLIC_BACKEND_URL || ''}/api`;
+          const apiBase = IS_WEB ? '/api' : `${process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com'}/api`;
           const eventPayload = JSON.stringify({
             event_type: 'personal_sms',
             title: 'SMS Sent',

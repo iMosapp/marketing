@@ -13,7 +13,7 @@ import api from '../../services/api';
 import { showAlert, showSimpleAlert } from '../../services/alert';
 
 const IS_WEB = Platform.OS === 'web';
-const PHOTO_BASE = IS_WEB ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '');
+const PHOTO_BASE = IS_WEB ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com');
 function resolveUrl(url?: string | null): string {
   if (!url) return '';
   if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;

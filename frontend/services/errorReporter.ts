@@ -68,7 +68,7 @@ export async function reportError(report: ErrorReport) {
     };
 
     // Use fetch directly (not axios) to avoid circular issues with api interceptors
-    const baseUrl = Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || '');
+    const baseUrl = Platform.OS === 'web' ? '' : (process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com');
     await fetch(`${baseUrl}/api/errors/report`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
