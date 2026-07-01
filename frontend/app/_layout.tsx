@@ -158,7 +158,7 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1, backgroundColor: bgColor }}>
         <SafeAreaProvider>
           <ToastProvider>
-            <View style={{ flex: 1, paddingTop: showJessi ? JESSI_BAR_HEIGHT : 0 }}>
+            <View style={{ flex: 1 }}>
               <Stack screenOptions={{ headerShown: false, animation: 'none' }}>
                 <Stack.Screen name="index" options={{ animation: 'none' }} />
                 <Stack.Screen name="auth/login" options={{ animation: 'none' }} />
@@ -175,11 +175,12 @@ export default function RootLayout() {
                 <Stack.Screen name="l/[username]" />
               </Stack>
             </View>
-            {showJessi && (
+            {/* Jessi floating chat hidden — causes keyboard offset issues */}
+            {/* {showJessi && (
               <ErrorBoundary>
                 <JessieFloatingChat />
               </ErrorBoundary>
-            )}
+            )} */}
           </ToastProvider>
         </SafeAreaProvider>
       </GestureHandlerRootView>
