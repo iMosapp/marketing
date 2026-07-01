@@ -139,9 +139,8 @@ async def upload_image_endpoint(
     x_user_id: str = Header(None, alias="X-User-ID"),
 ):
     """Upload an image. Auto-compresses to WebP and caches immediately."""
-    if not file.content_type or not file.content_type.startswith("image/"):
-        raise HTTPException(status_code=400, detail="File must be an image")
-
+    # Accept any file — Pillow will validate it. Don't reject on content-type alone
+    # (React Native sends application/octet-stream for local files)
     data = await file.read()
     if len(data) > 25 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Image must be under 25MB")

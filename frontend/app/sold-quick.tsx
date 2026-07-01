@@ -124,16 +124,9 @@ export default function SoldQuickScreen() {
           const blob = await resp.blob();
           formData.append('photo', blob, 'delivery.jpg');
         } else {
-          // fetch() on iOS reads the local file and returns actual JPEG bytes
-          // (expo-image-picker with quality set converts HEIC→JPEG automatically)
-          try {
-            const resp = await fetch(photo.uri);
-            const blob = await resp.blob();
-            formData.append('photo', blob, 'delivery.jpg');
-          } catch {
-            // Fallback to direct URI if fetch fails
-            formData.append('photo', { uri: photo.uri, type: 'image/jpeg', name: 'delivery.jpg' } as any);
-          }
+          // Native: expo-image-picker with quality:0.6 always outputs JPEG to a temp file
+          // Use {uri, type, name} — React Native reads the file and sends correct bytes
+          formData.append('photo', { uri: photo.uri, type: 'image/jpeg', name: 'delivery.jpg' } as any);
         }
       }
       const cardRes = await api.post('/congrats/create', formData, { headers: { 'X-User-ID': user._id } });
