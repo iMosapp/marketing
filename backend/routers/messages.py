@@ -832,15 +832,13 @@ async def send_mms_message(
     upload_result = await upload_image(media_content, prefix="mms", entity_id=actual_conv_id)
     
     if upload_result:
-        # Use object storage URL — append ?format=jpeg for Twilio MMS compatibility
         public_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+        # Use absolute URLs everywhere — relative paths can't be loaded by the mobile app
         media_image_url = f"{public_url}/api/images/{upload_result['original_path']}?format=jpeg"
-        media_thumb_url = f"{public_url}/api/images/{upload_result['thumbnail_path']}"
-        # Store display URLs without format param (WebP for app display)
-        display_url = f"/api/images/{upload_result['original_path']}"
-        thumb_url = f"/api/images/{upload_result['thumbnail_path']}"
+        display_url     = f"{public_url}/api/images/{upload_result['original_path']}"
+        thumb_url       = f"{public_url}/api/images/{upload_result['thumbnail_path']}"
     else:
-        # Fallback: store in MongoDB if object storage fails
+        # Fallback: store in MongoDB
         media_base64 = base64.b64encode(media_content).decode('utf-8')
         media_data_url = f"data:{media_type};base64,{media_base64}"
         media_doc = {
@@ -855,9 +853,10 @@ async def send_mms_message(
         media_result = await db.media.insert_one(media_doc)
         media_id = str(media_result.inserted_id)
         public_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+        # Store the API endpoint URL — NOT the raw base64 (too large for expo-image)
         media_image_url = f"{public_url}/api/messages/media/{media_id}"
-        display_url = media_data_url
-        thumb_url = display_url
+        display_url     = media_image_url
+        thumb_url       = media_image_url
     
     # Create message record with object storage URLs
     message = {
