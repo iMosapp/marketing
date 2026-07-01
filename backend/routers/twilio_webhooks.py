@@ -359,15 +359,14 @@ async def incoming_message(
             
             for i, twilio_url in enumerate(media_urls):
                 media_type = media_types[i] if i < len(media_types) else 'image/jpeg'
-                media_id = await download_and_store_media(twilio_url, media_type)
+                # download_and_store_media now returns a full public URL
+                full_url = await download_and_store_media(twilio_url, media_type)
                 
-                if media_id:
-                    # Use our own media endpoint URL
-                    our_url = f"{BACKEND_URL}/api/messages/media/{media_id}"
-                    stored_media_urls.append(our_url)
-                    stored_media_ids.append(media_id)
+                if full_url:
+                    stored_media_urls.append(full_url)
+                    stored_media_ids.append(full_url)
                 else:
-                    # Fall back to Twilio URL if download failed
+                    # Fallback: use Twilio URL directly
                     stored_media_urls.append(twilio_url)
             
             message["media_urls"] = stored_media_urls
