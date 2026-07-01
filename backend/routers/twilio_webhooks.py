@@ -23,61 +23,49 @@ BACKEND_URL = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", os.e
 
 async def download_and_store_media(media_url: str, media_type: str) -> Optional[str]:
     """
-    Download media from Twilio URL and store it in object storage.
-    Returns a publicly accessible URL for display.
+    Return a proxied URL that serves Twilio media with authentication.
+    The proxy approach is more reliable than downloading — no upload timeout risk.
     """
+    if not media_url or not media_url.startswith("http"):
+        return None
+    import urllib.parse
+    public_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+    encoded = urllib.parse.quote(media_url, safe='')
+    return f"{public_url}/api/webhooks/twilio/media-proxy?url={encoded}"
+
+
+@router.get("/media-proxy")
+async def proxy_twilio_media(url: str):
+    """
+    Proxy endpoint for Twilio media — fetches with Twilio auth and returns to client.
+    This lets the app display inbound MMS photos without needing Twilio credentials client-side.
+    """
+    import urllib.parse
+    twilio_sid   = os.environ.get("TWILIO_ACCOUNT_SID")
+    twilio_token = os.environ.get("TWILIO_AUTH_TOKEN")
+    if not twilio_sid or not twilio_token:
+        raise HTTPException(status_code=500, detail="Twilio credentials not configured")
     try:
-        twilio_sid = os.environ.get("TWILIO_ACCOUNT_SID")
-        twilio_token = os.environ.get("TWILIO_AUTH_TOKEN")
-        
-        if not twilio_sid or not twilio_token:
-            logger.warning("Twilio credentials not configured for media download")
-            return None
-        
+        decoded_url = urllib.parse.unquote(url)
         async with httpx.AsyncClient() as client:
-            response = await client.get(
-                media_url,
+            resp = await client.get(
+                decoded_url,
                 auth=(twilio_sid, twilio_token),
                 follow_redirects=True,
-                timeout=30.0
+                timeout=20.0,
             )
-            
-            if response.status_code != 200:
-                logger.error(f"Failed to download media: {response.status_code}")
-                return None
-            
-            media_bytes = response.content
-
-        # Try object storage first (preferred — publicly accessible)
-        try:
-            from utils.image_storage import upload_image
-            upload_result = await upload_image(media_bytes, prefix="inbound_mms", entity_id="twilio")
-            if upload_result:
-                public_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
-                return f"{public_url}/api/images/{upload_result['original_path']}"
-        except Exception as img_err:
-            logger.warning(f"Object storage upload failed, falling back to DB: {img_err}")
-
-        # Fallback: store in MongoDB
-        base64_data = base64.b64encode(media_bytes).decode('utf-8')
-        data_url = f"data:{media_type};base64,{base64_data}"
-        media_doc = {
-            "data": data_url,
-            "content_type": media_type,
-            "size": len(media_bytes),
-            "source": "twilio_inbound",
-            "original_url": media_url,
-            "created_at": datetime.utcnow()
-        }
-        result = await get_db().media.insert_one(media_doc)
-        media_id = str(result.inserted_id)
-        logger.info(f"Stored inbound media in DB: {media_id}")
-        public_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
-        return f"{public_url}/api/messages/media/{media_id}"
-            
+        if resp.status_code != 200:
+            raise HTTPException(status_code=resp.status_code, detail="Media fetch failed")
+        content_type = resp.headers.get("content-type", "image/jpeg")
+        from fastapi.responses import Response as FastAPIResponse
+        return FastAPIResponse(
+            content=resp.content,
+            media_type=content_type,
+            headers={"Cache-Control": "public, max-age=86400"},
+        )
     except Exception as e:
-        logger.error(f"Error downloading/storing media: {str(e)}")
-        return None
+        logger.error(f"[MediaProxy] Error: {e}")
+        raise HTTPException(status_code=500, detail="Media proxy error")
 
 
 @router.post("/incoming")
