@@ -883,7 +883,7 @@ async def send_mms_message(
         rep_twilio_number = (rep_doc or {}).get("twilio_number") or (rep_doc or {}).get("mvpline_number")
     except Exception:
         pass
-    sms_result = await send_sms(to_phone, content or "📷", media_urls, from_phone=rep_twilio_number)
+    sms_result = await send_sms(to_phone, content or "", media_urls, from_phone=rep_twilio_number)
     
     if sms_result.get('success'):
         message['status'] = 'sent'
