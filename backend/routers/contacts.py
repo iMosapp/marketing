@@ -1848,6 +1848,169 @@ async def normalize_all_phones(user_id: str):
     }
 
 
+@router.get("/{user_id}/duplicates")
+async def find_duplicate_contacts(user_id: str):
+    """
+    Find contacts that share the same normalized phone number.
+    Handles ALL phone formats: 8013901047 == +1 (801) 390-1047 == +18013901047
+    """
+    from services.twilio_service import normalize_phone
+    db = get_db()
+
+    contacts = await db.contacts.find(
+        {"user_id": user_id, "status": {"$nin": ["hidden", "merged", "deleted"]}, "phone": {"$exists": True, "$ne": ""}},
+        {"_id": 1, "first_name": 1, "last_name": 1, "phone": 1, "email": 1,
+         "tags": 1, "notes": 1, "source": 1, "created_at": 1}
+    ).to_list(5000)
+
+    # Group by last-10 digits — matches ALL format variations
+    phone_groups: dict = {}
+    for c in contacts:
+        raw = c.get("phone", "")
+        if not raw:
+            continue
+        digits = ''.join(ch for ch in raw if ch.isdigit())
+        key = digits[-10:] if len(digits) >= 10 else digits
+        if not key or len(key) < 7:
+            continue
+        phone_groups.setdefault(key, []).append(c)
+
+    duplicate_sets = []
+    for _key, group in phone_groups.items():
+        if len(group) < 2:
+            continue
+        enriched = []
+        for c in group:
+            cid = str(c["_id"])
+            event_count = await db.contact_events.count_documents({"contact_id": cid})
+            conv_count  = await db.conversations.count_documents({"contact_id": cid})
+            card_count  = await db.congrats_cards.count_documents({"contact_id": cid})
+            last_event  = await db.contact_events.find_one(
+                {"contact_id": cid}, {"timestamp": 1}, sort=[("timestamp", -1)]
+            )
+            created = c.get("created_at")
+            enriched.append({
+                "id": cid,
+                "first_name": c.get("first_name", ""),
+                "last_name": c.get("last_name", ""),
+                "phone": c.get("phone", ""),
+                "email": c.get("email", ""),
+                "photo": None,
+                "tags": c.get("tags", []),
+                "notes": c.get("notes", ""),
+                "source": c.get("source", ""),
+                "created_at": created.isoformat() if hasattr(created, "isoformat") else str(created or ""),
+                "event_count": event_count,
+                "conversation_count": conv_count,
+                "card_count": card_count,
+                "last_activity": last_event["timestamp"].isoformat() if last_event and last_event.get("timestamp") else None,
+            })
+        enriched.sort(key=lambda x: -(x["event_count"] + x["conversation_count"] + x["card_count"]))
+        duplicate_sets.append({"phone": enriched[0]["phone"], "contacts": enriched})
+
+    return {"duplicates": duplicate_sets, "total_groups": len(duplicate_sets)}
+
+
+@router.get("/{user_id}/merged-history")
+async def get_merged_history(user_id: str):
+    """Return contacts previously merged (status=merged) grouped by primary."""
+    db = get_db()
+    merged = await db.contacts.find(
+        {"user_id": user_id, "status": "merged", "merged_into": {"$exists": True}},
+        {"_id": 1, "first_name": 1, "last_name": 1, "merged_into": 1, "updated_at": 1}
+    ).sort("updated_at", -1).to_list(100)
+
+    primary_map: dict = {}
+    for m in merged:
+        pid = m.get("merged_into")
+        if not pid:
+            continue
+        if pid not in primary_map:
+            try:
+                primary = await db.contacts.find_one({"_id": ObjectId(pid)}, {"first_name": 1, "last_name": 1})
+            except Exception:
+                primary = None
+            primary_map[pid] = {
+                "primary_id": pid,
+                "primary_name": f"{(primary or {}).get('first_name','')} {(primary or {}).get('last_name','')}".strip() if primary else "Unknown",
+                "duplicates_count": 0,
+                "merged_at": m["updated_at"].isoformat() if hasattr(m.get("updated_at"), "isoformat") else "",
+            }
+        primary_map[pid]["duplicates_count"] += 1
+
+    return {"merged": list(primary_map.values())}
+
+
+@router.post("/{user_id}/merge")
+async def merge_contacts(user_id: str, data: dict):
+    """Merge duplicate_id into primary_id — moves all records, merges tags, hides duplicate."""
+    db = get_db()
+    primary_id   = data.get("primary_id")
+    duplicate_id = data.get("duplicate_id")
+    if not primary_id or not duplicate_id:
+        raise HTTPException(status_code=400, detail="primary_id and duplicate_id required")
+
+    primary   = await db.contacts.find_one({"_id": ObjectId(primary_id),   "user_id": user_id})
+    duplicate = await db.contacts.find_one({"_id": ObjectId(duplicate_id), "user_id": user_id})
+    if not primary:   raise HTTPException(status_code=404, detail="Primary contact not found")
+    if not duplicate: raise HTTPException(status_code=404, detail="Duplicate contact not found")
+
+    now = datetime.utcnow()
+    migrated = 0
+    for col in ["messages", "contact_events", "conversations", "tasks",
+                "campaign_enrollments", "campaign_pending_sends", "congrats_cards",
+                "short_urls", "broadcast_messages"]:
+        try:
+            r = await db[col].update_many({"contact_id": duplicate_id}, {"$set": {"contact_id": primary_id}})
+            migrated += r.modified_count
+        except Exception:
+            pass
+
+    # Merge tags
+    dup_tags = duplicate.get("tags", [])
+    if dup_tags:
+        await db.contacts.update_one({"_id": ObjectId(primary_id)}, {"$addToSet": {"tags": {"$each": dup_tags}}})
+
+    # Copy missing fields
+    updates = {}
+    for field in ["vehicle", "email", "notes", "birthday", "anniversary", "photo_url", "photo_thumbnail"]:
+        if not primary.get(field) and duplicate.get(field):
+            updates[field] = duplicate[field]
+    if updates:
+        await db.contacts.update_one({"_id": ObjectId(primary_id)}, {"$set": updates})
+
+    await db.contacts.update_one(
+        {"_id": ObjectId(duplicate_id)},
+        {"$set": {"status": "merged", "merged_into": primary_id, "updated_at": now}}
+    )
+    logger.info(f"[Merge] {duplicate_id} → {primary_id} | {migrated} records migrated")
+    return {"success": True, "records_migrated": migrated, "primary_id": primary_id}
+
+
+@router.post("/{user_id}/repair-merge")
+async def repair_merge(user_id: str, data: dict):
+    """Re-run migration for a previously merged contact — catches any stragglers."""
+    db = get_db()
+    primary_id = data.get("primary_id")
+    if not primary_id:
+        raise HTTPException(status_code=400, detail="primary_id required")
+    merged_contacts = await db.contacts.find(
+        {"user_id": user_id, "merged_into": primary_id}, {"_id": 1}
+    ).to_list(100)
+    migrated = 0
+    for dup in merged_contacts:
+        dup_id = str(dup["_id"])
+        for col in ["messages", "contact_events", "conversations", "tasks",
+                    "campaign_enrollments", "campaign_pending_sends"]:
+            try:
+                r = await db[col].update_many({"contact_id": dup_id}, {"$set": {"contact_id": primary_id}})
+                migrated += r.modified_count
+            except Exception:
+                pass
+    return {"success": True, "records_migrated": migrated}
+
+
+
 
 async def get_contacts_by_tag(user_id: str, tag_name: str, skip: int = 0, limit: int = 200):
     """Return all contacts for a user that have a specific tag applied."""
