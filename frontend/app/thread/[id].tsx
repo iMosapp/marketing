@@ -1984,19 +1984,36 @@ function ThreadScreen() {
           )}
           
           {/* Render attached images */}
-          {hasMedia && (
+          {hasMedia && item.media_urls && item.media_urls.length > 0 && (
             <View style={styles.mediaContainer}>
-              {item.media_urls?.map((url, index) => (
-                <View key={index} style={styles.mediaImageWrapper}>
-                  <Image 
-                    source={{ uri: url }} 
-                    style={styles.mediaImage}
-                    contentFit="cover"
-                    cachePolicy="memory-disk"
-                    transition={200}
-                  />
-                </View>
-              ))}
+              {item.media_urls.map((url, index) => {
+                // Ensure absolute URL — some old messages stored relative paths
+                const absUrl = url && url.startsWith('http')
+                  ? url
+                  : url ? `https://app.imonsocial.com${url.startsWith('/') ? '' : '/'}${url}` : '';
+                if (!absUrl) return null;
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    activeOpacity={0.9}
+                    onPress={() => {
+                      if (Platform.OS === 'web') { window.open(absUrl, '_blank'); }
+                      else { Linking.openURL(absUrl); }
+                    }}
+                  >
+                    <View style={styles.mediaImageWrapper}>
+                      <Image
+                        source={{ uri: absUrl }}
+                        style={styles.mediaImage}
+                        contentFit="cover"
+                        cachePolicy="none"
+                        transition={300}
+                        onError={(e) => console.log('[Media] Load error:', absUrl, e)}
+                      />
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           )}
           
