@@ -2380,7 +2380,7 @@ function ThreadScreen() {
       {/* Input Area - Large contained box with all tools inside */}
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
       >
         <View style={[styles.composerContainer, { backgroundColor: colors.background }]}>
           {/* Main composer box */}
@@ -2990,7 +2990,7 @@ function ThreadScreen() {
         <KeyboardAvoidingView 
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={{ flex: 1 }}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
         >
           <View style={styles.congratsModalOverlay}>
             <TouchableOpacity 
