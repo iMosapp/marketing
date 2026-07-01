@@ -175,12 +175,17 @@ async def _check_date_campaign_enrollment(user_id: str, contact_id: str, contact
 @router.post("/{user_id}", response_model=Contact)
 async def create_contact(user_id: str, contact_data: ContactCreate):
     """Create a new contact"""
+    from services.twilio_service import normalize_phone
     db = get_db()
     contact_dict = contact_data.dict()
     contact_dict['user_id'] = user_id
     contact_dict['original_user_id'] = user_id
     contact_dict['created_at'] = datetime.utcnow()
     contact_dict['updated_at'] = datetime.utcnow()
+
+    # Normalize phone to E.164 on every save — prevents duplicate contacts
+    if contact_dict.get('phone'):
+        contact_dict['phone'] = normalize_phone(contact_dict['phone'])
     
     # Determine ownership type AUTOMATICALLY based on source
     # Phone imports = personal (user's own contacts, go with them if they leave)
@@ -493,10 +498,15 @@ async def get_contact(user_id: str, contact_id: str):
 @router.put("/{user_id}/{contact_id}")
 async def update_contact(user_id: str, contact_id: str, contact_data: ContactCreate):
     """Update a contact with role-based access check"""
+    from services.twilio_service import normalize_phone
     base_filter = await get_data_filter(user_id)
     
     update_dict = contact_data.dict()
     update_dict['updated_at'] = datetime.utcnow()
+
+    # Normalize phone to E.164 on every save
+    if update_dict.get('phone'):
+        update_dict['phone'] = normalize_phone(update_dict['phone'])
 
     # Capture old tags BEFORE save for sold workflow detection
     db = get_db()
@@ -1764,7 +1774,81 @@ async def remove_campaign_enrollment(user_id: str, contact_id: str, data: dict =
     }
 
 
-@router.get("/{user_id}/by-tag/{tag_name}")
+@router.post("/admin/{user_id}/normalize-phones")
+async def normalize_all_phones(user_id: str):
+    """
+    Normalize all contact phone numbers to E.164 (+1XXXXXXXXXX) for a user.
+    Also auto-merges contacts that have the same normalized phone.
+    Run once after deploy to fix existing duplicates.
+    """
+    from services.twilio_service import normalize_phone
+    db = get_db()
+    updated = 0
+    merged = 0
+
+    contacts = await db.contacts.find(
+        {"user_id": user_id, "phone": {"$exists": True, "$ne": ""}},
+        {"_id": 1, "phone": 1, "first_name": 1, "last_name": 1, "tags": 1, "created_at": 1}
+    ).to_list(5000)
+
+    # Normalize phones
+    phone_map: dict = {}  # normalized_phone → [contact_ids]
+    for c in contacts:
+        raw = c.get("phone", "")
+        if not raw:
+            continue
+        normalized = normalize_phone(raw)
+        if normalized != raw:
+            await db.contacts.update_one(
+                {"_id": c["_id"]},
+                {"$set": {"phone": normalized, "updated_at": datetime.utcnow()}}
+            )
+            updated += 1
+        phone_map.setdefault(normalized, []).append(c)
+
+    # Auto-merge contacts with the same normalized phone (keep the older/richer one)
+    for phone, dupes in phone_map.items():
+        if len(dupes) < 2:
+            continue
+        # Sort: keep the one with more data (tags, vehicle) and older created_at
+        dupes.sort(key=lambda x: (
+            -len(x.get("tags", [])),
+            x.get("created_at", datetime.utcnow())
+        ))
+        keep = dupes[0]
+        keep_id = str(keep["_id"])
+        for dup in dupes[1:]:
+            dup_id = str(dup["_id"])
+            # Move all messages, events, enrollments from dup → keep
+            await db.messages.update_many({"contact_id": dup_id}, {"$set": {"contact_id": keep_id}})
+            await db.contact_events.update_many({"contact_id": dup_id}, {"$set": {"contact_id": keep_id}})
+            await db.campaign_enrollments.update_many({"contact_id": dup_id}, {"$set": {"contact_id": keep_id}})
+            await db.conversations.update_many({"contact_id": dup_id}, {"$set": {"contact_id": keep_id}})
+            await db.tasks.update_many({"contact_id": dup_id}, {"$set": {"contact_id": keep_id}})
+            # Merge tags
+            dup_tags = dup.get("tags", [])
+            if dup_tags:
+                await db.contacts.update_one(
+                    {"_id": keep["_id"]},
+                    {"$addToSet": {"tags": {"$each": dup_tags}}}
+                )
+            # Hide the duplicate
+            await db.contacts.update_one(
+                {"_id": dup["_id"]},
+                {"$set": {"status": "merged", "merged_into": keep_id}}
+            )
+            merged += 1
+            logger.info(f"[Normalize] Merged {dup_id} into {keep_id} (phone={phone})")
+
+    return {
+        "success": True,
+        "phones_normalized": updated,
+        "duplicates_merged": merged,
+        "message": f"Normalized {updated} phone numbers and merged {merged} duplicate contacts."
+    }
+
+
+
 async def get_contacts_by_tag(user_id: str, tag_name: str, skip: int = 0, limit: int = 200):
     """Return all contacts for a user that have a specific tag applied."""
     db = get_db()
