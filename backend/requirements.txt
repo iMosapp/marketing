@@ -84,7 +84,6 @@ pandas==3.0.0
 passlib==1.7.4
 pathspec==1.0.4
 pdf2image==1.17.0
-pillow==11.3.0
 platformdirs==4.5.1
 playwright==1.58.0
 pluggy==1.6.0
