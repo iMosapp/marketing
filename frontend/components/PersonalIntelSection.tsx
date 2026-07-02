@@ -281,10 +281,10 @@ export default function PersonalIntelSection({ contactId, userId, colors }: { co
   return (
     <View style={{ paddingHorizontal: 16, marginBottom: 16 }} data-testid="personal-intel-section">
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, overflow: 'hidden', marginRight: 8 }}>
           <Ionicons name="sparkles" size={14} color="#AF52DE" />
-          <Text style={{ color: '#AF52DE', fontSize: 14, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 }}>Personal Intelligence</Text>
-          <Text style={{ color: '#555', fontSize: 12, fontStyle: 'italic', marginLeft: 4 }}>from voice memos</Text>
+          <Text style={{ color: '#AF52DE', fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 }} numberOfLines={1}>Personal Intelligence</Text>
+          <Text style={{ color: '#555', fontSize: 11, fontStyle: 'italic' }} numberOfLines={1}>from voice</Text>
         </View>
         <TouchableOpacity onPress={startEdit} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, backgroundColor: '#AF52DE18' }} data-testid="edit-intel-btn">
           <Ionicons name="create-outline" size={13} color="#AF52DE" />

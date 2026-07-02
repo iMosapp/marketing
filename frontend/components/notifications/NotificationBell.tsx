@@ -197,7 +197,8 @@ export function NotificationBell() {
             </View>
 
             {/* Category Filters */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryBar}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryBar}
+              contentContainerStyle={{ paddingHorizontal: 12, gap: 6 }}>
               {categories.map(cat => {
                 const isActive = categoryFilter === cat;
                 const count = cat === 'all'
@@ -308,11 +309,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     position: 'absolute',
     top: IS_WEB ? 60 : 48,
     right: IS_WEB ? 16 : 0,
+    left: IS_WEB ? undefined : 0,
     width: IS_WEB ? Math.min(380, (typeof window !== 'undefined' ? window.innerWidth : 380) - 32) : '100%',
-    maxWidth: 380,
+    maxWidth: IS_WEB ? 380 : '100%',
     maxHeight: 520,
     backgroundColor: colors.card,
-    borderRadius: 16,
+    borderRadius: IS_WEB ? 16 : 0,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
     borderWidth: 1,
     borderColor: colors.surface,
     overflow: 'hidden',
@@ -331,14 +337,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.surface,
   },
   dropdownTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '700',
     color: colors.text,
+    flexShrink: 1,
+    marginRight: 8,
   },
   markAll: {
     fontSize: 15,
@@ -346,11 +354,10 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontWeight: '500',
   },
   categoryBar: {
-    paddingHorizontal: 12,
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: colors.surface,
-    maxHeight: 44,
+    maxHeight: 46,
   },
   categoryChip: {
     flexDirection: 'row',

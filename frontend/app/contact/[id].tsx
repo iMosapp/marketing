@@ -2525,7 +2525,7 @@ function ContactDetailScreen() {
             {/* Tags + Automations Strip (merged) */}
             {!isNewContact && (
               <View style={s.heroTagsStrip} data-testid="hero-tags-strip">
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingBottom: 4, alignItems: 'center' }}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingBottom: 4, paddingRight: 16, alignItems: 'center' }}>
                   {contact.tags.map((tag, i) => {
                     const info = availableTags.find(t => t.name === tag);
                     const chipColor = info?.color || colors.textSecondary;
