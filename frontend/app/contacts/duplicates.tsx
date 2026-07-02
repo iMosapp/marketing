@@ -114,7 +114,9 @@ export default function DuplicatesScreen() {
     } finally {
       setNormalizing(false);
     }
-  }; = (primaryId: string, duplicateId: string, primaryName: string, dupName: string) => {
+  };
+
+  const handleMerge = (primaryId: string, duplicateId: string, primaryName: string, dupName: string) => {
     showConfirm(
       'Merge Contacts',
       `Keep "${primaryName}" and merge "${dupName}" into it?\n\nAll activity, messages, cards, and tags from "${dupName}" will be moved to "${primaryName}". This cannot be undone.`,
