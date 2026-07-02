@@ -23,6 +23,127 @@ import uuid
 router = APIRouter(prefix="/images", tags=["Images"])
 logger = logging.getLogger(__name__)
 
+FONT_BOLD    = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
+FONT_REGULAR = "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+
+
+@router.post("/congrats-overlay")
+async def create_congrats_overlay(
+    photo: UploadFile = File(...),
+    customer_name: str = "",
+    user_id: str = "",
+    headline: str = "CONGRATULATIONS!",
+    subtext: str = "",
+):
+    """
+    Overlay a congratulations banner + logo on a delivery photo.
+    Returns a JPEG image ready to send as MMS — no link, just a native photo.
+    """
+    from PIL import Image as PILImage, ImageDraw, ImageFont, ImageFilter
+    import io as _io
+    import os
+
+    data = await photo.read()
+    img = PILImage.open(_io.BytesIO(data)).convert("RGB")
+
+    # Resize to max 1080px wide (keeps MMS under 5MB)
+    MAX_W = 1080
+    if img.width > MAX_W:
+        ratio = MAX_W / img.width
+        img = img.resize((MAX_W, int(img.height * ratio)), PILImage.LANCZOS)
+
+    w, h = img.size
+    draw = ImageDraw.Draw(img)
+
+    # ── GRADIENT BANNER at bottom ────────────────────────────────────────────
+    banner_h = int(h * 0.30)  # 30% of image height
+    banner_y = h - banner_h
+
+    # Draw semi-transparent dark gradient using alpha blend
+    overlay = PILImage.new("RGBA", (w, banner_h), (0, 0, 0, 0))
+    for y in range(banner_h):
+        alpha = int(200 * (y / banner_h))  # 0 → 200 (top to bottom)
+        for x in range(w):
+            overlay.putpixel((x, y), (0, 0, 0, alpha))
+    img_rgba = img.convert("RGBA")
+    overlay_full = PILImage.new("RGBA", (w, h), (0, 0, 0, 0))
+    overlay_full.paste(overlay, (0, banner_y))
+    img_rgba = PILImage.alpha_composite(img_rgba, overlay_full)
+    img = img_rgba.convert("RGB")
+    draw = ImageDraw.Draw(img)
+
+    # ── GOLD ACCENT LINE ─────────────────────────────────────────────────────
+    line_y = banner_y + 14
+    draw.rectangle([int(w * 0.06), line_y, int(w * 0.94), line_y + 3], fill="#C9A962")
+
+    # ── FONTS ────────────────────────────────────────────────────────────────
+    font_size_headline = max(36, int(w * 0.065))
+    font_size_name     = max(28, int(w * 0.048))
+    font_size_sub      = max(20, int(w * 0.030))
+
+    try:
+        font_headline = ImageFont.truetype(FONT_BOLD, font_size_headline)
+        font_name     = ImageFont.truetype(FONT_BOLD, font_size_name)
+        font_sub      = ImageFont.truetype(FONT_REGULAR, font_size_sub)
+    except Exception:
+        font_headline = font_name = font_sub = ImageFont.load_default()
+
+    # ── TEXT ─────────────────────────────────────────────────────────────────
+    text_start_y = banner_y + 24
+    margin = int(w * 0.06)
+
+    # Headline — white with gold shadow
+    draw.text((margin + 2, text_start_y + 2), headline, font=font_headline, fill="#C9A96280")
+    draw.text((margin, text_start_y), headline, font=font_headline, fill="#FFFFFF")
+
+    # Customer name — gold
+    if customer_name:
+        name_y = text_start_y + font_size_headline + 10
+        first = customer_name.strip().split()[0] if customer_name.strip() else customer_name
+        name_text = f"Welcome to the family, {first}!"
+        draw.text((margin, name_y), name_text, font=font_name, fill="#C9A962")
+
+    # Subtext
+    if subtext:
+        sub_y = text_start_y + font_size_headline + font_size_name + 22
+        draw.text((margin, sub_y), subtext, font=font_sub, fill="#FFFFFFCC")
+
+    # ── COMPANY LOGO ─────────────────────────────────────────────────────────
+    if user_id:
+        try:
+            db = get_db()
+            from bson import ObjectId
+            user = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1})
+            if user and user.get("store_id"):
+                store = await db.stores.find_one({"_id": ObjectId(str(user["store_id"]))}, {"logo_path": 1, "logo_url": 1})
+                logo_path = (store or {}).get("logo_path") or (store or {}).get("logo_url")
+                if logo_path:
+                    import httpx, os as _os
+                    base = _os.environ.get("PUBLIC_FACING_URL", "https://app.imonsocial.com")
+                    logo_url = f"{base}/api/images/{logo_path}" if not logo_path.startswith("http") else logo_path
+                    async with httpx.AsyncClient(timeout=5.0) as client:
+                        resp = await client.get(logo_url)
+                    if resp.status_code == 200:
+                        logo_img = PILImage.open(_io.BytesIO(resp.content)).convert("RGBA")
+                        logo_max = int(w * 0.18)
+                        logo_img.thumbnail((logo_max, logo_max), PILImage.LANCZOS)
+                        lw, lh = logo_img.size
+                        # Place top-right corner
+                        logo_x = w - lw - margin
+                        logo_y = 16
+                        img_rgba2 = img.convert("RGBA")
+                        img_rgba2.paste(logo_img, (logo_x, logo_y), logo_img)
+                        img = img_rgba2.convert("RGB")
+                        draw = ImageDraw.Draw(img)
+        except Exception as logo_err:
+            logger.warning(f"Logo overlay failed (non-fatal): {logo_err}")
+
+    # ── ENCODE & RETURN ──────────────────────────────────────────────────────
+    buf = _io.BytesIO()
+    img.save(buf, "JPEG", quality=88)
+    return Response(content=buf.getvalue(), media_type="image/jpeg",
+                    headers={"Content-Disposition": 'inline; filename="congrats.jpg"'})
+
 
 @router.get("/cache-stats")
 async def cache_stats():

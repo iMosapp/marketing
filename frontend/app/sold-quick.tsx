@@ -30,6 +30,10 @@ export default function SoldQuickScreen() {
   const [lookingUp, setLookingUp] = useState(false);
   const checkAnim = useRef(new Animated.Value(0)).current;
 
+  // Send type selector
+  const [sendType, setSendType] = useState<'photo' | 'card'>('photo');
+  const [congratsText, setCongratsText] = useState('CONGRATULATIONS!');
+
   // Auto-lookup contact by phone
   useEffect(() => {
     if (!user?._id || !customerPhone || customerPhone.replace(/\D/g, '').length < 10) return;
@@ -110,26 +114,15 @@ export default function SoldQuickScreen() {
       });
       const contactId = contactRes.data.contact_id;
 
-      // Step 2: Create the congrats card with delivery photo
-      const formData = new FormData();
-      formData.append('salesman_id', user._id);
-      formData.append('customer_name', customerName.trim());
-      formData.append('customer_phone', customerPhone.trim());
-      formData.append('card_type', 'congrats');
-      formData.append('contact_id', contactId);
-      formData.append('tags', JSON.stringify(['Sold']));
-      if (photo) {
-        if (IS_WEB) {
-          const resp = await fetch(photo.uri);
-          const blob = await resp.blob();
-          formData.append('photo', blob, 'delivery.jpg');
-        } else {
-          // Native: expo-image-picker with quality:0.6 always outputs JPEG to a temp file
-          // Use {uri, type, name} — React Native reads the file and sends correct bytes
-          formData.append('photo', { uri: photo.uri, type: 'image/jpeg', name: 'delivery.jpg' } as any);
-        }
-      }
-      const cardRes = await api.post('/congrats/create', formData, { headers: { 'X-User-ID': user._id } });
+      // Create the congrats card (needed for Digital Card path and for the contact record)
+      const cardFormData = new FormData();
+      cardFormData.append('salesman_id', user._id);
+      cardFormData.append('customer_name', customerName.trim());
+      cardFormData.append('customer_phone', customerPhone.trim());
+      cardFormData.append('card_type', 'congrats');
+      cardFormData.append('contact_id', contactId);
+      cardFormData.append('tags', JSON.stringify(['Sold']));
+      const cardRes = await api.post('/congrats/create', cardFormData, { headers: { 'X-User-ID': user._id } });
       const cardUrl = cardRes.data?.short_url || `${APP_URL}/congrats/${cardRes.data?.card_id}`;
 
       // Step 3: Get review link
@@ -148,16 +141,59 @@ export default function SoldQuickScreen() {
         event_type: 'vcf_sent',
       }).catch(() => {});
 
-      // Step 5: Card link — 2 minutes
-      await api.post('/messages/schedule-delayed', {
-        to: customerPhone.trim(),
-        body: `Congratulations ${firstName}! It was a pleasure working with you today. Here is your delivery card to celebrate the big day! ${cardUrl}`,
-        user_id: user._id,
-        contact_id: contactId,
-        contact_name: customerName.trim(),
-        delay_seconds: 120,
-        event_type: 'congrats_card_sent',
-      }).catch(() => {});
+      // Step 5: Congrats — 2 minutes
+      // Branded Photo: create overlay image and send as native MMS
+      // Digital Card: send the card link
+      if (sendType === 'photo') {
+        let congratsMediaUrl = '';
+        if (photo) {
+          try {
+            const overlayForm = new FormData();
+            overlayForm.append('customer_name', customerName.trim());
+            overlayForm.append('user_id', user._id);
+            overlayForm.append('headline', congratsText.trim() || 'CONGRATULATIONS!');
+            if (IS_WEB) {
+              const resp = await fetch(photo.uri);
+              const blob = await resp.blob();
+              overlayForm.append('photo', blob, 'delivery.jpg');
+            } else {
+              overlayForm.append('photo', { uri: photo.uri, type: 'image/jpeg', name: 'delivery.jpg' } as any);
+            }
+            const overlayRes = await api.post('/images/congrats-overlay', overlayForm, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+              responseType: 'blob',
+            });
+            const uploadForm = new FormData();
+            uploadForm.append('file', overlayRes.data, 'congrats.jpg');
+            const uploadRes = await api.post('/images/upload', uploadForm, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            const path = uploadRes.data?.original_url || '';
+            if (path) congratsMediaUrl = path.startsWith('http') ? path : `${APP_URL}${path}`;
+          } catch (e) { console.log('Overlay failed:', e); }
+        }
+        await api.post('/messages/schedule-delayed', {
+          to: customerPhone.trim(),
+          body: `Congratulations ${firstName}! It was a pleasure working with you today!`,
+          user_id: user._id,
+          contact_id: contactId,
+          contact_name: customerName.trim(),
+          delay_seconds: 120,
+          ...(congratsMediaUrl ? { media_urls: [congratsMediaUrl] } : {}),
+          event_type: 'congrats_card_sent',
+        }).catch(() => {});
+      } else {
+        // Digital Card link
+        await api.post('/messages/schedule-delayed', {
+          to: customerPhone.trim(),
+          body: `Congratulations ${firstName}! It was a pleasure working with you today. Here is your delivery card! ${cardUrl}`,
+          user_id: user._id,
+          contact_id: contactId,
+          contact_name: customerName.trim(),
+          delay_seconds: 120,
+          event_type: 'congrats_card_sent',
+        }).catch(() => {});
+      }
 
       // Step 6: Review link — 5 minutes
       if (reviewUrl) {
@@ -196,11 +232,12 @@ export default function SoldQuickScreen() {
           <Text style={s.successSub}>Sequence started for {customerName.split(' ')[0]}</Text>
           <View style={s.timeline}>
             {[
-              { icon: 'card-outline',    color: '#007AFF', label: 'VCF sent',           time: 'Right now',  done: true },
-              { icon: 'gift-outline',    color: ACCENT,    label: 'Congrats card',       time: '~2 min',     done: false },
-              { icon: 'star-outline',    color: '#FF9500', label: 'Review request',      time: '~5 min',     done: false },
-              { icon: 'chatbubble-outline', color: '#34C759', label: '7-day check-in',   time: '1 week',     done: false },
-              { icon: 'people-outline',  color: '#AF52DE', label: 'Referral ask',        time: '3 weeks',    done: false },
+              { icon: 'card-outline',    color: '#007AFF', label: 'VCF sent',                  time: 'Right now', done: true },
+              { icon: 'image-outline',   color: '#34C759', label: 'Branded congrats photo',    time: '~2 min',    done: false },
+              { icon: 'gift-outline',    color: ACCENT,    label: 'Digital card link',          time: '~4 min',    done: false },
+              { icon: 'star-outline',    color: '#FF9500', label: 'Review request',             time: '~5 min',    done: false },
+              { icon: 'chatbubble-outline', color: '#34C759', label: '7-day check-in',          time: '1 week',    done: false },
+              { icon: 'people-outline',  color: '#AF52DE', label: 'Referral ask',               time: '3 weeks',   done: false },
             ].map((item, i) => (
               <View key={i} style={s.timelineRow}>
                 <View style={[s.timelineIcon, { backgroundColor: item.color + '20' }]}>
@@ -291,13 +328,60 @@ export default function SoldQuickScreen() {
           {lookingUp && <ActivityIndicator size="small" color={colors.textSecondary} />}
         </View>
 
+        {/* ── Send Type Selector ── */}
+        <View style={{ marginTop: 24 }}>
+          <Text style={s.fieldLabel}>CONGRATS FORMAT</Text>
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+            <TouchableOpacity
+              style={[s.typeBtn, sendType === 'photo' && s.typeBtnActive]}
+              onPress={() => setSendType('photo')}
+              data-testid="send-type-photo"
+            >
+              <Ionicons name="image-outline" size={22} color={sendType === 'photo' ? '#000' : ACCENT} />
+              <Text style={[s.typeBtnLabel, sendType === 'photo' && { color: '#000' }]}>Branded Photo</Text>
+              <Text style={[s.typeBtnSub, sendType === 'photo' && { color: '#00000099' }]}>Native MMS with logo overlay</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[s.typeBtn, sendType === 'card' && s.typeBtnActive]}
+              onPress={() => setSendType('card')}
+              data-testid="send-type-card"
+            >
+              <Ionicons name="gift-outline" size={22} color={sendType === 'card' ? '#000' : ACCENT} />
+              <Text style={[s.typeBtnLabel, sendType === 'card' && { color: '#000' }]}>Digital Card</Text>
+              <Text style={[s.typeBtnSub, sendType === 'card' && { color: '#00000099' }]}>Full card link experience</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Custom text for branded photo */}
+        {sendType === 'photo' && (
+          <View style={{ marginTop: 14 }}>
+            <Text style={s.fieldLabel}>OVERLAY TEXT</Text>
+            <TextInput
+              style={s.input}
+              value={congratsText}
+              onChangeText={setCongratsText}
+              placeholder="CONGRATULATIONS!"
+              placeholderTextColor={colors.textSecondary}
+              autoCapitalize="characters"
+              data-testid="congrats-text-input"
+            />
+            <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4 }}>
+              This text appears on the photo with your store logo
+            </Text>
+          </View>
+        )}
+
         {/* What will send */}
         <View style={s.sequencePreview}>
           <Text style={s.sequenceTitle}>What will be sent automatically</Text>
           {[
             { label: 'Your contact card (VCF)', time: 'Immediately', color: '#007AFF' },
-            { label: 'Congrats card with photo', time: '~2 minutes',  color: ACCENT },
-            { label: 'Review request',            time: '~5 minutes',  color: '#FF9500' },
+            {
+              label: sendType === 'photo' ? 'Branded congrats photo' : 'Congrats card link',
+              time: '~2 minutes', color: ACCENT,
+            },
+            { label: 'Review request', time: '~5 minutes', color: '#FF9500' },
           ].map((item, i) => (
             <View key={i} style={s.sequenceRow}>
               <View style={[s.sequenceDot, { backgroundColor: item.color }]} />
@@ -353,6 +437,15 @@ const styles = (colors: any) => StyleSheet.create({
   sequenceTime:    { fontSize: 13, fontWeight: '700' },
   sendBtn:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: ACCENT, borderRadius: 16, paddingVertical: 20, marginTop: 24 },
   sendBtnText:     { fontSize: 19, fontWeight: '800', color: '#000', letterSpacing: 0.5 },
+  typeBtn: {
+    flex: 1, borderWidth: 1.5, borderColor: ACCENT + '50', borderRadius: 14,
+    padding: 14, alignItems: 'center', gap: 6, backgroundColor: ACCENT + '08',
+  },
+  typeBtnActive: {
+    backgroundColor: ACCENT, borderColor: ACCENT,
+  },
+  typeBtnLabel: { fontSize: 14, fontWeight: '700', color: ACCENT, textAlign: 'center' },
+  typeBtnSub:   { fontSize: 11, color: colors.textSecondary, textAlign: 'center', lineHeight: 15 },
   // Success
   successWrap:     { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28 },
   successCircle:   { width: 110, height: 110, borderRadius: 55, backgroundColor: '#34C759', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
