@@ -424,8 +424,8 @@ export default function LoginScreen() {
               <View style={styles.logoContainer}>
                 <Image 
                   source={Platform.OS === 'web'
-                    ? { uri: '/new-logo-512-transparent.png' }
-                    : require('../../assets/images/imos-logo-white-v3.png')
+                    ? { uri: '/imos-logo-transparent.png' }
+                    : require('../../assets/images/icon.png')
                   }
                   style={styles.logoImage}
                   resizeMode="contain"
@@ -684,9 +684,10 @@ const getStyles = (colors: any) => StyleSheet.create({
     aspectRatio: 1,
   },
   logoImage: {
-    width: 180,
-    height: 180,
-    aspectRatio: 1,
+    width: 140,
+    height: 140,
+    borderRadius: 32,  // Matches iOS app icon rounded corner style
+    overflow: 'hidden',
   },
   tagline: {
     fontSize: 16,
