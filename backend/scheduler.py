@@ -112,13 +112,18 @@ async def _auto_wrap_urls(media_urls: list, message: str, user_id: str, campaign
                 logger.warning(f"[AutoWrap] Failed to wrap {url}: {e}")
                 return url
 
-    # Wrap media_urls
+    # Wrap media_urls — but NEVER wrap direct image/media URLs
+    # Twilio fetches media_urls directly and does not follow redirects
     wrapped_media = []
+    _IMAGE_EXTS = ('.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.mov', '.vcf')
     for url in media_urls:
-        if url:
-            wrapped_media.append(await _wrap_or_personalize(url))
-        else:
+        if not url:
             wrapped_media.append(url)
+        elif any(url.lower().split('?')[0].endswith(ext) for ext in _IMAGE_EXTS) or '/api/images/' in url or '/api/profile/' in url:
+            # Direct image/media URL — pass through unchanged so Twilio can fetch it
+            wrapped_media.append(url)
+        else:
+            wrapped_media.append(await _wrap_or_personalize(url))
 
     # Wrap/personalize all URLs in message text
     all_urls = _URL_RE.findall(message)
