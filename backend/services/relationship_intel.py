@@ -313,6 +313,24 @@ async def build_relationship_brief(user_id: str, contact_id: str, campaign_conte
         for pm in brief["previous_campaign_messages"][:5]:
             ai_parts.append(f"  Step {pm['step']} ({pm['campaign']}): \"{pm['message'][:150]}\"")
 
+    # === VOICE MEMO TRANSCRIPTS (full rep notes — richest context available) ===
+    try:
+        voice_notes = await db.voice_notes.find(
+            {"user_id": user_id, "contact_id": contact_id, "transcript": {"$exists": True, "$ne": ""}},
+            {"transcript": 1, "created_at": 1}
+        ).sort("created_at", -1).limit(5).to_list(5)
+
+        if voice_notes:
+            ai_parts.append("\nREP'S VOICE MEMOS (transcribed notes about this customer — use this context naturally in conversation):")
+            for i, vn in enumerate(voice_notes):
+                transcript = vn.get("transcript", "").strip()
+                if transcript:
+                    # Truncate very long transcripts but keep meaningful content
+                    truncated = transcript[:500] + ("..." if len(transcript) > 500 else "")
+                    ai_parts.append(f"  Memo {i+1}: {truncated}")
+    except Exception as ve:
+        logger.debug(f"Voice notes fetch failed (non-fatal): {ve}")
+
     if msg_summary:
         ai_parts.append("\nRECENT CONVERSATION:")
         for ms in msg_summary[:5]:
