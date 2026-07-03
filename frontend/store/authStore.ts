@@ -244,27 +244,50 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             const { status: existingStatus } = await Notifications.getPermissionsAsync();
             let finalStatus = existingStatus;
             if (existingStatus !== 'granted') {
-              // Small delay so the login screen has fully navigated away before showing dialog
               await new Promise(r => setTimeout(r, 1500));
               const { status } = await Notifications.requestPermissionsAsync();
               finalStatus = status;
             }
-            if (finalStatus === 'granted') {
-              const Constants = await import('expo-constants');
-              const projectId = Constants.default.expoConfig?.extra?.eas?.projectId || '178e2029-a577-4d78-9611-bd7ebec83c91';
-              const tokenData = await Notifications.getExpoPushTokenAsync({ projectId }).catch(() => null);
-              if (tokenData?.data && user._id) {
-                const { default: apiInstance } = await import('../services/api');
-                await apiInstance.post(`/push/subscribe-native/${user._id}`, {
-                  expo_push_token: tokenData.data,
-                  platform: Platform.OS,
-                }).catch(() => {});
-              }
+
+            console.log('[Push] Permission status:', finalStatus);
+
+            if (finalStatus !== 'granted') {
+              console.warn('[Push] Notifications not granted — user must enable in Settings');
+              return;
+            }
+
+            // Always use hardcoded projectId — Constants.expoConfig is unreliable in OTA bundles
+            const projectId = '178e2029-a577-4d78-9611-bd7ebec83c91';
+            console.log('[Push] Getting Expo push token for project:', projectId);
+
+            let tokenData: any = null;
+            try {
+              tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+              console.log('[Push] Token obtained:', tokenData?.data?.slice(0, 30));
+            } catch (tokenErr: any) {
+              console.error('[Push] getExpoPushTokenAsync FAILED:', tokenErr?.message || tokenErr);
+              // Report to backend for debugging
+              const { default: apiInstance } = await import('../services/api');
+              apiInstance.post('/push/log-error', {
+                user_id: user._id,
+                error: tokenErr?.message || String(tokenErr),
+                platform: Platform.OS,
+              }).catch(() => {});
+              return;
+            }
+
+            if (tokenData?.data && user._id) {
+              const { default: apiInstance } = await import('../services/api');
+              const result = await apiInstance.post(`/push/subscribe-native/${user._id}`, {
+                expo_push_token: tokenData.data,
+                platform: Platform.OS,
+              });
+              console.log('[Push] Token registered successfully:', result.data);
             }
           } catch (nativePushErr: any) {
-            console.warn('[Auth] Native push setup skipped:', nativePushErr?.message);
+            console.error('[Auth] Native push setup FAILED:', nativePushErr?.message, nativePushErr?.stack?.slice(0, 200));
           }
-        }, 2000); // Wait 2s after login before requesting permission
+        }, 2000);
       }
     } catch (error) {
       set({ isLoading: false });

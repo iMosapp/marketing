@@ -218,19 +218,46 @@ async def subscribe_native_push(user_id: str, request: Request):
     platform = data.get("platform", "ios")
     if not expo_token:
         raise HTTPException(status_code=400, detail="expo_push_token required")
-    # Upsert so re-installs don't create duplicates
     await db.expo_push_tokens.update_one(
         {"user_id": user_id, "expo_push_token": expo_token},
         {"$set": {
-            "user_id":          user_id,
-            "expo_push_token":  expo_token,
-            "platform":         platform,
-            "updated_at":       datetime.now(timezone.utc),
+            "user_id":         user_id,
+            "expo_push_token": expo_token,
+            "platform":        platform,
+            "updated_at":      datetime.now(timezone.utc),
         }, "$setOnInsert": {"created_at": datetime.now(timezone.utc)}},
         upsert=True,
     )
-    logger.info(f"[Push] Native Expo token registered for user {user_id} ({platform})")
-    return {"success": True}
+    logger.info(f"[Push] ✅ Native Expo token registered for user {user_id} ({platform}): {expo_token[:20]}...")
+    return {"success": True, "registered": True}
+
+
+@router.post("/log-error")
+async def log_push_error(request: Request):
+    """Log push notification errors from native clients for debugging."""
+    db = get_db()
+    data = await request.json()
+    logger.error(f"[Push] ❌ Client error — user={data.get('user_id')} platform={data.get('platform')}: {data.get('error')}")
+    await db.push_errors.insert_one({
+        **data,
+        "created_at": datetime.now(timezone.utc),
+    })
+    return {"logged": True}
+
+
+@router.get("/status/{user_id}")
+async def get_push_status(user_id: str):
+    """Check push notification registration status for a user."""
+    db = get_db()
+    tokens = await db.expo_push_tokens.find({"user_id": user_id}, {"_id": 0, "expo_push_token": 1, "platform": 1, "updated_at": 1}).to_list(10)
+    web_subs = await db.push_subscriptions.count_documents({"user_id": user_id})
+    errors = await db.push_errors.find({"user_id": user_id}).sort("created_at", -1).limit(3).to_list(3)
+    return {
+        "native_tokens": len(tokens),
+        "tokens": [{"platform": t.get("platform"), "token_preview": t.get("expo_push_token", "")[:20] + "...", "updated": str(t.get("updated_at", ""))} for t in tokens],
+        "web_subscriptions": web_subs,
+        "recent_errors": [{"error": e.get("error"), "time": str(e.get("created_at", ""))} for e in errors],
+    }
 
 
 async def send_push_native(user_id: str, title: str, body: str, data: dict = None):
