@@ -3162,16 +3162,8 @@ function ContactDetailScreen() {
                   <Text style={s.sectionHeaderCount}>{events.length} events</Text>
                 </View>
 
-                {/* Log Reply + Search Row */}
+                {/* Feed Action Row */}
                 <View style={s.feedActionRow}>
-                  <TouchableOpacity
-                    style={s.logReplyBtn}
-                    onPress={() => setShowLogReply(true)}
-                    data-testid="log-reply-btn"
-                  >
-                    <Ionicons name="chatbubble-ellipses" size={16} color="#30D158" />
-                    <Text style={s.logReplyBtnText}>Log Customer Reply</Text>
-                  </TouchableOpacity>
                   <TouchableOpacity
                     style={[s.logReplyBtn, { backgroundColor: '#FF950015', borderColor: '#FF950050' }]}
                     onPress={() => setShowAddTask(true)}
@@ -3454,9 +3446,8 @@ function ContactDetailScreen() {
           {/* ===== DETAILS TAB ===== */}
           {!isNewContact && !isEditing && contactTab === 'details' && (
             <>
-              {/* Voice Notes */}
-              {Platform.OS === 'web' && (
-                <View style={[s.section, { paddingTop: 4 }]} data-testid="voice-notes-section">
+              {/* Voice Notes — show on all platforms including native iOS */}
+              <View style={[s.section, { paddingTop: 4 }]} data-testid="voice-notes-section">
                   <View style={s.sectionHeaderRow}>
                     <Text style={s.sectionHeader}>Voice Notes</Text>
                     <Text style={s.sectionHeaderCount}>{voiceNotes.length} {voiceNotes.length === 1 ? 'note' : 'notes'}</Text>
@@ -3548,7 +3539,6 @@ function ContactDetailScreen() {
                     </View>
                   ) : null}
                 </View>
-              )}
 
               {/* Personal Intelligence (from voice memo extraction) */}
               <PersonalIntelSection contactId={id as string} userId={user?._id || ''} colors={colors} />

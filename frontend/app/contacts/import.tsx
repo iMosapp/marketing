@@ -74,16 +74,18 @@ export default function ImportContactsScreen() {
 
   const loadPhoneContacts = async () => {
     // Apple 5.1.2(iv): Explicit consent required before uploading third-party contact data
-    await new Promise<void>((resolve, reject) => {
+    let consented = false;
+    await new Promise<void>((resolve) => {
       showAlert(
         'Import Contacts',
         'I\'m On Social will read your phone contacts and upload names, phone numbers, and email addresses to our secure servers. This data is used only for your relationship management and is never sold or shared with third parties.\n\nDo you consent to this?',
         [
-          { text: 'Cancel', style: 'cancel', onPress: () => reject(new Error('cancelled')) },
-          { text: 'I Agree', style: 'default', onPress: () => resolve() },
+          { text: 'Cancel', style: 'cancel', onPress: () => resolve() },
+          { text: 'I Agree', style: 'default', onPress: () => { consented = true; resolve(); } },
         ]
       );
-    }).catch(() => null);
+    });
+    if (!consented) return; // user cancelled — don't proceed
     const hasPermission = await requestContactsPermission();
     if (!hasPermission) return;
     setLoading(true);
@@ -302,6 +304,12 @@ export default function ImportContactsScreen() {
           <View style={styles.loadingOverlay}>
             <ActivityIndicator size="large" color="#007AFF" />
             <Text style={styles.loadingText}>Parsing contacts...</Text>
+            <TouchableOpacity
+              onPress={() => { setLoading(false); setImportMode('select'); }}
+              style={{ marginTop: 20, paddingHorizontal: 24, paddingVertical: 10, backgroundColor: '#FF3B3020', borderRadius: 10 }}
+            >
+              <Text style={{ color: '#FF3B30', fontWeight: '600', fontSize: 16 }}>Cancel</Text>
+            </TouchableOpacity>
           </View>
         )}
       </SafeAreaView>
