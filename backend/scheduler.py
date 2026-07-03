@@ -750,7 +750,28 @@ async def process_pending_campaign_steps():
                         except Exception as sms_err:
                             logger.error(f"[Scheduler] Campaign SMS send error step {current_step}: {sms_err}")
 
-                    conv_id = f"campaign_{user_id}_{contact_id}"
+                    # Use the real conversation (rep_phone + contact_phone) so messages
+                    # appear in the actual inbox thread, not a phantom campaign conversation
+                    real_conv = None
+                    rep_phone = send_doc.get("rep_phone") or await get_rep_twilio_number(user_id)
+                    if contact_phone and rep_phone:
+                        real_conv = await db.conversations.find_one({
+                            "rep_phone": rep_phone,
+                            "contact_phone": contact_phone,
+                        })
+                    if not real_conv and contact_id:
+                        real_conv = await db.conversations.find_one({
+                            "user_id": user_id,
+                            "contact_id": contact_id,
+                        })
+                    if real_conv:
+                        conv_id = str(real_conv["_id"])
+                        await db.conversations.update_one(
+                            {"_id": real_conv["_id"]},
+                            {"$set": {"last_message_at": now}}
+                        )
+                    else:
+                        conv_id = f"campaign_{user_id}_{contact_id}"
                     await db.messages.insert_one({
                         "conversation_id": conv_id, "sender": "user",
                         "content": message_content, "timestamp": now,

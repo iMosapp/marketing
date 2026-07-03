@@ -102,7 +102,10 @@ export default function SoldQuickScreen() {
     if (!user?._id) return;
     if (!customerPhone.trim()) { showSimpleAlert('Phone Required', 'Enter the customer\'s phone number.'); return; }
     if (!customerName.trim()) { showSimpleAlert('Name Required', 'Enter the customer\'s name.'); return; }
-
+    if (sendType === 'photo' && !photo) {
+      showSimpleAlert('Photo Required', 'Please take a photo or choose from your camera roll to use the Branded Photo option. Or switch to Digital Card.');
+      return;
+    }
     setSending(true);
     try {
       // Step 1: Find or create contact
@@ -164,7 +167,10 @@ export default function SoldQuickScreen() {
               headers: { 'Content-Type': 'multipart/form-data' },
             });
             congratsMediaUrl = res.data?.url || '';
-          } catch (e) { console.log('Branded photo failed:', e); }
+          } catch (e: any) {
+            console.log('Branded photo failed:', e);
+            showSimpleAlert('Photo Error', 'Could not create branded photo: ' + (e?.message || 'Unknown error') + '. Sending text only.');
+          }
         }
         await api.post('/messages/schedule-delayed', {
           to: customerPhone.trim(),
