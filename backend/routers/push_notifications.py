@@ -72,10 +72,7 @@ async def test_push(user_id: str):
 
 
 async def send_push_to_user(user_id: str, title: str, body: str, url: str = "/touchpoints/performance", icon: str = "flame"):
-    """Send a push notification to all subscriptions for a user, respecting their schedule."""
-    if not VAPID_PRIVATE_KEY:
-        logger.warning("VAPID_PRIVATE_KEY not set — skipping push")
-        return 0
+    """Send a push notification — handles BOTH native iOS (Expo) and web (VAPID)."""
 
     # Respect quiet-hours schedule
     try:
@@ -87,26 +84,63 @@ async def send_push_to_user(user_id: str, title: str, body: str, url: str = "/to
         logger.debug(f"[Push] Schedule check failed (non-fatal): {e}")
 
     db = get_db()
-    subs = await db.push_subscriptions.find({"user_id": user_id}).to_list(20)
     sent = 0
-    for sub_doc in subs:
-        subscription_info = sub_doc.get("subscription", {})
-        try:
-            webpush(
-                subscription_info=subscription_info,
-                data=json.dumps({"title": title, "body": body, "url": url, "icon": icon}),
-                vapid_private_key=VAPID_PRIVATE_KEY,
-                vapid_claims={"sub": VAPID_MAILTO},
-            )
-            sent += 1
-        except WebPushException as e:
-            if "410" in str(e) or "404" in str(e):
-                await db.push_subscriptions.delete_one({"_id": sub_doc["_id"]})
-                logger.info(f"Removed expired subscription for user {user_id}")
-            else:
-                logger.warning(f"Push failed for user {user_id}: {e}")
-        except Exception as e:
-            logger.warning(f"Push error for user {user_id}: {e}")
+
+    # ── Native iOS/Android via Expo Push API ──────────────────────────────────
+    tokens = await db.expo_push_tokens.find({"user_id": user_id}).to_list(10)
+    if tokens:
+        import httpx
+        messages = [{
+            "to": t["expo_push_token"],
+            "title": title,
+            "body": body,
+            "data": {"url": url, "icon": icon},
+            "sound": "default",
+            "badge": 1,
+        } for t in tokens if t.get("expo_push_token")]
+        if messages:
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    resp = await client.post(
+                        "https://exp.host/--/api/v2/push/send",
+                        json=messages,
+                        headers={"Accept": "application/json", "Content-Type": "application/json"},
+                    )
+                    result = resp.json()
+                    # Clean up invalid tokens
+                    if isinstance(result, dict) and "data" in result:
+                        for i, item in enumerate(result["data"]):
+                            if isinstance(item, dict) and item.get("status") == "error":
+                                details = item.get("details", {})
+                                if details.get("error") in ("DeviceNotRegistered", "InvalidCredentials"):
+                                    if i < len(tokens):
+                                        await db.expo_push_tokens.delete_one({"_id": tokens[i]["_id"]})
+                    sent += len(messages)
+                    logger.info(f"[Push] Expo native sent {len(messages)} notifications to {user_id}")
+            except Exception as e:
+                logger.warning(f"[Push] Expo native failed for {user_id}: {e}")
+
+    # ── Web push via VAPID ────────────────────────────────────────────────────
+    if VAPID_PRIVATE_KEY:
+        subs = await db.push_subscriptions.find({"user_id": user_id}).to_list(20)
+        for sub_doc in subs:
+            subscription_info = sub_doc.get("subscription", {})
+            try:
+                webpush(
+                    subscription_info=subscription_info,
+                    data=json.dumps({"title": title, "body": body, "url": url, "icon": icon}),
+                    vapid_private_key=VAPID_PRIVATE_KEY,
+                    vapid_claims={"sub": VAPID_MAILTO},
+                )
+                sent += 1
+            except WebPushException as e:
+                if "410" in str(e) or "404" in str(e):
+                    await db.push_subscriptions.delete_one({"_id": sub_doc["_id"]})
+                else:
+                    logger.warning(f"[Push] Web push failed for {user_id}: {e}")
+            except Exception as e:
+                logger.warning(f"[Push] Web push error for {user_id}: {e}")
+
     return sent
 
 

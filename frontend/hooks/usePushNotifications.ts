@@ -84,14 +84,17 @@ export function usePushNotifications() {
         }
 
         setStatus('granted');
-        // Register Expo push token
+        // Register Expo push token — requires projectId for production builds
         try {
-          const tokenData = await Notifications.getExpoPushTokenAsync();
+          const tokenData = await Notifications.getExpoPushTokenAsync({
+            projectId: '178e2029-a577-4d78-9611-bd7ebec83c91',
+          });
           if (tokenData?.data) {
             await api.post(`/push/subscribe-native/${user._id}`, {
               expo_push_token: tokenData.data,
               platform: Platform.OS,
             });
+            console.log('[Push] Token registered:', tokenData.data.slice(0, 20) + '...');
           }
         } catch (tokenErr) {
           console.warn('[Push] Token registration failed:', tokenErr);
