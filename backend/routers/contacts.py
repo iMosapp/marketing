@@ -925,6 +925,35 @@ async def update_contact_tags(user_id: str, contact_id: str, data: dict = Body(.
                 user_id, contact_id, {**contact, "tags": newly_added}
             )
 
+    # Handle repeat buyer — if contact already has date_sold and we're adding Sold tag again,
+    # push to purchase_history instead of starting fresh
+    newly_sold = 'Sold' in tags and 'Sold' not in old_tags
+    if newly_sold:
+        contact_doc = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"date_sold": 1, "vehicle": 1, "purchase_history": 1, "sold_count": 1})
+        if contact_doc and contact_doc.get("date_sold"):
+            # Repeat buyer — archive previous sale to purchase_history
+            prev_entry = {
+                "date": contact_doc["date_sold"].isoformat() if hasattr(contact_doc["date_sold"], "isoformat") else str(contact_doc["date_sold"]),
+                "vehicle": contact_doc.get("vehicle", ""),
+                "notes": f"Previous purchase",
+                "is_repeat": True,
+            }
+            await db.contacts.update_one(
+                {"_id": ObjectId(contact_id)},
+                {
+                    "$push": {"purchase_history": prev_entry},
+                    "$set": {"date_sold": datetime.utcnow()},
+                    "$inc": {"sold_count": 1},
+                }
+            )
+            logger.info(f"[Contacts] Repeat buyer detected for {contact_id} — purchase_history updated")
+        elif newly_sold:
+            # First sale — initialize sold_count to 1
+            await db.contacts.update_one(
+                {"_id": ObjectId(contact_id)},
+                {"$set": {"date_sold": datetime.utcnow(), "sold_count": 1}}
+            )
+
     # Sold workflow hook — runs AFTER tag save, never blocks it
     sold_result = None
     try:

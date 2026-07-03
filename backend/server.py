@@ -485,6 +485,89 @@ async def update_leaderboard_settings(user_id: str, settings: dict):
     
     return {"message": "Settings updated"}
 
+# ============= SALES ANALYTICS =============
+@api_router.get("/users/{user_id}/sold-performance")
+async def get_sold_performance(user_id: str, months: int = 6):
+    """
+    Monthly sold performance: count, referrals, repeat buyers, MoM comparison.
+    Used for the Home screen widget and Hub performance section.
+    """
+    db = get_db()
+    from datetime import timezone as tz
+    now = datetime.now(tz.utc)
+    results = []
+    for i in range(months - 1, -1, -1):
+        # Calculate month start/end
+        month_offset = now.month - i - 1
+        year = now.year + (month_offset // 12)
+        month = (month_offset % 12) + 1
+        if month <= 0:
+            month += 12
+            year -= 1
+        start = datetime(year, month, 1, tzinfo=tz.utc)
+        end = datetime(year + (1 if month == 12 else 0), (month % 12) + 1, 1, tzinfo=tz.utc)
+        start_naive = start.replace(tzinfo=None)
+        end_naive = end.replace(tzinfo=None)
+
+        # Total sold this month (contacts with date_sold in range)
+        total = await db.contacts.count_documents({
+            "user_id": user_id,
+            "date_sold": {"$gte": start_naive, "$lt": end_naive},
+            "status": {"$nin": ["hidden", "merged", "deleted"]},
+        })
+        # Referral sales (had a referrer)
+        referrals = await db.contacts.count_documents({
+            "user_id": user_id,
+            "date_sold": {"$gte": start_naive, "$lt": end_naive},
+            "referred_by": {"$exists": True, "$ne": None, "$ne": ""},
+            "status": {"$nin": ["hidden", "merged", "deleted"]},
+        })
+        # Repeat buyers (sold_count > 1 or has purchase_history)
+        repeats = await db.contacts.count_documents({
+            "user_id": user_id,
+            "date_sold": {"$gte": start_naive, "$lt": end_naive},
+            "sold_count": {"$gt": 1},
+            "status": {"$nin": ["hidden", "merged", "deleted"]},
+        })
+        results.append({
+            "year": year, "month": month,
+            "label": start.strftime("%b %Y"),
+            "short": start.strftime("%b"),
+            "total": total,
+            "referrals": referrals,
+            "repeats": repeats,
+            "organic": max(0, total - referrals - repeats),
+        })
+
+    # MoM comparison
+    current = results[-1] if results else {"total": 0, "referrals": 0, "repeats": 0}
+    previous = results[-2] if len(results) >= 2 else {"total": 0, "referrals": 0, "repeats": 0}
+    mom_change = current["total"] - previous["total"]
+    mom_pct = round((mom_change / previous["total"] * 100) if previous["total"] > 0 else 0)
+
+    # All-time totals
+    all_time = await db.contacts.count_documents({
+        "user_id": user_id,
+        "date_sold": {"$exists": True, "$ne": None},
+        "status": {"$nin": ["hidden", "merged", "deleted"]},
+    })
+    all_referrals = await db.contacts.count_documents({
+        "user_id": user_id,
+        "referred_by": {"$exists": True, "$ne": None, "$ne": ""},
+        "status": {"$nin": ["hidden", "merged", "deleted"]},
+    })
+
+    return {
+        "monthly": results,
+        "current_month": current,
+        "previous_month": previous,
+        "mom_change": mom_change,
+        "mom_pct": mom_pct,
+        "all_time_sold": all_time,
+        "all_time_referrals": all_referrals,
+    }
+
+
 # ============= REVIEW LINKS ENDPOINTS =============
 @api_router.get("/users/{user_id}/review-links")
 async def get_review_links(user_id: str):

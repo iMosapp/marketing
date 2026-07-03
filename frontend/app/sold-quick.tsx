@@ -33,6 +33,25 @@ export default function SoldQuickScreen() {
   // Send type selector
   const [sendType, setSendType] = useState<'photo' | 'card'>('photo');
   const [congratsText, setCongratsText] = useState('CONGRATULATIONS!');
+  // Referral tracking
+  const [referredByName, setReferredByName] = useState('');
+  const [referredById, setReferredById] = useState('');
+  const [referralSearch, setReferralSearch] = useState('');
+  const [referralResults, setReferralResults] = useState<any[]>([]);
+  const [showReferralSearch, setShowReferralSearch] = useState(false);
+
+  // Referral contact search
+  useEffect(() => {
+    if (!referralSearch || referralSearch.length < 2 || !user?._id) { setReferralResults([]); return; }
+    const t = setTimeout(async () => {
+      try {
+        const res = await api.get(`/contacts/${user._id}?search=${encodeURIComponent(referralSearch)}&limit=5`);
+        const list = Array.isArray(res.data) ? res.data : res.data?.contacts || [];
+        setReferralResults(list.slice(0, 5));
+      } catch { setReferralResults([]); }
+    }, 400);
+    return () => clearTimeout(t);
+  }, [referralSearch, user?._id]);
 
   // Auto-lookup contact by phone
   useEffect(() => {
@@ -114,6 +133,7 @@ export default function SoldQuickScreen() {
         phone: customerPhone.trim(),
         event_type: 'congrats_card_sent',
         event_title: 'Sold',
+        ...(referredById ? { referred_by: referredById, referred_by_name: referredByName } : {}),
       });
       const contactId = contactRes.data.contact_id;
 
@@ -327,6 +347,53 @@ export default function SoldQuickScreen() {
           />
           {lookingUp && <ActivityIndicator size="small" color={colors.textSecondary} />}
         </View>
+
+        {/* Referred by (optional) */}
+        <Text style={[s.fieldLabel, { marginTop: 16 }]}>REFERRED BY <Text style={{ color: colors.textTertiary, fontWeight: '400' }}>(optional)</Text></Text>
+        {referredByName ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: ACCENT + '18', borderRadius: 12, padding: 12, gap: 10 }}>
+            <Ionicons name="person-circle" size={22} color={ACCENT} />
+            <Text style={{ flex: 1, fontSize: 16, fontWeight: '600', color: colors.text }}>{referredByName}</Text>
+            <TouchableOpacity onPress={() => { setReferredByName(''); setReferredById(''); setReferralSearch(''); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View>
+            <TextInput
+              style={s.input}
+              placeholder="Search contacts..."
+              placeholderTextColor={colors.textSecondary}
+              value={referralSearch}
+              onChangeText={setReferralSearch}
+              onFocus={() => setShowReferralSearch(true)}
+              data-testid="referral-search"
+            />
+            {referralResults.length > 0 && (
+              <View style={{ backgroundColor: colors.card, borderRadius: 10, borderWidth: 1, borderColor: colors.surface, marginTop: 4, overflow: 'hidden' }}>
+                {referralResults.map((c: any) => (
+                  <TouchableOpacity
+                    key={c._id}
+                    style={{ flexDirection: 'row', alignItems: 'center', padding: 12, gap: 10, borderBottomWidth: 1, borderBottomColor: colors.surface }}
+                    onPress={() => {
+                      const name = c.name || `${c.first_name || ''} ${c.last_name || ''}`.trim();
+                      setReferredById(c._id);
+                      setReferredByName(name);
+                      setReferralSearch('');
+                      setReferralResults([]);
+                    }}
+                  >
+                    <Ionicons name="person-outline" size={18} color={colors.textSecondary} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>{c.name || `${c.first_name || ''} ${c.last_name || ''}`.trim()}</Text>
+                      {c.phone && <Text style={{ fontSize: 12, color: colors.textSecondary }}>{c.phone}</Text>}
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
 
         {/* ── Send Type Selector ── */}
         <View style={{ marginTop: 24 }}>

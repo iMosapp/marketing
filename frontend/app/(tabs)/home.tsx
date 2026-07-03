@@ -370,6 +370,7 @@ function HomeScreen() {
   const [winsFeed, setWinsFeed] = useState<any[]>([]);
   const [completedToday, setCompletedToday] = useState<Set<string>>(new Set());
   const [loadingMy3, setLoadingMy3] = useState(false);
+  const [soldPerf, setSoldPerf] = useState<any>(null);
 
   // Modals
   const [showContactAction, setShowContactAction] = useState(false);
@@ -419,6 +420,8 @@ function HomeScreen() {
       const res = await api.get(`/home/${user._id}`);
       setStreak(res.data.streak);
       setMy3(res.data.my_3 || []);
+      // Load sold performance stats
+      api.get(`/users/${user._id}/sold-performance`).then(r => setSoldPerf(r.data)).catch(() => {});
       setWinsFeed(res.data.wins_feed || []);
     } catch { /* silent fail — not critical */ }
     finally { if (!silent) setLoadingMy3(false); }
@@ -748,6 +751,46 @@ function HomeScreen() {
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
           </TouchableOpacity>
+        )}
+
+        {/* ── MY MONTH SALES WIDGET ── */}
+        {soldPerf && (soldPerf.current_month?.total > 0 || soldPerf.all_time_sold > 0) && (
+          <View style={{ marginHorizontal: 16, marginBottom: 16, backgroundColor: colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#C9A96230' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="trophy" size={17} color="#C9A962" />
+                <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>
+                  {new Date().toLocaleString('default', { month: 'long' })} Sales
+                </Text>
+              </View>
+              {soldPerf.mom_change !== 0 && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: soldPerf.mom_change > 0 ? '#34C75918' : '#FF3B3018', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 }}>
+                  <Ionicons name={soldPerf.mom_change > 0 ? 'trending-up' : 'trending-down'} size={14} color={soldPerf.mom_change > 0 ? '#34C759' : '#FF3B30'} />
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: soldPerf.mom_change > 0 ? '#34C759' : '#FF3B30' }}>
+                    {soldPerf.mom_change > 0 ? '+' : ''}{soldPerf.mom_change} vs last month
+                  </Text>
+                </View>
+              )}
+            </View>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {[
+                { label: 'Sold', value: soldPerf.current_month?.total || 0, color: '#C9A962', icon: 'checkmark-circle' },
+                { label: 'Referrals', value: soldPerf.current_month?.referrals || 0, color: '#007AFF', icon: 'people' },
+                { label: 'Repeats', value: soldPerf.current_month?.repeats || 0, color: '#AF52DE', icon: 'repeat' },
+              ].map((stat, i) => (
+                <View key={i} style={{ flex: 1, backgroundColor: stat.color + '12', borderRadius: 12, padding: 12, alignItems: 'center', gap: 4 }}>
+                  <Ionicons name={stat.icon as any} size={20} color={stat.color} />
+                  <Text style={{ fontSize: 22, fontWeight: '800', color: stat.color }}>{stat.value}</Text>
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: colors.textSecondary }}>{stat.label}</Text>
+                </View>
+              ))}
+            </View>
+            {soldPerf.all_time_sold > 0 && (
+              <Text style={{ fontSize: 12, color: colors.textTertiary, textAlign: 'center', marginTop: 10 }}>
+                {soldPerf.all_time_sold} total sold · {soldPerf.all_time_referrals} referrals all-time
+              </Text>
+            )}
+          </View>
         )}
 
         {/* ── MY 3 FOR TODAY ────────────────────────────── */}

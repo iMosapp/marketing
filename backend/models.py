@@ -287,10 +287,11 @@ class Contact(BaseModel):
     # Important dates
     birthday: Optional[datetime] = None
     anniversary: Optional[datetime] = None
-    date_sold: Optional[datetime] = None  # When they purchased/were sold to
-    custom_dates: List[CustomDateField] = []  # Additional custom dates
-    
-    purchase_date: Optional[datetime] = None  # Legacy - alias for date_sold
+    date_sold: Optional[datetime] = None  # Most recent purchase date
+    custom_dates: List[CustomDateField] = []
+    purchase_date: Optional[datetime] = None  # Legacy alias for date_sold
+    purchase_history: List[dict] = []          # [{date, vehicle, notes}] — one per sale
+    sold_count: int = 0                        # Total purchases (1 for first sale, 2+ for repeats)
     
     # Physical address
     address_street: Optional[str] = None
