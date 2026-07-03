@@ -1271,6 +1271,7 @@ async def process_scheduled_broadcasts():
     Every 5 min: find broadcasts with status='scheduled' and scheduled_at <= now.
     Trigger the send by queuing all recipients into campaign_pending_sends with staggering.
     """
+    from routers.database import get_db
     db = get_db()
     if db is None:
         return
