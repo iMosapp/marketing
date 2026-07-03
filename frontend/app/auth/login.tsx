@@ -265,8 +265,9 @@ export default function LoginScreen() {
         const profileComplete = loggedInUser?.onboarding_complete === true || (hasPhoto && hasBio);
         const landingRoute = getProfileGatedRoute(loggedInUser);
         
-        // Navigate immediately — never block navigation on biometric setup
+        // Navigate — small delay lets iOS settle before mounting the full tabs
         try {
+          await new Promise(r => setTimeout(r, 100));
           router.replace(landingRoute as any);
         } catch (navErr) {
           console.error('[Login] Navigation error:', navErr);

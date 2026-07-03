@@ -14,10 +14,14 @@ export default function TabLayout() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // WebSocket for real-time
+  // WebSocket for real-time updates — delayed to not compete with initial render
   const { subscribe } = useWebSocket();
+  const [wsReady, setWsReady] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setWsReady(true), 1500);
+    return () => clearTimeout(t);
+  }, []);
 
-  // Tab badge counts
   const [inboxUnreadCount, setInboxUnreadCount] = useState(0);
 
   const fetchInboxUnreadCount = useCallback(async () => {
@@ -42,15 +46,15 @@ export default function TabLayout() {
     }
   }, [mounted, user?._id, fetchInboxUnreadCount]);
 
-  // WebSocket real-time updates
+  // WebSocket real-time updates (only after delay to not crash on mount)
   useEffect(() => {
-    if (!subscribe) return;
+    if (!subscribe || !wsReady) return;
     return subscribe((msg: any) => {
       if (msg.type === 'new_customer_message' || (msg.type === 'notification_update' && msg.reason === 'new_message')) {
         setInboxUnreadCount(prev => prev + 1);
       }
     });
-  }, [subscribe]);
+  }, [subscribe, wsReady]);
 
   // Auth redirect — with grace period to allow loadAuth to restore session
   // Without the delay, iOS storage reads can briefly show isAuthenticated=false
