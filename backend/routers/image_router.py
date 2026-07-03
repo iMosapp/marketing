@@ -54,17 +54,13 @@ async def create_congrats_branded_upload(
     banner_h = int(h * 0.30)
     banner_y = h - banner_h
 
-    # Gradient overlay
-    overlay = PILImage.new("RGBA", (w, banner_h), (0, 0, 0, 0))
-    for y in range(banner_h):
-        alpha = int(200 * (y / banner_h))
-        for x in range(w):
-            overlay.putpixel((x, y), (0, 0, 0, alpha))
-    img_rgba = img.convert("RGBA")
-    overlay_full = PILImage.new("RGBA", (w, h), (0, 0, 0, 0))
-    overlay_full.paste(overlay, (0, banner_y))
-    img_rgba = PILImage.alpha_composite(img_rgba, overlay_full)
-    img = img_rgba.convert("RGB")
+    # Gradient overlay (fast numpy — pixel loop is too slow for 1080px)
+    import numpy as np
+    img_arr = np.array(img, dtype=np.float32)
+    alpha_ramp = np.linspace(0, 0.78, banner_h, dtype=np.float32)
+    for i in range(banner_h):
+        img_arr[banner_y + i] = img_arr[banner_y + i] * (1 - alpha_ramp[i])
+    img = PILImage.fromarray(np.clip(img_arr, 0, 255).astype(np.uint8))
     draw = ImageDraw.Draw(img)
 
     # Gold accent line
@@ -159,21 +155,19 @@ async def create_congrats_overlay(
     w, h = img.size
     draw = ImageDraw.Draw(img)
 
-    # ── GRADIENT BANNER at bottom ────────────────────────────────────────────
-    banner_h = int(h * 0.30)  # 30% of image height
+    # ── GRADIENT BANNER at bottom (fast numpy approach) ─────────────────────
+    banner_h = int(h * 0.30)
     banner_y = h - banner_h
 
-    # Draw semi-transparent dark gradient using alpha blend
-    overlay = PILImage.new("RGBA", (w, banner_h), (0, 0, 0, 0))
-    for y in range(banner_h):
-        alpha = int(200 * (y / banner_h))  # 0 → 200 (top to bottom)
-        for x in range(w):
-            overlay.putpixel((x, y), (0, 0, 0, alpha))
-    img_rgba = img.convert("RGBA")
-    overlay_full = PILImage.new("RGBA", (w, h), (0, 0, 0, 0))
-    overlay_full.paste(overlay, (0, banner_y))
-    img_rgba = PILImage.alpha_composite(img_rgba, overlay_full)
-    img = img_rgba.convert("RGB")
+    import numpy as np
+    img_arr = np.array(img, dtype=np.float32)
+    # Build alpha ramp: 0 at top of banner → 0.78 at bottom
+    alpha_ramp = np.linspace(0, 0.78, banner_h, dtype=np.float32)
+    # Apply: blend each row toward black
+    for i in range(banner_h):
+        row = banner_y + i
+        img_arr[row] = img_arr[row] * (1 - alpha_ramp[i])
+    img = PILImage.fromarray(np.clip(img_arr, 0, 255).astype(np.uint8))
     draw = ImageDraw.Draw(img)
 
     # ── GOLD ACCENT LINE ─────────────────────────────────────────────────────
