@@ -159,18 +159,12 @@ export default function SoldQuickScreen() {
             } else {
               overlayForm.append('photo', { uri: photo.uri, type: 'image/jpeg', name: 'delivery.jpg' } as any);
             }
-            const overlayRes = await api.post('/images/congrats-overlay', overlayForm, {
-              headers: { 'Content-Type': 'multipart/form-data' },
-              responseType: 'blob',
-            });
-            const uploadForm = new FormData();
-            uploadForm.append('file', overlayRes.data, 'congrats.jpg');
-            const uploadRes = await api.post('/images/upload', uploadForm, {
+            // Single endpoint: creates overlay + uploads + returns public URL
+            const res = await api.post('/images/congrats-branded-upload', overlayForm, {
               headers: { 'Content-Type': 'multipart/form-data' },
             });
-            const path = uploadRes.data?.original_url || '';
-            if (path) congratsMediaUrl = path.startsWith('http') ? path : `${APP_URL}${path}`;
-          } catch (e) { console.log('Overlay failed:', e); }
+            congratsMediaUrl = res.data?.url || '';
+          } catch (e) { console.log('Branded photo failed:', e); }
         }
         await api.post('/messages/schedule-delayed', {
           to: customerPhone.trim(),

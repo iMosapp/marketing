@@ -27,7 +27,111 @@ FONT_BOLD    = "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
 FONT_REGULAR = "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
 
 
-@router.post("/congrats-overlay")
+@router.post("/congrats-branded-upload")
+async def create_congrats_branded_upload(
+    photo: UploadFile = File(...),
+    customer_name: str = "",
+    user_id: str = "",
+    headline: str = "CONGRATULATIONS!",
+):
+    """
+    Create a branded congrats overlay photo AND upload it to object storage.
+    Returns a public URL ready to send as Twilio MMS media_url.
+    One call from the frontend — no blob re-upload needed.
+    """
+    from PIL import Image as PILImage, ImageDraw, ImageFont
+    import io as _io
+
+    data = await photo.read()
+    img = PILImage.open(_io.BytesIO(data)).convert("RGB")
+
+    MAX_W = 1080
+    if img.width > MAX_W:
+        ratio = MAX_W / img.width
+        img = img.resize((MAX_W, int(img.height * ratio)), PILImage.LANCZOS)
+
+    w, h = img.size
+    banner_h = int(h * 0.30)
+    banner_y = h - banner_h
+
+    # Gradient overlay
+    overlay = PILImage.new("RGBA", (w, banner_h), (0, 0, 0, 0))
+    for y in range(banner_h):
+        alpha = int(200 * (y / banner_h))
+        for x in range(w):
+            overlay.putpixel((x, y), (0, 0, 0, alpha))
+    img_rgba = img.convert("RGBA")
+    overlay_full = PILImage.new("RGBA", (w, h), (0, 0, 0, 0))
+    overlay_full.paste(overlay, (0, banner_y))
+    img_rgba = PILImage.alpha_composite(img_rgba, overlay_full)
+    img = img_rgba.convert("RGB")
+    draw = ImageDraw.Draw(img)
+
+    # Gold accent line
+    draw.rectangle([int(w * 0.06), banner_y + 14, int(w * 0.94), banner_y + 17], fill="#C9A962")
+
+    # Fonts
+    margin = int(w * 0.06)
+    font_size_h = max(36, int(w * 0.065))
+    font_size_n = max(28, int(w * 0.048))
+    try:
+        font_h = ImageFont.truetype(FONT_BOLD, font_size_h)
+        font_n = ImageFont.truetype(FONT_BOLD, font_size_n)
+    except Exception:
+        font_h = font_n = ImageFont.load_default()
+
+    text_y = banner_y + 24
+    draw.text((margin + 2, text_y + 2), headline, font=font_h, fill="#C9A96280")
+    draw.text((margin, text_y), headline, font=font_h, fill="#FFFFFF")
+
+    if customer_name:
+        first = customer_name.strip().split()[0] if customer_name.strip() else customer_name
+        name_text = f"Welcome to the family, {first}!"
+        draw.text((margin, text_y + font_size_h + 10), name_text, font=font_n, fill="#C9A962")
+
+    # Logo from store brand kit
+    if user_id:
+        try:
+            db = get_db()
+            from bson import ObjectId
+            user = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1})
+            if user and user.get("store_id"):
+                store = await db.stores.find_one({"_id": ObjectId(str(user["store_id"]))}, {"logo_path": 1, "logo_url": 1})
+                logo_path = (store or {}).get("logo_path") or (store or {}).get("logo_url")
+                if logo_path:
+                    import httpx, os as _os
+                    base = _os.environ.get("PUBLIC_FACING_URL", "https://app.imonsocial.com")
+                    logo_url = f"{base}/api/images/{logo_path}" if not logo_path.startswith("http") else logo_path
+                    async with httpx.AsyncClient(timeout=5.0) as client:
+                        resp = await client.get(logo_url)
+                    if resp.status_code == 200:
+                        logo_img = PILImage.open(_io.BytesIO(resp.content)).convert("RGBA")
+                        logo_max = int(w * 0.18)
+                        logo_img.thumbnail((logo_max, logo_max), PILImage.LANCZOS)
+                        lw, lh = logo_img.size
+                        img_rgba2 = img.convert("RGBA")
+                        img_rgba2.paste(logo_img, (w - lw - margin, 16), logo_img)
+                        img = img_rgba2.convert("RGB")
+        except Exception as logo_err:
+            logger.warning(f"Logo overlay failed: {logo_err}")
+
+    # Encode and upload directly
+    buf = _io.BytesIO()
+    img.save(buf, "JPEG", quality=88)
+    img_bytes = buf.getvalue()
+
+    upload_result = await upload_image(img_bytes, prefix="congrats_branded", entity_id=user_id or "general")
+    if not upload_result:
+        raise HTTPException(status_code=500, detail="Upload failed")
+
+    import os as _os
+    public_url = _os.environ.get("PUBLIC_FACING_URL", _os.environ.get("APP_URL", "https://app.imonsocial.com"))
+    return {
+        "url": f"{public_url}/api/images/{upload_result['original_path']}",
+        "path": upload_result['original_path'],
+    }
+
+
 async def create_congrats_overlay(
     photo: UploadFile = File(...),
     customer_name: str = "",
