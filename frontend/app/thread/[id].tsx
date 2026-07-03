@@ -2254,6 +2254,8 @@ function ThreadScreen() {
           style={{ flex: 1 }}
           contentContainerStyle={styles.messagesList}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -2385,12 +2387,8 @@ function ThreadScreen() {
         </View>
       )}
       
-      {/* Input Area - Large contained box with all tools inside */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-      >
-        <View style={[styles.composerContainer, { backgroundColor: colors.background }]}>
+      {/* Input Area */}
+      <View style={[styles.composerContainer, { backgroundColor: colors.background }]}>
           {/* Main composer box */}
           <View style={[styles.composerBox, { backgroundColor: colors.surface }]}>
             {/* Media Preview */}
@@ -2583,8 +2581,8 @@ function ThreadScreen() {
             </View>
           </View>
         </View>
-      </KeyboardAvoidingView>
-      
+      </View>
+
       {/* Review Links Action Sheet */}
       <Modal visible={showReviewLinks} animationType="slide" transparent={true}>
         <TouchableOpacity style={styles.actionSheetOverlay} activeOpacity={1} onPress={() => setShowReviewLinks(false)}>
