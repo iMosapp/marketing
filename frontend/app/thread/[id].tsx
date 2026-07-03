@@ -25,6 +25,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
+import { resolvePhotoUrl } from '../../utils/photoUrl';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AISuggestion from '../../components/AISuggestion';
 import ChannelPicker, { useChannelPicker } from '../../components/ChannelPicker';
@@ -493,7 +494,9 @@ function ThreadScreen() {
   const contactPhone = (contact_phone as string) || '';
   const [actualConversationId, setActualConversationId] = useState<string | null>(null);
   // Initialize with param photo if available, will be overwritten by API if different
-  const [contactPhoto, setContactPhoto] = useState<string | null>((paramPhoto as string) || null);
+  const [contactPhoto, setContactPhoto] = useState<string | null>(
+    paramPhoto ? resolvePhotoUrl(paramPhoto as string) : null
+  );
   const [contactIdForNav, setContactIdForNav] = useState<string | null>(null);
   
   useEffect(() => {
@@ -516,7 +519,7 @@ function ThreadScreen() {
         setDisplayContactName(response.data.contact_name);
       }
       if (response.data?.contact_photo) {
-        setContactPhoto(response.data.contact_photo);
+        setContactPhoto(resolvePhotoUrl(response.data.contact_photo));
       }
       // Check if contact email exists in conversation info
       const loadedEmail = response.data?.contact_email || response.data?.contact_email_work;
@@ -529,7 +532,7 @@ function ThreadScreen() {
       try {
         const contactResponse = await api.get(`/contacts/${user?._id}/${id}`);
         if (contactResponse.data?.photo_thumbnail || contactResponse.data?.photo_url || contactResponse.data?.photo) {
-          setContactPhoto(contactResponse.data.photo_thumbnail || contactResponse.data.photo_url || contactResponse.data.photo);
+          setContactPhoto(resolvePhotoUrl(contactResponse.data.photo_thumbnail || contactResponse.data.photo_url || contactResponse.data.photo));
         }
         // Load email from contact record if available  - check both fields
         const contactEmail = contactResponse.data?.email || contactResponse.data?.email_work;
@@ -2070,7 +2073,12 @@ function ThreadScreen() {
         
         {/* Contact Avatar */}
         {contactPhoto ? (
-          <Image source={{ uri: contactPhoto }} style={styles.headerAvatar} />
+          <Image
+            source={{ uri: contactPhoto }}
+            style={styles.headerAvatar}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+          />
         ) : (
           <View style={[styles.headerAvatarPlaceholder, { backgroundColor: colors.accent }]}>
             <Text style={styles.headerAvatarText}>
@@ -3433,16 +3441,18 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   headerAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     marginLeft: 4,
+    marginRight: 2,
   },
   headerAvatarPlaceholder: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     marginLeft: 4,
+    marginRight: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
