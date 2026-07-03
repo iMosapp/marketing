@@ -8,6 +8,7 @@ import {
   Pressable,
   StyleSheet,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   ScrollView,
   Alert,
@@ -221,6 +222,7 @@ export default function LoginScreen() {
   };
   
   const handleLogin = async () => {
+    Keyboard.dismiss(); // Always dismiss keyboard first
     setLoginError('');
     
     if (!email || !password) {
@@ -421,7 +423,10 @@ export default function LoginScreen() {
             <View style={styles.header}>
               <View style={styles.logoContainer}>
                 <Image 
-                  source={{ uri: '/new-logo-512-transparent.png' }}
+                  source={Platform.OS === 'web'
+                    ? { uri: '/new-logo-512-transparent.png' }
+                    : require('../../assets/images/imos-logo-white-v3.png')
+                  }
                   style={styles.logoImage}
                   resizeMode="contain"
                 />
