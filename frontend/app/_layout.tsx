@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Stack, useSegments } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -119,6 +120,20 @@ export default function RootLayout() {
     loadTheme();
     setMounted(true);
     initGlobalErrorHandlers();
+
+    // Check for crash from previous session and report it
+    if (Platform.OS !== 'web') {
+      AsyncStorage.getItem('last_crash').then(crash => {
+        if (crash) {
+          try {
+            const data = JSON.parse(crash);
+            console.warn('[Crash Recovery] Last crash:', data.message, data.time);
+            // Clear it so we don't keep reporting the same crash
+            AsyncStorage.removeItem('last_crash');
+          } catch {}
+        }
+      }).catch(() => {});
+    }
     
     // Re-check auth when PWA comes back from background (iOS aggressively kills JS context)
     if (Platform.OS === 'web') {

@@ -104,4 +104,37 @@ export function initGlobalErrorHandlers() {
       });
     });
   }
+
+  // Native iOS/Android: use React Native's global error handler
+  // This catches ALL uncaught JS errors including those in useEffect, async ops, etc.
+  if (Platform.OS !== 'web') {
+    try {
+      const ErrorUtils = (global as any).ErrorUtils;
+      if (ErrorUtils) {
+        const previousHandler = ErrorUtils.getGlobalHandler();
+        ErrorUtils.setGlobalHandler((error: Error, isFatal: boolean) => {
+          // Report to backend
+          reportError({
+            error_message: error?.message || 'Unknown native crash',
+            error_stack: error?.stack || '',
+            error_type: 'render_crash',
+            extra: { isFatal, osVersion: Platform.Version },
+          });
+
+          // Store crash locally for diagnosis on next launch
+          AsyncStorage.setItem('last_crash', JSON.stringify({
+            message: error?.message,
+            stack: error?.stack?.slice(0, 800),
+            isFatal,
+            time: new Date().toISOString(),
+          })).catch(() => {});
+
+          // Call original React Native handler
+          if (previousHandler) previousHandler(error, isFatal);
+        });
+      }
+    } catch (handlerErr) {
+      // Never let the error handler setup itself cause issues
+    }
+  }
 }
