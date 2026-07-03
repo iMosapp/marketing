@@ -165,41 +165,37 @@ export default function SoldQuickScreen() {
       }).catch(() => {});
 
       // Step 5: Congrats — 2 minutes
-      // Branded Photo: create overlay image and send as native MMS
-      // Digital Card: send the card link
+      // Photo: upload native photo and send as MMS (no overlay processing)
+      // Card: send the digital card link
       if (sendType === 'photo') {
-        let congratsMediaUrl = '';
+        let photoMediaUrl = '';
         if (photo) {
           try {
-            const overlayForm = new FormData();
-            overlayForm.append('customer_name', customerName.trim());
-            overlayForm.append('user_id', user._id);
-            overlayForm.append('headline', congratsText.trim() || 'CONGRATULATIONS!');
+            const uploadForm = new FormData();
             if (IS_WEB) {
               const resp = await fetch(photo.uri);
               const blob = await resp.blob();
-              overlayForm.append('photo', blob, 'delivery.jpg');
+              uploadForm.append('file', blob, 'delivery.jpg');
             } else {
-              overlayForm.append('photo', { uri: photo.uri, type: 'image/jpeg', name: 'delivery.jpg' } as any);
+              uploadForm.append('file', { uri: photo.uri, type: 'image/jpeg', name: 'delivery.jpg' } as any);
             }
-            // Single endpoint: creates overlay + uploads + returns public URL
-            const res = await api.post('/images/congrats-branded-upload', overlayForm, {
+            const uploadRes = await api.post('/images/upload', uploadForm, {
               headers: { 'Content-Type': 'multipart/form-data' },
             });
-            congratsMediaUrl = res.data?.url || '';
-          } catch (e: any) {
-            console.log('Branded photo failed:', e);
-            showSimpleAlert('Photo Error', 'Could not create branded photo: ' + (e?.message || 'Unknown error') + '. Sending text only.');
+            const path = uploadRes.data?.original_url || '';
+            if (path) photoMediaUrl = path.startsWith('http') ? path : `${APP_URL}${path}`;
+          } catch (e) {
+            console.log('Photo upload failed:', e);
           }
         }
         await api.post('/messages/schedule-delayed', {
           to: customerPhone.trim(),
-          body: `Congratulations ${firstName}! It was a pleasure working with you today!`,
+          body: congratsText.trim() || `Congratulations ${firstName}! It was a pleasure working with you today!`,
           user_id: user._id,
           contact_id: contactId,
           contact_name: customerName.trim(),
           delay_seconds: 120,
-          ...(congratsMediaUrl ? { media_urls: [congratsMediaUrl] } : {}),
+          ...(photoMediaUrl ? { media_urls: [photoMediaUrl] } : {}),
           event_type: 'congrats_card_sent',
         }).catch(() => {});
       } else {
@@ -253,7 +249,7 @@ export default function SoldQuickScreen() {
           <View style={s.timeline}>
             {[
               { icon: 'card-outline',    color: '#007AFF', label: 'VCF sent',                  time: 'Right now', done: true },
-              { icon: 'image-outline',   color: '#34C759', label: 'Branded congrats photo',    time: '~2 min',    done: false },
+              { icon: 'image-outline',   color: '#34C759', label: 'Delivery photo (MMS)',         time: '~2 min',    done: false },
               { icon: 'gift-outline',    color: ACCENT,    label: 'Digital card link',          time: '~4 min',    done: false },
               { icon: 'star-outline',    color: '#FF9500', label: 'Review request',             time: '~5 min',    done: false },
               { icon: 'chatbubble-outline', color: '#34C759', label: '7-day check-in',          time: '1 week',    done: false },
@@ -405,8 +401,8 @@ export default function SoldQuickScreen() {
               data-testid="send-type-photo"
             >
               <Ionicons name="image-outline" size={22} color={sendType === 'photo' ? '#000' : ACCENT} />
-              <Text style={[s.typeBtnLabel, sendType === 'photo' && { color: '#000' }]}>Branded Photo</Text>
-              <Text style={[s.typeBtnSub, sendType === 'photo' && { color: '#00000099' }]}>Native MMS with logo overlay</Text>
+              <Text style={[s.typeBtnLabel, sendType === 'photo' && { color: '#000' }]}>Delivery Photo</Text>
+              <Text style={[s.typeBtnSub, sendType === 'photo' && { color: '#00000099' }]}>Send the actual photo as MMS</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[s.typeBtn, sendType === 'card' && s.typeBtnActive]}
@@ -420,24 +416,7 @@ export default function SoldQuickScreen() {
           </View>
         </View>
 
-        {/* Custom text for branded photo */}
-        {sendType === 'photo' && (
-          <View style={{ marginTop: 14 }}>
-            <Text style={s.fieldLabel}>OVERLAY TEXT</Text>
-            <TextInput
-              style={s.input}
-              value={congratsText}
-              onChangeText={setCongratsText}
-              placeholder="CONGRATULATIONS!"
-              placeholderTextColor={colors.textSecondary}
-              autoCapitalize="characters"
-              data-testid="congrats-text-input"
-            />
-            <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4 }}>
-              This text appears on the photo with your store logo
-            </Text>
-          </View>
-        )}
+        {/* No overlay text needed - photo sends as-is */}
 
         {/* What will send */}
         <View style={s.sequencePreview}>
@@ -445,7 +424,7 @@ export default function SoldQuickScreen() {
           {[
             { label: 'Your contact card (VCF)', time: 'Immediately', color: '#007AFF' },
             {
-              label: sendType === 'photo' ? 'Branded congrats photo' : 'Congrats card link',
+              label: sendType === 'photo' ? 'Delivery photo (MMS)' : 'Congrats card link',
               time: '~2 minutes', color: ACCENT,
             },
             { label: 'Review request', time: '~5 minutes', color: '#FF9500' },
