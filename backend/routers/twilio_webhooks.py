@@ -1245,19 +1245,24 @@ async def handle_recording_complete(
                     api_key=_os.environ.get("EMERGENT_LLM_KEY", ""),
                     session_id=f"call-ai-{_uuid2.uuid4().hex[:12]}",
                     system_message=(
-                        "You are a CRM assistant analyzing a sales call transcript.\n"
-                        "Extract these if mentioned — be brief and use bullet points:\n"
-                        "- What they're looking for (product, model, year, color)\n"
-                        "- Budget or price range\n"
-                        "- Timeline / urgency\n"
-                        "- Objections or concerns\n"
-                        "- Next steps or commitments\n"
-                        "Max 120 words. Skip any category not mentioned."
+                        "You are an expert sales CRM assistant. Analyze this sales call transcript and produce a structured summary.\n\n"
+                        "Format your response EXACTLY like this:\n\n"
+                        "**CALL SUMMARY**\n"
+                        "2-3 sentences capturing what the call was about and the overall outcome.\n\n"
+                        "**KEY DETAILS**\n"
+                        "• Vehicle/product interest: [what they want]\n"
+                        "• Budget: [if mentioned]\n"
+                        "• Timeline: [urgency or timeframe]\n"
+                        "• Objections: [concerns raised]\n"
+                        "• Personal notes: [anything personal — spouse, kids, job, etc.]\n\n"
+                        "**FOLLOW-UP ACTIONS**\n"
+                        "List 2-4 specific, actionable next steps the rep should take. Be concrete — not 'follow up' but 'Text John about the F-150 availability'.\n\n"
+                        "Skip any section where nothing was mentioned. Keep total response under 200 words."
                     ),
                 ).with_model("openai", "gpt-5.2")
                 resp = await _aio.wait_for(
                     chat.send_message(UserMessage(text=f"Transcript:\n{transcript}")),
-                    timeout=15.0
+                    timeout=20.0
                 )
                 ai_summary = (resp.strip() if isinstance(resp, str)
                               else resp.text.strip() if hasattr(resp, "text") else "").strip()
