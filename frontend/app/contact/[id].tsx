@@ -2703,7 +2703,7 @@ function ContactDetailScreen() {
                     try {
                       const res = await api.get(`/calls/${user?._id}/contact/${id}`);
                       const all = [...(res.data.recordings || []), ...(res.data.calls || [])];
-                      all.sort((a: any, b: any) => new Date(b.timestamp||b.created_at||0).getTime() - new Date(a.timestamp||a.created_at||0).getTime());
+                      all.sort((a: any, b: any) => { try { return new Date(b.timestamp||b.created_at||0).getTime() - new Date(a.timestamp||a.created_at||0).getTime(); } catch { return 0; } });
                       setCallLogs(all);
                     } catch {}
                     setCallLogsLoading(false);
@@ -3736,7 +3736,7 @@ function ContactDetailScreen() {
                     try {
                       const res = await api.get(`/calls/${user?._id}/contact/${id}`);
                       const all = [...(res.data.recordings || []), ...(res.data.calls || [])];
-                      all.sort((a: any, b: any) => new Date(b.timestamp||b.created_at||0).getTime() - new Date(a.timestamp||a.created_at||0).getTime());
+                      all.sort((a: any, b: any) => { try { return new Date(b.timestamp||b.created_at||0).getTime() - new Date(a.timestamp||a.created_at||0).getTime(); } catch { return 0; } });
                       setCallLogs(all);
                     } catch {}
                     setCallLogsLoading(false);
