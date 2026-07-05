@@ -51,6 +51,55 @@ const SOCIAL_PLATFORMS = [
 ];
 
 // ─── Profile completeness ─────────────────────────────────────────────────────
+function NotificationPreferences({ user, colors }: { user: any; colors: any }) {
+  const [mode, setMode] = React.useState<'sms' | 'push' | 'both'>(user?.notification_mode || 'both');
+  const [saving, setSaving] = React.useState(false);
+
+  const save = async (newMode: 'sms' | 'push' | 'both') => {
+    setMode(newMode);
+    setSaving(true);
+    try {
+      await api.patch(`/push/preferences/${user._id}`, { notification_mode: newMode });
+    } catch {}
+    setSaving(false);
+  };
+
+  const options: { value: 'sms' | 'push' | 'both'; label: string; sub: string; icon: string }[] = [
+    { value: 'both',  label: 'SMS + Push',      sub: 'Text alerts and in-app notifications', icon: 'notifications' },
+    { value: 'push',  label: 'Push only',        sub: 'In-app notifications only, no SMS',    icon: 'phone-portrait' },
+    { value: 'sms',   label: 'SMS only',         sub: 'Text message alerts only',             icon: 'chatbubble' },
+  ];
+
+  return (
+    <View style={{ paddingHorizontal: 16, marginTop: 24, marginBottom: 8 }}>
+      <Text style={{ fontSize: 13, fontWeight: '700', color: '#6E6E73', letterSpacing: 0.5, marginBottom: 10, textTransform: 'uppercase' }}>
+        Alert Delivery
+      </Text>
+      <View style={{ backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.surface, overflow: 'hidden' }}>
+        {options.map((opt, i) => (
+          <TouchableOpacity
+            key={opt.value}
+            onPress={() => save(opt.value)}
+            style={{ flexDirection: 'row', alignItems: 'center', padding: 14, borderBottomWidth: i < 2 ? 1 : 0, borderBottomColor: colors.surface }}
+            data-testid={`notif-mode-${opt.value}`}
+          >
+            <View style={{ width: 36, height: 36, borderRadius: 9, backgroundColor: mode === opt.value ? '#007AFF20' : colors.surface, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+              <Ionicons name={opt.icon as any} size={18} color={mode === opt.value ? '#007AFF' : colors.textSecondary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>{opt.label}</Text>
+              <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 1 }}>{opt.sub}</Text>
+            </View>
+            {mode === opt.value && (
+              saving ? <ActivityIndicator size="small" color="#007AFF" /> : <Ionicons name="checkmark-circle" size={22} color="#007AFF" />
+            )}
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 function calcCompleteness(user: any): number {
   const fields = [
     user?.photo_url || user?.photo_path,
@@ -789,6 +838,9 @@ export default function MyAccountScreen() {
 
         {/* ── Account Info ── */}
         <AccountInfoCard user={user} colors={colors} />
+
+        {/* ── Notification Preferences ── */}
+        <NotificationPreferences user={user} colors={colors} />
 
         {/* ── Sign Out ── */}
         <View style={{ paddingHorizontal: 16, marginTop: 24, marginBottom: 8 }}>

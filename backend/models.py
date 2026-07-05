@@ -202,6 +202,7 @@ class User(BaseModel):
     name: str
     password: str  # Should be hashed in production
     mode: str = "rep"
+    notification_mode: str = "both"  # "sms", "push", "both" — controls alert delivery preference
     
     # Organization & Role
     organization_id: Optional[str] = None  # Which org they belong to
