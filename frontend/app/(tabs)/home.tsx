@@ -754,7 +754,7 @@ function HomeScreen() {
         )}
 
         {/* ── MY MONTH SALES WIDGET ── */}
-        {soldPerf && (soldPerf.current_month?.total > 0 || soldPerf.all_time_sold > 0) && (
+        {soldPerf && (
           <View style={{ marginHorizontal: 16, marginBottom: 16, backgroundColor: colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#C9A96230' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
