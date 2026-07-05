@@ -401,6 +401,8 @@ function HomeScreen() {
         loadAllData();
         // Stagger home intelligence 1s to avoid simultaneous OOM on server
         const t = setTimeout(() => loadHomeIntelligence(), 1000);
+        // Always refresh sold performance when returning to home (e.g. after SOLD wizard)
+        api.get(`/users/${user._id}/sold-performance`).then(r => setSoldPerf(r.data)).catch(() => {});
         return () => clearTimeout(t);
       }
     }, [user?._id])
@@ -774,15 +776,20 @@ function HomeScreen() {
             </View>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {[
-                { label: 'Sold', value: soldPerf.current_month?.total || 0, color: '#C9A962', icon: 'checkmark-circle' },
-                { label: 'Referrals', value: soldPerf.current_month?.referrals || 0, color: '#007AFF', icon: 'people' },
-                { label: 'Repeats', value: soldPerf.current_month?.repeats || 0, color: '#AF52DE', icon: 'repeat' },
+                { label: 'Sold', value: soldPerf.current_month?.total || 0, color: '#C9A962', icon: 'checkmark-circle', filter: 'Sold' },
+                { label: 'Referrals', value: soldPerf.current_month?.referrals || 0, color: '#007AFF', icon: 'people', filter: 'referrals' },
+                { label: 'Repeats', value: soldPerf.current_month?.repeats || 0, color: '#AF52DE', icon: 'repeat', filter: 'repeats' },
               ].map((stat, i) => (
-                <View key={i} style={{ flex: 1, backgroundColor: stat.color + '12', borderRadius: 12, padding: 12, alignItems: 'center', gap: 4 }}>
+                <TouchableOpacity
+                  key={i}
+                  style={{ flex: 1, backgroundColor: stat.color + '12', borderRadius: 12, padding: 12, alignItems: 'center', gap: 4 }}
+                  onPress={() => router.push(`/contacts?filter=${stat.filter}` as any)}
+                  data-testid={`sold-stat-${stat.label.toLowerCase()}`}
+                >
                   <Ionicons name={stat.icon as any} size={20} color={stat.color} />
                   <Text style={{ fontSize: 22, fontWeight: '800', color: stat.color }}>{stat.value}</Text>
                   <Text style={{ fontSize: 11, fontWeight: '600', color: colors.textSecondary }}>{stat.label}</Text>
-                </View>
+                </TouchableOpacity>
               ))}
             </View>
             {soldPerf.all_time_sold > 0 && (
