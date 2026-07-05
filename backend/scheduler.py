@@ -760,9 +760,11 @@ async def process_pending_campaign_steps():
                     real_conv = None
                     rep_phone = send_doc.get("rep_phone") or await get_rep_twilio_number(user_id)
                     if contact_phone and rep_phone:
+                        from services.twilio_service import normalize_phone as _norm
+                        cp_norm = _norm(contact_phone)
                         real_conv = await db.conversations.find_one({
                             "rep_phone": rep_phone,
-                            "contact_phone": contact_phone,
+                            "contact_phone": {"$in": [cp_norm, contact_phone]},
                         })
                     if not real_conv and contact_id:
                         real_conv = await db.conversations.find_one({

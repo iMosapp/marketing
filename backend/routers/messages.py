@@ -696,16 +696,27 @@ async def send_via_twilio(request: Request):
     if not result.get("success"):
         raise HTTPException(status_code=500, detail=result.get("error", "Send failed"))
     now = datetime.utcnow()
-    # Find conversation — try new key first (rep_phone+contact_phone), fall back to old
-    conv = await db.conversations.find_one({"rep_phone": rep_twilio_number, "contact_phone": to_phone})
+    from services.twilio_service import normalize_phone
+    # Normalize phone before lookup — prevents duplicate conversations from format mismatches
+    to_phone_normalized = normalize_phone(to_phone) if to_phone else to_phone
+    # Find conversation — search both normalized and raw formats
+    conv = await db.conversations.find_one({"rep_phone": rep_twilio_number, "contact_phone": to_phone_normalized})
     if not conv:
-        conv = await db.conversations.find_one({"$or": [{"user_id": user_id}, {"user_id": ObjectId(user_id)}], "contact_phone": to_phone})
+        # Try raw format fallback
+        digits = ''.join(c for c in to_phone if c.isdigit())
+        last10 = digits[-10:] if len(digits) >= 10 else digits
+        conv = await db.conversations.find_one({
+            "$and": [
+                {"$or": [{"user_id": user_id}, {"user_id": ObjectId(user_id) if len(user_id) == 24 else user_id}]},
+                {"contact_phone": {"$regex": last10, "$options": "i"}} if last10 else {"contact_phone": to_phone}
+            ]
+        })
     if not conv:
         r = await db.conversations.insert_one({
             "user_id": user_id,
             "rep_phone": rep_twilio_number,
             "contact_id": contact_id,
-            "contact_phone": to_phone,
+            "contact_phone": to_phone_normalized,  # Always store normalized
             "status": "active",
             "created_at": now,
             "updated_at": now,

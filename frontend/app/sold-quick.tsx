@@ -122,15 +122,18 @@ export default function SoldQuickScreen() {
     if (!customerPhone.trim()) { showSimpleAlert('Phone Required', 'Enter the customer\'s phone number.'); return; }
     if (!customerName.trim()) { showSimpleAlert('Name Required', 'Enter the customer\'s name.'); return; }
     if (sendType === 'photo' && !photo) {
-      showSimpleAlert('Photo Required', 'Please take a photo or choose from your camera roll to use the Branded Photo option. Or switch to Digital Card.');
+      showSimpleAlert('Photo Required', 'Please take a photo or choose from your camera roll to use the Delivery Photo option. Or switch to Digital Card.');
       return;
     }
+    // Normalize to E.164 — prevents duplicate conversations from format mismatches
+    const rawDigits = customerPhone.trim().replace(/\D/g, '');
+    const normalizedPhone = rawDigits.length === 10 ? `+1${rawDigits}` : rawDigits.length === 11 && rawDigits[0] === '1' ? `+${rawDigits}` : normalizedPhone;
     setSending(true);
     try {
       // Step 1: Find or create contact
       const contactRes = await api.post(`/contacts/${user._id}/find-or-create-and-log`, {
         name: customerName.trim(),
-        phone: customerPhone.trim(),
+        phone: normalizedPhone,
         event_type: 'congrats_card_sent',
         event_title: 'Sold',
         ...(referredById ? { referred_by: referredById, referred_by_name: referredByName } : {}),
@@ -141,7 +144,7 @@ export default function SoldQuickScreen() {
       const cardFormData = new FormData();
       cardFormData.append('salesman_id', user._id);
       cardFormData.append('customer_name', customerName.trim());
-      cardFormData.append('customer_phone', customerPhone.trim());
+      cardFormData.append('customer_phone', normalizedPhone);
       cardFormData.append('card_type', 'congrats');
       cardFormData.append('contact_id', contactId);
       cardFormData.append('tags', JSON.stringify(['Sold']));
@@ -156,7 +159,7 @@ export default function SoldQuickScreen() {
       const vcfUrl = `${APP_URL}/api/profile/${user._id}/vcard.vcf`;
       const firstName = customerName.trim().split(' ')[0];
       await api.post('/messages/twilio-send', {
-        to: customerPhone.trim(),
+        to: normalizedPhone,
         body: `Hi ${firstName}! This is ${user.name}, tap to save my number so you always have it.`,
         user_id: user._id,
         contact_id: contactId,
@@ -193,7 +196,7 @@ export default function SoldQuickScreen() {
           }
         }
         await api.post('/messages/schedule-delayed', {
-          to: customerPhone.trim(),
+          to: normalizedPhone,
           body: congratsText.trim() || `Congratulations ${firstName}! It was a pleasure working with you today!`,
           user_id: user._id,
           contact_id: contactId,
@@ -205,7 +208,7 @@ export default function SoldQuickScreen() {
       } else {
         // Digital Card link
         await api.post('/messages/schedule-delayed', {
-          to: customerPhone.trim(),
+          to: normalizedPhone,
           body: `Congratulations ${firstName}! It was a pleasure working with you today. Here is your delivery card! ${cardUrl}`,
           user_id: user._id,
           contact_id: contactId,
@@ -218,7 +221,7 @@ export default function SoldQuickScreen() {
       // Step 6: Review link — 5 minutes
       if (reviewUrl) {
         await api.post('/messages/schedule-delayed', {
-          to: customerPhone.trim(),
+          to: normalizedPhone,
           body: `Hey ${firstName}, if you wouldn't mind leaving a quick review I'd really appreciate it! ${reviewUrl}`,
           user_id: user._id,
           contact_id: contactId,
