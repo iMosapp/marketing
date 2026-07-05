@@ -2581,7 +2581,6 @@ function ThreadScreen() {
             </View>
           </View>
         </View>
-      </View>
 
       {/* Review Links Action Sheet */}
       <Modal visible={showReviewLinks} animationType="slide" transparent={true}>
