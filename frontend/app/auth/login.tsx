@@ -276,13 +276,8 @@ export default function LoginScreen() {
           router.replace('/(tabs)/home' as any);
         }
 
-        // Offer biometric setup AFTER navigation, with a small delay
-        if (biometricStatus?.isAvailable && !biometricStatus?.isEnabled) {
-          setTimeout(() => {
-            setPendingCredentials({ email, password });
-            setShowBiometricPrompt(true);
-          }, 800);
-        }
+        // Biometric setup is available via My Presence → Settings
+        // Do NOT show modal here — triggers during navigation causing EXC_BAD_ACCESS crash
 
         return; // Success — exit the retry loop
       } catch (error: any) {
