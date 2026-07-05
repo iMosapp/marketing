@@ -165,25 +165,17 @@ export default function RootLayout() {
         } catch {}
       }
     };
-    const t = setTimeout(registerPush, 3000); // 3s after auth — gives app time to fully load
+    const t = setTimeout(registerPush, 3000);
     return () => clearTimeout(t);
   }, [isAuthenticated, user?._id]);
-    
-    // Re-check auth when PWA comes back from background (iOS aggressively kills JS context)
+
+  // Re-check auth when PWA comes back from background (iOS aggressively kills JS context)
+  useEffect(() => {
     if (Platform.OS === 'web') {
       const handleVisibilityChange = () => {
         if (document.visibilityState === 'visible') {
-          // Only run loadAuth if we're NOT already authenticated in-memory.
-          // If we are authenticated, iOS may have cleared storage but the JS context
-          // survived — loadAuth handles this by re-persisting from in-memory state.
-          // This avoids a flash of "loading" that can trigger the login redirect.
           const { isAuthenticated: alreadyAuth } = useAuthStore.getState();
-          if (!alreadyAuth) {
-            loadAuth();
-          } else {
-            // Already authenticated in memory — silently re-persist storage in background
-            loadAuth();
-          }
+          loadAuth();
         }
       };
       document.addEventListener('visibilitychange', handleVisibilityChange);
