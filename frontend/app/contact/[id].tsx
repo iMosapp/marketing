@@ -1422,12 +1422,12 @@ function ContactDetailScreen() {
           }
           const uploadRes = await api.post('/images/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
           let photoUrl = uploadRes.data?.original_url || uploadRes.data?.url || uploadRes.data?.file_url || '';
-          // Make absolute URL (Twilio needs to fetch it from a public URL)
+          // Make absolute URL + force JPEG so Twilio can deliver as MMS (WebP not universally supported)
           if (photoUrl && photoUrl.startsWith('/')) {
             const baseUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com';
             photoUrl = `${baseUrl}${photoUrl}`;
           }
-          if (photoUrl) mediaUrls = [photoUrl];
+          if (photoUrl) mediaUrls = [`${photoUrl}?format=jpeg`];
         } catch (uploadErr) {
           console.warn('Photo upload failed, sending text only:', uploadErr);
         }

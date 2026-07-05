@@ -183,7 +183,11 @@ export default function SoldQuickScreen() {
               headers: { 'Content-Type': 'multipart/form-data' },
             });
             const path = uploadRes.data?.original_url || '';
-            if (path) photoMediaUrl = path.startsWith('http') ? path : `${APP_URL}${path}`;
+            if (path) {
+              // Append ?format=jpeg — Twilio needs JPEG, not WebP, for reliable MMS delivery
+              const absPath = path.startsWith('http') ? path : `${APP_URL}${path}`;
+              photoMediaUrl = `${absPath}?format=jpeg`;
+            }
           } catch (e) {
             console.log('Photo upload failed:', e);
           }
