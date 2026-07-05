@@ -121,19 +121,53 @@ export default function RootLayout() {
     setMounted(true);
     initGlobalErrorHandlers();
 
-    // Check for crash from previous session and report it
+    // Check for crash from previous session
     if (Platform.OS !== 'web') {
       AsyncStorage.getItem('last_crash').then(crash => {
         if (crash) {
-          try {
-            const data = JSON.parse(crash);
-            console.warn('[Crash Recovery] Last crash:', data.message, data.time);
-            // Clear it so we don't keep reporting the same crash
-            AsyncStorage.removeItem('last_crash');
-          } catch {}
+          try { const data = JSON.parse(crash); console.warn('[Crash Recovery] Last crash:', data.message, data.time); AsyncStorage.removeItem('last_crash'); } catch {}
         }
       }).catch(() => {});
     }
+  }, []);
+
+  // Register push token whenever user is authenticated — runs after BOTH fresh login AND session restore
+  useEffect(() => {
+    if (!isAuthenticated || !user?._id || Platform.OS === 'web') return;
+    const registerPush = async () => {
+      try {
+        const Notifications = await import('expo-notifications');
+        const { status: existing } = await Notifications.getPermissionsAsync();
+        let finalStatus = existing;
+        if (existing !== 'granted') {
+          await new Promise(r => setTimeout(r, 1500)); // wait for screen to settle
+          const { status } = await Notifications.requestPermissionsAsync();
+          finalStatus = status;
+        }
+        console.log('[Push] Permission status:', finalStatus);
+        if (finalStatus !== 'granted') return;
+        const tokenData = await Notifications.getExpoPushTokenAsync({
+          projectId: '178e2029-a577-4d78-9611-bd7ebec83c91',
+        });
+        if (tokenData?.data) {
+          const { default: apiInstance } = await import('../services/api');
+          await apiInstance.post(`/push/subscribe-native/${user._id}`, {
+            expo_push_token: tokenData.data,
+            platform: Platform.OS,
+          });
+          console.log('[Push] ✅ Token registered:', tokenData.data.slice(0, 25) + '...');
+        }
+      } catch (err: any) {
+        console.error('[Push] Registration failed:', err?.message);
+        try {
+          const { default: apiInstance } = await import('../services/api');
+          await apiInstance.post('/push/log-error', { user_id: user._id, error: err?.message, platform: Platform.OS }).catch(() => {});
+        } catch {}
+      }
+    };
+    const t = setTimeout(registerPush, 3000); // 3s after auth — gives app time to fully load
+    return () => clearTimeout(t);
+  }, [isAuthenticated, user?._id]);
     
     // Re-check auth when PWA comes back from background (iOS aggressively kills JS context)
     if (Platform.OS === 'web') {
