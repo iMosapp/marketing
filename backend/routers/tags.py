@@ -407,9 +407,12 @@ async def auto_enroll_contacts_in_campaign(user_id: str, tag_name: str, contact_
         tag_normalized = tag_lower.replace(" ", "_")
         base_filter = await get_data_filter(user_id)
 
-        # 1. Check for an existing active campaign with this trigger_tag
+        # 1. Check for an existing active campaign with this trigger_tag — case-insensitive
         existing_campaign = await db.campaigns.find_one({
-            "$and": [base_filter, {"trigger_tag": {"$in": [tag_lower, tag_normalized]}, "active": True}]
+            "$and": [base_filter, {
+                "trigger_tag": {"$regex": f"^{tag_name}$", "$options": "i"},
+                "active": True
+            }]
         })
 
         # 2. If none, check prebuilt templates for a matching trigger_tag

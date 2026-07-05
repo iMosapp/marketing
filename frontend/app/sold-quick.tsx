@@ -38,7 +38,30 @@ export default function SoldQuickScreen() {
   const [referredById, setReferredById] = useState('');
   const [referralSearch, setReferralSearch] = useState('');
   const [referralResults, setReferralResults] = useState<any[]>([]);
-  const [showReferralSearch, setShowReferralSearch] = useState(false);
+
+  // Campaign selection
+  const [availableCampaigns, setAvailableCampaigns] = useState<any[]>([]);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>('');
+  const [selectedCampaignName, setSelectedCampaignName] = useState<string>('');
+
+  useEffect(() => {
+    if (!user?._id) return;
+    api.get(`/campaigns/${user._id}?active=true`).then(res => {
+      const camps = (res.data?.campaigns || res.data || []).filter((c: any) =>
+        c.active && (
+          c.trigger_tag?.toLowerCase() === 'sold' ||
+          c.type?.includes('sold') ||
+          c.name?.toLowerCase().includes('sold') ||
+          c.name?.toLowerCase().includes('follow')
+        )
+      );
+      setAvailableCampaigns(camps);
+      if (camps.length > 0 && !selectedCampaignId) {
+        setSelectedCampaignId(camps[0]._id || camps[0].id);
+        setSelectedCampaignName(camps[0].name);
+      }
+    }).catch(() => {});
+  }, [user?._id]);  const [showReferralSearch, setShowReferralSearch] = useState(false);
 
   // Referral contact search
   useEffect(() => {
@@ -229,6 +252,12 @@ export default function SoldQuickScreen() {
           delay_seconds: 300,
           event_type: 'review_request_sent',
         }).catch(() => {});
+      }
+
+      // Step 7: Enroll in long-term follow-up campaign
+      if (selectedCampaignId && contactId) {
+        await api.post(`/campaigns/${user._id}/${selectedCampaignId}/enroll/${contactId}`)
+          .catch(() => {});
       }
 
       // Success animation
@@ -442,6 +471,46 @@ export default function SoldQuickScreen() {
               <Text style={[s.sequenceTime, { color: item.color }]}>{item.time}</Text>
             </View>
           ))}
+        </View>
+
+        {/* ── Long-term Campaign ── */}
+        <View style={{ marginTop: 24 }}>
+          <Text style={s.fieldLabel}>LONG-TERM FOLLOW-UP CAMPAIGN</Text>
+          {availableCampaigns.length === 0 ? (
+            <View style={{ backgroundColor: colors.card, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: colors.surface, marginTop: 8 }}>
+              <Text style={{ fontSize: 14, color: colors.textSecondary }}>No Sold campaigns found. Create one in Hub → Campaigns.</Text>
+            </View>
+          ) : (
+            <View style={{ backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.surface, marginTop: 8, overflow: 'hidden' }}>
+              {availableCampaigns.map((c: any, i: number) => {
+                const cid = c._id || c.id;
+                const selected = selectedCampaignId === cid;
+                return (
+                  <TouchableOpacity
+                    key={cid}
+                    onPress={() => { setSelectedCampaignId(cid); setSelectedCampaignName(c.name); }}
+                    style={{ flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12, borderBottomWidth: i < availableCampaigns.length - 1 ? 1 : 0, borderBottomColor: colors.surface }}
+                    data-testid={`campaign-option-${cid}`}
+                  >
+                    <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: selected ? ACCENT : colors.border, backgroundColor: selected ? ACCENT : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
+                      {selected && <Ionicons name="checkmark" size={12} color="#000" />}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>{c.name}</Text>
+                      <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                        {(c.sequences || []).length} steps · starts day 7
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+          {selectedCampaignId && (
+            <TouchableOpacity onPress={() => { setSelectedCampaignId(''); setSelectedCampaignName(''); }} style={{ marginTop: 6, alignSelf: 'flex-end' }}>
+              <Text style={{ fontSize: 12, color: colors.textSecondary }}>Skip campaign enrollment</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Send button */}
