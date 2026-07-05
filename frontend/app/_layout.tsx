@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Platform, View } from 'react-native';
+import { useEffect, useState, useRef } from 'react';
+import { Platform, View, AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Stack, useSegments } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -95,6 +95,51 @@ export default function RootLayout() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const segments = useSegments();
   const [mounted, setMounted] = useState(false);
+
+
+  // Clear badge + notification tap navigation
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    let responseSubRemove: (() => void) | null = null;
+    let appStateSub: any = null;
+
+    (async () => {
+      try {
+        const Notifications = await import('expo-notifications');
+        await Notifications.setBadgeCountAsync(0);
+        Notifications.setNotificationHandler({
+          handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: true,
+          }),
+        });
+        const sub = Notifications.addNotificationResponseReceivedListener(response => {
+          const data = response.notification.request.content.data as any;
+          const url = data?.url || data?.screen || '';
+          if (url && url !== '/') {
+            setTimeout(() => { try { router.push(url as any); } catch {} }, 600);
+          }
+        });
+        responseSubRemove = () => sub.remove();
+      } catch {}
+    })();
+
+    appStateSub = AppState.addEventListener('change', async nextState => {
+      if (nextState === 'active') {
+        try {
+          const Notifications = await import('expo-notifications');
+          await Notifications.setBadgeCountAsync(0);
+        } catch {}
+      }
+    });
+
+    return () => {
+      responseSubRemove?.();
+      appStateSub?.remove();
+    };
+  }, []);
+
 
   // Sync theme mode to data-theme on <html> so CSS can target dark/light autofill colors
   // Also re-applies whenever segments change (e.g. after returning from login page which forced 'light')
