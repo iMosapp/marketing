@@ -167,7 +167,7 @@ export default function TabLayout() {
         }}
       />
       {/* Hidden tabs - accessible via Menu but not shown in tab bar */}
-      <Tabs.Screen name="dialer" options={{ href: null }} />
+      <Tabs.Screen name="dialer" options={{ href: null, headerShown: false }} />
       <Tabs.Screen name="team" options={{ href: null }} />
       <Tabs.Screen name="touchpoints" options={{ href: null }} />
       <Tabs.Screen name="activity-feed" options={{ href: null }} />
