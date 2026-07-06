@@ -2242,7 +2242,12 @@ function ThreadScreen() {
         </ScrollView>
       )}
 
-      
+      {/* Messages + Composer — wrapped together so keyboard pushes both up */}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
       {/* Messages - hidden when intel is expanded */}
       {!showIntel && (loading ? (
         <View style={styles.loadingContainer}>
@@ -2255,7 +2260,6 @@ function ThreadScreen() {
           contentContainerStyle={styles.messagesList}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
-          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -2581,6 +2585,8 @@ function ThreadScreen() {
             </View>
           </View>
         </View>
+
+      </KeyboardAvoidingView>
 
       {/* Review Links Action Sheet */}
       <Modal visible={showReviewLinks} animationType="slide" transparent={true}>
