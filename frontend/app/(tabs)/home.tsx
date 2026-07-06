@@ -776,14 +776,17 @@ function HomeScreen() {
             </View>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {[
-                { label: 'Sold', value: soldPerf.current_month?.total || 0, color: '#C9A962', icon: 'checkmark-circle', filter: 'Sold' },
-                { label: 'Referrals', value: soldPerf.current_month?.referrals || 0, color: '#007AFF', icon: 'people', filter: 'referrals' },
-                { label: 'Repeats', value: soldPerf.current_month?.repeats || 0, color: '#AF52DE', icon: 'repeat', filter: 'repeats' },
+                { label: 'Sold', value: soldPerf.current_month?.total || 0, color: '#C9A962', icon: 'checkmark-circle',
+                  onPress: () => router.push('/contacts?tag=Sold' as any) },
+                { label: 'Referrals', value: soldPerf.current_month?.referrals || 0, color: '#007AFF', icon: 'people',
+                  onPress: () => router.push('/contacts?tag=Sold&has_referral=true' as any) },
+                { label: 'Repeats', value: soldPerf.current_month?.repeats || 0, color: '#AF52DE', icon: 'repeat',
+                  onPress: () => router.push('/contacts?tag=Sold&repeats=true' as any) },
               ].map((stat, i) => (
                 <TouchableOpacity
                   key={i}
                   style={{ flex: 1, backgroundColor: stat.color + '12', borderRadius: 12, padding: 12, alignItems: 'center', gap: 4 }}
-                  onPress={() => router.push(`/contacts?filter=${stat.filter}` as any)}
+                  onPress={stat.onPress}
                   data-testid={`sold-stat-${stat.label.toLowerCase()}`}
                 >
                   <Ionicons name={stat.icon as any} size={20} color={stat.color} />

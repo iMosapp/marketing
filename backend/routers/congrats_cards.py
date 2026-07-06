@@ -692,6 +692,19 @@ async def create_congrats_card(
                     {"$push": {"tags": tag_name}},
                 )
                 applied_tags.append(tag_name)
+            # Set date_sold and sold_count when Sold tag is applied
+            if any(t.lower() == "sold" for t in applied_tags):
+                existing = await db.contacts.find_one({"_id": tag_contact["_id"]}, {"date_sold": 1, "sold_count": 1})
+                if not (existing or {}).get("date_sold"):
+                    await db.contacts.update_one(
+                        {"_id": tag_contact["_id"]},
+                        {"$set": {"date_sold": datetime.now(timezone.utc), "sold_count": 1}}
+                    )
+                else:
+                    await db.contacts.update_one(
+                        {"_id": tag_contact["_id"]},
+                        {"$set": {"date_sold": datetime.now(timezone.utc)}, "$inc": {"sold_count": 1}}
+                    )
 
             # Trigger campaign enrollment for applied tags (unless skipped)
             should_skip = skip_campaign and skip_campaign.lower() in ("true", "1", "yes")

@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
@@ -36,14 +36,15 @@ export default function ContactsScreen() {
   const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
-  
+  const { tag: tagParam } = useLocalSearchParams<{ tag?: string }>();
+
   const [search, setSearch] = useState('');
   const [contacts, setContacts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [tags, setTags] = useState<Tag[]>([]);
-  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [selectedTag, setSelectedTag] = useState<string | null>(tagParam || null);
   const [crmFilter, setCrmFilter] = useState<'all' | 'linked' | 'not_linked' | 'users'>('all');
   const [viewMode, setViewMode] = useState<'mine' | 'team'>('mine');
   const [sortMode, setSortMode] = useState<'alpha' | 'recent'>('recent');
