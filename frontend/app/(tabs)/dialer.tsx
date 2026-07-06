@@ -84,7 +84,7 @@ export default function DialerScreen() {
     const twilioNumber = (user as any)?.twilio_number || (user as any)?.mvpline_number;
     if (twilioNumber && user?._id) {
       try {
-        await api.post('/webhooks/twilio/outbound-call', {
+        await api.post('/webhooks/twilio/call', {
           rep_user_id: user._id,
           customer_phone: numberToCall,
           contact_id: contactId,
