@@ -60,7 +60,12 @@ function NotificationPreferences({ user, colors }: { user: any; colors: any }) {
     setSaving(true);
     try {
       await api.patch(`/push/preferences/${user._id}`, { notification_mode: newMode });
-    } catch {}
+      // Brief visual confirmation — checkmark already shows, no toast needed
+    } catch (e: any) {
+      // Revert on failure
+      setMode(mode);
+      alert('Failed to save: ' + (e?.response?.data?.detail || e?.message || 'Unknown error'));
+    }
     setSaving(false);
   };
 

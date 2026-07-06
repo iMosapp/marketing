@@ -258,12 +258,13 @@ async def log_push_error(request: Request):
 @router.patch("/preferences/{user_id}")
 async def update_notification_preferences(user_id: str, request: Request):
     """Update user's notification delivery preference: 'sms', 'push', or 'both'."""
+    from bson import ObjectId as _OId
     db = get_db()
     data = await request.json()
     mode = data.get("notification_mode", "both")
     if mode not in ("sms", "push", "both"):
         raise HTTPException(status_code=400, detail="notification_mode must be 'sms', 'push', or 'both'")
-    await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"notification_mode": mode}})
+    await db.users.update_one({"_id": _OId(user_id)}, {"$set": {"notification_mode": mode}})
     logger.info(f"[Push] User {user_id} set notification_mode={mode}")
     return {"success": True, "notification_mode": mode}
 
