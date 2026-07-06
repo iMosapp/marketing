@@ -249,7 +249,7 @@ export default function SoldQuickScreen() {
           user_id: user._id,
           contact_id: contactId,
           contact_name: customerName.trim(),
-          delay_seconds: 300,
+          delay_seconds: 420,
           event_type: 'review_request_sent',
         }).catch(() => {});
       }
@@ -287,7 +287,7 @@ export default function SoldQuickScreen() {
               { icon: 'card-outline',    color: '#007AFF', label: 'VCF sent',                  time: 'Right now', done: true },
               { icon: 'image-outline',   color: '#34C759', label: 'Delivery photo (MMS)',         time: '~2 min',    done: false },
               { icon: 'gift-outline',    color: ACCENT,    label: 'Digital card link',          time: '~4 min',    done: false },
-              { icon: 'star-outline',    color: '#FF9500', label: 'Review request',             time: '~5 min',    done: false },
+              { icon: 'star-outline',    color: '#FF9500', label: 'Review request',             time: '~7 min',    done: false },
               { icon: 'chatbubble-outline', color: '#34C759', label: '7-day check-in',          time: '1 week',    done: false },
               { icon: 'people-outline',  color: '#AF52DE', label: 'Referral ask',               time: '3 weeks',   done: false },
             ].map((item, i) => (
@@ -477,7 +477,7 @@ export default function SoldQuickScreen() {
               label: sendType === 'photo' ? 'Delivery photo (MMS)' : 'Congrats card link',
               time: '~2 minutes', color: ACCENT,
             },
-            { label: 'Review request', time: '~5 minutes', color: '#FF9500' },
+            { label: 'Review request', time: '~7 minutes', color: '#FF9500' },
           ].map((item, i) => (
             <View key={i} style={s.sequenceRow}>
               <View style={[s.sequenceDot, { backgroundColor: item.color }]} />
