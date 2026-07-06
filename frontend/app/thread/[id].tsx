@@ -733,14 +733,18 @@ function ThreadScreen() {
     return () => clearInterval(interval);
   }, [actualConversationId, id, loading]);
 
-  // ScrollView's onContentSizeChange handles initial scroll to bottom
-  // This effect handles scrolling on new messages arriving
+  // Auto-scroll to bottom when messages load or new messages arrive
   useEffect(() => {
     if (messages.length > 0 && !loading) {
-      flatListRef.current?.scrollToEnd({ animated: true });
-      setShowScrollBtn(false);
+      // Immediate scroll first, then delayed to handle KeyboardAvoidingView layout
+      flatListRef.current?.scrollToEnd({ animated: false });
+      const t = setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: false });
+        setShowScrollBtn(false);
+      }, 150);
+      return () => clearTimeout(t);
     }
-  }, [messages.length]);
+  }, [messages.length, loading]);
 
   const loadAISuggestion = async () => {
     if (!conversationId || aiMode === 'off') return;
@@ -2268,8 +2272,10 @@ function ThreadScreen() {
             />
           }
           onContentSizeChange={() => {
-            flatListRef.current?.scrollToEnd({ animated: false });
-            setShowScrollBtn(false);
+            setTimeout(() => {
+              flatListRef.current?.scrollToEnd({ animated: false });
+              setShowScrollBtn(false);
+            }, 50);
           }}
           onScroll={(e) => {
             const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
