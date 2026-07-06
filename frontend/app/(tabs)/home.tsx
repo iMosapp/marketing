@@ -663,9 +663,9 @@ function HomeScreen() {
 
   const TILES = [
     { key: 'sold',        icon: 'trophy',     label: 'SOLD!',       sublabel: 'Snap the moment & start campaign', color: '#C9A962', onPress: () => router.push('/sold-quick' as any) },
-    { key: 'dialer',      icon: 'keypad',     label: 'Dialer',      sublabel: 'Call a contact',                  color: '#34C759', onPress: () => router.push('/(tabs)/dialer' as any) },
-    { key: 'card',        icon: 'card',       label: 'Card',        sublabel: 'Send your digital card',          color: '#007AFF', onPress: () => router.push('/quick-send/digitalcard' as any) },
-    { key: 'new-contact', icon: 'person-add', label: 'New Contact', sublabel: 'Add someone new',                 color: '#FF9500', onPress: () => router.push('/contact/new' as any) },
+    { key: 'review',      icon: 'star',       label: 'Review',      sublabel: 'Ask for a 5-star review',          color: '#FF9500', onPress: () => router.push('/quick-send/review' as any) },
+    { key: 'card',        icon: 'card',       label: 'Card',        sublabel: 'Send your digital card',           color: '#007AFF', onPress: () => router.push('/quick-send/digitalcard' as any) },
+    { key: 'new-contact', icon: 'person-add', label: 'New Contact', sublabel: 'Add someone new',                  color: '#34C759', onPress: () => router.push('/contact/new' as any) },
   ];
 
   return (
@@ -754,6 +754,16 @@ function HomeScreen() {
             <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
           </TouchableOpacity>
         )}
+
+        {/* ── MAKE A CALL BAR ── */}
+        <TouchableOpacity
+          onPress={() => router.push('/(tabs)/dialer' as any)}
+          style={{ marginHorizontal: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: colors.card, borderRadius: 14, paddingVertical: 13, borderWidth: 1, borderColor: colors.surface }}
+          data-testid="make-a-call-btn"
+        >
+          <Ionicons name="call-outline" size={20} color="#34C759" />
+          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Make a Call</Text>
+        </TouchableOpacity>
 
         {/* ── MY MONTH SALES WIDGET ── */}
         {soldPerf && (
