@@ -736,15 +736,10 @@ function ThreadScreen() {
   // Auto-scroll to bottom when messages load or new messages arrive
   useEffect(() => {
     if (messages.length > 0 && !loading) {
-      // Immediate scroll first, then delayed to handle KeyboardAvoidingView layout
-      flatListRef.current?.scrollToEnd({ animated: false });
-      const t = setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: false });
-        setShowScrollBtn(false);
-      }, 150);
-      return () => clearTimeout(t);
+      flatListRef.current?.scrollToEnd({ animated: true });
+      setShowScrollBtn(false);
     }
-  }, [messages.length, loading]);
+  }, [messages.length]);
 
   const loadAISuggestion = async () => {
     if (!conversationId || aiMode === 'off') return;
@@ -2272,10 +2267,8 @@ function ThreadScreen() {
             />
           }
           onContentSizeChange={() => {
-            setTimeout(() => {
-              flatListRef.current?.scrollToEnd({ animated: false });
-              setShowScrollBtn(false);
-            }, 50);
+            flatListRef.current?.scrollToEnd({ animated: false });
+            setShowScrollBtn(false);
           }}
           onScroll={(e) => {
             const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;

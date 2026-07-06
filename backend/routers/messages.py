@@ -1733,31 +1733,47 @@ async def get_conversation_info(conversation_id: str):
 
 @router.get("/thread/{conversation_id}")
 async def get_thread_messages(conversation_id: str):
-    """Get messages for a conversation thread. Merges sibling conversations safely."""
+    """Get all messages for a conversation thread.
+    Loads by contact_id so messages with mismatched conversation_ids are always included."""
     db = get_db()
 
-    # Always start with the primary conversation's messages
+    # Primary: get messages by conversation_id
     conv_ids = [conversation_id]
+    contact_id_filter = None
 
-    # Safely try to find sibling conversations (same contact, different conv due to phone format)
     try:
         from bson import ObjectId as _OId
         conv = await db.conversations.find_one({"_id": _OId(conversation_id)})
         if conv:
-            contact_id = str(conv.get("contact_id", ""))
-            user_id = str(conv.get("user_id", ""))
-            if contact_id and user_id:
+            raw_cid = conv.get("contact_id")
+            if raw_cid:
+                contact_id_filter = str(raw_cid)
+                # Also include sibling conversations for same contact
                 siblings = await db.conversations.find(
-                    {"contact_id": contact_id, "user_id": user_id, "_id": {"$ne": _OId(conversation_id)}},
+                    {"contact_id": raw_cid, "_id": {"$ne": _OId(conversation_id)}},
                     {"_id": 1}
                 ).limit(5).to_list(5)
                 conv_ids.extend([str(s["_id"]) for s in siblings])
     except Exception:
-        pass  # Never let sibling lookup break the main message fetch
+        pass
 
-    messages = await db.messages.find(
-        {"conversation_id": {"$in": conv_ids}}
-    ).sort("timestamp", 1).limit(500).to_list(500)
+    # Fetch by both conversation_id AND contact_id to catch all messages
+    query: dict = {"$or": [{"conversation_id": {"$in": conv_ids}}]}
+    if contact_id_filter:
+        # Include messages stored with the contact_id directly or with fake conv IDs
+        query["$or"].append({"contact_id": contact_id_filter})
+        query["$or"].append({"conversation_id": {"$regex": contact_id_filter}})
+
+    messages = await db.messages.find(query).sort("timestamp", 1).limit(500).to_list(500)
+
+    # Deduplicate by _id
+    seen = set()
+    unique = []
+    for m in messages:
+        mid = str(m["_id"])
+        if mid not in seen:
+            seen.add(mid)
+            unique.append(m)
 
     return [{
         "_id": str(m["_id"]),
@@ -1772,7 +1788,7 @@ async def get_thread_messages(conversation_id: str):
         "card_type": m.get("card_type", ""),
         "has_media": m.get("has_media", False),
         "media_urls": m.get("media_urls", []),
-    } for m in messages]
+    } for m in unique]
 
 
 @router.post("/ai-suggest/{conversation_id}")
