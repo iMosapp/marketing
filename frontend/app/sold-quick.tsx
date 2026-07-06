@@ -452,7 +452,21 @@ export default function SoldQuickScreen() {
           </View>
         </View>
 
-        {/* No overlay text needed - photo sends as-is */}
+        {/* Custom message with delivery photo */}
+        {sendType === 'photo' && (
+          <View style={{ marginTop: 14 }}>
+            <Text style={s.fieldLabel}>MESSAGE WITH PHOTO</Text>
+            <TextInput
+              style={[s.input, { height: 80, textAlignVertical: 'top', paddingTop: 10 }]}
+              value={congratsText}
+              onChangeText={setCongratsText}
+              placeholder={`Congratulations ${customerName.split(' ')[0] || 'there'}! It was a pleasure working with you today!`}
+              placeholderTextColor={colors.textSecondary}
+              multiline
+              data-testid="congrats-text-input"
+            />
+          </View>
+        )}
 
         {/* What will send */}
         <View style={s.sequencePreview}>
