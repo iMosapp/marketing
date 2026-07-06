@@ -787,11 +787,11 @@ function HomeScreen() {
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {[
                 { label: 'Sold', value: soldPerf.current_month?.total || 0, color: '#C9A962', icon: 'checkmark-circle',
-                  onPress: () => router.push('/contacts?tag=Sold' as any) },
+                  onPress: () => router.push('/sales-list?type=sold' as any) },
                 { label: 'Referrals', value: soldPerf.current_month?.referrals || 0, color: '#007AFF', icon: 'people',
-                  onPress: () => router.push('/contacts?tag=Sold&has_referral=true' as any) },
+                  onPress: () => router.push('/sales-list?type=referrals' as any) },
                 { label: 'Repeats', value: soldPerf.current_month?.repeats || 0, color: '#AF52DE', icon: 'repeat',
-                  onPress: () => router.push('/contacts?tag=Sold&repeats=true' as any) },
+                  onPress: () => router.push('/sales-list?type=repeats' as any) },
               ].map((stat, i) => (
                 <TouchableOpacity
                   key={i}

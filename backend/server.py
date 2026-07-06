@@ -568,6 +568,88 @@ async def get_sold_performance(user_id: str, months: int = 6):
     }
 
 
+
+@api_router.get("/users/{user_id}/sold-contacts")
+async def get_sold_contacts_list(user_id: str, filter_type: str = "sold", month: int = 0, year: int = 0):
+    """Return filtered sold contacts for home screen tile taps."""
+    db = get_db()
+    from datetime import timezone as _tz
+    now_dt = datetime.now(_tz.utc)
+    m = month or now_dt.month
+    y = year or now_dt.year
+    start = datetime(y, m, 1)
+    end = datetime(y + (1 if m == 12 else 0), (m % 12) + 1, 1)
+    base: dict = {
+        "user_id": user_id,
+        "date_sold": {"$gte": start.replace(tzinfo=None), "$lt": end.replace(tzinfo=None)},
+        "status": {"$nin": ["hidden", "merged", "deleted"]},
+    }
+    if filter_type == "referrals":
+        base["referred_by"] = {"$exists": True, "$ne": None, "$ne": ""}
+    elif filter_type == "repeats":
+        base["sold_count"] = {"$gt": 1}
+    contacts = await db.contacts.find(base, {
+        "_id": 1, "first_name": 1, "last_name": 1, "phone": 1,
+        "vehicle": 1, "date_sold": 1, "sold_count": 1, "referred_by_name": 1, "photo_thumbnail": 1
+    }).sort("date_sold", -1).to_list(200)
+    return {"contacts": [{
+        "_id": str(c["_id"]),
+        "name": f"{c.get('first_name','')} {c.get('last_name','')}".strip(),
+        "phone": c.get("phone", ""),
+        "vehicle": c.get("vehicle", ""),
+        "date_sold": c["date_sold"].isoformat() if c.get("date_sold") else "",
+        "sold_count": c.get("sold_count", 1),
+        "referred_by_name": c.get("referred_by_name", ""),
+        "photo_thumbnail": c.get("photo_thumbnail", ""),
+    } for c in contacts], "total": len(contacts)}
+
+
+@api_router.get("/team/{user_id}/performance")
+async def get_team_performance(user_id: str, month: int = 0, year: int = 0):
+    """Team sales performance grouped by store. Admin sees all stores, others see their store."""
+    db = get_db()
+    from datetime import timezone as _tz
+    now_dt = datetime.now(_tz.utc)
+    m = month or now_dt.month
+    y = year or now_dt.year
+    start = datetime(y, m, 1).replace(tzinfo=None)
+    end = datetime(y + (1 if m == 12 else 0), (m % 12) + 1, 1).replace(tzinfo=None)
+    requester = await db.users.find_one({"_id": ObjectId(user_id)}, {"role": 1, "store_id": 1})
+    if not requester:
+        raise HTTPException(status_code=404, detail="User not found")
+    role = requester.get("role", "user")
+    is_admin = role in ("super_admin", "org_admin")
+    users_q: dict = {"active": {"$ne": False}} if is_admin else {"store_id": requester.get("store_id"), "active": {"$ne": False}}
+    reps = await db.users.find(users_q, {"_id": 1, "name": 1, "store_id": 1, "role": 1, "photo_thumbnail": 1}).to_list(200)
+    store_ids = list({str(r.get("store_id", "")) for r in reps if r.get("store_id")})
+    stores_map: dict = {}
+    for sid in store_ids:
+        try:
+            s = await db.stores.find_one({"_id": ObjectId(sid)}, {"name": 1})
+            stores_map[sid] = (s or {}).get("name", "Unknown Store")
+        except Exception:
+            stores_map[sid] = "Unknown Store"
+    results: dict = {}
+    for rep in reps:
+        rid = str(rep["_id"])
+        sid = str(rep.get("store_id", "")) or "no_store"
+        store_name = stores_map.get(sid, "No Store")
+        sold = await db.contacts.count_documents({"user_id": rid, "date_sold": {"$gte": start, "$lt": end}, "status": {"$nin": ["hidden", "merged", "deleted"]}})
+        refs = await db.contacts.count_documents({"user_id": rid, "date_sold": {"$gte": start, "$lt": end}, "referred_by": {"$exists": True, "$ne": None, "$ne": ""}, "status": {"$nin": ["hidden", "merged", "deleted"]}})
+        rpts = await db.contacts.count_documents({"user_id": rid, "date_sold": {"$gte": start, "$lt": end}, "sold_count": {"$gt": 1}, "status": {"$nin": ["hidden", "merged", "deleted"]}})
+        all_t = await db.contacts.count_documents({"user_id": rid, "date_sold": {"$exists": True, "$ne": None}, "status": {"$nin": ["hidden", "merged", "deleted"]}})
+        if sid not in results:
+            results[sid] = {"store_id": sid, "store_name": store_name, "reps": [], "totals": {"sold": 0, "referrals": 0, "repeats": 0, "all_time": 0}}
+        results[sid]["reps"].append({"user_id": rid, "name": rep.get("name", "?"), "role": role, "photo": rep.get("photo_thumbnail", ""), "sold": sold, "referrals": refs, "repeats": rpts, "all_time": all_t})
+        for k, v in [("sold", sold), ("referrals", refs), ("repeats", rpts), ("all_time", all_t)]:
+            results[sid]["totals"][k] += v
+    for sid in results:
+        results[sid]["reps"].sort(key=lambda r: -r["sold"])
+    return {"stores": list(results.values()), "month": m, "year": y, "month_label": datetime(y, m, 1).strftime("%B %Y"), "is_admin": is_admin}
+
+
+# ============= REVIEW LINKS ENDPOINTS =============
+
 # ============= REVIEW LINKS ENDPOINTS =============
 @api_router.get("/users/{user_id}/review-links")
 async def get_review_links(user_id: str):

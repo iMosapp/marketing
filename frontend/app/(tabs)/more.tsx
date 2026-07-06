@@ -673,6 +673,7 @@ export default function MoreScreen() {
   if (perm('insights')) {
     const items = filterItems('insights', [
       { permKey: 'my_performance', icon: 'stats-chart', title: 'My Stats', subtitle: 'Day / week / month performance', onPress: () => router.push('/touchpoints/performance' as any), color: '#34C759' },
+      { permKey: 'my_performance', icon: 'trophy', title: 'Team Sales', subtitle: 'Monthly sold, referrals & repeats by rep', onPress: () => router.push('/reports/team-performance' as any), color: '#C9A962' },
       { permKey: 'my_performance', icon: 'people', title: 'Customer Engagement', subtitle: 'Ranked by engagement level', onPress: () => router.push('/touchpoints/customer-performance' as any), color: '#FF9500' },
       { permKey: 'leaderboard', icon: 'podium', title: 'Leaderboard', subtitle: 'Where I stand on the team', onPress: () => router.push('/admin/leaderboard'), color: '#AF52DE' },
       { permKey: 'activity_reports', icon: 'bar-chart', title: 'Activity Reports', subtitle: 'Detailed activity analytics', onPress: () => router.push('/reports/activity'), color: '#007AFF' },
