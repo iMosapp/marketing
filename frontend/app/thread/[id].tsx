@@ -2587,7 +2587,6 @@ function ThreadScreen() {
         </View>
 
       </KeyboardAvoidingView>
-    </SafeAreaView>
 
       {/* Review Links Action Sheet */}
       <Modal visible={showReviewLinks} animationType="slide" transparent={true}>
