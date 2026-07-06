@@ -755,10 +755,11 @@ async def process_pending_campaign_steps():
                         except Exception as sms_err:
                             logger.error(f"[Scheduler] Campaign SMS send error step {current_step}: {sms_err}")
 
-                    # Use the real conversation (rep_phone + contact_phone) so messages
-                    # appear in the actual inbox thread, not a phantom campaign conversation
+                    # Find the real conversation — try multiple strategies aggressively
                     real_conv = None
                     rep_phone = send_doc.get("rep_phone") or await get_rep_twilio_number(user_id)
+
+                    # Strategy 1: exact phone match (normalized)
                     if contact_phone and rep_phone:
                         from services.twilio_service import normalize_phone as _norm
                         cp_norm = _norm(contact_phone)
@@ -766,19 +767,57 @@ async def process_pending_campaign_steps():
                             "rep_phone": rep_phone,
                             "contact_phone": {"$in": [cp_norm, contact_phone]},
                         })
+
+                    # Strategy 2: last-10-digit phone match (handles format differences)
+                    if not real_conv and contact_phone and rep_phone:
+                        digits = ''.join(c for c in contact_phone if c.isdigit())
+                        last10 = digits[-10:] if len(digits) >= 10 else digits
+                        if last10:
+                            real_conv = await db.conversations.find_one({
+                                "rep_phone": rep_phone,
+                                "contact_phone": {"$regex": last10},
+                            })
+
+                    # Strategy 3: by contact_id (ObjectId OR string)
                     if not real_conv and contact_id:
-                        real_conv = await db.conversations.find_one({
-                            "user_id": user_id,
-                            "contact_id": contact_id,
-                        })
+                        try:
+                            real_conv = await db.conversations.find_one({
+                                "$or": [
+                                    {"user_id": user_id, "contact_id": ObjectId(contact_id)},
+                                    {"user_id": user_id, "contact_id": contact_id},
+                                ]
+                            })
+                        except Exception:
+                            real_conv = await db.conversations.find_one({
+                                "user_id": user_id, "contact_id": contact_id,
+                            })
+
+                    # Strategy 4: any conversation for this user mentioning this phone
+                    if not real_conv and contact_phone:
+                        digits = ''.join(c for c in contact_phone if c.isdigit())
+                        last10 = digits[-10:] if len(digits) >= 10 else digits
+                        if last10:
+                            real_conv = await db.conversations.find_one({
+                                "user_id": user_id,
+                                "contact_phone": {"$regex": last10},
+                            })
+
                     if real_conv:
                         conv_id = str(real_conv["_id"])
+                        # Update conversation with latest message info so inbox stays fresh
                         await db.conversations.update_one(
                             {"_id": real_conv["_id"]},
-                            {"$set": {"last_message_at": now}}
+                            {"$set": {
+                                "last_message_at": now,
+                                "last_message": message_content[:200],
+                                "last_message_sender": "user",
+                            }}
                         )
+                        logger.info(f"[Scheduler] Found real conv {conv_id} for {contact_phone}")
                     else:
                         conv_id = f"campaign_{user_id}_{contact_id}"
+                        logger.warning(f"[Scheduler] No conv found for phone={contact_phone} user={user_id} — using fallback ID")
+
                     await db.messages.insert_one({
                         "conversation_id": conv_id, "sender": "user",
                         "content": message_content, "timestamp": now,
