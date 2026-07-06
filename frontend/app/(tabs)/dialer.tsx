@@ -73,26 +73,48 @@ export default function DialerScreen() {
     if (!numberToCall) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
-    // Log call activity BEFORE opening dialer (await ensures it completes)
-    if (user?._id) {
-      const digits = numberToCall.replace(/\D/g, '');
-      const suffix = digits.length >= 10 ? digits.slice(-10) : digits;
-      const match = contacts.find((c: any) => {
-        const cDigits = (c.phone || '').replace(/\D/g, '');
-        return cDigits.endsWith(suffix);
-      });
-      const contactName = match ? `${match.first_name || ''} ${match.last_name || ''}`.trim() : '';
+    // Find matching contact for logging
+    const digits = numberToCall.replace(/\D/g, '');
+    const suffix = digits.length >= 10 ? digits.slice(-10) : digits;
+    const match = contacts.find((c: any) => (c.phone || '').replace(/\D/g, '').endsWith(suffix));
+    const contactName = match ? `${match.first_name || ''} ${match.last_name || ''}`.trim() : '';
+    const contactId = match?._id || '';
+
+    // Use Twilio Click-to-Call if rep has a dedicated number
+    const twilioNumber = (user as any)?.twilio_number || (user as any)?.mvpline_number;
+    if (twilioNumber && user?._id) {
       try {
-        await api.post(`/contacts/${user._id}/find-or-create-and-log`, {
-          phone: numberToCall, name: contactName,
-          event_type: 'call_placed', event_title: 'Call Placed',
-          event_description: `Called ${contactName || numberToCall} from dialer`,
-          event_icon: 'call', event_color: '#34C759',
-          event_channel: 'call',
+        await api.post('/webhooks/twilio/outbound-call', {
+          rep_user_id: user._id,
+          customer_phone: numberToCall,
+          contact_id: contactId,
         });
-      } catch {}
+        // Log activity
+        if (user._id) {
+          api.post(`/contacts/${user._id}/find-or-create-and-log`, {
+            phone: numberToCall, name: contactName,
+            event_type: 'call_placed', event_title: 'Call Placed',
+            event_description: `Called ${contactName || numberToCall} via Twilio`,
+            event_icon: 'call', event_color: '#34C759', event_channel: 'call',
+          }).catch(() => {});
+        }
+        return; // Twilio will ring your personal phone — pick up to connect
+      } catch (err: any) {
+        const msg = err?.response?.data?.detail || 'Could not start call via Twilio. Falling back to native dialer.';
+        console.warn('[Dialer] Twilio call failed:', msg);
+        // Fall through to native dialer below
+      }
     }
 
+    // Fallback: native phone dialer
+    if (user?._id) {
+      api.post(`/contacts/${user._id}/find-or-create-and-log`, {
+        phone: numberToCall, name: contactName,
+        event_type: 'call_placed', event_title: 'Call Placed',
+        event_description: `Called ${contactName || numberToCall} from dialer`,
+        event_icon: 'call', event_color: '#34C759', event_channel: 'call',
+      }).catch(() => {});
+    }
     const telUrl = `tel:${numberToCall}`;
     if (IS_WEB) {
       const a = document.createElement('a');
@@ -150,6 +172,21 @@ export default function DialerScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']} data-testid="dialer-screen">
       <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+
+        {/* Twilio number indicator */}
+        {((user as any)?.twilio_number || (user as any)?.mvpline_number) ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingTop: 8, paddingBottom: 4 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#34C759' }} />
+            <Text style={{ fontSize: 13, color: '#34C759', fontWeight: '600' }}>
+              Calling from {(user as any)?.twilio_number || (user as any)?.mvpline_number}
+            </Text>
+          </View>
+        ) : (
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingTop: 8, paddingBottom: 4 }}>
+            <Ionicons name="warning-outline" size={14} color="#FF9500" />
+            <Text style={{ fontSize: 13, color: '#FF9500' }}>No Twilio number — using native dialer</Text>
+          </View>
+        )}
 
         {/* ─── Number Display ─── */}
         <View style={{ alignItems: 'center', paddingHorizontal: 24, paddingBottom: 4, minHeight: 56 }}>
