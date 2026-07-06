@@ -2064,7 +2064,12 @@ function ThreadScreen() {
   };
   
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={0}
+      >
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -2242,12 +2247,7 @@ function ThreadScreen() {
         </ScrollView>
       )}
 
-      {/* Messages + Composer — wrapped together so keyboard pushes both up */}
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={0}
-      >
+      {/* Messages + Composer */}
       {/* Messages - hidden when intel is expanded */}
       {!showIntel && (loading ? (
         <View style={styles.loadingContainer}>
@@ -2587,6 +2587,7 @@ function ThreadScreen() {
         </View>
 
       </KeyboardAvoidingView>
+    </SafeAreaView>
 
       {/* Review Links Action Sheet */}
       <Modal visible={showReviewLinks} animationType="slide" transparent={true}>

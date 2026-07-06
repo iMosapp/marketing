@@ -1733,59 +1733,45 @@ async def get_conversation_info(conversation_id: str):
 
 @router.get("/thread/{conversation_id}")
 async def get_thread_messages(conversation_id: str):
-    """Get messages for a conversation thread.
-    Also merges messages from sibling conversations (same contact/phone)
-    to fix fragmentation from SOLD wizard phone normalization."""
+    """Get messages for a conversation thread. Merges sibling conversations safely."""
     db = get_db()
 
-    # Get the primary conversation
-    try:
-        conv = await db.conversations.find_one({"_id": ObjectId(conversation_id)})
-    except Exception:
-        conv = None
-
-    # Collect all conversation IDs to fetch (primary + any siblings for same contact)
+    # Always start with the primary conversation's messages
     conv_ids = [conversation_id]
-    if conv:
-        contact_id = conv.get("contact_id")
-        contact_phone = conv.get("contact_phone", "")
-        user_id = conv.get("user_id")
-        rep_phone = conv.get("rep_phone")
 
-        # Find sibling conversations (same contact — different conversation_id due to phone format differences)
-        if contact_id or (rep_phone and contact_phone):
-            query = {"_id": {"$ne": ObjectId(conversation_id)}}
+    # Safely try to find sibling conversations (same contact, different conv due to phone format)
+    try:
+        from bson import ObjectId as _OId
+        conv = await db.conversations.find_one({"_id": _OId(conversation_id)})
+        if conv:
+            contact_id = str(conv.get("contact_id", ""))
+            user_id = str(conv.get("user_id", ""))
             if contact_id and user_id:
-                query["$or"] = [
-                    {"contact_id": contact_id, "user_id": user_id},
-                ]
-                if rep_phone and contact_phone:
-                    # Also match by phone digits (last 10)
-                    digits = ''.join(c for c in contact_phone if c.isdigit())
-                    last10 = digits[-10:] if len(digits) >= 10 else digits
-                    if last10:
-                        query["$or"].append({"rep_phone": rep_phone, "contact_phone": {"$regex": last10}})
-            siblings = await db.conversations.find(query, {"_id": 1}).to_list(5)
-            conv_ids.extend([str(s["_id"]) for s in siblings])
+                siblings = await db.conversations.find(
+                    {"contact_id": contact_id, "user_id": user_id, "_id": {"$ne": _OId(conversation_id)}},
+                    {"_id": 1}
+                ).limit(5).to_list(5)
+                conv_ids.extend([str(s["_id"]) for s in siblings])
+    except Exception:
+        pass  # Never let sibling lookup break the main message fetch
 
-    # Fetch messages from all conversation IDs
     messages = await db.messages.find(
         {"conversation_id": {"$in": conv_ids}}
     ).sort("timestamp", 1).limit(500).to_list(500)
 
     return [{
-        "_id": str(m['_id']),
-        "content": m.get('content', ''),
-        "sender": m.get('sender', 'unknown'),
-        "timestamp": m['timestamp'].isoformat() if m.get('timestamp') and hasattr(m['timestamp'], 'isoformat') else str(m.get('timestamp', '')),
-        "status": m.get('status', 'sent'),
-        "ai_generated": m.get('ai_generated', False),
-        "intent_detected": m.get('intent_detected'),
-        "channel": m.get('channel'),
-        "event_type": m.get('event_type', ''),
-        "card_type": m.get('card_type', ''),
-        "has_media": m.get('has_media', False),
-        "media_urls": m.get('media_urls', [])
+        "_id": str(m["_id"]),
+        "content": m.get("content", ""),
+        "sender": m.get("sender", "unknown"),
+        "timestamp": m["timestamp"].isoformat() if m.get("timestamp") and hasattr(m["timestamp"], "isoformat") else str(m.get("timestamp", "")),
+        "status": m.get("status", "sent"),
+        "ai_generated": m.get("ai_generated", False),
+        "intent_detected": m.get("intent_detected"),
+        "channel": m.get("channel"),
+        "event_type": m.get("event_type", ""),
+        "card_type": m.get("card_type", ""),
+        "has_media": m.get("has_media", False),
+        "media_urls": m.get("media_urls", []),
     } for m in messages]
 
 
