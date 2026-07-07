@@ -70,9 +70,9 @@ function NotificationPreferences({ user, colors }: { user: any; colors: any }) {
   };
 
   const options: { value: 'sms' | 'push' | 'both'; label: string; sub: string; icon: string }[] = [
-    { value: 'both',  label: 'SMS + Push',      sub: 'Text alerts and in-app notifications', icon: 'notifications' },
-    { value: 'push',  label: 'Push only',        sub: 'In-app notifications only, no SMS',    icon: 'phone-portrait' },
-    { value: 'sms',   label: 'SMS only',         sub: 'Text message alerts only',             icon: 'chatbubble' },
+    { value: 'both',  label: 'SMS + Push',   sub: 'Text to your personal phone + in-app badge',  icon: 'notifications' },
+    { value: 'push',  label: 'Push only',     sub: 'In-app badge only, no SMS to personal phone', icon: 'phone-portrait' },
+    { value: 'sms',   label: 'SMS only',      sub: 'Text to your personal phone only',             icon: 'chatbubble' },
   ];
 
   return (

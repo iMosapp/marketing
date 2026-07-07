@@ -761,23 +761,12 @@ async def incoming_message(
                 })
                 logger.info(f"[Webhook] 'You Are Needed' escalation for {contact_id} ({max_reply_count} replies)")
 
-                # Always push the rep — regardless of SMS/phone settings
-                try:
-                    from routers.push_notifications import send_push_to_user
-                    asyncio.create_task(send_push_to_user(
-                        user_id,
-                        f"You're Needed — {cname_esc}",
-                        f"{effective_reply_count} messages without a reply. Jessi needs you.",
-                        f"/thread/{conversation_id}",
-                        "alert-circle",
-                    ))
-                except Exception:
-                    pass
-
                 # Send URGENT SMS to rep's personal cell — fire-and-forget, never block webhook
                 try:
-                    notif_prefs2   = (rep_user or {}).get("notification_settings", {}) if rep_user else {}
-                    sms_urn_enabled = notif_prefs2.get("sms_you_are_needed", True)
+                    notif_prefs2 = (rep_user or {}).get("notification_settings", {}) if rep_user else {}
+                    notification_mode = (rep_user or {}).get("notification_mode", "both") if rep_user else "both"
+                    sms_urn_enabled = (notif_prefs2.get("sms_you_are_needed", True)
+                                       and notification_mode in ("sms", "both"))
                     rep_personal_phone = normalize_phone((rep_user.get("phone") or "").strip()) if rep_user else ""
                     rep_twilio_number  = (rep_user.get("twilio_number") or rep_user.get("mvpline_number") or "").strip() if rep_user else ""
                     if sms_urn_enabled and rep_personal_phone and rep_twilio_number:
@@ -825,6 +814,23 @@ async def incoming_message(
                     "priority": "urgent" if max_reply_count >= 2 else "normal",
                     "read": False, "dismissed": False, "created_at": datetime.utcnow(),
                 })
+
+                # Send push for EVERY customer reply (not just escalations)
+                notification_mode = (rep_user or {}).get("notification_mode", "both") if rep_user else "both"
+                if notification_mode in ("push", "both"):
+                    try:
+                        from routers.push_notifications import send_push_to_user
+                        push_msg = (f"{effective_reply_count} messages without a reply"
+                                    if max_reply_count >= 2 else Body[:100])
+                        asyncio.create_task(send_push_to_user(
+                            user_id,
+                            notif_title,
+                            push_msg,
+                            f"/thread/{conversation_id}",
+                            "alert-circle" if max_reply_count >= 2 else "chatbubble",
+                        ))
+                    except Exception:
+                        pass
             except Exception:
                 pass
 
