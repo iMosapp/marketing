@@ -844,8 +844,7 @@ export default function MyAccountScreen() {
         {/* ── Account Info ── */}
         <AccountInfoCard user={user} colors={colors} />
 
-        {/* ── Notification Preferences ── */}
-        <NotificationPreferences user={user} colors={colors} />
+        {/* ── Notification preferences moved to Hub → Settings → Notifications ── */}
 
         {/* ── Sign Out ── */}
         <View style={{ paddingHorizontal: 16, marginTop: 24, marginBottom: 8 }}>

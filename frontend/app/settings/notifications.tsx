@@ -37,6 +37,7 @@ export default function NotificationSettings() {
   const [throttleMin,  setThrottleMin]  = useState<number>(saved.sms_active_throttle_minutes ?? 30);
   const [smsUrgent,    setSmsUrgent]    = useState<boolean>(saved.sms_you_are_needed         ?? true);
   const [urnThreshold, setUrnThreshold] = useState<number>(saved.you_are_needed_threshold    ?? 2);
+  const [alertMode,    setAlertMode]    = useState<'both'|'push'|'sms'>((user as any)?.notification_mode || 'both');
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
@@ -53,7 +54,10 @@ export default function NotificationSettings() {
         you_are_needed_threshold:      urnThreshold,
       };
       await api.patch(`/users/${user._id}`, { notification_settings: prefs });
-      updateUser({ notification_settings: prefs } as any);
+      // Save alert delivery mode separately
+      await api.patch(`/push/preferences/${user._id}`, { notification_mode: alertMode });
+      // Update auth store so the value persists across screens
+      updateUser({ notification_settings: prefs, notification_mode: alertMode } as any);
       setHasChanges(false);
       showToast('Notification preferences saved', 'success');
     } catch (e: any) {
@@ -114,6 +118,32 @@ export default function NotificationSettings() {
             </View>
           </View>
         )}
+
+        {/* ── Alert Delivery Mode ─────────────────────────────────────────── */}
+        <Text style={[s.sectionLabel, { color: colors.textSecondary }]}>ALERT DELIVERY</Text>
+        <View style={[s.card, { backgroundColor: colors.card, padding: 0, overflow: 'hidden' }]}>
+          {([
+            { value: 'both' as const,  label: 'SMS + Push',  sub: 'Text to personal phone + in-app badge',  icon: 'notifications',   color: '#007AFF' },
+            { value: 'push' as const,  label: 'Push only',   sub: 'In-app badge only, no SMS texts',        icon: 'phone-portrait',  color: '#34C759' },
+            { value: 'sms'  as const,  label: 'SMS only',    sub: 'Text to personal phone only',            icon: 'chatbubble',      color: '#FF9500' },
+          ] as const).map((opt, i, arr) => (
+            <TouchableOpacity
+              key={opt.value}
+              onPress={() => { setAlertMode(opt.value); mark(); }}
+              style={{ flexDirection: 'row', alignItems: 'center', padding: 14, borderBottomWidth: i < arr.length - 1 ? 1 : 0, borderBottomColor: colors.border, gap: 12 }}
+              data-testid={`alert-mode-${opt.value}`}
+            >
+              <View style={{ width: 36, height: 36, borderRadius: 9, backgroundColor: alertMode === opt.value ? opt.color + '25' : colors.surface, alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name={opt.icon as any} size={18} color={alertMode === opt.value ? opt.color : colors.textSecondary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>{opt.label}</Text>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 1 }}>{opt.sub}</Text>
+              </View>
+              {alertMode === opt.value && <Ionicons name="checkmark-circle" size={22} color={opt.color} />}
+            </TouchableOpacity>
+          ))}
+        </View>
 
         {/* ── Active Conversation ────────────────────────────────────────── */}
         <Text style={[s.sectionLabel, { color: colors.textSecondary }]}>ACTIVE CONVERSATIONS</Text>
