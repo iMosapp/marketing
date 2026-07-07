@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
   Image, ActivityIndicator, Platform, Animated, ScrollView,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -25,6 +26,7 @@ export default function SoldQuickScreen() {
   const [photo, setPhoto] = useState<{ uri: string; type: string; name: string } | null>(null);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [vehiclePurchased, setVehiclePurchased] = useState('');
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
@@ -163,6 +165,13 @@ export default function SoldQuickScreen() {
       });
       const contactId = contactRes.data.contact_id;
 
+      // Update vehicle/purchase on the contact immediately
+      if (vehiclePurchased.trim() && contactId) {
+        api.put(`/contacts/${user._id}/${contactId}`, {
+          vehicle: vehiclePurchased.trim(),
+        }).catch(() => {});
+      }
+
       // Create the congrats card (needed for Digital Card path and for the contact record)
       const cardFormData = new FormData();
       cardFormData.append('salesman_id', user._id);
@@ -171,6 +180,7 @@ export default function SoldQuickScreen() {
       cardFormData.append('card_type', 'congrats');
       cardFormData.append('contact_id', contactId);
       cardFormData.append('tags', JSON.stringify(['Sold']));
+      if (vehiclePurchased.trim()) cardFormData.append('vehicle', vehiclePurchased.trim());
       const cardRes = await api.post('/congrats/create', cardFormData, { headers: { 'X-User-ID': user._id } });
       const cardUrl = cardRes.data?.short_url || `${APP_URL}/congrats/${cardRes.data?.card_id}`;
 
@@ -313,6 +323,11 @@ export default function SoldQuickScreen() {
   // ── MAIN SCREEN ──
   return (
     <SafeAreaView style={s.container} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={0}
+      >
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} data-testid="sold-quick-back">
           <Ionicons name="close" size={28} color={colors.text} />
@@ -380,8 +395,20 @@ export default function SoldQuickScreen() {
           {lookingUp && <ActivityIndicator size="small" color={colors.textSecondary} />}
         </View>
 
-        {/* Referred by (optional) */}
-        <Text style={[s.fieldLabel, { marginTop: 16 }]}>REFERRED BY <Text style={{ color: colors.textTertiary, fontWeight: '400' }}>(optional)</Text></Text>
+        {/* What did they purchase? */}
+        <Text style={s.fieldLabel}>WHAT DID THEY PURCHASE?</Text>
+        <TextInput
+          style={s.input}
+          placeholder="e.g. 2024 Ford F-150, Samsung TV, Health Plan..."
+          placeholderTextColor={colors.textSecondary}
+          value={vehiclePurchased}
+          onChangeText={setVehiclePurchased}
+          autoCapitalize="words"
+          returnKeyType="next"
+          data-testid="sold-vehicle-input"
+        />
+
+        {/* Referred by (optional) */}        <Text style={[s.fieldLabel, { marginTop: 16 }]}>REFERRED BY <Text style={{ color: colors.textTertiary, fontWeight: '400' }}>(optional)</Text></Text>
         {referredByName ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: ACCENT + '18', borderRadius: 12, padding: 12, gap: 10 }}>
             <Ionicons name="person-circle" size={22} color={ACCENT} />
@@ -544,6 +571,7 @@ export default function SoldQuickScreen() {
         </TouchableOpacity>
 
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
