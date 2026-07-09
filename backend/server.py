@@ -218,6 +218,64 @@ async def migrate_sold_campaign_endpoint():
     return result
 
 
+@api_router.post("/admin/deduplicate-campaigns")
+async def deduplicate_campaigns():
+    """
+    EMERGENCY: Remove duplicate campaigns created by seeder running multiple times.
+    Cancels all pending sends tied to duplicate campaigns.
+    Keeps the NEWEST version of each campaign name per user.
+    """
+    db = get_db()
+    all_camps = await db.campaigns.find(
+        {}, {"name": 1, "user_id": 1, "created_at": 1}
+    ).sort("created_at", -1).to_list(2000)
+
+    seen: dict = {}
+    to_delete = []
+    for c in all_camps:
+        key = f"{c.get('name', '')}__{ c.get('user_id', '')}"
+        if key in seen:
+            to_delete.append(c["_id"])
+        else:
+            seen[key] = str(c["_id"])
+
+    if not to_delete:
+        return {"message": "No duplicate campaigns found", "deleted": 0}
+
+    dup_ids = [str(i) for i in to_delete]
+
+    # Cancel pending sends from duplicate campaigns
+    sends = await db.campaign_pending_sends.update_many(
+        {"campaign_id": {"$in": dup_ids}, "status": "pending"},
+        {"$set": {"status": "cancelled", "cancelled_reason": "duplicate_campaign_cleanup"}}
+    )
+    # Cancel enrollments in duplicate campaigns
+    enrs = await db.campaign_enrollments.update_many(
+        {"campaign_id": {"$in": dup_ids}},
+        {"$set": {"status": "cancelled"}}
+    )
+    # Delete the duplicate campaigns
+    deleted = await db.campaigns.delete_many({"_id": {"$in": to_delete}})
+
+    # Also cancel any remaining anniversary sends to prevent re-occurrence
+    ann = await db.campaign_pending_sends.update_many(
+        {
+            "message_template": {"$regex": "anniversary|time flies|another year|been a year", "$options": "i"},
+            "status": "pending"
+        },
+        {"$set": {"status": "cancelled", "cancelled_reason": "anniversary_duplicate_protection"}}
+    )
+
+    logger.info(f"[Admin] Deduped campaigns: deleted={deleted.deleted_count} sends_cancelled={sends.modified_count} enrs_cancelled={enrs.modified_count} ann_cancelled={ann.modified_count}")
+    return {
+        "duplicate_campaigns_deleted": deleted.deleted_count,
+        "pending_sends_cancelled": sends.modified_count,
+        "enrollments_cancelled": enrs.modified_count,
+        "anniversary_sends_cancelled": ann.modified_count,
+        "unique_campaigns_kept": len(seen),
+    }
+
+
 @api_router.post("/admin/backfill-user-contact-links")
 async def backfill_user_contact_links(request: Request):
     """

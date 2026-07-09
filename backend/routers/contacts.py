@@ -101,6 +101,15 @@ async def _check_tag_campaign_enrollment(user_id: str, contact_id: str, contact_
                     "created_at": now,
                 })
 
+            # Pre-schedule steps — skip any that already exist (idempotency)
+            existing_steps = set()
+            async for ex in db.campaign_pending_sends.find(
+                {"enrollment_id": enrollment_id, "status": {"$nin": ["cancelled"]}},
+                {"step": 1}
+            ):
+                existing_steps.add(ex.get("step"))
+
+            pending_docs = [d for d in pending_docs if d["step"] not in existing_steps]
             if pending_docs:
                 await db.campaign_pending_sends.insert_many(pending_docs)
                 logger.info(f"Pre-scheduled {len(pending_docs)} sends for '{campaign.get('name')}' → {contact_name} (mode={delivery_mode})")
