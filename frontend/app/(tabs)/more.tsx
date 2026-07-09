@@ -679,6 +679,26 @@ export default function MoreScreen() {
       { permKey: 'activity_reports', icon: 'bar-chart', title: 'Activity Reports', subtitle: 'Detailed activity analytics', onPress: () => router.push('/reports/activity'), color: '#007AFF' },
       { permKey: 'email_analytics', icon: 'trending-up', title: 'Email Analytics', subtitle: 'Opens, clicks & engagement', onPress: () => router.push('/settings/email-analytics'), color: '#FF2D55' },
       { permKey: 'system_logs', icon: 'bug-outline', title: 'System Logs', subtitle: 'Errors, warnings and diagnostics', onPress: () => router.push('/admin/system-logs'), color: '#FF3B30' },
+      { permKey: 'system_logs', icon: 'alert-circle-outline', title: 'Fix Duplicate Campaigns', subtitle: 'Remove duplicate sends — run if contacts got repeat messages', color: '#FF3B30',
+        onPress: async () => {
+          const { showAlert } = await import('../../services/alert');
+          showAlert('Fix Duplicate Campaigns', 'This will remove duplicate campaign copies and cancel any pending duplicate sends. Cannot be undone. Continue?', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Fix Now', style: 'destructive', onPress: async () => {
+              try {
+                const apiMod = await import('../../services/api');
+                const res = await apiMod.default.post('/admin/deduplicate-campaigns');
+                const d = res.data;
+                const { showSimpleAlert } = await import('../../services/alert');
+                showSimpleAlert('Done', `Removed ${d.duplicate_campaigns_deleted} duplicates, cancelled ${d.pending_sends_cancelled} sends.`);
+              } catch (e: any) {
+                const { showSimpleAlert } = await import('../../services/alert');
+                showSimpleAlert('Error', e?.response?.data?.detail || 'Failed');
+              }
+            }}
+          ]);
+        }
+      },
       { permKey: 'my_performance', icon: 'pulse', title: 'SEO Health', subtitle: 'Your online visibility score', onPress: () => router.push('/seo-health'), color: '#30D158' },
       { permKey: 'geo_health', icon: 'brain', title: 'GEO Health', subtitle: 'Your AI citation score — ChatGPT, Gemini, Perplexity', onPress: () => router.push('/geo-health'), color: '#AF52DE' },
       { permKey: 'va_library', icon: 'person-circle', title: 'VA Library', subtitle: 'Build and manage named Virtual Assistant personas', onPress: () => router.push('/admin/va-library'), color: '#C9A962' },
