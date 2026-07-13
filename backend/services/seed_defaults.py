@@ -161,11 +161,11 @@ DEFAULT_CAMPAIGNS = [
         "description": "Long-term relationship after sale. Steps 1-3 (VCF, card, review) are sent by the SOLD wizard. This campaign handles day 7+.",
         "scope": "personal",
         "sequences": [
-            {"step": 1, "delay_days": 7, "channel": "sms", "message_template": "Just checking in to see how everything is going with the {{vehicle}} so far. Let me know if you need anything!"},
-            {"step": 2, "delay_days": 21, "channel": "sms", "message_template": "Random question, do you know anyone else looking for a vehicle right now? I would be happy to help them the same way."},
-            {"step": 3, "delay_days": 75, "channel": "sms", "message_template": "Your first service will probably be coming up soon. If you'd like I can help get that scheduled for you."},
-            {"step": 4, "delay_days": 0, "delay_months": 6, "channel": "sms", "message_template": "Hope you're still loving the {{vehicle}}. If you ever need anything just reach out."},
-            {"step": 5, "delay_days": 0, "delay_months": 12, "channel": "sms", "message_template": "Hard to believe it's already been a year since you got your {{vehicle}}. Hope you're still loving it. If you ever need anything just reach out."},
+            {"step": 1, "delay_days": 7,   "channel": "sms", "message_template": "Hey {{name}}, just checking in! How's everything going? Let me know if you need anything at all."},
+            {"step": 2, "delay_days": 21,  "channel": "sms", "message_template": "Hey {{name}}! Quick question — do you know anyone else who might be looking? I'd love to help them the same way I helped you."},
+            {"step": 3, "delay_days": 90,  "channel": "sms", "message_template": "Hey {{name}}, hope everything is still going great! Thinking of you and wanted to check in. Let me know if you ever need anything."},
+            {"step": 4, "delay_days": 180, "channel": "sms", "message_template": "Hey {{name}}! Hard to believe it's already been 6 months. Hope you're still loving everything. I'm always here if you need me!"},
+            {"step": 5, "delay_days": 365, "channel": "sms", "message_template": "Hey {{name}}! It's been a whole year — time flies! Hope everything is still great. Would love to connect again whenever you're ready."},
         ],
     },
 ]

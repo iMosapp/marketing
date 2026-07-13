@@ -699,6 +699,26 @@ export default function MoreScreen() {
           ]);
         }
       },
+      { permKey: 'system_logs', icon: 'refresh-circle-outline', title: 'Fix Sold Campaign Sequences', subtitle: 'Set campaigns to day-7+ only and auto-send mode', color: '#FF9500',
+        onPress: async () => {
+          const { showAlert } = await import('../../services/alert');
+          showAlert('Fix Sold Campaign Sequences', 'This updates all Sold campaigns to start at day 7 (no duplicates with SOLD wizard) and enables auto-sending. Run this once on production.', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Fix Now', onPress: async () => {
+              try {
+                const apiMod = await import('../../services/api');
+                const res = await apiMod.default.post('/admin/fix-sold-campaign-sequences');
+                const d = res.data;
+                const { showSimpleAlert } = await import('../../services/alert');
+                showSimpleAlert('Done', `Fixed ${d.sold_campaigns_fixed} Sold campaigns. Auto-send set on ${d.other_campaigns_set_auto} others. ${d.pending_sends_set_auto} pending sends activated.`);
+              } catch (e: any) {
+                const { showSimpleAlert } = await import('../../services/alert');
+                showSimpleAlert('Error', e?.response?.data?.detail || 'Failed');
+              }
+            }}
+          ]);
+        }
+      },
       { permKey: 'my_performance', icon: 'pulse', title: 'SEO Health', subtitle: 'Your online visibility score', onPress: () => router.push('/seo-health'), color: '#30D158' },
       { permKey: 'geo_health', icon: 'brain', title: 'GEO Health', subtitle: 'Your AI citation score — ChatGPT, Gemini, Perplexity', onPress: () => router.push('/geo-health'), color: '#AF52DE' },
       { permKey: 'va_library', icon: 'person-circle', title: 'VA Library', subtitle: 'Build and manage named Virtual Assistant personas', onPress: () => router.push('/admin/va-library'), color: '#C9A962' },

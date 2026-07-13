@@ -276,6 +276,51 @@ async def deduplicate_campaigns():
     }
 
 
+@api_router.post("/admin/fix-sold-campaign-sequences")
+async def fix_sold_campaign_sequences():
+    """
+    Fix Sold campaigns so they start at day 7 (not day 0).
+    Day 0/2 immediate texts are handled by the SOLD wizard — this prevents duplicates.
+    Also sets all tag-triggered campaigns to delivery_mode=auto.
+    """
+    db = get_db()
+    LONG_TERM = [
+        {"step": 1, "delay_days": 7,   "channel": "sms", "message_template": "Hey {name}, just checking in! How's everything going? Let me know if you need anything at all."},
+        {"step": 2, "delay_days": 21,  "channel": "sms", "message_template": "Hey {name}! Quick question — do you know anyone else who might be looking? I'd love to help them the same way I helped you."},
+        {"step": 3, "delay_days": 90,  "channel": "sms", "message_template": "Hey {name}, hope everything is still going great! Thinking of you and wanted to check in. Let me know if you ever need anything."},
+        {"step": 4, "delay_days": 180, "channel": "sms", "message_template": "Hey {name}! Hard to believe it's already been 6 months. Hope you're still loving everything. I'm always here if you need me!"},
+        {"step": 5, "delay_days": 365, "channel": "sms", "message_template": "Hey {name}! It's been a whole year — time flies! Hope everything is still great. Would love to connect again whenever you're ready."},
+    ]
+    # Fix Sold campaign sequences
+    r1 = await db.campaigns.update_many(
+        {"trigger_tag": {"$regex": "^sold$", "$options": "i"}, "active": True},
+        {"$set": {"sequences": LONG_TERM, "total_steps": 5, "delivery_mode": "auto",
+                  "description": "Long-term follow-up. Day 7+ only — immediate texts handled by SOLD wizard."}}
+    )
+    # Set all tag-triggered campaigns to auto
+    r2 = await db.campaigns.update_many(
+        {"trigger_tag": {"$exists": True, "$ne": ""}, "active": True, "delivery_mode": {"$ne": "auto"}},
+        {"$set": {"delivery_mode": "auto"}}
+    )
+    # Cancel duplicate day-0 congratulations sends still pending
+    r3 = await db.campaign_pending_sends.update_many(
+        {"status": "pending", "step": {"$in": [1, 2]},
+         "message_template": {"$regex": "congratulations|excited for you|quick review|great experience", "$options": "i"}},
+        {"$set": {"status": "cancelled", "cancelled_reason": "duplicate_of_sold_wizard"}}
+    )
+    # Update pending sends delivery_mode to auto
+    r4 = await db.campaign_pending_sends.update_many(
+        {"status": "pending", "delivery_mode": {"$ne": "auto"}},
+        {"$set": {"delivery_mode": "auto"}}
+    )
+    return {
+        "sold_campaigns_fixed": r1.modified_count,
+        "other_campaigns_set_auto": r2.modified_count,
+        "duplicate_sends_cancelled": r3.modified_count,
+        "pending_sends_set_auto": r4.modified_count,
+    }
+
+
 @api_router.post("/admin/backfill-user-contact-links")
 async def backfill_user_contact_links(request: Request):
     """
