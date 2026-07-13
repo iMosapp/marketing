@@ -27,6 +27,8 @@ class BroadcastFilter(BaseModel):
     custom_date_start: Optional[str] = None
     custom_date_end: Optional[str] = None
     contact_ids: Optional[List[str]] = []
+    sold_months_min: Optional[int] = None   # lower bound: sold at least N months ago
+    sold_months_max: Optional[int] = None   # upper bound: sold at most N months ago
 
 
 class BroadcastCreate(BaseModel):
