@@ -470,9 +470,7 @@ async def check_campaign_permission(user_id: str, action: str = "edit") -> dict:
         store_id = user.get("store_ids")[0]  # Use primary store
     
     if not store_id:
-        # No store assigned - default to allowed for managers
-        if role == "store_manager":
-            return {"allowed": True, "reason": "Manager default access"}
+        # No store assigned — managers without a store cannot edit campaigns
         return {"allowed": False, "reason": "No store assigned"}
     
     # Get store settings

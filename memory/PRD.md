@@ -351,7 +351,7 @@ Extract `admin.py` (4,000 lines) into:
 
 ## Prioritized Backlog — Updated May 27, 2026
 
-## Prioritized Backlog — Updated June 9, 2026
+## Prioritized Backlog — Updated July 13, 2026
 
 ### P0 — This Week
 - **SOLD Wizard** ✅ DONE — 3-step delivery flow (Photo → Notes → Confirm). Gold "SOLD!" button on every contact page (hidden if already sold). Applies Sold tag → auto-starts Sold campaign. Photo saves to camera roll on native.
