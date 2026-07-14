@@ -55,7 +55,7 @@
     },
     "android": {
       "package": "com.imonsocial.app",
-      "versionCode": 1,
+      "versionCode": 4,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#000000"
