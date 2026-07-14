@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Optional
 import os
 import re
+import asyncio
 import base64
 import uuid
 import logging
@@ -52,34 +53,37 @@ async def get_vcard(user_id: str):
     photo_path = user.get("photo_url") or user.get("photo_path") or user.get("photo_thumbnail") or ""
     if photo_path:
         try:
-            if photo_path.startswith("/api/"):
-                photo_url_abs = f"{_APP_URL}{photo_path}"
-            elif photo_path.startswith("http"):
-                photo_url_abs = photo_path
-            else:
-                photo_url_abs = ""
+            img_bytes = None
 
-            if photo_url_abs:
-                async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
-                    resp = await client.get(photo_url_abs)
+            if photo_path.startswith("/api/images/"):
+                # Fetch directly from object storage — avoids HTTP self-call which fails in containers
+                storage_path = photo_path[len("/api/images/"):]
+                try:
+                    from utils.image_storage import get_object
+                    img_bytes, _ = await asyncio.to_thread(get_object, storage_path)
+                except Exception as storage_err:
+                    logger.warning(f"[vCard] Object storage fetch failed for {user_id}: {storage_err}")
+
+            elif photo_path.startswith("http"):
+                # External URL — fetch via httpx
+                async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+                    resp = await client.get(photo_path)
                 if resp.status_code == 200:
                     img_bytes = resp.content
-                    # Convert to JPEG (handles WebP, PNG, etc.) and resize to 300×300 max
-                    img = PILImage.open(io.BytesIO(img_bytes)).convert("RGB")
-                    img.thumbnail((300, 300), PILImage.LANCZOS)
-                    buf = io.BytesIO()
-                    img.save(buf, format="JPEG", quality=85)
-                    b64 = base64.b64encode(buf.getvalue()).decode("ascii")
-                    # vCard 3.0 requires lines folded at 75 chars (continuation with space)
-                    folded = "\r\n ".join([b64[i:i+74] for i in range(0, len(b64), 74)])
-                    photo_line = f"PHOTO;ENCODING=b;TYPE=JPEG:\r\n {folded}\r\n"
+
+            if img_bytes:
+                # Convert to JPEG (handles WebP, PNG, etc.) and resize to 300×300 max
+                img = PILImage.open(io.BytesIO(img_bytes)).convert("RGB")
+                img.thumbnail((300, 300), PILImage.LANCZOS)
+                buf = io.BytesIO()
+                img.save(buf, format="JPEG", quality=85)
+                b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+                # vCard 3.0 requires lines folded at 75 chars (continuation with space)
+                folded = "\r\n ".join([b64[i:i+74] for i in range(0, len(b64), 74)])
+                photo_line = f"PHOTO;ENCODING=b;TYPE=JPEG:\r\n {folded}\r\n"
+                logger.info(f"[vCard] Photo embedded successfully for {user_id} ({len(b64)} b64 chars)")
         except Exception as photo_err:
             logger.warning(f"[vCard] Photo embed failed for {user_id}: {photo_err}")
-            # Fall back to URL reference
-            if photo_path.startswith("/api/"):
-                photo_line = f"PHOTO;VALUE=URL:{_APP_URL}{photo_path}\r\n"
-            elif photo_path.startswith("http"):
-                photo_line = f"PHOTO;VALUE=URL:{photo_path}\r\n"
 
     phone_line = f"TEL;TYPE=CELL:{phone}\r\n" if phone else ""
     email_line = f"EMAIL:{email}\r\n" if email else ""
