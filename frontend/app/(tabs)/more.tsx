@@ -621,13 +621,14 @@ export default function MoreScreen() {
 
   // ============================================================
   // SECTION MANAGE — right under My Brand (most-used daily section)
-  // Tags, Campaigns, Reviews, Showcase — all users see this
-  // Role-based: users = personal items; admins = team-level too
+  // Tags, Campaigns, Reviews, Showcase — role-gated
+  // Only org_admin / super_admin can manage/edit campaigns
   // ============================================================
   {
+    const canManageCampaigns = user?.role === 'super_admin' || user?.role === 'org_admin';
     const manageItems: (MenuItem & { permKey?: string })[] = [
       { icon: 'pricetags',  title: 'Tags',       subtitle: 'All tags — personal, account & org', onPress: () => router.push('/settings/tags'),             color: '#FF9500' },
-      { icon: 'megaphone',  title: 'Campaigns',  subtitle: 'All campaigns in one place',          onPress: () => router.push('/campaigns'),                 color: '#FF2D55' },
+      ...(canManageCampaigns ? [{ icon: 'megaphone' as any,  title: 'Campaigns',  subtitle: 'Build & manage automated campaigns', onPress: () => router.push('/campaigns' as any), color: '#FF2D55' }] : []),
       { icon: 'star',       title: 'Review Center', subtitle: 'Approve, publish & track reviews', onPress: () => router.push('/settings/review-approvals'), color: '#FFD60A' },
       { icon: 'images',     title: 'Showcase',      subtitle: 'Approve showcase entries',          onPress: () => router.push('/settings/showcase-approvals'), color: '#34C759' },
     ];

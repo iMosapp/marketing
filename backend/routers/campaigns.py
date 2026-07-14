@@ -483,11 +483,11 @@ async def check_campaign_permission(user_id: str, action: str = "edit") -> dict:
     settings = store.get("settings", {})
     campaign_settings = settings.get("campaigns", {})
     
-    # Store managers - check if manager campaigns are disabled
+    # Store managers - campaign editing disabled by default, must be explicitly enabled per store
     if role == "store_manager":
-        if campaign_settings.get("managers_can_edit", True):
+        if campaign_settings.get("managers_can_edit", False):
             return {"allowed": True, "reason": "Manager access enabled"}
-        return {"allowed": False, "reason": "Campaign editing disabled for managers at this store"}
+        return {"allowed": False, "reason": "Campaign editing is restricted to admins. Contact your org admin to enable this."}
     
     # Sales reps - check if sales campaigns are enabled
     if role == "user":

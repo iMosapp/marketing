@@ -41,6 +41,7 @@ _USER_PERMISSIONS = {
 }
 
 # Store Manager: user permissions + broadcast, card templates, leaderboard, and admin basics
+# Managers can VIEW campaigns but NOT create/edit/delete them — only admins can
 _STORE_MANAGER_PERMISSIONS = {
     "my_tools": {
         "_enabled": True,
@@ -51,7 +52,7 @@ _STORE_MANAGER_PERMISSIONS = {
     },
     "campaigns": {
         "_enabled": True,
-        "campaign_builder": True,
+        "campaign_builder": False,   # Managers cannot create/edit campaigns
         "campaign_dashboard": True,
         "broadcast": True,
         "date_triggers": True,

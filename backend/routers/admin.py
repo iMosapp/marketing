@@ -684,7 +684,7 @@ async def get_store_campaign_settings(store_id: str):
     
     settings = store.get("settings", {})
     campaign_settings = settings.get("campaigns", {
-        "managers_can_edit": True,
+        "managers_can_edit": False,
         "sales_can_edit": False
     })
     
