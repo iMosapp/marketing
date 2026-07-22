@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { Platform, View, AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Stack, useSegments } from 'expo-router';
+import { Stack, useSegments, router } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuthStore } from '../store/authStore';
@@ -116,9 +116,13 @@ export default function RootLayout() {
         });
         const sub = Notifications.addNotificationResponseReceivedListener(response => {
           const data = response.notification.request.content.data as any;
-          const url = data?.url || data?.screen || '';
+          let url = data?.url || data?.screen || '';
+          // Strip domain if backend sent a full URL (e.g. https://app.imonsocial.com/thread/abc)
+          if (url.startsWith('http')) {
+            try { url = new URL(url).pathname; } catch {}
+          }
           if (url && url !== '/') {
-            setTimeout(() => { try { router.push(url as any); } catch {} }, 600);
+            setTimeout(() => { try { router.push(url as any); } catch (e) { console.warn('[Push] Navigation failed:', e); } }, 600);
           }
         });
         responseSubRemove = () => sub.remove();
