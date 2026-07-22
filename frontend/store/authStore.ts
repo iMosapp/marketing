@@ -163,9 +163,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   
   setToken: (token) => set({ token }),
   
-  updateUser: (updates) => set((state) => ({
-    user: state.user ? { ...state.user, ...updates } : null
-  })),
+  updateUser: (updates) => {
+    set((state) => {
+      const updatedUser = state.user ? { ...state.user, ...updates } : null;
+      // Persist to IDB so settings survive app restarts
+      if (updatedUser) {
+        _idbSet('imonsocial_user', JSON.stringify(updatedUser)).catch(() => {});
+        try {
+          const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+          AsyncStorage.setItem('imonsocial_user', JSON.stringify(updatedUser)).catch(() => {});
+        } catch {}
+      }
+      return { user: updatedUser };
+    });
+  },
   
   login: async (email, password) => {
     set({ isLoading: true });
