@@ -43,6 +43,7 @@ export default function SearchScreen() {
   const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
+  const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResults | null>(null);
   const [loading, setLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);

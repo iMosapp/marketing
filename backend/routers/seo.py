@@ -724,7 +724,10 @@ async def seo_health_score(user_id: str, skip_cache: bool = False):
     # Cache miss — return a lightweight placeholder immediately and compute in background.
     # The home page shows a "Calculating..." state until the next poll (which hits the cache).
     import asyncio as _asyncio
-    _asyncio.create_task(_compute_and_cache_score(user_id, now))
+    try:
+        _asyncio.create_task(_compute_and_cache_score(user_id, now))
+    except Exception as e:
+        logger.warning(f"[SEO] Could not schedule background compute for {user_id}: {e}")
 
     # Return a minimal "pending" response — home page handles this gracefully
     return {
