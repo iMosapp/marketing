@@ -166,12 +166,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   updateUser: (updates) => {
     set((state) => {
       const updatedUser = state.user ? { ...state.user, ...updates } : null;
-      // Persist to IDB so settings survive app restarts
+      // Persist to IDB and AsyncStorage so settings survive app restarts
+      // AsyncStorage key MUST be 'user' — that's what loadAuth reads from
       if (updatedUser) {
         _idbSet('imonsocial_user', JSON.stringify(updatedUser)).catch(() => {});
         try {
           const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-          AsyncStorage.setItem('imonsocial_user', JSON.stringify(updatedUser)).catch(() => {});
+          AsyncStorage.setItem('user', JSON.stringify(updatedUser)).catch(() => {});
         } catch {}
       }
       return { user: updatedUser };

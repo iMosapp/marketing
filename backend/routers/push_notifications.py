@@ -8,6 +8,7 @@ import logging
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Request
 from pywebpush import webpush, WebPushException
+from bson import ObjectId
 
 from routers.database import get_db
 
@@ -305,9 +306,6 @@ async def send_push_native(user_id: str, title: str, body: str, data: dict = Non
     except Exception as e:
         logger.warning(f"[Push] Expo native push failed: {e}")
         return 0
-
-
-    return len(notifications)
 
 
 

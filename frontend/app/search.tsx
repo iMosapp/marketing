@@ -117,9 +117,9 @@ export default function SearchScreen() {
         router.push({
           pathname: `/thread/${result.id}`,
           params: {
-            contact_name: result.name || result.title || '',
-            contact_phone: result.phone || '',
-            contact_email: result.email || '',
+            contact_name: result.title || result.subtitle || '',
+            contact_phone: result.subtitle || '',
+            contact_email: '',
           }
         });
         break;

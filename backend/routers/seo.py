@@ -954,15 +954,21 @@ async def seo_team_scores(store_id: str):
             score_data = await seo_health_score(uid)
             if isinstance(score_data, dict) and "error" in score_data:
                 continue
+            # Skip placeholder responses — score is still computing in background
+            if score_data.get("computing"):
+                # Force a real compute for team view so leaderboard isn't empty
+                score_data = await _compute_health_score(uid)
+                if isinstance(score_data, dict) and "error" in score_data:
+                    continue
             results.append({
                 "user_id": uid,
                 "name": member.get("name", ""),
                 "title": member.get("title", ""),
                 "photo": resolve_user_photo(member),
-                "score": score_data["total_score"],
-                "grade": score_data["grade"],
-                "review_count": score_data["factors"]["reviews"]["details"]["count"],
-                "card_visits": score_data["factors"]["distribution"]["details"]["card_visits"],
+                "score": score_data.get("total_score", 0),
+                "grade": score_data.get("grade", "N/A"),
+                "review_count": score_data.get("factors", {}).get("reviews", {}).get("details", {}).get("count", 0),
+                "card_visits": score_data.get("factors", {}).get("distribution", {}).get("details", {}).get("card_visits", 0),
             })
         except Exception as e:
             logger.warning(f"[SEO] Team score error for {uid}: {e}")
