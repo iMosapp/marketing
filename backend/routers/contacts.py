@@ -2281,3 +2281,23 @@ async def delete_purchase(user_id: str, contact_id: str, purchase_id: str):
         raise HTTPException(status_code=404, detail="Contact not found")
     return {"success": True}
 
+
+
+@router.patch("/{user_id}/{contact_id}/vehicle")
+async def update_contact_vehicle(user_id: str, contact_id: str, data: dict = Body(...)):
+    """Safe partial update for the vehicle/product display field only.
+    Does NOT touch any other contact fields."""
+    db = get_db()
+    vehicle = (data.get("vehicle") or "").strip()
+    if not vehicle:
+        raise HTTPException(status_code=400, detail="vehicle is required")
+    try:
+        result = await db.contacts.update_one(
+            {"_id": ObjectId(contact_id), "user_id": user_id},
+            {"$set": {"vehicle": vehicle, "updated_at": datetime.now(timezone.utc)}}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    return {"success": True, "vehicle": vehicle}

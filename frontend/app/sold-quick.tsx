@@ -165,11 +165,20 @@ export default function SoldQuickScreen() {
       });
       const contactId = contactRes.data.contact_id;
 
-      // Update vehicle/purchase on the contact immediately
+      // Save purchase to purchase_history AND update contact vehicle field
+      // Uses the dedicated purchase endpoint (safe, partial update — no contact data wiped)
       if (vehiclePurchased.trim() && contactId) {
-        api.put(`/contacts/${user._id}/${contactId}`, {
-          vehicle: vehiclePurchased.trim(),
-        }).catch(() => {});
+        api.post(`/contacts/${user._id}/${contactId}/purchases`, {
+          title: vehiclePurchased.trim(),
+          category: 'vehicle',
+          date: new Date().toISOString().split('T')[0],
+          notes: '',
+        }).catch(() => {
+          // Fallback: safe vehicle-only patch so the header still shows what was purchased
+          api.patch(`/contacts/${user._id}/${contactId}/vehicle`, {
+            vehicle: vehiclePurchased.trim(),
+          }).catch(() => {});
+        });
       }
 
       // Create the congrats card (needed for Digital Card path and for the contact record)

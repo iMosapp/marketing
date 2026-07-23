@@ -48,6 +48,21 @@ async def build_relationship_brief(user_id: str, contact_id: str, campaign_conte
     first_name = contact.get("first_name", "")
     last_name = contact.get("last_name", "")
     name = f"{first_name} {last_name}".strip() or "Unknown"
+
+    # Build most recent purchase display from purchase_history
+    purchase_history = contact.get("purchase_history") or []
+    most_recent_purchase = None
+    if purchase_history:
+        def _ph_date(p):
+            d = p.get("date") or ""
+            return d if isinstance(d, str) else ""
+        sorted_purchases = sorted(purchase_history, key=_ph_date, reverse=True)
+        most_recent_purchase = sorted_purchases[0]
+
+    # Use most recent purchase title, falling back to legacy vehicle field
+    vehicle_display = (most_recent_purchase.get("title") if most_recent_purchase
+                       else contact.get("vehicle_purchased") or contact.get("vehicle") or "")
+
     brief["contact"] = {
         "name": name,
         "first_name": first_name,
@@ -57,10 +72,12 @@ async def build_relationship_brief(user_id: str, contact_id: str, campaign_conte
         "notes": contact.get("notes", ""),
         "vehicle_interest": contact.get("vehicle_interest", ""),
         "vehicle_purchased": contact.get("vehicle_purchased", ""),
-        "vehicle": contact.get("vehicle", ""),
+        "vehicle": vehicle_display,
         "date_sold": str(contact.get("date_sold", "")) if contact.get("date_sold") else "",
         "lead_source": contact.get("lead_source", ""),
         "birthday": str(contact.get("birthday", "")) if contact.get("birthday") else "",
+        "purchase_history": purchase_history,
+        "most_recent_purchase": most_recent_purchase,
     }
 
     # === PERSONAL DETAILS (from voice memo intelligence) ===
@@ -266,7 +283,15 @@ async def build_relationship_brief(user_id: str, contact_id: str, campaign_conte
 
     vehicle = contact.get("vehicle_purchased") or contact.get("vehicle_interest") or contact.get("vehicle", "")
     if vehicle:
-        ai_parts.append(f"Vehicle: {vehicle}")
+        ai_parts.append(f"Most recent purchase: {vehicle}")
+
+    # Full purchase history for AI context
+    purchase_history = brief.get("contact", {}).get("purchase_history") or []
+    if len(purchase_history) > 1:
+        ai_parts.append(f"\nPURCHASE HISTORY ({len(purchase_history)} total):")
+        for p in purchase_history[:5]:  # show up to 5 most recent
+            date_str = p.get("date", "unknown date")
+            ai_parts.append(f"  - {p.get('title', 'Purchase')} — {date_str}")
 
     if contact.get("notes"):
         ai_parts.append(f"Notes: {contact['notes'][:300]}")
