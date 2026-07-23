@@ -292,7 +292,7 @@ class Contact(BaseModel):
     custom_dates: List[CustomDateField] = []
     purchase_date: Optional[datetime] = None  # Legacy alias for date_sold
     purchase_history: List[dict] = []          # [{date, vehicle, notes}] — one per sale
-    sold_count: int = 0                        # Total purchases (1 for first sale, 2+ for repeats)
+    sold_count: Optional[int] = 0              # Total purchases (1 for first sale, 2+ for repeats); coerce null→0
     
     # Physical address
     address_street: Optional[str] = None
