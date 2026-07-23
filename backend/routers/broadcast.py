@@ -29,6 +29,9 @@ class BroadcastFilter(BaseModel):
     contact_ids: Optional[List[str]] = []
     sold_months_min: Optional[int] = None   # lower bound: sold at least N months ago
     sold_months_max: Optional[int] = None   # upper bound: sold at most N months ago
+    purchase_title_contains: Optional[str] = None  # search purchase_history[].title
+    purchase_category: Optional[str] = None         # vehicle / real_estate / insurance / other
+    purchase_history_year: Optional[int] = None     # year within purchase_history[].date
 
 
 class BroadcastCreate(BaseModel):
@@ -126,6 +129,29 @@ async def get_filtered_contacts(filters: dict, user_id: str) -> List[dict]:
             date_q["$lte"] = datetime.fromisoformat(filters["custom_date_end"].replace("Z", "+00:00")).replace(tzinfo=None)
         query["date_sold"] = date_q
 
+    # Purchase history filters — search across purchase_history[] array
+    if filters.get("purchase_title_contains"):
+        import re as _re
+        pattern = _re.escape(filters["purchase_title_contains"].strip())
+        query["$or"] = query.get("$or", []) + [
+            {"purchase_history": {"$elemMatch": {"title": {"$regex": pattern, "$options": "i"}}}},
+            {"vehicle": {"$regex": pattern, "$options": "i"}},  # legacy fallback
+        ]
+
+    if filters.get("purchase_category"):
+        query["purchase_history"] = {
+            "$elemMatch": {
+                **query.get("purchase_history", {}).get("$elemMatch", {}),
+                "category": filters["purchase_category"],
+            }
+        }
+
+    if filters.get("purchase_history_year"):
+        yr = str(filters["purchase_history_year"])
+        query["$or"] = query.get("$or", []) + [
+            {"purchase_history": {"$elemMatch": {"date": {"$regex": f"^{yr}"}}}},
+        ]
+
     # Exclude hidden/deleted
     query["status"] = {"$nin": ["hidden", "merged", "deleted"]}
 
@@ -178,7 +204,10 @@ async def preview_broadcast_recipients(
     days_since_purchase: Optional[int] = None,
     days_since_contact: Optional[int] = None,
     custom_date_start: Optional[str] = None,
-    custom_date_end: Optional[str] = None
+    custom_date_end: Optional[str] = None,
+    purchase_title_contains: Optional[str] = None,
+    purchase_category: Optional[str] = None,
+    purchase_history_year: Optional[int] = None,
 ):
     """Preview how many contacts match the filter criteria"""
     filters = {
@@ -189,7 +218,10 @@ async def preview_broadcast_recipients(
         "days_since_purchase": days_since_purchase,
         "days_since_contact": days_since_contact,
         "custom_date_start": custom_date_start,
-        "custom_date_end": custom_date_end
+        "custom_date_end": custom_date_end,
+        "purchase_title_contains": purchase_title_contains,
+        "purchase_category": purchase_category,
+        "purchase_history_year": purchase_history_year,
     }
     
     contacts = await get_filtered_contacts(filters, user_id)

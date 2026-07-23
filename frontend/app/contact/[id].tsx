@@ -43,6 +43,7 @@ import {
 } from '../../utils/contactHelpers';
 import { EVENT_TYPE_LABELS, getEventLabel } from '../../utils/eventTypes';
 import PersonalIntelSection from '../../components/PersonalIntelSection';
+import PurchaseHistorySection from '../../components/contact/PurchaseHistorySection';
 import ChannelPicker, { useChannelPicker } from '../../components/ChannelPicker';
 import { ContactProvider } from '../../components/contact/ContactContext';
 import { ScreenErrorBoundary } from '../../components/ScreenErrorBoundary';
@@ -3542,6 +3543,15 @@ function ContactDetailScreen() {
 
               {/* Personal Intelligence (from voice memo extraction) */}
               <PersonalIntelSection contactId={id as string} userId={user?._id || ''} colors={colors} />
+
+              {/* Purchase History */}
+              {!isNewContact && (
+                <PurchaseHistorySection
+                  contactId={id as string}
+                  userId={user?._id || ''}
+                  colors={colors}
+                />
+              )}
 
               {/* Notes (editable view in details) */}
               {contact.notes ? (

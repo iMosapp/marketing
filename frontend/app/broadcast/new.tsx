@@ -42,6 +42,9 @@ interface FilterState {
   days_since_contact: number | null;
   custom_date_start: string | null;
   custom_date_end: string | null;
+  purchase_title_contains: string | null;
+  purchase_category: string | null;
+  purchase_history_year: number | null;
 }
 
 const MONTHS = [
@@ -87,6 +90,9 @@ const { showToast } = useToast();
     days_since_contact: null,
     custom_date_start: null,
     custom_date_end: null,
+    purchase_title_contains: null,
+    purchase_category: null,
+    purchase_history_year: null,
   });
   
   // Available tags
@@ -103,6 +109,7 @@ const { showToast } = useToast();
   const [expandedSections, setExpandedSections] = useState({
     tags: true,
     dateFilters: false,
+    purchases: false,
     schedule: false,
   });
 
@@ -150,6 +157,9 @@ const { showToast } = useToast();
       if (filters.days_since_contact) params.append('days_since_contact', filters.days_since_contact.toString());
       if (filters.custom_date_start) params.append('custom_date_start', filters.custom_date_start);
       if (filters.custom_date_end) params.append('custom_date_end', filters.custom_date_end);
+      if (filters.purchase_title_contains) params.append('purchase_title_contains', filters.purchase_title_contains);
+      if (filters.purchase_category) params.append('purchase_category', filters.purchase_category);
+      if (filters.purchase_history_year) params.append('purchase_history_year', filters.purchase_history_year.toString());
       
       const res = await api.get(`/broadcast/preview?${params.toString()}`);
       if (res.data.success) {
@@ -558,6 +568,76 @@ const { showToast } = useToast();
                   keyboardType="number-pad"
                   maxLength={4}
                 />
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* Filter by Purchase — search across purchase_history */}
+        <View style={styles.section}>
+          <Pressable
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, paddingBottom: 0 }}
+            onPress={() => setExpandedSections(prev => ({ ...prev, purchases: !prev.purchases }))}
+            testID="section-purchases"
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Ionicons name="bag-handle-outline" size={20} color="#007AFF" />
+              <Text style={styles.sectionTitle}>Filter by Purchase</Text>
+            </View>
+            <Ionicons name={expandedSections.purchases ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textSecondary} />
+          </Pressable>
+          {expandedSections.purchases && (
+            <View style={[styles.sectionContent, { paddingTop: 16 }]}>
+              <Text style={styles.filterLabel}>Purchase contains keyword:</Text>
+              <TextInput
+                style={[styles.input, { marginBottom: 4 }]}
+                placeholder='e.g. "Road Glide" or "Term Life"'
+                placeholderTextColor="#6E6E73"
+                value={filters.purchase_title_contains || ''}
+                onChangeText={t => setFilters(prev => ({ ...prev, purchase_title_contains: t || null }))}
+                testID="purchase-title-filter"
+              />
+              <Text style={{ fontSize: 12, color: colors.textTertiary, marginBottom: 16 }}>
+                Searches all purchase records — any industry, any product
+              </Text>
+
+              <Text style={styles.filterLabel}>Purchase Year:</Text>
+              <TextInput
+                style={[styles.yearInput, { marginBottom: 16 }]}
+                placeholder="e.g. 2023"
+                placeholderTextColor="#6E6E73"
+                value={filters.purchase_history_year?.toString() || ''}
+                onChangeText={t => setFilters(prev => ({ ...prev, purchase_history_year: t ? parseInt(t) : null }))}
+                keyboardType="number-pad"
+                maxLength={4}
+                testID="purchase-year-filter"
+              />
+
+              <Text style={styles.filterLabel}>Category:</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {[
+                  { value: null,           label: 'Any' },
+                  { value: 'vehicle',      label: 'Vehicle' },
+                  { value: 'real_estate',  label: 'Real Estate' },
+                  { value: 'insurance',    label: 'Insurance' },
+                  { value: 'boat',         label: 'Boat / RV' },
+                  { value: 'other',        label: 'Other' },
+                ].map(opt => (
+                  <Pressable
+                    key={opt.label}
+                    onPress={() => setFilters(prev => ({ ...prev, purchase_category: opt.value }))}
+                    style={[
+                      styles.presetButton,
+                      filters.purchase_category === opt.value && styles.presetButtonActive,
+                    ]}
+                    testID={`purchase-cat-${opt.label}`}
+                  >
+                    <Text style={[
+                      styles.presetText,
+                      filters.purchase_category === opt.value && styles.presetTextActive,
+                    ]}>{opt.label}</Text>
+                  </Pressable>
+                ))}
               </View>
             </View>
           )}
