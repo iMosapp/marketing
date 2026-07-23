@@ -1,0 +1,40 @@
+{
+  "summary": "Re-test of Purchase History feature after sold_count=None fix. 18/18 tests passed (was 17/18 with 1 skipped). The $inc fix resolved the code path, but 106 existing contacts in the DB already had sold_count=None from the old bug — these were data-migrated to sold_count=0 to restore GET /api/contacts 200 responses.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "GET /api/contacts/{user_id}",
+        "issue": "Still returned 500 after the $inc fix because 106 existing DB documents had sold_count=null (written by the old buggy code). Pydantic model has sold_count: int = 0 (not Optional), so any null value causes ValidationError. Fixed by running a one-time DB migration: update_many({sold_count: None}, {$set: {sold_count: 0}}) — 106 docs updated.",
+        "priority": "HIGH",
+        "status": "FIXED by T1 (data migration)"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_purchase_history.py",
+    "/app/test_reports/pytest/purchase_history_267.xml"
+  ],
+  "action_items": [
+    "IMPORTANT (preventive): The Contact Pydantic model has sold_count: int = 0 (not Optional[int]). Any future code that sets sold_count to None/null will break GET /api/contacts. Consider adding a DB-level validator or changing model to Optional[int] = 0 for safety.",
+    "Consider adding a startup migration in server.py to auto-heal sold_count=null contacts, in case this happens again."
+  ],
+  "critical_code_review_comments": [
+    "models.py Contact: sold_count: int = 0 is strict — any null in DB breaks serialization. Recommend Optional[int] = 0 with a validator to coerce None→0 for resilience."
+  ],
+  "updated_files": [],
+  "success_rate": {
+    "backend": "100% (18/18 passed)",
+    "frontend": "N/A (backend-only)"
+  },
+  "seed_data_creation": "Test purchases created for contact with phone +15550000001 under user 69a0b7095fddcede09591667. DB migration: 106 contacts updated sold_count null→0.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All 18 purchase history tests now pass. The sold_count null issue in DB was fixed by data migration. The code fix ($inc) is in place. Legacy migration test now passes (found contacts with vehicle field). Broadcast filters all working.",
+  "rca_of_issue": "Root cause: old add_purchase() used '$set: {sold_count: None}' which wrote null to MongoDB. Contact Pydantic model requires int. Fix: code changed to $inc but 106 docs already had null. Data migration required in addition to code fix."
+}

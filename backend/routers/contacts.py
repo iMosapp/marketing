@@ -2207,13 +2207,13 @@ async def add_purchase(user_id: str, contact_id: str, data: dict = Body(...)):
             {"_id": ObjectId(contact_id), "user_id": user_id},
             {
                 "$push": {"purchase_history": purchase},
-                # Keep legacy fields in sync with most recent purchase
+                # Keep legacy fields in sync with the newly added purchase
                 "$set": {
                     "vehicle": title,
                     **({"date_sold": datetime.fromisoformat(data["date"].replace("Z", "+00:00")).replace(tzinfo=None)}
                        if data.get("date") else {}),
-                    "sold_count": None,   # will be re-counted
-                }
+                },
+                "$inc": {"sold_count": 1},
             }
         )
     except Exception as e:
