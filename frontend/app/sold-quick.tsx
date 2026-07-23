@@ -152,7 +152,7 @@ export default function SoldQuickScreen() {
     }
     // Normalize to E.164 — prevents duplicate conversations from format mismatches
     const rawDigits = customerPhone.trim().replace(/\D/g, '');
-    const normalizedPhone = rawDigits.length === 10 ? `+1${rawDigits}` : rawDigits.length === 11 && rawDigits[0] === '1' ? `+${rawDigits}` : normalizedPhone;
+    const normalizedPhone = rawDigits.length === 10 ? `+1${rawDigits}` : rawDigits.length === 11 && rawDigits[0] === '1' ? `+${rawDigits}` : customerPhone.trim();
     setSending(true);
     try {
       // Step 1: Find or create contact

@@ -281,7 +281,7 @@ async def build_relationship_brief(user_id: str, contact_id: str, campaign_conte
     if brief["milestones"]:
         ai_parts.append(f"\nMILESTONES: {' | '.join(brief['milestones'])}")
 
-    vehicle = contact.get("vehicle_purchased") or contact.get("vehicle_interest") or contact.get("vehicle", "")
+    vehicle = brief.get("contact", {}).get("vehicle", "")
     if vehicle:
         ai_parts.append(f"Most recent purchase: {vehicle}")
 
