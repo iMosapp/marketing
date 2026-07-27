@@ -1712,15 +1712,20 @@ async def send_review_request_card(user_id: str, contact_id: str, request: Reque
         if logo_url and not logo_url.startswith("http"):
             logo_url = f"{APP_BASE}{logo_url}"
 
-    # Fetch logo bytes if available
+    # Fetch logo bytes if available — use object storage directly to avoid HTTP self-calls
     logo_bytes = None
     if logo_url:
         try:
-            full_url = logo_url if logo_url.startswith("http") else f"{APP_BASE}{logo_url}"
-            async with httpx.AsyncClient(timeout=8.0) as client:
-                resp = await client.get(full_url)
-                if resp.status_code == 200:
-                    logo_bytes = resp.content
+            if logo_url.startswith("/api/images/"):
+                from utils.image_storage import get_object
+                storage_path = logo_url[len("/api/images/"):]
+                logo_bytes, _ = await _aio.to_thread(get_object, storage_path)
+            else:
+                full_url = logo_url if logo_url.startswith("http") else f"{APP_BASE}{logo_url}"
+                async with httpx.AsyncClient(timeout=4.0) as client:
+                    resp = await client.get(full_url)
+                    if resp.status_code == 200:
+                        logo_bytes = resp.content
         except Exception as e:
             logger.warning(f"[ReviewCard] Could not fetch logo: {e}")
 
