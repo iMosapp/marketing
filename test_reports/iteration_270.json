@@ -1,0 +1,38 @@
+{
+  "summary": "Backend-only testing of Jessi AI vehicle reference fix. All 15 tests passed. Verified: (1) POST /purchases with category='vehicle' syncs personal_details.vehicle_purchased and clears vehicle_details. (2) build_relationship_brief() ai_context shows 'Most recent purchase: Road Glide' (not Mojave) when purchase_history exists. (3) Mojave does not appear in 'Most recent purchase' line after Road Glide is added. (4) Stale Mojave vehicle_details not shown in ai_context after new purchase. (5) Legacy contacts (no purchase_history) still correctly show vehicle_details from personal_details.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "GET /api/ai-outreach/relationship-brief/{user_id}/{contact_id}",
+        "issue": "HTTP endpoint strips ai_context from the brief before returning — the field is not exposed externally. Tests required direct Python import to verify ai_context. This is by design but worth noting if Jessi AI ever needs to debug context via API."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_jessi_vehicle_fix_270.py",
+    "/app/test_reports/pytest/jessi_vehicle_270.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "The contact creation endpoint (POST /contacts/{user_id}) does NOT accept or persist personal_details in the request payload — contacts need a separate PATCH /personal-details call to set them. This is by design but could confuse integrators.",
+    "The has_purchase_history gate in relationship_intel.py line 321-334: when purchase_history exists AND the memo vehicle matches current vehicle (name substring match), vehicle_color IS still shown. This is correct — color is still relevant to current vehicle. vehicle_details gets cleared by add_purchase() so won't appear."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_jessi_vehicle_fix_270.py"
+  ],
+  "success_rate": {
+    "backend": "100% (15/15)",
+    "frontend": "N/A (backend-only)"
+  },
+  "seed_data_creation": "Created and cleaned up 4 test contacts (TEST_Jessi VehicleFix*) during test run",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All 5 bug fix scenarios verified via pytest. Key findings: (A) add_purchase() correctly syncs personal_details.vehicle_purchased='Road Glide' and clears vehicle_details='' for category='vehicle'. (B) build_relationship_brief() correctly uses purchase_history most-recent title ('Road Glide') in ai_context, gating out stale Mojave references. (C) Legacy contacts (no purchase_history) still show vehicle_details from personal_details. Note: The HTTP relationship-brief endpoint does NOT return ai_context field — had to use direct Python import to test it.",
+  "rca_of_issue": "Root cause 1: build_relationship_brief() was feeding personal_details.vehicle_purchased (Mojave from old voice memo) directly into the AI context even when purchase_history had a more recent entry (Road Glide). Fix: has_purchase_history variable gates the personal_details vehicle fields. Root cause 2: add_purchase() was not updating personal_details.vehicle_purchased, so even after adding a new vehicle purchase, the voice-memo field still referenced the old vehicle. Fix: add_purchase() now sets personal_details.vehicle_purchased=title and personal_details.vehicle_details='' when category='vehicle'."
+}

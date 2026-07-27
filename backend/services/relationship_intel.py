@@ -287,6 +287,7 @@ async def build_relationship_brief(user_id: str, contact_id: str, campaign_conte
 
     # Full purchase history for AI context
     purchase_history = brief.get("contact", {}).get("purchase_history") or []
+    has_purchase_history = len(purchase_history) > 0
     if len(purchase_history) > 1:
         ai_parts.append(f"\nPURCHASE HISTORY ({len(purchase_history)} total):")
         for p in purchase_history[:5]:  # show up to 5 most recent
@@ -314,10 +315,23 @@ async def build_relationship_brief(user_id: str, contact_id: str, campaign_conte
             ai_parts.append(f"  Occupation: {personal['occupation']}")
         if personal.get("employer"):
             ai_parts.append(f"  Employer: {personal['employer']}")
-        if personal.get("vehicle_details"):
-            ai_parts.append(f"  Vehicle details: {personal['vehicle_details']}")
-        if personal.get("vehicle_color"):
-            ai_parts.append(f"  Vehicle color: {personal['vehicle_color']}")
+        # Only show voice-memo vehicle data if there's no purchase_history overriding it.
+        # If purchase_history exists, the most recent purchase is already shown above —
+        # showing a stale voice-memo vehicle would confuse the AI into referencing the old one.
+        if not has_purchase_history:
+            if personal.get("vehicle_details"):
+                ai_parts.append(f"  Vehicle details: {personal['vehicle_details']}")
+            if personal.get("vehicle_color"):
+                ai_parts.append(f"  Vehicle color: {personal['vehicle_color']}")
+        else:
+            # Still show color/details if they apply to the CURRENT vehicle (same name match)
+            current_vehicle = vehicle.lower()
+            memo_vehicle = (personal.get("vehicle_purchased") or "").lower()
+            if memo_vehicle and memo_vehicle in current_vehicle or current_vehicle in memo_vehicle:
+                if personal.get("vehicle_details"):
+                    ai_parts.append(f"  Vehicle details: {personal['vehicle_details']}")
+                if personal.get("vehicle_color"):
+                    ai_parts.append(f"  Vehicle color: {personal['vehicle_color']}")
         if personal.get("trade_in"):
             ai_parts.append(f"  Trade-in: {personal['trade_in']}")
         if personal.get("purchase_context"):
@@ -406,7 +420,7 @@ async def build_relationship_brief(user_id: str, contact_id: str, campaign_conte
                 personal_bits.append(f"Kids: {', '.join(kid_names)}")
         if personal.get("interests"):
             personal_bits.append(f"Interests: {', '.join(personal['interests'][:3])}")
-        if personal.get("vehicle_purchased"):
+        if personal.get("vehicle_purchased") and not has_purchase_history:
             personal_bits.append(f"Purchased: {personal['vehicle_purchased']}")
         if personal_bits:
             human_parts.append(f"Personal: {' / '.join(personal_bits)}")

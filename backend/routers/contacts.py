@@ -2203,16 +2203,22 @@ async def add_purchase(user_id: str, contact_id: str, data: dict = Body(...)):
     }
 
     try:
+        set_fields = {
+            "vehicle": title,
+            **({"date_sold": datetime.fromisoformat(data["date"].replace("Z", "+00:00")).replace(tzinfo=None)}
+               if data.get("date") else {}),
+        }
+        # For vehicle purchases, also sync personal_details.vehicle_purchased
+        # so voice-memo context stays current and Jessi doesn't reference old vehicles
+        if data.get("category") == "vehicle":
+            set_fields["personal_details.vehicle_purchased"] = title
+            set_fields["personal_details.vehicle_details"] = ""  # clear stale details
+
         await db.contacts.update_one(
             {"_id": ObjectId(contact_id), "user_id": user_id},
             {
                 "$push": {"purchase_history": purchase},
-                # Keep legacy fields in sync with the newly added purchase
-                "$set": {
-                    "vehicle": title,
-                    **({"date_sold": datetime.fromisoformat(data["date"].replace("Z", "+00:00")).replace(tzinfo=None)}
-                       if data.get("date") else {}),
-                },
+                "$set": set_fields,
                 "$inc": {"sold_count": 1},
             }
         )
