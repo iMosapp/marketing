@@ -1288,24 +1288,31 @@ async def get_card_image(card_id: str):
                     logo_url = store_doc.get("logo_url", "")
                     if logo_url:
                         try:
-                            import httpx
-                            full_url = f"{app_url}{logo_url}" if logo_url.startswith("/") else logo_url
-                            async with httpx.AsyncClient() as client:
-                                resp = await client.get(full_url, timeout=5)
-                                if resp.status_code == 200:
-                                    logo_img = Image.open(io.BytesIO(resp.content)).convert("RGBA")
-                                    # Scale to max 200w x 60h
-                                    lw, lh = logo_img.size
-                                    scale = min(200 / lw, 60 / lh, 1.0)
-                                    logo_img = logo_img.resize((int(lw * scale), int(lh * scale)), Image.Resampling.LANCZOS)
-                                    lw, lh = logo_img.size
-                                    lx = (W - lw) // 2
-                                    # Paste with alpha
-                                    img.paste(logo_img, (lx, y), logo_img if logo_img.mode == 'RGBA' else None)
-                                    y += lh + 12
-                                    store_logo_loaded = True
-                        except Exception:
-                            pass
+                            import asyncio as _asyncio
+                            logo_bytes = None
+                            if logo_url.startswith("/api/images/"):
+                                # Direct object storage fetch — avoids slow HTTP self-call
+                                from utils.image_storage import get_object
+                                storage_path = logo_url[len("/api/images/"):]
+                                logo_bytes, _ = await _asyncio.to_thread(get_object, storage_path)
+                            elif logo_url.startswith("http"):
+                                import httpx
+                                async with httpx.AsyncClient(timeout=4.0) as client:
+                                    resp = await client.get(logo_url)
+                                    if resp.status_code == 200:
+                                        logo_bytes = resp.content
+                            if logo_bytes:
+                                logo_img = Image.open(io.BytesIO(logo_bytes)).convert("RGBA")
+                                lw, lh = logo_img.size
+                                scale = min(200 / lw, 60 / lh, 1.0)
+                                logo_img = logo_img.resize((int(lw * scale), int(lh * scale)), Image.Resampling.LANCZOS)
+                                lw, lh = logo_img.size
+                                lx = (W - lw) // 2
+                                img.paste(logo_img, (lx, y), logo_img if logo_img.mode == 'RGBA' else None)
+                                y += lh + 12
+                                store_logo_loaded = True
+                        except Exception as logo_err:
+                            logger.warning(f"[CardImage] Logo load failed: {logo_err}")
         except Exception:
             pass
 
@@ -1341,11 +1348,17 @@ async def get_card_image(card_id: str):
             if customer_photo_data.startswith("data:"):
                 b64 = customer_photo_data.split(",")[1]
                 photo_bytes = base64.b64decode(b64)
+            elif customer_photo_data.startswith("/api/images/"):
+                # Direct object storage fetch — avoids slow HTTP self-call
+                import asyncio as _asyncio
+                from utils.image_storage import get_object
+                storage_path = customer_photo_data[len("/api/images/"):]
+                photo_bytes, _ = await _asyncio.to_thread(get_object, storage_path)
             elif customer_photo_data.startswith("/api/") or customer_photo_data.startswith("http"):
                 import httpx
                 full = f"{app_url}{customer_photo_data}" if customer_photo_data.startswith("/") else customer_photo_data
-                async with httpx.AsyncClient() as client:
-                    resp = await client.get(full, timeout=5)
+                async with httpx.AsyncClient(timeout=4.0) as client:
+                    resp = await client.get(full)
                     photo_bytes = resp.content if resp.status_code == 200 else None
             else:
                 photo_bytes = None
