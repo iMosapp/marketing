@@ -48,7 +48,7 @@ async def _check_tag_campaign_enrollment(user_id: str, contact_id: str, contact_
             if not sequences:
                 continue
 
-            delivery_mode = campaign.get('delivery_mode', 'manual')
+            delivery_mode = campaign.get('delivery_mode', 'auto')
             now = datetime.utcnow()
 
             enrollment = {

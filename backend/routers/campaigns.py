@@ -1020,7 +1020,7 @@ async def enroll_contact_in_campaign(user_id: str, campaign_id: str, contact_id:
                 "message_template": step.get('message_template') or step.get('message', ''),
                 "media_urls": step.get('media_urls', []),
                 "channel": step.get('channel', 'sms'),
-                "delivery_mode": campaign.get('delivery_mode', 'manual'),
+                "delivery_mode": campaign.get('delivery_mode', 'auto'),
                 "ai_enabled": campaign.get('ai_enabled', False),
                 "send_at": base_time + absolute_offset,
                 "status": "pending",
