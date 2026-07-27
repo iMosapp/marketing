@@ -1695,6 +1695,27 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"Scheduler start failed (non-fatal): {e}")
 
+    # One-time migration: upgrade any existing campaigns with delivery_mode="manual"
+    # to delivery_mode="auto" so they actually fire.
+    # Safe to run every startup — only updates campaigns that still have the old value.
+    try:
+        db = get_db()
+        result = await db.campaigns.update_many(
+            {"delivery_mode": {"$in": ["manual", None, ""]}},
+            {"$set": {"delivery_mode": "auto"}}
+        )
+        if result.modified_count > 0:
+            logger.info(f"[Migration] Upgraded {result.modified_count} campaign(s) from manual → auto delivery_mode")
+        # Also fix pending_sends that are stuck as "pending_user_action" — they should be "pending"
+        sends_result = await db.campaign_pending_sends.update_many(
+            {"delivery_mode": {"$in": ["manual", None, ""]}, "status": "pending_user_action"},
+            {"$set": {"delivery_mode": "auto", "status": "pending"}}
+        )
+        if sends_result.modified_count > 0:
+            logger.info(f"[Migration] Unstuck {sends_result.modified_count} pending_sends from pending_user_action → pending")
+    except Exception as e:
+        logger.warning(f"Campaign delivery_mode migration failed (non-fatal): {e}")
+
     logger.info("I'm On Social API v2.0 started")
 
 @app.on_event("shutdown")

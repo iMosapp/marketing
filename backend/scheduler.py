@@ -597,7 +597,7 @@ async def process_pending_campaign_steps():
                     base = enrolled_at if isinstance(enrolled_at, datetime) else now_naive
                     if hasattr(base, 'tzinfo') and base.tzinfo:
                         base = base.replace(tzinfo=None)
-                    delivery_mode = campaign.get("delivery_mode", "manual")
+                    delivery_mode = campaign.get("delivery_mode", "auto")
                     docs = []
                     for i, step in enumerate(remaining):
                         # ABSOLUTE from enrollment date
@@ -664,7 +664,7 @@ async def process_pending_campaign_steps():
                 current_step = send_doc.get("step", 1)
                 message_content = send_doc.get("message_template", "")
                 channel = send_doc.get("channel", "sms")
-                delivery_mode = send_doc.get("delivery_mode", "manual")
+                delivery_mode = send_doc.get("delivery_mode", "auto")
                 campaign_ai_enabled = send_doc.get("ai_enabled", False)
 
                 # Mark send as processing immediately (prevents double-processing)

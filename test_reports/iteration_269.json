@@ -1,0 +1,41 @@
+{
+  "summary": "Backend-only testing of campaign automation fix. All 8 tests passed. Verified: all prebuilt templates have delivery_mode='auto', tag enrollment creates campaign_pending_sends, PATCH /contacts tags triggers enrollment, startup migration upgrades manual→auto campaigns.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "GET /campaigns/{user_id}",
+        "issue": "auto_enroll_contacts_in_campaign() auto-creates a new 'Sold - Complete Follow-Up' campaign from prebuilt template BUT this new campaign gets deduplicated away in GET /campaigns response when there's an existing campaign with same name+type. The enrollment DID happen (confirmed in backend logs: '[TagEnroll] Enrolled 1 contact(s) in campaign 69a785d7af1da36da6f46760') but the campaign isn't discoverable via the standard GET endpoint due to deduplication by (name, type). This could confuse users who can't see newly auto-created campaigns. Not breaking for automation but worth noting."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_campaign_auto_enrollment_fix_269.py",
+    "/app/test_reports/pytest/campaign_auto_enrollment_269.xml"
+  ],
+  "action_items": [
+    "Optional: Review GET /campaigns deduplication logic — auto-created campaigns from auto_enroll_contacts_in_campaign() may be hidden if a campaign with the same name+type already exists. The enrollment happens in the hidden campaign, so users might not see it in campaign list."
+  ],
+  "critical_code_review_comments": [
+    "campaigns.py line 1023: enroll_contact_in_campaign() uses delivery_mode = campaign.get('delivery_mode', 'manual') as fallback default. Even though all templates now have 'auto', the fallback is still 'manual'. Should be changed to 'auto' as default to prevent regression if any campaign is created without explicit delivery_mode.",
+    "contacts.py line 51: _check_tag_campaign_enrollment() also uses delivery_mode = campaign.get('delivery_mode', 'manual') as fallback. Same issue - should default to 'auto'. The startup migration handles existing records but new campaigns without explicit delivery_mode would still get 'manual' as the in-code fallback.",
+    "auto_enroll_contacts_in_campaign in tags.py creates a campaign duplicate issue: it calls find_one to get the 'first' matching campaign (non-deterministic ordering) and enrolls there. If user has multiple campaigns with trigger_tag='sold', only one gets the enrollment. The GET /campaigns deduplication by (name, type) further hides auto-created campaigns."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_campaign_auto_enrollment_fix_269.py"
+  ],
+  "success_rate": {
+    "backend": "100% (8/8)",
+    "frontend": "N/A (backend-only)"
+  },
+  "seed_data_creation": "Created and cleaned up test contacts (TestEnroll AutoCampaign, PatchTagTest Campaign269) during test run",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "All 3 root causes fixed and verified: (A) PREBUILT_TEMPLATES all have delivery_mode='auto', (B) auto_enroll_contacts_in_campaign() now calls enroll_contact_in_campaign() which creates campaign_pending_sends, (C) PATCH /contacts/{uid}/{cid}/tags with 'Sold' triggers _check_tag_campaign_enrollment which pre-schedules all steps into campaign_pending_sends with delivery_mode='auto' and status='pending'. Startup migration also verified. Minor: fallback in enroll_contact_in_campaign and _check_tag_campaign_enrollment still uses delivery_mode='manual' as default — could cause regression for new campaigns created without explicit delivery_mode.",
+  "rca_of_issue": "Three root causes: 1) All prebuilt templates had delivery_mode='manual' so scheduler never sent them (scheduler checks delivery_mode='auto'/'automated'). 2) auto_enroll_contacts_in_campaign() only created campaign_enrollments, not campaign_pending_sends. 3) SOLD wizard only enrolled if user manually selected a campaign. Fixes: A) Templates changed to delivery_mode='auto'. B) Function now calls enroll_contact_in_campaign() which pre-schedules all pending_sends. C) SOLD wizard now applies Sold tag regardless. D) Startup migration upgrades all existing manual campaigns."
+}

@@ -28,7 +28,7 @@ PREBUILT_TEMPLATES = [
         "trigger_tag": "sold",
         "icon": "car",
         "color": "#34C759",
-        "delivery_mode": "manual",
+        "delivery_mode": "auto",
         "ai_enabled": True,
         "sequences": [
             {
@@ -91,7 +91,7 @@ PREBUILT_TEMPLATES = [
         "trigger_tag": "be_back",
         "icon": "refresh",
         "color": "#FF9500",
-        "delivery_mode": "manual",
+        "delivery_mode": "auto",
         "ai_enabled": True,
         "sequences": [
             {
@@ -144,7 +144,7 @@ PREBUILT_TEMPLATES = [
         "trigger_tag": "service_due",
         "icon": "construct",
         "color": "#007AFF",
-        "delivery_mode": "manual",
+        "delivery_mode": "auto",
         "ai_enabled": True,
         "sequences": [
             {
@@ -187,7 +187,7 @@ PREBUILT_TEMPLATES = [
         "trigger_tag": "referral",
         "icon": "people",
         "color": "#AF52DE",
-        "delivery_mode": "manual",
+        "delivery_mode": "auto",
         "ai_enabled": True,
         "sequences": [
             {
@@ -230,7 +230,7 @@ PREBUILT_TEMPLATES = [
         "trigger_tag": "vip",
         "icon": "diamond",
         "color": "#FFD60A",
-        "delivery_mode": "manual",
+        "delivery_mode": "auto",
         "ai_enabled": True,
         "sequences": [
             {
@@ -283,7 +283,7 @@ PREBUILT_TEMPLATES = [
         "trigger_tag": "review_sent",
         "icon": "star",
         "color": "#FFD60A",
-        "delivery_mode": "manual",
+        "delivery_mode": "auto",
         "ai_enabled": True,
         "sequences": [
             {
@@ -316,7 +316,7 @@ PREBUILT_TEMPLATES = [
         "trigger_tag": "cold_prospect",
         "icon": "chatbubble-ellipses",
         "color": "#34C759",
-        "delivery_mode": "manual",
+        "delivery_mode": "auto",
         "ai_enabled": True,
         "sequences": [
             {
@@ -359,7 +359,7 @@ PREBUILT_TEMPLATES = [
         "trigger_tag": "cold_prospect",
         "icon": "mail",
         "color": "#007AFF",
-        "delivery_mode": "manual",
+        "delivery_mode": "auto",
         "ai_enabled": True,
         "sequences": [
             {

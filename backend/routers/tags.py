@@ -385,11 +385,16 @@ async def auto_enroll_contacts_in_campaign(user_id: str, tag_name: str, contact_
     """
     Generic tag → campaign auto-enrollment engine.
     When a tag is applied, find any active campaign with a matching trigger_tag
-    and auto-enroll the contacts.
+    and auto-enroll the contacts — with full pending_sends pre-scheduling.
+
+    Uses enroll_contact_in_campaign() (campaigns.py) which is the single
+    correct enrollment path. The old inline enrollment path was broken because
+    it created campaign_enrollments but never created campaign_pending_sends,
+    so messages sat in limbo and were never sent.
     """
     db = get_db()
     try:
-        from routers.campaigns import PREBUILT_TEMPLATES, calculate_next_send_date
+        from routers.campaigns import PREBUILT_TEMPLATES, enroll_contact_in_campaign
         from routers.campaign_config import get_effective_config
 
         # Check if auto_enroll_on_tag is enabled
@@ -415,18 +420,17 @@ async def auto_enroll_contacts_in_campaign(user_id: str, tag_name: str, contact_
             }]
         })
 
-        # 2. If none, check prebuilt templates for a matching trigger_tag
+        # 2. If none, auto-create from prebuilt template
         if not existing_campaign:
             matching_template = next(
                 (t for t in PREBUILT_TEMPLATES if t.get("trigger_tag", "").lower() in (tag_lower, tag_normalized)),
                 None
             )
             if not matching_template:
-                # Also try matching tag name directly (e.g. tag "Hot Lead" won't match any template)
                 logger.debug(f"No campaign template found for tag '{tag_name}' — skipping enrollment")
                 return
 
-            # Auto-create the campaign from the prebuilt template
+            # Auto-create the campaign — always use delivery_mode "auto" so messages actually fire
             campaign_doc = {
                 "user_id": user_id,
                 "name": matching_template["name"],
@@ -435,7 +439,7 @@ async def auto_enroll_contacts_in_campaign(user_id: str, tag_name: str, contact_
                 "trigger_tag": matching_template["trigger_tag"],
                 "icon": matching_template.get("icon", "megaphone"),
                 "color": matching_template.get("color", "#007AFF"),
-                "delivery_mode": matching_template.get("delivery_mode", "manual"),
+                "delivery_mode": "auto",   # Always auto — manual mode = messages never send
                 "ai_enabled": matching_template.get("ai_enabled", True),
                 "sequences": matching_template["sequences"],
                 "active": True,
@@ -444,49 +448,33 @@ async def auto_enroll_contacts_in_campaign(user_id: str, tag_name: str, contact_
             }
             camp_result = await db.campaigns.insert_one(campaign_doc)
             campaign_id = str(camp_result.inserted_id)
-            sequences = matching_template["sequences"]
             logger.info(f"Auto-created campaign '{matching_template['name']}' (id={campaign_id}) from tag '{tag_name}'")
         else:
             campaign_id = str(existing_campaign["_id"])
-            sequences = existing_campaign.get("sequences", [])
+            # If the existing campaign has manual mode, upgrade it to auto
+            if existing_campaign.get("delivery_mode") not in ("auto", "automated"):
+                await db.campaigns.update_one(
+                    {"_id": existing_campaign["_id"]},
+                    {"$set": {"delivery_mode": "auto"}}
+                )
+                logger.info(f"Upgraded campaign '{existing_campaign.get('name')}' delivery_mode to 'auto'")
 
-        # 3. Enroll each contact
+        # 3. Enroll each contact using the canonical enrollment function
+        #    This pre-schedules ALL steps into campaign_pending_sends — the only way
+        #    the scheduler will pick them up and send them.
+        enrolled = 0
         for cid in contact_ids:
-            already = await db.campaign_enrollments.find_one({
-                "campaign_id": campaign_id,
-                "contact_id": cid,
-                "status": "active",
-            })
-            if already:
-                continue
+            try:
+                await enroll_contact_in_campaign(user_id, campaign_id, cid)
+                enrolled += 1
+            except Exception as e:
+                # 400 = already enrolled — that's fine, not an error
+                err_str = str(e)
+                if "already enrolled" not in err_str.lower():
+                    logger.warning(f"Failed to enroll contact {cid} in campaign {campaign_id}: {e}")
 
-            contact = await db.contacts.find_one(
-                {"_id": ObjectId(cid)}, {"first_name": 1, "last_name": 1, "phone": 1}
-            )
-            if not contact:
-                continue
-
-            cname = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip()
-            first_step = sequences[0] if sequences else None
-            next_send = calculate_next_send_date(first_step) if first_step else datetime.utcnow()
-
-            enrollment = {
-                "user_id": user_id,
-                "campaign_id": campaign_id,
-                "contact_id": cid,
-                "contact_name": cname,
-                "contact_phone": contact.get("phone", ""),
-                "current_step": 1,
-                "total_steps": len(sequences),
-                "status": "active",
-                "enrolled_at": datetime.utcnow(),
-                "next_send_at": next_send,
-                "messages_sent": [],
-                "trigger_type": f"{tag_lower}_tag",
-                "auto_enrolled": True,
-            }
-            await db.campaign_enrollments.insert_one(enrollment)
-            logger.info(f"Auto-enrolled {cname} in campaign '{campaign_id}' via tag '{tag_name}'")
+        if enrolled:
+            logger.info(f"[TagEnroll] Enrolled {enrolled} contact(s) in campaign '{campaign_id}' via tag '{tag_name}'")
 
     except Exception as e:
         logger.warning(f"Campaign auto-enrollment failed for tag '{tag_name}': {e}")

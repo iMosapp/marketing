@@ -274,9 +274,20 @@ export default function SoldQuickScreen() {
       }
 
       // Step 7: Enroll in long-term follow-up campaign
-      if (selectedCampaignId && contactId) {
-        await api.post(`/campaigns/${user._id}/${selectedCampaignId}/enroll/${contactId}`)
-          .catch(() => {});
+      // If user picked a specific campaign, enroll in that.
+      // If they skipped the picker, auto-enroll by applying the Sold tag —
+      // the backend will find/create the matching campaign and pre-schedule all steps.
+      if (contactId) {
+        if (selectedCampaignId) {
+          // Manual campaign selection — enroll directly
+          await api.post(`/campaigns/${user._id}/${selectedCampaignId}/enroll/${contactId}`)
+            .catch(() => {});
+        } else {
+          // Auto-enroll via tag: apply Sold tag → backend finds matching campaign → pre-schedules sends
+          await api.patch(`/contacts/${user._id}/${contactId}/tags`, {
+            tags: ['Sold'],
+          }).catch(() => {});
+        }
       }
 
       // Success animation
