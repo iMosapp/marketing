@@ -304,6 +304,18 @@ export default function SoldQuickScreen() {
 
   // ── SUCCESS SCREEN ──
   if (done) {
+    // Build immediate sends list based on what actually ran
+    const immediateSteps = [
+      { icon: 'card-outline',    color: '#007AFF', label: 'Contact card (VCF)',      time: 'Sent ✓',  done: true },
+      ...(sendType === 'photo' && photo
+        ? [{ icon: 'image-outline',  color: '#34C759', label: 'Delivery photo (MMS)',   time: '~2 min',   done: false }]
+        : [{ icon: 'gift-outline',   color: ACCENT,    label: 'Digital card link',      time: '~4 min',   done: false }]
+      ),
+      { icon: 'star-outline',    color: '#FF9500', label: 'Review request',           time: '~7 min',   done: false },
+    ];
+
+    const campaignName = selectedCampaignName || 'Sold Follow-Up';
+
     return (
       <SafeAreaView style={s.container} edges={['top', 'bottom']}>
         <View style={s.successWrap}>
@@ -312,26 +324,37 @@ export default function SoldQuickScreen() {
           </Animated.View>
           <Text style={s.successTitle}>SOLD!</Text>
           <Text style={s.successSub}>Sequence started for {customerName.split(' ')[0]}</Text>
+
+          {/* Immediate sends — what actually fires in the next few minutes */}
           <View style={s.timeline}>
-            {[
-              { icon: 'card-outline',    color: '#007AFF', label: 'VCF sent',                  time: 'Right now', done: true },
-              { icon: 'image-outline',   color: '#34C759', label: 'Delivery photo (MMS)',         time: '~2 min',    done: false },
-              { icon: 'gift-outline',    color: ACCENT,    label: 'Digital card link',          time: '~4 min',    done: false },
-              { icon: 'star-outline',    color: '#FF9500', label: 'Review request',             time: '~7 min',    done: false },
-              { icon: 'chatbubble-outline', color: '#34C759', label: '7-day check-in',          time: '1 week',    done: false },
-              { icon: 'people-outline',  color: '#AF52DE', label: 'Referral ask',               time: '3 weeks',   done: false },
-            ].map((item, i) => (
+            {immediateSteps.map((item, i) => (
               <View key={i} style={s.timelineRow}>
                 <View style={[s.timelineIcon, { backgroundColor: item.color + '20' }]}>
                   <Ionicons name={item.icon as any} size={16} color={item.color} />
                 </View>
                 <Text style={s.timelineLabel}>{item.label}</Text>
                 <Text style={[s.timelineTime, { color: item.done ? '#34C759' : item.color }]}>
-                  {item.done ? 'Sent ✓' : item.time}
+                  {item.time}
                 </Text>
               </View>
             ))}
+
+            {/* Divider */}
+            <View style={{ height: 1, backgroundColor: '#ffffff15', marginVertical: 10 }} />
+
+            {/* Campaign enrollment line */}
+            <View style={s.timelineRow}>
+              <View style={[s.timelineIcon, { backgroundColor: '#AF52DE20' }]}>
+                <Ionicons name="rocket-outline" size={16} color="#AF52DE" />
+              </View>
+              <Text style={s.timelineLabel}>Long-term follow-up</Text>
+              <Text style={[s.timelineTime, { color: '#AF52DE' }]}>Running</Text>
+            </View>
+            <Text style={{ fontSize: 12, color: '#ffffff50', paddingLeft: 44, marginTop: 2, marginBottom: 4 }}>
+              Enrolled in {campaignName}
+            </Text>
           </View>
+
           <TouchableOpacity style={s.doneBtn} onPress={() => router.back()} data-testid="sold-quick-done">
             <Text style={s.doneBtnText}>Done</Text>
           </TouchableOpacity>
