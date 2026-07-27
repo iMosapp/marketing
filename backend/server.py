@@ -1706,13 +1706,16 @@ async def startup_event():
         )
         if result.modified_count > 0:
             logger.info(f"[Migration] Upgraded {result.modified_count} campaign(s) from manual → auto delivery_mode")
-        # Also fix pending_sends that are stuck as "pending_user_action" — they should be "pending"
+        # Cancel all old stuck pending_sends rather than releasing them.
+        # These were created before the delivery_mode bug was fixed — releasing them
+        # would flood customers with out-of-sequence messages from months ago.
+        # New enrollments from today forward will create fresh pending_sends with delivery_mode="auto".
         sends_result = await db.campaign_pending_sends.update_many(
-            {"delivery_mode": {"$in": ["manual", None, ""]}, "status": "pending_user_action"},
-            {"$set": {"delivery_mode": "auto", "status": "pending"}}
+            {"delivery_mode": {"$in": ["manual", None, ""]}, "status": {"$in": ["pending_user_action", "pending"]}},
+            {"$set": {"status": "cancelled", "cancelled_reason": "pre-fix manual delivery_mode — cancelled on deploy"}}
         )
         if sends_result.modified_count > 0:
-            logger.info(f"[Migration] Unstuck {sends_result.modified_count} pending_sends from pending_user_action → pending")
+            logger.info(f"[Migration] Cancelled {sends_result.modified_count} old stuck pending_sends (pre-fix). New enrollments will work correctly.")
     except Exception as e:
         logger.warning(f"Campaign delivery_mode migration failed (non-fatal): {e}")
 
