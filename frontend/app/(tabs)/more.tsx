@@ -831,6 +831,8 @@ export default function MoreScreen() {
     color: colors.textSecondary,
     items: [
       { icon: 'shield-checkmark', title: 'Security', subtitle: 'Passwords & Face ID', onPress: () => router.push('/settings/security'), color: '#FF3B30' },
+      // Notification preferences — visible to ALL users so everyone can control SMS vs Push
+      { icon: 'chatbubble-ellipses-outline', title: 'Notification Preferences', subtitle: 'SMS alerts, push delivery & quiet times', onPress: () => router.push('/settings/notifications'), color: '#FF9500' },
       { icon: 'time-outline', title: 'My Schedule', subtitle: 'Work hours & notification quiet times', onPress: () => router.push('/settings/schedule'), color: '#34C759' },
       { icon: 'calendar-outline', title: 'Calendar', subtitle: 'Connect calendars', onPress: () => router.push('/settings/calendar'), color: '#007AFF' },
       { icon: 'help-circle-outline', title: 'Help Center', subtitle: 'How-to guides & FAQs', onPress: () => router.push('/help' as any), color: '#007AFF' },

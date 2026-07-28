@@ -77,7 +77,7 @@ export default function NotificationSettings() {
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <Text style={s.title}>SMS Notifications</Text>
+        <Text style={s.title}>Notification Preferences</Text>
         {hasChanges ? (
           <TouchableOpacity style={s.saveBtn} onPress={save} disabled={saving}>
             {saving

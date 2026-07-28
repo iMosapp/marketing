@@ -103,6 +103,26 @@ export default function RootLayout() {
     let responseSubRemove: (() => void) | null = null;
     let appStateSub: any = null;
 
+    const handleNotificationResponse = (response: any) => {
+      const data = response?.notification?.request?.content?.data as any;
+      let url = data?.url || data?.screen || '';
+      // Strip domain if backend sent a full URL (e.g. https://app.imonsocial.com/thread/abc)
+      if (url.startsWith('http')) {
+        try { url = new URL(url).pathname; } catch {}
+      }
+      // Handle custom scheme (imos://thread/abc → /thread/abc)
+      if (url.startsWith('imos://')) {
+        url = url.replace('imos:/', '');
+      }
+      if (url && url !== '/') {
+        // Delay navigation to allow router to fully initialize
+        setTimeout(() => {
+          try { router.push(url as any); }
+          catch (e) { console.warn('[Push] Navigation failed:', e); }
+        }, 800);
+      }
+    };
+
     (async () => {
       try {
         const Notifications = await import('expo-notifications');
@@ -114,17 +134,15 @@ export default function RootLayout() {
             shouldSetBadge: true,
           }),
         });
-        const sub = Notifications.addNotificationResponseReceivedListener(response => {
-          const data = response.notification.request.content.data as any;
-          let url = data?.url || data?.screen || '';
-          // Strip domain if backend sent a full URL (e.g. https://app.imonsocial.com/thread/abc)
-          if (url.startsWith('http')) {
-            try { url = new URL(url).pathname; } catch {}
-          }
-          if (url && url !== '/') {
-            setTimeout(() => { try { router.push(url as any); } catch (e) { console.warn('[Push] Navigation failed:', e); } }, 600);
-          }
-        });
+
+        // Handle cold-start: app was CLOSED when notification was tapped
+        const lastResponse = await Notifications.getLastNotificationResponseAsync();
+        if (lastResponse) {
+          handleNotificationResponse(lastResponse);
+        }
+
+        // Handle foreground/background taps
+        const sub = Notifications.addNotificationResponseReceivedListener(handleNotificationResponse);
         responseSubRemove = () => sub.remove();
       } catch {}
     })();
