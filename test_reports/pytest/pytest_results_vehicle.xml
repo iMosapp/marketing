@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="6" time="0.084" timestamp="2026-07-28T01:41:35.653965+00:00" hostname="agent-env-ed2e0bed-a367-4d5c-a080-e18e539ff770"><testcase classname="backend.tests.test_vehicle_template" name="test_vehicle_from_purchase_history[asyncio]" time="0.001"><failure message="AssertionError: Got: Hey there, how is your Road Glide treating you?&#10;assert 'Hey there, h...treating you?' == 'Hey John, ho...treating you?'&#10;  &#10;  - Hey John, how is your Road Glide treating you?&#10;  ?     ^^ ^&#10;  + Hey there, how is your Road Glide treating you?&#10;  ?     ^ ^^^">backend/tests/test_vehicle_template.py:26: in test_vehicle_from_purchase_history
+    assert result == "Hey John, how is your Road Glide treating you?", f"Got: {result}"
+E   AssertionError: Got: Hey there, how is your Road Glide treating you?
+E   assert 'Hey there, h...treating you?' == 'Hey John, ho...treating you?'
+E     
+E     - Hey John, how is your Road Glide treating you?
+E     ?     ^^ ^
+E     + Hey there, how is your Road Glide treating you?
+E     ?     ^ ^^^</failure></testcase><testcase classname="backend.tests.test_vehicle_template" name="test_vehicle_fallback_legacy[asyncio]" time="0.001" /><testcase classname="backend.tests.test_vehicle_template" name="test_purchase_alias_for_vehicle[asyncio]" time="0.001" /><testcase classname="backend.tests.test_vehicle_template" name="test_most_recent_purchase_used[asyncio]" time="0.000" /><testcase classname="backend.tests.test_vehicle_template" name="test_vehicle_no_purchase_history_key[asyncio]" time="0.001"><failure message="AssertionError: Got: Hi there, Mojave maintenance due.&#10;assert 'Hi there, Mo...ntenance due.' == 'Hi Mike, Moj...ntenance due.'&#10;  &#10;  - Hi Mike, Mojave maintenance due.&#10;  ?    ^^^&#10;  + Hi there, Mojave maintenance due.&#10;  ?    ^^^^">backend/tests/test_vehicle_template.py:84: in test_vehicle_no_purchase_history_key
+    assert result == "Hi Mike, Mojave maintenance due.", f"Got: {result}"
+E   AssertionError: Got: Hi there, Mojave maintenance due.
+E   assert 'Hi there, Mo...ntenance due.' == 'Hi Mike, Moj...ntenance due.'
+E     
+E     - Hi Mike, Mojave maintenance due.
+E     ?    ^^^
+E     + Hi there, Mojave maintenance due.
+E     ?    ^^^^</failure></testcase><testcase classname="backend.tests.test_vehicle_template" name="test_vehicle_empty_string_when_no_data[asyncio]" time="0.001" /></testsuite></testsuites>

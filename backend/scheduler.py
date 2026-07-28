@@ -183,10 +183,20 @@ async def resolve_template_variables(db, message: str, contact: dict, user_id: s
             message = message.replace("{review_link}", review_url)
             message = message.replace("{review_url}", review_url)
     
-    # Purchase info
-    if "{purchase}" in message:
-        purchase = contact.get("purchase", "") or contact.get("vehicle", "") or contact.get("product", "") or "purchase"
-        message = message.replace("{purchase}", purchase)
+    # Purchase / vehicle info — reads from purchase_history (most recent) or legacy vehicle field
+    if "{vehicle}" in message or "{purchase}" in message:
+        # Try purchase_history first (most recent purchase title)
+        purchase_history = contact.get("purchase_history") or []
+        if purchase_history:
+            def _ph_date(p):
+                d = p.get("date") or ""
+                return d if isinstance(d, str) else ""
+            sorted_ph = sorted(purchase_history, key=_ph_date, reverse=True)
+            vehicle_val = sorted_ph[0].get("title", "")
+        else:
+            vehicle_val = contact.get("vehicle") or contact.get("vehicle_purchased") or contact.get("product") or ""
+        message = message.replace("{vehicle}", vehicle_val)
+        message = message.replace("{purchase}", vehicle_val)
     
     return message
 
@@ -723,12 +733,17 @@ async def process_pending_campaign_steps():
                     media_urls = send_doc.get("media_urls") or []
 
                     # Resolve template variables ({first_name}, {name}, {vehicle}, etc.)
+                    # Fetch full contact for vehicle/purchase_history resolution
                     try:
-                        message_content = await resolve_template_variables(
-                            db, message_content,
-                            {"contact_id": contact_id, "first_name": send_doc.get("contact_name", "").split()[0] if send_doc.get("contact_name") else "there"},
-                            user_id
-                        )
+                        contact_doc = await db.contacts.find_one(
+                            {"_id": ObjectId(contact_id)},
+                            {"first_name": 1, "last_name": 1, "phone": 1, "email": 1,
+                             "vehicle": 1, "purchase_history": 1, "vehicle_purchased": 1}
+                        ) or {}
+                        name_parts = send_doc.get("contact_name", "there").split()
+                        contact_doc.setdefault("first_name", name_parts[0] if name_parts else "there")
+                        contact_doc.setdefault("last_name", " ".join(name_parts[1:]) if len(name_parts) > 1 else "")
+                        message_content = await resolve_template_variables(db, message_content, contact_doc, user_id)
                     except Exception:
                         # Fallback: replace just {first_name}/{name} manually
                         first = (send_doc.get("contact_name") or "there").split()[0]

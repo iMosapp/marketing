@@ -6,12 +6,14 @@ const MERGE_TAGS = [
   { key: '{first_name}', label: 'First Name', icon: 'person-outline' },
   { key: '{last_name}', label: 'Last Name', icon: 'person-outline' },
   { key: '{full_name}', label: 'Full Name', icon: 'people-outline' },
+  { key: '{vehicle}', label: 'Their Purchase', icon: 'bag-handle-outline' },
   { key: '{phone}', label: 'Phone', icon: 'call-outline' },
   { key: '{email}', label: 'Email', icon: 'mail-outline' },
   { key: '{my_name}', label: 'My Name', icon: 'person-circle-outline' },
   { key: '{my_phone}', label: 'My Phone', icon: 'phone-portrait-outline' },
   { key: '{company}', label: 'Company', icon: 'business-outline' },
   { key: '{date_sold}', label: 'Date Sold', icon: 'calendar-outline' },
+  { key: '{review_link}', label: 'Review Link', icon: 'star-outline' },
 ];
 
 interface Props {

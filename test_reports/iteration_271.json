@@ -1,0 +1,40 @@
+{
+  "summary": "Tested resolve_template_variables() in scheduler.py for {vehicle}/{purchase} template logic. {vehicle} resolution from purchase_history, {purchase} alias, and most-recent-sort all PASS. But found a critical Python operator precedence bug on line 149 that breaks {first_name} resolution when contact dict has no 'contact_name' key.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "scheduler.py line 149 — resolve_template_variables()",
+        "issue": "Python operator precedence bug: `contact_first = (contact.get('first_name') or contact.get('contact_name','').split()[0] if contact.get('contact_name') else 'there')` — the ternary has higher precedence than `or`, so entire expression evaluates as `(X if contact.get('contact_name') else 'there')`. When a contact dict has first_name='John' but no 'contact_name' key, {first_name} resolves to 'there' instead of 'John'. Fix: add explicit parentheses: `contact_first = contact.get('first_name') or (contact.get('contact_name','').split()[0] if contact.get('contact_name') else 'there')`",
+        "priority": "CRITICAL"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_vehicle_template.py",
+    "/app/test_reports/pytest/pytest_results_vehicle.xml"
+  ],
+  "action_items": [
+    "Fix line 149 in /app/backend/scheduler.py: change `contact_first = (contact.get('first_name') or contact.get('contact_name', '').split()[0] if contact.get('contact_name') else 'there')` to `contact_first = contact.get('first_name') or (contact.get('contact_name', '').split()[0] if contact.get('contact_name') else 'there')`"
+  ],
+  "critical_code_review_comments": [
+    "scheduler.py line 149: Python operator precedence bug — ternary (`if/else`) has higher precedence than `or`, making the whole expression conditional on `contact_name` presence. This silently breaks {first_name} for any contact fetched via find_one() that doesn't have a contact_name field (which is the normal case for DB contacts)."
+  ],
+  "updated_files": ["/app/backend/tests/test_vehicle_template.py"],
+  "success_rate": {"backend": "67%", "frontend": "N/A"},
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Tests in /app/backend/tests/test_vehicle_template.py cover all 5 vehicle/purchase scenarios. 4/6 pass. 2 fail due to {first_name} resolving to 'there' (line 149 bug). After E1 fixes line 149, rerun the same test file — all 6 should pass.",
+  "rca_of_the_issue": {
+    "bug": "{first_name} resolves to 'there' instead of contact's actual first_name",
+    "location": "/app/backend/scheduler.py line 149",
+    "root_cause": "Python operator precedence: `A or B if C else D` parses as `(A or B) if C else D`, not `A or (B if C else D)`. So the entire expression is gated on `contact.get('contact_name')` being truthy. When a DB contact has first_name='John' but no contact_name field, it falls through to 'there'.",
+    "reproduction": "Call resolve_template_variables(None, 'Hi {first_name}', {'first_name': 'John'}, 'uid') — returns 'Hi there'",
+    "fix": "Line 149: `contact_first = contact.get('first_name') or (contact.get('contact_name', '').split()[0] if contact.get('contact_name') else 'there')`"
+  }
+}
