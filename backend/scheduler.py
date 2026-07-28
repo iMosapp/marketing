@@ -728,6 +728,35 @@ async def process_pending_campaign_steps():
                 if not message_content:
                     message_content = f"Hi {send_doc.get('contact_name', 'there')}!"
 
+                # ── QUIET HOURS GATE ──────────────────────────────────────────
+                # Never send campaign messages outside 8 AM – 9 PM in the rep's
+                # local timezone. If due now but outside window, defer to 9 AM.
+                if delivery_mode in ("automated", "auto"):
+                    try:
+                        from zoneinfo import ZoneInfo
+                        if user_id not in _user_cache:
+                            _user_cache[user_id] = await db.users.find_one({"_id": ObjectId(user_id)}, {"timezone": 1, "store_id": 1}) or {}
+                        tz_name = _user_cache[user_id].get("timezone") or "America/Denver"
+                        local_tz = ZoneInfo(tz_name)
+                        local_now = datetime.now(local_tz)
+                        hour = local_now.hour
+                        if hour < 8 or hour >= 21:
+                            # Outside window — defer to 9 AM today (or tomorrow if already evening)
+                            if hour >= 21:
+                                next_day = (local_now + timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0)
+                            else:
+                                next_day = local_now.replace(hour=9, minute=0, second=0, microsecond=0)
+                            deferred_utc = next_day.astimezone(timezone.utc).replace(tzinfo=None)
+                            await db.campaign_pending_sends.update_one(
+                                {"_id": send_id},
+                                {"$set": {"status": "pending", "send_at": deferred_utc,
+                                          "deferred_reason": f"quiet hours (was {hour}:00 local)"}}
+                            )
+                            logger.info(f"[Scheduler] Deferred send {send_id} — quiet hours ({hour}:00 {tz_name}), rescheduled to {deferred_utc}")
+                            continue
+                    except Exception as qh_err:
+                        logger.debug(f"[Scheduler] Quiet hours check failed (non-fatal): {qh_err}")
+
                 # ── DELIVERY ──
                 if delivery_mode in ("automated", "auto"):
                     media_urls = send_doc.get("media_urls") or []

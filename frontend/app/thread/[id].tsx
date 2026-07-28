@@ -1812,8 +1812,24 @@ function ThreadScreen() {
         return '#FF3B30';
     }
   };
-  
-  const renderMessage = ({ item }: { item: Message }) => {
+
+  // ── Date separator helper ──────────────────────────────────────────────────
+  const getDateLabel = (timestamp: Date): string => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const msgDate = new Date(timestamp);
+    if (msgDate.toDateString() === today.toDateString()) return 'Today';
+    if (msgDate.toDateString() === yesterday.toDateString()) return 'Yesterday';
+    return format(msgDate, 'EEE, MMM d');  // e.g. "Sun, Jul 27"
+  };
+
+  const isSameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+
+  const renderMessage = ({ item, index }: { item: Message; index: number }) => {
     const isUser = item.sender === 'user' || item.sender === 'ai';
     const timestamp = item.timestamp ? new Date(item.timestamp) : new Date();
     const hasMedia = item.has_media && item.media_urls && item.media_urls.length > 0;
@@ -1948,7 +1964,22 @@ function ThreadScreen() {
       );
     }
 
+    // Show date separator if this message is on a different day than the previous one
+    const prevMsg = index > 0 ? messages[index - 1] : null;
+    const prevTimestamp = prevMsg?.timestamp ? new Date(prevMsg.timestamp) : null;
+    const showDateSep = !prevTimestamp || !isSameDay(timestamp, prevTimestamp);
+
     return (
+      <>
+        {showDateSep && (
+          <View style={styles.dateSeparatorRow}>
+            <View style={[styles.dateSeparatorLine, { backgroundColor: colors.border }]} />
+            <Text style={[styles.dateSeparatorText, { color: colors.textTertiary, backgroundColor: colors.bg }]}>
+              {getDateLabel(timestamp)}
+            </Text>
+            <View style={[styles.dateSeparatorLine, { backgroundColor: colors.border }]} />
+          </View>
+        )}
       <View
         style={[
           styles.messageContainer,
@@ -2059,6 +2090,7 @@ function ThreadScreen() {
           )}
         </View>
       </View>
+      </>
     );
   };
   
@@ -3661,6 +3693,24 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontWeight: '500',
     marginBottom: 4,
     letterSpacing: 0.1,
+  },
+  dateSeparatorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 12,
+    paddingHorizontal: 16,
+  },
+  dateSeparatorLine: {
+    flex: 1,
+    height: 1,
+    opacity: 0.4,
+  },
+  dateSeparatorText: {
+    fontSize: 12,
+    fontWeight: '600',
+    paddingHorizontal: 10,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
   senderLabelRight: {
     textAlign: 'right',
