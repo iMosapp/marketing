@@ -3,7 +3,7 @@ Authentication router - handles login, signup, forgot password
 """
 from fastapi import APIRouter, HTTPException, Request, Response, Cookie
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 import random
 import secrets
@@ -12,6 +12,8 @@ import os
 import httpx
 import resend
 import asyncio
+import jwt as pyjwt
+
 try:
     import bcrypt
     BCRYPT_AVAILABLE = True
@@ -20,6 +22,51 @@ except ImportError:
 
 from models import User, UserCreate, UserPersona
 from routers.database import get_db
+
+
+# ── JWT Configuration ──────────────────────────────────────────────────────────
+_JWT_ALGORITHM = "HS256"
+_JWT_EXPIRY_DAYS = 30   # Long-lived token — avoids forcing re-login
+
+
+def _get_jwt_secret() -> str:
+    secret = os.environ.get("JWT_SECRET")
+    if not secret:
+        raise RuntimeError("JWT_SECRET env var is not set — cannot sign tokens")
+    return secret
+
+
+def create_jwt_token(user_id: str, role: str) -> str:
+    """Issue a signed JWT valid for 30 days."""
+    payload = {
+        "sub": user_id,
+        "role": role,
+        "exp": datetime.now(timezone.utc) + timedelta(days=_JWT_EXPIRY_DAYS),
+        "iat": datetime.now(timezone.utc),
+    }
+    return pyjwt.encode(payload, _get_jwt_secret(), algorithm=_JWT_ALGORITHM)
+
+
+def verify_jwt_token(token: str) -> Optional[dict]:
+    """
+    Verify a JWT token and return the payload, or None if invalid.
+    Supports legacy mock_token_<id> for backward compatibility during migration.
+    """
+    if not token:
+        return None
+    # Backward compat: accept old mock_token format for one deploy cycle
+    if token.startswith("mock_token_"):
+        user_id = token[len("mock_token_"):]
+        if user_id:
+            return {"sub": user_id, "role": None, "_legacy": True}
+        return None
+    try:
+        payload = pyjwt.decode(token, _get_jwt_secret(), algorithms=[_JWT_ALGORITHM])
+        return payload
+    except pyjwt.ExpiredSignatureError:
+        return None
+    except pyjwt.InvalidTokenError:
+        return None
 
 
 def hash_password(plain: str) -> str:
@@ -414,7 +461,7 @@ async def login(credentials: dict):
     user['feature_permissions'] = merge_permissions(user.get('feature_permissions'), user.get('role', 'user'))
 
     response_data = {
-        "token": f"mock_token_{user['_id']}",
+        "token": create_jwt_token(str(user['_id']), user.get('role', 'user')),
         "user": user
     }
     if partner_branding:
@@ -569,7 +616,7 @@ async def get_current_user(request: Request):
         pass
 
     response_data = {
-        "token": f"mock_token_{user['_id']}",
+        "token": create_jwt_token(str(user['_id']), user.get('role', 'user')),
         "user": user
     }
     if partner_branding:
@@ -780,26 +827,8 @@ async def change_password(data: dict):
 
 @router.post("/admin-reset")
 async def admin_password_reset(data: dict):
-    """Emergency admin password reset - requires secret key"""
-    secret = data.get('secret')
-    email = data.get('email')
-    new_password = data.get('new_password')
-    
-    if secret != "iM-On-Social-Emergency-Reset-2026":
-        raise HTTPException(status_code=403, detail="Invalid secret")
-    
-    if not email or not new_password:
-        raise HTTPException(status_code=400, detail="Email and new_password required")
-    
-    result = await get_db().users.update_one(
-        {"email": email},
-        {"$set": {"password": hash_password(new_password), "status": "active", "is_active": True, "needs_password_change": False}}
-    )
-    
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    return {"message": f"Password reset and account activated for {email}"}
+    """Emergency admin password reset — DISABLED. Use forgot-password flow instead."""
+    raise HTTPException(status_code=410, detail="This endpoint has been permanently disabled. Use /auth/forgot-password/request to reset a password.")
 
 
 @router.post("/persona/{user_id}")
@@ -1289,128 +1318,18 @@ async def backfill_ref_codes():
 
 @router.post("/admin-fix-login")
 async def admin_fix_login(data: dict):
-    """
-    Diagnose and fix login issues for a user.
-    - Checks password state (plain text vs bcrypt)
-    - Can force-reset to a known password
-    Requires the admin secret.
-    """
-    secret = data.get('secret')
-    if secret != "iM-On-Social-Emergency-Reset-2026":
-        raise HTTPException(status_code=403, detail="Invalid secret")
-
-    email = (data.get('email') or '').strip().lower()
-    new_password = data.get('new_password')
-
-    if not email:
-        raise HTTPException(status_code=400, detail="Email is required")
-
-    import re
-    escaped_email = re.escape(email)
-    user = await get_db().users.find_one({"email": {"$regex": f"^{escaped_email}$", "$options": "i"}})
-    if not user:
-        return {"status": "error", "message": f"No user found with email '{email}'"}
-
-    stored_pw = user.get('password', '')
-    is_hashed = stored_pw.startswith("$2b$") or stored_pw.startswith("$2a$")
-
-    diagnosis = {
-        "email": user.get("email"),
-        "name": user.get("name"),
-        "user_id": str(user["_id"]),
-        "status": user.get("status"),
-        "is_active": user.get("is_active"),
-        "password_type": "bcrypt" if is_hashed else "plain_text",
-        "password_length": len(stored_pw),
-        "bcrypt_available": BCRYPT_AVAILABLE,
-        "needs_password_change": user.get("needs_password_change", False),
-    }
-
-    if new_password:
-        hashed = hash_password(new_password)
-        await get_db().users.update_one(
-            {"_id": user["_id"]},
-            {"$set": {
-                "password": hashed,
-                "status": "active",
-                "is_active": True,
-                "needs_password_change": False,
-            }}
-        )
-        diagnosis["action"] = "Password reset and account activated"
-        diagnosis["new_password_type"] = "bcrypt" if hashed.startswith("$2b$") else "plain"
-    else:
-        diagnosis["action"] = "Diagnosis only (pass new_password to reset)"
-
-    return diagnosis
+    """DISABLED — use forgot-password flow instead."""
+    raise HTTPException(status_code=410, detail="This endpoint has been permanently disabled.")
 
 
 
 @router.post("/force-reset-password")
 async def force_reset_password(data: dict):
-    """
-    Force-reset a user's password to a new bcrypt hash, bypassing same-password checks.
-    Used to fix accounts with plain-text or malformed passwords.
-    Requires the super admin secret key.
-    """
-    email    = data.get("email", "").strip().lower()
-    new_pass = data.get("new_password", "").strip()
-    secret   = data.get("secret", "")
-
-    # Simple secret guard — prevents unauthorized use
-    if secret != os.environ.get("ADMIN_EMAIL", "forest@imonsocial.com"):
-        raise HTTPException(status_code=403, detail="Unauthorized")
-    if not email or not new_pass:
-        raise HTTPException(status_code=400, detail="email and new_password required")
-
-    db = get_db()
-    user = await db.users.find_one({"email": email})
-    if not user:
-        raise HTTPException(status_code=404, detail=f"No user found with email {email}")
-
-    import bcrypt as _bcrypt
-    hashed = _bcrypt.hashpw(new_pass.encode(), _bcrypt.gensalt()).decode()
-    await db.users.update_one(
-        {"email": email},
-        {"$set": {"password": hashed, "password_plain": None}}
-    )
-    return {"success": True, "message": f"Password reset for {email}"}
+    """DISABLED — use forgot-password flow instead."""
+    raise HTTPException(status_code=410, detail="This endpoint has been permanently disabled.")
 
 
 @router.post("/admin-fix-all-passwords")
 async def admin_fix_all_plain_passwords(data: dict):
-    """
-    Find all users with plain-text passwords and hash them.
-    This is a one-time migration to fix the historical bug.
-    """
-    secret = data.get('secret')
-    if secret != "iM-On-Social-Emergency-Reset-2026":
-        raise HTTPException(status_code=403, detail="Invalid secret")
-
-    db = get_db()
-    fixed = 0
-    errors = 0
-    plain_text_users = []
-
-    async for user in db.users.find({}, {"_id": 1, "email": 1, "name": 1, "password": 1}):
-        pw = user.get("password", "")
-        if pw and not (pw.startswith("$2b$") or pw.startswith("$2a$")):
-            plain_text_users.append({"email": user.get("email"), "name": user.get("name")})
-            try:
-                hashed = hash_password(pw)
-                await db.users.update_one(
-                    {"_id": user["_id"]},
-                    {"$set": {"password": hashed}}
-                )
-                fixed += 1
-            except Exception as e:
-                logger.error(f"Failed to hash password for {user.get('email')}: {e}")
-                errors += 1
-
-    return {
-        "status": "complete",
-        "users_with_plain_passwords": len(plain_text_users),
-        "fixed": fixed,
-        "errors": errors,
-        "affected_users": [u["email"] for u in plain_text_users],
-    }
+    """DISABLED — migration already ran, endpoint removed for security."""
+    raise HTTPException(status_code=410, detail="This endpoint has been permanently disabled.")

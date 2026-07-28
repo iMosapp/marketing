@@ -63,7 +63,13 @@ api.interceptors.request.use(
       // Try in-memory state first — avoids AsyncStorage read on every request
       const { useAuthStore } = await import('../store/authStore');
       const state = useAuthStore.getState();
-      const { user, isImpersonating, originalUser } = state;
+      const { user, token, isImpersonating, originalUser } = state;
+
+      // Send JWT as Authorization Bearer (new, secure path)
+      // Also keep X-User-ID for any backend paths not yet on JWT (backward compat)
+      if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+      }
       if (user?._id) {
         config.headers['X-User-ID'] = user._id;
         // Tag all requests with impersonation context so backend logs show it
@@ -75,6 +81,10 @@ api.interceptors.request.use(
       }
       // Fallback: read from AsyncStorage (cold boot, before loadAuth completes)
       const userStr = await AsyncStorage.getItem('user');
+      const tokenStr = await AsyncStorage.getItem('auth_token') || await AsyncStorage.getItem('imonsocial_token');
+      if (tokenStr) {
+        config.headers['Authorization'] = `Bearer ${tokenStr}`;
+      }
       if (userStr) {
         try {
           const parsed = JSON.parse(userStr);

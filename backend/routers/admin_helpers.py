@@ -30,8 +30,15 @@ def safe_objectid(val):
         return None
 
 
-async def get_requesting_user(x_user_id: str = Header(None, alias="X-User-ID")) -> dict:
-    """Return the calling user document for RBAC checks, or None if unauthenticated."""
+async def get_requesting_user(request_or_header=None) -> dict:
+    """Return the calling user document for RBAC checks.
+    Accepts either a FastAPI Request object (new) or an X-User-ID string (legacy)."""
+    from fastapi import Request as _Request
+    if isinstance(request_or_header, _Request):
+        from routers.rbac import _resolve_user_from_request
+        return await _resolve_user_from_request(request_or_header)
+    # Legacy: called with X-User-ID string directly
+    x_user_id = request_or_header
     if not x_user_id:
         return None
     return await get_user_by_id(x_user_id)

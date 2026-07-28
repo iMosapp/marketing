@@ -8,7 +8,7 @@ Roles hierarchy (highest to lowest):
 3. store_manager - Store manager, sees users/data within their store(s)
 4. user - Regular sales rep, sees only their own data
 """
-from fastapi import HTTPException, Header
+from fastapi import HTTPException, Header, Request
 from functools import wraps
 from typing import List, Optional
 from bson import ObjectId
@@ -28,19 +28,44 @@ ROLE_HIERARCHY = {
 }
 
 
-async def get_current_user(x_user_id: str = Header(None, alias="X-User-ID")) -> dict:
+async def _resolve_user_from_request(request: Request) -> Optional[dict]:
     """
-    Extract and validate the current user from the request header.
-    In production, this would validate a JWT token.
-    For now, we use X-User-ID header.
+    Resolve the authenticated user from the request.
+    Priority order:
+    1. Authorization: Bearer <jwt>  — verified JWT (new, secure)
+    2. X-User-ID header             — legacy fallback (backward compat, remove after 2 deploys)
+
+    For the JWT path: verifies signature, expiry, and loads user from DB.
+    For the mock_token legacy path: extracts user_id from token string (no sig verification).
     """
-    if not x_user_id:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    
-    user = await get_user_by_id(x_user_id)
+    from routers.auth import verify_jwt_token
+
+    # ── Path 1: Authorization Bearer header ──────────────────────────────────
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+        payload = verify_jwt_token(token)
+        if payload:
+            user_id = payload.get("sub")
+            if user_id:
+                return await get_user_by_id(user_id)
+
+    # ── Path 2: Legacy X-User-ID header (backward compat) ────────────────────
+    x_user_id = request.headers.get("X-User-ID")
+    if x_user_id:
+        return await get_user_by_id(x_user_id)
+
+    return None
+
+
+async def get_current_user(request: Request) -> dict:
+    """
+    Extract and validate the current user from the request.
+    Verifies JWT signature; falls back to legacy X-User-ID for existing sessions.
+    """
+    user = await _resolve_user_from_request(request)
     if not user:
-        raise HTTPException(status_code=401, detail="User not found")
-    
+        raise HTTPException(status_code=401, detail="Authentication required")
     return user
 
 
@@ -51,13 +76,10 @@ def require_role(min_role: str):
     """
     min_level = ROLE_HIERARCHY.get(min_role, 0)
     
-    async def check_role(x_user_id: str = Header(None, alias="X-User-ID")):
-        if not x_user_id:
-            raise HTTPException(status_code=401, detail="Authentication required")
-        
-        user = await get_user_by_id(x_user_id)
+    async def check_role(request: Request):
+        user = await _resolve_user_from_request(request)
         if not user:
-            raise HTTPException(status_code=401, detail="User not found")
+            raise HTTPException(status_code=401, detail="Authentication required")
         
         user_role = user.get('role', 'user')
         user_level = ROLE_HIERARCHY.get(user_role, 0)
@@ -425,13 +447,10 @@ def require_permission(permission: str):
     Dependency factory that requires a specific permission.
     Usage: @router.get("/endpoint", dependencies=[Depends(require_permission("view_billing"))])
     """
-    async def check_permission(x_user_id: str = Header(None, alias="X-User-ID")):
-        if not x_user_id:
-            raise HTTPException(status_code=401, detail="Authentication required")
-        
-        user = await get_user_by_id(x_user_id)
+    async def check_permission(request: Request):
+        user = await _resolve_user_from_request(request)
         if not user:
-            raise HTTPException(status_code=401, detail="User not found")
+            raise HTTPException(status_code=401, detail="Authentication required")
         
         if not has_permission(user, permission):
             raise HTTPException(
