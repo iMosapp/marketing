@@ -146,7 +146,7 @@ async def resolve_template_variables(db, message: str, contact: dict, user_id: s
         return message
     
     # Contact info
-    contact_first = (contact.get("first_name") or contact.get("contact_name", "").split()[0] if contact.get("contact_name") else "there")
+    contact_first = contact.get("first_name") or (contact.get("contact_name", "").split()[0] if contact.get("contact_name") else "there")
     contact_last = (contact.get("last_name") or (" ".join(contact.get("contact_name", "").split()[1:]) if contact.get("contact_name") else ""))
     contact_full = f"{contact_first} {contact_last}".strip() or "there"
     
