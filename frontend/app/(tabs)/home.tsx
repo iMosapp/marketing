@@ -373,6 +373,7 @@ function HomeScreen() {
   const [soldPerf, setSoldPerf] = useState<any>(null);
 
   // Modals
+  const [showSharePicker, setShowSharePicker] = useState(false);
   const [showContactAction, setShowContactAction] = useState(false);
   const [contactActionMode, setContactActionMode] = useState<'search' | 'keypad'>('search');
   const [showSendCard, setShowSendCard] = useState(false);
@@ -664,7 +665,7 @@ function HomeScreen() {
   const TILES = [
     { key: 'sold',        icon: 'trophy',     label: 'SOLD!',       sublabel: 'Snap the moment & start campaign', color: '#C9A962', onPress: () => router.push('/sold-quick' as any) },
     { key: 'review',      icon: 'star',       label: 'Review',      sublabel: 'Ask for a 5-star review',          color: '#FF9500', onPress: () => router.push('/quick-send/review' as any) },
-    { key: 'card',        icon: 'card',       label: 'Card',        sublabel: 'Send your digital card',           color: '#007AFF', onPress: () => router.push('/quick-send/digitalcard' as any) },
+    { key: 'card',        icon: 'card',       label: 'Card',        sublabel: 'Send your digital card',           color: '#007AFF', onPress: () => setShowSharePicker(true) },
     { key: 'new-contact', icon: 'person-add', label: 'New Contact', sublabel: 'Add someone new',                  color: '#34C759', onPress: () => router.push('/contact/new' as any) },
   ];
 
@@ -1009,6 +1010,129 @@ function HomeScreen() {
         </>
         )}
       </ScrollView>
+
+      {/* Asset Share Picker — tapping Card tile on home screen */}
+      <Modal visible={showSharePicker} transparent animationType="slide" onRequestClose={() => setShowSharePicker(false)}>
+        <TouchableOpacity
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' }}
+          activeOpacity={1}
+          onPress={() => setShowSharePicker(false)}
+        >
+          <View
+            style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingBottom: 36 }}
+            onStartShouldSetResponder={() => true}
+          >
+            {/* Handle */}
+            <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 8 }}>
+              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border }} />
+            </View>
+
+            <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text, textAlign: 'center', marginBottom: 4 }}>
+              What do you want to share?
+            </Text>
+            <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginBottom: 20 }}>
+              Choose an asset to send to your customer
+            </Text>
+
+            {[
+              {
+                key: 'digital-card',
+                icon: 'card',
+                color: '#007AFF',
+                label: 'Digital Card',
+                sublabel: 'Your interactive business card',
+                isDefault: true,
+                onPress: () => { setShowSharePicker(false); router.push('/quick-send/digitalcard' as any); },
+              },
+              {
+                key: 'vcf',
+                icon: 'person-circle',
+                color: '#34C759',
+                label: 'Contact Card (VCF)',
+                sublabel: 'Save your number to their contacts',
+                isDefault: false,
+                onPress: () => {
+                  setShowSharePicker(false);
+                  const baseUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com';
+                  const vcfUrl = `${baseUrl}/api/profile/${user?._id}/vcard.vcf`;
+                  setShareConfig({ visible: true, title: 'Share Contact Card', subtitle: 'Customer taps to save your number', url: vcfUrl, text: `Tap to save my contact: ${vcfUrl}`, showPreview: false, showQR: false, eventType: 'vcf_shared' });
+                },
+              },
+              {
+                key: 'landing',
+                icon: 'globe-outline',
+                color: '#AF52DE',
+                label: 'Landing Page',
+                sublabel: 'Your full personal page',
+                isDefault: false,
+                onPress: () => {
+                  setShowSharePicker(false);
+                  const baseUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com';
+                  setShareConfig({ visible: true, title: 'Share Landing Page', subtitle: 'Your full personal page', url: `${baseUrl}/p/${user?._id}`, text: `Check out my page: ${baseUrl}/p/${user?._id}`, showPreview: true, previewUrl: `${baseUrl}/p/${user?._id}`, showQR: true, eventType: 'landing_page_shared' });
+                },
+              },
+              {
+                key: 'showcase',
+                icon: 'images-outline',
+                color: '#FF9500',
+                label: 'Showcase',
+                sublabel: 'Your customer photo gallery',
+                isDefault: false,
+                onPress: () => { setShowSharePicker(false); openShareModal('showroom'); },
+              },
+              {
+                key: 'linkpage',
+                icon: 'link',
+                color: '#FF2D55',
+                label: 'Link Page',
+                sublabel: 'All your links in one spot',
+                isDefault: false,
+                onPress: () => {
+                  setShowSharePicker(false);
+                  const baseUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com';
+                  setShareConfig({ visible: true, title: 'Share Link Page', subtitle: 'All your links in one place', url: `${baseUrl}/l/${user?._id}`, text: `All my links: ${baseUrl}/l/${user?._id}`, showPreview: true, previewUrl: `${baseUrl}/l/${user?._id}`, showQR: true, eventType: 'link_page_shared' });
+                },
+              },
+            ].map((item, i, arr) => (
+              <TouchableOpacity
+                key={item.key}
+                onPress={item.onPress}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingHorizontal: 20,
+                  paddingVertical: 14,
+                  borderBottomWidth: i < arr.length - 1 ? 1 : 0,
+                  borderBottomColor: colors.border,
+                  backgroundColor: item.isDefault ? item.color + '0D' : 'transparent',
+                }}
+                data-testid={`share-picker-${item.key}`}
+              >
+                <View style={{
+                  width: 44, height: 44, borderRadius: 12,
+                  backgroundColor: item.color + '20',
+                  alignItems: 'center', justifyContent: 'center',
+                  marginRight: 14,
+                }}>
+                  <Ionicons name={item.icon as any} size={22} color={item.color} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{item.label}</Text>
+                    {item.isDefault && (
+                      <View style={{ backgroundColor: item.color, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 }}>
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff', letterSpacing: 0.3 }}>DEFAULT</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 1 }}>{item.sublabel}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Universal Share Modal  - used by Share My Card, Review Link, Showcase */}
       <UniversalShareModal
