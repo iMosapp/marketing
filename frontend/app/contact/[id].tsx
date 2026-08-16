@@ -128,7 +128,7 @@ function ContactDetailScreen() {
     },
   };
   const router = useRouter();
-  const { id, prefill, channel, action, taskId, taskTitle, event_type: urlEventType, event_title: urlEventTitle } = useLocalSearchParams();
+  const { id, prefill, channel, action, taskId, taskTitle, capture, event_type: urlEventType, event_title: urlEventTitle } = useLocalSearchParams();
   const user = useAuthStore((state) => state.user);
   const isNewContact = id === 'new';
   const { showToast } = useToast();
@@ -178,7 +178,7 @@ function ContactDetailScreen() {
   const [voiceNotesLoading, setVoiceNotesLoading] = useState(false);
   const [uploadingVoiceNote, setUploadingVoiceNote] = useState(false);
   const [playingNoteId, setPlayingNoteId] = useState<string | null>(null);
-  const [showAllNotes, setShowAllNotes] = useState(false);
+  const [showAllNotes, setShowAllNotes] = useState(true);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const recordingTimerRef = React.useRef<any>(null);
   const scrollRef = React.useRef<ScrollView>(null);
@@ -506,6 +506,17 @@ function ContactDetailScreen() {
       }
     }, [id, user])
   );
+
+  // Auto-open voice recorder when deep-linked with ?capture=true (from post-sale notification)
+  useEffect(() => {
+    if (capture === 'true' && !isNewContact) {
+      setContactTab('details');
+      // Small delay so the tab renders before we start recording
+      setTimeout(() => {
+        startRecording();
+      }, 800);
+    }
+  }, [capture, isNewContact]);
 
   // Periodic polling DISABLED — causes scroll jumps. Events refresh on focus and after user actions.
   // useEffect(() => {
@@ -3447,11 +3458,16 @@ function ContactDetailScreen() {
           {/* ===== DETAILS TAB ===== */}
           {!isNewContact && !isEditing && contactTab === 'details' && (
             <>
-              {/* Voice Notes — show on all platforms including native iOS */}
+              {/* Voice Notes — full history, all visible */}
               <View style={[s.section, { paddingTop: 4 }]} data-testid="voice-notes-section">
                   <View style={s.sectionHeaderRow}>
-                    <Text style={s.sectionHeader}>Voice Notes</Text>
-                    <Text style={s.sectionHeaderCount}>{voiceNotes.length} {voiceNotes.length === 1 ? 'note' : 'notes'}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.sectionHeader}>Relationship Voice Memos</Text>
+                      <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                        Spouse · Kids · Pets · Hobbies · What matters to them
+                      </Text>
+                    </View>
+                    <Text style={s.sectionHeaderCount}>{voiceNotes.length}</Text>
                   </View>
 
                   {isRecording ? (
@@ -3509,34 +3525,21 @@ function ContactDetailScreen() {
                               </TouchableOpacity>
                             </View>
                             {note.transcript ? (
-                              <Text style={s.vnTranscript} numberOfLines={expandedEvents[1000 + i] ? undefined : 3}>
+                              <Text style={s.vnTranscript}>
                                 {note.transcript}
                               </Text>
                             ) : (
                               <Text style={[s.vnTranscript, { fontStyle: 'italic', color: colors.textTertiary }]}>Transcribing...</Text>
                             )}
-                            {note.transcript && note.transcript.length > 120 && (
-                              <TouchableOpacity onPress={() => setExpandedEvents(prev => ({ ...prev, [1000 + i]: !prev[1000 + i] }))}>
-                                <Text style={{ color: '#007AFF', fontSize: 14, marginTop: 4 }}>
-                                  {expandedEvents[1000 + i] ? 'Show less' : 'Read full transcript'}
-                                </Text>
-                              </TouchableOpacity>
+                            {note.transcript && (
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                                <Ionicons name="sparkles" size={11} color="#AF52DE" />
+                                <Text style={{ fontSize: 11, color: '#AF52DE', fontStyle: 'italic' }}>AI has learned from this memo</Text>
+                              </View>
                             )}
                           </View>
                         );
                       })}
-                      {voiceNotes.length > 1 && (
-                        <TouchableOpacity
-                          style={s.showMoreBtn}
-                          onPress={() => setShowAllNotes(!showAllNotes)}
-                          data-testid="show-more-voice-notes"
-                        >
-                          <Text style={s.showMoreText}>
-                            {showAllNotes ? 'Show Latest Only' : `Show All ${voiceNotes.length} Voice Notes`}
-                          </Text>
-                          <Ionicons name={showAllNotes ? 'chevron-up' : 'chevron-down'} size={16} color="#007AFF" />
-                        </TouchableOpacity>
-                      )}
                     </View>
                   ) : null}
                 </View>
@@ -3825,7 +3828,7 @@ function ContactDetailScreen() {
                       {call.transcript ? (
                         <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8 }}>
                           <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '700', marginBottom: 4, letterSpacing: 0.5 }}>TRANSCRIPT</Text>
-                          <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 17 }} numberOfLines={6}>
+                          <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 17 }}>
                             {call.transcript}
                           </Text>
                         </View>

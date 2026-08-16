@@ -274,20 +274,24 @@ export default function SoldQuickScreen() {
       }
 
       // Step 7: Enroll in long-term follow-up campaign
-      // If user picked a specific campaign, enroll in that.
-      // If they skipped the picker, auto-enroll by applying the Sold tag —
-      // the backend will find/create the matching campaign and pre-schedule all steps.
       if (contactId) {
         if (selectedCampaignId) {
-          // Manual campaign selection — enroll directly
           await api.post(`/campaigns/${user._id}/${selectedCampaignId}/enroll/${contactId}`)
             .catch(() => {});
         } else {
-          // Auto-enroll via tag: apply Sold tag → backend finds matching campaign → pre-schedules sends
           await api.patch(`/contacts/${user._id}/${contactId}/tags`, {
             tags: ['Sold'],
           }).catch(() => {});
         }
+      }
+
+      // Step 8: Schedule 5-min voice capture reminder push notification
+      // Rep is still with customer now — notification fires after customer leaves
+      if (contactId) {
+        api.post(`/voice-notes/${user._id}/${contactId}/capture-reminder`, {
+          contact_name: customerName.trim(),
+          delay_seconds: 300,  // 5 minutes
+        }).catch(() => {});
       }
 
       // Success animation
@@ -358,6 +362,14 @@ export default function SoldQuickScreen() {
           <TouchableOpacity style={s.doneBtn} onPress={() => router.back()} data-testid="sold-quick-done">
             <Text style={s.doneBtnText}>Done</Text>
           </TouchableOpacity>
+
+          {/* Capture reminder hint */}
+          <View style={{ marginTop: 10, paddingHorizontal: 8, alignItems: 'center' }}>
+            <Ionicons name="notifications-outline" size={14} color="#ffffff60" />
+            <Text style={{ fontSize: 12, color: '#ffffff50', marginTop: 4, textAlign: 'center', lineHeight: 17 }}>
+              In 5 min you'll get a reminder to capture{'\n'}what you know about {customerName.split(' ')[0]}
+            </Text>
+          </View>
         </View>
       </SafeAreaView>
     );

@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/voice-notes", tags=["voice-notes"])
 
-MAX_DURATION_SECONDS = 120  # 2 minute cap
+MAX_DURATION_SECONDS = 180  # 3 minute cap
 
 
 class VoiceNoteOut(BaseModel):
@@ -197,3 +197,40 @@ async def delete_voice_note(user_id: str, contact_id: str, note_id: str):
         raise HTTPException(status_code=404, detail="Voice note not found")
 
     return {"message": "Voice note deleted"}
+
+
+
+@router.post("/{user_id}/{contact_id}/capture-reminder")
+async def schedule_capture_reminder(user_id: str, contact_id: str, data: dict = None):
+    """
+    Schedule a push notification ~5 minutes after a sale to prompt the rep
+    to record a relationship voice note about the customer while memory is fresh.
+    Called by the SOLD wizard after success.
+    """
+    import asyncio
+    db = get_db()
+    data = data or {}
+    contact_name = data.get("contact_name", "your customer")
+    first_name = contact_name.split()[0] if contact_name else "your customer"
+    delay_seconds = data.get("delay_seconds", 300)  # 5 minutes default
+
+    async def _send_after_delay():
+        await asyncio.sleep(delay_seconds)
+        try:
+            from routers.push_notifications import send_push_native
+            await send_push_native(
+                user_id=user_id,
+                title=f"Capture {first_name}'s story while it's fresh",
+                body=f"Spouse, kids, pets, hobbies — 60 seconds now saves the relationship forever.",
+                data={
+                    "url": f"/contact/{contact_id}?capture=true",
+                    "contact_id": contact_id,
+                    "action": "voice_capture",
+                }
+            )
+            logger.info(f"[VoiceCapture] Sent capture reminder for contact {contact_id}")
+        except Exception as e:
+            logger.warning(f"[VoiceCapture] Failed to send reminder: {e}")
+
+    asyncio.create_task(_send_after_delay())
+    return {"success": True, "message": f"Reminder scheduled in {delay_seconds}s"}
