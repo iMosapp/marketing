@@ -769,7 +769,7 @@ function HomeScreen() {
         {/* ── MY MONTH SALES WIDGET ── */}
         {soldPerf && (
           <View style={{ marginHorizontal: 16, marginBottom: 16, backgroundColor: colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#C9A96230' }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 6 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <Ionicons name="trophy" size={17} color="#C9A962" />
                 <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>
@@ -778,9 +778,9 @@ function HomeScreen() {
               </View>
               {soldPerf.mom_change !== 0 && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: soldPerf.mom_change > 0 ? '#34C75918' : '#FF3B3018', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 }}>
-                  <Ionicons name={soldPerf.mom_change > 0 ? 'trending-up' : 'trending-down'} size={14} color={soldPerf.mom_change > 0 ? '#34C759' : '#FF3B30'} />
-                  <Text style={{ fontSize: 13, fontWeight: '700', color: soldPerf.mom_change > 0 ? '#34C759' : '#FF3B30' }}>
-                    {soldPerf.mom_change > 0 ? '+' : ''}{soldPerf.mom_change} vs last month
+                  <Ionicons name={soldPerf.mom_change > 0 ? 'trending-up' : 'trending-down'} size={12} color={soldPerf.mom_change > 0 ? '#34C759' : '#FF3B30'} />
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: soldPerf.mom_change > 0 ? '#34C759' : '#FF3B30' }} numberOfLines={1}>
+                    {soldPerf.mom_change > 0 ? '+' : ''}{soldPerf.mom_change} vs prev
                   </Text>
                 </View>
               )}
@@ -802,7 +802,7 @@ function HomeScreen() {
                 >
                   <Ionicons name={stat.icon as any} size={20} color={stat.color} />
                   <Text style={{ fontSize: 22, fontWeight: '800', color: stat.color }}>{stat.value}</Text>
-                  <Text style={{ fontSize: 11, fontWeight: '600', color: colors.textSecondary }}>{stat.label}</Text>
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: colors.textSecondary, textAlign: 'center' }} numberOfLines={1} adjustsFontSizeToFit>{stat.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -817,14 +817,14 @@ function HomeScreen() {
         {/* ── MY 3 FOR TODAY ────────────────────────────── */}
         <View style={{ marginHorizontal: 16, marginBottom: 20 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <View>
+            <View style={{ flex: 1, marginRight: 10 }}>
               <Text style={{ fontSize: 22, fontWeight: '800', color: colors.text }}>Your 3 for Today</Text>
-              <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
+              <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }} numberOfLines={1}>
                 {my3.length > 0 ? '30 seconds each. Keep the streak alive.' : 'Analysing your relationships...'}
               </Text>
             </View>
             {my3.length > 0 && (
-              <View style={{ backgroundColor: '#C9A96220', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 }}>
+              <View style={{ backgroundColor: '#C9A96220', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4, flexShrink: 0 }}>
                 <Text style={{ fontSize: 13, fontWeight: '700', color: '#C9A962' }}>{my3.length - completedToday.size}/{my3.length}</Text>
               </View>
             )}
@@ -854,7 +854,7 @@ function HomeScreen() {
                       <Ionicons name={item.icon as any} size={20} color={item.color} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 16, fontWeight: '700', color: done ? colors.textSecondary : colors.text }}>{item.first_name} {item.last_name}</Text>
+                      <Text style={{ fontSize: 16, fontWeight: '700', color: done ? colors.textSecondary : colors.text }} numberOfLines={1}>{item.first_name} {item.last_name}</Text>
                       <Text style={{ fontSize: 13, color: item.color, marginTop: 2, fontWeight: '500' }}>{item.reason_label}</Text>
                     </View>
                     {!done ? (
