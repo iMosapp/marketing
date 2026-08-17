@@ -2307,3 +2307,27 @@ async def update_contact_vehicle(user_id: str, contact_id: str, data: dict = Bod
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Contact not found")
     return {"success": True, "vehicle": vehicle}
+
+
+@router.patch("/{user_id}/{contact_id}/set-photo")
+async def set_contact_photo_from_url(user_id: str, contact_id: str, data: dict = Body(...)):
+    """Set a contact's profile photo from an already-uploaded URL.
+    Used by the SOLD wizard to set the delivery photo as the contact's avatar."""
+    db = get_db()
+    photo_url = (data.get("photo_url") or "").strip()
+    if not photo_url:
+        raise HTTPException(status_code=400, detail="photo_url is required")
+    try:
+        result = await db.contacts.update_one(
+            {"_id": ObjectId(contact_id), "user_id": user_id},
+            {"$set": {
+                "photo_url": photo_url,
+                "photo_thumbnail": photo_url,
+                "updated_at": datetime.now(timezone.utc),
+            }}
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    return {"success": True, "photo_url": photo_url}

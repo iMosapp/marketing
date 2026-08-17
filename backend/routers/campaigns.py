@@ -973,7 +973,8 @@ async def enroll_contact_in_campaign(user_id: str, campaign_id: str, contact_id:
     
     contact_name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip()
     
-    # Create enrollment
+    # Create enrollment — include ai_assist_mode so conversation thread auto-enables Jessi
+    ai_assist_mode = "auto_reply" if campaign.get('ai_enabled') else "off"
     enrollment = {
         "user_id": user_id,
         "campaign_id": campaign_id,
@@ -984,12 +985,31 @@ async def enroll_contact_in_campaign(user_id: str, campaign_id: str, contact_id:
         "status": "active",
         "enrolled_at": datetime.utcnow(),
         "next_send_at": next_send,
-        "messages_sent": []
+        "messages_sent": [],
+        "ai_assist_mode": ai_assist_mode,   # drives Jessi auto-enable in thread view
     }
     
     result = await get_db().campaign_enrollments.insert_one(enrollment)
     enrollment_id = str(result.inserted_id)
     enrollment['_id'] = enrollment_id
+
+    # If campaign has AI enabled, also explicitly enable Jessi on the contact's conversation
+    if campaign.get('ai_enabled') and contact.get('phone'):
+        try:
+            rep_doc = await get_db().users.find_one({"_id": ObjectId(user_id)}, {"twilio_number": 1, "mvpline_number": 1})
+            rep_phone = (rep_doc or {}).get("twilio_number") or (rep_doc or {}).get("mvpline_number")
+            if rep_phone:
+                await get_db().conversations.update_many(
+                    {
+                        "$or": [
+                            {"rep_phone": rep_phone, "contact_phone": contact['phone']},
+                            {"user_id": user_id, "contact_id": contact_id},
+                        ]
+                    },
+                    {"$set": {"ai_enabled": True, "ai_mode": "auto_reply"}}
+                )
+        except Exception as e:
+            logger.warning(f"[Enroll] Could not enable Jessi on conversation: {e}")
 
     # ── PRE-SCHEDULE ALL STEPS ────────────────────────────────────────────────
     # Calculate exact send times for every step at enrollment time.

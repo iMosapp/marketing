@@ -232,6 +232,12 @@ export default function SoldQuickScreen() {
               // Append ?format=jpeg — Twilio needs JPEG, not WebP, for reliable MMS delivery
               const absPath = path.startsWith('http') ? path : `${APP_URL}${path}`;
               photoMediaUrl = `${absPath}?format=jpeg`;
+              // Also set as the contact's profile photo (shows in thread header + contact page)
+              if (contactId) {
+                api.patch(`/contacts/${user._id}/${contactId}/set-photo`, {
+                  photo_url: absPath,
+                }).catch(() => {});
+              }
             }
           } catch (e) {
             console.log('Photo upload failed:', e);

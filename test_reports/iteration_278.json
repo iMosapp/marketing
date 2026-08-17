@@ -1,0 +1,23 @@
+{
+  "summary": "Backend testing for two SOLD wizard bug fixes: (1) PATCH /contacts/{uid}/{cid}/set-photo endpoint, (2) enroll_contact_in_campaign ai_assist_mode fix. All 9 tests passed.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_sold_wizard_fixes.py",
+    "/app/test_reports/pytest/sold_wizard_fixes.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": ["/app/backend/tests/test_sold_wizard_fixes.py"],
+  "success_rate": {"backend": "100% (9/9)", "frontend": "N/A"},
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Both SOLD wizard fixes verified: (1) PATCH /api/contacts/{uid}/{cid}/set-photo correctly sets photo_url and photo_thumbnail on the contact. Returns 200 with {success:true, photo_url}. Returns 400 with no photo_url, 404 for invalid contact. (2) enroll_contact_in_campaign sets ai_assist_mode='auto_reply' when campaign.ai_enabled=True and 'off' when False. Also updates conversations with ai_enabled=True, ai_mode='auto_reply'. Test file at /app/backend/tests/test_sold_wizard_fixes.py."
+}
