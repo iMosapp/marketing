@@ -67,8 +67,8 @@
       ]
     },
     "androidStatusBar": {
-      "backgroundColor": "#000000",
-      "barStyle": "light-content"
+      "backgroundColor": "#FFFFFF",
+      "barStyle": "dark-content"
     },
     "web": {
       "bundler": "metro",
@@ -85,7 +85,7 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#000"
+          "backgroundColor": "#FFFFFF"
         }
       ],
       [
