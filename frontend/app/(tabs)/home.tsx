@@ -371,6 +371,7 @@ function HomeScreen() {
   const [completedToday, setCompletedToday] = useState<Set<string>>(new Set());
   const [loadingMy3, setLoadingMy3] = useState(false);
   const [soldPerf, setSoldPerf] = useState<any>(null);
+  const [hotOpps, setHotOpps] = useState<any[]>([]);
 
   // Modals
   const [showSharePicker, setShowSharePicker] = useState(false);
@@ -426,6 +427,12 @@ function HomeScreen() {
       // Load sold performance stats
       api.get(`/users/${user._id}/sold-performance`).then(r => setSoldPerf(r.data)).catch(() => {});
       setWinsFeed(res.data.wins_feed || []);
+      // Load hot opportunities (conversations with detected buying intent)
+      api.get(`/messages/conversations/${user._id}?hot_only=true`)
+        .then(r => {
+          const all = Array.isArray(r.data) ? r.data : (r.data?.conversations || []);
+          setHotOpps(all.filter((c: any) => c.hot_opportunity === true).slice(0, 5));
+        }).catch(() => {});
     } catch { /* silent fail — not critical */ }
     finally { if (!silent) setLoadingMy3(false); }
   };
@@ -873,6 +880,41 @@ function HomeScreen() {
             })
           )}
         </View>
+
+        {/* ── HOT OPPORTUNITIES ─────────────────────────────── */}
+        {hotOpps.length > 0 && (
+          <View style={{ marginHorizontal: 16, marginBottom: 16, backgroundColor: '#FF3B300D', borderRadius: 16, padding: 16, borderWidth: 1.5, borderColor: '#FF3B3030' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <Ionicons name="flame" size={18} color="#FF3B30" />
+              <Text style={{ fontSize: 16, fontWeight: '800', color: '#FF3B30', flex: 1 }}>
+                Hot Opportunities ({hotOpps.length})
+              </Text>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/inbox?tab=hot' as any)}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: '#FF3B30' }}>View All →</Text>
+              </TouchableOpacity>
+            </View>
+            {hotOpps.map((conv: any, i: number) => (
+              <TouchableOpacity
+                key={conv._id}
+                onPress={() => router.push(`/thread/${conv._id}` as any)}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderTopWidth: i > 0 ? 0.5 : 0, borderTopColor: '#FF3B3020' }}
+              >
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#FF3B3020', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Ionicons name="flame" size={16} color="#FF3B30" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }} numberOfLines={1}>
+                    {conv.contact_name || conv.contact_phone || 'Customer'}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: '#FF3B30', fontWeight: '500', marginTop: 1 }} numberOfLines={1}>
+                    {conv.intent_signals?.slice(0, 2).join(' · ') || 'High buying intent detected'}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#FF3B30" />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         {/* ── WINS FEED ─────────────────────────────────── */}
         {winsFeed.length > 0 && (

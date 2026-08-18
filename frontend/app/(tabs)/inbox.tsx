@@ -152,7 +152,7 @@ export default function InboxScreen() {
   const { showToast } = useToast();
   
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<'assigned' | 'waiting' | 'ai_active' | 'unassigned' | 'all' | 'closed'>('assigned');
+  const [activeTab, setActiveTab] = useState<'hot' | 'assigned' | 'waiting' | 'ai_active' | 'unassigned' | 'all' | 'closed'>('assigned');
   const filter = activeTab; // alias for legacy references
   const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null);
   const toggleActionMenu = (convId: string) =>
@@ -567,12 +567,13 @@ export default function InboxScreen() {
       const isUnassigned = !conv.user_id || conv.user_id === 'unassigned';
       const isClosed     = conv.status === 'closed';
 
+      if (activeTab === 'hot')        return matchesSearch && conv.hot_opportunity === true && !isClosed;
       if (activeTab === 'assigned')   return matchesSearch && conv.status === 'active' && !isWaiting && !isUnassigned && !isClosed;
       if (activeTab === 'waiting')    return matchesSearch && isWaiting;
       if (activeTab === 'ai_active')  return matchesSearch && isAiActive && !isClosed;
       if (activeTab === 'unassigned') return matchesSearch && isUnassigned && !isClosed && conv.status !== 'archived';
       if (activeTab === 'closed')     return matchesSearch && isClosed;
-      return matchesSearch && !isClosed; // 'all' — excludes closed (they live in their own tab)
+      return matchesSearch && !isClosed; // 'all' — excludes closed
     })
     .sort((a, b) => {
       const aUnacked = a.ai_outcome && !a.ai_outcome_acknowledged ? 1 : 0;
@@ -889,6 +890,7 @@ export default function InboxScreen() {
       .toUpperCase() || '?';
     
     const isUrgent = item.unread || item.needs_assistance;
+    const isHot = item.hot_opportunity === true;
     const aiOutcome = item.ai_outcome ? AI_OUTCOME_CONFIG[item.ai_outcome] : null;
     const hasAiOutcome = item.ai_handled && aiOutcome;
     const isAcknowledged = item.ai_outcome_acknowledged;
@@ -1015,6 +1017,12 @@ export default function InboxScreen() {
               >
                 {contactName}
               </Text>
+              {isHot && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#FF3B3015', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: '#FF3B3030' }}>
+                  <Ionicons name="flame" size={11} color="#FF3B30" />
+                  <Text style={{ fontSize: 10, fontWeight: '800', color: '#FF3B30', letterSpacing: 0.3 }}>HOT</Text>
+                </View>
+              )}
               {hasAiOutcome && !isAcknowledged && (
                 <View style={[styles.aiOutcomeTag, { backgroundColor: aiOutcome.bgColor }]}>
                   <Ionicons name={aiOutcome.icon as any} size={9} color={aiOutcome.color} />
@@ -1627,8 +1635,10 @@ export default function InboxScreen() {
           ai_active:  all.filter(c => c.ai_enabled && c.ai_mode && c.ai_mode !== 'off' && c.status !== 'closed').length,
           assigned:   all.filter(c => c.status === 'active' && !(c.needs_assistance || c.status === 'paused') && !(!c.user_id || c.user_id === 'unassigned') && c.status !== 'closed').length,
           closed:     all.filter(c => c.status === 'closed').length,
+          hot:        all.filter(c => c.hot_opportunity === true && c.status !== 'closed').length,
         };
         const tabs: { key: typeof activeTab; label: string; icon: string; activeColor: string }[] = [
+          { key: 'hot',       label: '🔥 Hot',  icon: 'flame',                     activeColor: '#FF3B30' },
           { key: 'all',       label: 'All',     icon: 'list-outline',              activeColor: '#C9A962' },
           { key: 'waiting',   label: 'Waiting', icon: 'time-outline',              activeColor: '#FF9500' },
           { key: 'ai_active', label: 'AI',      icon: 'sparkles',                  activeColor: '#34C759' },

@@ -418,6 +418,22 @@ async def incoming_message(
             except Exception as _ce:
                 logger.warning(f"[Webhook] contact_event insert FAILED (wins feed affected): {_ce}")
 
+        # ── Buying Intent Detection — fire-and-forget, never blocks response ──────
+        if user_id and contact_id and Body and Body.strip() and conversation_id:
+            try:
+                cname = contact.get("name") or f"{contact.get('first_name','')} {contact.get('last_name','')}".strip() or from_phone
+                from services.intent_detection import process_inbound_intent
+                asyncio.create_task(process_inbound_intent(
+                    db=db,
+                    message=Body,
+                    contact_name=cname,
+                    contact_id=str(contact_id),
+                    conversation_id=str(conversation_id),
+                    user_id=str(user_id),
+                ))
+            except Exception as _ie:
+                logger.debug(f"[Webhook] Intent detection task creation failed (non-fatal): {_ie}")
+
         # ── SMS system notification to rep's personal cell ─────────────────────
         if rep_user and not is_stop:
             try:

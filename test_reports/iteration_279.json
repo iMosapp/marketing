@@ -1,0 +1,39 @@
+{
+  "summary": "Backend testing for intent_detection.py. Found and fixed a critical bug: INTENT_PROMPT used str.format() but contained unescaped JSON template braces {}, causing silent KeyError and all GPT calls returning score=0. Fixed by escaping to {{}}. All 14 tests pass after fix.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "services/intent_detection.py:detect_buying_intent",
+        "issue": "INTENT_PROMPT JSON template braces {} not escaped for str.format() — caused KeyError silently caught, all real GPT calls returned score=0 instead of actual intent score",
+        "priority": "CRITICAL"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_intent_detection.py",
+    "/app/test_reports/pytest/intent_detection.xml"
+  ],
+  "action_items": [
+    "FIXED: Escaped JSON template braces in INTENT_PROMPT ({{ and }}) so str.format() works correctly — GPT now returns real scores"
+  ],
+  "critical_code_review_comments": [
+    "FIXED: INTENT_PROMPT in intent_detection.py had unescaped curly braces in the JSON example. str.format() tried to interpret them as placeholders, throwing KeyError that was silently caught, returning default score=0 for all non-skip messages.",
+    "Note: GPT scored 'What are my monthly payments?' at 5 (not 7+) without conversation context — this is expected LLM variability with minimal context. With real conversation context (recent_messages), score will likely be higher.",
+    "process_inbound_intent push notification: import is inside try/except so push failure won't break intent storage — good defensive pattern"
+  ],
+  "updated_files": [
+    "/app/backend/services/intent_detection.py",
+    "/app/backend/tests/test_intent_detection.py"
+  ],
+  "success_rate": {"backend": "100% (14/14)", "frontend": "N/A"},
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "intent_detection.py bug fixed: INTENT_PROMPT JSON braces escaped. All 14 tests pass. detect_buying_intent: skip phrases return score=0, GPT integration working. process_inbound_intent: score<4 skips DB write, score 4-6 sets intent_score+hot_opportunity=False, score>=7 sets hot_opportunity=True. Test file: /app/backend/tests/test_intent_detection.py",
+  "rca_of_issue": "Root cause: INTENT_PROMPT string contained a JSON example block with raw {score}, {signals} etc. that str.format() interpreted as replacement field names. Python raised KeyError which was caught by the broad except block, returning the default {score:0} response. Fix: escape all non-placeholder braces in the template to {{ and }}."
+}
