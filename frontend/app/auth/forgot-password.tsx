@@ -45,46 +45,37 @@ export default function ForgotPasswordScreen() {
   const [devCode, setDevCode] = useState<string | null>(null);
   
   const handleRequestCode = async () => {
-    if (!email) {
-      showSimpleAlert('Error', 'Please enter your email address');
+    if (!email.trim()) {
+      showSimpleAlert('Error', 'Please enter your phone number or email');
       return;
     }
-    
+
     setLoading(true);
     try {
-      const response = await authAPI.forgotPassword(email);
-      // Store dev code for testing (shown in alert in dev mode)
-      if (response.dev_code) {
-        setDevCode(response.dev_code);
-        showAlert(
-          'Code Sent',
-          `For testing, your reset code is: ${response.dev_code}\n\nIn production, this would be sent to your email.`,
-          [{ text: 'OK', onPress: () => setStep('code') }]
-        );
-      } else {
-        showAlert(
-          'Code Sent',
-          'If an account with that email exists, a reset code has been sent.',
-          [{ text: 'OK', onPress: () => setStep('code') }]
-        );
-      }
+      // Send phone or email — backend handles both
+      await authAPI.forgotPassword(email.trim());
+      showAlert(
+        'Code Sent',
+        'A 6-digit reset code has been sent via text to your registered phone number. Check your messages.',
+        [{ text: 'OK', onPress: () => setStep('code') }]
+      );
     } catch (error: any) {
-      const message = error?.response?.data?.detail || 'Failed to send reset code';
+      const message = error?.response?.data?.detail || 'Failed to send reset code. Make sure you have a phone number registered on your account.';
       showSimpleAlert('Error', message);
     } finally {
       setLoading(false);
     }
   };
-  
+
   const handleVerifyCode = async () => {
     if (!code || code.length !== 6) {
-      showSimpleAlert('Error', 'Please enter a valid 6-digit code');
+      showSimpleAlert('Error', 'Please enter the 6-digit code from your text message');
       return;
     }
-    
+
     setLoading(true);
     try {
-      await authAPI.verifyResetCode(email, code);
+      await authAPI.verifyResetCode(email.trim(), code);
       setStep('password');
     } catch (error: any) {
       const message = error?.response?.data?.detail || 'Invalid or expired code';
@@ -93,25 +84,25 @@ export default function ForgotPasswordScreen() {
       setLoading(false);
     }
   };
-  
+
   const handleResetPassword = async () => {
-    if (!newPassword || newPassword.length < 4) {
-      showSimpleAlert('Error', 'Password must be at least 4 characters');
+    if (!newPassword || newPassword.length < 6) {
+      showSimpleAlert('Error', 'Password must be at least 6 characters');
       return;
     }
-    
+
     if (newPassword !== confirmPassword) {
       showSimpleAlert('Error', 'Passwords do not match');
       return;
     }
-    
+
     setLoading(true);
     try {
-      await authAPI.resetPassword(email, code, newPassword);
+      await authAPI.resetPassword(email.trim(), code, newPassword);
       showAlert(
-        'Success',
-        'Your password has been reset. You can now log in with your new password.',
-        [{ text: 'OK', onPress: () => router.replace('/auth/login') }]
+        'Password Reset',
+        'Your password has been updated. You can now log in with your new password.',
+        [{ text: 'Log In', onPress: () => router.replace('/auth/login') }]
       );
     } catch (error: any) {
       const message = error?.response?.data?.detail || 'Failed to reset password';
@@ -120,21 +111,21 @@ export default function ForgotPasswordScreen() {
       setLoading(false);
     }
   };
-  
+
   const renderEmailStep = () => (
     <>
       <Text style={styles.stepTitle}>Reset Your Password</Text>
       <Text style={styles.stepDescription}>
-        Enter your email address and we'll send you a code to reset your password.
+        Enter your phone number or email. We'll text a 6-digit code to your registered mobile number.
       </Text>
-      
+
       <TextInput
         style={styles.input}
-        placeholder="Email"
+        placeholder="Phone number or email"
         placeholderTextColor={colors.textSecondary}
         value={email}
         onChangeText={setEmail}
-        keyboardType="email-address"
+        keyboardType="default"
         autoCapitalize="none"
         autoCorrect={false}
         autoFocus
@@ -156,18 +147,12 @@ export default function ForgotPasswordScreen() {
   
   const renderCodeStep = () => (
     <>
-      <Text style={styles.stepTitle}>Enter Code</Text>
+      <Text style={styles.stepTitle}>Check Your Texts</Text>
       <Text style={styles.stepDescription}>
-        Enter the 6-digit code sent to {email}
+        Enter the 6-digit code texted to your registered phone number.
+        {'\n'}Didn't get it? Check that your phone number is on your account.
       </Text>
-      
-      {devCode && (
-        <View style={styles.devCodeBox}>
-          <Text style={styles.devCodeLabel}>Dev Mode - Your Code:</Text>
-          <Text style={styles.devCodeText}>{devCode}</Text>
-        </View>
-      )}
-      
+
       <TextInput
         style={[styles.input, styles.codeInput]}
         placeholder="000000"

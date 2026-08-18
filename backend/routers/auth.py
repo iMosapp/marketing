@@ -93,7 +93,34 @@ if RESEND_API_KEY:
     resend.api_key = RESEND_API_KEY
 
 # Store reset codes temporarily (in production, use Redis or similar)
-reset_codes = {}
+reset_codes = {}  # Legacy in-memory — only kept for imports; new flow uses MongoDB
+
+# ── SMS helper ────────────────────────────────────────────────────────────────
+async def _send_sms_reset_code(phone: str, code: str) -> bool:
+    """Send a 6-digit reset code via Twilio SMS. Returns True on success."""
+    twilio_sid = os.environ.get("TWILIO_ACCOUNT_SID")
+    twilio_token = os.environ.get("TWILIO_AUTH_TOKEN")
+    from_phone = os.environ.get("TWILIO_PHONE_NUMBER")
+    if not twilio_sid or not twilio_token or not from_phone:
+        logger.warning("[ResetSMS] Twilio not configured — cannot send SMS code")
+        return False
+    try:
+        import httpx as _httpx
+        async with _httpx.AsyncClient(timeout=8.0) as client:
+            resp = await client.post(
+                f"https://api.twilio.com/2010-04-01/Accounts/{twilio_sid}/Messages.json",
+                auth=(twilio_sid, twilio_token),
+                data={"From": from_phone, "To": phone,
+                      "Body": f"Your I'm On Social reset code is: {code}\n\nExpires in 10 minutes. Do not share this code."}
+            )
+        if resp.status_code == 201:
+            logger.info(f"[ResetSMS] Code sent to {phone[-4:]}")
+            return True
+        logger.warning(f"[ResetSMS] Twilio returned {resp.status_code}: {resp.text[:200]}")
+        return False
+    except Exception as e:
+        logger.error(f"[ResetSMS] Failed to send SMS: {e}")
+        return False
 
 async def send_welcome_email(user: dict):
     """Send welcome email to new user"""
@@ -663,116 +690,199 @@ async def logout_session():
 
 @router.post("/forgot-password/request")
 async def request_password_reset(data: dict):
-    """Request a password reset code"""
-    email = (data.get('email') or '').strip().lower()
-    if not email:
-        raise HTTPException(status_code=400, detail="Email is required")
-    
+    """
+    Request a 6-digit SMS reset code.
+    Accepts phone number OR email. Looks up the user, sends code via Twilio SMS
+    to their registered phone. Falls back to email if no phone on file.
+    Stores code in MongoDB (survives restarts) with 10-min TTL + 5-attempt lockout.
+    """
     import re
-    escaped_email = re.escape(email)
-    user = await get_db().users.find_one({"email": {"$regex": f"^{escaped_email}$", "$options": "i"}})
-    if not user:
-        # Don't reveal if email exists
-        return {"message": "If an account exists with this email, a reset code has been sent"}
-    
-    # Generate 6-digit code using cryptographically secure random
-    code = str(secrets.randbelow(900000) + 100000)
-    reset_codes[email] = {
-        'code': code,
-        'expires': datetime.utcnow().timestamp() + 600  # 10 minutes
-    }
-    
-    logger.info(f"Password reset code generated for {email}")
-    
-    # Send reset code email via Resend
-    if RESEND_API_KEY:
-        try:
-            params = {
-                "from": f"I'm On Social <{SENDER_EMAIL}>",
-                "to": [email],
-                "reply_to": "support@imonsocial.com",
-                "subject": "Your I'm On Social Password Reset Code",
-                "html": f"""
-                <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 20px; background: #ffffff;">
-                    <div style="text-align: center; margin-bottom: 32px;">
-                        <h2 style="color: #1A1A1A; margin: 0;">Password Reset</h2>
-                    </div>
-                    <p style="color: #555; font-size: 15px; line-height: 1.6;">
-                        You requested a password reset for your I'm On Social account. Use the code below to reset your password. This code expires in 10 minutes.
-                    </p>
-                    <div style="text-align: center; margin: 32px 0;">
-                        <div style="display: inline-block; background: #F0F4FF; border: 2px solid #007AFF; border-radius: 12px; padding: 16px 40px; letter-spacing: 8px; font-size: 28px; font-weight: 700; color: #007AFF;">
-                            {code}
-                        </div>
-                    </div>
-                    <p style="color: #999; font-size: 13px; text-align: center;">
-                        If you didn't request this, you can safely ignore this email.
-                    </p>
-                </div>
-                """
-            }
-            resend.Emails.send(params)
-            logger.info(f"Password reset email sent to {email}")
-        except Exception as e:
-            logger.error(f"Failed to send reset email to {email}: {e}")
+    db = get_db()
+    identifier = (data.get('phone') or data.get('email') or '').strip()
+    if not identifier:
+        raise HTTPException(status_code=400, detail="Phone number or email is required")
+
+    # Normalize phone to E.164 if it looks like a phone
+    digits = re.sub(r'\D', '', identifier)
+    is_phone = len(digits) >= 10 and '@' not in identifier
+    user = None
+
+    if is_phone:
+        e164 = f"+1{digits[-10:]}" if len(digits) == 10 else f"+{digits}"
+        user = await db.users.find_one({"$or": [{"phone": e164}, {"phone": digits[-10:]}]})
+        if not user:
+            # Try Twilio number too
+            user = await db.users.find_one({"twilio_number": e164})
     else:
-        logger.warning("Resend API key not configured, reset email not sent")
-    
-    return {
-        "message": "If an account exists with this email, a reset code has been sent"
-    }
+        escaped = re.escape(identifier.lower())
+        user = await db.users.find_one({"email": {"$regex": f"^{escaped}$", "$options": "i"}})
+
+    # Always return the same message to prevent enumeration
+    safe_response = {"message": "If an account exists, a reset code has been sent via text"}
+
+    if not user:
+        return safe_response
+
+    # Rate limit: no more than 3 requests per email per 10 minutes
+    recent = await db.password_reset_tokens.count_documents({
+        "user_id": str(user["_id"]),
+        "created_at": {"$gte": datetime.utcnow().timestamp() - 600},
+    })
+    if recent >= 3:
+        raise HTTPException(status_code=429, detail="Too many reset requests. Please wait 10 minutes.")
+
+    code = str(secrets.randbelow(900000) + 100000)
+    now_ts = datetime.utcnow().timestamp()
+
+    await db.password_reset_tokens.insert_one({
+        "user_id": str(user["_id"]),
+        "email":   (user.get("email") or "").lower(),
+        "code":    code,
+        "created_at":  now_ts,
+        "expires_at":  now_ts + 600,  # 10 minutes
+        "attempts":    0,
+        "used":        False,
+    })
+
+    # Get the phone to send to
+    send_phone = user.get("phone") or user.get("twilio_number") or ""
+    sent_via_sms = False
+    if send_phone:
+        sent_via_sms = await _send_sms_reset_code(send_phone, code)
+
+    # Fall back to email if SMS failed or no phone
+    if not sent_via_sms and RESEND_API_KEY and user.get("email"):
+        try:
+            import asyncio as _aio
+            await _aio.to_thread(resend.Emails.send, {
+                "from": f"I'm On Social <{SENDER_EMAIL}>",
+                "to": [user["email"]],
+                "reply_to": "support@imonsocial.com",
+                "subject": "Your I'm On Social Reset Code",
+                "html": f"""<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:40px 20px">
+                    <h2 style="color:#1A1A1A">Password Reset</h2>
+                    <p style="color:#555">Your reset code:</p>
+                    <div style="text-align:center;margin:32px 0">
+                      <span style="background:#F0F4FF;border:2px solid #007AFF;border-radius:12px;padding:16px 40px;letter-spacing:8px;font-size:28px;font-weight:700;color:#007AFF">{code}</span>
+                    </div>
+                    <p style="color:#999;font-size:13px">Expires in 10 minutes.</p>
+                  </div>"""
+            })
+        except Exception as e:
+            logger.warning(f"[Reset] Email fallback failed: {e}")
+
+    return safe_response
+
 
 @router.post("/forgot-password/verify")
 async def verify_reset_code(data: dict):
-    """Verify the reset code"""
-    email = (data.get('email') or '').strip().lower()
-    code = data.get('code')
-    
-    if not email or not code:
-        raise HTTPException(status_code=400, detail="Email and code are required")
-    
-    stored = reset_codes.get(email)
-    if not stored:
-        raise HTTPException(status_code=400, detail="No reset request found for this email")
-    
-    if datetime.utcnow().timestamp() > stored['expires']:
-        del reset_codes[email]
-        raise HTTPException(status_code=400, detail="Reset code has expired")
-    
-    if stored['code'] != code:
-        raise HTTPException(status_code=400, detail="Invalid reset code")
-    
-    return {"message": "Code verified", "verified": True}
+    """
+    Verify the 6-digit SMS reset code.
+    Accepts email or phone + code. Max 5 attempts before lockout.
+    """
+    import re
+    db = get_db()
+    identifier = (data.get('email') or data.get('phone') or '').strip().lower()
+    code = (data.get('code') or '').strip()
+
+    if not identifier or not code:
+        raise HTTPException(status_code=400, detail="Phone/email and code are required")
+
+    # Find user
+    digits = re.sub(r'\D', '', identifier)
+    is_phone = len(digits) >= 10 and '@' not in identifier
+    user = None
+    if is_phone:
+        e164 = f"+1{digits[-10:]}" if len(digits) == 10 else f"+{digits}"
+        user = await db.users.find_one({"$or": [{"phone": e164}, {"phone": digits[-10:]}]})
+    else:
+        escaped = re.escape(identifier)
+        user = await db.users.find_one({"email": {"$regex": f"^{escaped}$", "$options": "i"}})
+
+    if not user:
+        raise HTTPException(status_code=400, detail="No reset request found")
+
+    now_ts = datetime.utcnow().timestamp()
+    token = await db.password_reset_tokens.find_one({
+        "user_id": str(user["_id"]),
+        "expires_at": {"$gt": now_ts},
+        "used": False,
+    }, sort=[("created_at", -1)])
+
+    if not token:
+        raise HTTPException(status_code=400, detail="No valid reset code found. Please request a new one.")
+
+    if token.get("attempts", 0) >= 5:
+        raise HTTPException(status_code=429, detail="Too many incorrect attempts. Please request a new code.")
+
+    if token["code"] != code:
+        await db.password_reset_tokens.update_one(
+            {"_id": token["_id"]},
+            {"$inc": {"attempts": 1}}
+        )
+        remaining = 4 - token.get("attempts", 0)
+        raise HTTPException(status_code=400, detail=f"Incorrect code. {remaining} attempts remaining.")
+
+    return {"message": "Code verified", "verified": True, "user_id": str(user["_id"])}
+
 
 @router.post("/forgot-password/reset")
 async def reset_password(data: dict):
-    """Reset the password with verified code"""
-    email = (data.get('email') or '').strip().lower()
-    code = data.get('code')
-    new_password = data.get('new_password')
-    
-    if not all([email, code, new_password]):
-        raise HTTPException(status_code=400, detail="Email, code, and new password are required")
-    
-    stored = reset_codes.get(email)
-    if not stored or stored['code'] != code:
-        raise HTTPException(status_code=400, detail="Invalid or expired reset code")
-    
+    """Reset password using verified code. Marks token as used."""
     import re
-    escaped_email = re.escape(email)
-    # Update password and clear the temp password flag
-    result = await get_db().users.update_one(
-        {"email": {"$regex": f"^{escaped_email}$", "$options": "i"}},
+    db = get_db()
+    identifier = (data.get('email') or data.get('phone') or '').strip().lower()
+    code = (data.get('code') or '').strip()
+    new_password = data.get('new_password', '')
+
+    if not all([identifier, code, new_password]):
+        raise HTTPException(status_code=400, detail="Phone/email, code, and new password are required")
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+
+    # Find user
+    digits = re.sub(r'\D', '', identifier)
+    is_phone = len(digits) >= 10 and '@' not in identifier
+    user = None
+    if is_phone:
+        e164 = f"+1{digits[-10:]}" if len(digits) == 10 else f"+{digits}"
+        user = await db.users.find_one({"$or": [{"phone": e164}, {"phone": digits[-10:]}]})
+    else:
+        escaped = re.escape(identifier)
+        user = await db.users.find_one({"email": {"$regex": f"^{escaped}$", "$options": "i"}})
+
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid reset request")
+
+    now_ts = datetime.utcnow().timestamp()
+    token = await db.password_reset_tokens.find_one({
+        "user_id": str(user["_id"]),
+        "code": code,
+        "expires_at": {"$gt": now_ts},
+        "used": False,
+        "attempts": {"$lt": 5},
+    }, sort=[("created_at", -1)])
+
+    if not token:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset code")
+
+    # Update password
+    result = await db.users.update_one(
+        {"_id": user["_id"]},
         {"$set": {"password": hash_password(new_password), "needs_password_change": False}}
     )
-    
     if result.modified_count == 0:
         raise HTTPException(status_code=400, detail="Failed to update password")
-    
-    # Clear the reset code
-    del reset_codes[email]
-    
+
+    # Mark token as used (prevents reuse)
+    await db.password_reset_tokens.update_one(
+        {"_id": token["_id"]},
+        {"$set": {"used": True, "used_at": now_ts}}
+    )
+
+    logger.info(f"[Reset] Password reset completed for user {user['_id']}")
     return {"message": "Password updated successfully"}
+
 
 
 @router.post("/change-password")
