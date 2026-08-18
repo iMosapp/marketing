@@ -31,29 +31,46 @@ ROLE_HIERARCHY = {
 async def _resolve_user_from_request(request: Request) -> Optional[dict]:
     """
     Resolve the authenticated user from the request.
-    ONLY accepts a valid signed JWT in the Authorization: Bearer header.
-    X-User-ID header and mock_token_ are no longer accepted — Phase 1 security hardening.
+    Handles three token types:
+    1. Authorization: Bearer <jwt>         — verified JWT (normal login)
+    2. Authorization: Bearer impersonate_* — admin impersonation session token
+    Only signed JWTs and valid impersonation sessions are accepted.
+    X-User-ID header and mock_token_ are permanently rejected.
     """
     from routers.auth import verify_jwt_token
 
-    # ── JWT Bearer — the only accepted auth path ──────────────────────────────
     auth_header = request.headers.get("Authorization", "")
-    if auth_header.startswith("Bearer "):
-        token = auth_header[7:]
-        payload = verify_jwt_token(token)
-        if payload:
-            user_id = payload.get("sub")
-            if user_id:
-                return await get_user_by_id(user_id)
+    if not auth_header.startswith("Bearer "):
+        return None
 
-    # No valid JWT — return None (caller raises 401)
+    token = auth_header[7:]
+
+    # ── Path 1: Signed JWT ────────────────────────────────────────────────────
+    payload = verify_jwt_token(token)
+    if payload:
+        user_id = payload.get("sub")
+        if user_id:
+            return await get_user_by_id(user_id)
+
+    # ── Path 2: Impersonation session token ───────────────────────────────────
+    if token.startswith("impersonate_"):
+        try:
+            db = get_db()
+            session = await db.impersonation_sessions.find_one({"token": token})
+            if session:
+                uid = session.get("impersonated_user_id") or session.get("user_id")
+                if uid:
+                    return await get_user_by_id(str(uid))
+        except Exception:
+            pass
+
     return None
 
 
 async def get_current_user(request: Request) -> dict:
     """
     Extract and validate the current user from the request.
-    Requires a valid signed JWT in Authorization: Bearer header.
+    Requires a valid signed JWT or a valid impersonation session token.
     """
     user = await _resolve_user_from_request(request)
     if not user:

@@ -131,6 +131,113 @@ logger = logging.getLogger(__name__)
 import time
 
 @app.middleware("http")
+async def enforce_user_ownership(request: Request, call_next):
+    """
+    Phase 2 BOLA protection — enforce that the JWT caller owns (or administers)
+    the user_id appearing in the URL path for all major data endpoints.
+
+    Protects: contacts, tasks, campaigns, voice-notes, messages/conversations,
+              tags, templates, home, activity, search, notifications-center,
+              reports, push preferences, users data endpoints.
+
+    Skips: public pages, auth, webhooks, admin routes, images, and any
+           path that doesn't contain a user_id segment.
+    """
+    import re as _re
+    from fastapi.responses import JSONResponse as _JSONResponse
+
+    path = request.url.path
+
+    # ── Paths that are always public / handled by their own auth ──────────────
+    ALWAYS_SKIP = (
+        "/api/auth/", "/api/webhooks/", "/api/public/", "/api/images/",
+        "/api/card/", "/api/l/", "/api/p/", "/api/showcase/", "/api/congrats/",
+        "/api/review/", "/api/s/", "/api/opt-in/", "/api/health",
+        "/api/admin/", "/api/imos/", "/api/birthday/", "/api/timeline/",
+        "/api/onboarding/", "/api/profile/", "/api/docs", "/openapi.json",
+        "/api/seo/sitemap", "/api/directory/", "/api/analytics/",
+        "/api/integrations/public", "/api/demo/", "/api/leads/",
+    )
+    if any(path.startswith(p) for p in ALWAYS_SKIP):
+        return await call_next(request)
+
+    # ── Routes protected: resource/{user_id}/... ──────────────────────────────
+    # The first ObjectId segment after the resource name is the user_id.
+    PROTECTED_PREFIXES = (
+        "/api/contacts/", "/api/tasks/", "/api/campaigns/", "/api/voice-notes/",
+        "/api/messages/conversations/", "/api/tags/", "/api/templates/",
+        "/api/home/", "/api/activity/", "/api/search/", "/api/notifications-center/",
+        "/api/reports/", "/api/push/preferences/", "/api/push/subscribe-native/",
+        "/api/push/status/", "/api/users/", "/api/engagement-signals/",
+        "/api/ai-outreach/", "/api/broadcast/",
+    )
+
+    matched_prefix = next((p for p in PROTECTED_PREFIXES if path.startswith(p)), None)
+    if not matched_prefix:
+        return await call_next(request)
+
+    # Extract the segment immediately after the prefix — that's the user_id
+    remainder = path[len(matched_prefix):]
+    path_user_id = remainder.split("/")[0].split("?")[0]
+
+    OID_RE = _re.compile(r'^[0-9a-f]{24}$')
+    if not OID_RE.match(path_user_id):
+        # Not an ObjectId — could be a sub-route like /api/campaigns/scheduler
+        return await call_next(request)
+
+    # ── Resolve caller from JWT ───────────────────────────────────────────────
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        return _JSONResponse({"detail": "Authentication required"}, status_code=401)
+
+    token = auth[7:]
+    caller_id = None
+    caller_role = "user"
+
+    # JWT path
+    from routers.auth import verify_jwt_token
+    payload = verify_jwt_token(token)
+    if payload:
+        caller_id = payload.get("sub")
+        caller_role = payload.get("role", "user") or "user"
+    elif token.startswith("impersonate_"):
+        # Impersonation session
+        try:
+            session = await get_db().impersonation_sessions.find_one({"token": token})
+            if session:
+                uid = session.get("impersonated_user_id") or session.get("user_id")
+                if uid:
+                    caller_id = str(uid)
+                    # Impersonating admin can access anyone
+                    caller_role = "super_admin"
+        except Exception:
+            pass
+
+    if not caller_id:
+        return _JSONResponse({"detail": "Authentication required"}, status_code=401)
+
+    # ── Ownership check ───────────────────────────────────────────────────────
+    if caller_id == path_user_id:
+        # Own data — always allowed
+        return await call_next(request)
+
+    if caller_role in ("super_admin", "org_admin", "store_manager"):
+        # Admins/managers may access data for users they manage
+        # Full scope check deferred to get_data_filter — allow through here
+        return await call_next(request)
+
+    # Caller is a regular user trying to access another user's data
+    logger.warning(
+        f"[BOLA] Blocked {request.method} {path} — "
+        f"caller={caller_id} tried to access user_id={path_user_id}"
+    )
+    return _JSONResponse(
+        {"detail": "Access denied — you can only access your own data"},
+        status_code=403
+    )
+
+
+@app.middleware("http")
 async def log_slow_requests(request: Request, call_next):
     """Log all requests — with impersonation context and error tracking for crash diagnosis."""
     import traceback
