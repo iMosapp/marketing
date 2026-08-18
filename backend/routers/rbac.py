@@ -31,16 +31,12 @@ ROLE_HIERARCHY = {
 async def _resolve_user_from_request(request: Request) -> Optional[dict]:
     """
     Resolve the authenticated user from the request.
-    Priority order:
-    1. Authorization: Bearer <jwt>  — verified JWT (new, secure)
-    2. X-User-ID header             — legacy fallback (backward compat, remove after 2 deploys)
-
-    For the JWT path: verifies signature, expiry, and loads user from DB.
-    For the mock_token legacy path: extracts user_id from token string (no sig verification).
+    ONLY accepts a valid signed JWT in the Authorization: Bearer header.
+    X-User-ID header and mock_token_ are no longer accepted — Phase 1 security hardening.
     """
     from routers.auth import verify_jwt_token
 
-    # ── Path 1: Authorization Bearer header ──────────────────────────────────
+    # ── JWT Bearer — the only accepted auth path ──────────────────────────────
     auth_header = request.headers.get("Authorization", "")
     if auth_header.startswith("Bearer "):
         token = auth_header[7:]
@@ -50,22 +46,18 @@ async def _resolve_user_from_request(request: Request) -> Optional[dict]:
             if user_id:
                 return await get_user_by_id(user_id)
 
-    # ── Path 2: Legacy X-User-ID header (backward compat) ────────────────────
-    x_user_id = request.headers.get("X-User-ID")
-    if x_user_id:
-        return await get_user_by_id(x_user_id)
-
+    # No valid JWT — return None (caller raises 401)
     return None
 
 
 async def get_current_user(request: Request) -> dict:
     """
     Extract and validate the current user from the request.
-    Verifies JWT signature; falls back to legacy X-User-ID for existing sessions.
+    Requires a valid signed JWT in Authorization: Bearer header.
     """
     user = await _resolve_user_from_request(request)
     if not user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+        raise HTTPException(status_code=401, detail="Authentication required — valid JWT required")
     return user
 
 

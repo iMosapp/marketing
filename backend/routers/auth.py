@@ -49,16 +49,13 @@ def create_jwt_token(user_id: str, role: str) -> str:
 
 def verify_jwt_token(token: str) -> Optional[dict]:
     """
-    Verify a JWT token and return the payload, or None if invalid.
-    Supports legacy mock_token_<id> for backward compatibility during migration.
+    Verify a JWT token and return the payload, or None if invalid/expired.
+    Only accepts properly signed JWTs — mock_token_ legacy format is no longer accepted.
     """
     if not token:
         return None
-    # Backward compat: accept old mock_token format for one deploy cycle
+    # Explicitly reject legacy mock tokens — no longer accepted
     if token.startswith("mock_token_"):
-        user_id = token[len("mock_token_"):]
-        if user_id:
-            return {"sub": user_id, "role": None, "_legacy": True}
         return None
     try:
         payload = pyjwt.decode(token, _get_jwt_secret(), algorithms=[_JWT_ALGORITHM])
@@ -1161,8 +1158,18 @@ async def send_onboarding_notification_sms(manager: dict, user_name: str):
         logger.warning(f"Twilio SMS failed: {e}")
 
 @router.get("/user/{user_id}")
-async def get_user(user_id: str):
-    """Get user profile"""
+async def get_user(user_id: str, request: Request):
+    """Get user profile — requires valid JWT; users can only fetch their own profile."""
+    from routers.rbac import _resolve_user_from_request
+    caller = await _resolve_user_from_request(request)
+    if not caller:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    # Users can only read their own profile; admins can read any
+    caller_role = caller.get("role", "user")
+    caller_id = str(caller.get("_id", ""))
+    if caller_id != user_id and caller_role not in ("super_admin", "org_admin", "store_manager"):
+        raise HTTPException(status_code=403, detail="You can only access your own profile")
+
     user = await get_db().users.find_one({"_id": ObjectId(user_id)})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -1289,22 +1296,26 @@ async def update_review_links(user_id: str, data: dict):
 
 @router.get("/ref/{ref_code}")
 async def resolve_ref_code(ref_code: str):
-    """Resolve a ref code to the user who owns it."""
+    """Resolve a ref code — returns only name and user_id (no email/role/org) to prevent enumeration."""
     db = get_db()
-    user = await db.users.find_one({"ref_code": ref_code}, {"_id": 1, "name": 1, "email": 1, "role": 1, "organization_id": 1, "store_id": 1})
+    user = await db.users.find_one({"ref_code": ref_code}, {"_id": 1, "name": 1})
     if not user:
         return {"status": "not_found"}
     return {
         "status": "found",
         "user_id": str(user["_id"]),
         "name": user.get("name", ""),
-        "role": user.get("role", ""),
+        # role/email/org_id intentionally omitted — prevents user_id enumeration for auth attacks
     }
 
 
 @router.post("/ref/backfill")
-async def backfill_ref_codes():
-    """Backfill ref_codes for existing users who don't have one."""
+async def backfill_ref_codes(request: Request):
+    """Backfill ref_codes — super_admin only."""
+    from routers.rbac import _resolve_user_from_request
+    caller = await _resolve_user_from_request(request)
+    if not caller or caller.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super admin access required")
     import hashlib
     db = get_db()
     count = 0
