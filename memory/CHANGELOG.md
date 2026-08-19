@@ -1,5 +1,12 @@
 # CHANGELOG — iMOs App
 
+## Jun, 2026 — Contact Gallery "Add Photo" Picker Fix (COMPLETED)
+- **Bug:** In Contact → tap avatar → photo viewer → "Add Photo", the image picker never opened on iOS — it flashed and returned to the contact. Root cause: iOS cannot present the image-picker view controller while the photo-viewer `Modal` is still dismissing.
+- **Fix (frontend, `contact/[id].tsx`):** Defer launching the picker until the Modal has fully closed — added `Modal onDismiss` (iOS) with a `pendingPickRef` flag + a 350ms timeout fallback for Android/web. Both the header camera button and the empty-state "Add Photo" button now route through `requestAddPhotoFromGallery`.
+- **Also made it persist:** New helper `uploadGalleryPhoto` picks the photo and immediately saves it via `POST /api/contacts/{user}/{id}/photo` (the previous code used a non-existent PATCH route), then refreshes the gallery. Backend endpoint verified via curl (returns compressed `photo_url`).
+- **Deploy note:** Native frontend change — requires `eas update --branch production` to reach the live app.
+
+
 ## Jun, 2026 — Inbox Contact-Card (.vcf) Rendering Fix (COMPLETED)
 - **Bug:** Outbound "tap to save my number" intro messages attach a `.vcf` contact card (media_url `/api/profile/{id}/vcard.vcf`, content-type `text/vcard`). The customer's phone renders it as a native contact card (with embedded photo), but the app's own inbox tried to render the `.vcf` via `<Image>` → blank gray placeholder box.
 - **Fix (frontend only, `thread/[id].tsx`):** Detect `.vcf`/`/vcard` media URLs and render a dedicated Contact Card tile (rep's profile photo + name + "Contact Card · Tap to save", tap opens the vCard) instead of a broken image. Added `myPhoto` state fetched from `/api/profile/{user._id}`.

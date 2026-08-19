@@ -1759,6 +1759,62 @@ function ContactDetailScreen() {
     }
   };
 
+  // iOS cannot present the image picker while the photo-viewer Modal is still
+  // dismissing (it opens then instantly closes). Defer the picker until the
+  // modal has fully closed: use the Modal's onDismiss (iOS) with a timeout fallback.
+  const pendingPickRef = useRef(false);
+  const requestAddPhotoFromGallery = () => {
+    pendingPickRef.current = true;
+    setShowPhotoViewer(false);
+    setFullPhoto(null);
+    setAllPhotos([]);
+    setSelectedPhotoIndex(-1);
+    if (Platform.OS !== 'ios') {
+      // Android/web don't reliably fire Modal.onDismiss — use a short delay
+      setTimeout(() => {
+        if (pendingPickRef.current) { pendingPickRef.current = false; uploadGalleryPhoto(); }
+      }, 350);
+    }
+  };
+  const runPendingPick = () => {
+    if (pendingPickRef.current) { pendingPickRef.current = false; uploadGalleryPhoto(); }
+  };
+
+  // Pick a photo from the library and immediately persist it to the contact +
+  // gallery (used from the photo-viewer "Add Photo" button, which has no Save step).
+  const uploadGalleryPhoto = async () => {
+    if (!user?._id || !id) return;
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true, aspect: [1, 1], quality: 0.5, base64: true,
+      });
+      if (result.canceled || !result.assets || result.assets.length === 0) return;
+      const asset = result.assets[0];
+      const photoData = asset.base64
+        ? `data:image/jpeg;base64,${asset.base64}`
+        : asset.uri || null;
+      if (!photoData) {
+        showToast('Could not load the selected photo. Please try again.', 'warning');
+        return;
+      }
+      showToast('Uploading photo...', 'info');
+      const resp = await api.post(`/contacts/${user._id}/${id}/photo`, { photo: photoData });
+      const newUrl = resp.data?.photo_url;
+      setContact((prev: any) => ({
+        ...prev,
+        photo: newUrl ? resolvePhotoUrl(newUrl) : photoData,
+        photo_url: newUrl || prev?.photo_url,
+        photo_thumbnail: newUrl || prev?.photo_thumbnail,
+      }));
+      await preloadGalleryPhotos();
+      showToast('Photo added!', 'success');
+    } catch (e) {
+      console.error('uploadGalleryPhoto error:', e);
+      showToast('Failed to add photo. Please try again.', 'error');
+    }
+  };
+
   // Preload gallery photos when contact loads (so gallery opens instantly)
   const preloadGalleryPhotos = React.useCallback(async () => {
     if (!user || isNewContact) return;
@@ -4823,7 +4879,7 @@ function ContactDetailScreen() {
       </Modal>
 
       {/* Photo Gallery — Modern reel */}
-      <Modal visible={showPhotoViewer} animationType="slide" transparent={false} onRequestClose={() => { setShowPhotoViewer(false); setFullPhoto(null); setAllPhotos([]); setSelectedPhotoIndex(-1); }}>
+      <Modal visible={showPhotoViewer} animationType="slide" transparent={false} onDismiss={runPendingPick} onRequestClose={() => { setShowPhotoViewer(false); setFullPhoto(null); setAllPhotos([]); setSelectedPhotoIndex(-1); }}>
         <SafeAreaView style={{ flex: 1, backgroundColor: '#000' }} edges={['top']}>
         <View style={s.galleryRoot}>
           {/* Header */}
@@ -4841,7 +4897,7 @@ function ContactDetailScreen() {
             </Text>
             <TouchableOpacity
               style={s.galleryUploadBtn}
-              onPress={() => { setShowPhotoViewer(false); setFullPhoto(null); setAllPhotos([]); setSelectedPhotoIndex(-1); pickImage(); }}
+              onPress={requestAddPhotoFromGallery}
               data-testid="gallery-upload-btn"
               hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
@@ -5038,7 +5094,7 @@ function ContactDetailScreen() {
               <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 18, marginTop: 12, textAlign: 'center' }}>No photos yet</Text>
               <TouchableOpacity
                 style={{ marginTop: 20, backgroundColor: '#C9A962', borderRadius: 20, paddingHorizontal: 24, paddingVertical: 10 }}
-                onPress={() => { setShowPhotoViewer(false); pickImage(); }}
+                onPress={requestAddPhotoFromGallery}
                 data-testid="gallery-empty-upload"
               >
                 <Text style={{ color: '#000', fontWeight: '700', fontSize: 16 }}>Add Photo</Text>
