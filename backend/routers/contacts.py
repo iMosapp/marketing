@@ -671,6 +671,66 @@ async def set_profile_photo(user_id: str, contact_id: str, data: dict = Body(...
     if not photo_url:
         raise HTTPException(status_code=400, detail="photo_url is required")
 
+    # If the source is a Twilio media proxy (customer-texted photo), it isn't durable —
+    # download the bytes and re-upload to object storage so the avatar survives long-term.
+    try:
+        low = photo_url.lower()
+        if "media-proxy" in low or "api.twilio.com" in low:
+            import httpx as _httpx, os as _os, urllib.parse as _urllib
+            fetch_url = photo_url
+            # For raw twilio URLs, route through our proxy so auth is applied
+            if "api.twilio.com" in low and "media-proxy" not in low:
+                _public = _os.environ.get("PUBLIC_FACING_URL", _os.environ.get("APP_URL", "https://app.imonsocial.com"))
+                fetch_url = f"{_public}/api/webhooks/twilio/media-proxy?url={_urllib.quote(photo_url, safe='')}"
+            async with _httpx.AsyncClient(timeout=25.0, follow_redirects=True) as _client:
+                _resp = await _client.get(fetch_url)
+            if _resp.status_code == 200 and _resp.content:
+                import base64 as _b64
+                _ctype = _resp.headers.get("content-type", "image/jpeg")
+                _b64data = f"data:{_ctype};base64,{_b64.b64encode(_resp.content).decode('ascii')}"
+                from utils.image_storage import upload_image
+                _up = await upload_image(_b64data, prefix="contacts", entity_id=contact_id)
+                if _up:
+                    # Persist durable object-storage URLs and stop here (own $set path)
+                    try:
+                        old_contact = await db.contacts.find_one(
+                            {"_id": ObjectId(contact_id)},
+                            {"photo_path": 1, "photo_thumb_path": 1, "photo_url": 1, "photo_thumbnail": 1}
+                        )
+                        if old_contact:
+                            old_url = f"/api/images/{old_contact['photo_path']}" if old_contact.get("photo_path") else (old_contact.get("photo_url") or "")
+                            if old_url and old_url.startswith(("/api/images/", "http")):
+                                exists = await db.contacts.find_one(
+                                    {"_id": ObjectId(contact_id), "photo_history.url": old_url}, {"_id": 1}
+                                )
+                                if not exists:
+                                    await db.contacts.update_one(
+                                        {"_id": ObjectId(contact_id)},
+                                        {"$push": {"photo_history": {
+                                            "url": old_url,
+                                            "thumbnail_url": old_contact.get("photo_thumbnail") or old_url,
+                                            "replaced_at": datetime.now(timezone.utc).isoformat(),
+                                            "type": "profile",
+                                        }}}
+                                    )
+                    except Exception:
+                        pass
+                    durable_thumb = f"/api/images/{_up['thumbnail_path']}"
+                    await db.contacts.update_one(
+                        {"_id": ObjectId(contact_id)},
+                        {"$set": {
+                            "photo_path": _up["original_path"],
+                            "photo_thumb_path": _up["thumbnail_path"],
+                            "photo_avatar_path": _up["avatar_path"],
+                            "photo_thumbnail": durable_thumb,
+                            "photo_url": durable_thumb,
+                            "updated_at": datetime.utcnow(),
+                        }, "$unset": {"photo": ""}}
+                    )
+                    return {"message": "Profile photo updated", "photo_url": durable_thumb}
+    except Exception as e:
+        logger.warning(f"[profile-photo] durable re-upload failed, storing URL directly: {e}")
+
     # Save old photo to history before replacing
     try:
         old_contact = await db.contacts.find_one(
@@ -1356,6 +1416,59 @@ async def get_all_contact_photos(user_id: str, contact_id: str):
             "url": full_url, "thumbnail_url": thumb_url,
             "date": bc["created_at"].isoformat() if bc.get("created_at") else None,
         })
+
+    # 5. Photos texted in/out via MMS — customer-sent images (the "Jeep in Moab"
+    #    case) + photos the rep sent. Twilio media URLs are wrapped in the auth proxy.
+    try:
+        import os as _os, urllib.parse as _urllib
+        _public_url = _os.environ.get("PUBLIC_FACING_URL", _os.environ.get("APP_URL", "https://app.imonsocial.com"))
+        conv_ids = []
+        async for _conv in db.conversations.find({"contact_id": contact_id}, {"_id": 1}):
+            conv_ids.append(str(_conv["_id"]))
+        or_clauses = [{"contact_id": contact_id}]
+        if conv_ids:
+            or_clauses.append({"conversation_id": {"$in": conv_ids}})
+        msgs = await db.messages.find(
+            {"has_media": True, "$or": or_clauses},
+            {"media_urls": 1, "media_content_types": 1, "direction": 1, "sender": 1, "timestamp": 1}
+        ).sort("timestamp", -1).to_list(200)
+        first_name = (contact.get("first_name") if contact else "") or "Contact"
+        for m in msgs:
+            urls = m.get("media_urls") or []
+            ctypes = m.get("media_content_types") or []
+            is_inbound = m.get("direction") == "inbound" or m.get("sender") == "contact"
+            for ui, mu in enumerate(urls):
+                if not mu or not isinstance(mu, str):
+                    continue
+                low = mu.lower()
+                # Skip contact cards and other non-image attachments
+                if ".vcf" in low or "/vcard" in low:
+                    continue
+                ctype = ctypes[ui] if ui < len(ctypes) else ""
+                base = low.split("?")[0]
+                is_image = (
+                    (ctype.startswith("image/") if ctype else False)
+                    or base.endswith((".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic", ".heif"))
+                    # Twilio MMS media often has no extension — treat as image when no type says otherwise
+                    or ("api.twilio.com" in low and not ctype)
+                    or ("media-proxy" in low)
+                )
+                if not is_image:
+                    continue
+                # Build a displayable URL — proxy raw Twilio media so it loads with auth
+                if "api.twilio.com" in low and "media-proxy" not in low:
+                    disp = f"{_public_url}/api/webhooks/twilio/media-proxy?url={_urllib.quote(mu, safe='')}"
+                else:
+                    disp = mu
+                photos.append({
+                    "type": "message_in" if is_inbound else "message_out",
+                    "label": f"From {first_name}" if is_inbound else "You sent",
+                    "url": disp,
+                    "thumbnail_url": disp,
+                    "date": m["timestamp"].isoformat() if m.get("timestamp") else None,
+                })
+    except Exception as e:
+        logger.warning(f"[photos/all] message media fetch failed: {e}")
 
     # Deduplicate by URL — keep first occurrence (profile > history > congrats > birthday)
     seen_urls = set()

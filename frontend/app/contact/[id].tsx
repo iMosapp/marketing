@@ -5017,8 +5017,9 @@ function ContactDetailScreen() {
                         const photoUrl = allPhotos[selectedPhotoIndex]?.url;
                         if (!photoUrl) return;
                         try {
-                          await api.patch(`/contacts/${user._id}/${id}/profile-photo`, { photo_url: photoUrl });
-                          setContact((prev: any) => ({ ...prev, photo: photoUrl, photo_url: photoUrl, photo_thumbnail: photoUrl }));
+                          const r = await api.patch(`/contacts/${user._id}/${id}/profile-photo`, { photo_url: photoUrl });
+                          const durable = r.data?.photo_url ? resolvePhotoUrl(r.data.photo_url) : photoUrl;
+                          setContact((prev: any) => ({ ...prev, photo: durable, photo_url: durable, photo_thumbnail: durable }));
                           showToast('Profile photo updated!', 'success');
                           // Refresh gallery and go back to grid
                           setSelectedPhotoIndex(-1); setFullPhoto(null);
@@ -5069,8 +5070,9 @@ function ContactDetailScreen() {
                           onPress={async (e) => {
                             e.stopPropagation?.();
                             try {
-                              await api.patch(`/contacts/${user._id}/${id}/profile-photo`, { photo_url: photo.url });
-                              setContact((prev: any) => ({ ...prev, photo: photo.url, photo_url: photo.url, photo_thumbnail: photo.url }));
+                              const r = await api.patch(`/contacts/${user._id}/${id}/profile-photo`, { photo_url: photo.url });
+                              const durable = r.data?.photo_url ? resolvePhotoUrl(r.data.photo_url) : photo.url;
+                              setContact((prev: any) => ({ ...prev, photo: durable, photo_url: durable, photo_thumbnail: durable }));
                               showToast('Profile photo updated!', 'success');
                               // Refresh gallery to get correct deduped state
                               preloadGalleryPhotos();

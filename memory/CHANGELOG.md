@@ -1,5 +1,14 @@
 # CHANGELOG — iMOs App
 
+## Jun, 2026 — Contact Gallery: Include All Past Photos (COMPLETED)
+- **Request:** The contact photo gallery should include every photo tied to a contact — especially photos the customer texted in (e.g., "their Jeep on the rocks in Moab") — so any can be set as the contact photo for a birthday text/card.
+- **Backend (`contacts.py` `GET /photos/all`):** Added a new source — MMS photos from the `messages` collection for the contact's conversations. Includes inbound (customer-sent, labeled "From {first_name}") and outbound (rep-sent, "You sent") images. Image-only filter (skips `.vcf` contact cards and non-images); raw `api.twilio.com` media URLs are wrapped in the auth media-proxy so they display.
+- **Backend (`contacts.py` PATCH `/profile-photo`):** When a Twilio/proxy MMS photo is set as the profile, it's now downloaded and re-uploaded to object storage (durable) so the avatar survives Twilio media retention. Falls back to storing the URL directly if fetch fails.
+- **Frontend (`contact/[id].tsx`):** Both "set as profile" handlers now use the durable `photo_url` returned by the backend. The existing gallery grid already renders all photo types with a tap-to-set-profile action, so MMS photos are immediately usable.
+- **Verified:** Seeded inbound MMS (object-storage + raw Twilio + a `.vcf`) → gallery correctly listed the two images (Twilio one proxy-wrapped), skipped the `.vcf`; set-as-profile returned 200 for both durable and fallback paths. Test data cleaned up.
+- **Deploy note:** Backend change (Deploy button) + native frontend (`eas update --branch production`).
+
+
 ## Jun, 2026 — Contact Gallery "Add Photo" Picker Fix (COMPLETED)
 - **Bug:** In Contact → tap avatar → photo viewer → "Add Photo", the image picker never opened on iOS — it flashed and returned to the contact. Root cause: iOS cannot present the image-picker view controller while the photo-viewer `Modal` is still dismissing.
 - **Fix (frontend, `contact/[id].tsx`):** Defer launching the picker until the Modal has fully closed — added `Modal onDismiss` (iOS) with a `pendingPickRef` flag + a 350ms timeout fallback for Android/web. Both the header camera button and the empty-state "Add Photo" button now route through `requestAddPhotoFromGallery`.
