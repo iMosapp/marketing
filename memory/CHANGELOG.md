@@ -1,5 +1,12 @@
 # CHANGELOG — iMOs App
 
+## Jun, 2026 — Inbox Contact-Card (.vcf) Rendering Fix (COMPLETED)
+- **Bug:** Outbound "tap to save my number" intro messages attach a `.vcf` contact card (media_url `/api/profile/{id}/vcard.vcf`, content-type `text/vcard`). The customer's phone renders it as a native contact card (with embedded photo), but the app's own inbox tried to render the `.vcf` via `<Image>` → blank gray placeholder box.
+- **Fix (frontend only, `thread/[id].tsx`):** Detect `.vcf`/`/vcard` media URLs and render a dedicated Contact Card tile (rep's profile photo + name + "Contact Card · Tap to save", tap opens the vCard) instead of a broken image. Added `myPhoto` state fetched from `/api/profile/{user._id}`.
+- **Verified** on web preview (seeded a test vCard message, screenshot confirmed the tile renders; test data cleaned up).
+- **Deploy note:** Native frontend change — requires `eas update --branch production` to reach the live app.
+
+
 ## Mar 3, 2026 — Send Something Picker Cleanup (COMPLETED)
 - **Consolidated picker:** Removed "Enroll in Campaign" from the + button menu, moved "Create a Card" to #5, added "Photos" sub-menu (Photo Library + Camera) at #6
 - **Final order:** My Digital Card → Review Link → My Showcase → My Link Page → Create a Card → Photos

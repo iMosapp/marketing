@@ -498,6 +498,8 @@ function ThreadScreen() {
     paramPhoto ? resolvePhotoUrl(paramPhoto as string) : null
   );
   const [contactIdForNav, setContactIdForNav] = useState<string | null>(null);
+  // The rep's own profile photo — used to render outbound contact-card (.vcf) tiles
+  const [myPhoto, setMyPhoto] = useState<string | null>(null);
   
   useEffect(() => {
     if (user?._id && id) {
@@ -505,6 +507,16 @@ function ThreadScreen() {
       loadContactInfo();
     }
   }, [id, user?._id]);
+
+  useEffect(() => {
+    if (!user?._id) return;
+    api.get(`/profile/${user._id}`)
+      .then((r) => {
+        const p = r.data?.user?.photo_url;
+        if (p) setMyPhoto(resolvePhotoUrl(p));
+      })
+      .catch(() => {});
+  }, [user?._id]);
   
   // Load contact info including photo
   const loadContactInfo = async () => {
@@ -2025,6 +2037,39 @@ function ThreadScreen() {
                   ? url
                   : url ? `https://app.imonsocial.com${url.startsWith('/') ? '' : '/'}${url}` : '';
                 if (!absUrl) return null;
+
+                // Contact card (.vcf) — can't render as an image. Show a contact-card tile
+                // that mirrors what the customer receives (their saved contact w/ photo).
+                const lower = absUrl.toLowerCase();
+                const isVcard = lower.includes('.vcf') || lower.includes('/vcard');
+                if (isVcard) {
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      activeOpacity={0.9}
+                      data-testid="vcard-media-tile"
+                      onPress={() => {
+                        if (Platform.OS === 'web') { window.open(absUrl, '_blank'); }
+                        else { Linking.openURL(absUrl); }
+                      }}
+                      style={styles.vcardTile}
+                    >
+                      {myPhoto ? (
+                        <Image source={{ uri: myPhoto }} style={styles.vcardAvatar} contentFit="cover" transition={200} />
+                      ) : (
+                        <View style={[styles.vcardAvatar, styles.vcardAvatarFallback]}>
+                          <Ionicons name="person" size={26} color="#8E8E93" />
+                        </View>
+                      )}
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.vcardTitle} numberOfLines={1}>{user?.name || 'Contact Card'}</Text>
+                        <Text style={styles.vcardSubtitle}>Contact Card · Tap to save</Text>
+                      </View>
+                      <Ionicons name="person-add" size={20} color="#007AFF" />
+                    </TouchableOpacity>
+                  );
+                }
+
                 return (
                   <TouchableOpacity
                     key={index}
@@ -4062,6 +4107,37 @@ const getStyles = (colors: any) => StyleSheet.create({
   mediaImageError: {
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  vcardTile: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 4,
+    width: 240,
+  },
+  vcardAvatar: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: '#E5E5EA',
+  },
+  vcardAvatarFallback: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  vcardTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1C1C1E',
+  },
+  vcardSubtitle: {
+    fontSize: 12,
+    color: '#8E8E93',
+    marginTop: 1,
   },
   mediaErrorText: {
     color: colors.textSecondary,
