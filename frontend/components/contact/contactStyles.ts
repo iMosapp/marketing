@@ -308,6 +308,7 @@ export const getS = (colors: any) => StyleSheet.create({
   galleryTileImg: { width: '100%', height: '100%' },
   profileBadge: { position: 'absolute' as const, top: 6, left: 6, width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' },
   setProfileOverlay: { position: 'absolute' as const, bottom: 6, right: 6, width: 28, height: 28, borderRadius: 14, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'center', alignItems: 'center' },
+  gallerySectionHeader: { color: '#C9A962', fontSize: 12, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' as const, paddingHorizontal: 12, paddingTop: 18, paddingBottom: 8 },
 
   vnRecordBtn: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
   vnRecordText: { fontSize: 17, fontWeight: '600', color: colors.textSecondary },

@@ -1,5 +1,17 @@
 # CHANGELOG — iMOs App
 
+## Jun, 2026 — Gallery Sections, Camera, Use-in-Card & Security Phase 3 (COMPLETED)
+- **Photo Sections (frontend `contact/[id].tsx`):** The contact photo gallery is now grouped into sections with gold headers — **Texted In** (customer MMS), **You Sent**, **Cards** (congrats/birthday), **Profile** (current + history). Global photo indices preserved so the full-photo viewer still works. Verified on web: TEXTED IN · 1, CARDS · 1, PROFILE · 4 render with per-tile set-as-profile icons.
+- **Camera Option (frontend):** The gallery "Add Photo" now shows a native chooser — **Take Photo** (camera) or **Choose from Library**. Camera uses `launchCameraAsync` + camera-permission request; both defer their launch until the photo-viewer modal fully dismisses (iOS `onDismiss` + Android/web timeout). Web goes straight to the file picker.
+- **Use for Card (frontend):** Added a "Use for Card" button (gift icon) to the full-photo viewer. It routes to `/settings/create-card` with `prefillPhoto=<url>`; `create-card.tsx` now reads that param (init + effect) and pre-loads the recipient photo. Verified on web (photo pre-populates the card).
+- **Security Phase 3 (backend):**
+  - **Login rate limiting** (`auth.py`): MongoDB-backed brute-force protection keyed by `ip:email` — 8 failed attempts → 15-min lockout (429), cleared on success. TTL index auto-cleans `login_attempts` after 1 day. Real client IP via `cf-connecting-ip`/`x-forwarded-for`. Verified: 8×401 then 429.
+  - **Password-reset per-IP throttle** (`auth.py`): max 6 reset requests per IP / 10 min (adds to existing per-account 3/10-min + code lockout); stores `request_ip` on reset tokens.
+  - **Strict CORS** (`server.py`): allowed origins now read from `CORS_ORIGINS` env (comma-separated). Preview set to preview/prod/custom-domain/localhost. `"*"` still supported for permissive mode. Native apps unaffected (no Origin header).
+  - Env vars: `LOGIN_MAX_FAILS`, `LOGIN_LOCKOUT_MINUTES`, `RESET_IP_MAX`, `RESET_IP_WINDOW_MIN`, `CORS_ORIGINS`.
+- **⚠️ Production action needed:** Set `CORS_ORIGINS` in the PRODUCTION backend `.env` to the real web origins before/at deploy (it currently defaults to permissive there). Deploy backend via the Deploy button; push the native UI via `eas update --branch production`.
+
+
 ## Jun, 2026 — Contact Gallery: Include All Past Photos (COMPLETED)
 - **Request:** The contact photo gallery should include every photo tied to a contact — especially photos the customer texted in (e.g., "their Jeep on the rocks in Moab") — so any can be set as the contact photo for a birthday text/card.
 - **Backend (`contacts.py` `GET /photos/all`):** Added a new source — MMS photos from the `messages` collection for the contact's conversations. Includes inbound (customer-sent, labeled "From {first_name}") and outbound (rep-sent, "You sent") images. Image-only filter (skips `.vcf` contact cards and non-images); raw `api.twilio.com` media URLs are wrapped in the auth media-proxy so they display.

@@ -274,9 +274,18 @@ async def log_slow_requests(request: Request, call_next):
 
 
 # ============= CORS MIDDLEWARE =============
+# Strict, env-driven origins. Set CORS_ORIGINS to a comma-separated allowlist in
+# production (e.g. "https://app.imonsocial.com,https://imos-deploy-prep.emergent.host").
+# "*" keeps it permissive. Native apps send no Origin header, so they're unaffected.
+_cors_env = os.environ.get("CORS_ORIGINS", "*").strip()
+if _cors_env and _cors_env != "*":
+    _allowed_origins = [o.strip() for o in _cors_env.split(",") if o.strip()]
+else:
+    _allowed_origins = ["*"]
+logger.info(f"[CORS] Allowed origins: {_allowed_origins}")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_allowed_origins,
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -1610,6 +1619,8 @@ async def startup_event():
                     db.messages.create_index([("_id", 1)]),  # Ensures batch message lookups are instant
                     db.contacts.create_index([("user_id", 1), ("phone", 1)]),  # For phone dedup
                     db.contacts.create_index([("user_id", 1), ("email", 1)]),  # For email dedup
+                    # Login brute-force tracking — TTL auto-cleans stale records after 1 day
+                    db.login_attempts.create_index("updated_at", expireAfterSeconds=86400),
                     # last_activity_at — powers "recent" sort without in-memory aggregation
                     db.contacts.create_index([("user_id", 1), ("last_activity_at", -1)]),
                     db.contacts.create_index([("user_id", 1), ("last_activity_at", -1), ("status", 1)]),

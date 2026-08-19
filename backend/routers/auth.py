@@ -83,6 +83,70 @@ def verify_password(plain: str, stored: str) -> bool:
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 logger = logging.getLogger(__name__)
 
+# ── Brute-force / rate-limit protection (MongoDB-backed, survives restarts) ─────
+_LOGIN_MAX_FAILS = int(os.environ.get("LOGIN_MAX_FAILS", "8"))       # failed tries before lockout
+_LOGIN_LOCKOUT_MINUTES = int(os.environ.get("LOGIN_LOCKOUT_MINUTES", "15"))
+_RESET_IP_MAX = int(os.environ.get("RESET_IP_MAX", "6"))            # reset requests per IP / window
+_RESET_IP_WINDOW_MIN = int(os.environ.get("RESET_IP_WINDOW_MIN", "10"))
+
+
+def _client_ip(request: Optional[Request]) -> str:
+    """Extract the real client IP behind Cloudflare / K8s ingress."""
+    if request is None:
+        return "unknown"
+    hdr = request.headers
+    cf = hdr.get("cf-connecting-ip")
+    if cf:
+        return cf.strip()
+    xff = hdr.get("x-forwarded-for")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+async def _check_login_lockout(identifier: str):
+    """Raise 429 if this ip:email is currently locked out."""
+    try:
+        rec = await get_db().login_attempts.find_one({"_id": identifier})
+    except Exception:
+        return
+    if rec and rec.get("locked_until"):
+        now = datetime.now(timezone.utc)
+        locked_until = rec["locked_until"]
+        if getattr(locked_until, "tzinfo", None) is None:
+            locked_until = locked_until.replace(tzinfo=timezone.utc)
+        if locked_until > now:
+            wait = int((locked_until - now).total_seconds() // 60) + 1
+            raise HTTPException(status_code=429, detail=f"Too many login attempts. Try again in {wait} minute(s).")
+
+
+async def _record_login_failure(identifier: str):
+    """Increment failed-attempt counter; lock the identifier once the cap is hit."""
+    try:
+        from pymongo import ReturnDocument
+        now = datetime.now(timezone.utc)
+        rec = await get_db().login_attempts.find_one_and_update(
+            {"_id": identifier},
+            {"$inc": {"count": 1}, "$set": {"updated_at": now}, "$setOnInsert": {"first_at": now}},
+            upsert=True,
+            return_document=ReturnDocument.AFTER,
+        )
+        if rec and rec.get("count", 0) >= _LOGIN_MAX_FAILS:
+            await get_db().login_attempts.update_one(
+                {"_id": identifier},
+                {"$set": {"locked_until": now + timedelta(minutes=_LOGIN_LOCKOUT_MINUTES), "count": 0}},
+            )
+    except Exception as e:
+        logger.warning(f"[RateLimit] record failure failed: {e}")
+
+
+async def _clear_login_attempts(identifier: str):
+    try:
+        await get_db().login_attempts.delete_one({"_id": identifier})
+    except Exception:
+        pass
+
+
 APP_URL = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
 
 
@@ -374,7 +438,7 @@ async def test_login(credentials: dict):
 
 
 @router.post("/login")
-async def login(credentials: dict):
+async def login(credentials: dict, request: Request = None):
     """Login with email and password"""
     import re
     from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError, NetworkTimeout
@@ -383,6 +447,10 @@ async def login(credentials: dict):
     
     if not email or not password:
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    # Brute-force protection — lock out repeated failures per ip:email
+    rl_id = f"{_client_ip(request)}:{email}"
+    await _check_login_lockout(rl_id)
     
     # Case-insensitive email lookup (escape regex special chars in email)
     escaped_email = re.escape(email)
@@ -401,6 +469,7 @@ async def login(credentials: dict):
         raise HTTPException(status_code=503, detail="Service temporarily unavailable")
     if not user:
         logger.warning(f"Login failed: no user found for email '{email}'")
+        await _record_login_failure(rl_id)
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
     if not verify_password(password, user.get('password', '')):
@@ -408,7 +477,11 @@ async def login(credentials: dict):
         stored_pw = user.get('password', '')
         is_hashed = stored_pw.startswith("$2b$") or stored_pw.startswith("$2a$")
         logger.warning(f"Login failed: wrong password for email '{email}' (stored_is_hashed={is_hashed}, bcrypt_available={BCRYPT_AVAILABLE}, pw_len={len(stored_pw)})")
+        await _record_login_failure(rl_id)
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    # Success — clear any failed-attempt record for this ip:email
+    await _clear_login_attempts(rl_id)
     
     # Auto-upgrade legacy plain-text passwords to bcrypt (always hash, even if bcrypt unavailable next deploy)
     stored_pw = user.get('password', '')
@@ -689,7 +762,7 @@ async def logout_session():
     return resp
 
 @router.post("/forgot-password/request")
-async def request_password_reset(data: dict):
+async def request_password_reset(data: dict, request: Request = None):
     """
     Request a 6-digit SMS reset code.
     Accepts phone number OR email. Looks up the user, sends code via Twilio SMS
@@ -701,6 +774,21 @@ async def request_password_reset(data: dict):
     identifier = (data.get('phone') or data.get('email') or '').strip()
     if not identifier:
         raise HTTPException(status_code=400, detail="Phone number or email is required")
+
+    # Per-IP throttle — stops a single source hammering reset for many accounts
+    try:
+        ip = _client_ip(request)
+        window_start = datetime.utcnow().timestamp() - (_RESET_IP_WINDOW_MIN * 60)
+        ip_recent = await db.password_reset_tokens.count_documents({
+            "request_ip": ip,
+            "created_at": {"$gte": window_start},
+        })
+        if ip_recent >= _RESET_IP_MAX:
+            raise HTTPException(status_code=429, detail="Too many reset requests. Please wait a few minutes.")
+    except HTTPException:
+        raise
+    except Exception:
+        pass
 
     # Normalize phone to E.164 if it looks like a phone
     digits = re.sub(r'\D', '', identifier)
@@ -742,6 +830,7 @@ async def request_password_reset(data: dict):
         "expires_at":  now_ts + 600,  # 10 minutes
         "attempts":    0,
         "used":        False,
+        "request_ip":  _client_ip(request),
     })
 
     # Get the phone to send to

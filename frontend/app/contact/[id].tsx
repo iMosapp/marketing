@@ -1602,9 +1602,27 @@ function ContactDetailScreen() {
     }
   };
 
+  // Drop a gallery photo straight into a new card (birthday/congrats/etc.)
+  const usePhotoForCard = (photoUrl: string) => {
+    if (!photoUrl) return;
+    const contactName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim();
+    const params = new URLSearchParams({
+      type: 'congrats',
+      prefillName: contactName,
+      prefillPhone: contact.phone || '',
+      prefillEmail: contact.email || '',
+      prefillPhoto: photoUrl,
+      for_contact: id as string,
+      return_to_contact: 'true',
+    });
+    setShowPhotoViewer(false);
+    setSelectedPhotoIndex(-1);
+    setFullPhoto(null);
+    router.push(`/settings/create-card?${params.toString()}`);
+  };
+
   // Handle card template selection → navigate to card creation and return
-  const handleCardTemplateSelect = (cardType: string) => {
-    setShowCardTemplatePicker(false);
+  const handleCardTemplateSelect = (cardType: string) => {    setShowCardTemplatePicker(false);
     const contactName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim();
     const params = new URLSearchParams({
       type: cardType,
@@ -1759,29 +1777,60 @@ function ContactDetailScreen() {
     }
   };
 
-  // iOS cannot present the image picker while the photo-viewer Modal is still
-  // dismissing (it opens then instantly closes). Defer the picker until the
+  // iOS cannot present the image picker/camera while the photo-viewer Modal is
+  // still dismissing (it opens then instantly closes). Defer the launch until the
   // modal has fully closed: use the Modal's onDismiss (iOS) with a timeout fallback.
-  const pendingPickRef = useRef(false);
+  const pendingActionRef = useRef<null | 'library' | 'camera'>(null);
   const requestAddPhotoFromGallery = () => {
-    pendingPickRef.current = true;
+    // Web has no native camera picker — go straight to the file picker.
+    if (Platform.OS === 'web') { startDeferredPick('library'); return; }
+    showAlert('Add Photo', undefined, [
+      { text: 'Take Photo', onPress: () => startDeferredPick('camera') },
+      { text: 'Choose from Library', onPress: () => startDeferredPick('library') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+  const startDeferredPick = (action: 'library' | 'camera') => {
+    pendingActionRef.current = action;
     setShowPhotoViewer(false);
     setFullPhoto(null);
     setAllPhotos([]);
     setSelectedPhotoIndex(-1);
     if (Platform.OS !== 'ios') {
       // Android/web don't reliably fire Modal.onDismiss — use a short delay
-      setTimeout(() => {
-        if (pendingPickRef.current) { pendingPickRef.current = false; uploadGalleryPhoto(); }
-      }, 350);
+      setTimeout(runPendingPick, 350);
     }
   };
   const runPendingPick = () => {
-    if (pendingPickRef.current) { pendingPickRef.current = false; uploadGalleryPhoto(); }
+    const action = pendingActionRef.current;
+    pendingActionRef.current = null;
+    if (action === 'camera') captureGalleryPhoto();
+    else if (action === 'library') uploadGalleryPhoto();
   };
 
-  // Pick a photo from the library and immediately persist it to the contact +
-  // gallery (used from the photo-viewer "Add Photo" button, which has no Save step).
+  // Upload a picked/captured asset to the contact + gallery immediately (no Save step).
+  const persistPickedPhoto = async (asset: any) => {
+    const photoData = asset?.base64
+      ? `data:image/jpeg;base64,${asset.base64}`
+      : asset?.uri || null;
+    if (!photoData) {
+      showToast('Could not load the selected photo. Please try again.', 'warning');
+      return;
+    }
+    showToast('Uploading photo...', 'info');
+    const resp = await api.post(`/contacts/${user._id}/${id}/photo`, { photo: photoData });
+    const newUrl = resp.data?.photo_url;
+    setContact((prev: any) => ({
+      ...prev,
+      photo: newUrl ? resolvePhotoUrl(newUrl) : photoData,
+      photo_url: newUrl || prev?.photo_url,
+      photo_thumbnail: newUrl || prev?.photo_thumbnail,
+    }));
+    await preloadGalleryPhotos();
+    showToast('Photo added!', 'success');
+  };
+
+  // Choose an existing photo from the library.
   const uploadGalleryPhoto = async () => {
     if (!user?._id || !id) return;
     try {
@@ -1790,28 +1839,31 @@ function ContactDetailScreen() {
         allowsEditing: true, aspect: [1, 1], quality: 0.5, base64: true,
       });
       if (result.canceled || !result.assets || result.assets.length === 0) return;
-      const asset = result.assets[0];
-      const photoData = asset.base64
-        ? `data:image/jpeg;base64,${asset.base64}`
-        : asset.uri || null;
-      if (!photoData) {
-        showToast('Could not load the selected photo. Please try again.', 'warning');
-        return;
-      }
-      showToast('Uploading photo...', 'info');
-      const resp = await api.post(`/contacts/${user._id}/${id}/photo`, { photo: photoData });
-      const newUrl = resp.data?.photo_url;
-      setContact((prev: any) => ({
-        ...prev,
-        photo: newUrl ? resolvePhotoUrl(newUrl) : photoData,
-        photo_url: newUrl || prev?.photo_url,
-        photo_thumbnail: newUrl || prev?.photo_thumbnail,
-      }));
-      await preloadGalleryPhotos();
-      showToast('Photo added!', 'success');
+      await persistPickedPhoto(result.assets[0]);
     } catch (e) {
       console.error('uploadGalleryPhoto error:', e);
       showToast('Failed to add photo. Please try again.', 'error');
+    }
+  };
+
+  // Snap a brand-new photo with the camera.
+  const captureGalleryPhoto = async () => {
+    if (!user?._id || !id) return;
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (perm.status !== 'granted') {
+        showSimpleAlert('Camera Permission', 'Camera access is required to take a photo.');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true, aspect: [1, 1], quality: 0.5, base64: true,
+      });
+      if (result.canceled || !result.assets || result.assets.length === 0) return;
+      await persistPickedPhoto(result.assets[0]);
+    } catch (e) {
+      console.error('captureGalleryPhoto error:', e);
+      showToast('Failed to take photo. Please try again.', 'error');
     }
   };
 
@@ -2430,7 +2482,7 @@ function ContactDetailScreen() {
             <View style={s.heroRow}>
               {/* Left: Avatar */}
               <View style={s.heroAvatarContainer}>
-                <TouchableOpacity onPress={isEditing ? pickImage : viewFullPhoto} activeOpacity={isEditing ? 0.7 : 0.8}>
+                <TouchableOpacity onPress={isEditing ? pickImage : viewFullPhoto} activeOpacity={isEditing ? 0.7 : 0.8} data-testid="contact-avatar-btn">
                   {contact.photo ? (
                     <Image source={{ uri: resolvePhotoUrl(contact.photo) }} style={s.heroAvatar} />
                   ) : (
@@ -5031,62 +5083,86 @@ function ContactDetailScreen() {
                       <Ionicons name="person-circle" size={18} color="#000" />
                     </TouchableOpacity>
                   )}
+                  <TouchableOpacity
+                    style={[s.viewerActionBtn, { backgroundColor: '#5856D6' }]}
+                    onPress={() => usePhotoForCard(allPhotos[selectedPhotoIndex]?.url)}
+                    data-testid="use-for-card-btn"
+                  >
+                    <Ionicons name="gift" size={18} color="#FFF" />
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
           ) : allPhotos.length > 0 ? (
-            /* === INSTAGRAM-STYLE 3-COLUMN GRID === */
+            /* === SECTIONED 3-COLUMN GRID (Texted In · Sent · Cards · Profile) === */
             <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }}>
-              <View
-                style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 1 }}
-                onLayout={(e) => setGalleryWidth(e.nativeEvent.layout.width)}
-              >
-                {galleryWidth > 0 && allPhotos.map((photo: any, idx: number) => {
-                  const isProfile = photo.type === 'profile';
+              <View onLayout={(e) => setGalleryWidth(e.nativeEvent.layout.width)}>
+                {galleryWidth > 0 && (() => {
                   const tileSize = Math.floor((galleryWidth - 2) / 3);
-                  return (
-                    <TouchableOpacity
-                      key={`${photo.type}-${idx}`}
-                      activeOpacity={0.85}
-                      onPress={() => { setSelectedPhotoIndex(idx); setFullPhoto(photo.url); }}
-                      data-testid={`gallery-tile-${idx}`}
-                      style={{ width: tileSize, height: tileSize, overflow: 'hidden', position: 'relative', backgroundColor: '#111' }}
-                    >
-                      <Image
-                        source={{ uri: photo.thumbnail_url || photo.url }}
-                        style={{ width: tileSize, height: tileSize }}
-                        contentFit="cover"
-                        transition={250}
-                        cachePolicy="memory-disk"
-                      />
-                      {isProfile && (
-                        <View style={s.profileBadge} data-testid="profile-badge">
-                          <Ionicons name="person-circle" size={14} color="#C9A962" />
+                  const indexed = allPhotos.map((p: any, i: number) => ({ ...p, _gi: i }));
+                  const SECTIONS: { title: string; types: string[] }[] = [
+                    { title: 'Texted In', types: ['message_in'] },
+                    { title: 'You Sent', types: ['message_out'] },
+                    { title: 'Cards', types: ['congrats', 'birthday'] },
+                    { title: 'Profile', types: ['profile', 'history'] },
+                  ];
+                  const renderTile = (photo: any) => {
+                    const isProfile = photo.type === 'profile';
+                    return (
+                      <TouchableOpacity
+                        key={`${photo.type}-${photo._gi}`}
+                        activeOpacity={0.85}
+                        onPress={() => { setSelectedPhotoIndex(photo._gi); setFullPhoto(photo.url); }}
+                        data-testid={`gallery-tile-${photo._gi}`}
+                        style={{ width: tileSize, height: tileSize, overflow: 'hidden', position: 'relative', backgroundColor: '#111' }}
+                      >
+                        <Image
+                          source={{ uri: photo.thumbnail_url || photo.url }}
+                          style={{ width: tileSize, height: tileSize }}
+                          contentFit="cover"
+                          transition={250}
+                          cachePolicy="memory-disk"
+                        />
+                        {isProfile && (
+                          <View style={s.profileBadge} data-testid="profile-badge">
+                            <Ionicons name="person-circle" size={14} color="#C9A962" />
+                          </View>
+                        )}
+                        {!isProfile && (
+                          <TouchableOpacity
+                            style={s.setProfileOverlay}
+                            onPress={async (e) => {
+                              e.stopPropagation?.();
+                              try {
+                                const r = await api.patch(`/contacts/${user._id}/${id}/profile-photo`, { photo_url: photo.url });
+                                const durable = r.data?.photo_url ? resolvePhotoUrl(r.data.photo_url) : photo.url;
+                                setContact((prev: any) => ({ ...prev, photo: durable, photo_url: durable, photo_thumbnail: durable }));
+                                showToast('Profile photo updated!', 'success');
+                                preloadGalleryPhotos();
+                              } catch { showSimpleAlert('Error', 'Failed to update'); }
+                            }}
+                            data-testid={`set-profile-${photo._gi}`}
+                            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                          >
+                            <Ionicons name="person-circle-outline" size={16} color="#FFF" />
+                          </TouchableOpacity>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  };
+                  return SECTIONS.map((sec) => {
+                    const items = indexed.filter((p: any) => sec.types.includes(p.type));
+                    if (items.length === 0) return null;
+                    return (
+                      <View key={sec.title} data-testid={`gallery-section-${sec.title.toLowerCase().replace(/\s+/g, '-')}`}>
+                        <Text style={s.gallerySectionHeader}>{sec.title} · {items.length}</Text>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 1 }}>
+                          {items.map(renderTile)}
                         </View>
-                      )}
-                      {!isProfile && (
-                        <TouchableOpacity
-                          style={s.setProfileOverlay}
-                          onPress={async (e) => {
-                            e.stopPropagation?.();
-                            try {
-                              const r = await api.patch(`/contacts/${user._id}/${id}/profile-photo`, { photo_url: photo.url });
-                              const durable = r.data?.photo_url ? resolvePhotoUrl(r.data.photo_url) : photo.url;
-                              setContact((prev: any) => ({ ...prev, photo: durable, photo_url: durable, photo_thumbnail: durable }));
-                              showToast('Profile photo updated!', 'success');
-                              // Refresh gallery to get correct deduped state
-                              preloadGalleryPhotos();
-                            } catch { showSimpleAlert('Error', 'Failed to update'); }
-                          }}
-                          data-testid={`set-profile-${idx}`}
-                          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                        >
-                          <Ionicons name="person-circle-outline" size={16} color="#FFF" />
-                        </TouchableOpacity>
-                      )}
-                    </TouchableOpacity>
-                  );
-                })}
+                      </View>
+                    );
+                  });
+                })()}
               </View>
             </ScrollView>
           ) : (

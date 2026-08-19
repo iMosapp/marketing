@@ -30,7 +30,7 @@ export default function CreateCardPage() {
   const { colors } = useThemeStore();
   const s = getS(colors);
   const router = useRouter();
-  const { type, prefillName, prefillPhone, prefillEmail, returnToThread, for_contact, return_to_contact, generic: genericParam, sold_flow: soldFlowParam } = useLocalSearchParams<{ type: string; prefillName: string; prefillPhone: string; prefillEmail: string; returnToThread: string; for_contact: string; return_to_contact: string; generic: string; sold_flow: string }>();
+  const { type, prefillName, prefillPhone, prefillEmail, prefillPhoto, returnToThread, for_contact, return_to_contact, generic: genericParam, sold_flow: soldFlowParam } = useLocalSearchParams<{ type: string; prefillName: string; prefillPhone: string; prefillEmail: string; prefillPhoto: string; returnToThread: string; for_contact: string; return_to_contact: string; generic: string; sold_flow: string }>();
   const { user } = useAuthStore();
   const cardType = type || 'congrats';
   const baseMeta = TYPE_META[cardType] || { label: cardType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) + ' Card', icon: 'create-outline', accent: '#C9A962', headline: cardType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), message: 'A special card for {name}!' };
@@ -80,7 +80,15 @@ export default function CreateCardPage() {
   const [customerPhone, setCustomerPhone] = useState(prefillPhone || '');
   const [customerEmail, setCustomerEmail] = useState(prefillEmail || '');
   const [customMessage, setCustomMessage] = useState('');
-  const [photo, setPhoto] = useState(null);
+  const [photo, setPhoto] = useState<any>(prefillPhoto ? { uri: prefillPhoto as string, type: 'image/jpeg', name: 'photo.jpg' } : null);
+
+  // Prefill the recipient photo when arriving from "Use for Card" (gallery).
+  useEffect(() => {
+    if (prefillPhoto && !photo) {
+      setPhoto({ uri: prefillPhoto as string, type: 'image/jpeg', name: 'photo.jpg' });
+      setIsGeneric(false);
+    }
+  }, [prefillPhoto]);
   const [creating, setCreating] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [createdCard, setCreatedCard] = useState(null);
