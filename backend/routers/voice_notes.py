@@ -9,7 +9,7 @@ import base64
 import logging
 from datetime import datetime, timezone
 from typing import Optional
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Request
 from pydantic import BaseModel
 from bson import ObjectId
 
@@ -21,6 +21,84 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/voice-notes", tags=["voice-notes"])
 
 MAX_DURATION_SECONDS = 180  # 3 minute cap
+
+
+@router.post("/admin/backfill-audio-urls")
+async def backfill_audio_urls(request: Request):
+    """Re-link voice notes whose audio_url was never saved (storage response bug).
+    Matches DB notes to storage files per contact by upload timestamp. Super admin only."""
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authentication required")
+    from routers.auth import verify_jwt_token
+    payload = verify_jwt_token(auth[7:])
+    caller_id = payload.get("sub") if payload else None
+    if not caller_id:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    db = get_db()
+    try:
+        caller = await db.users.find_one({"_id": ObjectId(caller_id)}, {"role": 1})
+    except Exception:
+        caller = None
+    if not caller or caller.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Super admin access required")
+    return await run_audio_backfill()
+
+
+async def run_audio_backfill() -> dict:
+    """Core backfill: re-link voice notes with empty audio_url to their storage files."""
+    import asyncio
+    from utils.image_storage import list_objects
+
+    db = get_db()
+    notes = await db.voice_notes.find({
+        "$or": [{"audio_url": {"$in": [None, ""]}}, {"audio_url": {"$exists": False}}]
+    }).to_list(2000)
+    if not notes:
+        return {"fixed": 0, "unmatched": 0, "notes_scanned": 0}
+
+    def _lm(o):
+        try:
+            return datetime.fromisoformat(o.get("last_modified", "").replace("Z", "+00:00"))
+        except Exception:
+            return datetime.min.replace(tzinfo=timezone.utc)
+
+    by_contact: dict = {}
+    for n in notes:
+        by_contact.setdefault(n["contact_id"], []).append(n)
+
+    fixed = unmatched = 0
+    for cid, cnotes in by_contact.items():
+        try:
+            objs = await asyncio.to_thread(list_objects, f"voice-notes/{cid}/")
+        except Exception as e:
+            logger.warning(f"[VoiceBackfill] list failed for {cid}: {e}")
+            unmatched += len(cnotes)
+            continue
+        used: set = set()
+        for n in sorted(cnotes, key=lambda x: x.get("created_at") or datetime.min):
+            n_ts = n.get("created_at")
+            if n_ts and n_ts.tzinfo is None:
+                n_ts = n_ts.replace(tzinfo=timezone.utc)
+            best, best_diff = None, None
+            for o in objs:
+                if o["path"] in used:
+                    continue
+                diff = abs((_lm(o) - n_ts).total_seconds()) if n_ts else 0
+                if best is None or diff < best_diff:
+                    best, best_diff = o, diff
+            if best:
+                used.add(best["path"])
+                await db.voice_notes.update_one(
+                    {"_id": n["_id"]},
+                    {"$set": {"audio_path": best["path"], "audio_url": f"/api/images/{best['path']}"}}
+                )
+                fixed += 1
+            else:
+                unmatched += 1
+
+    logger.info(f"[VoiceBackfill] fixed={fixed} unmatched={unmatched} of {len(notes)}")
+    return {"fixed": fixed, "unmatched": unmatched, "notes_scanned": len(notes)}
 
 
 class VoiceNoteOut(BaseModel):
@@ -96,7 +174,8 @@ async def create_voice_note(
     storage_path = f"voice-notes/{contact_id}/{filename}"
     try:
         result = put_object(storage_path, audio_bytes, content_type)
-        audio_url = result.get("url", "")
+        stored_path = result.get("path") or storage_path
+        audio_url = f"/api/images/{stored_path}"
     except Exception as e:
         logger.error(f"Voice note upload failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to store audio")
@@ -110,6 +189,7 @@ async def create_voice_note(
         "contact_id": contact_id,
         "user_id": user_id,
         "audio_url": audio_url,
+        "audio_path": stored_path,
         "transcript": transcript,
         "duration": round(duration, 1),
         "created_at": now,

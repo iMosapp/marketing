@@ -336,6 +336,39 @@ async def serve_image(path: str, request: Request):
                 content_type = "image/jpeg"
             except Exception:
                 pass
+
+        # Audio: infer content type from extension when storage didn't record one
+        if not content_type or content_type == "application/octet-stream":
+            _p = path.lower().split("?")[0]
+            for _e, _ct in ((".m4a", "audio/mp4"), (".mp3", "audio/mpeg"),
+                            (".wav", "audio/wav"), (".webm", "audio/webm")):
+                if _p.endswith(_e):
+                    content_type = _ct
+                    break
+
+        # Range requests — iOS AVPlayer needs ranged responses for audio playback
+        range_header = request.headers.get("range", "")
+        if range_header.startswith("bytes="):
+            try:
+                spec = range_header[6:].split("-")
+                start = int(spec[0]) if spec[0] else 0
+                end = int(spec[1]) if len(spec) > 1 and spec[1] else len(data) - 1
+                end = min(end, len(data) - 1)
+                if 0 <= start <= end:
+                    return Response(
+                        content=data[start:end + 1],
+                        status_code=206,
+                        media_type=content_type,
+                        headers={
+                            "Content-Range": f"bytes {start}-{end}/{len(data)}",
+                            "Accept-Ranges": "bytes",
+                            "Cache-Control": "public, max-age=31536000, immutable",
+                            "ETag": f'"{etag}"',
+                        },
+                    )
+            except Exception:
+                pass
+
         return Response(
             content=data,
             media_type=content_type,
@@ -343,8 +376,11 @@ async def serve_image(path: str, request: Request):
                 "Cache-Control": "public, max-age=31536000, immutable",
                 "ETag": f'"{etag}"',
                 "Vary": "Accept-Encoding",
+                "Accept-Ranges": "bytes",
             },
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to serve image {path}: {e}")
         raise HTTPException(status_code=404, detail="Image not found")

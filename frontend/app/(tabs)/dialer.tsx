@@ -12,9 +12,13 @@ import { contactsAPI } from '../../services/api';
 import api from '../../services/api';
 
 const IS_WEB = Platform.OS === 'web';
-const { width: SCREEN_W } = Dimensions.get('window');
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 const PAD_SIDE = Math.min(SCREEN_W, 420);
-const BTN_SIZE = Math.min(Math.floor((PAD_SIDE - 80) / 3), 80);
+// Cap keypad button size by HEIGHT too so the pad never overflows the top of the screen
+// Chrome above/below keypad: safe areas + search + toggle + indicator + number + matches + tab bar
+const CHROME_H = 470;
+const HEIGHT_BTN = Math.floor((SCREEN_H - CHROME_H - 58) / 5);
+const BTN_SIZE = Math.max(52, Math.min(Math.floor((PAD_SIDE - 80) / 3), 80, HEIGHT_BTN));
 const BTN_GAP = Math.floor((PAD_SIDE - 64 - BTN_SIZE * 3) / 2);
 
 const DIAL_KEYS: { num: string; letters: string }[] = [
@@ -40,6 +44,10 @@ export default function DialerScreen() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [contacts, setContacts] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [serverResults, setServerResults] = useState<any[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [dialMatches, setDialMatches] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<'keypad' | 'recents'>('keypad');
   const [recentCalls, setRecentCalls] = useState<any[]>([]);
   const [recentsLoading, setRecentsLoading] = useState(false);
@@ -52,15 +60,42 @@ export default function DialerScreen() {
     }
   }, [user, isPending]);
 
-  // Matching contacts as user dials
-  const matchingContacts = useMemo(() => {
-    if (!phoneNumber || phoneNumber.length < 3) return [];
+  // Server-side name/number search — searches the FULL contact book, not just loaded page
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < 2 || !user?._id) { setServerResults([]); return; }
+    const qSend = /^[\d\s\-()+.]+$/.test(q) ? q.replace(/\D/g, '') : q;
+    const t = setTimeout(async () => {
+      try {
+        setSearching(true);
+        const data = await contactsAPI.getAll(user._id, qSend, undefined, undefined, 0, 30);
+        const results = (Array.isArray(data) ? data : (data?.contacts || []))
+          .filter((c: any) => (c.phone || '').replace(/\D/g, '').length >= 7);
+        setServerResults(results);
+      } catch { /* keep last results */ } finally {
+        setSearching(false);
+      }
+    }, 250);
+    return () => clearTimeout(t);
+  }, [searchQuery, user?._id]);
+
+  // Server-side match as user dials digits on the keypad
+  useEffect(() => {
     const digits = phoneNumber.replace(/\D/g, '');
-    return contacts.filter(c => {
-      const cDigits = (c.phone || '').replace(/\D/g, '');
-      return cDigits.includes(digits);
-    }).slice(0, 5);
-  }, [phoneNumber, contacts]);
+    if (digits.length < 3 || !user?._id) { setDialMatches([]); return; }
+    const t = setTimeout(async () => {
+      try {
+        const data = await contactsAPI.getAll(user._id, digits, undefined, undefined, 0, 10);
+        setDialMatches(Array.isArray(data) ? data : (data?.contacts || []));
+      } catch { /* keep last */ }
+    }, 250);
+    return () => clearTimeout(t);
+  }, [phoneNumber, user?._id]);
+
+  const matchingContacts = useMemo(() => {
+    if (!phoneNumber || phoneNumber.replace(/\D/g, '').length < 3) return [];
+    return dialMatches.slice(0, 5);
+  }, [phoneNumber, dialMatches]);
 
   const handleDialPress = (num: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -77,10 +112,12 @@ export default function DialerScreen() {
     if (!numberToCall) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
-    // Find matching contact for logging
+    // Find matching contact for logging — check live search results first, then loaded page
     const digits = numberToCall.replace(/\D/g, '');
     const suffix = digits.length >= 10 ? digits.slice(-10) : digits;
-    const match = contacts.find((c: any) => (c.phone || '').replace(/\D/g, '').endsWith(suffix));
+    const match = [...dialMatches, ...serverResults, ...contacts].find(
+      (c: any) => (c.phone || '').replace(/\D/g, '').endsWith(suffix)
+    );
     const contactName = match ? `${match.first_name || ''} ${match.last_name || ''}`.trim() : '';
     const contactId = match?._id || '';
 
@@ -169,15 +206,11 @@ export default function DialerScreen() {
     return full.length > 14 ? full.slice(0, 12) + '...' : full;
   };
 
-  // Name search matches
+  // Name search matches — server results (full contact book)
   const nameMatches = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return [];
-    return contacts.filter(c => {
-      const full = `${c.first_name || ''} ${c.last_name || ''}`.toLowerCase();
-      return full.includes(q) && (c.phone || '').replace(/\D/g, '').length >= 7;
-    }).slice(0, 20);
-  }, [searchQuery, contacts]);
+    if (searchQuery.trim().length < 2) return [];
+    return serverResults.slice(0, 20);
+  }, [searchQuery, serverResults]);
 
   const handleSearchCall = (c: any) => {
     Keyboard.dismiss();
@@ -233,10 +266,12 @@ export default function DialerScreen() {
         <Ionicons name="search" size={18} color={colors.textSecondary} />
         <TextInput
           style={{ flex: 1, fontSize: 16, color: colors.text, marginLeft: 8, height: 42 }}
-          placeholder="Search contacts by name"
+          placeholder="Search by name or number"
           placeholderTextColor={colors.textTertiary || colors.textSecondary}
           value={searchQuery}
           onChangeText={setSearchQuery}
+          onFocus={() => setSearchFocused(true)}
+          onBlur={() => setSearchFocused(false)}
           autoCorrect={false}
           autoCapitalize="words"
           returnKeyType="search"
@@ -269,15 +304,22 @@ export default function DialerScreen() {
         ))}
       </View>
 
-      {searchQuery.trim().length > 0 ? (
-        /* ─── Search Results ─── */
+      {(searchFocused || searchQuery.trim().length > 0) ? (
+        /* ─── Search Results (also shown while search is focused so the keypad never overlaps the keyboard) ─── */
         <ScrollView
           style={{ flex: 1, marginTop: 10 }}
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
           keyboardShouldPersistTaps="handled"
           data-testid="dialer-search-results"
         >
-          {nameMatches.length === 0 ? (
+          {searchQuery.trim().length < 2 ? (
+            <View style={{ alignItems: 'center', paddingTop: 40 }}>
+              <Ionicons name="search" size={32} color={colors.textTertiary || colors.textSecondary} />
+              <Text style={{ fontSize: 16, color: colors.textSecondary, marginTop: 8 }}>Type a name or number</Text>
+            </View>
+          ) : searching && nameMatches.length === 0 ? (
+            <ActivityIndicator size="small" color={colors.textSecondary} style={{ marginTop: 40 }} />
+          ) : nameMatches.length === 0 ? (
             <View style={{ alignItems: 'center', paddingTop: 40 }}>
               <Ionicons name="person-outline" size={32} color={colors.textTertiary || colors.textSecondary} />
               <Text style={{ fontSize: 16, color: colors.textSecondary, marginTop: 8 }}>No contacts found</Text>
@@ -357,7 +399,7 @@ export default function DialerScreen() {
           )}
         </ScrollView>
       ) : (
-      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+      <View style={{ flex: 1, justifyContent: 'flex-end', overflow: 'hidden' }}>
 
         {/* Twilio number indicator */}
         {((user as any)?.twilio_number || (user as any)?.mvpline_number) ? (

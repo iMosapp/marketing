@@ -127,6 +127,19 @@ def put_object(path: str, data: bytes, content_type: str) -> dict:
     return resp.json()
 
 
+def list_objects(prefix: str) -> list:
+    """List objects in storage under a prefix. Returns [{path, size, last_modified}, ...]."""
+    key = init_storage()
+    resp = requests.get(
+        f"{STORAGE_URL}/objects",
+        params={"prefix": prefix},
+        headers={"X-Storage-Key": key},
+        timeout=60,
+    )
+    resp.raise_for_status()
+    return resp.json().get("objects", [])
+
+
 def get_object(path: str):
     """Fetch image with cache-first strategy."""
     cached = _cache.get(path)

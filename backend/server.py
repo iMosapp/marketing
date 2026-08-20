@@ -1545,6 +1545,17 @@ async def startup_event():
 
     import asyncio as _aio2
     _aio2.create_task(_consolidate_phone_contacts())
+
+    # Self-heal: re-link voice notes whose audio_url was never saved (storage response bug)
+    async def _voice_note_backfill():
+        try:
+            from routers.voice_notes import run_audio_backfill
+            result = await run_audio_backfill()
+            if result.get("notes_scanned"):
+                logger.info(f"[Startup] Voice note audio backfill: {result}")
+        except Exception as e:
+            logger.warning(f"[Startup] Voice note backfill skipped: {e}")
+    _aio2.create_task(_voice_note_backfill())
     # Removes any accidentally-stored test prompts from the ai_clone_prompts collection
     try:
         db = get_db()
