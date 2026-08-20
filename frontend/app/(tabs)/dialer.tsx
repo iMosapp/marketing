@@ -535,11 +535,17 @@ export default function DialerScreen() {
                   activeOpacity={0.5}
                   data-testid={`dial-${key.num === '*' ? 'star' : key.num === '#' ? 'hash' : key.num}`}
                 >
-                  <Text style={{ fontSize: 30, fontWeight: '400', color: colors.text, lineHeight: 34 }}>
+                  <Text
+                    style={{ fontSize: Math.round(BTN_SIZE * 0.42), fontWeight: '400', color: colors.text, lineHeight: Math.round(BTN_SIZE * 0.46), includeFontPadding: false }}
+                    maxFontSizeMultiplier={1}
+                  >
                     {key.num}
                   </Text>
                   {key.letters ? (
-                    <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textSecondary, letterSpacing: 1.5, marginTop: -1 }}>
+                    <Text
+                      style={{ fontSize: Math.max(9, Math.round(BTN_SIZE * 0.14)), fontWeight: '700', color: colors.textSecondary, letterSpacing: 1.2, lineHeight: Math.max(10, Math.round(BTN_SIZE * 0.16)), includeFontPadding: false }}
+                      maxFontSizeMultiplier={1}
+                    >
                       {key.letters}
                     </Text>
                   ) : null}
