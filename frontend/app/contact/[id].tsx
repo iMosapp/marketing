@@ -14,6 +14,7 @@ import {
   Linking,
   Dimensions,
   useWindowDimensions,
+  Switch,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -1727,6 +1728,34 @@ function ContactDetailScreen() {
         }
       }
     );
+  };
+
+  // Toggle birthday/anniversary send opt-in (adds/removes the manual tag; never fires a send)
+  const toggleDateOptin = async (occasion: 'birthday' | 'anniversary', enable: boolean) => {
+    if (!user?._id || !id) return;
+    const tag = occasion === 'birthday' ? 'Birthday' : 'Anniversary';
+    setContact((prev: any) => ({
+      ...prev,
+      tags: enable
+        ? [...(prev.tags || []).filter((t: string) => t.toLowerCase() !== tag.toLowerCase()), tag]
+        : (prev.tags || []).filter((t: string) => t.toLowerCase() !== tag.toLowerCase()),
+    }));
+    try {
+      await api.post(`/contacts/${user._id}/date-optins/bulk`, {
+        contact_ids: [String(id)],
+        occasion,
+        enable,
+      });
+      showToast(enable ? `${tag} sends ON` : `${tag} sends OFF`);
+    } catch (e) {
+      setContact((prev: any) => ({
+        ...prev,
+        tags: enable
+          ? (prev.tags || []).filter((t: string) => t.toLowerCase() !== tag.toLowerCase())
+          : [...(prev.tags || []), tag],
+      }));
+      showSimpleAlert('Error', 'Could not update. Try again.');
+    }
   };
 
   // Group events by date for collapsible sections
@@ -3705,6 +3734,53 @@ function ContactDetailScreen() {
                       <Text style={s.viewRowValue}>{format(cd.date, 'MMM d, yyyy')}</Text>
                     </View>
                   ))}
+
+                  {/* Opt-in toggles: date sends fire ONLY when these are ON */}
+                  {(() => {
+                    const tl = (contact.tags || []).map((t: string) => (t || '').toLowerCase());
+                    const bOn = tl.includes('birthday');
+                    const aOn = tl.includes('anniversary');
+                    return (
+                      <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(128,128,128,0.15)' }}>
+                        {contact.birthday && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }} data-testid="birthday-optin-row">
+                            <Ionicons name={bOn ? 'notifications' : 'notifications-off'} size={16} color={bOn ? '#34C759' : '#8E8E93'} />
+                            <View style={{ flex: 1 }}>
+                              <Text style={s.viewRowLabel} numberOfLines={1}>Birthday text + card</Text>
+                              <Text style={{ fontSize: 11, color: '#8E8E93' }} numberOfLines={1}>
+                                {bOn ? 'Sends automatically on their birthday' : 'OFF — nothing sends'}
+                              </Text>
+                            </View>
+                            <Switch
+                              value={bOn}
+                              onValueChange={(v) => toggleDateOptin('birthday', v)}
+                              trackColor={{ false: 'rgba(128,128,128,0.3)', true: '#34C75966' }}
+                              thumbColor={bOn ? '#34C759' : '#f4f3f4'}
+                              data-testid="birthday-optin-switch"
+                            />
+                          </View>
+                        )}
+                        {(contact.date_sold || contact.anniversary) && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }} data-testid="anniversary-optin-row">
+                            <Ionicons name={aOn ? 'notifications' : 'notifications-off'} size={16} color={aOn ? '#34C759' : '#8E8E93'} />
+                            <View style={{ flex: 1 }}>
+                              <Text style={s.viewRowLabel} numberOfLines={1}>Anniversary text + card</Text>
+                              <Text style={{ fontSize: 11, color: '#8E8E93' }} numberOfLines={1}>
+                                {aOn ? 'Sends yearly with their car photo' : 'OFF — nothing sends'}
+                              </Text>
+                            </View>
+                            <Switch
+                              value={aOn}
+                              onValueChange={(v) => toggleDateOptin('anniversary', v)}
+                              trackColor={{ false: 'rgba(128,128,128,0.3)', true: '#34C75966' }}
+                              thumbColor={aOn ? '#34C759' : '#f4f3f4'}
+                              data-testid="anniversary-optin-switch"
+                            />
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })()}
                 </View>
               )}
 

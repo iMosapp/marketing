@@ -6,6 +6,7 @@ import os
 import io
 import uuid
 import base64
+import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import Optional
@@ -21,6 +22,59 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/voice-notes", tags=["voice-notes"])
 
 MAX_DURATION_SECONDS = 180  # 3 minute cap
+
+
+def _convert_webm_to_m4a(webm_bytes: bytes) -> bytes:
+    """Transcode webm (web recordings) to m4a/AAC so iPhones can play it."""
+    import subprocess
+    import tempfile
+    from imageio_ffmpeg import get_ffmpeg_exe
+    ffmpeg = get_ffmpeg_exe()
+    in_path = out_path = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as f:
+            f.write(webm_bytes)
+            in_path = f.name
+        out_path = in_path[:-5] + ".m4a"
+        subprocess.run(
+            [ffmpeg, "-y", "-i", in_path, "-vn", "-c:a", "aac", "-b:a", "64k", out_path],
+            check=True, capture_output=True, timeout=120,
+        )
+        with open(out_path, "rb") as f:
+            return f.read()
+    finally:
+        for p in (in_path, out_path):
+            if p:
+                try:
+                    os.unlink(p)
+                except Exception:
+                    pass
+
+
+async def run_webm_conversion() -> dict:
+    """Convert already-stored .webm voice notes to .m4a so they play on iOS.
+    Idempotent — only touches notes whose audio_path still ends in .webm."""
+    from utils.image_storage import get_object, put_object as _put
+    db = get_db()
+    notes = await db.voice_notes.find({"audio_path": {"$regex": r"\.webm$"}}).to_list(500)
+    converted = failed = 0
+    for n in notes:
+        try:
+            data, _ct = get_object(n["audio_path"])
+            m4a = await asyncio.to_thread(_convert_webm_to_m4a, data)
+            new_path = n["audio_path"][:-5] + ".m4a"
+            await asyncio.to_thread(_put, new_path, m4a, "audio/mp4")
+            await db.voice_notes.update_one(
+                {"_id": n["_id"]},
+                {"$set": {"audio_path": new_path, "audio_url": f"/api/images/{new_path}"}}
+            )
+            converted += 1
+        except Exception as e:
+            failed += 1
+            logger.warning(f"[WebmConvert] failed for note {n.get('_id')}: {e}")
+    if converted or failed:
+        logger.info(f"[WebmConvert] converted={converted} failed={failed} of {len(notes)}")
+    return {"converted": converted, "failed": failed, "scanned": len(notes)}
 
 
 @router.post("/admin/backfill-audio-urls")
@@ -169,6 +223,15 @@ async def create_voice_note(
         ext = "mp3"
 
     filename = f"voice_note_{uuid.uuid4().hex[:8]}.{ext}"
+
+    # Web recordings arrive as webm — iPhones can't play webm, transcode to m4a (AAC)
+    if ext == "webm":
+        try:
+            audio_bytes = await asyncio.to_thread(_convert_webm_to_m4a, audio_bytes)
+            ext, content_type = "m4a", "audio/mp4"
+            filename = f"voice_note_{uuid.uuid4().hex[:8]}.m4a"
+        except Exception as e:
+            logger.warning(f"webm→m4a conversion failed, storing original webm: {e}")
 
     # 1. Upload to object storage
     storage_path = f"voice-notes/{contact_id}/{filename}"

@@ -1546,13 +1546,17 @@ async def startup_event():
     import asyncio as _aio2
     _aio2.create_task(_consolidate_phone_contacts())
 
-    # Self-heal: re-link voice notes whose audio_url was never saved (storage response bug)
+    # Self-heal: re-link voice notes whose audio_url was never saved (storage response bug),
+    # then convert any stored webm memos to m4a so they play on iOS
     async def _voice_note_backfill():
         try:
-            from routers.voice_notes import run_audio_backfill
+            from routers.voice_notes import run_audio_backfill, run_webm_conversion
             result = await run_audio_backfill()
             if result.get("notes_scanned"):
                 logger.info(f"[Startup] Voice note audio backfill: {result}")
+            conv = await run_webm_conversion()
+            if conv.get("scanned"):
+                logger.info(f"[Startup] Voice note webm conversion: {conv}")
         except Exception as e:
             logger.warning(f"[Startup] Voice note backfill skipped: {e}")
     _aio2.create_task(_voice_note_backfill())

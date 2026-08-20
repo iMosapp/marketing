@@ -727,6 +727,111 @@ async def _run_date_triggers_for_user(db, user_id: str) -> int:
     return sent_count
 
 
+async def send_date_preview_digests():
+    """Hourly: at 8 AM local, text each rep the list of contacts getting
+    birthday/anniversary sends today — an hour before the 9 AM sends go out."""
+    from routers.database import get_db, get_data_filter
+    import pytz
+
+    db = get_db()
+    if db is None:
+        return
+    try:
+        cfg_users = await db.date_trigger_configs.distinct("user_id", {"enabled": True})
+        camp_users = await db.campaigns.distinct("user_id", {"active": True, "$or": [
+            {"type": {"$in": ["birthday", "anniversary", "sold_date"]}},
+            {"date_type": {"$in": ["birthday", "anniversary", "sold_date"]}},
+        ]})
+        sent = 0
+        for user_id in {*cfg_users, *[u for u in camp_users if u]}:
+            try:
+                user = await db.users.find_one({"_id": __import__("bson").ObjectId(user_id)})
+            except Exception:
+                user = None
+            if not user:
+                continue
+            try:
+                local_now = datetime.now(pytz.timezone(user.get("timezone") or "America/Denver"))
+            except Exception:
+                continue
+            if local_now.hour != 8:
+                continue
+            today_str = local_now.strftime("%Y-%m-%d")
+            guard = await db.date_send_guard.find_one_and_update(
+                {"_id": f"digest_{user_id}_{today_str}"},
+                {"$setOnInsert": {"created_at": datetime.utcnow()}},
+                upsert=True,
+            )
+            if guard is not None:
+                continue  # already sent today
+
+            base_filter = await get_data_filter(user_id)
+            contacts = await db.contacts.find(
+                {**base_filter, "$or": [
+                    {"birthday": {"$exists": True, "$ne": None}},
+                    {"date_sold": {"$exists": True, "$ne": None}},
+                    {"anniversary": {"$exists": True, "$ne": None}},
+                ]},
+                {"first_name": 1, "last_name": 1, "tags": 1, "birthday": 1, "anniversary": 1, "date_sold": 1},
+            ).to_list(2000)
+
+            bdays, annivs = [], []
+            for c in contacts:
+                tags_l = [t.lower() for t in c.get("tags", []) if isinstance(t, str)]
+                name = f"{c.get('first_name', '')} {(c.get('last_name') or '')[:1]}".strip()
+                bd = c.get("birthday")
+                if isinstance(bd, datetime) and bd.month == local_now.month and bd.day == local_now.day and "birthday" in tags_l:
+                    bdays.append(name)
+                if "anniversary" in tags_l:
+                    ds = c.get("date_sold")
+                    an = c.get("anniversary")
+                    if isinstance(ds, datetime) and ds.month == local_now.month and ds.day == local_now.day and ds.year < local_now.year:
+                        yrs = local_now.year - ds.year
+                        annivs.append(f"{name} ({yrs} yr{'s' if yrs != 1 else ''})")
+                    elif isinstance(an, datetime) and an.month == local_now.month and an.day == local_now.day:
+                        annivs.append(name)
+
+            if not bdays and not annivs:
+                continue
+
+            lines = ["I'm On Social — going out today at 9 AM:"]
+            if bdays:
+                lines.append(f"🎂 Birthdays: {', '.join(bdays[:15])}")
+            if annivs:
+                lines.append(f"🚗 Anniversaries: {', '.join(annivs[:15])}")
+            lines.append("Manage: Settings → Date Triggers → Manage Recipients")
+            body = "\n".join(lines)
+
+            phone = user.get("phone")
+            if phone:
+                try:
+                    from services.twilio_service import send_sms
+                    await send_sms(phone, body, from_phone=user.get("twilio_number") or user.get("mvpline_number"))
+                    sent += 1
+                except Exception as e:
+                    logger.warning(f"[Digest] SMS failed for {user_id}: {e}")
+
+            await db.notifications.update_one(
+                {"idempotency_key": f"date_digest_{user_id}_{today_str}"},
+                {"$setOnInsert": {
+                    "user_id": user_id,
+                    "type": "date_digest",
+                    "title": "Today's birthday & anniversary sends",
+                    "message": body,
+                    "link": "/settings/date-recipients",
+                    "idempotency_key": f"date_digest_{user_id}_{today_str}",
+                    "read": False,
+                    "dismissed": False,
+                    "created_at": datetime.now(timezone.utc),
+                }},
+                upsert=True,
+            )
+        if sent:
+            logger.info(f"[Scheduler] Date preview digests: {sent} sent")
+    except Exception as e:
+        logger.error(f"[Scheduler] Date digest error: {e}")
+
+
 async def process_pending_campaign_steps():
     """
     Reads from the pre-scheduled campaign_pending_sends queue — no enrollment scan.
@@ -1421,6 +1526,15 @@ def start_scheduler():
         id="weekly_bug_digest",
         replace_existing=True,
         misfire_grace_time=7200,
+    )
+
+    # Hourly at :05 — at each rep's 8 AM local, text them who's getting date sends today
+    scheduler.add_job(
+        safe_job(send_date_preview_digests),
+        CronTrigger(minute=5),
+        id="date_preview_digest",
+        replace_existing=True,
+        misfire_grace_time=1800,
     )
 
     # Daily 15:00 UTC (~9 AM Central) — nudge store admins about vehicles missing photos
