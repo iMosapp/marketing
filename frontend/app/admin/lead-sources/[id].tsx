@@ -32,6 +32,7 @@ interface LeadSource {
   webhook_url: string;
   adf_url?: string;
   email_inbound_url?: string;
+  monthly_cost?: number | null;
   api_key: string;
   is_active: boolean;
   lead_count: number;
@@ -149,6 +150,7 @@ export default function LeadSourceDetailScreen() {
     team_id: '',
     assignment_method: 'jump_ball' as 'jump_ball' | 'round_robin' | 'weighted_round_robin',
     is_active: true,
+    monthly_cost: '',
   });
 
   useEffect(() => {
@@ -177,6 +179,7 @@ export default function LeadSourceDetailScreen() {
           team_id: sourceData.team_id,
           assignment_method: sourceData.assignment_method,
           is_active: sourceData.is_active,
+          monthly_cost: sourceData.monthly_cost != null ? String(sourceData.monthly_cost) : '',
         });
       }
       
@@ -220,7 +223,10 @@ export default function LeadSourceDetailScreen() {
 
     setSaving(true);
     try {
-      const response = await api.patch(`/lead-sources/${id}`, formData);
+      const response = await api.patch(`/lead-sources/${id}`, {
+        ...formData,
+        monthly_cost: formData.monthly_cost !== '' ? parseFloat(formData.monthly_cost) || 0 : undefined,
+      });
       if (response.data.success) {
         setSource(response.data.lead_source);
         setEditing(false);
@@ -421,6 +427,19 @@ export default function LeadSourceDetailScreen() {
                 placeholderTextColor="#6E6E73"
                 multiline
                 numberOfLines={3}
+              />
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.label}>MONTHLY COST ($)</Text>
+              <TextInput
+                style={styles.input}
+                value={formData.monthly_cost}
+                onChangeText={(text) => setFormData({ ...formData, monthly_cost: text.replace(/[^0-9.]/g, '') })}
+                placeholder="e.g. 1200 — powers cost-per-sale in Source ROI"
+                placeholderTextColor="#6E6E73"
+                keyboardType="decimal-pad"
+                data-testid="monthly-cost-input"
               />
             </View>
 

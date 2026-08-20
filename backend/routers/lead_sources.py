@@ -30,6 +30,7 @@ class LeadSourceUpdate(BaseModel):
     team_id: Optional[str] = None
     assignment_method: Optional[Literal["jump_ball", "round_robin", "weighted_round_robin"]] = None
     is_active: Optional[bool] = None
+    monthly_cost: Optional[float] = None
 
 class InboundLead(BaseModel):
     first_name: Optional[str] = None
@@ -95,6 +96,7 @@ def serialize_lead_source(source: dict) -> dict:
         "webhook_url": _wh,
         "adf_url": f"{_base}/api/leads/adf?source_id={_sid}",
         "email_inbound_url": f"{_base}/api/leads/email-inbound?source_id={_sid}",
+        "monthly_cost": source.get("monthly_cost"),
         "api_key": source.get("api_key"),
         "is_active": source.get("is_active", True),
         "lead_count": source.get("lead_count", 0),

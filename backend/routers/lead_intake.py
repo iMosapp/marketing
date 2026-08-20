@@ -380,6 +380,7 @@ async def _match_lead_inventory(db, normalized: dict, store_id: str) -> Optional
             "color": a.get("color", ""),
             "mileage": a.get("mileage", ""),
             "photo_url": it.get("photo_url", ""),
+            "photo_full_path": it.get("photo_full_path", ""),
         }
     except Exception as e:
         logger.warning(f"[LeadIntake] Inventory match failed: {e}")
@@ -565,6 +566,16 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
     # ── Match vehicle of interest against live inventory
     matched_vehicle = await _match_lead_inventory(db, normalized, store_id)
 
+    # Photo of the matched vehicle rides along with the first text (MMS)
+    lead_media = []
+    if matched_vehicle:
+        _pub = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com")).rstrip("/")
+        if matched_vehicle.get("photo_full_path"):
+            lead_media = [f"{_pub}/api/images/{matched_vehicle['photo_full_path']}"]
+        elif matched_vehicle.get("photo_url"):
+            _pu = matched_vehicle["photo_url"]
+            lead_media = [_pu if _pu.startswith("http") else f"{_pub}{_pu}"]
+
     # ── Generate AI first message
     first_message = await generate_first_message(normalized, assigned_user, store, matched_vehicle)
 
@@ -585,6 +596,7 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         "comments":          normalized.get("comments", ""),
         "vehicle_raw":       {k: v for k, v in normalized.items() if k.startswith("vehicle_") or k.startswith("trade_")},
         "matched_inventory": matched_vehicle,
+        "media_urls":        lead_media,
         "extra_fields":      normalized.get("extra_fields", {}),
         "assigned_to":       assigned_user_id,
         "draft_message":     first_message,
@@ -634,6 +646,23 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         await db.lead_sources.update_one(
             {"_id": source["_id"]}, {"$inc": {"lead_count": 1}}
         )
+
+    # ── Instant push to the assigned rep — a fresh internet lead just landed
+    if assigned_user_id:
+        try:
+            from routers.push_notifications import send_push_to_user
+            _veh_note = normalized.get("vehicle_interest") or "New inquiry"
+            if matched_vehicle:
+                _veh_note += f" — IN STOCK ({matched_vehicle.get('name', '')})"
+            asyncio.create_task(send_push_to_user(
+                assigned_user_id,
+                f"🔥 New Lead — {full_name}",
+                f"{_veh_note} via {source.get('name', 'internet lead')}",
+                f"/thread/{conv_id}",
+                "flash",
+            ))
+        except Exception as e:
+            logger.warning(f"[LeadIntake] Rep push failed: {e}")
 
     # ── Fire Workflow Automation ───────────────────────────────────────────────
     # Sends instant intake text, blasts all workflow reps with push notifications
@@ -736,7 +765,7 @@ async def process_queued_leads():
                         rep_twilio_num = (rep or {}).get("twilio_number") or (rep or {}).get("mvpline_number")
                     except Exception:
                         pass
-                result = await send_sms(phone, message, from_phone=rep_twilio_num)
+                result = await send_sms(phone, message, from_phone=rep_twilio_num, media_urls=lead.get("media_urls") or None)
                 mocked = result.get("mock", True)
             else:
                 mocked = True
@@ -761,6 +790,8 @@ async def process_queued_leads():
                         "mocked":          mocked,
                         "created_at":      now,
                         "status":          "sent",
+                        "has_media":       bool(lead.get("media_urls")),
+                        "media_urls":      lead.get("media_urls") or [],
                     }
                     await db.messages.insert_one(msg_doc)
                     await db.conversations.update_one(
@@ -1188,10 +1219,27 @@ async def lead_source_analytics(
         if l.get("contact_id") in sold_contacts:
             s["sold"] += 1
 
+    # Layer in real-dollar cost (from lead source monthly_cost)
+    cost_by_name = {}
+    async for src in db.lead_sources.find({"monthly_cost": {"$gt": 0}}, {"name": 1, "monthly_cost": 1}):
+        cost_by_name[src.get("name", "")] = float(src["monthly_cost"])
+
     sources = []
     for s in by_source.values():
         s["reply_rate"] = round(s["replied"] / s["leads"] * 100) if s["leads"] else 0
         s["sold_rate"] = round(s["sold"] / s["leads"] * 100) if s["leads"] else 0
+        monthly = cost_by_name.get(s["source_name"])
+        if monthly:
+            period_cost = round(monthly * days / 30, 2)
+            s["monthly_cost"] = monthly
+            s["period_cost"] = period_cost
+            s["cost_per_lead"] = round(period_cost / s["leads"], 2) if s["leads"] else None
+            s["cost_per_sale"] = round(period_cost / s["sold"], 2) if s["sold"] else None
+        else:
+            s["monthly_cost"] = None
+            s["period_cost"] = None
+            s["cost_per_lead"] = None
+            s["cost_per_sale"] = None
         sources.append(s)
     sources.sort(key=lambda x: x["leads"], reverse=True)
 

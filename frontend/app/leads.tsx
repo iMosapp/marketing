@@ -265,6 +265,33 @@ export default function LeadsDashboard() {
                         <View style={{ width: `${Math.min(s.sold_rate, 100)}%`, height: 6, backgroundColor: '#34C759' }} />
                       </View>
                     </View>
+                    {(s.cost_per_sale != null || s.cost_per_lead != null) && (
+                      <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                        {s.cost_per_sale != null && (
+                          <View style={{ flex: 1, backgroundColor: '#34C75912', borderRadius: 8, padding: 8, alignItems: 'center' }}>
+                            <Text style={{ fontSize: 15, fontWeight: '800', color: '#34C759' }}>{fmtPrice(s.cost_per_sale)}</Text>
+                            <Text style={{ fontSize: 10, fontWeight: '600', color: colors.textSecondary, letterSpacing: 0.4 }}>PER SALE</Text>
+                          </View>
+                        )}
+                        {s.cost_per_lead != null && (
+                          <View style={{ flex: 1, backgroundColor: `${ACCENT}12`, borderRadius: 8, padding: 8, alignItems: 'center' }}>
+                            <Text style={{ fontSize: 15, fontWeight: '800', color: ACCENT }}>{fmtPrice(s.cost_per_lead)}</Text>
+                            <Text style={{ fontSize: 10, fontWeight: '600', color: colors.textSecondary, letterSpacing: 0.4 }}>PER LEAD</Text>
+                          </View>
+                        )}
+                        {s.period_cost != null && (
+                          <View style={{ flex: 1, backgroundColor: colors.surface, borderRadius: 8, padding: 8, alignItems: 'center' }}>
+                            <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{fmtPrice(s.period_cost)}</Text>
+                            <Text style={{ fontSize: 10, fontWeight: '600', color: colors.textSecondary, letterSpacing: 0.4 }}>SPENT</Text>
+                          </View>
+                        )}
+                      </View>
+                    )}
+                    {s.monthly_cost == null && (
+                      <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 8 }}>
+                        Set a monthly cost on this source (Admin → Lead Sources) to see cost per sale
+                      </Text>
+                    )}
                     {s.failed > 0 && (
                       <Text style={{ fontSize: 12, color: '#FF3B30', marginTop: 8 }}>{s.failed} failed to send</Text>
                     )}

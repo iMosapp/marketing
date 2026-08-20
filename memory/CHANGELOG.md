@@ -151,3 +151,9 @@
 - NEW /app/frontend/app/leads.tsx — "Internet Leads" dashboard: Leads tab (status filters, source/status/REPLIED badges, vehicle interest, matched in-stock vehicle box w/ photo+price+stock#, tap → thread) + Source ROI tab (30/90/365-day windows, totals, per-source reply/sold progress bars)
 - Hub → Manage → "Internet Leads" entry added
 - Tested e2e with QA leads (matched Tacoma/Civic, seeded reply + sale → 50% rates verified), 401 for unauth list; QA data cleaned
+
+## Jun 2026 — Lead Cost Entry, New Lead Push, Auto Photo Text
+- **Lead Cost**: lead_sources.monthly_cost (LeadSourceUpdate + serialize); analytics computes period_cost (monthly*days/30), cost_per_lead, cost_per_sale per source; admin lead source edit form has MONTHLY COST input; ROI tab shows $ PER SALE / PER LEAD / SPENT tiles + hint when unset
+- **New Lead Push**: process_inbound_lead pushes assigned rep instantly ("🔥 New Lead — {name}", vehicle + IN STOCK note, deep-link /thread/{conv_id}) via send_push_to_user create_task (additive to intake workflow blast; only fires when a rep is assigned via round-robin/weighted)
+- **Auto Photo Text**: matched vehicle's photo (photo_full_path absolute URL) stored as inbound_leads.media_urls; process_queued_leads passes media_urls to send_sms (MMS) and logs has_media on the message
+- Verified: PATCH monthly_cost 1200 → 30d analytics $1200 per lead/sale; lead media_urls carries Tacoma photo; ROI UI screenshot shows dollar tiles. QA data cleaned (test source keeps $1200 cost as demo)
