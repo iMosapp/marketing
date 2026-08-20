@@ -110,3 +110,12 @@
 - Dialer: added "Search contacts by name" bar at top of dial pad; typing a name shows matching contacts full-screen with tap-to-call (dialer.tsx). Tap calls via existing Twilio click-to-call flow
 - Root cause of wrapping: user's iPhone large accessibility font scale multiplying fontSize
 - Verified via web preview screenshots (login → home scoreboard, dialer search "Forest" → match → call button, notifications dropdown)
+
+## Jun 2026 — Four Features: Backdate Sold Date, Delete Texted Photos, Dialer Recents, Report a Bug
+- **Backdate Sold Date**: "SALE DATE" picker (default today, max today) added to /sold-quick and /contact/sold-wizard step 2. New PATCH /api/contacts/{uid}/{cid}/date-sold endpoint. Purchases POST now uses the chosen date. Failure surfaces a warning alert instead of silent swallow
+- **Delete Texted Photos**: DELETE /photos now accepts photo_type message_in/message_out → adds normalized URL to contact.hidden_gallery_urls; gallery GET /photos/all filters hidden. _norm_media_url strips scheme+domain so proxy/base-url differences still match
+- **Dialer Recents**: Keypad/Recents segmented toggle on dialer. GET /api/contacts/{uid}/recent-calls (contact_events call_placed/call_received joined with contacts). Consecutive calls to same contact collapsed with (n) count
+- **Report a Bug**: /report-bug form (category chips + description) → POST /api/bug-reports/{uid} (stores db.bug_reports + Resend email to all super_admins). Admin screen /admin/bug-reports (filters, Start/Resolve/Reopen status flow, role guard + error/retry UI). Hub entries: Settings→Report a Bug, Internal Ops→Bug Reports
+- **Security**: /api/bug-reports/ added to BOLA PROTECTED_PREFIXES (POST now requires JWT matching path user). GET/PATCH admin endpoints verify JWT (Authorization Bearer) + super_admin role from DB — X-User-ID header alone no longer accepted
+- Testing: testing agent iteration_283 (17 backend pytest all pass + full frontend flows); all flagged issues fixed and re-verified via curl + screenshots
+- LEARNING: Metro watcher in this pod often serves stale bundles — run `sudo supervisorctl restart frontend` after edits before screenshot verification

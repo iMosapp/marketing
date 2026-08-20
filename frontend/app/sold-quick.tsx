@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useThemeStore } from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
@@ -18,8 +19,10 @@ const IS_WEB = Platform.OS === 'web';
 const ACCENT = '#C9A962';
 const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com';
 
+const fmtDateLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
 export default function SoldQuickScreen() {
-  const { colors } = useThemeStore();
+  const { colors, mode } = useThemeStore();
   const { user } = useAuthStore();
   const router = useRouter();
 
@@ -27,6 +30,8 @@ export default function SoldQuickScreen() {
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [vehiclePurchased, setVehiclePurchased] = useState('');
+  const [saleDate, setSaleDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [sending, setSending] = useState(false);
   const [done, setDone] = useState(false);
   const [lookingUp, setLookingUp] = useState(false);
@@ -165,13 +170,22 @@ export default function SoldQuickScreen() {
       });
       const contactId = contactRes.data.contact_id;
 
+      // Set the sale date (supports backdating past sales)
+      if (contactId) {
+        await api.patch(`/contacts/${user._id}/${contactId}/date-sold`, {
+          date: fmtDateLocal(saleDate),
+        }).catch(() => {
+          showSimpleAlert('Sale Date Not Saved', 'The sale date could not be saved. You can set it later on the contact page.');
+        });
+      }
+
       // Save purchase to purchase_history AND update contact vehicle field
       // Uses the dedicated purchase endpoint (safe, partial update — no contact data wiped)
       if (vehiclePurchased.trim() && contactId) {
         api.post(`/contacts/${user._id}/${contactId}/purchases`, {
           title: vehiclePurchased.trim(),
           category: 'vehicle',
-          date: new Date().toISOString().split('T')[0],
+          date: fmtDateLocal(saleDate),
           notes: '',
         }).catch(() => {
           // Fallback: safe vehicle-only patch so the header still shows what was purchased
@@ -468,6 +482,49 @@ export default function SoldQuickScreen() {
           returnKeyType="next"
           data-testid="sold-vehicle-input"
         />
+
+        {/* Sale date (backdate support) */}
+        <Text style={s.fieldLabel}>SALE DATE</Text>
+        {IS_WEB ? (
+          <input
+            type="date"
+            defaultValue={fmtDateLocal(saleDate)}
+            max={fmtDateLocal(new Date())}
+            onChange={(e: any) => { if (e.target.value) setSaleDate(new Date(e.target.value + 'T12:00:00')); }}
+            style={{
+              width: '100%', padding: 12, borderRadius: 12,
+              backgroundColor: colors.card, color: colors.text, border: `1.5px solid ${colors.surface}`,
+              fontSize: 16, boxSizing: 'border-box' as any,
+            }}
+            data-testid="sold-date-input"
+          />
+        ) : (
+          <>
+            <TouchableOpacity
+              style={[s.input, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+              onPress={() => setShowDatePicker(v => !v)}
+              data-testid="sold-date-btn"
+            >
+              <Text style={{ fontSize: 16, color: colors.text }}>
+                {saleDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                {fmtDateLocal(saleDate) === fmtDateLocal(new Date()) ? '  (Today)' : ''}
+              </Text>
+              <Ionicons name="calendar-outline" size={18} color={ACCENT} />
+            </TouchableOpacity>
+            {showDatePicker && (
+              <DateTimePicker
+                value={saleDate}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                maximumDate={new Date()}
+                onChange={(_, d) => { if (Platform.OS !== 'ios') setShowDatePicker(false); if (d) setSaleDate(d); }}
+                textColor={colors.text}
+                themeVariant={mode}
+                style={{ height: 130, alignSelf: 'center' }}
+              />
+            )}
+          </>
+        )}
 
         {/* Referred by (optional) */}        <Text style={[s.fieldLabel, { marginTop: 16 }]}>REFERRED BY <Text style={{ color: colors.textTertiary, fontWeight: '400' }}>(optional)</Text></Text>
         {referredByName ? (

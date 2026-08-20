@@ -802,6 +802,7 @@ export default function MoreScreen() {
       { icon: 'color-palette', title: 'Brand Assets', subtitle: 'Logos & downloads', onPress: () => router.push('/admin/brand-assets'), color: '#FF9500' },
       // Diagnostics
       { icon: 'bug', title: 'Error Reports', subtitle: 'App crashes & error logs', onPress: () => router.push('/admin/error-reports' as any), color: '#FF3B30' },
+      { icon: 'chatbox-ellipses', title: 'Bug Reports', subtitle: 'User-submitted issues & feedback', onPress: () => router.push('/admin/bug-reports' as any), color: '#FF9500' },
     ];
     sections.push({ id: 'internal_ops', title: 'Internal Operations', icon: 'lock-closed', color: '#8E8E93', items });
   }
@@ -836,6 +837,7 @@ export default function MoreScreen() {
       { icon: 'time-outline', title: 'My Schedule', subtitle: 'Work hours & notification quiet times', onPress: () => router.push('/settings/schedule'), color: '#34C759' },
       { icon: 'calendar-outline', title: 'Calendar', subtitle: 'Connect calendars', onPress: () => router.push('/settings/calendar'), color: '#007AFF' },
       { icon: 'help-circle-outline', title: 'Help Center', subtitle: 'How-to guides & FAQs', onPress: () => router.push('/help' as any), color: '#007AFF' },
+      { icon: 'bug-outline', title: 'Report a Bug', subtitle: 'Flag an issue or share feedback', onPress: () => router.push('/report-bug' as any), color: '#FF3B30' },
       ...(pushSupported ? [{
         icon: 'notifications-outline' as string,
         title: 'Push Notifications',

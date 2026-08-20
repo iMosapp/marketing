@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  View, Text, TouchableOpacity, Platform, Linking, Dimensions, TextInput, ScrollView, Keyboard,
+  View, Text, TouchableOpacity, Platform, Linking, Dimensions, TextInput, ScrollView, Keyboard, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -40,6 +40,9 @@ export default function DialerScreen() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [contacts, setContacts] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'keypad' | 'recents'>('keypad');
+  const [recentCalls, setRecentCalls] = useState<any[]>([]);
+  const [recentsLoading, setRecentsLoading] = useState(false);
 
   const isPending = user?.status === 'pending';
 
@@ -183,6 +186,42 @@ export default function DialerScreen() {
     handleCall(c.phone);
   };
 
+  useEffect(() => {
+    if (viewMode === 'recents' && user?._id) {
+      setRecentsLoading(true);
+      api.get(`/contacts/${user._id}/recent-calls?limit=50`)
+        .then(r => {
+          const raw = r.data?.calls || [];
+          // Collapse consecutive calls to the same contact into one row with a count
+          const grouped: any[] = [];
+          for (const c of raw) {
+            const last = grouped[grouped.length - 1];
+            if (last && last.contact_id === c.contact_id && last.direction === c.direction) {
+              last.count += 1;
+            } else {
+              grouped.push({ ...c, count: 1 });
+            }
+          }
+          setRecentCalls(grouped);
+        })
+        .catch(() => {})
+        .finally(() => setRecentsLoading(false));
+    }
+  }, [viewMode, user?._id]);
+
+  const timeAgo = (iso: string) => {
+    try {
+      const diffMin = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+      if (diffMin < 1) return 'now';
+      if (diffMin < 60) return `${diffMin}m`;
+      const hrs = Math.floor(diffMin / 60);
+      if (hrs < 24) return `${hrs}h`;
+      const days = Math.floor(hrs / 24);
+      if (days < 7) return `${days}d`;
+      return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    } catch { return ''; }
+  };
+
   const showMatches = matchingContacts.length > 0 && phoneNumber.length >= 3;
   const visibleMatches = matchingContacts.slice(0, 2);
   const moreCount = matchingContacts.length - 2;
@@ -209,6 +248,25 @@ export default function DialerScreen() {
             <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
           </TouchableOpacity>
         )}
+      </View>
+
+      {/* ─── Keypad / Recents Toggle ─── */}
+      <View style={{ flexDirection: 'row', alignSelf: 'center', marginTop: 10, backgroundColor: colors.card, borderRadius: 10, padding: 3 }}>
+        {([['keypad', 'Keypad', 'keypad-outline'], ['recents', 'Recents', 'time-outline']] as const).map(([m, label, icon]) => (
+          <TouchableOpacity
+            key={m}
+            onPress={() => setViewMode(m)}
+            style={{
+              flexDirection: 'row', alignItems: 'center', gap: 6,
+              paddingVertical: 7, paddingHorizontal: 26, borderRadius: 8,
+              backgroundColor: viewMode === m ? colors.bg : 'transparent',
+            }}
+            data-testid={`dialer-tab-${m}`}
+          >
+            <Ionicons name={icon as any} size={15} color={viewMode === m ? colors.text : colors.textSecondary} />
+            <Text style={{ fontSize: 14, fontWeight: '600', color: viewMode === m ? colors.text : colors.textSecondary }} numberOfLines={1} maxFontSizeMultiplier={1.15}>{label}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       {searchQuery.trim().length > 0 ? (
@@ -245,6 +303,52 @@ export default function DialerScreen() {
                     {formatPhone(c.phone)}
                   </Text>
                 </View>
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#34C75920', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="call" size={18} color="#34C759" />
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
+        </ScrollView>
+      ) : viewMode === 'recents' ? (
+        /* ─── Recent Calls ─── */
+        <ScrollView
+          style={{ flex: 1, marginTop: 10 }}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
+          data-testid="dialer-recents-list"
+        >
+          {recentsLoading ? (
+            <ActivityIndicator size="small" color={colors.textSecondary} style={{ marginTop: 40 }} />
+          ) : recentCalls.length === 0 ? (
+            <View style={{ alignItems: 'center', paddingTop: 40 }}>
+              <Ionicons name="call-outline" size={32} color={colors.textTertiary || colors.textSecondary} />
+              <Text style={{ fontSize: 16, color: colors.textSecondary, marginTop: 8 }}>No recent calls</Text>
+            </View>
+          ) : (
+            recentCalls.map((c: any, i: number) => (
+              <TouchableOpacity
+                key={`${c.contact_id}-${i}`}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', paddingVertical: 12,
+                  borderBottomWidth: 0.5, borderBottomColor: colors.border,
+                }}
+                onPress={() => handleCall(c.phone)}
+                activeOpacity={0.6}
+                data-testid={`dialer-recent-${i}`}
+              >
+                <Ionicons
+                  name={c.direction === 'outgoing' ? 'arrow-up-circle-outline' : 'arrow-down-circle-outline'}
+                  size={22}
+                  color={c.direction === 'outgoing' ? '#34C759' : '#007AFF'}
+                  style={{ marginRight: 10 }}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text }} numberOfLines={1}>
+                    {c.name}{c.count > 1 ? ` (${c.count})` : ''}
+                  </Text>
+                  <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 1 }} numberOfLines={1}>{formatPhone(c.phone)}</Text>
+                </View>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, marginRight: 12 }}>{timeAgo(c.timestamp)}</Text>
                 <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#34C75920', alignItems: 'center', justifyContent: 'center' }}>
                   <Ionicons name="call" size={18} color="#34C759" />
                 </View>

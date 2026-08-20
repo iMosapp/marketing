@@ -1,0 +1,48 @@
+{
+  "summary": "Tested the 4 new features (Backdate Sold Date, Delete Texted Photos, Recent Calls in dialer, Report a Bug + admin management) on both backend and frontend (mobile web 390x844). Backend: new pytest suite with 17 tests — all passing (recent-calls shape/limit, date-sold happy path + 400/404 validation + persistence via GET, bug-reports POST/GET/PATCH incl. filters, 403 for non-super-admin, 401 without X-User-ID, message_in photo hide + gallery filtering + invalid photo_type). Frontend: verified dialer Keypad/Recents toggle and Recents list (real calls with name, formatted phone, direction arrow, relative time, call button), name search + clear, SALE DATE field on /sold-quick (between purchase and referred-by, defaults to today, max=today, backdating works) and on /contact/sold-wizard step 2, /report-bug end-to-end submission -> 'Report Sent!' success screen with Done, /admin/bug-reports list + All/Open/In Progress/Resolved filters + Start Working -> Resolve -> Reopen transitions with live count updates, Hub (/more) entries 'Report a Bug' (Settings) and 'Bug Reports' (Internal Operations, super admin only, hidden for regular user). No Twilio calls/SMS were triggered; one real bug-report email was sent by the single UI submission. All TEST_QA data cleaned from db.bug_reports and contacts.hidden_gallery_urls.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/bug-reports/{user_id}", "issue": "No auth/ownership check — any caller can post a report on behalf of any user_id (and trigger a Resend email to all super admins). Unlike GET/PATCH there is no X-User-ID/token verification, so it is an unauthenticated email-trigger/spam vector."},
+      {"endpoint": "GET /api/bug-reports", "issue": "Authorization relies solely on the X-User-ID header (no JWT verification), so any user id string that maps to a super_admin grants access. PATCH status has the same pattern."},
+      {"endpoint": "PATCH /api/contacts/{user_id}/{contact_id}/date-sold", "issue": "user_id in the path is used only in the update filter and is not checked against the authenticated caller (BOLA surface consistent with the rest of contacts.py, flagging for awareness)."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "admin/bug-reports.tsx", "issue": "No route/role guard: a non-super-admin who navigates directly to /admin/bug-reports sees the full admin screen with the 'No bug reports' empty state. The 403 is only console.error'd — user gets no 'access denied' feedback and the empty state is misleading.", "selector": "screen /admin/bug-reports", "priority": "MEDIUM"},
+      {"component": "admin/bug-reports.tsx", "issue": "fetchReports catch only logs to console (no error state UI / retry), and setStatus swallows failures silently — if PATCH fails the row simply does not change with no toast.", "selector": "fetchReports / setStatus", "priority": "MEDIUM"},
+      {"component": "dialer.tsx Recents", "issue": "Recent calls are not de-duplicated/grouped: 12 consecutive identical 'Bud (801) 821-2166 Mar 10' rows dominated the list (backend returns one row per call_placed event). Consider collapsing consecutive calls to the same contact with an (n) count like the native Phone app.", "selector": "dialer-recents-list", "priority": "LOW"},
+      {"component": "sold-quick.tsx / sold-wizard.tsx", "issue": "On web the SALE DATE renders as a raw HTML date input, so the spec'd '(Today)' suffix only appears on native. Minor spec/visual inconsistency (native TouchableOpacity path shows the suffix).", "selector": "input[type=date]", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "SOLD submission (both flows)", "issue": "The date-sold PATCH is wrapped in .catch(() => {}) in sold-quick.tsx (~line 175) and sold-wizard.tsx (~line 100), so a failed backdate is silently ignored and the sale is recorded with the default/today date without warning the rep.", "affected_selectors": ["sold-date-input"]}
+    ],
+    "design_issues": [
+      {"screen": "/admin/bug-reports", "issues": ["At 390px the filter row's last chip ('Resolved (1)') is clipped at the right edge; it is a horizontal ScrollView so it is reachable, but there is no visual affordance (no fade/indicator) that it scrolls."]},
+      {"screen": "Testability", "issues": ["data-testid attributes on React Native TouchableOpacity/TextInput are NOT emitted to the DOM on RN Web (verified: dialer-tab-recents, dialer-name-search-input, sold-date-input etc. all count=0), so automated web tests must fall back to text/placeholder selectors. Only the plain <input type=date> keeps its attribute. Consider testID + a web-only accessibilityLabel if DOM test ids are wanted."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_bug_reports_dialer_datesold.py", "/app/test_reports/pytest/pytest_bugreports.xml"],
+  "action_items": [
+    "Add a super-admin guard (or 'Access denied' UI) to /admin/bug-reports instead of rendering an empty list on 403.",
+    "Surface fetch/patch errors on the admin bug reports screen (error banner + retry, toast on failed status change).",
+    "Authenticate POST /api/bug-reports/{user_id} (verify caller == user_id) to stop unauthenticated report/email injection.",
+    "Do not swallow the date-sold PATCH failure in sold-quick.tsx / sold-wizard.tsx — surface a warning if the backdate did not save.",
+    "Optional: collapse consecutive duplicate calls in the dialer Recents list."
+  ],
+  "critical_code_review_comments": [
+    "bug_reports.py: _require_super_admin trusts the raw X-User-ID header; all other new endpoints in this router should use the same JWT dependency the rest of the app uses.",
+    "bug_reports.py: submit_bug_report has no rate limiting and always calls _email_super_admins — combined with the missing auth this can be abused to spam super admins via Resend.",
+    "admin/bug-reports.tsx: empty catch blocks (lines ~55-60, ~65-70) hide API failures from the user; add error state + toast.",
+    "contact_events.get_recent_calls over-fetches limit*3 events and filters in Python; duplicates are returned per event so the UI shows long runs of the same contact."
+  ],
+  "updated_files": ["/app/backend/tests/test_bug_reports_dialer_datesold.py"],
+  "success_rate": {"backend": "100% (17/17)", "frontend": "~93% (all 4 features functional; 2 non-blocking defects: missing role guard + silent error handling on admin screen)"},
+  "seed_data_creation": "Created and deleted 3 TEST_QA bug reports (2 via API, 1 via UI submission) and a TEST_QA_hidden gallery URL on contact 69a8abe36a8712d026633756; contact date_sold was changed to 2026-08-01 during tests and restored to its original 2022-01-01 value by fixture teardown. Only the main agent's pre-existing 'Test report from agent - please ignore' report remains in db.bug_reports.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "Super admin forest@imosapp.com / Admin123! (id 69a0b7095fddcede09591667); regular user mjeast1985@gmail.com / NavyBean1!",
+  "context_for_next_testing_agent": "Backend regression suite for these features: /app/backend/tests/test_bug_reports_dialer_datesold.py (uses login to get token, passes both Authorization: Bearer and X-User-ID; contacts/* endpoints REQUIRE the Bearer token, bug-reports/* only read X-User-ID). RN Web strips data-testid from TouchableOpacity/TextInput — use get_by_text/placeholder selectors. Admin bug-report filter chips render with counts ('Open (3)'), so use a regex selector. sold-wizard step 2 is reachable via /contact/sold-wizard?contact_id=...&contact_name=... then 'Skip Photo'. Never click dialer rows/call button or complete a sold submission (real Twilio traffic).",
+  "rca_of_the_issue": "Non-admin access to /admin/bug-reports: the screen has no role check; fetchReports() catches the 403 and leaves reports=[] so the generic 'No bug reports' empty state renders. Data is not leaked (backend returns 403) but the UX implies the feature is empty rather than restricted."
+}

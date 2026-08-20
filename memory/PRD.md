@@ -911,3 +911,11 @@ Each tab shows a live count badge. Active tab highlighted with a colored bottom 
 - Bugs fixed: agreementId undefined on W-9 verify, get_agreement missing w9_status/w9_file_url/custom_terms/commission_duration, list_agreements missing w9_status, duplicate route decorator, create_default_templates referenced undefined variables
 - Backend: 26/26 tests pass | Frontend: All flows verified via Playwright
 Quote signing system complete
+
+
+## Four UX Features (Jun 2026) — TESTED via testing agent iteration_283 (all pass)
+1. **Backdate Sold Date** — SALE DATE picker in sold-quick + sold-wizard; PATCH /api/contacts/{uid}/{cid}/date-sold
+2. **Delete Texted Photos** — gallery delete supports message_in/message_out via contact.hidden_gallery_urls
+3. **Dialer Recents** — Keypad/Recents toggle; GET /api/contacts/{uid}/recent-calls; consecutive-call grouping (n)
+4. **Report a Bug** — /report-bug form → db.bug_reports + Resend email to super admins; /admin/bug-reports management screen (role-guarded); Hub menu entries added
+Security: /api/bug-reports under BOLA middleware; admin endpoints require JWT + super_admin role

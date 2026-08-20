@@ -791,6 +791,15 @@ async def set_profile_photo(user_id: str, contact_id: str, data: dict = Body(...
 
 
 
+def _norm_media_url(u: str) -> str:
+    """Strip scheme+domain so hidden-URL matching survives base-URL differences."""
+    if u and "://" in u:
+        rest = u.split("://", 1)[1]
+        idx = rest.find("/")
+        return rest[idx:] if idx >= 0 else rest
+    return u or ""
+
+
 @router.delete("/{user_id}/{contact_id}/photos")
 async def delete_contact_photo(user_id: str, contact_id: str, data: dict = Body(...)):
     """Delete a photo from a contact's gallery. Handles profile, history, congrats, and birthday photos."""
@@ -866,11 +875,38 @@ async def delete_contact_photo(user_id: str, contact_id: str, data: dict = Body(
             ]},
             {"$unset": {"photo_url": "", "photo_thumbnail_url": "", "photo_path": "", "photo_thumb_path": "", "customer_photo": ""}}
         )
+
+    elif photo_type in ("message_in", "message_out"):
+        # Texted-in/out MMS photos live on message docs — hide them from the gallery
+        await db.contacts.update_one(
+            {"_id": oid},
+            {"$addToSet": {"hidden_gallery_urls": _norm_media_url(photo_url)}}
+        )
     else:
         raise HTTPException(status_code=400, detail="Invalid photo_type")
 
     return {"message": "Photo deleted"}
 
+
+
+@router.patch("/{user_id}/{contact_id}/date-sold")
+async def set_date_sold(user_id: str, contact_id: str, data: dict = Body(...)):
+    """Set/backdate the sold date for a contact (used by the SOLD wizard)."""
+    db = get_db()
+    date_str = (data.get("date") or "").strip()
+    if not date_str:
+        raise HTTPException(status_code=400, detail="date is required")
+    try:
+        dt = datetime.fromisoformat(date_str.replace("Z", "+00:00")).replace(tzinfo=None)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid date format")
+    result = await db.contacts.update_one(
+        {"_id": ObjectId(contact_id), "user_id": user_id},
+        {"$set": {"date_sold": dt, "updated_at": datetime.utcnow()}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    return {"success": True, "date_sold": dt.isoformat()}
 
 
 @router.patch("/{user_id}/{contact_id}/toggle-automation")
@@ -1321,7 +1357,8 @@ async def get_all_contact_photos(user_id: str, contact_id: str):
         contact = await db.contacts.find_one(
             {"_id": ObjectId(contact_id)},
             {"photo_path": 1, "photo_thumb_path": 1, "photo_url": 1,
-             "photo_thumbnail": 1, "first_name": 1, "phone": 1, "photo_history": 1}
+             "photo_thumbnail": 1, "first_name": 1, "phone": 1, "photo_history": 1,
+             "hidden_gallery_urls": 1}
         )
     except Exception:
         contact = None
@@ -1433,6 +1470,7 @@ async def get_all_contact_photos(user_id: str, contact_id: str):
             {"media_urls": 1, "media_content_types": 1, "direction": 1, "sender": 1, "timestamp": 1}
         ).sort("timestamp", -1).to_list(200)
         first_name = (contact.get("first_name") if contact else "") or "Contact"
+        hidden_urls = set((contact.get("hidden_gallery_urls") or [])) if contact else set()
         for m in msgs:
             urls = m.get("media_urls") or []
             ctypes = m.get("media_content_types") or []
@@ -1460,6 +1498,8 @@ async def get_all_contact_photos(user_id: str, contact_id: str):
                     disp = f"{_public_url}/api/webhooks/twilio/media-proxy?url={_urllib.quote(mu, safe='')}"
                 else:
                     disp = mu
+                if hidden_urls and (_norm_media_url(disp) in hidden_urls or _norm_media_url(mu) in hidden_urls):
+                    continue
                 photos.append({
                     "type": "message_in" if is_inbound else "message_out",
                     "label": f"From {first_name}" if is_inbound else "You sent",

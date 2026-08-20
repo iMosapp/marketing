@@ -8,6 +8,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as MediaLibrary from 'expo-media-library';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
@@ -16,8 +17,10 @@ import { showSimpleAlert } from '../../services/alert';
 const IS_WEB = Platform.OS === 'web';
 const ACCENT = '#C9A962';
 
+const fmtDateLocal = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
 export default function SoldWizardScreen() {
-  const { colors } = useThemeStore();
+  const { colors, mode } = useThemeStore();
   const { user } = useAuthStore();
   const router = useRouter();
   const {
@@ -36,6 +39,8 @@ export default function SoldWizardScreen() {
   const [photo, setPhoto] = useState<{ uri: string; type: string; name: string } | null>(null);
   const [note, setNote] = useState('');
   const [vehicle, setVehicle] = useState(contact_vehicle || '');
+  const [saleDate, setSaleDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const scaleAnim = useRef(new Animated.Value(0)).current;
 
@@ -90,6 +95,13 @@ export default function SoldWizardScreen() {
       if (vehicle && vehicle !== contact_vehicle) {
         await api.put(`/contacts/${user._id}/${contact_id}`, { vehicle }).catch(() => {});
       }
+
+      // 1b. Set the sale date (supports backdating past sales)
+      await api.patch(`/contacts/${user._id}/${contact_id}/date-sold`, {
+        date: fmtDateLocal(saleDate),
+      }).catch(() => {
+        showSimpleAlert('Sale Date Not Saved', 'The sale date could not be saved. You can set it later on the contact page.');
+      });
 
       // 2. Save delivery note if entered
       if (note.trim()) {
@@ -248,6 +260,50 @@ export default function SoldWizardScreen() {
               onChangeText={setVehicle}
               data-testid="sold-vehicle-input"
             />
+          </View>
+
+          <View style={s.fieldGroup}>
+            <Text style={s.fieldLabel}>SALE DATE</Text>
+            {IS_WEB ? (
+              <input
+                type="date"
+                defaultValue={fmtDateLocal(saleDate)}
+                max={fmtDateLocal(new Date())}
+                onChange={(e: any) => { if (e.target.value) setSaleDate(new Date(e.target.value + 'T12:00:00')); }}
+                style={{
+                  width: '100%', padding: 14, borderRadius: 10,
+                  backgroundColor: colors.card, color: colors.text, border: `1.5px solid ${colors.surface}`,
+                  fontSize: 16, boxSizing: 'border-box' as any,
+                }}
+                data-testid="sold-date-input"
+              />
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={[s.input, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+                  onPress={() => setShowDatePicker(v => !v)}
+                  data-testid="sold-date-btn"
+                >
+                  <Text style={{ fontSize: 16, color: colors.text }}>
+                    {saleDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    {fmtDateLocal(saleDate) === fmtDateLocal(new Date()) ? '  (Today)' : ''}
+                  </Text>
+                  <Ionicons name="calendar-outline" size={18} color={ACCENT} />
+                </TouchableOpacity>
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={saleDate}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    maximumDate={new Date()}
+                    onChange={(_, d) => { if (Platform.OS !== 'ios') setShowDatePicker(false); if (d) setSaleDate(d); }}
+                    textColor={colors.text}
+                    themeVariant={mode}
+                    style={{ height: 130, alignSelf: 'center' }}
+                  />
+                )}
+              </>
+            )}
           </View>
 
           <View style={s.fieldGroup}>

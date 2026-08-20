@@ -856,6 +856,49 @@ async def get_reply_photo(user_id: str, contact_id: str, event_index: int):
         return RedirectResponse(url=photo_data)
     raise HTTPException(status_code=404, detail="Photo format not supported")
 
+@router.get("/{user_id}/recent-calls")
+async def get_recent_calls(user_id: str, limit: int = 50):
+    """Recent outbound/inbound calls for the dialer Recents tab."""
+    db = get_db()
+    limit = min(max(limit, 1), 100)
+    events = await db.contact_events.find(
+        {"user_id": user_id, "event_type": {"$in": ["call_placed", "call_received"]}},
+        {"contact_id": 1, "event_type": 1, "timestamp": 1}
+    ).sort("timestamp", -1).to_list(limit * 3)
+
+    oids = []
+    for cid in {e.get("contact_id") for e in events if e.get("contact_id")}:
+        try:
+            oids.append(ObjectId(cid))
+        except Exception:
+            pass
+    contacts_map = {}
+    if oids:
+        async for c in db.contacts.find(
+            {"_id": {"$in": oids}},
+            {"first_name": 1, "last_name": 1, "phone": 1, "photo_thumbnail": 1, "photo_url": 1}
+        ):
+            contacts_map[str(c["_id"])] = c
+
+    calls = []
+    for e in events:
+        c = contacts_map.get(e.get("contact_id") or "")
+        if not c or not c.get("phone"):
+            continue
+        ts = e.get("timestamp")
+        calls.append({
+            "contact_id": e.get("contact_id"),
+            "name": f"{c.get('first_name', '')} {c.get('last_name', '')}".strip() or c.get("phone"),
+            "phone": c.get("phone", ""),
+            "photo": c.get("photo_thumbnail") or c.get("photo_url") or "",
+            "direction": "outgoing" if e.get("event_type") == "call_placed" else "incoming",
+            "timestamp": ts.isoformat() if hasattr(ts, "isoformat") else ts,
+        })
+        if len(calls) >= limit:
+            break
+    return {"calls": calls}
+
+
 @router.post("/{user_id}/find-or-create-and-log")
 async def find_or_create_contact_and_log_event(user_id: str, payload: dict):
     """
