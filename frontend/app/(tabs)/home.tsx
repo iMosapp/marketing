@@ -966,21 +966,28 @@ function HomeScreen() {
               <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
             </View>
 
-            {/* Mini Scoreboard */}
-            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
-              {[
-                { label: 'CALLS', color: '#007AFF', val: taskSummary?.activity?.calls || 0 },
-                { label: 'TEXTS', color: '#34C759', val: taskSummary?.activity?.texts || 0 },
-                { label: 'EMAILS', color: '#5AC8FA', val: taskSummary?.activity?.emails || 0 },
-                { label: 'CARDS', color: '#C9A962', val: taskSummary?.activity?.cards || 0 },
-                { label: 'CLICKS', color: '#FF375F', val: taskSummary?.activity?.clicks || 0 },
-                { label: 'LEADS', color: '#32ADE6', val: taskSummary?.activity?.new_leads || 0 },
-              ].map(s => (
-                <View key={s.label} style={{ flex: 1, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 10, paddingVertical: 8, paddingHorizontal: 2 }}>
-                  <Text style={{ fontSize: 21, fontWeight: '700', color: s.color }}>{s.val}</Text>
-                  <Text style={{ fontSize: 9, color: colors.textSecondary, fontWeight: '600', letterSpacing: 0.5, marginTop: 1 }}>{s.label}</Text>
-                </View>
-              ))}
+            {/* Mini Scoreboard — 2 rows of 3 so labels never wrap */}
+            <View style={{ gap: 6, marginBottom: 14 }}>
+              {(() => {
+                const stats = [
+                  { label: 'CALLS', color: '#007AFF', val: taskSummary?.activity?.calls || 0 },
+                  { label: 'TEXTS', color: '#34C759', val: taskSummary?.activity?.texts || 0 },
+                  { label: 'EMAILS', color: '#5AC8FA', val: taskSummary?.activity?.emails || 0 },
+                  { label: 'CARDS', color: '#C9A962', val: taskSummary?.activity?.cards || 0 },
+                  { label: 'CLICKS', color: '#FF375F', val: taskSummary?.activity?.clicks || 0 },
+                  { label: 'LEADS', color: '#32ADE6', val: taskSummary?.activity?.new_leads || 0 },
+                ];
+                return [0, 1].map(row => (
+                  <View key={row} style={{ flexDirection: 'row', gap: 6 }}>
+                    {stats.slice(row * 3, row * 3 + 3).map(s => (
+                      <View key={s.label} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 4 }}>
+                        <Text style={{ fontSize: 20, fontWeight: '700', color: s.color }} maxFontSizeMultiplier={1.2} numberOfLines={1}>{s.val}</Text>
+                        <Text style={{ fontSize: 11, color: colors.textSecondary, fontWeight: '600', letterSpacing: 0.5 }} maxFontSizeMultiplier={1.1} numberOfLines={1}>{s.label}</Text>
+                      </View>
+                    ))}
+                  </View>
+                ));
+              })()}
             </View>
 
             {/* Progress */}

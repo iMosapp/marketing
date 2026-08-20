@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
-  View, Text, TouchableOpacity, Platform, Linking, Dimensions,
+  View, Text, TouchableOpacity, Platform, Linking, Dimensions, TextInput, ScrollView, Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -39,6 +39,7 @@ export default function DialerScreen() {
 
   const [phoneNumber, setPhoneNumber] = useState('');
   const [contacts, setContacts] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const isPending = user?.status === 'pending';
 
@@ -165,12 +166,93 @@ export default function DialerScreen() {
     return full.length > 14 ? full.slice(0, 12) + '...' : full;
   };
 
+  // Name search matches
+  const nameMatches = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return contacts.filter(c => {
+      const full = `${c.first_name || ''} ${c.last_name || ''}`.toLowerCase();
+      return full.includes(q) && (c.phone || '').replace(/\D/g, '').length >= 7;
+    }).slice(0, 20);
+  }, [searchQuery, contacts]);
+
+  const handleSearchCall = (c: any) => {
+    Keyboard.dismiss();
+    setSearchQuery('');
+    setPhoneNumber(c.phone || '');
+    handleCall(c.phone);
+  };
+
   const showMatches = matchingContacts.length > 0 && phoneNumber.length >= 3;
   const visibleMatches = matchingContacts.slice(0, 2);
   const moreCount = matchingContacts.length - 2;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']} data-testid="dialer-screen">
+      {/* ─── Name Search Bar ─── */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginTop: 8, backgroundColor: colors.card, borderRadius: 12, paddingHorizontal: 12, height: 42 }}>
+        <Ionicons name="search" size={18} color={colors.textSecondary} />
+        <TextInput
+          style={{ flex: 1, fontSize: 16, color: colors.text, marginLeft: 8, height: 42 }}
+          placeholder="Search contacts by name"
+          placeholderTextColor={colors.textTertiary || colors.textSecondary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCorrect={false}
+          autoCapitalize="words"
+          returnKeyType="search"
+          maxFontSizeMultiplier={1.2}
+          data-testid="dialer-name-search-input"
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => { setSearchQuery(''); Keyboard.dismiss(); }} data-testid="dialer-search-clear-btn">
+            <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {searchQuery.trim().length > 0 ? (
+        /* ─── Search Results ─── */
+        <ScrollView
+          style={{ flex: 1, marginTop: 10 }}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 24 }}
+          keyboardShouldPersistTaps="handled"
+          data-testid="dialer-search-results"
+        >
+          {nameMatches.length === 0 ? (
+            <View style={{ alignItems: 'center', paddingTop: 40 }}>
+              <Ionicons name="person-outline" size={32} color={colors.textTertiary || colors.textSecondary} />
+              <Text style={{ fontSize: 16, color: colors.textSecondary, marginTop: 8 }}>No contacts found</Text>
+            </View>
+          ) : (
+            nameMatches.map((c: any, i: number) => (
+              <TouchableOpacity
+                key={c._id}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', paddingVertical: 12,
+                  borderBottomWidth: 0.5, borderBottomColor: colors.border,
+                }}
+                onPress={() => handleSearchCall(c)}
+                activeOpacity={0.6}
+                data-testid={`dialer-search-result-${i}`}
+              >
+                <Ionicons name="person-circle" size={36} color={colors.textSecondary} style={{ marginRight: 10 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text }} numberOfLines={1}>
+                    {`${c.first_name || ''} ${c.last_name || ''}`.trim() || 'Unnamed'}
+                  </Text>
+                  <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 1 }} numberOfLines={1}>
+                    {formatPhone(c.phone)}
+                  </Text>
+                </View>
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#34C75920', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="call" size={18} color="#34C759" />
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
+        </ScrollView>
+      ) : (
       <View style={{ flex: 1, justifyContent: 'flex-end' }}>
 
         {/* Twilio number indicator */}
@@ -315,6 +397,7 @@ export default function DialerScreen() {
         {/* Bottom spacer */}
         <View style={{ height: 8 }} />
       </View>
+      )}
     </SafeAreaView>
   );
 }

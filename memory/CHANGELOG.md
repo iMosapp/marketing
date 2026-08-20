@@ -103,3 +103,10 @@
 
 ## Mar 2, 2026 — Date-Based Automations
 - Editable and removable Birthday, Anniversary, Sold Date automations
+
+## Jun 2026 — Text Wrapping Fixes + Dialer Name Search
+- Home "Today's Touchpoints" scoreboard: restructured from 1 row of 6 to 2 rows of 3 (number + label side-by-side), with numberOfLines/maxFontSizeMultiplier caps so labels never wrap at large Dynamic Type sizes (home.tsx)
+- NotificationBell dropdown title: "Notifications" now single-line with adjustsFontSizeToFit + maxFontSizeMultiplier (NotificationBell.tsx)
+- Dialer: added "Search contacts by name" bar at top of dial pad; typing a name shows matching contacts full-screen with tap-to-call (dialer.tsx). Tap calls via existing Twilio click-to-call flow
+- Root cause of wrapping: user's iPhone large accessibility font scale multiplying fontSize
+- Verified via web preview screenshots (login → home scoreboard, dialer search "Forest" → match → call button, notifications dropdown)

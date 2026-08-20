@@ -180,18 +180,18 @@ export function NotificationBell() {
             <Pressable style={styles.dropdown} onPress={(e) => e.stopPropagation()}>
             {/* Header */}
             <View style={styles.dropdownHeader}>
-              <Text style={styles.dropdownTitle}>Notifications</Text>
+              <Text style={styles.dropdownTitle} numberOfLines={1} adjustsFontSizeToFit maxFontSizeMultiplier={1.15}>Notifications</Text>
               <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
                 {unreadCount > 0 && (
                   <TouchableOpacity onPress={markAllRead} data-testid="mark-all-read-btn">
-                    <Text style={styles.markAll}>Mark all read</Text>
+                    <Text style={styles.markAll} numberOfLines={1} maxFontSizeMultiplier={1.15}>Mark all read</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
                   onPress={() => { setOpen(false); router.push('/(tabs)/notifications' as any); }}
                   data-testid="view-all-notifications-btn"
                 >
-                  <Text style={[styles.markAll, { color: colors.textSecondary }]}>View All</Text>
+                  <Text style={[styles.markAll, { color: colors.textSecondary }]} numberOfLines={1} maxFontSizeMultiplier={1.15}>View All</Text>
                 </TouchableOpacity>
               </View>
             </View>
