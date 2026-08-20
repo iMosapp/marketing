@@ -15,7 +15,7 @@ import {
   Dimensions,
   useWindowDimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -93,6 +93,7 @@ interface ContactStats {
 
 function ContactDetailScreen() {
   const { colors, mode } = useThemeStore();
+  const insets = useSafeAreaInsets();
   const s = getS(colors);
   const { width: screenWidth } = useWindowDimensions();
   const ncs = {
@@ -4932,10 +4933,13 @@ function ContactDetailScreen() {
 
       {/* Photo Gallery — Modern reel */}
       <Modal visible={showPhotoViewer} animationType="slide" transparent={false} onDismiss={runPendingPick} onRequestClose={() => { setShowPhotoViewer(false); setFullPhoto(null); setAllPhotos([]); setSelectedPhotoIndex(-1); }}>
-        <SafeAreaView style={{ flex: 1, backgroundColor: '#000' }} edges={['top']}>
+        {/* NOTE: react-native-safe-area-context returns 0 insets inside a RN Modal
+            (it renders outside the SafeAreaProvider tree), so we apply the insets
+            captured at the screen level explicitly instead of using SafeAreaView here. */}
+        <View style={{ flex: 1, backgroundColor: '#000' }}>
         <View style={s.galleryRoot}>
           {/* Header */}
-          <View style={s.galleryTopBar}>
+          <View style={[s.galleryTopBar, { paddingTop: insets.top + 12 }]}>
             <TouchableOpacity
               style={s.galleryCloseBtn}
               onPress={() => { setShowPhotoViewer(false); setFullPhoto(null); setAllPhotos([]); setSelectedPhotoIndex(-1); }}
@@ -5016,7 +5020,7 @@ function ContactDetailScreen() {
                 })}
               </ScrollView>
               {/* Bottom action bar */}
-              <View style={s.viewerBottomBar}>
+              <View style={[s.viewerBottomBar, { paddingBottom: insets.bottom + 12 }]}>
                 <View style={{ flex: 1 }}>
                   <Text style={s.viewerLabel} numberOfLines={1}>
                     {allPhotos[selectedPhotoIndex]?.type === 'profile' ? 'Profile Photo' : (allPhotos[selectedPhotoIndex]?.label || 'Photo')}
@@ -5180,7 +5184,7 @@ function ContactDetailScreen() {
             </View>
           )}
         </View>
-        </SafeAreaView>
+        </View>
       </Modal>
       <ChannelPicker
         message={channelPicker.message}

@@ -1,5 +1,14 @@
 # CHANGELOG — iMOs App
 
+## Jun, 2026 — Photo Gallery Header Behind Notch (COMPLETED)
+- **Bug:** In the contact photo gallery, the close (X) and camera buttons sat up under the iPhone status bar/notch and were untappable — user had to force-close the app.
+- **Root cause:** The gallery is a RN `<Modal>`, and `react-native-safe-area-context`'s `SafeAreaView`/insets return **0 inside a Modal** (Modal renders outside the SafeAreaProvider tree), so the header rendered at y=0 under the notch.
+- **Fix (`contact/[id].tsx`):** Capture `useSafeAreaInsets()` at the screen level (valid there) and apply it explicitly — `paddingTop: insets.top + 12` on the gallery top bar and `paddingBottom: insets.bottom + 12` on the full-photo bottom bar. Replaced the ineffective in-Modal `SafeAreaView` with a plain `View`.
+- **Verified:** Web preview — gallery opens, header renders (X · Photos · camera), no regression. Native notch offset can't be shown on web (insets=0 there) but is the standard fix.
+- **Note:** Same "controls under the notch" pattern may exist in other RN Modals across the app (user mentioned seeing it elsewhere) — not yet swept.
+- **Deploy note:** Native frontend change — ships via `eas update --branch production`.
+
+
 ## Jun, 2026 — Date Picker Invisible in Light Mode (COMPLETED)
 - **Bug:** The birthday/date picker text was invisible and couldn't be changed. Root cause: the native `DateTimePicker` hardcoded `textColor="#FFFFFF"` + `themeVariant="dark"`, but the sheet background follows the theme (`colors.card`). In light mode that's white text on a white sheet → invisible; you can't scroll a spinner you can't see.
 - **Fix:** Made the picker theme-adaptive — `textColor={colors.text}` + `themeVariant={mode}` (from `useThemeStore`). Applied to the contact birthday/anniversary/custom-date picker AND the automation-date picker (`contact/[id].tsx`), plus the same latent bug in `AppointmentModal.tsx` (date + time), `campaigns/new.tsx`, and `campaigns/[id].tsx`. No hardcoded white pickers remain.
