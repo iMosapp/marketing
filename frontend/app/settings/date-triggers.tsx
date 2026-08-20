@@ -235,8 +235,21 @@ export default function DateTriggersScreen() {
         {activeTab === 'dates' ? (
           <>
             <Text style={styles.sectionDescription}>
-              Contacts with these dates will automatically receive your message every year at 10 AM. Tags are auto-applied when dates are saved.
+              Messages send only on the contact's actual date, and ONLY to contacts you've opted in below — nothing fires just because a date is on file.
             </Text>
+
+            <TouchableOpacity
+              style={styles.manageBtn}
+              onPress={() => router.push('/settings/date-recipients')}
+              data-testid="manage-recipients-btn"
+            >
+              <Ionicons name="people" size={20} color="#C9A962" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.manageTitle}>Manage Recipients</Text>
+                <Text style={styles.manageHint}>Search & bulk-choose exactly who gets birthday and anniversary messages</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
 
             {DATE_TRIGGERS.map((trigger) => {
               const config = configs[trigger.type] || {};
@@ -431,6 +444,13 @@ const getStyles = (colors: any) => StyleSheet.create({
   triggerCard: {
     backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 12,
   },
+  manageBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 16,
+    borderWidth: 1, borderColor: '#C9A96244',
+  },
+  manageTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
+  manageHint: { fontSize: 13, color: colors.textSecondary, marginTop: 2, lineHeight: 17 },
   triggerHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
   },

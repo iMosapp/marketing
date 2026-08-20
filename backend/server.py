@@ -1556,6 +1556,50 @@ async def startup_event():
         except Exception as e:
             logger.warning(f"[Startup] Voice note backfill skipped: {e}")
     _aio2.create_task(_voice_note_backfill())
+
+    # ONE-TIME migration: birthday/anniversary sends become manual opt-in.
+    # Wipes previously auto-applied Birthday/Anniversary tags and cancels
+    # enrollments created by the old save-time auto-enroll (which fired
+    # messages immediately instead of on the actual date).
+    async def _date_optin_migration():
+        try:
+            db = get_db()
+            if await db.migrations.find_one({"_id": "date_optin_reset_2026_08"}):
+                return
+            r1 = await db.contacts.update_many(
+                {},
+                {"$pull": {"tags": {"$in": [
+                    "Birthday", "birthday", "BIRTHDAY",
+                    "Anniversary", "anniversary", "ANNIVERSARY",
+                ]}}},
+            )
+            enr_filter = {"status": "active", "$or": [
+                {"trigger_type": {"$in": ["birthday", "anniversary", "sold_date"]}},
+                {"trigger_type": "tag", "trigger_tag": {"$in": ["Birthday", "birthday", "Anniversary", "anniversary"]}},
+            ]}
+            enr_ids = [str(e["_id"]) async for e in db.campaign_enrollments.find(enr_filter, {"_id": 1})]
+            cancelled_sends = 0
+            if enr_ids:
+                await db.campaign_enrollments.update_many(
+                    enr_filter, {"$set": {"status": "cancelled", "cancel_reason": "date_optin_reset"}}
+                )
+                rs = await db.campaign_pending_sends.update_many(
+                    {"enrollment_id": {"$in": enr_ids}, "status": "pending"},
+                    {"$set": {"status": "cancelled", "cancel_reason": "date_optin_reset"}},
+                )
+                cancelled_sends = rs.modified_count
+            await db.migrations.insert_one({
+                "_id": "date_optin_reset_2026_08",
+                "tags_cleared_on": r1.modified_count,
+                "enrollments_cancelled": len(enr_ids),
+                "pending_sends_cancelled": cancelled_sends,
+                "ran_at": datetime.utcnow(),
+            })
+            logger.info(f"[Startup] Date opt-in reset: tags cleared on {r1.modified_count} contacts, "
+                        f"{len(enr_ids)} enrollments + {cancelled_sends} pending sends cancelled")
+        except Exception as e:
+            logger.warning(f"[Startup] Date opt-in reset failed: {e}")
+    _aio2.create_task(_date_optin_migration())
     # Removes any accidentally-stored test prompts from the ai_clone_prompts collection
     try:
         db = get_db()

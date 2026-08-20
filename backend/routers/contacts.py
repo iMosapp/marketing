@@ -8,6 +8,7 @@ from typing import List, Optional
 import logging
 
 from models import Contact, ContactCreate
+from pydantic import BaseModel
 from routers.database import get_db, get_data_filter, get_user_by_id, get_accessible_user_ids, increment_user_stat
 
 router = APIRouter(prefix="/contacts", tags=["Contacts"])
@@ -24,13 +25,20 @@ async def _check_tag_campaign_enrollment(user_id: str, contact_id: str, contact_
     
     try:
         # Find active campaigns with trigger_tags matching this contact's tags (case-insensitive)
+        # Birthday/Anniversary tags are OPT-IN markers for date-based sends — they must NEVER
+        # instant-fire a campaign on tag application. Date sends happen only day-of via scheduler.
+        DATE_OPTIN_TAG_NAMES = {"birthday", "anniversary"}
         contact_tags_lower = [t.lower() for t in contact_tags]
         all_campaigns = await db.campaigns.find({
             "user_id": user_id,
             "active": True,
             "trigger_tag": {"$exists": True, "$ne": ""}
         }).to_list(50)
-        campaigns = [c for c in all_campaigns if c.get('trigger_tag', '').lower() in contact_tags_lower]
+        campaigns = [
+            c for c in all_campaigns
+            if c.get('trigger_tag', '').lower() in contact_tags_lower
+            and c.get('trigger_tag', '').lower() not in DATE_OPTIN_TAG_NAMES
+        ]
         
         for campaign in campaigns:
             campaign_id = str(campaign['_id'])
@@ -119,67 +127,10 @@ async def _check_tag_campaign_enrollment(user_id: str, contact_id: str, contact_
 
 
 async def _check_date_campaign_enrollment(user_id: str, contact_id: str, contact_data: dict):
-    """Auto-enroll contact in date-based campaigns when date fields are present"""
-    db = get_db()
-    
-    # Map contact date fields to campaign date_type/type values
-    date_field_map = {
-        "birthday": ["birthday"],
-        "anniversary": ["anniversary"],
-        "date_sold": ["sold_date"],
-    }
-    
-    try:
-        for contact_field, campaign_types in date_field_map.items():
-            date_val = contact_data.get(contact_field)
-            if not date_val:
-                continue
-            
-            # Find active date campaigns matching this date type
-            type_conditions = []
-            for ct in campaign_types:
-                type_conditions.append({"type": ct})
-                type_conditions.append({"date_type": ct})
-            
-            campaigns = await db.campaigns.find({
-                "user_id": user_id,
-                "active": True,
-                "$or": type_conditions
-            }).to_list(50)
-            
-            for campaign in campaigns:
-                campaign_id = str(campaign['_id'])
-                # Check if already enrolled
-                existing = await db.campaign_enrollments.find_one({
-                    "campaign_id": campaign_id,
-                    "contact_id": contact_id,
-                    "status": {"$in": ["active", "completed"]}
-                })
-                if existing:
-                    continue
-                
-                contact_name = f"{contact_data.get('first_name', '')} {contact_data.get('last_name', '')}".strip()
-                sequences = campaign.get('sequences', [])
-                
-                enrollment = {
-                    "user_id": user_id,
-                    "campaign_id": campaign_id,
-                    "campaign_name": campaign.get('name', ''),
-                    "contact_id": contact_id,
-                    "contact_name": contact_name,
-                    "contact_phone": contact_data.get('phone', ''),
-                    "current_step": 1,
-                    "total_steps": len(sequences),
-                    "status": "active",
-                    "enrolled_at": datetime.utcnow(),
-                    "next_send_at": datetime.utcnow(),
-                    "messages_sent": [],
-                    "trigger_type": campaign_types[0]
-                }
-                await db.campaign_enrollments.insert_one(enrollment)
-                logger.info(f"Auto-enrolled {contact_name} in date campaign '{campaign.get('name')}' ({campaign_types[0]})")
-    except Exception as e:
-        logger.error(f"Date campaign enrollment check failed: {e}")
+    """DEPRECATED — save-time date enrollment fired messages immediately instead of on
+    the actual date. Replaced by _enroll_date_campaigns_for_user in scheduler.py (day-of,
+    opt-in tag gated). Kept as a no-op so nothing external breaks."""
+    return
 
 @router.post("/{user_id}", response_model=Contact)
 async def create_contact(user_id: str, contact_data: ContactCreate):
@@ -207,12 +158,9 @@ async def create_contact(user_id: str, contact_data: ContactCreate):
         contact_dict['ownership_type'] = 'org'
     contact_dict['status'] = 'active'
     
-    # Auto-tag based on date fields
+    # Auto-tag ONLY the Sold Date marker. Birthday/Anniversary tags are strictly
+    # manual opt-ins (managed in Settings → Date Recipients) — never auto-applied.
     existing_tags = set(contact_dict.get('tags', []))
-    if contact_dict.get('birthday'):
-        existing_tags.add('Birthday')
-    if contact_dict.get('anniversary'):
-        existing_tags.add('Anniversary')
     if contact_dict.get('date_sold'):
         existing_tags.add('Sold Date')
     contact_dict['tags'] = list(existing_tags)
@@ -223,8 +171,8 @@ async def create_contact(user_id: str, contact_data: ContactCreate):
     # Auto-enroll in tag-triggered campaigns
     await _check_tag_campaign_enrollment(user_id, str(result.inserted_id), contact_dict)
     
-    # Auto-enroll in date-based campaigns (birthday, anniversary, sold_date)
-    await _check_date_campaign_enrollment(user_id, str(result.inserted_id), contact_dict)
+    # NOTE: date-based campaign enrollment (birthday/anniversary/sold_date) happens
+    # day-of via the daily scheduler sweep — never at save time.
     
     # Track stat for leaderboard
     await increment_user_stat(user_id, "contacts_added")
@@ -309,6 +257,101 @@ async def check_duplicate_contact(user_id: str, phone: Optional[str] = None, ema
         }
         for m in matches
     ]}
+
+DATE_OPTIN_TAGS = {"birthday": "Birthday", "anniversary": "Anniversary"}
+
+
+@router.get("/{user_id}/date-optins")
+async def get_date_optins(user_id: str, occasion: str = "birthday", search: Optional[str] = None):
+    """List contacts that HAVE the relevant date on file, with opt-in (tag) status."""
+    if occasion not in DATE_OPTIN_TAGS:
+        raise HTTPException(status_code=400, detail="occasion must be 'birthday' or 'anniversary'")
+    db = get_db()
+    base_filter = await get_data_filter(user_id)
+
+    if occasion == "birthday":
+        date_query = {"birthday": {"$exists": True, "$ne": None}}
+    else:
+        date_query = {"$or": [
+            {"date_sold": {"$exists": True, "$ne": None}},
+            {"anniversary": {"$exists": True, "$ne": None}},
+        ]}
+
+    query: dict = {"$and": [base_filter, date_query, {"status": {"$ne": "hidden"}}]}
+    if search and search.strip():
+        s = search.strip()
+        query["$and"].append({"$or": [
+            {"first_name": {"$regex": s, "$options": "i"}},
+            {"last_name": {"$regex": s, "$options": "i"}},
+        ]})
+
+    contacts = await db.contacts.find(query, {
+        "first_name": 1, "last_name": 1, "phone": 1, "photo_thumbnail": 1,
+        "birthday": 1, "anniversary": 1, "date_sold": 1, "tags": 1, "vehicle": 1,
+    }).sort([("first_name", 1)]).to_list(2000)
+
+    tag_l = DATE_OPTIN_TAGS[occasion].lower()
+    now = datetime.utcnow()
+    out = []
+    for c in contacts:
+        tags_lower = [t.lower() for t in c.get("tags", []) if isinstance(t, str)]
+        if occasion == "birthday":
+            d = c.get("birthday")
+            years = None
+        else:
+            d = c.get("date_sold") or c.get("anniversary")
+            years = (now.year - d.year) if isinstance(d, datetime) else None
+        out.append({
+            "id": str(c["_id"]),
+            "first_name": c.get("first_name", ""),
+            "last_name": c.get("last_name", ""),
+            "phone": c.get("phone", ""),
+            "photo_thumbnail": c.get("photo_thumbnail", ""),
+            "vehicle": c.get("vehicle", "") or "",
+            "date": d.strftime("%b %-d") if isinstance(d, datetime) else None,
+            "years": years,
+            "opted_in": tag_l in tags_lower,
+        })
+    return {
+        "occasion": occasion,
+        "total": len(out),
+        "opted_in": sum(1 for o in out if o["opted_in"]),
+        "contacts": out,
+    }
+
+
+class DateOptinBulk(BaseModel):
+    contact_ids: List[str]
+    occasion: str
+    enable: bool
+
+
+@router.post("/{user_id}/date-optins/bulk")
+async def bulk_update_date_optins(user_id: str, data: DateOptinBulk):
+    """Bulk add/remove the Birthday/Anniversary opt-in tag. NEVER triggers a send —
+    sends only happen day-of via the scheduler."""
+    if data.occasion not in DATE_OPTIN_TAGS:
+        raise HTTPException(status_code=400, detail="occasion must be 'birthday' or 'anniversary'")
+    if not data.contact_ids:
+        return {"updated": 0}
+    db = get_db()
+    base_filter = await get_data_filter(user_id)
+    oids = []
+    for cid in data.contact_ids[:2000]:
+        try:
+            oids.append(ObjectId(cid))
+        except Exception:
+            pass
+    tag = DATE_OPTIN_TAGS[data.occasion]
+    query = {"$and": [{"_id": {"$in": oids}}, base_filter]}
+    if data.enable:
+        result = await db.contacts.update_many(query, {"$addToSet": {"tags": tag}})
+    else:
+        result = await db.contacts.update_many(
+            query, {"$pull": {"tags": {"$in": [tag, tag.lower(), tag.upper()]}}}
+        )
+    return {"updated": result.modified_count, "enable": data.enable, "tag": tag}
+
 
 @router.get("/{user_id}")
 async def get_contacts(
@@ -580,12 +623,8 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
             logger.error(f"Photo processing during update failed: {e}")
             update_dict['photo_url'] = photo_val
     
-    # Auto-tag based on date fields
+    # Auto-tag ONLY the Sold Date marker — Birthday/Anniversary tags are manual opt-ins
     existing_tags = set(update_dict.get('tags', []))
-    if update_dict.get('birthday'):
-        existing_tags.add('Birthday')
-    if update_dict.get('anniversary'):
-        existing_tags.add('Anniversary')
     if update_dict.get('date_sold'):
         existing_tags.add('Sold Date')
     update_dict['tags'] = list(existing_tags)
@@ -641,8 +680,7 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
     # Auto-enroll in tag-triggered campaigns
     await _check_tag_campaign_enrollment(user_id, contact_id, update_dict)
     
-    # Auto-enroll in date-based campaigns if date fields were updated
-    await _check_date_campaign_enrollment(user_id, contact_id, update_dict)
+    # NOTE: date-based campaign enrollment happens day-of via the scheduler — never at save time.
 
     # Sold workflow hook — runs AFTER all saves, never blocks
     sold_result = None

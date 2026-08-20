@@ -317,7 +317,7 @@ async def process_all_date_triggers():
         return
 
     try:
-        # Find distinct user_ids that have at least one enabled config
+        # Users with enabled date-trigger configs
         pipeline = [
             {"$match": {"enabled": True}},
             {"$group": {"_id": "$user_id"}},
@@ -325,10 +325,21 @@ async def process_all_date_triggers():
         user_docs = await db.date_trigger_configs.aggregate(pipeline).to_list(500)
         user_ids = [d["_id"] for d in user_docs]
 
-        logger.info(f"[Scheduler] Found {len(user_ids)} users with active date triggers")
+        # Also users with active date-based campaigns (birthday/anniversary/sold_date)
+        camp_users = await db.campaigns.distinct("user_id", {
+            "active": True,
+            "$or": [
+                {"type": {"$in": ["birthday", "anniversary", "sold_date"]}},
+                {"date_type": {"$in": ["birthday", "anniversary", "sold_date"]}},
+            ],
+        })
+        all_user_ids = list({*user_ids, *[u for u in camp_users if u]})
+
+        logger.info(f"[Scheduler] Found {len(all_user_ids)} users with active date triggers/campaigns")
 
         total_sent = 0
-        for user_id in user_ids:
+        total_enrolled = 0
+        for user_id in all_user_ids:
             try:
                 result = await _run_date_triggers_for_user(db, user_id)
                 total_sent += result
@@ -336,17 +347,156 @@ async def process_all_date_triggers():
                 msg = f"[Scheduler] Error processing date triggers for user {user_id}: {e}"
                 logger.error(msg)
                 _scheduler_state["errors"] = (_scheduler_state["errors"] + [msg])[-20:]
+            try:
+                total_enrolled += await _enroll_date_campaigns_for_user(db, user_id)
+            except Exception as e:
+                msg = f"[Scheduler] Error in day-of campaign enrollment for user {user_id}: {e}"
+                logger.error(msg)
+                _scheduler_state["errors"] = (_scheduler_state["errors"] + [msg])[-20:]
 
         _scheduler_state["last_date_trigger_run"] = datetime.now(timezone.utc).isoformat()
         _scheduler_state["date_trigger_results"] = {
-            "users_processed": len(user_ids),
+            "users_processed": len(all_user_ids),
             "messages_sent": total_sent,
+            "campaign_enrollments": total_enrolled,
             "ran_at": datetime.now(timezone.utc).isoformat(),
         }
-        logger.info(f"[Scheduler] Date-trigger sweep complete. {total_sent} messages sent for {len(user_ids)} users.")
+        logger.info(f"[Scheduler] Date-trigger sweep complete. {total_sent} messages, {total_enrolled} day-of campaign enrollments for {len(all_user_ids)} users.")
     except Exception as e:
         logger.error(f"[Scheduler] Fatal error in date-trigger sweep: {e}")
         _scheduler_state["errors"] = (_scheduler_state["errors"] + [str(e)])[-20:]
+
+
+DATE_CAMPAIGN_OCCASIONS = [
+    # (contact date field, campaign type, opt-in tag required on the contact)
+    ("birthday", "birthday", "birthday"),
+    ("anniversary", "anniversary", "anniversary"),
+    ("date_sold", "sold_date", "anniversary"),
+]
+
+
+async def _enroll_date_campaigns_for_user(db, user_id: str) -> int:
+    """Day-of enrollment into date-based campaigns. Fires ONLY on the contact's actual
+    date, ONLY for contacts carrying the manual opt-in tag, max one campaign per
+    contact per occasion per day (same-day guard kills doubles)."""
+    import pytz
+    from routers.database import get_data_filter
+
+    user = await db.users.find_one({"_id": __import__("bson").ObjectId(user_id)}, {"timezone": 1})
+    if not user:
+        return 0
+    try:
+        local_now = datetime.now(pytz.timezone(user.get("timezone") or "America/Denver"))
+    except Exception:
+        local_now = datetime.now(timezone.utc)
+    today_month, today_day = local_now.month, local_now.day
+    today_str = local_now.strftime("%Y-%m-%d")
+
+    base_filter = await get_data_filter(user_id)
+    now = datetime.utcnow()
+    enrolled = 0
+
+    for contact_field, campaign_type, optin_tag in DATE_CAMPAIGN_OCCASIONS:
+        campaigns = await db.campaigns.find({
+            "user_id": user_id, "active": True,
+            "$or": [{"type": campaign_type}, {"date_type": campaign_type}],
+        }).to_list(20)
+        if not campaigns:
+            continue
+
+        contacts = await db.contacts.find(
+            {**base_filter, contact_field: {"$exists": True, "$ne": None}},
+            {"first_name": 1, "last_name": 1, "phone": 1, "tags": 1, contact_field: 1, "disabled_automations": 1},
+        ).to_list(2000)
+
+        for contact in contacts:
+            dt = contact.get(contact_field)
+            if not (isinstance(dt, datetime) and dt.month == today_month and dt.day == today_day):
+                continue
+            tags_lower = [t.lower() for t in contact.get("tags", []) if isinstance(t, str)]
+            if optin_tag not in tags_lower:
+                continue
+            if contact_field == "date_sold" and dt.year >= local_now.year:
+                continue  # sold this year — not an anniversary yet
+            if campaign_type in contact.get("disabled_automations", []):
+                continue
+
+            contact_id = str(contact["_id"])
+
+            # Same-day guard — one date-campaign enrollment per contact per occasion per day
+            guard = await db.date_send_guard.find_one_and_update(
+                {"_id": f"{user_id}_{contact_id}_{campaign_type}_{today_str}"},
+                {"$setOnInsert": {"created_at": now}},
+                upsert=True,
+            )
+            if guard is not None:
+                continue  # already handled today
+
+            # Enroll in the FIRST matching campaign only — never two at once
+            campaign = campaigns[0]
+            campaign_id = str(campaign["_id"])
+            recent = await db.campaign_enrollments.find_one({
+                "campaign_id": campaign_id,
+                "contact_id": contact_id,
+                "enrolled_at": {"$gte": now - timedelta(days=300)},
+            })
+            if recent:
+                continue
+
+            sequences = campaign.get("sequences", [])
+            if not sequences:
+                continue
+            contact_name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip()
+
+            enr = await db.campaign_enrollments.insert_one({
+                "user_id": user_id,
+                "campaign_id": campaign_id,
+                "campaign_name": campaign.get("name", ""),
+                "contact_id": contact_id,
+                "contact_name": contact_name,
+                "contact_phone": contact.get("phone", ""),
+                "current_step": 1,
+                "total_steps": len(sequences),
+                "status": "active",
+                "enrolled_at": now,
+                "next_send_at": now,
+                "messages_sent": [],
+                "trigger_type": campaign_type,
+            })
+            enrollment_id = str(enr.inserted_id)
+
+            docs = []
+            for i, step in enumerate(sequences):
+                offset = timedelta(
+                    minutes=int(step.get("delay_minutes", 0) or 0),
+                    hours=int(step.get("delay_hours", 0) or 0),
+                    days=int(step.get("delay_days", 0) or 0) + int(step.get("delay_months", 0) or 0) * 30,
+                )
+                docs.append({
+                    "user_id": user_id,
+                    "campaign_id": campaign_id,
+                    "campaign_name": campaign.get("name", ""),
+                    "contact_id": contact_id,
+                    "contact_name": contact_name,
+                    "contact_phone": contact.get("phone", ""),
+                    "enrollment_id": enrollment_id,
+                    "step": i + 1,
+                    "message_template": step.get("message_template") or step.get("message", ""),
+                    "media_type": step.get("media_type", ""),
+                    "media_urls": step.get("media_urls", []),
+                    "channel": step.get("channel", "sms"),
+                    "delivery_mode": campaign.get("delivery_mode", "auto"),
+                    "ai_enabled": campaign.get("ai_enabled", False),
+                    "send_at": now + offset,
+                    "status": "pending",
+                    "created_at": now,
+                })
+            if docs:
+                await db.campaign_pending_sends.insert_many(docs)
+            enrolled += 1
+            logger.info(f"[Scheduler] Day-of {campaign_type} enrollment: {contact_name} → '{campaign.get('name')}'")
+
+    return enrolled
 
 
 async def _run_date_triggers_for_user(db, user_id: str) -> int:
@@ -406,6 +556,15 @@ async def _run_date_triggers_for_user(db, user_id: str) -> int:
                 dt = contact.get(date_field)
                 if dt and isinstance(dt, datetime):
                     if dt.month == today_month and dt.day == today_day:
+                        # OPT-IN GATE: date sends require the manual tag —
+                        # birthday → "Birthday", anniversary/sold_date → "Anniversary"
+                        required_tag = {"birthday": "birthday", "anniversary": "anniversary", "sold_date": "anniversary"}.get(trigger_type)
+                        tags_lower = [t.lower() for t in contact.get("tags", []) if isinstance(t, str)]
+                        if required_tag and required_tag not in tags_lower:
+                            continue
+                        # Sold-date anniversaries require at least 1 full year of ownership
+                        if trigger_type == "sold_date" and dt.year >= local_now.year:
+                            continue
                         # Skip contacts that have this automation disabled
                         disabled = contact.get("disabled_automations", [])
                         if trigger_type in disabled:
@@ -437,24 +596,36 @@ async def _run_date_triggers_for_user(db, user_id: str) -> int:
 
             message = await resolve_template_variables(db, template, contact, user_id)
 
+            # {years} variable for anniversaries (years since sold/anniversary date)
+            if trigger_type in ("sold_date", "anniversary"):
+                dt_field = contact.get({"sold_date": "date_sold", "anniversary": "anniversary"}[trigger_type])
+                if isinstance(dt_field, datetime):
+                    message = message.replace("{years}", str(max(1, local_now.year - dt_field.year)))
+
             send_result = {"sms": False, "email": False}
 
-            # Auto-create a birthday card if this is a birthday trigger
+            # Auto-create a card and append its link — birthday card for birthdays,
+            # anniversary card (with the car photo) for sold-date/anniversary triggers
+            auto_card_type = None
             if trigger_type == "birthday" and config.get("include_birthday_card", True):
+                auto_card_type = "birthday"
+            elif trigger_type in ("anniversary", "sold_date"):
+                auto_card_type = "anniversary"
+            if auto_card_type:
                 try:
                     from routers.congrats_cards import auto_create_card
-                    bday_result = await auto_create_card(user_id, contact_id, card_type="birthday")
+                    bday_result = await auto_create_card(user_id, contact_id, card_type=auto_card_type)
                     if bday_result and bday_result.get("short_url"):
-                        message += f"\n\nView your birthday card: {bday_result['short_url']}"
-                        logger.info(f"[Scheduler] Birthday card created for {contact_name}: {bday_result.get('card_id')}")
+                        message += f"\n\nView your {auto_card_type} card: {bday_result['short_url']}"
+                        logger.info(f"[Scheduler] {auto_card_type.title()} card created for {contact_name}: {bday_result.get('card_id')}")
                     elif bday_result and bday_result.get("already_exists"):
                         existing_card = await db.congrats_cards.find_one(
                             {"card_id": bday_result["card_id"]}, {"short_url": 1}
                         )
                         if existing_card and existing_card.get("short_url"):
-                            message += f"\n\nView your birthday card: {existing_card['short_url']}"
+                            message += f"\n\nView your {auto_card_type} card: {existing_card['short_url']}"
                 except Exception as e:
-                    logger.error(f"[Scheduler] Birthday card creation failed for {contact_name}: {e}")
+                    logger.error(f"[Scheduler] {auto_card_type} card creation failed for {contact_name}: {e}")
 
             # Friendly trigger labels
             trigger_labels = {
