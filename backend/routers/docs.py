@@ -52,6 +52,72 @@ async def _deduplicate_docs():
     return total_removed
 
 
+REPO_DOC_SOURCES = [
+    ("/app/docs/PRODUCT_REQUIREMENTS.md", {
+        "slug": "product-requirements-document",
+        "title": "Product Requirements Document",
+        "summary": "Complete PRD for the i'M On Social platform — vision, personas, full feature scope, and backlog.",
+        "category": "prd", "icon": "clipboard", "sort_order": 0,
+    }),
+    ("/app/docs/APP_SCOPE.md", {
+        "slug": "imos-app-scope",
+        "title": "Full App Scope & Architecture",
+        "summary": "Tech stack, backend domains, API surfaces, data model, screen map, security model, and automation safety rails.",
+        "category": "prd", "icon": "layers", "sort_order": 1,
+    }),
+    ("/app/docs/OPERATIONS_MANUAL.md", {
+        "slug": "imos-operations-manual",
+        "title": "i'M On Social Platform - Complete Operations Manual",
+        "summary": "Environments, release workflow, all scheduled automations, admin how-tos, and troubleshooting.",
+        "category": "operations", "icon": "book", "sort_order": 0,
+    }),
+    ("/app/memory/PRD.md", {
+        "slug": "imos-prd-working-log",
+        "title": "PRD Working Log (Full Build History)",
+        "summary": "The complete chronological engineering log — every feature, fix, and decision since day one.",
+        "category": "prd", "icon": "time", "sort_order": 2,
+    }),
+]
+
+
+async def sync_repo_docs() -> dict:
+    """Upsert internal docs from repo markdown files into company_docs.
+    Runs at startup — production docs refresh automatically on every deploy.
+    Only overwrites when the repo file content actually changed (hash check),
+    so in-app PRD edits survive deploys unless the repo file was updated."""
+    import hashlib
+    db = get_db()
+    synced = 0
+    for path, meta in REPO_DOC_SOURCES:
+        try:
+            with open(path, "r") as f:
+                content = f.read()
+        except FileNotFoundError:
+            continue
+        h = hashlib.sha256(content.encode()).hexdigest()
+        existing = await db.company_docs.find_one({"slug": meta["slug"]}, {"synced_hash": 1, "content": 1})
+        if existing and existing.get("synced_hash") == h:
+            existing_hash = hashlib.sha256((existing.get("content") or "").encode()).hexdigest()
+            if existing_hash == h:
+                continue
+        now = datetime.utcnow()
+        await db.company_docs.update_one(
+            {"slug": meta["slug"]},
+            {"$set": {
+                **meta,
+                "content": content,
+                "synced_hash": h,
+                "is_published": True,
+                "version": now.strftime("%Y.%m.%d"),
+                "updated_at": now,
+            }, "$setOnInsert": {"created_at": now}},
+            upsert=True,
+        )
+        synced += 1
+        logger.info(f"[DocSync] Updated '{meta['title']}' from {path}")
+    return {"synced": synced}
+
+
 @router.post("/deduplicate")
 async def deduplicate_docs(x_user_id: str = Header(None, alias="X-User-ID")):
     """Remove duplicate documents. Super admin only."""

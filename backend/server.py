@@ -1604,6 +1604,17 @@ async def startup_event():
         except Exception as e:
             logger.warning(f"[Startup] Date opt-in reset failed: {e}")
     _aio2.create_task(_date_optin_migration())
+
+    # Sync internal docs (PRD / Ops Manual / App Scope) from repo files into Admin → Docs
+    async def _doc_sync():
+        try:
+            from routers.docs import sync_repo_docs
+            result = await sync_repo_docs()
+            if result.get("synced"):
+                logger.info(f"[Startup] Internal docs synced: {result}")
+        except Exception as e:
+            logger.warning(f"[Startup] Doc sync failed: {e}")
+    _aio2.create_task(_doc_sync())
     # Removes any accidentally-stored test prompts from the ai_clone_prompts collection
     try:
         db = get_db()
@@ -1763,35 +1774,8 @@ async def startup_event():
     except Exception as e:
         logger.warning(f"Index creation skipped: {e}")
     
-    # Auto-sync PRD.md into the database
-    try:
-        prd_path = Path(__file__).parent.parent / "memory" / "PRD.md"
-        if prd_path.exists():
-            prd_content = prd_path.read_text()
-            existing = await db.company_docs.find_one({"slug": "product-requirements-document"}, {"content": 1})
-            if not existing or existing.get("content") != prd_content:
-                await db.company_docs.update_one(
-                    {"slug": "product-requirements-document"},
-                    {"$set": {
-                        "content": prd_content,
-                        "updated_at": datetime.utcnow(),
-                        "title": "Product Requirements Document",
-                        "summary": "Complete PRD for the I'm On Social platform - features, architecture, backlog, and known issues.",
-                        "category": "prd",
-                        "icon": "clipboard",
-                        "is_published": True,
-                        "sort_order": 0,
-                    },
-                    "$setOnInsert": {
-                        "slug": "product-requirements-document",
-                        "version": "1.0",
-                        "created_at": datetime.utcnow(),
-                    }},
-                    upsert=True,
-                )
-                logger.info("PRD auto-synced from PRD.md")
-    except Exception as e:
-        logger.warning(f"PRD auto-sync skipped: {e}")
+    # PRD/Ops Manual/App Scope now sync from /app/docs via routers.docs.sync_repo_docs()
+    # (the old raw PRD.md sync lives on as the "PRD Working Log" doc — see REPO_DOC_SOURCES)
 
     # ── Auto-assign Twilio phone number to the primary admin on every deploy ──
     # Uses ADMIN_EMAIL env var if set, otherwise falls back to first super_admin.

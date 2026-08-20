@@ -957,6 +957,12 @@ Backlog note: direct HomeNet/vAuto API sync pending dealer credentials (user cho
 5. New endpoints: `GET /api/contacts/{uid}/date-optins?occasion=birthday|anniversary` (list w/ date, years, vehicle, opted_in), `POST /api/contacts/{uid}/date-optins/bulk` {contact_ids, occasion, enable} (tag add/pull, never triggers sends).
 6. New screen `/settings/date-recipients` (Birthdays/Anniversaries tabs, search, All/ON/OFF filter, select-all, bulk Turn ON/OFF bar). Linked via "Manage Recipients" card on /settings/date-triggers (description updated).
 
+## Internal Docs System Refresh (Aug 2026) — verified in preview
+- New repo docs: `/app/docs/PRODUCT_REQUIREMENTS.md` (clean current-state PRD), `/app/docs/OPERATIONS_MANUAL.md` (v6, replaces stale Mar-24 v5.0: environments, release workflow, all 21 scheduler jobs, self-heals, admin how-tos, troubleshooting), `/app/docs/APP_SCOPE.md` (architecture/routers/collections/screens/security).
+- `sync_repo_docs()` in routers/docs.py + startup task in server.py: upserts the 3 docs + `/app/memory/PRD.md` (as "PRD Working Log", slug imos-prd-working-log) into `company_docs`, hash-guarded (skips when repo file unchanged so in-app edits survive; verifies stored content hash to defeat stale writes). Date-based version stamp.
+- REMOVED the old conflicting startup PRD.md auto-sync in server.py (line ~1777) that was overwriting the PRD slug with the raw working log.
+- Production docs refresh automatically on every deploy. CHANGELOG.md + README.md also updated.
+
 ## Quick Add Toggle + Preview Digest + Webm Conversion (Aug 2026) — all self-tested
 1. **Recipient Quick Add**: contact profile → Details tab → Important Dates now shows "Birthday text + card" / "Anniversary text + card" Switches (`toggleDateOptin` in contact/[id].tsx, calls date-optins/bulk with single id, optimistic + rollback). Verified: toggle ON → toast + tag persisted in DB.
 2. **Send Preview Digest**: scheduler job `date_preview_digest` (hourly at :05) — at each rep's 8 AM LOCAL, SMS (via send_sms from their twilio number) + in-app notification listing today's opted-in birthday & anniversary sends (with years) an hour before the 9 AM sends. Once-per-day guard via date_send_guard `digest_{uid}_{date}`. Verified incl. guard. Scheduler now 21 jobs.

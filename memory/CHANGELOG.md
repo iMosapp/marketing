@@ -1,5 +1,36 @@
 # CHANGELOG — iMOs App
 
+## Aug 2026 — Click-to-Call Press-1 Gate + In-Call UI (COMPLETED)
+- Rep answers their cell and must **press 1** before the customer is dialed — hang-ups/voicemail no longer trigger customer calls (`twilio_webhooks.py`: Gather gate + `/call-bridge-connect`).
+- Dialer shows live call status + **red hang-up button** (`/call-cancel` kills both legs; `/call-progress` polled every 2s, fed by status callbacks).
+
+## Aug 2026 — Dialer Fixes (COMPLETED)
+- Tap a contact = **stages** the number; only the green button places the call (search results, keypad matches, recents; recents keep a one-tap call icon).
+- Search now server-side over the FULL contact book by name or phone digits (was client-filtering the first 50 loaded contacts).
+- Layout overflow fixed: keypad sizes to screen height, search-focus swaps to results view (number/status can no longer overlap the search bar or tabs).
+
+## Aug 2026 — Birthday/Anniversary Opt-In Overhaul (COMPLETED)
+- **Incident:** editing birthdays fired texts immediately, one contact got two different AI birthday texts. Root cause: auto-applied Birthday tag + save-time campaign enrollment scheduled for "now" via two paths.
+- **New rule:** date sends fire ONLY on the actual date, ONLY for contacts manually tagged `Birthday`/`Anniversary`, with a same-day guard (doubles impossible) + single-campaign-per-occasion + 300-day re-enrollment block. Tags never auto-applied; date tags never instant-fire tag campaigns.
+- Anniversary = sold-date anniversary: `{years}` variable + auto anniversary card with the car photo.
+- New **Date Recipients** screen (search/filter/bulk ON-OFF) + per-contact toggles on the profile; morning **preview digest** (8 AM local SMS + notification) an hour before sends.
+- One-time startup migration wiped all previously auto-applied tags and cancelled queued buggy sends (runs itself on production deploy).
+
+## Aug 2026 — Voice Memo Playback Fixed + Webm Conversion (COMPLETED)
+- Root cause: storage PUT returns `path`, code read `url` → every memo saved with an EMPTY audio link. Fixed; startup self-heal relinks old memos by contact+timestamp matching (5/5 in preview).
+- Audio served with content-type inference + HTTP Range (206) for iOS AVPlayer.
+- Web-recorded `.webm` memos now auto-transcode to m4a (imageio-ffmpeg AAC) at upload; stored webm memos convert at startup.
+
+## Aug 2026 — Speed-to-Lead, Photo Reminders, Monthly ROI Email (COMPLETED)
+- Leads dashboard: **Speed tab** (team avg + per-rep first-human-reply leaderboard) + color-coded "Replied in Xm" badge per lead.
+- Inventory: missing-photos banner + daily 9 AM push to store admins.
+- 1st-of-month per-store **ROI email** (leads/replied/sold/spend/$-per-lead/$-per-sale); recipient configurable in Admin → Store → AI & Security; test endpoint `POST /api/leads/analytics/roi-email-test`.
+
+## Aug 2026 — Internal Docs System Refresh (COMPLETED)
+- New `/app/docs/`: PRODUCT_REQUIREMENTS.md, OPERATIONS_MANUAL.md (v6, replaces stale v5.0), APP_SCOPE.md.
+- `sync_repo_docs()` startup task upserts them into Admin → Docs (hash-guarded) — production docs refresh automatically on deploy.
+
+
 ## Jun, 2026 — Photo Gallery Header Behind Notch (COMPLETED)
 - **Bug:** In the contact photo gallery, the close (X) and camera buttons sat up under the iPhone status bar/notch and were untappable — user had to force-close the app.
 - **Root cause:** The gallery is a RN `<Modal>`, and `react-native-safe-area-context`'s `SafeAreaView`/insets return **0 inside a Modal** (Modal renders outside the SafeAreaProvider tree), so the header rendered at y=0 under the notch.
