@@ -94,6 +94,7 @@ export default function StoreDetailScreen() {
     intent_hot_threshold: 7,
     login_max_fails: 8,
     lockout_minutes: 15,
+    roi_report_email: '',
   });
   const [savingAiSecurity, setSavingAiSecurity] = useState(false);
   const [intentPreview, setIntentPreview] = useState<any[]>([]);
@@ -192,6 +193,7 @@ export default function StoreDetailScreen() {
         intent_hot_threshold: Number(aiSecurity.intent_hot_threshold),
         login_max_fails: Number(aiSecurity.login_max_fails),
         lockout_minutes: Number(aiSecurity.lockout_minutes),
+        roi_report_email: (aiSecurity.roi_report_email || '').trim(),
       });
       showSimpleAlert('Success', 'AI & security settings saved!');
     } catch (error: any) {
@@ -750,6 +752,24 @@ export default function StoreDetailScreen() {
             <Text style={[styles.permissionDesc, { marginTop: 6 }]}>
               Attempts allowed: 3–50 · Lockout: 1–1440 min
             </Text>
+
+            <View style={{ marginTop: 14 }}>
+              <Text style={styles.inputLabel}>Monthly ROI Report Email</Text>
+              <TextInput
+                style={styles.input}
+                value={aiSecurity.roi_report_email || ''}
+                onChangeText={(t) => setAiSecurity({ ...aiSecurity, roi_report_email: t })}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholder="Defaults to super admin email"
+                placeholderTextColor={colors.textSecondary}
+                data-testid="roi-report-email-input"
+              />
+              <Text style={styles.permissionDesc}>
+                On the 1st of each month, this address receives a summary of what every lead source cost vs. what it returned (leads, replies, sales, cost per sale).
+              </Text>
+            </View>
 
             <TouchableOpacity
               style={styles.saveCampaignSettingsButton}

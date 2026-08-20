@@ -1095,6 +1095,38 @@ async def receive_webhook_lead(source_id: str, request: Request):
     return {"success": True, **result}
 
 
+async def _first_human_replies(db, conv_ids: list) -> dict:
+    """Batch: first human (non-automated) outbound message per conversation.
+    Returns {conversation_id: {"ts": datetime, "rep_id": str}}."""
+    if not conv_ids:
+        return {}
+    pipeline = [
+        {"$match": {"conversation_id": {"$in": conv_ids}, "sender": "user", "auto_sent": {"$ne": True}}},
+        {"$addFields": {"_ts": {"$ifNull": ["$timestamp", "$created_at"]}}},
+        {"$match": {"_ts": {"$ne": None}}},
+        {"$sort": {"_ts": 1}},
+        {"$group": {"_id": "$conversation_id",
+                    "first_ts": {"$first": "$_ts"},
+                    "rep_id": {"$first": {"$ifNull": ["$user_id", "$sender_id"]}}}},
+    ]
+    out = {}
+    async for row in db.messages.aggregate(pipeline):
+        out[row["_id"]] = {"ts": row["first_ts"], "rep_id": row.get("rep_id")}
+    return out
+
+
+def _resp_seconds(received, ts) -> Optional[int]:
+    try:
+        if received.tzinfo:
+            received = received.replace(tzinfo=None)
+        if ts.tzinfo:
+            ts = ts.replace(tzinfo=None)
+        s = (ts - received).total_seconds()
+        return int(s) if s >= 0 else None
+    except Exception:
+        return None
+
+
 def _require_auth(request: Request) -> str:
     """JWT gate for read/analytics endpoints (intake POSTs stay public for providers)."""
     auth = request.headers.get("Authorization", "")
@@ -1136,9 +1168,17 @@ async def list_leads(
             {"conversation_id": {"$in": conv_ids}, "direction": "inbound"}
         ))
 
+    # Speed-to-lead: first human rep reply per conversation
+    first_replies = await _first_human_replies(db, conv_ids)
+
     return [
         {
             "id":             str(l["_id"]),
+            "first_response_seconds": (
+                _resp_seconds(l.get("received_at"), first_replies[l["conversation_id"]]["ts"])
+                if l.get("conversation_id") in first_replies and isinstance(l.get("received_at"), datetime)
+                else None
+            ),
             "source_name":    l.get("source_name"),
             "full_name":      l.get("full_name"),
             "phone":          l.get("phone"),
@@ -1249,6 +1289,264 @@ async def lead_source_analytics(
         "sold": sum(s["sold"] for s in sources),
     }
     return {"days": days, "sources": sources, "totals": totals}
+
+
+@router.get("/analytics/response-times")
+async def lead_response_times(
+    request:  Request,
+    store_id: Optional[str] = None,
+    days:     int = 90,
+):
+    """Speed-to-lead: per-rep average time from lead arrival to first human reply."""
+    _require_auth(request)
+    db = get_db()
+    days = min(max(days, 1), 365)
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+
+    query: dict = {"received_at": {"$gte": since}, "conversation_id": {"$nin": [None, ""]}}
+    if store_id:
+        query["store_id"] = store_id
+    leads = await db.inbound_leads.find(
+        query, {"conversation_id": 1, "received_at": 1, "assigned_to": 1}
+    ).to_list(3000)
+
+    conv_map = {l["conversation_id"]: l for l in leads}
+    first = await _first_human_replies(db, list(conv_map.keys()))
+
+    per_rep: dict = {}
+    all_secs: list = []
+    for cid, l in conv_map.items():
+        fr = first.get(cid)
+        if not fr or not isinstance(l.get("received_at"), datetime):
+            continue
+        secs = _resp_seconds(l["received_at"], fr["ts"])
+        if secs is None:
+            continue
+        rep_id = str(fr.get("rep_id") or l.get("assigned_to") or "") or "unassigned"
+        per_rep.setdefault(rep_id, []).append(secs)
+        all_secs.append(secs)
+
+    names = {}
+    rep_oids = [ObjectId(r) for r in per_rep if ObjectId.is_valid(r)]
+    if rep_oids:
+        async for u in db.users.find({"_id": {"$in": rep_oids}}, {"name": 1}):
+            names[str(u["_id"])] = u.get("name", "")
+
+    reps = []
+    for rid, secs in per_rep.items():
+        reps.append({
+            "user_id":        rid,
+            "name":           names.get(rid) or ("Unassigned" if rid == "unassigned" else "Unknown"),
+            "count":          len(secs),
+            "avg_seconds":    int(sum(secs) / len(secs)),
+            "fastest_seconds": min(secs),
+            "slowest_seconds": max(secs),
+        })
+    reps.sort(key=lambda r: r["avg_seconds"])
+
+    return {
+        "days": days,
+        "overall": {
+            "avg_seconds":     int(sum(all_secs) / len(all_secs)) if all_secs else None,
+            "measured":        len(all_secs),
+            "unanswered":      len(conv_map) - len(all_secs),
+            "fastest_seconds": min(all_secs) if all_secs else None,
+        },
+        "reps": reps,
+    }
+
+
+# ── Monthly ROI email ─────────────────────────────────────────────────────────
+
+_DEFAULT_ROI_RECIPIENT = os.environ.get("ADMIN_EMAIL", "forest@imosapp.com")
+
+
+async def _compute_roi_rows(db, store_id, start, end):
+    """Per-source funnel + cost for one store over a window. Returns (rows, totals)."""
+    query: dict = {"received_at": {"$gte": start, "$lt": end}}
+    if store_id:
+        query["store_id"] = store_id
+    else:
+        query["store_id"] = {"$in": [None, ""]}
+    leads = await db.inbound_leads.find(
+        query, {"source_name": 1, "status": 1, "conversation_id": 1, "contact_id": 1}
+    ).to_list(5000)
+    if not leads:
+        return [], {}
+
+    conv_ids = [l.get("conversation_id") for l in leads if l.get("conversation_id")]
+    replied = set()
+    if conv_ids:
+        replied = set(await db.messages.distinct(
+            "conversation_id",
+            {"conversation_id": {"$in": conv_ids}, "direction": "inbound"}
+        ))
+    contact_oids = []
+    for l in leads:
+        try:
+            contact_oids.append(ObjectId(l.get("contact_id")))
+        except Exception:
+            pass
+    sold = set()
+    if contact_oids:
+        async for c in db.contacts.find(
+            {"_id": {"$in": contact_oids}, "date_sold": {"$nin": [None, ""]}}, {"_id": 1}
+        ):
+            sold.add(str(c["_id"]))
+
+    cost_by_name = {}
+    async for src in db.lead_sources.find({"monthly_cost": {"$gt": 0}}, {"name": 1, "monthly_cost": 1}):
+        cost_by_name[src.get("name", "")] = float(src["monthly_cost"])
+
+    by: dict = {}
+    for l in leads:
+        key = l.get("source_name") or "Unknown"
+        s = by.setdefault(key, {"source": key, "leads": 0, "replied": 0, "sold": 0})
+        s["leads"] += 1
+        if l.get("conversation_id") in replied:
+            s["replied"] += 1
+        if l.get("contact_id") in sold:
+            s["sold"] += 1
+
+    rows = []
+    for s in by.values():
+        cost = cost_by_name.get(s["source"])
+        s["cost"] = cost
+        s["cost_per_lead"] = round(cost / s["leads"], 2) if cost and s["leads"] else None
+        s["cost_per_sale"] = round(cost / s["sold"], 2) if cost and s["sold"] else None
+        rows.append(s)
+    rows.sort(key=lambda x: x["leads"], reverse=True)
+
+    totals = {
+        "leads":   sum(r["leads"] for r in rows),
+        "replied": sum(r["replied"] for r in rows),
+        "sold":    sum(r["sold"] for r in rows),
+        "cost":    round(sum(r["cost"] or 0 for r in rows), 2),
+    }
+    return rows, totals
+
+
+def _build_roi_email_html(store_name: str, month_label: str, rows: list, totals: dict) -> str:
+    def money(v):
+        return f"${v:,.0f}" if v is not None else "—"
+
+    body_rows = ""
+    for r in rows:
+        body_rows += f"""
+        <tr>
+            <td style="padding:10px 12px;border-bottom:1px solid #eee;font-size:14px;color:#1a1a1a;font-weight:600;">{r['source']}</td>
+            <td style="padding:10px 8px;border-bottom:1px solid #eee;text-align:center;font-size:14px;">{r['leads']}</td>
+            <td style="padding:10px 8px;border-bottom:1px solid #eee;text-align:center;font-size:14px;color:#007AFF;">{r['replied']}</td>
+            <td style="padding:10px 8px;border-bottom:1px solid #eee;text-align:center;font-size:14px;color:#34C759;font-weight:700;">{r['sold']}</td>
+            <td style="padding:10px 8px;border-bottom:1px solid #eee;text-align:right;font-size:14px;">{money(r['cost'])}</td>
+            <td style="padding:10px 8px;border-bottom:1px solid #eee;text-align:right;font-size:13px;color:#555;">{money(r['cost_per_lead'])}</td>
+            <td style="padding:10px 12px;border-bottom:1px solid #eee;text-align:right;font-size:13px;color:#555;">{money(r['cost_per_sale'])}</td>
+        </tr>"""
+
+    return f"""
+    <div style="font-family:-apple-system,Arial,sans-serif;max-width:640px;margin:0 auto;padding:24px;">
+        <h2 style="color:#1a1a1a;margin-bottom:2px;">Lead Source ROI — {month_label}</h2>
+        <p style="color:#555;margin-top:0;">{store_name}</p>
+        <div style="display:flex;gap:10px;margin:16px 0;">
+            <div style="flex:1;background:#f5f5f7;border-radius:10px;padding:14px;text-align:center;">
+                <div style="font-size:22px;font-weight:800;color:#AF52DE;">{totals.get('leads', 0)}</div>
+                <div style="font-size:11px;color:#888;letter-spacing:0.5px;">LEADS</div>
+            </div>
+            <div style="flex:1;background:#f5f5f7;border-radius:10px;padding:14px;text-align:center;">
+                <div style="font-size:22px;font-weight:800;color:#34C759;">{totals.get('sold', 0)}</div>
+                <div style="font-size:11px;color:#888;letter-spacing:0.5px;">SOLD</div>
+            </div>
+            <div style="flex:1;background:#f5f5f7;border-radius:10px;padding:14px;text-align:center;">
+                <div style="font-size:22px;font-weight:800;color:#1a1a1a;">${totals.get('cost', 0):,.0f}</div>
+                <div style="font-size:11px;color:#888;letter-spacing:0.5px;">SPENT</div>
+            </div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;background:#fafafa;border-radius:10px;">
+            <tr>
+                <th style="padding:8px 12px;text-align:left;font-size:11px;color:#888;letter-spacing:0.5px;">SOURCE</th>
+                <th style="padding:8px;font-size:11px;color:#888;">LEADS</th>
+                <th style="padding:8px;font-size:11px;color:#888;">REPLIED</th>
+                <th style="padding:8px;font-size:11px;color:#888;">SOLD</th>
+                <th style="padding:8px;text-align:right;font-size:11px;color:#888;">SPENT</th>
+                <th style="padding:8px;text-align:right;font-size:11px;color:#888;">$/LEAD</th>
+                <th style="padding:8px 12px;text-align:right;font-size:11px;color:#888;">$/SALE</th>
+            </tr>{body_rows}
+        </table>
+        <p style="color:#888;font-size:12px;margin-top:20px;">Set monthly costs per source in Admin &rarr; Lead Sources. Full funnel in the app &rarr; Internet Leads &rarr; Source ROI.</p>
+    </div>
+    """
+
+
+async def send_monthly_roi_email(start: Optional[datetime] = None,
+                                  end: Optional[datetime] = None,
+                                  label: Optional[str] = None) -> dict:
+    """1st-of-month: email each store what every lead source cost vs returned.
+    Recipient = store.roi_report_email, falling back to the super admin default."""
+    db = get_db()
+    resend_key = os.environ.get("RESEND_API_KEY")
+    if not resend_key:
+        logger.info("[ROI Email] skipped — no RESEND_API_KEY")
+        return {"sent": 0, "reason": "no_api_key"}
+
+    now = datetime.now(timezone.utc)
+    if not (start and end):
+        end = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        start = (end - timedelta(days=1)).replace(day=1)
+    month_label = label or start.strftime("%B %Y")
+
+    store_ids = await db.inbound_leads.distinct(
+        "store_id", {"received_at": {"$gte": start, "$lt": end}}
+    )
+    if not store_ids:
+        logger.info(f"[ROI Email] no leads for {month_label} — nothing to send")
+        return {"sent": 0, "reason": "no_leads", "month": month_label}
+
+    import resend
+    resend.api_key = resend_key
+    sender = os.environ.get("SENDER_EMAIL", "notifications@send.imonsocial.com")
+
+    sent, recipients = 0, []
+    for sid in store_ids:
+        rows, totals = await _compute_roi_rows(db, sid, start, end)
+        if not rows:
+            continue
+        store = {}
+        if sid:
+            try:
+                store = await db.stores.find_one(
+                    {"_id": ObjectId(sid)}, {"name": 1, "roi_report_email": 1}
+                ) or {}
+            except Exception:
+                pass
+        recipient = (store.get("roi_report_email") or "").strip() or _DEFAULT_ROI_RECIPIENT
+        store_name = store.get("name") or "All Stores"
+        html = _build_roi_email_html(store_name, month_label, rows, totals)
+        try:
+            await asyncio.to_thread(resend.Emails.send, {
+                "from": f"I'm On Social <{sender}>",
+                "to": recipient,
+                "subject": f"Lead Source ROI — {month_label} ({store_name})",
+                "html": html,
+            })
+            sent += 1
+            recipients.append(recipient)
+            logger.info(f"[ROI Email] sent {month_label} report for '{store_name}' to {recipient}")
+        except Exception as e:
+            logger.warning(f"[ROI Email] send failed for store {sid}: {e}")
+
+    return {"sent": sent, "month": month_label, "recipients": recipients}
+
+
+@router.post("/analytics/roi-email-test")
+async def roi_email_test(request: Request):
+    """Admin utility: send the ROI report for the current month-to-date right now."""
+    _require_auth(request)
+    now = datetime.now(timezone.utc)
+    start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    result = await send_monthly_roi_email(
+        start=start, end=now, label=f"{now.strftime('%B %Y')} (month to date)"
+    )
+    return result
 
 
 @router.get("/{lead_id}")

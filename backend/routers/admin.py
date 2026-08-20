@@ -716,7 +716,7 @@ async def get_store_ai_security_settings(store_id: str):
     """Get AI intent sensitivity + login lockout settings for a store."""
     store = await get_db().stores.find_one(
         {"_id": ObjectId(store_id)},
-        {"intent_hot_threshold": 1, "login_max_fails": 1, "lockout_minutes": 1}
+        {"intent_hot_threshold": 1, "login_max_fails": 1, "lockout_minutes": 1, "roi_report_email": 1}
     )
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
@@ -725,6 +725,7 @@ async def get_store_ai_security_settings(store_id: str):
         "intent_hot_threshold": store.get("intent_hot_threshold", 7),
         "login_max_fails": store.get("login_max_fails", int(_os.environ.get("LOGIN_MAX_FAILS", "8"))),
         "lockout_minutes": store.get("lockout_minutes", int(_os.environ.get("LOGIN_LOCKOUT_MINUTES", "15"))),
+        "roi_report_email": store.get("roi_report_email", ""),
     }
 
 
@@ -741,6 +742,11 @@ async def update_store_ai_security_settings(store_id: str, data: dict):
     lm = data.get("lockout_minutes")
     if isinstance(lm, (int, float)) and 1 <= int(lm) <= 1440:
         update["lockout_minutes"] = int(lm)
+    re_mail = data.get("roi_report_email")
+    if isinstance(re_mail, str):
+        re_mail = re_mail.strip()
+        if re_mail == "" or ("@" in re_mail and "." in re_mail.split("@")[-1]):
+            update["roi_report_email"] = re_mail
     if not update:
         raise HTTPException(status_code=400, detail="No valid settings provided (intent_hot_threshold 1-10, login_max_fails 3-50, lockout_minutes 1-1440)")
     result = await get_db().stores.update_one(

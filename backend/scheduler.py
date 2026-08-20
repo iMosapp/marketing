@@ -1252,6 +1252,34 @@ def start_scheduler():
         misfire_grace_time=7200,
     )
 
+    # Daily 15:00 UTC (~9 AM Central) — nudge store admins about vehicles missing photos
+    async def _photo_reminders():
+        from routers.inventory import send_missing_photo_reminders
+        result = await send_missing_photo_reminders()
+        logger.info(f"[Scheduler] Photo reminders: {result}")
+
+    scheduler.add_job(
+        safe_job(_photo_reminders),
+        CronTrigger(hour=15, minute=0),
+        id="daily_photo_reminder",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+
+    # 1st of month 14:30 UTC — email each store what its lead sources cost vs returned
+    async def _monthly_roi():
+        from routers.lead_intake import send_monthly_roi_email
+        result = await send_monthly_roi_email()
+        logger.info(f"[Scheduler] Monthly ROI email: {result}")
+
+    scheduler.add_job(
+        safe_job(_monthly_roi),
+        CronTrigger(day=1, hour=14, minute=30),
+        id="monthly_roi_email",
+        replace_existing=True,
+        misfire_grace_time=7200,
+    )
+
     # Daily at 4 AM UTC - expire "Recent" tags older than 14 days
     scheduler.add_job(
         safe_job(expire_recent_tags),

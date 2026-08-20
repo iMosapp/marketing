@@ -63,8 +63,75 @@ async def list_inventory(user_id: str, search: str = None, status: str = None, l
     counts = {
         "available": await db.inventory.count_documents({**scope, "status": "available", "is_visible": {"$ne": False}}),
         "sold": await db.inventory.count_documents({**scope, "status": "sold", "is_visible": {"$ne": False}}),
+        "missing_photos": await db.inventory.count_documents({
+            **scope, "status": "available", "is_visible": {"$ne": False},
+            "$or": [{"photo_url": {"$exists": False}}, {"photo_url": {"$in": [None, ""]}}],
+        }),
     }
     return {"items": [_serialize(i) for i in items], "total": len(items), "counts": counts}
+
+
+async def send_missing_photo_reminders() -> dict:
+    """Daily nudge: push + in-app notification to store admins when in-stock
+    vehicles are missing photos (photos ride along on the first lead text)."""
+    db = get_db()
+    query = {
+        "status": "available", "is_visible": {"$ne": False},
+        "$or": [{"photo_url": {"$exists": False}}, {"photo_url": {"$in": [None, ""]}}],
+    }
+    items = await db.inventory.find(query, {"store_id": 1, "created_by_user_id": 1}).to_list(3000)
+    if not items:
+        return {"notified": 0, "reason": "no_missing_photos"}
+
+    by_scope: dict = {}
+    for it in items:
+        key = str(it.get("store_id") or "") or f"user:{it.get('created_by_user_id', '')}"
+        by_scope[key] = by_scope.get(key, 0) + 1
+
+    from routers.push_notifications import send_push_to_user
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    notified = 0
+
+    for key, count in by_scope.items():
+        if key.startswith("user:"):
+            uids = [key[5:]] if key[5:] else []
+        else:
+            store_vals = [key, ObjectId(key)] if ObjectId.is_valid(key) else [key]
+            admins = await db.users.find(
+                {"store_id": {"$in": store_vals}, "role": {"$in": ["store_manager", "org_admin"]}},
+                {"_id": 1},
+            ).to_list(20)
+            uids = [str(a["_id"]) for a in admins]
+
+        title = f"{count} vehicle{'s' if count != 1 else ''} missing photos"
+        body = "In-stock vehicles without photos can't ride along on lead texts. Add pictures in Inventory."
+
+        for uid in uids:
+            idem = f"photo_reminder_{uid}_{today}"
+            r = await db.notifications.update_one(
+                {"idempotency_key": idem},
+                {"$setOnInsert": {
+                    "user_id": uid,
+                    "type": "photo_reminder",
+                    "title": title,
+                    "message": body,
+                    "link": "/inventory",
+                    "idempotency_key": idem,
+                    "read": False,
+                    "dismissed": False,
+                    "created_at": datetime.now(timezone.utc),
+                }},
+                upsert=True,
+            )
+            if r.upserted_id:
+                try:
+                    await send_push_to_user(uid, f"📸 {title}", body, "/inventory", "camera")
+                except Exception as e:
+                    logger.debug(f"[PhotoReminder] push to {uid} failed: {e}")
+                notified += 1
+
+    logger.info(f"[PhotoReminder] {notified} admins notified across {len(by_scope)} scopes")
+    return {"notified": notified, "scopes": len(by_scope)}
 
 
 def _build_item(user_id: str, store_id: str, data: dict, source: str) -> dict:

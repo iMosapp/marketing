@@ -34,14 +34,25 @@ function timeAgo(iso: string) {
 
 const fmtPrice = (p: any) => (p || p === 0) ? `$${Number(p).toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '';
 
+const fmtDuration = (s: number | null | undefined) => {
+  if (s == null) return '—';
+  if (s < 60) return `${Math.max(1, Math.round(s))}s`;
+  if (s < 3600) return `${Math.round(s / 60)}m`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ${Math.round((s % 3600) / 60)}m`;
+  return `${Math.floor(s / 86400)}d`;
+};
+
+const speedColor = (s: number) => (s < 300 ? '#34C759' : s < 3600 ? '#FF9500' : '#FF3B30');
+
 export default function LeadsDashboard() {
   const { colors } = useThemeStore();
   const { user } = useAuthStore();
   const router = useRouter();
 
-  const [tab, setTab] = useState<'leads' | 'roi'>('leads');
+  const [tab, setTab] = useState<'leads' | 'roi' | 'speed'>('leads');
   const [leads, setLeads] = useState<any[]>([]);
   const [roi, setRoi] = useState<any>(null);
+  const [speed, setSpeed] = useState<any>(null);
   const [roiDays, setRoiDays] = useState(90);
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -52,12 +63,14 @@ export default function LeadsDashboard() {
     try {
       const storeParam = user.store_id ? `store_id=${user.store_id}&` : '';
       const statusParam = statusFilter !== 'all' ? `status=${statusFilter}&` : '';
-      const [leadsRes, roiRes] = await Promise.all([
+      const [leadsRes, roiRes, speedRes] = await Promise.all([
         api.get(`/leads/?${storeParam}${statusParam}limit=100`),
         api.get(`/leads/analytics/sources?${storeParam}days=${roiDays}`),
+        api.get(`/leads/analytics/response-times?${storeParam}days=${roiDays}`),
       ]);
       setLeads(leadsRes.data || []);
       setRoi(roiRes.data || null);
+      setSpeed(speedRes.data || null);
     } catch (e) {
       console.error('Leads fetch failed:', e);
     } finally {
@@ -87,13 +100,13 @@ export default function LeadsDashboard() {
 
       {/* Tabs */}
       <View style={{ flexDirection: 'row', alignSelf: 'center', backgroundColor: colors.card, borderRadius: 10, padding: 3, marginBottom: 10 }}>
-        {([['leads', 'Leads', 'people-outline'], ['roi', 'Source ROI', 'trending-up-outline']] as const).map(([k, label, icon]) => (
+        {([['leads', 'Leads', 'people-outline'], ['roi', 'Source ROI', 'trending-up-outline'], ['speed', 'Speed', 'stopwatch-outline']] as const).map(([k, label, icon]) => (
           <TouchableOpacity
             key={k}
             onPress={() => setTab(k)}
             style={{
               flexDirection: 'row', alignItems: 'center', gap: 6,
-              paddingVertical: 7, paddingHorizontal: 24, borderRadius: 8,
+              paddingVertical: 7, paddingHorizontal: 16, borderRadius: 8,
               backgroundColor: tab === k ? colors.bg : 'transparent',
             }}
             data-testid={`leads-tab-${k}`}
@@ -181,6 +194,12 @@ export default function LeadsDashboard() {
                       <View style={{ backgroundColor: `${st.color}18`, paddingVertical: 3, paddingHorizontal: 8, borderRadius: 6 }}>
                         <Text style={{ fontSize: 11, fontWeight: '700', color: st.color }}>{st.label}</Text>
                       </View>
+                      {l.first_response_seconds != null && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: `${speedColor(l.first_response_seconds)}18`, paddingVertical: 3, paddingHorizontal: 8, borderRadius: 6 }} data-testid={`lead-speed-badge-${l.id}`}>
+                          <Ionicons name="flash" size={10} color={speedColor(l.first_response_seconds)} />
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: speedColor(l.first_response_seconds) }}>Replied in {fmtDuration(l.first_response_seconds)}</Text>
+                        </View>
+                      )}
                       {l.has_reply && (
                         <View style={{ backgroundColor: '#34C75918', paddingVertical: 3, paddingHorizontal: 8, borderRadius: 6 }}>
                           <Text style={{ fontSize: 11, fontWeight: '700', color: '#34C759' }}>REPLIED</Text>
@@ -212,6 +231,63 @@ export default function LeadsDashboard() {
                   </TouchableOpacity>
                 );
               })
+            )
+          ) : tab === 'speed' ? (
+            /* ─── Speed to Lead tab ─── */
+            !speed || (speed.overall?.measured === 0 && speed.overall?.unanswered === 0) ? (
+              <View style={{ alignItems: 'center', paddingTop: 50 }}>
+                <Ionicons name="stopwatch-outline" size={44} color={colors.textSecondary} />
+                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginTop: 12 }}>No response data yet</Text>
+                <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginTop: 6, paddingHorizontal: 32 }}>
+                  Once reps start replying to internet leads, you'll see who answers fastest here.
+                </Text>
+              </View>
+            ) : (
+              <>
+                {/* Overall stats */}
+                <View style={{ flexDirection: 'row', gap: 8 }} data-testid="speed-overall-stats">
+                  {[
+                    { label: 'TEAM AVG', val: fmtDuration(speed.overall.avg_seconds), color: speed.overall.avg_seconds != null ? speedColor(speed.overall.avg_seconds) : colors.text },
+                    { label: 'MEASURED', val: String(speed.overall.measured), color: '#007AFF' },
+                    { label: 'NO REPLY YET', val: String(speed.overall.unanswered), color: '#FF9500' },
+                  ].map(s => (
+                    <View key={s.label} style={{ flex: 1, alignItems: 'center', backgroundColor: colors.card, borderRadius: 12, paddingVertical: 12 }}>
+                      <Text style={{ fontSize: 20, fontWeight: '800', color: s.color }} numberOfLines={1}>{s.val}</Text>
+                      <Text style={{ fontSize: 10, fontWeight: '600', color: colors.textSecondary, letterSpacing: 0.5 }} numberOfLines={1}>{s.label}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: `${ACCENT}12`, borderRadius: 10, padding: 10 }}>
+                  <Ionicons name="flash" size={15} color={ACCENT} />
+                  <Text style={{ fontSize: 13, color: colors.textSecondary, flex: 1 }} maxFontSizeMultiplier={1.15}>
+                    Time from lead arrival to the first human rep reply. Under 5 minutes wins deals.
+                  </Text>
+                </View>
+
+                {/* Rep leaderboard */}
+                {speed.reps.map((r: any, i: number) => {
+                  const rankColors = ['#C9A962', '#A8A8A8', '#CD7F32'];
+                  const rankColor = rankColors[i] || colors.textSecondary;
+                  return (
+                    <View key={r.user_id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 12, padding: 14 }} data-testid={`speed-rep-${r.user_id}`}>
+                      <View style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: `${rankColor}22` }}>
+                        <Text style={{ fontSize: 14, fontWeight: '800', color: rankColor }}>{i + 1}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }} numberOfLines={1}>{r.name}</Text>
+                        <Text style={{ fontSize: 12, color: colors.textSecondary }} numberOfLines={1}>
+                          {r.count} lead{r.count !== 1 ? 's' : ''} · fastest {fmtDuration(r.fastest_seconds)}
+                        </Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={{ fontSize: 17, fontWeight: '800', color: speedColor(r.avg_seconds) }}>{fmtDuration(r.avg_seconds)}</Text>
+                        <Text style={{ fontSize: 10, fontWeight: '600', color: colors.textSecondary, letterSpacing: 0.4 }}>AVG RESPONSE</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </>
             )
           ) : (
             /* ─── Source ROI tab ─── */

@@ -198,6 +198,16 @@ export default function InventoryScreen() {
         </Text>
       </View>
 
+      {/* Photo reminder banner */}
+      {counts.missing_photos > 0 && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, marginBottom: 10, backgroundColor: '#FF950014', borderRadius: 10, padding: 10 }} data-testid="inventory-photo-reminder-banner">
+          <Ionicons name="camera" size={15} color="#FF9500" />
+          <Text style={{ fontSize: 13, color: colors.textSecondary, flex: 1 }} maxFontSizeMultiplier={1.15}>
+            <Text style={{ fontWeight: '700', color: '#FF9500' }}>{counts.missing_photos} in-stock vehicle{counts.missing_photos !== 1 ? 's' : ''} missing photos</Text> — leads get the car's picture texted automatically once one is added.
+          </Text>
+        </View>
+      )}
+
       {/* Search */}
       <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, backgroundColor: colors.card, borderRadius: 10, paddingHorizontal: 12, height: 40, marginBottom: 10 }}>
         <Ionicons name="search" size={16} color={colors.textSecondary} />
