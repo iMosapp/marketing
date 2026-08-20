@@ -51,6 +51,7 @@ export default function DialerScreen() {
   const [viewMode, setViewMode] = useState<'keypad' | 'recents'>('keypad');
   const [recentCalls, setRecentCalls] = useState<any[]>([]);
   const [recentsLoading, setRecentsLoading] = useState(false);
+  const [activeCall, setActiveCall] = useState<{ sid: string; name: string; number: string; status: string } | null>(null);
 
   const isPending = user?.status === 'pending';
 
@@ -125,11 +126,14 @@ export default function DialerScreen() {
     const twilioNumber = (user as any)?.twilio_number || (user as any)?.mvpline_number;
     if (twilioNumber && user?._id) {
       try {
-        await api.post('/webhooks/twilio/call', {
+        const resp = await api.post('/webhooks/twilio/call', {
           rep_user_id: user._id,
           customer_phone: numberToCall,
           contact_id: contactId,
         });
+        if (resp.data?.call_sid) {
+          setActiveCall({ sid: resp.data.call_sid, name: contactName, number: numberToCall, status: 'ringing' });
+        }
         // Log activity
         if (user._id) {
           api.post(`/contacts/${user._id}/find-or-create-and-log`, {
@@ -164,6 +168,30 @@ export default function DialerScreen() {
     } else {
       Linking.openURL(telUrl);
     }
+  };
+
+  // Poll live call status while a click-to-call is active
+  useEffect(() => {
+    if (!activeCall?.sid) return;
+    const iv = setInterval(async () => {
+      try {
+        const r = await api.get(`/webhooks/twilio/call-progress/${activeCall.sid}`);
+        const st = r.data?.status || '';
+        if (['completed', 'busy', 'failed', 'no-answer', 'canceled'].includes(st)) {
+          setActiveCall(null);
+        } else if (st && st !== 'unknown') {
+          setActiveCall((p) => (p && p.status !== st ? { ...p, status: st } : p));
+        }
+      } catch { /* keep polling */ }
+    }, 2000);
+    return () => clearInterval(iv);
+  }, [activeCall?.sid]);
+
+  const hangUp = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    const sid = activeCall?.sid;
+    setActiveCall(null);
+    if (sid) api.post('/webhooks/twilio/call-cancel', { call_sid: sid }).catch(() => {});
   };
 
   // Restricted access for pending users
@@ -405,8 +433,17 @@ export default function DialerScreen() {
       ) : (
       <View style={{ flex: 1, justifyContent: 'flex-end', overflow: 'hidden' }}>
 
-        {/* Twilio number indicator */}
-        {((user as any)?.twilio_number || (user as any)?.mvpline_number) ? (
+        {/* Twilio number indicator / live call status */}
+        {activeCall ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingTop: 8, paddingBottom: 4 }} data-testid="dialer-active-call-status">
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF9500' }} />
+            <Text style={{ fontSize: 13, color: '#FF9500', fontWeight: '600' }} numberOfLines={1}>
+              {activeCall.status === 'in-progress'
+                ? `On the line — press 1 to reach ${activeCall.name || formatPhone(activeCall.number)}`
+                : 'Calling your phone… answer & press 1 to connect'}
+            </Text>
+          </View>
+        ) : ((user as any)?.twilio_number || (user as any)?.mvpline_number) ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingTop: 8, paddingBottom: 4 }}>
             <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#34C759' }} />
             <Text style={{ fontSize: 13, color: '#34C759', fontWeight: '600' }}>
@@ -514,18 +551,31 @@ export default function DialerScreen() {
           {/* ─── Bottom Row: [empty] | Call | Backspace ─── */}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 2 }}>
             <View style={{ width: BTN_SIZE, height: BTN_SIZE }} />
-            <TouchableOpacity
-              style={{
-                width: BTN_SIZE, height: BTN_SIZE, borderRadius: BTN_SIZE / 2,
-                backgroundColor: '#34C759', alignItems: 'center', justifyContent: 'center',
-                opacity: phoneNumber ? 1 : 0.4,
-              }}
-              onPress={() => handleCall()}
-              disabled={!phoneNumber}
-              data-testid="dialer-call-btn"
-            >
-              <Ionicons name="call" size={32} color="#FFF" />
-            </TouchableOpacity>
+            {activeCall ? (
+              <TouchableOpacity
+                style={{
+                  width: BTN_SIZE, height: BTN_SIZE, borderRadius: BTN_SIZE / 2,
+                  backgroundColor: '#FF3B30', alignItems: 'center', justifyContent: 'center',
+                }}
+                onPress={hangUp}
+                data-testid="dialer-hangup-btn"
+              >
+                <Ionicons name="call" size={32} color="#FFF" style={{ transform: [{ rotate: '135deg' }] }} />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={{
+                  width: BTN_SIZE, height: BTN_SIZE, borderRadius: BTN_SIZE / 2,
+                  backgroundColor: '#34C759', alignItems: 'center', justifyContent: 'center',
+                  opacity: phoneNumber ? 1 : 0.4,
+                }}
+                onPress={() => handleCall()}
+                disabled={!phoneNumber}
+                data-testid="dialer-call-btn"
+              >
+                <Ionicons name="call" size={32} color="#FFF" />
+              </TouchableOpacity>
+            )}
             {phoneNumber ? (
               <TouchableOpacity
                 style={{

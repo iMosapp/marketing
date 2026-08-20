@@ -998,6 +998,7 @@ async def initiate_outbound_call(request: Request):
             url=f"{app_url}/api/webhooks/twilio/call-bridge",
             status_callback=f"{app_url}/api/webhooks/twilio/call-status",
             status_callback_method="POST",
+            status_callback_event=["initiated", "ringing", "answered", "completed"],
         )
         # Store with the real CallSid
         pending_call_doc["call_sid"] = call.sid
@@ -1051,7 +1052,7 @@ async def initiate_outbound_call(request: Request):
             "success":  True,
             "call_sid": call.sid,
             "status":   call.status,
-            "message":  f"Calling your phone ({rep_personal_phone[-4:]})... pick up to connect to {customer_phone_e164}",
+            "message":  f"Calling your phone ({rep_personal_phone[-4:]})... answer and press 1 to connect to {customer_phone_e164}",
         }
     except Exception as e:
         logger.error(f"[Voice] Outbound call failed: {e}")
@@ -1456,6 +1457,55 @@ async def call_bridge_twiml(
             media_type="application/xml"
         )
 
+    # Press-1 gate: the customer is NOT dialed until the rep confirms.
+    # Stops voicemail pickups and hang-ups from dialing the customer anyway.
+    from xml.sax.saxutils import escape as _xesc
+    say_name = "the customer"
+    try:
+        cid = pending.get("contact_id")
+        if cid:
+            c = await db.contacts.find_one({"_id": ObjectId(cid)}, {"first_name": 1, "last_name": 1})
+            if c:
+                say_name = f"{c.get('first_name', '')} {c.get('last_name', '')}".strip() or say_name
+    except Exception:
+        pass
+
+    app_url = os.environ.get('PUBLIC_FACING_URL', os.environ.get('APP_URL', 'https://app.imonsocial.com'))
+    twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Gather action="{app_url}/api/webhooks/twilio/call-bridge-connect" method="POST" numDigits="1" timeout="12">
+    <Say>Calling {_xesc(say_name)}. Press 1 to connect, or hang up to cancel.</Say>
+    <Pause length="4"/>
+    <Say>Press 1 to connect.</Say>
+  </Gather>
+  <Say>No input received. Call cancelled. Goodbye.</Say>
+  <Hangup/>
+</Response>"""
+
+    logger.info(f"[Voice] Press-1 gate for {caller_number} → {customer_phone}")
+    return Response(content=twiml, media_type="application/xml")
+
+
+@router.post("/call-bridge-connect")
+async def call_bridge_connect(
+    request: Request,
+    CallSid: str = Form(default=""),
+    Digits:  str = Form(default=""),
+):
+    """Rep pressed a key at the press-1 gate. 1 = dial the customer, anything else = cancel."""
+    db = get_db()
+    call_sid = CallSid or request.query_params.get("CallSid", "")
+    pending = await db.pending_calls.find_one({"call_sid": call_sid}) if call_sid else None
+
+    if not pending or Digits != "1":
+        logger.info(f"[Voice] Press-1 gate declined (digits='{Digits}') for SID={call_sid} — customer NOT dialed")
+        return Response(
+            content='<?xml version="1.0" encoding="UTF-8"?><Response><Say>Call cancelled. Goodbye.</Say><Hangup/></Response>',
+            media_type="application/xml"
+        )
+
+    customer_phone = pending.get("customer_phone", "")
+    caller_number  = pending.get("rep_twilio_number", "")
     twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say>Connecting your call now.</Say>
@@ -1467,8 +1517,40 @@ async def call_bridge_twiml(
   </Dial>
 </Response>"""
 
-    logger.info(f"[Voice] Bridging {caller_number} → {customer_phone}")
+    logger.info(f"[Voice] Press-1 confirmed — bridging {caller_number} → {customer_phone}")
     return Response(content=twiml, media_type="application/xml")
+
+
+@router.post("/call-cancel")
+async def cancel_click_to_call(request: Request):
+    """Red hang-up button in the app — kills the rep leg (customer leg dies with it)."""
+    body = await request.json()
+    call_sid = body.get("call_sid", "")
+    if not call_sid:
+        raise HTTPException(status_code=400, detail="call_sid required")
+    tw_sid   = os.environ.get("TWILIO_ACCOUNT_SID", "")
+    tw_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
+    if not tw_sid or not tw_token:
+        raise HTTPException(status_code=500, detail="Twilio credentials not configured")
+    try:
+        import asyncio as _aio
+        from twilio.rest import Client as _TC
+        client = _TC(tw_sid, tw_token)
+        await _aio.to_thread(lambda: client.calls(call_sid).update(status="completed"))
+    except Exception as e:
+        logger.warning(f"[Voice] Call cancel failed for {call_sid}: {e}")
+    db = get_db()
+    await db.pending_calls.update_one({"call_sid": call_sid}, {"$set": {"status": "canceled"}})
+    logger.info(f"[Voice] Call {call_sid} cancelled from the app")
+    return {"success": True}
+
+
+@router.get("/call-progress/{call_sid}")
+async def call_progress(call_sid: str):
+    """Live status for the dialer in-call UI (fed by the status callback webhook)."""
+    db = get_db()
+    doc = await db.pending_calls.find_one({"call_sid": call_sid}, {"status": 1})
+    return {"status": (doc or {}).get("status", "unknown")}
 
 
 
@@ -1483,8 +1565,15 @@ async def handle_call_status(
 ):
     """Updates call status in the DB (optional logging)."""
     logger.info(f"[Voice] Call status: {CallSid} → {CallStatus} | duration={Duration}s")
+    db = get_db()
+    if CallSid and CallStatus:
+        try:
+            await db.pending_calls.update_one(
+                {"call_sid": CallSid}, {"$set": {"status": CallStatus}}
+            )
+        except Exception:
+            pass
     if CallStatus in ("completed", "failed", "busy", "no-answer"):
-        db = get_db()
         try:
             await db.contact_events.update_one(
                 {"call_sid": CallSid},
