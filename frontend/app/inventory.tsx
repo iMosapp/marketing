@@ -7,8 +7,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
+import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'expo-image';
 import { useThemeStore } from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
+import { resolvePhotoUrl } from '../utils/photoUrl';
 import api from '../services/api';
 import { showSimpleAlert, showConfirm } from '../services/alert';
 
@@ -31,6 +34,30 @@ export default function InventoryScreen() {
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [photoUploadingId, setPhotoUploadingId] = useState<string | null>(null);
+
+  const handleAddPhoto = async (item: any) => {
+    if (!user?._id) return;
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.7,
+        base64: true,
+        allowsEditing: true,
+        aspect: [4, 3],
+      });
+      if (result.canceled || !result.assets?.[0]?.base64) return;
+      setPhotoUploadingId(item._id);
+      await api.post(`/inventory/${user._id}/${item._id}/photo`, {
+        photo: `data:image/jpeg;base64,${result.assets[0].base64}`,
+      });
+      fetchItems();
+    } catch {
+      showSimpleAlert('Error', 'Could not upload the photo. Please try again.');
+    } finally {
+      setPhotoUploadingId(null);
+    }
+  };
 
   const fetchItems = useCallback(async () => {
     if (!user?._id) { setLoading(false); return; }
@@ -233,15 +260,33 @@ export default function InventoryScreen() {
               const sold = item.status === 'sold';
               return (
                 <View key={item._id} style={{ backgroundColor: colors.card, borderRadius: 12, padding: 14 }} data-testid={`inventory-item-${item._id}`}>
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
-                    <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, flex: 1 }} numberOfLines={2}>{item.name}</Text>
-                    {item.price != null && (
-                      <Text style={{ fontSize: 16, fontWeight: '700', color: '#34C759' }}>{fmtPrice(item.price)}</Text>
-                    )}
+                  <View style={{ flexDirection: 'row', gap: 12 }}>
+                    <TouchableOpacity onPress={() => handleAddPhoto(item)} data-testid={`inventory-photo-${item._id}`}>
+                      {photoUploadingId === item._id ? (
+                        <View style={{ width: 62, height: 62, borderRadius: 10, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' }}>
+                          <ActivityIndicator size="small" color={ACCENT} />
+                        </View>
+                      ) : item.photo_url ? (
+                        <Image source={{ uri: resolvePhotoUrl(item.photo_url) || '' }} style={{ width: 62, height: 62, borderRadius: 10, backgroundColor: colors.surface }} contentFit="cover" />
+                      ) : (
+                        <View style={{ width: 62, height: 62, borderRadius: 10, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed' }}>
+                          <Ionicons name="camera-outline" size={20} color={colors.textSecondary} />
+                          <Text style={{ fontSize: 9, color: colors.textSecondary, marginTop: 2 }}>Photo</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+                        <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, flex: 1 }} numberOfLines={2}>{item.name}</Text>
+                        {item.price != null && (
+                          <Text style={{ fontSize: 16, fontWeight: '700', color: '#34C759' }}>{fmtPrice(item.price)}</Text>
+                        )}
+                      </View>
+                      {subBits.length > 0 && (
+                        <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 3 }} numberOfLines={1}>{subBits.join(' · ')}</Text>
+                      )}
+                    </View>
                   </View>
-                  {subBits.length > 0 && (
-                    <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 3 }} numberOfLines={1}>{subBits.join(' · ')}</Text>
-                  )}
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 }}>
                     <View style={{ backgroundColor: sold ? '#FF3B3018' : '#34C75918', paddingVertical: 3, paddingHorizontal: 10, borderRadius: 6 }}>
                       <Text style={{ fontSize: 11, fontWeight: '700', color: sold ? '#FF3B30' : '#34C759' }}>{sold ? 'SOLD' : 'AVAILABLE'}</Text>

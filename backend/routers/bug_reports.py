@@ -70,6 +70,69 @@ async def _push_super_admins(report: dict):
         logger.warning(f"[bug-reports] push notify failed: {e}")
 
 
+async def send_weekly_bug_digest():
+    """Monday digest of unresolved bug reports emailed to super admins."""
+    if not RESEND_API_KEY:
+        logger.info("[bug-digest] skipped — no RESEND_API_KEY")
+        return {"sent": False, "reason": "no_api_key"}
+    db = get_db()
+    reports = await db.bug_reports.find(
+        {"status": {"$in": ["open", "in_progress"]}}
+    ).sort("created_at", -1).to_list(100)
+    if not reports:
+        logger.info("[bug-digest] skipped — no open reports")
+        return {"sent": False, "reason": "no_open_reports"}
+
+    admins = await db.users.find({"role": "super_admin"}, {"email": 1}).to_list(10)
+    emails = [a["email"] for a in admins if a.get("email")]
+    if not emails:
+        return {"sent": False, "reason": "no_admins"}
+
+    open_count = sum(1 for r in reports if r.get("status") == "open")
+    prog_count = sum(1 for r in reports if r.get("status") == "in_progress")
+    now = datetime.now(timezone.utc)
+
+    rows = ""
+    for r in reports[:25]:
+        created = r.get("created_at")
+        age_days = "?"
+        if hasattr(created, "isoformat"):
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=timezone.utc)
+            age_days = int((now - created).total_seconds() // 86400)
+        status_color = "#FF3B30" if r.get("status") == "open" else "#FF9500"
+        status_label = "OPEN" if r.get("status") == "open" else "IN PROGRESS"
+        rows += f"""
+        <tr>
+            <td style="padding: 10px 12px; border-bottom: 1px solid #eee;">
+                <span style="display: inline-block; background: {status_color}18; color: {status_color}; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 5px;">{status_label}</span>
+                <span style="font-size: 12px; color: #888; margin-left: 6px;">{(r.get('category') or 'bug').replace('_', ' ').title()} · {r.get('user_name', 'Unknown')} · {age_days}d old</span>
+                <div style="font-size: 14px; color: #1a1a1a; margin-top: 4px;">{(r.get('description') or '')[:180]}</div>
+            </td>
+        </tr>"""
+
+    html = f"""
+    <div style="font-family: -apple-system, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
+        <h2 style="color: #1a1a1a; margin-bottom: 4px;">🐛 Weekly Bug Report Digest</h2>
+        <p style="color: #555; margin-top: 0;">{open_count} open · {prog_count} in progress</p>
+        <table style="width: 100%; border-collapse: collapse; background: #fafafa; border-radius: 10px;">{rows}</table>
+        <p style="color: #888; font-size: 12px; margin-top: 20px;">Manage in Hub &rarr; Internal Operations &rarr; Bug Reports.</p>
+    </div>
+    """
+    try:
+        await asyncio.to_thread(resend.Emails.send, {
+            "from": f"I'm On Social <{SENDER_EMAIL}>",
+            "to": emails,
+            "subject": f"Weekly Bug Digest — {open_count + prog_count} unresolved report{'s' if open_count + prog_count != 1 else ''}",
+            "html": html,
+        })
+        logger.info(f"[bug-digest] sent to {len(emails)} super admin(s) — {len(reports)} unresolved")
+        return {"sent": True, "reports": len(reports)}
+    except Exception as e:
+        logger.warning(f"[bug-digest] send failed: {e}")
+        return {"sent": False, "reason": str(e)}
+
+
 @router.post("/{user_id}")
 async def submit_bug_report(user_id: str, data: dict = Body(...)):
     """Field rep submits a bug report from Hub settings."""

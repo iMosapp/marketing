@@ -752,6 +752,50 @@ async def update_store_ai_security_settings(store_id: str, data: dict):
     return {"message": "Settings updated", **update}
 
 
+@router.get("/stores/{store_id}/intent-preview")
+async def get_store_intent_preview(store_id: str, limit: int = 15):
+    """Recent intent-scored conversations for this store — powers the
+    sensitivity preview so admins can see what each threshold would catch."""
+    db = get_db()
+    users = await db.users.find(
+        {"$or": [{"store_id": store_id}, {"store_ids": store_id}]},
+        {"name": 1}
+    ).to_list(200)
+    user_map = {str(u["_id"]): u.get("name", "") for u in users}
+    if not user_map:
+        return {"conversations": []}
+    convs = await db.conversations.find(
+        {"user_id": {"$in": list(user_map.keys())}, "intent_score": {"$gte": 1}},
+        {"contact_id": 1, "user_id": 1, "intent_score": 1, "intent_category": 1,
+         "intent_signals": 1, "intent_detected_at": 1}
+    ).sort("intent_detected_at", -1).to_list(min(limit, 50))
+
+    contact_ids = []
+    for c in convs:
+        try:
+            contact_ids.append(ObjectId(c.get("contact_id")))
+        except Exception:
+            pass
+    contact_map = {}
+    if contact_ids:
+        async for ct in db.contacts.find({"_id": {"$in": contact_ids}}, {"first_name": 1, "last_name": 1}):
+            contact_map[str(ct["_id"])] = f"{ct.get('first_name', '')} {ct.get('last_name', '')}".strip()
+
+    out = []
+    for c in convs:
+        ts = c.get("intent_detected_at")
+        out.append({
+            "conversation_id": str(c["_id"]),
+            "contact_name": contact_map.get(c.get("contact_id"), "Unknown"),
+            "rep_name": user_map.get(c.get("user_id"), ""),
+            "score": c.get("intent_score", 0),
+            "category": c.get("intent_category", ""),
+            "signals": c.get("intent_signals", []),
+            "detected_at": ts.isoformat() if hasattr(ts, "isoformat") else ts,
+        })
+    return {"conversations": out}
+
+
 @router.delete("/stores/{store_id}")
 async def delete_store(store_id: str):
     """Delete a store"""

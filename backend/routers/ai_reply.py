@@ -79,14 +79,15 @@ _INV_STOPWORDS = {
 }
 
 
-async def _search_inventory_context(db, user_id: str, message: str) -> str:
+async def _search_inventory_context(db, user_id: str, message: str):
     """Search the store's live inventory for vehicles matching the customer's
-    message. Returns a bullet list Jessi can quote from, or '' if no matches."""
+    message. Returns (bullet_list_str, media_urls) — ('' , []) if no matches."""
     import re as _re
+    import os as _os
     try:
         user = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1})
         if not user:
-            return ""
+            return "", []
         sid = user.get("store_id")
         scope = {"store_id": str(sid)} if sid else {"$or": [
             {"created_by_user_id": user_id}, {"assigned_to_user_id": user_id}]}
@@ -99,7 +100,7 @@ async def _search_inventory_context(db, user_id: str, message: str) -> str:
             if t.endswith("s") and len(t) > 3:
                 tokens.append(t[:-1])  # "tacomas" should match "Tacoma"
         if not tokens:
-            return ""
+            return "", []
 
         token_ors = []
         for t in tokens:
@@ -115,7 +116,7 @@ async def _search_inventory_context(db, user_id: str, message: str) -> str:
         }
         items = await db.inventory.find(query).limit(12).to_list(12)
         if not items:
-            return ""
+            return "", []
 
         def _hits(it):
             blob = f"{it.get('name', '')} {it.get('description', '')} " + \
@@ -124,7 +125,8 @@ async def _search_inventory_context(db, user_id: str, message: str) -> str:
             return sum(1 for t in set(tokens) if t in blob)
 
         items.sort(key=_hits, reverse=True)
-        lines = []
+        public_url = _os.environ.get("PUBLIC_FACING_URL", _os.environ.get("APP_URL", "https://app.imonsocial.com")).rstrip("/")
+        lines, media = [], []
         for it in items[:3]:
             a = it.get("attributes") or {}
             bits = [it.get("name", "")]
@@ -137,10 +139,17 @@ async def _search_inventory_context(db, user_id: str, message: str) -> str:
             if a.get("stock_number"):
                 bits.append(f"Stock #{a['stock_number']}")
             lines.append(" — ".join(str(b) for b in bits if b))
-        return "\n".join(f"• {l}" for l in lines)
+            # Attach the top matching vehicle's photo so Jessi can text the exact car
+            if not media:
+                if it.get("photo_full_path"):
+                    media.append(f"{public_url}/api/images/{it['photo_full_path']}")
+                elif it.get("photo_url"):
+                    pu = it["photo_url"]
+                    media.append(pu if pu.startswith("http") else f"{public_url}{pu}")
+        return "\n".join(f"• {l}" for l in lines), media
     except Exception as e:
         logger.debug(f"[AIReply] Inventory search failed: {e}")
-        return ""
+        return "", []
 
 
 # ── Core queue function — called by inbound webhook ──────────────────────────
@@ -204,9 +213,9 @@ async def queue_ai_reply(
 
     # If the question is inventory/pricing-related (not AI-suspicion), try LIVE
     # inventory first — Jessi can answer with real availability and pricing.
-    inventory_context = ""
+    inventory_context, inventory_media = "", []
     if is_hot_topic and not any(sig in msg_lower for sig in AI_SUSPECT_SIGNALS):
-        inventory_context = await _search_inventory_context(db, assigned_user_id, incoming_message)
+        inventory_context, inventory_media = await _search_inventory_context(db, assigned_user_id, incoming_message)
 
     if is_hot_topic and not inventory_context:
         logger.info(f"[AIReply] Hot topic detected in message — sending brief reply + escalating for {contact_id}")
@@ -446,6 +455,7 @@ async def queue_ai_reply(
         "ai_mode_used":                ai_assist_mode,
         "reply_count_at_creation":     reply_count,
         "incoming_message_preview":    incoming_message[:200],
+        "media_urls":                  inventory_media or [],
         "created_at":                  now,
     }
 
@@ -662,7 +672,7 @@ async def process_ai_reply_queue():
                         rep_twilio_number = (rep_doc or {}).get("twilio_number") or (rep_doc or {}).get("mvpline_number")
                     except Exception:
                         pass
-            result = await send_sms(phone, item["body"], from_phone=rep_twilio_number)
+            result = await send_sms(phone, item["body"], from_phone=rep_twilio_number, media_urls=item.get("media_urls") or None)
             mocked = result.get("mock", True)
 
             await db.ai_reply_queue.update_one(
@@ -705,6 +715,8 @@ async def process_ai_reply_queue():
                 "twilio_sid":      result.get("sid"),
                 "timestamp":       now,
                 "status":          "sent" if not mocked else "sent_mock",
+                "has_media":       bool(item.get("media_urls")),
+                "media_urls":      item.get("media_urls") or [],
             })
 
             # Sync conversation's AI mode so the UI reflects reality

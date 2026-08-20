@@ -96,6 +96,7 @@ export default function StoreDetailScreen() {
     lockout_minutes: 15,
   });
   const [savingAiSecurity, setSavingAiSecurity] = useState(false);
+  const [intentPreview, setIntentPreview] = useState<any[]>([]);
   
   // Congrats Card Template State
   const [showCongratsEditor, setShowCongratsEditor] = useState(false);
@@ -154,6 +155,14 @@ export default function StoreDetailScreen() {
         setAiSecurity(aiSecResponse.data);
       } catch (err) {
         console.log('No AI/security settings, using defaults');
+      }
+
+      // Load recent intent-scored conversations for the sensitivity preview
+      try {
+        const previewResponse = await api.get(`/admin/stores/${id}/intent-preview?limit=10`);
+        setIntentPreview(previewResponse.data.conversations || []);
+      } catch (err) {
+        console.log('No intent preview data');
       }
     } catch (error) {
       console.error('Failed to load store:', error);
@@ -668,6 +677,48 @@ export default function StoreDetailScreen() {
                   );
                 })}
               </View>
+
+              {/* Sensitivity Preview — what would each threshold catch? */}
+              {intentPreview.length > 0 && (
+                <View style={{ marginTop: 16, backgroundColor: colors.surface, borderRadius: 12, padding: 12 }}>
+                  <Text style={[styles.permissionTitle, { fontSize: 13 }]}>Recent scored conversations</Text>
+                  <Text style={[styles.permissionDesc, { marginBottom: 8 }]}>
+                    At sensitivity {aiSecurity.intent_hot_threshold}, highlighted ones would alert:
+                  </Text>
+                  {intentPreview.map((p: any) => {
+                    const wouldAlert = p.score >= Number(aiSecurity.intent_hot_threshold);
+                    return (
+                      <View
+                        key={p.conversation_id}
+                        style={{
+                          flexDirection: 'row', alignItems: 'center', gap: 8,
+                          paddingVertical: 7, borderBottomWidth: 0.5, borderBottomColor: colors.border,
+                        }}
+                        data-testid={`intent-preview-${p.conversation_id}`}
+                      >
+                        <View style={{
+                          width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center',
+                          backgroundColor: wouldAlert ? '#FF950022' : colors.card,
+                        }}>
+                          <Text style={{ fontSize: 13, fontWeight: '800', color: wouldAlert ? '#FF9500' : colors.textSecondary }}>{p.score}</Text>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 13, fontWeight: '600', color: colors.text }} numberOfLines={1}>{p.contact_name}</Text>
+                          <Text style={{ fontSize: 11, color: colors.textSecondary }} numberOfLines={1}>
+                            {(p.signals || []).slice(0, 3).join(', ') || p.category || 'scored'}
+                            {p.detected_at ? ` · ${new Date(p.detected_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
+                          </Text>
+                        </View>
+                        {wouldAlert && (
+                          <View style={{ backgroundColor: '#FF950018', paddingVertical: 2, paddingHorizontal: 8, borderRadius: 5 }}>
+                            <Text style={{ fontSize: 10, fontWeight: '700', color: '#FF9500' }}>WOULD ALERT</Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
             </View>
 
             <View style={{ flexDirection: 'row', gap: 12 }}>

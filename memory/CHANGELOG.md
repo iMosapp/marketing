@@ -127,3 +127,11 @@
 - **Lockout Settings**: per-store login_max_fails (3-50) + lockout_minutes (1-1440); auth._get_lockout_settings resolves on failed login; same admin UI section
 - Fixes from testing (iteration_284): guarded ObjectId for legacy org ids in admin_hierarchy get_store (500 → 200); inventory PUT/DELETE now BOLA-scoped via _scope_query (cross-user → 404); /inventory auth guard + no infinite spinner; seeded vehicles backfilled with store_id; vehicle name wraps 2 lines
 - 3 demo vehicles seeded in preview DB (Tacoma/F-150/Civic, store 69a0b7095fddcede09591668)
+
+## Jun 2026 — Inventory Photos, Sensitivity Preview, Weekly Bug Digest
+- **Inventory Photos**: POST /api/inventory/{uid}/{item_id}/photo (base64 → object storage via upload_image, prefix 'inventory'); inventory.tsx cards show 62px thumbnail or dashed add-photo placeholder (ImagePicker, tap photo to replace). Jessi's _search_inventory_context now returns (context, media_urls) — top matching vehicle's photo (photo_full_path as absolute PUBLIC_FACING_URL) attaches to the queued AI reply; ai_reply queue_doc carries media_urls; sender passes media_urls to send_sms (MMS) and logs has_media/media_urls on the message so it renders in the inbox thread
+- **Sensitivity Preview**: GET /api/admin/stores/{id}/intent-preview (recent intent-scored conversations of store users, joined w/ contact names); admin AI & Security section lists them with score badges + live "WOULD ALERT" highlight vs currently selected threshold pill
+- **Weekly Bug Digest**: bug_reports.send_weekly_bug_digest (skips when no open/in_progress reports; HTML digest w/ status badges, reporter, age) + scheduler job weekly_bug_digest CronTrigger mon 15:00 UTC (~8-9am Mountain), registered & verified via /api/scheduler/status
+- FIX: digest age calc handles tz-naive Mongo datetimes
+- NOTE: preview env Resend domain (send.imonsocial.com) not verified → digest email only sends in PRODUCTION (same limitation as all preview emails)
+- Demo data seeded in preview: red photo on Tacoma, 3 intent-scored conversations (scores 8/6/4) owned by forestward@gmail.com with demo_seed:true flag

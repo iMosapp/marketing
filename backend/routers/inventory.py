@@ -156,6 +156,30 @@ async def delete_inventory_item(user_id: str, item_id: str):
     return {"success": True}
 
 
+@router.post("/{user_id}/{item_id}/photo")
+async def upload_inventory_photo(user_id: str, item_id: str, data: dict = Body(...)):
+    """Attach a photo to a vehicle (base64) — Jessi texts it when quoting this car."""
+    db = get_db()
+    photo = data.get("photo") or data.get("photo_url")
+    if not photo:
+        raise HTTPException(status_code=400, detail="photo is required")
+    scope = await _scope_query(user_id)
+    item = await db.inventory.find_one({"$and": [{"_id": ObjectId(item_id)}, scope or {}]}, {"_id": 1})
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    from utils.image_storage import upload_image
+    result = await upload_image(photo, prefix="inventory", entity_id=item_id)
+    if not result:
+        raise HTTPException(status_code=500, detail="Photo upload failed")
+    photo_url = f"/api/images/{result['thumbnail_path']}"
+    await db.inventory.update_one({"_id": ObjectId(item_id)}, {"$set": {
+        "photo_url": photo_url,
+        "photo_full_path": result["original_path"],
+        "updated_at": datetime.now(timezone.utc),
+    }})
+    return {"success": True, "photo_url": photo_url}
+
+
 CSV_HEADER_ALIASES = {
     "year": "year", "yr": "year",
     "make": "make", "manufacturer": "make",

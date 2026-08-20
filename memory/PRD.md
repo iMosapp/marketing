@@ -926,3 +926,8 @@ Security: /api/bug-reports under BOLA middleware; admin endpoints require JWT + 
 3. **Bug Push Alert**: push to super admins on bug report
 4. **Lockout Settings**: per-store login_max_fails + lockout_minutes
 Backlog note: direct HomeNet/vAuto API sync pending dealer credentials (user chose inventory-ready option)
+
+## Inventory Photos + Sensitivity Preview + Bug Digest (Jun 2026) — self-tested (curl + python-direct + screenshots)
+1. **Inventory Photos**: vehicles carry photos; Jessi texts the exact car's photo via MMS when quoting it
+2. **Sensitivity Preview**: admin AI & Security shows recent scored conversations w/ live WOULD ALERT highlighting per threshold
+3. **Weekly Bug Digest**: Monday 15:00 UTC email of unresolved bug reports to super admins (skips when none)

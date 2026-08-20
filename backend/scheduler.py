@@ -1074,6 +1074,16 @@ async def send_weekly_power_rankings_job():
         logger.error(f"[Scheduler] Power Rankings error: {e}")
 
 
+async def send_weekly_bug_digest_job():
+    """Monday digest of unresolved bug reports to super admins."""
+    from routers.bug_reports import send_weekly_bug_digest
+    try:
+        result = await send_weekly_bug_digest()
+        logger.info(f"[Scheduler] Bug Digest: {result}")
+    except Exception as e:
+        logger.error(f"[Scheduler] Bug Digest error: {e}")
+
+
 async def expire_recent_tags():
     """Daily job: remove 'Recent' tag from contacts where it was applied more than 14 days ago."""
     logger.info("[Scheduler] Starting Recent tag expiry scan...")
@@ -1229,6 +1239,15 @@ def start_scheduler():
         safe_job(send_weekly_power_rankings_job),
         CronTrigger(day_of_week='mon', hour=9, minute=0),
         id="weekly_power_rankings",
+        replace_existing=True,
+        misfire_grace_time=7200,
+    )
+
+    # Monday 15:00 UTC (~8-9 AM Mountain) — weekly digest of unresolved bug reports
+    scheduler.add_job(
+        safe_job(send_weekly_bug_digest_job),
+        CronTrigger(day_of_week='mon', hour=15, minute=0),
+        id="weekly_bug_digest",
         replace_existing=True,
         misfire_grace_time=7200,
     )
