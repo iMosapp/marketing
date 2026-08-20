@@ -1471,12 +1471,16 @@ async def call_bridge_twiml(
         pass
 
     app_url = os.environ.get('PUBLIC_FACING_URL', os.environ.get('APP_URL', 'https://app.imonsocial.com'))
+    _action = f"{app_url}/api/webhooks/twilio/call-bridge-connect"
     twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Gather action="{app_url}/api/webhooks/twilio/call-bridge-connect" method="POST" numDigits="1" timeout="12">
-    <Say>Calling {_xesc(say_name)}. Press 1 to connect, or hang up to cancel.</Say>
-    <Pause length="4"/>
-    <Say>Press 1 to connect.</Say>
+  <Gather input="dtmf speech" action="{_action}" method="POST" numDigits="1" timeout="15" speechTimeout="auto" hints="yes, one, connect">
+    <Say>Calling {_xesc(say_name)}. Press 1 on your phone's keypad, or say yes, to connect.</Say>
+    <Pause length="5"/>
+    <Say>Press 1, or say yes, to connect.</Say>
+  </Gather>
+  <Gather input="dtmf speech" action="{_action}" method="POST" numDigits="1" timeout="8" speechTimeout="auto" hints="yes, one, connect">
+    <Say>Last chance. Press 1 or say yes to connect the call.</Say>
   </Gather>
   <Say>No input received. Call cancelled. Goodbye.</Say>
   <Hangup/>
@@ -1491,14 +1495,20 @@ async def call_bridge_connect(
     request: Request,
     CallSid: str = Form(default=""),
     Digits:  str = Form(default=""),
+    SpeechResult: str = Form(default=""),
 ):
-    """Rep pressed a key at the press-1 gate. 1 = dial the customer, anything else = cancel."""
+    """Rep confirmed at the press-1 gate. Accepts DTMF 1 OR spoken yes/one/connect
+    (speech backup for carriers that mangle DTMF)."""
     db = get_db()
     call_sid = CallSid or request.query_params.get("CallSid", "")
     pending = await db.pending_calls.find_one({"call_sid": call_sid}) if call_sid else None
 
-    if not pending or Digits != "1":
-        logger.info(f"[Voice] Press-1 gate declined (digits='{Digits}') for SID={call_sid} — customer NOT dialed")
+    speech = (SpeechResult or "").lower()
+    speech_ok = any(w in speech for w in ("yes", "yeah", "yep", "one", "connect")) and "no " not in f"{speech} "
+    confirmed = Digits == "1" or speech_ok
+
+    if not pending or not confirmed:
+        logger.info(f"[Voice] Press-1 gate declined (digits='{Digits}', speech='{speech}') for SID={call_sid} — customer NOT dialed")
         return Response(
             content='<?xml version="1.0" encoding="UTF-8"?><Response><Say>Call cancelled. Goodbye.</Say><Hangup/></Response>',
             media_type="application/xml"

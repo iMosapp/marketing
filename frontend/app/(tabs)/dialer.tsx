@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, Platform, Linking, Dimensions, TextInput, ScrollView, Keyboard, ActivityIndicator,
 } from 'react-native';
@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { Audio } from 'expo-av';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { contactsAPI } from '../../services/api';
@@ -20,6 +21,21 @@ const CHROME_H = 470;
 const HEIGHT_BTN = Math.floor((SCREEN_H - CHROME_H - 58) / 5);
 const BTN_SIZE = Math.max(52, Math.min(Math.floor((PAD_SIDE - 80) / 3), 80, HEIGHT_BTN));
 const BTN_GAP = Math.floor((PAD_SIDE - 64 - BTN_SIZE * 3) / 2);
+
+const DTMF_FILES: Record<string, any> = {
+  '1': require('../../assets/dtmf/1.wav'),
+  '2': require('../../assets/dtmf/2.wav'),
+  '3': require('../../assets/dtmf/3.wav'),
+  '4': require('../../assets/dtmf/4.wav'),
+  '5': require('../../assets/dtmf/5.wav'),
+  '6': require('../../assets/dtmf/6.wav'),
+  '7': require('../../assets/dtmf/7.wav'),
+  '8': require('../../assets/dtmf/8.wav'),
+  '9': require('../../assets/dtmf/9.wav'),
+  '0': require('../../assets/dtmf/0.wav'),
+  '*': require('../../assets/dtmf/star.wav'),
+  '#': require('../../assets/dtmf/hash.wav'),
+};
 
 const DIAL_KEYS: { num: string; letters: string }[] = [
   { num: '1', letters: '' },
@@ -98,8 +114,31 @@ export default function DialerScreen() {
     return dialMatches.slice(0, 5);
   }, [phoneNumber, dialMatches]);
 
+  const dtmfSounds = useRef<Record<string, Audio.Sound>>({});
+
+  // Load real DTMF touch tones (plays even with the iPhone silent switch on, like the native dialer)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
+        for (const [k, mod] of Object.entries(DTMF_FILES)) {
+          const { sound } = await Audio.Sound.createAsync(mod, { volume: 0.5 });
+          if (!mounted) { sound.unloadAsync().catch(() => {}); return; }
+          dtmfSounds.current[k] = sound;
+        }
+      } catch { /* tones are best-effort */ }
+    })();
+    return () => {
+      mounted = false;
+      Object.values(dtmfSounds.current).forEach(s => s.unloadAsync().catch(() => {}));
+      dtmfSounds.current = {};
+    };
+  }, []);
+
   const handleDialPress = (num: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    dtmfSounds.current[num]?.replayAsync().catch(() => {});
     setPhoneNumber(prev => prev + num);
   };
 
@@ -439,8 +478,8 @@ export default function DialerScreen() {
             <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: '#FF9500' }} />
             <Text style={{ fontSize: 13, color: '#FF9500', fontWeight: '600' }} numberOfLines={1}>
               {activeCall.status === 'in-progress'
-                ? `On the line — press 1 to reach ${activeCall.name || formatPhone(activeCall.number)}`
-                : 'Calling your phone… answer & press 1 to connect'}
+                ? `On the line — press 1 on the call keypad to reach ${activeCall.name || formatPhone(activeCall.number)}`
+                : 'Calling your phone… answer, then press 1 on the call keypad (or say "yes")'}
             </Text>
           </View>
         ) : ((user as any)?.twilio_number || (user as any)?.mvpline_number) ? (
