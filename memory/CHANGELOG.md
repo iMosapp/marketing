@@ -144,3 +144,10 @@
 - Admin lead source detail page (/admin/lead-sources/[id]) shows 3 connection blocks: Webhook URL, ADF/XML URL, Email Lead Intake (with CloudMailin/SendGrid setup hint)
 - Fixed preview test source TEST_Lead_Source_VA_Picker store_id (was a user id)
 - Tested e2e: ADF POST creates lead+contact+conversation w/ matched Tacoma + stock-aware draft; email-inbound verified in CloudMailin JSON + SendGrid multipart attachment formats; all QA leads cleaned up
+
+## Jun 2026 — Leads Dashboard + Source ROI Tracking
+- GET /api/leads/ enhanced: matched_inventory, has_reply (distinct inbound messages per conversation), comments; now JWT-gated via _require_auth (intake POSTs remain public for providers)
+- NEW GET /api/leads/analytics/sources?days= — per-source funnel: leads → sent → replied → sold with reply_rate/sold_rate (replied = conversation has inbound msg; sold = contact.date_sold set); totals summary
+- NEW /app/frontend/app/leads.tsx — "Internet Leads" dashboard: Leads tab (status filters, source/status/REPLIED badges, vehicle interest, matched in-stock vehicle box w/ photo+price+stock#, tap → thread) + Source ROI tab (30/90/365-day windows, totals, per-source reply/sold progress bars)
+- Hub → Manage → "Internet Leads" entry added
+- Tested e2e with QA leads (matched Tacoma/Civic, seeded reply + sale → 50% rates verified), 401 for unauth list; QA data cleaned

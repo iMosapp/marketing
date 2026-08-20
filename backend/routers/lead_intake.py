@@ -1064,14 +1064,27 @@ async def receive_webhook_lead(source_id: str, request: Request):
     return {"success": True, **result}
 
 
+def _require_auth(request: Request) -> str:
+    """JWT gate for read/analytics endpoints (intake POSTs stay public for providers)."""
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        from routers.auth import verify_jwt_token
+        p = verify_jwt_token(auth[7:])
+        if p and p.get("sub"):
+            return p["sub"]
+    raise HTTPException(status_code=401, detail="Authentication required")
+
+
 @router.get("/")
 async def list_leads(
+    request:  Request,
     store_id: Optional[str] = None,
     status:   Optional[str] = None,
     limit:    int = 50,
     skip:     int = 0,
 ):
-    """Admin: list received leads with status."""
+    """List received internet leads with status, matched vehicle, and reply flag."""
+    _require_auth(request)
     db    = get_db()
     query: dict = {}
     if store_id:
@@ -1083,6 +1096,15 @@ async def list_leads(
         "received_at", -1
     ).skip(skip).limit(limit).to_list(limit)
 
+    # Which of these leads' conversations got a customer reply?
+    conv_ids = [l.get("conversation_id") for l in leads if l.get("conversation_id")]
+    replied_convs = set()
+    if conv_ids:
+        replied_convs = set(await db.messages.distinct(
+            "conversation_id",
+            {"conversation_id": {"$in": conv_ids}, "direction": "inbound"}
+        ))
+
     return [
         {
             "id":             str(l["_id"]),
@@ -1091,7 +1113,10 @@ async def list_leads(
             "phone":          l.get("phone"),
             "email":          l.get("email"),
             "vehicle_interest": l.get("vehicle_interest"),
+            "matched_inventory": l.get("matched_inventory"),
+            "comments":       l.get("comments", ""),
             "status":         l.get("status"),
+            "has_reply":      l.get("conversation_id") in replied_convs,
             "is_after_hours": l.get("is_after_hours", False),
             "scheduled_send_at": l.get("scheduled_send_at").isoformat() if isinstance(l.get("scheduled_send_at"), datetime) else l.get("scheduled_send_at"),
             "sent_at":        l.get("sent_at").isoformat() if isinstance(l.get("sent_at"), datetime) else None,
@@ -1103,6 +1128,79 @@ async def list_leads(
         }
         for l in leads
     ]
+
+
+@router.get("/analytics/sources")
+async def lead_source_analytics(
+    request:  Request,
+    store_id: Optional[str] = None,
+    days:     int = 90,
+):
+    """Per-source funnel: leads → sent → replied → sold. Shows what's worth paying for."""
+    _require_auth(request)
+    db = get_db()
+    days = min(max(days, 1), 365)
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+
+    query: dict = {"received_at": {"$gte": since}}
+    if store_id:
+        query["store_id"] = store_id
+    leads = await db.inbound_leads.find(
+        query,
+        {"source_name": 1, "source_id": 1, "status": 1, "conversation_id": 1, "contact_id": 1}
+    ).to_list(3000)
+
+    conv_ids = [l.get("conversation_id") for l in leads if l.get("conversation_id")]
+    replied_convs = set()
+    if conv_ids:
+        replied_convs = set(await db.messages.distinct(
+            "conversation_id",
+            {"conversation_id": {"$in": conv_ids}, "direction": "inbound"}
+        ))
+
+    contact_oids = []
+    for l in leads:
+        try:
+            contact_oids.append(ObjectId(l.get("contact_id")))
+        except Exception:
+            pass
+    sold_contacts = set()
+    if contact_oids:
+        async for c in db.contacts.find(
+            {"_id": {"$in": contact_oids}, "date_sold": {"$nin": [None, ""]}}, {"_id": 1}
+        ):
+            sold_contacts.add(str(c["_id"]))
+
+    by_source: dict = {}
+    for l in leads:
+        key = l.get("source_name") or "Unknown"
+        s = by_source.setdefault(key, {
+            "source_name": key, "source_id": l.get("source_id", ""),
+            "leads": 0, "sent": 0, "replied": 0, "sold": 0, "failed": 0,
+        })
+        s["leads"] += 1
+        if l.get("status") == "sent":
+            s["sent"] += 1
+        elif l.get("status") == "failed":
+            s["failed"] += 1
+        if l.get("conversation_id") in replied_convs:
+            s["replied"] += 1
+        if l.get("contact_id") in sold_contacts:
+            s["sold"] += 1
+
+    sources = []
+    for s in by_source.values():
+        s["reply_rate"] = round(s["replied"] / s["leads"] * 100) if s["leads"] else 0
+        s["sold_rate"] = round(s["sold"] / s["leads"] * 100) if s["leads"] else 0
+        sources.append(s)
+    sources.sort(key=lambda x: x["leads"], reverse=True)
+
+    totals = {
+        "leads": sum(s["leads"] for s in sources),
+        "replied": sum(s["replied"] for s in sources),
+        "sold": sum(s["sold"] for s in sources),
+    }
+    return {"days": days, "sources": sources, "totals": totals}
 
 
 @router.get("/{lead_id}")
