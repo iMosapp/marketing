@@ -175,10 +175,13 @@ async def get_store_hierarchy(store_id: str):
     if not store:
         raise HTTPException(status_code=404, detail="Store not found")
     
-    # Get organization info
+    # Get organization info (guard legacy string ids like 'org_001')
     org = None
     if store.get("organization_id"):
-        org = await get_db().organizations.find_one({"_id": ObjectId(store["organization_id"])})
+        try:
+            org = await get_db().organizations.find_one({"_id": ObjectId(store["organization_id"])})
+        except Exception:
+            org = await get_db().organizations.find_one({"_id": store["organization_id"]})
     
     # Get users assigned to this store (check both store_id and store_ids)
     users = await get_db().users.find({

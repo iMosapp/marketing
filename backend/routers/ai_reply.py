@@ -68,6 +68,81 @@ def get_human_delay(incoming_message: str = "") -> int:
     return int(base)
 
 
+# ── Live inventory lookup for Jessi ──────────────────────────────────────────
+
+_INV_STOPWORDS = {
+    "the", "and", "you", "your", "have", "has", "does", "what", "which", "with",
+    "how", "much", "many", "any", "are", "was", "for", "can", "could", "would",
+    "come", "there", "that", "this", "one", "ones", "get", "got", "still", "about",
+    "price", "pricing", "cost", "stock", "available", "availability", "color",
+    "colour", "much", "like", "want", "looking", "interested", "info", "more",
+}
+
+
+async def _search_inventory_context(db, user_id: str, message: str) -> str:
+    """Search the store's live inventory for vehicles matching the customer's
+    message. Returns a bullet list Jessi can quote from, or '' if no matches."""
+    import re as _re
+    try:
+        user = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1})
+        if not user:
+            return ""
+        sid = user.get("store_id")
+        scope = {"store_id": str(sid)} if sid else {"$or": [
+            {"created_by_user_id": user_id}, {"assigned_to_user_id": user_id}]}
+
+        raw_tokens = [w for w in _re.findall(r"[a-z0-9]+", (message or "").lower())
+                      if len(w) >= 3 and w not in _INV_STOPWORDS]
+        tokens = []
+        for t in raw_tokens[:8]:
+            tokens.append(t)
+            if t.endswith("s") and len(t) > 3:
+                tokens.append(t[:-1])  # "tacomas" should match "Tacoma"
+        if not tokens:
+            return ""
+
+        token_ors = []
+        for t in tokens:
+            rx = {"$regex": t, "$options": "i"}
+            token_ors += [
+                {"name": rx}, {"description": rx},
+                {"attributes.make": rx}, {"attributes.model": rx},
+                {"attributes.color": rx}, {"attributes.trim": rx},
+            ]
+        query = {
+            "status": "available", "is_visible": {"$ne": False},
+            "$and": [scope, {"$or": token_ors}],
+        }
+        items = await db.inventory.find(query).limit(12).to_list(12)
+        if not items:
+            return ""
+
+        def _hits(it):
+            blob = f"{it.get('name', '')} {it.get('description', '')} " + \
+                   " ".join(str(v) for v in (it.get("attributes") or {}).values())
+            blob = blob.lower()
+            return sum(1 for t in set(tokens) if t in blob)
+
+        items.sort(key=_hits, reverse=True)
+        lines = []
+        for it in items[:3]:
+            a = it.get("attributes") or {}
+            bits = [it.get("name", "")]
+            if a.get("color"):
+                bits.append(str(a["color"]))
+            if it.get("price"):
+                bits.append(f"${it['price']:,.0f}")
+            if a.get("mileage"):
+                bits.append(f"{a['mileage']} miles")
+            if a.get("stock_number"):
+                bits.append(f"Stock #{a['stock_number']}")
+            lines.append(" — ".join(str(b) for b in bits if b))
+        return "\n".join(f"• {l}" for l in lines)
+    except Exception as e:
+        logger.debug(f"[AIReply] Inventory search failed: {e}")
+        return ""
+
+
 # ── Core queue function — called by inbound webhook ──────────────────────────
 
 async def queue_ai_reply(
@@ -119,7 +194,21 @@ async def queue_ai_reply(
     msg_lower = (incoming_message or "").lower()
     is_hot_topic = any(sig in msg_lower for sig in ESCALATION_SIGNALS)
 
-    if is_hot_topic:
+    # Customer suspects AI — a rep MUST take over, never let Jessi keep talking
+    AI_SUSPECT_SIGNALS = [
+        "robot", "are you a robot", "is this ai", "is this a bot", "are you real",
+        "talking to a person", "real person", "automated", "chatbot", "ai bot",
+        "computer", "are you human", "is this automated", "machine", "is this jessi",
+        "who is this", "who am i talking to",
+    ]
+
+    # If the question is inventory/pricing-related (not AI-suspicion), try LIVE
+    # inventory first — Jessi can answer with real availability and pricing.
+    inventory_context = ""
+    if is_hot_topic and not any(sig in msg_lower for sig in AI_SUSPECT_SIGNALS):
+        inventory_context = await _search_inventory_context(db, assigned_user_id, incoming_message)
+
+    if is_hot_topic and not inventory_context:
         logger.info(f"[AIReply] Hot topic detected in message — sending brief reply + escalating for {contact_id}")
         # Generate a brief warm response and immediately flag for rep
         hot_reply = "Good question, let me check on that and get back to you."
@@ -192,6 +281,32 @@ async def queue_ai_reply(
         logger.info(f"[AIReply] Hot topic brief reply queued + rep escalation triggered for {contact_id}")
         return queue_item
 
+    if is_hot_topic and inventory_context:
+        # Jessi has live inventory facts — answer with real data, but still flag
+        # the conversation and notify the rep so they can jump in.
+        logger.info(f"[AIReply] Live inventory match — Jessi answering with real data for {contact_id}")
+        try:
+            await db.conversations.update_one(
+                {"_id": ObjectId(conversation_id)},
+                {"$set": {"needs_assistance": True, "you_are_needed_at": datetime.utcnow()}}
+            )
+        except Exception:
+            pass
+        if assigned_user_id:
+            try:
+                contact_doc = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"first_name": 1, "last_name": 1})
+                cname_inv = f"{contact_doc.get('first_name','')} {contact_doc.get('last_name','')}".strip() if contact_doc else "a customer"
+                from routers.push_notifications import send_push_to_user
+                asyncio.create_task(send_push_to_user(
+                    assigned_user_id,
+                    f"Inventory Question — {cname_inv}",
+                    f"Asked: \"{(incoming_message or '')[:70]}\" — Jessi replied with live inventory.",
+                    f"/thread/{conversation_id}",
+                    "car-sport",
+                ))
+            except Exception:
+                pass
+
     # ── Generate AI draft ──────────────────────────────────────────────────
     try:
         from routers.ai_campaigns import build_clone_system_prompt, get_contact_context
@@ -217,8 +332,17 @@ async def queue_ai_reply(
         )
 
         nl = "\n\n"
+        inv_block = ""
+        if inventory_context:
+            inv_block = (
+                "LIVE INVENTORY MATCHES (current and accurate — quote these facts):\n"
+                f"{inventory_context}\n"
+                "Answer the customer's question using ONLY these vehicles. Mention price/color/mileage "
+                "when relevant. If none of them fit what they asked, say you'll double-check what's on the lot.\n\n"
+            )
         user_prompt = (
             f"Customer context:\n{contact_context}\n\n"
+            f"{inv_block}"
             f"{'Recent conversation:' + nl + conv_lines + nl if conv_lines else ''}"
             f"Customer just said: \"{incoming_message}\"\n\n"
             "Reply naturally and briefly as me. Just the reply text, nothing else."

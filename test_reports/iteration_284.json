@@ -1,0 +1,55 @@
+{
+  "summary": "Iteration 284 QA of the 4 new features (live inventory, intent sensitivity, bug-report push, lockout settings). Backend: 17/17 pytest assertions pass for inventory CRUD/CSV/401 + admin ai-security-settings GET/PUT validation/persistence + bug report submit. Python-direct regression confirmed _get_hot_threshold (7), _get_lockout_settings ((8,15) store & env default) and _search_inventory_context (returns Tacoma bullet for 'red Tacomas?', '' for unrelated) when called with the seeded items' owner. Frontend: /inventory list/search/status chips/Mark Sold-Mark Available/Add modal/delete-with-confirm all work when reached from Hub > Manage > Inventory; AI & Security section (pills 1-10 + max fails + lockout + Save + persistence after reload) verified working on a store with a valid organization_id. TWO blocking/serious defects found: (1) /admin/stores/69a0b7095fddcede09591668 (the real store) fails to load — GET /api/admin/hierarchy/store/{id} returns 500 (organization_id 'org_001' is not a valid ObjectId), so the new AI & Security UI is unreachable for that store; (2) inventory PUT/DELETE have no ownership scoping (BOLA) — another authenticated user can modify/delete any item by _id. Also /inventory spins forever with no auth redirect when opened unauthenticated. All test data cleaned (3 seeded vehicles intact, QA bug report deleted, store settings restored to 7/8/15).",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "GET /api/admin/hierarchy/store/{store_id}", "issue": "500 InvalidId — store 69a0b7095fddcede09591668 has organization_id 'org_001' (legacy string) and admin_hierarchy.py:181 wraps it in ObjectId() unguarded. Whole admin store-detail screen shows 'Account not found' + 'Failed to load store details' alert, blocking the NEW AI & Security UI for the only real store. Fix: validate/try-except ObjectId or match on string id.", "priority": "CRITICAL"},
+      {"endpoint": "PUT/DELETE /api/inventory/{user_id}/{item_id}", "issue": "No ownership/store scoping — user_id in path is ignored. Verified: user mjeast1985@gmail.com successfully marked SOLD and deleted an inventory item created by the super admin (both 200). Should be 403/404. Fix: apply _scope_query(user_id) to the update/delete filters.", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "POST /api/bug-reports/{user_id}", "issue": "Works (200) and push is best-effort, but _push_super_admins is awaited inline before responding (adds latency) and swallows per-user errors with bare `except: pass` — no '[Push]' log line was emitted, so push delivery/failure is unobservable. Suggest background task + warning-level logging."},
+      {"endpoint": "GET /api/inventory/{user_id}", "issue": "Super admin scope is {} (all items across all stores/tenants). Acceptable for now but it means the seeded 3 vehicles have store_id=null and are therefore invisible to real store users (forestward@gmail.com store scope returns 0 items, and Jessi's _search_inventory_context returns '' for that store) — seed data should carry store_id 69a0b7095fddcede09591668 so the AI inventory answers actually work for store reps."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "app/inventory.tsx", "issue": "Opening /inventory while unauthenticated (or before auth store hydrates) shows an infinite spinner and never fires an API call — fetchItems early-returns on !user?._id without setLoading(false) and there is no redirect to /auth/login (other routes like /more do redirect).", "selector": "ActivityIndicator on /inventory", "priority": "MEDIUM"},
+      {"component": "admin/stores/[id].tsx", "issue": "New AI & Security section cannot be reached for the production store 69a0b7095fddcede09591668 because the page's hierarchy fetch 500s (see backend critical #1). Page shows generic 'Account not found' with no retry affordance.", "selector": "text=AI & Security", "priority": "CRITICAL"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Inventory (390x844)", "issues": ["Vehicle name truncates ('2024 Toyota Tacoma TRD Off-Ro...') because price sits on the same row — consider wrapping to 2 lines", "Delete confirmation uses the browser's native window.confirm on web instead of a styled modal (functional, but off-brand)"]},
+      {"screen": "Testability", "issues": ["No data-testid attributes reach the web DOM on any tested screen (document.querySelectorAll('[data-testid]') = 0). Automation must rely on text selectors; consider dataSet={{ testid: ... }} on RN web for interactive elements like the trash button, which currently has no accessible name/role."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_inventory_ai_security_284.py",
+    "/app/backend/tests/test_inventory_bola_284.py",
+    "/app/backend/tests/direct_284.py",
+    "/app/test_reports/pytest/it284.xml"
+  ],
+  "action_items": [
+    "Guard ObjectId() in routers/admin_hierarchy.py get_store_hierarchy (and audit other places using store['organization_id']) so legacy string org ids like 'org_001' don't 500 — this currently blocks the whole admin store detail page including the new AI & Security section.",
+    "Scope inventory PUT and DELETE by _scope_query(user_id) — cross-user update/delete currently succeeds (BOLA).",
+    "Add auth guard + loading reset on /inventory so unauthenticated/pre-hydration load doesn't spin forever.",
+    "Backfill store_id on the 3 seeded inventory vehicles (currently null) so store reps and Jessi's inventory search can see them.",
+    "Move _push_super_admins to a background task and log push results instead of silently passing."
+  ],
+  "critical_code_review_comments": [
+    "routers/inventory.py update/delete ignore the user_id path param → any authenticated user can mutate any item; must filter with the same scope query used by list_inventory.",
+    "routers/inventory.py list_inventory rebuilds the query when scope has $or (line 62) — duplicated logic that's easy to break; build with a single $and list instead.",
+    "routers/bug_reports.py _push_super_admins swallows all exceptions with `except: pass`; failures are undiagnosable.",
+    "app/inventory.tsx fetchItems returns before the finally-block semantics matter for the !user._id case — set loading false or gate the screen behind auth."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_inventory_ai_security_284.py",
+    "/app/backend/tests/test_inventory_bola_284.py",
+    "/app/backend/tests/direct_284.py"
+  ],
+  "success_rate": {"backend": "94% (17/18 assertions; 1 security scoping test fails by design)", "frontend": "80% (inventory flows pass; admin AI & Security unverifiable on target store due to 500)"},
+  "seed_data_creation": "Temporary items only (TESTMAKE/QACSVMAKE/TESTBOLA/2019 QATest Widget) — all deleted. QA bug report 'TEST-QA push check' deleted. Store 69a0b7095fddcede09591668 and TEST_Store_1772685059 settings restored to 7/8/15. The 3 seeded vehicles are untouched.",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "forest@imosapp.com / Admin123! (super admin, no store_id); mjeast1985@gmail.com / NavyBean1! (regular user)",
+  "context_for_next_testing_agent": "Login must happen in the same browser session as navigation (session not persisted across tool runs). /inventory can only be reached in-app via Hub (/more) > tap 'Manage' accordion > 'Inventory'. Inventory delete has no queryable selector: click at x=345, y=(nameBoundingBox.y + 54) and accept the native confirm dialog via page.on('dialog'). AI & Security UI verified on store 69a907033b77512d1d8d8a09 (valid org id); retest on 69a0b7095fddcede09591668 once the hierarchy 500 is fixed. Re-run /app/backend/tests/test_inventory_ai_security_284.py and test_inventory_bola_284.py after fixes.",
+  "rca_of_the_issue": "Store detail 500: stores.organization_id for the real store is the legacy string 'org_001'; admin_hierarchy.get_store_hierarchy line 181 calls ObjectId(store['organization_id']) without validation → bson.errors.InvalidId → 500 → frontend renders 'Account not found', hiding the new AI & Security section. Inventory BOLA: update_inventory_item/delete_inventory_item filter only on {_id: ObjectId(item_id)}, ignoring the user_id path segment, so any authenticated caller can mutate any item."
+}

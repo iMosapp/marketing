@@ -120,8 +120,10 @@ async def _check_login_lockout(identifier: str):
             raise HTTPException(status_code=429, detail=f"Too many login attempts. Try again in {wait} minute(s).")
 
 
-async def _record_login_failure(identifier: str):
+async def _record_login_failure(identifier: str, max_fails: int = None, lockout_minutes: int = None):
     """Increment failed-attempt counter; lock the identifier once the cap is hit."""
+    max_fails = max_fails or _LOGIN_MAX_FAILS
+    lockout_minutes = lockout_minutes or _LOGIN_LOCKOUT_MINUTES
     try:
         from pymongo import ReturnDocument
         now = datetime.now(timezone.utc)
@@ -131,13 +133,32 @@ async def _record_login_failure(identifier: str):
             upsert=True,
             return_document=ReturnDocument.AFTER,
         )
-        if rec and rec.get("count", 0) >= _LOGIN_MAX_FAILS:
+        if rec and rec.get("count", 0) >= max_fails:
             await get_db().login_attempts.update_one(
                 {"_id": identifier},
-                {"$set": {"locked_until": now + timedelta(minutes=_LOGIN_LOCKOUT_MINUTES), "count": 0}},
+                {"$set": {"locked_until": now + timedelta(minutes=lockout_minutes), "count": 0}},
             )
     except Exception as e:
         logger.warning(f"[RateLimit] record failure failed: {e}")
+
+
+async def _get_lockout_settings(user: Optional[dict]) -> tuple:
+    """Resolve per-store lockout settings (admin-configurable), else env defaults."""
+    max_fails, minutes = _LOGIN_MAX_FAILS, _LOGIN_LOCKOUT_MINUTES
+    try:
+        sid = (user or {}).get("store_id")
+        if sid:
+            store = await get_db().stores.find_one(
+                {"_id": ObjectId(str(sid))}, {"login_max_fails": 1, "lockout_minutes": 1}
+            )
+            if store:
+                if isinstance(store.get("login_max_fails"), int) and 3 <= store["login_max_fails"] <= 50:
+                    max_fails = store["login_max_fails"]
+                if isinstance(store.get("lockout_minutes"), int) and 1 <= store["lockout_minutes"] <= 1440:
+                    minutes = store["lockout_minutes"]
+    except Exception:
+        pass
+    return max_fails, minutes
 
 
 async def _clear_login_attempts(identifier: str):
@@ -477,7 +498,8 @@ async def login(credentials: dict, request: Request = None):
         stored_pw = user.get('password', '')
         is_hashed = stored_pw.startswith("$2b$") or stored_pw.startswith("$2a$")
         logger.warning(f"Login failed: wrong password for email '{email}' (stored_is_hashed={is_hashed}, bcrypt_available={BCRYPT_AVAILABLE}, pw_len={len(stored_pw)})")
-        await _record_login_failure(rl_id)
+        _mf, _lm = await _get_lockout_settings(user)
+        await _record_login_failure(rl_id, _mf, _lm)
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     # Success — clear any failed-attempt record for this ip:email

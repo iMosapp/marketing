@@ -711,6 +711,47 @@ async def update_store_campaign_settings(store_id: str, campaign_settings: dict)
     return {"message": "Campaign settings updated", "settings": update_dict}
 
 
+@router.get("/stores/{store_id}/ai-security-settings")
+async def get_store_ai_security_settings(store_id: str):
+    """Get AI intent sensitivity + login lockout settings for a store."""
+    store = await get_db().stores.find_one(
+        {"_id": ObjectId(store_id)},
+        {"intent_hot_threshold": 1, "login_max_fails": 1, "lockout_minutes": 1}
+    )
+    if not store:
+        raise HTTPException(status_code=404, detail="Store not found")
+    import os as _os
+    return {
+        "intent_hot_threshold": store.get("intent_hot_threshold", 7),
+        "login_max_fails": store.get("login_max_fails", int(_os.environ.get("LOGIN_MAX_FAILS", "8"))),
+        "lockout_minutes": store.get("lockout_minutes", int(_os.environ.get("LOGIN_LOCKOUT_MINUTES", "15"))),
+    }
+
+
+@router.put("/stores/{store_id}/ai-security-settings")
+async def update_store_ai_security_settings(store_id: str, data: dict):
+    """Update AI intent sensitivity + login lockout settings for a store."""
+    update = {}
+    t = data.get("intent_hot_threshold")
+    if isinstance(t, (int, float)) and 1 <= int(t) <= 10:
+        update["intent_hot_threshold"] = int(t)
+    mf = data.get("login_max_fails")
+    if isinstance(mf, (int, float)) and 3 <= int(mf) <= 50:
+        update["login_max_fails"] = int(mf)
+    lm = data.get("lockout_minutes")
+    if isinstance(lm, (int, float)) and 1 <= int(lm) <= 1440:
+        update["lockout_minutes"] = int(lm)
+    if not update:
+        raise HTTPException(status_code=400, detail="No valid settings provided (intent_hot_threshold 1-10, login_max_fails 3-50, lockout_minutes 1-1440)")
+    result = await get_db().stores.update_one(
+        {"_id": ObjectId(store_id)},
+        {"$set": {**update, "updated_at": datetime.utcnow()}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Store not found")
+    return {"message": "Settings updated", **update}
+
+
 @router.delete("/stores/{store_id}")
 async def delete_store(store_id: str):
     """Delete a store"""

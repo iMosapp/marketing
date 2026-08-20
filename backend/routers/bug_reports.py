@@ -48,6 +48,28 @@ async def _email_super_admins(report: dict):
         logger.warning(f"[bug-reports] email notify failed: {e}")
 
 
+async def _push_super_admins(report: dict):
+    """Instant push notification to super admins when a bug report is filed."""
+    db = get_db()
+    try:
+        from routers.push_notifications import send_push_to_user
+        admins = await db.users.find({"role": "super_admin"}, {"_id": 1}).to_list(10)
+        for a in admins:
+            try:
+                await send_push_to_user(
+                    user_id=str(a["_id"]),
+                    title=f"🐛 Bug Report — {report.get('user_name', 'User')}",
+                    body=(report.get("description") or "")[:120],
+                    url="/admin/bug-reports",
+                    icon="bug",
+                )
+                logger.info(f"[bug-reports] push sent to super admin {a['_id']}")
+            except Exception as e:
+                logger.warning(f"[bug-reports] push to {a['_id']} failed: {e}")
+    except Exception as e:
+        logger.warning(f"[bug-reports] push notify failed: {e}")
+
+
 @router.post("/{user_id}")
 async def submit_bug_report(user_id: str, data: dict = Body(...)):
     """Field rep submits a bug report from Hub settings."""
@@ -74,6 +96,7 @@ async def submit_bug_report(user_id: str, data: dict = Body(...)):
     }
     result = await db.bug_reports.insert_one(report)
     await _email_super_admins(report)
+    asyncio.create_task(_push_super_admins(report))
     return {"success": True, "report_id": str(result.inserted_id)}
 
 

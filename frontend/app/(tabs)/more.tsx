@@ -628,6 +628,7 @@ export default function MoreScreen() {
     const canManageCampaigns = user?.role === 'super_admin' || user?.role === 'org_admin';
     const manageItems: (MenuItem & { permKey?: string })[] = [
       { icon: 'pricetags',  title: 'Tags',       subtitle: 'All tags — personal, account & org', onPress: () => router.push('/settings/tags'),             color: '#FF9500' },
+      { icon: 'car-sport',  title: 'Inventory',  subtitle: 'Vehicles Jessi can quote & check',   onPress: () => router.push('/inventory' as any),          color: '#32ADE6' },
       ...(canManageCampaigns ? [{ icon: 'megaphone' as any,  title: 'Campaigns',  subtitle: 'Build & manage automated campaigns', onPress: () => router.push('/campaigns' as any), color: '#FF2D55' }] : []),
       { icon: 'star',       title: 'Review Center', subtitle: 'Approve, publish & track reviews', onPress: () => router.push('/settings/review-approvals'), color: '#FFD60A' },
       { icon: 'images',     title: 'Showcase',      subtitle: 'Approve showcase entries',          onPress: () => router.push('/settings/showcase-approvals'), color: '#34C759' },

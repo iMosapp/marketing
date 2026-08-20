@@ -88,6 +88,14 @@ export default function StoreDetailScreen() {
     sales_can_edit: false,
   });
   const [savingCampaignSettings, setSavingCampaignSettings] = useState(false);
+
+  // AI & Security Settings State
+  const [aiSecurity, setAiSecurity] = useState({
+    intent_hot_threshold: 7,
+    login_max_fails: 8,
+    lockout_minutes: 15,
+  });
+  const [savingAiSecurity, setSavingAiSecurity] = useState(false);
   
   // Congrats Card Template State
   const [showCongratsEditor, setShowCongratsEditor] = useState(false);
@@ -139,6 +147,14 @@ export default function StoreDetailScreen() {
       } catch (err) {
         console.log('No existing campaign settings, using defaults');
       }
+
+      // Load AI & security settings for this store
+      try {
+        const aiSecResponse = await api.get(`/admin/stores/${id}/ai-security-settings`);
+        setAiSecurity(aiSecResponse.data);
+      } catch (err) {
+        console.log('No AI/security settings, using defaults');
+      }
     } catch (error) {
       console.error('Failed to load store:', error);
       showSimpleAlert('Error', 'Failed to load store details');
@@ -160,6 +176,22 @@ export default function StoreDetailScreen() {
     }
   };
   
+  const saveAiSecurity = async () => {
+    setSavingAiSecurity(true);
+    try {
+      await api.put(`/admin/stores/${id}/ai-security-settings`, {
+        intent_hot_threshold: Number(aiSecurity.intent_hot_threshold),
+        login_max_fails: Number(aiSecurity.login_max_fails),
+        lockout_minutes: Number(aiSecurity.lockout_minutes),
+      });
+      showSimpleAlert('Success', 'AI & security settings saved!');
+    } catch (error: any) {
+      showSimpleAlert('Error', error?.response?.data?.detail || 'Failed to save settings');
+    } finally {
+      setSavingAiSecurity(false);
+    }
+  };
+
   const saveCongratsTemplate = async () => {
     setSavingTemplate(true);
     try {
@@ -606,6 +638,85 @@ export default function StoreDetailScreen() {
             </TouchableOpacity>
           </View>
           
+          {/* AI & Security Settings */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="shield-half" size={20} color="#FF9500" />
+              <Text style={styles.sectionTitle}>AI & Security</Text>
+            </View>
+
+            <View style={{ marginBottom: 16 }}>
+              <Text style={styles.permissionTitle}>Hot Opportunity Sensitivity</Text>
+              <Text style={styles.permissionDesc}>
+                Alerts fire when buying-intent score reaches {aiSecurity.intent_hot_threshold}/10. Lower = more alerts, higher = only the strongest signals.
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => {
+                  const active = Number(aiSecurity.intent_hot_threshold) === n;
+                  return (
+                    <TouchableOpacity
+                      key={n}
+                      style={{
+                        width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center',
+                        backgroundColor: active ? '#FF9500' : colors.surface,
+                      }}
+                      onPress={() => setAiSecurity({ ...aiSecurity, intent_hot_threshold: n })}
+                      data-testid={`intent-threshold-${n}`}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#FFF' : colors.textSecondary }}>{n}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inputLabel}>Max Failed Logins</Text>
+                <TextInput
+                  style={styles.input}
+                  value={String(aiSecurity.login_max_fails)}
+                  onChangeText={(t) => setAiSecurity({ ...aiSecurity, login_max_fails: t.replace(/\D/g, '') as any })}
+                  keyboardType="number-pad"
+                  placeholder="8"
+                  placeholderTextColor={colors.textSecondary}
+                  data-testid="lockout-max-fails-input"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inputLabel}>Lockout (minutes)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={String(aiSecurity.lockout_minutes)}
+                  onChangeText={(t) => setAiSecurity({ ...aiSecurity, lockout_minutes: t.replace(/\D/g, '') as any })}
+                  keyboardType="number-pad"
+                  placeholder="15"
+                  placeholderTextColor={colors.textSecondary}
+                  data-testid="lockout-minutes-input"
+                />
+              </View>
+            </View>
+            <Text style={[styles.permissionDesc, { marginTop: 6 }]}>
+              Attempts allowed: 3–50 · Lockout: 1–1440 min
+            </Text>
+
+            <TouchableOpacity
+              style={styles.saveCampaignSettingsButton}
+              onPress={saveAiSecurity}
+              disabled={savingAiSecurity}
+              data-testid="save-ai-security-btn"
+            >
+              {savingAiSecurity ? (
+                <ActivityIndicator size="small" color={colors.text} />
+              ) : (
+                <>
+                  <Ionicons name="save-outline" size={18} color={colors.text} />
+                  <Text style={styles.saveCampaignSettingsButtonText}>Save AI & Security</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+
           {/* Edit Details Section */}
           {editMode && (
             <View style={styles.section}>

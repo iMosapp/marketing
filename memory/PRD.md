@@ -919,3 +919,10 @@ Quote signing system complete
 3. **Dialer Recents** — Keypad/Recents toggle; GET /api/contacts/{uid}/recent-calls; consecutive-call grouping (n)
 4. **Report a Bug** — /report-bug form → db.bug_reports + Resend email to super admins; /admin/bug-reports management screen (role-guarded); Hub menu entries added
 Security: /api/bug-reports under BOLA middleware; admin endpoints require JWT + super_admin role
+
+## Live Inventory + Store Settings (Jun 2026) — TESTED iteration_284 + fixes verified
+1. **Live Inventory**: inventory.py CRUD/CSV + /inventory screen + Jessi answers availability/pricing from live inventory (HomeNet/vAuto feed plugs into existing /api/webhooks/inventory later)
+2. **Intent Sensitivity**: per-store intent_hot_threshold, admin AI & Security section in /admin/stores/[id]
+3. **Bug Push Alert**: push to super admins on bug report
+4. **Lockout Settings**: per-store login_max_fails + lockout_minutes
+Backlog note: direct HomeNet/vAuto API sync pending dealer credentials (user chose inventory-ready option)

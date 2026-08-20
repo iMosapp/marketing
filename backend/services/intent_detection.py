@@ -135,6 +135,22 @@ async def detect_buying_intent(
         return default
 
 
+async def _get_hot_threshold(db, user_id: str) -> int:
+    """Per-store configurable hot-opportunity threshold (default 7)."""
+    try:
+        from bson import ObjectId
+        user = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1})
+        sid = (user or {}).get("store_id")
+        if sid:
+            store = await db.stores.find_one({"_id": ObjectId(str(sid))}, {"intent_hot_threshold": 1})
+            t = (store or {}).get("intent_hot_threshold")
+            if isinstance(t, (int, float)) and 1 <= int(t) <= 10:
+                return int(t)
+    except Exception:
+        pass
+    return 7
+
+
 async def process_inbound_intent(
     db,
     message: str,
@@ -167,8 +183,9 @@ async def process_inbound_intent(
         score = result.get("score", 0)
         signals = result.get("signals", [])
         hot_summary = result.get("hot_summary", "")
+        hot_threshold = await _get_hot_threshold(db, user_id)
 
-        if score < 4:
+        if score < min(4, hot_threshold):
             return  # Not interesting — skip DB write
 
         now = datetime.now(timezone.utc)
@@ -181,14 +198,14 @@ async def process_inbound_intent(
                 "intent_signals": signals,
                 "intent_category": result.get("category", ""),
                 "intent_detected_at": now,
-                "hot_opportunity": score >= 7,
+                "hot_opportunity": score >= hot_threshold,
             }}
         )
 
-        logger.info(f"[Intent] Conv {conversation_id[:8]} | score={score} | signals={signals}")
+        logger.info(f"[Intent] Conv {conversation_id[:8]} | score={score} | threshold={hot_threshold} | signals={signals}")
 
-        # Fire Hot Opportunity push when score >= 7
-        if score >= 7 and user_id:
+        # Fire Hot Opportunity push when score >= store threshold
+        if score >= hot_threshold and user_id:
             summary = hot_summary or f"{contact_name} is showing strong buying intent"
             try:
                 from routers.push_notifications import send_push_to_user

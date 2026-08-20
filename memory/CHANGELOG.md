@@ -119,3 +119,11 @@
 - **Security**: /api/bug-reports/ added to BOLA PROTECTED_PREFIXES (POST now requires JWT matching path user). GET/PATCH admin endpoints verify JWT (Authorization Bearer) + super_admin role from DB — X-User-ID header alone no longer accepted
 - Testing: testing agent iteration_283 (17 backend pytest all pass + full frontend flows); all flagged issues fixed and re-verified via curl + screenshots
 - LEARNING: Metro watcher in this pod often serves stale bundles — run `sudo supervisorctl restart frontend` after edits before screenshot verification
+
+## Jun 2026 — Live Inventory, Intent Sensitivity, Bug Push, Lockout Settings
+- **Live Inventory (inventory-ready, user chose option c)**: new /app/backend/routers/inventory.py (CRUD + CSV import, feeds same db.inventory as HomeNet-compatible webhook API); /app/frontend/app/inventory.tsx management screen (search, filters, add modal, CSV upload via DocumentPicker, mark sold, delete); Hub → Manage → Inventory entry; Jessi (ai_reply.py) now searches store inventory on availability/pricing questions via _search_inventory_context and answers with real vehicle facts (price/color/mileage/stock#) instead of generic escalation — still flags convo + pushes rep. AI-suspect messages always escalate
+- **Intent Sensitivity**: per-store intent_hot_threshold (1-10, default 7) on stores collection; intent_detection._get_hot_threshold; admin UI pills in /admin/stores/[id] "AI & Security" section; GET/PUT /api/admin/stores/{id}/ai-security-settings
+- **Bug Push Alert**: bug_reports._push_super_admins → send_push_to_user for all super_admins on new report (background task, logged)
+- **Lockout Settings**: per-store login_max_fails (3-50) + lockout_minutes (1-1440); auth._get_lockout_settings resolves on failed login; same admin UI section
+- Fixes from testing (iteration_284): guarded ObjectId for legacy org ids in admin_hierarchy get_store (500 → 200); inventory PUT/DELETE now BOLA-scoped via _scope_query (cross-user → 404); /inventory auth guard + no infinite spinner; seeded vehicles backfilled with store_id; vehicle name wraps 2 lines
+- 3 demo vehicles seeded in preview DB (Tacoma/F-150/Civic, store 69a0b7095fddcede09591668)

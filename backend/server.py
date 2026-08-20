@@ -170,6 +170,7 @@ async def enforce_user_ownership(request: Request, call_next):
         "/api/reports/", "/api/push/preferences/", "/api/push/subscribe-native/",
         "/api/push/status/", "/api/users/", "/api/engagement-signals/",
         "/api/ai-outreach/", "/api/broadcast/", "/api/bug-reports/",
+        "/api/inventory/",
     )
 
     matched_prefix = next((p for p in PROTECTED_PREFIXES if path.startswith(p)), None)
@@ -657,6 +658,8 @@ from routers import error_reporting
 api_router.include_router(error_reporting.router)
 from routers import bug_reports
 api_router.include_router(bug_reports.router)
+from routers import inventory as inventory_mgmt
+api_router.include_router(inventory_mgmt.router)
 
 # ============= WEBSOCKET ENDPOINT =============
 @app.websocket("/api/ws/{user_id}")
