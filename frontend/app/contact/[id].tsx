@@ -92,7 +92,7 @@ interface ContactStats {
 
 
 function ContactDetailScreen() {
-  const { colors } = useThemeStore();
+  const { colors, mode } = useThemeStore();
   const s = getS(colors);
   const { width: screenWidth } = useWindowDimensions();
   const ncs = {
@@ -4811,8 +4811,8 @@ function ContactDetailScreen() {
                   mode="date"
                   display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                   onChange={(_, d) => { if (d) setAutomationPickerDate(d); }}
-                  textColor="#FFFFFF"
-                  themeVariant="dark"
+                  textColor={colors.text}
+                  themeVariant={mode}
                   style={{ height: 150, marginVertical: 8 }}
                 />
               )}
@@ -4893,7 +4893,7 @@ function ContactDetailScreen() {
                 </View>
               ) : (
                 <DateTimePicker value={tempDate} mode="date" display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={handleDateChange} textColor="#FFFFFF" themeVariant="dark" style={{ height: 200, marginHorizontal: 10 }}
+                  onChange={handleDateChange} textColor={colors.text} themeVariant={mode} style={{ height: 200, marginHorizontal: 10 }}
                   maximumDate={new Date(2100, 11, 31)} minimumDate={new Date(1900, 0, 1)} />
               )}
               {(Platform.OS === 'ios' || IS_WEB) && (

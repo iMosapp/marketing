@@ -1,5 +1,12 @@
 # CHANGELOG — iMOs App
 
+## Jun, 2026 — Date Picker Invisible in Light Mode (COMPLETED)
+- **Bug:** The birthday/date picker text was invisible and couldn't be changed. Root cause: the native `DateTimePicker` hardcoded `textColor="#FFFFFF"` + `themeVariant="dark"`, but the sheet background follows the theme (`colors.card`). In light mode that's white text on a white sheet → invisible; you can't scroll a spinner you can't see.
+- **Fix:** Made the picker theme-adaptive — `textColor={colors.text}` + `themeVariant={mode}` (from `useThemeStore`). Applied to the contact birthday/anniversary/custom-date picker AND the automation-date picker (`contact/[id].tsx`), plus the same latent bug in `AppointmentModal.tsx` (date + time), `campaigns/new.tsx`, and `campaigns/[id].tsx`. No hardcoded white pickers remain.
+- **Note:** The native `DateTimePicker` doesn't render on web preview (web uses a custom scroll picker), so this is verified by code/type-check only; visual confirmation is on device.
+- **Deploy note:** Native frontend change — ships via `eas update --branch production`.
+
+
 ## Jun, 2026 — Gallery Sections, Camera, Use-in-Card & Security Phase 3 (COMPLETED)
 - **Photo Sections (frontend `contact/[id].tsx`):** The contact photo gallery is now grouped into sections with gold headers — **Texted In** (customer MMS), **You Sent**, **Cards** (congrats/birthday), **Profile** (current + history). Global photo indices preserved so the full-photo viewer still works. Verified on web: TEXTED IN · 1, CARDS · 1, PROFILE · 4 render with per-tile set-as-profile icons.
 - **Camera Option (frontend):** The gallery "Add Photo" now shows a native chooser — **Take Photo** (camera) or **Choose from Library**. Camera uses `launchCameraAsync` + camera-permission request; both defer their launch until the photo-viewer modal fully dismisses (iOS `onDismiss` + Android/web timeout). Web goes straight to the file picker.

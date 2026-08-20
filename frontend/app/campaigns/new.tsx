@@ -42,7 +42,7 @@ interface SequenceStep {
 }
 
 export default function CampaignBuilderScreen() {
-  const { colors } = useThemeStore();
+  const { colors, mode } = useThemeStore();
   const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
@@ -958,7 +958,8 @@ const { showToast } = useToast();
                     display="spinner"
                     onChange={handleTimeChange}
                     style={styles.timePicker}
-                    textColor="#FFF"
+                    textColor={colors.text}
+                    themeVariant={mode}
                   />
                 </View>
               </View>

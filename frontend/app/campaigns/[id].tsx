@@ -58,7 +58,7 @@ interface Enrollment {
 }
 
 export default function CampaignDetailScreen() {
-  const { colors } = useThemeStore();
+  const { colors, mode } = useThemeStore();
   const styles = getStyles(colors);
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -761,7 +761,8 @@ const { showToast } = useToast();
             is24Hour={false}
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
             onChange={handleTimeChange}
-            themeVariant="dark"
+            themeVariant={mode}
+            textColor={colors.text}
           />
         )}
         

@@ -36,7 +36,7 @@ export default function AppointmentModal({
   contactPhone,
   userId,
 }: AppointmentModalProps) {
-  const { colors } = useThemeStore();
+  const { colors, mode } = useThemeStore();
   const styles = getStyles(colors);
   const [title, setTitle] = useState(`Appointment with ${contactName}`);
   const [date, setDate] = useState(new Date(Date.now() + 24 * 60 * 60 * 1000)); // Tomorrow
@@ -380,7 +380,8 @@ export default function AppointmentModal({
                   onChange={handleDateChange}
                   minimumDate={new Date()}
                   style={{ backgroundColor: colors.card }}
-                  textColor="#FFF"
+                  textColor={colors.text}
+                  themeVariant={mode}
                 />
               </View>
             </View>
@@ -414,7 +415,8 @@ export default function AppointmentModal({
                   display="spinner"
                   onChange={handleTimeChange}
                   style={{ backgroundColor: colors.card }}
-                  textColor="#FFF"
+                  textColor={colors.text}
+                  themeVariant={mode}
                 />
               </View>
             </View>
