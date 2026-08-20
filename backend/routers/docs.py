@@ -1169,6 +1169,90 @@ def _strip_markdown(text: str) -> list:
     return result
 
 
+def _render_markdown_to_pdf(pdf, content: str):
+    """Render markdown content into an fpdf document (headings, bullets, code, tables)."""
+    def sanitize(text):
+        text = (text.replace("\u2019", "'").replace("\u2018", "'")
+                    .replace("\u201c", '"').replace("\u201d", '"')
+                    .replace("\u2014", "--").replace("\u2013", "-")
+                    .replace("\u2026", "...").replace("\u00b7", "-")
+                    .replace("\u2192", "->").replace("\u2190", "<-")
+                    .replace("\u26a0", "!").replace("\ufe0f", ""))
+        return text.encode("latin-1", "replace").decode("latin-1")
+
+    in_code_block = False
+    for line in content.split("\n"):
+        stripped = line.strip()
+        indent = len(line) - len(line.lstrip())
+
+        if not stripped:
+            pdf.ln(3)
+            continue
+        if stripped.startswith("```"):
+            in_code_block = not in_code_block
+            continue
+        pdf.set_x(10)
+        if in_code_block:
+            pdf.set_font("Courier", "", 9)
+            pdf.set_text_color(80, 80, 80)
+            pdf.multi_cell(190, 5, sanitize(stripped))
+            continue
+        if stripped.startswith("|"):
+            if re.match(r"^\|[\s\-:|]+\|$", stripped):
+                continue  # table separator row
+            cells = [c.strip() for c in stripped.strip("|").split("|")]
+            row = "  |  ".join(re.sub(r"\*\*(.+?)\*\*", r"\1", re.sub(r"`(.+?)`", r"\1", c)) for c in cells)
+            pdf.set_font("Courier", "", 8)
+            pdf.set_text_color(70, 70, 70)
+            pdf.multi_cell(190, 4.5, sanitize(row))
+            continue
+        if stripped.startswith("# ") and not stripped.startswith("## "):
+            pdf.set_font("Helvetica", "B", 18)
+            pdf.set_text_color(30, 30, 30)
+            pdf.multi_cell(190, 9, sanitize(stripped[2:]))
+            pdf.ln(3)
+        elif stripped.startswith("## "):
+            pdf.ln(2)
+            pdf.set_font("Helvetica", "B", 14)
+            pdf.set_text_color(50, 50, 50)
+            pdf.multi_cell(190, 8, sanitize(stripped[3:]))
+            pdf.ln(2)
+        elif stripped.startswith("### "):
+            pdf.ln(1)
+            pdf.set_font("Helvetica", "B", 11)
+            pdf.set_text_color(120, 90, 30)
+            pdf.multi_cell(190, 7, sanitize(stripped[4:]))
+            pdf.ln(1)
+        elif stripped == "---":
+            pdf.ln(3)
+            pdf.set_draw_color(200, 169, 98)
+            pdf.line(10, pdf.get_y(), 200, pdf.get_y())
+            pdf.ln(5)
+        elif stripped.startswith("- ") or re.match(r"^\d+\.\s", stripped):
+            text = re.sub(r"^(-|\d+\.)\s+", "", stripped)
+            text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
+            text = re.sub(r"`(.+?)`", r"\1", text)
+            text = re.sub(r"\[(.+?)\]\(.+?\)", r"\1", text)
+            if indent >= 2:
+                pdf.set_font("Helvetica", "", 9)
+                pdf.set_text_color(100, 100, 100)
+                pdf.set_x(18)
+                pdf.multi_cell(180, 5, sanitize(f"- {text}"))
+            else:
+                pdf.set_font("Helvetica", "", 10)
+                pdf.set_text_color(60, 60, 60)
+                pdf.set_x(14)
+                pdf.multi_cell(184, 6, sanitize(f"- {text}"))
+        else:
+            text = re.sub(r"\*\*(.+?)\*\*", r"\1", stripped)
+            text = re.sub(r"`(.+?)`", r"\1", text)
+            text = re.sub(r"\[(.+?)\]\(.+?\)", r"\1", text)
+            text = re.sub(r"^\*(.+)\*$", r"\1", text)
+            pdf.set_font("Helvetica", "", 10)
+            pdf.set_text_color(60, 60, 60)
+            pdf.multi_cell(190, 6, sanitize(text))
+
+
 def _build_pdf_bytes(doc: dict) -> bytes:
     """Build a clean, branded PDF from a company_docs document."""
     from fpdf import FPDF
@@ -1217,8 +1301,13 @@ def _build_pdf_bytes(doc: dict) -> bytes:
     pdf.cell(0, 6, f"Version {version}  |  {datetime.utcnow().strftime('%B %Y')}", align="C")
     pdf.ln(20)
 
-    # ── Slides as chapters ──
+    # ── Slides as chapters (older docs) or markdown content (repo-synced docs) ──
     slides = doc.get("slides", [])
+    if not slides and doc.get("content"):
+        pdf.add_page()
+        _render_markdown_to_pdf(pdf, doc.get("content", ""))
+        return bytes(pdf.output())
+
     for slide in slides:
         pdf.add_page()
         order = slide.get("order", "")

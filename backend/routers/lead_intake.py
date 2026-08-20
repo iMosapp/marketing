@@ -1549,6 +1549,103 @@ async def roi_email_test(request: Request):
     return result
 
 
+# ── Slow-reply alerts ─────────────────────────────────────────────────────────
+
+SLOW_REPLY_MINUTES = 15
+
+
+async def send_slow_lead_alerts() -> dict:
+    """Every 5 min: ping store managers when a new lead has sat 15+ minutes
+    without a HUMAN rep reply. One alert per lead, daytime hours only."""
+    import pytz
+    db = get_db()
+    now = datetime.utcnow()
+    leads = await db.inbound_leads.find({
+        "received_at": {"$gte": now - timedelta(hours=24), "$lte": now - timedelta(minutes=SLOW_REPLY_MINUTES)},
+        "slow_alert_sent": {"$ne": True},
+        "conversation_id": {"$nin": [None, ""]},
+    }, {
+        "conversation_id": 1, "received_at": 1, "full_name": 1, "store_id": 1,
+        "source_name": 1, "vehicle_interest": 1, "assigned_to": 1,
+    }).to_list(500)
+    if not leads:
+        return {"alerted": 0}
+
+    first = await _first_human_replies(db, [l["conversation_id"] for l in leads])
+    from routers.push_notifications import send_push_to_user
+
+    alerted = 0
+    for lead in leads:
+        lead_id = lead["_id"]
+        if lead["conversation_id"] in first:
+            # A rep replied — never alert for this lead
+            await db.inbound_leads.update_one({"_id": lead_id}, {"$set": {"slow_alert_sent": True}})
+            continue
+
+        # Daytime guard: hold overnight alerts until 8 AM local (assigned rep's tz, default Denver)
+        tz_name = "America/Denver"
+        try:
+            if lead.get("assigned_to") and ObjectId.is_valid(str(lead["assigned_to"])):
+                rep = await db.users.find_one({"_id": ObjectId(lead["assigned_to"])}, {"timezone": 1})
+                tz_name = (rep or {}).get("timezone") or tz_name
+            local_hour = datetime.now(pytz.timezone(tz_name)).hour
+        except Exception:
+            local_hour = 12
+        if not (8 <= local_hour < 21):
+            continue  # re-checked next run; fires once morning opens
+
+        # Recipients: store managers/org admins of the lead's store, else super admins
+        uids = []
+        sid = lead.get("store_id")
+        if sid:
+            store_vals = [sid, ObjectId(sid)] if ObjectId.is_valid(str(sid)) else [sid]
+            admins = await db.users.find(
+                {"store_id": {"$in": store_vals}, "role": {"$in": ["store_manager", "org_admin"]}},
+                {"_id": 1},
+            ).to_list(20)
+            uids = [str(a["_id"]) for a in admins]
+        if not uids:
+            supers = await db.users.find({"role": "super_admin"}, {"_id": 1}).to_list(5)
+            uids = [str(a["_id"]) for a in supers]
+
+        received = lead.get("received_at")
+        if received and received.tzinfo:
+            received = received.replace(tzinfo=None)
+        mins = int((now - received).total_seconds() // 60) if received else SLOW_REPLY_MINUTES
+        detail = lead.get("vehicle_interest") or lead.get("source_name") or "internet lead"
+        title = f"Lead going cold: {lead.get('full_name') or 'New lead'}"
+        body = f"{mins} min without a rep reply — {detail}. Jump in before it goes cold."
+
+        for uid in uids:
+            idem = f"slow_lead_{lead_id}_{uid}"
+            r = await db.notifications.update_one(
+                {"idempotency_key": idem},
+                {"$setOnInsert": {
+                    "user_id": uid,
+                    "type": "slow_lead",
+                    "title": title,
+                    "message": body,
+                    "link": "/leads",
+                    "idempotency_key": idem,
+                    "read": False,
+                    "dismissed": False,
+                    "created_at": datetime.now(timezone.utc),
+                }},
+                upsert=True,
+            )
+            if r.upserted_id:
+                try:
+                    await send_push_to_user(uid, f"⏱️ {title}", body, "/leads", "flame")
+                except Exception:
+                    pass
+
+        await db.inbound_leads.update_one({"_id": lead_id}, {"$set": {"slow_alert_sent": True}})
+        alerted += 1
+        logger.info(f"[SlowLead] Alerted {len(uids)} manager(s): {title} ({mins}m)")
+
+    return {"alerted": alerted, "checked": len(leads)}
+
+
 @router.get("/{lead_id}")
 async def get_lead(lead_id: str):
     """Get a specific inbound lead."""

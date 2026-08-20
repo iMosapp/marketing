@@ -1537,6 +1537,21 @@ def start_scheduler():
         misfire_grace_time=1800,
     )
 
+    # Every 5 min — ping managers when a lead sits 15+ min without a human reply
+    async def _slow_lead_alerts():
+        from routers.lead_intake import send_slow_lead_alerts
+        result = await send_slow_lead_alerts()
+        if result.get("alerted"):
+            logger.info(f"[Scheduler] Slow lead alerts: {result}")
+
+    scheduler.add_job(
+        safe_job(_slow_lead_alerts),
+        IntervalTrigger(minutes=5),
+        id="slow_lead_alert",
+        replace_existing=True,
+        misfire_grace_time=300,
+    )
+
     # Daily 15:00 UTC (~9 AM Central) — nudge store admins about vehicles missing photos
     async def _photo_reminders():
         from routers.inventory import send_missing_photo_reminders
