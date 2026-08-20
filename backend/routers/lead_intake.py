@@ -329,8 +329,65 @@ def calculate_send_time(store: dict) -> datetime:
 
 # ── AI first message generator ────────────────────────────────────────────────
 
+async def _match_lead_inventory(db, normalized: dict, store_id: str) -> Optional[dict]:
+    """Match the lead's vehicle of interest against live inventory.
+    Returns a compact summary (id, name, price, stock#, photo) or None."""
+    make  = (normalized.get("vehicle_make") or "").strip()
+    model = (normalized.get("vehicle_model") or "").strip()
+    if not make and not model:
+        return None
+    try:
+        base = {"status": "available", "is_visible": {"$ne": False}}
+        if store_id:
+            base["store_id"] = str(store_id)
+        clauses = []
+        if make:
+            clauses.append({"$or": [
+                {"attributes.make": {"$regex": re.escape(make), "$options": "i"}},
+                {"name": {"$regex": re.escape(make), "$options": "i"}},
+            ]})
+        if model:
+            clauses.append({"$or": [
+                {"attributes.model": {"$regex": re.escape(model), "$options": "i"}},
+                {"name": {"$regex": re.escape(model), "$options": "i"}},
+            ]})
+        items = await db.inventory.find({**base, "$and": clauses}).limit(5).to_list(5)
+        if not items and len(clauses) == 2:
+            # Loosen: model-only match (portals often mangle the make)
+            items = await db.inventory.find({**base, "$and": clauses[1:]}).limit(5).to_list(5)
+        if not items:
+            return None
+        year = (normalized.get("vehicle_year") or "").strip()
+        trim = (normalized.get("vehicle_trim") or "").strip().lower()
+
+        def rank(it):
+            a = it.get("attributes") or {}
+            score = 0
+            if year and str(a.get("year", "")) == year:
+                score += 2
+            if trim and trim in str(a.get("trim", "")).lower():
+                score += 1
+            return score
+
+        items.sort(key=rank, reverse=True)
+        it = items[0]
+        a = it.get("attributes") or {}
+        return {
+            "inventory_id": str(it["_id"]),
+            "name": it.get("name", ""),
+            "price": it.get("price"),
+            "stock_number": a.get("stock_number", ""),
+            "color": a.get("color", ""),
+            "mileage": a.get("mileage", ""),
+            "photo_url": it.get("photo_url", ""),
+        }
+    except Exception as e:
+        logger.warning(f"[LeadIntake] Inventory match failed: {e}")
+        return None
+
+
 async def generate_first_message(lead: dict, assigned_user: Optional[dict],
-                                  store: dict) -> str:
+                                  store: dict, matched_vehicle: Optional[dict] = None) -> str:
     """
     Generate an AI-drafted first message in the assigned rep's voice.
     Falls back to a store-branded template if no persona is set.
@@ -342,6 +399,17 @@ async def generate_first_message(lead: dict, assigned_user: Optional[dict],
     ])) or "the vehicle"
     source = lead.get("source_name", "your inquiry")
     store_name = store.get("name", "our dealership")
+
+    stock_line = ""
+    if matched_vehicle:
+        bits = [matched_vehicle.get("name", "")]
+        if matched_vehicle.get("color"):
+            bits.append(str(matched_vehicle["color"]))
+        if matched_vehicle.get("price"):
+            bits.append(f"${matched_vehicle['price']:,.0f}")
+        if matched_vehicle.get("stock_number"):
+            bits.append(f"Stock #{matched_vehicle['stock_number']}")
+        stock_line = " — ".join(str(b) for b in bits if b)
 
     # Try personal AI clone if user has a persona
     if assigned_user:
@@ -361,7 +429,8 @@ async def generate_first_message(lead: dict, assigned_user: Optional[dict],
 
             user_msg = (
                 f"New lead: {first} inquired about {veh} via {source}. "
-                f"Write a first outreach text from {user_name.split()[0]}."
+                + (f"GOOD NEWS — we have it in stock right now: {stock_line}. Confirm availability naturally (no need to list every detail). " if stock_line else "")
+                + f"Write a first outreach text from {user_name.split()[0]}."
             )
 
             emergent_key = os.environ.get("EMERGENT_LLM_KEY", "")
@@ -383,6 +452,11 @@ async def generate_first_message(lead: dict, assigned_user: Optional[dict],
     rep_first = (assigned_user.get("name", "").split()[0] if assigned_user else "")
     intro = f"I'm {rep_first} at {store_name}. " if rep_first else f"This is {store_name}. "
     vehicle_str = f"the {veh}" if veh != "the vehicle" else "what you were looking at"
+    if stock_line:
+        return (
+            f"Hey {first}! {intro}Good news, we've still got {vehicle_str} on the lot "
+            f"({stock_line}). Want me to hold it for a quick look?"
+        )
     return (
         f"Hey {first}! {intro}Saw your inquiry about {vehicle_str} — "
         f"are you still in the market or just browsing? Happy to help either way."
@@ -488,8 +562,11 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
     scheduled_send_at = calculate_send_time(store)
     is_immediate = (scheduled_send_at - now).total_seconds() < 120
 
+    # ── Match vehicle of interest against live inventory
+    matched_vehicle = await _match_lead_inventory(db, normalized, store_id)
+
     # ── Generate AI first message
-    first_message = await generate_first_message(normalized, assigned_user, store)
+    first_message = await generate_first_message(normalized, assigned_user, store, matched_vehicle)
 
     # ── Save inbound_lead record
     lead_doc = {
@@ -507,6 +584,7 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         ])),
         "comments":          normalized.get("comments", ""),
         "vehicle_raw":       {k: v for k, v in normalized.items() if k.startswith("vehicle_") or k.startswith("trade_")},
+        "matched_inventory": matched_vehicle,
         "extra_fields":      normalized.get("extra_fields", {}),
         "assigned_to":       assigned_user_id,
         "draft_message":     first_message,
@@ -775,6 +853,147 @@ async def receive_adf_lead(request: Request):
     # ADF spec requires plain-text acknowledgement
     return PlainTextResponse(
         f"SUCCESS: Lead received for {normalized.get('full_name','')} "
+        f"| Lead ID: {result['lead_id']}"
+    )
+
+
+def _extract_adf_from_text(text: str) -> Optional[str]:
+    """Pull an <adf>...</adf> block out of any text (email body, attachment, field)."""
+    if not text:
+        return None
+    low = text.lower()
+    i = low.find("<adf")
+    if i == -1:
+        return None
+    j = low.find("</adf>", i)
+    if j == -1:
+        return None
+    return text[i:j + 6]
+
+
+@router.post("/email-inbound", response_class=PlainTextResponse)
+async def receive_email_lead(request: Request):
+    """
+    Inbound-email webhook for ADF leads delivered by EMAIL (the industry default).
+    Point any inbound email service here — SendGrid Inbound Parse, Mailgun Routes,
+    CloudMailin, Zapier Email Parser, etc. The payload is scanned for ADF XML in
+    every text field AND every attachment, so the provider format doesn't matter.
+
+    Configure:  POST to /api/leads/email-inbound?source_id=<your_source_id>
+    """
+    import json as _json
+    import base64 as _b64
+    import quopri as _quopri
+
+    db = get_db()
+    content_type = request.headers.get("content-type", "")
+    candidates: list = []
+    subject, from_addr = "", ""
+
+    try:
+        if "multipart/form-data" in content_type or "application/x-www-form-urlencoded" in content_type:
+            form = await request.form()
+            for key, val in form.multi_items():
+                if hasattr(val, "read"):  # attachment (UploadFile)
+                    try:
+                        data = await val.read()
+                        candidates.append(data.decode("utf-8", errors="replace"))
+                    except Exception:
+                        pass
+                else:
+                    sval = str(val)
+                    lk = key.lower()
+                    if lk == "subject":
+                        subject = sval
+                    elif lk in ("from", "sender"):
+                        from_addr = sval
+                    candidates.append(sval)
+        else:
+            body = (await request.body()).decode("utf-8", errors="replace")
+            try:
+                data = _json.loads(body)
+
+                def _walk(o):
+                    if isinstance(o, dict):
+                        for v in o.values():
+                            _walk(v)
+                    elif isinstance(o, list):
+                        for v in o:
+                            _walk(v)
+                    elif isinstance(o, str):
+                        candidates.append(o)
+                        if len(o) > 100 and "<" not in o[:60]:
+                            try:  # base64-encoded attachment content
+                                candidates.append(_b64.b64decode(o, validate=True).decode("utf-8", errors="replace"))
+                            except Exception:
+                                pass
+
+                _walk(data)
+                if isinstance(data, dict):
+                    subject = str(data.get("subject") or (data.get("headers") or {}).get("subject") or "")
+                    from_addr = str(data.get("from") or (data.get("envelope") or {}).get("from") or "")
+            except Exception:
+                candidates.append(body)
+    except Exception as e:
+        return PlainTextResponse(f"ERROR: could not read request: {e}", status_code=400)
+
+    adf_xml = None
+    for c in candidates:
+        adf_xml = _extract_adf_from_text(c)
+        if adf_xml:
+            break
+    if not adf_xml:
+        # Emails are often quoted-printable encoded ("=3D" etc.) — retry after decoding
+        for c in candidates:
+            try:
+                cleaned = _quopri.decodestring(c.encode("utf-8", errors="replace")).decode("utf-8", errors="replace")
+                adf_xml = _extract_adf_from_text(cleaned)
+                if adf_xml:
+                    break
+            except Exception:
+                pass
+
+    if not adf_xml:
+        await db.lead_email_failures.insert_one({
+            "subject": subject, "from": from_addr,
+            "preview": " | ".join(c[:200] for c in candidates[:3]),
+            "received_at": datetime.now(timezone.utc),
+        })
+        logger.warning(f"[LeadIntake/Email] No ADF XML found — subject='{subject}' from='{from_addr}'")
+        return PlainTextResponse("ERROR: No ADF XML found in email", status_code=422)
+
+    try:
+        normalized = parse_adf_xml(adf_xml)
+    except ValueError as e:
+        logger.error(f"[LeadIntake/Email] Parse error: {e}")
+        return PlainTextResponse("ERROR: Could not parse ADF XML", status_code=400)
+
+    # Resolve source — same strategy as /adf
+    source_id = request.query_params.get("source_id")
+    source = None
+    if source_id and ObjectId.is_valid(source_id):
+        source = await db.lead_sources.find_one({"_id": ObjectId(source_id)})
+    if source is None:
+        vendor_name = normalized.get("source_name", "ADF Email Lead")
+        source = await db.lead_sources.find_one(
+            {"name": {"$regex": re.escape(vendor_name), "$options": "i"}}
+        )
+        if source is None:
+            source = await db.lead_sources.find_one({"is_active": True}) or {
+                "name": vendor_name, "assignment_method": "jump_ball",
+                "_id": None, "store_id": None
+            }
+    if not normalized.get("source_name") and source.get("name"):
+        normalized["source_name"] = source["name"]
+
+    try:
+        result = await process_inbound_lead(normalized, source, db, raw_body=adf_xml)
+    except HTTPException as e:
+        logger.error(f"[LeadIntake/Email] Processing error: {e.detail}")
+        return PlainTextResponse(f"ERROR: {e.detail}", status_code=e.status_code)
+
+    return PlainTextResponse(
+        f"SUCCESS: Email lead received for {normalized.get('full_name', '')} "
         f"| Lead ID: {result['lead_id']}"
     )
 

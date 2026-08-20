@@ -931,3 +931,7 @@ Backlog note: direct HomeNet/vAuto API sync pending dealer credentials (user cho
 1. **Inventory Photos**: vehicles carry photos; Jessi texts the exact car's photo via MMS when quoting it
 2. **Sensitivity Preview**: admin AI & Security shows recent scored conversations w/ live WOULD ALERT highlighting per threshold
 3. **Weekly Bug Digest**: Monday 15:00 UTC email of unresolved bug reports to super admins (skips when none)
+
+## Lead Intake: ADF/XML + Email + Inventory Match (Jun 2026) — self-tested e2e
+- ADF endpoint, Zapier webhook, NEW email-inbound endpoint (any inbound-email provider), inventory auto-match on leads, AI first message quotes real stock
+- User has no provider connected yet; when ready: give provider the ADF URL (HTTP) or set up CloudMailin/SendGrid inbound address → email_inbound_url (URLs shown in Admin → Lead Sources → source detail)

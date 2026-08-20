@@ -79,15 +79,22 @@ def hydrate_intake_text(template: str, lead_data: dict, source_name: str = "", r
 
 def serialize_lead_source(source: dict) -> dict:
     """Convert MongoDB document to JSON-serializable dict"""
+    _base = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com")).rstrip("/")
+    _sid = str(source["_id"])
+    _wh = source.get("webhook_url") or ""
+    if _wh.startswith("/"):
+        _wh = f"{_base}{_wh}"
     return {
-        "id": str(source["_id"]),
+        "id": _sid,
         "name": source.get("name"),
         "description": source.get("description"),
         "store_id": source.get("store_id"),
         "organization_id": source.get("organization_id"),
         "team_id": source.get("team_id"),
         "assignment_method": source.get("assignment_method", "jump_ball"),
-        "webhook_url": source.get("webhook_url"),
+        "webhook_url": _wh,
+        "adf_url": f"{_base}/api/leads/adf?source_id={_sid}",
+        "email_inbound_url": f"{_base}/api/leads/email-inbound?source_id={_sid}",
         "api_key": source.get("api_key"),
         "is_active": source.get("is_active", True),
         "lead_count": source.get("lead_count", 0),

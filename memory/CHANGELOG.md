@@ -135,3 +135,12 @@
 - FIX: digest age calc handles tz-naive Mongo datetimes
 - NOTE: preview env Resend domain (send.imonsocial.com) not verified → digest email only sends in PRODUCTION (same limitation as all preview emails)
 - Demo data seeded in preview: red photo on Tacoma, 3 intent-scored conversations (scores 8/6/4) owned by forestward@gmail.com with demo_seed:true flag
+
+## Jun 2026 — ADF/XML Lead Intake Completion (Email + Inventory Match)
+- DISCOVERED existing full lead intake engine (lead_intake.py): POST /api/leads/adf (ADF XML parser, plain-text ACK per spec), POST /api/leads/webhook/{source_id} (Zapier-style JSON/form normalizer + X-API-Key), lead sources CRUD w/ jump-ball/round-robin assignment, AI first message, after-hours scheduling, intake workflows
+- NEW: POST /api/leads/email-inbound — provider-agnostic inbound-email webhook (SendGrid Inbound Parse multipart, Mailgun Routes, CloudMailin JSON w/ base64 attachments, quoted-printable). Scans all fields+attachments for <adf> block; failures logged to db.lead_email_failures
+- NEW: _match_lead_inventory — leads' vehicle of interest auto-matched to live store inventory (make/model regex + year/trim ranking); stored on inbound_leads.matched_inventory; AI first message + fallback template now quote real stock (name, color, price, stock#)
+- serialize_lead_source now returns adf_url + email_inbound_url (PUBLIC_FACING_URL based) and absolutizes legacy relative webhook_url
+- Admin lead source detail page (/admin/lead-sources/[id]) shows 3 connection blocks: Webhook URL, ADF/XML URL, Email Lead Intake (with CloudMailin/SendGrid setup hint)
+- Fixed preview test source TEST_Lead_Source_VA_Picker store_id (was a user id)
+- Tested e2e: ADF POST creates lead+contact+conversation w/ matched Tacoma + stock-aware draft; email-inbound verified in CloudMailin JSON + SendGrid multipart attachment formats; all QA leads cleaned up

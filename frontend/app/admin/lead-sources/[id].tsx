@@ -30,6 +30,8 @@ interface LeadSource {
   team_id: string;
   assignment_method: 'jump_ball' | 'round_robin' | 'weighted_round_robin';
   webhook_url: string;
+  adf_url?: string;
+  email_inbound_url?: string;
   api_key: string;
   is_active: boolean;
   lead_count: number;
@@ -519,6 +521,51 @@ export default function LeadSourceDetailScreen() {
               </TouchableOpacity>
               <Text style={styles.credentialHint}>POST leads to this URL</Text>
             </View>
+
+            {/* ADF / XML URL */}
+            {source.adf_url && (
+              <View style={styles.credentialSection}>
+                <View style={styles.credentialHeader}>
+                  <Ionicons name="code-slash" size={20} color="#34C759" />
+                  <Text style={styles.credentialTitle}>ADF / XML URL</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.credentialBox}
+                  onPress={() => copyToClipboard(source.adf_url!, 'ADF URL')}
+                  data-testid="adf-url-copy"
+                >
+                  <Text style={styles.credentialValue} numberOfLines={2}>{source.adf_url}</Text>
+                  <Ionicons name="copy-outline" size={18} color="#007AFF" />
+                </TouchableOpacity>
+                <Text style={styles.credentialHint}>
+                  For Cars.com, AutoTrader, CarGurus & OEM portals that POST ADF XML directly
+                </Text>
+              </View>
+            )}
+
+            {/* Email Intake URL */}
+            {source.email_inbound_url && (
+              <View style={styles.credentialSection}>
+                <View style={styles.credentialHeader}>
+                  <Ionicons name="mail" size={20} color="#AF52DE" />
+                  <Text style={styles.credentialTitle}>Email Lead Intake</Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.credentialBox}
+                  onPress={() => copyToClipboard(source.email_inbound_url!, 'Email Intake URL')}
+                  data-testid="email-intake-url-copy"
+                >
+                  <Text style={styles.credentialValue} numberOfLines={2}>{source.email_inbound_url}</Text>
+                  <Ionicons name="copy-outline" size={18} color="#007AFF" />
+                </TouchableOpacity>
+                <Text style={styles.credentialHint}>
+                  For providers that deliver leads by EMAIL: create a free inbound address on
+                  CloudMailin or SendGrid Inbound Parse, point it at this URL, then give that
+                  email address to your lead provider. ADF XML is auto-extracted from the email
+                  body or attachments.
+                </Text>
+              </View>
+            )}
 
             {/* API Key */}
             <View style={styles.credentialSection}>
