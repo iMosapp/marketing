@@ -216,7 +216,7 @@ export default function DialerScreen() {
     Keyboard.dismiss();
     setSearchQuery('');
     setPhoneNumber(c.phone || '');
-    handleCall(c.phone);
+    setViewMode('keypad');
   };
 
   useEffect(() => {
@@ -374,7 +374,7 @@ export default function DialerScreen() {
                   flexDirection: 'row', alignItems: 'center', paddingVertical: 12,
                   borderBottomWidth: 0.5, borderBottomColor: colors.border,
                 }}
-                onPress={() => handleCall(c.phone)}
+                onPress={() => { setPhoneNumber(c.phone || ''); setViewMode('keypad'); }}
                 activeOpacity={0.6}
                 data-testid={`dialer-recent-${i}`}
               >
@@ -391,9 +391,13 @@ export default function DialerScreen() {
                   <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 1 }} numberOfLines={1}>{formatPhone(c.phone)}</Text>
                 </View>
                 <Text style={{ fontSize: 13, color: colors.textSecondary, marginRight: 12 }}>{timeAgo(c.timestamp)}</Text>
-                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#34C75920', alignItems: 'center', justifyContent: 'center' }}>
+                <TouchableOpacity
+                  onPress={() => handleCall(c.phone)}
+                  style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#34C75920', alignItems: 'center', justifyContent: 'center' }}
+                  data-testid={`dialer-recent-call-${i}`}
+                >
                   <Ionicons name="call" size={18} color="#34C759" />
-                </View>
+                </TouchableOpacity>
               </TouchableOpacity>
             ))
           )}
@@ -450,7 +454,7 @@ export default function DialerScreen() {
                   paddingHorizontal: 12, paddingVertical: 9,
                   borderTopWidth: i > 0 ? 0.5 : 0, borderTopColor: colors.border,
                 }}
-                onPress={() => { setPhoneNumber(c.phone || ''); handleCall(c.phone); }}
+                onPress={() => setPhoneNumber(c.phone || '')}
                 activeOpacity={0.6}
                 data-testid={`dialer-match-${i}`}
               >
