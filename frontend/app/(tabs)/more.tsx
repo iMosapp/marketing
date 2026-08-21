@@ -68,6 +68,7 @@ export default function MoreScreen() {
   const [pendingUsersCount, setPendingUsersCount] = useState(0);
   const [exitingImpersonation, setExitingImpersonation] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [hubSearch, setHubSearch] = useState('');
   const sectionRefs = useRef<Record<string, View | null>>({});
   const scrollRef = useRef<ScrollView>(null);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -871,6 +872,42 @@ export default function MoreScreen() {
   // allSections is now just 'sections' since admin is inline
   const allSections = sections;
 
+  // ── Hub simplification: split everyday vs admin, brand lives in My Profile ──
+  const ADMIN_SECTION_IDS = ['setup_manage', 'account_mgmt', 'internal_ops'];
+  const adminSections = allSections.filter(s => ADMIN_SECTION_IDS.includes(s.id));
+  const everydaySections = allSections.filter(s => !ADMIN_SECTION_IDS.includes(s.id) && s.id !== 'my_brand');
+  const brandSectionRef: any = allSections.find(s => s.id === 'my_brand');
+
+  // Flat search index across EVERYTHING (incl. admin + brand + profile)
+  const searchIndex: MenuItem[] = [
+    { icon: 'person', title: 'My Profile', subtitle: 'Your info & public pages', color: '#C9A962', onPress: () => router.push('/my-profile' as any) },
+    ...((brandSectionRef?._brandItems || []).map((b: any) => ({
+      icon: b.icon, title: b.title, subtitle: b.subtitle, color: b.color,
+      onPress: () => b.editRoute && router.push(b.editRoute as any),
+    }))),
+    ...allSections.flatMap(s => s.items),
+  ];
+  const hubQ = hubSearch.trim().toLowerCase();
+  const seenTitles = new Set<string>();
+  const searchResults = hubQ
+    ? searchIndex.filter(i => {
+        if (seenTitles.has(i.title)) return false;
+        const hit = i.title.toLowerCase().includes(hubQ) || i.subtitle.toLowerCase().includes(hubQ);
+        if (hit) seenTitles.add(i.title);
+        return hit;
+      })
+    : [];
+
+  // Big "What do you want to do?" task tiles
+  const taskGrid = [
+    { icon: 'megaphone', label: 'Send a Blast', sub: 'Message many at once', color: '#FF9500', route: '/broadcast-message' },
+    { icon: 'id-card', label: 'Share My Card', sub: 'Text your digital card', color: '#C9A962', route: '/quick-send/digitalcard' },
+    { icon: 'star', label: 'Get Reviews', sub: 'Send your review link', color: '#FFD60A', route: '/quick-send/review' },
+    { icon: 'stats-chart', label: 'My Numbers', sub: 'How am I doing?', color: '#34C759', route: '/touchpoints/performance' },
+    { icon: 'search', label: 'Find a Word', sub: 'Search texts & calls', color: '#32ADE6', route: '/keyword-search' },
+    { icon: 'car-sport', label: 'Inventory', sub: 'What\'s on the lot', color: '#AF52DE', route: '/inventory' },
+  ];
+
   function openExternal(url: string) {
     // Append self_preview=1 so tracking ignores salesperson viewing their own page
     const sep = url.includes('?') ? '&' : '?';
@@ -1025,6 +1062,9 @@ export default function MoreScreen() {
             <Ionicons name={section.icon as any} size={20} color={section.color} />
           </View>
           <Text style={[styles.sectionTitleText, { color: colors.text }]}>{section.title}</Text>
+          <View style={[styles.countPill, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.countPillText, { color: colors.textSecondary }]}>{itemCount + (((section as any)._brandItems || []).length)}</Text>
+          </View>
           <Ionicons 
             name={isExpanded ? 'chevron-up' : 'chevron-down'} 
             size={20} 
@@ -1143,7 +1183,7 @@ export default function MoreScreen() {
         <View style={styles.profileCardContainer}>
           <TouchableOpacity
             style={styles.profileCard}
-            onPress={() => router.push('/my-account')}
+            onPress={() => router.push('/my-profile' as any)}
             activeOpacity={0.9}
             data-testid="profile-card"
           >
@@ -1205,12 +1245,12 @@ export default function MoreScreen() {
             <View style={{ flexDirection: 'row', gap: 10 }}>
               <TouchableOpacity
                 style={[styles.editProfileBtn, { flex: 1, flexDirection: 'column', backgroundColor: '#C9A96218', borderColor: '#C9A962' }]}
-                onPress={() => router.push('/my-account')}
+                onPress={() => router.push('/my-profile' as any)}
                 activeOpacity={0.8}
                 data-testid="edit-profile-hint-btn"
               >
                 <Ionicons name="person" size={18} color="#C9A962" />
-                <Text style={[styles.editProfileBtnText, { fontSize: 13, textAlign: 'center', marginTop: 3 }]}>Manage Profile</Text>
+                <Text style={[styles.editProfileBtnText, { fontSize: 13, textAlign: 'center', marginTop: 3 }]}>My Profile</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.editProfileBtn, { flex: 1, flexDirection: 'column', backgroundColor: '#C9A96218', borderColor: '#C9A962' }]}
@@ -1225,6 +1265,60 @@ export default function MoreScreen() {
           </View>
         </View>
         
+        {/* ── Hub Search — find anything instantly ── */}
+        <View style={styles.hubSearchWrap}>
+          <View style={[styles.hubSearchBar, { backgroundColor: colors.card, borderColor: hubQ ? '#C9A962' : colors.border }]}>
+            <Ionicons name="search" size={17} color={hubQ ? '#C9A962' : colors.textSecondary} />
+            <TextInput
+              style={[styles.hubSearchInput, { color: colors.text }]}
+              placeholder="Search anything… broadcast, reviews, tags"
+              placeholderTextColor={colors.textTertiary}
+              value={hubSearch}
+              onChangeText={setHubSearch}
+              autoCapitalize="none"
+              data-testid="hub-search-input"
+            />
+            {hubSearch.length > 0 && (
+              <TouchableOpacity onPress={() => setHubSearch('')} data-testid="hub-search-clear">
+                <Ionicons name="close-circle" size={17} color={colors.textSecondary} />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        {hubQ ? (
+          /* ── Search results ── */
+          <View style={{ marginTop: 4 }} data-testid="hub-search-results">
+            {searchResults.length === 0 ? (
+              <Text style={{ fontSize: 13, color: colors.textTertiary, textAlign: 'center', marginTop: 24 }}>
+                Nothing found for "{hubSearch.trim()}"
+              </Text>
+            ) : (
+              searchResults.slice(0, 20).map((item, index) => renderMenuItem(item, index))
+            )}
+          </View>
+        ) : (
+        <>
+        {/* ── What do you want to do? ── */}
+        <Text style={styles.taskGridLabel}>What do you want to do?</Text>
+        <View style={styles.taskGrid} data-testid="hub-task-grid">
+          {taskGrid.map(t => (
+            <TouchableOpacity
+              key={t.label}
+              style={[styles.taskTile, { backgroundColor: colors.card, borderColor: `${t.color}35` }]}
+              onPress={() => router.push(t.route as any)}
+              activeOpacity={0.75}
+              data-testid={`task-${t.label.toLowerCase().replace(/\s+/g, '-')}`}
+            >
+              <View style={[styles.taskTileIcon, { backgroundColor: `${t.color}1E` }]}>
+                <Ionicons name={t.icon as any} size={22} color={t.color} />
+              </View>
+              <Text style={[styles.taskTileLabel, { color: colors.text }]}>{t.label}</Text>
+              <Text style={[styles.taskTileSub, { color: colors.textTertiary }]}>{t.sub}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
         {/* Pinned Tools — your permanent quick-launch bar */}
         {pinnedTools.length > 0 && (
           <View style={styles.recentSection} data-testid="pinned-tools-section">
@@ -1258,10 +1352,43 @@ export default function MoreScreen() {
           </View>
         )}
 
-        {/* Recently Visited section removed — Pinned Tools replaces it */}
+        {/* Everyday sections */}
+        {everydaySections.map(section => renderSection(section))}
 
-        {/* All Collapsible Sections */}
-        {allSections.map(section => renderSection(section))}
+        {/* Single Admin section — all admin/setup/ops tools in one place */}
+        {adminSections.length > 0 && (
+          <View style={styles.sectionWrapper} data-testid="section-admin-hub">
+            <TouchableOpacity
+              style={[styles.sectionHeaderCard, { backgroundColor: colors.card }]}
+              onPress={() => toggleSection('admin_hub')}
+              activeOpacity={0.7}
+              data-testid="section-header-admin-hub"
+            >
+              <View style={[styles.sectionIcon, { backgroundColor: '#FF3B3020' }]}>
+                <Ionicons name="shield-half" size={20} color="#FF3B30" />
+              </View>
+              <Text style={[styles.sectionTitleText, { color: colors.text }]}>Admin</Text>
+              <View style={[styles.countPill, { backgroundColor: colors.surface }]}>
+                <Text style={[styles.countPillText, { color: colors.textSecondary }]}>
+                  {adminSections.reduce((a, s) => a + s.items.length, 0)}
+                </Text>
+              </View>
+              <Ionicons
+                name={expandedSections.has('admin_hub') ? 'chevron-up' : 'chevron-down'}
+                size={20}
+                color={colors.textSecondary}
+              />
+            </TouchableOpacity>
+            {expandedSections.has('admin_hub') && adminSections.map(sub => (
+              <View key={sub.id}>
+                <Text style={[styles.adminSubLabel, { color: colors.textTertiary }]}>{sub.title.toUpperCase()}</Text>
+                {sub.items.map((item, index) => renderMenuItem(item, index))}
+              </View>
+            ))}
+          </View>
+        )}
+        </>
+        )}
         
         {/* Legal Section - Always visible, not collapsible */}
         <View style={styles.legalSection}>
@@ -1893,6 +2020,19 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
     alignItems: 'stretch',
   },
+  // ── Hub search + task grid (simplified hub) ──
+  hubSearchWrap: { paddingHorizontal: 16, marginTop: 4, marginBottom: 4 },
+  hubSearchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1.5 },
+  hubSearchInput: { flex: 1, fontSize: 15, padding: 0 },
+  taskGridLabel: { fontSize: 13, fontWeight: '800', color: '#C9A962', letterSpacing: 0.6, textTransform: 'uppercase', marginHorizontal: 16, marginTop: 14, marginBottom: 10 },
+  taskGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: 16, marginBottom: 16 },
+  taskTile: { width: '48%', flexGrow: 1, borderRadius: 16, borderWidth: 1.5, padding: 14, gap: 8 },
+  taskTileIcon: { width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  taskTileLabel: { fontSize: 15, fontWeight: '800' },
+  taskTileSub: { fontSize: 11, marginTop: -5 },
+  countPill: { borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2, marginRight: 8 },
+  countPillText: { fontSize: 11, fontWeight: '700' },
+  adminSubLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 0.8, marginTop: 10, marginBottom: 6, marginLeft: 4 },
   // Section Header Card (standalone card)
   sectionHeaderCard: {
     flexDirection: 'row',

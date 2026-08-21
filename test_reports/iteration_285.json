@@ -1,0 +1,41 @@
+{
+  "summary": "Frontend-only E2E test of the simplified Hub tab and the new /my-profile page on the preview URL (admin forest@imosapp.com). Verified Hub layout (profile card, 2 buttons, search bar, 6-tile task grid, 8 accordions with count pills), hub search filtering + result navigation, all 6 task tile destinations, everyday accordions (Partner Portal/Manage/My Tools/Campaigns/My Performance/Learning/Settings), the single Admin accordion with 3 sub-group labels (37 items = 9+12+16), full My Profile page (5 public page cards with Share/Send/View/Edit, MY CONTENT rows, Edit My Info, VA, back nav), and regressions on Home/Contacts/Inbox + thread message rendering (MessageBubble refactor) with header search. Core functionality is intact — no functional regressions found in the changed screens. 3 medium issues found (all outside the new UI logic: preview routing of /inbox, hardcoded prod base URL for public links, review-link slug resolution for users without store_id).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "my-profile.tsx / more.tsx avatar", "issue": "Profile photo asset is a 1x1 px webp (94 bytes) served from /api/images/imos/profiles/...thumb.webp, so the avatar renders as a solid olive block on Hub, My Profile and My Account. Cover photo is only 100x100 upscaled to full width (blurry). PRE-EXISTING (same on /my-account), not caused by this change.", "selector": "img[src*='/profiles/']", "priority": "LOW"},
+      {"component": "All RN Web screens", "issue": "data-testid props do not reach the DOM (only 'theme-toggle-home' was found). Every documented testid (hub-search-input, task-*, section-header-admin-hub, profile-page-*, content-*) is absent, so automation must rely on text selectors. Consider dataSet={{testid:'x'}} which RNW emits as data-testid.", "selector": "[data-testid]", "priority": "LOW"},
+      {"component": "Console (Hub / quick-send screens)", "issue": "Repeated console error: 'Unexpected text node: . A text node cannot be a child of a <View>' — stray whitespace/JSX text node inside a View. Harmless but noisy.", "selector": "n/a", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "Direct URL navigation to /inbox", "issue": "Loading https://<preview>/inbox directly returns the imonsocial MARKETING page ('INBOX & MESSAGING … Book a Demo'), not the app inbox. Navigating via the bottom tab bar works fine (28 conversations, filters, threads). /home, /contacts, /more, /my-profile, /thread/* direct URLs are unaffected — looks like a marketing-service/ingress route conflict on /inbox.", "affected_selectors": ["/inbox"]},
+      {"flow": "My Profile → public page Share/View", "issue": "my-profile.tsx hardcodes PROD_BASE='https://app.imonsocial.com' for all 5 public links. On preview, View opens https://app.imonsocial.com/card/<id>?self_preview=1 which renders 'Card Not Found' (preview data does not exist in prod). Share copies the same prod URL. Should read process.env.EXPO_PUBLIC_APP_URL (already in frontend/.env).", "affected_selectors": ["View", "Share"]},
+      {"flow": "My Profile → Review Link card", "issue": "storeSlug is only resolved via GET /admin/stores/{store_id}; for the super-admin (no store_id) no request is fired at all, so the card permanently shows 'Store slug not set — tap Edit to configure' and has no Share/Send/View buttons. more.tsx additionally fell back to user.store_slug (line ~135) — that fallback is missing on the new page.", "affected_selectors": ["Review Link"]}
+    ],
+    "design_issues": [
+      {"screen": "My Profile (mobile 390px)", "issues": ["The 4 action chips wrap so 'Edit' drops to its own line on each card — slightly ragged but readable", "No page title in the header; only a floating back chevron over the cover"]},
+      {"screen": "Hub (desktop 1920px)", "issues": ["Notification bell badge sits on top of the profile-card cover's top-right corner", "Cover/avatar images are heavily upscaled (see avatar bug)"]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Investigate why direct navigation to /inbox on the preview host serves the marketing site instead of the Expo app (in-app tab nav works)",
+    "Replace hardcoded PROD_BASE in /app/frontend/app/my-profile.tsx with process.env.EXPO_PUBLIC_APP_URL so Share/View links are environment-correct",
+    "Add a store-slug fallback (user.store_slug / org lookup) on my-profile Review Link card so users without store_id still get a review link, matching old Hub behaviour",
+    "Optional: emit real data-testid attributes on RN Web (dataSet) to make future automated testing reliable"
+  ],
+  "critical_code_review_comments": [
+    "my-profile.tsx: PROD_BASE hardcoded ('https://app.imonsocial.com') — violates env-var rule and breaks link previews outside prod",
+    "my-profile.tsx: no loading/error state for the GET /admin/stores/{store_id} call (.catch(() => {}) silently swallows failures)",
+    "(tabs)/more.tsx is 2373 lines — well above the 700-line guideline; sections config, search index and modals should be extracted",
+    "Hub search index dedupes by title only, so two different items with the same title would silently hide one (currently only 'Partner Portal' collides between section and admin item)"
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested", "frontend": "~93% (all Hub/My Profile/regression flows pass; 3 medium integration issues)"},
+  "seed_data_creation": "None — navigation-only testing, no broadcasts/SMS sent, no data modified",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "forest@imosapp.com / Admin123! (from /app/memory/test_credentials.md)",
+  "context_for_next_testing_agent": "data-testid does NOT reach the DOM on this Expo-web app — use text/placeholder selectors. Hub search input: input[placeholder*='Search anything']. Section headers/accordion items are plain text (get_by_text exact=True, .first). Text with textTransform:uppercase in CSS still has original-case DOM text (e.g. 'Sales Director' not 'SALES DIRECTOR'). Hidden tab screens (Home) stay mounted and intercept clicks — scope clicks to unique visible text. Thread header icons are icon-font DIVs (no svg): search icon is the leftmost right-side glyph (~x=1758,y=33 at 1920 width); thread search bar placeholder is 'Search this conversation…' and highlighting works (5/5 for 'holiday'). /inbox must be reached by clicking the Inbox tab; direct URL serves the marketing site.",
+  "rca_of_the_issue": "Review-link gap: my-profile.tsx resolves storeSlug only from GET /admin/stores/{user.store_id} and returns early when store_id is falsy, so super-admin/individual users never get a review URL; the old Hub code also checked user.store_slug first. Public-link 'Card Not Found': PROD_BASE is hardcoded to app.imonsocial.com so preview-only records are looked up in production. /inbox marketing page: the request is served by the marketing service rather than the Expo dev server, so it never reaches the app router."
+}
