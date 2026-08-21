@@ -37,6 +37,7 @@ export default function KeywordRulesScreen() {
   const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const isManager = ['super_admin', 'org_admin', 'store_manager', 'admin'].includes((user as any)?.role || '');
 
   const [loading, setLoading] = useState(true);
   const [rules, setRules] = useState<any[]>([]);
@@ -47,6 +48,7 @@ export default function KeywordRulesScreen() {
   const [formKeywords, setFormKeywords] = useState('');
   const [formColor, setFormColor] = useState(RULE_COLORS[0]);
   const [formAlert, setFormAlert] = useState(false);
+  const [formScope, setFormScope] = useState<'personal' | 'team'>('personal');
   const [saving, setSaving] = useState(false);
   const [scanningId, setScanningId] = useState<string | null>(null);
 
@@ -75,6 +77,7 @@ export default function KeywordRulesScreen() {
     setFormKeywords('');
     setFormColor(RULE_COLORS[rules.length % RULE_COLORS.length]);
     setFormAlert(false);
+    setFormScope('personal');
     setModalOpen(true);
   };
 
@@ -84,6 +87,7 @@ export default function KeywordRulesScreen() {
     setFormKeywords((rule.keywords || []).join(', '));
     setFormColor(rule.color || RULE_COLORS[0]);
     setFormAlert(!!rule.alert_enabled);
+    setFormScope(rule.scope === 'team' ? 'team' : 'personal');
     setModalOpen(true);
   };
 
@@ -97,7 +101,7 @@ export default function KeywordRulesScreen() {
       if (editRule) {
         await api.put(`/keyword-rules/${user?._id}/${editRule._id}`, { tag, keywords, color: formColor, alert_enabled: formAlert });
       } else {
-        await api.post(`/keyword-rules/${user?._id}`, { tag, keywords, color: formColor, enabled: true, alert_enabled: formAlert });
+        await api.post(`/keyword-rules/${user?._id}`, { tag, keywords, color: formColor, enabled: true, alert_enabled: formAlert, scope: formScope });
       }
       setModalOpen(false);
       load();
@@ -216,11 +220,17 @@ export default function KeywordRulesScreen() {
           {rules.map(rule => (
             <View key={rule._id} style={styles.ruleCard} data-testid={`keyword-rule-${rule.tag.toLowerCase().replace(/\s+/g, '-')}`}>
               <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <View style={[styles.tagChip, { backgroundColor: `${rule.color || '#5856D6'}22` }]}>
                     <Ionicons name="pricetag" size={11} color={rule.color || '#5856D6'} />
                     <Text style={[styles.tagChipText, { color: rule.color || '#5856D6' }]}>{rule.tag}</Text>
                   </View>
+                  {rule.scope === 'team' && (
+                    <View style={[styles.tagChip, { backgroundColor: '#32ADE622' }]} data-testid={`keyword-rule-team-badge-${rule._id}`}>
+                      <Ionicons name="people" size={10} color="#32ADE6" />
+                      <Text style={[styles.tagChipText, { color: '#32ADE6' }]}>Team</Text>
+                    </View>
+                  )}
                   {rule.hit_count > 0 && (
                     <Text style={styles.hitCount}>{rule.hit_count} hit{rule.hit_count === 1 ? '' : 's'}</Text>
                   )}
@@ -230,27 +240,33 @@ export default function KeywordRulesScreen() {
                 </Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
-                <TouchableOpacity onPress={() => toggleAlert(rule)} style={styles.iconBtn} data-testid={`keyword-rule-alert-${rule._id}`}>
-                  <Ionicons name={rule.alert_enabled ? 'notifications' : 'notifications-off-outline'} size={16} color={rule.alert_enabled ? '#FF9500' : colors.textTertiary} />
-                </TouchableOpacity>
+                {rule.editable !== false && (
+                  <TouchableOpacity onPress={() => toggleAlert(rule)} style={styles.iconBtn} data-testid={`keyword-rule-alert-${rule._id}`}>
+                    <Ionicons name={rule.alert_enabled ? 'notifications' : 'notifications-off-outline'} size={16} color={rule.alert_enabled ? '#FF9500' : colors.textTertiary} />
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity onPress={() => scanRule(rule)} style={styles.iconBtn} disabled={scanningId === rule._id} data-testid={`keyword-rule-scan-${rule._id}`}>
                   {scanningId === rule._id
                     ? <ActivityIndicator size="small" color="#32ADE6" />
                     : <Ionicons name="time-outline" size={16} color="#32ADE6" />}
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => openEdit(rule)} style={styles.iconBtn} data-testid={`keyword-rule-edit-${rule._id}`}>
-                  <Ionicons name="pencil" size={16} color={colors.textSecondary} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => deleteRule(rule)} style={styles.iconBtn} data-testid={`keyword-rule-delete-${rule._id}`}>
-                  <Ionicons name="trash-outline" size={16} color="#FF3B30" />
-                </TouchableOpacity>
-                <Switch
-                  value={rule.enabled}
-                  onValueChange={() => toggleRule(rule)}
-                  trackColor={{ false: colors.surface, true: '#34C759' }}
-                  thumbColor="#fff"
-                  data-testid={`keyword-rule-toggle-${rule._id}`}
-                />
+                {rule.editable !== false && (
+                  <>
+                    <TouchableOpacity onPress={() => openEdit(rule)} style={styles.iconBtn} data-testid={`keyword-rule-edit-${rule._id}`}>
+                      <Ionicons name="pencil" size={16} color={colors.textSecondary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => deleteRule(rule)} style={styles.iconBtn} data-testid={`keyword-rule-delete-${rule._id}`}>
+                      <Ionicons name="trash-outline" size={16} color="#FF3B30" />
+                    </TouchableOpacity>
+                    <Switch
+                      value={rule.enabled}
+                      onValueChange={() => toggleRule(rule)}
+                      trackColor={{ false: colors.surface, true: '#34C759' }}
+                      thumbColor="#fff"
+                      data-testid={`keyword-rule-toggle-${rule._id}`}
+                    />
+                  </>
+                )}
               </View>
             </View>
           ))}
@@ -301,6 +317,36 @@ export default function KeywordRulesScreen() {
               onChangeText={setFormTag}
               data-testid="keyword-rule-tag-input"
             />
+
+            {isManager && !editRule && (
+              <>
+                <Text style={styles.fieldLabel}>Who does this rule apply to?</Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+                  <TouchableOpacity
+                    onPress={() => setFormScope('personal')}
+                    style={[styles.scopePill, formScope === 'personal' && { backgroundColor: '#5856D6', borderColor: '#5856D6' }]}
+                    data-testid="keyword-rule-scope-personal"
+                  >
+                    <Ionicons name="person" size={13} color={formScope === 'personal' ? '#fff' : colors.textSecondary} />
+                    <Text style={[styles.scopePillText, { color: formScope === 'personal' ? '#fff' : colors.textSecondary }]}>Just me</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setFormScope('team')}
+                    style={[styles.scopePill, formScope === 'team' && { backgroundColor: '#32ADE6', borderColor: '#32ADE6' }]}
+                    data-testid="keyword-rule-scope-team"
+                  >
+                    <Ionicons name="people" size={13} color={formScope === 'team' ? '#fff' : colors.textSecondary} />
+                    <Text style={[styles.scopePillText, { color: formScope === 'team' ? '#fff' : colors.textSecondary }]}>Whole team</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+            {editRule?.scope === 'team' && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 }}>
+                <Ionicons name="people" size={13} color="#32ADE6" />
+                <Text style={{ fontSize: 12, color: '#32ADE6', fontWeight: '600' }}>Team rule — applies to every rep's conversations</Text>
+              </View>
+            )}
 
             <Text style={styles.fieldLabel}>Keywords (comma-separated)</Text>
             <TextInput
@@ -385,6 +431,8 @@ const getStyles = (colors: any) => StyleSheet.create({
   input: { backgroundColor: colors.surface, borderRadius: 10, padding: 12, fontSize: 15, color: colors.text, marginBottom: 16, borderWidth: 1, borderColor: colors.border },
   colorDot: { width: 30, height: 30, borderRadius: 15 },
   colorDotSelected: { borderWidth: 3, borderColor: colors.text },
+  scopePill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  scopePillText: { fontSize: 13, fontWeight: '700' },
   saveBtn: { backgroundColor: '#5856D6', borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
   saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });

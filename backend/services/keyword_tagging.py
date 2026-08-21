@@ -17,26 +17,49 @@ STARTER_RULES = [
     {"tag": "Price", "keywords": ["price", "pricing", "payment", "payments", "monthly"], "color": "#FF2D55"},
 ]
 
+READY_TO_BUY_RULE = {
+    "tag": "Ready to Buy",
+    "keywords": ["ready to buy", "ready to purchase", "coming in today", "coming in now", "on my way", "buy today", "where do i sign"],
+    "color": "#FF3B30",
+    "alert_enabled": True,
+}
+
 
 async def ensure_starter_rules(user_id: str):
-    """Idempotently seed the 5 starter rules for a user (once, ever)."""
+    """Idempotently seed starter rules. v2 backfills the Ready to Buy alert rule
+    for users who were seeded before it existed."""
     db = get_db()
     try:
-        user = await db.users.find_one({"_id": ObjectId(user_id)}, {"keyword_rules_seeded": 1})
+        user = await db.users.find_one({"_id": ObjectId(user_id)}, {"keyword_rules_seeded": 1, "keyword_rules_seeded_v2": 1})
     except Exception:
         return
-    if not user or user.get("keyword_rules_seeded"):
+    if not user:
         return
-    count = await db.keyword_rules.count_documents({"user_id": user_id})
-    if count == 0:
-        now = datetime.now(timezone.utc)
-        await db.keyword_rules.insert_many([
-            {"user_id": user_id, "tag": r["tag"], "keywords": r["keywords"], "color": r["color"],
-             "enabled": True, "is_starter": True, "created_at": now}
-            for r in STARTER_RULES
-        ])
-        logger.info(f"[KeywordTag] Seeded {len(STARTER_RULES)} starter rules for user {user_id}")
-    await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"keyword_rules_seeded": True}})
+    now = datetime.now(timezone.utc)
+
+    if not user.get("keyword_rules_seeded"):
+        count = await db.keyword_rules.count_documents({"user_id": user_id})
+        if count == 0:
+            all_rules = STARTER_RULES + [READY_TO_BUY_RULE]
+            await db.keyword_rules.insert_many([
+                {"user_id": user_id, "tag": r["tag"], "keywords": r["keywords"], "color": r["color"],
+                 "enabled": True, "alert_enabled": r.get("alert_enabled", False), "is_starter": True, "created_at": now}
+                for r in all_rules
+            ])
+            logger.info(f"[KeywordTag] Seeded {len(all_rules)} starter rules for user {user_id}")
+        await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"keyword_rules_seeded": True, "keyword_rules_seeded_v2": True}})
+        return
+
+    if not user.get("keyword_rules_seeded_v2"):
+        existing = await db.keyword_rules.find_one({"user_id": user_id, "tag": {"$regex": "^ready to buy$", "$options": "i"}})
+        if not existing:
+            r = READY_TO_BUY_RULE
+            await db.keyword_rules.insert_one({
+                "user_id": user_id, "tag": r["tag"], "keywords": r["keywords"], "color": r["color"],
+                "enabled": True, "alert_enabled": True, "is_starter": True, "created_at": now,
+            })
+            logger.info(f"[KeywordTag] Backfilled Ready to Buy rule for user {user_id}")
+        await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"keyword_rules_seeded_v2": True}})
 
 
 def _build_pattern(keyword: str):
@@ -63,11 +86,14 @@ async def run_keyword_tagging(user_id: str, contact_id: str, text: str,
     db = get_db()
     await ensure_starter_rules(user_id)
 
-    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1})
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1, "organization_id": 1, "org_id": 1})
     store_id = (user or {}).get("store_id")
+    org_id = (user or {}).get("organization_id") or (user or {}).get("org_id")
     scope = [{"user_id": user_id}]
     if store_id:
         scope.append({"store_id": store_id})
+    if org_id:
+        scope.append({"org_id": org_id})
     rules = await db.keyword_rules.find({"$or": scope, "enabled": True}).to_list(200)
     if not rules:
         return []

@@ -12,6 +12,30 @@ logger = logging.getLogger(__name__)
 
 RULE_COLORS = ["#007AFF", "#FF9500", "#34C759", "#AF52DE", "#FF2D55", "#5856D6", "#00C7BE", "#FFD60A"]
 
+ADMIN_ROLES = ("super_admin", "org_admin", "store_manager", "admin")
+
+
+async def _user_ctx(user_id: str):
+    """Returns (store_id, org_id, role, is_admin) for team-rule scoping."""
+    db = get_db()
+    try:
+        u = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1, "organization_id": 1, "org_id": 1, "role": 1})
+    except Exception:
+        u = None
+    u = u or {}
+    role = u.get("role", "user")
+    return u.get("store_id"), (u.get("organization_id") or u.get("org_id")), role, role in ADMIN_ROLES
+
+
+def _can_manage(rule: dict, user_id: str, store_id, org_id, is_admin: bool) -> bool:
+    if rule.get("user_id"):
+        return rule["user_id"] == user_id
+    if rule.get("store_id"):
+        return is_admin and rule["store_id"] == store_id
+    if rule.get("org_id"):
+        return is_admin and rule["org_id"] == org_id
+    return False
+
 
 def _clean_keywords(raw) -> list:
     if not isinstance(raw, list):
@@ -30,11 +54,12 @@ def _clean_keywords(raw) -> list:
 async def list_rules(user_id: str):
     db = get_db()
     await ensure_starter_rules(user_id)
-    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1})
-    store_id = (user or {}).get("store_id")
+    store_id, org_id, role, is_admin = await _user_ctx(user_id)
     scope = [{"user_id": user_id}]
     if store_id:
         scope.append({"store_id": store_id})
+    if org_id:
+        scope.append({"org_id": org_id})
     rules = await db.keyword_rules.find({"$or": scope}).sort("created_at", 1).to_list(200)
 
     # Hit counts per rule
@@ -48,6 +73,8 @@ async def list_rules(user_id: str):
         counts = {r["_id"]: r["count"] async for r in db.keyword_tag_events.aggregate(pipeline)}
 
     for r in rules:
+        r["scope"] = "personal" if r.get("user_id") else "team"
+        r["editable"] = _can_manage(r, user_id, store_id, org_id, is_admin)
         r["_id"] = str(r["_id"])
         r["hit_count"] = counts.get(r["_id"], 0)
         r["created_at"] = r["created_at"].isoformat() if hasattr(r.get("created_at"), "isoformat") else str(r.get("created_at", ""))
@@ -64,21 +91,39 @@ async def create_rule(user_id: str, data: dict):
     if not keywords:
         raise HTTPException(status_code=400, detail="At least one keyword is required")
 
-    existing = await db.keyword_rules.find_one({"user_id": user_id, "tag": {"$regex": f"^{tag}$", "$options": "i"}})
-    if existing:
-        raise HTTPException(status_code=400, detail=f"A rule for tag '{tag}' already exists")
+    requested_scope = data.get("scope", "personal")
+    store_id, org_id, role, is_admin = await _user_ctx(user_id)
 
     rule = {
-        "user_id": user_id,
         "tag": tag,
         "keywords": keywords,
         "color": data.get("color") or RULE_COLORS[0],
         "enabled": data.get("enabled", True),
         "alert_enabled": bool(data.get("alert_enabled", False)),
+        "created_by": user_id,
         "created_at": datetime.now(timezone.utc),
     }
+
+    if requested_scope == "team":
+        if not is_admin:
+            raise HTTPException(status_code=403, detail="Only managers can create team rules")
+        if not store_id and not org_id:
+            raise HTTPException(status_code=400, detail="No store or organization on your account for team rules")
+        dup_scope = {"store_id": store_id} if store_id else {"org_id": org_id}
+        existing = await db.keyword_rules.find_one({**dup_scope, "tag": {"$regex": f"^{tag}$", "$options": "i"}})
+        if existing:
+            raise HTTPException(status_code=400, detail=f"A team rule for tag '{tag}' already exists")
+        rule.update(dup_scope)
+    else:
+        existing = await db.keyword_rules.find_one({"user_id": user_id, "tag": {"$regex": f"^{tag}$", "$options": "i"}})
+        if existing:
+            raise HTTPException(status_code=400, detail=f"A rule for tag '{tag}' already exists")
+        rule["user_id"] = user_id
+
     result = await db.keyword_rules.insert_one(rule)
     rule["_id"] = str(result.inserted_id)
+    rule["scope"] = "personal" if rule.get("user_id") else "team"
+    rule["editable"] = True
     rule["hit_count"] = 0
     rule["created_at"] = rule["created_at"].isoformat()
     return rule
@@ -93,6 +138,10 @@ async def update_rule(user_id: str, rule_id: str, data: dict):
         raise HTTPException(status_code=400, detail="Invalid rule ID")
     if not rule:
         raise HTTPException(status_code=404, detail="Rule not found")
+
+    store_id, org_id, role, is_admin = await _user_ctx(user_id)
+    if not _can_manage(rule, user_id, store_id, org_id, is_admin):
+        raise HTTPException(status_code=403, detail="You don't have permission to edit this rule")
 
     update = {"updated_at": datetime.now(timezone.utc)}
     if "tag" in data and str(data["tag"]).strip():
@@ -122,11 +171,15 @@ async def update_rule(user_id: str, rule_id: str, data: dict):
 async def delete_rule(user_id: str, rule_id: str):
     db = get_db()
     try:
-        result = await db.keyword_rules.delete_one({"_id": ObjectId(rule_id)})
+        rule = await db.keyword_rules.find_one({"_id": ObjectId(rule_id)})
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid rule ID")
-    if result.deleted_count == 0:
+    if not rule:
         raise HTTPException(status_code=404, detail="Rule not found")
+    store_id, org_id, role, is_admin = await _user_ctx(user_id)
+    if not _can_manage(rule, user_id, store_id, org_id, is_admin):
+        raise HTTPException(status_code=403, detail="You don't have permission to delete this rule")
+    await db.keyword_rules.delete_one({"_id": ObjectId(rule_id)})
     return {"message": "Rule deleted"}
 
 
