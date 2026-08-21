@@ -228,6 +228,19 @@ export default function SearchScreen() {
 
   const renderHeader = () => (
     <>
+      {query.trim() && (
+        <TouchableOpacity
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.card, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginHorizontal: 16, marginBottom: 8, borderWidth: 1, borderColor: colors.border }}
+          onPress={() => router.push(`/keyword-search?q=${encodeURIComponent(query.trim())}` as any)}
+          data-testid="global-deep-search-row"
+        >
+          <Ionicons name="search-circle" size={20} color="#32ADE6" />
+          <Text style={{ flex: 1, fontSize: 13, color: colors.text, fontWeight: '600' }} numberOfLines={1}>
+            Deep search texts & call transcripts for "{query.trim()}"
+          </Text>
+          <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+        </TouchableOpacity>
+      )}
       {query.trim() && renderFilterBar()}
       {!query && recentSearches.length > 0 && (
         <View style={styles.recentSection}>

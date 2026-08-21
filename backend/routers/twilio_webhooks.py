@@ -364,8 +364,15 @@ async def incoming_message(
             message["num_media"] = num_media
             message["original_twilio_urls"] = media_urls  # Keep original for reference
         
-        await db.messages.insert_one(message)
+        msg_insert = await db.messages.insert_one(message)
         logger.info(f"Saved incoming message to conversation {conversation_id}")
+
+        # ── Keyword auto-tagging (fire-and-forget) ──────────────────────────────
+        try:
+            from services.keyword_tagging import schedule_keyword_tagging
+            schedule_keyword_tagging(user_id, contact_id, Body or "", "sms", str(msg_insert.inserted_id), conversation_id)
+        except Exception as kt_err:
+            logger.warning(f"[KeywordTag] schedule failed: {kt_err}")
 
         # ── Auto-reopen closed conversation when customer replies ──────────────
         # If the conversation was marked closed, reopen it so the rep sees it
@@ -1461,6 +1468,14 @@ async def handle_recording_complete(
                     upsert=False,
                 )
                 logger.info(f"[Voice] Thread message updated with recording for conv {conv_id_for_update}")
+
+            # ── Keyword auto-tagging on the call transcript ─────────────────────
+            if transcript:
+                try:
+                    from services.keyword_tagging import run_keyword_tagging
+                    await run_keyword_tagging(user_id, contact_id, transcript, "call", CallSid, conv_id_for_update)
+                except Exception as kt_err:
+                    logger.warning(f"[KeywordTag] call transcript tagging failed: {kt_err}")
 
         # Push notification to rep
         if user_id:

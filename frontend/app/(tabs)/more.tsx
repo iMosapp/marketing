@@ -628,6 +628,8 @@ export default function MoreScreen() {
     const canManageCampaigns = user?.role === 'super_admin' || user?.role === 'org_admin';
     const manageItems: (MenuItem & { permKey?: string })[] = [
       { icon: 'pricetags',  title: 'Tags',       subtitle: 'All tags — personal, account & org', onPress: () => router.push('/settings/tags'),             color: '#FF9500' },
+      { icon: 'pricetags-outline', title: 'Keyword Auto-Tags', subtitle: 'Auto-tag calls & texts by keywords', onPress: () => router.push('/settings/keyword-rules' as any), color: '#5856D6' },
+      { icon: 'search-circle', title: 'Keyword Search', subtitle: 'Find any word in texts & call transcripts', onPress: () => router.push('/keyword-search' as any), color: '#32ADE6' },
       { icon: 'car-sport',  title: 'Inventory',  subtitle: 'Vehicles Jessi can quote & check',   onPress: () => router.push('/inventory' as any),          color: '#32ADE6' },
       { icon: 'globe',      title: 'Internet Leads', subtitle: 'Incoming leads & source ROI',    onPress: () => router.push('/leads' as any),              color: '#AF52DE' },
       ...(canManageCampaigns ? [{ icon: 'megaphone' as any,  title: 'Campaigns',  subtitle: 'Build & manage automated campaigns', onPress: () => router.push('/campaigns' as any), color: '#FF2D55' }] : []),

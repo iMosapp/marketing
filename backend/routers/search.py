@@ -194,6 +194,99 @@ def _get_match_field(doc: dict, query: str) -> str:
     return "other"
 
 
+def _make_snippet(text: str, q: str, pad: int = 70) -> str:
+    idx = text.lower().find(q.lower())
+    if idx == -1:
+        return text[:140] + ("…" if len(text) > 140 else "")
+    s = max(0, idx - pad)
+    e = min(len(text), idx + len(q) + pad)
+    return ("…" if s > 0 else "") + text[s:e].strip() + ("…" if e < len(text) else "")
+
+
+@router.get("/{user_id}/messages")
+async def search_messages(
+    user_id: str,
+    q: str = Query(..., min_length=2, description="Keyword to find in messages and call transcripts"),
+    limit: int = Query(30, ge=1, le=100),
+):
+    """Deep keyword search across SMS message text and call transcripts.
+    Returns message-level hits so the UI can jump straight to the match."""
+    db = get_db()
+    base_filter = await get_data_filter(user_id)
+    rx = {"$regex": re.escape(q), "$options": "i"}
+
+    convs = await db.conversations.find(
+        base_filter, {"contact_id": 1, "contact_name": 1, "contact_phone": 1}
+    ).limit(2000).to_list(2000)
+    conv_map = {str(c["_id"]): c for c in convs}
+
+    results = []
+    seen_call_sids = set()
+
+    msgs = await db.messages.find({
+        "conversation_id": {"$in": list(conv_map.keys())},
+        "$or": [{"content": rx}, {"transcript": rx}],
+    }).sort("timestamp", -1).limit(limit).to_list(limit)
+
+    for m in msgs:
+        conv = conv_map.get(m.get("conversation_id", ""), {})
+        is_call = m.get("type") == "call_log" or m.get("channel") == "voice"
+        transcript = m.get("transcript", "") or ""
+        content = m.get("content", "") or ""
+        hay = transcript if (is_call and q.lower() in transcript.lower()) else content
+        if q.lower() not in hay.lower():
+            hay = transcript or content
+        if m.get("call_sid"):
+            seen_call_sids.add(m["call_sid"])
+        ts = m.get("timestamp")
+        results.append({
+            "message_id": str(m["_id"]),
+            "conversation_id": m.get("conversation_id"),
+            "contact_id": str(conv.get("contact_id", "") or ""),
+            "contact_name": conv.get("contact_name") or conv.get("contact_phone") or "Unknown",
+            "source": "call" if is_call else "sms",
+            "sender": m.get("sender", ""),
+            "snippet": _make_snippet(hay, q),
+            "auto_tags": m.get("auto_tags", []),
+            "timestamp": ts.isoformat() if hasattr(ts, "isoformat") else str(ts or ""),
+        })
+
+    # Call recordings whose transcript matched but have no thread message
+    calls = await db.call_logs.find(
+        {"$and": [base_filter, {"transcript": rx}]}
+    ).sort("timestamp", -1).limit(limit).to_list(limit)
+
+    for c in calls:
+        if c.get("call_sid") in seen_call_sids:
+            continue
+        conv_id = None
+        message_id = None
+        msg = await db.messages.find_one({"call_sid": c.get("call_sid"), "type": "call_log"}, {"_id": 1, "conversation_id": 1})
+        if msg:
+            message_id = str(msg["_id"])
+            conv_id = msg.get("conversation_id")
+        elif c.get("contact_id"):
+            conv = await db.conversations.find_one({"contact_id": c["contact_id"]}, {"_id": 1})
+            if conv:
+                conv_id = str(conv["_id"])
+        ts = c.get("timestamp")
+        results.append({
+            "message_id": message_id,
+            "conversation_id": conv_id,
+            "contact_id": str(c.get("contact_id", "") or ""),
+            "contact_name": c.get("contact_name") or c.get("contact_phone") or "Unknown",
+            "source": "call",
+            "sender": "",
+            "snippet": _make_snippet(c.get("transcript", ""), q),
+            "auto_tags": c.get("auto_tags", []),
+            "timestamp": ts.isoformat() if hasattr(ts, "isoformat") else str(ts or ""),
+        })
+
+    results.sort(key=lambda r: r.get("timestamp") or "", reverse=True)
+    results = results[:limit]
+    return {"query": q, "results": results, "total": len(results)}
+
+
 @router.get("/{user_id}/suggestions")
 async def get_search_suggestions(
     user_id: str,

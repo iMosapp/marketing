@@ -1592,6 +1592,19 @@ export default function InboxScreen() {
             </TouchableOpacity>
           )}
         </View>
+        {search.trim().length > 1 && (
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.surface, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginTop: 8 }}
+            onPress={() => router.push(`/keyword-search?q=${encodeURIComponent(search.trim())}` as any)}
+            data-testid="inbox-deep-search-row"
+          >
+            <Ionicons name="search-circle" size={20} color="#32ADE6" />
+            <Text style={{ flex: 1, fontSize: 13, color: colors.textPrimary, fontWeight: '600' }} numberOfLines={1}>
+              Search message text & calls for "{search.trim()}"
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+          </TouchableOpacity>
+        )}
       </View>
       
       {/* Inbox View Toggle (My/Team) */}

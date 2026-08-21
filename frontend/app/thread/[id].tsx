@@ -1,5 +1,5 @@
 import { ScreenErrorBoundary } from '../../components/ScreenErrorBoundary';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -123,7 +123,7 @@ interface Template {
 
 function ThreadScreen() {
   const router = useRouter();
-  const { id, contact_name, contact_phone, contact_email, contact_photo: paramPhoto, mode, prefill, event_type: paramEventType } = useLocalSearchParams();
+  const { id, contact_name, contact_phone, contact_email, contact_photo: paramPhoto, mode, prefill, event_type: paramEventType, jumpToMsg, q: searchParamQ } = useLocalSearchParams();
   const user = useAuthStore((state) => state.user);
   const flatListRef = useRef<ScrollView>(null);
   
@@ -170,6 +170,12 @@ function ThreadScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [sending, setSending] = useState(false);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
+  // ── In-thread keyword search ──
+  const [threadSearchOpen, setThreadSearchOpen] = useState(false);
+  const [threadSearchQuery, setThreadSearchQuery] = useState('');
+  const [currentMatchIdx, setCurrentMatchIdx] = useState(0);
+  const messageOffsets = useRef<Record<number, number>>({});
+  const jumpHandledRef = useRef(false);
   const [isThreadRecording, setIsThreadRecording] = useState(false);
   const threadRecordingRef = useRef<any>(null);
 
@@ -748,10 +754,81 @@ function ThreadScreen() {
   // Auto-scroll to bottom when messages load or new messages arrive
   useEffect(() => {
     if (messages.length > 0 && !loading) {
+      if (threadSearchOpen || jumpHandledRef.current === false && typeof jumpToMsg === 'string' && jumpToMsg) return;
       flatListRef.current?.scrollToEnd({ animated: true });
       setShowScrollBtn(false);
     }
   }, [messages.length]);
+
+  // ── In-thread search: match computation + jump helpers ─────────────────────
+  const searchMatches = useMemo(() => {
+    const ql = threadSearchQuery.trim().toLowerCase();
+    if (!threadSearchOpen || !ql) return [] as number[];
+    const out: number[] = [];
+    messages.forEach((m: any, i: number) => {
+      const hay = `${m.content || ''} ${m.transcript || ''}`.toLowerCase();
+      if (hay.includes(ql)) out.push(i);
+    });
+    return out;
+  }, [messages, threadSearchQuery, threadSearchOpen]);
+
+  const jumpToMatch = (pos: number) => {
+    if (!searchMatches.length) return;
+    const bounded = ((pos % searchMatches.length) + searchMatches.length) % searchMatches.length;
+    setCurrentMatchIdx(bounded);
+    const y = messageOffsets.current[searchMatches[bounded]];
+    if (y !== undefined) flatListRef.current?.scrollTo({ y: Math.max(0, y - 90), animated: true });
+  };
+
+  // Auto-jump to the most recent match as the user types (debounced)
+  useEffect(() => {
+    if (!threadSearchOpen || !threadSearchQuery.trim()) return;
+    const t = setTimeout(() => {
+      if (searchMatches.length) jumpToMatch(searchMatches.length - 1);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [threadSearchQuery, searchMatches.length, threadSearchOpen]);
+
+  // Deep-link jump: /thread/[id]?jumpToMsg=<messageId>&q=<term>
+  useEffect(() => {
+    if (loading || jumpHandledRef.current) return;
+    const target = typeof jumpToMsg === 'string' ? jumpToMsg : '';
+    if (!target || messages.length === 0) return;
+    const idx = messages.findIndex((m: any) => m._id === target);
+    if (idx === -1) { jumpHandledRef.current = true; return; }
+    jumpHandledRef.current = true;
+    const qParam = typeof searchParamQ === 'string' ? searchParamQ : '';
+    if (qParam) { setThreadSearchOpen(true); setThreadSearchQuery(qParam); }
+    setTimeout(() => {
+      const y = messageOffsets.current[idx];
+      if (y !== undefined) flatListRef.current?.scrollTo({ y: Math.max(0, y - 90), animated: true });
+    }, 700);
+  }, [loading, messages.length]);
+
+  // Render message text with the searched keyword highlighted
+  const renderHighlightedText = (text: string) => {
+    const q = threadSearchQuery.trim();
+    if (!threadSearchOpen || !q || !text) return text;
+    const lower = text.toLowerCase();
+    const ql = q.toLowerCase();
+    if (!lower.includes(ql)) return text;
+    const parts: React.ReactNode[] = [];
+    let i = 0;
+    let idx = lower.indexOf(ql);
+    let key = 0;
+    while (idx !== -1 && key < 50) {
+      if (idx > i) parts.push(text.slice(i, idx));
+      parts.push(
+        <Text key={`hl-${key++}`} style={{ backgroundColor: '#FFD60A', color: '#000', fontWeight: '700' }}>
+          {text.slice(idx, idx + q.length)}
+        </Text>
+      );
+      i = idx + q.length;
+      idx = lower.indexOf(ql, i);
+    }
+    if (i < text.length) parts.push(text.slice(i));
+    return parts;
+  };
 
   const loadAISuggestion = async () => {
     if (!conversationId || aiMode === 'off') return;
@@ -2009,6 +2086,7 @@ function ThreadScreen() {
             isUser ? styles.userMessageBubble : styles.contactMessageBubble,
             isRichContent && styles.richMessageBubble,
             isRichContent && { borderLeftColor: richColor },
+            threadSearchOpen && threadSearchQuery.trim() !== '' && searchMatches[currentMatchIdx] === index && { borderWidth: 2, borderColor: '#FFD60A' },
           ]}
         >
           {/* Rich content header */}
@@ -2109,7 +2187,7 @@ function ThreadScreen() {
               styles.messageText,
               isUser ? { color: colors.userBubbleText } : { color: colors.contactBubbleText },
             ]}>
-              {item.content}
+              {renderHighlightedText(item.content)}
             </Text>
           ) : null}
           
@@ -2134,6 +2212,18 @@ function ThreadScreen() {
             </View>
           )}
         </View>
+
+        {/* Auto-applied keyword tags */}
+        {(item as any).auto_tags?.length > 0 && (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 3, justifyContent: isUser ? 'flex-end' : 'flex-start' }} data-testid="message-auto-tags">
+            {(item as any).auto_tags.map((t: string) => (
+              <View key={t} style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#5856D620', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 }}>
+                <Ionicons name="pricetag" size={9} color="#5856D6" />
+                <Text style={{ fontSize: 10, color: '#5856D6', fontWeight: '600' }}>{t}</Text>
+              </View>
+            ))}
+          </View>
+        )}
       </View>
       </>
     );
@@ -2187,6 +2277,16 @@ function ThreadScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginRight: 4 }}>
           <TouchableOpacity
             onPress={() => {
+              if (threadSearchOpen) { setThreadSearchOpen(false); setThreadSearchQuery(''); }
+              else setThreadSearchOpen(true);
+            }}
+            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: threadSearchOpen ? '#FFD60A' : colors.surface, alignItems: 'center', justifyContent: 'center' }}
+            data-testid="thread-search-btn"
+          >
+            <Ionicons name="search" size={17} color={threadSearchOpen ? '#000' : colors.accent} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
               const phone = contactPhone || '';
               const cid   = contactIdForNav || (id as string) || '';
               if (phone) {
@@ -2213,6 +2313,35 @@ function ThreadScreen() {
           <Ionicons name="ellipsis-horizontal" size={24} color={colors.accent} />
         </TouchableOpacity>
       </View>
+
+      {/* In-thread keyword search bar */}
+      {threadSearchOpen && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.surface }} data-testid="thread-search-bar">
+          <Ionicons name="search" size={16} color={colors.textSecondary} />
+          <TextInput
+            style={{ flex: 1, fontSize: 15, color: colors.textPrimary, paddingVertical: 4 }}
+            placeholder="Search this conversation…"
+            placeholderTextColor={colors.textSecondary}
+            value={threadSearchQuery}
+            onChangeText={setThreadSearchQuery}
+            autoFocus
+            autoCapitalize="none"
+            data-testid="thread-search-input"
+          />
+          <Text style={{ fontSize: 12, color: colors.textSecondary, fontWeight: '600', minWidth: 30, textAlign: 'center' }} data-testid="thread-search-count">
+            {searchMatches.length ? `${currentMatchIdx + 1}/${searchMatches.length}` : threadSearchQuery.trim() ? '0' : ''}
+          </Text>
+          <TouchableOpacity onPress={() => jumpToMatch(currentMatchIdx - 1)} disabled={!searchMatches.length} style={{ padding: 4, opacity: searchMatches.length ? 1 : 0.3 }} data-testid="thread-search-prev">
+            <Ionicons name="chevron-up" size={18} color={colors.accent} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => jumpToMatch(currentMatchIdx + 1)} disabled={!searchMatches.length} style={{ padding: 4, opacity: searchMatches.length ? 1 : 0.3 }} data-testid="thread-search-next">
+            <Ionicons name="chevron-down" size={18} color={colors.accent} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { setThreadSearchOpen(false); setThreadSearchQuery(''); }} style={{ padding: 4 }} data-testid="thread-search-close">
+            <Ionicons name="close" size={18} color={colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+      )}
       
       {/* Mode banner removed — more room for messages */}
       
@@ -2344,6 +2473,7 @@ function ThreadScreen() {
             />
           }
           onContentSizeChange={() => {
+            if (threadSearchOpen || (typeof jumpToMsg === 'string' && jumpToMsg && !jumpHandledRef.current)) return;
             flatListRef.current?.scrollToEnd({ animated: false });
             setShowScrollBtn(false);
           }}
@@ -2376,9 +2506,12 @@ function ThreadScreen() {
               <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Start the conversation!</Text>
             </View>
           ) : messages.map((item, index) => (
-            <React.Fragment key={item._id || String(index)}>
+            <View
+              key={item._id || String(index)}
+              onLayout={(e) => { messageOffsets.current[index] = e.nativeEvent.layout.y; }}
+            >
               {renderMessage({ item, index })}
-            </React.Fragment>
+            </View>
           ))}
         </ScrollView>
       ))}

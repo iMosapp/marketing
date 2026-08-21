@@ -399,6 +399,12 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
     
     result = await get_db().messages.insert_one(message)
     message['_id'] = str(result.inserted_id)
+    # Keyword auto-tagging (fire-and-forget)
+    try:
+        from services.keyword_tagging import schedule_keyword_tagging
+        schedule_keyword_tagging(user_id, contact_id, resolved_content, "sms", message['_id'], conversation_id)
+    except Exception as kt_err:
+        logger.warning(f"[KeywordTag] schedule failed: {kt_err}")
     # Invalidate conversation cache so sender sees the new message immediately
     _conv_cache.pop(f"{user_id}:True", None)
     _conv_cache.pop(f"{user_id}:False", None)
@@ -1788,6 +1794,16 @@ async def get_thread_messages(conversation_id: str):
         "card_type": m.get("card_type", ""),
         "has_media": m.get("has_media", False),
         "media_urls": m.get("media_urls", []),
+        "type": m.get("type", ""),
+        "call_sid": m.get("call_sid"),
+        "call_status": m.get("call_status"),
+        "duration_s": m.get("duration_s", 0),
+        "ai_summary": m.get("ai_summary", ""),
+        "has_recording": m.get("has_recording", False),
+        "recording_url": m.get("recording_url"),
+        "transcript": m.get("transcript", ""),
+        "direction": m.get("direction", ""),
+        "auto_tags": m.get("auto_tags", []),
     } for m in unique]
 
 
@@ -1960,6 +1976,13 @@ async def send_message_simple(user_id: str, message_data: dict):
     result = await db.messages.insert_one(message)
     message_id = str(result.inserted_id)
     message['_id'] = message_id
+
+    # Keyword auto-tagging (fire-and-forget)
+    try:
+        from services.keyword_tagging import schedule_keyword_tagging
+        schedule_keyword_tagging(user_id, resolved_contact_id, content, "sms", message_id, conversation_id)
+    except Exception as kt_err:
+        logger.warning(f"[KeywordTag] schedule failed: {kt_err}")
 
     # ── Rep replied: clear YOU'RE NEEDED + lower future threshold to 1 ─────
     # Once a rep personally replies, they want to know about the NEXT message
@@ -2487,8 +2510,15 @@ async def twilio_inbound_webhook(request: Request):
             "to_number": to_phone  # Track which number received this
         }
         
-        await db.messages.insert_one(message)
+        insert_result = await db.messages.insert_one(message)
         logger.info(f"Saved inbound message to conversation {conversation_id} ({inbox_name})")
+
+        # Keyword auto-tagging (fire-and-forget)
+        try:
+            from services.keyword_tagging import schedule_keyword_tagging
+            schedule_keyword_tagging(user_id, contact_id, body or "", "sms", str(insert_result.inserted_id), conversation_id)
+        except Exception as kt_err:
+            logger.warning(f"[KeywordTag] schedule failed: {kt_err}")
         
         # ── Real-time notification via WebSocket ──
         try:
