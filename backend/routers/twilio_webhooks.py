@@ -1100,6 +1100,46 @@ async def call_whisper(
     return Response(content=twiml, media_type="application/xml")
 
 
+def _split_stereo_wav(wav_path: str):
+    """Split a stereo wav into (left, right) mono wavs. Returns None if not stereo."""
+    import wave
+    import audioop
+    with wave.open(wav_path, "rb") as w:
+        ch, width, rate = w.getnchannels(), w.getsampwidth(), w.getframerate()
+        frames = w.readframes(w.getnframes())
+    if ch != 2:
+        return None
+    out_paths = []
+    for tag, l_w, r_w in (("L", 1, 0), ("R", 0, 1)):
+        mono = audioop.tomono(frames, width, l_w, r_w)
+        p = wav_path[:-4] + f"_{tag}.wav"
+        with wave.open(p, "wb") as out:
+            out.setnchannels(1)
+            out.setsampwidth(width)
+            out.setframerate(rate)
+            out.writeframes(mono)
+        out_paths.append(p)
+    return out_paths[0], out_paths[1]
+
+
+def _whisper_segments(result):
+    """Extract [(start_seconds, text)] from a verbose_json Whisper response."""
+    segs = getattr(result, "segments", None)
+    if segs is None and isinstance(result, dict):
+        segs = result.get("segments")
+    out = []
+    for s in segs or []:
+        if isinstance(s, dict):
+            start, text = s.get("start", 0), (s.get("text") or "").strip()
+            nsp = s.get("no_speech_prob", 0)
+        else:
+            start, text = getattr(s, "start", 0), (getattr(s, "text", "") or "").strip()
+            nsp = getattr(s, "no_speech_prob", 0)
+        if text and (nsp or 0) < 0.5:
+            out.append((float(start or 0), text))
+    return out
+
+
 @router.post("/recording-complete")
 async def handle_recording_complete(
     request:           Request,
@@ -1194,6 +1234,7 @@ async def handle_recording_complete(
     # ── Transcribe + extract in background ────────────────────────────────────
     async def _transcribe_and_save():
         transcript = (TranscriptionText or "").strip()
+        transcript_segments = []
         ai_summary = ""
         now        = datetime.utcnow()
 
@@ -1213,47 +1254,97 @@ async def handle_recording_complete(
                     from utils.system_logger import syslog
                     await syslog.warning("voice_transcription", "EMERGENT_LLM_KEY not set — Whisper unavailable")
                 else:
-                    import requests as _req, tempfile, uuid as _uuid
-                    mp3_url = RecordingUrl if RecordingUrl.endswith(".mp3") else f"{RecordingUrl}.mp3"
-                    logger.info(f"[Voice] Downloading recording from Twilio: {mp3_url[:60]}...")
+                    import requests as _req, uuid as _uuid
+                    # .wav preserves the dual channels (rep = one channel, customer = the other)
+                    wav_url = RecordingUrl if RecordingUrl.endswith(".wav") else f"{RecordingUrl}.wav"
+                    logger.info(f"[Voice] Downloading recording from Twilio: {wav_url[:60]}...")
 
-                    # Use synchronous requests in a thread to avoid httpx async complexity
                     def _download():
-                        r = _req.get(mp3_url, auth=(tw_sid, tw_token), timeout=30)
+                        r = _req.get(wav_url, auth=(tw_sid, tw_token), timeout=60)
                         return r.status_code, r.content
 
                     status_code, content = await _aio.to_thread(_download)
 
                     if status_code == 200 and content:
-                        tmp_path = f"/tmp/call_{_uuid.uuid4().hex}.mp3"
+                        tmp_path = f"/tmp/call_{_uuid.uuid4().hex}.wav"
                         with open(tmp_path, "wb") as f:
                             f.write(content)
                         logger.info(f"[Voice] Downloaded {len(content)} bytes — transcribing with Whisper...")
 
+                        split_paths = None
                         try:
                             from emergentintegrations.llm.openai import OpenAISpeechToText
                             stt = OpenAISpeechToText(api_key=emergent_key)
-                            # Must pass an opened binary file object — litellm rejects bare path strings
-                            with open(tmp_path, "rb") as audio_file:
-                                result = await _aio.wait_for(
-                                    stt.transcribe(audio_file, language="en"),
-                                    timeout=60.0
+
+                            try:
+                                split_paths = await _aio.to_thread(_split_stereo_wav, tmp_path)
+                            except Exception as sp_err:
+                                logger.warning(f"[Voice] Channel split failed, mono fallback: {sp_err}")
+
+                            if split_paths:
+                                # Speaker names: rep from users, customer from contact
+                                rep_name = "Rep"
+                                try:
+                                    if user_id and ObjectId.is_valid(str(user_id)):
+                                        rep_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"name": 1})
+                                        rep_name = ((rep_doc or {}).get("name") or "Rep").strip().split()[0] or "Rep"
+                                except Exception:
+                                    pass
+                                cust_name = "Customer"
+                                if contact:
+                                    cust_name = (contact.get("first_name") or (contact.get("name") or "").split(" ")[0] or "Customer").strip() or "Customer"
+
+                                # Dual-channel: LEFT = parent leg, RIGHT = dialed party.
+                                # Outbound click-to-call: parent = rep. Inbound: parent = customer.
+                                left_name, right_name = (rep_name, cust_name) if direction == "outbound" else (cust_name, rep_name)
+
+                                async def _tx_verbose(p):
+                                    with open(p, "rb") as af:
+                                        return await _aio.wait_for(
+                                            stt.transcribe(af, language="en", response_format="verbose_json"),
+                                            timeout=120.0,
+                                        )
+
+                                lres = await _tx_verbose(split_paths[0])
+                                rres = await _tx_verbose(split_paths[1])
+                                entries = (
+                                    [(t, left_name,  "rep" if left_name == rep_name else "customer", txt) for t, txt in _whisper_segments(lres)] +
+                                    [(t, right_name, "rep" if right_name == rep_name else "customer", txt) for t, txt in _whisper_segments(rres)]
                                 )
-                            if hasattr(result, "text"):
-                                transcript = result.text.strip()
-                            elif isinstance(result, str):
-                                transcript = result.strip()
-                            elif isinstance(result, dict):
-                                transcript = result.get("text", "").strip()
-                            logger.info(f"[Voice] Whisper transcript ({len(transcript)} chars) for {contact_name}")
+                                entries.sort(key=lambda e: e[0])
+                                for t, nm, role, txt in entries:
+                                    if transcript_segments and transcript_segments[-1]["speaker"] == nm:
+                                        transcript_segments[-1]["text"] += " " + txt
+                                    else:
+                                        transcript_segments.append({"speaker": nm, "role": role, "start": round(t, 1), "text": txt})
+                                transcript = "\n".join(f"{s['speaker']}: {s['text']}" for s in transcript_segments)
+                                logger.info(f"[Voice] Dual-channel transcript: {len(transcript_segments)} turns for {contact_name}")
+
+                            if not transcript:
+                                # Mono fallback (old single-channel recordings)
+                                with open(tmp_path, "rb") as audio_file:
+                                    result = await _aio.wait_for(
+                                        stt.transcribe(audio_file, language="en"),
+                                        timeout=90.0
+                                    )
+                                if hasattr(result, "text"):
+                                    transcript = result.text.strip()
+                                elif isinstance(result, str):
+                                    transcript = result.strip()
+                                elif isinstance(result, dict):
+                                    transcript = result.get("text", "").strip()
+                                logger.info(f"[Voice] Whisper transcript ({len(transcript)} chars) for {contact_name}")
                         finally:
                             import os as _ost
-                            try: _ost.remove(tmp_path)
-                            except: pass
+                            for _p in [tmp_path] + list(split_paths or []):
+                                try:
+                                    _ost.remove(_p)
+                                except Exception:
+                                    pass
                     else:
-                        logger.warning(f"[Voice] Recording download failed: HTTP {status_code} from {mp3_url[:60]}")
+                        logger.warning(f"[Voice] Recording download failed: HTTP {status_code} from {wav_url[:60]}")
                         from utils.system_logger import syslog
-                        await syslog.warning("voice_transcription", f"Recording download failed HTTP {status_code}", recording_url=mp3_url[:80], call_sid=CallSid)
+                        await syslog.warning("voice_transcription", f"Recording download failed HTTP {status_code}", recording_url=wav_url[:80], call_sid=CallSid)
             except Exception as transcribe_err:
                 logger.warning(f"[Voice] Transcription failed: {transcribe_err}", exc_info=True)
                 from utils.system_logger import syslog
@@ -1306,6 +1397,7 @@ async def handle_recording_complete(
             "recording_url":    RecordingUrl,
             "duration_s":       dur,
             "transcript":       transcript,
+            "transcript_segments": transcript_segments,
             "ai_summary":       ai_summary,
             "direction":        direction,
             "timestamp":        now,
@@ -1328,6 +1420,7 @@ async def handle_recording_complete(
                 "ai_summary":    ai_summary,
                 "recording_url": RecordingUrl,
                 "transcript":    transcript,
+                "transcript_segments": transcript_segments,
                 "duration_s":    dur,
                 "call_sid":      CallSid,
                 "direction":     direction,
@@ -1520,7 +1613,7 @@ async def call_bridge_connect(
 <Response>
   <Say>Connecting your call now.</Say>
   <Dial callerId="{caller_number}" timeout="30"
-        record="record-from-answer"
+        record="record-from-answer-dual"
         recordingStatusCallback="{os.environ.get('PUBLIC_FACING_URL', os.environ.get('APP_URL', 'https://app.imonsocial.com'))}/api/webhooks/twilio/recording-complete"
         recordingStatusCallbackMethod="POST">
     <Number>{customer_phone}</Number>
@@ -1693,7 +1786,7 @@ async def handle_inbound_voice(
         twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Dial callerId="{to_phone}" timeout="25"
-        record="record-from-answer"
+        record="record-from-answer-dual"
         recordingStatusCallback="{recording_cb}"
         recordingStatusCallbackMethod="POST"
         action="{fallback_url}">

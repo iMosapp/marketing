@@ -957,6 +957,18 @@ Backlog note: direct HomeNet/vAuto API sync pending dealer credentials (user cho
 5. New endpoints: `GET /api/contacts/{uid}/date-optins?occasion=birthday|anniversary` (list w/ date, years, vehicle, opted_in), `POST /api/contacts/{uid}/date-optins/bulk` {contact_ids, occasion, enable} (tag add/pull, never triggers sends).
 6. New screen `/settings/date-recipients` (Birthdays/Anniversaries tabs, search, All/ON/OFF filter, select-all, bulk Turn ON/OFF bar). Linked via "Manage Recipients" card on /settings/date-triggers (description updated).
 
+## Dual-Channel Speaker-Labeled Call Transcripts (Aug 2026) — pipeline self-tested e2e
+- Both `<Dial>`s (outbound press-1 bridge + inbound) now use `record-from-answer-dual` → stereo recording, one voice per channel.
+- recording-complete (twilio_webhooks.py): downloads `.wav`, `_split_stereo_wav` (wave+audioop) → per-channel Whisper `verbose_json` with timestamps → `_whisper_segments` (drops no_speech_prob>0.5 silence hallucinations) → time-interleaved, consecutive-speaker collapsed → `transcript_segments` [{speaker, role rep|customer, start, text}] + labeled flat `transcript` ("Forest: ... / Jane: ..."). Channel map: outbound left=rep; inbound left=customer. Names: rep first name from users, customer first_name from contact. Mono fallback for old recordings. GPT summary now receives labeled transcript.
+- Saved on call_logs + notes; calls API returns whole docs so segments flow to UI.
+- UI (contact/[id].tsx calls tab): chat-style transcript — colored dot+name (gold rep / blue customer) + m:ss timestamp per turn; plain-text fallback for legacy calls.
+- NOTE: only NEW recordings after deploy are dual-channel; old mono recordings keep unlabeled transcripts.
+
+## Dialer Keypad Formatting + DTMF (Aug 2026)
+- Keypad letters now inside circles: fonts scale to BTN_SIZE, maxFontSizeMultiplier=1 (device font-scaling was pushing letters outside circles).
+- Real DTMF touch tones: 12 generated dual-tone WAVs in assets/dtmf/, expo-av playback (playsInSilentModeIOS), wired into handleDialPress.
+- Press-1 gate hardened: Gather input="dtmf speech" + hints, spoken yes/one/connect accepted (speech backup for carriers that mangle DTMF), second "Last chance" Gather before cancel, prompt says "on your phone's keypad". All paths curl-verified.
+
 ## Doc PDF Export + Slow Reply Alert (Aug 2026) — self-tested
 1. **Doc PDF Export**: `_build_pdf_bytes` in docs.py only rendered slide-based docs — markdown `content` docs (new Ops Manual/App Scope/PRD log) exported empty. Added `_render_markdown_to_pdf` (headings, bullets, code, markdown tables as monospace, link stripping, unicode sanitize) used when a doc has content but no slides. Existing viewer buttons (`GET /api/docs/{id}/export-pdf`, `POST /{id}/email-pdf`, super-admin only) now work for all docs. Verified: Ops Manual → valid 42KB multi-page branded PDF.
 2. **Slow Reply Alert**: `send_slow_lead_alerts()` in lead_intake.py + scheduler job `slow_lead_alert` (every 5 min, 22 jobs total). Leads 15+ min old (24h window) with NO human reply → push + in-app notification to store_managers/org_admins (fallback super admins), message includes minutes + vehicle/source. One alert per lead (`slow_alert_sent` flag + idempotency keys), daytime guard (8AM–9PM local via assigned rep tz, overnight leads alert at 8AM). Replied leads flagged silently. Tested: alert fired / replied skipped / fresh deferred / no dupes on re-run.
