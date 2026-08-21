@@ -74,6 +74,7 @@ async def create_rule(user_id: str, data: dict):
         "keywords": keywords,
         "color": data.get("color") or RULE_COLORS[0],
         "enabled": data.get("enabled", True),
+        "alert_enabled": bool(data.get("alert_enabled", False)),
         "created_at": datetime.now(timezone.utc),
     }
     result = await db.keyword_rules.insert_one(rule)
@@ -105,6 +106,8 @@ async def update_rule(user_id: str, rule_id: str, data: dict):
         update["color"] = data["color"]
     if "enabled" in data:
         update["enabled"] = bool(data["enabled"])
+    if "alert_enabled" in data:
+        update["alert_enabled"] = bool(data["alert_enabled"])
 
     await db.keyword_rules.update_one({"_id": ObjectId(rule_id)}, {"$set": update})
     updated = await db.keyword_rules.find_one({"_id": ObjectId(rule_id)})
@@ -125,6 +128,20 @@ async def delete_rule(user_id: str, rule_id: str):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Rule not found")
     return {"message": "Rule deleted"}
+
+
+@router.post("/{user_id}/{rule_id}/scan")
+async def scan_rule_history(user_id: str, rule_id: str):
+    """One-tap retro scan: apply this rule to all past messages + call transcripts."""
+    from services.keyword_tagging import scan_history_for_rule
+    db = get_db()
+    try:
+        rule = await db.keyword_rules.find_one({"_id": ObjectId(rule_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid rule ID")
+    if not rule:
+        raise HTTPException(status_code=404, detail="Rule not found")
+    return await scan_history_for_rule(user_id, rule)
 
 
 @router.get("/{user_id}/events")

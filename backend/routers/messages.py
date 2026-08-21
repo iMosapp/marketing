@@ -402,7 +402,7 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
     # Keyword auto-tagging (fire-and-forget)
     try:
         from services.keyword_tagging import schedule_keyword_tagging
-        schedule_keyword_tagging(user_id, contact_id, resolved_content, "sms", message['_id'], conversation_id)
+        schedule_keyword_tagging(user_id, contact_id, resolved_content, "sms", message['_id'], conversation_id, sender="user")
     except Exception as kt_err:
         logger.warning(f"[KeywordTag] schedule failed: {kt_err}")
     # Invalidate conversation cache so sender sees the new message immediately
@@ -1980,7 +1980,7 @@ async def send_message_simple(user_id: str, message_data: dict):
     # Keyword auto-tagging (fire-and-forget)
     try:
         from services.keyword_tagging import schedule_keyword_tagging
-        schedule_keyword_tagging(user_id, resolved_contact_id, content, "sms", message_id, conversation_id)
+        schedule_keyword_tagging(user_id, resolved_contact_id, content, "sms", message_id, conversation_id, sender="user")
     except Exception as kt_err:
         logger.warning(f"[KeywordTag] schedule failed: {kt_err}")
 
@@ -2516,7 +2516,7 @@ async def twilio_inbound_webhook(request: Request):
         # Keyword auto-tagging (fire-and-forget)
         try:
             from services.keyword_tagging import schedule_keyword_tagging
-            schedule_keyword_tagging(user_id, contact_id, body or "", "sms", str(insert_result.inserted_id), conversation_id)
+            schedule_keyword_tagging(user_id, contact_id, body or "", "sms", str(insert_result.inserted_id), conversation_id, sender="contact")
         except Exception as kt_err:
             logger.warning(f"[KeywordTag] schedule failed: {kt_err}")
         

@@ -46,7 +46,9 @@ export default function KeywordRulesScreen() {
   const [formTag, setFormTag] = useState('');
   const [formKeywords, setFormKeywords] = useState('');
   const [formColor, setFormColor] = useState(RULE_COLORS[0]);
+  const [formAlert, setFormAlert] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [scanningId, setScanningId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!user?._id) return;
@@ -72,6 +74,7 @@ export default function KeywordRulesScreen() {
     setFormTag('');
     setFormKeywords('');
     setFormColor(RULE_COLORS[rules.length % RULE_COLORS.length]);
+    setFormAlert(false);
     setModalOpen(true);
   };
 
@@ -80,6 +83,7 @@ export default function KeywordRulesScreen() {
     setFormTag(rule.tag);
     setFormKeywords((rule.keywords || []).join(', '));
     setFormColor(rule.color || RULE_COLORS[0]);
+    setFormAlert(!!rule.alert_enabled);
     setModalOpen(true);
   };
 
@@ -91,9 +95,9 @@ export default function KeywordRulesScreen() {
     setSaving(true);
     try {
       if (editRule) {
-        await api.put(`/keyword-rules/${user?._id}/${editRule._id}`, { tag, keywords, color: formColor });
+        await api.put(`/keyword-rules/${user?._id}/${editRule._id}`, { tag, keywords, color: formColor, alert_enabled: formAlert });
       } else {
-        await api.post(`/keyword-rules/${user?._id}`, { tag, keywords, color: formColor, enabled: true });
+        await api.post(`/keyword-rules/${user?._id}`, { tag, keywords, color: formColor, enabled: true, alert_enabled: formAlert });
       }
       setModalOpen(false);
       load();
@@ -110,6 +114,43 @@ export default function KeywordRulesScreen() {
       await api.put(`/keyword-rules/${user?._id}/${rule._id}`, { enabled: !rule.enabled });
     } catch {
       setRules(prev => prev.map(r => r._id === rule._id ? { ...r, enabled: rule.enabled } : r));
+    }
+  };
+
+  const toggleAlert = async (rule: any) => {
+    setRules(prev => prev.map(r => r._id === rule._id ? { ...r, alert_enabled: !r.alert_enabled } : r));
+    try {
+      await api.put(`/keyword-rules/${user?._id}/${rule._id}`, { alert_enabled: !rule.alert_enabled });
+    } catch {
+      setRules(prev => prev.map(r => r._id === rule._id ? { ...r, alert_enabled: rule.alert_enabled } : r));
+    }
+  };
+
+  const scanRule = async (rule: any) => {
+    const doScan = async () => {
+      setScanningId(rule._id);
+      try {
+        const res = await api.post(`/keyword-rules/${user?._id}/${rule._id}/scan`);
+        const d = res.data || {};
+        showSimpleAlert(
+          'Scan Complete',
+          `${d.messages_matched || 0} message(s) + ${d.calls_matched || 0} call(s) matched — ${d.contacts_tagged || 0} contact(s) tagged "${rule.tag}".`
+        );
+        load();
+      } catch {
+        showSimpleAlert('Error', 'History scan failed');
+      } finally {
+        setScanningId(null);
+      }
+    };
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Scan all past texts & calls for "${rule.tag}" keywords and tag matching contacts?`)) doScan();
+    } else {
+      const { Alert } = require('react-native');
+      Alert.alert('Scan History', `Scan all past texts & calls for "${rule.tag}" keywords and tag matching contacts?`, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Scan', onPress: doScan },
+      ]);
     }
   };
 
@@ -162,7 +203,8 @@ export default function KeywordRulesScreen() {
           <View style={styles.explainer}>
             <Ionicons name="pricetags" size={16} color="#5856D6" />
             <Text style={styles.explainerText}>
-              When a keyword shows up in a text or a call transcript, the tag is applied to the contact automatically — and you can see exactly which message triggered it.
+              When a keyword shows up in a text or a call transcript, the tag is applied to the contact automatically — and you can see exactly which message triggered it.{'\n\n'}
+              <Ionicons name="notifications" size={11} color="#FF9500" /> bell = instant push alert when a customer says it · <Ionicons name="time-outline" size={11} color="#32ADE6" /> clock = scan past conversations
             </Text>
           </View>
 
@@ -187,7 +229,15 @@ export default function KeywordRulesScreen() {
                   {(rule.keywords || []).join(' · ')}
                 </Text>
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                <TouchableOpacity onPress={() => toggleAlert(rule)} style={styles.iconBtn} data-testid={`keyword-rule-alert-${rule._id}`}>
+                  <Ionicons name={rule.alert_enabled ? 'notifications' : 'notifications-off-outline'} size={16} color={rule.alert_enabled ? '#FF9500' : colors.textTertiary} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => scanRule(rule)} style={styles.iconBtn} disabled={scanningId === rule._id} data-testid={`keyword-rule-scan-${rule._id}`}>
+                  {scanningId === rule._id
+                    ? <ActivityIndicator size="small" color="#32ADE6" />
+                    : <Ionicons name="time-outline" size={16} color="#32ADE6" />}
+                </TouchableOpacity>
                 <TouchableOpacity onPress={() => openEdit(rule)} style={styles.iconBtn} data-testid={`keyword-rule-edit-${rule._id}`}>
                   <Ionicons name="pencil" size={16} color={colors.textSecondary} />
                 </TouchableOpacity>
@@ -264,7 +314,7 @@ export default function KeywordRulesScreen() {
             />
 
             <Text style={styles.fieldLabel}>Color</Text>
-            <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap', marginBottom: 20 }}>
+            <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
               {RULE_COLORS.map(c => (
                 <TouchableOpacity
                   key={c}
@@ -273,6 +323,20 @@ export default function KeywordRulesScreen() {
                   data-testid={`keyword-rule-color-${c.replace('#', '')}`}
                 />
               ))}
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <View style={{ flex: 1, marginRight: 12 }}>
+                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>Instant alert</Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>Push notification the moment a customer says or texts this</Text>
+              </View>
+              <Switch
+                value={formAlert}
+                onValueChange={setFormAlert}
+                trackColor={{ false: colors.surface, true: '#FF9500' }}
+                thumbColor="#fff"
+                data-testid="keyword-rule-alert-switch"
+              />
             </View>
 
             <TouchableOpacity

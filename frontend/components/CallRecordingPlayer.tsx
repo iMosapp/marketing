@@ -16,6 +16,8 @@ type Props = {
   textColor?: string;
   subColor?: string;
   trackColor?: string;
+  onPositionChange?: (ms: number) => void;
+  seekControl?: React.MutableRefObject<((ms: number) => void) | null>;
 };
 
 export const CallRecordingPlayer = ({
@@ -24,6 +26,8 @@ export const CallRecordingPlayer = ({
   textColor = '#1C1C1E',
   subColor = '#8E8E93',
   trackColor = '#E5E5EA',
+  onPositionChange,
+  seekControl,
 }: Props) => {
   const soundRef = useRef<Audio.Sound | null>(null);
   const [loading, setLoading] = useState(false);
@@ -42,15 +46,48 @@ export const CallRecordingPlayer = ({
   const onStatus = (st: any) => {
     if (!st.isLoaded) return;
     setPosition(st.positionMillis || 0);
+    onPositionChange?.(st.positionMillis || 0);
     if (st.durationMillis && isFinite(st.durationMillis)) setDuration(st.durationMillis);
     setPlaying(st.isPlaying);
     if (st.didJustFinish) {
       setPlaying(false);
       setPosition(0);
+      onPositionChange?.(0);
       soundRef.current?.setPositionAsync(0).catch(() => {});
       soundRef.current?.pauseAsync().catch(() => {});
     }
   };
+
+  // Jump to a specific position and play — used by synced transcripts
+  const playFrom = async (ms: number) => {
+    try {
+      if (!soundRef.current) {
+        setLoading(true);
+        setError(false);
+        await Audio.setAudioModeAsync({ playsInSilentModeIOS: true, allowsRecordingIOS: false });
+        const { sound } = await Audio.Sound.createAsync(
+          { uri: url },
+          { shouldPlay: true, positionMillis: ms, rate: rateRef.current, shouldCorrectPitch: true, progressUpdateIntervalMillis: 400 },
+          onStatus
+        );
+        soundRef.current = sound;
+        setLoading(false);
+        setPlaying(true);
+        setPosition(ms);
+        return;
+      }
+      await soundRef.current.setPositionAsync(ms);
+      await soundRef.current.playAsync();
+      setPosition(ms);
+      onPositionChange?.(ms);
+    } catch (e) {
+      console.error('playFrom failed:', e);
+      setLoading(false);
+      setError(true);
+      soundRef.current = null;
+    }
+  };
+  if (seekControl) seekControl.current = playFrom;
 
   const togglePlay = async () => {
     try {

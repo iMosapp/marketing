@@ -370,7 +370,7 @@ async def incoming_message(
         # ── Keyword auto-tagging (fire-and-forget) ──────────────────────────────
         try:
             from services.keyword_tagging import schedule_keyword_tagging
-            schedule_keyword_tagging(user_id, contact_id, Body or "", "sms", str(msg_insert.inserted_id), conversation_id)
+            schedule_keyword_tagging(user_id, contact_id, Body or "", "sms", str(msg_insert.inserted_id), conversation_id, sender="contact")
         except Exception as kt_err:
             logger.warning(f"[KeywordTag] schedule failed: {kt_err}")
 

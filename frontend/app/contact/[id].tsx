@@ -34,7 +34,7 @@ import api from '../../services/api';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
 import { useToast } from '../../components/common/Toast';
 import VoiceInput from '../../components/VoiceInput';
-import { CallRecordingPlayer } from '../../components/CallRecordingPlayer';
+import { CallTranscript } from '../../components/CallTranscript';
 import CampaignJourney from '../../components/CampaignJourney';
 import { SoldWorkflowModal } from '../../components/SoldWorkflowModal';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
@@ -3990,21 +3990,6 @@ function ContactDetailScreen() {
                         )}
                       </View>
 
-                      {/* Recording player — 1x / 1.5x / 2x speeds */}
-                      {call.recording_url ? (
-                        <View style={{ backgroundColor: colors.surface, borderRadius: 10, padding: 10, marginBottom: 8 }}>
-                          <CallRecordingPlayer
-                            url={call.call_sid
-                              ? `${api.defaults.baseURL}/calls/recording/${call.call_sid}`
-                              : `${api.defaults.baseURL}/webhooks/twilio/media-proxy?url=${encodeURIComponent(call.recording_url)}`}
-                            tint={isInbound ? '#007AFF' : '#34C759'}
-                            textColor={colors.text}
-                            subColor={colors.textSecondary}
-                            trackColor={colors.border}
-                          />
-                        </View>
-                      ) : null}
-
                       {/* AI Summary */}
                       {call.ai_summary ? (
                         <View style={{ backgroundColor: '#C9A96210', borderRadius: 10, padding: 10, marginBottom: 8, borderLeftWidth: 3, borderLeftColor: '#C9A962' }}>
@@ -4025,35 +4010,8 @@ function ContactDetailScreen() {
                         </View>
                       ) : null}
 
-                      {/* Full Transcript — speaker-labeled chat view when channels are available */}
-                      {call.transcript_segments?.length ? (
-                        <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8 }}>
-                          <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '700', marginBottom: 6, letterSpacing: 0.5 }}>TRANSCRIPT</Text>
-                          {call.transcript_segments.map((seg: any, si: number) => (
-                            <View key={si} style={{ marginBottom: 8 }} data-testid={`transcript-seg-${si}`}>
-                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: seg.role === 'rep' ? '#C9A962' : '#007AFF' }} />
-                                <Text style={{ color: seg.role === 'rep' ? '#C9A962' : '#007AFF', fontSize: 11, fontWeight: '800' }}>
-                                  {seg.speaker}
-                                </Text>
-                                {seg.start != null && (
-                                  <Text style={{ color: colors.textSecondary, fontSize: 10 }}>
-                                    {Math.floor(seg.start / 60)}:{String(Math.floor(seg.start % 60)).padStart(2, '0')}
-                                  </Text>
-                                )}
-                              </View>
-                              <Text style={{ color: colors.text, fontSize: 12, lineHeight: 17, marginTop: 2, paddingLeft: 12 }}>{seg.text}</Text>
-                            </View>
-                          ))}
-                        </View>
-                      ) : call.transcript ? (
-                        <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 8 }}>
-                          <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '700', marginBottom: 4, letterSpacing: 0.5 }}>TRANSCRIPT</Text>
-                          <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 17 }}>
-                            {call.transcript}
-                          </Text>
-                        </View>
-                      ) : null}
+                      {/* Recording player + synced transcript (tap a line to jump) */}
+                      <CallTranscript call={call} colors={colors} isInbound={isInbound} />
                     </View>
                   );
                 })
