@@ -188,3 +188,11 @@
 - **New Lead Push**: process_inbound_lead pushes assigned rep instantly ("🔥 New Lead — {name}", vehicle + IN STOCK note, deep-link /thread/{conv_id}) via send_push_to_user create_task (additive to intake workflow blast; only fires when a rep is assigned via round-robin/weighted)
 - **Auto Photo Text**: matched vehicle's photo (photo_full_path absolute URL) stored as inbound_leads.media_urls; process_queued_leads passes media_urls to send_sms (MMS) and logs has_media on the message
 - Verified: PATCH monthly_cost 1200 → 30d analytics $1200 per lead/sale; lead media_urls carries Tacoma photo; ROI UI screenshot shows dollar tiles. QA data cleaned (test source keeps $1200 cost as demo)
+
+## Contact Detail Screen Refactor (Aug 21, 2026) — self-tested e2e via screenshots
+- Split monolithic `app/contact/[id].tsx` (5,288 → 2,985 lines) into 12 render-only components under `components/contact/`:
+  HeroSection, EditFormTop, EditFormBottom, FeedTab, DetailsTab, CallsTab, ComposerBar,
+  ShareModals, PickerModals, DateModals, AddTaskModal, GalleryModal.
+- Zero logic/visual changes: all state + handlers stay in parent, components are prop-driven (mirrors thread/[id] refactor pattern).
+- `getEventTitle` moved to `utils/contactHelpers.tsx` (shared by parent + FeedTab); months/getDaysInMonth moved into DateModals.
+- All data-testids preserved verbatim. Verified: Feed/Details/Calls tabs, edit mode, AddTask modal, photo gallery modal, feed date-group collapse — all render + behave identically on preview.

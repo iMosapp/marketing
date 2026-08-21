@@ -41,7 +41,7 @@ import { resolvePhotoUrl } from '../../utils/photoUrl';
 import { getS } from '../../components/contact/contactStyles';
 import {
   getTimeInSystem, getTimeInSystemLabel, formatEventTime, formatDateUTC,
-  QUICK_ACTIONS, EVENT_CATEGORY_ICON, IntelRenderer,
+  QUICK_ACTIONS, EVENT_CATEGORY_ICON, IntelRenderer, getEventTitle,
 } from '../../utils/contactHelpers';
 import { EVENT_TYPE_LABELS, getEventLabel } from '../../utils/eventTypes';
 import PersonalIntelSection from '../../components/PersonalIntelSection';
@@ -49,15 +49,21 @@ import PurchaseHistorySection from '../../components/contact/PurchaseHistorySect
 import ChannelPicker, { useChannelPicker } from '../../components/ChannelPicker';
 import { ContactProvider } from '../../components/contact/ContactContext';
 import { ScreenErrorBoundary } from '../../components/ScreenErrorBoundary';
+import HeroSection from '../../components/contact/HeroSection';
+import EditFormTop from '../../components/contact/EditFormTop';
+import EditFormBottom from '../../components/contact/EditFormBottom';
+import FeedTab from '../../components/contact/FeedTab';
+import DetailsTab from '../../components/contact/DetailsTab';
+import CallsTab from '../../components/contact/CallsTab';
+import ComposerBar from '../../components/contact/ComposerBar';
+import ShareModals from '../../components/contact/ShareModals';
+import PickerModals from '../../components/contact/PickerModals';
+import DateModals from '../../components/contact/DateModals';
+import AddTaskModal from '../../components/contact/AddTaskModal';
+import GalleryModal from '../../components/contact/GalleryModal';
 
 const IS_WEB = Platform.OS === 'web';
 
-function getEventTitle(evt: { title?: string; event_type: string; metadata?: any }): string {
-  // card_headline in metadata wins — set for custom cards since slug v timestamp 
-  if (evt.metadata?.card_headline) return `Viewed '${evt.metadata.card_headline}' Card`;
-  if (evt.title) return evt.title;
-  return getEventLabel(evt.event_type);
-}
 
 interface CustomDateField {
   name: string;
@@ -2420,8 +2426,6 @@ function ContactDetailScreen() {
     !contactEnrollments.some(e => e.campaign_id === c._id && e.status === 'active')
   );
 
-  const getDaysInMonth = (m: number, y: number) => new Date(y, m + 1, 0).getDate();
-  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
   const filteredContacts = allContacts.filter(c => {
     const name = `${c.first_name} ${c.last_name || ''}`.toLowerCase();
@@ -2509,261 +2513,27 @@ function ContactDetailScreen() {
             </View>
           )}
           {/* ===== COMPACT PROFILE HERO ===== */}
-          <View style={[s.heroSection, { backgroundColor: colors.bg }]} data-testid="contact-hero">
-            <View style={s.heroRow}>
-              {/* Left: Avatar */}
-              <View style={s.heroAvatarContainer}>
-                <TouchableOpacity onPress={isEditing ? pickImage : viewFullPhoto} activeOpacity={isEditing ? 0.7 : 0.8} data-testid="contact-avatar-btn">
-                  {contact.photo ? (
-                    <Image source={{ uri: resolvePhotoUrl(contact.photo) }} style={s.heroAvatar} />
-                  ) : (
-                    <View style={s.heroAvatarPlaceholder}>
-                      <Text style={s.heroInitials}>{initials}</Text>
-                    </View>
-                  )}
-                  {isEditing && (
-                    <View style={s.heroCameraBadge}>
-                      <Ionicons name="camera" size={12} color={colors.text} />
-                    </View>
-                  )}
-                </TouchableOpacity>
-                {!isNewContact && stats.total_touchpoints > 0 && (
-                  <View style={s.touchpointBadge} data-testid="touchpoint-badge">
-                    <Text style={s.touchpointBadgeText}>{stats.total_touchpoints}</Text>
-                  </View>
-                )}
-              </View>
-
-              {/* Right: Name + Info */}
-              <View style={s.heroInfo}>
-                <Text style={[s.heroName, { color: colors.text }]} data-testid="contact-name" numberOfLines={1}>{fullName}</Text>
-
-                {/* Vehicle / Product / Highlight */}
-                {contact.vehicle ? (
-                  <View style={s.heroHighlight}>
-                    <Ionicons name="pricetag" size={12} color="#C9A962" />
-                    <Text style={s.heroHighlightText} numberOfLines={1}>{contact.vehicle}</Text>
-                  </View>
-                ) : null}
-
-                {/* Location + Time compact */}
-                <View style={s.heroMetaRow}>
-                  {(contact.address_city || contact.address_state) ? (
-                    <View style={s.heroMetaItem}>
-                      <Ionicons name="location-outline" size={11} color={colors.textTertiary} />
-                      <Text style={s.heroMetaText}>{[contact.address_city, contact.address_state].filter(Boolean).join(', ')}</Text>
-                    </View>
-                  ) : null}
-                  {(contact.occupation || contact.employer || contact.organization_name) ? (
-                    <View style={s.heroMetaItem}>
-                      <Ionicons name="briefcase-outline" size={11} color={colors.textTertiary} />
-                      <Text style={s.heroMetaText}>{[contact.occupation, contact.employer || contact.organization_name].filter(Boolean).join(' at ')}</Text>
-                    </View>
-                  ) : null}
-                  {!isNewContact && (
-                    <View style={s.heroMetaItem}>
-                      <Ionicons name="time-outline" size={11} color={colors.textTertiary} />
-                      <Text style={s.heroMetaText}>{timeValue} {timeLabel} relationship</Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-
-              {/* Phone + Voice Note icons next to contact name */}
-              {!isEditing && !isNewContact && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginLeft: 8 }}>
-                  {/* Click-to-Call */}
-                  <TouchableOpacity
-                    onPress={() => {
-                      const phone = contact?.phone || '';
-                      const name  = contact?.name || `${contact?.first_name || ''} ${contact?.last_name || ''}`.trim();
-                      const cid   = id as string;
-                      if (phone) {
-                        router.push({ pathname: '/call-screen', params: { phone, contact_name: name, contact_id: cid } } as any);
-                      } else {
-                        showSimpleAlert('No Phone', 'This contact has no phone number saved.');
-                      }
-                    }}
-                    activeOpacity={0.7}
-                    style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#007AFF', alignItems: 'center', justifyContent: 'center', shadowColor: '#007AFF', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6, elevation: 4 }}
-                    data-testid="hero-call-btn"
-                  >
-                    <Ionicons name="call" size={20} color="#FFF" />
-                  </TouchableOpacity>
-
-                  {/* Voice Note — green mic button */}
-                  <TouchableOpacity
-                    onPress={isRecording ? stopRecording : startRecording}
-                    activeOpacity={0.7}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: isRecording ? '#FF3B30' : '#34C759', alignItems: 'center', justifyContent: 'center', shadowColor: isRecording ? '#FF3B30' : '#34C759', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6, elevation: 4, zIndex: 10 }}
-                    data-testid="hero-record-btn"
-                  >
-                    <Ionicons name={isRecording ? 'stop' : 'mic'} size={22} color="#FFF" />
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-
-            {/* Compact stats line */}
-            {!isNewContact && (
-              <View style={s.heroStatsLine} data-testid="contact-stats-row">
-                <View style={s.heroStatChip}>
-                  <Text style={s.heroStatVal}>{stats.total_touchpoints}</Text>
-                  <Text style={s.heroStatLbl}>tchs</Text>
-                </View>
-                <Text style={s.heroStatDot}>·</Text>
-                <View style={s.heroStatChip}>
-                  <Text style={s.heroStatVal}>{stats.messages_sent}</Text>
-                  <Text style={s.heroStatLbl}>msgs</Text>
-                </View>
-                <Text style={s.heroStatDot}>·</Text>
-                <View style={s.heroStatChip}>
-                  <Text style={s.heroStatVal}>{stats.link_clicks}</Text>
-                  <Text style={s.heroStatLbl}>clks</Text>
-                </View>
-                <Text style={s.heroStatDot}>·</Text>
-                <View style={s.heroStatChip}>
-                  <Text style={s.heroStatVal}>{stats.campaigns}</Text>
-                  <Text style={s.heroStatLbl}>cmpn</Text>
-                </View>
-                <Text style={s.heroStatDot}>·</Text>
-                <View style={s.heroStatChip}>
-                  <Text style={s.heroStatVal}>{stats.referral_count ?? contact.referral_count}</Text>
-                  <Text style={s.heroStatLbl}>refs</Text>
-                </View>
-              </View>
-            )}
-
-            {/* Linked App Account Card */}
-            {!isNewContact && !isEditing && contact.linked_user_id && (
-              <View
-                style={{
-                  flexDirection: 'row', alignItems: 'center',
-                  backgroundColor: '#007AFF15', borderRadius: 10,
-                  paddingHorizontal: 12, paddingVertical: 8, marginTop: 8,
-                  borderWidth: 1, borderColor: '#007AFF30',
-                }}
-                data-testid="linked-account-card"
-              >
-                <Ionicons name="shield-checkmark" size={18} color="#007AFF" />
-                <View style={{ marginLeft: 8, flex: 1 }}>
-                  <Text style={{ color: '#007AFF', fontWeight: '600', fontSize: 13 }}>
-                    {contact.linked_role ? (contact.linked_role === 'super_admin' ? 'Super Admin' : contact.linked_role === 'org_admin' ? 'Admin' : contact.linked_role === 'store_manager' ? 'Manager' : 'User') : 'User'} Account
-                  </Text>
-                  {(contact.linked_store_name || contact.linked_org_name) && (
-                    <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 1 }}>
-                      {[contact.linked_store_name, contact.linked_org_name].filter(Boolean).join(' · ')}
-                    </Text>
-                  )}
-                </View>
-              </View>
-            )}
-
-            {/* AI Relationship Summary — auto-displays below name when intel is cached */}
-            {!isNewContact && intelData?.summary ? (
-              <View style={{ marginHorizontal: 16, marginTop: 4, marginBottom: 4 }}>
-                <Text
-                  style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18, textAlign: 'center', fontStyle: 'italic' }}
-                  numberOfLines={3}
-                  data-testid="contact-intel-summary"
-                >
-                  {intelData.summary.split('\n')[0]}
-                </Text>
-              </View>
-            ) : null}
-
-            {/* Tags + Automations Strip (merged) */}
-            {!isNewContact && (
-              <View style={s.heroTagsStrip} data-testid="hero-tags-strip">
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingBottom: 4, paddingRight: 16, alignItems: 'center' }}>
-                  {contact.tags.map((tag, i) => {
-                    const info = availableTags.find(t => t.name === tag);
-                    const chipColor = info?.color || colors.textSecondary;
-                    const displayTag = tag === 'imos_user' ? 'User' : tag === 'imos_super_admin' ? 'Super Admin' : tag === 'imos_org_admin' ? 'Admin' : tag === 'imos_store_manager' ? 'Manager' : tag;
-                    return (
-                      <View key={`tag-${i}`} style={[s.heroTagChip, { borderColor: `${chipColor}40`, backgroundColor: `${chipColor}10` }]}>
-                        <Ionicons name={(info?.icon || 'pricetag') as any} size={13} color={chipColor} />
-                        <Text style={[s.heroTagChipText, { color: chipColor }]} numberOfLines={1}>{displayTag}</Text>
-                      </View>
-                    );
-                  })}
-                  {contact.birthday && (() => {
-                    const isPaused = contact.disabled_automations.includes('birthday');
-                    return (
-                    <TouchableOpacity
-                      style={[s.heroTagChip, {
-                        borderColor: isPaused ? '#FF950040' : '#FF2D5540',
-                        backgroundColor: isPaused ? '#FF950008' : '#FF2D5510',
-                        borderStyle: 'dashed',
-                      }]}
-                      onPress={() => handleAutomationChipPress('birthday', 'Birthday', '#FF2D55', contact.birthday)}
-                      activeOpacity={0.7}
-                      data-testid="auto-birthday"
-                    >
-                      {isPaused && <Ionicons name="pause-circle" size={14} color="#FF9500" style={{ marginRight: 1 }} />}
-                      <Ionicons name="gift" size={13} color={isPaused ? '#999' : '#FF2D55'} />
-                      <Text style={[s.heroTagChipText, { color: isPaused ? '#999' : '#FF2D55', textDecorationLine: isPaused ? 'line-through' : 'none' }]} numberOfLines={1}>{formatDateUTC(contact.birthday)}</Text>
-                    </TouchableOpacity>
-                    );
-                  })()}
-                  {contact.anniversary && (() => {
-                    const isPaused = contact.disabled_automations.includes('anniversary');
-                    return (
-                    <TouchableOpacity
-                      style={[s.heroTagChip, {
-                        borderColor: isPaused ? '#FF950040' : '#FF6B6B40',
-                        backgroundColor: isPaused ? '#FF950008' : '#FF6B6B10',
-                        borderStyle: 'dashed',
-                      }]}
-                      onPress={() => handleAutomationChipPress('anniversary', 'Anniversary', '#FF6B6B', contact.anniversary)}
-                      activeOpacity={0.7}
-                      data-testid="auto-anniversary"
-                    >
-                      {isPaused && <Ionicons name="pause-circle" size={14} color="#FF9500" style={{ marginRight: 1 }} />}
-                      <Ionicons name="heart" size={13} color={isPaused ? '#999' : '#FF6B6B'} />
-                      <Text style={[s.heroTagChipText, { color: isPaused ? '#999' : '#FF6B6B', textDecorationLine: isPaused ? 'line-through' : 'none' }]} numberOfLines={1}>{formatDateUTC(contact.anniversary)}</Text>
-                    </TouchableOpacity>
-                    );
-                  })()}
-                  {contact.date_sold && (() => {
-                    const isPaused = contact.disabled_automations.includes('sold_date');
-                    return (
-                    <TouchableOpacity
-                      style={[s.heroTagChip, {
-                        borderColor: isPaused ? '#FF950040' : '#34C75940',
-                        backgroundColor: isPaused ? '#FF950008' : '#34C75910',
-                        borderStyle: 'dashed',
-                      }]}
-                      onPress={() => handleAutomationChipPress('sold_date', 'Sold Date', '#34C759', contact.date_sold)}
-                      activeOpacity={0.7}
-                      data-testid="auto-sold"
-                    >
-                      {isPaused && <Ionicons name="pause-circle" size={14} color="#FF9500" style={{ marginRight: 1 }} />}
-                      <Ionicons name="car-sport" size={13} color={isPaused ? '#999' : '#34C759'} />
-                      <Text style={[s.heroTagChipText, { color: isPaused ? '#999' : '#34C759', textDecorationLine: isPaused ? 'line-through' : 'none' }]} numberOfLines={1}>{formatDateUTC(contact.date_sold)}</Text>
-                    </TouchableOpacity>
-                    );
-                  })()}
-                  {contactEnrollments.map((e, i) => {
-                    const chipColor = e.status === 'completed' ? '#34C759' : '#007AFF';
-                    return (
-                      <View key={`camp-${i}`} style={[s.heroTagChip, { borderColor: `${chipColor}40`, backgroundColor: `${chipColor}10`, borderStyle: 'dashed' }]} data-testid={`campaign-chip-${i}`}>
-                        <Ionicons name={e.status === 'completed' ? 'checkmark-circle' : 'play-circle'} size={13} color={chipColor} />
-                        <Text style={[s.heroTagChipText, { color: chipColor }]} numberOfLines={1}>{e.campaign_name}</Text>
-                        {e.status !== 'completed' && (
-                          <Text style={{ fontSize: 12, color: chipColor, fontWeight: '600' }}>{e.current_step}/{e.total_steps}</Text>
-                        )}
-                      </View>
-                    );
-                  })}
-                  <TouchableOpacity onPress={() => { loadTags(); setShowTagPicker(true); }} style={[s.heroTagChip, { borderColor: '#007AFF40', backgroundColor: '#007AFF08' }]} data-testid="hero-add-tag-btn">
-                    <Ionicons name="add" size={14} color="#007AFF" />
-                  </TouchableOpacity>
-                </ScrollView>
-              </View>
-            )}
-          </View>
+          <HeroSection
+            s={s}
+            colors={colors}
+            contact={contact}
+            stats={stats}
+            isEditing={isEditing}
+            isNewContact={isNewContact}
+            fullName={fullName}
+            initials={initials}
+            intelData={intelData}
+            availableTags={availableTags}
+            contactEnrollments={contactEnrollments}
+            isRecording={isRecording}
+            contactId={id as string}
+            pickImage={pickImage}
+            viewFullPhoto={viewFullPhoto}
+            startRecording={startRecording}
+            stopRecording={stopRecording}
+            handleAutomationChipPress={handleAutomationChipPress}
+            onAddTag={() => { loadTags(); setShowTagPicker(true); }}
+          />
 
           {/* ===== SOLD WIZARD BUTTON ===== */}
           {!isNewContact && !isEditing && !contact.tags.includes('Sold') && (
@@ -2869,1154 +2639,141 @@ function ContactDetailScreen() {
 
           {/* ===== EDIT-MODE: Basic Info + Tags + Important Dates at top ===== */}
           {isEditing && (
-            <>
-              {/* Quick Add - Essential Fields */}
-              <View style={s.section}>
-                {isNewContact && <Text style={[s.sectionHeader, { fontSize: 19, marginBottom: 12 }]}>Quick Add</Text>}
-                {!isNewContact && <Text style={s.sectionHeader}>Basic Info</Text>}
-                <View style={s.inputGroup}>
-                  <Text style={s.inputLabel}>First Name *</Text>
-                  <TextInput style={s.input} placeholder="First name" placeholderTextColor={colors.textTertiary}
-                    value={contact.first_name} onChangeText={t => setContact({ ...contact, first_name: t })} autoFocus={isNewContact} data-testid="input-first-name" />
-                </View>
-                <View style={s.inputGroup}>
-                  <Text style={s.inputLabel}>Last Name</Text>
-                  <TextInput style={s.input} placeholder="Last name" placeholderTextColor={colors.textTertiary}
-                    value={contact.last_name} onChangeText={t => setContact({ ...contact, last_name: t })} data-testid="input-last-name" />
-                </View>
-                <View style={s.inputGroup}>
-                  <Text style={s.inputLabel}>Phone</Text>
-                  <TextInput style={s.input} placeholder="+1 (555) 123-4567" placeholderTextColor={colors.textTertiary}
-                    value={contact.phone} onChangeText={t => setContact({ ...contact, phone: t })} keyboardType="phone-pad" data-testid="input-phone" />
-                </View>
-                <View style={s.inputGroup}>
-                  <Text style={s.inputLabel}>Email</Text>
-                  <TextInput style={s.input} placeholder="email@example.com" placeholderTextColor={colors.textTertiary}
-                    value={contact.email} onChangeText={t => setContact({ ...contact, email: t })} keyboardType="email-address" autoCapitalize="none" data-testid="input-email" />
-                </View>
-              </View>
-
-              {/* Collapsible More Details - Vehicle, Address, Tags, Dates */}
-              {isNewContact && !showMoreDetails && (
-                <TouchableOpacity
-                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, marginHorizontal: 16, marginBottom: 8, borderRadius: 12, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}
-                  onPress={() => setShowMoreDetails(true)}
-                  data-testid="show-more-details-btn"
-                >
-                  <Ionicons name="add-circle-outline" size={20} color="#007AFF" style={{ marginRight: 8 }} />
-                  <Text style={{ fontSize: 17, fontWeight: '600', color: '#007AFF' }}>More Details (optional)</Text>
-                </TouchableOpacity>
-              )}
-
-              {(!isNewContact || showMoreDetails) && (
-                <>
-                  {isNewContact && (
-                    <TouchableOpacity
-                      style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, marginHorizontal: 16, marginBottom: 4 }}
-                      onPress={() => setShowMoreDetails(false)}
-                      data-testid="hide-more-details-btn"
-                    >
-                      <Ionicons name="chevron-up" size={18} color={colors.textSecondary} style={{ marginRight: 6 }} />
-                      <Text style={{ fontSize: 16, color: colors.textSecondary }}>Hide Details</Text>
-                    </TouchableOpacity>
-                  )}
-
-                  <View style={s.section}>
-                    {!isNewContact && <View />}
-                    <View style={s.inputGroup}>
-                      <Text style={s.inputLabel}>Vehicle</Text>
-                      <TextInput style={s.input} placeholder="e.g., 2023 Toyota RAV4" placeholderTextColor={colors.textTertiary}
-                        value={contact.vehicle} onChangeText={t => setContact({ ...contact, vehicle: t })} data-testid="input-vehicle" />
-                    </View>
-                  </View>
-
-                  {/* Employment Section */}
-                  <View style={s.section}>
-                    <Text style={s.sectionHeader}>Employment</Text>
-                    <View style={s.inputGroup}>
-                      <Text style={s.inputLabel}>Organization Name</Text>
-                      <TextInput style={s.input} placeholder="e.g., Hertz, Goldman Sachs" placeholderTextColor={colors.textTertiary}
-                        value={contact.organization_name} onChangeText={t => setContact({ ...contact, organization_name: t })} data-testid="input-organization-name" />
-                    </View>
-                    <View style={s.inputGroup}>
-                      <Text style={s.inputLabel}>Job Title / Occupation</Text>
-                      <TextInput style={s.input} placeholder="e.g., Senior Manager" placeholderTextColor={colors.textTertiary}
-                        value={contact.occupation} onChangeText={t => setContact({ ...contact, occupation: t })} data-testid="input-occupation" />
-                    </View>
-                    <View style={s.inputGroup}>
-                      <Text style={s.inputLabel}>Employer / Company</Text>
-                      <TextInput style={s.input} placeholder="e.g., Goldman Sachs" placeholderTextColor={colors.textTertiary}
-                        value={contact.employer} onChangeText={t => setContact({ ...contact, employer: t })} data-testid="input-employer" />
-                    </View>
-                  </View>
-
-                  {/* Additional Phone Numbers */}
-                  {contact.phones.length > 0 && (
-                    <View style={s.section}>
-                      <Text style={s.sectionHeader}>Additional Phone Numbers</Text>
-                      {contact.phones.map((p, idx) => (
-                        <View key={`phone-${idx}`} style={s.inputGroup}>
-                          <Text style={s.inputLabel}>{p.label || 'Phone'}</Text>
-                          <TextInput style={s.input} value={p.value} keyboardType="phone-pad"
-                            onChangeText={t => {
-                              const updated = [...contact.phones];
-                              updated[idx] = { ...updated[idx], value: t };
-                              setContact({ ...contact, phones: updated });
-                            }}
-                            data-testid={`input-phone-${idx}`} />
-                        </View>
-                      ))}
-                    </View>
-                  )}
-
-                  {/* Additional Email Addresses */}
-                  {contact.emails.length > 0 && (
-                    <View style={s.section}>
-                      <Text style={s.sectionHeader}>Additional Email Addresses</Text>
-                      {contact.emails.map((e, idx) => (
-                        <View key={`email-${idx}`} style={s.inputGroup}>
-                          <Text style={s.inputLabel}>{e.label || 'Email'}</Text>
-                          <TextInput style={s.input} value={e.value} keyboardType="email-address" autoCapitalize="none"
-                            onChangeText={t => {
-                              const updated = [...contact.emails];
-                              updated[idx] = { ...updated[idx], value: t };
-                              setContact({ ...contact, emails: updated });
-                            }}
-                            data-testid={`input-email-${idx}`} />
-                        </View>
-                      ))}
-                    </View>
-                  )}
-
-                  {/* Address Section */}
-                  <View style={s.section}>
-                    <Text style={s.sectionHeader}>Address</Text>
-                    <View style={s.inputGroup}>
-                      <Text style={s.inputLabel}>Street</Text>
-                      <TextInput style={s.input} placeholder="123 Main St" placeholderTextColor={colors.textTertiary}
-                        value={contact.address_street} onChangeText={t => setContact({ ...contact, address_street: t })} data-testid="input-address-street" />
-                    </View>
-                    <View style={{ flexDirection: 'row', gap: 10 }}>
-                      <View style={[s.inputGroup, { flex: 1 }]}>
-                        <Text style={s.inputLabel}>City</Text>
-                        <TextInput style={s.input} placeholder="City" placeholderTextColor={colors.textTertiary}
-                          value={contact.address_city} onChangeText={t => setContact({ ...contact, address_city: t })} data-testid="input-address-city" />
-                      </View>
-                      <View style={[s.inputGroup, { flex: 0.5 }]}>
-                        <Text style={s.inputLabel}>State</Text>
-                        <TextInput style={s.input} placeholder="ST" placeholderTextColor={colors.textTertiary}
-                          value={contact.address_state} onChangeText={t => setContact({ ...contact, address_state: t })} autoCapitalize="characters" data-testid="input-address-state" />
-                      </View>
-                    </View>
-                    <View style={{ flexDirection: 'row', gap: 10 }}>
-                      <View style={[s.inputGroup, { flex: 1 }]}>
-                        <Text style={s.inputLabel}>ZIP Code</Text>
-                        <TextInput style={s.input} placeholder="12345" placeholderTextColor={colors.textTertiary}
-                          value={contact.address_zip} onChangeText={t => setContact({ ...contact, address_zip: t })} keyboardType="number-pad" data-testid="input-address-zip" />
-                      </View>
-                      <View style={[s.inputGroup, { flex: 1 }]}>
-                        <Text style={s.inputLabel}>Country</Text>
-                        <TextInput style={s.input} placeholder="US" placeholderTextColor={colors.textTertiary}
-                          value={contact.address_country} onChangeText={t => setContact({ ...contact, address_country: t })} data-testid="input-address-country" />
-                      </View>
-                    </View>
-                  </View>
-                </>
-              )}
-
-              {/* Tags (edit mode  - at top) */}
-              {(!isNewContact || showMoreDetails) && (
-              <View style={s.section}>
-                <Text style={s.sectionHeader}>Tags</Text>
-                <View style={s.tagsWrap}>
-                  {contact.tags.map((tag, i) => {
-                    const info = availableTags.find(t => t.name === tag);
-                    return (
-                      <View key={i} style={[s.tagPill, info?.color && { borderColor: info.color }]}>
-                        {info?.icon && <Ionicons name={info.icon as any} size={13} color={info.color || colors.textSecondary} />}
-                        <Text style={[s.tagPillText, info?.color && { color: info.color }]}>{tag}</Text>
-                        <TouchableOpacity onPress={() => removeTag(tag)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                          <Ionicons name="close-circle" size={15} color={colors.textSecondary} />
-                        </TouchableOpacity>
-                      </View>
-                    );
-                  })}
-                  <TouchableOpacity style={s.addTagChip} onPress={() => { loadTags(); setShowTagPicker(true); }} data-testid="add-tag-button-top">
-                    <Ionicons name="add" size={16} color="#007AFF" />
-                    <Text style={s.addTagChipText}>Add</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-              )}
-
-              {/* Important Dates (edit mode  - at top) */}
-              {(!isNewContact || showMoreDetails) && (
-              <View style={s.section}>
-                <Text style={s.sectionHeader}>Important Dates</Text>
-                {[
-                  { field: 'birthday', label: 'Birthday', icon: 'gift', color: '#FF9500' },
-                  { field: 'anniversary', label: 'Anniversary', icon: 'heart', color: '#FF2D55' },
-                  { field: 'date_sold', label: 'Date Sold', icon: 'car', color: '#34C759' },
-                ].map(d => (
-                  <TouchableOpacity key={d.field} style={s.dateRow} onPress={() => openDatePicker(d.field, (contact as any)[d.field], d.label)}>
-                    <View style={[s.dateRowIcon, { backgroundColor: `${d.color}20` }]}>
-                      <Ionicons name={d.icon as any} size={18} color={d.color} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.dateRowLabel}>{d.label}</Text>
-                      <Text style={[s.dateRowValue, !(contact as any)[d.field] && { color: colors.textTertiary }]}>
-                        {formatDateDisplay((contact as any)[d.field])}
-                      </Text>
-                    </View>
-                    {(contact as any)[d.field] && (
-                      <TouchableOpacity onPress={() => clearDate(d.field)} style={{ padding: 4, marginRight: 8 }}>
-                        <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
-                      </TouchableOpacity>
-                    )}
-                    <Ionicons name="calendar" size={20} color={colors.textSecondary} />
-                  </TouchableOpacity>
-                ))}
-                {contact.custom_dates.map((cd, i) => (
-                  <TouchableOpacity key={i} style={s.dateRow} onPress={() => openDatePicker(`custom_${i}`, cd.date)}>
-                    <View style={[s.dateRowIcon, { backgroundColor: '#007AFF20' }]}>
-                      <Ionicons name="calendar-outline" size={18} color="#007AFF" />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.dateRowLabel}>{cd.name}</Text>
-                      <Text style={[s.dateRowValue, !cd.date && { color: colors.textTertiary }]}>{formatDateDisplay(cd.date)}</Text>
-                    </View>
-                    <TouchableOpacity onPress={() => removeCustomDateField(i)} style={{ padding: 4 }}>
-                      <Ionicons name="trash-outline" size={18} color="#FF3B30" />
-                    </TouchableOpacity>
-                  </TouchableOpacity>
-                ))}
-                <TouchableOpacity style={s.addBtn} onPress={() => {
-                  setTempDate(new Date()); setActiveDateField('pending_custom');
-                  setActiveDateLabel('Select Date'); setShowDatePicker(true);
-                }}>
-                  <Ionicons name="add-circle" size={20} color="#007AFF" />
-                  <Text style={s.addBtnText}>Add Custom Date</Text>
-                </TouchableOpacity>
-              </View>
-              )}
-            </>
+            <EditFormTop
+              s={s}
+              colors={colors}
+              contact={contact}
+              setContact={setContact}
+              isNewContact={isNewContact}
+              showMoreDetails={showMoreDetails}
+              setShowMoreDetails={setShowMoreDetails}
+              availableTags={availableTags}
+              removeTag={removeTag}
+              onAddTag={() => { loadTags(); setShowTagPicker(true); }}
+              openDatePicker={openDatePicker}
+              formatDateDisplay={formatDateDisplay}
+              clearDate={clearDate}
+              removeCustomDateField={removeCustomDateField}
+              onAddCustomDate={() => {
+                setTempDate(new Date()); setActiveDateField('pending_custom');
+                setActiveDateLabel('Select Date'); setShowDatePicker(true);
+              }}
+            />
           )}
 
           {/* ===== FEED TAB ===== */}
           {!isNewContact && !isEditing && contactTab === 'feed' && (
-            <>
-              {/* Suggested Actions (inline at top of feed) */}
-              {suggestedActions.length > 0 && (
-                <View style={[s.section, { paddingTop: 4 }]} data-testid="suggested-actions">
-                  {suggestedActions.map((action, i) => (
-                    <TouchableOpacity
-                      key={i}
-                      style={s.suggestedCard}
-                      onPress={() => handleSuggestedAction(action)}
-                      activeOpacity={0.7}
-                      data-testid={`suggested-action-${i}`}
-                    >
-                      <View style={[s.suggestedIcon, { backgroundColor: `${action.color}20` }]}>
-                        <Ionicons name={action.icon as any} size={20} color={action.color} />
-                      </View>
-                      <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={s.suggestedTitle}>{action.title}</Text>
-                        <Text style={s.suggestedDesc}>{action.description}</Text>
-                        {action.suggested_message && (
-                          <View style={s.suggestedMsgPreview}>
-                            <Text style={s.suggestedMsgText} numberOfLines={2}>"{action.suggested_message}"</Text>
-                          </View>
-                        )}
-                      </View>
-                      <View style={[s.suggestedArrow, { backgroundColor: `${action.color}15` }]}>
-                        <Ionicons name="arrow-forward" size={16} color={action.color} />
-                      </View>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-
-              {/* AI Intel pill (collapsed) */}
-              <View style={[s.section, { paddingTop: suggestedActions.length > 0 ? 0 : 4 }]} data-testid="relationship-intel">
-                <TouchableOpacity
-                  style={s.intelBtn}
-                  onPress={() => {
-                    if (intelData && !showIntel) { setShowIntel(true); return; }
-                    if (!intelData) { generateIntel(); return; }
-                    setShowIntel(!showIntel);
-                  }}
-                  activeOpacity={0.7}
-                  data-testid="intel-toggle-btn"
-                >
-                  <View style={s.intelBtnLeft}>
-                    <View style={s.intelIcon}>
-                      <Ionicons name="sparkles" size={16} color="#C9A962" />
-                    </View>
-                    <View>
-                      <Text style={s.intelBtnTitle}>Relationship Intel</Text>
-                      {intelData?.generated_at && !showIntel && (
-                        <Text style={s.intelBtnSub}>
-                          Updated {formatEventTime(intelData.generated_at)}
-                        </Text>
-                      )}
-                    </View>
-                  </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <TouchableOpacity
-                      onPress={(e) => {
-                        e.stopPropagation?.();
-                        generateIntel();
-                      }}
-                      style={s.intelUpdateBtn}
-                      data-testid="intel-update-btn"
-                    >
-                      <Ionicons name="refresh" size={13} color="#C9A962" />
-                      <Text style={s.intelUpdateBtnText}>Update</Text>
-                    </TouchableOpacity>
-                    <Ionicons name={showIntel ? 'chevron-up' : 'chevron-forward'} size={18} color={colors.textTertiary} />
-                  </View>
-                </TouchableOpacity>
-
-                {showIntel && (
-                  <View style={s.intelCard}>
-                    {intelGenerating ? (
-                      <View style={s.intelLoading}>
-                        <ActivityIndicator size="small" color="#C9A962" />
-                        <Text style={s.intelLoadingText}>Analyzing relationship history...</Text>
-                      </View>
-                    ) : intelData?.summary ? (
-                      <>
-                        <IntelRenderer text={intelData.summary} />
-                        <View style={s.intelMeta}>
-                          <Text style={s.intelMetaText}>
-                            Based on {intelData.data_points?.messages || 0} messages, {intelData.data_points?.events || 0} events, {intelData.data_points?.voice_notes || 0} voice notes
-                          </Text>
-                          <TouchableOpacity onPress={generateIntel} style={s.intelRefresh} data-testid="intel-refresh-btn">
-                            <Ionicons name="refresh" size={14} color="#007AFF" />
-                            <Text style={s.intelRefreshText}>Refresh</Text>
-                          </TouchableOpacity>
-                        </View>
-                      </>
-                    ) : (
-                      <Text style={s.intelEmpty}>Tap to generate an AI briefing</Text>
-                    )}
-                  </View>
-                )}
-              </View>
-
-              {/* Pinned Notes (view-only, inside feed) */}
-              {contact.notes ? (
-                <View style={[s.section, { paddingTop: 0 }]} data-testid="pinned-notes">
-                  <View style={s.pinnedNote}>
-                    <Ionicons name="document-text" size={14} color="#C9A962" style={{ marginTop: 2 }} />
-                    <Text style={s.pinnedNoteText} numberOfLines={3}>{contact.notes}</Text>
-                  </View>
-                </View>
-              ) : null}
-
-              {/* Task Context Banner — shows when navigating from a task notification */}
-              {taskTitle ? (
-                <View style={s.taskBanner} data-testid="task-context-banner">
-                  <View style={s.taskBannerIcon}>
-                    <Ionicons name="alert-circle" size={20} color="#FF9500" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.taskBannerLabel}>Pending Task</Text>
-                    <Text style={s.taskBannerTitle}>{decodeURIComponent(taskTitle as string)}</Text>
-                    {prefill ? <Text style={s.taskBannerDesc} numberOfLines={2}>{decodeURIComponent(prefill as string)}</Text> : null}
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => router.setParams({ taskTitle: '', taskId: '', prefill: '' })}
-                    style={s.taskBannerClose}
-                    data-testid="task-banner-dismiss"
-                  >
-                    <Ionicons name="close" size={16} color={colors.textSecondary} />
-                  </TouchableOpacity>
-                </View>
-              ) : null}
-
-              {/* Sold Workflow Status */}
-              {!isNewContact && contact.sold_workflow_status && contact.sold_workflow_status !== 'not_applicable' && (
-                <View style={{ marginHorizontal: 16, marginBottom: 12, backgroundColor: colors.card, borderRadius: 12, padding: 14 }} data-testid="sold-workflow-status">
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <Ionicons 
-                        name={
-                          contact.sold_workflow_status === 'delivery_success' ? 'checkmark-circle' :
-                          contact.sold_workflow_status === 'delivery_pending' ? 'time' :
-                          contact.sold_workflow_status === 'validation_failed' ? 'alert-circle' :
-                          contact.sold_workflow_status === 'delivery_failed' ? 'close-circle' : 'help-circle'
-                        }
-                        size={20}
-                        color={
-                          contact.sold_workflow_status === 'delivery_success' ? '#34C759' :
-                          contact.sold_workflow_status === 'delivery_pending' ? '#FF9500' :
-                          contact.sold_workflow_status === 'validation_failed' ? '#FF9500' :
-                          '#FF3B30'
-                        }
-                      />
-                      <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>
-                        Sold Workflow: {contact.sold_workflow_status.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
-                      </Text>
-                    </View>
-                    {(contact.sold_workflow_status === 'validation_failed' || contact.sold_workflow_status === 'delivery_failed') && (
-                      <TouchableOpacity
-                        onPress={() => {
-                          if (contact.sold_workflow_status === 'validation_failed') {
-                            setSoldWorkflowResult({
-                              status: 'validation_failed',
-                              event_id: contact.sold_workflow_event_id,
-                              missing_fields: contact.sold_validation_missing_fields || [],
-                            });
-                            setShowSoldModal(true);
-                          } else {
-                            // Manual retry for delivery_failed
-                            api.post(`/sold-workflow/retry/${contact.sold_workflow_event_id}`, {}, { headers: { 'X-User-ID': user?._id } })
-                              .then(() => { showToast('Delivery retry initiated'); loadContact(); })
-                              .catch(() => showSimpleAlert('Error', 'Retry failed'));
-                          }
-                        }}
-                        style={{ backgroundColor: '#FF950020', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}
-                        data-testid="sold-workflow-retry-btn"
-                      >
-                        <Text style={{ fontSize: 14, fontWeight: '600', color: '#FF9500' }}>
-                          {contact.sold_workflow_status === 'validation_failed' ? 'Fix & Complete' : 'Retry'}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                  {contact.sold_workflow_last_error && (
-                    <Text style={{ fontSize: 14, color: '#FF3B30', marginTop: 6 }}>
-                      {contact.sold_workflow_last_error}
-                    </Text>
-                  )}
-                </View>
-              )}
-
-              {/* Campaign Journey — upcoming campaign activities */}
-              {!isNewContact && user && (
-                <CampaignJourney
-                  userId={user._id}
-                  contactId={id as string}
-                  onEnrollmentRemoved={loadCampaignsAndEnrollments}
-                  onPrePopulateComposer={(msg) => {
-                    setComposerMessage(msg);
-                    setComposerMode('sms');
-                  }}
-                />
-              )}
-
-              {/* Relationship Feed (Activity) */}
-              <View style={[s.section, { paddingTop: 0 }]} data-testid="activity-feed">
-                <View style={s.sectionHeaderRow}>
-                  <Text style={s.sectionHeader}>Activity</Text>
-                  <Text style={s.sectionHeaderCount}>{events.length} events</Text>
-                </View>
-
-                {/* Feed Action Row */}
-                <View style={s.feedActionRow}>
-                  <TouchableOpacity
-                    style={[s.logReplyBtn, { backgroundColor: '#FF950015', borderColor: '#FF950050' }]}
-                    onPress={() => setShowAddTask(true)}
-                    data-testid="add-task-btn"
-                  >
-                    <Ionicons name="add-circle" size={16} color="#FF9500" />
-                    <Text style={[s.logReplyBtnText, { color: '#FF9500' }]}>Add Task</Text>
-                  </TouchableOpacity>
-                  {events.length > 0 && (
-                    <View style={s.feedSearchRowCompact}>
-                      <Ionicons name="search" size={14} color={colors.textTertiary} />
-                      <TextInput
-                        style={s.feedSearchInputCompact}
-                        placeholder="Search..."
-                        placeholderTextColor={colors.textTertiary}
-                        value={feedSearch}
-                        onChangeText={setFeedSearch}
-                        data-testid="feed-search-input"
-                      />
-                      {feedSearch.length > 0 && (
-                        <TouchableOpacity onPress={() => setFeedSearch('')}>
-                          <Ionicons name="close-circle" size={14} color={colors.textTertiary} />
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  )}
-                </View>
-
-                {/* Log Reply Inline Composer  - Chat Bubble Style */}
-                {showLogReply && (
-                  <View style={s.logReplyBubble} data-testid="log-reply-composer">
-                    <View style={s.bubbleTail} />
-                    <View style={s.bubbleHeader}>
-                      <Ionicons name="arrow-down-circle" size={18} color="#30D158" />
-                      <Text style={s.bubbleHeaderText}>Customer said...</Text>
-                      <TouchableOpacity onPress={() => { setShowLogReply(false); setReplyText(''); setReplyPhoto(null); }} style={s.bubbleClose}>
-                        <Ionicons name="close-circle" size={22} color={colors.textTertiary} />
-                      </TouchableOpacity>
-                    </View>
-                    <View style={s.bubbleInputWrap}>
-                      <TextInput
-                        style={s.bubbleInput}
-                        placeholder="Paste what they said..."
-                        placeholderTextColor={colors.textTertiary}
-                        value={replyText}
-                        onChangeText={setReplyText}
-                        multiline
-                        data-testid="log-reply-input"
-                      />
-                    </View>
-                    {replyPhoto && (
-                      <View style={s.bubblePhotoPreview}>
-                        <Image source={{ uri: replyPhoto }} style={s.bubblePhotoThumb} contentFit="cover" />
-                        <TouchableOpacity style={s.bubblePhotoRemove} onPress={() => setReplyPhoto(null)}>
-                          <Ionicons name="close-circle" size={22} color="#FF3B30" />
-                        </TouchableOpacity>
-                      </View>
-                    )}
-                    <View style={s.bubbleFooter}>
-                      <TouchableOpacity style={s.bubblePhotoBtn} onPress={pickReplyPhoto} data-testid="log-reply-photo-btn">
-                        <Ionicons name="image" size={20} color={colors.textTertiary} />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[s.bubbleSaveBtn, (!replyText.trim() && !replyPhoto) && { opacity: 0.35 }]}
-                        onPress={handleLogReply}
-                        disabled={(!replyText.trim() && !replyPhoto) || submittingReply}
-                        data-testid="log-reply-submit"
-                      >
-                        {submittingReply ? (
-                          <ActivityIndicator size="small" color={colors.text} />
-                        ) : (
-                          <>
-                            <Text style={s.bubbleSaveText}>Save Reply</Text>
-                            <Ionicons name="arrow-up-circle" size={22} color={colors.text} />
-                          </>
-                        )}
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
-
-                {eventsLoading ? (
-                  <ActivityIndicator size="small" color="#C9A962" style={{ marginTop: 16 }} />
-                ) : filteredEvents.length === 0 ? (
-                  <View style={s.emptyFeed}>
-                    <Ionicons name={feedQuery ? 'search-outline' : 'time-outline'} size={36} color={colors.surface} />
-                    <Text style={s.emptyFeedText}>{feedQuery ? 'No matching events' : 'No activity yet'}</Text>
-                    <Text style={s.emptyFeedSub}>{feedQuery ? 'No results for "' + feedSearch + '"' : 'Send a message or enroll in a campaign to get started'}</Text>
-                  </View>
-                ) : (
-                  <View style={s.feedTimeline}>
-                    {(() => {
-                      const ENGAGEMENT_SET = new Set(['digital_card_viewed', 'showcase_viewed', 'link_page_viewed', 'link_clicked', 'review_link_clicked', 'congrats_card_viewed', 'review_page_viewed', 'training_video_clicked']);
-                      const MILESTONE_SET = new Set(['new_contact_added', 'campaign_enrolled', 'review_submitted', 'referral_made']);
-                      const PHOTO_SET = new Set(['congrats_card_sent', 'birthday_card_sent', 'anniversary_card_sent', 'holiday_card_sent', 'thank_you_card_sent', 'thankyou_card_sent', 'welcome_card_sent', 'delivery_photo']);
-                      const ENG_LABELS: Record<string, string> = {
-                        digital_card_viewed: 'Customer viewed your digital card',
-                        showcase_viewed: 'Customer viewed your showcase',
-                        link_page_viewed: 'Customer visited your link page',
-                        link_clicked: 'Customer clicked your link',
-                        review_link_clicked: 'Customer clicked your review link',
-                        congrats_card_viewed: 'Customer opened your congrats card',
-                        review_page_viewed: 'Customer viewed your review page',
-                        training_video_clicked: 'Customer watched a training video',
-                      };
-                      const MILE_META: Record<string, { icon: string; color: string; label: string }> = {
-                        new_contact_added: { icon: 'person-add', color: '#007AFF', label: 'Relationship Started' },
-                        campaign_enrolled: { icon: 'rocket', color: '#AF52DE', label: 'Campaign Launched' },
-                        review_submitted: { icon: 'star', color: '#FFD60A', label: 'Review Received' },
-                        referral_made: { icon: 'people', color: '#34C759', label: 'Referral Connection' },
-                      };
-                      let runningCount = 0;
-                      return eventDateGroups.map((group, gi) => {
-                      const isCollapsed = collapsedDateGroups[group.label] === true;
-                      const groupEvents = group.events; // Show ALL events — no artificial cap
-                      if (groupEvents.length === 0) return null;
-                      return (
-                        <View key={group.label}>
-                          <TouchableOpacity
-                            style={s.feedDateHeader}
-                            onPress={() => setCollapsedDateGroups(prev => ({ ...prev, [group.label]: !prev[group.label] }))}
-                            activeOpacity={0.7}
-                            data-testid={`feed-date-${group.label}`}
-                          >
-                            <View style={s.feedDateLine} />
-                            <Text style={s.feedDateText}>{group.label}</Text>
-                            <Text style={s.feedDateCount}>{group.events.length}</Text>
-                            <Ionicons name={isCollapsed ? 'chevron-down' : 'chevron-up'} size={14} color={colors.textTertiary} />
-                            <View style={s.feedDateLine} />
-                          </TouchableOpacity>
-
-                          {!isCollapsed && (
-                            <View style={{ marginHorizontal: 4, marginBottom: 8, borderRadius: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, overflow: 'hidden' }}>
-                          {groupEvents.map((evt, i) => {
-                      const evtKey = `${group.label}-${i}`;
-                      const isExpanded = expandedEvents[evtKey] === true;
-                      const isInbound = evt.direction === 'inbound' || evt.event_type === 'customer_reply';
-                      const et = evt.event_type;
-                      const catStyle = EVENT_CATEGORY_ICON[evt.category] || EVENT_CATEGORY_ICON.custom;
-                      const isCustomerAction = ENGAGEMENT_SET.has(et) || isInbound || evt.category === 'customer_activity';
-
-                      // ── Clean, unified row (Activity-tab style) ────────────────
-                      const rowColor  = isCustomerAction ? '#34C759' : (MILESTONE_SET.has(et) ? '#C9A962' : '#007AFF');
-                      const rowIcon   = (evt.icon || catStyle.icon || (isInbound ? 'arrow-down-circle' : 'flag')) as any;
-
-                      // Clean label — no "Customer:" / "You:" prefix
-                      let cleanLabel = getEventTitle(evt);
-                      if (!cleanLabel) cleanLabel = et.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-
-                      const hasDetail = !!(evt.description || evt.full_content);
-                      const isLast = i === groupEvents.length - 1;
-
-                      return (
-                        <TouchableOpacity
-                          key={evtKey}
-                          activeOpacity={hasDetail ? 0.6 : 1}
-                          onPress={() => hasDetail && setExpandedEvents(prev => ({ ...prev, [evtKey]: !prev[evtKey] }))}
-                          style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            paddingVertical: 10,
-                            paddingHorizontal: 8,
-                            borderBottomWidth: isLast ? 0 : 0.5,
-                            borderBottomColor: colors.border,
-                          }}
-                          data-testid={`feed-event-${evtKey}`}
-                        >
-                          {/* Icon */}
-                          <View style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: rowColor + '18', alignItems: 'center', justifyContent: 'center', marginRight: 10, flexShrink: 0 }}>
-                            <Ionicons name={rowIcon} size={14} color={rowColor} />
-                          </View>
-
-                          {/* Label + optional expanded content */}
-                          <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 14, fontWeight: '500', color: colors.text }} numberOfLines={isExpanded ? undefined : 1}>
-                              {cleanLabel}
-                            </Text>
-                            {isExpanded && hasDetail && (
-                              <View style={{ marginTop: 6, padding: 10, borderRadius: 10, backgroundColor: colors.surface }}>
-                                <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 19 }}>
-                                  {evt.full_content || evt.description}
-                                </Text>
-                                {evt.has_photo && (
-                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                                    <Ionicons name="image" size={13} color={rowColor} />
-                                    <Text style={{ fontSize: 12, color: rowColor }}>Photo attached</Text>
-                                  </View>
-                                )}
-                                {evt.link && (
-                                  <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 }} onPress={() => router.push(evt.link as any)}>
-                                    <Ionicons name="open-outline" size={14} color="#007AFF" />
-                                    <Text style={{ fontSize: 13, fontWeight: '600', color: '#007AFF' }}>View Card</Text>
-                                  </TouchableOpacity>
-                                )}
-                              </View>
-                            )}
-                          </View>
-
-                          {/* Time + optional expand chevron */}
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 8 }}>
-                            <Text style={{ fontSize: 12, color: colors.textTertiary }}>{formatEventTime(evt.timestamp)}</Text>
-                            {hasDetail ? <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={12} color={colors.textTertiary} /> : null}
-                          </View>
-                        </TouchableOpacity>
-                      );
-                    })}
-                            </View>
-                          )}
-                        </View>
-                      );
-                    });
-                    })()}
-                    {/* Load Older History button */}
-                    {hasMoreEvents && (
-                      <TouchableOpacity
-                        style={s.showMoreBtn}
-                        onPress={loadMoreEvents}
-                        disabled={loadingMoreEvents}
-                        data-testid="load-more-events-button"
-                      >
-                        {loadingMoreEvents ? (
-                          <ActivityIndicator size="small" color="#007AFF" />
-                        ) : (
-                          <>
-                            <Ionicons name="time-outline" size={16} color="#007AFF" />
-                            <Text style={s.showMoreText}>Load Older History</Text>
-                          </>
-                        )}
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                )}
-              </View>
-
-              {/* Conversations Link */}
-              <TouchableOpacity
-                style={s.conversationLink}
-                onPress={async () => {
-                  // Get the actual conversation ID (not contact ID) so thread loads messages correctly
-                  try {
-                    const conv = await messagesAPI.createConversation(user._id, {
-                      contact_id: id as string,
-                      contact_phone: contact?.phone || undefined,
-                    });
-                    const conversationId = conv._id || conv.id;
-                    router.push({
-                      pathname: `/thread/${conversationId}`,
-                      params: {
-                        contact_name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
-                        contact_phone: contact.phone || '',
-                        contact_email: contact.email || contact.email_work || '',
-                      }
-                    });
-                  } catch {
-                    // Fallback to contact ID
-                    router.push({
-                      pathname: `/thread/${id}`,
-                      params: {
-                        contact_name: `${contact.first_name} ${contact.last_name || ''}`.trim(),
-                        contact_phone: contact.phone || '',
-                        contact_email: contact.email || contact.email_work || '',
-                      }
-                    });
-                  }
-                }}
-                data-testid="go-to-conversation"
-              >
-                <View style={[s.quickActionIcon, { backgroundColor: '#007AFF20' }]}>
-                  <Ionicons name="chatbubbles" size={20} color="#007AFF" />
-                </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={s.conversationLinkTitle}>View Conversation</Text>
-                  <Text style={s.conversationLinkSub}>Open full message thread</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </>
+            <FeedTab
+              s={s}
+              colors={colors}
+              contact={contact}
+              user={user}
+              contactId={id as string}
+              isNewContact={isNewContact}
+              suggestedActions={suggestedActions}
+              handleSuggestedAction={handleSuggestedAction}
+              intelData={intelData}
+              showIntel={showIntel}
+              setShowIntel={setShowIntel}
+              intelGenerating={intelGenerating}
+              generateIntel={generateIntel}
+              taskTitle={taskTitle}
+              prefill={prefill}
+              setSoldWorkflowResult={setSoldWorkflowResult}
+              setShowSoldModal={setShowSoldModal}
+              loadContact={loadContact}
+              showToast={showToast}
+              loadCampaignsAndEnrollments={loadCampaignsAndEnrollments}
+              setComposerMessage={setComposerMessage}
+              setComposerMode={setComposerMode}
+              events={events}
+              feedSearch={feedSearch}
+              setFeedSearch={setFeedSearch}
+              feedQuery={feedQuery}
+              filteredEvents={filteredEvents}
+              eventDateGroups={eventDateGroups}
+              eventsLoading={eventsLoading}
+              expandedEvents={expandedEvents}
+              setExpandedEvents={setExpandedEvents}
+              collapsedDateGroups={collapsedDateGroups}
+              setCollapsedDateGroups={setCollapsedDateGroups}
+              hasMoreEvents={hasMoreEvents}
+              loadMoreEvents={loadMoreEvents}
+              loadingMoreEvents={loadingMoreEvents}
+              showLogReply={showLogReply}
+              setShowLogReply={setShowLogReply}
+              replyText={replyText}
+              setReplyText={setReplyText}
+              replyPhoto={replyPhoto}
+              setReplyPhoto={setReplyPhoto}
+              submittingReply={submittingReply}
+              handleLogReply={handleLogReply}
+              pickReplyPhoto={pickReplyPhoto}
+              setShowAddTask={setShowAddTask}
+            />
           )}
 
           {/* ===== DETAILS TAB ===== */}
           {!isNewContact && !isEditing && contactTab === 'details' && (
-            <>
-              {/* Voice Notes — full history, all visible */}
-              <View style={[s.section, { paddingTop: 4 }]} data-testid="voice-notes-section">
-                  <View style={s.sectionHeaderRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.sectionHeader}>Relationship Voice Memos</Text>
-                      <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
-                        Spouse · Kids · Pets · Hobbies · What matters to them
-                      </Text>
-                    </View>
-                    <Text style={s.sectionHeaderCount}>{voiceNotes.length}</Text>
-                  </View>
-
-                  {isRecording ? (
-                    <View style={s.vnRecording} data-testid="voice-recording-indicator">
-                      <View style={s.vnRecordingDot} />
-                      <Text style={s.vnRecordingTime}>{formatRecordingTime(recordingTime)}</Text>
-                      <Text style={s.vnRecordingLimit}>/ {formatRecordingTime(MAX_RECORDING_SECONDS)}</Text>
-                      <TouchableOpacity style={s.vnStopBtn} onPress={stopRecording} data-testid="stop-recording-btn">
-                        <Ionicons name="stop" size={18} color={colors.text} />
-                        <Text style={s.vnStopText}>Stop</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : uploadingVoiceNote ? (
-                    <View style={s.vnRecording}>
-                      <ActivityIndicator size="small" color="#34C759" />
-                      <Text style={[s.vnRecordingTime, { marginLeft: 8 }]}>Saving & transcribing...</Text>
-                    </View>
-                  ) : (
-                    <TouchableOpacity style={s.vnRecordBtn} onPress={startRecording} data-testid="start-recording-btn">
-                      <Ionicons name="mic" size={20} color="#34C759" />
-                      <Text style={s.vnRecordText}>Record a Voice Note</Text>
-                    </TouchableOpacity>
-                  )}
-
-                  {voiceNotesLoading ? (
-                    <ActivityIndicator size="small" color="#C9A962" style={{ marginTop: 12 }} />
-                  ) : voiceNotes.length > 0 ? (
-                    <View style={{ marginTop: 12 }}>
-                      {(showAllNotes ? voiceNotes : voiceNotes.slice(0, 1)).map((note, i) => {
-                        const isPlaying = playingNoteId === note.id;
-                        return (
-                          <View key={note.id} style={s.vnCard} data-testid={`voice-note-${i}`}>
-                            <View style={s.vnCardHeader}>
-                              <TouchableOpacity
-                                style={[s.vnPlayBtn, isPlaying && s.vnPlayBtnActive]}
-                                onPress={() => playVoiceNote(note.id, note.audio_url)}
-                                data-testid={`play-voice-note-${i}`}
-                              >
-                                <Ionicons name={isPlaying ? 'pause' : 'play'} size={16} color={isPlaying ? '#000' : '#34C759'} />
-                              </TouchableOpacity>
-                              <View style={{ flex: 1, marginLeft: 10 }}>
-                                <Text style={s.vnCardDate}>{formatEventTime(note.created_at)}</Text>
-                                <Text style={s.vnCardDuration}>{formatRecordingTime(Math.round(note.duration))}</Text>
-                              </View>
-                              <TouchableOpacity
-                                onPress={(e) => {
-                                  e.stopPropagation?.();
-                                  deleteVoiceNote(note.id);
-                                }}
-                                style={{ padding: 12, margin: -8, zIndex: 10 }}
-                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                                data-testid={`delete-voice-note-${i}`}
-                              >
-                                <Ionicons name="trash-outline" size={18} color="#FF3B30" />
-                              </TouchableOpacity>
-                            </View>
-                            {note.transcript ? (
-                              <Text style={s.vnTranscript}>
-                                {note.transcript}
-                              </Text>
-                            ) : (
-                              <Text style={[s.vnTranscript, { fontStyle: 'italic', color: colors.textTertiary }]}>Transcribing...</Text>
-                            )}
-                            {note.transcript && (
-                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
-                                <Ionicons name="sparkles" size={11} color="#AF52DE" />
-                                <Text style={{ fontSize: 11, color: '#AF52DE', fontStyle: 'italic' }}>AI has learned from this memo</Text>
-                              </View>
-                            )}
-                          </View>
-                        );
-                      })}
-                    </View>
-                  ) : null}
-                </View>
-
-              {/* Personal Intelligence (from voice memo extraction) */}
-              <PersonalIntelSection contactId={id as string} userId={user?._id || ''} colors={colors} />
-
-              {/* Purchase History */}
-              {!isNewContact && (
-                <PurchaseHistorySection
-                  contactId={id as string}
-                  userId={user?._id || ''}
-                  colors={colors}
-                />
-              )}
-
-              {/* Notes (editable view in details) */}
-              {contact.notes ? (
-                <View style={s.section}>
-                  <Text style={s.sectionHeader}>Notes</Text>
-                  <Text style={s.viewText}>{contact.notes}</Text>
-                </View>
-              ) : null}
-
-              {/* Important Dates */}
-              {(contact.birthday || contact.anniversary || contact.date_sold || contact.custom_dates.length > 0) && (
-                <View style={s.section}>
-                  <Text style={s.sectionHeader}>Important Dates</Text>
-                  {contact.birthday && (
-                    <View style={s.viewRow}>
-                      <Ionicons name="gift" size={16} color="#FF9500" />
-                      <Text style={s.viewRowLabel}>Birthday</Text>
-                      <Text style={s.viewRowValue}>{format(contact.birthday, 'MMM d, yyyy')}</Text>
-                    </View>
-                  )}
-                  {contact.anniversary && (
-                    <View style={s.viewRow}>
-                      <Ionicons name="heart" size={16} color="#FF2D55" />
-                      <Text style={s.viewRowLabel}>Anniversary</Text>
-                      <Text style={s.viewRowValue}>{format(contact.anniversary, 'MMM d, yyyy')}</Text>
-                    </View>
-                  )}
-                  {contact.date_sold && (
-                    <View style={s.viewRow}>
-                      <Ionicons name="car" size={16} color="#34C759" />
-                      <Text style={s.viewRowLabel}>Date Sold</Text>
-                      <Text style={s.viewRowValue}>{format(contact.date_sold, 'MMM d, yyyy')}</Text>
-                    </View>
-                  )}
-                  {contact.custom_dates.map((cd, i) => cd.date && (
-                    <View key={i} style={s.viewRow}>
-                      <Ionicons name="calendar-outline" size={16} color="#007AFF" />
-                      <Text style={s.viewRowLabel}>{cd.name}</Text>
-                      <Text style={s.viewRowValue}>{format(cd.date, 'MMM d, yyyy')}</Text>
-                    </View>
-                  ))}
-
-                  {/* Opt-in toggles: date sends fire ONLY when these are ON */}
-                  {(() => {
-                    const tl = (contact.tags || []).map((t: string) => (t || '').toLowerCase());
-                    const bOn = tl.includes('birthday');
-                    const aOn = tl.includes('anniversary');
-                    return (
-                      <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: 'rgba(128,128,128,0.15)' }}>
-                        {contact.birthday && (
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }} data-testid="birthday-optin-row">
-                            <Ionicons name={bOn ? 'notifications' : 'notifications-off'} size={16} color={bOn ? '#34C759' : '#8E8E93'} />
-                            <View style={{ flex: 1 }}>
-                              <Text style={s.viewRowLabel} numberOfLines={1}>Birthday text + card</Text>
-                              <Text style={{ fontSize: 11, color: '#8E8E93' }} numberOfLines={1}>
-                                {bOn ? 'Sends automatically on their birthday' : 'OFF — nothing sends'}
-                              </Text>
-                            </View>
-                            <Switch
-                              value={bOn}
-                              onValueChange={(v) => toggleDateOptin('birthday', v)}
-                              trackColor={{ false: 'rgba(128,128,128,0.3)', true: '#34C75966' }}
-                              thumbColor={bOn ? '#34C759' : '#f4f3f4'}
-                              data-testid="birthday-optin-switch"
-                            />
-                          </View>
-                        )}
-                        {(contact.date_sold || contact.anniversary) && (
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 }} data-testid="anniversary-optin-row">
-                            <Ionicons name={aOn ? 'notifications' : 'notifications-off'} size={16} color={aOn ? '#34C759' : '#8E8E93'} />
-                            <View style={{ flex: 1 }}>
-                              <Text style={s.viewRowLabel} numberOfLines={1}>Anniversary text + card</Text>
-                              <Text style={{ fontSize: 11, color: '#8E8E93' }} numberOfLines={1}>
-                                {aOn ? 'Sends yearly with their car photo' : 'OFF — nothing sends'}
-                              </Text>
-                            </View>
-                            <Switch
-                              value={aOn}
-                              onValueChange={(v) => toggleDateOptin('anniversary', v)}
-                              trackColor={{ false: 'rgba(128,128,128,0.3)', true: '#34C75966' }}
-                              thumbColor={aOn ? '#34C759' : '#f4f3f4'}
-                              data-testid="anniversary-optin-switch"
-                            />
-                          </View>
-                        )}
-                      </View>
-                    );
-                  })()}
-                </View>
-              )}
-
-              {/* Referrals */}
-              {(contact.referred_by_name || referrals.length > 0) && (
-                <View style={s.section}>
-                  <Text style={s.sectionHeader}>Referrals</Text>
-                  {contact.referred_by_name && (
-                    <View style={s.viewRow}>
-                      <Ionicons name="people" size={16} color="#34C759" />
-                      <Text style={s.viewRowLabel}>Referred by</Text>
-                      <Text style={s.viewRowValue}>{contact.referred_by_name}</Text>
-                    </View>
-                  )}
-                  {contact.referral_count > 0 && (
-                    <View style={s.viewRow}>
-                      <Ionicons name="trophy" size={16} color="#FF9500" />
-                      <Text style={s.viewRowLabel}>Referred</Text>
-                      <Text style={s.viewRowValue}>{contact.referral_count} customer{contact.referral_count > 1 ? 's' : ''}</Text>
-                    </View>
-                  )}
-                  {referrals.map(r => (
-                    <TouchableOpacity key={r._id} style={s.referralItem} onPress={() => router.push(`/contact/${r._id}`)}>
-                      <View style={s.referralAvatar}><Text style={s.referralAvatarText}>{r.first_name?.[0]}{r.last_name?.[0]}</Text></View>
-                      <Text style={s.referralName}>{r.first_name} {r.last_name || ''}</Text>
-                      <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-
-              {/* Campaigns */}
-              {contactEnrollments.length > 0 && (
-                <View style={s.section}>
-                  <Text style={s.sectionHeader}>Campaigns</Text>
-                  {contactEnrollments.map((e, i) => (
-                    <View key={i} style={s.campaignCard}>
-                      <View style={[s.quickActionIcon, { backgroundColor: e.status === 'completed' ? '#34C75920' : '#007AFF20' }]}>
-                        <Ionicons name={e.status === 'completed' ? 'checkmark-circle' : 'play-circle'} size={18}
-                          color={e.status === 'completed' ? '#34C759' : '#007AFF'} />
-                      </View>
-                      <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={s.campaignName}>{e.campaign_name}</Text>
-                        <Text style={s.campaignSub}>
-                          {e.status === 'completed' ? 'Completed' : `Step ${e.current_step} of ${e.total_steps}`}
-                        </Text>
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              )}
-            </>
+            <DetailsTab
+              s={s}
+              colors={colors}
+              contact={contact}
+              contactId={id as string}
+              userId={user?._id || ''}
+              isNewContact={isNewContact}
+              voiceNotes={voiceNotes}
+              voiceNotesLoading={voiceNotesLoading}
+              isRecording={isRecording}
+              recordingTime={recordingTime}
+              uploadingVoiceNote={uploadingVoiceNote}
+              playingNoteId={playingNoteId}
+              showAllNotes={showAllNotes}
+              startRecording={startRecording}
+              stopRecording={stopRecording}
+              playVoiceNote={playVoiceNote}
+              deleteVoiceNote={deleteVoiceNote}
+              formatRecordingTime={formatRecordingTime}
+              maxRecordingSeconds={MAX_RECORDING_SECONDS}
+              referrals={referrals}
+              contactEnrollments={contactEnrollments}
+              toggleDateOptin={toggleDateOptin}
+            />
           )}
 
           {/* ===== REMAINING EDIT FIELDS ===== */}
           {isEditing && (
-            <>
-              {/* Referral */}
-              <View style={s.section}>
-                <Text style={s.sectionHeader}>Referral</Text>
-                <TouchableOpacity style={s.dateRow} onPress={() => { loadAllContacts(); setShowReferralPicker(true); }}>
-                  <View style={[s.dateRowIcon, { backgroundColor: '#34C75920' }]}>
-                    <Ionicons name="people" size={18} color="#34C759" />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.dateRowLabel}>Referred By</Text>
-                    <Text style={[s.dateRowValue, !contact.referred_by_name && { color: colors.textTertiary }]}>
-                      {contact.referred_by_name || 'Select referrer'}
-                    </Text>
-                  </View>
-                  {contact.referred_by ? (
-                    <TouchableOpacity onPress={clearReferrer} style={{ padding: 4 }}>
-                      <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
-                    </TouchableOpacity>
-                  ) : (
-                    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                  )}
-                </TouchableOpacity>
-                {contact.referred_by && (
-                  <View style={s.inputGroup}>
-                    <Text style={s.inputLabel}>Referral Notes</Text>
-                    <TextInput style={s.input} placeholder="How did they refer?" placeholderTextColor={colors.textTertiary}
-                      value={contact.referral_notes} onChangeText={t => setContact({ ...contact, referral_notes: t })} />
-                  </View>
-                )}
-              </View>
-
-              {/* Notes */}
-              <View style={s.section}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Text style={[s.sectionHeader, { marginBottom: 0 }]}>Notes</Text>
-                  <VoiceInput
-                    onTranscription={(text: string) => setContact({ ...contact, notes: contact.notes + ' ' + text })}
-                    size="small" color={colors.textSecondary}
-                  />
-                </View>
-                <TextInput style={[s.input, { minHeight: 100, textAlignVertical: 'top', marginTop: 8 }]}
-                  placeholder="Add notes..." placeholderTextColor={colors.textTertiary} value={contact.notes}
-                  onChangeText={t => setContact({ ...contact, notes: t })} multiline data-testid="input-notes" />
-              </View>
-
-              {/* Convert to User (super_admin only) */}
-              {!isNewContact && user?.role === 'super_admin' && (
-                <TouchableOpacity
-                  onPress={() => {
-                    const fullName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim();
-                    showConfirm(
-                      'Convert to User',
-                      `Create a user account for ${fullName}? This will let them log into I'm On Social.`,
-                      () => {
-                        router.push({
-                          pathname: '/admin/users' as any,
-                          params: {
-                            importName: fullName,
-                            importEmail: contact.email || '',
-                            importPhone: contact.phone || '',
-                            importContactId: id as string,
-                          },
-                        });
-                      }
-                    );
-                  }}
-                  style={[s.deleteBtn, { borderColor: '#007AFF40', marginBottom: 8 }]}
-                  data-testid="convert-to-user-btn"
-                >
-                  <Ionicons name="person-add-outline" size={18} color="#007AFF" />
-                  <Text style={[s.deleteBtnText, { color: '#007AFF' }]}>Convert to User Account</Text>
-                </TouchableOpacity>
-              )}
-
-              {/* Delete */}
-              {!isNewContact && (
-                <TouchableOpacity onPress={handleDelete} style={s.deleteBtn} data-testid="delete-contact-button">
-                  <Ionicons name="trash-outline" size={18} color="#FF3B30" />
-                  <Text style={s.deleteBtnText}>Delete Contact</Text>
-                </TouchableOpacity>
-              )}
-            </>
+            <EditFormBottom
+              s={s}
+              colors={colors}
+              contact={contact}
+              setContact={setContact}
+              isNewContact={isNewContact}
+              user={user}
+              contactId={id as string}
+              onPickReferrer={() => { loadAllContacts(); setShowReferralPicker(true); }}
+              clearReferrer={clearReferrer}
+              handleDelete={handleDelete}
+            />
           )}
 
           {/* ===== CALLS TAB ===== */}
           {!isNewContact && !isEditing && contactTab === 'calls' && (
-            <View style={{ padding: 16 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-                  {callLogs.length} call{callLogs.length !== 1 ? 's' : ''}
-                </Text>
-                <TouchableOpacity
-                  onPress={async () => {
-                    setCallLogsLoading(true);
-                    try {
-                      const res = await api.get(`/calls/${user?._id}/contact/${id}`);
-                      const all = [...(res.data.recordings || []), ...(res.data.calls || [])];
-                      all.sort((a: any, b: any) => { try { return new Date(b.timestamp||b.created_at||0).getTime() - new Date(a.timestamp||a.created_at||0).getTime(); } catch { return 0; } });
-                      setCallLogs(all);
-                    } catch {}
-                    setCallLogsLoading(false);
-                  }}
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-                  data-testid="refresh-calls-btn"
-                >
-                  <Ionicons name="refresh" size={14} color={colors.accent} />
-                  <Text style={{ color: colors.accent, fontSize: 13, fontWeight: '600' }}>Refresh</Text>
-                </TouchableOpacity>
-              </View>
-              {callLogsLoading ? (
-                <View style={{ alignItems: 'center', padding: 40 }}>
-                  <ActivityIndicator size="large" color={colors.accent} />
-                  <Text style={{ color: colors.textSecondary, marginTop: 8 }}>Loading call history...</Text>
-                </View>
-              ) : callLogs.length === 0 ? (
-                <View style={{ alignItems: 'center', padding: 40 }}>
-                  <Ionicons name="call-outline" size={48} color={colors.textSecondary} />
-                  <Text style={{ color: colors.text, fontSize: 17, fontWeight: '600', marginTop: 12 }}>No calls yet</Text>
-                  <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 4, textAlign: 'center' }}>
-                    Call logs and AI summaries will appear here after calls are made or received.
-                  </Text>
-                </View>
-              ) : (
-                callLogs.map((call: any, i: number) => {
-                  const ts = call.timestamp || call.created_at;
-                  const date = ts ? new Date(ts).toLocaleString() : '';
-                  const dur = call.duration_s || call.duration || 0;
-                  const durStr = dur > 0 ? `${Math.floor(dur/60)}m ${dur%60}s` : '';
-                  const isInbound = (call.direction || '').includes('inbound');
-                  const hasData = !!(call.ai_summary || call.transcript);
-                  const isRecent = ts && (Date.now() - new Date(ts).getTime()) < 10 * 60 * 1000; // < 10 min
-
-                  return (
-                    <View key={`call-${i}`} style={{ backgroundColor: colors.card, borderRadius: 14, padding: 14, marginBottom: 12 }}>
-                      {/* Header */}
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                        <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: isInbound ? '#007AFF20' : '#34C75920', alignItems: 'center', justifyContent: 'center' }}>
-                          <Ionicons name={isInbound ? 'call-outline' : 'call'} size={17} color={isInbound ? '#007AFF' : '#34C759'} />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ color: colors.text, fontWeight: '700', fontSize: 15 }}>
-                            {isInbound ? 'Inbound call' : 'Outbound call'}{durStr ? ` — ${durStr}` : ''}
-                          </Text>
-                          <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 1 }}>{date}</Text>
-                        </View>
-                        {!hasData && isRecent && (
-                          <View style={{ backgroundColor: '#FF950015', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
-                            <Text style={{ fontSize: 10, color: '#FF9500', fontWeight: '700' }}>PROCESSING</Text>
-                          </View>
-                        )}
-                      </View>
-
-                      {/* AI Summary */}
-                      {call.ai_summary ? (
-                        <View style={{ backgroundColor: '#C9A96210', borderRadius: 10, padding: 10, marginBottom: 8, borderLeftWidth: 3, borderLeftColor: '#C9A962' }}>
-                          <Text style={{ color: '#C9A962', fontSize: 11, fontWeight: '800', marginBottom: 5, letterSpacing: 0.5 }}>AI KEY INFO</Text>
-                          <Text style={{ color: colors.text, fontSize: 13, lineHeight: 19 }}>{call.ai_summary}</Text>
-                        </View>
-                      ) : !hasData && !isRecent ? (
-                        <View style={{ backgroundColor: colors.surface, borderRadius: 10, padding: 10, marginBottom: 8 }}>
-                          <Text style={{ color: colors.textSecondary, fontSize: 12, fontStyle: 'italic' }}>
-                            No transcript available for this call.
-                          </Text>
-                        </View>
-                      ) : !hasData && isRecent ? (
-                        <View style={{ backgroundColor: '#FF950010', borderRadius: 10, padding: 10, marginBottom: 8 }}>
-                          <Text style={{ color: '#FF9500', fontSize: 12 }}>
-                            Transcript is being processed — check back in a few minutes.
-                          </Text>
-                        </View>
-                      ) : null}
-
-                      {/* Recording player + synced transcript (tap a line to jump) */}
-                      <CallTranscript call={call} colors={colors} isInbound={isInbound} />
-                    </View>
-                  );
-                })
-              )}
-            </View>
+            <CallsTab
+              colors={colors}
+              callLogs={callLogs}
+              callLogsLoading={callLogsLoading}
+              onRefresh={async () => {
+                setCallLogsLoading(true);
+                try {
+                  const res = await api.get(`/calls/${user?._id}/contact/${id}`);
+                  const all = [...(res.data.recordings || []), ...(res.data.calls || [])];
+                  all.sort((a: any, b: any) => { try { return new Date(b.timestamp||b.created_at||0).getTime() - new Date(a.timestamp||a.created_at||0).getTime(); } catch { return 0; } });
+                  setCallLogs(all);
+                } catch {}
+                setCallLogsLoading(false);
+              }}
+            />
           )}
 
           <View style={{ height: 140 }} />
@@ -4024,1238 +2781,178 @@ function ContactDetailScreen() {
 
         {/* ===== INLINE COMPOSER (Inbox-Style) ===== */}
         {!isNewContact && !isEditing && (
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={0}
-          >
-          <View style={s.composerContainer} data-testid="contact-composer">
-            {/* SMS/Email mode toggle */}
-            <View style={s.composerModeRow}>
-              <TouchableOpacity
-                style={[s.composerModeBtn, composerMode === 'sms' && s.composerModeBtnActive]}
-                onPress={() => setComposerMode('sms')}
-                data-testid="composer-mode-sms"
-              >
-                <Ionicons name="chatbubble" size={14} color={composerMode === 'sms' ? '#34C759' : colors.textTertiary} />
-                <Text style={[s.composerModeBtnText, composerMode === 'sms' && { color: '#34C759' }]}>SMS</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[s.composerModeBtn, composerMode === 'email' && s.composerModeBtnActive]}
-                onPress={() => setComposerMode('email')}
-                data-testid="composer-mode-email"
-              >
-                <Ionicons name="mail" size={14} color={composerMode === 'email' ? '#AF52DE' : colors.textTertiary} />
-                <Text style={[s.composerModeBtnText, composerMode === 'email' && { color: '#AF52DE' }]}>Email</Text>
-              </TouchableOpacity>
-              <View style={{ flex: 1 }} />
-              <TouchableOpacity
-                style={s.composerCallBtn}
-                onPress={() => {
-                  if (!contact.phone) { showSimpleAlert('Missing Info', 'No phone number'); return; }
-                  const contactName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim();
-                  router.push(`/call-screen?contact_id=${id}&contact_name=${encodeURIComponent(contactName)}&phone=${encodeURIComponent(contact.phone)}`);
-                }}
-                data-testid="composer-call-btn"
-              >
-                <Ionicons name="call" size={16} color="#32ADE6" />
-              </TouchableOpacity>
-            </View>
-
-            {/* AI Suggestion bubble */}
-            {showAISuggestion && aiSuggestion ? (
-              <View style={s.aiSuggestionBubble} data-testid="ai-suggestion-bubble">
-                <View style={s.aiSuggestionHeader}>
-                  <Ionicons name="sparkles" size={14} color="#34C759" />
-                  <Text style={s.aiSuggestionLabel}>AI Suggestion</Text>
-                  <TouchableOpacity onPress={() => { setShowAISuggestion(false); setAiSuggestion(''); }}>
-                    <Ionicons name="close-circle" size={16} color={colors.textTertiary} />
-                  </TouchableOpacity>
-                </View>
-                <Text style={s.aiSuggestionText}>{aiSuggestion}</Text>
-                <View style={s.aiSuggestionActions}>
-                  <TouchableOpacity
-                    style={s.aiActionBtn}
-                    onPress={() => { setComposerMessage(aiSuggestion); setShowAISuggestion(false); }}
-                    data-testid="ai-edit-btn"
-                  >
-                    <Ionicons name="pencil" size={14} color="#007AFF" />
-                    <Text style={s.aiActionBtnText}>Edit</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[s.aiActionBtn, s.aiActionBtnSend]}
-                    onPress={() => { handleComposerSend(aiSuggestion); setShowAISuggestion(false); setAiSuggestion(''); }}
-                    data-testid="ai-send-btn"
-                  >
-                    <Ionicons name="send" size={14} color={colors.text} />
-                    <Text style={[s.aiActionBtnText, { color: colors.text }]}>Send Now</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ) : null}
-
-            {/* Composer box */}
-            <View style={[s.composerBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              {/* Photo attachment preview */}
-              {selectedMedia?.uri && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingTop: 10, gap: 8 }} data-testid="composer-photo-preview">
-                  <Image source={{ uri: selectedMedia.uri }} style={{ width: 60, height: 60, borderRadius: 8 }} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>Photo attached</Text>
-                    <Text style={{ fontSize: 13, color: colors.textTertiary }}>Will be sent with your message</Text>
-                  </View>
-                  <TouchableOpacity onPress={() => setSelectedMedia(null)} style={{ padding: 4 }} data-testid="remove-photo-btn">
-                    <Ionicons name="close-circle" size={22} color="#FF3B30" />
-                  </TouchableOpacity>
-                </View>
-              )}
-              <TextInput
-                style={[s.composerInput, {
-                  color: colors.text,
-                  minHeight: 44,
-                  maxHeight: 180,
-                }]}
-                placeholder="Type your message..."
-                placeholderTextColor={colors.textTertiary}
-                value={composerMessage}
-                onChangeText={setComposerMessage}
-                multiline
-                maxLength={1600}
-                scrollEnabled
-                data-testid="composer-input"
-              />
-              <View style={[s.composerToolbar, { backgroundColor: colors.bg, borderTopColor: colors.border }]}>
-                <View style={s.composerTools}>
-                  {/* Photo */}
-                  <TouchableOpacity style={s.composerToolBtn} onPress={handleAttachPhoto} data-testid="toolbar-photo-btn">
-                    <Ionicons name="image-outline" size={22} color={colors.textSecondary} />
-                  </TouchableOpacity>
-                  {/* Templates */}
-                  <TouchableOpacity style={s.composerToolBtn} onPress={() => setShowTemplates(true)} data-testid="toolbar-templates-btn">
-                    <Ionicons name="document-text-outline" size={22} color={colors.textSecondary} />
-                  </TouchableOpacity>
-                  {/* Review Link */}
-                  <TouchableOpacity style={s.composerToolBtn} onPress={() => setShowReviewLinks(true)} data-testid="toolbar-review-btn">
-                    <Ionicons name="star-outline" size={22} color={colors.textSecondary} />
-                  </TouchableOpacity>
-                  {/* Business Card */}
-                  <TouchableOpacity style={s.composerToolBtn} onPress={openBusinessCardPicker} data-testid="toolbar-card-btn">
-                    <Ionicons name="card-outline" size={22} color={colors.textSecondary} />
-                  </TouchableOpacity>
-                  {/* Voice to Text */}
-                  <TouchableOpacity
-                    style={[s.composerToolBtn, isVoiceRecording && { backgroundColor: '#FF3B3020', borderRadius: 16 }]}
-                    onPress={handleVoiceToText}
-                    data-testid="toolbar-voice-btn"
-                  >
-                    {voiceTranscribing ? (
-                      <ActivityIndicator size="small" color="#FF9500" />
-                    ) : (
-                      <Ionicons name={isVoiceRecording ? 'stop-circle' : 'mic-outline'} size={22} color={isVoiceRecording ? '#FF3B30' : colors.textSecondary} />
-                    )}
-                  </TouchableOpacity>
-                  {/* AI Sparkle */}
-                  <TouchableOpacity
-                    style={[s.composerToolBtn, loadingAI && { opacity: 0.5 }]}
-                    onPress={loadAISuggestionForComposer}
-                    disabled={loadingAI}
-                    data-testid="ai-sparkle-btn"
-                  >
-                    {loadingAI ? (
-                      <ActivityIndicator size="small" color="#AF52DE" />
-                    ) : (
-                      <Ionicons name="sparkles" size={20} color="#AF52DE" />
-                    )}
-                  </TouchableOpacity>
-                </View>
-                {/* Send button */}
-                {IS_WEB ? (
-                  <button
-                    type="button"
-                    onClick={() => handleComposerSend()}
-                    disabled={(!composerMessage.trim() && !selectedMedia) || composerSending}
-                    data-testid="composer-send-btn"
-                    style={{
-                      width: 36, height: 36, borderRadius: 18,
-                      backgroundColor: (composerMessage.trim() || selectedMedia) && !composerSending
-                        ? (composerMode === 'sms' ? '#34C759' : '#AF52DE')
-                        : colors.borderLight,
-                      border: 'none',
-                      cursor: (!composerMessage.trim() && !selectedMedia) || composerSending ? 'not-allowed' : 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}
-                  >
-                    {composerSending ? (
-                      <ActivityIndicator size="small" color={colors.text} />
-                    ) : (
-                      <Ionicons
-                        name={composerMode === 'sms' ? 'send' : 'mail'}
-                        size={18}
-                        color={composerMessage.trim() ? '#FFF' : '#6E6E73'}
-                      />
-                    )}
-                  </button>
-                ) : (
-                  <TouchableOpacity
-                    style={[s.composerSendBtn, { backgroundColor: composerMode === 'sms' ? '#34C759' : '#AF52DE' },
-                      (!composerMessage.trim() || composerSending) && { backgroundColor: colors.borderLight }]}
-                    onPress={() => handleComposerSend()}
-                    disabled={!composerMessage.trim() || composerSending}
-                    data-testid="composer-send-btn"
-                  >
-                    {composerSending ? (
-                      <ActivityIndicator size="small" color={colors.text} />
-                    ) : (
-                      <Ionicons name={composerMode === 'sms' ? 'send' : 'mail'} size={18} color={composerMessage.trim() ? '#FFF' : '#6E6E73'} />
-                    )}
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          </View>
-          </KeyboardAvoidingView>
+          <ComposerBar
+            s={s}
+            colors={colors}
+            contact={contact}
+            contactId={id as string}
+            composerMode={composerMode}
+            setComposerMode={setComposerMode}
+            composerMessage={composerMessage}
+            setComposerMessage={setComposerMessage}
+            composerSending={composerSending}
+            selectedMedia={selectedMedia}
+            setSelectedMedia={setSelectedMedia}
+            showAISuggestion={showAISuggestion}
+            setShowAISuggestion={setShowAISuggestion}
+            aiSuggestion={aiSuggestion}
+            setAiSuggestion={setAiSuggestion}
+            loadingAI={loadingAI}
+            loadAISuggestionForComposer={loadAISuggestionForComposer}
+            handleComposerSend={handleComposerSend}
+            handleAttachPhoto={handleAttachPhoto}
+            onOpenTemplates={() => setShowTemplates(true)}
+            onOpenReviewLinks={() => setShowReviewLinks(true)}
+            openBusinessCardPicker={openBusinessCardPicker}
+            handleVoiceToText={handleVoiceToText}
+            isVoiceRecording={isVoiceRecording}
+            voiceTranscribing={voiceTranscribing}
+          />
         )}
       </KeyboardAvoidingView>
 
       {/* ===== MODALS ===== */}
+      <ShareModals
+        s={s}
+        colors={colors}
+        contact={contact}
+        user={user}
+        contactId={id as string}
+        showReviewCardOptions={showReviewCardOptions}
+        setShowReviewCardOptions={setShowReviewCardOptions}
+        sendReviewCard={sendReviewCard}
+        sendingReviewCard={sendingReviewCard}
+        showReviewLinks={showReviewLinks}
+        setShowReviewLinks={setShowReviewLinks}
+        storeSlug={storeSlug}
+        reviewLinks={reviewLinks}
+        customLinkName={customLinkName}
+        insertReviewLink={insertReviewLink}
+        setComposerMessage={setComposerMessage}
+        showTemplates={showTemplates}
+        setShowTemplates={setShowTemplates}
+        templates={templates}
+        selectTemplate={selectTemplate}
+        showBusinessCard={showBusinessCard}
+        setShowBusinessCard={setShowBusinessCard}
+        sendVCardLink={sendVCardLink}
+        sendBusinessCardLink={sendBusinessCardLink}
+        sendLandingPageLink={sendLandingPageLink}
+        sendShowcaseLink={sendShowcaseLink}
+        sendLinkPageLink={sendLinkPageLink}
+        showLandingPageOptions={showLandingPageOptions}
+        setShowLandingPageOptions={setShowLandingPageOptions}
+        loadingCampaigns={loadingCampaigns}
+        campaigns={campaigns}
+        selectedCampaign={selectedCampaign}
+        setSelectedCampaign={setSelectedCampaign}
+        showPhotoOptionsModal={showPhotoOptionsModal}
+        setShowPhotoOptionsModal={setShowPhotoOptionsModal}
+        pickComposerPhoto={pickComposerPhoto}
+        showCardTemplatePicker={showCardTemplatePicker}
+        setShowCardTemplatePicker={setShowCardTemplatePicker}
+        handleCardTemplateSelect={handleCardTemplateSelect}
+        customCardTypes={customCardTypes}
+        webActionSheet={webActionSheet}
+        setWebActionSheet={setWebActionSheet}
+      />
 
-      {/* Review Card Options — choose between branded card or plain link */}
-      <Modal visible={showReviewCardOptions} animationType="slide" transparent={true} onRequestClose={() => setShowReviewCardOptions(false)}>
-        <TouchableOpacity style={s.actionSheetOverlay} activeOpacity={1} onPress={() => setShowReviewCardOptions(false)}>
-          <View style={s.actionSheetContainer}>
-            <Text style={[s.actionSheetTitle, { color: colors.text }]}>Request a Review</Text>
-            <Text style={[s.actionSheetSubtitle, { color: colors.textSecondary }]}>
-              How would you like to send the review request?
-            </Text>
-
-            {/* Branded card option */}
-            <TouchableOpacity
-              style={[s.actionSheetButton, { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 16 }]}
-              onPress={sendReviewCard}
-              disabled={sendingReviewCard}
-              data-testid="send-review-card-btn"
-            >
-              {sendingReviewCard ? (
-                <ActivityIndicator color="#34C759" />
-              ) : (
-                <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#34C75920', alignItems: 'center', justifyContent: 'center' }}>
-                  <Ionicons name="image" size={20} color="#34C759" />
-                </View>
-              )}
-              <View style={{ flex: 1 }}>
-                <Text style={[s.actionSheetButtonText, { color: colors.text }]}>Send Branded Review Card</Text>
-                <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
-                  MMS with your store logo + "please leave a review"
-                </Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Plain review link option */}
-            <TouchableOpacity
-              style={[s.actionSheetButton, { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 16 }]}
-              onPress={() => { setShowReviewCardOptions(false); setShowReviewLinks(true); }}
-              data-testid="send-review-link-btn"
-            >
-              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#007AFF20', alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name="star" size={20} color="#007AFF" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[s.actionSheetButtonText, { color: colors.text }]}>Send Review Link</Text>
-                <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>Plain text link only</Text>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={s.actionSheetCancel} onPress={() => setShowReviewCardOptions(false)}>
-              <Text style={s.actionSheetCancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* Review Links Action Sheet */}
-      <Modal visible={showReviewLinks} animationType="slide" transparent={true}>
-        <TouchableOpacity style={s.actionSheetOverlay} activeOpacity={1} onPress={() => setShowReviewLinks(false)}>
-          <View style={s.actionSheetContainer} onStartShouldSetResponder={() => true}>
-            <View style={s.actionSheetGroup}>
-              {storeSlug && (
-                <>
-                  <TouchableOpacity
-                    style={s.actionSheetButton}
-                    data-testid="review-link-imos"
-                    onPress={async () => {
-                      const firstName = contact.first_name || 'there';
-                      const reviewUrl = `https://app.imonsocial.com/review/${storeSlug}?sp=${user?._id}`;
-                      setShowReviewLinks(false);
-                      try {
-                        const shortRes = await api.post('/s/create', {
-                          original_url: reviewUrl,
-                          link_type: 'review_request',
-                          user_id: user?._id,
-                          reference_id: id as string,
-                          metadata: { contact_id: id as string, platform: 'imos' },
-                        });
-                        const trackableUrl = shortRes.data?.short_url || reviewUrl;
-                        setComposerMessage(`Hey ${firstName}! We'd love your feedback. Leave us a review here: ${trackableUrl}`);
-                      } catch (e) {
-                        setComposerMessage(`Hey ${firstName}! We'd love your feedback. Leave us a review here: ${reviewUrl}`);
-                      }
-                    }}
-                  >
-                    <Ionicons name="star" size={22} color="#FFD60A" />
-                    <Text style={s.actionSheetButtonText}>Send Review Request</Text>
-                  </TouchableOpacity>
-                  <View style={s.actionSheetDivider} />
-                </>
-              )}
-              {Object.entries(reviewLinks).filter(([_, url]) => url).map(([platformId, url], index, arr) => {
-                const platformNames: Record<string, {name: string; icon: string; color: string}> = {
-                  google: { name: 'Google Reviews', icon: 'logo-google', color: '#4285F4' },
-                  facebook: { name: 'Facebook', icon: 'logo-facebook', color: '#1877F2' },
-                  yelp: { name: 'Yelp', icon: 'star', color: '#D32323' },
-                  trustpilot: { name: 'Trustpilot', icon: 'shield-checkmark', color: '#00B67A' },
-                  dealerrater: { name: 'DealerRater', icon: 'car-sport', color: '#ED8B00' },
-                  cars_com: { name: 'Cars.com', icon: 'car', color: '#5C2D91' },
-                  custom: { name: customLinkName || 'Custom Link', icon: 'link', color: colors.textSecondary },
-                };
-                const platform = platformNames[platformId] || platformNames.custom;
-                return (
-                  <React.Fragment key={platformId}>
-                    <TouchableOpacity style={s.actionSheetButton} onPress={() => insertReviewLink(platformId, url, platform.name)}>
-                      <Ionicons name={platform.icon as any} size={22} color={platform.color} />
-                      <Text style={s.actionSheetButtonText}>{platform.name}</Text>
-                    </TouchableOpacity>
-                    {index < arr.length - 1 && <View style={s.actionSheetDivider} />}
-                  </React.Fragment>
-                );
-              })}
-              {!storeSlug && Object.keys(reviewLinks).length === 0 && (
-                <TouchableOpacity style={s.actionSheetButton} onPress={() => { setShowReviewLinks(false); router.push('/settings/review-links' as any); }}>
-                  <Ionicons name="settings-outline" size={22} color="#007AFF" />
-                  <Text style={s.actionSheetButtonText}>Set Up Review Links</Text>
-                </TouchableOpacity>
-              )}
-              {(storeSlug || Object.keys(reviewLinks).length > 0) && (
-                <>
-                  <View style={s.actionSheetDivider} />
-                  <TouchableOpacity style={s.actionSheetButton} onPress={() => { setShowReviewLinks(false); router.push('/settings/review-links' as any); }}>
-                    <Ionicons name="settings-outline" size={22} color={colors.textSecondary} />
-                    <Text style={[s.actionSheetButtonText, { color: colors.textSecondary, fontSize: 18 }]}>Manage Review Links</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
-            <TouchableOpacity style={s.actionSheetCancel} onPress={() => setShowReviewLinks(false)}>
-              <Text style={s.actionSheetCancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* Templates Modal */}
-      <Modal visible={showTemplates} animationType="slide" presentationStyle="pageSheet" transparent={true}>
-        <TouchableOpacity style={s.toolbarModalOverlay} activeOpacity={1} onPress={() => setShowTemplates(false)}>
-          <View style={s.toolbarModal} onStartShouldSetResponder={() => true}>
-            <View style={s.toolbarModalHeader}>
-              <View style={s.toolbarModalHandle} />
-              <Text style={s.toolbarModalTitle}>Message Templates</Text>
-            </View>
-            <FlatList
-              data={templates}
-              keyExtractor={(item) => item._id}
-              style={s.toolbarTemplatesList}
-              contentContainerStyle={s.toolbarTemplatesListContent}
-              showsVerticalScrollIndicator={true}
-              renderItem={({ item: template }) => (
-                <TouchableOpacity style={s.toolbarTemplateItem} onPress={() => selectTemplate(template)}>
-                  <View style={s.toolbarTemplateIcon}>
-                    <Ionicons name="document-text" size={20} color="#007AFF" />
-                  </View>
-                  <View style={s.toolbarTemplateContent}>
-                    <Text style={s.toolbarTemplateName}>{template.name}</Text>
-                    <Text style={s.toolbarTemplatePreview} numberOfLines={2}>{template.content}</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                </TouchableOpacity>
-              )}
-              ListEmptyComponent={() => (
-                <View style={s.toolbarEmptyTemplates}>
-                  <Ionicons name="document-text-outline" size={48} color={colors.textSecondary} />
-                  <Text style={s.toolbarEmptyTemplatesText}>No templates yet</Text>
-                </View>
-              )}
-            />
-            <View style={s.toolbarModalFooter}>
-              <TouchableOpacity style={s.toolbarModalCloseBtn} onPress={() => setShowTemplates(false)}>
-                <Text style={s.toolbarModalCloseBtnText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* Digital Business Card Modal */}
-      <Modal visible={showBusinessCard} animationType="slide" presentationStyle="pageSheet" transparent={true}>
-        <TouchableOpacity style={s.toolbarModalOverlay} activeOpacity={1} onPress={() => setShowBusinessCard(false)}>
-          <View style={[s.toolbarModal, { marginBottom: 40 }]} onStartShouldSetResponder={() => true}>
-            <View style={s.toolbarModalHeader}>
-              <View style={s.toolbarModalHandle} />
-            </View>
-            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 16 }} bounces={false}>
-            <View style={s.cardModalContent}>
-              <View style={s.cardPreview}>
-                <Ionicons name="share-social" size={48} color="#007AFF" />
-                <Text style={s.cardPreviewTitle}>Share Your Stuff</Text>
-                <Text style={s.cardPreviewDesc}>Choose what you'd like to send to {contact.first_name || 'this contact'}</Text>
-              </View>
-              <View style={s.shareOptionsContainer}>
-                <TouchableOpacity style={s.shareOptionCard} onPress={sendVCardLink} data-testid="share-vcf-btn">
-                  <View style={s.shareOptionIcon}>
-                    <Ionicons name="person-add" size={28} color="#34C759" />
-                  </View>
-                  <View style={s.shareOptionContent}>
-                    <Text style={s.shareOptionTitle}>Share Contact (VCF)</Text>
-                    <Text style={s.shareOptionDesc}>Send a direct link to save your contact info to their phone</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                </TouchableOpacity>
-                <TouchableOpacity style={s.shareOptionCard} onPress={sendBusinessCardLink} data-testid="share-landing-btn">
-                  <View style={s.shareOptionIcon}>
-                    <Ionicons name="card-outline" size={28} color="#007AFF" />
-                  </View>
-                  <View style={s.shareOptionContent}>
-                    <Text style={s.shareOptionTitle}>Share Digital Card</Text>
-                    <Text style={s.shareOptionDesc}>Send your sleek digital business card</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                </TouchableOpacity>
-                <TouchableOpacity style={s.shareOptionCard} onPress={sendLandingPageLink} data-testid="share-landingpage-btn">
-                  <View style={s.shareOptionIcon}>
-                    <Ionicons name="globe-outline" size={28} color="#5856D6" />
-                  </View>
-                  <View style={s.shareOptionContent}>
-                    <Text style={s.shareOptionTitle}>Share Landing Page</Text>
-                    <Text style={s.shareOptionDesc}>Send your full profile with bio, socials & more</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                </TouchableOpacity>
-                <TouchableOpacity style={s.shareOptionCard} onPress={sendShowcaseLink} data-testid="share-showcase-btn">
-                  <View style={s.shareOptionIcon}>
-                    <Ionicons name="images-outline" size={28} color="#FF9500" />
-                  </View>
-                  <View style={s.shareOptionContent}>
-                    <Text style={s.shareOptionTitle}>Share Showcase</Text>
-                    <Text style={s.shareOptionDesc}>Show off your happy customers & featured work</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                </TouchableOpacity>
-                <TouchableOpacity style={s.shareOptionCard} onPress={sendLinkPageLink} data-testid="share-linkpage-btn">
-                  <View style={s.shareOptionIcon}>
-                    <Ionicons name="link-outline" size={28} color="#AF52DE" />
-                  </View>
-                  <View style={s.shareOptionContent}>
-                    <Text style={s.shareOptionTitle}>Share Link Page</Text>
-                    <Text style={s.shareOptionDesc}>Send all your social links in one place</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-                </TouchableOpacity>
-
-                {/* CRM Timeline Link */}
-                <View style={[s.shareOptionCard, { borderTopWidth: 1, borderTopColor: colors.surface, marginTop: 8, paddingTop: 16 }]}>
-                  <View style={[s.shareOptionIcon, { backgroundColor: '#C9A96220' }]}>
-                    <Ionicons name="open-outline" size={28} color="#C9A962" />
-                  </View>
-                  <View style={[s.shareOptionContent, { flex: 1 }]}>
-                    <Text style={s.shareOptionTitle}>CRM Timeline Link</Text>
-                    <Text style={s.shareOptionDesc}>Copy a live activity link for your CRM</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={{ backgroundColor: '#C9A962', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8 }}
-                    onPress={async () => {
-                      try {
-                        const res = await api.post(`/crm/timeline-token/${user._id}/${id}`);
-                        const link = `${api.defaults.baseURL?.replace('/api', '')}/timeline/${res.data.token}`;
-                        api.post(`/crm/mark-copied/${user._id}/${id}`).catch(() => {});
-
-                        // Use native Share Sheet on mobile (most reliable on iOS)
-                        if (typeof navigator !== 'undefined' && navigator.share) {
-                          try {
-                            await navigator.share({
-                              title: `${contact.first_name || ''} ${contact.last_name || ''} — Activity Timeline`.trim(),
-                              url: link,
-                            });
-                            return;
-                          } catch (shareErr: any) {
-                            // User cancelled share — still show the link
-                            if (shareErr?.name === 'AbortError') return;
-                          }
-                        }
-
-                        // Desktop fallback: clipboard
-                        try {
-                          await Clipboard.setStringAsync(link);
-                          showSimpleAlert('CRM Link Copied!', 'Paste this into your CRM. It stays up-to-date automatically.');
-                        } catch {
-                          // Last resort: show the link so user can manually copy
-                          showSimpleAlert('CRM Timeline Link', link);
-                        }
-                      } catch (e: any) {
-                        console.error('CRM link error:', e?.response?.data || e?.message || e);
-                        showSimpleAlert('Error', e?.response?.data?.detail || 'Could not generate CRM link');
-                      }
-                    }}
-                    data-testid="copy-crm-link-btn"
-                  >
-                    <Text style={{ color: '#000', fontWeight: '700', fontSize: 15 }}>Copy</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-              {showLandingPageOptions && (
-                <View style={s.landingPageOptions}>
-                  <View style={s.landingPageOptionsHeader}>
-                    <TouchableOpacity onPress={() => setShowLandingPageOptions(false)}>
-                      <Ionicons name="arrow-back" size={24} color="#007AFF" />
-                    </TouchableOpacity>
-                    <Text style={s.landingPageOptionsTitle}>Landing Page Options</Text>
-                  </View>
-                  <Text style={s.campaignPickerLabel}>Start them on a campaign (optional):</Text>
-                  {loadingCampaigns ? (
-                    <ActivityIndicator size="small" color="#007AFF" style={{ marginVertical: 20 }} />
-                  ) : campaigns.length === 0 ? (
-                    <View style={s.noCampaigns}>
-                      <Text style={s.noCampaignsText}>No active campaigns</Text>
-                      <Text style={s.noCampaignsSubtext}>Create campaigns in the Campaigns tab</Text>
-                    </View>
-                  ) : (
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.campaignScroller} contentContainerStyle={s.campaignScrollerContent}>
-                      <TouchableOpacity style={[s.campaignChip, !selectedCampaign && s.campaignChipSelected]} onPress={() => setSelectedCampaign(null)}>
-                        <Text style={[s.campaignChipText, !selectedCampaign && s.campaignChipTextSelected]}>None</Text>
-                      </TouchableOpacity>
-                      {campaigns.map((campaign: any) => (
-                        <TouchableOpacity key={campaign.id || campaign._id} style={[s.campaignChip, selectedCampaign === (campaign.id || campaign._id) && s.campaignChipSelected]} onPress={() => setSelectedCampaign(campaign.id || campaign._id)}>
-                          <Text style={[s.campaignChipText, selectedCampaign === (campaign.id || campaign._id) && s.campaignChipTextSelected]}>{campaign.name}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  )}
-                  <TouchableOpacity style={s.sendCardButton} onPress={sendBusinessCardLink} data-testid="send-card-btn">
-                    <Ionicons name="paper-plane" size={20} color="#FFF" />
-                    <Text style={s.sendCardButtonText}>{selectedCampaign ? 'Send Card + Start Campaign' : 'Send Landing Page'}</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-            </ScrollView>
-            <View style={s.toolbarModalFooter}>
-              <TouchableOpacity style={s.toolbarModalCloseBtn} onPress={() => { setShowBusinessCard(false); setShowLandingPageOptions(false); }}>
-                <Text style={s.toolbarModalCloseBtnText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* Photo & Card Action Sheet (Web/PWA) */}
-      <Modal visible={showPhotoOptionsModal} animationType="slide" transparent={true} onRequestClose={() => setShowPhotoOptionsModal(false)}>
-        <TouchableOpacity style={s.actionSheetOverlay} activeOpacity={1} onPress={() => setShowPhotoOptionsModal(false)}>
-          <View style={s.actionSheetContainer} onStartShouldSetResponder={() => true}>
-            <View style={s.actionSheetGroup}>
-              <TouchableOpacity style={s.actionSheetButton} onPress={() => { setShowPhotoOptionsModal(false); pickComposerPhoto(); }} data-testid="photo-option-add">
-                <Ionicons name="image-outline" size={22} color="#007AFF" />
-                <Text style={s.actionSheetButtonText}>Add a Photo</Text>
-              </TouchableOpacity>
-              <View style={s.actionSheetDivider} />
-              <View style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
-                <Text style={{ fontSize: 15, color: colors.textSecondary, fontWeight: '600', marginBottom: 10, textAlign: 'center' }}>CREATE A CARD</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingHorizontal: 4 }}>
-                  {[
-                    { type: 'congrats', label: 'Congrats', color: '#C9A962', icon: 'trophy' },
-                    { type: 'birthday', label: 'Birthday', color: '#FF2D55', icon: 'gift' },
-                    { type: 'holiday', label: 'Holiday', color: '#5AC8FA', icon: 'snow' },
-                    { type: 'thankyou', label: 'Thank You', color: '#34C759', icon: 'thumbs-up' },
-                    { type: 'anniversary', label: 'Anniversary', color: '#FF6B6B', icon: 'heart' },
-                    { type: 'welcome', label: 'Welcome', color: '#007AFF', icon: 'hand-left' },
-                    ...customCardTypes,
-                  ].map(item => (
-                    <TouchableOpacity
-                      key={item.type}
-                      style={{ alignItems: 'center', backgroundColor: `${item.color}15`, borderRadius: 12, paddingVertical: 12, paddingHorizontal: 14, minWidth: 80 }}
-                      onPress={() => { setShowPhotoOptionsModal(false); handleCardTemplateSelect(item.type); }}
-                      data-testid={`card-template-${item.type}`}
-                    >
-                      <Ionicons name={item.icon as any} size={24} color={item.color} />
-                      <Text style={{ fontSize: 14, fontWeight: '600', color: item.color, marginTop: 6 }}>{item.label}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-            </View>
-            <TouchableOpacity style={s.actionSheetCancel} onPress={() => setShowPhotoOptionsModal(false)} data-testid="photo-option-cancel">
-              <Text style={s.actionSheetCancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* Web Action Sheet for Automation Chips */}
-      <Modal visible={webActionSheet.visible} animationType="slide" transparent={true} onRequestClose={() => setWebActionSheet(prev => ({ ...prev, visible: false }))}>
-        <TouchableOpacity style={s.actionSheetOverlay} activeOpacity={1} onPress={() => setWebActionSheet(prev => ({ ...prev, visible: false }))}>
-          <View style={s.actionSheetContainer} onStartShouldSetResponder={() => true}>
-            <View style={s.actionSheetGroup}>
-              <View style={{ paddingVertical: 14, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.border }}>
-                <Text style={{ fontSize: 15, fontWeight: '600', color: colors.textSecondary }}>{webActionSheet.title}</Text>
-              </View>
-              {webActionSheet.options.map((option, idx) => (
-                <React.Fragment key={idx}>
-                  <TouchableOpacity 
-                    style={s.actionSheetButton} 
-                    onPress={() => { setWebActionSheet(prev => ({ ...prev, visible: false })); option.onPress(); }}
-                    data-testid={`action-sheet-${option.label.toLowerCase().replace(/\s+/g, '-')}`}
-                  >
-                    <Ionicons name={option.icon as any} size={22} color={option.color} />
-                    <Text style={[s.actionSheetButtonText, { color: option.color }]}>{option.label}</Text>
-                  </TouchableOpacity>
-                  {idx < webActionSheet.options.length - 1 && <View style={s.actionSheetDivider} />}
-                </React.Fragment>
-              ))}
-            </View>
-            <TouchableOpacity style={s.actionSheetCancel} onPress={() => setWebActionSheet(prev => ({ ...prev, visible: false }))} data-testid="action-sheet-cancel">
-              <Text style={s.actionSheetCancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* Card Template Picker */}
-      {/* ── Add Task Modal ── */}
-      <Modal visible={showAddTask} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAddTask(false)}>
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-            <TouchableOpacity onPress={() => setShowAddTask(false)}>
-              <Text style={{ fontSize: 17, color: '#007AFF' }}>Cancel</Text>
-            </TouchableOpacity>
-            <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>Add Task</Text>
-            <TouchableOpacity onPress={handleSaveTask} disabled={savingTask || !newTaskTitle.trim()} data-testid="save-task-btn">
-              {savingTask ? <ActivityIndicator size="small" color="#007AFF" /> : (
-                <Text style={{ fontSize: 17, fontWeight: '700', color: newTaskTitle.trim() ? '#007AFF' : colors.textTertiary }}>Save</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
-            {/* Contact badge */}
-            {contact && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.card, borderRadius: 10, padding: 12, marginBottom: 16 }}>
-                <Ionicons name="person-circle" size={20} color="#007AFF" />
-                <Text style={{ fontSize: 15, color: colors.text, fontWeight: '600' }}>
-                  {`${contact.first_name || ''} ${contact.last_name || ''}`.trim()}
-                </Text>
-              </View>
-            )}
-
-            {/* Task title */}
-            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>What do you need to do?</Text>
-            <TextInput
-              style={{ backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 17, color: colors.text, borderWidth: 1, borderColor: colors.border, marginBottom: 16 }}
-              placeholder={`e.g. Text ${contact?.first_name || 'them'} about Friday's conversation`}
-              placeholderTextColor={colors.textTertiary}
-              value={newTaskTitle}
-              onChangeText={setNewTaskTitle}
-              autoFocus
-              returnKeyType="done"
-              data-testid="task-title-input"
-            />
-
-            {/* Due date */}
-            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>When?</Text>
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-              {([
-                { key: 'today',    label: 'Today' },
-                { key: 'tomorrow', label: 'Tomorrow' },
-                { key: 'thisweek', label: 'This Week' },
-              ] as const).map(opt => (
-                <TouchableOpacity
-                  key={opt.key}
-                  onPress={() => setNewTaskDue(opt.key)}
-                  style={{ paddingHorizontal: 18, paddingVertical: 10, borderRadius: 20, borderWidth: 1.5,
-                    borderColor: newTaskDue === opt.key ? '#FF9500' : colors.border,
-                    backgroundColor: newTaskDue === opt.key ? '#FF950020' : colors.card }}
-                >
-                  <Text style={{ fontSize: 15, fontWeight: '600', color: newTaskDue === opt.key ? '#FF9500' : colors.text }}>{opt.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Priority */}
-            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>Priority</Text>
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
-              {([
-                { key: 'low',    label: 'Low',    color: '#34C759' },
-                { key: 'medium', label: 'Medium', color: '#FF9500' },
-                { key: 'high',   label: 'High',   color: '#FF3B30' },
-              ] as const).map(p => (
-                <TouchableOpacity
-                  key={p.key}
-                  onPress={() => setNewTaskPriority(p.key)}
-                  style={{ flex: 1, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5, alignItems: 'center',
-                    borderColor: newTaskPriority === p.key ? p.color : colors.border,
-                    backgroundColor: newTaskPriority === p.key ? p.color + '20' : colors.card }}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: newTaskPriority === p.key ? p.color : colors.text }}>{p.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Notes */}
-            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Notes <Text style={{ fontWeight: '400', textTransform: 'none' }}>(optional)</Text></Text>
-            <TextInput
-              style={{ backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1, borderColor: colors.border, minHeight: 80, textAlignVertical: 'top' }}
-              placeholder="Any context or details..."
-              placeholderTextColor={colors.textTertiary}
-              value={newTaskNotes}
-              onChangeText={setNewTaskNotes}
-              multiline
-              data-testid="task-notes-input"
-            />
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
-
-      <Modal visible={showCardTemplatePicker} animationType="slide" transparent onRequestClose={() => setShowCardTemplatePicker(false)}>
-        <TouchableOpacity style={s.sendPickerOverlay} activeOpacity={1} onPress={() => setShowCardTemplatePicker(false)}>
-          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
-            <View style={[s.sendPickerSheet, { maxHeight: '85%' }]}>
-              <View style={s.sendPickerHandle} />
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingBottom: 10 }}>
-                <Text style={s.sendPickerTitle}>Choose a Card Template</Text>
-                <TouchableOpacity onPress={() => setShowCardTemplatePicker(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                  <Ionicons name="close-circle" size={24} color={colors.textSecondary} />
-                </TouchableOpacity>
-              </View>
-              <ScrollView
-                bounces={true}
-                showsVerticalScrollIndicator={true}
-                keyboardShouldPersistTaps="handled"
-                nestedScrollEnabled={true}
-                contentContainerStyle={{ paddingBottom: 30 }}
-              >
-              {[
-                { type: 'congrats', label: 'Congratulations', sub: 'Celebrate a purchase or milestone', color: '#C9A962', icon: 'trophy' },
-                { type: 'birthday', label: 'Happy Birthday', sub: 'Send birthday wishes', color: '#FF2D55', icon: 'gift' },
-                { type: 'anniversary', label: 'Anniversary', sub: 'Celebrate their anniversary', color: '#FF6B6B', icon: 'heart' },
-                { type: 'thankyou', label: 'Thank You', sub: 'Show your appreciation', color: '#34C759', icon: 'thumbs-up' },
-                { type: 'welcome', label: 'Welcome', sub: 'Welcome a new customer', color: '#007AFF', icon: 'hand-left' },
-                { type: 'holiday', label: 'Holiday', sub: 'Seasonal greetings', color: '#5AC8FA', icon: 'snow' },
-                ...customCardTypes,
-              ].map(item => (
-                <TouchableOpacity
-                  key={item.type}
-                  style={s.sendPickerItem}
-                  onPress={() => handleCardTemplateSelect(item.type)}
-                  activeOpacity={0.7}
-                  data-testid={`card-template-${item.type}`}
-                >
-                  <View style={[s.sendPickerIcon, { backgroundColor: `${item.color}20` }]}>
-                    <Ionicons name={item.icon as any} size={20} color={item.color} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={s.sendPickerLabel}>{item.label}</Text>
-                    <Text style={s.sendPickerSub}>{item.sub}</Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={16} color={colors.borderLight} />
-                </TouchableOpacity>
-              ))}
-              </ScrollView>
-            </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
+      <AddTaskModal
+        colors={colors}
+        visible={showAddTask}
+        onClose={() => setShowAddTask(false)}
+        contact={contact}
+        newTaskTitle={newTaskTitle}
+        setNewTaskTitle={setNewTaskTitle}
+        newTaskNotes={newTaskNotes}
+        setNewTaskNotes={setNewTaskNotes}
+        newTaskDue={newTaskDue}
+        setNewTaskDue={setNewTaskDue}
+        newTaskPriority={newTaskPriority}
+        setNewTaskPriority={setNewTaskPriority}
+        savingTask={savingTask}
+        handleSaveTask={handleSaveTask}
+      />
 
 
-      {/* Referral Picker */}
-      <Modal visible={showReferralPicker} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={s.modalContainer}>
-          <View style={s.modalHeader}>
-            <TouchableOpacity onPress={() => setShowReferralPicker(false)}>
-              <Text style={s.modalCancel}>Cancel</Text>
-            </TouchableOpacity>
-            <Text style={s.modalTitle}>Select Referrer</Text>
-            <View style={{ width: 60 }} />
-          </View>
-          <View style={s.modalSearch}>
-            <Ionicons name="search" size={18} color={colors.textSecondary} />
-            <TextInput style={s.modalSearchInput} placeholder="Search contacts" placeholderTextColor={colors.textSecondary}
-              value={contactSearch} onChangeText={setContactSearch} />
-          </View>
-          <FlatList data={filteredContacts} keyExtractor={i => i._id} renderItem={({ item }) => (
-            <TouchableOpacity style={s.pickerItem} onPress={() => selectReferrer(item)}>
-              <View style={s.pickerAvatar}><Text style={s.pickerAvatarText}>{item.first_name?.[0]}{item.last_name?.[0] || ''}</Text></View>
-              <View style={{ flex: 1 }}><Text style={s.pickerName}>{item.first_name} {item.last_name || ''}</Text><Text style={s.pickerSub}>{item.phone}</Text></View>
-            </TouchableOpacity>
-          )} ListEmptyComponent={<View style={s.emptyPicker}><Text style={s.emptyPickerText}>No contacts found</Text></View>} />
-        </SafeAreaView>
-      </Modal>
+      <PickerModals
+        s={s}
+        colors={colors}
+        isEditing={isEditing}
+        showReferralPicker={showReferralPicker}
+        setShowReferralPicker={setShowReferralPicker}
+        contactSearch={contactSearch}
+        setContactSearch={setContactSearch}
+        filteredContacts={filteredContacts}
+        selectReferrer={selectReferrer}
+        showTagPicker={showTagPicker}
+        setShowTagPicker={setShowTagPicker}
+        tagSearch={tagSearch}
+        setTagSearch={setTagSearch}
+        filteredAvailableTags={filteredAvailableTags}
+        addTag={addTag}
+        addTagFromHero={addTagFromHero}
+        showCampaignPicker={showCampaignPicker}
+        setShowCampaignPicker={setShowCampaignPicker}
+        availableCampaigns={availableCampaigns}
+        enrollInCampaign={enrollInCampaign}
+      />
 
-      {/* Tag Picker */}
-      <Modal visible={showTagPicker} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={s.modalContainer}>
-          <View style={s.modalHeader}>
-            <TouchableOpacity onPress={() => { setShowTagPicker(false); setTagSearch(''); }}>
-              <Text style={s.modalCancel}>Cancel</Text>
-            </TouchableOpacity>
-            <Text style={s.modalTitle}>Select Tag</Text>
-            <TouchableOpacity onPress={() => { setShowTagPicker(false); setTagSearch(''); router.push('/settings/tags' as any); }}>
-              <Text style={s.modalAction}>Manage</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={s.modalSearch}>
-            <Ionicons name="search" size={18} color={colors.textSecondary} />
-            <TextInput style={s.modalSearchInput} placeholder="Search tags..." placeholderTextColor={colors.textSecondary}
-              value={tagSearch} onChangeText={setTagSearch} autoCapitalize="none" />
-          </View>
-          <ScrollView style={{ flex: 1 }}>
-            {filteredAvailableTags.length > 0 ? filteredAvailableTags.map(tag => (
-              <TouchableOpacity key={tag._id} style={s.pickerItem} onPress={() => isEditing ? addTag(tag.name) : addTagFromHero(tag.name)} data-testid={`tag-option-${tag.name}`}>
-                <View style={[s.dateRowIcon, { backgroundColor: `${tag.color}20` }]}>
-                  <Ionicons name={tag.icon || 'pricetag'} size={18} color={tag.color} />
-                </View>
-                <View style={{ flex: 1 }}><Text style={s.pickerName}>{tag.name}</Text></View>
-                <Ionicons name="add-circle" size={24} color={tag.color} />
-              </TouchableOpacity>
-            )) : (
-              <View style={s.emptyPicker}><Text style={s.emptyPickerText}>No tags available</Text></View>
-            )}
-          </ScrollView>
-        </SafeAreaView>
-      </Modal>
-
-      {/* Campaign Picker */}
-      <Modal visible={showCampaignPicker} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={s.modalContainer}>
-          <View style={s.modalHeader}>
-            <TouchableOpacity onPress={() => setShowCampaignPicker(false)}>
-              <Text style={s.modalCancel}>Cancel</Text>
-            </TouchableOpacity>
-            <Text style={s.modalTitle}>Enroll in Campaign</Text>
-            <View style={{ width: 60 }} />
-          </View>
-          <FlatList data={availableCampaigns} keyExtractor={i => i._id} contentContainerStyle={{ padding: 16 }}
-            renderItem={({ item }) => (
-              <TouchableOpacity style={s.campaignCard} onPress={() => enrollInCampaign(item)}>
-                <View style={[s.quickActionIcon, { backgroundColor: '#007AFF20' }]}>
-                  <Ionicons name="calendar" size={20} color="#007AFF" />
-                </View>
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={s.campaignName}>{item.name}</Text>
-                  <Text style={s.campaignSub}>{item.sequences?.length || 0} steps</Text>
-                </View>
-                <Ionicons name="add-circle" size={24} color="#007AFF" />
-              </TouchableOpacity>
-            )} ListEmptyComponent={<View style={s.emptyPicker}><Text style={s.emptyPickerText}>No available campaigns</Text></View>} />
-        </SafeAreaView>
-      </Modal>
-
-      {/* Automation Edit Modal */}
-      {editingAutomation && (
-        <Modal visible={!!editingAutomation} animationType="fade" transparent onRequestClose={() => setEditingAutomation(null)}>
-          <TouchableOpacity style={s.labelOverlay} activeOpacity={1} onPress={() => setEditingAutomation(null)}>
-            <TouchableOpacity activeOpacity={1} style={s.labelModal} onPress={() => {}}>
-              <Text style={s.labelTitle}>Edit {editingAutomation.label}</Text>
-              <Text style={[s.labelSub, { color: editingAutomation.color }]}>
-                {editingAutomation.value ? formatDateUTC(editingAutomation.value, 'MMM d, yyyy') : 'No date set'}
-              </Text>
-              {IS_WEB ? (
-                <input
-                  type="date"
-                  defaultValue={editingAutomation.value ? new Date(editingAutomation.value).toISOString().split('T')[0] : ''}
-                  onChange={(e: any) => {
-                    if (e.target.value) setAutomationPickerDate(new Date(e.target.value + 'T12:00:00'));
-                  }}
-                  style={{
-                    width: '100%', padding: 12, borderRadius: 10,
-                    backgroundColor: colors.surface, color: colors.text, border: '1px solid #3A3A3C',
-                    fontSize: 18, marginBottom: 12, marginTop: 8,
-                  }}
-                  data-testid="automation-date-input"
-                />
-              ) : (
-                <DateTimePicker
-                  value={editingAutomation.value ? new Date(editingAutomation.value) : new Date()}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={(_, d) => { if (d) setAutomationPickerDate(d); }}
-                  textColor={colors.text}
-                  themeVariant={mode}
-                  style={{ height: 150, marginVertical: 8 }}
-                />
-              )}
-              <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
-                <TouchableOpacity
-                  style={[s.labelBtn, { backgroundColor: colors.surface }]}
-                  onPress={() => handleClearAutomation(editingAutomation.field)}
-                  data-testid="automation-clear-btn"
-                >
-                  <Text style={{ fontSize: 18, fontWeight: '600', color: '#FF3B30' }}>Clear Date</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[s.labelBtn, { backgroundColor: editingAutomation.color || '#007AFF' }]}
-                  onPress={() => handleUpdateAutomationDate(editingAutomation.field, automationPickerDate)}
-                  data-testid="automation-save-btn"
-                >
-                  <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text }}>Save Date</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          </TouchableOpacity>
-        </Modal>
-      )}
-
-      {/* Date Picker */}
-      {showDatePicker && (
-        <Modal visible={showDatePicker} animationType={IS_WEB ? 'none' : 'slide'} transparent onRequestClose={() => setShowDatePicker(false)}>
-          <View style={s.dateOverlay}>
-            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setShowDatePicker(false)} />
-            <View style={[s.dateModal, IS_WEB && { minHeight: 400 }]}>
-              <View style={s.dateModalHeader}>
-                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <Text style={{ fontSize: 18, color: '#FF3B30' }}>Cancel</Text>
-                </TouchableOpacity>
-                <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text }}>{activeDateLabel}</Text>
-                <TouchableOpacity onPress={confirmDateSelection}>
-                  <Text style={{ fontSize: 18, fontWeight: '600', color: '#007AFF' }}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              {IS_WEB ? (
-                <View style={{ flexDirection: 'row', paddingHorizontal: 20, paddingVertical: 16, gap: 12 }}>
-                  {/* Month */}
-                  <View style={{ flex: 1, alignItems: 'center' }}>
-                    <Text style={s.webPickerLabel}>MONTH</Text>
-                    <ScrollView style={s.webPickerScroll} showsVerticalScrollIndicator={false}>
-                      {months.map((m, i) => (
-                        <TouchableOpacity key={m} style={[s.webPickerItem, webMonth === i && s.webPickerItemSel]}
-                          onPress={() => { setWebMonth(i); const max = getDaysInMonth(i, webYear); if (webDay > max) setWebDay(max); }}>
-                          <Text style={[s.webPickerText, webMonth === i && s.webPickerTextSel]}>{m}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  </View>
-                  {/* Day */}
-                  <View style={{ flex: 1, alignItems: 'center' }}>
-                    <Text style={s.webPickerLabel}>DAY</Text>
-                    <ScrollView style={s.webPickerScroll} showsVerticalScrollIndicator={false}>
-                      {Array.from({ length: getDaysInMonth(webMonth, webYear) }, (_, i) => i + 1).map(d => (
-                        <TouchableOpacity key={d} style={[s.webPickerItem, webDay === d && s.webPickerItemSel]}
-                          onPress={() => setWebDay(d)}>
-                          <Text style={[s.webPickerText, webDay === d && s.webPickerTextSel]}>{d}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  </View>
-                  {/* Year */}
-                  <View style={{ flex: 1, alignItems: 'center' }}>
-                    <Text style={s.webPickerLabel}>YEAR</Text>
-                    <ScrollView style={s.webPickerScroll} showsVerticalScrollIndicator={false}>
-                      {Array.from({ length: 126 }, (_, i) => 1920 + i).map(y => (
-                        <TouchableOpacity key={y} style={[s.webPickerItem, webYear === y && s.webPickerItemSel]}
-                          onPress={() => { setWebYear(y); const max = getDaysInMonth(webMonth, y); if (webDay > max) setWebDay(max); }}>
-                          <Text style={[s.webPickerText, webYear === y && s.webPickerTextSel]}>{y}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
-                  </View>
-                </View>
-              ) : (
-                <DateTimePicker value={tempDate} mode="date" display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={handleDateChange} textColor={colors.text} themeVariant={mode} style={{ height: 200, marginHorizontal: 10 }}
-                  maximumDate={new Date(2100, 11, 31)} minimumDate={new Date(1900, 0, 1)} />
-              )}
-              {(Platform.OS === 'ios' || IS_WEB) && (
-                <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16 }}>
-                  <TouchableOpacity style={s.dateConfirmBtn} onPress={confirmDateSelection}>
-                    <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text }}>
-                      Select {IS_WEB ? format(new Date(webYear, webMonth, webDay), 'MMM d, yyyy') : format(tempDate, 'MMM d, yyyy')}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          </View>
-        </Modal>
-      )}
-
-      {/* Custom Date Label Modal */}
-      <Modal visible={showCustomDateLabel} animationType="fade" transparent onRequestClose={() => setShowCustomDateLabel(false)}>
-        <TouchableOpacity style={s.labelOverlay} activeOpacity={1} onPress={() => setShowCustomDateLabel(false)}>
-          <TouchableOpacity activeOpacity={1} style={s.labelModal} onPress={() => {}}>
-            <Text style={s.labelTitle}>Name This Date</Text>
-            <Text style={s.labelSub}>{pendingCustomDate ? format(pendingCustomDate, 'MMM d, yyyy') : ''}</Text>
-            <TextInput style={s.labelInput} placeholder='e.g., "Lease Expiration"' placeholderTextColor={colors.textSecondary}
-              value={newCustomDateName} onChangeText={setNewCustomDateName} returnKeyType="done" onSubmitEditing={confirmCustomDateWithLabel} />
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <TouchableOpacity style={[s.labelBtn, { backgroundColor: colors.surface }]} onPress={() => setShowCustomDateLabel(false)}>
-                <Text style={{ fontSize: 18, fontWeight: '600', color: '#FF3B30' }}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[s.labelBtn, { backgroundColor: '#007AFF' }]} onPress={confirmCustomDateWithLabel}>
-                <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text }}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
+      <DateModals
+        s={s}
+        colors={colors}
+        mode={mode}
+        editingAutomation={editingAutomation}
+        setEditingAutomation={setEditingAutomation}
+        automationPickerDate={automationPickerDate}
+        setAutomationPickerDate={setAutomationPickerDate}
+        handleClearAutomation={handleClearAutomation}
+        handleUpdateAutomationDate={handleUpdateAutomationDate}
+        showDatePicker={showDatePicker}
+        setShowDatePicker={setShowDatePicker}
+        activeDateLabel={activeDateLabel}
+        tempDate={tempDate}
+        handleDateChange={handleDateChange}
+        confirmDateSelection={confirmDateSelection}
+        webMonth={webMonth}
+        setWebMonth={setWebMonth}
+        webDay={webDay}
+        setWebDay={setWebDay}
+        webYear={webYear}
+        setWebYear={setWebYear}
+        showCustomDateLabel={showCustomDateLabel}
+        setShowCustomDateLabel={setShowCustomDateLabel}
+        pendingCustomDate={pendingCustomDate}
+        newCustomDateName={newCustomDateName}
+        setNewCustomDateName={setNewCustomDateName}
+        confirmCustomDateWithLabel={confirmCustomDateWithLabel}
+      />
 
       {/* Photo Gallery — Modern reel */}
-      <Modal visible={showPhotoViewer} animationType="slide" transparent={false} onDismiss={runPendingPick} onRequestClose={() => { setShowPhotoViewer(false); setFullPhoto(null); setAllPhotos([]); setSelectedPhotoIndex(-1); }}>
-        {/* NOTE: react-native-safe-area-context returns 0 insets inside a RN Modal
-            (it renders outside the SafeAreaProvider tree), so we apply the insets
-            captured at the screen level explicitly instead of using SafeAreaView here. */}
-        <View style={{ flex: 1, backgroundColor: '#000' }}>
-        <View style={s.galleryRoot}>
-          {/* Header */}
-          <View style={[s.galleryTopBar, { paddingTop: insets.top + 12 }]}>
-            <TouchableOpacity
-              style={s.galleryCloseBtn}
-              onPress={() => { setShowPhotoViewer(false); setFullPhoto(null); setAllPhotos([]); setSelectedPhotoIndex(-1); }}
-              data-testid="close-photo-viewer"
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            >
-              <Ionicons name="close" size={22} color="#FFF" />
-            </TouchableOpacity>
-            <Text style={s.galleryTopTitle}>
-              {selectedPhotoIndex >= 0 ? `${selectedPhotoIndex + 1} of ${allPhotos.length}` : 'Photos'}
-            </Text>
-            <TouchableOpacity
-              style={s.galleryUploadBtn}
-              onPress={requestAddPhotoFromGallery}
-              data-testid="gallery-upload-btn"
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            >
-              <Ionicons name="camera" size={22} color="#C9A962" />
-            </TouchableOpacity>
-          </View>
-
-          {fullPhotoLoading ? (
-            /* === SHIMMER SKELETON GRID === */
-            <View style={{ flex: 1, padding: 0 }}>
-              <View
-                style={s.galleryGrid}
-                onLayout={(e) => setGalleryWidth(e.nativeEvent.layout.width)}
-              >
-                {[0,1,2,3,4,5].map(i => {
-                  const sz = galleryWidth > 0 ? Math.floor((galleryWidth - 2) / 3) : 120;
-                  return (
-                    <View key={i} style={{ width: sz, height: sz, backgroundColor: '#1a1a1a' }} data-testid={`shimmer-${i}`} />
-                  );
-                })}
-              </View>
-            </View>
-          ) : selectedPhotoIndex >= 0 && allPhotos.length > 0 ? (
-            /* === FULL-SCREEN VIEWER === */
-            <View style={{ flex: 1 }}>
-              <ScrollView
-                ref={photoReelRef}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                scrollEventThrottle={16}
-                onLayout={() => {
-                  // Scroll to the tapped photo after layout — more reliable than FlatList initialScrollIndex on web
-                  if (selectedPhotoIndex > 0 && photoReelRef.current) {
-                    setTimeout(() => {
-                      photoReelRef.current?.scrollTo({ x: selectedPhotoIndex * screenWidth, animated: false });
-                    }, 50);
-                  }
-                }}
-                onScroll={(e) => {
-                  const idx = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
-                  if (idx >= 0 && idx < allPhotos.length && idx !== selectedPhotoIndex) {
-                    setSelectedPhotoIndex(idx);
-                    setFullPhoto(allPhotos[idx]?.url || null);
-                  }
-                }}
-                style={{ flex: 1 }}
-                data-testid="photo-reel"
-              >
-                {allPhotos.map((item, i) => {
-                  const screenH = Dimensions.get('window').height;
-                  const imgH = screenH - 200;
-                  return (
-                    <View key={`reel-${i}`} style={{ width: screenWidth, height: imgH, justifyContent: 'center', alignItems: 'center' }}>
-                      <Image
-                        source={{ uri: item.url }}
-                        style={{ width: screenWidth, height: imgH }}
-                        contentFit="contain"
-                        transition={200}
-                        cachePolicy="memory-disk"
-                      />
-                    </View>
-                  );
-                })}
-              </ScrollView>
-              {/* Bottom action bar */}
-              <View style={[s.viewerBottomBar, { paddingBottom: insets.bottom + 12 }]}>
-                <View style={{ flex: 1 }}>
-                  <Text style={s.viewerLabel} numberOfLines={1}>
-                    {allPhotos[selectedPhotoIndex]?.type === 'profile' ? 'Profile Photo' : (allPhotos[selectedPhotoIndex]?.label || 'Photo')}
-                  </Text>
-                  {allPhotos[selectedPhotoIndex]?.date && (
-                    <Text style={s.viewerDate}>{new Date(allPhotos[selectedPhotoIndex].date).toLocaleDateString()}</Text>
-                  )}
-                </View>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <TouchableOpacity
-                    style={s.viewerActionBtn}
-                    onPress={() => { setSelectedPhotoIndex(-1); setFullPhoto(null); }}
-                    data-testid="back-to-gallery-grid"
-                  >
-                    <Ionicons name="grid-outline" size={18} color="#FFF" />
-                  </TouchableOpacity>
-                  {/* Delete photo button */}
-                  <TouchableOpacity
-                    style={[s.viewerActionBtn, { backgroundColor: '#FF3B30' }]}
-                    onPress={() => {
-                      const photo = allPhotos[selectedPhotoIndex];
-                      if (!photo) return;
-                      const isProfile = photo.type === 'profile';
-                      showConfirm(
-                        isProfile ? 'Remove Profile Photo' : 'Delete Photo',
-                        isProfile
-                          ? 'This will remove the profile photo. The next photo in history will become the new profile photo.'
-                          : 'Are you sure you want to delete this photo? This cannot be undone.',
-                        async () => {
-                          try {
-                            await api.delete(`/contacts/${user?._id}/${id}/photos`, { data: { photo_url: photo.url, photo_type: photo.type } });
-                            if (isProfile) {
-                              setContact((prev: any) => ({ ...prev, photo: null, photo_url: null, photo_thumbnail: null, photo_path: null }));
-                            }
-                            showToast('Photo deleted', 'success');
-                            setSelectedPhotoIndex(-1); setFullPhoto(null);
-                            preloadGalleryPhotos();
-                          } catch { showSimpleAlert('Error', 'Failed to delete photo'); }
-                        }
-                      );
-                    }}
-                    data-testid="delete-photo-btn"
-                  >
-                    <Ionicons name="trash" size={18} color="#FFF" />
-                  </TouchableOpacity>
-                  {allPhotos[selectedPhotoIndex]?.type !== 'profile' && (
-                    <TouchableOpacity
-                      style={[s.viewerActionBtn, { backgroundColor: '#C9A962' }]}
-                      onPress={async () => {
-                        const photoUrl = allPhotos[selectedPhotoIndex]?.url;
-                        if (!photoUrl) return;
-                        try {
-                          const r = await api.patch(`/contacts/${user._id}/${id}/profile-photo`, { photo_url: photoUrl });
-                          const durable = r.data?.photo_url ? resolvePhotoUrl(r.data.photo_url) : photoUrl;
-                          setContact((prev: any) => ({ ...prev, photo: durable, photo_url: durable, photo_thumbnail: durable }));
-                          showToast('Profile photo updated!', 'success');
-                          // Refresh gallery and go back to grid
-                          setSelectedPhotoIndex(-1); setFullPhoto(null);
-                          preloadGalleryPhotos();
-                        } catch { showSimpleAlert('Error', 'Failed to update profile photo'); }
-                      }}
-                      data-testid="set-as-profile-btn"
-                    >
-                      <Ionicons name="person-circle" size={18} color="#000" />
-                    </TouchableOpacity>
-                  )}
-                  <TouchableOpacity
-                    style={[s.viewerActionBtn, { backgroundColor: '#5856D6' }]}
-                    onPress={() => usePhotoForCard(allPhotos[selectedPhotoIndex]?.url)}
-                    data-testid="use-for-card-btn"
-                  >
-                    <Ionicons name="gift" size={18} color="#FFF" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          ) : allPhotos.length > 0 ? (
-            /* === SECTIONED 3-COLUMN GRID (Texted In · Sent · Cards · Profile) === */
-            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }}>
-              <View onLayout={(e) => setGalleryWidth(e.nativeEvent.layout.width)}>
-                {galleryWidth > 0 && (() => {
-                  const tileSize = Math.floor((galleryWidth - 2) / 3);
-                  const indexed = allPhotos.map((p: any, i: number) => ({ ...p, _gi: i }));
-                  const SECTIONS: { title: string; types: string[] }[] = [
-                    { title: 'Texted In', types: ['message_in'] },
-                    { title: 'You Sent', types: ['message_out'] },
-                    { title: 'Cards', types: ['congrats', 'birthday'] },
-                    { title: 'Profile', types: ['profile', 'history'] },
-                  ];
-                  const renderTile = (photo: any) => {
-                    const isProfile = photo.type === 'profile';
-                    return (
-                      <TouchableOpacity
-                        key={`${photo.type}-${photo._gi}`}
-                        activeOpacity={0.85}
-                        onPress={() => { setSelectedPhotoIndex(photo._gi); setFullPhoto(photo.url); }}
-                        data-testid={`gallery-tile-${photo._gi}`}
-                        style={{ width: tileSize, height: tileSize, overflow: 'hidden', position: 'relative', backgroundColor: '#111' }}
-                      >
-                        <Image
-                          source={{ uri: photo.thumbnail_url || photo.url }}
-                          style={{ width: tileSize, height: tileSize }}
-                          contentFit="cover"
-                          transition={250}
-                          cachePolicy="memory-disk"
-                        />
-                        {isProfile && (
-                          <View style={s.profileBadge} data-testid="profile-badge">
-                            <Ionicons name="person-circle" size={14} color="#C9A962" />
-                          </View>
-                        )}
-                        {!isProfile && (
-                          <TouchableOpacity
-                            style={s.setProfileOverlay}
-                            onPress={async (e) => {
-                              e.stopPropagation?.();
-                              try {
-                                const r = await api.patch(`/contacts/${user._id}/${id}/profile-photo`, { photo_url: photo.url });
-                                const durable = r.data?.photo_url ? resolvePhotoUrl(r.data.photo_url) : photo.url;
-                                setContact((prev: any) => ({ ...prev, photo: durable, photo_url: durable, photo_thumbnail: durable }));
-                                showToast('Profile photo updated!', 'success');
-                                preloadGalleryPhotos();
-                              } catch { showSimpleAlert('Error', 'Failed to update'); }
-                            }}
-                            data-testid={`set-profile-${photo._gi}`}
-                            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                          >
-                            <Ionicons name="person-circle-outline" size={16} color="#FFF" />
-                          </TouchableOpacity>
-                        )}
-                      </TouchableOpacity>
-                    );
-                  };
-                  return SECTIONS.map((sec) => {
-                    const items = indexed.filter((p: any) => sec.types.includes(p.type));
-                    if (items.length === 0) return null;
-                    return (
-                      <View key={sec.title} data-testid={`gallery-section-${sec.title.toLowerCase().replace(/\s+/g, '-')}`}>
-                        <Text style={s.gallerySectionHeader}>{sec.title} · {items.length}</Text>
-                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 1 }}>
-                          {items.map(renderTile)}
-                        </View>
-                      </View>
-                    );
-                  });
-                })()}
-              </View>
-            </ScrollView>
-          ) : (
-            /* === EMPTY STATE === */
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 }}>
-              <Ionicons name="images-outline" size={48} color="rgba(255,255,255,0.15)" />
-              <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 18, marginTop: 12, textAlign: 'center' }}>No photos yet</Text>
-              <TouchableOpacity
-                style={{ marginTop: 20, backgroundColor: '#C9A962', borderRadius: 20, paddingHorizontal: 24, paddingVertical: 10 }}
-                onPress={requestAddPhotoFromGallery}
-                data-testid="gallery-empty-upload"
-              >
-                <Text style={{ color: '#000', fontWeight: '700', fontSize: 16 }}>Add Photo</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-        </View>
-      </Modal>
+      <GalleryModal
+        s={s}
+        insets={insets}
+        screenWidth={screenWidth}
+        user={user}
+        contactId={id as string}
+        setContact={setContact}
+        showPhotoViewer={showPhotoViewer}
+        setShowPhotoViewer={setShowPhotoViewer}
+        fullPhotoLoading={fullPhotoLoading}
+        allPhotos={allPhotos}
+        setAllPhotos={setAllPhotos}
+        selectedPhotoIndex={selectedPhotoIndex}
+        setSelectedPhotoIndex={setSelectedPhotoIndex}
+        setFullPhoto={setFullPhoto}
+        galleryWidth={galleryWidth}
+        setGalleryWidth={setGalleryWidth}
+        photoReelRef={photoReelRef}
+        runPendingPick={runPendingPick}
+        requestAddPhotoFromGallery={requestAddPhotoFromGallery}
+        preloadGalleryPhotos={preloadGalleryPhotos}
+        usePhotoForCard={usePhotoForCard}
+        showToast={showToast}
+      />
       <ChannelPicker
         message={channelPicker.message}
         phone={channelPicker.phone}

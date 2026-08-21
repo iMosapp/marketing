@@ -8,6 +8,14 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { differenceInYears, differenceInMonths, differenceInDays, format } from 'date-fns';
 import { useThemeStore } from '../store/themeStore';
+import { getEventLabel } from './eventTypes';
+
+export function getEventTitle(evt: { title?: string; event_type: string; metadata?: any }): string {
+  // card_headline in metadata wins — set for custom cards since slug v timestamp 
+  if (evt.metadata?.card_headline) return `Viewed '${evt.metadata.card_headline}' Card`;
+  if (evt.title) return evt.title;
+  return getEventLabel(evt.event_type);
+}
 
 // ─── Time helpers ─────────────────────────────────────────────────────────────
 
