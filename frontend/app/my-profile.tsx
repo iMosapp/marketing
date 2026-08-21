@@ -9,6 +9,7 @@ import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { showSimpleAlert } from '../services/alert';
 import api from '../services/api';
+import * as ImagePicker from 'expo-image-picker';
 import { resolveUserPhotoUrlHiRes, resolvePhotoUrl } from '../utils/photoUrl';
 
 const PROD_BASE = process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com';
@@ -18,7 +19,70 @@ export default function MyProfileScreen() {
   const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
+  const setUser = useAuthStore((s: any) => s.setUser);
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+
+  const uploadPhotoFile = async (fd: FormData) => {
+    setPhotoUploading(true);
+    try {
+      const res = await api.post(`/profile/${user?._id}/photo`, fd);
+      if (res.data?.photo_url) {
+        setUser({
+          ...user,
+          photo_url: res.data.photo_url,
+          photo_thumb_path: undefined,
+          photo_avatar_path: undefined,
+        } as any);
+        showSimpleAlert('Photo Updated!', 'Your new profile photo is live on all your pages.');
+      }
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail;
+      showSimpleAlert('Upload Failed', typeof detail === 'string' ? detail : 'Please try a JPEG or PNG under 10MB.');
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
+
+  const pickAndUploadPhoto = () => {
+    if (Platform.OS === 'web') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.style.position = 'fixed';
+      input.style.top = '-9999px';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.onchange = async (e: any) => {
+        const file = e.target.files?.[0];
+        document.body.removeChild(input);
+        if (!file) return;
+        const fd = new FormData();
+        fd.append('file', file);
+        await uploadPhotoFile(fd);
+      };
+      input.click();
+    } else {
+      (async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          showSimpleAlert('Permission Needed', 'Allow photo access to update your profile picture.');
+          return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [1, 1],
+          quality: 0.9,
+        });
+        if (result.canceled || !result.assets?.[0]) return;
+        const asset = result.assets[0];
+        const fd = new FormData();
+        fd.append('file', { uri: asset.uri, type: 'image/jpeg', name: 'profile.jpg' } as any);
+        await uploadPhotoFile(fd);
+      })();
+    }
+  };
 
   useEffect(() => {
     if ((user as any)?.store_slug) {
@@ -98,13 +162,20 @@ export default function MyProfileScreen() {
             <Ionicons name="chevron-back" size={24} color="#fff" />
           </TouchableOpacity>
           <View style={styles.coverBottom}>
-            {(user as any)?.photo_url ? (
-              <ExpoImage source={{ uri: resolveUserPhotoUrlHiRes(user as any) || '' }} style={styles.avatar} contentFit="cover" placeholder={null} />
-            ) : (
-              <View style={[styles.avatar, styles.avatarFallback]}>
-                <Text style={styles.avatarText}>{user?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || '?'}</Text>
+            <TouchableOpacity onPress={pickAndUploadPhoto} activeOpacity={0.8} data-testid="change-photo-btn">
+              {(user as any)?.photo_url ? (
+                <ExpoImage source={{ uri: resolveUserPhotoUrlHiRes(user as any) || '' }} style={styles.avatar} contentFit="cover" placeholder={null} />
+              ) : (
+                <View style={[styles.avatar, styles.avatarFallback]}>
+                  <Text style={styles.avatarText}>{user?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || '?'}</Text>
+                </View>
+              )}
+              <View style={styles.cameraBadge}>
+                {photoUploading
+                  ? <Text style={{ fontSize: 8, color: '#000', fontWeight: '800' }}>...</Text>
+                  : <Ionicons name="camera" size={12} color="#000" />}
               </View>
-            )}
+            </TouchableOpacity>
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>{user?.name || 'Guest'}</Text>
               {((user as any)?.persona?.title || (user as any)?.title) ? (
@@ -203,6 +274,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   backBtn: { position: 'absolute', top: 10, left: 10, width: 34, height: 34, borderRadius: 17, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', zIndex: 5 },
   coverBottom: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
   avatar: { width: 62, height: 62, borderRadius: 16, borderWidth: 2, borderColor: '#C9A962' },
+  cameraBadge: { position: 'absolute', bottom: -4, right: -4, width: 22, height: 22, borderRadius: 11, backgroundColor: '#C9A962', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#000' },
   avatarFallback: { backgroundColor: '#C9A962', alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 22, fontWeight: '800', color: '#000' },
   name: { fontSize: 20, fontWeight: '800', color: '#fff' },

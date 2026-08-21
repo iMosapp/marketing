@@ -676,6 +676,58 @@ function HomeScreen() {
     { key: 'new-contact', icon: 'person-add', label: 'New Contact', sublabel: 'Add someone new',                  color: '#34C759', onPress: () => router.push('/contact/new' as any) },
   ];
 
+  // ── ONE clear next action, picked by priority ──
+  const nextMove = (() => {
+    if (hotOpps.length > 0) {
+      const c: any = hotOpps[0];
+      return {
+        icon: 'flame', color: '#FF3B30',
+        label: `Reply to ${c.contact_name || c.contact_phone || 'a hot lead'}`,
+        sub: c.intent_signals?.[0] || 'High buying intent — strike while it\'s hot',
+        btn: 'Open Chat',
+        onPress: () => router.push(`/thread/${c._id}` as any),
+      };
+    }
+    if ((taskSummary?.overdue || 0) > 0) {
+      return {
+        icon: 'alert-circle', color: '#FF9500',
+        label: `Clear ${taskSummary.overdue} overdue touchpoint${taskSummary.overdue === 1 ? '' : 's'}`,
+        sub: 'A quick text keeps them from going cold',
+        btn: "Let's Go",
+        onPress: () => router.push('/(tabs)/touchpoints?period=today' as any),
+      };
+    }
+    const next3: any = my3.find((m: any) => !completedToday.has(m.contact_id));
+    if (next3) {
+      return {
+        icon: next3.icon || 'chatbubble', color: next3.color || '#C9A962',
+        label: `${next3.action_label || 'Text'} ${next3.first_name || ''}`.trim(),
+        sub: next3.reason_label || '30 seconds, big impact',
+        btn: 'Do It',
+        onPress: () => {
+          setCompletedToday(p => new Set([...p, next3.contact_id]));
+          router.push(`/contact/${next3.contact_id}` as any);
+        },
+      };
+    }
+    if (pendingTasks.length > 0) {
+      return {
+        icon: 'checkbox', color: '#C9A962',
+        label: 'Knock out today\'s touchpoints',
+        sub: `${taskSummary?.pending_today || pendingTasks.length} waiting for you`,
+        btn: 'Start',
+        onPress: () => router.push('/(tabs)/touchpoints?period=today' as any),
+      };
+    }
+    return {
+      icon: 'star', color: '#C9A962',
+      label: 'All caught up!',
+      sub: 'Perfect time to ask a happy customer for a review',
+      btn: 'Get Reviews',
+      onPress: () => router.push('/quick-send/review' as any),
+    };
+  })();
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
@@ -704,6 +756,35 @@ function HomeScreen() {
           </View>
         ) : (
         <>
+
+        {/* ── DO THIS NEXT — one clear action ─── */}
+        <TouchableOpacity
+          onPress={nextMove.onPress}
+          activeOpacity={0.85}
+          style={{
+            marginHorizontal: 16, marginBottom: 16, borderRadius: 20, padding: 18,
+            backgroundColor: nextMove.color + '12',
+            borderWidth: 2, borderColor: nextMove.color + '55',
+          }}
+          data-testid="next-move-card"
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+            <Ionicons name="arrow-forward-circle" size={14} color={nextMove.color} />
+            <Text style={{ fontSize: 11, fontWeight: '900', color: nextMove.color, letterSpacing: 1.2 }}>DO THIS NEXT</Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: nextMove.color + '22', alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name={nextMove.icon as any} size={24} color={nextMove.color} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 17, fontWeight: '800', color: colors.text, lineHeight: 21 }} numberOfLines={2}>{nextMove.label}</Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }} numberOfLines={1}>{nextMove.sub}</Text>
+            </View>
+            <View style={{ backgroundColor: nextMove.color, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 9 }}>
+              <Text style={{ fontSize: 13, fontWeight: '800', color: '#fff' }}>{nextMove.btn}</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
 
         {/* ── QUICK ACTIONS — 2×2 grid ─── */}
         <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>

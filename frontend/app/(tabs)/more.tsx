@@ -533,8 +533,10 @@ export default function MoreScreen() {
   };
   
   // Check user roles
-  const isAdmin = user?.role === 'super_admin' || user?.role === 'org_admin' || user?.role === 'store_manager';
-  const isSuperAdmin = user?.role === 'super_admin';
+  const reallyAdmin = user?.role === 'super_admin' || user?.role === 'org_admin' || user?.role === 'store_manager';
+  const [repPreview, setRepPreview] = useState(false);
+  const isAdmin = !repPreview && reallyAdmin;
+  const isSuperAdmin = !repPreview && user?.role === 'super_admin';
   const isIndependent = !user?.organization_id;
 
   // Feature permissions from user object (merged with defaults on login)
@@ -553,8 +555,8 @@ export default function MoreScreen() {
   // ===== REORGANIZED HUB SECTIONS (Role-Aware) =====
 
   const sections: Section[] = [];
-  const isStoreManager = user?.role === 'store_manager';
-  const isPartner = !!(user?.partner_id) || user?.role === 'partner' || user?.role === 'reseller' || user?.role === 'org_admin';
+  const isStoreManager = !repPreview && user?.role === 'store_manager';
+  const isPartner = !repPreview && (!!(user?.partner_id) || user?.role === 'partner' || user?.role === 'reseller' || user?.role === 'org_admin');
 
   // ── PARTNER PORTAL SECTION ──────────────────────────────────────────────────
   if (isPartner) {
@@ -626,7 +628,7 @@ export default function MoreScreen() {
   // Only org_admin / super_admin can manage/edit campaigns
   // ============================================================
   {
-    const canManageCampaigns = user?.role === 'super_admin' || user?.role === 'org_admin';
+    const canManageCampaigns = !repPreview && (user?.role === 'super_admin' || user?.role === 'org_admin');
     const manageItems: (MenuItem & { permKey?: string })[] = [
       { icon: 'pricetags',  title: 'Tags',       subtitle: 'All tags — personal, account & org', onPress: () => router.push('/settings/tags'),             color: '#FF9500' },
       { icon: 'pricetags-outline', title: 'Keyword Auto-Tags', subtitle: 'Auto-tag calls & texts by keywords', onPress: () => router.push('/settings/keyword-rules' as any), color: '#5856D6' },
@@ -1285,6 +1287,31 @@ export default function MoreScreen() {
             )}
           </View>
         </View>
+
+        {/* ── Rep Preview banner / toggle ── */}
+        {repPreview && (
+          <TouchableOpacity
+            onPress={() => setRepPreview(false)}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, marginBottom: 8, backgroundColor: '#C9A96220', borderWidth: 1.5, borderColor: '#C9A962', borderRadius: 12, padding: 12 }}
+            data-testid="rep-preview-banner"
+          >
+            <Ionicons name="eye" size={16} color="#C9A962" />
+            <Text style={{ flex: 1, fontSize: 13, fontWeight: '700', color: '#C9A962' }}>
+              Rep Preview — this is what your reps see. Tap to exit.
+            </Text>
+            <Ionicons name="close" size={16} color="#C9A962" />
+          </TouchableOpacity>
+        )}
+        {reallyAdmin && !repPreview && (
+          <TouchableOpacity
+            onPress={() => setRepPreview(true)}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginHorizontal: 16, marginBottom: 8, paddingVertical: 8 }}
+            data-testid="rep-preview-toggle"
+          >
+            <Ionicons name="eye-outline" size={14} color={colors.textTertiary} />
+            <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textTertiary }}>View as Rep</Text>
+          </TouchableOpacity>
+        )}
 
         {hubQ ? (
           /* ── Search results ── */

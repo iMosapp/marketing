@@ -832,6 +832,110 @@ async def send_date_preview_digests():
         logger.error(f"[Scheduler] Date digest error: {e}")
 
 
+async def send_weekly_keyword_digests():
+    """Hourly: at 8 AM local on Mondays, text each rep a recap of last week's
+    hottest keywords (from keyword_tag_events, excluding retro scans)."""
+    from routers.database import get_db
+    import pytz
+
+    db = get_db()
+    if db is None:
+        return
+    try:
+        now_utc = datetime.now(timezone.utc)
+        user_ids = await db.keyword_tag_events.distinct("user_id", {
+            "created_at": {"$gte": now_utc - timedelta(days=9)},
+            "retro_scan": {"$ne": True},
+        })
+        sent = 0
+        for user_id in user_ids:
+            try:
+                user = await db.users.find_one({"_id": ObjectId(user_id)})
+            except Exception:
+                user = None
+            if not user:
+                continue
+            try:
+                tz = pytz.timezone(user.get("timezone") or "America/Denver")
+                local_now = datetime.now(tz)
+            except Exception:
+                continue
+            if local_now.weekday() != 0 or local_now.hour != 8:
+                continue
+
+            week_key = local_now.strftime("%G-W%V")
+            guard = await db.date_send_guard.find_one_and_update(
+                {"_id": f"kwdigest_{user_id}_{week_key}"},
+                {"$setOnInsert": {"created_at": datetime.utcnow()}},
+                upsert=True,
+            )
+            if guard is not None:
+                continue  # already sent this week
+
+            week_start_local = local_now.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=local_now.weekday())
+            last_week_start = week_start_local - timedelta(days=7)
+            evs = await db.keyword_tag_events.find({
+                "user_id": user_id,
+                "retro_scan": {"$ne": True},
+                "created_at": {
+                    "$gte": last_week_start.astimezone(pytz.utc),
+                    "$lt": week_start_local.astimezone(pytz.utc),
+                },
+            }, {"tag": 1, "keyword": 1, "source_type": 1}).to_list(5000)
+            if not evs:
+                continue
+
+            tag_counts, kw_counts, calls = {}, {}, 0
+            for e in evs:
+                tag = e.get("tag", "")
+                tag_counts[tag] = tag_counts.get(tag, 0) + 1
+                kw_counts.setdefault(tag, {})
+                kw = e.get("keyword", "")
+                kw_counts[tag][kw] = kw_counts[tag].get(kw, 0) + 1
+                if e.get("source_type") == "call":
+                    calls += 1
+
+            top = sorted(tag_counts.items(), key=lambda x: -x[1])[:5]
+            lines = [f"I'm On Social — last week your customers mentioned ({len(evs)} hits):"]
+            for tag, cnt in top:
+                kws = sorted(kw_counts.get(tag, {}).items(), key=lambda x: -x[1])
+                top_kw = kws[0][0] if kws and kws[0][0] else ""
+                lines.append(f"🔥 {tag}: {cnt}" + (f" (top: \"{top_kw}\")" if top_kw else ""))
+            if calls:
+                lines.append(f"📞 {calls} came from phone calls")
+            lines.append("Details: Hub → Keyword Auto-Tags")
+            body = "\n".join(lines)
+
+            phone = user.get("phone")
+            if phone:
+                try:
+                    from services.twilio_service import send_sms
+                    await send_sms(phone, body, from_phone=user.get("twilio_number") or user.get("mvpline_number"))
+                    sent += 1
+                except Exception as e:
+                    logger.warning(f"[KwDigest] SMS failed for {user_id}: {e}")
+
+            await db.notifications.update_one(
+                {"idempotency_key": f"kw_digest_{user_id}_{week_key}"},
+                {"$setOnInsert": {
+                    "user_id": user_id,
+                    "type": "keyword_digest",
+                    "title": "Last week's keyword recap",
+                    "message": body,
+                    "link": "/settings/keyword-rules",
+                    "idempotency_key": f"kw_digest_{user_id}_{week_key}",
+                    "read": False,
+                    "dismissed": False,
+                    "created_at": datetime.now(timezone.utc),
+                }},
+                upsert=True,
+            )
+        if sent:
+            logger.info(f"[Scheduler] Weekly keyword digests: {sent} sent")
+    except Exception as e:
+        logger.error(f"[Scheduler] Weekly keyword digest error: {e}")
+
+
 async def process_pending_campaign_steps():
     """
     Reads from the pre-scheduled campaign_pending_sends queue — no enrollment scan.
@@ -1533,6 +1637,15 @@ def start_scheduler():
         safe_job(send_date_preview_digests),
         CronTrigger(minute=5),
         id="date_preview_digest",
+        replace_existing=True,
+        misfire_grace_time=1800,
+    )
+
+    # Hourly at :10 — Monday 8 AM local weekly keyword recap SMS
+    scheduler.add_job(
+        safe_job(send_weekly_keyword_digests),
+        CronTrigger(minute=10),
+        id="weekly_keyword_digest",
         replace_existing=True,
         misfire_grace_time=1800,
     )
