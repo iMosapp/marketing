@@ -1,7 +1,7 @@
 """
 Calls router - handles call logs and dialer functionality
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request, Response
 from bson import ObjectId
 from datetime import datetime
 from typing import Optional
@@ -253,3 +253,58 @@ async def retry_transcription(call_sid: str, x_user_id: str = None):
         raise HTTPException(status_code=504, detail="Whisper transcription timed out (90s)")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/recording/{call_sid}")
+async def stream_recording(call_sid: str, request: Request):
+    """Stream a call recording through the backend (Twilio auth server-side).
+    Supports HTTP Range so iOS/web players can seek and change speed smoothly."""
+    import os as _os
+    import re as _re
+    import httpx as _httpx
+
+    db = get_db()
+    log = await db.call_logs.find_one({"call_sid": call_sid}, {"recording_url": 1, "recording_sid": 1})
+    if not log or not log.get("recording_url"):
+        raise HTTPException(status_code=404, detail="Recording not found")
+
+    tw_sid = _os.environ.get("TWILIO_ACCOUNT_SID")
+    tw_token = _os.environ.get("TWILIO_AUTH_TOKEN")
+    if not tw_sid or not tw_token:
+        raise HTTPException(status_code=500, detail="Twilio credentials not configured")
+
+    cache_key = (log.get("recording_sid") or call_sid).replace("/", "_")
+    cache_path = f"/tmp/rec_cache_{cache_key}.mp3"
+
+    if not _os.path.exists(cache_path):
+        url = log["recording_url"]
+        mp3_url = url if url.endswith(".mp3") else f"{url}.mp3"
+        async with _httpx.AsyncClient() as client:
+            resp = await client.get(mp3_url, auth=(tw_sid, tw_token), follow_redirects=True, timeout=60.0)
+        if resp.status_code != 200:
+            raise HTTPException(status_code=502, detail=f"Recording fetch failed: HTTP {resp.status_code}")
+        tmp = cache_path + ".part"
+        with open(tmp, "wb") as f:
+            f.write(resp.content)
+        _os.replace(tmp, cache_path)
+
+    file_size = _os.path.getsize(cache_path)
+    headers = {"Accept-Ranges": "bytes", "Cache-Control": "private, max-age=3600"}
+
+    range_header = request.headers.get("range")
+    if range_header:
+        m = _re.match(r"bytes=(\d*)-(\d*)", range_header)
+        start = int(m.group(1)) if m and m.group(1) else 0
+        end = int(m.group(2)) if m and m.group(2) else file_size - 1
+        end = min(end, file_size - 1)
+        if start > end or start >= file_size:
+            raise HTTPException(status_code=416, detail="Invalid range")
+        with open(cache_path, "rb") as f:
+            f.seek(start)
+            data = f.read(end - start + 1)
+        headers["Content-Range"] = f"bytes {start}-{end}/{file_size}"
+        return Response(content=data, status_code=206, headers=headers, media_type="audio/mpeg")
+
+    with open(cache_path, "rb") as f:
+        data = f.read()
+    return Response(content=data, headers=headers, media_type="audio/mpeg")

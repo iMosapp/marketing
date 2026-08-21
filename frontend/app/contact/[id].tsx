@@ -34,6 +34,7 @@ import api from '../../services/api';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
 import { useToast } from '../../components/common/Toast';
 import VoiceInput from '../../components/VoiceInput';
+import { CallRecordingPlayer } from '../../components/CallRecordingPlayer';
 import CampaignJourney from '../../components/CampaignJourney';
 import { SoldWorkflowModal } from '../../components/SoldWorkflowModal';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
@@ -3988,6 +3989,21 @@ function ContactDetailScreen() {
                           </View>
                         )}
                       </View>
+
+                      {/* Recording player — 1x / 1.5x / 2x speeds */}
+                      {call.recording_url ? (
+                        <View style={{ backgroundColor: colors.surface, borderRadius: 10, padding: 10, marginBottom: 8 }}>
+                          <CallRecordingPlayer
+                            url={call.call_sid
+                              ? `${api.defaults.baseURL}/calls/recording/${call.call_sid}`
+                              : `${api.defaults.baseURL}/webhooks/twilio/media-proxy?url=${encodeURIComponent(call.recording_url)}`}
+                            tint={isInbound ? '#007AFF' : '#34C759'}
+                            textColor={colors.text}
+                            subColor={colors.textSecondary}
+                            trackColor={colors.border}
+                          />
+                        </View>
+                      ) : null}
 
                       {/* AI Summary */}
                       {call.ai_summary ? (

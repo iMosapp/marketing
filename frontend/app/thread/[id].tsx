@@ -29,6 +29,7 @@ import { resolvePhotoUrl } from '../../utils/photoUrl';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AISuggestion from '../../components/AISuggestion';
 import ChannelPicker, { useChannelPicker } from '../../components/ChannelPicker';
+import { CallRecordingPlayer } from '../../components/CallRecordingPlayer';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { messagesAPI, templatesAPI, emailAPI } from '../../services/api';
@@ -2034,19 +2035,16 @@ function ThreadScreen() {
               </View>
             )}
 
-            {/* Recording link */}
-            {hasRecording && callItem.recording_url && (
-              <TouchableOpacity
-                onPress={() => {
-                  const url = callItem.recording_url;
-                  if (Platform.OS === 'web') { window.open(url, '_blank'); }
-                  else { Linking.openURL(url); }
-                }}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#E5E5EA' }}
-              >
-                <Ionicons name="play-circle" size={18} color={callColor} />
-                <Text style={{ fontSize: 13, color: callColor, fontWeight: '600' }}>Listen to Recording</Text>
-              </TouchableOpacity>
+            {/* Inline recording player — 1x / 1.5x / 2x speeds */}
+            {hasRecording && (callItem.call_sid || callItem.recording_url) && (
+              <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#E5E5EA' }}>
+                <CallRecordingPlayer
+                  url={callItem.call_sid
+                    ? `${api.defaults.baseURL}/calls/recording/${callItem.call_sid}`
+                    : `${api.defaults.baseURL}/webhooks/twilio/media-proxy?url=${encodeURIComponent(callItem.recording_url)}`}
+                  tint={callColor}
+                />
+              </View>
             )}
           </View>
         </View>
