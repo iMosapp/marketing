@@ -183,6 +183,70 @@ async def delete_rule(user_id: str, rule_id: str):
     return {"message": "Rule deleted"}
 
 
+@router.get("/{user_id}/insights")
+async def keyword_insights(user_id: str):
+    """Weekly keyword activity: this week's fires per tag (vs last week) + 8-week trend.
+    Retro-scan events are excluded so history scans don't skew weekly numbers."""
+    from datetime import timedelta
+    db = get_db()
+    now = datetime.now(timezone.utc)
+    week_start = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+    last_week_start = week_start - timedelta(days=7)
+    window_start = week_start - timedelta(weeks=7)
+
+    events = await db.keyword_tag_events.find(
+        {"user_id": user_id, "created_at": {"$gte": window_start}, "retro_scan": {"$ne": True}},
+        {"tag": 1, "keyword": 1, "created_at": 1},
+    ).to_list(10000)
+
+    this_week: dict = {}
+    last_week: dict = {}
+    kw_counts: dict = {}
+    weekly: dict = {}
+    for e in events:
+        ts = e.get("created_at")
+        if not hasattr(ts, "isoformat"):
+            continue
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+        tag = e.get("tag", "")
+        wk_idx = min(7, max(0, (ts - window_start).days // 7))
+        weekly[wk_idx] = weekly.get(wk_idx, 0) + 1
+        if ts >= week_start:
+            this_week[tag] = this_week.get(tag, 0) + 1
+            kw = e.get("keyword", "")
+            kw_counts.setdefault(tag, {})
+            kw_counts[tag][kw] = kw_counts[tag].get(kw, 0) + 1
+        elif ts >= last_week_start:
+            last_week[tag] = last_week.get(tag, 0) + 1
+
+    tags_out = []
+    all_tags = set(this_week) | set(last_week)
+    for tag in sorted(all_tags, key=lambda t: -(this_week.get(t, 0))):
+        count = this_week.get(tag, 0)
+        prev = last_week.get(tag, 0)
+        kws = sorted(kw_counts.get(tag, {}).items(), key=lambda x: -x[1])
+        tags_out.append({
+            "tag": tag,
+            "count": count,
+            "last_week": prev,
+            "delta": count - prev,
+            "top_keyword": kws[0][0] if kws else "",
+        })
+
+    weeks = [
+        {"label": (window_start + timedelta(weeks=i)).strftime("%b %d").replace(" 0", " "), "count": weekly.get(i, 0)}
+        for i in range(8)
+    ]
+    return {
+        "week_start": week_start.isoformat(),
+        "total_this_week": sum(this_week.values()),
+        "total_last_week": sum(last_week.values()),
+        "tags": tags_out,
+        "weekly": weeks,
+    }
+
+
 @router.post("/{user_id}/{rule_id}/scan")
 async def scan_rule_history(user_id: str, rule_id: str):
     """One-tap retro scan: apply this rule to all past messages + call transcripts."""

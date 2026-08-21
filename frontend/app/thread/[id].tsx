@@ -29,7 +29,9 @@ import { resolvePhotoUrl } from '../../utils/photoUrl';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AISuggestion from '../../components/AISuggestion';
 import ChannelPicker, { useChannelPicker } from '../../components/ChannelPicker';
-import { CallRecordingPlayer } from '../../components/CallRecordingPlayer';
+import { CallLogCard } from '../../components/thread/CallLogCard';
+import { MessageBubble } from '../../components/thread/MessageBubble';
+import { ThreadSearchBar } from '../../components/thread/ThreadSearchBar';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { messagesAPI, templatesAPI, emailAPI } from '../../services/api';
@@ -1922,308 +1924,30 @@ function ThreadScreen() {
   const renderMessage = ({ item, index }: { item: Message; index: number }) => {
     const isUser = item.sender === 'user' || item.sender === 'ai';
     const timestamp = item.timestamp ? new Date(item.timestamp) : new Date();
-    const hasMedia = item.has_media && item.media_urls && item.media_urls.length > 0;
-    
-    // Detect rich content types
-    const content = item.content || '';
-    const eventType = (item as any).event_type || '';
-    const contentLower = content.toLowerCase();
-    const isReviewLink = content.includes('/review/') || contentLower.includes('review link') || eventType.includes('review');
-    const isDigitalCard = content.includes('/card/') || content.includes('/p/') || contentLower.includes('digital card') || contentLower.includes('digital business card') || contentLower.includes('save my contact') || eventType === 'digital_card_shared' || eventType === 'digital_card_sent';
-    
-    // Detect card type from event_type first, then fall back to URL/content analysis
-    let detectedCardType = '';
-    const KNOWN_CARD_TYPES = ['congrats', 'birthday', 'anniversary', 'thankyou', 'welcome', 'holiday'];
-    
-    // Helper: detect card type from message text content
-    const detectFromContent = (text: string): string => {
-      if (text.includes('holiday card') || text.includes('happy holiday')) return 'holiday';
-      if (text.includes('birthday card') || text.includes('happy birthday')) return 'birthday';
-      if (text.includes('anniversary card') || text.includes('happy anniversary')) return 'anniversary';
-      if (text.includes('thank you card') || text.includes('thankyou card')) return 'thankyou';
-      if (text.includes('welcome card')) return 'welcome';
-      return '';
-    };
-    
-    if (eventType.includes('_card_sent') || eventType.includes('_card_shared')) {
-      const typeFromEvent = eventType.replace('_card_sent', '').replace('_card_shared', '');
-      if (KNOWN_CARD_TYPES.includes(typeFromEvent) && typeFromEvent !== 'congrats') {
-        // Specific card type like birthday_card_sent — trust it
-        detectedCardType = typeFromEvent;
-      } else if (typeFromEvent === 'congrats') {
-        // Generic congrats_card_sent — check content for the REAL type
-        // If this is actually a digital card, don't mislabel it as congrats
-        if (!isDigitalCard) {
-          detectedCardType = detectFromContent(contentLower) || 'congrats';
-        }
-      }
-      // digital_card_sent/shared and other non-card types fall through (detectedCardType stays '')
-    } else if (content.includes('/congrats/')) {
-      if (!isDigitalCard) {
-        detectedCardType = detectFromContent(contentLower) || 'congrats';
-      }
-    } else if (!isDigitalCard && (contentLower.includes('congrats') || contentLower.includes('congratulations'))) {
-      detectedCardType = 'congrats';
-    }
-    const isCongratsCard = detectedCardType !== '';
-    const isRichContent = isReviewLink || isCongratsCard || isDigitalCard;
-    
-    // Card type display config
-    const CARD_DISPLAY: Record<string, { icon: string; color: string; label: string }> = {
-      congrats: { icon: 'trophy', color: '#C9A962', label: 'Congrats Card' },
-      birthday: { icon: 'gift', color: '#FF2D55', label: 'Birthday Card' },
-      anniversary: { icon: 'heart', color: '#AF52DE', label: 'Anniversary Card' },
-      thankyou: { icon: 'thumbs-up', color: '#34C759', label: 'Thank You Card' },
-      welcome: { icon: 'hand-left', color: '#007AFF', label: 'Welcome Card' },
-      holiday: { icon: 'snow', color: '#5AC8FA', label: 'Holiday Card' },
-    };
-    
-    // Choose icon and color for rich content
-    let richIcon = 'chatbubble';
-    let richColor = '#007AFF';
-    let richLabel = 'Message';
-    if (isReviewLink) { richIcon = 'star'; richColor = '#FFD60A'; richLabel = 'Review Link'; }
-    else if (isDigitalCard) { richIcon = 'card'; richColor = '#5856D6'; richLabel = 'Digital Card'; }
-    else if (isCongratsCard) {
-      const cardDisplay = CARD_DISPLAY[detectedCardType] || CARD_DISPLAY.congrats;
-      richIcon = cardDisplay.icon; richColor = cardDisplay.color; richLabel = cardDisplay.label;
-    }
-    
-    // ── Call log message — renders as a rich call card ───────────────────────
+
+    // Call log — rich call card with inline recording player
     const isCallLog = (item as any).type === 'call_log' || (item as any).channel === 'voice';
-    if (isCallLog) {
-      const callItem = item as any;
-      const hasRecording = callItem.has_recording;
-      const aiSummary    = callItem.ai_summary || '';
-      const dur          = callItem.duration_s || 0;
-      const durLabel     = dur >= 60 ? `${Math.floor(dur/60)}m ${dur%60}s` : dur > 0 ? `${dur}s` : '';
-      const isOutbound   = callItem.direction === 'outbound';
-      const callStatus   = callItem.call_status || 'placed';
-      const callColor    = '#30D158';
+    if (isCallLog) return <CallLogCard item={item} timestamp={timestamp} />;
 
-      return (
-        <View style={{ marginVertical: 6, marginHorizontal: 16 }}>
-          <Text style={{ fontSize: 12, color: '#8E8E93', marginBottom: 4, textAlign: 'center' }}>
-            {format(timestamp, 'h:mm a')}
-          </Text>
-          <View style={{ backgroundColor: '#F2F9F4', borderRadius: 14, borderWidth: 1.5, borderColor: callColor, padding: 14 }}>
-            {/* Call header */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: aiSummary ? 10 : 0 }}>
-              <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: callColor + '20', alignItems: 'center', justifyContent: 'center' }}>
-                <Ionicons name={isOutbound ? 'call' : 'call-outline'} size={18} color={callColor} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: '700', color: '#1C1C1E' }}>
-                  {isOutbound ? 'Outbound Call' : 'Inbound Call'}{durLabel ? ` · ${durLabel}` : ''}
-                </Text>
-                <Text style={{ fontSize: 12, color: '#8E8E93', marginTop: 1 }}>
-                  {callStatus === 'placed' ? 'Call placed — waiting for recording...' : callStatus === 'completed' ? 'Call completed' : callStatus}
-                </Text>
-              </View>
-              {hasRecording && (
-                <View style={{ backgroundColor: callColor + '20', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                  <Text style={{ fontSize: 11, color: callColor, fontWeight: '700' }}>✓ Recorded</Text>
-                </View>
-              )}
-            </View>
-
-            {/* AI Summary */}
-            {!!aiSummary && (
-              <View style={{ backgroundColor: '#fff', borderRadius: 10, padding: 10, borderWidth: 1, borderColor: '#E5E5EA' }}>
-                <Text style={{ fontSize: 12, fontWeight: '700', color: '#8E8E93', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 }}>Call Summary</Text>
-                <Text style={{ fontSize: 13, color: '#1C1C1E', lineHeight: 18 }}>{aiSummary}</Text>
-              </View>
-            )}
-
-            {/* Inline recording player — 1x / 1.5x / 2x speeds */}
-            {hasRecording && (callItem.call_sid || callItem.recording_url) && (
-              <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#E5E5EA' }}>
-                <CallRecordingPlayer
-                  url={callItem.call_sid
-                    ? `${api.defaults.baseURL}/calls/recording/${callItem.call_sid}`
-                    : `${api.defaults.baseURL}/webhooks/twilio/media-proxy?url=${encodeURIComponent(callItem.recording_url)}`}
-                  tint={callColor}
-                />
-              </View>
-            )}
-          </View>
-        </View>
-      );
-    }
-
-    // Show date separator if this message is on a different day than the previous one
     const prevMsg = index > 0 ? messages[index - 1] : null;
     const prevTimestamp = prevMsg?.timestamp ? new Date(prevMsg.timestamp) : null;
     const showDateSep = !prevTimestamp || !isSameDay(timestamp, prevTimestamp);
 
     return (
-      <>
-        {showDateSep && (
-          <View style={styles.dateSeparatorRow}>
-            <View style={[styles.dateSeparatorLine, { backgroundColor: colors.border }]} />
-            <Text style={[styles.dateSeparatorText, { color: colors.textTertiary, backgroundColor: colors.bg }]}>
-              {getDateLabel(timestamp)}
-            </Text>
-            <View style={[styles.dateSeparatorLine, { backgroundColor: colors.border }]} />
-          </View>
-        )}
-      <View
-        style={[
-          styles.messageContainer,
-          isUser ? styles.userMessageContainer : styles.contactMessageContainer,
-        ]}
-      >
-        {/* Sender label */}
-        <Text style={[styles.senderLabel, isUser ? styles.senderLabelRight : styles.senderLabelLeft]}>
-          {isUser ? (item.ai_generated ? 'Jessi AI' : 'You') : (contactName?.toString() || 'Contact')} · {format(timestamp, 'h:mm a')}
-        </Text>
-        
-        <View
-          style={[
-            styles.messageBubble,
-            isUser ? styles.userMessageBubble : styles.contactMessageBubble,
-            isRichContent && styles.richMessageBubble,
-            isRichContent && { borderLeftColor: richColor },
-            threadSearchOpen && threadSearchQuery.trim() !== '' && searchMatches[currentMatchIdx] === index && { borderWidth: 2, borderColor: '#FFD60A' },
-          ]}
-        >
-          {/* Rich content header */}
-          {isRichContent && (
-            <View style={styles.richContentHeader}>
-              <View style={[styles.richContentIcon, { backgroundColor: `${richColor}20` }]}>
-                <Ionicons name={richIcon as any} size={14} color={richColor} />
-              </View>
-              <Text style={[styles.richContentLabel, { color: richColor }]}>{richLabel}</Text>
-            </View>
-          )}
-          
-          {item.ai_generated && !isRichContent && (
-            <View style={styles.aiIndicator}>
-              <Ionicons name="sparkles" size={12} color="#34C759" />
-              <Text style={styles.aiIndicatorText}>AI</Text>
-            </View>
-          )}
-          
-          {/* Render attached images */}
-          {hasMedia && item.media_urls && item.media_urls.length > 0 && (
-            <View style={styles.mediaContainer}>
-              {item.media_urls.map((url, index) => {
-                // Ensure absolute URL — some old messages stored relative paths
-                const absUrl = url && url.startsWith('http')
-                  ? url
-                  : url ? `https://app.imonsocial.com${url.startsWith('/') ? '' : '/'}${url}` : '';
-                if (!absUrl) return null;
-
-                // Contact card (.vcf) — can't render as an image. Show a contact-card tile
-                // that mirrors what the customer receives (their saved contact w/ photo).
-                const lower = absUrl.toLowerCase();
-                const isVcard = lower.includes('.vcf') || lower.includes('/vcard');
-                if (isVcard) {
-                  return (
-                    <TouchableOpacity
-                      key={index}
-                      activeOpacity={0.9}
-                      data-testid="vcard-media-tile"
-                      onPress={() => {
-                        if (Platform.OS === 'web') { window.open(absUrl, '_blank'); }
-                        else { Linking.openURL(absUrl); }
-                      }}
-                      style={styles.vcardTile}
-                    >
-                      {myPhoto ? (
-                        <Image source={{ uri: myPhoto }} style={styles.vcardAvatar} contentFit="cover" transition={200} />
-                      ) : (
-                        <View style={[styles.vcardAvatar, styles.vcardAvatarFallback]}>
-                          <Ionicons name="person" size={26} color="#8E8E93" />
-                        </View>
-                      )}
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.vcardTitle} numberOfLines={1}>{user?.name || 'Contact Card'}</Text>
-                        <Text style={styles.vcardSubtitle}>Contact Card · Tap to save</Text>
-                      </View>
-                      <Ionicons name="person-add" size={20} color="#007AFF" />
-                    </TouchableOpacity>
-                  );
-                }
-
-                return (
-                  <TouchableOpacity
-                    key={index}
-                    activeOpacity={0.9}
-                    onPress={() => {
-                      if (Platform.OS === 'web') { window.open(absUrl, '_blank'); }
-                      else { Linking.openURL(absUrl); }
-                    }}
-                  >
-                    <View style={styles.mediaImageWrapper}>
-                      <Image
-                        source={{ uri: absUrl }}
-                        style={styles.mediaImage}
-                        contentFit="cover"
-                        cachePolicy="none"
-                        transition={300}
-                        onError={(e) => console.log('[Media] Load error:', absUrl, e)}
-                      />
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
-          
-          {/* Show image icon if media exists but no text content */}
-          {hasMedia && !item.content && (
-            <View style={styles.mediaOnlyIndicator}>
-              <Ionicons name="image" size={14} color={isUser ? "#fff" : colors.textSecondary} />
-              <Text style={[styles.mediaOnlyText, { color: isUser ? '#fff' : colors.contactBubbleText }]}>Photo</Text>
-            </View>
-          )}
-          
-          {/* Text content */}
-          {item.content ? (
-            <Text style={[
-              styles.messageText,
-              isUser ? { color: colors.userBubbleText } : { color: colors.contactBubbleText },
-            ]}>
-              {renderHighlightedText(item.content)}
-            </Text>
-          ) : null}
-          
-          {item.intent_detected && (
-            <View style={styles.intentBadge}>
-              <Ionicons name="flag" size={10} color="#FF9500" />
-              <Text style={styles.intentText}>{item.intent_detected}</Text>
-            </View>
-          )}
-          
-          {item.channel === 'sms_personal' && isUser && (
-            <View style={styles.personalSmsBadge}>
-              <Ionicons name="phone-portrait-outline" size={10} color={colors.textSecondary} />
-              <Text style={styles.personalSmsText}>Sent from your phone</Text>
-            </View>
-          )}
-          
-          {item.channel === 'email' && isUser && (
-            <View style={styles.personalSmsBadge}>
-              <Ionicons name="mail-outline" size={10} color="#AF52DE" />
-              <Text style={[styles.personalSmsText, { color: '#AF52DE' }]}>Sent via email</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Auto-applied keyword tags */}
-        {(item as any).auto_tags?.length > 0 && (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 3, justifyContent: isUser ? 'flex-end' : 'flex-start' }} data-testid="message-auto-tags">
-            {(item as any).auto_tags.map((t: string) => (
-              <View key={t} style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#5856D620', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 }}>
-                <Ionicons name="pricetag" size={9} color="#5856D6" />
-                <Text style={{ fontSize: 10, color: '#5856D6', fontWeight: '600' }}>{t}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-      </View>
-      </>
+      <MessageBubble
+        item={item}
+        isUser={isUser}
+        timestamp={timestamp}
+        showDateSep={showDateSep}
+        dateLabel={showDateSep ? getDateLabel(timestamp) : ''}
+        styles={styles}
+        colors={colors}
+        contactName={contactName?.toString() || 'Contact'}
+        myPhoto={myPhoto}
+        userName={user?.name}
+        highlight={renderHighlightedText}
+        isCurrentMatch={threadSearchOpen && threadSearchQuery.trim() !== '' && searchMatches[currentMatchIdx] === index}
+      />
     );
   };
   
@@ -2314,31 +2038,16 @@ function ThreadScreen() {
 
       {/* In-thread keyword search bar */}
       {threadSearchOpen && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.surface }} data-testid="thread-search-bar">
-          <Ionicons name="search" size={16} color={colors.textSecondary} />
-          <TextInput
-            style={{ flex: 1, fontSize: 15, color: colors.textPrimary, paddingVertical: 4 }}
-            placeholder="Search this conversation…"
-            placeholderTextColor={colors.textSecondary}
-            value={threadSearchQuery}
-            onChangeText={setThreadSearchQuery}
-            autoFocus
-            autoCapitalize="none"
-            data-testid="thread-search-input"
-          />
-          <Text style={{ fontSize: 12, color: colors.textSecondary, fontWeight: '600', minWidth: 30, textAlign: 'center' }} data-testid="thread-search-count">
-            {searchMatches.length ? `${currentMatchIdx + 1}/${searchMatches.length}` : threadSearchQuery.trim() ? '0' : ''}
-          </Text>
-          <TouchableOpacity onPress={() => jumpToMatch(currentMatchIdx - 1)} disabled={!searchMatches.length} style={{ padding: 4, opacity: searchMatches.length ? 1 : 0.3 }} data-testid="thread-search-prev">
-            <Ionicons name="chevron-up" size={18} color={colors.accent} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => jumpToMatch(currentMatchIdx + 1)} disabled={!searchMatches.length} style={{ padding: 4, opacity: searchMatches.length ? 1 : 0.3 }} data-testid="thread-search-next">
-            <Ionicons name="chevron-down" size={18} color={colors.accent} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => { setThreadSearchOpen(false); setThreadSearchQuery(''); }} style={{ padding: 4 }} data-testid="thread-search-close">
-            <Ionicons name="close" size={18} color={colors.textSecondary} />
-          </TouchableOpacity>
-        </View>
+        <ThreadSearchBar
+          colors={colors}
+          query={threadSearchQuery}
+          onChangeQuery={setThreadSearchQuery}
+          countLabel={searchMatches.length ? `${currentMatchIdx + 1}/${searchMatches.length}` : threadSearchQuery.trim() ? '0' : ''}
+          hasMatches={searchMatches.length > 0}
+          onPrev={() => jumpToMatch(currentMatchIdx - 1)}
+          onNext={() => jumpToMatch(currentMatchIdx + 1)}
+          onClose={() => { setThreadSearchOpen(false); setThreadSearchQuery(''); }}
+        />
       )}
       
       {/* Mode banner removed — more room for messages */}

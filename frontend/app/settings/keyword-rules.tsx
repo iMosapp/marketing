@@ -42,6 +42,7 @@ export default function KeywordRulesScreen() {
   const [loading, setLoading] = useState(true);
   const [rules, setRules] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
+  const [insights, setInsights] = useState<any>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editRule, setEditRule] = useState<any>(null);
   const [formTag, setFormTag] = useState('');
@@ -56,12 +57,14 @@ export default function KeywordRulesScreen() {
     if (!user?._id) return;
     try {
       setLoading(true);
-      const [rulesRes, eventsRes] = await Promise.all([
+      const [rulesRes, eventsRes, insightsRes] = await Promise.all([
         api.get(`/keyword-rules/${user._id}`),
         api.get(`/keyword-rules/${user._id}/events?limit=30`),
+        api.get(`/keyword-rules/${user._id}/insights`),
       ]);
       setRules(rulesRes.data || []);
       setEvents(eventsRes.data || []);
+      setInsights(insightsRes.data || null);
     } catch (e) {
       console.error('Failed to load keyword rules:', e);
     } finally {
@@ -211,6 +214,74 @@ export default function KeywordRulesScreen() {
               <Ionicons name="notifications" size={11} color="#FF9500" /> bell = instant push alert when a customer says it · <Ionicons name="time-outline" size={11} color="#32ADE6" /> clock = scan past conversations
             </Text>
           </View>
+
+          {/* Weekly insights */}
+          {insights && (insights.total_this_week > 0 || insights.total_last_week > 0) && (
+            <>
+              <Text style={styles.sectionTitle}>THIS WEEK</Text>
+              <View style={styles.insightsCard} data-testid="keyword-insights-card">
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <Text style={{ fontSize: 22, fontWeight: '800', color: colors.text }}>
+                    {insights.total_this_week}
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary }}>  keyword hit{insights.total_this_week === 1 ? '' : 's'}</Text>
+                  </Text>
+                  {(() => {
+                    const d = insights.total_this_week - insights.total_last_week;
+                    const up = d > 0;
+                    const flat = d === 0;
+                    return (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                        <Ionicons name={flat ? 'remove' : up ? 'trending-up' : 'trending-down'} size={13} color={flat ? colors.textTertiary : up ? '#34C759' : '#FF3B30'} />
+                        <Text style={{ fontSize: 12, fontWeight: '700', color: flat ? colors.textTertiary : up ? '#34C759' : '#FF3B30' }}>
+                          {flat ? 'same as' : `${Math.abs(d)} ${up ? 'more' : 'fewer'} than`} last week
+                        </Text>
+                      </View>
+                    );
+                  })()}
+                </View>
+
+                {(insights.tags || []).slice(0, 6).map((t: any) => {
+                  const maxCount = Math.max(...insights.tags.map((x: any) => x.count), 1);
+                  const c = rules.find(r => r.tag === t.tag)?.color || '#5856D6';
+                  return (
+                    <View key={t.tag} style={{ marginBottom: 10 }} data-testid={`insight-tag-${t.tag.toLowerCase().replace(/\s+/g, '-')}`}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 3 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                          <Text style={{ fontSize: 13, fontWeight: '700', color: c }}>{t.tag}</Text>
+                          {!!t.top_keyword && (
+                            <Text style={{ fontSize: 11, color: colors.textTertiary }} numberOfLines={1}>"{t.top_keyword}"</Text>
+                          )}
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                          <Text style={{ fontSize: 13, fontWeight: '800', color: colors.text }}>{t.count}</Text>
+                          {t.delta !== 0 && (
+                            <Ionicons name={t.delta > 0 ? 'arrow-up' : 'arrow-down'} size={11} color={t.delta > 0 ? '#34C759' : '#FF3B30'} />
+                          )}
+                        </View>
+                      </View>
+                      <View style={{ height: 6, borderRadius: 3, backgroundColor: colors.surface, overflow: 'hidden' }}>
+                        <View style={{ width: `${(t.count / maxCount) * 100}%`, height: '100%', backgroundColor: c, borderRadius: 3 }} />
+                      </View>
+                    </View>
+                  );
+                })}
+
+                {/* 8-week trend */}
+                <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 40, marginTop: 10 }}>
+                  {(insights.weekly || []).map((w: any, i: number) => {
+                    const maxW = Math.max(...insights.weekly.map((x: any) => x.count), 1);
+                    const isCurrent = i === (insights.weekly.length - 1);
+                    return (
+                      <View key={i} style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
+                        <View style={{ width: '100%', height: `${Math.max(6, (w.count / maxW) * 100)}%`, borderRadius: 3, backgroundColor: isCurrent ? '#5856D6' : colors.surface, borderWidth: isCurrent ? 0 : 1, borderColor: colors.border }} />
+                      </View>
+                    );
+                  })}
+                </View>
+                <Text style={{ fontSize: 10, color: colors.textTertiary, marginTop: 5, textAlign: 'right' }}>Last 8 weeks · this week in purple</Text>
+              </View>
+            </>
+          )}
 
           {/* Rules */}
           <Text style={styles.sectionTitle}>RULES</Text>
@@ -412,6 +483,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   explainer: { flexDirection: 'row', gap: 10, backgroundColor: '#5856D615', borderRadius: 12, padding: 12, margin: 16, alignItems: 'flex-start' },
   explainerText: { flex: 1, fontSize: 13, color: colors.textSecondary, lineHeight: 18 },
   sectionTitle: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.6, marginHorizontal: 16, marginBottom: 8 },
+  insightsCard: { backgroundColor: colors.card, borderRadius: 14, padding: 14, marginHorizontal: 16, marginBottom: 20, borderWidth: 1, borderColor: colors.border },
   emptyText: { fontSize: 13, color: colors.textTertiary, marginHorizontal: 16, marginBottom: 12 },
   ruleCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 14, padding: 14, marginHorizontal: 16, marginBottom: 10, borderWidth: 1, borderColor: colors.border, gap: 8 },
   tagChip: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
