@@ -196,3 +196,10 @@
 - Zero logic/visual changes: all state + handlers stay in parent, components are prop-driven (mirrors thread/[id] refactor pattern).
 - `getEventTitle` moved to `utils/contactHelpers.tsx` (shared by parent + FeedTab); months/getDaysInMonth moved into DateModals.
 - All data-testids preserved verbatim. Verified: Feed/Details/Calls tabs, edit mode, AddTask modal, photo gallery modal, feed date-group collapse — all render + behave identically on preview.
+
+## Touchpoints Swipe Actions (Aug 22, 2026) — self-tested e2e via screenshots
+- `app/touchpoints/index.tsx`: TaskCard bottom row now Call + Text ONLY; Done & Snooze moved to swipe gestures.
+- Swipe right → gold Done (completes task); swipe left → gray Snooze (24h). Native uses gesture-handler Swipeable (inbox pattern), web uses WebSwipeableItem. Hint line "Swipe right = Done · Swipe left = Snooze" above list.
+- Card border/radius moved to swipe wrapper so actions reveal inside the rounded frame.
+- Also fixed pre-existing crash: dormant-cleanup banner called undefined `loadTasks()` → now `loadData()`.
+- Verified on preview: both swipe directions reveal + snap open on Overdue cards.

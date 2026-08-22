@@ -6,6 +6,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Swipeable, RectButton } from 'react-native-gesture-handler';
+import WebSwipeableItem from '../../components/WebSwipeableItem';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { tasksAPI, contactsAPI } from '../../services/api';
@@ -361,7 +363,7 @@ function TouchpointsScreen() {
                     try {
                       const res = await api.delete(`/tasks/${user?._id}/system-tasks/dormant`);
                       showSimpleAlert('Cleared!', `Removed ${res.data?.deleted || dormantCount} auto-generated reminders.`);
-                      loadTasks();
+                      loadData();
                     } catch { showSimpleAlert('Error', 'Could not clear reminders. Try again.'); }
                   }}
                   data-testid="clear-dormant-tasks-btn"
@@ -371,6 +373,13 @@ function TouchpointsScreen() {
               </View>
             );
           })()}
+
+          {/* Swipe hint */}
+          {(overdueTasks.length > 0 || todayTasks.length > 0) && (
+            <Text style={{ textAlign: 'center', fontSize: 12, color: '#636366', paddingBottom: 6 }} data-testid="swipe-hint">
+              Swipe right = Done  ·  Swipe left = Snooze
+            </Text>
+          )}
 
           {/* Overdue Section */}
           {overdueTasks.length > 0 && (
@@ -411,21 +420,15 @@ function TaskCard({ task, colors, onComplete, onSnooze, onCall, onText }: {
   const badges = getBadges(task);
   const dueLabel = getDueLabel(task);
   const initials = getInitials(task.contact_name);
+  const swipeableRef = React.useRef<Swipeable>(null);
 
   // Determine which action buttons to show
   const showCall = task.action_type === 'call' || task.type === 'follow_up' || task.type === 'birthday' || overdue;
   const showText = true;
   const textLabel = task.source === 'campaign' ? 'Send Text' : 'Text';
 
-  return (
-    <View
-      style={{
-        marginHorizontal: 16, marginBottom: 10, backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border, overflow: 'hidden',
-        borderLeftWidth: overdue ? 3 : highPri ? 3 : 1,
-        borderLeftColor: overdue ? '#FF3B30' : highPri ? '#FF9500' : colors.border,
-      }}
-      data-testid={`task-card-${task._id}`}
-    >
+  const cardContent = (
+    <View style={{ backgroundColor: colors.card }}>
       {/* Top */}
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', padding: 14, gap: 12 }}>
         <View style={{ width: 42, height: 42, borderRadius: 12, backgroundColor: avatar.bg, alignItems: 'center', justifyContent: 'center' }}>
@@ -455,29 +458,76 @@ function TaskCard({ task, colors, onComplete, onSnooze, onCall, onText }: {
         </View>
       ) : null}
 
-      {/* Actions */}
+      {/* Actions — Call & Text only (Done/Snooze are swipe gestures) */}
       <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: colors.border }}>
         {showCall && (
-          <TouchableOpacity onPress={() => onCall(task)} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 11, borderRightWidth: 1, borderRightColor: colors.border }} data-testid={`task-call-${task._id}`}>
-            <Ionicons name="call" size={16} color="#007AFF" />
-            <Text style={{ fontSize: 14, fontWeight: '600', color: '#007AFF' }}>Call</Text>
+          <TouchableOpacity onPress={() => onCall(task)} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 13, borderRightWidth: showText ? 1 : 0, borderRightColor: colors.border }} data-testid={`task-call-${task._id}`}>
+            <Ionicons name="call" size={17} color="#007AFF" />
+            <Text style={{ fontSize: 15, fontWeight: '600', color: '#007AFF' }}>Call</Text>
           </TouchableOpacity>
         )}
         {showText && (
-          <TouchableOpacity onPress={() => onText(task)} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 11, borderRightWidth: 1, borderRightColor: colors.border }} data-testid={`task-text-${task._id}`}>
-            <Ionicons name="chatbubble" size={16} color="#34C759" />
-            <Text style={{ fontSize: 14, fontWeight: '600', color: '#34C759' }}>{textLabel}</Text>
+          <TouchableOpacity onPress={() => onText(task)} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 13 }} data-testid={`task-text-${task._id}`}>
+            <Ionicons name="chatbubble" size={17} color="#34C759" />
+            <Text style={{ fontSize: 15, fontWeight: '600', color: '#34C759' }}>{textLabel}</Text>
           </TouchableOpacity>
         )}
-        <TouchableOpacity onPress={() => onComplete(task._id)} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 11, borderRightWidth: 1, borderRightColor: colors.border }} data-testid={`task-done-${task._id}`}>
-          <Ionicons name="checkmark-circle" size={16} color="#C9A962" />
-          <Text style={{ fontSize: 14, fontWeight: '600', color: '#C9A962' }}>Done</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => onSnooze(task._id)} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 11 }} data-testid={`task-snooze-${task._id}`}>
-          <Ionicons name="time-outline" size={16} color="#8E8E93" />
-          <Text style={{ fontSize: 14, fontWeight: '600', color: '#8E8E93' }}>Snooze</Text>
-        </TouchableOpacity>
       </View>
+    </View>
+  );
+
+  const wrapperStyle = {
+    marginHorizontal: 16, marginBottom: 10, borderRadius: 14, overflow: 'hidden' as const,
+    borderWidth: 1, borderColor: colors.border,
+    borderLeftWidth: overdue ? 3 : highPri ? 3 : 1,
+    borderLeftColor: overdue ? '#FF3B30' : highPri ? '#FF9500' : colors.border,
+  };
+
+  if (IS_WEB) {
+    return (
+      <View style={wrapperStyle} data-testid={`task-card-${task._id}`}>
+        <WebSwipeableItem
+          leftActions={[{ key: 'done', icon: 'checkmark-circle', label: 'Done', color: '#1C1C1E', bgColor: '#C9A962', onPress: () => onComplete(task._id) }]}
+          rightActions={[{ key: 'snooze', icon: 'time-outline', label: 'Snooze', color: '#FFF', bgColor: '#8E8E93', onPress: () => onSnooze(task._id) }]}
+        >
+          {cardContent}
+        </WebSwipeableItem>
+      </View>
+    );
+  }
+
+  return (
+    <View style={wrapperStyle} data-testid={`task-card-${task._id}`}>
+      <Swipeable
+        ref={swipeableRef}
+        friction={2}
+        leftThreshold={40}
+        rightThreshold={40}
+        overshootLeft={false}
+        overshootRight={false}
+        renderLeftActions={() => (
+          <RectButton
+            style={{ width: 84, backgroundColor: '#C9A962', justifyContent: 'center', alignItems: 'center', gap: 4 }}
+            onPress={() => { swipeableRef.current?.close(); onComplete(task._id); }}
+            testID={`swipe-done-${task._id}`}
+          >
+            <Ionicons name="checkmark-circle" size={22} color="#1C1C1E" />
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#1C1C1E' }}>Done</Text>
+          </RectButton>
+        )}
+        renderRightActions={() => (
+          <RectButton
+            style={{ width: 84, backgroundColor: '#8E8E93', justifyContent: 'center', alignItems: 'center', gap: 4 }}
+            onPress={() => { swipeableRef.current?.close(); onSnooze(task._id); }}
+            testID={`swipe-snooze-${task._id}`}
+          >
+            <Ionicons name="time-outline" size={22} color="#FFF" />
+            <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFF' }}>Snooze</Text>
+          </RectButton>
+        )}
+      >
+        {cardContent}
+      </Swipeable>
     </View>
   );
 }
