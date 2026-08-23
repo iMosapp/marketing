@@ -123,37 +123,30 @@ async def merge_personal_details(contact_id: str, new_details: dict):
     merged = {**existing}
 
     for key, value in new_details.items():
-        if key not in merged or not merged[key]:
-            # No existing value — use new
-            merged[key] = value
-        elif isinstance(value, list) and isinstance(merged.get(key), list):
+        if isinstance(value, list) and isinstance(merged.get(key), list):
             # Merge lists (dedup by checking stringified items)
             existing_strs = {json.dumps(item, sort_keys=True) if isinstance(item, dict) else str(item) for item in merged[key]}
             for item in value:
                 item_str = json.dumps(item, sort_keys=True) if isinstance(item, dict) else str(item)
                 if item_str not in existing_strs:
                     merged[key].append(item)
-        # If existing has a value and new has a value for a string field, keep existing
-        # (user's explicit edits should not be overwritten by AI)
+        else:
+            # Newest info wins — a fresh voice memo is the latest ground truth
+            # (new job, spouse name correction, new vehicle, etc.)
+            merged[key] = value
 
     # Save merged details and update key contact fields
     update_fields = {"personal_details": merged, "updated_at": datetime.now(timezone.utc)}
 
-    # Also update top-level contact fields if they're empty
+    # Also update top-level contact fields — newest memo wins
     if new_details.get("vehicle_purchased"):
-        existing_vehicle = (contact or {}).get("vehicle", "") or ""
-        if not existing_vehicle:
-            update_fields["vehicle"] = new_details["vehicle_purchased"]
+        update_fields["vehicle"] = new_details["vehicle_purchased"]
 
     if new_details.get("occupation"):
-        existing_occ = (contact or {}).get("occupation", "") or ""
-        if not existing_occ:
-            update_fields["occupation"] = new_details["occupation"]
+        update_fields["occupation"] = new_details["occupation"]
 
     if new_details.get("employer"):
-        existing_emp = (contact or {}).get("employer", "") or ""
-        if not existing_emp:
-            update_fields["employer"] = new_details["employer"]
+        update_fields["employer"] = new_details["employer"]
 
     await db.contacts.update_one(
         {"_id": ObjectId(contact_id)},

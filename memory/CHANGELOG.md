@@ -203,3 +203,8 @@
 - Card border/radius moved to swipe wrapper so actions reveal inside the rounded frame.
 - Also fixed pre-existing crash: dormant-cleanup banner called undefined `loadTasks()` → now `loadData()`.
 - Verified on preview: both swipe directions reveal + snap open on Overdue cards.
+
+## Voice Memo Intel Update Fix (Aug 2026) — backend, tested e2e in preview
+- Bug: `services/voice_intel.py merge_personal_details` never overwrote existing values (scalars kept old value; top-level employer/occupation/vehicle only set when empty) → new employment/spouse info from fresh memos was silently discarded.
+- Fix: newest memo wins — scalar personal_details fields overwrite, lists still merge+dedup, top-level vehicle/occupation/employer always updated when extracted.
+- Verified live: gpt-5.2 extraction via EMERGENT_LLM_KEY works; test contact employer "Old Company Inc"→"Tesla", spouse "Karen"→"Sarah". NOTE: user saw this in PRODUCTION — requires backend redeploy to take effect there.
