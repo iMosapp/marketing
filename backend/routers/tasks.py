@@ -647,6 +647,36 @@ async def update_task(user_id: str, task_id: str, update_data: dict):
         updates["snoozed_until"] = snooze_until
         updates["due_date"] = snooze_until
 
+    elif action == "reopen":
+        # Undo a swipe complete/snooze — restore the task to pending
+        updates["status"] = "pending"
+        updates["completed"] = False
+        updates["completed_at"] = None
+        updates["snoozed_until"] = None
+        if "due_date" in update_data:
+            try:
+                updates["due_date"] = datetime.fromisoformat(str(update_data["due_date"]).replace("Z", "+00:00"))
+            except Exception:
+                pass
+        try:
+            await db.contact_events.delete_one({
+                "event_type": "task_completed",
+                "user_id": user_id,
+                "contact_id": task.get("contact_id", ""),
+                "title": f"Task Completed: {task.get('title', '')}",
+            })
+        except Exception:
+            pass
+        pending_send_id = task.get("pending_send_id", "")
+        if pending_send_id:
+            try:
+                await db.campaign_pending_sends.update_one(
+                    {"_id": ObjectId(pending_send_id), "status": "done"},
+                    {"$set": {"status": "pending"}, "$unset": {"completed_at": ""}}
+                )
+            except Exception:
+                pass
+
     elif action == "dismiss":
         updates["status"] = "dismissed"
 

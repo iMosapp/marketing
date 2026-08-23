@@ -216,3 +216,9 @@
 - Backend gate: queue_ai_reply (ai_reply.py) returns None when assigned user has ai_master_paused=true — stops ALL AI drafts/auto-replies.
 - Voice Note tile → contact picker → /contact/{id}?capture=true (existing deep-link auto-starts recorder). Verified recorder auto-started.
 - Production needs BOTH: backend redeploy (AI gate + allowed_fields) AND eas update (Home/photo screen).
+
+## Card QR + Photo to Many + Undo Snackbar (Aug 23, 2026) — all self-tested e2e
+- Card QR: Home Card tile picker now has "Card QR Code" → UniversalShareModal opens straight to a REAL scannable QR (react-native-qrcode-svg; replaced the old placeholder icon for ALL QR views). New props: startWithQR.
+- Photo to Many: /quick-send/photo now multi-select (checkmark rows, "Next — Text N people" bar, recipient chips + Add on send step). Uploads once, loops smartSendSMS per person; native fallback uses comma-joined sms: recipients.
+- Undo snackbar: touchpoints swipe Done/Snooze shows 5s "Done — {name} [UNDO]" bar. Backend: new `reopen` action in PATCH /api/tasks/{uid}/{tid} (restores pending, clears snooze/completed, restores due_date, deletes task_completed event, reverts pending_send). Verified via curl + UI.
+- Production: needs backend redeploy (reopen action) + eas update (all frontend).

@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import QRCode from 'react-native-qrcode-svg';
 import {
   View,
   Text,
@@ -29,6 +30,7 @@ interface UniversalShareModalProps {
   showPreview?: boolean;
   previewUrl?: string;
   showQR?: boolean;
+  startWithQR?: boolean;
   vCardUserId?: string;
   userId?: string;
   eventType?: string;
@@ -70,6 +72,7 @@ export function UniversalShareModal({
   showPreview = true,
   previewUrl,
   showQR = false,
+  startWithQR = false,
   vCardUserId,
   userId,
   eventType,
@@ -82,6 +85,7 @@ export function UniversalShareModal({
   const [recipientEmail, setRecipientEmail] = useState('');
   const [saving, setSaving] = useState(false);
   const [showQRView, setShowQRView] = useState(false);
+  useEffect(() => { if (visible && startWithQR) setShowQRView(true); }, [visible, startWithQR]);
 
   // Contact search state
   const [contactSuggestions, setContactSuggestions] = useState<any[]>([]);
@@ -304,17 +308,16 @@ export function UniversalShareModal({
           <TouchableOpacity activeOpacity={1} onPress={() => {}}>
             <View style={styles.shareModal}>
               <View style={styles.shareModalHandle} />
-              <Text style={styles.shareModalTitle}>QR Code</Text>
-              <Text style={styles.shareModalSubtitle}>Scan to open link</Text>
+              <Text style={styles.shareModalTitle}>{startWithQR ? title : 'QR Code'}</Text>
+              <Text style={styles.shareModalSubtitle}>{startWithQR ? subtitle : 'Scan to open link'}</Text>
               <View style={styles.qrContainer}>
-                {/* Simple QR code display using a table-based approach for web */}
-                <View style={styles.qrPlaceholder}>
-                  <Ionicons name="qr-code" size={160} color={colors.text} />
+                <View style={{ backgroundColor: '#FFFFFF', padding: 18, borderRadius: 20 }} data-testid="qr-code-box">
+                  <QRCode value={shareUrl || 'https://imonsocial.com'} size={220} backgroundColor="#FFFFFF" color="#000000" />
                 </View>
                 <Text style={[styles.qrUrl, { color: colors.textSecondary }]} numberOfLines={2}>{shareUrl}</Text>
               </View>
-              <TouchableOpacity style={styles.shareModalCancel} onPress={() => setShowQRView(false)}>
-                <Text style={styles.shareModalCancelText}>Back</Text>
+              <TouchableOpacity style={styles.shareModalCancel} onPress={() => startWithQR ? close() : setShowQRView(false)} data-testid="qr-close-btn">
+                <Text style={styles.shareModalCancelText}>{startWithQR ? 'Done' : 'Back'}</Text>
               </TouchableOpacity>
             </View>
           </TouchableOpacity>

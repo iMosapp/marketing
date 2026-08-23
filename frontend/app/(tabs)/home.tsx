@@ -409,7 +409,7 @@ function HomeScreen() {
   const [actionContactsLoading, setActionContactsLoading] = useState(false);
 
   // Universal share modals
-  const [shareConfig, setShareConfig] = useState<{ visible: boolean; title: string; subtitle: string; url: string; text?: string; showPreview: boolean; previewUrl?: string; showQR: boolean; eventType: string }>({
+  const [shareConfig, setShareConfig] = useState<{ visible: boolean; title: string; subtitle: string; url: string; text?: string; showPreview: boolean; previewUrl?: string; showQR: boolean; startQR?: boolean; eventType: string }>({
     visible: false, title: '', subtitle: '', url: '', showPreview: true, showQR: false, eventType: '',
   });
 
@@ -1214,6 +1214,20 @@ function HomeScreen() {
                 onPress: () => { setShowSharePicker(false); router.push('/quick-send/digitalcard' as any); },
               },
               {
+                key: 'card-qr',
+                icon: 'qr-code',
+                color: '#C9A962',
+                label: 'Card QR Code',
+                sublabel: 'Let them scan it right off your screen',
+                isDefault: false,
+                onPress: () => {
+                  setShowSharePicker(false);
+                  const baseUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com';
+                  const cardUrl = `${baseUrl}/card/${user?._id}`;
+                  setShareConfig({ visible: true, title: 'Your Card QR', subtitle: 'Have them scan it — your card opens instantly', url: cardUrl, text: `My digital card: ${cardUrl}`, showPreview: false, showQR: true, startQR: true, eventType: 'card_qr_shown' });
+                },
+              },
+              {
                 key: 'vcf',
                 icon: 'person-circle',
                 color: '#34C759',
@@ -1314,6 +1328,7 @@ function HomeScreen() {
         showPreview={shareConfig.showPreview}
         previewUrl={shareConfig.previewUrl}
         showQR={shareConfig.showQR}
+        startWithQR={!!shareConfig.startQR}
         vCardUserId={user?._id}
         userId={user?._id}
         eventType={shareConfig.eventType}

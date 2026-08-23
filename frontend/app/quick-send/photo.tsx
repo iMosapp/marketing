@@ -27,10 +27,11 @@ function SendPhotoScreen() {
   const [contacts, setContacts] = useState<any[]>([]);
   const [contactsLoading, setContactsLoading] = useState(false);
   const [search, setSearch] = useState('');
-  const [selContact, setSelContact] = useState<any>(null);
+  const [selContacts, setSelContacts] = useState<any[]>([]);
   const [caption, setCaption] = useState('');
   const [sending, setSending] = useState(false);
   const [sentVia, setSentVia] = useState<'twilio' | 'native'>('twilio');
+  const [sentCount, setSentCount] = useState(0);
 
   useEffect(() => {
     const load = async () => {
@@ -84,17 +85,24 @@ function SendPhotoScreen() {
       || `${c.first_name || ''} ${c.last_name || ''}`.toLowerCase().includes(q);
   });
 
-  const selectContact = (c: any) => {
+  const toggleContact = (c: any) => {
     if (!c.phone) { showSimpleAlert('No Phone', `${c.first_name || 'This contact'} has no phone number saved.`); return; }
-    setSelContact(c);
-    setStep('send');
+    const cid = c._id || c.id;
+    setSelContacts(prev => prev.some(p => (p._id || p.id) === cid)
+      ? prev.filter(p => (p._id || p.id) !== cid)
+      : [...prev, c]);
   };
 
+  const firstSel = selContacts[0];
+  const recipientsLabel = selContacts.length === 1
+    ? `${firstSel?.first_name || ''} ${firstSel?.last_name || ''}`.trim()
+    : `${selContacts.length} people`;
+
   const sendPhoto = async () => {
-    if (!user || !selContact || !photo) return;
+    if (!user || selContacts.length === 0 || !photo) return;
     setSending(true);
     try {
-      // 1. Upload photo to object storage
+      // 1. Upload photo to object storage (once)
       const formData = new FormData();
       if (IS_WEB) {
         const resp = await fetch(photo.uri);
@@ -112,46 +120,52 @@ function SendPhotoScreen() {
       const mediaUrl = photoUrl ? `${photoUrl}?format=jpeg` : '';
       if (!mediaUrl) { showSimpleAlert('Error', 'Photo upload failed. Try again.'); setSending(false); return; }
 
-      const contactId = selContact._id || selContact.id;
       const body = caption.trim();
       const twilioNumber = (user as any).twilio_number || (user as any).mvpline_number;
 
-      // 2. Preferred: real MMS from the rep's business number
+      // 2. Preferred: real MMS from the rep's business number — one per recipient
       if (twilioNumber) {
-        try {
-          const result = await smartSendSMS({
-            to: selContact.phone,
-            body,
-            userId: user._id,
-            twilioNumber,
-            contactId,
-            eventType: 'photo_sent',
-            platform: Platform.OS,
-            mediaUrls: [mediaUrl],
-          });
-          if (result.usedTwilio) {
-            setSentVia('twilio');
-            setStep('done');
-            setSending(false);
-            return;
-          }
-        } catch {}
+        let sent = 0;
+        for (const c of selContacts) {
+          try {
+            const result = await smartSendSMS({
+              to: c.phone,
+              body,
+              userId: user._id,
+              twilioNumber,
+              contactId: c._id || c.id,
+              eventType: 'photo_sent',
+              platform: Platform.OS,
+              mediaUrls: [mediaUrl],
+            });
+            if (result.usedTwilio) sent++;
+          } catch {}
+        }
+        if (sent > 0) {
+          setSentVia('twilio');
+          setSentCount(sent);
+          setStep('done');
+          setSending(false);
+          return;
+        }
       }
 
-      // 3. Fallback: log the event, open native SMS with the photo as a link
-      try {
-        await contactsAPI.logEvent(user._id, contactId, {
-          event_type: 'photo_sent',
-          title: 'Photo Sent',
-          description: body || 'Sent a photo',
-          channel: 'sms',
-          category: 'message',
-          icon: 'image',
-          color: '#32ADE6',
-        });
-      } catch {}
+      // 3. Fallback: log the events, open native SMS with the photo as a link
+      for (const c of selContacts) {
+        try {
+          await contactsAPI.logEvent(user._id, c._id || c.id, {
+            event_type: 'photo_sent',
+            title: 'Photo Sent',
+            description: body || 'Sent a photo',
+            channel: 'sms',
+            category: 'message',
+            icon: 'image',
+            color: '#32ADE6',
+          });
+        } catch {}
+      }
       const smsBody = body ? `${body} ${mediaUrl}` : mediaUrl;
-      const phoneClean = (selContact.phone || '').replace(/[^\d+]/g, '');
+      const numbers = selContacts.map(c => (c.phone || '').replace(/[^\d+]/g, '')).join(',');
       let sep = '?';
       if (IS_WEB && typeof window !== 'undefined') {
         const ua = window.navigator.userAgent.toLowerCase();
@@ -159,7 +173,7 @@ function SendPhotoScreen() {
       } else if (Platform.OS === 'ios') {
         sep = '&';
       }
-      const smsUrl = `sms:${phoneClean}${sep}body=${encodeURIComponent(smsBody)}`;
+      const smsUrl = `sms:${numbers}${sep}body=${encodeURIComponent(smsBody)}`;
       if (IS_WEB && typeof window !== 'undefined') {
         window.open(smsUrl, '_self');
       } else {
@@ -167,6 +181,7 @@ function SendPhotoScreen() {
         Linking.openURL(smsUrl);
       }
       setSentVia('native');
+      setSentCount(selContacts.length);
       setStep('done');
     } catch (e) {
       showSimpleAlert('Error', 'Could not send the photo. Please try again.');
@@ -174,7 +189,7 @@ function SendPhotoScreen() {
     setSending(false);
   };
 
-  const contactName = selContact ? `${selContact.first_name || ''} ${selContact.last_name || ''}`.trim() : '';
+  const contactName = recipientsLabel;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
@@ -252,17 +267,21 @@ function SendPhotoScreen() {
               data={filteredContacts}
               keyExtractor={(item: any) => item._id || item.id}
               keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: selContacts.length > 0 ? 100 : 20 }}
               renderItem={({ item }: any) => {
                 const name = `${item.first_name || ''} ${item.last_name || ''}`.trim() || item.phone || 'Unknown';
                 const initials = `${(item.first_name || '?')[0] || ''}${(item.last_name || '')[0] || ''}`.toUpperCase();
+                const isSel = selContacts.some(p => (p._id || p.id) === (item._id || item.id));
                 return (
                   <TouchableOpacity
-                    onPress={() => selectContact(item)}
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}
+                    onPress={() => toggleContact(item)}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border, backgroundColor: isSel ? 'rgba(50,173,230,0.08)' : 'transparent' }}
                     data-testid={`send-photo-contact-${item._id || item.id}`}
                   >
-                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(50,173,230,0.14)', alignItems: 'center', justifyContent: 'center' }}>
-                      <Text style={{ fontWeight: '700', fontSize: 15, color: '#32ADE6' }}>{initials}</Text>
+                    <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: isSel ? '#32ADE6' : 'rgba(50,173,230,0.14)', alignItems: 'center', justifyContent: 'center' }}>
+                      {isSel
+                        ? <Ionicons name="checkmark" size={20} color="#FFF" />
+                        : <Text style={{ fontWeight: '700', fontSize: 15, color: '#32ADE6' }}>{initials}</Text>}
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>{name}</Text>
@@ -270,7 +289,7 @@ function SendPhotoScreen() {
                         <Text style={{ fontSize: 13, color: '#FF9500', marginTop: 1 }}>No phone number</Text>
                       )}
                     </View>
-                    <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
+                    <Ionicons name={isSel ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={isSel ? '#32ADE6' : colors.textTertiary} />
                   </TouchableOpacity>
                 );
               }}
@@ -281,21 +300,57 @@ function SendPhotoScreen() {
               }
             />
           )}
+          {/* Continue bar */}
+          {selContacts.length > 0 && (
+            <View style={{ position: 'absolute', left: 16, right: 16, bottom: 20 }}>
+              <TouchableOpacity
+                onPress={() => setStep('send')}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#32ADE6', borderRadius: 16, paddingVertical: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 10, elevation: 8 }}
+                data-testid="send-photo-next-btn"
+              >
+                <Ionicons name="arrow-forward-circle" size={20} color="#FFF" />
+                <Text style={{ fontSize: 16, fontWeight: '800', color: '#FFF' }}>
+                  Next — Text {selContacts.length === 1 ? recipientsLabel : `${selContacts.length} people`}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       )}
 
       {/* STEP 3: CAPTION + SEND */}
-      {step === 'send' && selContact && (
+      {step === 'send' && selContacts.length > 0 && (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled">
           <Image source={{ uri: photo?.uri }} style={{ width: '100%', height: 260, borderRadius: 16, backgroundColor: colors.card }} contentFit="cover" />
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.card, borderRadius: 12, padding: 12, marginTop: 14 }}>
-            <Ionicons name="person-circle" size={20} color="#32ADE6" />
-            <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text, flex: 1 }}>{contactName}</Text>
-            <Text style={{ fontSize: 13, color: colors.textSecondary }}>{selContact.phone}</Text>
+          {/* Recipients */}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
+            {selContacts.map((c: any) => (
+              <View key={c._id || c.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.card, borderWidth: 1, borderColor: 'rgba(50,173,230,0.4)', borderRadius: 18, paddingHorizontal: 10, paddingVertical: 6 }}>
+                <Ionicons name="person-circle" size={16} color="#32ADE6" />
+                <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>
+                  {`${c.first_name || ''} ${c.last_name || ''}`.trim() || c.phone}
+                </Text>
+                <TouchableOpacity onPress={() => {
+                  const remaining = selContacts.filter(p => (p._id || p.id) !== (c._id || c.id));
+                  setSelContacts(remaining);
+                  if (remaining.length === 0) setStep('who');
+                }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons name="close-circle" size={16} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+            ))}
+            <TouchableOpacity
+              onPress={() => setStep('who')}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderColor: colors.border, borderRadius: 18, paddingHorizontal: 10, paddingVertical: 6 }}
+              data-testid="send-photo-add-more-btn"
+            >
+              <Ionicons name="add" size={16} color="#32ADE6" />
+              <Text style={{ fontSize: 14, fontWeight: '600', color: '#32ADE6' }}>Add</Text>
+            </TouchableOpacity>
           </View>
           <TextInput
             style={{ backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text, borderWidth: 1, borderColor: colors.border, marginTop: 12, minHeight: 70, textAlignVertical: 'top' }}
-            placeholder={`Add a quick note for ${selContact.first_name || 'them'} (optional)`}
+            placeholder={`Add a quick note for ${selContacts.length === 1 ? (firstSel?.first_name || 'them') : 'everyone'} (optional)`}
             placeholderTextColor={colors.textTertiary}
             value={caption}
             onChangeText={setCaption}
@@ -310,7 +365,9 @@ function SendPhotoScreen() {
             data-testid="send-photo-send-btn"
           >
             {sending ? <ActivityIndicator size="small" color="#FFF" /> : <Ionicons name="send" size={20} color="#FFF" />}
-            <Text style={{ fontSize: 17, fontWeight: '800', color: '#FFF' }}>{sending ? 'Sending...' : `Text it to ${selContact.first_name || 'them'}`}</Text>
+            <Text style={{ fontSize: 17, fontWeight: '800', color: '#FFF' }}>
+              {sending ? 'Sending...' : `Text it to ${selContacts.length === 1 ? (firstSel?.first_name || 'them') : `${selContacts.length} people`}`}
+            </Text>
           </TouchableOpacity>
         </ScrollView>
       )}
@@ -321,11 +378,13 @@ function SendPhotoScreen() {
           <View style={{ width: 84, height: 84, borderRadius: 42, backgroundColor: 'rgba(52,199,89,0.15)', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
             <Ionicons name="checkmark" size={44} color="#34C759" />
           </View>
-          <Text style={{ fontSize: 22, fontWeight: '800', color: colors.text }}>Photo sent!</Text>
+          <Text style={{ fontSize: 22, fontWeight: '800', color: colors.text }}>
+            {sentCount > 1 ? `Photo sent to ${sentCount} people!` : 'Photo sent!'}
+          </Text>
           <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 6, textAlign: 'center' }}>
             {sentVia === 'twilio'
-              ? `On its way to ${contactName} — logged to their timeline`
-              : `Finish sending in your texting app — it's logged to ${contactName}'s timeline`}
+              ? `On its way to ${contactName} — logged to ${sentCount > 1 ? 'their timelines' : 'their timeline'}`
+              : `Finish sending in your texting app — it's logged to ${contactName}'s timeline${sentCount > 1 ? 's' : ''}`}
           </Text>
           <TouchableOpacity
             onPress={() => router.back()}
@@ -335,7 +394,7 @@ function SendPhotoScreen() {
             <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Done</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => { setPhoto(null); setSelContact(null); setCaption(''); setSearch(''); setStep('photo'); }}
+            onPress={() => { setPhoto(null); setSelContacts([]); setCaption(''); setSearch(''); setSentCount(0); setStep('photo'); }}
             style={{ marginTop: 14 }}
             data-testid="send-photo-another-btn"
           >

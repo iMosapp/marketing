@@ -1,5 +1,5 @@
 import { ScreenErrorBoundary } from '../../components/ScreenErrorBoundary';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Linking, Platform,
 } from 'react-native';
@@ -102,19 +102,45 @@ function TouchpointsScreen() {
 
   const completeTask = async (taskId: string) => {
     if (!user?._id) return;
+    const task = tasks.find(t => t._id === taskId);
     try {
       await tasksAPI.patchTask(user._id, taskId, { action: 'complete' });
       setTasks(prev => prev.filter(t => t._id !== taskId));
       setSummary((s: any) => s ? { ...s, completed_today: s.completed_today + 1, pending_today: Math.max(0, s.pending_today - 1), progress_pct: Math.round(((s.completed_today + 1) / Math.max(s.total_today, 1)) * 100) } : s);
+      if (task) showUndo(task, 'complete');
     } catch { showSimpleAlert('Error', 'Failed to complete task'); }
   };
 
   const snoozeTask = async (taskId: string) => {
     if (!user?._id) return;
+    const task = tasks.find(t => t._id === taskId);
     try {
       await tasksAPI.patchTask(user._id, taskId, { action: 'snooze', snooze_hours: 24 });
       setTasks(prev => prev.filter(t => t._id !== taskId));
+      if (task) showUndo(task, 'snooze');
     } catch { showSimpleAlert('Error', 'Failed to snooze task'); }
+  };
+
+  // ── Undo snackbar (accidental swipes) ──
+  const [undo, setUndoState] = useState<{ task: any; action: 'complete' | 'snooze' } | null>(null);
+  const undoTimer = useRef<any>(null);
+  const showUndo = (task: any, action: 'complete' | 'snooze') => {
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+    setUndoState({ task, action });
+    undoTimer.current = setTimeout(() => setUndoState(null), 5000);
+  };
+  const handleUndo = async () => {
+    if (!undo || !user?._id) return;
+    const { task, action } = undo;
+    if (undoTimer.current) clearTimeout(undoTimer.current);
+    setUndoState(null);
+    try {
+      await tasksAPI.patchTask(user._id, task._id, { action: 'reopen', due_date: task.due_date });
+      setTasks(prev => [task, ...prev.filter(t => t._id !== task._id)]);
+      if (action === 'complete') {
+        setSummary((s: any) => s ? { ...s, completed_today: Math.max(0, s.completed_today - 1), pending_today: s.pending_today + 1, progress_pct: Math.round((Math.max(0, s.completed_today - 1) / Math.max(s.total_today, 1)) * 100) } : s);
+      }
+    } catch { showSimpleAlert('Error', 'Could not undo — pull to refresh'); }
   };
 
   const handleCall = async (task: any) => {
@@ -405,6 +431,27 @@ function TouchpointsScreen() {
             </View>
           )}
         </ScrollView>
+      )}
+
+      {/* Undo snackbar */}
+      {undo && (
+        <View
+          style={{
+            position: 'absolute', left: 16, right: 16, bottom: 28,
+            backgroundColor: '#1C1C1E', borderRadius: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)',
+            flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14,
+            shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.45, shadowRadius: 12, elevation: 10,
+          }}
+          data-testid="undo-snackbar"
+        >
+          <Ionicons name={undo.action === 'complete' ? 'checkmark-circle' : 'time'} size={20} color={undo.action === 'complete' ? '#C9A962' : '#8E8E93'} />
+          <Text style={{ flex: 1, marginLeft: 10, color: '#FFF', fontSize: 15, fontWeight: '600' }} numberOfLines={1}>
+            {undo.action === 'complete' ? 'Done' : 'Snoozed 24h'} — {undo.task.contact_name || undo.task.title}
+          </Text>
+          <TouchableOpacity onPress={handleUndo} style={{ paddingHorizontal: 14, paddingVertical: 7, borderRadius: 9, backgroundColor: 'rgba(201,169,98,0.18)' }} data-testid="undo-btn">
+            <Text style={{ color: '#C9A962', fontSize: 14, fontWeight: '800', letterSpacing: 0.5 }}>UNDO</Text>
+          </TouchableOpacity>
+        </View>
       )}
 
     </SafeAreaView>
