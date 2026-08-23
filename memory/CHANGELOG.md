@@ -222,3 +222,11 @@
 - Photo to Many: /quick-send/photo now multi-select (checkmark rows, "Next — Text N people" bar, recipient chips + Add on send step). Uploads once, loops smartSendSMS per person; native fallback uses comma-joined sms: recipients.
 - Undo snackbar: touchpoints swipe Done/Snooze shows 5s "Done — {name} [UNDO]" bar. Backend: new `reopen` action in PATCH /api/tasks/{uid}/{tid} (restores pending, clears snooze/completed, restores due_date, deletes task_completed event, reverts pending_send). Verified via curl + UI.
 - Production: needs backend redeploy (reopen action) + eas update (all frontend).
+
+## QR On Lock — all 3 flavors (Aug 23, 2026) — self-tested e2e
+- Login-screen QR: "My Card QR" button on auth/login (uses AsyncStorage 'last_card_user' saved at each login, survives logout) → full-screen QR modal. Verified.
+- 1-tap Home QR: qr-code icon in Home header (left of AI pill) + long-press on Card tile → opens UniversalShareModal straight to QR. Verified.
+- Wallet passes: new backend router routers/wallet_pass.py — GET /api/wallet/{uid}/status, POST /api/wallet/{uid}/download-token (10-min public token), GET /api/wallet/download/{token}.pkpass (signed .pkpass via cryptography PKCS7, zipfile, icons in backend/assets/), GET /api/wallet/{uid}/google-save-url (RS256 JWT save link). "/api/wallet/" added to BOLA PROTECTED_PREFIXES; download route is public-by-token.
+- Config via env (unset = graceful 503 + "Almost Ready" alert in app): APPLE_TEAM_ID, APPLE_PASS_TYPE_ID, APPLE_PASS_P12_B64 (or _PATH), APPLE_PASS_P12_PASSWORD, APPLE_WWDR_PEM_B64 (or _PATH), GOOGLE_WALLET_ISSUER_ID, GOOGLE_WALLET_SA_JSON_B64 (or _PATH).
+- pkpass pipeline proven with self-signed test cert (manifest SHA1s + DER PKCS7 signature validated). Real Apple cert from user still required for production passes.
+- Frontend: home.tsx openCardQR()/handleAddToWallet(), "Add to Wallet" option in Card picker.

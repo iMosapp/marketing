@@ -391,6 +391,41 @@ function HomeScreen() {
       showSimpleAlert('Error', 'Could not update AI setting. Try again.');
     }
   };
+
+  // ── Instant Card QR (header button + Card tile long-press) ──
+  const openCardQR = () => {
+    const baseUrl = process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com';
+    const cardUrl = `${baseUrl}/card/${user?._id}`;
+    setShareConfig({ visible: true, title: 'Your Card QR', subtitle: 'Have them scan it — your card opens instantly', url: cardUrl, text: `My digital card: ${cardUrl}`, showPreview: false, showQR: true, startQR: true, eventType: 'card_qr_shown' });
+  };
+
+  // ── Add card QR to Apple/Google Wallet ──
+  const handleAddToWallet = async () => {
+    setShowSharePicker(false);
+    if (!user?._id) return;
+    try {
+      const st = await api.get(`/wallet/${user._id}/status`);
+      if (Platform.OS === 'android') {
+        if (!st.data?.google) {
+          showSimpleAlert('Almost Ready', 'Google Wallet passes need a one-time setup (wallet credentials). Ask us to finish the setup and this will light up.');
+          return;
+        }
+        const r = await api.get(`/wallet/${user._id}/google-save-url`);
+        if (r.data?.save_url) Linking.openURL(r.data.save_url);
+        return;
+      }
+      if (!st.data?.apple) {
+        showSimpleAlert('Almost Ready', 'Apple Wallet passes need a one-time certificate setup. Ask us to finish the setup and this will light up.');
+        return;
+      }
+      const t = await api.post(`/wallet/${user._id}/download-token`);
+      const url = `${api.defaults.baseURL}/wallet/download/${t.data.token}.pkpass`;
+      if (IS_WEB && typeof window !== 'undefined') window.open(url, '_blank');
+      else Linking.openURL(url);
+    } catch {
+      showSimpleAlert('Error', 'Could not create your wallet pass. Try again.');
+    }
+  };
   const [showContactAction, setShowContactAction] = useState(false);
   const [contactActionMode, setContactActionMode] = useState<'search' | 'keypad'>('search');
   const [showSendCard, setShowSendCard] = useState(false);
@@ -694,7 +729,7 @@ function HomeScreen() {
     { key: 'sold',        icon: 'trophy',     label: 'SOLD!',       sublabel: 'Snap the moment & start campaign', color: '#C9A962', onPress: () => router.push('/sold-quick' as any) },
     { key: 'send-photo',  icon: 'camera',     label: 'Send Photo',  sublabel: 'Snap & text a photo — no sale needed', color: '#32ADE6', onPress: () => router.push('/quick-send/photo' as any) },
     { key: 'review',      icon: 'star',       label: 'Review',      sublabel: 'Ask for a 5-star review',          color: '#FF9500', onPress: () => router.push('/quick-send/review' as any) },
-    { key: 'card',        icon: 'card',       label: 'Card',        sublabel: 'Send your digital card',           color: '#007AFF', onPress: () => setShowSharePicker(true) },
+    { key: 'card',        icon: 'card',       label: 'Card',        sublabel: 'Send your digital card',           color: '#007AFF', onPress: () => setShowSharePicker(true), onLongPress: openCardQR },
     { key: 'voice-note',  icon: 'mic',        label: 'Voice Note',  sublabel: 'Record notes on a customer',       color: '#34C759', onPress: () => openActionPicker('voice', 'Voice Note — pick a person') },
     { key: 'new-contact', icon: 'person-add', label: 'New Contact', sublabel: 'Add someone new',                  color: '#AF52DE', onPress: () => router.push('/contact/new' as any) },
   ];
@@ -757,6 +792,14 @@ function HomeScreen() {
         <View style={{ width: 32 }} />
         <Text style={[styles.userName, { color: colors.text }]}>Home</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <TouchableOpacity
+            onPress={openCardQR}
+            activeOpacity={0.7}
+            style={{ padding: 6 }}
+            data-testid="header-qr-btn"
+          >
+            <Ionicons name="qr-code-outline" size={19} color={colors.textSecondary} />
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={toggleAiMaster}
             activeOpacity={0.7}
@@ -833,6 +876,8 @@ function HomeScreen() {
                 <TouchableOpacity
                   key={tile.key}
                   onPress={tile.onPress}
+                  onLongPress={(tile as any).onLongPress}
+                  delayLongPress={350}
                   activeOpacity={0.75}
                   style={{
                     flex: 1,
@@ -1226,6 +1271,15 @@ function HomeScreen() {
                   const cardUrl = `${baseUrl}/card/${user?._id}`;
                   setShareConfig({ visible: true, title: 'Your Card QR', subtitle: 'Have them scan it — your card opens instantly', url: cardUrl, text: `My digital card: ${cardUrl}`, showPreview: false, showQR: true, startQR: true, eventType: 'card_qr_shown' });
                 },
+              },
+              {
+                key: 'wallet',
+                icon: 'wallet',
+                color: '#34C759',
+                label: 'Add to Wallet',
+                sublabel: 'Your card QR in Apple or Google Wallet',
+                isDefault: false,
+                onPress: handleAddToWallet,
               },
               {
                 key: 'vcf',

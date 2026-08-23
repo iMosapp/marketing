@@ -20,6 +20,8 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Modal as RNModal } from 'react-native';
+import QRCode from 'react-native-qrcode-svg';
 import { useAuthStore } from '../../store/authStore';
 import { WebSafeButton } from '../../components/WebSafeButton';
 import { useThemeStore } from '../../store/themeStore';
@@ -141,6 +143,15 @@ export default function LoginScreen() {
   const [loginError, setLoginError] = useState('');
   const [biometricLoading, setBiometricLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+
+  // ── Quick Card QR from the login screen (works before signing in) ──
+  const [lastCardUser, setLastCardUser] = useState<{ id: string; name: string } | null>(null);
+  const [showLoginQR, setShowLoginQR] = useState(false);
+  useEffect(() => {
+    AsyncStorage.getItem('last_card_user')
+      .then(v => { if (v) setLastCardUser(JSON.parse(v)); })
+      .catch(() => {});
+  }, []);
   
   // Biometric state
   const [biometricStatus, setBiometricStatus] = useState<BiometricStatus | null>(null);
@@ -250,6 +261,11 @@ export default function LoginScreen() {
         
         // Get the user from store after login
         const loggedInUser = useAuthStore.getState().user;
+
+        // Remember who logs in on this device so the login screen can show their card QR
+        if (loggedInUser?._id) {
+          AsyncStorage.setItem('last_card_user', JSON.stringify({ id: loggedInUser._id, name: loggedInUser.name || '' })).catch(() => {});
+        }
         
         // Check if user needs to change password (first-time login with temp password)
         if (loggedInUser?.needs_password_change) {
@@ -540,6 +556,47 @@ export default function LoginScreen() {
                   <Text style={styles.errorText}>{loginError}</Text>
                 </View>
               ) : null}
+
+              {/* Quick Card QR — share your card without signing in */}
+              {lastCardUser?.id ? (
+                <TouchableOpacity
+                  onPress={() => setShowLoginQR(true)}
+                  activeOpacity={0.7}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 16, paddingVertical: 10 }}
+                  data-testid="login-qr-btn"
+                >
+                  <Ionicons name="qr-code-outline" size={17} color="#C9A962" />
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: '#C9A962' }}>My Card QR</Text>
+                </TouchableOpacity>
+              ) : null}
+
+              <RNModal visible={showLoginQR} transparent animationType="fade" onRequestClose={() => setShowLoginQR(false)}>
+                <TouchableOpacity
+                  style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 32 }}
+                  activeOpacity={1}
+                  onPress={() => setShowLoginQR(false)}
+                >
+                  <Text style={{ fontSize: 20, fontWeight: '800', color: '#FFF', marginBottom: 4 }}>
+                    {lastCardUser?.name ? `${lastCardUser.name.split(' ')[0]}'s Card` : 'My Card'}
+                  </Text>
+                  <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', marginBottom: 20 }}>Have them scan it</Text>
+                  <View style={{ backgroundColor: '#FFF', padding: 18, borderRadius: 20 }} data-testid="login-qr-code">
+                    <QRCode
+                      value={`${process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'}/card/${lastCardUser?.id}`}
+                      size={240}
+                      backgroundColor="#FFFFFF"
+                      color="#000000"
+                    />
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setShowLoginQR(false)}
+                    style={{ marginTop: 24, paddingHorizontal: 32, paddingVertical: 12, borderRadius: 22, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' }}
+                    data-testid="login-qr-close"
+                  >
+                    <Text style={{ fontSize: 16, fontWeight: '700', color: '#FFF' }}>Close</Text>
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              </RNModal>
               
               {biometricStatus?.isAvailable && biometricStatus?.isEnabled && (
                 <TouchableOpacity

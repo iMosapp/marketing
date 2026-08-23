@@ -31,7 +31,7 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env', override=False)
 
 # Import routers (after env is loaded)
-from routers import auth, contacts, tasks, messages, calls, campaigns, admin, admin_hierarchy, admin_users, leaderboard, calendar, templates, tags, search, public_review, digital_card, profile, integrations, partners, legal, subscriptions, directory, shared_inboxes, voice, twilio_webhooks, twilio_admin, public_landing, congrats_cards, short_urls, onboarding_settings, team_invite, jessie, sop, invoices, email, reports, broadcast, lead_sources, lead_intake, notifications, webhooks, inventory_webhooks, demo_requests, team_chat, date_triggers, app_directory, scheduler_admin, contact_events, white_label, image_router, webhook_subscriptions, public_api, user_lifecycle, docs, nda, voice_notes, contact_intel, leaderboard_v2, notifications_center, ai_campaigns, ai_reply, home_intelligence, showcase, brand_assets, linkpage, setup_wizard, help_center, review_templates, social_templates, training, engagement_signals, ai_outreach, campaign_config, permission_templates, opt_in, push_notifications, crm_timeline, tracking, contact_merge, account_health, messaging_channels, csv_import, sold_workflow, partner_billing, seo, geo, chat_widget, partner_invoices, training_reports, media_tracking, va_profiles, user_schedule, keyword_rules
+from routers import auth, contacts, tasks, messages, calls, campaigns, admin, admin_hierarchy, admin_users, leaderboard, calendar, templates, tags, search, public_review, digital_card, profile, integrations, partners, legal, subscriptions, directory, shared_inboxes, voice, twilio_webhooks, twilio_admin, public_landing, congrats_cards, short_urls, onboarding_settings, team_invite, jessie, sop, invoices, email, reports, broadcast, lead_sources, lead_intake, notifications, webhooks, inventory_webhooks, demo_requests, team_chat, date_triggers, app_directory, scheduler_admin, contact_events, white_label, image_router, webhook_subscriptions, public_api, user_lifecycle, docs, nda, voice_notes, contact_intel, leaderboard_v2, notifications_center, ai_campaigns, ai_reply, home_intelligence, showcase, brand_assets, linkpage, setup_wizard, help_center, review_templates, social_templates, training, engagement_signals, ai_outreach, campaign_config, permission_templates, opt_in, push_notifications, crm_timeline, tracking, contact_merge, account_health, messaging_channels, csv_import, sold_workflow, partner_billing, seo, geo, chat_widget, partner_invoices, training_reports, media_tracking, va_profiles, user_schedule, keyword_rules, wallet_pass
 from routers.database import get_db
 from websocket_manager import manager as ws_manager
 
@@ -170,7 +170,7 @@ async def enforce_user_ownership(request: Request, call_next):
         "/api/reports/", "/api/push/preferences/", "/api/push/subscribe-native/",
         "/api/push/status/", "/api/users/", "/api/engagement-signals/",
         "/api/ai-outreach/", "/api/broadcast/", "/api/bug-reports/",
-        "/api/inventory/", "/api/keyword-rules/",
+        "/api/inventory/", "/api/keyword-rules/", "/api/wallet/",
     )
 
     matched_prefix = next((p for p in PROTECTED_PREFIXES if path.startswith(p)), None)
@@ -661,6 +661,7 @@ from routers import bug_reports
 api_router.include_router(bug_reports.router)
 from routers import inventory as inventory_mgmt
 api_router.include_router(inventory_mgmt.router)
+api_router.include_router(wallet_pass.router)
 
 # ============= WEBSOCKET ENDPOINT =============
 @app.websocket("/api/ws/{user_id}")
