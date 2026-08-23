@@ -375,6 +375,22 @@ function HomeScreen() {
 
   // Modals
   const [showSharePicker, setShowSharePicker] = useState(false);
+
+  // ── AI master switch (pauses all AI auto-replies) ──
+  const [aiPaused, setAiPaused] = useState<boolean>(!!(user as any)?.ai_master_paused);
+  useEffect(() => { setAiPaused(!!(user as any)?.ai_master_paused); }, [(user as any)?.ai_master_paused]);
+  const toggleAiMaster = async () => {
+    if (!user?._id) return;
+    const next = !aiPaused;
+    setAiPaused(next);
+    try {
+      await api.patch(`/users/${user._id}`, { ai_master_paused: next });
+      useAuthStore.getState().updateUser({ ai_master_paused: next } as any);
+    } catch {
+      setAiPaused(!next);
+      showSimpleAlert('Error', 'Could not update AI setting. Try again.');
+    }
+  };
   const [showContactAction, setShowContactAction] = useState(false);
   const [contactActionMode, setContactActionMode] = useState<'search' | 'keypad'>('search');
   const [showSendCard, setShowSendCard] = useState(false);
@@ -545,6 +561,11 @@ function HomeScreen() {
   const handleActionContactSelect = (contact: any) => {
     setShowActionPicker(false);
     const contactId = contact._id || contact.id;
+    if (pendingAction === 'voice') {
+      // capture=true auto-starts the voice recorder on the contact page
+      router.push(`/contact/${contactId}?capture=true` as any);
+      return;
+    }
     router.push(`/contact/${contactId}?action=${pendingAction}` as any);
   };
 
@@ -671,9 +692,11 @@ function HomeScreen() {
 
   const TILES = [
     { key: 'sold',        icon: 'trophy',     label: 'SOLD!',       sublabel: 'Snap the moment & start campaign', color: '#C9A962', onPress: () => router.push('/sold-quick' as any) },
+    { key: 'send-photo',  icon: 'camera',     label: 'Send Photo',  sublabel: 'Snap & text a photo — no sale needed', color: '#32ADE6', onPress: () => router.push('/quick-send/photo' as any) },
     { key: 'review',      icon: 'star',       label: 'Review',      sublabel: 'Ask for a 5-star review',          color: '#FF9500', onPress: () => router.push('/quick-send/review' as any) },
     { key: 'card',        icon: 'card',       label: 'Card',        sublabel: 'Send your digital card',           color: '#007AFF', onPress: () => setShowSharePicker(true) },
-    { key: 'new-contact', icon: 'person-add', label: 'New Contact', sublabel: 'Add someone new',                  color: '#34C759', onPress: () => router.push('/contact/new' as any) },
+    { key: 'voice-note',  icon: 'mic',        label: 'Voice Note',  sublabel: 'Record notes on a customer',       color: '#34C759', onPress: () => openActionPicker('voice', 'Voice Note — pick a person') },
+    { key: 'new-contact', icon: 'person-add', label: 'New Contact', sublabel: 'Add someone new',                  color: '#AF52DE', onPress: () => router.push('/contact/new' as any) },
   ];
 
   // ── ONE clear next action, picked by priority ──
@@ -735,6 +758,22 @@ function HomeScreen() {
         <Text style={[styles.userName, { color: colors.text }]}>Home</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <TouchableOpacity
+            onPress={toggleAiMaster}
+            activeOpacity={0.7}
+            style={{
+              flexDirection: 'row', alignItems: 'center', gap: 4,
+              paddingHorizontal: 10, paddingVertical: 5, borderRadius: 14,
+              backgroundColor: aiPaused ? 'rgba(142,142,147,0.12)' : 'rgba(201,169,98,0.15)',
+              borderWidth: 1, borderColor: aiPaused ? 'rgba(142,142,147,0.35)' : 'rgba(201,169,98,0.5)',
+            }}
+            data-testid="ai-master-toggle"
+          >
+            <Ionicons name="sparkles" size={13} color={aiPaused ? '#8E8E93' : '#C9A962'} />
+            <Text style={{ fontSize: 11, fontWeight: '800', letterSpacing: 0.5, color: aiPaused ? '#8E8E93' : '#C9A962' }}>
+              {aiPaused ? 'AI OFF' : 'AI ON'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             onPress={toggleTheme}
             style={{ padding: 6 }}
             testID="theme-toggle-home"
@@ -788,8 +827,8 @@ function HomeScreen() {
 
         {/* ── QUICK ACTIONS — 2×2 grid ─── */}
         <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
-          {[[TILES[0], TILES[1]], [TILES[2], TILES[3]]].map((row, rowIdx) => (
-            <View key={rowIdx} style={{ flexDirection: 'row', gap: 10, marginBottom: rowIdx === 0 ? 10 : 0 }}>
+          {[[TILES[0], TILES[1]], [TILES[2], TILES[3]], [TILES[4], TILES[5]]].map((row, rowIdx) => (
+            <View key={rowIdx} style={{ flexDirection: 'row', gap: 10, marginBottom: rowIdx < 2 ? 10 : 0 }}>
               {row.map(tile => (
                 <TouchableOpacity
                   key={tile.key}

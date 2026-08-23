@@ -173,6 +173,16 @@ async def queue_ai_reply(
     """
     db = get_db()
 
+    # Master AI switch — rep can pause ALL AI replies from the Home screen
+    try:
+        if assigned_user_id:
+            _u = await db.users.find_one({"_id": ObjectId(assigned_user_id)}, {"ai_master_paused": 1})
+            if _u and _u.get("ai_master_paused"):
+                logger.info(f"AI master paused for user {assigned_user_id} — skipping AI reply")
+                return None
+    except Exception:
+        pass
+
     if ai_assist_mode == AI_MODE_OFF:
         return None  # Caller already paused + notified rep
 

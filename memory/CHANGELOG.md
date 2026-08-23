@@ -208,3 +208,11 @@
 - Bug: `services/voice_intel.py merge_personal_details` never overwrote existing values (scalars kept old value; top-level employer/occupation/vehicle only set when empty) → new employment/spouse info from fresh memos was silently discarded.
 - Fix: newest memo wins — scalar personal_details fields overwrite, lists still merge+dedup, top-level vehicle/occupation/employer always updated when extracted.
 - Verified live: gpt-5.2 extraction via EMERGENT_LLM_KEY works; test contact employer "Old Company Inc"→"Tesla", spouse "Karen"→"Sarah". NOTE: user saw this in PRODUCTION — requires backend redeploy to take effect there.
+
+## Salesperson Quick Actions (Aug 23, 2026) — self-tested e2e via screenshots + curl
+- Home quick actions now 6 tiles (3 rows × 2): SOLD! · Send Photo · Review · Card · Voice Note · New Contact.
+- NEW /quick-send/photo screen: snap/pick photo → search contact → caption → MMS via smartSendSMS (Twilio) or native-SMS fallback w/ photo link; logs photo_sent event. Industry-neutral copy per user (auto-adjacent: insurance/real estate).
+- NEW AI master switch: gold "AI ON"/gray "AI OFF" pill in Home header → PATCH /users/{id} ai_master_paused (added to allowed_fields in server.py patch_user_profile AND auth.py patch_user — NOTE: /api/users/{id} routes to server.py:1003, auth.py version is at /api/auth/users/{id}).
+- Backend gate: queue_ai_reply (ai_reply.py) returns None when assigned user has ai_master_paused=true — stops ALL AI drafts/auto-replies.
+- Voice Note tile → contact picker → /contact/{id}?capture=true (existing deep-link auto-starts recorder). Verified recorder auto-started.
+- Production needs BOTH: backend redeploy (AI gate + allowed_fields) AND eas update (Home/photo screen).
