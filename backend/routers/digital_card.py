@@ -2,10 +2,11 @@
 Digital Business Card router - shareable card for salespeople
 Includes campaign enrollment on card save/download
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from bson import ObjectId
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional
+import hashlib
 from routers.database import get_db, get_data_filter
 from routers.short_urls import create_short_url, get_short_url_base
 
@@ -24,14 +25,49 @@ def get_safe_logo(doc):
 router = APIRouter(prefix="/card", tags=["digital-card"])
 
 
+async def _record_card_scan(db, user_id: str, request: Request):
+    """Count unique visitors per day (IP + user-agent hash). Skips the card owner viewing their own card."""
+    try:
+        auth = request.headers.get("authorization", "")
+        if auth.lower().startswith("bearer "):
+            from routers.auth import verify_jwt_token
+            payload = verify_jwt_token(auth[7:])
+            if payload and payload.get("sub") == user_id:
+                return
+        fwd = request.headers.get("x-forwarded-for", "")
+        ip = fwd.split(",")[0].strip() if fwd else (request.client.host if request.client else "unknown")
+        ua = request.headers.get("user-agent", "")
+        visitor = hashlib.sha256(f"{ip}|{ua}".encode()).hexdigest()[:24]
+        now = datetime.now(timezone.utc)
+        day = now.strftime("%Y-%m-%d")
+        await db.card_scans.update_one(
+            {"user_id": user_id, "visitor": visitor, "day": day},
+            {"$setOnInsert": {"scanned_at": now}},
+            upsert=True,
+        )
+    except Exception as e:
+        print(f"[DigitalCard] scan tracking failed: {e}")
+
+
+@router.get("/scan-stats/{user_id}")
+async def get_scan_stats(user_id: str):
+    """Unique QR/card scans — last 7 days and all-time."""
+    db = get_db()
+    week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    week = await db.card_scans.count_documents({"user_id": user_id, "scanned_at": {"$gte": week_ago}})
+    total = await db.card_scans.count_documents({"user_id": user_id})
+    return {"week": week, "total": total}
+
+
 @router.get("/data/{user_id}")
-async def get_card_data(user_id: str, cid: str = None):
+async def get_card_data(user_id: str, request: Request, cid: str = None):
     """
     Get salesperson's digital card data for public display
     cid = contact ID (optional, for accurate tracking — passed by short URL redirect)
     """
     db = get_db()
-    
+    await _record_card_scan(db, user_id, request)
+
     try:
         user = await db.users.find_one(
             {"_id": ObjectId(user_id)},

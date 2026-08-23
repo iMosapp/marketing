@@ -1386,6 +1386,7 @@ function HomeScreen() {
         vCardUserId={user?._id}
         userId={user?._id}
         eventType={shareConfig.eventType}
+        showScanStats={shareConfig.eventType === 'card_qr_shown'}
       />
 
       <ContactActionModal visible={showContactAction} onClose={() => setShowContactAction(false)} colors={colors} userId={user?._id || ''} initialMode={contactActionMode} />

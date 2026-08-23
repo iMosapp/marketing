@@ -34,6 +34,7 @@ interface UniversalShareModalProps {
   vCardUserId?: string;
   userId?: string;
   eventType?: string;
+  showScanStats?: boolean;
 }
 
 const copyText = async (text: string) => {
@@ -76,6 +77,7 @@ export function UniversalShareModal({
   vCardUserId,
   userId,
   eventType,
+  showScanStats = false,
 }: UniversalShareModalProps) {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
@@ -86,6 +88,14 @@ export function UniversalShareModal({
   const [saving, setSaving] = useState(false);
   const [showQRView, setShowQRView] = useState(false);
   useEffect(() => { if (visible && startWithQR) setShowQRView(true); }, [visible, startWithQR]);
+
+  // Scan counter — unique visitors who opened this card
+  const [scanStats, setScanStats] = useState<{ week: number; total: number } | null>(null);
+  useEffect(() => {
+    if (visible && showQRView && showScanStats && userId) {
+      api.get(`/card/scan-stats/${userId}`).then(r => setScanStats(r.data)).catch(() => {});
+    }
+  }, [visible, showQRView, showScanStats, userId]);
 
   // Contact search state
   const [contactSuggestions, setContactSuggestions] = useState<any[]>([]);
@@ -315,6 +325,20 @@ export function UniversalShareModal({
                   <QRCode value={shareUrl || 'https://imonsocial.com'} size={220} backgroundColor="#FFFFFF" color="#000000" />
                 </View>
                 <Text style={[styles.qrUrl, { color: colors.textSecondary }]} numberOfLines={2}>{shareUrl}</Text>
+                {showScanStats && scanStats !== null && (
+                  <View
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, backgroundColor: colors.bg, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 20, borderWidth: 1, borderColor: colors.border }}
+                    data-testid="qr-scan-stats"
+                  >
+                    <Ionicons name="eye-outline" size={16} color="#007AFF" />
+                    <Text style={{ color: colors.text, fontSize: 14, fontWeight: '700' }} data-testid="qr-scan-week-count">
+                      {scanStats.week} scan{scanStats.week === 1 ? '' : 's'} this week
+                    </Text>
+                    {scanStats.total > scanStats.week && (
+                      <Text style={{ color: colors.textSecondary, fontSize: 12 }}>· {scanStats.total} all-time</Text>
+                    )}
+                  </View>
+                )}
               </View>
               <TouchableOpacity style={styles.shareModalCancel} onPress={() => startWithQR ? close() : setShowQRView(false)} data-testid="qr-close-btn">
                 <Text style={styles.shareModalCancelText}>{startWithQR ? 'Done' : 'Back'}</Text>
