@@ -25,6 +25,7 @@ import { format } from 'date-fns';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { contactsAPI, tagsAPI } from '../../services/api';
+import { useContactSearch } from '../../hooks/useContactSearch';
 import api from '../../services/api';
 import { showSimpleAlert, showConfirm } from '../../services/alert';
 import { useToast } from '../../components/common/Toast';
@@ -115,6 +116,8 @@ export default function NewContactScreen() {
       setAllContacts(Array.isArray(data) ? data : (data?.contacts || []));
     } catch {}
   };
+
+  useContactSearch(user?._id, contactSearch, setAllContacts, showReferralPicker);
 
   const filteredContacts = useMemo(() =>
     contactSearch.trim()

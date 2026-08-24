@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { tasksAPI, contactsAPI } from '../../services/api';
+import { useContactSearch } from '../../hooks/useContactSearch';
 import { showAlert, showSimpleAlert } from '../../services/alert';
 import { useThemeStore } from '../../store/themeStore';
 import api from '../../services/api';
@@ -142,6 +143,8 @@ export default function NewTaskScreen() {
     } catch {}
     setContactsLoading(false);
   };
+
+  useContactSearch(user?._id, contactQuery, setContacts);
 
   const filteredContacts = contacts.filter(c => {
     const q = contactQuery.toLowerCase();

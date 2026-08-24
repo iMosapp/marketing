@@ -20,6 +20,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import api from '../../services/api';
 import { contactsAPI } from '../../services/api';
+import { useContactSearch } from '../../hooks/useContactSearch';
 import { showSimpleAlert } from '../../services/alert';
 import { NotificationBell } from '../../components/notifications/NotificationBell';
 import { UniversalShareModal } from '../../components/UniversalShareModal';
@@ -69,6 +70,8 @@ function ContactActionModal({
     try { const data = await contactsAPI.getAll(userId); setContacts(Array.isArray(data) ? data : (data?.contacts || [])); } catch {}
     setLoading(false);
   };
+
+  useContactSearch(userId, search, setContacts, visible);
 
   const filtered = contacts.filter(c => {
     const q = search.toLowerCase();
@@ -603,6 +606,9 @@ function HomeScreen() {
     }
     router.push(`/contact/${contactId}?action=${pendingAction}` as any);
   };
+
+  useContactSearch(user?._id, actionSearch, setActionContacts, showActionPicker);
+  useContactSearch(user?._id, cardSearch, setCardContacts, showSendCard);
 
   const filteredActionContacts = actionContacts.filter(c => {
     const q = actionSearch.toLowerCase();

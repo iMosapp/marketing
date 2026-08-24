@@ -30,6 +30,7 @@ import { resolvePhotoUrl } from '../../utils/photoUrl';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { messagesAPI, contactsAPI, emailAPI, tasksAPI, tagsAPI } from '../../services/api';
+import { useContactSearch } from '../../hooks/useContactSearch';
 import SwipeableConversationItem from '../../components/SwipeableConversationItem';
 import WebSwipeableItem, { wasRecentSwipe } from '../../components/WebSwipeableItem';
 import AppointmentModal from '../../components/AppointmentModal';
@@ -516,6 +517,8 @@ export default function InboxScreen() {
       setLoadingContacts(false);
     }
   };
+
+  useContactSearch(user?._id, contactSearch, setContacts);
   
   const startConversation = (contact: any) => {
     triggerHaptic('light');

@@ -30,6 +30,7 @@ import { Image } from 'expo-image';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { contactsAPI, campaignsAPI, tagsAPI, messagesAPI } from '../../services/api';
+import { useContactSearch } from '../../hooks/useContactSearch';
 import api from '../../services/api';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
 import { useToast } from '../../components/common/Toast';
@@ -1090,6 +1091,8 @@ function ContactDetailScreen() {
       setAllContacts(contactArr.filter((c: any) => c._id !== id));
     } catch (e) { console.error(e); }
   };
+
+  useContactSearch(user?._id, contactSearch, (arr) => setAllContacts(arr.filter((c: any) => c._id !== id)));
 
   // ===== NEW CONTACT: DUPLICATE CHECK =====
   const checkDuplicate = useCallback(async (phone: string, email: string) => {

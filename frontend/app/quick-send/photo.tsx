@@ -11,6 +11,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import api, { contactsAPI, smartSendSMS } from '../../services/api';
+import { useContactSearch } from '../../hooks/useContactSearch';
 import { showSimpleAlert } from '../../services/alert';
 
 const IS_WEB = Platform.OS === 'web';
@@ -45,6 +46,8 @@ function SendPhotoScreen() {
     };
     load();
   }, [user?._id]);
+
+  useContactSearch(user?._id, search, setContacts);
 
   const takePhoto = async () => {
     try {

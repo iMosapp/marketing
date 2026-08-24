@@ -8,6 +8,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { tasksAPI, contactsAPI } from '../../services/api';
+import { useContactSearch } from '../../hooks/useContactSearch';
 import { showSimpleAlert } from '../../services/alert';
 
 const PRIORITIES = [
@@ -68,6 +69,8 @@ export default function AddTaskScreen() {
     } catch {}
     setContactsLoading(false);
   };
+
+  useContactSearch(user?._id, contactSearch, setContactsList);
 
   const filteredContacts = contactsList.filter(c => {
     const q = contactSearch.toLowerCase();
