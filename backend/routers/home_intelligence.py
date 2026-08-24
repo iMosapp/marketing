@@ -440,6 +440,96 @@ async def get_wins_feed(user_id: str, db, limit: int = 15) -> list:
     return wins
 
 
+# ── One-tap message draft — powers the "What to send" sheet on Home ──────────
+
+DRAFT_BRIEFS = {
+    "card_viewed":       "They just viewed my digital business card. Write a friendly follow-up that opens a conversation.",
+    "campaign_reply":    "They replied to a recent message of mine. Write a warm response that re-opens the conversation.",
+    "birthday":          "Their birthday is coming up. Write a warm, personal birthday wish.",
+    "anniversary":       "Their purchase anniversary is this week. Write a warm note marking the occasion.",
+    "cooling_down":      "It has been a while since we last talked. Write a casual, no-pressure check-in.",
+    "review_click":      "They clicked my review link but may not have finished the review. Write a gentle, appreciative nudge.",
+    "warm_lead":         "This is a warm lead actively showing interest. Write a helpful, low-pressure reach-out offering to answer questions.",
+    "purchase_followup": "They bought from me recently. Write a thank-you check-in asking how everything is going.",
+}
+
+DRAFT_FALLBACKS = {
+    "card_viewed":       "Hey {first}! Saw you checked out my card — anything I can help you with? Happy to answer any questions.",
+    "campaign_reply":    "Hey {first}! Thanks for getting back to me — what can I help you with?",
+    "birthday":          "Happy early birthday, {first}! 🎉 Hope you have an amazing one — let me know if there's anything I can do for you.",
+    "anniversary":       "Hey {first}! Can't believe it's already been a year — happy anniversary! Hope everything's still treating you great.",
+    "cooling_down":      "Hey {first}! It's been a minute — just checking in to see how everything's going. Anything I can help with?",
+    "review_click":      "Hey {first}! Thanks for taking a look at that review link — if you get a sec to finish it, it'd mean the world to me!",
+    "warm_lead":         "Hey {first}! Just wanted to reach out — I'm here if you have any questions at all. No pressure!",
+    "purchase_followup": "Hey {first}! Just checking in — how's everything going with your purchase? Let me know if you need anything at all.",
+}
+
+DRAFT_SYSTEM_PROMPT = """You write ONE short, casual, ready-to-send text message from a salesperson to their customer.
+Rules:
+- 1-3 sentences max, warm and conversational — like texting a friend
+- Sound human, never salesy or robotic
+- Use the customer's first name once
+- At most one emoji, or none
+- Output ONLY the message text. No quotes, no preamble, no options."""
+
+
+@router.get("/draft/{user_id}/{contact_id}")
+async def draft_message(user_id: str, contact_id: str, reason: str = ""):
+    """Generate one ready-to-send text message for a contact, tailored to why they're being recommended."""
+    import asyncio
+    db = get_db()
+    try:
+        contact = await db.contacts.find_one({"_id": ObjectId(contact_id)})
+    except Exception:
+        contact = None
+    if not contact:
+        return {"message": "Hey! Just checking in — how's everything going?"}
+
+    first = contact.get("first_name", "") or "there"
+    fallback = DRAFT_FALLBACKS.get(reason, DRAFT_FALLBACKS["cooling_down"]).format(first=first)
+
+    import os
+    api_key = os.getenv("EMERGENT_LLM_KEY")
+    if not api_key:
+        return {"message": fallback}
+
+    parts = [f"Customer first name: {first}"]
+    if contact.get("vehicle"):
+        parts.append(f"Their purchase/vehicle: {contact['vehicle']}")
+    if contact.get("spouse_name"):
+        parts.append(f"Spouse: {contact['spouse_name']}")
+    if contact.get("occupation") or contact.get("employer"):
+        parts.append(f"Work: {contact.get('occupation', '')} {contact.get('employer', '')}".strip())
+    if contact.get("tags"):
+        parts.append(f"Tags: {', '.join(contact['tags'][:5])}")
+    last = contact.get("last_contacted_at") or contact.get("last_activity_at")
+    if isinstance(last, datetime):
+        days = (datetime.now(timezone.utc) - (last if last.tzinfo else last.replace(tzinfo=timezone.utc))).days
+        parts.append(f"Days since last contact: {days}")
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"name": 1})
+    if user and user.get("name"):
+        parts.append(f"Salesperson name: {user['name'].split()[0]}")
+    brief = DRAFT_BRIEFS.get(reason, DRAFT_BRIEFS["cooling_down"])
+    prompt = f"Situation: {brief}\n\n" + "\n".join(parts)
+
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        import secrets as _secrets
+        chat = LlmChat(
+            api_key=api_key,
+            session_id=f"homedraft_{user_id}_{_secrets.token_hex(4)}",
+            system_message=DRAFT_SYSTEM_PROMPT,
+        ).with_model("openai", "gpt-5.2")
+        text = await asyncio.wait_for(chat.send_message(UserMessage(text=prompt)), timeout=12.0)
+        text = (text or "").strip().strip('"').strip()
+        if not text or len(text) > 500:
+            text = fallback
+        return {"message": text}
+    except Exception as e:
+        logger.warning(f"[HomeDraft] LLM failed, using fallback: {e}")
+        return {"message": fallback}
+
+
 # ── Combined endpoint ─────────────────────────────────────────────────────────
 
 from cachetools import TTLCache as _TTLCache
