@@ -1655,8 +1655,8 @@ export default function InboxScreen() {
         };
         const tabs: { key: typeof activeTab; label: string; icon: string; activeColor: string }[] = [
           { key: 'hot',       label: '🔥 Hot',  icon: 'flame',                     activeColor: '#FF3B30' },
-          { key: 'all',       label: 'All',     icon: 'list-outline',              activeColor: '#C9A962' },
           { key: 'waiting',   label: 'Waiting', icon: 'time-outline',              activeColor: '#FF9500' },
+          { key: 'all',       label: 'All',     icon: 'list-outline',              activeColor: '#C9A962' },
           { key: 'ai_active', label: 'AI',      icon: 'sparkles',                  activeColor: '#34C759' },
           { key: 'assigned',  label: 'Active',  icon: 'person-circle-outline',     activeColor: '#007AFF' },
           { key: 'closed',    label: 'Closed',  icon: 'checkmark-circle-outline',  activeColor: '#8E8E93' },
