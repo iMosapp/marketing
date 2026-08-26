@@ -753,7 +753,7 @@ function HomeScreen() {
       const res = await api.get(`/home/draft/${user._id}/${item.contact_id}`, { params: { reason: item.reason_key || '' } });
       setDraftMsg(res.data.message || '');
     } catch {
-      setDraftMsg(`Hey ${item.first_name || ''}! Just checking in — how's everything going?`.replace('  ', ' '));
+      setDraftMsg(`Hey ${item.first_name || ''}! Just checking in, how's everything going?`.replace('  ', ' '));
     }
     setDraftLoading(false);
   };

@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException, Request
 from bson import ObjectId
 
 from routers.database import get_db
+from utils.text_sanitize import no_em_dash
 
 router = APIRouter(prefix="/chat", tags=["Chat Widget"])
 logger = logging.getLogger("chat_widget")
@@ -143,7 +144,7 @@ async def send_message(request: Request):
 
         full_message = message + context_hint
         response = await chat.send_message(UserMessage(text=full_message))
-        response_text = response if isinstance(response, str) else str(response)
+        response_text = no_em_dash(response if isinstance(response, str) else str(response))
 
         session["messages"].append({"role": "jessi", "text": response_text, "ts": datetime.now(timezone.utc).isoformat()})
 

@@ -13,6 +13,7 @@ from bson import ObjectId
 
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from routers.database import get_db
+from utils.text_sanitize import no_em_dash
 
 logger = logging.getLogger(__name__)
 
@@ -202,11 +203,15 @@ async def generate_suggestions(user_id: str, contact_id: str) -> dict:
                 "best_time_reason": "Warm and personal post-sale follow-up",
             },
             {
-                "message": f"Hi {first_name}, hope you're loving the new car! If you have a minute, I'd really appreciate a quick review — it means a lot. Let me know if anything comes up!",
+                "message": f"Hi {first_name}, hope you're loving the new car! If you have a minute, I'd really appreciate a quick review, it means a lot. Let me know if anything comes up!",
                 "approach": "Review request",
                 "best_time_reason": "Captures satisfaction while it's fresh",
             },
         ]
+
+    for s in suggestions:
+        if isinstance(s, dict) and s.get("message"):
+            s["message"] = no_em_dash(s["message"])
 
     return {
         "suggestions": suggestions[:2],

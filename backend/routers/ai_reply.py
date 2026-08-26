@@ -25,6 +25,7 @@ from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Request
 
 from routers.database import get_db
+from utils.text_sanitize import no_em_dash
 
 router = APIRouter(prefix="/ai-reply", tags=["ai-reply"])
 logger = logging.getLogger(__name__)
@@ -385,6 +386,7 @@ async def queue_ai_reply(
         ai_body = (response.strip() if isinstance(response, str)
                    else response.text.strip() if hasattr(response, "text")
                    else str(response)).strip('"\'')
+        ai_body = no_em_dash(ai_body)
 
     except Exception as e:
         logger.error(f"[AIReply] Draft generation failed for {contact_id}: {e}")
@@ -1106,6 +1108,7 @@ async def send_silence_followups():
             )
             body = (result.strip() if isinstance(result, str)
                     else result.text.strip() if hasattr(result,"text") else "").strip('"\'')
+            body = no_em_dash(body)
 
             if not body:
                 skipped += 1
@@ -1222,6 +1225,7 @@ async def send_silence_followups():
             )
             body = (reply_text.strip() if isinstance(reply_text, str)
                     else reply_text.text.strip() if hasattr(reply_text,"text") else "").strip('"\'')
+            body = no_em_dash(body)
 
             if not body:
                 skipped += 1

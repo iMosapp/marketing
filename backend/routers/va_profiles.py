@@ -153,6 +153,7 @@ async def preview_va_profile(profile_id: str, x_user_id: str = Header(None, alia
             timeout=10.0,
         )
         sample = (result.strip() if isinstance(result, str) else result.text.strip() if hasattr(result, "text") else "").strip('"\'')
-        return {"sample_reply": sample}
+        from utils.text_sanitize import no_em_dash
+        return {"sample_reply": no_em_dash(sample)}
     except Exception as e:
         return {"sample_reply": f"Preview failed: {e}"}

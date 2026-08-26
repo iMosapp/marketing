@@ -13,6 +13,7 @@ from bson import ObjectId
 from fastapi import APIRouter, HTTPException
 
 from routers.database import get_db, get_user_by_id
+from utils.text_sanitize import no_em_dash
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/ai-campaigns", tags=["AI Campaigns"])
@@ -338,7 +339,7 @@ Write ONLY the message text. No quotes, no explanation. Make it sound like it's 
             system_message=system_prompt,
         ).with_model("openai", "gpt-5.2")
         response = await chat.send_message(UserMessage(text=user_prompt))
-        generated = response.strip().strip('"').strip("'")
+        generated = no_em_dash(response.strip().strip('"').strip("'"))
         return {"success": True, "message": generated, "channel": channel}
     except Exception as e:
         logger.error(f"AI message generation failed: {e}")
@@ -408,7 +409,7 @@ Reply naturally and briefly as me. Just the reply text, nothing else."""
             system_message=system_prompt,
         ).with_model("openai", "gpt-5.2")
         response = await chat.send_message(UserMessage(text=user_prompt))
-        generated = response.strip().strip('"').strip("'")
+        generated = no_em_dash(response.strip().strip('"').strip("'"))
 
         # Random delay 1-3 minutes (returned as metadata, not actually delayed here)
         delay_seconds = random.randint(60, 180)
@@ -448,7 +449,7 @@ async def preview_ai_clone(user_id: str, data: dict):
             system_message=system_prompt,
         ).with_model("openai", "gpt-5.2")
         response = await chat.send_message(UserMessage(text=test_message))
-        return {"success": True, "response": response.strip()}
+        return {"success": True, "response": no_em_dash(response.strip())}
     except Exception as e:
         logger.error(f"AI preview failed: {e}")
         raise HTTPException(status_code=500, detail=f"Preview failed: {str(e)}")

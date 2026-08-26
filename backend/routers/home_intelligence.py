@@ -454,14 +454,14 @@ DRAFT_BRIEFS = {
 }
 
 DRAFT_FALLBACKS = {
-    "card_viewed":       "Hey {first}! Saw you checked out my card — anything I can help you with? Happy to answer any questions.",
-    "campaign_reply":    "Hey {first}! Thanks for getting back to me — what can I help you with?",
-    "birthday":          "Happy early birthday, {first}! 🎉 Hope you have an amazing one — let me know if there's anything I can do for you.",
-    "anniversary":       "Hey {first}! Can't believe it's already been a year — happy anniversary! Hope everything's still treating you great.",
-    "cooling_down":      "Hey {first}! It's been a minute — just checking in to see how everything's going. Anything I can help with?",
-    "review_click":      "Hey {first}! Thanks for taking a look at that review link — if you get a sec to finish it, it'd mean the world to me!",
-    "warm_lead":         "Hey {first}! Just wanted to reach out — I'm here if you have any questions at all. No pressure!",
-    "purchase_followup": "Hey {first}! Just checking in — how's everything going with your purchase? Let me know if you need anything at all.",
+    "card_viewed":       "Hey {first}! Saw you checked out my card. Anything I can help you with? Happy to answer any questions.",
+    "campaign_reply":    "Hey {first}! Thanks for getting back to me. What can I help you with?",
+    "birthday":          "Happy early birthday, {first}! 🎉 Hope you have an amazing one. Let me know if there's anything I can do for you.",
+    "anniversary":       "Hey {first}! Can't believe it's already been a year. Happy anniversary! Hope everything's still treating you great.",
+    "cooling_down":      "Hey {first}! It's been a minute, just checking in to see how everything's going. Anything I can help with?",
+    "review_click":      "Hey {first}! Thanks for taking a look at that review link. If you get a sec to finish it, it'd mean the world to me!",
+    "warm_lead":         "Hey {first}! Just wanted to reach out, I'm here if you have any questions at all. No pressure!",
+    "purchase_followup": "Hey {first}! Just checking in, how's everything going with your purchase? Let me know if you need anything at all.",
 }
 
 DRAFT_SYSTEM_PROMPT = """You write ONE short, casual, ready-to-send text message from a salesperson to their customer.
@@ -470,6 +470,7 @@ Rules:
 - Sound human, never salesy or robotic
 - Use the customer's first name once
 - At most one emoji, or none
+- NEVER use em dashes (—) or en dashes (–) anywhere. Use a comma or a period instead.
 - Output ONLY the message text. No quotes, no preamble, no options."""
 
 
@@ -522,6 +523,8 @@ async def draft_message(user_id: str, contact_id: str, reason: str = ""):
         ).with_model("openai", "gpt-5.2")
         text = await asyncio.wait_for(chat.send_message(UserMessage(text=prompt)), timeout=12.0)
         text = (text or "").strip().strip('"').strip()
+        from utils.text_sanitize import no_em_dash
+        text = no_em_dash(text)
         if not text or len(text) > 500:
             text = fallback
         return {"message": text}

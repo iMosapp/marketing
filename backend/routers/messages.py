@@ -16,6 +16,7 @@ import asyncio
 
 from models import Message, MessageCreate
 from routers.database import get_db, get_data_filter, increment_user_stat
+from utils.text_sanitize import no_em_dash
 from services.twilio_service import send_sms, get_twilio_status, normalize_phone, TWILIO_PHONE_NUMBER
 
 router = APIRouter(prefix="/messages", tags=["Messages"])
@@ -1877,6 +1878,7 @@ async def get_ai_suggestion_smart(conversation_id: str):
         suggestion = (response.strip() if isinstance(response, str)
                       else response.text.strip() if hasattr(response, "text")
                       else str(response)).strip('"\'')
+        suggestion = no_em_dash(suggestion)
 
         if suggestion:
             return {"suggestion": suggestion, "intent": "contextual"}
