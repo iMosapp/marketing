@@ -51,12 +51,27 @@ async def _record_card_scan(db, user_id: str, request: Request):
 
 @router.get("/scan-stats/{user_id}")
 async def get_scan_stats(user_id: str):
-    """Unique QR/card scans — last 7 days and all-time."""
+    """Unique QR/card scans — last 7 days (with per-day trend) and all-time."""
     db = get_db()
-    week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    now = datetime.now(timezone.utc)
+    week_ago = now - timedelta(days=7)
     week = await db.card_scans.count_documents({"user_id": user_id, "scanned_at": {"$gte": week_ago}})
     total = await db.card_scans.count_documents({"user_id": user_id})
-    return {"week": week, "total": total}
+    day_keys = [(now - timedelta(days=i)).strftime("%Y-%m-%d") for i in range(6, -1, -1)]
+    pipeline = [
+        {"$match": {"user_id": user_id, "day": {"$in": day_keys}}},
+        {"$group": {"_id": "$day", "count": {"$sum": 1}}},
+    ]
+    counts = {row["_id"]: row["count"] async for row in db.card_scans.aggregate(pipeline)}
+    days = [
+        {
+            "day": k,
+            "label": datetime.strptime(k, "%Y-%m-%d").strftime("%a")[0],
+            "count": counts.get(k, 0),
+        }
+        for k in day_keys
+    ]
+    return {"week": week, "total": total, "days": days}
 
 
 @router.get("/data/{user_id}")

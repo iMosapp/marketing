@@ -36,6 +36,7 @@ Phase 2 "Relationship OS" UX enhancements: robust backend security, intent-based
 - P3 WhatsApp, Stripe partner invoices, enterprise DMS (CDK, Reynolds, Dealertrack).
 
 ## Notes for agents
+- **Scan Trend Graph (June 2026)**: /api/card/scan-stats/{user_id} now also returns `days` (last 7 days, {day, label, count} via aggregation on card_scans.day). UniversalShareModal QR view renders mini bar chart under the scan pill (today highlighted, counts above bars). Verified: backend buckets + UI render on preview with seeded data (seed removed after).
 - User language: English. Keep replies short; for production pushes give ONLY `eas update` one-liner.
 - Metro bundler can serve stale bundles — restart frontend supervisor if changes don't appear.
 - RN-web may not expose data-testid on TouchableOpacity in header; click by coordinates in screenshot tests.

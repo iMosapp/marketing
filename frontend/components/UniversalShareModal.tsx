@@ -90,7 +90,7 @@ export function UniversalShareModal({
   useEffect(() => { if (visible && startWithQR) setShowQRView(true); }, [visible, startWithQR]);
 
   // Scan counter — unique visitors who opened this card
-  const [scanStats, setScanStats] = useState<{ week: number; total: number } | null>(null);
+  const [scanStats, setScanStats] = useState<{ week: number; total: number; days?: { day: string; label: string; count: number }[] } | null>(null);
   useEffect(() => {
     if (visible && showQRView && showScanStats && userId) {
       api.get(`/card/scan-stats/${userId}`).then(r => setScanStats(r.data)).catch(() => {});
@@ -326,18 +326,37 @@ export function UniversalShareModal({
                 </View>
                 <Text style={[styles.qrUrl, { color: colors.textSecondary }]} numberOfLines={2}>{shareUrl}</Text>
                 {showScanStats && scanStats !== null && (
-                  <View
-                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, backgroundColor: colors.bg, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 20, borderWidth: 1, borderColor: colors.border }}
-                    data-testid="qr-scan-stats"
-                  >
-                    <Ionicons name="eye-outline" size={16} color="#007AFF" />
-                    <Text style={{ color: colors.text, fontSize: 14, fontWeight: '700' }} data-testid="qr-scan-week-count">
-                      {scanStats.week} scan{scanStats.week === 1 ? '' : 's'} this week
-                    </Text>
-                    {scanStats.total > scanStats.week && (
-                      <Text style={{ color: colors.textSecondary, fontSize: 12 }}>· {scanStats.total} all-time</Text>
-                    )}
-                  </View>
+                  <>
+                    <View
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, backgroundColor: colors.bg, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 20, borderWidth: 1, borderColor: colors.border }}
+                      data-testid="qr-scan-stats"
+                    >
+                      <Ionicons name="eye-outline" size={16} color="#007AFF" />
+                      <Text style={{ color: colors.text, fontSize: 14, fontWeight: '700' }} data-testid="qr-scan-week-count">
+                        {scanStats.week} scan{scanStats.week === 1 ? '' : 's'} this week
+                      </Text>
+                      {scanStats.total > scanStats.week && (
+                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>· {scanStats.total} all-time</Text>
+                      )}
+                    </View>
+                    {!!scanStats.days?.length && (() => {
+                      const max = Math.max(...scanStats.days!.map(d => d.count), 1);
+                      return (
+                        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 10, marginTop: 12, height: 52 }} data-testid="qr-scan-trend">
+                          {scanStats.days!.map((d, i) => {
+                            const isToday = i === scanStats.days!.length - 1;
+                            return (
+                              <View key={d.day} style={{ alignItems: 'center', gap: 3 }}>
+                                <Text style={{ fontSize: 9, fontWeight: '700', color: d.count > 0 ? '#007AFF' : 'transparent' }}>{d.count}</Text>
+                                <View style={{ width: 16, height: Math.max(3, Math.round((d.count / max) * 26)), borderRadius: 3, backgroundColor: d.count > 0 ? (isToday ? '#007AFF' : '#007AFF80') : colors.border }} />
+                                <Text style={{ fontSize: 9, fontWeight: isToday ? '800' : '600', color: isToday ? colors.text : colors.textSecondary }}>{d.label}</Text>
+                              </View>
+                            );
+                          })}
+                        </View>
+                      );
+                    })()}
+                  </>
                 )}
               </View>
               <TouchableOpacity style={styles.shareModalCancel} onPress={() => startWithQR ? close() : setShowQRView(false)} data-testid="qr-close-btn">
