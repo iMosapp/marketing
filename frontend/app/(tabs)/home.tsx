@@ -24,6 +24,7 @@ import { useContactSearch } from '../../hooks/useContactSearch';
 import { showSimpleAlert } from '../../services/alert';
 import { NotificationBell } from '../../components/notifications/NotificationBell';
 import { UniversalShareModal } from '../../components/UniversalShareModal';
+import { DraftMessageSheet } from '../../components/DraftMessageSheet';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -742,39 +743,7 @@ function HomeScreen() {
 
   // ── "What to send" draft sheet — full message + guidance before acting ──
   const [draftSheet, setDraftSheet] = useState<any>(null);
-  const [draftMsg, setDraftMsg] = useState('');
-  const [draftLoading, setDraftLoading] = useState(false);
-
-  const fetchDraft = async (item: any) => {
-    if (!user?._id) return;
-    setDraftLoading(true);
-    setDraftMsg('');
-    try {
-      const res = await api.get(`/home/draft/${user._id}/${item.contact_id}`, { params: { reason: item.reason_key || '' } });
-      setDraftMsg(res.data.message || '');
-    } catch {
-      setDraftMsg(`Hey ${item.first_name || ''}! Just checking in, how's everything going?`.replace('  ', ' '));
-    }
-    setDraftLoading(false);
-  };
-
-  const openDraftSheet = (item: any) => {
-    setDraftSheet(item);
-    fetchDraft(item);
-  };
-
-  const sendDraft = () => {
-    if (!draftSheet) return;
-    const item = draftSheet;
-    setCompletedToday(p => new Set([...p, item.contact_id]));
-    setDraftSheet(null);
-    const qs = new URLSearchParams();
-    qs.set('contact_name', `${item.first_name || ''} ${item.last_name || ''}`.trim());
-    if (item.phone) qs.set('contact_phone', item.phone);
-    qs.set('mode', 'sms');
-    qs.set('prefill', draftMsg);
-    router.push(`/thread/${item.contact_id}?${qs.toString()}` as any);
-  };
+  const openDraftSheet = (item: any) => setDraftSheet(item);
 
   // ── ONE clear next action, picked by priority ──
   const nextMove = (() => {
@@ -1429,72 +1398,12 @@ function HomeScreen() {
       />
 
       {/* ── "What to send" sheet — full reason + ready-to-send message ── */}
-      <Modal visible={!!draftSheet} transparent animationType="slide" onRequestClose={() => setDraftSheet(null)}>
-        <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' }} activeOpacity={1} onPress={() => setDraftSheet(null)}>
-          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
-            <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 34 }} data-testid="draft-sheet">
-              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 16 }} />
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: (draftSheet?.color || '#C9A962') + '20', alignItems: 'center', justifyContent: 'center' }}>
-                  <Ionicons name={(draftSheet?.icon as any) || 'chatbubble'} size={19} color={draftSheet?.color || '#C9A962'} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 19, fontWeight: '800', color: colors.text }} data-testid="draft-sheet-name">
-                    Text {`${draftSheet?.first_name || ''} ${draftSheet?.last_name || ''}`.trim() || 'them'}
-                  </Text>
-                  <Text style={{ fontSize: 13, color: draftSheet?.color || colors.textSecondary, fontWeight: '600', marginTop: 1 }}>
-                    Why now: {draftSheet?.reason_label || 'Keep the relationship warm'}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={{ backgroundColor: colors.bg, borderRadius: 16, padding: 16, marginTop: 14, minHeight: 88, justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}>
-                {draftLoading ? (
-                  <View style={{ alignItems: 'center', gap: 8 }}>
-                    <ActivityIndicator color="#C9A962" />
-                    <Text style={{ fontSize: 13, color: colors.textSecondary }}>Writing your message...</Text>
-                  </View>
-                ) : (
-                  <Text style={{ fontSize: 16, color: colors.text, lineHeight: 23 }} data-testid="draft-message-text">{draftMsg}</Text>
-                )}
-              </View>
-              <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 8, textAlign: 'center' }}>
-                You can edit it before it sends
-              </Text>
-
-              <TouchableOpacity
-                onPress={sendDraft}
-                disabled={draftLoading}
-                style={{ backgroundColor: draftLoading ? colors.border : '#007AFF', borderRadius: 16, paddingVertical: 15, alignItems: 'center', marginTop: 14, flexDirection: 'row', justifyContent: 'center', gap: 8 }}
-                data-testid="draft-send-btn"
-              >
-                <Ionicons name="paper-plane" size={17} color="#fff" />
-                <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Use This Message</Text>
-              </TouchableOpacity>
-
-              <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
-                <TouchableOpacity
-                  onPress={() => draftSheet && fetchDraft(draftSheet)}
-                  disabled={draftLoading}
-                  style={{ flex: 1, borderRadius: 16, paddingVertical: 13, alignItems: 'center', borderWidth: 1, borderColor: colors.border, flexDirection: 'row', justifyContent: 'center', gap: 6 }}
-                  data-testid="draft-regenerate-btn"
-                >
-                  <Ionicons name="refresh" size={15} color={colors.text} />
-                  <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>Different Message</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => { const cid = draftSheet?.contact_id; setDraftSheet(null); if (cid) router.push(`/contact/${cid}` as any); }}
-                  style={{ flex: 1, borderRadius: 16, paddingVertical: 13, alignItems: 'center', borderWidth: 1, borderColor: colors.border, flexDirection: 'row', justifyContent: 'center', gap: 6 }}
-                  data-testid="draft-view-contact-btn"
-                >
-                  <Ionicons name="person" size={15} color={colors.text} />
-                  <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>View Contact</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
+      <DraftMessageSheet
+        userId={user?._id}
+        item={draftSheet}
+        onClose={() => setDraftSheet(null)}
+        onUsed={(it) => setCompletedToday(p => new Set([...p, it.contact_id]))}
+      />
 
       <ContactActionModal visible={showContactAction} onClose={() => setShowContactAction(false)} colors={colors} userId={user?._id || ''} initialMode={contactActionMode} />
 

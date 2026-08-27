@@ -451,6 +451,7 @@ DRAFT_BRIEFS = {
     "review_click":      "They clicked my review link but may not have finished the review. Write a gentle, appreciative nudge.",
     "warm_lead":         "This is a warm lead actively showing interest. Write a helpful, low-pressure reach-out offering to answer questions.",
     "purchase_followup": "They bought from me recently. Write a thank-you check-in asking how everything is going.",
+    "touchpoint":        "I have a scheduled follow-up touchpoint due for them. Write a friendly message that fits the task.",
 }
 
 DRAFT_FALLBACKS = {
@@ -462,6 +463,7 @@ DRAFT_FALLBACKS = {
     "review_click":      "Hey {first}! Thanks for taking a look at that review link. If you get a sec to finish it, it'd mean the world to me!",
     "warm_lead":         "Hey {first}! Just wanted to reach out, I'm here if you have any questions at all. No pressure!",
     "purchase_followup": "Hey {first}! Just checking in, how's everything going with your purchase? Let me know if you need anything at all.",
+    "touchpoint":        "Hey {first}! You crossed my mind today, just wanted to check in and see how everything's going. Anything I can help with?",
 }
 
 DRAFT_SYSTEM_PROMPT = """You write ONE short, casual, ready-to-send text message from a salesperson to their customer.
@@ -475,7 +477,7 @@ Rules:
 
 
 @router.get("/draft/{user_id}/{contact_id}")
-async def draft_message(user_id: str, contact_id: str, reason: str = ""):
+async def draft_message(user_id: str, contact_id: str, reason: str = "", context: str = ""):
     """Generate one ready-to-send text message for a contact, tailored to why they're being recommended."""
     import asyncio
     db = get_db()
@@ -511,6 +513,8 @@ async def draft_message(user_id: str, contact_id: str, reason: str = ""):
     if user and user.get("name"):
         parts.append(f"Salesperson name: {user['name'].split()[0]}")
     brief = DRAFT_BRIEFS.get(reason, DRAFT_BRIEFS["cooling_down"])
+    if context:
+        parts.append(f"The task/occasion: {context[:200]}")
     prompt = f"Situation: {brief}\n\n" + "\n".join(parts)
 
     try:

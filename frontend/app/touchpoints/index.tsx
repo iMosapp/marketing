@@ -13,6 +13,7 @@ import { useThemeStore } from '../../store/themeStore';
 import { tasksAPI, contactsAPI } from '../../services/api';
 import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
+import { DraftMessageSheet } from '../../components/DraftMessageSheet';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -141,6 +142,25 @@ function TouchpointsScreen() {
         setSummary((s: any) => s ? { ...s, completed_today: Math.max(0, s.completed_today - 1), pending_today: s.pending_today + 1, progress_pct: Math.round((Math.max(0, s.completed_today - 1) / Math.max(s.total_today, 1)) * 100) } : s);
       }
     } catch { showSimpleAlert('Error', 'Could not undo — pull to refresh'); }
+  };
+
+  // ── "Write it for me" draft sheet ──
+  const [draftItem, setDraftItem] = useState<any>(null);
+  const openDraft = (task: any) => {
+    if (!task.contact_id) { handleText(task); return; }
+    const parts = (task.contact_name || '').split(' ').filter(Boolean);
+    const reason = task.type === 'birthday' ? 'birthday' : task.type === 'anniversary' ? 'anniversary' : 'touchpoint';
+    setDraftItem({
+      contact_id: task.contact_id,
+      first_name: parts[0] || '',
+      last_name: parts.slice(1).join(' '),
+      phone: task.contact_phone,
+      reason_key: reason,
+      reason_label: isOverdue(task) ? `Overdue: ${task.title || 'touchpoint'}` : (task.title || 'Touchpoint due today'),
+      icon: 'sparkles',
+      color: '#C9A962',
+      context: task.description || task.title || '',
+    });
   };
 
   const handleCall = async (task: any) => {
@@ -411,7 +431,7 @@ function TouchpointsScreen() {
           {overdueTasks.length > 0 && (
             <>
               <Text style={{ fontSize: 13, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, textTransform: 'uppercase', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 6 }}>Overdue</Text>
-              {overdueTasks.map(task => <TaskCard key={task._id} task={task} colors={colors} onComplete={completeTask} onSnooze={snoozeTask} onCall={handleCall} onText={handleText} />)}
+              {overdueTasks.map(task => <TaskCard key={task._id} task={task} colors={colors} onComplete={completeTask} onSnooze={snoozeTask} onCall={handleCall} onText={handleText} onDraft={openDraft} />)}
             </>
           )}
 
@@ -419,7 +439,7 @@ function TouchpointsScreen() {
           {todayTasks.length > 0 && (
             <>
               <Text style={{ fontSize: 13, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, textTransform: 'uppercase', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 6 }}>Today</Text>
-              {todayTasks.map(task => <TaskCard key={task._id} task={task} colors={colors} onComplete={completeTask} onSnooze={snoozeTask} onCall={handleCall} onText={handleText} />)}
+              {todayTasks.map(task => <TaskCard key={task._id} task={task} colors={colors} onComplete={completeTask} onSnooze={snoozeTask} onCall={handleCall} onText={handleText} onDraft={openDraft} />)}
             </>
           )}
 
@@ -432,6 +452,9 @@ function TouchpointsScreen() {
           )}
         </ScrollView>
       )}
+
+      {/* "Write it for me" draft sheet */}
+      <DraftMessageSheet userId={user?._id} item={draftItem} onClose={() => setDraftItem(null)} />
 
       {/* Undo snackbar */}
       {undo && (
@@ -458,8 +481,8 @@ function TouchpointsScreen() {
   );
 }
 
-function TaskCard({ task, colors, onComplete, onSnooze, onCall, onText }: {
-  task: any; colors: any; onComplete: (id: string) => void; onSnooze: (id: string) => void; onCall: (t: any) => void; onText: (t: any) => void;
+function TaskCard({ task, colors, onComplete, onSnooze, onCall, onText, onDraft }: {
+  task: any; colors: any; onComplete: (id: string) => void; onSnooze: (id: string) => void; onCall: (t: any) => void; onText: (t: any) => void; onDraft: (t: any) => void;
 }) {
   const overdue = isOverdue(task);
   const highPri = task.priority === 'high' && !overdue;
@@ -505,12 +528,18 @@ function TaskCard({ task, colors, onComplete, onSnooze, onCall, onText }: {
         </View>
       ) : null}
 
-      {/* Actions — Call & Text only (Done/Snooze are swipe gestures) */}
+      {/* Actions — Call, Write It & Text (Done/Snooze are swipe gestures) */}
       <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: colors.border }}>
         {showCall && (
-          <TouchableOpacity onPress={() => onCall(task)} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 13, borderRightWidth: showText ? 1 : 0, borderRightColor: colors.border }} data-testid={`task-call-${task._id}`}>
+          <TouchableOpacity onPress={() => onCall(task)} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 13, borderRightWidth: 1, borderRightColor: colors.border }} data-testid={`task-call-${task._id}`}>
             <Ionicons name="call" size={17} color="#007AFF" />
             <Text style={{ fontSize: 15, fontWeight: '600', color: '#007AFF' }}>Call</Text>
+          </TouchableOpacity>
+        )}
+        {!!task.contact_id && (
+          <TouchableOpacity onPress={() => onDraft(task)} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 13, borderRightWidth: showText ? 1 : 0, borderRightColor: colors.border }} data-testid={`task-draft-${task._id}`}>
+            <Ionicons name="sparkles" size={17} color="#C9A962" />
+            <Text style={{ fontSize: 15, fontWeight: '600', color: '#C9A962' }}>Write It</Text>
           </TouchableOpacity>
         )}
         {showText && (
