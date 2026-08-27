@@ -564,6 +564,8 @@ async def get_branding_logo():
 api_router.include_router(auth.router)
 api_router.include_router(contact_events.router)
 api_router.include_router(contact_merge.router)
+from routers import crm_push
+api_router.include_router(crm_push.router)
 api_router.include_router(contacts.router)
 api_router.include_router(white_label.router)
 api_router.include_router(image_router.router)
@@ -745,7 +747,7 @@ async def get_sold_performance(user_id: str, months: int = 6):
         referrals = await db.contacts.count_documents({
             "user_id": user_id,
             "date_sold": {"$gte": start_naive, "$lt": end_naive},
-            "referred_by": {"$exists": True, "$ne": None, "$ne": ""},
+            "referred_by": {"$exists": True, "$nin": [None, ""]},
             "status": {"$nin": ["hidden", "merged", "deleted"]},
         })
         # Repeat buyers (sold_count > 1 or has purchase_history)
@@ -779,7 +781,7 @@ async def get_sold_performance(user_id: str, months: int = 6):
     })
     all_referrals = await db.contacts.count_documents({
         "user_id": user_id,
-        "referred_by": {"$exists": True, "$ne": None, "$ne": ""},
+        "referred_by": {"$exists": True, "$nin": [None, ""]},
         "status": {"$nin": ["hidden", "merged", "deleted"]},
     })
 
@@ -811,7 +813,7 @@ async def get_sold_contacts_list(user_id: str, filter_type: str = "sold", month:
         "status": {"$nin": ["hidden", "merged", "deleted"]},
     }
     if filter_type == "referrals":
-        base["referred_by"] = {"$exists": True, "$ne": None, "$ne": ""}
+        base["referred_by"] = {"$exists": True, "$nin": [None, ""]}
     elif filter_type == "repeats":
         base["sold_count"] = {"$gt": 1}
     contacts = await db.contacts.find(base, {
@@ -861,7 +863,7 @@ async def get_team_performance(user_id: str, month: int = 0, year: int = 0):
         sid = str(rep.get("store_id", "")) or "no_store"
         store_name = stores_map.get(sid, "No Store")
         sold = await db.contacts.count_documents({"user_id": rid, "date_sold": {"$gte": start, "$lt": end}, "status": {"$nin": ["hidden", "merged", "deleted"]}})
-        refs = await db.contacts.count_documents({"user_id": rid, "date_sold": {"$gte": start, "$lt": end}, "referred_by": {"$exists": True, "$ne": None, "$ne": ""}, "status": {"$nin": ["hidden", "merged", "deleted"]}})
+        refs = await db.contacts.count_documents({"user_id": rid, "date_sold": {"$gte": start, "$lt": end}, "referred_by": {"$exists": True, "$nin": [None, ""]}, "status": {"$nin": ["hidden", "merged", "deleted"]}})
         rpts = await db.contacts.count_documents({"user_id": rid, "date_sold": {"$gte": start, "$lt": end}, "sold_count": {"$gt": 1}, "status": {"$nin": ["hidden", "merged", "deleted"]}})
         all_t = await db.contacts.count_documents({"user_id": rid, "date_sold": {"$exists": True, "$ne": None}, "status": {"$nin": ["hidden", "merged", "deleted"]}})
         if sid not in results:
@@ -1241,7 +1243,6 @@ async def get_activity_feed(user_id: str, limit: int = 20):
         "user_role": user.get('role', 'user'),
         "total": len(activities)
     }
-    import time as _time
     _activity_cache[user_id] = result
     return result
 
@@ -1635,7 +1636,6 @@ async def startup_event():
     # Create database indexes for performance (non-blocking)
     try:
         import asyncio
-        from routers.database import get_db
         db = get_db()
         if db is not None:
             # Give index creation 15 seconds max, don't block startup

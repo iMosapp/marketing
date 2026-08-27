@@ -17,7 +17,6 @@ Credentials: forest@imosapp.com / (env: TEST_ADMIN_PASS) (user_id: 69a0b7095fddc
 import os
 import pytest
 import requests
-import os
 import re
 import uuid
 from datetime import datetime, timezone

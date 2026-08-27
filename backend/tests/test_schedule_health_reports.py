@@ -254,7 +254,7 @@ class TestSchedulesCRUD:
         for schedule_id in self.created_schedule_ids:
             try:
                 requests.delete(f"{BASE_URL}/api/account-health/schedules/{schedule_id}")
-            except:
+            except Exception:
                 pass
         self.created_schedule_ids.clear()
 

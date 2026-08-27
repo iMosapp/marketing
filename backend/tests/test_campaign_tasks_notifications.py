@@ -11,7 +11,6 @@ Also tests date triggers creating tasks + notifications with type='date_trigger'
 import os
 import pytest
 import requests
-import os
 import time
 from datetime import datetime, timedelta
 from bson import ObjectId
@@ -75,7 +74,7 @@ class TestManualCampaignTasksNotifications:
         try:
             # Clean up tasks
             self.session.delete(f"{BASE_URL}/api/admin/cleanup?prefix={TEST_PREFIX}")
-        except:
+        except Exception:
             pass
     
     def test_scheduler_trigger_endpoint_exists(self):

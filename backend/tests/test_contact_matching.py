@@ -41,7 +41,7 @@ class TestFindOrCreateAndLogEndpoint:
         for contact_id in self.created_contact_ids:
             try:
                 self.session.delete(f"{BASE_URL}/api/contacts/{USER_ID}/{contact_id}")
-            except:
+            except Exception:
                 pass
 
     def test_create_new_contact_when_no_match(self):

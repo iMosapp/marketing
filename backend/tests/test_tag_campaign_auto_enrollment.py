@@ -9,7 +9,6 @@ Tests generic tag-based campaign enrollment functionality including:
 import os
 import pytest
 import requests
-import os
 import json
 from datetime import datetime
 

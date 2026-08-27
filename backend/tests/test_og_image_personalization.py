@@ -13,7 +13,6 @@ Features tested:
 import os
 import pytest
 import requests
-import os
 import re
 from io import BytesIO
 

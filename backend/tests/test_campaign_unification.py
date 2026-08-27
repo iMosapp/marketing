@@ -10,7 +10,6 @@ Tests for unified Tag-Based and Date-Based campaign workflow:
 import os
 import pytest
 import requests
-import os
 from datetime import datetime
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
@@ -36,12 +35,12 @@ class TestCampaignUnification:
         for campaign_id in self.created_campaigns:
             try:
                 self.session.delete(f"{BASE_URL}/api/campaigns/{USER_ID}/{campaign_id}")
-            except:
+            except Exception:
                 pass
         for contact_id in self.created_contacts:
             try:
                 self.session.delete(f"{BASE_URL}/api/contacts/{USER_ID}/{contact_id}")
-            except:
+            except Exception:
                 pass
     
     def test_prebuilt_templates_load(self):

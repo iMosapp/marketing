@@ -13,7 +13,6 @@ Features tested:
 import os
 import pytest
 import requests
-import os
 from datetime import datetime, timezone
 import uuid
 

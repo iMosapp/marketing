@@ -15,7 +15,6 @@ Test Scenarios:
 import os
 import pytest
 import requests
-import os
 from datetime import datetime, timedelta
 
 # Get BASE_URL from environment

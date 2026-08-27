@@ -19,7 +19,6 @@ Key tests:
 import os
 import pytest
 import requests
-import os
 import time
 from datetime import datetime
 

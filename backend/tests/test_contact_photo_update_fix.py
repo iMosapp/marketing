@@ -12,7 +12,6 @@ Tests that PUT /api/contacts/{user_id}/{contact_id} with a photo:
 import os
 import pytest
 import requests
-import os
 import base64
 import time
 
@@ -254,7 +253,7 @@ class TestContactPhotoUpdateBugFix:
                     decoded = base64.b64decode(b64_data)
                     size_kb = len(decoded) / 1024
                     print(f"Full photo size: {size_kb:.2f} KB")
-                except:
+                except Exception:
                     pass
         elif response.status_code == 404:
             print("NOTE: No high-res photo found for this contact")

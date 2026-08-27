@@ -286,11 +286,11 @@ async def get_broadcast(broadcast_id: str, user_id: str):
 async def update_broadcast(broadcast_id: str, data: BroadcastUpdate, user_id: str):
     """Update a broadcast (only if not yet sent)"""
     try:
-        broadcast = await get_database().broadcasts.find_one({
+        broadcast = await get_db().broadcasts.find_one({
             "_id": ObjectId(broadcast_id),
             "created_by": user_id
         })
-    except:
+    except Exception:
         raise HTTPException(status_code=400, detail="Invalid broadcast ID")
     
     if not broadcast:
@@ -318,12 +318,12 @@ async def update_broadcast(broadcast_id: str, data: BroadcastUpdate, user_id: st
         update_data["recipient_count"] = len(contacts)
         update_data["recipients"] = [str(c["_id"]) for c in contacts]
     
-    await get_database().broadcasts.update_one(
+    await get_db().broadcasts.update_one(
         {"_id": ObjectId(broadcast_id)},
         {"$set": update_data}
     )
     
-    updated = await get_database().broadcasts.find_one({"_id": ObjectId(broadcast_id)})
+    updated = await get_db().broadcasts.find_one({"_id": ObjectId(broadcast_id)})
     
     return {
         "success": True,
@@ -335,12 +335,12 @@ async def update_broadcast(broadcast_id: str, data: BroadcastUpdate, user_id: st
 async def delete_broadcast(broadcast_id: str, user_id: str):
     """Delete a broadcast"""
     try:
-        result = await get_database().broadcasts.delete_one({
+        result = await get_db().broadcasts.delete_one({
             "_id": ObjectId(broadcast_id),
             "created_by": user_id,
             "status": {"$nin": ["sending", "sent"]}  # Can't delete sent broadcasts
         })
-    except:
+    except Exception:
         raise HTTPException(status_code=400, detail="Invalid broadcast ID")
     
     if result.deleted_count == 0:
@@ -476,11 +476,11 @@ async def send_broadcast(broadcast_id: str, user_id: str):
 async def duplicate_broadcast(broadcast_id: str, user_id: str):
     """Duplicate a broadcast"""
     try:
-        original = await get_database().broadcasts.find_one({
+        original = await get_db().broadcasts.find_one({
             "_id": ObjectId(broadcast_id),
             "created_by": user_id
         })
-    except:
+    except Exception:
         raise HTTPException(status_code=400, detail="Invalid broadcast ID")
     
     if not original:
@@ -503,7 +503,7 @@ async def duplicate_broadcast(broadcast_id: str, user_id: str):
         "recipients": original.get("recipients", [])
     }
     
-    result = await get_database().broadcasts.insert_one(new_broadcast)
+    result = await get_db().broadcasts.insert_one(new_broadcast)
     new_broadcast["_id"] = result.inserted_id
     
     return {

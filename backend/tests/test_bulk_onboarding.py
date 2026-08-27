@@ -11,7 +11,6 @@ This tests the new features:
 import os
 import pytest
 import requests
-import os
 import time
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')

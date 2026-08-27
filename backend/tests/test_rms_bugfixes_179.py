@@ -11,7 +11,6 @@ Tests the following fixes:
 import os
 import pytest
 import requests
-import os
 
 BASE_URL = os.environ.get("REACT_APP_BACKEND_URL", "https://user-routing-issue.preview.emergentagent.com")
 

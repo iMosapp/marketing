@@ -20,7 +20,6 @@ Endpoints tested:
 import os
 import pytest
 import requests
-import os
 from datetime import datetime, timedelta
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
@@ -517,7 +516,7 @@ class TestAutomatedCampaignComparison:
                 self.session.delete(f"{BASE_URL}/api/campaigns/{self.user_id}/{self.test_campaign_id}")
             if self.test_contact_id:
                 self.session.delete(f"{BASE_URL}/api/contacts/{self.user_id}/{self.test_contact_id}")
-        except:
+        except Exception:
             pass
     
     def test_automated_campaign_sets_sent_immediately(self):

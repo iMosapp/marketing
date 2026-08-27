@@ -8,10 +8,8 @@ Tests:
 5. Store detail page API returns store with users
 """
 import os
-import os
 import pytest
 import requests
-import os
 import uuid
 
 BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://user-routing-issue.preview.emergentagent.com')
@@ -35,7 +33,7 @@ class TestIndependentSignupFlow:
         for user_id in self.created_user_ids:
             try:
                 self.session.delete(f"{BASE_URL}/api/admin/users/{user_id}")
-            except:
+            except Exception:
                 pass
     
     def test_independent_signup_with_account_type(self):
@@ -106,7 +104,7 @@ class TestOrganizationSignupFlow:
         for user_id in self.created_user_ids:
             try:
                 self.session.delete(f"{BASE_URL}/api/admin/users/{user_id}")
-            except:
+            except Exception:
                 pass
     
     def test_org_signup_gets_pending_status(self):
@@ -151,7 +149,7 @@ class TestPendingUsersCount:
         for user_id in self.created_user_ids:
             try:
                 self.session.delete(f"{BASE_URL}/api/admin/users/{user_id}")
-            except:
+            except Exception:
                 pass
     
     def test_pending_count_returns_correct_value(self):
@@ -229,7 +227,7 @@ class TestAdminApproveFlow:
         for user_id in self.created_user_ids:
             try:
                 self.session.delete(f"{BASE_URL}/api/admin/users/{user_id}")
-            except:
+            except Exception:
                 pass
     
     def test_approve_changes_status_to_active(self):
@@ -404,7 +402,7 @@ class TestLoginWithPendingStatus:
         for user_id in self.created_user_ids:
             try:
                 self.session.delete(f"{BASE_URL}/api/admin/users/{user_id}")
-            except:
+            except Exception:
                 pass
     
     def test_pending_user_can_login(self):

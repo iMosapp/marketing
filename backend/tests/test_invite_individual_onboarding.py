@@ -9,7 +9,6 @@ Test credentials: forest@imonsocial.com / (env: TEST_ADMIN_PASS)
 import os
 import pytest
 import requests
-import os
 import uuid
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')

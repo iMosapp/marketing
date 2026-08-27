@@ -11,7 +11,6 @@ Test conversation: 69a15f29957bacd218fed55d
 import os
 import pytest
 import requests
-import os
 import time
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')

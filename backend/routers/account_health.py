@@ -186,13 +186,13 @@ async def get_accounts_overview(period: int = 30):
             try:
                 org = await db.organizations.find_one({"_id": ObjectId(u["organization_id"])}, {"name": 1})
                 org_name = org.get("name", "") if org else ""
-            except:
+            except Exception:
                 pass
         if u.get("store_id"):
             try:
                 store = await db.stores.find_one({"_id": ObjectId(u["store_id"])}, {"name": 1})
                 store_name = store.get("name", "") if store else ""
-            except:
+            except Exception:
                 pass
 
         accounts.append({
@@ -238,13 +238,13 @@ async def get_user_health(user_id: str, period: int = 30):
         try:
             org = await db.organizations.find_one({"_id": ObjectId(user["organization_id"])}, {"name": 1})
             org_name = org.get("name", "") if org else ""
-        except:
+        except Exception:
             pass
     if user.get("store_id"):
         try:
             store = await db.stores.find_one({"_id": ObjectId(user["store_id"])}, {"name": 1})
             store_name = store.get("name", "") if store else ""
-        except:
+        except Exception:
             pass
 
     # Recent activity timeline (last 10 events)
@@ -376,7 +376,7 @@ def _build_report_html(user_info: dict, metrics: dict, health: dict, event_break
             try:
                 dt = datetime.fromisoformat(ts)
                 ts = dt.strftime("%b %d, %Y %I:%M %p")
-            except:
+            except Exception:
                 pass
         activity_rows += f"""
         <tr>
@@ -535,13 +535,13 @@ async def send_user_health_report(user_id: str, req: SendReportRequest):
         try:
             org = await db.organizations.find_one({"_id": ObjectId(user["organization_id"])}, {"name": 1})
             org_name = org.get("name", "") if org else ""
-        except:
+        except Exception:
             pass
     if user.get("store_id"):
         try:
             store = await db.stores.find_one({"_id": ObjectId(user["store_id"])}, {"name": 1})
             store_name = store.get("name", "") if store else ""
-        except:
+        except Exception:
             pass
 
     recent_events = []
@@ -830,13 +830,13 @@ async def run_monthly_health_reports():
                     try:
                         org = await db.organizations.find_one({"_id": ObjectId(user["organization_id"])}, {"name": 1})
                         org_name = org.get("name", "") if org else ""
-                    except:
+                    except Exception:
                         pass
                 if user.get("store_id"):
                     try:
                         store = await db.stores.find_one({"_id": ObjectId(user["store_id"])}, {"name": 1})
                         store_name = store.get("name", "") if store else ""
-                    except:
+                    except Exception:
                         pass
 
                 recent = []

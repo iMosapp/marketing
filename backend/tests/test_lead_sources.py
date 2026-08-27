@@ -42,7 +42,7 @@ class TestLeadSourcesAPI:
         for source_id in self.created_source_ids:
             try:
                 self.session.delete(f"{BASE_URL}/api/lead-sources/{source_id}")
-            except:
+            except Exception:
                 pass
     
     # ============ GET /api/lead-sources ============

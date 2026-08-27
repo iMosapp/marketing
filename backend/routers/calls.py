@@ -30,7 +30,7 @@ async def create_call_log(user_id: str, call_data: CallCreate):
     if call_data.type == "missed":
         try:
             contact = await get_db().contacts.find_one({"_id": ObjectId(call_data.contact_id)})
-        except:
+        except Exception:
             contact = await get_db().contacts.find_one({"_id": call_data.contact_id})
         
         if contact:
@@ -62,7 +62,7 @@ async def get_call_logs(user_id: str, call_type: Optional[str] = None):
         call['_id'] = str(call['_id'])
         try:
             contact = await get_db().contacts.find_one({"_id": ObjectId(call['contact_id'])})
-        except:
+        except Exception:
             contact = await get_db().contacts.find_one({"_id": call['contact_id']})
         
         if contact:
@@ -194,7 +194,7 @@ async def retry_transcription(call_sid: str, x_user_id: str = None):
             transcript = result.strip()
         
         try: os.remove(tmp_path)
-        except: pass
+        except Exception: pass
         
         if not transcript:
             return {"status": "empty_transcript", "message": "Whisper returned empty — call may have been silent"}

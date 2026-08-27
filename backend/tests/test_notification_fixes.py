@@ -9,7 +9,6 @@ Test suite for notification system fixes:
 import os
 import pytest
 import requests
-import os
 from datetime import datetime, timezone, timedelta
 from bson import ObjectId
 

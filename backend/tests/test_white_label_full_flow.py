@@ -11,10 +11,8 @@ Testing the complete end-to-end partner setup:
 """
 
 import os
-import os
 import pytest
 import requests
-import os
 import uuid
 from datetime import datetime
 

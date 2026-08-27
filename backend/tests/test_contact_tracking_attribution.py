@@ -11,7 +11,6 @@ Tests the fixes for:
 import os
 import pytest
 import requests
-import os
 from bson import ObjectId
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')

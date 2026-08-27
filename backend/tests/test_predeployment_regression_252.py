@@ -14,7 +14,6 @@ Key IDs:
 import os
 import pytest
 import requests
-import os
 import time
 import io
 

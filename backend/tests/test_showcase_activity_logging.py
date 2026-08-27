@@ -11,7 +11,6 @@ Tests for:
 import os
 import pytest
 import requests
-import os
 import base64
 import time
 

@@ -83,7 +83,7 @@ _FIELD_ALIASES: dict[str, list[str]] = {
         "vin", "vehicle_vin", "vin_number", "stock_vin",
     ],
     "vehicle_stock": [
-        "stock", "stock_number", "stocknumber", "stock_no",
+        "vehicle_stock", "stock", "stock_number", "stocknumber", "stock_no",
     ],
     "vehicle_type": [
         "vehicle_type", "type", "sale_type", "interest", "condition",
@@ -98,6 +98,8 @@ _FIELD_ALIASES: dict[str, list[str]] = {
     ],
     "city": ["city", "customer_city"],
     "state": ["state", "province", "customer_state"],
+    "street": ["street", "street_address", "address", "address1", "customer_street"],
+    "external_lead_id": ["external_lead_id", "lead_id", "leadid", "prospect_id"],
     "trade_year": ["trade_year", "tradein_year", "trade_in_year"],
     "trade_make": ["trade_make", "tradein_make", "trade_in_make"],
     "trade_model": ["trade_model", "tradein_model", "trade_in_model"],
@@ -190,6 +192,13 @@ def parse_adf_xml(body: str) -> dict:
     # ── Request date
     raw["adf_requestdate"] = txt(prospect, "requestdate", "RequestDate")
 
+    # ── Portal's lead ID (<id sequence source> on prospect)
+    id_el = prospect.find("id")
+    if id_el is None:
+        id_el = prospect.find("Id")
+    if id_el is not None and id_el.text:
+        raw["external_lead_id"] = id_el.text.strip()
+
     # ── Vehicle
     veh = prospect.find("vehicle") or prospect.find("Vehicle")
     if veh is not None:
@@ -238,6 +247,7 @@ def parse_adf_xml(body: str) -> dict:
             # Address
             addr = contact.find("address") or contact.find("Address")
             if addr is not None:
+                raw["street"]   = txt(addr, "street", "Street", "address1", "line1")
                 raw["city"]     = txt(addr, "city", "City")
                 raw["state"]    = txt(addr, "regioncode", "state", "State")
                 raw["zip_code"] = txt(addr, "postalcode", "zip", "Zip")
@@ -513,24 +523,39 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         contact_id = str(existing_contact["_id"])
         is_new_contact = False
     else:
+        vehicle_interest = " ".join(filter(None, [
+            normalized.get("vehicle_year"), normalized.get("vehicle_make"),
+            normalized.get("vehicle_model"), normalized.get("vehicle_trim"),
+        ]))
+        notes_parts = [normalized.get("comments", "")]
+        if normalized.get("vehicle_vin"):
+            notes_parts.append(f"VIN: {normalized['vehicle_vin']}")
+        if normalized.get("vehicle_stock"):
+            notes_parts.append(f"Stock #: {normalized['vehicle_stock']}")
+        trade_desc = " ".join(filter(None, [
+            normalized.get("trade_year"), normalized.get("trade_make"), normalized.get("trade_model"),
+        ]))
+        if trade_desc:
+            miles = f", {normalized['trade_mileage']} mi" if normalized.get("trade_mileage") else ""
+            notes_parts.append(f"Trade-in: {trade_desc}{miles}")
         # Create contact
         contact_doc = {
             "first_name":    first,
             "last_name":     last,
             "phone":         phone_e164,
             "email":         email.lower().strip() if email else "",
-            "city":          normalized.get("city", ""),
-            "state":         normalized.get("state", ""),
-            "zip":           normalized.get("zip_code", ""),
+            "address_street": normalized.get("street", ""),
+            "address_city":  normalized.get("city", ""),
+            "address_state": normalized.get("state", ""),
+            "address_zip":   normalized.get("zip_code", ""),
             "source":        "internet_lead",
             "ownership_type": "org",
             "status":        "active",
             "tags":          ["Internet Lead", normalized.get("source_name", source.get("name", "Lead"))],
-            "notes":         normalized.get("comments", ""),
-            "vehicle_interest": " ".join(filter(None, [
-                normalized.get("vehicle_year"), normalized.get("vehicle_make"),
-                normalized.get("vehicle_model"), normalized.get("vehicle_trim"),
-            ])),
+            "notes":         "\n".join(filter(None, notes_parts)),
+            "vehicle":          vehicle_interest or None,
+            "vehicle_interest": vehicle_interest,
+            "external_id":      normalized.get("external_lead_id") or None,
             "lead_source_id":   str(source.get("_id", "")),
             "lead_source_name": source.get("name", ""),
             "store_id":         store_id,

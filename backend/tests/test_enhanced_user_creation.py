@@ -44,7 +44,7 @@ class TestEnhancedUserCreation:
                     f"{BASE_URL}/api/admin/users/{user_id}/hard",
                     headers={"X-User-ID": SUPER_ADMIN_USER_ID}
                 )
-            except:
+            except Exception:
                 pass
         
         for contact_id in created_contact_ids:
@@ -53,7 +53,7 @@ class TestEnhancedUserCreation:
                     f"{BASE_URL}/api/contacts/{contact_id}",
                     headers={"X-User-ID": SUPER_ADMIN_USER_ID}
                 )
-            except:
+            except Exception:
                 pass
         
         created_user_ids = []

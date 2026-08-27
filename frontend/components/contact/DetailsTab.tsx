@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { formatEventTime } from '../../utils/contactHelpers';
 import PersonalIntelSection from '../PersonalIntelSection';
 import PurchaseHistorySection from './PurchaseHistorySection';
+import CrmPushSection from './CrmPushSection';
 
 export default function DetailsTab(props: any) {
   const {
@@ -209,6 +210,17 @@ export default function DetailsTab(props: any) {
             );
           })()}
         </View>
+      )}
+
+      {/* Push to CRM as ADF/XML lead */}
+      {!isNewContact && (
+        <CrmPushSection
+          userId={userId}
+          contactId={contactId}
+          contactName={`${contact?.first_name || ''} ${contact?.last_name || ''}`.trim()}
+          colors={colors}
+          s={s}
+        />
       )}
 
       {/* Referrals */}

@@ -41,7 +41,7 @@ class TestTagCampaignEnrollmentImmediate:
             try:
                 session.delete(f"{BASE_URL}/api/campaigns/{USER_ID}/{cls.created_campaign_id}")
                 print(f"Cleaned up test campaign: {cls.created_campaign_id}")
-            except:
+            except Exception:
                 pass
         
         # Cleanup test contact
@@ -49,7 +49,7 @@ class TestTagCampaignEnrollmentImmediate:
             try:
                 session.delete(f"{BASE_URL}/api/contacts/{USER_ID}/{cls.created_contact_id}")
                 print(f"Cleaned up test contact: {cls.created_contact_id}")
-            except:
+            except Exception:
                 pass
         
         # Cleanup any enrollments, pending_sends, tasks, notifications with "TestAutoTag" prefix
@@ -374,7 +374,7 @@ class TestTagCampaignEnrollmentImmediate:
         try:
             self.session.delete(f"{BASE_URL}/api/campaigns/{USER_ID}/{dup_id}")
             print(f"Cleaned up duplicated campaign: {dup_id}")
-        except:
+        except Exception:
             pass
         
         print(f"Duplicate campaign verified: {data['name']}")
@@ -398,9 +398,9 @@ class TestCleanup:
                         try:
                             session.delete(f"{BASE_URL}/api/campaigns/{USER_ID}/{campaign['_id']}")
                             print(f"Cleaned up campaign: {campaign['name']}")
-                        except:
+                        except Exception:
                             pass
-        except:
+        except Exception:
             pass
         
         # Get and cleanup test contacts
@@ -414,9 +414,9 @@ class TestCleanup:
                         try:
                             session.delete(f"{BASE_URL}/api/contacts/{USER_ID}/{contact['_id']}")
                             print(f"Cleaned up contact: {first_name}")
-                        except:
+                        except Exception:
                             pass
-        except:
+        except Exception:
             pass
         
         print("Cleanup completed")

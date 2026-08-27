@@ -88,7 +88,7 @@ async def get_card_data(user_id: str, request: Request, cid: str = None):
             {"_id": ObjectId(user_id)},
             {"password": 0}  # Exclude password
         )
-    except:
+    except Exception:
         raise HTTPException(status_code=404, detail="User not found")
     
     if not user:
@@ -332,7 +332,7 @@ async def generate_vcard(user_id: str):
     
     try:
         user = await db.users.find_one({"_id": ObjectId(user_id)})
-    except:
+    except Exception:
         raise HTTPException(status_code=404, detail="User not found")
     
     if not user:
@@ -438,7 +438,7 @@ async def get_card_short_url(user_id: str):
     # Verify user exists
     try:
         user = await db.users.find_one({"_id": ObjectId(user_id)})
-    except:
+    except Exception:
         raise HTTPException(status_code=404, detail="User not found")
     
     if not user:

@@ -13,7 +13,6 @@ Covers:
 import os
 import pytest
 import requests
-import os
 import io
 import tempfile
 

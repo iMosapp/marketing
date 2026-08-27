@@ -14,7 +14,6 @@ Endpoints tested:
 import os
 import pytest
 import requests
-import os
 from datetime import datetime, timedelta
 
 # Get base URL from environment

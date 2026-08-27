@@ -9,10 +9,8 @@ Tests for MVPLine hierarchy system:
 - MMS media download and storage endpoint
 """
 import os
-import os
 import pytest
 import requests
-import os
 import uuid
 from datetime import datetime
 
@@ -135,7 +133,7 @@ class TestStoreUserManagement:
                     f"{BASE_URL}/api/admin/hierarchy/users/{self.test_user_id}/remove-store",
                     json={"store_id": TEST_STORE_ID}
                 )
-            except:
+            except Exception:
                 pass
     
     def test_01_add_user_to_store(self):
@@ -237,7 +235,7 @@ class TestIndependentSignup:
         for user_id in self.created_user_ids:
             try:
                 self.session.delete(f"{BASE_URL}/api/admin/users/{user_id}")
-            except:
+            except Exception:
                 pass
     
     def test_01_independent_signup_gets_active_status(self):
@@ -310,7 +308,7 @@ class TestOrganizationSignup:
         for user_id in self.created_user_ids:
             try:
                 self.session.delete(f"{BASE_URL}/api/admin/users/{user_id}")
-            except:
+            except Exception:
                 pass
     
     def test_01_organization_signup_gets_pending_status(self):
@@ -389,7 +387,7 @@ class TestPendingUsersCount:
         for user_id in self.created_user_ids:
             try:
                 self.session.delete(f"{BASE_URL}/api/admin/users/{user_id}")
-            except:
+            except Exception:
                 pass
     
     def test_01_pending_users_count_endpoint(self):

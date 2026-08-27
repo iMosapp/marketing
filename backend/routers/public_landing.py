@@ -94,7 +94,7 @@ async def get_landing_page_data(user_id: str):
             {"_id": ObjectId(user_id)},
             {"password": 0}  # Exclude password
         )
-    except:
+    except Exception:
         raise HTTPException(status_code=404, detail="User not found")
     
     if not user:
@@ -204,7 +204,7 @@ async def submit_review(
     # Validate user exists
     try:
         user = await db.users.find_one({"_id": ObjectId(user_id)})
-    except:
+    except Exception:
         raise HTTPException(status_code=404, detail="User not found")
     
     if not user:
@@ -344,7 +344,7 @@ async def create_referral(user_id: str, data: dict):
     # Get the salesperson
     try:
         user = await db.users.find_one({"_id": ObjectId(user_id)})
-    except:
+    except Exception:
         raise HTTPException(status_code=404, detail="User not found")
     
     if not user:

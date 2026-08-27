@@ -565,7 +565,7 @@ async def _email_accepted_quote(quote: dict, quote_id: str, stripe_url: str | No
             try:
                 quote_owner_id = quote.get("created_by") or quote.get("user_id")
                 if quote_owner_id:
-                    owner = await db.users.find_one({"_id": ObjectId(str(quote_owner_id))}, {"twilio_number": 1, "mvpline_number": 1})
+                    owner = await get_db().users.find_one({"_id": ObjectId(str(quote_owner_id))}, {"twilio_number": 1, "mvpline_number": 1})
                     rep_twilio_num = (owner or {}).get("twilio_number") or (owner or {}).get("mvpline_number")
             except Exception:
                 pass

@@ -30,7 +30,7 @@ async def get_vcard(user_id: str):
     Generate and return the user's contact info as a vCard 3.0 (.vcf) file.
     Photo is embedded as base64 JPEG so iOS/Android show it when saving the contact.
     """
-    import httpx, base64, io
+    import httpx, io
     from PIL import Image as PILImage
 
     db = get_db()
@@ -137,7 +137,7 @@ async def get_profile(user_id: str):
             {"_id": ObjectId(user_id)},
             {"password": 0}
         )
-    except:
+    except Exception:
         raise HTTPException(status_code=404, detail="User not found")
     
     if not user:

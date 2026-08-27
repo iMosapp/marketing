@@ -18,7 +18,6 @@ Tests verify:
 import os
 import pytest
 import requests
-import os
 from datetime import datetime, timezone
 from bson import ObjectId
 
@@ -72,7 +71,7 @@ class TestContactStatsBugFix:
         # Cleanup
         try:
             api_client.delete(f"{BASE_URL}/api/contacts/{test_user['user_id']}/{contact_id}")
-        except:
+        except Exception:
             pass
     
     @pytest.fixture(scope="class")
@@ -103,7 +102,7 @@ class TestContactStatsBugFix:
         for cid in referral_ids:
             try:
                 api_client.delete(f"{BASE_URL}/api/contacts/{test_user['user_id']}/{cid}")
-            except:
+            except Exception:
                 pass
     
     @pytest.fixture(scope="class")
@@ -158,7 +157,7 @@ class TestContactStatsBugFix:
             # Cleanup
             try:
                 db.campaign_enrollments.delete_many({"test_marker": "TEST_STATS_FIX"})
-            except:
+            except Exception:
                 pass
     
     def test_stats_endpoint_returns_all_fields(self, api_client, test_user, test_contact_a):
@@ -329,7 +328,7 @@ class TestContactStatsIntegrationWithFrontend:
             # Cleanup
             try:
                 api_client.delete(f"{BASE_URL}/api/contacts/{user_id}/{contact_id}")
-            except:
+            except Exception:
                 pass
 
 

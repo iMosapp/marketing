@@ -137,7 +137,6 @@ async def create_admin_user(user_data: dict, x_user_id: str = Header(None, alias
 @router.post("/users/create")
 async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alias="X-User-ID")):
     """Create a user and optionally send invite email/SMS - admins only"""
-    import secrets
     import string
     
     requesting_user = await get_requesting_user(x_user_id)
@@ -1007,7 +1006,7 @@ async def get_user_detail(user_id: str, x_user_id: str = Header(None, alias="X-U
                     "_id": str(org['_id']),
                     "name": org.get('name', 'Unknown')
                 }
-        except:
+        except Exception:
             pass
     
     # Get stores the user is assigned to
@@ -1026,7 +1025,7 @@ async def get_user_detail(user_id: str, x_user_id: str = Header(None, alias="X-U
                     "city": store.get('city'),
                     "state": store.get('state')
                 })
-        except:
+        except Exception:
             pass
     
     # Get available stores for assignment.
@@ -1090,7 +1089,6 @@ async def impersonate_user(user_id: str):
         raise HTTPException(status_code=404, detail="User not found")
     
     # Generate impersonation token (using same mock pattern as auth)
-    import secrets
     impersonation_token = f"impersonate_{secrets.token_hex(12)}"
     
     # Store the impersonation session (optional - for tracking)
@@ -1320,8 +1318,6 @@ async def add_team_member(data: AddTeamMemberRequest):
     This is used by store managers to add users to their team.
     Triggers onboarding flow and sends welcome SMS.
     """
-    import secrets
-    import os
     
     db = get_db()
     

@@ -10,7 +10,6 @@ Tests:
 import os
 import pytest
 import requests
-import os
 from datetime import datetime
 
 # Use PUBLIC URL from frontend/.env

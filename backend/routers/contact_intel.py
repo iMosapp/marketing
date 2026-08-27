@@ -81,7 +81,7 @@ def _build_prompt(ctx: dict) -> str:
         if isinstance(created, str):
             try:
                 created = datetime.fromisoformat(created.replace('Z', '+00:00'))
-            except:
+            except Exception:
                 created = None
         if created:
             days = (now - created.replace(tzinfo=timezone.utc) if created.tzinfo is None else now - created).days

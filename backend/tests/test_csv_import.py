@@ -11,7 +11,6 @@ Tests for Google Contacts CSV import functionality including:
 import os
 import pytest
 import requests
-import os
 import io
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')

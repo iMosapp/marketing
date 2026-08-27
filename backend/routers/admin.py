@@ -1128,7 +1128,7 @@ async def get_recent_activity(
                     contact = await db.contacts.find_one({"_id": ObjectId(conv["contact_id"])})
                     if contact:
                         contact_name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip() or "a customer"
-                except:
+                except Exception:
                     pass
         
         activities.append({
@@ -1161,7 +1161,7 @@ async def get_recent_activity(
                 contact = await db.contacts.find_one({"_id": ObjectId(call["contact_id"])})
                 if contact:
                     contact_name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip() or "a customer"
-            except:
+            except Exception:
                 pass
         
         action = "called" if call_type == "outbound" else "received call from"
@@ -1196,7 +1196,7 @@ async def get_recent_activity(
                     contact = await db.contacts.find_one({"_id": ObjectId(conv["contact_id"])})
                     if contact:
                         contact_name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip() or "a customer"
-                except:
+                except Exception:
                     pass
         
         activities.append({
@@ -1960,14 +1960,14 @@ async def get_admin_contacts(
         try:
             user_docs = await db.users.find({'_id': {'$in': [ObjectId(uid) for uid in user_ids]}}).to_list(100)
             users = {str(u['_id']): u.get('name') for u in user_docs}
-        except:
+        except Exception:
             pass
     
     if store_ids:
         try:
             store_docs = await db.stores.find({'_id': {'$in': [ObjectId(sid) for sid in store_ids]}}).to_list(100)
             stores = {str(s['_id']): s.get('name') for s in store_docs}
-        except:
+        except Exception:
             pass
     
     result = []
@@ -1994,22 +1994,6 @@ async def get_admin_contacts(
     
     return result
 
-    valid_roles = ["super_admin", "org_admin", "store_manager", "user"]
-    
-    if role not in valid_roles:
-        raise HTTPException(status_code=400, detail=f"Invalid role. Must be one of: {valid_roles}")
-    
-    result = await get_db().users.update_one(
-        {"_id": ObjectId(user_id)},
-        {"$set": {"role": role, "updated_at": datetime.utcnow()}}
-    )
-    
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    return {"message": "User role updated", "role": role}
-
-
 
 @router.post("/migrate-mms-media")
 async def migrate_mms_media():
@@ -2018,7 +2002,6 @@ async def migrate_mms_media():
     This fixes the issue where images disappear after logout/login.
     """
     import httpx
-    import base64
     import os
     
     BACKEND_URL = os.environ.get("REACT_APP_BACKEND_URL", "")
@@ -2275,6 +2258,7 @@ async def clear_system_logs(x_user_id: str = Header(None, alias="X-User-ID")):
     results = {"total": len(users), "seeded": 0, "errors": 0, "default_campaign_set": 0}
     for user in users:
         try:
+            from services.seed_defaults import seed_user_defaults
             result = await seed_user_defaults(str(user["_id"]))
             results["seeded"] += 1
             if result.get("default_campaign_set"):

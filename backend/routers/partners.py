@@ -1182,7 +1182,7 @@ async def submit_digital_w9(agreement_id: str, request: Request):
     signed_at      = datetime.utcnow()
 
     def _build_pdf() -> bytes:
-        from fpdf import FPDF, XPos, YPos
+        from fpdf import XPos, YPos
         pdf = FPDF()
         pdf.set_margins(18, 14, 18)
         pdf.set_auto_page_break(auto=True, margin=16)

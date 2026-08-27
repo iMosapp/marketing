@@ -49,7 +49,7 @@ def test_contact(api_client):
     # Cleanup: Delete the test contact
     try:
         api_client.delete(f"{BASE_URL}/api/contacts/{TEST_USER_ID}/{contact_id}")
-    except:
+    except Exception:
         pass
 
 @pytest.fixture(scope="module")

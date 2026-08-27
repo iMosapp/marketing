@@ -21,7 +21,6 @@ Endpoints tested:
 import os
 import pytest
 import requests
-import os
 import asyncio
 from datetime import datetime, timezone, timedelta
 from bson import ObjectId
@@ -107,7 +106,7 @@ class TestManualCampaignPendingStatusDirect:
         
         try:
             self.loop.run_until_complete(do_cleanup())
-        except:
+        except Exception:
             pass
     
     def test_manual_campaign_pending_status_full_flow(self):

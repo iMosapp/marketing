@@ -10,6 +10,7 @@ from typing import Optional
 import os
 import random
 import secrets
+import logging
 import string
 import httpx
 from io import BytesIO
@@ -318,7 +319,7 @@ async def _generate_og_image_bytes(user_doc, store_doc, app_url) -> bytes:
     Layout: salesperson photo fills left ~60% of frame, name/title overlaid
     at the bottom with a gradient scrim. Store logo in the bottom-right.
     """
-    from PIL import ImageDraw, ImageFilter
+    from PIL import ImageFilter
     from utils.image_urls import resolve_user_photo, resolve_store_logo
 
     user_photo_url = resolve_user_photo(user_doc)
@@ -453,7 +454,6 @@ async def _generate_customer_og_image_bytes(card_doc, store_doc, app_url) -> byt
     The customer's photo fills the left side, their name and card context
     appear on the right. Cached as WebP for fast delivery.
     """
-    from PIL import ImageDraw
     from utils.image_urls import resolve_store_logo
 
     customer_name = (card_doc.get("customer_name") or "").strip().title()
@@ -1092,7 +1092,7 @@ async def redirect_short_url(short_code: str, request: Request):
             person_schema = {k: v for k, v in person_schema.items() if v}
             json_ld_block = f'<script type="application/ld+json">{_json.dumps(person_schema, ensure_ascii=False)}</script>'
         except Exception as e:
-            logger.warning(f"[Schema] {e}")
+            logging.getLogger(__name__).warning(f"[Schema] {e}")
 
     html = f"""<!DOCTYPE html>
 <html><head>

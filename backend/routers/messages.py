@@ -188,7 +188,7 @@ async def get_conversations(user_id: str, personal_only: bool = True):
         for cid in contact_ids:
             try:
                 oid_list.append(ObjectId(cid))
-            except:
+            except Exception:
                 pass
         if oid_list:
             contacts_cursor = db.contacts.find(
@@ -1252,67 +1252,6 @@ async def cleanup_all_conversations(request: Request):
     }
 
 
-    # Move all messages from secondary → primary
-    msgs_result = await db.messages.update_many(
-        {"conversation_id": secondary_id},
-        {"$set": {"conversation_id": primary_id}}
-    )
-
-    # Move all notifications referencing secondary → primary
-    await db.notifications.update_many(
-        {"conversation_id": secondary_id},
-        {"$set": {"conversation_id": primary_id}}
-    )
-
-    # Move all contact_events referencing secondary → primary
-    await db.contact_events.update_many(
-        {"conversation_id": secondary_id},
-        {"$set": {"conversation_id": primary_id}}
-    )
-
-    # Move AI reply queue items
-    await db.ai_reply_queue.update_many(
-        {"conversation_id": secondary_id},
-        {"$set": {"conversation_id": primary_id}}
-    )
-
-    # Update primary with the latest last_message_at
-    sec_last = secondary.get("last_message_at")
-    pri_last = primary.get("last_message_at")
-    latest   = sec_last if (sec_last and (not pri_last or sec_last > pri_last)) else pri_last
-
-    await db.conversations.update_one(
-        {"_id": ObjectId(primary_id)},
-        {"$set": {
-            "last_message_at":    latest,
-            "merged_from":        secondary_id,
-            "needs_assistance":   primary.get("needs_assistance") or secondary.get("needs_assistance", False),
-        }}
-    )
-
-    # Close the secondary (don't delete — keep for audit trail)
-    await db.conversations.update_one(
-        {"_id": ObjectId(secondary_id)},
-        {"$set": {
-            "status":      "closed",
-            "merged_into": primary_id,
-            "merged_at":   datetime.utcnow(),
-        }}
-    )
-
-    # Bust conversation cache
-    _conv_cache.pop(f"{primary.get('user_id')}:True", None)
-    _conv_cache.pop(f"{primary.get('user_id')}:False", None)
-
-    return {
-        "success":       True,
-        "primary_id":    primary_id,
-        "secondary_id":  secondary_id,
-        "messages_moved": msgs_result.modified_count,
-        "message":       f"Merged {msgs_result.modified_count} messages into the primary conversation.",
-    }
-
-
 @router.get("/duplicate-check/{user_id}")
 async def find_duplicate_conversations(user_id: str):
     """Find conversations with the same phone number — used for the merge UI."""
@@ -1665,7 +1604,7 @@ async def get_conversation_info(conversation_id: str):
     # Find conversation
     try:
         conv = await db.conversations.find_one({"_id": ObjectId(conversation_id)})
-    except:
+    except Exception:
         conv = await db.conversations.find_one({"_id": conversation_id})
     
     if not conv:

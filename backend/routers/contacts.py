@@ -516,6 +516,99 @@ async def get_contacts(
         "has_more": (skip + limit) < total,
     } if paginated else results  # plain array for old clients
 
+@router.get("/{user_id}/duplicates")
+async def find_duplicate_contacts(user_id: str):
+    """
+    Find contacts that share the same normalized phone number.
+    Handles ALL phone formats: 8013901047 == +1 (801) 390-1047 == +18013901047
+    """
+    from services.twilio_service import normalize_phone
+    db = get_db()
+
+    contacts = await db.contacts.find(
+        {"user_id": user_id, "status": {"$nin": ["hidden", "merged", "deleted"]}, "phone": {"$exists": True, "$ne": ""}},
+        {"_id": 1, "first_name": 1, "last_name": 1, "phone": 1, "email": 1,
+         "tags": 1, "notes": 1, "source": 1, "created_at": 1}
+    ).to_list(5000)
+
+    # Group by last-10 digits — matches ALL format variations
+    phone_groups: dict = {}
+    for c in contacts:
+        raw = c.get("phone", "")
+        if not raw:
+            continue
+        digits = ''.join(ch for ch in raw if ch.isdigit())
+        key = digits[-10:] if len(digits) >= 10 else digits
+        if not key or len(key) < 7:
+            continue
+        phone_groups.setdefault(key, []).append(c)
+
+    duplicate_sets = []
+    for _key, group in phone_groups.items():
+        if len(group) < 2:
+            continue
+        enriched = []
+        for c in group:
+            cid = str(c["_id"])
+            event_count = await db.contact_events.count_documents({"contact_id": cid})
+            conv_count  = await db.conversations.count_documents({"contact_id": cid})
+            card_count  = await db.congrats_cards.count_documents({"contact_id": cid})
+            last_event  = await db.contact_events.find_one(
+                {"contact_id": cid}, {"timestamp": 1}, sort=[("timestamp", -1)]
+            )
+            created = c.get("created_at")
+            enriched.append({
+                "id": cid,
+                "first_name": c.get("first_name", ""),
+                "last_name": c.get("last_name", ""),
+                "phone": c.get("phone", ""),
+                "email": c.get("email", ""),
+                "photo": None,
+                "tags": c.get("tags", []),
+                "notes": c.get("notes", ""),
+                "source": c.get("source", ""),
+                "created_at": created.isoformat() if hasattr(created, "isoformat") else str(created or ""),
+                "event_count": event_count,
+                "conversation_count": conv_count,
+                "card_count": card_count,
+                "last_activity": last_event["timestamp"].isoformat() if last_event and last_event.get("timestamp") else None,
+            })
+        enriched.sort(key=lambda x: -(x["event_count"] + x["conversation_count"] + x["card_count"]))
+        duplicate_sets.append({"phone": enriched[0]["phone"], "contacts": enriched})
+
+    return {"duplicates": duplicate_sets, "total_groups": len(duplicate_sets)}
+
+
+@router.get("/{user_id}/merged-history")
+async def get_merged_history(user_id: str):
+    """Return contacts previously merged (status=merged) grouped by primary."""
+    db = get_db()
+    merged = await db.contacts.find(
+        {"user_id": user_id, "status": "merged", "merged_into": {"$exists": True}},
+        {"_id": 1, "first_name": 1, "last_name": 1, "merged_into": 1, "updated_at": 1}
+    ).sort("updated_at", -1).to_list(100)
+
+    primary_map: dict = {}
+    for m in merged:
+        pid = m.get("merged_into")
+        if not pid:
+            continue
+        if pid not in primary_map:
+            try:
+                primary = await db.contacts.find_one({"_id": ObjectId(pid)}, {"first_name": 1, "last_name": 1})
+            except Exception:
+                primary = None
+            primary_map[pid] = {
+                "primary_id": pid,
+                "primary_name": f"{(primary or {}).get('first_name','')} {(primary or {}).get('last_name','')}".strip() if primary else "Unknown",
+                "duplicates_count": 0,
+                "merged_at": m["updated_at"].isoformat() if hasattr(m.get("updated_at"), "isoformat") else "",
+            }
+        primary_map[pid]["duplicates_count"] += 1
+
+    return {"merged": list(primary_map.values())}
+
+
 @router.get("/{user_id}/{contact_id}", response_model=Contact)
 async def get_contact(user_id: str, contact_id: str):
     """Get a specific contact with role-based access check"""
@@ -529,7 +622,7 @@ async def get_contact(user_id: str, contact_id: str):
                 base_filter
             ]
         })
-    except:
+    except Exception:
         contact = await get_db().contacts.find_one({
             "$and": [
                 {"_id": contact_id},
@@ -668,7 +761,7 @@ async def update_contact(user_id: str, contact_id: str, contact_data: ContactCre
             {"$and": [{"_id": ObjectId(contact_id)}, base_filter]},
             {"$set": update_dict}
         )
-    except:
+    except Exception:
         result = await get_db().contacts.update_one(
             {"$and": [{"_id": contact_id}, base_filter]},
             {"$set": update_dict}
@@ -1279,7 +1372,7 @@ async def upload_contact_photo(user_id: str, contact_id: str, photo_data: dict):
             {"$and": [{"_id": ObjectId(contact_id)}, base_filter]},
             {"$set": update_fields}
         )
-    except:
+    except Exception:
         result = await db.contacts.update_one(
             {"$and": [{"_id": contact_id}, base_filter]},
             {"$set": update_fields}
@@ -1300,7 +1393,7 @@ async def get_full_photo(user_id: str, contact_id: str):
         # Fallback: try the contact's photo field directly
         try:
             contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"photo": 1, "photo_url": 1})
-        except:
+        except Exception:
             contact = await db.contacts.find_one({"_id": contact_id}, {"photo": 1, "photo_url": 1})
         if contact and contact.get("photo"):
             return {"photo": contact["photo"]}
@@ -2071,99 +2164,6 @@ async def normalize_all_phones(user_id: str):
         "duplicates_merged": merged,
         "message": f"Normalized {updated} phone numbers and merged {merged} duplicate contacts."
     }
-
-
-@router.get("/{user_id}/duplicates")
-async def find_duplicate_contacts(user_id: str):
-    """
-    Find contacts that share the same normalized phone number.
-    Handles ALL phone formats: 8013901047 == +1 (801) 390-1047 == +18013901047
-    """
-    from services.twilio_service import normalize_phone
-    db = get_db()
-
-    contacts = await db.contacts.find(
-        {"user_id": user_id, "status": {"$nin": ["hidden", "merged", "deleted"]}, "phone": {"$exists": True, "$ne": ""}},
-        {"_id": 1, "first_name": 1, "last_name": 1, "phone": 1, "email": 1,
-         "tags": 1, "notes": 1, "source": 1, "created_at": 1}
-    ).to_list(5000)
-
-    # Group by last-10 digits — matches ALL format variations
-    phone_groups: dict = {}
-    for c in contacts:
-        raw = c.get("phone", "")
-        if not raw:
-            continue
-        digits = ''.join(ch for ch in raw if ch.isdigit())
-        key = digits[-10:] if len(digits) >= 10 else digits
-        if not key or len(key) < 7:
-            continue
-        phone_groups.setdefault(key, []).append(c)
-
-    duplicate_sets = []
-    for _key, group in phone_groups.items():
-        if len(group) < 2:
-            continue
-        enriched = []
-        for c in group:
-            cid = str(c["_id"])
-            event_count = await db.contact_events.count_documents({"contact_id": cid})
-            conv_count  = await db.conversations.count_documents({"contact_id": cid})
-            card_count  = await db.congrats_cards.count_documents({"contact_id": cid})
-            last_event  = await db.contact_events.find_one(
-                {"contact_id": cid}, {"timestamp": 1}, sort=[("timestamp", -1)]
-            )
-            created = c.get("created_at")
-            enriched.append({
-                "id": cid,
-                "first_name": c.get("first_name", ""),
-                "last_name": c.get("last_name", ""),
-                "phone": c.get("phone", ""),
-                "email": c.get("email", ""),
-                "photo": None,
-                "tags": c.get("tags", []),
-                "notes": c.get("notes", ""),
-                "source": c.get("source", ""),
-                "created_at": created.isoformat() if hasattr(created, "isoformat") else str(created or ""),
-                "event_count": event_count,
-                "conversation_count": conv_count,
-                "card_count": card_count,
-                "last_activity": last_event["timestamp"].isoformat() if last_event and last_event.get("timestamp") else None,
-            })
-        enriched.sort(key=lambda x: -(x["event_count"] + x["conversation_count"] + x["card_count"]))
-        duplicate_sets.append({"phone": enriched[0]["phone"], "contacts": enriched})
-
-    return {"duplicates": duplicate_sets, "total_groups": len(duplicate_sets)}
-
-
-@router.get("/{user_id}/merged-history")
-async def get_merged_history(user_id: str):
-    """Return contacts previously merged (status=merged) grouped by primary."""
-    db = get_db()
-    merged = await db.contacts.find(
-        {"user_id": user_id, "status": "merged", "merged_into": {"$exists": True}},
-        {"_id": 1, "first_name": 1, "last_name": 1, "merged_into": 1, "updated_at": 1}
-    ).sort("updated_at", -1).to_list(100)
-
-    primary_map: dict = {}
-    for m in merged:
-        pid = m.get("merged_into")
-        if not pid:
-            continue
-        if pid not in primary_map:
-            try:
-                primary = await db.contacts.find_one({"_id": ObjectId(pid)}, {"first_name": 1, "last_name": 1})
-            except Exception:
-                primary = None
-            primary_map[pid] = {
-                "primary_id": pid,
-                "primary_name": f"{(primary or {}).get('first_name','')} {(primary or {}).get('last_name','')}".strip() if primary else "Unknown",
-                "duplicates_count": 0,
-                "merged_at": m["updated_at"].isoformat() if hasattr(m.get("updated_at"), "isoformat") else "",
-            }
-        primary_map[pid]["duplicates_count"] += 1
-
-    return {"merged": list(primary_map.values())}
 
 
 @router.post("/{user_id}/merge")

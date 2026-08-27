@@ -21,7 +21,7 @@ async def get_requesting_user(user_id: str):
         return None
     try:
         return await get_db().users.find_one({"_id": ObjectId(user_id)})
-    except:
+    except Exception:
         return None
 
 

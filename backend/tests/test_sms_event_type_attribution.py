@@ -18,7 +18,6 @@ Key Tests:
 import os
 import pytest
 import requests
-import os
 import time
 from datetime import datetime, timezone
 

@@ -21,12 +21,10 @@ from .database import get_db
 
 # Import inline to avoid models package conflict
 import sys
-import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Define models inline since there's a naming conflict with models.py
 from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
 
 
 class InventoryItemCreate(BaseModel):

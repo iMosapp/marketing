@@ -9,10 +9,8 @@ Tests:
 - GET /api/admin/stats - Includes pending_users count
 """
 import os
-import os
 import pytest
 import requests
-import os
 import uuid
 from datetime import datetime
 
@@ -38,7 +36,7 @@ class TestPendingUsersWorkflow:
         if self.test_user_id:
             try:
                 self.session.delete(f"{BASE_URL}/api/admin/users/{self.test_user_id}")
-            except:
+            except Exception:
                 pass
     
     def test_01_login_super_admin(self):
@@ -294,7 +292,7 @@ class TestSignupValidation:
         for user_id in self.created_user_ids:
             try:
                 self.session.delete(f"{BASE_URL}/api/admin/users/{user_id}")
-            except:
+            except Exception:
                 pass
     
     def test_signup_duplicate_email(self):
@@ -367,7 +365,7 @@ class TestPendingUserFiltering:
         for user_id in self.created_user_ids:
             try:
                 self.session.delete(f"{BASE_URL}/api/admin/users/{user_id}")
-            except:
+            except Exception:
                 pass
     
     def test_pending_users_sorted_by_created_at_desc(self):

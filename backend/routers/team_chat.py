@@ -44,7 +44,7 @@ async def create_channel(request: CreateChannelRequest):
     # Validate creator exists
     try:
         creator = await db.users.find_one({"_id": ObjectId(request.created_by)})
-    except:
+    except Exception:
         creator = None
     
     if not creator:
@@ -136,7 +136,7 @@ async def get_user_channels(user_id: str):
     # Get user info
     try:
         user = await db.users.find_one({"_id": ObjectId(user_id)})
-    except:
+    except Exception:
         user = None
     
     if not user:
@@ -205,7 +205,7 @@ async def get_channel_details(channel_id: str):
     
     try:
         channel = await db.team_channels.find_one({"_id": ObjectId(channel_id)})
-    except:
+    except Exception:
         channel = None
     
     if not channel:
@@ -224,7 +224,7 @@ async def get_channel_details(channel_id: str):
                     "photo_url": user.get("photo_url"),
                     "is_online": False  # Could implement presence later
                 })
-        except:
+        except Exception:
             continue
     
     return {
@@ -247,7 +247,7 @@ async def add_channel_members(channel_id: str, request: AddMembersRequest):
     
     try:
         channel = await db.team_channels.find_one({"_id": ObjectId(channel_id)})
-    except:
+    except Exception:
         channel = None
     
     if not channel:
@@ -280,7 +280,7 @@ async def send_message(request: SendMessageRequest):
     # Validate channel
     try:
         channel = await db.team_channels.find_one({"_id": ObjectId(request.channel_id)})
-    except:
+    except Exception:
         channel = None
     
     if not channel:
@@ -293,7 +293,7 @@ async def send_message(request: SendMessageRequest):
     # Get sender info
     try:
         sender = await db.users.find_one({"_id": ObjectId(request.sender_id)})
-    except:
+    except Exception:
         sender = None
     
     if not sender:
@@ -402,7 +402,7 @@ async def get_channel_messages(
     # Validate channel and membership
     try:
         channel = await db.team_channels.find_one({"_id": ObjectId(channel_id)})
-    except:
+    except Exception:
         channel = None
     
     if not channel:
@@ -417,7 +417,7 @@ async def get_channel_messages(
         try:
             before_date = datetime.fromisoformat(before.replace('Z', '+00:00'))
             query["created_at"] = {"$lt": before_date}
-        except:
+        except Exception:
             pass
     
     # Get messages
@@ -460,7 +460,7 @@ async def search_members(
     # Get requesting user's org
     try:
         user = await db.users.find_one({"_id": ObjectId(user_id)})
-    except:
+    except Exception:
         user = None
     
     if not user:
@@ -518,7 +518,7 @@ async def send_broadcast(
     # Get sender
     try:
         sender = await db.users.find_one({"_id": ObjectId(sender_id)})
-    except:
+    except Exception:
         sender = None
     
     if not sender:
@@ -589,7 +589,7 @@ async def delete_channel(channel_id: str, user_id: str):
 
     try:
         channel = await db.team_channels.find_one({"_id": ObjectId(channel_id)})
-    except:
+    except Exception:
         channel = None
 
     if not channel:
@@ -627,7 +627,7 @@ async def clear_channel_history(channel_id: str, user_id: str):
 
     try:
         channel = await db.team_channels.find_one({"_id": ObjectId(channel_id)})
-    except:
+    except Exception:
         channel = None
 
     if not channel:

@@ -58,7 +58,7 @@ async def get_user_by_id(user_id: str) -> dict:
         if user:
             user['_id'] = str(user['_id'])
         return user
-    except:
+    except Exception:
         return None
 
 async def get_accessible_user_ids(user: dict) -> List[str]:
