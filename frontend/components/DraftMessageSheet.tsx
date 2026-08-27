@@ -42,6 +42,7 @@ export function DraftMessageSheet({ userId, item, onClose, onUsed }: {
     if (item.phone) qs.set('contact_phone', item.phone);
     qs.set('mode', 'sms');
     qs.set('prefill', msg);
+    if (item.task_id) qs.set('taskId', item.task_id);
     router.push(`/thread/${item.contact_id}?${qs.toString()}` as any);
   };
 

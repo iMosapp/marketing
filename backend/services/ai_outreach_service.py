@@ -13,7 +13,7 @@ from bson import ObjectId
 
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from routers.database import get_db
-from utils.text_sanitize import no_em_dash
+from utils.text_sanitize import no_em_dash, clean_ai_text
 
 logger = logging.getLogger(__name__)
 
@@ -211,7 +211,7 @@ async def generate_suggestions(user_id: str, contact_id: str) -> dict:
 
     for s in suggestions:
         if isinstance(s, dict) and s.get("message"):
-            s["message"] = no_em_dash(s["message"])
+            s["message"] = await clean_ai_text(s["message"], user_id)
 
     return {
         "suggestions": suggestions[:2],

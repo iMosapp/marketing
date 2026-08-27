@@ -509,12 +509,15 @@ async def draft_message(user_id: str, contact_id: str, reason: str = "", context
     if isinstance(last, datetime):
         days = (datetime.now(timezone.utc) - (last if last.tzinfo else last.replace(tzinfo=timezone.utc))).days
         parts.append(f"Days since last contact: {days}")
-    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"name": 1})
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"name": 1, "persona.banned_words": 1})
     if user and user.get("name"):
         parts.append(f"Salesperson name: {user['name'].split()[0]}")
+    banned = ((user or {}).get("persona") or {}).get("banned_words", "")
     brief = DRAFT_BRIEFS.get(reason, DRAFT_BRIEFS["cooling_down"])
     if context:
         parts.append(f"The task/occasion: {context[:200]}")
+    if banned:
+        parts.append(f"NEVER use these words or phrases: {banned}")
     prompt = f"Situation: {brief}\n\n" + "\n".join(parts)
 
     try:
@@ -527,8 +530,8 @@ async def draft_message(user_id: str, contact_id: str, reason: str = "", context
         ).with_model("openai", "gpt-5.2")
         text = await asyncio.wait_for(chat.send_message(UserMessage(text=prompt)), timeout=12.0)
         text = (text or "").strip().strip('"').strip()
-        from utils.text_sanitize import no_em_dash
-        text = no_em_dash(text)
+        from utils.text_sanitize import clean_ai_text
+        text = await clean_ai_text(text, user_id)
         if not text or len(text) > 500:
             text = fallback
         return {"message": text}

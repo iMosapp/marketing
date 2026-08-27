@@ -152,6 +152,7 @@ function TouchpointsScreen() {
     const reason = task.type === 'birthday' ? 'birthday' : task.type === 'anniversary' ? 'anniversary' : 'touchpoint';
     setDraftItem({
       contact_id: task.contact_id,
+      task_id: task._id,
       first_name: parts[0] || '',
       last_name: parts.slice(1).join(' '),
       phone: task.contact_phone,

@@ -15,7 +15,7 @@ from emergentintegrations.llm.chat import LlmChat, UserMessage
 from emergentintegrations.llm.openai import OpenAITextToSpeech
 
 from routers.database import get_db
-from utils.text_sanitize import no_em_dash
+from utils.text_sanitize import no_em_dash, clean_ai_text
 
 # ─────────────────────────────────────────────────────────
 # Deep knowledge base — covers every feature, screen, flow
@@ -798,7 +798,7 @@ async def chat_with_jessie(user_id: str, user_message: str, current_page: str = 
     await save_message(user_id, "user", user_message)
 
     # Get response (single call, no replay)
-    response_text = no_em_dash(await chat.send_message(UserMessage(text=user_message)))
+    response_text = await clean_ai_text(await chat.send_message(UserMessage(text=user_message)), user_id)
 
     # Save assistant message
     await save_message(user_id, "assistant", response_text)

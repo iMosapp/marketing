@@ -126,8 +126,16 @@ interface Template {
 
 function ThreadScreen() {
   const router = useRouter();
-  const { id, contact_name, contact_phone, contact_email, contact_photo: paramPhoto, mode, prefill, event_type: paramEventType, jumpToMsg, q: searchParamQ } = useLocalSearchParams();
+  const { id, contact_name, contact_phone, contact_email, contact_photo: paramPhoto, mode, prefill, event_type: paramEventType, jumpToMsg, q: searchParamQ, taskId } = useLocalSearchParams();
   const user = useAuthStore((state) => state.user);
+  const taskCompletedRef = useRef(false);
+
+  // Auto-complete the linked touchpoint once the drafted text actually sends
+  const completeLinkedTask = () => {
+    if (!taskId || typeof taskId !== 'string' || taskCompletedRef.current || !user?._id) return;
+    taskCompletedRef.current = true;
+    api.patch(`/tasks/${user._id}/${taskId}`, { action: 'complete' }).catch(() => {});
+  };
   const flatListRef = useRef<ScrollView>(null);
   
   // Color mode state - theme-aware
@@ -580,6 +588,9 @@ function ThreadScreen() {
         messagesAPI.getThread(id as string),
         api.get(`/messages/conversation/${id}/info`).catch(() => null),
       ]);
+      // If there are no messages AND no conversation metadata, this id is a
+      // contact id, not a conversation id — fall through to create/resolve it.
+      if ((!data || data.length === 0) && !convInfo) throw new Error('not-a-conversation');
       setMessages(data || []);
       setActualConversationId(id as string);
 
@@ -987,6 +998,7 @@ function ThreadScreen() {
       }
       
       // 4. Open channel picker (shows all org-enabled channels: SMS, WhatsApp, Messenger, etc.)
+      completeLinkedTask();
       channelPicker.open({
         message: contentToSend,
         phone: contactPhone,
@@ -1081,6 +1093,9 @@ function ThreadScreen() {
         );
         // Remove optimistic message since it actually failed
         setMessages((prev) => prev.filter((m) => !m._id.startsWith('temp_')));
+      } else {
+        // Sent successfully — complete the linked touchpoint if we came from one
+        completeLinkedTask();
       }
       
       // Clear template info after sending

@@ -171,6 +171,7 @@ class UserPersona(BaseModel):
     specialties: List[str] = []
     vehicles: str = ""
     never_say: str = ""
+    banned_words: str = ""
     custom_phrases: str = ""
     ideal_customer: str = ""
     scheduling_link: str = ""

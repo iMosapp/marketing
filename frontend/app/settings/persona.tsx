@@ -44,6 +44,7 @@ interface PersonaSettings {
   // New: from AI clone document
   vehicles: string;         // What they drive/own — makes AI sound human
   never_say: string;        // Phrases/things they would never say
+  banned_words: string;     // Hard-banned words/phrases — stripped from every AI message
   custom_phrases: string;   // Things they always say
   ideal_customer: string;   // Who they serve best
   scheduling_link: string;  // e.g. Calendly / HubSpot meetings link
@@ -110,6 +111,7 @@ const { showToast } = useToast();
     // New fields
     vehicles: '',
     never_say: '',
+    banned_words: '',
     custom_phrases: '',
     ideal_customer: '',
     scheduling_link: '',
@@ -680,6 +682,28 @@ const { showToast } = useToast();
                 />
                 <VoiceInput
                   onTranscription={(text) => setSettings(prev => ({ ...prev, never_say: prev.never_say ? prev.never_say + ' ' + text : text }))}
+                  size="small"
+                />
+              </View>
+            </View>
+
+            {/* Banned words — hard-enforced */}
+            <View style={styles.fieldGroup}>
+              <Text style={[styles.fieldLabel, { color: '#FF3B30' }]}>Banned Words & Phrases</Text>
+              <Text style={styles.fieldHint}>Zero tolerance. Anything here is automatically stripped out of every AI message before it sends. Separate with commas.</Text>
+              <View style={styles.voiceInputRow}>
+                <TextInput
+                  style={[styles.addInput, { flex: 1, minHeight: 80, textAlignVertical: 'top', paddingTop: 12 }]}
+                  value={settings.banned_words}
+                  onChangeText={(text) => setSettings(prev => ({ ...prev, banned_words: text }))}
+                  placeholder={'e.g., I hope this message finds you well, delve, furthermore, kindly'}
+                  placeholderTextColor={colors.textSecondary}
+                  multiline
+                  numberOfLines={4}
+                  data-testid="banned-words-input"
+                />
+                <VoiceInput
+                  onTranscription={(text) => setSettings(prev => ({ ...prev, banned_words: prev.banned_words ? prev.banned_words + ', ' + text : text }))}
                   size="small"
                 />
               </View>

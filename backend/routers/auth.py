@@ -1178,6 +1178,8 @@ def _build_ai_clone_prompt(name: str, first: str, persona: dict, user: dict) -> 
 
     if persona.get("never_say"):
         sections.append(f"- Never say or do: {persona['never_say']}")
+    if persona.get("banned_words"):
+        sections.append(f"- BANNED words and phrases, never use these under any circumstance: {persona['banned_words']}")
 
     links = []
     if persona.get("scheduling_link"):
