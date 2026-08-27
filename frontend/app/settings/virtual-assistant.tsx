@@ -48,7 +48,6 @@ const PERSONA_FIELDS: { key: string; label: string; weight: number }[] = [
   { key: 'years_experience',label: 'Years of experience', weight: 1 },
   { key: 'ideal_customer',  label: 'Ideal customer',      weight: 1 },
   { key: 'never_say',       label: 'Things I never say',  weight: 2 },
-  { key: 'custom_phrases',  label: 'My go-to phrases',    weight: 2 },
   { key: 'family_info',     label: 'Family background',   weight: 1 },
   { key: 'vehicles',        label: 'Vehicles & lifestyle',weight: 1 },
   { key: 'personal_motto',  label: 'Personal motto',      weight: 1 },
@@ -156,7 +155,7 @@ export default function VirtualAssistantScreen() {
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <Text style={s.headerTitle}>Virtual Assistant</Text>
+        <Text style={s.headerTitle}>My VA</Text>
         <TouchableOpacity
           onPress={() => router.push('/settings/persona')}
           style={s.editBtn}
@@ -182,7 +181,7 @@ export default function VirtualAssistantScreen() {
             <View style={[s.statusDot, { backgroundColor: score >= 40 ? '#34C759' : '#FF9500' }]} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={s.vaName}>{firstName}'s Virtual Assistant</Text>
+            <Text style={s.vaName}>{firstName}'s VA</Text>
             <Text style={s.vaSubtitle}>Personal AI Clone · Assist Mode</Text>
           </View>
           <View style={s.paBadge}>

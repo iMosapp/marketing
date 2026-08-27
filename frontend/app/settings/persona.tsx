@@ -305,7 +305,7 @@ const { showToast } = useToast();
         onPress={() => router.push('/settings/virtual-assistant')}
       >
         <Ionicons name="person-circle" size={16} color="#C9A962" />
-        <Text style={{ fontSize: 13, fontWeight: '600', color: '#C9A962' }}>See how your Virtual Assistant sounds</Text>
+        <Text style={{ fontSize: 13, fontWeight: '600', color: '#C9A962' }}>See how your VA sounds</Text>
         <Ionicons name="chevron-forward" size={14} color="#C9A962" />
       </TouchableOpacity>
 
@@ -711,8 +711,8 @@ const { showToast } = useToast();
 
             {/* Your go-to phrases */}
             <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Your Go-To Phrases</Text>
-              <Text style={styles.fieldHint}>Things you actually say. Expressions, catchphrases, how you sign off — whatever makes you sound like you.</Text>
+              <Text style={styles.fieldLabel}>Your Go-To Phrases (optional)</Text>
+              <Text style={styles.fieldHint}>Things you actually say. Your VA sprinkles these in occasionally, never in every message.</Text>
               <View style={styles.voiceInputRow}>
                 <TextInput
                   style={[styles.addInput, { flex: 1, minHeight: 80, textAlignVertical: 'top', paddingTop: 12 }]}

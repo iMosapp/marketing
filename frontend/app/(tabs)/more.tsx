@@ -656,7 +656,7 @@ export default function MoreScreen() {
     const items = filterItems('my_tools', [
       { permKey: 'touchpoints', icon: 'checkbox-outline', title: "Today's Touchpoints", subtitle: 'Your daily action queue', onPress: () => router.push('/(tabs)/touchpoints' as any), color: '#C9A962' },
       { permKey: 'ask_jessi', icon: 'sparkles', title: 'Ask Jessi', subtitle: 'Your AI assistant', onPress: () => router.push('/jessie'), color: '#C9A962' },
-      { permKey: 'ask_jessi', icon: 'person-circle', title: 'Virtual Assistant', subtitle: 'Your AI clone — see how it sounds', onPress: () => router.push('/settings/virtual-assistant'), color: '#C9A962' },
+      { permKey: 'ask_jessi', icon: 'person-circle', title: 'My VA', subtitle: 'Your AI clone — see how it sounds', onPress: () => router.push('/settings/virtual-assistant'), color: '#C9A962' },
       { permKey: 'ask_jessi', icon: 'flash', title: 'AI Follow-ups', subtitle: 'Smart outreach suggestions', onPress: () => router.push('/(tabs)/ai-outreach' as any), color: '#AF52DE' },
       { permKey: 'team_chat', icon: 'chatbox-ellipses', title: 'Team Chat', subtitle: 'Internal team messaging', onPress: () => router.push('/(tabs)/team'), color: '#5856D6' },
     ]);
@@ -1261,7 +1261,7 @@ export default function MoreScreen() {
                 data-testid="virtual-assistant-btn"
               >
                 <Ionicons name="person-circle" size={18} color="#C9A962" />
-                <Text style={[styles.editProfileBtnText, { fontSize: 13, textAlign: 'center', marginTop: 3 }]}>My Virtual Assistant</Text>
+                <Text style={[styles.editProfileBtnText, { fontSize: 13, textAlign: 'center', marginTop: 3 }]}>My VA</Text>
               </TouchableOpacity>
             </View>
           </View>

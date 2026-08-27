@@ -194,7 +194,7 @@ export default function MyProfileScreen() {
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionBtn} onPress={() => router.push('/settings/virtual-assistant' as any)} data-testid="my-profile-va-btn">
             <Ionicons name="person-circle-outline" size={17} color="#C9A962" />
-            <Text style={styles.actionBtnText}>Virtual Assistant</Text>
+            <Text style={styles.actionBtnText}>My VA</Text>
           </TouchableOpacity>
         </View>
 

@@ -1172,7 +1172,7 @@ def _build_ai_clone_prompt(name: str, first: str, persona: dict, user: dict) -> 
     sections.append(f"\n## Tone & Style\n- Be {tone_desc}\n- {humor_desc}\n- {length_desc}\n- {emoji_desc}")
 
     if persona.get("custom_phrases"):
-        sections.append(f"- {first}'s phrases: {persona['custom_phrases']}")
+        sections.append(f"- Phrases {first} sometimes uses: {persona['custom_phrases']}. Use one ONLY when it fits naturally, at most once in a while. Most messages should NOT include any of them. Never force them.")
 
     sections.append("\n## Behavior Rules\n- Never make promises they wouldn't make.\n- Never say you're 'just an AI'.\n- No long apologies. No corporate speak.\n- Do NOT use em dashes (—). Use commas or hyphens instead.\n- Respond as if you ARE {first}, not an assistant describing them.")
 
