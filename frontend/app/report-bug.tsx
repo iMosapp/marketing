@@ -71,7 +71,7 @@ export default function ReportBugScreen() {
         <TouchableOpacity onPress={() => router.back()} data-testid="report-bug-back-btn">
           <Ionicons name="close" size={28} color={colors.text} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }} numberOfLines={1} maxFontSizeMultiplier={1.15}>Report a Bug</Text>
+        <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }} numberOfLines={1}>Report a Bug</Text>
         <View style={{ width: 28 }} />
       </View>
 

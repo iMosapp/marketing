@@ -131,7 +131,7 @@ export default function DateRecipientsScreen() {
         ))}
       </View>
 
-      <Text style={styles.explainer} maxFontSizeMultiplier={1.15}>
+      <Text style={styles.explainer}>
         Only contacts turned ON receive a {occLabel} text{occasion === 'anniversary' ? ' + card with their car photo on their purchase anniversary' : ' + card on their birthday'}. Nothing sends without your say-so.
       </Text>
 

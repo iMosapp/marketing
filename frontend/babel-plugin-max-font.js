@@ -17,7 +17,7 @@ module.exports = function maxFontPlugin({ types: t }) {
         );
         if (has) return;
         path.node.attributes.unshift(
-          t.jsxAttribute(t.jsxIdentifier('maxFontSizeMultiplier'), t.jsxExpressionContainer(t.numericLiteral(1.2)))
+          t.jsxAttribute(t.jsxIdentifier('maxFontSizeMultiplier'), t.jsxExpressionContainer(t.numericLiteral(1)))
         );
       },
     },

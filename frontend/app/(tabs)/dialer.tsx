@@ -342,7 +342,7 @@ export default function DialerScreen() {
           autoCorrect={false}
           autoCapitalize="words"
           returnKeyType="search"
-          maxFontSizeMultiplier={1.2}
+         
           data-testid="dialer-name-search-input"
         />
         {searchQuery.length > 0 && (
@@ -366,7 +366,7 @@ export default function DialerScreen() {
             data-testid={`dialer-tab-${m}`}
           >
             <Ionicons name={icon as any} size={15} color={viewMode === m ? colors.text : colors.textSecondary} />
-            <Text style={{ fontSize: 14, fontWeight: '600', color: viewMode === m ? colors.text : colors.textSecondary }} numberOfLines={1} maxFontSizeMultiplier={1.15}>{label}</Text>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: viewMode === m ? colors.text : colors.textSecondary }} numberOfLines={1}>{label}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -576,14 +576,14 @@ export default function DialerScreen() {
                 >
                   <Text
                     style={{ fontSize: Math.round(BTN_SIZE * 0.42), fontWeight: '400', color: colors.text, lineHeight: Math.round(BTN_SIZE * 0.46), includeFontPadding: false }}
-                    maxFontSizeMultiplier={1}
+                   
                   >
                     {key.num}
                   </Text>
                   {key.letters ? (
                     <Text
                       style={{ fontSize: Math.max(9, Math.round(BTN_SIZE * 0.14)), fontWeight: '700', color: colors.textSecondary, letterSpacing: 1.2, lineHeight: Math.max(10, Math.round(BTN_SIZE * 0.16)), includeFontPadding: false }}
-                      maxFontSizeMultiplier={1}
+                     
                     >
                       {key.letters}
                     </Text>

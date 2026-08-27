@@ -1154,8 +1154,8 @@ function HomeScreen() {
                   <View key={row} style={{ flexDirection: 'row', gap: 6 }}>
                     {stats.slice(row * 3, row * 3 + 3).map(s => (
                       <View key={s.label} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 4 }}>
-                        <Text style={{ fontSize: 20, fontWeight: '700', color: s.color }} maxFontSizeMultiplier={1.2} numberOfLines={1}>{s.val}</Text>
-                        <Text style={{ fontSize: 11, color: colors.textSecondary, fontWeight: '600', letterSpacing: 0.5 }} maxFontSizeMultiplier={1.1} numberOfLines={1}>{s.label}</Text>
+                        <Text style={{ fontSize: 20, fontWeight: '700', color: s.color }} numberOfLines={1}>{s.val}</Text>
+                        <Text style={{ fontSize: 11, color: colors.textSecondary, fontWeight: '600', letterSpacing: 0.5 }} numberOfLines={1}>{s.label}</Text>
                       </View>
                     ))}
                   </View>

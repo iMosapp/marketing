@@ -95,7 +95,7 @@ export default function LeadsDashboard() {
         <TouchableOpacity onPress={() => router.back()} data-testid="leads-back-btn">
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, flex: 1 }} numberOfLines={1} maxFontSizeMultiplier={1.15}>Internet Leads</Text>
+        <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, flex: 1 }} numberOfLines={1}>Internet Leads</Text>
       </View>
 
       {/* Tabs */}
@@ -112,7 +112,7 @@ export default function LeadsDashboard() {
             data-testid={`leads-tab-${k}`}
           >
             <Ionicons name={icon as any} size={15} color={tab === k ? colors.text : colors.textSecondary} />
-            <Text style={{ fontSize: 14, fontWeight: '600', color: tab === k ? colors.text : colors.textSecondary }} numberOfLines={1} maxFontSizeMultiplier={1.15}>{label}</Text>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: tab === k ? colors.text : colors.textSecondary }} numberOfLines={1}>{label}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -260,7 +260,7 @@ export default function LeadsDashboard() {
 
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: `${ACCENT}12`, borderRadius: 10, padding: 10 }}>
                   <Ionicons name="flash" size={15} color={ACCENT} />
-                  <Text style={{ fontSize: 13, color: colors.textSecondary, flex: 1 }} maxFontSizeMultiplier={1.15}>
+                  <Text style={{ fontSize: 13, color: colors.textSecondary, flex: 1 }}>
                     Time from lead arrival to the first human rep reply. Under 5 minutes wins deals.
                   </Text>
                 </View>

@@ -106,7 +106,7 @@ export default function AdminBugReportsPage() {
         <TouchableOpacity onPress={() => router.back()} data-testid="bug-reports-back-btn">
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, flex: 1 }} numberOfLines={1} maxFontSizeMultiplier={1.15}>Bug Reports</Text>
+        <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, flex: 1 }} numberOfLines={1}>Bug Reports</Text>
       </View>
 
       {/* Filters */}

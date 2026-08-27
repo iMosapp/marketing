@@ -170,7 +170,7 @@ export default function InventoryScreen() {
         <TouchableOpacity onPress={() => router.back()} data-testid="inventory-back-btn">
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, flex: 1 }} numberOfLines={1} maxFontSizeMultiplier={1.15}>Inventory</Text>
+        <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, flex: 1 }} numberOfLines={1}>Inventory</Text>
         <TouchableOpacity
           style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.card, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12 }}
           onPress={handleCSVUpload}
@@ -193,7 +193,7 @@ export default function InventoryScreen() {
       {/* Jessi note */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, marginBottom: 10, backgroundColor: `${ACCENT}12`, borderRadius: 10, padding: 10 }}>
         <Ionicons name="sparkles" size={15} color={ACCENT} />
-        <Text style={{ fontSize: 13, color: colors.textSecondary, flex: 1 }} maxFontSizeMultiplier={1.15}>
+        <Text style={{ fontSize: 13, color: colors.textSecondary, flex: 1 }}>
           Jessi uses this list to answer customer availability & pricing questions live.
         </Text>
       </View>
@@ -202,7 +202,7 @@ export default function InventoryScreen() {
       {counts.missing_photos > 0 && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, marginBottom: 10, backgroundColor: '#FF950014', borderRadius: 10, padding: 10 }} data-testid="inventory-photo-reminder-banner">
           <Ionicons name="camera" size={15} color="#FF9500" />
-          <Text style={{ fontSize: 13, color: colors.textSecondary, flex: 1 }} maxFontSizeMultiplier={1.15}>
+          <Text style={{ fontSize: 13, color: colors.textSecondary, flex: 1 }}>
             <Text style={{ fontWeight: '700', color: '#FF9500' }}>{counts.missing_photos} in-stock vehicle{counts.missing_photos !== 1 ? 's' : ''} missing photos</Text> — leads get the car's picture texted automatically once one is added.
           </Text>
         </View>
@@ -332,7 +332,7 @@ export default function InventoryScreen() {
               <TouchableOpacity onPress={() => setShowAdd(false)} data-testid="inventory-add-cancel">
                 <Text style={{ fontSize: 16, color: colors.textSecondary }}>Cancel</Text>
               </TouchableOpacity>
-              <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }} maxFontSizeMultiplier={1.15}>Add Vehicle</Text>
+              <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>Add Vehicle</Text>
               <TouchableOpacity onPress={handleAdd} disabled={saving} data-testid="inventory-add-save">
                 {saving ? <ActivityIndicator size="small" color={ACCENT} /> : <Text style={{ fontSize: 16, fontWeight: '700', color: ACCENT }}>Save</Text>}
               </TouchableOpacity>
