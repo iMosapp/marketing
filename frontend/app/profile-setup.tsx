@@ -389,7 +389,7 @@ export default function ProfileSetupScreen() {
                       <Text style={s.sendBtnText}>Send My Card</Text>
                     </TouchableOpacity>
 
-                    <View style={s.rowBtns} style={{ marginTop: 12 }}>
+                    <View style={[s.rowBtns, { marginTop: 12 }]}>
                       <TouchableOpacity style={s.backBtn} onPress={() => animateStep(2)}>
                         <Ionicons name="arrow-back" size={18} color="#C9A962" />
                       </TouchableOpacity>

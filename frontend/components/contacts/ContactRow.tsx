@@ -174,10 +174,11 @@ function ContactRowInner({
         ) : null}
       </View>
 
-      {/* Birthday chip (within 30 days) */}
+      {/* Birthday chip (within 30 days; bell = enrolled in auto birthday text) */}
       {(() => {
         const bd = daysUntilBirthday(item.birthday);
         if (bd === null || bd > 30) return null;
+        const enrolled = (item.tags || []).some((t: string) => (t || '').toLowerCase() === 'birthday');
         return (
           <View
             style={{
@@ -192,6 +193,7 @@ function ContactRowInner({
             <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 10.5, fontWeight: '800', color: '#AF52DE' }}>
               {bd === 0 ? 'Today!' : `${bd}d`}
             </Text>
+            {enrolled && <Ionicons name="notifications" size={9} color="#34C759" />}
           </View>
         );
       })()}

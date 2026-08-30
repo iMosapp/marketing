@@ -479,18 +479,19 @@ async def get_contacts(
             {"locale": "en", "strength": 2}
         ).sort(sort_spec).skip(skip).limit(limit).to_list(limit)
 
-    # Ensure last_activity_at is present on every returned row (powers recency dots)
-    missing_la = [str(c["_id"]) for c in contacts if not c.get("last_activity_at")]
-    if missing_la:
+    # Ensure last_activity_at reflects true latest event on every returned row (recency dots)
+    page_ids = [str(c["_id"]) for c in contacts]
+    if page_ids:
         la_agg = await db.contact_events.aggregate([
-            {"$match": {"contact_id": {"$in": missing_la}}},
+            {"$match": {"contact_id": {"$in": page_ids}}},
             {"$group": {"_id": "$contact_id", "la": {"$max": "$timestamp"}}},
-        ]).to_list(len(missing_la))
+        ]).to_list(len(page_ids))
         la_map = {r["_id"]: r["la"] for r in la_agg}
         for c in contacts:
-            cid = str(c["_id"])
-            la = la_map.get(cid)
-            if not c.get("last_activity_at") and la:
+            stored = c.get("last_activity_at")
+            computed = la_map.get(str(c["_id"]))
+            la = computed if computed and (not isinstance(stored, datetime) or computed > stored) else stored
+            if la:
                 c["last_activity_at"] = la.isoformat() if hasattr(la, "isoformat") else la
     
     # For team view: enrich with salesperson names
@@ -567,6 +568,10 @@ def _smart_list_filter(smart_list: Optional[str]) -> Optional[dict]:
         return {"tags": "hot"}
     if smart_list == "new_this_week":
         return {"created_at": {"$gte": now - timedelta(days=7)}}
+    if smart_list == "birthdays_on":
+        return {"birthday": {"$type": "date"}, "tags": {"$regex": "^birthday$", "$options": "i"}}
+    if smart_list == "birthdays_off":
+        return {"birthday": {"$type": "date"}, "tags": {"$not": {"$regex": "^birthday$", "$options": "i"}}}
     if smart_list == "birthdays":
         today_doy = now.timetuple().tm_yday
         end_doy = today_doy + 30
@@ -590,7 +595,7 @@ async def get_smart_list_counts(user_id: str):
     import asyncio as _aio
     db = get_db()
     base = {"user_id": user_id, "status": {"$nin": ["hidden", "merged", "deleted"]}}
-    keys = ["needs_attention", "hot", "new_this_week", "birthdays"]
+    keys = ["needs_attention", "hot", "new_this_week", "birthdays", "birthdays_on", "birthdays_off"]
     counts = await _aio.gather(*[
         db.contacts.count_documents({"$and": [base, _smart_list_filter(k)]}) for k in keys
     ])

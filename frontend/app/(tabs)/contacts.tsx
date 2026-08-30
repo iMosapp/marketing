@@ -382,6 +382,8 @@ export default function ContactsScreen() {
     : smartList === 'hot' ? 'No hot leads at the moment'
     : smartList === 'new_this_week' ? 'No new contacts this week'
     : smartList === 'birthdays' ? 'No birthdays in the next 30 days'
+    : smartList === 'birthdays_on' ? 'Nobody is enrolled in auto birthday texts yet'
+    : smartList === 'birthdays_off' ? 'Everyone with a birthday has auto-texts turned on'
     : 'Tap + to add or import contacts';
 
   if (isPending) {
@@ -512,7 +514,47 @@ export default function ContactsScreen() {
 
       {/* Smart lists (personal book of business — hidden in team view) */}
       {!selectMode && viewMode !== 'team' && (
-        <SmartListBar counts={smartCounts} active={smartList} onSelect={(k) => setSmartList(k)} />
+        <SmartListBar
+          counts={smartCounts}
+          active={smartList?.startsWith('birthdays') ? 'birthdays' : smartList}
+          onSelect={(k) => setSmartList(k)}
+        />
+      )}
+
+      {/* Birthday split: everyone with a birthday vs. enrolled in auto-texts */}
+      {!selectMode && viewMode !== 'team' && smartList?.startsWith('birthdays') && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingBottom: 8 }}>
+          {[
+            { key: 'birthdays', label: 'Upcoming' },
+            { key: 'birthdays_on', label: `Auto-text ON${smartCounts.birthdays_on != null ? ` · ${smartCounts.birthdays_on}` : ''}` },
+            { key: 'birthdays_off', label: `No auto-text${smartCounts.birthdays_off != null ? ` · ${smartCounts.birthdays_off}` : ''}` },
+          ].map((o) => (
+            <TouchableOpacity
+              key={o.key}
+              onPress={() => setSmartList(o.key)}
+              style={{
+                paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12,
+                backgroundColor: smartList === o.key ? '#AF52DE' : colors.card,
+              }}
+              testID={`bday-sub-${o.key}`}
+              dataSet={{ testid: `bday-sub-${o.key}` }}
+            >
+              <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 12, fontWeight: '700', color: smartList === o.key ? '#FFF' : colors.textSecondary }}>
+                {o.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+          <View style={{ flex: 1 }} />
+          <TouchableOpacity
+            onPress={() => router.push('/settings/date-recipients')}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}
+            testID="manage-birthday-texts-btn"
+            dataSet={{ testid: 'manage-birthday-texts-btn' }}
+          >
+            <Ionicons name="settings-outline" size={12} color={GOLD} />
+            <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 12, fontWeight: '700', color: GOLD }}>Manage</Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       {loading ? (

@@ -29,6 +29,7 @@ interface PhoneContact {
   lastName?: string;
   phone?: string;
   email?: string;
+  birthday?: string;
   selected: boolean;
 }
 
@@ -91,19 +92,26 @@ export default function ImportContactsScreen() {
     setLoading(true);
     try {
       const { data } = await Contacts.getContactsAsync({
-        fields: [Contacts.Fields.FirstName, Contacts.Fields.LastName, Contacts.Fields.PhoneNumbers, Contacts.Fields.Emails],
+        fields: [Contacts.Fields.FirstName, Contacts.Fields.LastName, Contacts.Fields.PhoneNumbers, Contacts.Fields.Emails, Contacts.Fields.Birthday],
       });
       const validContacts: PhoneContact[] = data
         .filter(c => c.phoneNumbers && c.phoneNumbers.length > 0)
-        .map(c => ({
-          id: c.id || String(Math.random()),
-          name: c.name || `${c.firstName || ''} ${c.lastName || ''}`.trim() || 'Unknown',
-          firstName: c.firstName || '',
-          lastName: c.lastName || '',
-          phone: c.phoneNumbers?.[0]?.number || '',
-          email: c.emails?.[0]?.email || '',
-          selected: false,
-        }))
+        .map(c => {
+          const bd: any = (c as any).birthday;
+          const birthday = bd && bd.day != null && bd.month != null
+            ? `${bd.year || 1900}-${String(bd.month + 1).padStart(2, '0')}-${String(bd.day).padStart(2, '0')}`
+            : undefined;
+          return {
+            id: c.id || String(Math.random()),
+            name: c.name || `${c.firstName || ''} ${c.lastName || ''}`.trim() || 'Unknown',
+            firstName: c.firstName || '',
+            lastName: c.lastName || '',
+            phone: c.phoneNumbers?.[0]?.number || '',
+            email: c.emails?.[0]?.email || '',
+            birthday,
+            selected: false,
+          };
+        })
         .sort((a, b) => a.name.localeCompare(b.name));
       setPhoneContacts(validContacts);
       setImportMode('phone');
@@ -192,6 +200,7 @@ export default function ImportContactsScreen() {
         last_name: c.lastName || c.name.split(' ').slice(1).join(' ') || '',
         phone: c.phone || '',
         email: c.email || '',
+        birthday: c.birthday || null,
         tags: [],
         notes: '',
       }));
@@ -268,7 +277,7 @@ export default function ImportContactsScreen() {
             </View>
             <View style={styles.optionContent}>
               <Text style={styles.optionTitle}>From Phone</Text>
-              <Text style={styles.optionDesc}>Import from your device's address book{'\n'}(Requires App Store version)</Text>
+              <Text style={styles.optionDesc}>Import from your device&apos;s address book{'\n'}(Requires App Store version)</Text>
             </View>
             <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
           </TouchableOpacity>
@@ -285,7 +294,7 @@ export default function ImportContactsScreen() {
           <View style={styles.csvHint}>
             <Ionicons name="information-circle" size={20} color={colors.textSecondary} />
             <Text style={styles.csvHintText}>
-              Export your contacts from Google Contacts (.csv) or Apple Contacts (.vcf). We'll automatically detect names, phone numbers, emails, birthdays, and addresses. Personal imports stay with you, not the organization.
+              Export your contacts from Google Contacts (.csv) or Apple Contacts (.vcf). We&apos;ll automatically detect names, phone numbers, emails, birthdays, and addresses. Personal imports stay with you, not the organization.
             </Text>
           </View>
           <TouchableOpacity
@@ -341,6 +350,14 @@ export default function ImportContactsScreen() {
           <Text style={styles.selectedCount}>{selectedPhoneCount} of {phoneContacts.length} selected</Text>
         </View>
         <FlatList
+          ListHeaderComponent={() => (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 4, paddingBottom: 8 }} testID="birthday-import-note" dataSet={{ testid: 'birthday-import-note' }}>
+              <Ionicons name="gift" size={12} color="#AF52DE" />
+              <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 12, color: colors.textSecondary, flex: 1 }}>
+                Birthdays import too — auto birthday texts stay OFF until you turn them on per contact
+              </Text>
+            </View>
+          )}
           data={phoneContacts}
           keyExtractor={item => item.id}
           contentContainerStyle={styles.listContent}
@@ -356,6 +373,12 @@ export default function ImportContactsScreen() {
                 <Text style={styles.contactName}>{item.name}</Text>
                 <Text style={styles.contactPhone}>{item.phone}</Text>
                 {item.email ? <Text style={styles.contactEmail}>{item.email}</Text> : null}
+                {item.birthday ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                    <Ionicons name="gift" size={11} color="#AF52DE" />
+                    <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 12, color: '#AF52DE' }}>Birthday: {item.birthday}</Text>
+                  </View>
+                ) : null}
               </View>
             </TouchableOpacity>
           )}

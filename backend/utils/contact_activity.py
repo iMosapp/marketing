@@ -167,7 +167,10 @@ async def backfill_last_activity_at(db) -> dict:
             continue
         try:
             res = await db.contacts.update_one(
-                {"_id": ObjectId(cid), "last_activity_at": {"$exists": False}},
+                {"_id": ObjectId(cid), "$or": [
+                    {"last_activity_at": {"$exists": False}},
+                    {"last_activity_at": {"$lt": r["last"]}},
+                ]},
                 {"$set": {"last_activity_at": r["last"]}},
             )
             updated += res.modified_count
