@@ -599,7 +599,9 @@ async def get_smart_list_counts(user_id: str):
     counts = await _aio.gather(*[
         db.contacts.count_documents({"$and": [base, _smart_list_filter(k)]}) for k in keys
     ])
-    return dict(zip(keys, counts))
+    result = dict(zip(keys, counts))
+    result["all"] = await db.contacts.count_documents(base)
+    return result
 
 
 @router.get("/{user_id}/dates-calendar")

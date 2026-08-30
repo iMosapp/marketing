@@ -16,6 +16,7 @@ export function SmartListBar({ counts, active, onSelect }: {
   onSelect: (key: string | null) => void;
 }) {
   const { colors } = useThemeStore();
+  const allActive = !active;
 
   return (
     <ScrollView
@@ -25,6 +26,38 @@ export function SmartListBar({ counts, active, onSelect }: {
       contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingBottom: 10 }}
       testID="smart-list-bar" dataSet={{ testid: "smart-list-bar" } as any}
     >
+      {/* All contacts — always visible escape hatch */}
+      <TouchableOpacity
+        onPress={() => onSelect(null)}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+          backgroundColor: allActive ? '#C9A96222' : colors.card,
+          borderRadius: 14,
+          paddingHorizontal: 10,
+          paddingVertical: 7,
+          borderWidth: 1,
+          borderColor: allActive ? '#C9A962' : 'transparent',
+        }}
+        testID="smart-list-all" dataSet={{ testid: 'smart-list-all' } as any}
+      >
+        <View style={{
+          width: 26, height: 26, borderRadius: 13,
+          backgroundColor: '#C9A96222',
+          alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Ionicons name="people" size={13} color="#C9A962" />
+        </View>
+        <View>
+          <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 15, fontWeight: '800', color: allActive ? '#C9A962' : colors.text, lineHeight: 17 }}>
+            {counts.all ?? '—'}
+          </Text>
+          <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 10, fontWeight: '600', color: colors.textSecondary, lineHeight: 12 }}>
+            All Contacts
+          </Text>
+        </View>
+      </TouchableOpacity>
       {SMART_LISTS.map((sl) => {
         const isActive = active === sl.key;
         const count = counts[sl.key] ?? 0;
