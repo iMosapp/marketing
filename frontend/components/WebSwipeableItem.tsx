@@ -115,7 +115,8 @@ export const WebSwipeableItem: React.FC<Props> = ({
               style={[styles.actionBtn, { backgroundColor: action.bgColor }]}
               onPress={() => handleActionPress(action)}
               activeOpacity={0.7}
-              data-testid={`swipe-action-${action.key}`}
+              testID={`swipe-action-${action.key}`}
+              dataSet={{ testid: `swipe-action-${action.key}` } as any}
             >
               <Ionicons name={action.icon as any} size={20} color={action.color} />
               <Text style={[styles.actionLabel, { color: action.color }]}>{action.label}</Text>
@@ -133,7 +134,8 @@ export const WebSwipeableItem: React.FC<Props> = ({
               style={[styles.actionBtn, { backgroundColor: action.bgColor }]}
               onPress={() => handleActionPress(action)}
               activeOpacity={0.7}
-              data-testid={`swipe-action-${action.key}`}
+              testID={`swipe-action-${action.key}`}
+              dataSet={{ testid: `swipe-action-${action.key}` } as any}
             >
               <Ionicons name={action.icon as any} size={20} color={action.color} />
               <Text style={[styles.actionLabel, { color: action.color }]}>{action.label}</Text>

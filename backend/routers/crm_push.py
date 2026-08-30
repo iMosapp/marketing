@@ -126,6 +126,92 @@ class PushBody(BaseModel):
     save_email: bool = True
 
 
+class BulkPushBody(BaseModel):
+    contact_ids: list
+    email: str
+    save_email: bool = True
+
+
+def _adf_email_payload(user: dict, to_email: str, contact: dict, xml: str) -> dict:
+    name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip()
+    return {
+        "from": f"{user.get('name', 'iM On Social')} <{os.environ.get('SENDER_EMAIL', 'notifications@send.imonsocial.com')}>",
+        "to": to_email,
+        "reply_to": user.get("email", "support@imonsocial.com"),
+        "subject": f"New Lead: {name}",
+        "text": xml,
+    }
+
+
+@router.get("/{user_id}/settings")
+async def crm_settings(user_id: str):
+    db = get_db()
+    try:
+        user = await db.users.find_one({"_id": ObjectId(user_id)}, {"crm_intake_email": 1})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid id")
+    return {"crm_email": (user or {}).get("crm_intake_email", "")}
+
+
+@router.post("/{user_id}/bulk")
+async def bulk_push_to_crm(user_id: str, body: BulkPushBody):
+    db = get_db()
+    to_email = body.email.strip()
+    if "@" not in to_email or "." not in to_email:
+        raise HTTPException(status_code=400, detail="Enter a valid CRM intake email address")
+    ids = [str(i) for i in body.contact_ids][:50]
+    if not ids:
+        raise HTTPException(status_code=400, detail="No contacts selected")
+
+    resend_key = os.environ.get("RESEND_API_KEY")
+    if not resend_key:
+        raise HTTPException(status_code=503, detail="Email sending is not configured")
+    import resend
+    resend.api_key = resend_key
+
+    try:
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid id")
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    store_name = ""
+    if user.get("store_id"):
+        try:
+            store = await db.stores.find_one({"_id": ObjectId(user["store_id"])})
+            store_name = (store or {}).get("name", "")
+        except Exception:
+            pass
+
+    sent, failed = 0, 0
+    now = datetime.now(timezone.utc)
+    for cid in ids:
+        try:
+            contact = await db.contacts.find_one({"_id": ObjectId(cid)})
+            if not contact:
+                failed += 1
+                continue
+            xml = build_adf(contact, user, store_name)
+            await asyncio.to_thread(resend.Emails.send, _adf_email_payload(user, to_email, contact, xml))
+            await db.contacts.update_one(
+                {"_id": ObjectId(cid)},
+                {"$addToSet": {"tags": "Pushed to CRM"}, "$set": {"updated_at": now}},
+            )
+            await log_customer_activity(
+                user_id=user_id, contact_id=cid, event_type="crm_push",
+                title="Pushed to CRM", description=f"ADF/XML lead emailed to {to_email}",
+                icon="cloud-upload", color="#AF52DE", category="system",
+            )
+            sent += 1
+        except Exception as e:
+            logger.error(f"[CrmPush] bulk item failed {cid}: {e}")
+            failed += 1
+
+    if body.save_email and sent:
+        await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"crm_intake_email": to_email}})
+    return {"sent": sent, "failed": failed}
+
+
 @router.post("/{user_id}/{contact_id}")
 async def push_to_crm(user_id: str, contact_id: str, body: PushBody):
     db = get_db()
@@ -141,15 +227,8 @@ async def push_to_crm(user_id: str, contact_id: str, body: PushBody):
         raise HTTPException(status_code=503, detail="Email sending is not configured")
     import resend
     resend.api_key = resend_key
-    name = f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip()
     try:
-        await asyncio.to_thread(resend.Emails.send, {
-            "from": f"{user.get('name', 'iM On Social')} <{os.environ.get('SENDER_EMAIL', 'notifications@send.imonsocial.com')}>",
-            "to": to_email,
-            "reply_to": user.get("email", "support@imonsocial.com"),
-            "subject": f"New Lead: {name}",
-            "text": xml,
-        })
+        await asyncio.to_thread(resend.Emails.send, _adf_email_payload(user, to_email, contact, xml))
     except Exception as e:
         logger.error(f"[CrmPush] send failed: {e}")
         raise HTTPException(status_code=502, detail="Failed to send — check the address and try again")

@@ -1,0 +1,50 @@
+{
+  "summary": "Tested the redesigned Contacts page end-to-end (backend + frontend web preview, 390x844). Backend: created /app/backend/tests/test_contacts_smart_lists.py (16 tests, all passing) covering GET /api/contacts/{user_id}/smart-lists, smart_list filter param, auth enforcement (401 without Bearer), count-vs-total consistency for all 4 lists, hot-tag mutation round-trip (tag added then restored), pagination, sort, team view enrichment, search, no ObjectId leak. Frontend: logged in as admin, verified header + total count, 4 smart list cards with live counts + filter/toggle + empty states, filter bottom sheet (sections, A-Z sort, Team view with salesperson names, Reset, gold badge), AI draft sheet (real LLM message referencing the vehicle), server-side search, select mode + bulk CRM sheet (nothing sent), row tap -> profile, pagination (skip=50 request, footer '50 of 57' -> '57 contacts'). Found 2 high-priority issues (testIDs not in DOM, swipe actions unusable on web) plus several data-consistency issues.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/contacts/{user_id}?sort_by=alpha", "issue": "A-Z sort is case-sensitive (no Mongo collation): returns 'API Test' before 'ActivityLog Test', so the A-Z list looks unsorted to users. Use .collation({locale:'en',strength:2}) or a normalized name field."},
+      {"endpoint": "GET /api/contacts/{user_id}/smart-lists", "issue": "Counts always use {user_id: caller}; they do not respect view_mode=team, so cards keep showing 'mine' counts while the list shows 51 team contacts."},
+      {"endpoint": "GET /api/contacts/{user_id}", "issue": "last_activity_at is only injected in the sort_by=recent in-memory fallback branch. With sort_by=alpha or view_mode=team the field is absent, so smart list 'needs_attention' is permanently 0 and the UI recency dot/label falls back to updated_at (same contact shows '6d ago' in Recent but '5mo ago' in A-Z). Run/complete the last_activity_at backfill and return the field in all branches."},
+      {"endpoint": "GET /api/intel/{user_id}/{contact_id}", "issue": "Returns 404 when opening a contact profile (console 'API Error: {detail: Not Found}'). Pre-existing, unrelated to this redesign but user-visible in console."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "All RN components (contacts.tsx, SmartListBar, ContactRow, ContactFilterSheet, DraftMessageSheet)", "issue": "testID props are NOT rendered as data-testid in the DOM. react-native-web 0.21 View/Text/TouchableOpacity/TextInput no longer route through createDOMProps, so ONLY react-native-gesture-handler RectButtons emit data-testid (84 nodes = the swipe-text/call/email buttons). Every testID named in the request (open-filter-sheet-btn, smart-list-*, contacts-total-count, contacts-search-input, contact-row-*, recency-dot-*, draft-btn-*, contact-filter-sheet, filter-*, select-mode-btn, bulk-crm-*, draft-sheet) is absent, so all automated selectors must fall back to text/coordinates. Fix by also passing dataSet={{ testid: '...' }} (RN-web maps dataSet -> data-*) or a global wrapper/patch.", "selector": "[data-testid]", "priority": "HIGH"},
+      {"component": "ContactRow (Swipeable)", "issue": "On web the swipe gesture reveals Text/Call/Email during the drag, but on mouse-up the row snaps closed AND the press handler fires, navigating to /contact/{id}. Swipe actions are therefore unusable in the web preview (buttons have 0x0 rect after release). Needs a drag-distance guard on onPress and/or keeping the row open after release.", "selector": "[data-testid^=\"swipe-text-\"]", "priority": "HIGH"},
+      {"component": "contacts.tsx filteredContacts", "issue": "TAGS and CRM STATUS filters are applied client-side to the currently loaded page only, while the header count and footer come from the server total. With tag 'Appointment' selected the list showed 1 row while the header said 57 and the footer said '57 contacts'. Matching contacts beyond the first 50 are never shown.", "selector": "n/a", "priority": "MEDIUM"},
+      {"component": "ContactRow recency dot/subtitle", "issue": "Recency label and dot colour change with sort mode/view (Recent: 'Bud 3d ago' green; A-Z/Team: 'Bud 5mo ago' red) because the row falls back to updated_at when the API omits last_activity_at. The recency dot is the headline feature of the redesign so this is user-visible wrong data.", "selector": "n/a", "priority": "MEDIUM"},
+      {"component": "contacts.tsx data loading", "issue": "Initial mount fires GET /api/contacts/{id}?skip=0 twice (useEffect + useFocusEffect) - duplicate network call on every entry to the tab.", "selector": "n/a", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "Smart list card -> filtered list", "issue": "Works (New This Week -> 1 contact, count updates to 1, second tap restores 57; Needs Attention -> proper empty state copy), but Needs Attention/Hot/Birthdays counts are 0 with current data because last_activity_at is not persisted (see backend minor issue).", "affected_selectors": ["smart-list-new_this_week", "smart-list-needs_attention"]},
+      {"flow": "AI draft sheet", "issue": "No issue - real LLM draft generated in ~2s referencing the contact's vehicle; sheet closes on backdrop tap.", "affected_selectors": ["draft-btn-{id}", "draft-sheet"]}
+    ],
+    "design_issues": [
+      {"screen": "Contacts (390x844)", "issues": ["Header packs title + 5 icons; the 4th smart list card (Birthdays Soon) is clipped off-screen with no visual affordance that the row scrolls horizontally", "Rest of layout, contrast, pills, gold accents and spacing look clean and consistent"]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_contacts_smart_lists.py", "/app/test_reports/pytest/contacts_smart_lists.xml"],
+  "action_items": [
+    "Expose testIDs in DOM for RN-web 0.21 (dataSet={{testid}} or equivalent) - currently no automated selector coverage for the new Contacts UI",
+    "Fix web swipe actions: release currently closes the row and triggers navigation to the contact profile",
+    "Move TAGS / CRM STATUS filtering server-side (or reflect filtered counts in header/footer) - header shows 57 while 1 row is displayed",
+    "Persist/return last_activity_at for all sort modes and team view so recency dots, 'Xd ago' labels and the Needs Attention count are correct",
+    "Add case-insensitive collation to the A-Z sort",
+    "Make /smart-lists counts respect view_mode=team; remove duplicate skip=0 fetch on mount"
+  ],
+  "critical_code_review_comments": [
+    "routers/contacts.py get_contacts: the sort_by=recent branch loads up to 2000 docs into memory and re-sorts when the last_activity_at backfill is incomplete - O(n) per request and it is the code path currently taken; finish the backfill and drop the fallback.",
+    "_smart_list_filter('needs_attention') depends entirely on last_activity_at existing on contact docs; with the field missing the card is silently always 0 - consider an $or fallback on updated_at.",
+    "contacts.tsx is 774 lines and mixes bulk-CRM modal logic with the list screen; extract the bulk push modal into components/contacts/."
+  ],
+  "updated_files": ["/app/backend/tests/test_contacts_smart_lists.py"],
+  "success_rate": {"backend": "100% (16/16 pytest)", "frontend": "~80% (all core flows work; swipe-on-web and filter counts broken, testIDs missing)"},
+  "seed_data_creation": "None persisted. One existing contact was temporarily tagged 'hot' by the pytest suite to verify the Hot Leads smart list, then the original tags were restored and the baseline count re-asserted. No contacts deleted, no bulk CRM emails sent.",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "forest@imosapp.com / Admin123! (from /app/memory/test_credentials.md)",
+  "context_for_next_testing_agent": "testID does NOT reach the DOM in this app (RN-web 0.21) except for gesture-handler RectButtons (swipe-text/call/email-{id}). Until the main agent fixes that, use get_by_text / coordinate clicks: filter icon at (350,62) in 390x844, select-mode icon at (241,22), first row sparkle at (355,183), bulk-push icon at (300,30) in select mode. Login: /auth/login -> fill input[placeholder=Email]/[Password] -> click text 'Log In' -> goto /contacts. page.fill() does NOT trigger RN TextInput onChangeText for the search box - use click + keyboard.type. Pagination requires scrolling the inner scroll container via JS (element.scrollTop = scrollHeight).",
+  "rca_of_the_issue": "1) testIDs: react-native-web 0.21 View/Text/Pressable use pickProps + React.createElement instead of createDOMProps, so testID is dropped; only libs using RNW's legacy createElement export (gesture-handler RectButton) still emit data-testid. 2) Recency/Needs Attention: contact documents lack a persisted last_activity_at; the API only synthesises it inside the sort_by=recent in-memory fallback, so alpha/team responses omit it and ContactRow falls back to updated_at while _smart_list_filter('needs_attention') matches nothing. 3) Count mismatch: tag/CRM filters run in a useMemo over the loaded page while totalContacts comes from the server response."
+}

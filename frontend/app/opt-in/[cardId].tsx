@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator,
   Platform, Switch,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { PoweredByFooter } from '../../components/PoweredByFooter';
@@ -11,6 +11,7 @@ import { PoweredByFooter } from '../../components/PoweredByFooter';
 const IS_WEB = Platform.OS === 'web';
 
 export default function OptInPage() {
+  const router = useRouter();
   const { cardId } = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);

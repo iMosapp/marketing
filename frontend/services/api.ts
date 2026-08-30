@@ -267,14 +267,22 @@ export const onboardingAPI = {
 
 // ============= CONTACTS API =============
 export const contactsAPI = {
-  getAll: async (userId: string, search?: string, viewMode?: string, sortBy?: string, skip = 0, limit = 50) => {
+  getAll: async (userId: string, search?: string, viewMode?: string, sortBy?: string, skip = 0, limit = 50, smartList?: string, tag?: string, crm?: string) => {
     const params: any = { skip, limit, paginated: true };
     if (search) params.search = search;
     if (viewMode) params.view_mode = viewMode;
     if (sortBy) params.sort_by = sortBy;
+    if (smartList) params.smart_list = smartList;
+    if (tag) params.tag = tag;
+    if (crm && crm !== 'all') params.crm = crm;
     const response = await api.get(`/contacts/${userId}`, { params });
     // Support both paginated {contacts, total, has_more} and legacy array response
     if (Array.isArray(response.data)) return { contacts: response.data, total: response.data.length, has_more: false };
+    return response.data;
+  },
+
+  getSmartLists: async (userId: string) => {
+    const response = await api.get(`/contacts/${userId}/smart-lists`);
     return response.data;
   },
 

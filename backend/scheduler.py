@@ -5,6 +5,7 @@ Runs background jobs to process date-triggered campaigns and pending campaign st
 import asyncio
 import gc
 import logging
+import os
 import random
 import re
 from datetime import datetime, timezone, timedelta
@@ -32,6 +33,7 @@ async def _auto_wrap_urls(media_urls: list, message: str, user_id: str, campaign
     Returns (wrapped_media_urls, wrapped_message)
     """
     from routers.short_urls import create_short_url
+    from routers.database import get_db
     import re as _re
 
     def _link_type(url):

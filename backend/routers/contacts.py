@@ -361,6 +361,9 @@ async def get_contacts(
     sort_by: Optional[str] = None,
     skip: int = 0,
     limit: int = 50,
+    smart_list: Optional[str] = None,
+    tag: Optional[str] = None,
+    crm: Optional[str] = None,
     paginated: bool = False,  # Set True by new frontend — returns {contacts, total, has_more}
                               # Old clients get plain array for backward compatibility
 ):
@@ -399,7 +402,27 @@ async def get_contacts(
             {"user_id": user_id},
             status_filter,
         ]}
-    
+
+    sl_filter = _smart_list_filter(smart_list)
+    if sl_filter:
+        privacy_filter = {"$and": [privacy_filter, sl_filter]}
+
+    extra_filters = []
+    if tag:
+        extra_filters.append({"tags": tag})
+    if crm == "linked":
+        extra_filters.append({"crm_link_copied_at": {"$nin": [None, ""]}})
+    elif crm == "not_linked":
+        extra_filters.append({"$or": [
+            {"crm_link_copied_at": None},
+            {"crm_link_copied_at": {"$exists": False}},
+            {"crm_link_copied_at": ""},
+        ]})
+    elif crm == "users":
+        extra_filters.append({"linked_user_id": {"$nin": [None, ""]}})
+    if extra_filters:
+        privacy_filter = {"$and": [privacy_filter, *extra_filters]}
+
     if search:
         query = {
             "$and": [
@@ -452,7 +475,23 @@ async def get_contacts(
     else:
         sort_spec = [("first_name", 1), ("last_name", 1)]
         total = await db.contacts.count_documents(query)
-        contacts = await db.contacts.find(query, {"photo": 0}).sort(sort_spec).skip(skip).limit(limit).to_list(limit)
+        contacts = await db.contacts.find(query, {"photo": 0}).collation(
+            {"locale": "en", "strength": 2}
+        ).sort(sort_spec).skip(skip).limit(limit).to_list(limit)
+
+    # Ensure last_activity_at is present on every returned row (powers recency dots)
+    missing_la = [str(c["_id"]) for c in contacts if not c.get("last_activity_at")]
+    if missing_la:
+        la_agg = await db.contact_events.aggregate([
+            {"$match": {"contact_id": {"$in": missing_la}}},
+            {"$group": {"_id": "$contact_id", "la": {"$max": "$timestamp"}}},
+        ]).to_list(len(missing_la))
+        la_map = {r["_id"]: r["la"] for r in la_agg}
+        for c in contacts:
+            cid = str(c["_id"])
+            la = la_map.get(cid)
+            if not c.get("last_activity_at") and la:
+                c["last_activity_at"] = la.isoformat() if hasattr(la, "isoformat") else la
     
     # For team view: enrich with salesperson names
     salesperson_map = {}
@@ -515,6 +554,48 @@ async def get_contacts(
         "limit": limit,
         "has_more": (skip + limit) < total,
     } if paginated else results  # plain array for old clients
+
+def _smart_list_filter(smart_list: Optional[str]) -> Optional[dict]:
+    """Mongo filter for a contacts smart list. Shared by counts + list endpoints."""
+    if not smart_list:
+        return None
+    from datetime import timedelta, timezone as _tz
+    now = datetime.now(_tz.utc)
+    if smart_list == "needs_attention":
+        return {"last_activity_at": {"$gte": now - timedelta(days=90), "$lte": now - timedelta(days=14)}}
+    if smart_list == "hot":
+        return {"tags": "hot"}
+    if smart_list == "new_this_week":
+        return {"created_at": {"$gte": now - timedelta(days=7)}}
+    if smart_list == "birthdays":
+        today_doy = now.timetuple().tm_yday
+        end_doy = today_doy + 30
+        if end_doy <= 365:
+            cond = {"$and": [
+                {"$gte": [{"$dayOfYear": "$birthday"}, today_doy]},
+                {"$lte": [{"$dayOfYear": "$birthday"}, end_doy]},
+            ]}
+        else:
+            cond = {"$or": [
+                {"$gte": [{"$dayOfYear": "$birthday"}, today_doy]},
+                {"$lte": [{"$dayOfYear": "$birthday"}, end_doy - 365]},
+            ]}
+        return {"birthday": {"$type": "date"}, "$expr": cond}
+    return None
+
+
+@router.get("/{user_id}/smart-lists")
+async def get_smart_list_counts(user_id: str):
+    """Live counts for the contacts page smart list cards."""
+    import asyncio as _aio
+    db = get_db()
+    base = {"user_id": user_id, "status": {"$nin": ["hidden", "merged", "deleted"]}}
+    keys = ["needs_attention", "hot", "new_this_week", "birthdays"]
+    counts = await _aio.gather(*[
+        db.contacts.count_documents({"$and": [base, _smart_list_filter(k)]}) for k in keys
+    ])
+    return dict(zip(keys, counts))
+
 
 @router.get("/{user_id}/duplicates")
 async def find_duplicate_contacts(user_id: str):
