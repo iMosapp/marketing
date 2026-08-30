@@ -42,7 +42,7 @@ import { resolvePhotoUrl } from '../../utils/photoUrl';
 import { getS } from '../../components/contact/contactStyles';
 import {
   getTimeInSystem, getTimeInSystemLabel, formatEventTime, formatDateUTC,
-  QUICK_ACTIONS, EVENT_CATEGORY_ICON, IntelRenderer, getEventTitle,
+  QUICK_ACTIONS, EVENT_CATEGORY_ICON, getEventTitle,
 } from '../../utils/contactHelpers';
 import { EVENT_TYPE_LABELS, getEventLabel } from '../../utils/eventTypes';
 import PersonalIntelSection from '../../components/PersonalIntelSection';
@@ -62,6 +62,8 @@ import PickerModals from '../../components/contact/PickerModals';
 import DateModals from '../../components/contact/DateModals';
 import AddTaskModal from '../../components/contact/AddTaskModal';
 import GalleryModal from '../../components/contact/GalleryModal';
+import IntelBriefingCard from '../../components/contact/IntelBriefingCard';
+import QuickActionsRow from '../../components/contact/QuickActionsRow';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -194,19 +196,11 @@ function ContactDetailScreen() {
   const scrollRef = React.useRef<ScrollView>(null);
   const MAX_RECORDING_SECONDS = 300;
 
-  // AI Relationship Intel
+  // AI Relationship Intel (auto-updating)
   const [intelData, setIntelData] = useState<any>(null);
-  const [intelLoading, setIntelLoading] = useState(false);
-  const [intelGenerating, setIntelGenerating] = useState(false);
-
-  // Auto-load cached intel so summary shows immediately under the name
-  useEffect(() => {
-    if (!user?._id || !id || intelData) return;
-    api.get(`/intel/${user._id}/${id}`).then(r => {
-      if (r.data?.summary) setIntelData(r.data);
-    }).catch(() => {});
-  }, [user?._id, id]);
-  const [showIntel, setShowIntel] = useState(false);
+  const [intelRefreshing, setIntelRefreshing] = useState(false);
+  const intelBusyRef = useRef(false);
+  const composerInputRef = useRef<TextInput>(null);
 
   // Events & stats
   const [events, setEvents] = useState<ContactEvent[]>([]);
@@ -2199,12 +2193,28 @@ function ContactDetailScreen() {
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  // ===== AI RELATIONSHIP INTEL =====
+  // ===== AI RELATIONSHIP INTEL (auto-updating) =====
+  const refreshIntel = async () => {
+    if (!user || isNewContact || intelBusyRef.current) return;
+    intelBusyRef.current = true;
+    setIntelRefreshing(true);
+    try {
+      const data = await contactsAPI.generateContactIntel(user._id, id as string);
+      setIntelData({ ...data, stale: false });
+    } catch (e) {
+      console.error('Failed to refresh intel:', e);
+    } finally {
+      intelBusyRef.current = false;
+      setIntelRefreshing(false);
+    }
+  };
+
   const loadCachedIntel = async () => {
     if (!user || isNewContact) return;
     try {
       const data = await contactsAPI.getContactIntel(user._id, id as string);
       if (data.summary) setIntelData(data);
+      if (data.stale) refreshIntel();
     } catch (e) {
       // No cached intel  - that's fine
     }
@@ -2213,48 +2223,6 @@ function ContactDetailScreen() {
   React.useEffect(() => {
     if (!isNewContact && user) loadCachedIntel();
   }, [id, user, isNewContact]);
-
-  const generateIntel = async () => {
-    if (!user) return;
-    try {
-      setIntelGenerating(true);
-      setShowIntel(true);
-      const data = await contactsAPI.generateContactIntel(user._id, id as string);
-      setIntelData(data);
-      setShowIntel(true);
-      // Scroll to top after intel loads
-      requestAnimationFrame(() => {
-        // Native approach
-        scrollRef.current?.scrollTo({ y: 0, animated: true });
-        // Web fallback: find the actual scrollable div (RNW renders ScrollView as nested divs)
-        if (Platform.OS === 'web') {
-          try {
-            const el = (scrollRef.current as any)?._nativeRef?.current
-              || (scrollRef.current as any)?.getScrollableNode?.()
-              || (scrollRef.current as any)?.getInnerViewNode?.();
-            if (el) { el.scrollTop = 0; }
-            // Brute force: walk up from any known element to find the scrollable parent
-            const hero = document.querySelector('[data-testid="contact-hero"]');
-            if (hero) {
-              let parent = hero.parentElement;
-              while (parent) {
-                if (parent.scrollHeight > parent.clientHeight && parent.scrollTop > 0) {
-                  parent.scrollTop = 0;
-                  break;
-                }
-                parent = parent.parentElement;
-              }
-            }
-          } catch (_) {}
-        }
-      });
-    } catch (e) {
-      console.error('Failed to generate intel:', e);
-      showSimpleAlert('Error', 'Failed to generate AI summary. Please try again.');
-    } finally {
-      setIntelGenerating(false);
-    }
-  };
 
   // Toggle automation on/off for a specific date field
   const toggleAutomation = async (field: string) => {
@@ -2525,18 +2493,42 @@ function ContactDetailScreen() {
             isNewContact={isNewContact}
             fullName={fullName}
             initials={initials}
-            intelData={intelData}
             availableTags={availableTags}
             contactEnrollments={contactEnrollments}
-            isRecording={isRecording}
-            contactId={id as string}
             pickImage={pickImage}
             viewFullPhoto={viewFullPhoto}
-            startRecording={startRecording}
-            stopRecording={stopRecording}
             handleAutomationChipPress={handleAutomationChipPress}
             onAddTag={() => { loadTags(); setShowTagPicker(true); }}
           />
+
+          {/* ===== QUICK ACTIONS ROW ===== */}
+          {!isNewContact && !isEditing && (
+            <QuickActionsRow
+              colors={colors}
+              isRecording={isRecording}
+              onText={() => { setComposerMode('sms'); composerInputRef.current?.focus(); }}
+              onCall={() => {
+                if (contact.phone) {
+                  router.push({ pathname: '/call-screen', params: { phone: contact.phone, contact_name: fullName, contact_id: id as string } } as any);
+                } else {
+                  showSimpleAlert('No Phone', 'This contact has no phone number saved.');
+                }
+              }}
+              onEmail={() => { setComposerMode('email'); composerInputRef.current?.focus(); }}
+              onNote={() => (isRecording ? stopRecording() : startRecording())}
+              onTask={() => setShowAddTask(true)}
+            />
+          )}
+
+          {/* ===== RELATIONSHIP INTEL BRIEFING (auto-updating) ===== */}
+          {!isNewContact && !isEditing && (
+            <IntelBriefingCard
+              colors={colors}
+              intelData={intelData}
+              refreshing={intelRefreshing}
+              onRefresh={refreshIntel}
+            />
+          )}
 
           {/* ===== SOLD WIZARD BUTTON ===== */}
           {!isNewContact && !isEditing && !contact.tags.includes('Sold') && (
@@ -2675,11 +2667,6 @@ function ContactDetailScreen() {
               isNewContact={isNewContact}
               suggestedActions={suggestedActions}
               handleSuggestedAction={handleSuggestedAction}
-              intelData={intelData}
-              showIntel={showIntel}
-              setShowIntel={setShowIntel}
-              intelGenerating={intelGenerating}
-              generateIntel={generateIntel}
               taskTitle={taskTitle}
               prefill={prefill}
               setSoldWorkflowResult={setSoldWorkflowResult}
@@ -2795,6 +2782,7 @@ function ContactDetailScreen() {
             composerMessage={composerMessage}
             setComposerMessage={setComposerMessage}
             composerSending={composerSending}
+            inputRef={composerInputRef}
             selectedMedia={selectedMedia}
             setSelectedMedia={setSelectedMedia}
             showAISuggestion={showAISuggestion}

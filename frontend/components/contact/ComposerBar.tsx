@@ -19,7 +19,7 @@ export default function ComposerBar(props: any) {
     showAISuggestion, setShowAISuggestion, aiSuggestion, setAiSuggestion,
     loadingAI, loadAISuggestionForComposer, handleComposerSend,
     handleAttachPhoto, onOpenTemplates, onOpenReviewLinks, openBusinessCardPicker,
-    handleVoiceToText, isVoiceRecording, voiceTranscribing,
+    handleVoiceToText, isVoiceRecording, voiceTranscribing, inputRef,
   } = props;
   const router = useRouter();
 
@@ -109,6 +109,7 @@ export default function ComposerBar(props: any) {
           </View>
         )}
         <TextInput
+          ref={inputRef}
           style={[s.composerInput, {
             color: colors.text,
             minHeight: 44,

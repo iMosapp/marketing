@@ -251,22 +251,54 @@ RULES:
     }
 
 
+def _to_utc_dt(v):
+    if isinstance(v, datetime):
+        return v if v.tzinfo else v.replace(tzinfo=timezone.utc)
+    if isinstance(v, str):
+        try:
+            d = datetime.fromisoformat(v.replace('Z', '+00:00'))
+            return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
+        except Exception:
+            return None
+    return None
+
+
+async def _latest_activity(db, contact_id: str):
+    """Newest timestamp across messages, events, and voice notes for a contact."""
+    candidates = []
+    m = await db.messages.find({"contact_id": contact_id}, {"created_at": 1}).sort("created_at", -1).limit(1).to_list(1)
+    if m:
+        candidates.append(_to_utc_dt(m[0].get("created_at")))
+    e = await db.contact_events.find({"contact_id": contact_id}, {"timestamp": 1}).sort("timestamp", -1).limit(1).to_list(1)
+    if e:
+        candidates.append(_to_utc_dt(e[0].get("timestamp")))
+    v = await db.voice_notes.find({"contact_id": contact_id}, {"created_at": 1}).sort("created_at", -1).limit(1).to_list(1)
+    if v:
+        candidates.append(_to_utc_dt(v[0].get("created_at")))
+    candidates = [c for c in candidates if c]
+    return max(candidates) if candidates else None
+
+
 @router.get("/{user_id}/{contact_id}")
 async def get_cached_intel(user_id: str, contact_id: str):
-    """Get the cached AI summary for a contact (if available)."""
+    """Get the cached AI summary for a contact, plus a stale flag when newer activity exists."""
     db = get_db()
     doc = await db.contact_intel.find_one(
         {"contact_id": contact_id, "user_id": user_id},
         {"_id": 0}
     )
+    latest = await _latest_activity(db, contact_id)
     if not doc:
-        return {"summary": None, "generated_at": None}
-    
+        return {"summary": None, "generated_at": None, "stale": latest is not None}
+
+    gen = _to_utc_dt(doc.get("generated_at"))
+    stale = bool(latest and gen and latest > gen)
     return {
         "summary": doc.get("summary"),
         "contact_name": doc.get("contact_name"),
         "generated_at": doc["generated_at"].isoformat() if doc.get("generated_at") else None,
         "data_points": doc.get("data_points", {}),
+        "stale": stale,
     }
 
 

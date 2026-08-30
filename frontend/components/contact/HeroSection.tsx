@@ -6,19 +6,16 @@ import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
-import { showSimpleAlert } from '../../services/alert';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
 import { getTimeInSystem, getTimeInSystemLabel, formatDateUTC } from '../../utils/contactHelpers';
 
 export default function HeroSection(props: any) {
   const {
     s, colors, contact, stats, isEditing, isNewContact, fullName, initials,
-    intelData, availableTags, contactEnrollments, isRecording, contactId,
-    pickImage, viewFullPhoto, startRecording, stopRecording,
+    availableTags, contactEnrollments,
+    pickImage, viewFullPhoto,
     handleAutomationChipPress, onAddTag,
   } = props;
-  const router = useRouter();
   const timeValue = getTimeInSystem(stats.created_at);
   const timeLabel = getTimeInSystemLabel(stats.created_at);
 
@@ -82,41 +79,6 @@ export default function HeroSection(props: any) {
             )}
           </View>
         </View>
-
-        {/* Phone + Voice Note icons next to contact name */}
-        {!isEditing && !isNewContact && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginLeft: 8 }}>
-            {/* Click-to-Call */}
-            <TouchableOpacity
-              onPress={() => {
-                const phone = contact?.phone || '';
-                const name  = contact?.name || `${contact?.first_name || ''} ${contact?.last_name || ''}`.trim();
-                const cid   = contactId;
-                if (phone) {
-                  router.push({ pathname: '/call-screen', params: { phone, contact_name: name, contact_id: cid } } as any);
-                } else {
-                  showSimpleAlert('No Phone', 'This contact has no phone number saved.');
-                }
-              }}
-              activeOpacity={0.7}
-              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#007AFF', alignItems: 'center', justifyContent: 'center', shadowColor: '#007AFF', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6, elevation: 4 }}
-              data-testid="hero-call-btn"
-            >
-              <Ionicons name="call" size={20} color="#FFF" />
-            </TouchableOpacity>
-
-            {/* Voice Note — green mic button */}
-            <TouchableOpacity
-              onPress={isRecording ? stopRecording : startRecording}
-              activeOpacity={0.7}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: isRecording ? '#FF3B30' : '#34C759', alignItems: 'center', justifyContent: 'center', shadowColor: isRecording ? '#FF3B30' : '#34C759', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6, elevation: 4, zIndex: 10 }}
-              data-testid="hero-record-btn"
-            >
-              <Ionicons name={isRecording ? 'stop' : 'mic'} size={22} color="#FFF" />
-            </TouchableOpacity>
-          </View>
-        )}
       </View>
 
       {/* Compact stats line */}
@@ -173,19 +135,6 @@ export default function HeroSection(props: any) {
           </View>
         </View>
       )}
-
-      {/* AI Relationship Summary — auto-displays below name when intel is cached */}
-      {!isNewContact && intelData?.summary ? (
-        <View style={{ marginHorizontal: 16, marginTop: 4, marginBottom: 4 }}>
-          <Text
-            style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18, textAlign: 'center', fontStyle: 'italic' }}
-            numberOfLines={3}
-            data-testid="contact-intel-summary"
-          >
-            {intelData.summary.split('\n')[0]}
-          </Text>
-        </View>
-      ) : null}
 
       {/* Tags + Automations Strip (merged) */}
       {!isNewContact && (

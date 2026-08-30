@@ -83,7 +83,7 @@ const COLORS_DARK = {
   background: '#000000',
   surface: '#1C1C1E',
   elevated: '#2C2C2E',
-  accent: '#2E5CFF',
+  accent: '#C9A962',
   success: '#30D158',
   warning: '#FFD60A',
   danger: '#FF453A',
@@ -92,7 +92,7 @@ const COLORS_DARK = {
   textSecondary: '#8E8E93',
   textTertiary: '#2C2C2E',
   border: 'rgba(255, 255, 255, 0.08)',
-  borderFocus: 'rgba(46, 92, 255, 0.5)',
+  borderFocus: 'rgba(201, 169, 98, 0.5)',
 };
 
 // Light Mode Colors (Email)
@@ -100,7 +100,7 @@ const COLORS_LIGHT = {
   background: '#000000',
   surface: '#FFFFFF',
   elevated: '#3A3A3C',
-  accent: '#007AFF',
+  accent: '#C9A962',
   success: '#34C759',
   warning: '#FF9500',
   danger: '#FF3B30',
@@ -153,7 +153,7 @@ export default function InboxScreen() {
   const { showToast } = useToast();
   
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<'hot' | 'assigned' | 'waiting' | 'ai_active' | 'unassigned' | 'all' | 'closed'>('assigned');
+  const [activeTab, setActiveTab] = useState<'hot' | 'assigned' | 'waiting' | 'unread' | 'ai_active' | 'unassigned' | 'all' | 'closed'>('assigned');
   const filter = activeTab; // alias for legacy references
   const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null);
   const toggleActionMenu = (convId: string) =>
@@ -573,6 +573,7 @@ export default function InboxScreen() {
       if (activeTab === 'hot')        return matchesSearch && conv.hot_opportunity === true && !isClosed;
       if (activeTab === 'assigned')   return matchesSearch && conv.status === 'active' && !isWaiting && !isUnassigned && !isClosed;
       if (activeTab === 'waiting')    return matchesSearch && isWaiting;
+      if (activeTab === 'unread')     return matchesSearch && !!conv.unread && !isClosed;
       if (activeTab === 'ai_active')  return matchesSearch && isAiActive && !isClosed;
       if (activeTab === 'unassigned') return matchesSearch && isUnassigned && !isClosed && conv.status !== 'archived';
       if (activeTab === 'closed')     return matchesSearch && isClosed;
@@ -933,7 +934,8 @@ export default function InboxScreen() {
       <TouchableOpacity
         style={[
           styles.conversationItem,
-          { backgroundColor: colors.surface, borderColor: colors.border },
+          { backgroundColor: colors.surface },
+          isUrgent && !hasAiOutcome && styles.conversationItemUnread,
           item.status === 'closed' && styles.conversationItemClosed,
           hasAiOutcome && !isAcknowledged && styles.conversationItemAI,
           isSelected && styles.conversationItemSelected,
@@ -942,7 +944,8 @@ export default function InboxScreen() {
         onLongPress={handleLongPress}
         delayLongPress={500}
         activeOpacity={0.7}
-        data-testid={`conversation-item-${item._id}`}
+        testID={`conversation-item-${item._id}`}
+        dataSet={{ testid: `conversation-item-${item._id}` } as any}
       >
         {/* Selection checkbox */}
         {selectionMode && (
@@ -1064,12 +1067,12 @@ export default function InboxScreen() {
             const aiOn = item.ai_enabled && mode !== 'off';
             const label = mode === 'auto_reply' ? 'Auto' : mode === 'draft_only' ? 'Assist' : mode === 'auto_with_approval' ? 'Assist' : 'Human';
             const icon = mode === 'auto_reply' ? 'sparkles' : mode === 'draft_only' || mode === 'auto_with_approval' ? 'create-outline' : 'person-outline';
-            const bg = mode === 'auto_reply' ? '#34C75918' : mode !== 'off' ? '#007AFF18' : colors.elevated + '60';
-            const fg = mode === 'auto_reply' ? '#34C759' : mode !== 'off' ? '#007AFF' : colors.textSecondary;
+            const bg = mode === 'auto_reply' ? '#34C75918' : mode !== 'off' ? '#C9A96218' : 'transparent';
+            const fg = mode === 'auto_reply' ? '#34C759' : mode !== 'off' ? '#C9A962' : colors.textSecondary;
             return (
               <TouchableOpacity
                 onPress={(e) => handleAiModeToggle(item._id, mode, e)}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 3, alignSelf: 'flex-start', marginTop: 4, backgroundColor: bg, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 3 }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 3, alignSelf: 'flex-start', marginTop: 4, backgroundColor: bg, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 3, borderWidth: mode === 'off' ? 1 : 0, borderColor: colors.border }}
                 activeOpacity={0.7}
                 data-testid={`ai-mode-toggle-${item._id}`}
               >
@@ -1117,7 +1120,7 @@ export default function InboxScreen() {
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#FF3B3018', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, borderWidth: 1, borderColor: '#FF3B3040' }}>
                       <Ionicons name="alert-circle" size={11} color="#FF3B30" />
                       <Text style={{ fontSize: 11, fontWeight: '800', color: '#FF3B30', letterSpacing: 0.3 }}>
-                        YOU'RE NEEDED — {unanswered} msgs
+                        YOU&apos;RE NEEDED — {unanswered} msgs
                       </Text>
                     </View>
                     {/* Take Over: turn AI off and keep the badge until rep actually replies */}
@@ -1550,7 +1553,7 @@ export default function InboxScreen() {
           </View>
           <Text style={styles.restrictedTitle}>Access Pending</Text>
           <Text style={styles.restrictedText}>
-            Your account is being reviewed by an admin. You'll have full access to messaging once your account is configured.
+            Your account is being reviewed by an admin. You&apos;ll have full access to messaging once your account is configured.
           </Text>
           <View style={styles.restrictedActions}>
             <TouchableOpacity 
@@ -1603,7 +1606,7 @@ export default function InboxScreen() {
           >
             <Ionicons name="search-circle" size={20} color="#32ADE6" />
             <Text style={{ flex: 1, fontSize: 13, color: colors.textPrimary, fontWeight: '600' }} numberOfLines={1}>
-              Search message text & calls for "{search.trim()}"
+              Search message text & calls for &quot;{search.trim()}&quot;
             </Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
           </TouchableOpacity>
@@ -1619,9 +1622,10 @@ export default function InboxScreen() {
               inboxView === 'my' && styles.inboxToggleOptionActive,
             ]}
             onPress={() => handleInboxViewChange('my')}
-            data-testid="my-inbox-toggle"
+            testID="my-inbox-toggle"
+            dataSet={{ testid: 'my-inbox-toggle' } as any}
           >
-            <Ionicons name="person" size={14} color={inboxView === 'my' ? '#FFF' : colors.textSecondary} />
+            <Ionicons name="person" size={14} color={inboxView === 'my' ? '#000' : colors.textSecondary} />
             <Text style={[styles.inboxToggleText, { color: colors.textSecondary }, inboxView === 'my' && styles.inboxToggleTextActive]}>
               My Inbox
             </Text>
@@ -1632,9 +1636,10 @@ export default function InboxScreen() {
               inboxView === 'team' && styles.inboxToggleOptionActive,
             ]}
             onPress={() => handleInboxViewChange('team')}
-            data-testid="team-inbox-toggle"
+            testID="team-inbox-toggle"
+            dataSet={{ testid: 'team-inbox-toggle' } as any}
           >
-            <Ionicons name="people" size={14} color={inboxView === 'team' ? '#FFF' : colors.textSecondary} />
+            <Ionicons name="people" size={14} color={inboxView === 'team' ? '#000' : colors.textSecondary} />
             <Text style={[styles.inboxToggleText, { color: colors.textSecondary }, inboxView === 'team' && styles.inboxToggleTextActive]}>
               Team Inbox
             </Text>
@@ -1642,64 +1647,71 @@ export default function InboxScreen() {
         </View>
       </View>
       
-      {/* 5-Tab Inbox Bar */}
+      {/* Smart-card filter bar — same treatment as Home/Contacts */}
       {inboxView === 'my' && (() => {
         const all = conversations.filter(c => c);
         const counts = {
           all:        all.filter(c => c.status !== 'closed').length,
           waiting:    all.filter(c => (c.needs_assistance || c.status === 'paused') && c.status !== 'closed').length,
+          unread:     all.filter(c => c.unread && c.status !== 'closed').length,
           ai_active:  all.filter(c => c.ai_enabled && c.ai_mode && c.ai_mode !== 'off' && c.status !== 'closed').length,
           assigned:   all.filter(c => c.status === 'active' && !(c.needs_assistance || c.status === 'paused') && !(!c.user_id || c.user_id === 'unassigned') && c.status !== 'closed').length,
           closed:     all.filter(c => c.status === 'closed').length,
           hot:        all.filter(c => c.hot_opportunity === true && c.status !== 'closed').length,
         };
         const tabs: { key: typeof activeTab; label: string; icon: string; activeColor: string }[] = [
-          { key: 'hot',       label: '🔥 Hot',  icon: 'flame',                     activeColor: '#FF3B30' },
-          { key: 'waiting',   label: 'Waiting', icon: 'time-outline',              activeColor: '#FF9500' },
-          { key: 'all',       label: 'All',     icon: 'list-outline',              activeColor: '#C9A962' },
+          { key: 'hot',       label: 'Hot',     icon: 'flame',                     activeColor: '#FF453A' },
+          { key: 'waiting',   label: 'Waiting', icon: 'time',                      activeColor: '#FF9500' },
+          { key: 'unread',    label: 'Unread',  icon: 'mail-unread',               activeColor: '#32ADE6' },
+          { key: 'all',       label: 'All',     icon: 'chatbubbles',               activeColor: '#C9A962' },
           { key: 'ai_active', label: 'AI',      icon: 'sparkles',                  activeColor: '#34C759' },
-          { key: 'assigned',  label: 'Active',  icon: 'person-circle-outline',     activeColor: '#007AFF' },
-          { key: 'closed',    label: 'Closed',  icon: 'checkmark-circle-outline',  activeColor: '#8E8E93' },
+          { key: 'assigned',  label: 'Active',  icon: 'person-circle',             activeColor: '#AF52DE' },
+          { key: 'closed',    label: 'Closed',  icon: 'checkmark-circle',          activeColor: '#8E8E93' },
         ];
         return (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={{ borderBottomWidth: 1, borderBottomColor: colors.border, maxHeight: 52 }}
-            contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 7, gap: 7 }}
+            style={{ flexGrow: 0, flexShrink: 0 }}
+            contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 8, gap: 8 }}
           >
             {tabs.map(({ key, label, icon, activeColor }) => {
               const isActive = activeTab === key;
-              const count = counts[key];
+              const count = counts[key as keyof typeof counts] ?? 0;
               return (
                 <TouchableOpacity
                   key={key}
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    gap: 6,
-                    paddingHorizontal: 13,
-                    paddingVertical: 8,
-                    borderRadius: 20,
-                    backgroundColor: isActive ? activeColor + '22' : colors.card,
-                    borderWidth: 1.5,
-                    borderColor: isActive ? activeColor : colors.border,
+                    gap: 8,
+                    paddingHorizontal: 10,
+                    paddingVertical: 7,
+                    borderRadius: 14,
+                    backgroundColor: isActive ? activeColor + '22' : colors.surface,
+                    borderWidth: 1,
+                    borderColor: isActive ? activeColor : 'transparent',
                   }}
                   onPress={() => handleFilterPress(key)}
                   activeOpacity={0.7}
-                  data-testid={`inbox-tab-${key}`}
+                  testID={`inbox-tab-${key}`}
+                  dataSet={{ testid: `inbox-tab-${key}` } as any}
                 >
-                  <Ionicons name={icon as any} size={17} color={isActive ? activeColor : colors.textSecondary} />
-                  <Text style={{ fontSize: 13, fontWeight: isActive ? '800' : '600', color: isActive ? activeColor : colors.textSecondary }}>
-                    {label}
-                  </Text>
-                  {count > 0 && (
-                    <View style={{ minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 4, alignItems: 'center', justifyContent: 'center', backgroundColor: isActive ? activeColor : colors.surface }}>
-                      <Text style={{ fontSize: 11, fontWeight: '800', color: isActive ? '#fff' : colors.textSecondary }}>
-                        {count > 99 ? '99+' : count}
-                      </Text>
-                    </View>
-                  )}
+                  <View style={{
+                    width: 26, height: 26, borderRadius: 13,
+                    backgroundColor: activeColor + '22',
+                    alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <Ionicons name={icon as any} size={13} color={activeColor} />
+                  </View>
+                  <View>
+                    <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 15, fontWeight: '800', lineHeight: 17, color: isActive ? activeColor : colors.textPrimary }}>
+                      {count > 99 ? '99+' : count}
+                    </Text>
+                    <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 10, fontWeight: '600', lineHeight: 12, color: colors.textSecondary }}>
+                      {label}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               );
             })}
@@ -1734,7 +1746,7 @@ export default function InboxScreen() {
                 <Ionicons name="people" size={48} color={colors.accent} />
               </View>
               <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No team leads yet</Text>
-              <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Leads from your team's lead sources will appear here</Text>
+              <Text style={[styles.emptySubtext, { color: colors.textSecondary }]}>Leads from your team&apos;s lead sources will appear here</Text>
             </View>
           )}
         />
@@ -2421,8 +2433,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     alignItems: 'center',
     backgroundColor: '#1C1C1E',
-    borderBottomWidth: 1,
-    borderBottomColor: '#2A2A2A',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  conversationItemUnread: {
+    borderLeftWidth: 3,
+    borderLeftColor: '#C9A962',
   },
   conversationItemClosed: {
     opacity: 0.5,
@@ -2478,8 +2495,8 @@ const styles = StyleSheet.create({
   avatar: {
     width: 44,
     height: 44,
-    borderRadius: 12,
-    backgroundColor: COLORS.accent,
+    borderRadius: 14,
+    backgroundColor: '#2C2C2E',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2496,12 +2513,12 @@ const styles = StyleSheet.create({
     borderColor: COLORS.background,
   },
   avatarUrgent: {
-    backgroundColor: COLORS.accent,
+    backgroundColor: 'rgba(201, 169, 98, 0.28)',
   },
   avatarText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
+    color: '#C9A962',
+    fontSize: 17,
+    fontWeight: '700',
     letterSpacing: 0.3,
   },
   
@@ -2534,7 +2551,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.background,
   },
   unreadBubbleText: {
-    color: '#FFFFFF',
+    color: '#000000',
     fontSize: 12,
     fontWeight: '700',
   },
@@ -2963,7 +2980,7 @@ const styles = StyleSheet.create({
     color: COLORS_DARK.textSecondary,
   },
   inboxToggleTextActive: {
-    color: '#FFFFFF',
+    color: '#000000',
   },
   
   // Team Conversation Styles
