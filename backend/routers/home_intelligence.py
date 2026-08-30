@@ -18,6 +18,28 @@ router = APIRouter(prefix="/home", tags=["home"])
 logger = logging.getLogger(__name__)
 
 
+@router.get("/weekly-wins/{user_id}")
+async def weekly_wins(user_id: str):
+    """Last week's (Mon-Sun) wins for the Monday recap card."""
+    db = get_db()
+    now = datetime.now(timezone.utc)
+    this_monday = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+    start = this_monday - timedelta(days=7)
+    end = this_monday
+    sold = await db.contacts.count_documents({"user_id": user_id, "date_sold": {"$gte": start, "$lt": end}})
+    texts = await db.messages.count_documents({"user_id": user_id, "sender": "user", "timestamp": {"$gte": start, "$lt": end}})
+    scans = await db.card_scans.count_documents({"user_id": user_id, "scanned_at": {"$gte": start, "$lt": end}})
+    new_contacts = await db.contacts.count_documents({"user_id": user_id, "created_at": {"$gte": start, "$lt": end}})
+    return {
+        "week_start": start.isoformat(),
+        "week_end": end.isoformat(),
+        "sold": sold,
+        "texts": texts,
+        "scans": scans,
+        "new_contacts": new_contacts,
+    }
+
+
 # ── Streak calculator ─────────────────────────────────────────────────────────
 
 async def get_streak(user_id: str, db) -> dict:

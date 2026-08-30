@@ -1,0 +1,42 @@
+{
+  "summary": "Iteration 287: tested speed-to-lead + weekly wins features end-to-end. Backend: 10/10 pytest cases pass (GET /api/leads/awaiting/{user_id}, GET /api/home/weekly-wins/{user_id}, GET /api/leads/analytics/response-times with auth + clamping + sorting, conversation info lead flags). Frontend (mobile 390x844, real login forest@imosapp.com): Home red lead-alert-card showed '1 lead waiting 9m / Sally Tester' and navigated to /thread/6a948a5b94f43a817b73d510; /home?wins=1 rendered weekly-wins-card with all 4 stat cells (0 Sold / 26 Texts / 2 QR Scans / 0 New) and card is correctly HIDDEN on non-Monday without the override; Thread amber lead-wait-banner rendered ('New internet lead — waiting 10m · AutoTrader'); sending a message produced a GOLD bubble rgb(201,169,98) with BLACK text, gold send button (rgb(201,169,98)), banner disappeared, and Home lead-alert-card cleared after the human reply; header call + mic are dark circles (#2C2C2E) with gold icons, avatar initials gold; Leads Speed tab renders team-avg row (after I fixed missing DOM testids); Inbox (via bottom tab bar) rows render and lead-wait-chip ('Waiting 7m') verified with a temporary seeded waiting lead; contact profile /contact/69a496841603573df5a41723 still renders quick-actions-row + intel-briefing-card. Two real defects found (phantom cross-conversation ai_draft bubble in thread, residual blue header icons).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/messages/thread/{conversation_id}", "issue": "Leaks messages from OTHER conversations of the same contact (sibling-conversation + contact_id $or query, messages.py:1699-1731). For test conv 6a948a5b94f43a817b73d510 it returns an unsent ai_draft ('Hey Sally! This is i'M On social... 2023 Ford F-150') that actually belongs to conversations 6a907994af046c430462b9f2 / 6a9079eff2de796445f2a0eb. The draft has sender='ai_draft' and timestamp=None, so the thread UI renders it as an INBOUND grey bubble attributed to the contact ('Sally Tester') with a live clock time (7:58 -> 7:59 -> 8:01 PM across reloads) and it sorts above older real messages, breaking chronological order."},
+      {"endpoint": "GET /api/messages/conversations/{user_id}", "issue": "Internet-lead rows return awaiting_first_reply but NOT lead_received_at (null) — inbox chip works only because it falls back to conversation.created_at; thread/[id].tsx:611 relies on lead_received_at from the info endpoint, so keep the two payloads consistent."},
+      {"endpoint": "GET /api/leads/analytics/response-times", "issue": "Not a code bug but data gap: seeded lead conversations (e.g. Sally Tester) have no inbound_leads document, so replies to them are never 'measured' (overall.measured stays 0, reps=[]). Speed leaderboard therefore shows only the empty rep list."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "thread/[id].tsx message list", "issue": "Phantom bubble: an ai_draft from a sibling conversation renders as an incoming message from the contact with a constantly-changing 'now' timestamp and appears above older messages (see backend RCA). UI should filter sender==='ai_draft' / messages without timestamps.", "selector": "thread message bubbles", "priority": "HIGH"},
+      {"component": "app/leads.tsx (whole file)", "issue": "All testIDs in leads.tsx are written as raw data-testid props on RN <View>/<TouchableOpacity>; RN-web drops them, so the DOM had ZERO data-testid on /leads (leads-tab-*, leads-filter-*, lead-card-*, roi-source-*, lead-speed-badge-*, speed-* all unqueryable). I converted only speed-overall-stats and speed-rep-* to testID + dataSet; the rest still need conversion.", "selector": "[data-testid^=\"leads-\"]", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Thread header", "issues": ["Residual iOS blue (#007AFF) remains on the back chevron, the search circle button and the '...' overflow icon while call/mic are gold — inconsistent with the dark/gold conversion spec ('no blue')."]},
+      {"screen": "Home lead alert card", "issues": ["Subtitle truncates to 'Sally Tester · Respond now …' at 390px width (numberOfLines=1); consider shortening the copy."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_speed_to_lead_287.py", "/app/test_reports/pytest/pytest_results_287.xml"],
+  "action_items": [
+    "Filter ai_draft / timestamp-less messages out of GET /api/messages/thread (or stop pulling sibling-conversation messages) so unsent AI drafts from other conversations don't render as inbound contact bubbles with live timestamps.",
+    "Convert remaining raw data-testid props in /app/frontend/app/leads.tsx to testID + dataSet so the Leads screen is testable on web.",
+    "Finish the gold conversion in the thread header: back chevron, search button and '...' icon are still #007AFF.",
+    "Optionally include lead_received_at in the conversations list enrichment for consistency with /conversation/{id}/info."
+  ],
+  "critical_code_review_comments": [
+    "messages.py get_thread_messages builds a broad $or over sibling conversation ids + contact_id + regex on contact_id — this is a cross-conversation data-bleed vector and also returns draft records; add a sender/status filter and drop the regex clause.",
+    "home_intelligence.py: weekly_wins route is declared above the module-level `logger = logging.getLogger(__name__)` line, which is confusing placement; move route below module setup.",
+    "WeeklyWinsCard hides itself when total==0 with no explanatory empty state — silently blank on a real Monday for a new rep."
+  ],
+  "updated_files": ["/app/frontend/app/leads.tsx", "/app/backend/tests/test_speed_to_lead_287.py"],
+  "success_rate": {"backend": "100%", "frontend": "90%"},
+  "seed_data_creation": "Temporarily inserted conversation 6a948d5ed63bf2d92498027e ('TEST_QA WaitChip', is_internet_lead) + 1 inbound message to verify inbox lead-wait-chip and Home alert; both DELETED after verification. Seeded conv 6a948a5b94f43a817b73d510 (Sally Tester) left intact but now contains the required human reply 'TEST_QA gold bubble check' (sent as part of the gold-bubble test), so awaiting count for user 69a0b7095fddcede09591667 is now 0.",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "forest@imosapp.com / Admin123!",
+  "context_for_next_testing_agent": "Backend tests: /app/backend/tests/test_speed_to_lead_287.py (awaiting test tolerates count==0 since a human reply was sent this run). To re-test the waiting states you must insert a fresh conversation with user_id=69a0b7095fddcede09591667, is_internet_lead=True, status='active' and no sender='user' message (I did this and cleaned up). RN-web drops raw data-testid props — always use testID + dataSet. /inbox URL is a marketing page on web; reach the app inbox via the bottom tab bar. After editing frontend files, 'sudo supervisorctl restart frontend' is required (hot reload served a stale bundle for my testid fix).",
+  "rca_of_the_issue": "Phantom thread bubble: GET /api/messages/thread/{cid} intentionally widens its query to sibling conversations of the same contact and to contact_id/regex matches (messages.py:1706-1731). The Sally Tester contact has two other lead conversations containing ai_draft documents (sender='ai_draft', timestamp=None). Those drafts are returned, the UI has no branch for sender 'ai_draft' so it treats them as inbound contact messages, and the null timestamp makes the UI print the current clock time, which also puts them out of chronological order."
+}

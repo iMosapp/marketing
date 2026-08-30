@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import api from '../../services/api';
@@ -26,6 +26,8 @@ import { NotificationBell } from '../../components/notifications/NotificationBel
 import { UniversalShareModal } from '../../components/UniversalShareModal';
 import { DraftMessageSheet } from '../../components/DraftMessageSheet';
 import { HomeSmartBar } from '../../components/home/HomeSmartBar';
+import { LeadAlertCard } from '../../components/home/LeadAlertCard';
+import { WeeklyWinsCard } from '../../components/home/WeeklyWinsCard';
 import { QuickActionsFab } from '../../components/home/QuickActionsFab';
 
 const IS_WEB = Platform.OS === 'web';
@@ -361,6 +363,7 @@ function HomeScreen() {
   const { colors, themeMode, toggle: toggleTheme } = useThemeStore();
   const styles = getStyles(colors);
   const router = useRouter();
+  const { wins: winsParam } = useLocalSearchParams<{ wins?: string }>();
   const { user } = useAuthStore();
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [pendingTasks, setPendingTasks] = useState<any[]>([]);
@@ -854,6 +857,9 @@ function HomeScreen() {
         ) : (
         <>
 
+        {/* ── SPEED-TO-LEAD ALERT — unanswered internet leads ── */}
+        <LeadAlertCard userId={user?._id || ''} />
+
         {/* ── SMART CARDS — same treatment as Contacts ── */}
         <HomeSmartBar
           items={[
@@ -941,6 +947,9 @@ function HomeScreen() {
             </TouchableOpacity>
           ))}
         </View>
+
+        {/* ── WEEKLY WINS — Monday morning recap ── */}
+        <WeeklyWinsCard userId={user?._id || ''} forceShow={winsParam === '1'} />
 
         {streak && (
           <TouchableOpacity

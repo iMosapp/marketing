@@ -247,6 +247,8 @@ async def get_conversations(user_id: str, personal_only: bool = True):
         for conv in conversations:
             if conv.get('is_internet_lead'):
                 conv['awaiting_first_reply'] = conv['_id'] not in replied
+                ca = conv.get('created_at')
+                conv['lead_received_at'] = ca.isoformat() if hasattr(ca, 'isoformat') else ca
 
     # Assemble results
     result = []
@@ -1722,8 +1724,13 @@ async def get_thread_messages(conversation_id: str):
     except Exception:
         pass
 
-    # Fetch by both conversation_id AND contact_id to catch all messages
-    query: dict = {"$or": [{"conversation_id": {"$in": conv_ids}}]}
+    # Fetch by both conversation_id AND contact_id to catch all messages.
+    # Exclude unsent AI drafts and timestamp-less docs (render as phantom bubbles).
+    query: dict = {
+        "$or": [{"conversation_id": {"$in": conv_ids}}],
+        "sender": {"$ne": "ai_draft"},
+        "timestamp": {"$ne": None},
+    }
     if contact_id_filter:
         # Include messages stored with the contact_id directly or with fake conv IDs
         query["$or"].append({"contact_id": contact_id_filter})

@@ -92,7 +92,7 @@ export default function LeadsDashboard() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       {/* Header */}
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12 }}>
-        <TouchableOpacity onPress={() => router.back()} data-testid="leads-back-btn">
+        <TouchableOpacity onPress={() => router.back()} testID="leads-back-btn" dataSet={{ testid: 'leads-back-btn' } as any}>
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </TouchableOpacity>
         <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, flex: 1 }} numberOfLines={1}>Internet Leads</Text>
@@ -110,6 +110,8 @@ export default function LeadsDashboard() {
               backgroundColor: tab === k ? colors.bg : 'transparent',
             }}
             data-testid={`leads-tab-${k}`}
+            testID={`leads-tab-${k}`}
+            dataSet={{ testid: `leads-tab-${k}` } as any}
           >
             <Ionicons name={icon as any} size={15} color={tab === k ? colors.text : colors.textSecondary} />
             <Text style={{ fontSize: 14, fontWeight: '600', color: tab === k ? colors.text : colors.textSecondary }} numberOfLines={1}>{label}</Text>
@@ -128,6 +130,8 @@ export default function LeadsDashboard() {
                 style={{ paddingHorizontal: 14, height: 32, borderRadius: 16, justifyContent: 'center', backgroundColor: active ? ACCENT : colors.card }}
                 onPress={() => setStatusFilter(f.key)}
                 data-testid={`leads-filter-${f.key}`}
+                testID={`leads-filter-${f.key}`}
+                dataSet={{ testid: `leads-filter-${f.key}` } as any}
               >
                 <Text style={{ fontSize: 13, fontWeight: '600', color: active ? '#FFF' : colors.textSecondary }} numberOfLines={1}>{f.label}</Text>
               </TouchableOpacity>
@@ -144,6 +148,8 @@ export default function LeadsDashboard() {
                 style={{ paddingHorizontal: 14, height: 32, borderRadius: 16, justifyContent: 'center', backgroundColor: active ? ACCENT : colors.card }}
                 onPress={() => setRoiDays(d)}
                 data-testid={`roi-days-${d}`}
+                testID={`roi-days-${d}`}
+                dataSet={{ testid: `roi-days-${d}` } as any}
               >
                 <Text style={{ fontSize: 13, fontWeight: '600', color: active ? '#FFF' : colors.textSecondary }}>{d === 365 ? '1 Year' : `${d} Days`}</Text>
               </TouchableOpacity>
@@ -182,6 +188,8 @@ export default function LeadsDashboard() {
                     onPress={() => l.conversation_id && router.push(`/thread/${l.conversation_id}` as any)}
                     activeOpacity={0.7}
                     data-testid={`lead-card-${l.id}`}
+                    testID={`lead-card-${l.id}`}
+                    dataSet={{ testid: `lead-card-${l.id}` } as any}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, flex: 1 }} numberOfLines={1}>{l.full_name || 'Unknown'}</Text>
@@ -195,7 +203,7 @@ export default function LeadsDashboard() {
                         <Text style={{ fontSize: 11, fontWeight: '700', color: st.color }}>{st.label}</Text>
                       </View>
                       {l.first_response_seconds != null && (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: `${speedColor(l.first_response_seconds)}18`, paddingVertical: 3, paddingHorizontal: 8, borderRadius: 6 }} data-testid={`lead-speed-badge-${l.id}`}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: `${speedColor(l.first_response_seconds)}18`, paddingVertical: 3, paddingHorizontal: 8, borderRadius: 6 }} data-testid={`lead-speed-badge-${l.id}`} testID={`lead-speed-badge-${l.id}`} dataSet={{ testid: `lead-speed-badge-${l.id}` } as any}>
                           <Ionicons name="flash" size={10} color={speedColor(l.first_response_seconds)} />
                           <Text style={{ fontSize: 11, fontWeight: '700', color: speedColor(l.first_response_seconds) }}>Replied in {fmtDuration(l.first_response_seconds)}</Text>
                         </View>
@@ -245,7 +253,7 @@ export default function LeadsDashboard() {
             ) : (
               <>
                 {/* Overall stats */}
-                <View style={{ flexDirection: 'row', gap: 8 }} data-testid="speed-overall-stats">
+                <View style={{ flexDirection: 'row', gap: 8 }} testID="speed-overall-stats" dataSet={{ testid: 'speed-overall-stats' }}>
                   {[
                     { label: 'TEAM AVG', val: fmtDuration(speed.overall.avg_seconds), color: speed.overall.avg_seconds != null ? speedColor(speed.overall.avg_seconds) : colors.text },
                     { label: 'MEASURED', val: String(speed.overall.measured), color: '#007AFF' },
@@ -270,7 +278,7 @@ export default function LeadsDashboard() {
                   const rankColors = ['#C9A962', '#A8A8A8', '#CD7F32'];
                   const rankColor = rankColors[i] || colors.textSecondary;
                   return (
-                    <View key={r.user_id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 12, padding: 14 }} data-testid={`speed-rep-${r.user_id}`}>
+                    <View key={r.user_id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 12, padding: 14 }} testID={`speed-rep-${r.user_id}`} dataSet={{ testid: `speed-rep-${r.user_id}` }}>
                       <View style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: `${rankColor}22` }}>
                         <Text style={{ fontSize: 14, fontWeight: '800', color: rankColor }}>{i + 1}</Text>
                       </View>
@@ -316,7 +324,7 @@ export default function LeadsDashboard() {
                 </View>
 
                 {roi.sources.map((s: any) => (
-                  <View key={s.source_name} style={{ backgroundColor: colors.card, borderRadius: 12, padding: 14 }} data-testid={`roi-source-${s.source_name}`}>
+                  <View key={s.source_name} style={{ backgroundColor: colors.card, borderRadius: 12, padding: 14 }} data-testid={`roi-source-${s.source_name}`} testID={`roi-source-${s.source_name}`} dataSet={{ testid: `roi-source-${s.source_name}` } as any}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                       <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text, flex: 1 }} numberOfLines={1}>{s.source_name}</Text>
                       <Text style={{ fontSize: 13, color: colors.textSecondary }}>{s.leads} lead{s.leads !== 1 ? 's' : ''}</Text>

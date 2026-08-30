@@ -199,8 +199,8 @@ export const MessageBubble = ({
           {/* Show image icon if media exists but no text content */}
           {hasMedia && !item.content && (
             <View style={styles.mediaOnlyIndicator}>
-              <Ionicons name="image" size={14} color={isUser ? '#fff' : colors.textSecondary} />
-              <Text style={[styles.mediaOnlyText, { color: isUser ? '#fff' : colors.contactBubbleText }]}>Photo</Text>
+              <Ionicons name="image" size={14} color={isUser ? colors.userBubbleText : colors.textSecondary} />
+              <Text style={[styles.mediaOnlyText, { color: isUser ? colors.userBubbleText : colors.contactBubbleText }]}>Photo</Text>
             </View>
           )}
 

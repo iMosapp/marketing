@@ -47,7 +47,7 @@ const COLORS = {
   background: '#000000',
   surface: '#2C2C2E',   // Darker gray for contact bubbles (was #1C1C1E — too close to bg)
   elevated: '#3A3A3C',
-  accent: '#007AFF',
+  accent: '#C9A962',
   textPrimary: '#FFFFFF',
   textSecondary: '#8E8E93',
   textTertiary: '#636366',
@@ -148,24 +148,24 @@ function ThreadScreen() {
     background: themeColors.bg,
     surface: themeColors.card,
     elevated: themeColors.surface || themeColors.card,
-    accent: '#007AFF',
+    accent: '#C9A962',
     text: themeColors.text,
     textPrimary: themeColors.text,
     textSecondary: themeColors.textSecondary,
     textTertiary: themeColors.textTertiary || '#8E8E93',
     border: themeColors.border,
-    userBubbleBg: '#007AFF',          // Solid blue — visible on white bg
-    userBubbleBorder: '#007AFF',
-    userBubbleText: '#FFFFFF',        // Always white text on blue bubble
+    userBubbleBg: '#C9A962',          // Gold — brand accent on white bg
+    userBubbleBorder: '#C9A962',
+    userBubbleText: '#000000',        // Black text on gold bubble
     contactBubbleBg: '#E5E5EA',       // Light gray — visible on #F2F2F7 bg
     contactBubbleBorder: '#D1D1D6',
     contactBubbleText: '#000000',     // Black text on light gray
   } : {
     ...COLORS,
     text: '#FFFFFF',
-    userBubbleBg: '#007AFF',          // Solid blue — visible on black bg
-    userBubbleBorder: '#007AFF',
-    userBubbleText: '#FFFFFF',        // White text on blue
+    userBubbleBg: '#C9A962',          // Gold — brand accent on black bg
+    userBubbleBorder: '#C9A962',
+    userBubbleText: '#000000',        // Black text on gold
     contactBubbleBg: '#2C2C2E',       // Dark gray — visible on black bg
     contactBubbleBorder: '#38383A',
     contactBubbleText: '#FFFFFF',     // White text on dark gray
@@ -1999,8 +1999,8 @@ function ThreadScreen() {
             cachePolicy="memory-disk"
           />
         ) : (
-          <View style={[styles.headerAvatarPlaceholder, { backgroundColor: colors.accent }]}>
-            <Text style={styles.headerAvatarText}>
+          <View style={[styles.headerAvatarPlaceholder, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.headerAvatarText, { color: '#C9A962' }]}>
               {contactName.split(' ').map(n => n[0] || '').join('').toUpperCase().slice(0, 2) || '?'}
             </Text>
           </View>
@@ -2043,17 +2043,17 @@ function ThreadScreen() {
                 showSimpleAlert('No Phone', 'No phone number for this contact.');
               }
             }}
-            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#007AFF', alignItems: 'center', justifyContent: 'center' }}
+            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' }}
             data-testid="thread-call-btn"
           >
-            <Ionicons name="call" size={17} color="#fff" />
+            <Ionicons name="call" size={17} color="#C9A962" />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={isThreadRecording ? stopThreadVoiceNote : startThreadVoiceNote}
-            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: isThreadRecording ? '#FF3B30' : '#34C759', alignItems: 'center', justifyContent: 'center' }}
+            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: isThreadRecording ? '#FF3B30' : colors.surface, alignItems: 'center', justifyContent: 'center' }}
             data-testid="thread-mic-btn"
           >
-            <Ionicons name={isThreadRecording ? 'stop' : 'mic'} size={17} color="#fff" />
+            <Ionicons name={isThreadRecording ? 'stop' : 'mic'} size={17} color={isThreadRecording ? '#fff' : '#C9A962'} />
           </TouchableOpacity>
         </View>
 
@@ -2128,8 +2128,8 @@ function ThreadScreen() {
             onPress={() => { setShowEmailPrompt(false); setPromptEmail(''); setMessageMode('sms'); AsyncStorage.setItem('message_mode', 'sms'); }} 
             data-testid="email-prompt-close"
           >
-            <Ionicons name="chatbubble-outline" size={14} color="#007AFF" />
-            <Text style={{ color: '#007AFF', fontSize: 15, fontWeight: '600' }}>SMS</Text>
+            <Ionicons name="chatbubble-outline" size={14} color="#34C759" />
+            <Text style={{ color: '#34C759', fontSize: 15, fontWeight: '600' }}>SMS</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -2177,7 +2177,7 @@ function ThreadScreen() {
                   role="button"
                   data-testid="thread-intel-refresh"
                 >
-                  <Ionicons name="refresh" size={14} color="#007AFF" />
+                  <Ionicons name="refresh" size={14} color="#C9A962" />
                   <Text style={styles.intelRefreshText}>Refresh</Text>
                 </Pressable>
               </View>
@@ -2314,16 +2314,16 @@ function ThreadScreen() {
               }
             }
           }}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#007AFF12', borderTopWidth: 1, borderTopColor: '#007AFF30', paddingHorizontal: 16, paddingVertical: 10 }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#C9A96212', borderTopWidth: 1, borderTopColor: '#C9A96230', paddingHorizontal: 16, paddingVertical: 10 }}
           activeOpacity={0.75}
           data-testid="takeover-jessi-thread-btn"
         >
-          <Ionicons name="sparkles" size={15} color="#007AFF" />
-          <Text style={{ fontSize: 13, color: '#007AFF', fontWeight: '600', flex: 1 }}>
+          <Ionicons name="sparkles" size={15} color="#C9A962" />
+          <Text style={{ fontSize: 13, color: '#C9A962', fontWeight: '600', flex: 1 }}>
             {aiMode === 'auto_reply' ? 'Jessi is handling this' : 'AI in assist mode'}
           </Text>
-          <View style={{ backgroundColor: '#007AFF', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 }}>
-            <Text style={{ fontSize: 12, fontWeight: '800', color: '#fff' }}>Take Over</Text>
+          <View style={{ backgroundColor: '#C9A962', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 }}>
+            <Text style={{ fontSize: 12, fontWeight: '800', color: '#000' }}>Take Over</Text>
           </View>
         </TouchableOpacity>
       )}
@@ -2480,7 +2480,7 @@ function ThreadScreen() {
                     borderRadius: 18,
                     backgroundColor: (message.trim() || selectedMedia) && !sending && !sendingMedia 
                       ? (messageMode === 'sms' 
-                          ? (((user as any)?.mvpline_number || (user as any)?.twilio_number) ? '#007AFF' : '#FF9500') 
+                          ? (((user as any)?.mvpline_number || (user as any)?.twilio_number) ? '#C9A962' : '#FF9500') 
                           : '#34C759') 
                       : colors.borderLight,
                     border: 'none',
@@ -2498,7 +2498,7 @@ function ThreadScreen() {
                         ? (((user as any)?.mvpline_number || (user as any)?.twilio_number) ? 'send' : 'open-outline') 
                         : 'mail'}
                       size={18}
-                      color={(message.trim() || selectedMedia) ? '#FFF' : '#6E6E73'}
+                      color={(message.trim() || selectedMedia) ? '#000' : '#6E6E73'}
                     />
                   )}
                 </button>
@@ -2507,7 +2507,7 @@ function ThreadScreen() {
                   style={[
                     styles.composerSendButton, 
                     { backgroundColor: messageMode === 'sms' 
-                        ? (((user as any)?.mvpline_number || (user as any)?.twilio_number) ? '#007AFF' : '#FF9500') 
+                        ? (((user as any)?.mvpline_number || (user as any)?.twilio_number) ? '#C9A962' : '#FF9500') 
                         : '#34C759' },
                     ((!message.trim() && !selectedMedia) || sending || sendingMedia) && styles.composerSendButtonDisabled
                   ]}
@@ -2522,7 +2522,7 @@ function ThreadScreen() {
                         ? (((user as any)?.mvpline_number || (user as any)?.twilio_number) ? 'send' : 'open-outline') 
                         : 'mail'}
                       size={18}
-                      color={(message.trim() || selectedMedia) ? '#FFF' : '#6E6E73'}
+                      color={(message.trim() || selectedMedia) ? '#000' : '#6E6E73'}
                     />
                   )}
                 </TouchableOpacity>
@@ -3524,7 +3524,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   intelRefreshText: {
     fontSize: 14,
-    color: '#007AFF',
+    color: '#C9A962',
     fontWeight: '600' as const,
   },
   intelEmptyText: {

@@ -1381,6 +1381,29 @@ async def lead_response_times(
     }
 
 
+@router.get("/awaiting/{user_id}")
+async def awaiting_leads(user_id: str):
+    """Speed-to-lead: this rep's internet leads still waiting on a first human reply."""
+    db = get_db()
+    convs = await db.conversations.find(
+        {"user_id": user_id, "is_internet_lead": True, "status": "active"},
+        {"contact_name": 1, "created_at": 1},
+    ).sort("created_at", 1).limit(50).to_list(50)
+    for c in convs:
+        c["_id"] = str(c["_id"])
+    replied = await _first_human_replies(db, [c["_id"] for c in convs])
+    waiting = [c for c in convs if c["_id"] not in replied]
+    oldest = waiting[0] if waiting else None
+    return {
+        "count": len(waiting),
+        "oldest": {
+            "conversation_id": oldest["_id"],
+            "contact_name": oldest.get("contact_name"),
+            "received_at": oldest["created_at"].isoformat() if isinstance(oldest.get("created_at"), datetime) else oldest.get("created_at"),
+        } if oldest else None,
+    }
+
+
 # ── Monthly ROI email ─────────────────────────────────────────────────────────
 
 _DEFAULT_ROI_RECIPIENT = os.environ.get("ADMIN_EMAIL", "forest@imosapp.com")
