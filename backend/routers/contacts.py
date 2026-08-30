@@ -1213,6 +1213,27 @@ async def re_extract_intelligence(user_id: str, contact_id: str):
     return {"message": f"Re-extracted intelligence from {count} voice notes", "extracted": count}
 
 
+@router.patch("/{user_id}/{contact_id}/birthday")
+async def set_contact_birthday(user_id: str, contact_id: str, data: dict = Body(...)):
+    """Lightweight birthday set/clear — stores a BSON date so the Birthdays smart list works."""
+    db = get_db()
+    raw = data.get("birthday")
+    if raw:
+        try:
+            bday = datetime.strptime(str(raw)[:10], "%Y-%m-%d")
+        except ValueError:
+            raise HTTPException(status_code=400, detail="birthday must be YYYY-MM-DD")
+    else:
+        bday = None
+    result = await db.contacts.update_one(
+        {"_id": ObjectId(contact_id), "user_id": user_id},
+        {"$set": {"birthday": bday, "updated_at": datetime.utcnow()}},
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    return {"success": True, "birthday": bday.isoformat() if bday else None}
+
+
 @router.patch("/{user_id}/{contact_id}/tags")
 async def update_contact_tags(user_id: str, contact_id: str, data: dict = Body(...)):
     """Update tags on a contact without requiring the full contact payload."""

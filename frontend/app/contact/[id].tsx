@@ -2722,6 +2722,7 @@ function ContactDetailScreen() {
               s={s}
               colors={colors}
               contact={contact}
+              reloadContact={loadContact}
               contactId={id as string}
               userId={user?._id || ''}
               isNewContact={isNewContact}

@@ -24,6 +24,17 @@ function getStatus(tags: string[]): string | null {
   return null;
 }
 
+export function daysUntilBirthday(birthday?: string | null): number | null {
+  if (!birthday) return null;
+  const b = new Date(birthday);
+  if (isNaN(b.getTime())) return null;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const next = new Date(now.getFullYear(), b.getUTCMonth(), b.getUTCDate());
+  if (next < today) next.setFullYear(next.getFullYear() + 1);
+  return Math.round((next.getTime() - today.getTime()) / 86400000);
+}
+
 function timeAgoLabel(daysAgo: number | null): string | null {
   if (daysAgo === null) return null;
   if (daysAgo === 0) return 'Today';
@@ -162,6 +173,28 @@ function ContactRowInner({
           </Text>
         ) : null}
       </View>
+
+      {/* Birthday chip (within 30 days) */}
+      {(() => {
+        const bd = daysUntilBirthday(item.birthday);
+        if (bd === null || bd > 30) return null;
+        return (
+          <View
+            style={{
+              flexDirection: 'row', alignItems: 'center', gap: 3,
+              backgroundColor: '#AF52DE22', borderRadius: 8,
+              paddingHorizontal: 7, paddingVertical: 3, marginRight: 6,
+            }}
+            testID={`bday-chip-${item._id}`}
+            dataSet={{ testid: `bday-chip-${item._id}` }}
+          >
+            <Ionicons name="gift" size={10} color="#AF52DE" />
+            <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 10.5, fontWeight: '800', color: '#AF52DE' }}>
+              {bd === 0 ? 'Today!' : `${bd}d`}
+            </Text>
+          </View>
+        );
+      })()}
 
       {/* Status pill */}
       {status && (

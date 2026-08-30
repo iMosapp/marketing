@@ -2,15 +2,79 @@
  * DetailsTab — voice memos, personal intel, purchases, dates, referrals & campaigns.
  * Extracted from contact/[id].tsx (render-only; all state lives in the parent).
  */
-import React from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Switch } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ActivityIndicator, Switch, Modal, Platform } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { formatEventTime } from '../../utils/contactHelpers';
+import { contactsAPI } from '../../services/api';
 import PersonalIntelSection from '../PersonalIntelSection';
 import PurchaseHistorySection from './PurchaseHistorySection';
 import CrmPushSection from './CrmPushSection';
+
+function BirthdayModal({ visible, onClose, onSave, current, s, colors, saving }: any) {
+  const [dateStr, setDateStr] = useState('');
+  useEffect(() => {
+    if (visible) setDateStr(current ? new Date(current).toISOString().split('T')[0] : '');
+  }, [visible, current]);
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <TouchableOpacity style={s.labelOverlay} activeOpacity={1} onPress={onClose}>
+        <TouchableOpacity activeOpacity={1} style={s.labelModal} onPress={() => {}}>
+          <Text maxFontSizeMultiplier={1.0} style={s.labelTitle}>{current ? 'Edit Birthday' : 'Add Birthday'}</Text>
+          <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 13, color: '#8E8E93', marginTop: 2, marginBottom: 8 }}>
+            Powers the Birthdays smart list + automatic birthday texts
+          </Text>
+          {Platform.OS === 'web' ? (
+            <input
+              type="date"
+              value={dateStr}
+              onChange={(e: any) => setDateStr(e.target.value)}
+              style={{
+                width: '100%', padding: 12, borderRadius: 10,
+                backgroundColor: colors.surface, color: colors.text, border: '1px solid #3A3A3C',
+                fontSize: 17, marginBottom: 12, marginTop: 4,
+              }}
+              data-testid="birthday-date-input"
+            />
+          ) : (
+            <DateTimePicker
+              value={dateStr ? new Date(dateStr + 'T12:00:00') : new Date(1990, 0, 1)}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={(_: any, d?: Date) => { if (d) setDateStr(d.toISOString().split('T')[0]); }}
+              style={{ height: 150, marginVertical: 8 }}
+            />
+          )}
+          <View style={{ flexDirection: 'row', gap: 12, marginTop: 4 }}>
+            {current ? (
+              <TouchableOpacity
+                style={[s.labelBtn, { backgroundColor: colors.surface }]}
+                onPress={() => onSave(null)}
+                disabled={saving}
+                testID="birthday-clear-btn"
+                dataSet={{ testid: 'birthday-clear-btn' }}
+              >
+                <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 16, fontWeight: '600', color: '#FF3B30' }}>Clear</Text>
+              </TouchableOpacity>
+            ) : null}
+            <TouchableOpacity
+              style={[s.labelBtn, { backgroundColor: dateStr ? '#FF9500' : 'rgba(128,128,128,0.3)' }]}
+              onPress={() => dateStr && onSave(dateStr)}
+              disabled={saving || !dateStr}
+              testID="birthday-save-btn"
+              dataSet={{ testid: 'birthday-save-btn' }}
+            >
+              <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 16, fontWeight: '700', color: '#000' }}>{saving ? 'Saving...' : 'Save'}</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+  );
+}
 
 export default function DetailsTab(props: any) {
   const {
@@ -18,9 +82,21 @@ export default function DetailsTab(props: any) {
     voiceNotes, voiceNotesLoading, isRecording, recordingTime, uploadingVoiceNote,
     playingNoteId, showAllNotes, startRecording, stopRecording, playVoiceNote,
     deleteVoiceNote, formatRecordingTime, maxRecordingSeconds,
-    referrals, contactEnrollments, toggleDateOptin,
+    referrals, contactEnrollments, toggleDateOptin, reloadContact,
   } = props;
   const router = useRouter();
+  const [bdayModalOpen, setBdayModalOpen] = useState(false);
+  const [savingBday, setSavingBday] = useState(false);
+
+  const saveBirthday = async (dateStr: string | null) => {
+    setSavingBday(true);
+    try {
+      await contactsAPI.updateBirthday(userId, contactId, dateStr);
+      setBdayModalOpen(false);
+      reloadContact?.();
+    } catch {}
+    setSavingBday(false);
+  };
 
   return (
     <>
@@ -131,15 +207,29 @@ export default function DetailsTab(props: any) {
       ) : null}
 
       {/* Important Dates */}
-      {(contact.birthday || contact.anniversary || contact.date_sold || contact.custom_dates.length > 0) && (
-        <View style={s.section}>
+      <View style={s.section}>
           <Text style={s.sectionHeader}>Important Dates</Text>
-          {contact.birthday && (
-            <View style={s.viewRow}>
+          {contact.birthday ? (
+            <TouchableOpacity style={s.viewRow} onPress={() => setBdayModalOpen(true)} testID="birthday-row" dataSet={{ testid: 'birthday-row' }}>
               <Ionicons name="gift" size={16} color="#FF9500" />
               <Text style={s.viewRowLabel}>Birthday</Text>
               <Text style={s.viewRowValue}>{format(contact.birthday, 'MMM d, yyyy')}</Text>
-            </View>
+              <Ionicons name="pencil" size={12} color="#8E8E93" style={{ marginLeft: 6 }} />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8 }}
+              onPress={() => setBdayModalOpen(true)}
+              testID="add-birthday-btn"
+              dataSet={{ testid: 'add-birthday-btn' }}
+            >
+              <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: '#FF950022', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="gift" size={14} color="#FF9500" />
+              </View>
+              <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 15, fontWeight: '600', color: '#FF9500' }}>Add birthday</Text>
+              <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 12, color: '#8E8E93', flex: 1 }} numberOfLines={1}>unlocks auto birthday texts</Text>
+              <Ionicons name="chevron-forward" size={14} color="#8E8E93" />
+            </TouchableOpacity>
           )}
           {contact.anniversary && (
             <View style={s.viewRow}>
@@ -210,7 +300,16 @@ export default function DetailsTab(props: any) {
             );
           })()}
         </View>
-      )}
+
+      <BirthdayModal
+        visible={bdayModalOpen}
+        onClose={() => setBdayModalOpen(false)}
+        onSave={saveBirthday}
+        current={contact.birthday}
+        s={s}
+        colors={colors}
+        saving={savingBday}
+      />
 
       {/* Push to CRM as ADF/XML lead */}
       {!isNewContact && (

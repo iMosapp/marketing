@@ -24,7 +24,7 @@ import api from '../../services/api';
 import { showSimpleAlert, showConfirm } from '../../services/alert';
 import { SmartListBar } from '../../components/contacts/SmartListBar';
 import { ContactFilterSheet } from '../../components/contacts/ContactFilterSheet';
-import { ContactRow } from '../../components/contacts/ContactRow';
+import { ContactRow, daysUntilBirthday } from '../../components/contacts/ContactRow';
 import { DraftMessageSheet } from '../../components/DraftMessageSheet';
 
 const GOLD = '#C9A962';
@@ -328,8 +328,15 @@ export default function ContactsScreen() {
 
   const handleDraft = useCallback((item: any) => {
     const t: string[] = item.tags || [];
-    const reason = t.includes('hot') ? 'warm_lead' : t.includes('sold') ? 'purchase_followup' : 'cooling_down';
-    const reasonLabel = reason === 'warm_lead' ? 'Warm lead reach-out' : reason === 'purchase_followup' ? 'Purchase follow-up' : 'Quick check-in';
+    const bd = daysUntilBirthday(item.birthday);
+    const reason = (bd !== null && bd <= 30) ? 'birthday'
+      : t.includes('hot') ? 'warm_lead'
+      : t.includes('sold') ? 'purchase_followup'
+      : 'cooling_down';
+    const reasonLabel = reason === 'birthday' ? (bd === 0 ? 'Birthday today!' : `Birthday in ${bd} day${bd === 1 ? '' : 's'}`)
+      : reason === 'warm_lead' ? 'Warm lead reach-out'
+      : reason === 'purchase_followup' ? 'Purchase follow-up'
+      : 'Quick check-in';
     setDraftItem({
       contact_id: item._id,
       first_name: item.first_name,
@@ -337,8 +344,8 @@ export default function ContactsScreen() {
       phone: item.phone,
       reason_key: reason,
       reason_label: reasonLabel,
-      icon: 'sparkles',
-      color: GOLD,
+      icon: reason === 'birthday' ? 'gift' : 'sparkles',
+      color: reason === 'birthday' ? '#AF52DE' : GOLD,
     });
   }, []);
 

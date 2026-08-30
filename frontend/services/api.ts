@@ -286,6 +286,11 @@ export const contactsAPI = {
     return response.data;
   },
 
+  updateBirthday: async (userId: string, contactId: string, birthday: string | null) => {
+    const response = await api.patch(`/contacts/${userId}/${contactId}/birthday`, { birthday });
+    return response.data;
+  },
+
   getById: async (userId: string, contactId: string) => {
     const response = await api.get(`/contacts/${userId}/${contactId}`);
     return response.data;
