@@ -32,6 +32,7 @@ import ChannelPicker, { useChannelPicker } from '../../components/ChannelPicker'
 import { CallLogCard } from '../../components/thread/CallLogCard';
 import { MessageBubble } from '../../components/thread/MessageBubble';
 import { ThreadSearchBar } from '../../components/thread/ThreadSearchBar';
+import { LeadWaitBanner } from '../../components/LeadWaitTimer';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { messagesAPI, templatesAPI, emailAPI } from '../../services/api';
@@ -578,6 +579,9 @@ function ThreadScreen() {
     }
   };
   
+  // Speed-to-lead: banner shown while an internet lead awaits its first human reply
+  const [leadWait, setLeadWait] = useState<any>(null);
+
   // Ensure we have a conversation (create if needed)
   const ensureConversation = async () => {
     if (!id || !user?._id) return;
@@ -601,7 +605,12 @@ function ThreadScreen() {
       } else if (convInfo?.data?.ai_enabled === false) {
         setAiMode('off');
       }
-      
+
+      // Speed-to-lead: unanswered internet lead → show waiting banner
+      if (convInfo?.data?.is_internet_lead && convInfo.data.awaiting_first_reply) {
+        setLeadWait({ receivedAt: convInfo.data.lead_received_at, sourceName: convInfo.data.lead_source_name });
+      }
+
       // Auto-mark as read when opening a conversation
       try { await messagesAPI.markAsRead(id as string); } catch {}
       
@@ -963,6 +972,7 @@ function ThreadScreen() {
         try {
           await api.post(`/messages/send/${user._id}/${convId}`, messagePayload);
           eventLogged = true;
+          setLeadWait(null);
         } catch (e) {
           console.error('Messages send failed, will use fallback:', e);
         }
@@ -1096,6 +1106,7 @@ function ThreadScreen() {
       } else {
         // Sent successfully — complete the linked touchpoint if we came from one
         completeLinkedTask();
+        setLeadWait(null);
       }
       
       // Clear template info after sending
@@ -2065,7 +2076,10 @@ function ThreadScreen() {
         />
       )}
       
-      {/* Mode banner removed — more room for messages */}
+      {/* Speed-to-lead: unanswered internet lead banner */}
+      {leadWait && conversationStatus !== 'closed' && (
+        <LeadWaitBanner receivedAt={leadWait.receivedAt} sourceName={leadWait.sourceName} />
+      )}
       
       {/* Inline Email Prompt */}
       {showEmailPrompt && (

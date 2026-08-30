@@ -34,6 +34,7 @@ import { useContactSearch } from '../../hooks/useContactSearch';
 import SwipeableConversationItem from '../../components/SwipeableConversationItem';
 import WebSwipeableItem, { wasRecentSwipe } from '../../components/WebSwipeableItem';
 import AppointmentModal from '../../components/AppointmentModal';
+import { LeadWaitChip } from '../../components/LeadWaitTimer';
 import { useToast } from '../../components/common/Toast';
 
 const IS_WEB = Platform.OS === 'web';
@@ -1028,6 +1029,9 @@ export default function InboxScreen() {
                   <Ionicons name="flame" size={11} color="#FF3B30" />
                   <Text style={{ fontSize: 10, fontWeight: '800', color: '#FF3B30', letterSpacing: 0.3 }}>HOT</Text>
                 </View>
+              )}
+              {item.is_internet_lead && item.awaiting_first_reply && item.status !== 'closed' && (
+                <LeadWaitChip receivedAt={item.created_at} />
               )}
               {hasAiOutcome && !isAcknowledged && (
                 <View style={[styles.aiOutcomeTag, { backgroundColor: aiOutcome.bgColor }]}>

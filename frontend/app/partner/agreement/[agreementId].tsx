@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from '../../../services/api';
 import { useToast } from '../../../components/common/Toast';
-import { showAlert } from '../../../services/alert';
+import { showAlert, showSimpleAlert } from '../../../services/alert';
 
 export default function PartnerAgreementSigningPage() {
   const { agreementId, payment, session_id } = useLocalSearchParams();

@@ -239,6 +239,15 @@ async def get_conversations(user_id: str, personal_only: bool = True):
             last_msg_map[key]       = entry
             last_msg_map[str(key)]  = entry
     
+    # Speed-to-lead: flag internet-lead conversations still waiting on a human reply
+    lead_conv_ids = [c['_id'] for c in conversations if c.get('is_internet_lead')]
+    if lead_conv_ids:
+        from routers.lead_intake import _first_human_replies
+        replied = await _first_human_replies(db, lead_conv_ids)
+        for conv in conversations:
+            if conv.get('is_internet_lead'):
+                conv['awaiting_first_reply'] = conv['_id'] not in replied
+
     # Assemble results
     result = []
     for conv in conversations:
@@ -1646,6 +1655,16 @@ async def get_conversation_info(conversation_id: str):
         "ai_mode":    stored_ai_mode,
         "ai_enabled": stored_ai_enabled,
     }
+
+    # Speed-to-lead: waiting status for internet leads
+    if conv.get("is_internet_lead"):
+        from routers.lead_intake import _first_human_replies
+        replied = await _first_human_replies(db, [str(conv["_id"])])
+        ca = conv.get("created_at")
+        result["is_internet_lead"] = True
+        result["awaiting_first_reply"] = str(conv["_id"]) not in replied
+        result["lead_received_at"] = ca.isoformat() if hasattr(ca, "isoformat") else ca
+        result["lead_source_name"] = conv.get("lead_source_name")
 
     # ── Resolve best contact name + photo + email ──────────────────────────────
     contact_id = conv.get("contact_id")
