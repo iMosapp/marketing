@@ -42,7 +42,7 @@ export default function ContactsScreen() {
   const styles = getStyles(colors);
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
-  const { tag: tagParam } = useLocalSearchParams<{ tag?: string }>();
+  const { tag: tagParam, smart: smartParam } = useLocalSearchParams<{ tag?: string; smart?: string }>();
 
   const [search, setSearch] = useState('');
   const [contacts, setContacts] = useState<any[]>([]);
@@ -60,8 +60,12 @@ export default function ContactsScreen() {
   const PAGE_SIZE = 50;
 
   // Smart lists
-  const [smartList, setSmartList] = useState<string | null>(null);
+  const [smartList, setSmartList] = useState<string | null>(smartParam || null);
   const [smartCounts, setSmartCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (smartParam) setSmartList(smartParam);
+  }, [smartParam]);
 
   // Filter sheet
   const [filterOpen, setFilterOpen] = useState(false);

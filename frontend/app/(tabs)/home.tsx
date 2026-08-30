@@ -1,5 +1,5 @@
 import { ScreenErrorBoundary } from '../../components/ScreenErrorBoundary';
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -25,6 +25,8 @@ import { showSimpleAlert } from '../../services/alert';
 import { NotificationBell } from '../../components/notifications/NotificationBell';
 import { UniversalShareModal } from '../../components/UniversalShareModal';
 import { DraftMessageSheet } from '../../components/DraftMessageSheet';
+import { HomeSmartBar } from '../../components/home/HomeSmartBar';
+import { QuickActionsFab } from '../../components/home/QuickActionsFab';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -376,6 +378,16 @@ function HomeScreen() {
   const [loadingMy3, setLoadingMy3] = useState(false);
   const [soldPerf, setSoldPerf] = useState<any>(null);
   const [hotOpps, setHotOpps] = useState<any[]>([]);
+  const [hotContactCount, setHotContactCount] = useState<number | null>(null);
+  const scrollRef = useRef<any>(null);
+  const my3Y = useRef(0);
+
+  useEffect(() => {
+    if (!user?._id) return;
+    contactsAPI.getSmartLists(user._id)
+      .then((d: any) => setHotContactCount(d.hot ?? 0))
+      .catch(() => {});
+  }, [user?._id]);
 
   // Modals
   const [showSharePicker, setShowSharePicker] = useState(false);
@@ -732,15 +744,6 @@ function HomeScreen() {
     return map[type] || { icon: 'ellipse', color: colors.textSecondary };
   };
 
-  const TILES = [
-    { key: 'sold',        icon: 'trophy',     label: 'SOLD!',       sublabel: 'Snap the moment & start campaign', color: '#C9A962', onPress: () => router.push('/sold-quick' as any) },
-    { key: 'send-photo',  icon: 'camera',     label: 'Send Photo',  sublabel: 'Snap & text a photo — no sale needed', color: '#32ADE6', onPress: () => router.push('/quick-send/photo' as any) },
-    { key: 'review',      icon: 'star',       label: 'Review',      sublabel: 'Ask for a 5-star review',          color: '#FF9500', onPress: () => router.push('/quick-send/review' as any) },
-    { key: 'card',        icon: 'card',       label: 'Card',        sublabel: 'Send your digital card',           color: '#007AFF', onPress: () => setShowSharePicker(true), onLongPress: openCardQR },
-    { key: 'voice-note',  icon: 'mic',        label: 'Voice Note',  sublabel: 'Record notes on a customer',       color: '#34C759', onPress: () => openActionPicker('voice', 'Voice Note — pick a person') },
-    { key: 'new-contact', icon: 'person-add', label: 'New Contact', sublabel: 'Add someone new',                  color: '#AF52DE', onPress: () => router.push('/contact/new' as any) },
-  ];
-
   // ── "What to send" draft sheet — full message + guidance before acting ──
   const [draftSheet, setDraftSheet] = useState<any>(null);
   const openDraftSheet = (item: any) => setDraftSheet(item);
@@ -797,8 +800,12 @@ function HomeScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <View style={{ width: 32 }} />
-        <Text style={[styles.userName, { color: colors.text }]}>Home</Text>
+        <View style={{ flex: 1 }}>
+          <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>
+            {(() => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; })()}{user?.first_name ? `, ${user.first_name}` : ''}
+          </Text>
+          <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 22, fontWeight: '800', color: colors.text }}>Home</Text>
+        </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <TouchableOpacity
             onPress={openCardQR}
@@ -839,13 +846,39 @@ function HomeScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {!initialLoaded && loadingTasks ? (
           <View style={{ flex: 1, paddingTop: 60, alignItems: 'center' }}>
             <ActivityIndicator size="large" color={colors.accent} />
           </View>
         ) : (
         <>
+
+        {/* ── SMART CARDS — same treatment as Contacts ── */}
+        <HomeSmartBar
+          items={[
+            {
+              key: 'today', label: 'Today', icon: 'checkbox', color: '#C9A962',
+              value: `${completedToday.size}/${my3.length || 3}`,
+              onPress: () => scrollRef.current?.scrollTo({ y: Math.max(my3Y.current - 8, 0), animated: true }),
+            },
+            {
+              key: 'overdue', label: 'Overdue', icon: 'time', color: '#FF453A',
+              value: taskSummary?.overdue || 0,
+              onPress: () => router.push('/(tabs)/touchpoints?period=today' as any),
+            },
+            {
+              key: 'hot', label: 'Hot Leads', icon: 'flame', color: '#FF9500',
+              value: hotContactCount ?? '—',
+              onPress: () => router.push({ pathname: '/(tabs)/contacts', params: { smart: 'hot' } } as any),
+            },
+            {
+              key: 'sold', label: 'Sold This Mo', icon: 'trophy', color: '#34C759',
+              value: soldPerf?.current_month?.total || 0,
+              onPress: () => router.push('/sales-list?type=sold' as any),
+            },
+          ]}
+        />
 
         {/* ── DO THIS NEXT — one clear action ─── */}
         <TouchableOpacity
@@ -876,56 +909,38 @@ function HomeScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* ── QUICK ACTIONS — 2×2 grid ─── */}
-        <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
-          {[[TILES[0], TILES[1]], [TILES[2], TILES[3]], [TILES[4], TILES[5]]].map((row, rowIdx) => (
-            <View key={rowIdx} style={{ flexDirection: 'row', gap: 10, marginBottom: rowIdx < 2 ? 10 : 0 }}>
-              {row.map(tile => (
-                <TouchableOpacity
-                  key={tile.key}
-                  onPress={tile.onPress}
-                  onLongPress={(tile as any).onLongPress}
-                  delayLongPress={350}
-                  activeOpacity={0.75}
-                  style={{
-                    flex: 1,
-                    backgroundColor: tile.color + '14',
-                    borderWidth: 1.5,
-                    borderColor: tile.color + '45',
-                    borderRadius: 18,
-                    padding: 16,
-                    minHeight: 108,
-                  }}
-                  data-testid={`quick-action-${tile.key}`}
-                >
-                  <View style={{
-                    width: 44, height: 44, borderRadius: 12,
-                    backgroundColor: tile.color + '22',
-                    alignItems: 'center', justifyContent: 'center',
-                    marginBottom: 10,
-                  }}>
-                    <Ionicons name={tile.icon as any} size={24} color={tile.color} />
-                  </View>
-                  <Text style={{ fontSize: 17, fontWeight: '800', color: colors.text, marginBottom: 3 }}>
-                    {tile.label}
-                  </Text>
-                  <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 16 }} numberOfLines={2}>
-                    {tile.sublabel}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+        {/* ── QUICK ACTIONS — compact row, SOLD! front and center ── */}
+        <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 16 }}>
+          {[
+            { key: 'sold', icon: 'trophy', label: 'SOLD!', color: '#C9A962', hero: true, onPress: () => router.push('/sold-quick' as any) },
+            { key: 'new-contact', icon: 'person-add', label: 'Contact', color: '#AF52DE', onPress: () => router.push('/contact/new' as any) },
+            { key: 'card', icon: 'card', label: 'Card', color: '#007AFF', onPress: () => setShowSharePicker(true) },
+            { key: 'review', icon: 'star', label: 'Review', color: '#FF9500', onPress: () => router.push('/quick-send/review' as any) },
+          ].map(t => (
+            <TouchableOpacity
+              key={t.key}
+              onPress={t.onPress}
+              activeOpacity={0.75}
+              style={{
+                flex: t.hero ? 1.25 : 1,
+                backgroundColor: t.color + (t.hero ? '20' : '12'),
+                borderWidth: 1.5,
+                borderColor: t.color + (t.hero ? '77' : '35'),
+                borderRadius: 14,
+                paddingVertical: 12,
+                alignItems: 'center',
+                gap: 5,
+              }}
+              testID={`quick-action-${t.key}`}
+              dataSet={{ testid: `quick-action-${t.key}` } as any}
+            >
+              <Ionicons name={t.icon as any} size={22} color={t.color} />
+              <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 12.5, fontWeight: '800', color: t.hero ? t.color : colors.text }}>
+                {t.label}
+              </Text>
+            </TouchableOpacity>
           ))}
         </View>
-        {/* ── MAKE A CALL BAR ── */}
-        <TouchableOpacity
-          onPress={() => router.push('/(tabs)/dialer' as any)}
-          style={{ marginHorizontal: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: colors.card, borderRadius: 14, paddingVertical: 13, borderWidth: 1, borderColor: colors.surface }}
-          data-testid="make-a-call-btn"
-        >
-          <Ionicons name="call-outline" size={20} color="#34C759" />
-          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Make a Call</Text>
-        </TouchableOpacity>
 
         {streak && (
           <TouchableOpacity
@@ -995,7 +1010,10 @@ function HomeScreen() {
         )}
 
         {/* ── MY 3 FOR TODAY ────────────────────────────── */}
-        <View style={{ marginHorizontal: 16, marginBottom: 20 }}>
+        <View
+          style={{ marginHorizontal: 16, marginBottom: 20 }}
+          onLayout={(e) => { my3Y.current = e.nativeEvent.layout.y; }}
+        >
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <View style={{ flex: 1, marginRight: 10 }}>
               <Text style={{ fontSize: 22, fontWeight: '800', color: colors.text }}>Your 3 for Today</Text>
@@ -1017,7 +1035,7 @@ function HomeScreen() {
           ) : my3.length === 0 ? (
             <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 24, alignItems: 'center', borderWidth: 1, borderColor: colors.border }}>
               <Ionicons name="checkmark-circle" size={40} color="#34C759" />
-              <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 10 }}>You're all caught up!</Text>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 10 }}>You&apos;re all caught up!</Text>
               <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 4, textAlign: 'center' }}>No one needs your attention right now.</Text>
             </View>
           ) : (
@@ -1128,7 +1146,7 @@ function HomeScreen() {
                   <Ionicons name="checkbox-outline" size={22} color={colors.accent} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>Today's Touchpoints</Text>
+                  <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>Today&apos;s Touchpoints</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 3 }}>
                     <View style={{ backgroundColor: 'rgba(201,169,98,0.12)', paddingVertical: 2, paddingHorizontal: 8, borderRadius: 6 }}>
                       <Text style={{ fontSize: 13, fontWeight: '700', color: colors.accent }}>{taskSummary?.pending_today || pendingTasks.length} pending</Text>
@@ -1168,7 +1186,7 @@ function HomeScreen() {
               <View style={{ height: '100%', backgroundColor: colors.accent, borderRadius: 5, width: `${taskSummary?.progress_pct || 0}%` }} />
             </View>
             <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginBottom: 4 }}>
-              {taskSummary?.completed_today || 0} of {taskSummary?.total_today || 0} today's touchpoints
+              {taskSummary?.completed_today || 0} of {taskSummary?.total_today || 0} today&apos;s touchpoints
             </Text>
             {(taskSummary?.overdue || 0) > 0 && (
               <Text style={{ fontSize: 13, color: '#FF9500', textAlign: 'center', marginBottom: 12, fontWeight: '600' }}>
@@ -1232,6 +1250,16 @@ function HomeScreen() {
         </>
         )}
       </ScrollView>
+
+      {/* ── Floating quick actions (secondary actions) ── */}
+      <QuickActionsFab
+        actions={[
+          { key: 'dates-calendar', icon: 'calendar', label: 'Dates Calendar', color: '#AF52DE', onPress: () => router.push('/dates-calendar' as any) },
+          { key: 'send-photo', icon: 'camera', label: 'Send Photo', color: '#32ADE6', onPress: () => router.push('/quick-send/photo' as any) },
+          { key: 'voice-note', icon: 'mic', label: 'Voice Note', color: '#34C759', onPress: () => openActionPicker('voice', 'Voice Note — pick a person') },
+          { key: 'make-call', icon: 'call', label: 'Make a Call', color: '#30B0C7', onPress: () => router.push('/(tabs)/dialer' as any) },
+        ]}
+      />
 
       {/* Asset Share Picker — tapping Card tile on home screen */}
       <Modal visible={showSharePicker} transparent animationType="slide" onRequestClose={() => setShowSharePicker(false)}>
