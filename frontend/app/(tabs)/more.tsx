@@ -631,6 +631,7 @@ export default function MoreScreen() {
     const canManageCampaigns = !repPreview && (user?.role === 'super_admin' || user?.role === 'org_admin');
     const manageItems: (MenuItem & { permKey?: string })[] = [
       { icon: 'pricetags',  title: 'Tags',       subtitle: 'All tags — personal, account & org', onPress: () => router.push('/settings/tags'),             color: '#FF9500' },
+      { icon: 'calendar',   title: 'Dates Calendar', subtitle: 'Birthdays, sold dates & anniversaries by month', onPress: () => router.push('/dates-calendar' as any), color: '#AF52DE' },
       { icon: 'pricetags-outline', title: 'Keyword Auto-Tags', subtitle: 'Auto-tag calls & texts by keywords', onPress: () => router.push('/settings/keyword-rules' as any), color: '#5856D6' },
       { icon: 'search-circle', title: 'Keyword Search', subtitle: 'Find any word in texts & call transcripts', onPress: () => router.push('/keyword-search' as any), color: '#32ADE6' },
       { icon: 'car-sport',  title: 'Inventory',  subtitle: 'Vehicles Jessi can quote & check',   onPress: () => router.push('/inventory' as any),          color: '#32ADE6' },
@@ -1318,7 +1319,7 @@ export default function MoreScreen() {
           <View style={{ marginTop: 4 }} data-testid="hub-search-results">
             {searchResults.length === 0 ? (
               <Text style={{ fontSize: 13, color: colors.textTertiary, textAlign: 'center', marginTop: 24 }}>
-                Nothing found for "{hubSearch.trim()}"
+                Nothing found for &quot;{hubSearch.trim()}&quot;
               </Text>
             ) : (
               searchResults.slice(0, 20).map((item, index) => renderMenuItem(item, index))
@@ -1684,7 +1685,7 @@ export default function MoreScreen() {
             </TouchableOpacity>
             <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 14, borderRadius: 10, gap: 10, marginBottom: 8 }} onPress={() => resolveReviewMatch('update_name')}>
               <Ionicons name="create" size={20} color="#007AFF" />
-              <Text style={{ fontSize: 17, color: colors.text, fontWeight: '500', flex: 1 }}>Update to "{matchInfo.provided_name}"</Text>
+              <Text style={{ fontSize: 17, color: colors.text, fontWeight: '500', flex: 1 }}>Update to &quot;{matchInfo.provided_name}&quot;</Text>
             </TouchableOpacity>
             <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 14, borderRadius: 10, gap: 10, marginBottom: 8 }} onPress={() => resolveReviewMatch('create_new')}>
               <Ionicons name="person-add" size={20} color="#FF9500" />

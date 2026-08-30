@@ -291,6 +291,11 @@ export const contactsAPI = {
     return response.data;
   },
 
+  getDatesCalendar: async (userId: string, year: number, month: number) => {
+    const response = await api.get(`/contacts/${userId}/dates-calendar`, { params: { year, month } });
+    return response.data;
+  },
+
   getById: async (userId: string, contactId: string) => {
     const response = await api.get(`/contacts/${userId}/${contactId}`);
     return response.data;

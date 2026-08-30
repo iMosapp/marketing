@@ -602,6 +602,55 @@ async def get_smart_list_counts(user_id: str):
     return dict(zip(keys, counts))
 
 
+@router.get("/{user_id}/dates-calendar")
+async def get_dates_calendar(user_id: str, year: int, month: int):
+    """All date-specific events (birthdays / sold anniversaries / anniversaries) for a month."""
+    if month < 1 or month > 12:
+        raise HTTPException(status_code=400, detail="month must be 1-12")
+    db = get_db()
+    base = {"user_id": user_id, "status": {"$nin": ["hidden", "merged", "deleted"]}}
+    docs = await db.contacts.find(
+        {"$and": [base, {"$or": [
+            {"birthday": {"$ne": None}},
+            {"date_sold": {"$ne": None}},
+            {"anniversary": {"$ne": None}},
+        ]}]},
+        {"first_name": 1, "last_name": 1, "photo_thumbnail": 1, "vehicle": 1,
+         "birthday": 1, "date_sold": 1, "anniversary": 1, "tags": 1},
+    ).to_list(5000)
+
+    events = []
+    for c in docs:
+        tags_l = [t.lower() for t in c.get("tags", []) if isinstance(t, str)]
+        sold_d = c.get("date_sold")
+        for field, etype, occasion in (
+            ("birthday", "birthday", "birthday"),
+            ("date_sold", "sold", "anniversary"),
+            ("anniversary", "anniversary", "anniversary"),
+        ):
+            d = c.get(field)
+            if not isinstance(d, datetime) or d.month != month:
+                continue
+            # Skip duplicate row when anniversary mirrors the sold date
+            if field == "anniversary" and isinstance(sold_d, datetime) and sold_d.month == d.month and sold_d.day == d.day:
+                continue
+            years = year - d.year if 1930 < d.year < year else None
+            events.append({
+                "contact_id": str(c["_id"]),
+                "first_name": c.get("first_name", ""),
+                "last_name": c.get("last_name", ""),
+                "photo_thumbnail": c.get("photo_thumbnail", ""),
+                "vehicle": c.get("vehicle", "") or "",
+                "day": d.day,
+                "type": etype,
+                "occasion": occasion,
+                "years": years,
+                "enrolled": occasion in tags_l,
+            })
+    events.sort(key=lambda e: (e["day"], e["type"], e["first_name"]))
+    return {"year": year, "month": month, "events": events}
+
+
 @router.get("/{user_id}/duplicates")
 async def find_duplicate_contacts(user_id: str):
     """
