@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { adminAPI } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
+import { useThemeStore } from '../../store/themeStore';
 import { WebModal } from '../../components/WebModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -32,8 +33,10 @@ function timeAgo(minutes: number): string {
 }
 
 export default function TeamEngagementPage() {
-  const user = useAuthStore((s: any) => s.user);
+  const user = useAuthStore((s2: any) => s2.user);
   const router = useRouter();
+  const { colors } = useThemeStore();
+  const s = getStyles(colors);
   const [loading, setLoading] = useState(true);
   const [hotLeads, setHotLeads] = useState<any[]>([]);
   const [alertLeads, setAlertLeads] = useState<any[]>([]);
@@ -139,7 +142,7 @@ export default function TeamEngagementPage() {
           </View>
           <Text style={s.leadAction}>{lead.last_signal_label}</Text>
           <View style={s.repRow}>
-            <Ionicons name="person" size={11} color="#888" />
+            <Ionicons name="person" size={11} color={colors.textSecondary} />
             <Text style={s.repName}>{lead.rep_name}</Text>
             <Text style={s.leadTime}>{timeAgo(lead.minutes_ago)}</Text>
           </View>
@@ -174,7 +177,7 @@ export default function TeamEngagementPage() {
         {/* Header */}
         <View style={s.header} data-testid="team-engagement-header">
           <TouchableOpacity onPress={() => router.back()} style={s.backBtn} data-testid="back-button">
-            <Ionicons name="arrow-back" size={24} color="#FFF" />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Text style={s.title}>Team Engagement</Text>
@@ -269,7 +272,7 @@ export default function TeamEngagementPage() {
           {tab === 'leads' && (
             hotLeads.length === 0 ? (
               <View style={s.emptyState} data-testid="empty-leads">
-                <Ionicons name="flame-outline" size={48} color="#555" />
+                <Ionicons name="flame-outline" size={48} color={colors.textTertiary} />
                 <Text style={s.emptyTitle}>No hot leads</Text>
                 <Text style={s.emptyText}>When your team's customers engage, they'll appear here.</Text>
               </View>
@@ -281,7 +284,7 @@ export default function TeamEngagementPage() {
           {tab === 'team' && (
             teamStats.length === 0 ? (
               <View style={s.emptyState} data-testid="empty-team">
-                <Ionicons name="people-outline" size={48} color="#555" />
+                <Ionicons name="people-outline" size={48} color={colors.textTertiary} />
                 <Text style={s.emptyTitle}>No team data</Text>
               </View>
             ) : (
@@ -335,7 +338,7 @@ export default function TeamEngagementPage() {
         <SafeAreaView style={s.modal}>
           <View style={s.modalHeader}>
             <TouchableOpacity onPress={() => setShowReassign(false)} data-testid="reassign-close-btn">
-              <Ionicons name="close" size={24} color="#FFF" />
+              <Ionicons name="close" size={24} color={colors.text} />
             </TouchableOpacity>
             <Text style={s.modalTitle}>Reassign Lead</Text>
             <View style={{ width: 24 }} />
@@ -349,7 +352,7 @@ export default function TeamEngagementPage() {
             </View>
           )}
           <View style={s.searchRow}>
-            <Ionicons name="search" size={18} color="#888" />
+            <Ionicons name="search" size={18} color={colors.textSecondary} />
             <TextInput
               style={s.searchInput}
               value={userSearch}
@@ -394,52 +397,52 @@ export default function TeamEngagementPage() {
   );
 }
 
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0A0A0A' },
+const getStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   centerLoader: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 60 },
   header: { flexDirection: 'row', alignItems: 'center', padding: 20, gap: 12 },
-  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#1C1C1E', alignItems: 'center', justifyContent: 'center' },
-  refreshBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#1C1C1E', alignItems: 'center', justifyContent: 'center' },
-  title: { color: '#FFF', fontSize: 22, fontWeight: '700' },
-  subtitle: { color: '#888', fontSize: 15, marginTop: 2 },
+  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
+  refreshBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
+  title: { color: colors.text, fontSize: 22, fontWeight: '700' },
+  subtitle: { color: colors.textSecondary, fontSize: 15, marginTop: 2 },
 
   summaryRow: { flexDirection: 'row', paddingHorizontal: 16, marginBottom: 12, gap: 8 },
   summaryCard: {
-    flex: 1, backgroundColor: '#1C1C1E', borderRadius: 12, padding: 12,
+    flex: 1, backgroundColor: colors.card, borderRadius: 12, padding: 12,
     alignItems: 'center', gap: 4, borderWidth: 1,
   },
-  summaryNum: { color: '#FFF', fontSize: 21, fontWeight: '700' },
-  summaryLabel: { color: '#888', fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.3 },
+  summaryNum: { color: colors.text, fontSize: 21, fontWeight: '700' },
+  summaryLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.3 },
 
   filterRow: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 12, gap: 8 },
-  filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, backgroundColor: '#1C1C1E' },
+  filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, backgroundColor: colors.card },
   filterActive: { backgroundColor: '#C9A962' },
-  filterText: { color: '#888', fontSize: 15, fontWeight: '500' },
+  filterText: { color: colors.textSecondary, fontSize: 15, fontWeight: '500' },
   filterTextActive: { color: '#000' },
 
-  tabRow: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 16, backgroundColor: '#1C1C1E', borderRadius: 12, padding: 4 },
+  tabRow: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 16, backgroundColor: colors.card, borderRadius: 12, padding: 4 },
   tab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 10, borderRadius: 10 },
-  tabActive: { backgroundColor: '#2C2C2E' },
-  tabText: { color: '#666', fontSize: 15, fontWeight: '600' },
-  tabTextActive: { color: '#FFF' },
+  tabActive: { backgroundColor: colors.surface },
+  tabText: { color: colors.textSecondary, fontSize: 15, fontWeight: '600' },
+  tabTextActive: { color: colors.text },
   tabBadge: { borderRadius: 8, paddingHorizontal: 5, paddingVertical: 1, marginLeft: 3 },
   tabBadgeText: { color: '#FFF', fontSize: 12, fontWeight: '700' },
 
   section: { paddingHorizontal: 20 },
   sectionHint: { color: '#FF9500', fontSize: 14, fontWeight: '500', marginBottom: 10, fontStyle: 'italic' },
 
-  leadCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C1E', borderRadius: 14, padding: 14, marginBottom: 10, gap: 12 },
+  leadCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 14, padding: 14, marginBottom: 10, gap: 12 },
   alertCard: { borderWidth: 1, borderColor: '#FF950040' },
   leadIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   leadInfo: { flex: 1 },
   leadNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  leadName: { color: '#FFF', fontSize: 17, fontWeight: '600' },
+  leadName: { color: colors.text, fontSize: 17, fontWeight: '600' },
   returnBadge: { backgroundColor: '#FF950020', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
   returnText: { color: '#FF9500', fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
-  leadAction: { color: '#AAA', fontSize: 15, marginTop: 2 },
+  leadAction: { color: colors.textSecondary, fontSize: 15, marginTop: 2 },
   repRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 },
   repName: { color: '#C9A962', fontSize: 13, fontWeight: '500' },
-  leadTime: { color: '#555', fontSize: 13, marginLeft: 4 },
+  leadTime: { color: colors.textTertiary, fontSize: 13, marginLeft: 4 },
   leadMulti: { color: '#C9A962', fontSize: 13, marginTop: 2, fontWeight: '500' },
   leadRight: { alignItems: 'center', gap: 6 },
   heatBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
@@ -450,31 +453,31 @@ const s = StyleSheet.create({
   },
 
   // Rep cards
-  repCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C1E', borderRadius: 14, padding: 14, marginBottom: 10, gap: 12 },
-  repAvatar: { width: 42, height: 42, borderRadius: 11, backgroundColor: '#2C2C2E', alignItems: 'center', justifyContent: 'center' },
-  repInitial: { color: '#FFF', fontSize: 19, fontWeight: '700' },
-  repCardName: { color: '#FFF', fontSize: 17, fontWeight: '600', marginBottom: 4 },
+  repCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 14, padding: 14, marginBottom: 10, gap: 12 },
+  repAvatar: { width: 42, height: 42, borderRadius: 11, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  repInitial: { color: colors.text, fontSize: 19, fontWeight: '700' },
+  repCardName: { color: colors.text, fontSize: 17, fontWeight: '600', marginBottom: 4 },
   statsRow: { flexDirection: 'row', gap: 12 },
   stat: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  statNum: { color: '#AAA', fontSize: 14, fontWeight: '600' },
+  statNum: { color: colors.textSecondary, fontSize: 14, fontWeight: '600' },
   repRight: { alignItems: 'center' },
-  repTotal: { color: '#FFF', fontSize: 19, fontWeight: '700' },
-  repTotalLabel: { color: '#666', fontSize: 12, textTransform: 'uppercase' },
+  repTotal: { color: colors.text, fontSize: 19, fontWeight: '700' },
+  repTotalLabel: { color: colors.textTertiary, fontSize: 12, textTransform: 'uppercase' },
   signalBubble: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#007AFF18', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, marginTop: 4 },
   signalBubbleText: { color: '#007AFF', fontSize: 12, fontWeight: '700' },
 
   emptyState: { alignItems: 'center', paddingVertical: 60 },
-  emptyTitle: { color: '#FFF', fontSize: 19, fontWeight: '600', marginTop: 16 },
-  emptyText: { color: '#666', fontSize: 16, textAlign: 'center', marginTop: 8, paddingHorizontal: 40, lineHeight: 20 },
+  emptyTitle: { color: colors.text, fontSize: 19, fontWeight: '600', marginTop: 16 },
+  emptyText: { color: colors.textSecondary, fontSize: 16, textAlign: 'center', marginTop: 8, paddingHorizontal: 40, lineHeight: 20 },
 
   // Modal
-  modal: { flex: 1, backgroundColor: '#0A0A0A' },
+  modal: { flex: 1, backgroundColor: colors.bg },
   modalHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: '#1C1C1E',
+    borderBottomWidth: 1, borderBottomColor: colors.border,
   },
-  modalTitle: { fontSize: 18, fontWeight: '600', color: '#FFF' },
+  modalTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
   modalBody: { flex: 1, padding: 16 },
   reassignBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
@@ -483,16 +486,16 @@ const s = StyleSheet.create({
   },
   reassignBannerText: { color: '#C9A962', fontSize: 16, fontWeight: '500', flex: 1 },
   searchRow: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C1E',
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
     borderRadius: 10, marginHorizontal: 16, marginVertical: 12, paddingHorizontal: 12, paddingVertical: 8, gap: 8,
   },
-  searchInput: { flex: 1, fontSize: 17, color: '#FFF', padding: 4 },
+  searchInput: { flex: 1, fontSize: 17, color: colors.text, padding: 4 },
   userRow: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C1E',
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
     borderRadius: 12, padding: 14, marginBottom: 8, gap: 12,
   },
-  userAvatar: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#2C2C2E', alignItems: 'center', justifyContent: 'center' },
-  userInitial: { color: '#FFF', fontSize: 18, fontWeight: '700' },
-  userName: { fontSize: 17, fontWeight: '600', color: '#FFF' },
-  userEmail: { fontSize: 14, color: '#888', marginTop: 2 },
+  userAvatar: { width: 40, height: 40, borderRadius: 10, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  userInitial: { color: colors.text, fontSize: 18, fontWeight: '700' },
+  userName: { fontSize: 17, fontWeight: '600', color: colors.text },
+  userEmail: { fontSize: 14, color: colors.textSecondary, marginTop: 2 },
 });

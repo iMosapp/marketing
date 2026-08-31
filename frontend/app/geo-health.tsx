@@ -68,7 +68,7 @@ interface HealthData {
 export default function GEOHealthScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
-  const { theme } = useThemeStore();
+  const { mode: theme } = useThemeStore();
   const isDark = theme === 'dark';
   const [data, setData] = useState<HealthData | null>(null);
   const [team, setTeam] = useState<TeamMember[]>([]);

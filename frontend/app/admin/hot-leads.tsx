@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
+import { useThemeStore } from '../../store/themeStore';
 
 const SIGNAL_ICONS: Record<string, { icon: string; color: string }> = {
   card_viewed: { icon: 'eye', color: '#007AFF' },
@@ -32,9 +33,9 @@ function HeatBadge({ score }: { score: number }) {
   else if (score >= 3) { emoji = 'flame'; bg = '#FF9500'; }
   else { emoji = 'thermometer'; bg = '#555'; }
   return (
-    <View style={[styles.heatBadge, { backgroundColor: bg }]} data-testid="heat-badge">
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, backgroundColor: bg }} data-testid="heat-badge">
       <Ionicons name={emoji as any} size={12} color="#FFF" />
-      <Text style={styles.heatText}>{score.toFixed(0)}</Text>
+      <Text style={{ color: '#FFF', fontSize: 13, fontWeight: '700' }}>{score.toFixed(0)}</Text>
     </View>
   );
 }
@@ -42,6 +43,8 @@ function HeatBadge({ score }: { score: number }) {
 export default function HotLeadsPage() {
   const user = useAuthStore((s: any) => s.user);
   const router = useRouter();
+  const { colors } = useThemeStore();
+  const styles = getStyles(colors);
   const [hotLeads, setHotLeads] = useState<any[]>([]);
   const [signals, setSignals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,7 +84,7 @@ export default function HotLeadsPage() {
       {/* Header */}
       <View style={styles.header} data-testid="hot-leads-header">
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} data-testid="back-button">
-          <Ionicons name="arrow-back" size={24} color="#FFF" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <View>
           <Text style={styles.title}>Engagement Intelligence</Text>
@@ -96,7 +99,7 @@ export default function HotLeadsPage() {
           onPress={() => setTab('leads')}
           data-testid="tab-hot-leads"
         >
-          <Ionicons name="flame" size={16} color={tab === 'leads' ? '#FF3B30' : '#888'} />
+          <Ionicons name="flame" size={16} color={tab === 'leads' ? '#FF3B30' : colors.textSecondary} />
           <Text style={[styles.tabText, tab === 'leads' && styles.tabTextActive]}>Hot Leads</Text>
           {hotLeads.length > 0 && (
             <View style={styles.badge}><Text style={styles.badgeText}>{hotLeads.length}</Text></View>
@@ -107,7 +110,7 @@ export default function HotLeadsPage() {
           onPress={() => setTab('feed')}
           data-testid="tab-activity-feed"
         >
-          <Ionicons name="pulse" size={16} color={tab === 'feed' ? '#007AFF' : '#888'} />
+          <Ionicons name="pulse" size={16} color={tab === 'feed' ? '#007AFF' : colors.textSecondary} />
           <Text style={[styles.tabText, tab === 'feed' && styles.tabTextActive]}>Activity Feed</Text>
         </TouchableOpacity>
       </View>
@@ -133,7 +136,7 @@ export default function HotLeadsPage() {
         <View style={styles.section}>
           {hotLeads.length === 0 ? (
             <View style={styles.emptyState} data-testid="empty-state">
-              <Ionicons name="flame-outline" size={48} color="#555" />
+              <Ionicons name="flame-outline" size={48} color={colors.textTertiary} />
               <Text style={styles.emptyTitle}>No hot leads yet</Text>
               <Text style={styles.emptyText}>
                 When customers view your cards, click your links, or check out your reviews, they'll appear here instantly.
@@ -201,7 +204,7 @@ export default function HotLeadsPage() {
         <View style={styles.section}>
           {signals.length === 0 ? (
             <View style={styles.emptyState} data-testid="empty-feed">
-              <Ionicons name="pulse-outline" size={48} color="#555" />
+              <Ionicons name="pulse-outline" size={48} color={colors.textTertiary} />
               <Text style={styles.emptyTitle}>No activity yet</Text>
               <Text style={styles.emptyText}>Real-time engagement signals will appear here.</Text>
             </View>
@@ -238,55 +241,53 @@ export default function HotLeadsPage() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0A0A0A' },
+const getStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', padding: 20, paddingTop: 56, gap: 12 },
-  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#1C1C1E', alignItems: 'center', justifyContent: 'center' },
-  title: { color: '#FFF', fontSize: 22, fontWeight: '700' },
-  subtitle: { color: '#888', fontSize: 15, marginTop: 2 },
+  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
+  title: { color: colors.text, fontSize: 22, fontWeight: '700' },
+  subtitle: { color: colors.textSecondary, fontSize: 15, marginTop: 2 },
 
-  tabRow: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 12, backgroundColor: '#1C1C1E', borderRadius: 12, padding: 4 },
+  tabRow: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 12, backgroundColor: colors.card, borderRadius: 12, padding: 4 },
   tab: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10 },
-  tabActive: { backgroundColor: '#2C2C2E' },
-  tabText: { color: '#888', fontSize: 16, fontWeight: '600' },
-  tabTextActive: { color: '#FFF' },
+  tabActive: { backgroundColor: colors.surface },
+  tabText: { color: colors.textSecondary, fontSize: 16, fontWeight: '600' },
+  tabTextActive: { color: colors.text },
   badge: { backgroundColor: '#FF3B30', borderRadius: 10, paddingHorizontal: 6, paddingVertical: 1, marginLeft: 4 },
   badgeText: { color: '#FFF', fontSize: 13, fontWeight: '700' },
 
   filterRow: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 16, gap: 8 },
-  filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, backgroundColor: '#1C1C1E' },
+  filterChip: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, backgroundColor: colors.card },
   filterActive: { backgroundColor: '#C9A962' },
-  filterText: { color: '#888', fontSize: 15, fontWeight: '500' },
+  filterText: { color: colors.textSecondary, fontSize: 15, fontWeight: '500' },
   filterTextActive: { color: '#000' },
 
   section: { paddingHorizontal: 20 },
 
-  leadCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#1C1C1E', borderRadius: 14, padding: 14, marginBottom: 10, gap: 12 },
+  leadCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 14, padding: 14, marginBottom: 10, gap: 12 },
   leadCardHot: { borderWidth: 1, borderColor: '#FF3B3040' },
   leadIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   leadInfo: { flex: 1 },
   leadNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  leadName: { color: '#FFF', fontSize: 17, fontWeight: '600' },
+  leadName: { color: colors.text, fontSize: 17, fontWeight: '600' },
   returnBadge: { backgroundColor: '#FF950020', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
   returnText: { color: '#FF9500', fontSize: 9, fontWeight: '700', letterSpacing: 0.5 },
-  leadAction: { color: '#AAA', fontSize: 15, marginTop: 2 },
-  leadTime: { color: '#666', fontSize: 14, marginTop: 1 },
+  leadAction: { color: colors.textSecondary, fontSize: 15, marginTop: 2 },
+  leadTime: { color: colors.textTertiary, fontSize: 14, marginTop: 1 },
   leadMulti: { color: '#C9A962', fontSize: 13, marginTop: 2, fontWeight: '500' },
   leadRight: { alignItems: 'center', gap: 8 },
-  heatBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
-  heatText: { color: '#FFF', fontSize: 13, fontWeight: '700' },
   quickText: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#34C75920', alignItems: 'center', justifyContent: 'center' },
 
-  signalRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#1C1C1E', gap: 10 },
+  signalRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 10 },
   signalDot: { width: 6, height: 6, borderRadius: 3 },
-  signalIcon: { width: 32, height: 32, borderRadius: 8, backgroundColor: '#1C1C1E', alignItems: 'center', justifyContent: 'center' },
+  signalIcon: { width: 32, height: 32, borderRadius: 8, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   signalInfo: { flex: 1 },
-  signalName: { color: '#FFF', fontSize: 16, fontWeight: '600' },
-  signalLabel: { color: '#888', fontSize: 14, marginTop: 1 },
+  signalName: { color: colors.text, fontSize: 16, fontWeight: '600' },
+  signalLabel: { color: colors.textSecondary, fontSize: 14, marginTop: 1 },
   signalMeta: { flexDirection: 'row', alignItems: 'center' },
-  signalTime: { color: '#555', fontSize: 13 },
+  signalTime: { color: colors.textTertiary, fontSize: 13 },
 
   emptyState: { alignItems: 'center', paddingVertical: 60 },
-  emptyTitle: { color: '#FFF', fontSize: 19, fontWeight: '600', marginTop: 16 },
-  emptyText: { color: '#666', fontSize: 16, textAlign: 'center', marginTop: 8, paddingHorizontal: 40, lineHeight: 20 },
+  emptyTitle: { color: colors.text, fontSize: 19, fontWeight: '600', marginTop: 16 },
+  emptyText: { color: colors.textSecondary, fontSize: 16, textAlign: 'center', marginTop: 8, paddingHorizontal: 40, lineHeight: 20 },
 });

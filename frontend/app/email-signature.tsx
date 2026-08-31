@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Alert }
 import { useRouter, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../store/authStore';
+import { useThemeStore } from '../store/themeStore';
 import * as Clipboard from 'expo-clipboard';
 
 const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com';
@@ -12,6 +13,8 @@ type LinkOption = 'card' | 'showcase' | 'linkpage' | 'landing';
 export default function EmailSignaturePage() {
   const router = useRouter();
   const { user } = useAuthStore();
+  const { colors } = useThemeStore();
+  const s = getStyles(colors);
   const profile = user as any;
   const [selectedLink, setSelectedLink] = useState<LinkOption>('card');
   const [copied, setCopied] = useState<'html' | 'text' | null>(null);
@@ -125,7 +128,7 @@ export default function EmailSignaturePage() {
         <Stack.Screen options={{ headerShown: false }} />
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.back()} style={s.backBtn} data-testid="sig-back-btn">
-            <Ionicons name="arrow-back" size={24} color="#111" />
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>Email Signature</Text>
           <View style={{ width: 40 }} />
@@ -140,7 +143,7 @@ export default function EmailSignaturePage() {
       <Stack.Screen options={{ headerShown: false }} />
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn} data-testid="sig-back-btn">
-          <Ionicons name="arrow-back" size={24} color="#111" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>Email Signature</Text>
         <View style={{ width: 40 }} />
@@ -159,7 +162,7 @@ export default function EmailSignaturePage() {
               onPress={() => setSelectedLink(opt.key)}
               data-testid={`sig-link-${opt.key}`}
             >
-              <Ionicons name={opt.icon as any} size={22} color={selectedLink === opt.key ? '#007AFF' : '#888'} />
+              <Ionicons name={opt.icon as any} size={22} color={selectedLink === opt.key ? colors.accent : colors.textSecondary} />
               <Text style={[s.linkLabel, selectedLink === opt.key && s.linkLabelActive]}>{opt.label}</Text>
               <Text style={s.linkDesc}>{opt.desc}</Text>
             </TouchableOpacity>
@@ -207,15 +210,15 @@ export default function EmailSignaturePage() {
             onPress={() => copyToClipboard('html')}
             data-testid="sig-copy-html"
           >
-            <Ionicons name={copied === 'html' ? 'checkmark-circle' : 'copy-outline'} size={18} color="#FFF" />
-            <Text style={s.copyBtnText}>{copied === 'html' ? 'Copied!' : 'Copy Rich Signature'}</Text>
+            <Ionicons name={copied === 'html' ? 'checkmark-circle' : 'copy-outline'} size={18} color={copied === 'html' ? '#FFF' : '#000'} />
+            <Text style={[s.copyBtnText, copied === 'html' && { color: '#FFF' }]}>{copied === 'html' ? 'Copied!' : 'Copy Rich Signature'}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[s.copyBtnAlt, copied === 'text' && s.copyBtnDone]}
             onPress={() => copyToClipboard('text')}
             data-testid="sig-copy-text"
           >
-            <Ionicons name={copied === 'text' ? 'checkmark-circle' : 'document-text-outline'} size={18} color={copied === 'text' ? '#FFF' : '#333'} />
+            <Ionicons name={copied === 'text' ? 'checkmark-circle' : 'document-text-outline'} size={18} color={copied === 'text' ? '#FFF' : colors.text} />
             <Text style={[s.copyBtnAltText, copied === 'text' && { color: '#FFF' }]}>{copied === 'text' ? 'Copied!' : 'Copy Plain Text'}</Text>
           </TouchableOpacity>
         </View>
@@ -275,24 +278,25 @@ export default function EmailSignaturePage() {
   );
 }
 
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FB' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: Platform.OS === 'ios' ? 82 : 40, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: '#FFF', borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.06)' },
-  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#F2F2F7', alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#111' },
+const getStyles = (colors: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.bg },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: Platform.OS === 'ios' ? 82 : 40, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: colors.header, borderBottomWidth: 1, borderBottomColor: colors.border },
+  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
   loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  loadingText: { fontSize: 17, color: '#888' },
+  loadingText: { fontSize: 17, color: colors.textSecondary },
   scroll: { flex: 1 },
   scrollContent: { padding: 20 },
-  sectionLabel: { fontSize: 18, fontWeight: '700', color: '#111', marginBottom: 4 },
-  sectionHint: { fontSize: 15, color: '#888', marginBottom: 14 },
+  sectionLabel: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 4 },
+  sectionHint: { fontSize: 15, color: colors.textSecondary, marginBottom: 14 },
   linkGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  linkCard: { width: '48%' as any, backgroundColor: '#FFF', borderRadius: 14, padding: 14, borderWidth: 2, borderColor: 'rgba(0,0,0,0.06)' },
-  linkCardActive: { borderColor: '#007AFF', backgroundColor: 'rgba(0,122,255,0.04)' },
-  linkLabel: { fontSize: 16, fontWeight: '700', color: '#333', marginTop: 8 },
-  linkLabelActive: { color: '#007AFF' },
-  linkDesc: { fontSize: 13, color: '#888', marginTop: 2, lineHeight: 15 },
-  previewCard: { backgroundColor: '#FFF', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8 },
+  linkCard: { width: '48%' as any, backgroundColor: colors.card, borderRadius: 14, padding: 14, borderWidth: 2, borderColor: colors.border },
+  linkCardActive: { borderColor: colors.accent, backgroundColor: colors.accent + '14' },
+  linkLabel: { fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 8 },
+  linkLabelActive: { color: colors.accent },
+  linkDesc: { fontSize: 13, color: colors.textSecondary, marginTop: 2, lineHeight: 15 },
+  // The preview intentionally stays light — it mimics a real email background
+  previewCard: { backgroundColor: '#FFF', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: colors.border, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8 },
   previewInner: { flexDirection: 'row', gap: 16 },
   previewPhoto: { width: 72, height: 72, borderRadius: 36, overflow: 'hidden' },
   previewInfo: { flex: 1 },
@@ -305,14 +309,14 @@ const s = StyleSheet.create({
   previewSocials: { flexDirection: 'row', gap: 10, marginTop: 8 },
   socialTag: { fontSize: 14, fontWeight: '600' },
   copyRow: { flexDirection: 'row', gap: 10, marginTop: 20 },
-  copyBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#007AFF', paddingVertical: 14, borderRadius: 12 },
+  copyBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.accent, paddingVertical: 14, borderRadius: 12 },
   copyBtnDone: { backgroundColor: '#34C759' },
-  copyBtnText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
-  copyBtnAlt: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#F2F2F7', paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)' },
-  copyBtnAltText: { color: '#333', fontSize: 16, fontWeight: '700' },
-  instrCard: { backgroundColor: '#FFF', borderRadius: 14, padding: 16, marginTop: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' },
+  copyBtnText: { color: '#000', fontSize: 16, fontWeight: '700' },
+  copyBtnAlt: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: colors.surface, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: colors.border },
+  copyBtnAltText: { color: colors.text, fontSize: 16, fontWeight: '700' },
+  instrCard: { backgroundColor: colors.card, borderRadius: 14, padding: 16, marginTop: 12, borderWidth: 1, borderColor: colors.border },
   instrHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
-  instrTitle: { fontSize: 17, fontWeight: '700', color: '#111' },
-  instrStep: { fontSize: 15, color: '#555', lineHeight: 20, marginBottom: 4 },
-  instrNote: { fontSize: 14, color: '#007AFF', marginTop: 6, fontStyle: 'italic', lineHeight: 17 },
+  instrTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
+  instrStep: { fontSize: 15, color: colors.textSecondary, lineHeight: 20, marginBottom: 4 },
+  instrNote: { fontSize: 14, color: colors.accent, marginTop: 6, fontStyle: 'italic', lineHeight: 17 },
 });

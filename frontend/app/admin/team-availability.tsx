@@ -223,7 +223,7 @@ export default function TeamAvailabilityPage() {
 }
 
 const getStyles = (colors: any) => StyleSheet.create({
-  container:    { flex: 1, backgroundColor: colors.background },
+  container:    { flex: 1, backgroundColor: colors.bg },
   center:       { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   title:        { fontSize: 18, fontWeight: '700', color: colors.text },

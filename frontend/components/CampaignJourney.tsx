@@ -230,7 +230,7 @@ export default function CampaignJourney({ userId, contactId, onEnrollmentRemoved
             </TouchableOpacity>
 
             {/* Progress bar */}
-            <View style={[s.progressBg, { backgroundColor: colors.background }]}>
+            <View style={[s.progressBg, { backgroundColor: colors.bg }]}>
               <View style={[s.progressFill, { width: `${progressPct}%`, backgroundColor: accentColor }]} />
             </View>
 

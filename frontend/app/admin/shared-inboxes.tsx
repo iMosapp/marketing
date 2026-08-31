@@ -628,7 +628,7 @@ export default function SharedInboxesPage() {
 
       {/* ── Edit Inbox Modal ─────────────────────────────────────────────── */}
       <Modal visible={showEditModal} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border }}>
             <TouchableOpacity onPress={() => setShowEditModal(false)}>
               <Text style={{ color: '#FF3B30', fontSize: 16, fontWeight: '600' }}>Cancel</Text>

@@ -128,7 +128,7 @@ const SECTIONS = [
 
 export default function SEOGuideScreen() {
   const router = useRouter();
-  const { theme } = useThemeStore();
+  const { mode: theme } = useThemeStore();
   const isDark = theme === 'dark';
 
   const bg = isDark ? '#000' : '#F2F2F7';

@@ -282,7 +282,7 @@ export default function DuplicatesScreen() {
 
       {loading ? (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.primary} />
+          <ActivityIndicator size="large" color={colors.accent} />
           <Text style={styles.loadingText}>Scanning for duplicates...</Text>
         </View>
       ) : duplicates.length === 0 && mergedContacts.length === 0 ? (
@@ -357,7 +357,7 @@ export default function DuplicatesScreen() {
 }
 
 const getStyles = (colors: any) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { flex: 1, backgroundColor: colors.bg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -403,7 +403,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   countText: { fontSize: 13, color: colors.primary, fontWeight: '600' },
 
   contactCard: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.bg,
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,

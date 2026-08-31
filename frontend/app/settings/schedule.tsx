@@ -425,7 +425,7 @@ export default function SchedulePage() {
 }
 
 const getStyles = (colors: any) => StyleSheet.create({
-  container:    { flex: 1, backgroundColor: colors.background },
+  container:    { flex: 1, backgroundColor: colors.bg },
   center:       { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   back:         { width: 40 },
