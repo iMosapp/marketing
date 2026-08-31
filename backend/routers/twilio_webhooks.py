@@ -450,6 +450,13 @@ async def incoming_message(
                             {"$set": {"dismissed": True, "read": True}},
                         )
                     conv_unanswered = 0
+                    try:
+                        await db.waiting_clear_log.insert_one({
+                            "user_id": user_id, "conversation_id": conversation_id,
+                            "reason": "satisfied", "cleared_at": datetime.utcnow(),
+                        })
+                    except Exception:
+                        pass
                     logger.info(f"[Webhook] Customer sounded satisfied — auto-cleared Waiting for conv {conversation_id}")
                 except Exception as sce:
                     logger.warning(f"[Webhook] Satisfied auto-clear failed: {sce}")

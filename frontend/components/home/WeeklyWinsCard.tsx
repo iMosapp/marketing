@@ -54,6 +54,19 @@ export function WeeklyWinsCard({ userId, forceShow }: { userId: string; forceSho
           </View>
         ))}
       </View>
+      {(wins.waiting_cleared || 0) > 0 && (
+        <View
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#2C2C2E' }}
+          testID="wins-waiting-cleared"
+          dataSet={{ testid: 'wins-waiting-cleared' }}
+        >
+          <Ionicons name="checkmark-circle" size={14} color="#34C759" />
+          <Text style={{ fontSize: 12, color: '#8E8E93', flex: 1 }}>
+            <Text style={{ color: '#34C759', fontWeight: '700' }}>{wins.waiting_cleared}</Text>
+            {wins.waiting_cleared === 1 ? ' waiting alert cleared itself' : ' waiting alerts cleared themselves'} — no action needed
+          </Text>
+        </View>
+      )}
     </View>
   );
 }

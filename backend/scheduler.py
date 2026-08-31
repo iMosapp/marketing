@@ -1637,11 +1637,13 @@ async def send_weekly_wins_push():
             new_contacts = await db.contacts.count_documents({"user_id": uid, "created_at": {"$gte": start, "$lt": end}})
             if not (sold or texts or scans or new_contacts):
                 continue
+            waiting_cleared = await db.waiting_clear_log.count_documents({"user_id": uid, "cleared_at": {"$gte": start, "$lt": end}})
             parts = []
             if sold: parts.append(f"{sold} sold")
             if texts: parts.append(f"{texts} texts")
             if scans: parts.append(f"{scans} card scans")
             if new_contacts: parts.append(f"{new_contacts} new contacts")
+            if waiting_cleared: parts.append(f"{waiting_cleared} waiting self-cleared")
             await send_push_to_user(uid, "Your week in review is ready", " · ".join(parts) + " last week. Nice work.", "/home?wins=1", "trophy")
             await db.weekly_wins_push_log.insert_one({"user_id": uid, "week": week_key, "sent_at": now})
             sent += 1
@@ -1697,7 +1699,7 @@ async def expire_stale_waiting_flags():
     )
     stale = await db.conversations.find(
         {"needs_assistance": True, "you_are_needed_at": {"$lt": cutoff}},
-        {"_id": 1},
+        {"_id": 1, "user_id": 1},
     ).to_list(500)
     if not stale:
         return
@@ -1710,6 +1712,13 @@ async def expire_stale_waiting_flags():
         {"conversation_id": {"$in": [str(i) for i in ids]}, "type": "you_are_needed", "dismissed": {"$ne": True}},
         {"$set": {"dismissed": True, "read": True}},
     )
+    try:
+        await db.waiting_clear_log.insert_many([
+            {"user_id": c.get("user_id"), "conversation_id": str(c["_id"]), "reason": "expired", "cleared_at": now}
+            for c in stale
+        ])
+    except Exception:
+        pass
     logger.info(f"[WaitingExpire] Quietly cleared {len(ids)} stale waiting flags (>3 days)")
 
 

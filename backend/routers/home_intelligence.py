@@ -30,6 +30,7 @@ async def weekly_wins(user_id: str):
     texts = await db.messages.count_documents({"user_id": user_id, "sender": "user", "timestamp": {"$gte": start, "$lt": end}})
     scans = await db.card_scans.count_documents({"user_id": user_id, "scanned_at": {"$gte": start, "$lt": end}})
     new_contacts = await db.contacts.count_documents({"user_id": user_id, "created_at": {"$gte": start, "$lt": end}})
+    waiting_cleared = await db.waiting_clear_log.count_documents({"user_id": user_id, "cleared_at": {"$gte": start, "$lt": end}})
     return {
         "week_start": start.isoformat(),
         "week_end": end.isoformat(),
@@ -37,6 +38,7 @@ async def weekly_wins(user_id: str):
         "texts": texts,
         "scans": scans,
         "new_contacts": new_contacts,
+        "waiting_cleared": waiting_cleared,
     }
 
 
