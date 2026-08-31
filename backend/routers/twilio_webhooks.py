@@ -620,9 +620,13 @@ async def incoming_message(
         # ── Pause campaign enrollments + trigger AI reply ─────────────────────
         # Check conversation's ai_mode FIRST — rep's explicit override wins.
         # If the rep turned AI off for this conversation, never queue AI regardless of campaign.
-        conv_ai_off = (
+        # An EXPLICIT active ai_mode (auto_reply/draft_only/auto_with_approval) always wins,
+        # even if a stale ai_enabled=False flag is on the conversation.
+        _conv_mode = (conversation.get("ai_mode") or "").strip()
+        _conv_explicitly_on = _conv_mode in ("auto_reply", "draft_only", "auto_with_approval")
+        conv_ai_off = not _conv_explicitly_on and (
             conversation.get("ai_enabled") is False or
-            conversation.get("ai_mode") in ("off", None, "")
+            _conv_mode in ("off", "")
         )
 
         active_enrollments = await db.campaign_enrollments.find({
@@ -631,6 +635,7 @@ async def incoming_message(
 
         # Track whether escalation already fired for this conversation
         max_reply_count = 0
+        enrollment_ai_queued = False
 
         for enrollment in active_enrollments:
             campaign = None
@@ -653,11 +658,17 @@ async def incoming_message(
             # Use campaign's ai_assist_mode, fall back to enrollment's stored mode
             # (campaign may have been deleted — enrollment still knows its mode)
             # CRITICAL: Skip if the rep explicitly turned AI off on this conversation
+            # CRITICAL: If the rep explicitly set the conversation to auto_reply
+            # ("Jessi is handling this"), that ALWAYS wins over campaign mode —
+            # replies auto-send with no approval gate and no escalation suppression.
             if conv_ai_off:
                 ai_mode = "off"
+            elif _conv_mode == "auto_reply":
+                ai_mode = "auto_reply"
             else:
                 ai_mode = (campaign or {}).get("ai_assist_mode") or enrollment.get("ai_assist_mode") or "off"
             if ai_mode not in ("off", None):
+                enrollment_ai_queued = True
                 # Fire-and-forget — don't block the webhook waiting for GPT
                 # The webhook must return to Twilio quickly to avoid retries
                 async def _fire_ai_reply(enroll=enrollment, camp=campaign, rc=new_reply_count):
@@ -684,16 +695,11 @@ async def incoming_message(
         # If the rep set this conversation to Auto Reply, queue AI regardless of
         # campaign enrollment state. This is what users actually expect when they
         # toggle "Auto Reply" in Conversation Settings.
-        enrollment_ai_queued = any(
-            ((campaign or {}).get("ai_assist_mode") or e.get("ai_assist_mode") or "off") not in ("off", None)
-            for e in active_enrollments
-            for campaign in [None]  # campaign already fetched above, use enrollment fallback
-        ) if active_enrollments else False
-
+        # NOTE: enrollment_ai_queued is tracked in the loop above from the mode that
+        # ACTUALLY fired — never from stale enrollment ai_assist_mode fields.
         if not conv_ai_off and not enrollment_ai_queued and not is_stop:
-            conv_ai_mode    = conversation.get("ai_mode") or ""
-            conv_ai_enabled = conversation.get("ai_enabled", False)
-            if conv_ai_enabled and conv_ai_mode in ("auto_reply", "draft_only", "auto_with_approval"):
+            conv_ai_mode = _conv_mode
+            if conv_ai_mode in ("auto_reply", "draft_only", "auto_with_approval"):
                 logger.info(f"[Webhook] Conversation-level AI ({conv_ai_mode}) queuing reply for {contact_id}")
                 async def _fire_conv_ai(mode=conv_ai_mode):
                     try:
@@ -713,6 +719,13 @@ async def incoming_message(
                     except Exception as ce:
                         logger.error(f"[Webhook] Conversation AI reply failed: {ce}")
                 asyncio.create_task(_fire_conv_ai())
+            else:
+                logger.info(
+                    f"[Webhook] No AI queued for conv {conversation_id} — "
+                    f"ai_mode={conversation.get('ai_mode')!r}, ai_enabled={conversation.get('ai_enabled')!r}"
+                )
+        elif conv_ai_off and not is_stop:
+            logger.info(f"[Webhook] AI suppressed for conv {conversation_id} — rep turned AI off")
 
         # ── "You're Needed" escalation ─────────────────────────────────────────
         # Uses BOTH enrollment count AND conversation-level unanswered count.

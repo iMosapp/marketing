@@ -180,11 +180,41 @@ async def queue_ai_reply(
             _u = await db.users.find_one({"_id": ObjectId(assigned_user_id)}, {"ai_master_paused": 1})
             if _u and _u.get("ai_master_paused"):
                 logger.info(f"AI master paused for user {assigned_user_id} — skipping AI reply")
+                # Never let the silence go unnoticed — tell the rep a customer is waiting
+                try:
+                    contact_doc = await db.contacts.find_one(
+                        {"_id": ObjectId(contact_id)}, {"first_name": 1, "last_name": 1, "name": 1}
+                    )
+                    cname = ((contact_doc or {}).get("name")
+                             or f"{(contact_doc or {}).get('first_name','')} {(contact_doc or {}).get('last_name','')}".strip()
+                             or "A customer")
+                    await db.notifications.insert_one({
+                        "user_id":         assigned_user_id,
+                        "type":            "ai_paused_customer_waiting",
+                        "title":           f"{cname} replied — AI is paused",
+                        "message":         f"\"{(incoming_message or '')[:80]}\" — Jessi is OFF (Home AI switch). Reply yourself or turn AI back on.",
+                        "contact_id":      contact_id,
+                        "conversation_id": conversation_id,
+                        "read":            False,
+                        "dismissed":       False,
+                        "created_at":      datetime.utcnow(),
+                    })
+                    from routers.push_notifications import send_push_to_user
+                    asyncio.create_task(send_push_to_user(
+                        assigned_user_id,
+                        f"{cname} replied — AI is paused",
+                        "Jessi didn't respond because your Home AI switch is off. Reply or resume AI.",
+                        f"/thread/{conversation_id}",
+                        "alert-circle",
+                    ))
+                except Exception:
+                    pass
                 return None
     except Exception:
         pass
 
     if ai_assist_mode == AI_MODE_OFF:
+        logger.info(f"[AIReply] Mode off — not queuing for conversation {conversation_id}")
         return None  # Caller already paused + notified rep
 
     # ── Content-based immediate escalation ──────────────────────────────────
@@ -631,9 +661,11 @@ async def process_ai_reply_queue():
                         {"ai_enabled": 1, "ai_mode": 1}
                     )
                     if conv:
-                        ai_off = (
+                        _mode = (conv.get("ai_mode") or "").strip()
+                        _explicitly_on = _mode in ("auto_reply", "draft_only", "auto_with_approval")
+                        ai_off = not _explicitly_on and (
                             conv.get("ai_enabled") is False or
-                            conv.get("ai_mode") in ("off", None, "")
+                            _mode in ("off", "")
                         )
                         if ai_off:
                             logger.info(f"[AIReply] Skipping queued item — AI turned off on conversation {item['conversation_id']}")

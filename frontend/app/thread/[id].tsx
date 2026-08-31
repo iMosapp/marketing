@@ -2277,7 +2277,28 @@ function ThreadScreen() {
       )}
 
       {/* Persistent AI mode banner — always visible so rep can toggle any time */}
-      {aiMode === 'off' ? (
+      {(user as any)?.ai_master_paused && aiMode !== 'off' ? (
+        <TouchableOpacity
+          onPress={async () => {
+            if (!user?._id) return;
+            try {
+              await api.patch(`/users/${user._id}`, { ai_master_paused: false });
+              useAuthStore.getState().updateUser({ ai_master_paused: false } as any);
+            } catch {}
+          }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FF950014', borderTopWidth: 1, borderTopColor: '#FF950035', paddingHorizontal: 16, paddingVertical: 10 }}
+          activeOpacity={0.75}
+          data-testid="master-paused-thread-banner"
+        >
+          <Ionicons name="pause-circle" size={15} color="#FF9500" />
+          <Text style={{ fontSize: 13, color: '#FF9500', fontWeight: '600', flex: 1 }}>
+            All AI is paused (Home switch) — Jessi won't reply
+          </Text>
+          <View style={{ backgroundColor: '#FF9500', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 }}>
+            <Text style={{ fontSize: 12, fontWeight: '800', color: '#000' }}>Resume AI</Text>
+          </View>
+        </TouchableOpacity>
+      ) : aiMode === 'off' ? (
         <TouchableOpacity
           onPress={async () => {
             setAiMode('auto_reply');

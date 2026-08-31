@@ -21,7 +21,7 @@ import { useThemeStore } from '../../store/themeStore';
 import api from '../../services/api';
 import { contactsAPI } from '../../services/api';
 import { useContactSearch } from '../../hooks/useContactSearch';
-import { showSimpleAlert } from '../../services/alert';
+import { showSimpleAlert, showConfirm } from '../../services/alert';
 import { NotificationBell } from '../../components/notifications/NotificationBell';
 import { UniversalShareModal } from '../../components/UniversalShareModal';
 import { DraftMessageSheet } from '../../components/DraftMessageSheet';
@@ -398,9 +398,8 @@ function HomeScreen() {
   // ── AI master switch (pauses all AI auto-replies) ──
   const [aiPaused, setAiPaused] = useState<boolean>(!!(user as any)?.ai_master_paused);
   useEffect(() => { setAiPaused(!!(user as any)?.ai_master_paused); }, [(user as any)?.ai_master_paused]);
-  const toggleAiMaster = async () => {
+  const applyAiMaster = async (next: boolean) => {
     if (!user?._id) return;
-    const next = !aiPaused;
     setAiPaused(next);
     try {
       await api.patch(`/users/${user._id}`, { ai_master_paused: next });
@@ -409,6 +408,19 @@ function HomeScreen() {
       setAiPaused(!next);
       showSimpleAlert('Error', 'Could not update AI setting. Try again.');
     }
+  };
+  const toggleAiMaster = () => {
+    if (!user?._id) return;
+    if (!aiPaused) {
+      showConfirm(
+        'Pause ALL AI replies?',
+        "Jessi will stop auto-replying in EVERY conversation — even ones set to \"Jessi is handling this\" — until you turn this back on.",
+        () => applyAiMaster(true),
+        'Pause AI'
+      );
+      return;
+    }
+    applyAiMaster(false);
   };
 
   // ── Instant Card QR (header button + Card tile long-press) ──
@@ -824,14 +836,14 @@ function HomeScreen() {
             style={{
               flexDirection: 'row', alignItems: 'center', gap: 4,
               paddingHorizontal: 10, paddingVertical: 5, borderRadius: 14,
-              backgroundColor: aiPaused ? 'rgba(142,142,147,0.12)' : 'rgba(201,169,98,0.15)',
-              borderWidth: 1, borderColor: aiPaused ? 'rgba(142,142,147,0.35)' : 'rgba(201,169,98,0.5)',
+              backgroundColor: aiPaused ? 'rgba(255,59,48,0.14)' : 'rgba(201,169,98,0.15)',
+              borderWidth: 1, borderColor: aiPaused ? 'rgba(255,59,48,0.5)' : 'rgba(201,169,98,0.5)',
             }}
             data-testid="ai-master-toggle"
           >
-            <Ionicons name="sparkles" size={13} color={aiPaused ? '#8E8E93' : '#C9A962'} />
-            <Text style={{ fontSize: 11, fontWeight: '800', letterSpacing: 0.5, color: aiPaused ? '#8E8E93' : '#C9A962' }}>
-              {aiPaused ? 'AI OFF' : 'AI ON'}
+            <Ionicons name={aiPaused ? 'pause-circle' : 'sparkles'} size={13} color={aiPaused ? '#FF3B30' : '#C9A962'} />
+            <Text style={{ fontSize: 11, fontWeight: '800', letterSpacing: 0.5, color: aiPaused ? '#FF3B30' : '#C9A962' }}>
+              {aiPaused ? 'AI PAUSED' : 'AI ON'}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
