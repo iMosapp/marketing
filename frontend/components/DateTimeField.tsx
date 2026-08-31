@@ -111,12 +111,12 @@ export function DateTimeField({ colors, date, setDate, time, setTime, accent = '
 
 export const APPT_TYPES = [
   { key: 'call', label: 'Call', icon: 'call' },
-  { key: 'test_drive', label: 'Test Drive', icon: 'car-sport' },
+  { key: 'appointment', label: 'Appointment', icon: 'calendar' },
   { key: 'delivery', label: 'Delivery', icon: 'cube' },
   { key: 'meeting', label: 'Meeting', icon: 'people' },
 ] as const;
 
-export function ApptTypeRow({ colors, value, onChange, accent = '#0A84FF' }: any) {
+export function ApptTypeRow({ colors, value, onChange, accent = '#C9A962' }: any) {
   return (
     <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
       {APPT_TYPES.map(t => {

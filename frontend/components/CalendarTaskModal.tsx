@@ -95,7 +95,8 @@ export default function CalendarTaskModal({ visible, onClose, colors, userId, de
             autoFocus
             returnKeyType="done"
             maxFontSizeMultiplier={1.0}
-            data-testid="cal-task-title"
+            testID="cal-task-title"
+            dataSet={{ testid: 'cal-task-title' } as any}
           />
 
           <Text maxFontSizeMultiplier={1.0} style={label}>Appointment type <Text style={{ fontWeight: '400', textTransform: 'none' }}>(optional)</Text></Text>
@@ -124,7 +125,8 @@ export default function CalendarTaskModal({ visible, onClose, colors, userId, de
                 value={query}
                 onChangeText={setQuery}
                 maxFontSizeMultiplier={1.0}
-                data-testid="cal-task-contact-search"
+                testID="cal-task-contact-search"
+                dataSet={{ testid: 'cal-task-contact-search' } as any}
               />
               {results.map((c: any) => (
                 <TouchableOpacity

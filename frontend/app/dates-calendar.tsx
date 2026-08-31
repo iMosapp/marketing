@@ -16,6 +16,7 @@ import { useThemeStore } from '../store/themeStore';
 import api, { contactsAPI } from '../services/api';
 import { showSimpleAlert } from '../services/alert';
 import { Avatar } from '../components/Avatar';
+import CalendarTaskModal from '../components/CalendarTaskModal';
 
 const GOLD = '#C9A962';
 
@@ -23,11 +24,22 @@ const TYPE_META: Record<string, { color: string; icon: string; label: string }> 
   birthday: { color: '#AF52DE', icon: 'gift', label: 'Birthday' },
   sold: { color: '#34C759', icon: 'car-sport', label: 'Sold' },
   anniversary: { color: '#FF2D55', icon: 'heart', label: 'Anniversary' },
+  task: { color: GOLD, icon: 'checkbox', label: 'Tasks' },
+};
+
+const APPT_ICONS: Record<string, string> = {
+  call: 'call', appointment: 'calendar', test_drive: 'calendar', delivery: 'cube', meeting: 'people',
 };
 
 const tid = (id: string): any => ({ testID: id, dataSet: { testid: id } });
 
-export default function DatesCalendarScreen() {
+const fmtTime = (d: Date) => {
+  const h = d.getHours() % 12 || 12;
+  const m = String(d.getMinutes()).padStart(2, '0');
+  return `${h}:${m} ${d.getHours() >= 12 ? 'PM' : 'AM'}`;
+};
+
+export default function CalendarScreen() {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
   const router = useRouter();
@@ -37,18 +49,42 @@ export default function DatesCalendarScreen() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1); // 1-12
   const [events, setEvents] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [typeFilter, setTypeFilter] = useState<'all' | 'birthday' | 'sold' | 'anniversary'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'birthday' | 'sold' | 'anniversary' | 'task'>('all');
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [showAddTask, setShowAddTask] = useState(false);
 
   const load = useCallback(async () => {
     if (!user?._id) return;
     setLoading(true);
     try {
-      const data = await contactsAPI.getDatesCalendar(user._id, year, month);
-      setEvents(data.events || []);
+      const [datesRes, tasksRes] = await Promise.all([
+        contactsAPI.getDatesCalendar(user._id, year, month),
+        api.get(`/tasks/${user._id}/calendar?year=${year}&month=${month}`).then(r => r.data).catch(() => ({ tasks: [] })),
+      ]);
+      setEvents(datesRes.events || []);
+      const mapped = (tasksRes.tasks || []).map((t: any) => {
+        const local = new Date(t.due_at);
+        if (local.getFullYear() !== year || local.getMonth() + 1 !== month) return null;
+        return {
+          type: 'task',
+          day: local.getDate(),
+          task_id: t.task_id,
+          title: t.title,
+          has_time: t.has_time,
+          time_label: t.has_time ? fmtTime(local) : null,
+          time_sort: t.has_time ? local.getHours() * 60 + local.getMinutes() : 9999,
+          appointment_type: t.appointment_type,
+          contact_id: t.contact_id,
+          contact_name: t.contact_name,
+          completed: t.completed,
+        };
+      }).filter(Boolean);
+      setTasks(mapped);
     } catch {
       setEvents([]);
+      setTasks([]);
     } finally {
       setLoading(false);
     }
@@ -64,9 +100,11 @@ export default function DatesCalendarScreen() {
     setMonth(m); setYear(y); setSelectedDay(null);
   };
 
+  const allItems = useMemo(() => [...tasks, ...events], [tasks, events]);
+
   const typeFiltered = useMemo(
-    () => typeFilter === 'all' ? events : events.filter(e => e.type === typeFilter),
-    [events, typeFilter]
+    () => typeFilter === 'all' ? allItems : allItems.filter(e => e.type === typeFilter),
+    [allItems, typeFilter]
   );
 
   const dayEvents = useMemo(() => {
@@ -81,7 +119,8 @@ export default function DatesCalendarScreen() {
     birthday: events.filter(e => e.type === 'birthday').length,
     sold: events.filter(e => e.type === 'sold').length,
     anniversary: events.filter(e => e.type === 'anniversary').length,
-  }), [events]);
+    task: tasks.length,
+  }), [events, tasks]);
 
   const toggleEnroll = async (ev: any) => {
     const enable = !ev.enrolled;
@@ -99,6 +138,17 @@ export default function DatesCalendarScreen() {
         e.contact_id === ev.contact_id && e.occasion === ev.occasion ? { ...e, enrolled: !enable } : e
       ));
       showSimpleAlert('Error', 'Could not update. Please try again.');
+    }
+  };
+
+  const completeTask = async (task: any) => {
+    if (task.completed) return;
+    setTasks(prev => prev.map(t => t.task_id === task.task_id ? { ...t, completed: true } : t));
+    try {
+      await api.patch(`/tasks/${user?._id}/${task.task_id}`, { action: 'complete' });
+    } catch {
+      setTasks(prev => prev.map(t => t.task_id === task.task_id ? { ...t, completed: false } : t));
+      showSimpleAlert('Error', 'Could not complete. Please try again.');
     }
   };
 
@@ -128,7 +178,7 @@ export default function DatesCalendarScreen() {
     return `Anniversary · ${dateLabel}${ev.years ? ` · ${ev.years} yr${ev.years === 1 ? '' : 's'}` : ''}`;
   };
 
-  // group list by day for agenda headers
+  // group list by day for agenda headers (days ascending; tasks first, timed before anytime)
   const grouped = useMemo(() => {
     const out: { day: number; items: any[] }[] = [];
     listEvents.forEach((e: any) => {
@@ -136,8 +186,26 @@ export default function DatesCalendarScreen() {
       if (g) g.items.push(e);
       else out.push({ day: e.day, items: [e] });
     });
+    out.sort((a, b) => a.day - b.day);
+    out.forEach(g => g.items.sort((a: any, b: any) => {
+      const aT = a.type === 'task' ? a.time_sort : 100000;
+      const bT = b.type === 'task' ? b.time_sort : 100000;
+      return aT - bT;
+    }));
     return out;
   }, [listEvents]);
+
+  const taskIcon = (t: any) =>
+    (t.appointment_type && APPT_ICONS[t.appointment_type]) || 'checkbox';
+
+  const taskSubtitle = (t: any) => {
+    const parts = [t.time_label || 'Anytime'];
+    if (t.appointment_type) {
+      const label = { call: 'Call', appointment: 'Appointment', test_drive: 'Appointment', delivery: 'Delivery', meeting: 'Meeting' }[t.appointment_type as string];
+      if (label) parts.push(label);
+    }
+    return parts.join(' · ');
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -146,8 +214,10 @@ export default function DatesCalendarScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton} {...tid('dates-cal-back-btn')}>
           <Ionicons name="chevron-back" size={28} color={GOLD} />
         </TouchableOpacity>
-        <Text maxFontSizeMultiplier={1.0} style={styles.headerTitle}>Dates Calendar</Text>
-        <View style={{ width: 40 }} />
+        <Text maxFontSizeMultiplier={1.0} style={styles.headerTitle}>Calendar</Text>
+        <TouchableOpacity onPress={() => setShowAddTask(true)} style={styles.addButton} {...tid('cal-add-task-btn')}>
+          <Ionicons name="add" size={24} color="#000" />
+        </TouchableOpacity>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
@@ -207,7 +277,7 @@ export default function DatesCalendarScreen() {
           </View>
           {/* Legend */}
           <View style={styles.legend}>
-            {(['birthday', 'sold', 'anniversary'] as const).map(t => (
+            {(['task', 'birthday', 'sold', 'anniversary'] as const).map(t => (
               <View key={t} style={styles.legendItem}>
                 <View style={[styles.dot, { backgroundColor: TYPE_META[t].color }]} />
                 <Text maxFontSizeMultiplier={1.0} style={styles.legendText}>{TYPE_META[t].label}</Text>
@@ -219,7 +289,8 @@ export default function DatesCalendarScreen() {
         {/* Filter chips */}
         <View style={styles.chipsRow}>
           {([
-            { key: 'all', label: `All · ${events.length}` },
+            { key: 'all', label: `All · ${allItems.length}` },
+            { key: 'task', label: `Tasks · ${counts.task}` },
             { key: 'birthday', label: `Birthdays · ${counts.birthday}` },
             { key: 'sold', label: `Sold · ${counts.sold}` },
             { key: 'anniversary', label: `Anniv · ${counts.anniversary}` },
@@ -253,11 +324,15 @@ export default function DatesCalendarScreen() {
           <View style={styles.empty} {...tid('dates-cal-empty')}>
             <Ionicons name="calendar-outline" size={48} color={colors.border} />
             <Text maxFontSizeMultiplier={1.0} style={styles.emptyTitle}>
-              {selectedDay ? 'Nothing on this day' : `No dates in ${format(monthDate, 'MMMM')}`}
+              {selectedDay ? 'Nothing on this day' : `Nothing in ${format(monthDate, 'MMMM')}`}
             </Text>
             <Text maxFontSizeMultiplier={1.0} style={styles.emptySub}>
-              Birthdays, sold dates and anniversaries will show up here
+              Tasks, appointments, birthdays and sold dates will show up here
             </Text>
+            <TouchableOpacity onPress={() => setShowAddTask(true)} style={styles.emptyAddBtn} {...tid('cal-empty-add-btn')}>
+              <Ionicons name="add" size={16} color="#000" />
+              <Text maxFontSizeMultiplier={1.0} style={styles.emptyAddText}>Add a task</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           grouped.map(group => (
@@ -266,6 +341,40 @@ export default function DatesCalendarScreen() {
                 {format(new Date(year, month - 1, group.day), 'EEE · MMM d').toUpperCase()}
               </Text>
               {group.items.map((ev: any, idx: number) => {
+                if (ev.type === 'task') {
+                  return (
+                    <TouchableOpacity
+                      key={`task-${ev.task_id}`}
+                      style={[styles.eventRow, styles.taskRow, ev.completed && { opacity: 0.55 }]}
+                      onPress={() => ev.contact_id && router.push(`/contact/${ev.contact_id}`)}
+                      activeOpacity={ev.contact_id ? 0.7 : 1}
+                      {...tid(`cal-task-row-${ev.task_id}`)}
+                    >
+                      <View style={[styles.typeIcon, { backgroundColor: GOLD + '22' }]}>
+                        <Ionicons name={taskIcon(ev) as any} size={16} color={GOLD} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text maxFontSizeMultiplier={1.0} numberOfLines={1} style={[styles.eventName, ev.completed && styles.taskDone]}>
+                          {ev.title}
+                        </Text>
+                        <Text maxFontSizeMultiplier={1.0} numberOfLines={1} style={styles.eventSub}>
+                          {taskSubtitle(ev)}{ev.contact_name ? ` · ${ev.contact_name}` : ''}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={(e: any) => { e.stopPropagation?.(); completeTask(ev); }}
+                        style={styles.checkBtn}
+                        {...tid(`cal-task-complete-${ev.task_id}`)}
+                      >
+                        <Ionicons
+                          name={ev.completed ? 'checkmark-circle' : 'ellipse-outline'}
+                          size={26}
+                          color={ev.completed ? '#34C759' : colors.textTertiary}
+                        />
+                      </TouchableOpacity>
+                    </TouchableOpacity>
+                  );
+                }
                 const meta = TYPE_META[ev.type];
                 return (
                   <TouchableOpacity
@@ -309,6 +418,15 @@ export default function DatesCalendarScreen() {
           ))
         )}
       </ScrollView>
+
+      <CalendarTaskModal
+        visible={showAddTask}
+        onClose={() => setShowAddTask(false)}
+        colors={colors}
+        userId={user?._id}
+        defaultDate={selectedDay ? new Date(year, month - 1, selectedDay) : new Date()}
+        onSaved={load}
+      />
     </SafeAreaView>
   );
 }
@@ -321,6 +439,10 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   backButton: { padding: 8 },
   headerTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
+  addButton: {
+    width: 34, height: 34, borderRadius: 17, backgroundColor: GOLD,
+    alignItems: 'center', justifyContent: 'center', marginRight: 8,
+  },
   monthNav: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, marginBottom: 8,
@@ -347,7 +469,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   dotsRow: { flexDirection: 'row', gap: 2, height: 6, marginTop: 2 },
   dot: { width: 5, height: 5, borderRadius: 3 },
   legend: {
-    flexDirection: 'row', justifyContent: 'center', gap: 16,
+    flexDirection: 'row', justifyContent: 'center', gap: 14,
     marginTop: 8, paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border,
   },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
@@ -377,6 +499,9 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginHorizontal: 16, marginBottom: 6, paddingHorizontal: 12, paddingVertical: 10,
     gap: 10,
   },
+  taskRow: { borderWidth: 1, borderColor: GOLD + '33' },
+  taskDone: { textDecorationLine: 'line-through' },
+  checkBtn: { padding: 2 },
   typeIcon: {
     width: 32, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
   },
@@ -392,4 +517,9 @@ const getStyles = (colors: any) => StyleSheet.create({
   empty: { alignItems: 'center', paddingVertical: 48, paddingHorizontal: 32 },
   emptyTitle: { fontSize: 17, fontWeight: '700', color: colors.text, marginTop: 12 },
   emptySub: { fontSize: 13, color: colors.textSecondary, marginTop: 4, textAlign: 'center' },
+  emptyAddBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 16,
+    backgroundColor: GOLD, paddingHorizontal: 16, paddingVertical: 9, borderRadius: 18,
+  },
+  emptyAddText: { fontSize: 14, fontWeight: '700', color: '#000' },
 });

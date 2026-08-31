@@ -23,12 +23,12 @@ export default function AddTaskModal(props: any) {
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
           <TouchableOpacity onPress={onClose}>
-            <Text style={{ fontSize: 17, color: '#007AFF' }}>Cancel</Text>
+            <Text style={{ fontSize: 17, color: '#C9A962' }}>Cancel</Text>
           </TouchableOpacity>
           <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>Add Task</Text>
           <TouchableOpacity onPress={handleSaveTask} disabled={savingTask || !newTaskTitle.trim()} data-testid="save-task-btn">
-            {savingTask ? <ActivityIndicator size="small" color="#007AFF" /> : (
-              <Text style={{ fontSize: 17, fontWeight: '700', color: newTaskTitle.trim() ? '#007AFF' : colors.textTertiary }}>Save</Text>
+            {savingTask ? <ActivityIndicator size="small" color="#C9A962" /> : (
+              <Text style={{ fontSize: 17, fontWeight: '700', color: newTaskTitle.trim() ? '#C9A962' : colors.textTertiary }}>Save</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -37,7 +37,7 @@ export default function AddTaskModal(props: any) {
           {/* Contact badge */}
           {contact && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.card, borderRadius: 10, padding: 12, marginBottom: 16 }}>
-              <Ionicons name="person-circle" size={20} color="#007AFF" />
+              <Ionicons name="person-circle" size={20} color="#C9A962" />
               <Text style={{ fontSize: 15, color: colors.text, fontWeight: '600' }}>
                 {`${contact.first_name || ''} ${contact.last_name || ''}`.trim()}
               </Text>
