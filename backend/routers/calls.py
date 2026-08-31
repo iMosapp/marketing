@@ -239,6 +239,16 @@ async def retry_transcription(call_sid: str, x_user_id: str = None):
             {"call_sid": call_sid},
             {"$set": {"has_recording": True, "ai_summary": ai_summary, "transcript": transcript[:200]}}
         )
+
+        # Auto-extract scheduled appointments from the recovered transcript
+        try:
+            from routers.tasks import extract_appointment_from_call
+            asyncio.create_task(extract_appointment_from_call(
+                log.get("user_id") or "", log.get("contact_id") or "",
+                log.get("contact_name") or "", transcript, call_sid
+            ))
+        except Exception:
+            pass
         
         logger.info(f"[Calls] Retry transcription succeeded for {call_sid}: {len(transcript)} chars")
         return {

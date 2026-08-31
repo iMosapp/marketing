@@ -481,6 +481,9 @@ function ContactDetailScreen() {
   const [newTaskNotes, setNewTaskNotes] = useState('');
   const [newTaskDue, setNewTaskDue] = useState<'today' | 'tomorrow' | 'thisweek' | 'custom'>('today');
   const [newTaskPriority, setNewTaskPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [newTaskDate, setNewTaskDate] = useState<Date>(new Date());
+  const [newTaskTime, setNewTaskTime] = useState<string | null>(null);
+  const [newTaskApptType, setNewTaskApptType] = useState<string | null>(null);
   const [savingTask, setSavingTask] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [replyPhoto, setReplyPhoto] = useState<string | null>(null);
@@ -649,6 +652,14 @@ function ContactDetailScreen() {
         dueDate = new Date(now); dueDate.setHours(23, 59, 0, 0);
       } else if (newTaskDue === 'tomorrow') {
         dueDate = new Date(now); dueDate.setDate(dueDate.getDate() + 1); dueDate.setHours(9, 0, 0, 0);
+      } else if (newTaskDue === 'custom') {
+        dueDate = new Date(newTaskDate);
+        if (newTaskTime) {
+          const [h, m] = newTaskTime.split(':').map(Number);
+          dueDate.setHours(h, m, 0, 0);
+        } else {
+          dueDate.setHours(9, 0, 0, 0);
+        }
       } else {
         // this week = next Monday
         dueDate = new Date(now);
@@ -662,8 +673,10 @@ function ContactDetailScreen() {
         contact_name: contact ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim() : '',
         contact_phone: contact?.phone || '',
         due_date: dueDate.toISOString(),
+        has_time: newTaskDue === 'custom' && !!newTaskTime,
+        appointment_type: newTaskApptType,
         priority: newTaskPriority,
-        type: 'manual',
+        type: newTaskApptType ? 'appointment' : 'manual',
         source: 'manual',
         action_type: 'manual',
       });
@@ -672,6 +685,9 @@ function ContactDetailScreen() {
       setNewTaskNotes('');
       setNewTaskDue('today');
       setNewTaskPriority('medium');
+      setNewTaskDate(new Date());
+      setNewTaskTime(null);
+      setNewTaskApptType(null);
       showSimpleAlert('Task Added', `"${newTaskTitle.trim()}" added to your touchpoints.`);
     } catch { showSimpleAlert('Error', 'Could not save task. Try again.'); }
     finally { setSavingTask(false); }
@@ -2860,6 +2876,12 @@ function ContactDetailScreen() {
         setNewTaskNotes={setNewTaskNotes}
         newTaskDue={newTaskDue}
         setNewTaskDue={setNewTaskDue}
+        newTaskDate={newTaskDate}
+        setNewTaskDate={setNewTaskDate}
+        newTaskTime={newTaskTime}
+        setNewTaskTime={setNewTaskTime}
+        newTaskApptType={newTaskApptType}
+        setNewTaskApptType={setNewTaskApptType}
         newTaskPriority={newTaskPriority}
         setNewTaskPriority={setNewTaskPriority}
         savingTask={savingTask}

@@ -1424,6 +1424,16 @@ async def handle_recording_complete(
             "created_at":       now,
         })
 
+        # Auto-extract scheduled appointments from the call ("I'll call you tomorrow at 2")
+        if transcript and user_id:
+            try:
+                from routers.tasks import extract_appointment_from_call
+                asyncio.create_task(extract_appointment_from_call(
+                    user_id, contact_id or "", contact_name or "", transcript, CallSid
+                ))
+            except Exception as appt_err:
+                logger.warning(f"[Voice] Appointment extraction schedule failed: {appt_err}")
+
         if contact_id:
             # Note on contact record
             note_body = f"{'📞' if direction == 'inbound' else '📱'} {'Inbound' if direction == 'inbound' else 'Outbound'} call — {dur}s"

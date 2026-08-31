@@ -1555,6 +1555,66 @@ async def process_sold_deliveries_job():
 
 
 
+async def send_task_reminders():
+    """Every 60s: push reminders for time-specific tasks/appointments — 15 min before + at time."""
+    import pytz
+    from routers.database import get_db
+    from routers.push_notifications import send_push_to_user
+    db = get_db()
+    now = datetime.now(timezone.utc)
+
+    async def _notify(task, prefix, flag):
+        user_id = task.get("user_id")
+        if not user_id:
+            return
+        try:
+            u = await db.users.find_one({"_id": ObjectId(user_id)}, {"timezone": 1})
+            tz = pytz.timezone((u or {}).get("timezone") or "America/Denver")
+        except Exception:
+            tz = pytz.timezone("America/Denver")
+        due = task.get("due_date")
+        if due and not due.tzinfo:
+            due = due.replace(tzinfo=timezone.utc)
+        label = due.astimezone(tz).strftime("%-I:%M %p") if due else ""
+        title = f"{prefix}: {task.get('title', 'Task')}"
+        body = f"{label}" + (f" · {task['contact_name']}" if task.get("contact_name") else "")
+        url = f"/contact/{task['contact_id']}" if task.get("contact_id") else "/dates-calendar"
+        await db.tasks.update_one({"_id": task["_id"]}, {"$set": {flag: True}})
+        await send_push_to_user(user_id, title, body, url, "calendar")
+        await db.notifications.insert_one({
+            "user_id": user_id, "type": "task_reminder",
+            "title": title, "message": body,
+            "contact_id": task.get("contact_id"), "task_id": str(task["_id"]),
+            "read": False, "dismissed": False, "created_at": now,
+        })
+
+    base = {"has_time": True, "completed": False, "status": {"$nin": ["completed", "dismissed"]}}
+    upcoming = await db.tasks.find({
+        **base,
+        "due_date": {"$gt": now, "$lte": now + timedelta(minutes=15)},
+        "reminded_15": {"$ne": True},
+    }).to_list(50)
+    for t in upcoming:
+        try:
+            await _notify(t, "Coming up", "reminded_15")
+        except Exception as e:
+            logger.warning(f"[TaskReminder] 15-min push failed for {t.get('_id')}: {e}")
+
+    due_now = await db.tasks.find({
+        **base,
+        "due_date": {"$lte": now, "$gte": now - timedelta(minutes=30)},
+        "reminded_due": {"$ne": True},
+    }).to_list(50)
+    for t in due_now:
+        try:
+            await _notify(t, "Now", "reminded_due")
+        except Exception as e:
+            logger.warning(f"[TaskReminder] due push failed for {t.get('_id')}: {e}")
+
+    if upcoming or due_now:
+        logger.info(f"[TaskReminder] Sent {len(upcoming)} upcoming + {len(due_now)} due reminders")
+
+
 def start_scheduler():
     """Register jobs and start the APScheduler."""
     if scheduler.running:
@@ -1738,6 +1798,15 @@ def start_scheduler():
         safe_job(_process_ai_queue),
         IntervalTrigger(seconds=60),
         id="ai_reply_queue_processor",
+        replace_existing=True,
+        misfire_grace_time=30,
+    )
+
+    # Every 60 seconds — push reminders for time-specific tasks/appointments
+    scheduler.add_job(
+        safe_job(send_task_reminders),
+        IntervalTrigger(seconds=60),
+        id="task_reminder_processor",
         replace_existing=True,
         misfire_grace_time=30,
     )

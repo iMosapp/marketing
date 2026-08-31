@@ -1275,7 +1275,7 @@ function HomeScreen() {
       {/* ── Floating quick actions (secondary actions) ── */}
       <QuickActionsFab
         actions={[
-          { key: 'dates-calendar', icon: 'calendar', label: 'Dates Calendar', color: '#AF52DE', onPress: () => router.push('/dates-calendar' as any) },
+          { key: 'dates-calendar', icon: 'calendar', label: 'Calendar', color: '#AF52DE', onPress: () => router.push('/dates-calendar' as any) },
           { key: 'send-photo', icon: 'camera', label: 'Send Photo', color: '#32ADE6', onPress: () => router.push('/quick-send/photo' as any) },
           { key: 'voice-note', icon: 'mic', label: 'Voice Note', color: '#34C759', onPress: () => openActionPicker('voice', 'Voice Note — pick a person') },
           { key: 'make-call', icon: 'call', label: 'Make a Call', color: '#30B0C7', onPress: () => router.push('/(tabs)/dialer' as any) },

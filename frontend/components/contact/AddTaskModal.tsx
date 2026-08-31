@@ -6,12 +6,15 @@ import React from 'react';
 import { View, Text, TextInput, TouchableOpacity, Modal, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { DateTimeField, ApptTypeRow } from '../DateTimeField';
 
 export default function AddTaskModal(props: any) {
   const {
     colors, visible, onClose, contact,
     newTaskTitle, setNewTaskTitle, newTaskNotes, setNewTaskNotes,
     newTaskDue, setNewTaskDue, newTaskPriority, setNewTaskPriority,
+    newTaskDate, setNewTaskDate, newTaskTime, setNewTaskTime,
+    newTaskApptType, setNewTaskApptType,
     savingTask, handleSaveTask,
   } = props;
 
@@ -56,22 +59,49 @@ export default function AddTaskModal(props: any) {
 
           {/* Due date */}
           <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>When?</Text>
-          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
             {([
               { key: 'today',    label: 'Today' },
               { key: 'tomorrow', label: 'Tomorrow' },
               { key: 'thisweek', label: 'This Week' },
+              { key: 'custom',   label: 'Pick date & time' },
             ] as const).map(opt => (
               <TouchableOpacity
                 key={opt.key}
                 onPress={() => setNewTaskDue(opt.key)}
-                style={{ paddingHorizontal: 18, paddingVertical: 10, borderRadius: 20, borderWidth: 1.5,
+                style={{ paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1.5,
                   borderColor: newTaskDue === opt.key ? '#FF9500' : colors.border,
                   backgroundColor: newTaskDue === opt.key ? '#FF950020' : colors.card }}
+                data-testid={`task-due-${opt.key}`}
+                testID={`task-due-${opt.key}`}
+                dataSet={{ testid: `task-due-${opt.key}` } as any}
               >
                 <Text style={{ fontSize: 15, fontWeight: '600', color: newTaskDue === opt.key ? '#FF9500' : colors.text }}>{opt.label}</Text>
               </TouchableOpacity>
             ))}
+          </View>
+          {newTaskDue === 'custom' && (
+            <View style={{ marginBottom: 16 }}>
+              <DateTimeField
+                colors={colors}
+                date={newTaskDate}
+                setDate={setNewTaskDate}
+                time={newTaskTime}
+                setTime={setNewTaskTime}
+                accent="#FF9500"
+              />
+              {newTaskTime ? (
+                <Text style={{ fontSize: 12, color: colors.textTertiary, marginTop: 6 }}>
+                  You'll get a reminder 15 minutes before and at the scheduled time
+                </Text>
+              ) : null}
+            </View>
+          )}
+
+          {/* Appointment type */}
+          <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 }}>Appointment type <Text style={{ fontWeight: '400', textTransform: 'none' }}>(optional)</Text></Text>
+          <View style={{ marginBottom: 16 }}>
+            <ApptTypeRow colors={colors} value={newTaskApptType} onChange={setNewTaskApptType} />
           </View>
 
           {/* Priority */}

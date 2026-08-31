@@ -471,6 +471,168 @@ async def get_task_summary(user_id: str):
     return result
 
 
+@router.get("/{user_id}/calendar")
+async def get_calendar_tasks(user_id: str, year: int, month: int):
+    """Tasks + appointments for the Calendar screen (padded month window; client maps to local days)."""
+    db = get_db()
+    start = datetime(year, month, 1, tzinfo=timezone.utc) - timedelta(days=1)
+    end = (datetime(year + 1, 1, 1, tzinfo=timezone.utc) if month == 12
+           else datetime(year, month + 1, 1, tzinfo=timezone.utc)) + timedelta(days=1)
+    docs = await db.tasks.find({
+        "user_id": user_id,
+        "due_date": {"$gte": start, "$lt": end},
+        "status": {"$nin": ["dismissed"]},
+    }).sort("due_date", 1).to_list(300)
+    out = []
+    for t in docs:
+        dd = t.get("due_date")
+        out.append({
+            "task_id": str(t["_id"]),
+            "title": t.get("title", ""),
+            "due_at": dd.isoformat() + ("" if (hasattr(dd, "tzinfo") and dd.tzinfo) else "+00:00") if isinstance(dd, datetime) else dd,
+            "has_time": bool(t.get("has_time")),
+            "appointment_type": t.get("appointment_type"),
+            "contact_id": t.get("contact_id") or "",
+            "contact_name": t.get("contact_name") or "",
+            "completed": bool(t.get("completed")),
+            "priority": t.get("priority", "medium"),
+        })
+    return {"tasks": out}
+
+
+async def extract_appointment_from_call(user_id: str, contact_id: str, contact_name: str, transcript: str, call_sid: str = ""):
+    """AI-extract a scheduled commitment ("I'll call you tomorrow at 2") from a call transcript
+    and auto-create the appointment task + notify the rep."""
+    if not transcript or len(transcript) < 40 or not user_id:
+        return None
+    db = get_db()
+    tz = None
+    try:
+        import pytz
+        u = await db.users.find_one({"_id": ObjectId(user_id)}, {"timezone": 1})
+        tz = pytz.timezone((u or {}).get("timezone") or "America/Denver")
+    except Exception:
+        pass
+    now_local = datetime.now(tz) if tz else datetime.now(timezone.utc)
+
+    try:
+        import os as _os
+        import uuid as _uuid
+        import json as _json
+        import asyncio as _aio
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        chat = LlmChat(
+            api_key=_os.environ.get("EMERGENT_LLM_KEY", ""),
+            session_id=f"appt-{_uuid.uuid4().hex[:12]}",
+            system_message=(
+                "You extract scheduled commitments from sales call transcripts. "
+                "Return ONLY strict JSON: {\"found\": bool, \"title\": str, \"local_datetime\": \"YYYY-MM-DDTHH:MM\", "
+                "\"appointment_type\": \"call|test_drive|delivery|meeting|other\", \"has_time\": bool}. "
+                "Only report a commitment when a SPECIFIC future day (and ideally time) was clearly agreed, "
+                "e.g. 'I'll call you tomorrow at 2' or 'come by Saturday morning'. "
+                "Resolve relative dates using the current local datetime provided. "
+                "If a day was agreed but no time, set has_time false and use 09:00. "
+                "Title should be short and actionable, e.g. 'Call Forest about trade-in'. "
+                "If nothing specific was scheduled, return {\"found\": false}."
+            ),
+        ).with_model("openai", "gpt-5.2")
+        resp = await _aio.wait_for(chat.send_message(UserMessage(text=(
+            f"Current local datetime: {now_local.strftime('%A %Y-%m-%dT%H:%M')}\n"
+            f"Customer name: {contact_name or 'Unknown'}\n"
+            f"Transcript:\n{transcript[:6000]}"
+        ))), timeout=25.0)
+        text = resp if isinstance(resp, str) else getattr(resp, "text", str(resp))
+        data = _json.loads(text[text.find("{"):text.rfind("}") + 1])
+    except Exception as e:
+        logger.warning(f"[ApptExtract] extraction failed for call {call_sid}: {e}")
+        return None
+
+    if not data.get("found") or not data.get("local_datetime"):
+        return None
+    try:
+        naive = datetime.fromisoformat(str(data["local_datetime"])[:16])
+        local_dt = tz.localize(naive) if tz else naive.replace(tzinfo=timezone.utc)
+        due_utc = local_dt.astimezone(timezone.utc)
+    except Exception:
+        return None
+    if due_utc < datetime.now(timezone.utc) - timedelta(minutes=5):
+        return None
+
+    # Dedupe — same contact within ±45 min already has an appointment
+    window = timedelta(minutes=45)
+    if contact_id:
+        existing = await db.tasks.find_one({
+            "user_id": user_id, "contact_id": contact_id, "completed": False,
+            "due_date": {"$gte": due_utc - window, "$lte": due_utc + window},
+        })
+        if existing:
+            logger.info(f"[ApptExtract] Skipping duplicate appointment for contact {contact_id}")
+            return None
+
+    has_time = bool(data.get("has_time", True))
+    appt_type = data.get("appointment_type") or "call"
+    if appt_type not in ("call", "test_drive", "delivery", "meeting", "other"):
+        appt_type = "other"
+    title = (data.get("title") or "").strip() or f"Appointment with {contact_name}".strip()
+
+    task = {
+        "user_id": user_id,
+        "contact_id": contact_id or "",
+        "contact_name": contact_name or "",
+        "contact_phone": "",
+        "type": "appointment",
+        "source": "call_extraction",
+        "call_sid": call_sid,
+        "title": title,
+        "description": "Auto-created from your phone call",
+        "suggested_message": "",
+        "action_type": "manual",
+        "priority": "high",
+        "priority_order": PRIORITY_ORDER.get("high", 1),
+        "status": "pending",
+        "completed": False,
+        "due_date": due_utc,
+        "has_time": has_time,
+        "appointment_type": appt_type,
+        "reminded_15": False,
+        "reminded_due": False,
+        "completed_at": None,
+        "snoozed_until": None,
+        "campaign_id": None,
+        "campaign_name": None,
+        "pending_send_id": None,
+        "channel": "",
+        "created_at": datetime.now(timezone.utc),
+    }
+    result = await db.tasks.insert_one(task)
+
+    label = local_dt.strftime("%a %b %-d · %-I:%M %p") if has_time else local_dt.strftime("%a %b %-d")
+    try:
+        await db.notifications.insert_one({
+            "user_id": user_id,
+            "type": "appointment_extracted",
+            "title": f"Appointment added — {contact_name or 'contact'}",
+            "message": f"From your call: \"{title}\" · {label}. It's on your calendar.",
+            "contact_id": contact_id,
+            "task_id": str(result.inserted_id),
+            "read": False, "dismissed": False,
+            "created_at": datetime.now(timezone.utc),
+        })
+        import asyncio as _aio2
+        from routers.push_notifications import send_push_to_user
+        _aio2.create_task(send_push_to_user(
+            user_id,
+            f"Appointment added — {contact_name or 'contact'}",
+            f"{title} · {label} (from your call)",
+            f"/contact/{contact_id}" if contact_id else "/dates-calendar",
+            "calendar",
+        ))
+    except Exception:
+        pass
+    logger.info(f"[ApptExtract] Created '{title}' at {due_utc.isoformat()} for contact {contact_id}")
+    return str(result.inserted_id)
+
+
 @router.post("/{user_id}")
 async def create_task(user_id: str, task_data: dict):
     """Create a manual task. Required: title. Optional: contact_id, description, due_date, etc."""
@@ -502,6 +664,8 @@ async def create_task(user_id: str, task_data: dict):
         due_date = datetime.now(timezone.utc)
 
     priority = task_data.get("priority", "medium")
+    has_time = bool(task_data.get("has_time"))
+    appointment_type = task_data.get("appointment_type") or None
 
     task = {
         "user_id": user_id,
@@ -519,6 +683,10 @@ async def create_task(user_id: str, task_data: dict):
         "status": "pending",
         "completed": False,
         "due_date": due_date,
+        "has_time": has_time,
+        "appointment_type": appointment_type,
+        "reminded_15": False,
+        "reminded_due": False,
         "completed_at": None,
         "snoozed_until": None,
         "campaign_id": None,

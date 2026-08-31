@@ -631,7 +631,7 @@ export default function MoreScreen() {
     const canManageCampaigns = !repPreview && (user?.role === 'super_admin' || user?.role === 'org_admin');
     const manageItems: (MenuItem & { permKey?: string })[] = [
       { icon: 'pricetags',  title: 'Tags',       subtitle: 'All tags — personal, account & org', onPress: () => router.push('/settings/tags'),             color: '#FF9500' },
-      { icon: 'calendar',   title: 'Dates Calendar', subtitle: 'Birthdays, sold dates & anniversaries by month', onPress: () => router.push('/dates-calendar' as any), color: '#AF52DE' },
+      { icon: 'calendar',   title: 'Calendar', subtitle: 'Appointments, tasks, birthdays & sold dates', onPress: () => router.push('/dates-calendar' as any), color: '#AF52DE' },
       { icon: 'pricetags-outline', title: 'Keyword Auto-Tags', subtitle: 'Auto-tag calls & texts by keywords', onPress: () => router.push('/settings/keyword-rules' as any), color: '#5856D6' },
       { icon: 'search-circle', title: 'Keyword Search', subtitle: 'Find any word in texts & call transcripts', onPress: () => router.push('/keyword-search' as any), color: '#32ADE6' },
       { icon: 'car-sport',  title: 'Inventory',  subtitle: 'Vehicles Jessi can quote & check',   onPress: () => router.push('/inventory' as any),          color: '#32ADE6' },
