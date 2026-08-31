@@ -2,14 +2,16 @@
  * WeeklyWinsCard — Monday morning recap of last week's wins (sold, texts, scans, new contacts).
  */
 import React, { useEffect, useState } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import api from '../../services/api';
 
 const GOLD = '#C9A962';
 
 export function WeeklyWinsCard({ userId, forceShow }: { userId: string; forceShow?: boolean }) {
   const [wins, setWins] = useState<any>(null);
+  const router = useRouter();
   const isMonday = new Date().getDay() === 1;
   const visible = isMonday || !!forceShow;
 
@@ -47,11 +49,18 @@ export function WeeklyWinsCard({ userId, forceShow }: { userId: string; forceSho
       </View>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         {stats.map(s => (
-          <View key={s.key} style={{ flex: 1, alignItems: 'center', backgroundColor: '#2C2C2E55', borderRadius: 12, paddingVertical: 10, gap: 3 }} testID={`wins-stat-${s.key}`} dataSet={{ testid: `wins-stat-${s.key}` }}>
+          <TouchableOpacity
+            key={s.key}
+            style={{ flex: 1, alignItems: 'center', backgroundColor: '#2C2C2E55', borderRadius: 12, paddingVertical: 10, gap: 3 }}
+            testID={`wins-stat-${s.key}`}
+            dataSet={{ testid: `wins-stat-${s.key}` }}
+            disabled={s.key !== 'sold'}
+            onPress={() => router.push('/sales-list?type=sold' as any)}
+          >
             <Ionicons name={s.icon as any} size={16} color={s.color} />
             <Text style={{ fontSize: 18, fontWeight: '800', color: '#FFF' }}>{s.value}</Text>
             <Text style={{ fontSize: 10, fontWeight: '600', color: '#8E8E93', letterSpacing: 0.3 }}>{s.label}</Text>
-          </View>
+          </TouchableOpacity>
         ))}
       </View>
       {(wins.waiting_cleared || 0) > 0 && (

@@ -797,8 +797,25 @@ async def get_sold_performance(user_id: str, months: int = 6):
 
 
 
+MANAGER_ROLES = ("super_admin", "admin", "manager", "store_manager", "org_admin")
+
+
+async def _team_user_ids(db, user_id: str):
+    """Return (is_manager, [user_ids]) for the requester's team scope."""
+    requester = await db.users.find_one({"_id": ObjectId(user_id)}, {"role": 1, "store_id": 1})
+    role = (requester or {}).get("role", "user")
+    if role not in MANAGER_ROLES:
+        return False, [user_id]
+    if role in ("super_admin", "org_admin"):
+        users_q: dict = {"active": {"$ne": False}}
+    else:
+        users_q = {"store_id": requester.get("store_id"), "active": {"$ne": False}}
+    reps = await db.users.find(users_q, {"_id": 1}).to_list(300)
+    return True, [str(r["_id"]) for r in reps]
+
+
 @api_router.get("/users/{user_id}/sold-contacts")
-async def get_sold_contacts_list(user_id: str, filter_type: str = "sold", month: int = 0, year: int = 0):
+async def get_sold_contacts_list(user_id: str, filter_type: str = "sold", month: int = 0, year: int = 0, scope: str = "me"):
     """Return filtered sold contacts for home screen tile taps."""
     db = get_db()
     from datetime import timezone as _tz
@@ -812,14 +829,21 @@ async def get_sold_contacts_list(user_id: str, filter_type: str = "sold", month:
         "date_sold": {"$gte": start.replace(tzinfo=None), "$lt": end.replace(tzinfo=None)},
         "status": {"$nin": ["hidden", "merged", "deleted"]},
     }
+    rep_names: dict = {}
+    if scope == "team":
+        is_mgr, ids = await _team_user_ids(db, user_id)
+        if is_mgr:
+            base["user_id"] = {"$in": ids}
+            reps = await db.users.find({"_id": {"$in": [ObjectId(i) for i in ids]}}, {"name": 1}).to_list(300)
+            rep_names = {str(r["_id"]): r.get("name", "") for r in reps}
     if filter_type == "referrals":
         base["referred_by"] = {"$exists": True, "$nin": [None, ""]}
     elif filter_type == "repeats":
         base["sold_count"] = {"$gt": 1}
     contacts = await db.contacts.find(base, {
-        "_id": 1, "first_name": 1, "last_name": 1, "phone": 1,
+        "_id": 1, "first_name": 1, "last_name": 1, "phone": 1, "user_id": 1,
         "vehicle": 1, "date_sold": 1, "sold_count": 1, "referred_by_name": 1, "photo_thumbnail": 1
-    }).sort("date_sold", -1).to_list(200)
+    }).sort("date_sold", -1).to_list(500)
     return {"contacts": [{
         "_id": str(c["_id"]),
         "name": f"{c.get('first_name','')} {c.get('last_name','')}".strip(),
@@ -829,7 +853,50 @@ async def get_sold_contacts_list(user_id: str, filter_type: str = "sold", month:
         "sold_count": c.get("sold_count", 1),
         "referred_by_name": c.get("referred_by_name", ""),
         "photo_thumbnail": c.get("photo_thumbnail", ""),
+        "rep_name": rep_names.get(c.get("user_id", ""), ""),
     } for c in contacts], "total": len(contacts)}
+
+
+@api_router.get("/users/{user_id}/sold-monthly-summary")
+async def get_sold_monthly_summary(user_id: str, filter_type: str = "sold", scope: str = "me"):
+    """Monthly sold counts for the last 24 months plus year totals."""
+    db = get_db()
+    from datetime import timezone as _tz
+    now_dt = datetime.now(_tz.utc)
+    window_start = datetime(now_dt.year - 2, now_dt.month, 1)
+    match: dict = {
+        "user_id": user_id,
+        "date_sold": {"$gte": window_start, "$ne": None},
+        "status": {"$nin": ["hidden", "merged", "deleted"]},
+    }
+    is_manager = False
+    if scope == "team":
+        is_manager, ids = await _team_user_ids(db, user_id)
+        if is_manager:
+            match["user_id"] = {"$in": ids}
+    if filter_type == "referrals":
+        match["referred_by"] = {"$exists": True, "$nin": [None, ""]}
+    elif filter_type == "repeats":
+        match["sold_count"] = {"$gt": 1}
+    pipeline = [
+        {"$match": match},
+        {"$group": {"_id": {"y": {"$year": "$date_sold"}, "m": {"$month": "$date_sold"}}, "total": {"$sum": 1}}},
+    ]
+    rows = await db.contacts.aggregate(pipeline).to_list(60)
+    by_key = {(r["_id"]["y"], r["_id"]["m"]): r["total"] for r in rows}
+    months = []
+    y, m = now_dt.year, now_dt.month
+    for _ in range(24):
+        months.append({"year": y, "month": m, "label": datetime(y, m, 1).strftime("%b %Y"), "total": by_key.get((y, m), 0)})
+        m -= 1
+        if m == 0:
+            m, y = 12, y - 1
+    months.reverse()
+    year_totals: dict = {}
+    for row in months:
+        key = str(row["year"])
+        year_totals[key] = year_totals.get(key, 0) + row["total"]
+    return {"months": months, "year_totals": year_totals, "is_manager": is_manager if scope == "team" else None}
 
 
 @api_router.get("/team/{user_id}/performance")
