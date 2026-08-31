@@ -88,7 +88,7 @@ export default function CalendarTaskModal({ visible, onClose, colors, userId, de
           <Text maxFontSizeMultiplier={1.0} style={[label, { marginTop: 0 }]}>What do you need to do?</Text>
           <TextInput
             style={{ backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 17, color: colors.text, borderWidth: 1, borderColor: colors.border }}
-            placeholder="e.g. Call Forest about the trade-in"
+            placeholder="e.g. Call Sam to follow up"
             placeholderTextColor={colors.textTertiary}
             value={title}
             onChangeText={setTitle}

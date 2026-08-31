@@ -528,7 +528,7 @@ async def extract_appointment_from_call(user_id: str, contact_id: str, contact_n
             system_message=(
                 "You extract scheduled commitments from sales call transcripts. "
                 "Return ONLY strict JSON: {\"found\": bool, \"title\": str, \"local_datetime\": \"YYYY-MM-DDTHH:MM\", "
-                "\"appointment_type\": \"call|appointment|delivery|meeting|other\", \"has_time\": bool}. "
+                "\"appointment_type\": \"call|text|appointment|task\", \"has_time\": bool}. "
                 "Only report a commitment when a SPECIFIC future day (and ideally time) was clearly agreed, "
                 "e.g. 'I'll call you tomorrow at 2' or 'come by Saturday morning'. "
                 "Resolve relative dates using the current local datetime provided. "
@@ -572,8 +572,8 @@ async def extract_appointment_from_call(user_id: str, contact_id: str, contact_n
 
     has_time = bool(data.get("has_time", True))
     appt_type = data.get("appointment_type") or "call"
-    if appt_type not in ("call", "appointment", "test_drive", "delivery", "meeting", "other"):
-        appt_type = "other"
+    if appt_type not in ("call", "text", "appointment", "task", "test_drive", "delivery", "meeting", "other"):
+        appt_type = "task"
     title = (data.get("title") or "").strip() or f"Appointment with {contact_name}".strip()
 
     task = {

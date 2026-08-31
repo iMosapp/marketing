@@ -28,7 +28,8 @@ const TYPE_META: Record<string, { color: string; icon: string; label: string }> 
 };
 
 const APPT_ICONS: Record<string, string> = {
-  call: 'call', appointment: 'calendar', test_drive: 'calendar', delivery: 'cube', meeting: 'people',
+  call: 'call', text: 'chatbubble', appointment: 'calendar', task: 'checkbox',
+  test_drive: 'calendar', delivery: 'cube', meeting: 'people',
 };
 
 const tid = (id: string): any => ({ testID: id, dataSet: { testid: id } });
@@ -201,7 +202,7 @@ export default function CalendarScreen() {
   const taskSubtitle = (t: any) => {
     const parts = [t.time_label || 'Anytime'];
     if (t.appointment_type) {
-      const label = { call: 'Call', appointment: 'Appointment', test_drive: 'Appointment', delivery: 'Delivery', meeting: 'Meeting' }[t.appointment_type as string];
+      const label = { call: 'Call', text: 'Text', appointment: 'Appointment', task: 'Task', test_drive: 'Appointment', delivery: 'Delivery', meeting: 'Meeting' }[t.appointment_type as string];
       if (label) parts.push(label);
     }
     return parts.join(' · ');

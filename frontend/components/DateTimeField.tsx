@@ -111,9 +111,9 @@ export function DateTimeField({ colors, date, setDate, time, setTime, accent = '
 
 export const APPT_TYPES = [
   { key: 'call', label: 'Call', icon: 'call' },
+  { key: 'text', label: 'Text', icon: 'chatbubble' },
   { key: 'appointment', label: 'Appointment', icon: 'calendar' },
-  { key: 'delivery', label: 'Delivery', icon: 'cube' },
-  { key: 'meeting', label: 'Meeting', icon: 'people' },
+  { key: 'task', label: 'Task', icon: 'checkbox' },
 ] as const;
 
 export function ApptTypeRow({ colors, value, onChange, accent = '#C9A962' }: any) {
