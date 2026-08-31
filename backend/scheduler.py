@@ -1684,6 +1684,35 @@ async def deliver_held_push_summaries():
         pass
 
 
+async def expire_stale_waiting_flags():
+    """Hourly: quietly clear Waiting flags older than 3 days so the queue never fills with stale items."""
+    from routers.database import get_db
+    db = get_db()
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=3)
+    # Stamp flagged conversations that never got a timestamp so they expire too
+    await db.conversations.update_many(
+        {"needs_assistance": True, "you_are_needed_at": {"$exists": False}},
+        {"$set": {"you_are_needed_at": now}},
+    )
+    stale = await db.conversations.find(
+        {"needs_assistance": True, "you_are_needed_at": {"$lt": cutoff}},
+        {"_id": 1},
+    ).to_list(500)
+    if not stale:
+        return
+    ids = [c["_id"] for c in stale]
+    await db.conversations.update_many(
+        {"_id": {"$in": ids}},
+        {"$set": {"needs_assistance": False, "unanswered_customer_replies": 0}},
+    )
+    await db.notifications.update_many(
+        {"conversation_id": {"$in": [str(i) for i in ids]}, "type": "you_are_needed", "dismissed": {"$ne": True}},
+        {"$set": {"dismissed": True, "read": True}},
+    )
+    logger.info(f"[WaitingExpire] Quietly cleared {len(ids)} stale waiting flags (>3 days)")
+
+
 def start_scheduler():
     """Register jobs and start the APScheduler."""
     if scheduler.running:
@@ -1779,6 +1808,15 @@ def start_scheduler():
         id="held_push_summaries",
         replace_existing=True,
         misfire_grace_time=600,
+    )
+
+    # Hourly — quietly expire Waiting flags older than 3 days
+    scheduler.add_job(
+        safe_job(expire_stale_waiting_flags),
+        IntervalTrigger(hours=1),
+        id="expire_stale_waiting",
+        replace_existing=True,
+        misfire_grace_time=1800,
     )
 
     # Hourly at :05 — at each rep's 8 AM local, text them who's getting date sends today
