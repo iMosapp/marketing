@@ -2008,16 +2008,14 @@ function ThreadScreen() {
         
         <View style={styles.headerInfo}>
           <TouchableOpacity onPress={() => router.push(`/contact/${contactIdForNav || id}` as any)} data-testid="thread-contact-name-link">
-            <Text style={[styles.headerName, { color: colors.textPrimary }]}>{contactName}</Text>
+            <Text style={[styles.headerName, { color: colors.textPrimary }]} numberOfLines={1}>{contactName}</Text>
           </TouchableOpacity>
-          {conversationStatus === 'closed' ? (
+          {conversationStatus === 'closed' && (
             <TouchableOpacity onPress={toggleConversationStatus} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
               <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: '#8E8E93' }} />
               <Text style={{ fontSize: 12, color: '#8E8E93', fontWeight: '600' }}>Closed</Text>
               <Text style={{ fontSize: 12, color: '#34C759', fontWeight: '600' }}>· Tap to Reopen</Text>
             </TouchableOpacity>
-          ) : (
-            <Text style={[styles.headerPhone, { color: colors.textSecondary }]}>{contactPhone}</Text>
           )}
         </View>
 
