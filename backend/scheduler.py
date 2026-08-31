@@ -1615,6 +1615,42 @@ async def send_task_reminders():
         logger.info(f"[TaskReminder] Sent {len(upcoming)} upcoming + {len(due_now)} due reminders")
 
 
+async def send_weekly_wins_push():
+    """Monday morning: push 'Your week in review is ready' to reps with non-zero wins."""
+    from routers.database import get_db
+    from routers.push_notifications import send_push_to_user
+    db = get_db()
+    now = datetime.now(timezone.utc)
+    this_monday = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+    week_key = this_monday.strftime("%Y-%m-%d")
+    start, end = this_monday - timedelta(days=7), this_monday
+    users = await db.users.find({"status": {"$nin": ["disabled", "suspended"]}}, {"_id": 1}).to_list(500)
+    sent = 0
+    for u in users:
+        uid = str(u["_id"])
+        try:
+            if await db.weekly_wins_push_log.find_one({"user_id": uid, "week": week_key}):
+                continue
+            sold = await db.contacts.count_documents({"user_id": uid, "date_sold": {"$gte": start, "$lt": end}})
+            texts = await db.messages.count_documents({"user_id": uid, "sender": "user", "timestamp": {"$gte": start, "$lt": end}})
+            scans = await db.card_scans.count_documents({"user_id": uid, "scanned_at": {"$gte": start, "$lt": end}})
+            new_contacts = await db.contacts.count_documents({"user_id": uid, "created_at": {"$gte": start, "$lt": end}})
+            if not (sold or texts or scans or new_contacts):
+                continue
+            parts = []
+            if sold: parts.append(f"{sold} sold")
+            if texts: parts.append(f"{texts} texts")
+            if scans: parts.append(f"{scans} card scans")
+            if new_contacts: parts.append(f"{new_contacts} new contacts")
+            await send_push_to_user(uid, "Your week in review is ready", " · ".join(parts) + " last week. Nice work.", "/home?wins=1", "trophy")
+            await db.weekly_wins_push_log.insert_one({"user_id": uid, "week": week_key, "sent_at": now})
+            sent += 1
+        except Exception as e:
+            logger.warning(f"[WeeklyWinsPush] Failed for {uid}: {e}")
+    if sent:
+        logger.info(f"[WeeklyWinsPush] Sent {sent} week-in-review pushes")
+
+
 def start_scheduler():
     """Register jobs and start the APScheduler."""
     if scheduler.running:
@@ -1690,6 +1726,15 @@ def start_scheduler():
         safe_job(send_weekly_bug_digest_job),
         CronTrigger(day_of_week='mon', hour=15, minute=0),
         id="weekly_bug_digest",
+        replace_existing=True,
+        misfire_grace_time=7200,
+    )
+
+    # Monday 14:45 UTC (~8 AM Mountain) — "Your week in review is ready" push
+    scheduler.add_job(
+        safe_job(send_weekly_wins_push),
+        CronTrigger(day_of_week='mon', hour=14, minute=45),
+        id="weekly_wins_push",
         replace_existing=True,
         misfire_grace_time=7200,
     )

@@ -17,10 +17,20 @@ import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 const IS_WEB = Platform.OS === 'web';
 
+const GOLD = '#C9A962';
+
 function getNotifIcon(type: string): string {
   switch (type) {
+    case 'you_are_needed': return 'alert-circle';
+    case 'slow_lead': return 'time';
     case 'new_lead': case 'lead_assigned': return 'person-add';
     case 'jump_ball': return 'flash';
+    case 'engagement_signal': return 'flame';
+    case 'keyword_alert': return 'key';
+    case 'customer_reply': return 'chatbubble';
+    case 'customer_reply_ai_handling': return 'sparkles';
+    case 'appointment_extracted': return 'calendar';
+    case 'task_reminder': return 'alarm';
     case 'task_overdue': return 'alert-circle';
     case 'task_due_soon': return 'time';
     case 'unread_message': return 'chatbubble';
@@ -39,6 +49,10 @@ function getNotifIcon(type: string): string {
     case 'email_sent': return 'mail';
     case 'sms_sent': return 'chatbox';
     case 'badge_earned': return 'trophy';
+    case 'milestone': return 'trophy';
+    case 'ai_outreach': return 'sparkles';
+    case 'call_recorded': return 'mic';
+    case 'photo_reminder': return 'image';
     case 'campaign_send': return 'megaphone';
     case 'date_trigger': return 'calendar';
     case 'new_demo_request': return 'person-add';
@@ -48,44 +62,32 @@ function getNotifIcon(type: string): string {
 
 function getNotifColor(type: string): string {
   switch (type) {
-    case 'new_lead': case 'lead_assigned': return '#007AFF';
-    case 'jump_ball': return '#FF9500';
-    case 'task_overdue': return '#FF3B30';
-    case 'task_due_soon': return '#FF9500';
-    case 'unread_message': return '#007AFF';
-    case 'flagged': return '#FF9500';
-    case 'link_click': return '#5856D6';
-    case 'review_submitted': return '#FFD60A';
-    case 'email_sent': return '#30D158';
-    case 'sms_sent': return '#34C759';
-    case 'badge_earned': return '#FFD60A';
-    case 'campaign_send': return '#FF9500';
-    case 'date_trigger': return '#5856D6';
-    case 'new_demo_request': return '#34C759';
-    default: return '#6E6E73';
+    case 'you_are_needed': case 'slow_lead': case 'task_overdue': return '#FF3B30';
+    case 'jump_ball': case 'engagement_signal': case 'task_due_soon': case 'flagged': return '#FF9500';
+    case 'new_lead': case 'lead_assigned': case 'new_demo_request': return GOLD;
+    case 'customer_reply': case 'customer_reply_ai_handling': case 'unread_message': return GOLD;
+    case 'appointment_extracted': case 'task_reminder': case 'keyword_alert': return GOLD;
+    case 'review_submitted': case 'new_review': case 'badge_earned': case 'milestone': return '#FFD60A';
+    default: return '#8E8E93';
   }
 }
 
 function getCategoryLabel(cat: string): string {
   switch (cat) {
+    case 'urgent': return 'Needs You';
     case 'leads': return 'Leads';
-    case 'tasks': return 'Tasks';
-    case 'messages': return 'Messages';
-    case 'flags': return 'Flags';
-    case 'campaigns': return 'Campaigns';
-    case 'activity': return 'Activity';
+    case 'replies': return 'Replies';
+    case 'appts': return 'Appts';
     default: return 'All';
   }
 }
 
 function getCategoryIcon(cat: string): string {
   switch (cat) {
+    case 'urgent': return 'alert-circle';
     case 'leads': return 'person-add';
-    case 'tasks': return 'checkbox';
-    case 'messages': return 'chatbubble';
-    case 'flags': return 'flag';
-    case 'campaigns': return 'megaphone';
-    case 'activity': return 'pulse';
+    case 'replies': return 'chatbubble';
+    case 'appts': return 'calendar';
     default: return 'apps';
   }
 }
@@ -157,7 +159,7 @@ export function NotificationBell() {
     }
   };
 
-  const categories = ['all', 'leads', 'tasks', 'messages', 'campaigns', 'flags', 'activity'];
+  const categories = ['all', 'urgent', 'leads', 'replies', 'appts'];
 
   return (
     <View style={styles.wrapper}>
@@ -180,7 +182,7 @@ export function NotificationBell() {
             <Pressable style={styles.dropdown} onPress={(e) => e.stopPropagation()}>
             {/* Header */}
             <View style={styles.dropdownHeader}>
-              <Text style={styles.dropdownTitle} numberOfLines={1} adjustsFontSizeToFit>Notifications</Text>
+              <Text style={styles.dropdownTitle} numberOfLines={1} adjustsFontSizeToFit>Alerts</Text>
               <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
                 {unreadCount > 0 && (
                   <TouchableOpacity onPress={markAllRead} data-testid="mark-all-read-btn">
@@ -214,7 +216,7 @@ export function NotificationBell() {
                     <Ionicons
                       name={getCategoryIcon(cat) as any}
                       size={13}
-                      color={isActive ? '#FFF' : colors.textSecondary}
+                      color={isActive ? '#000' : colors.textSecondary}
                     />
                     <Text style={[styles.categoryChipText, isActive && styles.categoryChipTextActive]}>
                       {getCategoryLabel(cat)}{count > 0 ? ` (${count})` : ''}
@@ -350,8 +352,8 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   markAll: {
     fontSize: 15,
-    color: '#007AFF',
-    fontWeight: '500',
+    color: GOLD,
+    fontWeight: '600',
   },
   categoryBar: {
     paddingVertical: 8,
@@ -370,7 +372,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 6,
   },
   categoryChipActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: GOLD,
   },
   categoryChipText: {
     fontSize: 14,
@@ -378,7 +380,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontWeight: '500',
   },
   categoryChipTextActive: {
-    color: colors.text,
+    color: '#000',
+    fontWeight: '700',
   },
   list: {
     maxHeight: 400,
@@ -403,7 +406,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 10,
   },
   itemUnread: {
-    backgroundColor: '#007AFF08',
+    backgroundColor: GOLD + '0C',
   },
   iconCircle: {
     width: 32,
@@ -417,7 +420,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: '#007AFF',
+    backgroundColor: GOLD,
   },
   itemContent: {
     flex: 1,

@@ -13,52 +13,57 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
-
 import { useThemeStore } from '../../store/themeStore';
+
+const GOLD = '#C9A962';
+const RED = '#FF3B30';
+
+const tid = (id: string): any => ({ testID: id, dataSet: { testid: id } });
+
 const CATEGORIES = [
-  { key: 'all', label: 'All', icon: 'apps' },
-  { key: 'engagement', label: 'Engagement', icon: 'flame' },
-  { key: 'leads', label: 'Lead Sources', icon: 'person-add' },
-  { key: 'tasks', label: 'Tasks', icon: 'checkbox' },
-  { key: 'messages', label: 'Messages', icon: 'chatbubble' },
-  { key: 'campaigns', label: 'Campaigns', icon: 'megaphone' },
-  { key: 'flags', label: 'Flagged', icon: 'flag' },
-  { key: 'activity', label: 'Activity', icon: 'pulse' },
+  { key: 'all', label: 'All', icon: 'apps', color: GOLD },
+  { key: 'urgent', label: 'Needs You', icon: 'alert-circle', color: RED },
+  { key: 'leads', label: 'Leads', icon: 'person-add', color: GOLD },
+  { key: 'replies', label: 'Replies', icon: 'chatbubble', color: GOLD },
+  { key: 'appts', label: 'Appts', icon: 'calendar', color: GOLD },
 ];
 
-function getNotifIcon(type: string): string {
-  const map: Record<string, string> = {
-    new_lead: 'person-add', lead_assigned: 'person-add', jump_ball: 'flash',
-    task_overdue: 'alert-circle', task_due_soon: 'time',
-    unread_message: 'chatbubble', flagged: 'flag',
-    link_click: 'open', review_submitted: 'star', new_contact: 'person-add',
-    digital_card_sent: 'card', review_request_sent: 'star-half',
-    congrats_card_sent: 'gift', email_sent: 'mail', sms_sent: 'chatbox',
-    badge_earned: 'trophy',
-    campaign_send: 'megaphone',
-    engagement_signal: 'flame',
-    new_review: 'star',   // customer left a review on digital card
-    review_click: 'open', // customer clicked an online review link
-  };
-  return map[type] || 'notifications';
-}
+const TYPE_META: Record<string, { icon: string; color: string }> = {
+  you_are_needed: { icon: 'alert-circle', color: RED },
+  slow_lead: { icon: 'time', color: RED },
+  jump_ball: { icon: 'flash', color: '#FF9500' },
+  new_lead: { icon: 'person-add', color: GOLD },
+  lead_assigned: { icon: 'person-add', color: GOLD },
+  new_demo_request: { icon: 'person-add', color: GOLD },
+  engagement_signal: { icon: 'flame', color: '#FF9500' },
+  keyword_alert: { icon: 'key', color: GOLD },
+  customer_reply: { icon: 'chatbubble', color: GOLD },
+  customer_reply_ai_handling: { icon: 'sparkles', color: GOLD },
+  unread_message: { icon: 'chatbubble', color: GOLD },
+  appointment_extracted: { icon: 'calendar', color: GOLD },
+  task_reminder: { icon: 'alarm', color: GOLD },
+  task_overdue: { icon: 'alert-circle', color: RED },
+  task_due_soon: { icon: 'time', color: '#FF9500' },
+  // activity types (muted)
+  flagged: { icon: 'flag', color: '#FF9500' },
+  link_click: { icon: 'open', color: '#8E8E93' },
+  review_submitted: { icon: 'star', color: '#FFD60A' },
+  new_review: { icon: 'star', color: '#FFD60A' },
+  new_contact: { icon: 'person-add', color: '#8E8E93' },
+  digital_card_sent: { icon: 'card', color: '#8E8E93' },
+  review_request_sent: { icon: 'star-half', color: '#8E8E93' },
+  congrats_card_sent: { icon: 'gift', color: '#8E8E93' },
+  email_sent: { icon: 'mail', color: '#8E8E93' },
+  sms_sent: { icon: 'chatbox', color: '#8E8E93' },
+  campaign_send: { icon: 'megaphone', color: '#8E8E93' },
+  date_trigger: { icon: 'calendar', color: '#8E8E93' },
+  milestone: { icon: 'trophy', color: '#FFD60A' },
+  ai_outreach: { icon: 'sparkles', color: '#8E8E93' },
+  call_recorded: { icon: 'mic', color: '#8E8E93' },
+  photo_reminder: { icon: 'image', color: '#8E8E93' },
+};
 
-function getNotifColor(type: string): string {
-  const map: Record<string, string> = {
-    new_lead: '#007AFF', lead_assigned: '#007AFF', jump_ball: '#FF9500',
-    task_overdue: '#FF3B30', task_due_soon: '#FF9500',
-    unread_message: '#007AFF', flagged: '#FF9500',
-    link_click: '#5856D6', review_submitted: '#FFD60A',
-    email_sent: '#30D158', sms_sent: '#34C759', badge_earned: '#FFD60A',
-    digital_card_sent: '#5856D6', review_request_sent: '#FFD60A',
-    congrats_card_sent: '#FF2D55',
-    engagement_signal: '#FF3B30',
-    campaign_send: '#FF9500',
-    new_review: '#FFD60A',  // gold star for reviews
-    review_click: '#FBBC04', // gold for online review link clicks
-  };
-  return map[type] || '#8E8E93';
-}
+const metaFor = (type: string) => TYPE_META[type] || { icon: 'notifications', color: '#8E8E93' };
 
 function formatTime(isoString: string) {
   try {
@@ -68,52 +73,60 @@ function formatTime(isoString: string) {
     if (diff < 60000) return 'Just now';
     if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
     if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-    if (diff < 172800000) return 'Yesterday';
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   } catch { return ''; }
 }
 
-export default function NotificationsPage() {
+function dayLabel(isoString: string): string {
+  try {
+    const d = new Date(isoString);
+    const today = new Date();
+    const sameDay = (a: Date, b: Date) =>
+      a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+    if (sameDay(d, today)) return 'TODAY';
+    const yest = new Date(today); yest.setDate(today.getDate() - 1);
+    if (sameDay(d, yest)) return 'YESTERDAY';
+    return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase().replace(',', ' ·');
+  } catch { return ''; }
+}
+
+export default function AlertsPage() {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
+  const [feed, setFeed] = useState<'for_you' | 'activity'>('for_you');
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
+  const [activityCount, setActivityCount] = useState(0);
   const [activeCategory, setActiveCategory] = useState('all');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const fetchNotifications = useCallback(async (cat: string = 'all') => {
+  const fetchNotifications = useCallback(async (f: string, cat: string) => {
     if (!user?._id) return;
     try {
-      const res = await api.get(`/notification-center/${user._id}?category=${cat}&limit=100`);
+      const res = await api.get(`/notification-center/${user._id}?feed=${f}&category=${cat}&limit=100`);
       if (res.data.success) {
         setNotifications(res.data.notifications || []);
         setUnreadCount(res.data.unread_count ?? 0);
         setCategoryCounts(res.data.category_counts || {});
+        setActivityCount(res.data.activity_count ?? 0);
       }
-    } catch (e) {
-      console.error('Failed to fetch notifications:', e);
-    }
+    } catch { /* silent */ }
   }, [user?._id]);
 
   useEffect(() => {
     if (!user?._id) return;
     setLoading(true);
-    fetchNotifications(activeCategory).finally(() => setLoading(false));
-  }, [activeCategory, user?._id]);
+    fetchNotifications(feed, activeCategory).finally(() => setLoading(false));
+  }, [feed, activeCategory, user?._id, fetchNotifications]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await fetchNotifications();
+    await fetchNotifications(feed, activeCategory);
     setRefreshing(false);
-  };
-
-  const handleCategoryChange = (cat: string) => {
-    setActiveCategory(cat);
-    fetchNotifications(cat);
   };
 
   const markAsRead = async (id: string) => {
@@ -139,116 +152,154 @@ export default function NotificationsPage() {
     if (n.link) {
       router.push(n.link as any);
     } else if (n.contact_id) {
-      // Reviews and other notifications with a contact but no explicit link
       router.push(`/contact/${n.contact_id}` as any);
     }
   };
 
-  const totalCount = Object.values(categoryCounts).reduce((s: number, v: any) => s + v, 0);
+  const totalForYou = Object.values(categoryCounts).reduce((s: number, v: any) => s + v, 0);
+
+  // group rows by day
+  const grouped: { label: string; items: any[] }[] = [];
+  notifications.forEach((n: any) => {
+    const label = dayLabel(n.timestamp);
+    const g = grouped.find(x => x.label === label);
+    if (g) g.items.push(n);
+    else grouped.push({ label, items: [n] });
+  });
 
   return (
-    <SafeAreaView style={styles.container} data-testid="notifications-page">
+    <SafeAreaView style={styles.container} {...tid('notifications-page')}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} data-testid="notif-back-btn">
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} {...tid('notif-back-btn')}>
+          <Ionicons name="chevron-back" size={24} color={GOLD} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Notifications</Text>
+          <Text maxFontSizeMultiplier={1.0} style={styles.headerTitle}>Alerts</Text>
           {unreadCount > 0 && (
-            <Text style={styles.headerSub}>{unreadCount} unread</Text>
+            <Text maxFontSizeMultiplier={1.0} style={styles.headerSub}>{unreadCount} unread</Text>
           )}
         </View>
         {unreadCount > 0 && (
-          <TouchableOpacity onPress={markAllRead} style={styles.markAllBtn} data-testid="notif-mark-all-read">
-            <Ionicons name="checkmark-done" size={18} color="#007AFF" />
-            <Text style={styles.markAllText}>Read All</Text>
+          <TouchableOpacity onPress={markAllRead} style={styles.markAllBtn} {...tid('notif-mark-all-read')}>
+            <Ionicons name="checkmark-done" size={15} color="#000" />
+            <Text maxFontSizeMultiplier={1.0} style={styles.markAllText}>Read All</Text>
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Category Tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabBar}>
-        {CATEGORIES.map(cat => {
-          const isActive = activeCategory === cat.key;
-          const count = cat.key === 'all' ? totalCount : (categoryCounts[cat.key] || 0);
-          return (
-            <TouchableOpacity
-              key={cat.key}
-              style={[styles.tab, isActive && styles.tabActive]}
-              onPress={() => handleCategoryChange(cat.key)}
-              data-testid={`notif-tab-${cat.key}`}
-            >
-              <Ionicons name={cat.icon as any} size={15} color={isActive ? '#FFF' : colors.textSecondary} />
-              <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
-                {cat.label}
-              </Text>
-              {count > 0 && (
-                <View style={[styles.tabBadge, isActive && styles.tabBadgeActive]}>
-                  <Text style={[styles.tabBadgeText, isActive && { color: '#007AFF' }]}>{count}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+      {/* For You / Activity segmented control */}
+      <View style={styles.segmentWrap}>
+        <TouchableOpacity
+          style={[styles.segment, feed === 'for_you' && styles.segmentActive]}
+          onPress={() => setFeed('for_you')}
+          {...tid('notif-feed-foryou')}
+        >
+          <Text maxFontSizeMultiplier={1.0} style={[styles.segmentText, feed === 'for_you' && styles.segmentTextActive]}>
+            For You{totalForYou > 0 ? ` · ${totalForYou}` : ''}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.segment, feed === 'activity' && styles.segmentActive]}
+          onPress={() => setFeed('activity')}
+          {...tid('notif-feed-activity')}
+        >
+          <Text maxFontSizeMultiplier={1.0} style={[styles.segmentText, feed === 'activity' && styles.segmentTextActive]}>
+            Activity{activityCount > 0 ? ` · ${activityCount}` : ''}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
-      {/* Notification List */}
+      {/* Smart filter cards — For You only */}
+      {feed === 'for_you' && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ flexGrow: 0, flexShrink: 0 }}
+          contentContainerStyle={{ paddingHorizontal: 16, gap: 8, paddingVertical: 10 }}
+        >
+          {CATEGORIES.map(cat => {
+            const isActive = activeCategory === cat.key;
+            const count = cat.key === 'all' ? totalForYou : (categoryCounts[cat.key] || 0);
+            return (
+              <TouchableOpacity
+                key={cat.key}
+                style={[styles.smartCard, isActive && styles.smartCardActive]}
+                onPress={() => setActiveCategory(cat.key)}
+                {...tid(`notif-tab-${cat.key}`)}
+              >
+                <View style={[styles.smartIcon, { backgroundColor: cat.color + '22' }]}>
+                  <Ionicons name={cat.icon as any} size={13} color={cat.color} />
+                </View>
+                <View>
+                  <Text maxFontSizeMultiplier={1.0} style={styles.smartCount}>{count}</Text>
+                  <Text maxFontSizeMultiplier={1.0} style={styles.smartLabel}>{cat.label}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      )}
+
+      {/* List */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={GOLD} />
         </View>
       ) : (
         <ScrollView
           style={styles.list}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#007AFF" />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={GOLD} />}
         >
           {notifications.length === 0 ? (
-            <View style={styles.emptyContainer}>
+            <View style={styles.emptyContainer} {...tid('notif-empty')}>
               <View style={styles.emptyIcon}>
-                <Ionicons name="checkmark-circle" size={48} color={colors.borderLight} />
+                <Ionicons name="checkmark-circle" size={44} color={GOLD} />
               </View>
-              <Text style={styles.emptyTitle}>All caught up!</Text>
-              <Text style={styles.emptySubtitle}>
-                {activeCategory === 'all'
-                  ? "You have no notifications right now."
-                  : `No ${activeCategory} notifications.`}
+              <Text maxFontSizeMultiplier={1.0} style={styles.emptyTitle}>All caught up!</Text>
+              <Text maxFontSizeMultiplier={1.0} style={styles.emptySubtitle}>
+                {feed === 'activity'
+                  ? 'No recent activity.'
+                  : activeCategory === 'all'
+                    ? 'Nothing needs you right now.'
+                    : `No ${CATEGORIES.find(c => c.key === activeCategory)?.label.toLowerCase()} alerts.`}
               </Text>
             </View>
           ) : (
-            notifications.map((n: any) => (
-              <TouchableOpacity
-                key={n.id}
-                style={[styles.notifItem, !n.read && styles.notifItemUnread]}
-                onPress={() => handleNotifPress(n)}
-                data-testid={`notif-item-${n.id}`}
-              >
-                <View style={[styles.notifIcon, { backgroundColor: getNotifColor(n.type) + '18' }]}>
-                  <Ionicons name={getNotifIcon(n.type) as any} size={18} color={getNotifColor(n.type)} />
-                </View>
-                <View style={styles.notifContent}>
-                  <View style={styles.notifTopRow}>
-                    <Text style={[styles.notifTitle, !n.read && { color: colors.text }]} numberOfLines={1}>
-                      {n.title}
-                    </Text>
-                    {!n.read && <View style={styles.unreadDot} />}
-                  </View>
-                  {(n.body || n.contact_name) && (
-                    <Text style={styles.notifBody} numberOfLines={2}>
-                      {n.body || n.contact_name}
-                    </Text>
-                  )}
-                  <View style={styles.notifMeta}>
-                    <Text style={styles.notifTime}>{formatTime(n.timestamp)}</Text>
-                    <View style={[styles.notifCatBadge, { backgroundColor: getNotifColor(n.type) + '15' }]}>
-                      <Text style={[styles.notifCatBadgeText, { color: getNotifColor(n.type) }]}>
-                        {(n.category || '').charAt(0).toUpperCase() + (n.category || '').slice(1)}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.borderLight} style={{ marginTop: 4 }} />
-              </TouchableOpacity>
+            grouped.map(group => (
+              <View key={group.label}>
+                <Text maxFontSizeMultiplier={1.0} style={styles.dayHeader}>{group.label}</Text>
+                {group.items.map((n: any) => {
+                  const meta = metaFor(n.type);
+                  return (
+                    <TouchableOpacity
+                      key={n.id}
+                      style={[styles.notifItem, !n.read && styles.notifItemUnread]}
+                      onPress={() => handleNotifPress(n)}
+                      activeOpacity={0.7}
+                      {...tid(`notif-item-${n.id}`)}
+                    >
+                      <View style={[styles.notifIcon, { backgroundColor: meta.color + '20' }]}>
+                        <Ionicons name={meta.icon as any} size={17} color={meta.color} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <View style={styles.notifTopRow}>
+                          {!n.read && <View style={styles.unreadDot} />}
+                          <Text maxFontSizeMultiplier={1.0} style={styles.notifTitle} numberOfLines={1}>
+                            {n.title}
+                          </Text>
+                          <Text maxFontSizeMultiplier={1.0} style={styles.notifTime}>{formatTime(n.timestamp)}</Text>
+                        </View>
+                        {(n.body || n.contact_name) ? (
+                          <Text maxFontSizeMultiplier={1.0} style={styles.notifBody} numberOfLines={2}>
+                            {n.body || n.contact_name}
+                          </Text>
+                        ) : null}
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             ))
           )}
           <View style={{ height: 40 }} />
@@ -266,72 +317,72 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.card,
   },
   backBtn: {
-    width: 36, height: 36, borderRadius: 10,
+    width: 36, height: 36, borderRadius: 12,
     backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center',
   },
-  headerTitle: { fontSize: 21, fontWeight: '700', color: colors.text },
-  headerSub: { fontSize: 14, color: colors.textSecondary, marginTop: 1 },
+  headerTitle: { fontSize: 22, fontWeight: '800', color: colors.text },
+  headerSub: { fontSize: 13, color: colors.textSecondary, marginTop: 1 },
   markAllBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16,
-    backgroundColor: '#007AFF15',
+    paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16,
+    backgroundColor: GOLD,
   },
-  markAllText: { fontSize: 15, color: '#007AFF', fontWeight: '600' },
-  tabBar: {
-    paddingHorizontal: 12, paddingVertical: 8,
-    borderBottomWidth: 1, borderBottomColor: colors.card,
+  markAllText: { fontSize: 13, color: '#000', fontWeight: '700' },
+  segmentWrap: {
+    flexDirection: 'row', marginHorizontal: 16, backgroundColor: colors.card,
+    borderRadius: 12, padding: 3, gap: 3,
   },
-  tab: {
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    paddingHorizontal: 16, paddingVertical: 8,
-    borderRadius: 20, backgroundColor: colors.card,
-    marginRight: 8,
+  segment: {
+    flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center',
   },
-  tabActive: { backgroundColor: '#007AFF' },
-  tabText: { fontSize: 13, color: colors.textSecondary, fontWeight: '600' },
-  tabTextActive: { color: colors.text },
-  tabBadge: {
-    minWidth: 18, height: 18, borderRadius: 9,
-    backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center',
-    paddingHorizontal: 4, marginLeft: 2,
+  segmentActive: { backgroundColor: GOLD },
+  segmentText: { fontSize: 13.5, fontWeight: '700', color: colors.textSecondary },
+  segmentTextActive: { color: '#000' },
+  smartCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: colors.card, borderRadius: 14,
+    paddingHorizontal: 10, paddingVertical: 7,
+    borderWidth: 1, borderColor: 'transparent',
   },
-  tabBadgeActive: { backgroundColor: '#FFFFFF30' },
-  tabBadgeText: { fontSize: 12, fontWeight: '700', color: colors.textSecondary },
+  smartCardActive: { borderColor: GOLD, backgroundColor: GOLD + '14' },
+  smartIcon: {
+    width: 26, height: 26, borderRadius: 13,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  smartCount: { fontSize: 15, fontWeight: '800', color: colors.text, lineHeight: 17 },
+  smartLabel: { fontSize: 10, fontWeight: '600', color: colors.textSecondary, lineHeight: 12 },
   list: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 80 },
-  emptyContainer: { alignItems: 'center', paddingTop: 80, gap: 8 },
+  emptyContainer: { alignItems: 'center', paddingTop: 70, gap: 8 },
   emptyIcon: {
     width: 72, height: 72, borderRadius: 36,
-    backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: GOLD + '15', alignItems: 'center', justifyContent: 'center',
     marginBottom: 8,
   },
-  emptyTitle: { fontSize: 19, fontWeight: '600', color: colors.text },
-  emptySubtitle: { fontSize: 16, color: '#6E6E73', textAlign: 'center' },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
+  emptySubtitle: { fontSize: 14, color: colors.textSecondary, textAlign: 'center' },
+  dayHeader: {
+    fontSize: 12, fontWeight: '800', color: GOLD, letterSpacing: 0.8,
+    paddingHorizontal: 20, marginTop: 16, marginBottom: 6,
+  },
   notifItem: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 12,
-    paddingHorizontal: 16, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: colors.card,
+    flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+    backgroundColor: colors.card, borderRadius: 16,
+    marginHorizontal: 16, marginBottom: 6,
+    paddingHorizontal: 12, paddingVertical: 12,
   },
-  notifItemUnread: { backgroundColor: '#007AFF06' },
+  notifItemUnread: {
+    borderLeftWidth: 3, borderLeftColor: GOLD,
+  },
   notifIcon: {
-    width: 38, height: 38, borderRadius: 12,
-    alignItems: 'center', justifyContent: 'center', marginTop: 2,
+    width: 34, height: 34, borderRadius: 11,
+    alignItems: 'center', justifyContent: 'center', marginTop: 1,
   },
-  notifContent: { flex: 1 },
   notifTopRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  notifTitle: { fontSize: 16, fontWeight: '600', color: colors.border, flex: 1 },
-  unreadDot: {
-    width: 8, height: 8, borderRadius: 4, backgroundColor: '#007AFF',
-  },
-  notifBody: { fontSize: 15, color: colors.textSecondary, lineHeight: 18, marginTop: 2 },
-  notifMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
-  notifTime: { fontSize: 13, color: '#6E6E73' },
-  notifCatBadge: {
-    paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4,
-  },
-  notifCatBadgeText: { fontSize: 12, fontWeight: '600' },
+  unreadDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: GOLD },
+  notifTitle: { fontSize: 15, fontWeight: '700', color: colors.text, flex: 1 },
+  notifTime: { fontSize: 11.5, color: colors.textTertiary },
+  notifBody: { fontSize: 13, color: colors.textSecondary, lineHeight: 17, marginTop: 2 },
 });

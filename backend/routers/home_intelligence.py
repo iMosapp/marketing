@@ -40,6 +40,25 @@ async def weekly_wins(user_id: str):
     }
 
 
+@router.get("/reply-health/{user_id}")
+async def reply_health(user_id: str):
+    """AI replies that failed to send in the last 24h — powers the Home warning card."""
+    db = get_db()
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+    q = {
+        "$or": [{"assigned_user_id": user_id}, {"user_id": user_id}],
+        "status": "failed",
+        "created_at": {"$gte": cutoff},
+    }
+    failed = await db.ai_reply_queue.count_documents(q)
+    last = await db.ai_reply_queue.find_one(q, sort=[("created_at", -1)]) if failed else None
+    return {
+        "failed": failed,
+        "conversation_id": (last or {}).get("conversation_id"),
+        "error": (last or {}).get("error"),
+    }
+
+
 # ── Streak calculator ─────────────────────────────────────────────────────────
 
 async def get_streak(user_id: str, db) -> dict:

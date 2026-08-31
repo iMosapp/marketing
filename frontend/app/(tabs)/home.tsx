@@ -27,6 +27,7 @@ import { UniversalShareModal } from '../../components/UniversalShareModal';
 import { DraftMessageSheet } from '../../components/DraftMessageSheet';
 import { HomeSmartBar } from '../../components/home/HomeSmartBar';
 import { LeadAlertCard } from '../../components/home/LeadAlertCard';
+import { ReplyHealthCard } from '../../components/home/ReplyHealthCard';
 import { WeeklyWinsCard } from '../../components/home/WeeklyWinsCard';
 import { QuickActionsFab } from '../../components/home/QuickActionsFab';
 
@@ -871,6 +872,9 @@ function HomeScreen() {
 
         {/* ── SPEED-TO-LEAD ALERT — unanswered internet leads ── */}
         <LeadAlertCard userId={user?._id || ''} />
+
+        {/* ── AI REPLY HEALTH — failed sends in the last day ── */}
+        <ReplyHealthCard userId={user?._id || ''} />
 
         {/* ── SMART CARDS — same treatment as Contacts ── */}
         <HomeSmartBar
