@@ -885,6 +885,20 @@ export default function InboxScreen() {
     }
   };
   
+  // "All Good" — clear the Waiting state without touching AI or taking over
+  const handleClearWaiting = async (conversationId: string) => {
+    setConversations(prev => prev.map(c =>
+      c._id === conversationId ? { ...c, needs_assistance: false, unanswered_customer_replies: 0 } : c
+    ));
+    try {
+      await messagesAPI.updateConversation(user!._id, conversationId, { needs_assistance: false });
+    } catch {
+      setConversations(prev => prev.map(c =>
+        c._id === conversationId ? { ...c, needs_assistance: true } : c
+      ));
+    }
+  };
+
   const renderConversation = ({ item }: { item: any }) => {
     const contactName = item.contact?.name || 'Unknown';
     const contactPhoto = resolvePhotoUrl(item.contact?.photo_thumbnail || item.contact?.photo_url || null);
@@ -1168,6 +1182,22 @@ export default function InboxScreen() {
                     <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: info.color, marginLeft: 2 }} />
                   )}
                 </View>
+                {/* All Good: acknowledge + clear waiting without touching AI */}
+                {item.needs_assistance && (
+                  <TouchableOpacity
+                    onPress={async (e: any) => {
+                      e.stopPropagation?.();
+                      await handleClearWaiting(item._id);
+                    }}
+                    style={{ backgroundColor: '#34C759', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, flexDirection: 'row', alignItems: 'center', gap: 3 }}
+                    activeOpacity={0.75}
+                    testID={`all-good-btn-${item._id}`}
+                    dataSet={{ testid: `all-good-btn-${item._id}` } as any}
+                  >
+                    <Ionicons name="checkmark" size={11} color="#000" />
+                    <Text style={{ fontSize: 10, fontWeight: '800', color: '#000' }}>All Good</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             );
           })()}

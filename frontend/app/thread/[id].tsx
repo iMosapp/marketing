@@ -581,6 +581,7 @@ function ThreadScreen() {
   
   // Speed-to-lead: banner shown while an internet lead awaits its first human reply
   const [leadWait, setLeadWait] = useState<any>(null);
+  const [needsAssistance, setNeedsAssistance] = useState(false);
 
   // Ensure we have a conversation (create if needed)
   const ensureConversation = async () => {
@@ -610,6 +611,7 @@ function ThreadScreen() {
       if (convInfo?.data?.is_internet_lead && convInfo.data.awaiting_first_reply) {
         setLeadWait({ receivedAt: convInfo.data.lead_received_at, sourceName: convInfo.data.lead_source_name });
       }
+      setNeedsAssistance(!!convInfo?.data?.needs_assistance);
 
       // Auto-mark as read when opening a conversation
       try { await messagesAPI.markAsRead(id as string); } catch {}
@@ -730,6 +732,7 @@ function ThreadScreen() {
       } else if (convInfo?.data?.ai_enabled === false) {
         setAiMode('off');
       }
+      setNeedsAssistance(!!convInfo?.data?.needs_assistance);
       
       // Auto-load AI suggestion when there are messages from contacts
       if (data && data.length > 0) {
@@ -2341,6 +2344,25 @@ function ThreadScreen() {
           <Text style={{ fontSize: 13, color: '#C9A962', fontWeight: '600', flex: 1 }}>
             {aiMode === 'auto_reply' ? 'Jessi is handling this' : 'AI in assist mode'}
           </Text>
+          {needsAssistance && (
+            <TouchableOpacity
+              onPress={async (e: any) => {
+                e.stopPropagation?.();
+                setNeedsAssistance(false);
+                const convId = actualConversationId || conversationId;
+                if (convId && user?._id) {
+                  try { await messagesAPI.updateConversation(user._id, convId, { needs_assistance: false }); } catch { setNeedsAssistance(true); }
+                }
+              }}
+              style={{ backgroundColor: '#34C759', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, flexDirection: 'row', alignItems: 'center', gap: 4 }}
+              activeOpacity={0.75}
+              testID="clear-waiting-thread-btn"
+              dataSet={{ testid: 'clear-waiting-thread-btn' } as any}
+            >
+              <Ionicons name="checkmark" size={12} color="#000" />
+              <Text style={{ fontSize: 12, fontWeight: '800', color: '#000' }}>All Good</Text>
+            </TouchableOpacity>
+          )}
           <View style={{ backgroundColor: '#C9A962', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 }}>
             <Text style={{ fontSize: 12, fontWeight: '800', color: '#000' }}>Take Over</Text>
           </View>

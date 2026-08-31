@@ -1508,6 +1508,18 @@ async def update_conversation(user_id: str, conversation_id: str, data: dict):
         update_dict['unanswered_customer_replies'] = 0
         update_dict['rep_engaged']              = True
 
+    # "All Good" — rep acknowledged the waiting state without taking over.
+    # Clears the counter + dismisses the You're-Needed alerts; AI mode untouched.
+    if data.get('needs_assistance') is False:
+        update_dict['unanswered_customer_replies'] = 0
+        try:
+            await db.notifications.update_many(
+                {"conversation_id": conversation_id, "type": "you_are_needed", "dismissed": {"$ne": True}},
+                {"$set": {"dismissed": True, "read": True}},
+            )
+        except Exception:
+            pass
+
     # Try conversation lookup without strict user_id filter — our new routing
     # uses rep_phone as the primary key, so user_id may not always match.
     try:
@@ -1656,6 +1668,8 @@ async def get_conversation_info(conversation_id: str):
         "status": conv.get("status", "active"),
         "ai_mode":    stored_ai_mode,
         "ai_enabled": stored_ai_enabled,
+        "needs_assistance": bool(conv.get("needs_assistance")),
+        "unanswered_customer_replies": conv.get("unanswered_customer_replies", 0),
     }
 
     # Speed-to-lead: waiting status for internet leads
