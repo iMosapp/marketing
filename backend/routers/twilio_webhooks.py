@@ -9,10 +9,40 @@ from datetime import datetime
 from typing import Optional, List
 import logging
 import os
+import re
 import httpx
 import base64
 
 from routers.database import get_db
+
+# ── Satisfied-reply detection (auto-clears the Waiting flag) ─────────────────
+_SAT_WORDS = {
+    "thanks", "thank", "thx", "ty", "perfect", "awesome", "great", "ok", "okay",
+    "kk", "cool", "sweet", "appreciate", "appreciated", "understood", "gotcha",
+}
+_SAT_PHRASES = [
+    "sounds good", "sounds great", "sounds perfect", "got it", "see you", "see ya",
+    "will do", "no problem", "no worries", "that works", "works for me",
+    "looking forward", "you too", "have a good", "all good", "thank you",
+    "cant wait", "can't wait",
+]
+_NEG_WORDS = {
+    "not", "don't", "dont", "cant", "can't", "wont", "won't", "wrong", "never",
+    "stop", "bad", "upset", "issue", "unhappy", "frustrated", "waiting", "still",
+    "but", "actually", "instead", "cancel", "refund",
+}
+
+
+def _is_satisfied_reply(text: str) -> bool:
+    """Short positive closer, no question, no pushback — nothing left for the rep to do."""
+    t = (text or "").strip().lower()
+    if not t or len(t) > 80 or "?" in t:
+        return False
+    cleaned = t.replace("no problem", "").replace("no worries", "")
+    words = set(re.findall(r"[a-z']+", cleaned))
+    if words & _NEG_WORDS:
+        return False
+    return bool(words & _SAT_WORDS) or any(p in t for p in _SAT_PHRASES)
 
 router = APIRouter(prefix="/webhooks/twilio", tags=["Twilio Webhooks"])
 logger = logging.getLogger(__name__)
@@ -396,10 +426,33 @@ async def incoming_message(
             {"_id": ObjectId(conversation_id)},
             {"$inc": {"unanswered_customer_replies": 1}},
             return_document=_RD.AFTER,
-            projection={"unanswered_customer_replies": 1, "ai_mode": 1, "ai_enabled": 1, "rep_sms_notified_at": 1}
+            projection={"unanswered_customer_replies": 1, "ai_mode": 1, "ai_enabled": 1, "rep_sms_notified_at": 1, "needs_assistance": 1}
         )
         conv_unanswered = (convo_update or {}).get("unanswered_customer_replies", 1) if convo_update else 1
         logger.info(f"[Webhook] Unanswered count for conv {conversation_id}: {conv_unanswered}")
+
+        # ── Auto-clear Waiting: customer answered happily after an AI reply ─────
+        # A short positive closer means nothing is left to do — clear the flag,
+        # reset the counter, dismiss You're-Needed alerts. AI mode untouched.
+        is_satisfied = _is_satisfied_reply(Body)
+        if is_satisfied and convo_update:
+            _cf = convo_update
+            _ai_on = _cf.get("ai_enabled") is not False and _cf.get("ai_mode") not in ("off", "draft_only", "assisted")
+            if _ai_on:
+                try:
+                    await db.conversations.update_one(
+                        {"_id": ObjectId(conversation_id)},
+                        {"$set": {"needs_assistance": False, "unanswered_customer_replies": 0}},
+                    )
+                    if _cf.get("needs_assistance"):
+                        await db.notifications.update_many(
+                            {"conversation_id": conversation_id, "type": "you_are_needed", "dismissed": {"$ne": True}},
+                            {"$set": {"dismissed": True, "read": True}},
+                        )
+                    conv_unanswered = 0
+                    logger.info(f"[Webhook] Customer sounded satisfied — auto-cleared Waiting for conv {conversation_id}")
+                except Exception as sce:
+                    logger.warning(f"[Webhook] Satisfied auto-clear failed: {sce}")
 
         # ── Log contact_event so wins feed + activity feed reflect the reply ─────
         if user_id and contact_id and Body and Body.strip():
@@ -741,7 +794,7 @@ async def incoming_message(
 
         effective_reply_count = max(max_reply_count, conv_unanswered)
 
-        if effective_reply_count >= urn_threshold and not is_stop and user_id:
+        if effective_reply_count >= urn_threshold and not is_stop and user_id and not is_satisfied:
             try:
                 cname_esc = contact.get("name") or f"{contact.get('first_name','')} {contact.get('last_name','')}".strip() or from_phone
                 # If the stored name is a generic auto-generated "Lead (XXXX)", try to find
@@ -838,8 +891,8 @@ async def incoming_message(
         if user_id:
             try:
                 cname = contact.get("name") or f"{contact.get('first_name','')} {contact.get('last_name','')}".strip() or from_phone
-                notif_type  = "you_are_needed" if max_reply_count >= 2 else "customer_reply"
-                notif_title = (f"{cname} needs you — {max_reply_count} unanswered" if max_reply_count >= 2
+                notif_type  = "you_are_needed" if (max_reply_count >= 2 and not is_satisfied) else "customer_reply"
+                notif_title = (f"{cname} needs you — {max_reply_count} unanswered" if notif_type == "you_are_needed"
                                else f"{cname} replied")
                 await db.notifications.insert_one({
                     "user_id": user_id, "type": notif_type,
@@ -847,7 +900,7 @@ async def incoming_message(
                     "message": Body[:200],
                     "contact_id": contact_id, "conversation_id": conversation_id,
                     "campaign_paused": len(active_enrollments) > 0,
-                    "priority": "urgent" if max_reply_count >= 2 else "normal",
+                    "priority": "urgent" if notif_type == "you_are_needed" else "normal",
                     "read": False, "dismissed": False, "created_at": datetime.utcnow(),
                 })
 
@@ -857,13 +910,13 @@ async def incoming_message(
                     try:
                         from routers.push_notifications import send_push_to_user
                         push_msg = (f"{effective_reply_count} messages without a reply"
-                                    if max_reply_count >= 2 else Body[:100])
+                                    if notif_type == "you_are_needed" else Body[:100])
                         asyncio.create_task(send_push_to_user(
                             user_id,
                             notif_title,
                             push_msg,
                             f"/thread/{conversation_id}",
-                            "alert-circle" if max_reply_count >= 2 else "chatbubble",
+                            "alert-circle" if notif_type == "you_are_needed" else "chatbubble",
                         ))
                     except Exception:
                         pass
