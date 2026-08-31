@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { showAlert } from '../../services/alert';
+import { copyToClipboard } from '../../utils/clipboard';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView,
   ActivityIndicator, Alert, Switch, Platform, Linking,
@@ -124,10 +125,8 @@ export default function EditLinkPage() {
 
   const copyLink = () => {
     const url = `https://app.imonsocial.com/l/${username}`;
-    if (Platform.OS === 'web') {
-      navigator.clipboard.writeText(url);
-      showAlert('Copied!', url);
-    } else { Linking.openURL(url); }
+    copyToClipboard(url);
+    showAlert('Copied!', url);
   };
 
   if (loading) return (

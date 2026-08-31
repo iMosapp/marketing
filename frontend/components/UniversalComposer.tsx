@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { copyToClipboard } from '../utils/clipboard';
 import api, { messagesAPI } from '../services/api';
 import { showSimpleAlert } from '../services/alert';
 import { useAuthStore } from '../store/authStore';
@@ -298,7 +299,7 @@ export default function UniversalComposer({
           ? `sms:${contact.phone}${/iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase()) ? '&' : '?'}body=${encodeURIComponent(messageContent)}`
           : `sms:${contact.phone}?body=${encodeURIComponent(messageContent)}`;
         try { if (IS_WEB) window.location.href = smsUrl; else Linking.openURL(smsUrl); } catch {}
-        try { if (IS_WEB && navigator.clipboard) await navigator.clipboard.writeText(messageContent); } catch {}
+        try { await copyToClipboard(messageContent); } catch {}
       } else if (mode === 'email') {
         // Email sent via backend — just notify
       }

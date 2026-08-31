@@ -11,12 +11,14 @@ import {
   Platform,
   Linking,
   ScrollView,
+  Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useThemeStore } from '../store/themeStore';
 import api from '../services/api';
 import { showSimpleAlert } from '../services/alert';
+import { copyToClipboard } from '../utils/clipboard';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -36,32 +38,6 @@ interface UniversalShareModalProps {
   eventType?: string;
   showScanStats?: boolean;
 }
-
-const copyText = async (text: string) => {
-  try {
-    if (IS_WEB && navigator.clipboard) {
-      await navigator.clipboard.writeText(text);
-    } else if (IS_WEB) {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-    }
-  } catch {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-  }
-};
 
 export function UniversalShareModal({
   visible,
@@ -172,9 +148,11 @@ export function UniversalShareModal({
     try {
       if (IS_WEB && navigator.share) {
         await navigator.share({ title, text: defaultShareText, url: shareUrl });
-      } else {
-        await copyText(shareUrl);
+      } else if (IS_WEB) {
+        await copyToClipboard(shareUrl);
         showSimpleAlert('Link Copied!', 'Link has been copied to clipboard.');
+      } else {
+        await Share.share(Platform.OS === 'ios' ? { url: shareUrl } : { message: shareUrl });
       }
     } catch {}
     logEvent('share_link');
@@ -183,7 +161,7 @@ export function UniversalShareModal({
 
   // Copy Link
   const handleCopyLink = async () => {
-    await copyText(shareUrl);
+    await copyToClipboard(shareUrl);
     showSimpleAlert('Link Copied!', 'Link has been copied to clipboard.');
     logEvent('copy_link');
     close();
@@ -434,14 +412,14 @@ export function UniversalShareModal({
 
             {/* Share Options Grid */}
             <View style={styles.shareOptionsGrid}>
-              <TouchableOpacity style={styles.shareOption} onPress={handleShareLink} data-testid="share-via-link">
+              <TouchableOpacity style={styles.shareOption} onPress={handleShareLink} testID="share-via-link" {...({ dataSet: { testid: 'share-via-link' } } as any)}>
                 <View style={[styles.shareOptionIcon, { backgroundColor: '#007AFF20' }]}>
                   <Ionicons name="share-outline" size={24} color="#007AFF" />
                 </View>
                 <Text style={[styles.shareOptionText, { color: colors.text }]}>Share Link</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.shareOption} onPress={handleCopyLink} data-testid="share-copy-link">
+              <TouchableOpacity style={styles.shareOption} onPress={handleCopyLink} testID="share-copy-link" {...({ dataSet: { testid: 'share-copy-link' } } as any)}>
                 <View style={[styles.shareOptionIcon, { backgroundColor: '#5856D620' }]}>
                   <Ionicons name="copy-outline" size={24} color="#5856D6" />
                 </View>

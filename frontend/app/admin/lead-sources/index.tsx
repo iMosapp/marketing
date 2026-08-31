@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { copyToClipboard as copyTextNative } from '../../../utils/clipboard';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../../store/authStore';
 import api from '../../../services/api';
@@ -92,15 +93,9 @@ const { showToast } = useToast();
   };
 
   const copyToClipboard = async (text: string, label: string) => {
-    try {
-      // For web, use navigator.clipboard
-      if (typeof navigator !== 'undefined' && navigator.clipboard) {
-        await navigator.clipboard.writeText(text);
-        showToast('${label} copied to clipboard');
-      }
-    } catch (error) {
-      showAlert('Error', 'Could not copy to clipboard');
-    }
+    const ok = await copyTextNative(text);
+    if (ok) showToast(`${label} copied to clipboard`);
+    else showAlert('Error', 'Could not copy to clipboard');
   };
 
   const renderSource = ({ item }: { item: LeadSource }) => (

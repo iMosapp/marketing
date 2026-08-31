@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { copyToClipboard } from '../../utils/clipboard';
 import { showAlert } from '../../services/alert';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, Platform, LayoutAnimation, UIManager, ActivityIndicator, Alert,
@@ -241,9 +242,7 @@ export default function AppDirectoryScreen() {
 
   const handleCopyLink = async (page: PageEntry) => {
     const url = getFullUrl(page.path);
-    if (Platform.OS === 'web' && navigator.clipboard) {
-      await navigator.clipboard.writeText(url);
-    }
+    await copyToClipboard(url);
     setCopiedPath(page.path);
     setTimeout(() => setCopiedPath(null), 2000);
     try { await api.post('/admin/app-directory/share/copy-link', { page_name: page.name, page_path: page.path }); } catch {}

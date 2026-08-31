@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { copyToClipboard } from '../../utils/clipboard';
 import {
   View,
   Text,
@@ -119,13 +120,11 @@ export default function BrandAssetsPage() {
 
   const handleCopyUrl = async (asset: BrandAsset) => {
     const fullUrl = asset.url.startsWith('http') ? asset.url : `${process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'}${asset.url}`;
-    try {
-      if (IS_WEB) {
-        await navigator.clipboard.writeText(fullUrl);
-      }
+    const ok = await copyToClipboard(fullUrl);
+    if (ok) {
       setCopiedId(asset.id);
       setTimeout(() => setCopiedId(null), 2000);
-    } catch {
+    } else {
       showSimpleAlert('Error', 'Failed to copy URL');
     }
   };

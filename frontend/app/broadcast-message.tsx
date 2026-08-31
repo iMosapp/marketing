@@ -11,6 +11,7 @@
  */
 
 import React, { useState } from 'react';
+import { copyToClipboard } from '../utils/clipboard';
 import {
   View, Text, TouchableOpacity, TextInput, StyleSheet,
   ScrollView, Platform, Share, Image,
@@ -102,9 +103,7 @@ export default function BroadcastMessageScreen() {
   async function handleCopy() {
     const txt = fullMessage || (photo ? '(Use Share button to send with photo)' : '');
     if (!txt) return;
-    if (Platform.OS === 'web' && navigator.clipboard) {
-      await navigator.clipboard.writeText(txt);
-    }
+    await copyToClipboard(txt);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   }

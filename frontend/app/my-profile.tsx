@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Linking, Share } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -8,6 +8,7 @@ import { Image as ExpoImage } from 'expo-image';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 import { showSimpleAlert } from '../services/alert';
+import { copyToClipboard } from '../utils/clipboard';
 import api from '../services/api';
 import * as ImagePicker from 'expo-image-picker';
 import { resolveUserPhotoUrlHiRes, resolvePhotoUrl } from '../utils/photoUrl';
@@ -111,11 +112,11 @@ export default function MyProfileScreen() {
   };
 
   const shareLink = (url: string, label: string) => {
-    if (Platform.OS === 'web' && navigator.clipboard) {
-      navigator.clipboard.writeText(url);
+    if (Platform.OS === 'web') {
+      copyToClipboard(url);
       showSimpleAlert('Copied!', `${label} link copied to clipboard`);
-    } else if (Platform.OS !== 'web') {
-      Linking.openURL(`sms:?body=${encodeURIComponent(`Check this out: ${url}`)}`);
+    } else {
+      Share.share(Platform.OS === 'ios' ? { url } : { message: url });
     }
   };
 
@@ -220,7 +221,7 @@ export default function MyProfileScreen() {
               <Text style={styles.pageSubtitle}>{p.subtitle}</Text>
               <View style={{ flexDirection: 'row', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
                 {p.url && (
-                  <TouchableOpacity style={[styles.chipBtn, { backgroundColor: p.color }]} onPress={() => shareLink(p.url!, p.title)} data-testid={`share-${p.quickSend}`}>
+                  <TouchableOpacity style={[styles.chipBtn, { backgroundColor: p.color }]} onPress={() => shareLink(p.url!, p.title)} testID={`share-${p.quickSend}`} {...({ dataSet: { testid: `share-${p.quickSend}` } } as any)}>
                     <Ionicons name="share-outline" size={13} color="#000" />
                     <Text style={[styles.chipBtnText, { color: '#000' }]}>Share</Text>
                   </TouchableOpacity>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { copyToClipboard } from '../../utils/clipboard';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView,
   ActivityIndicator, Platform, Image, KeyboardAvoidingView, Animated,
@@ -426,7 +427,7 @@ export default function PartnerOnboardScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>Team Credentials ({created.length})</Text>
               <View style={{ flexDirection: 'row', gap: 8 }}>
-                <TouchableOpacity style={s.actionChip} onPress={() => { if (Platform.OS === 'web') { navigator.clipboard?.writeText(getCredsText()); alert('Copied!'); } }}>
+                <TouchableOpacity style={s.actionChip} onPress={() => { copyToClipboard(getCredsText()); alert('Copied!'); }}>
                   <Ionicons name="copy-outline" size={14} color="#007AFF" /><Text style={{ fontSize: 14, color: '#007AFF', fontWeight: '600' }}>Copy</Text>
                 </TouchableOpacity>
                 {Platform.OS === 'web' && (

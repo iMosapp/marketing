@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { copyToClipboard as copyTextNative } from '../../../utils/clipboard';
 import { showAlert } from '../../../services/alert';
 import {
   View,
@@ -293,21 +294,13 @@ export default function LeadSourceDetailScreen() {
   };
 
   const copyToClipboard = async (text: string, label: string) => {
-    try {
-      if (typeof navigator !== 'undefined' && navigator.clipboard) {
-        await navigator.clipboard.writeText(text);
-        if (IS_WEB) {
-          showToast(`${label} copied to clipboard`, 'success');
-        } else {
-          showToast('${label} copied to clipboard');
-        }
-      }
-    } catch (error) {
-      if (IS_WEB) {
-        showToast('Could not copy to clipboard', 'error');
-      } else {
-        showAlert('Error', 'Could not copy to clipboard');
-      }
+    const ok = await copyTextNative(text);
+    if (ok) {
+      showToast(`${label} copied to clipboard`, 'success');
+    } else if (IS_WEB) {
+      showToast('Could not copy to clipboard', 'error');
+    } else {
+      showAlert('Error', 'Could not copy to clipboard');
     }
   };
 

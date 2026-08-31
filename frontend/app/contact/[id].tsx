@@ -1548,9 +1548,7 @@ function ContactDetailScreen() {
           }
           // Copy to clipboard for easy pasting
           try {
-            if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard) {
-              navigator.clipboard.writeText(messageContent);
-            }
+            Clipboard.setStringAsync(messageContent).catch(() => {});
           } catch {}
           // Open in user gesture context (not blocked by popup blocker)
           if (Platform.OS === 'web' && typeof window !== 'undefined') {

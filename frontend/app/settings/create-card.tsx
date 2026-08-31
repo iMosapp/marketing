@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput,
-  Image, ActivityIndicator, Platform, Linking, Modal,
+  Image, ActivityIndicator, Platform, Linking, Modal, Share,
 } from 'react-native';
+import { copyToClipboard } from '../../utils/clipboard';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -524,9 +525,11 @@ export default function CreateCardPage() {
       try {
         if (IS_WEB && navigator.share) {
           await navigator.share({ title: meta.label, text: defaultShareText, url: shareUrl });
-        } else {
-          await navigator.clipboard?.writeText(shareUrl);
+        } else if (IS_WEB) {
+          await copyToClipboard(shareUrl);
           showSimpleAlert('Link Copied!', 'Link has been copied to clipboard.');
+        } else {
+          await Share.share(Platform.OS === 'ios' ? { url: shareUrl } : { message: shareUrl });
         }
       } catch {}
     };

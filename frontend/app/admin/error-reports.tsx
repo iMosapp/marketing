@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { copyToClipboard } from '../../utils/clipboard';
 import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Platform, RefreshControl,
 } from 'react-native';
@@ -8,7 +9,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
-import { showConfirm } from '../../services/alert';
+import { showConfirm, showSimpleAlert } from '../../services/alert';
 
 const FILTERS = [
   { key: 'all', label: 'All' },
@@ -110,24 +111,11 @@ export default function ErrorReportsPage() {
 
   const handleCopy = async () => {
     const text = buildCopyText();
-    try {
-      if (Platform.OS === 'web') {
-        if (navigator.clipboard) {
-          await navigator.clipboard.writeText(text);
-        } else {
-          const ta = document.createElement('textarea');
-          ta.value = text;
-          ta.style.position = 'fixed';
-          ta.style.opacity = '0';
-          document.body.appendChild(ta);
-          ta.select();
-          document.execCommand('copy');
-          document.body.removeChild(ta);
-        }
-      }
+    const ok = await copyToClipboard(text);
+    if (ok) {
       setCopied(true);
       setTimeout(() => setCopied(false), 3000);
-    } catch {
+    } else {
       showSimpleAlert('Copy Failed', 'Could not copy to clipboard. Try selecting the text manually.');
     }
   };
@@ -169,7 +157,8 @@ export default function ErrorReportsPage() {
         style={[styles.copyButton, copied && styles.copyButtonCopied]}
         onPress={handleCopy}
         activeOpacity={0.7}
-        data-testid="error-reports-copy"
+        testID="error-reports-copy"
+        {...({ dataSet: { testid: 'error-reports-copy' } } as any)}
       >
         <Ionicons name={copied ? 'checkmark-circle' : 'copy-outline'} size={22} color="#FFF" />
         <Text style={styles.copyText}>{copied ? 'Copied!' : 'Copy All Reports'}</Text>

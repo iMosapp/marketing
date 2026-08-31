@@ -1,0 +1,32 @@
+{
+  "summary": "Frontend-only verification of the clipboard fix (shared copyToClipboard helper) on the web preview as admin forest@imosapp.com. Verified with Playwright + granted clipboard-read/write permissions and dialog capture. PASS: (1) UniversalShareModal 'Copy Link' for Landing Page and Showcase -> alert 'Link Copied!' and clipboard contained the real URLs (https://app.imonsocial.com/p/<id>, /showcase/<id>); modal closed after copy. (2) UniversalShareModal 'Share Link' with no navigator.share (headless) fell back to copy + 'Link Copied!' alert with correct URL. (3) Show QR renders real QR + URL text, 'Back' returns to options, 'Cancel' closes modal. (4) /my-profile Share chips: My Digital Card -> clipboard https://app.imonsocial.com/card/69a0b7095fddcede09591667, My Link Page -> /l/<id>, alerts 'Copied! <label> link copied to clipboard'. (5) /admin/error-reports 'Copy All Reports' -> green 'Copied!' banner and 25,175 chars of report text on the clipboard. (6) /settings/link-page Copy -> alert 'Copied!' + clipboard https://app.imonsocial.com/l/forestward. (7) /broadcast-message 'Copy Message' -> button flips to 'Copied!' and clipboard contains the typed message. (8) /settings/create-card loads with no console errors (regression). Web clipboard path is fully working; native cannot be exercised here.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "app/(tabs)/more.tsx", "issue": "DEAD UI: the 'Share My Showcase' modal (visible={showShowroomShare}, ~line 1533) and the review share modal (visible={showShareModal}, ~line 1434) can never open - setShowShowroomShare(true)/setShowShareModal(true) are not called anywhere in the file. Therefore handleCopyShowroomLink (~line 306) and handleCopyReviewLink (~line 177), which were part of this fix, are unreachable dead code and the requested 'Hub -> Share My Showcase -> Copy Link' flow does not exist in the UI. Either wire a trigger or delete the dead modals/handlers.", "selector": "showroom-copy-link / showroom-share-close", "priority": "HIGH"},
+      {"component": "RN-web testIDs", "issue": "data-testid props are dropped on RN-web for TouchableOpacity: [data-testid=\"share-copy-link\"], [data-testid=\"share-digitalcard\"], [data-testid=\"error-reports-copy\"], [data-testid=\"header-qr-btn\"] all resolve to 0 elements in the DOM. All clicks had to be done by visible text. Use the testID + dataSet={{ testid: '...' }} pattern on TouchableOpacity/Views so automation is stable.", "selector": "[data-testid=\"share-copy-link\"]", "priority": "MEDIUM"},
+      {"component": "Home quick-send card flow", "issue": "Console error on the Card tile -> 'Digital Card' screen: 'Unexpected text node: . A text node cannot be a child of a <View>' (x2). Cosmetic but indicates a stray string/whitespace child in that render tree.", "selector": "n/a", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "more.tsx: wire a trigger for the Showcase/Review share modals or remove the unreachable modals + handleCopyShowroomLink/handleCopyReviewLink (currently dead code that was 'fixed' but is not reachable).",
+    "Add testID + dataSet={{testid}} to share/copy TouchableOpacity elements (UniversalShareModal share-copy-link/share-via-link, my-profile share-<quickSend>, error-reports-copy, header-qr-btn) so data-testid survives RN-web.",
+    "Route remaining hand-rolled copy code through utils/clipboard.copyToClipboard for consistency: settings/create-card.tsx:260 (duplicates logic via require('expo-clipboard')) and :421 (navigator.clipboard?.writeText with no execCommand fallback; the native else-branch calls Linking.openURL(shareUrl) which can be an empty string for the copy case), showcase/[id].tsx:181 (duplicated 20-line execCommand fallback) and :578, card/[userId].tsx:313/440/833, congrats/[cardId].tsx:707, birthday/[cardId].tsx:77.",
+    "Fix stray text node warning on the quick-send Digital Card screen."
+  ],
+  "critical_code_review_comments": [
+    "utils/clipboard.ts is correct (expo-clipboard first, web execCommand fallback) but ~10 call sites still call navigator.clipboard directly; those in public card/showcase/congrats/birthday screens do have native Share fallbacks, so they are not silently broken, yet they duplicate logic and lack the execCommand fallback on web.",
+    "more.tsx is very large and now contains two fully-built but unreachable share modals - dead code increases the risk of 'fixed but not visible to the user' regressions like this one."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "not tested", "frontend": "8/9 requested flows verified (Hub 'Share My Showcase' flow unreachable in UI)"},
+  "seed_data_creation": "None. No SMS/emails sent. Typed a throwaway message in /broadcast-message (not sent).",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "forest@imosapp.com / Admin123! (worked)",
+  "context_for_next_testing_agent": "Web clipboard is verified working across UniversalShareModal, my-profile chips, error-reports, link-page, broadcast-message. Reach UniversalShareModal via Home 'Card' tile -> 'Landing Page'/'Showcase'/'Link Page' (the 'Digital Card' entry instead routes to the quick-send 'Share My Card' form, not the modal). data-testids are not in the RN-web DOM; click by exact text. window.alert is used for confirmations - register a page 'dialog' handler that accepts, and read clipboard via page.evaluate('navigator.clipboard.readText()') after context.grant_permissions(['clipboard-read','clipboard-write']).",
+  "rca_of_the_issue": "The reported copy bug is fixed on the web path: every tested handler now writes the actual URL/text to the system clipboard (verified by reading it back). The only remaining gap for the user's 'showcase share' complaint is that more.tsx's showcase share modal has no trigger, so that specific screen the user may have been referring to is unreachable; users currently share the showcase from /my-profile or the Home Card sheet, both of which copy the correct https://app.imonsocial.com/showcase/<id> URL."
+}

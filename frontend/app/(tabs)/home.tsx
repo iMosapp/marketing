@@ -827,7 +827,8 @@ function HomeScreen() {
             onPress={openCardQR}
             activeOpacity={0.7}
             style={{ padding: 6 }}
-            data-testid="header-qr-btn"
+            testID="header-qr-btn"
+            {...({ dataSet: { testid: 'header-qr-btn' } } as any)}
           >
             <Ionicons name="qr-code-outline" size={19} color={colors.textSecondary} />
           </TouchableOpacity>

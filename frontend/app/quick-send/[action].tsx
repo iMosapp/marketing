@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { copyToClipboard } from '../../utils/clipboard';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, SafeAreaView,
   ActivityIndicator, Platform, KeyboardAvoidingView, Linking,
@@ -309,10 +310,7 @@ export default function QuickSendPage() {
       }
 
       if (sendMethod === 'copy') {
-        // Copy to clipboard
-        if (IS_WEB && navigator.clipboard) {
-          await navigator.clipboard.writeText(finalMessage);
-        }
+        await copyToClipboard(finalMessage);
         // Log the event via contact event endpoint
         if (contactId) {
           await api.post(`/contacts/${userId}/${contactId}/events`, {

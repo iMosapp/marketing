@@ -1,4 +1,5 @@
 import React from 'react';
+import { copyToClipboard } from '../../utils/clipboard';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -62,10 +63,7 @@ export default function HubScreen() {
   const navigate = (path: string) => router.push(path as any);
 
   const copyLink = (path: string) => {
-    const url = getShareUrl(path);
-    if (Platform.OS === 'web' && navigator.clipboard) {
-      navigator.clipboard.writeText(url);
-    }
+    copyToClipboard(getShareUrl(path));
   };
 
   return (

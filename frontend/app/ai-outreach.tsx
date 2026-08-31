@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { copyToClipboard } from '../utils/clipboard';
 import { View, Text, TouchableOpacity, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -327,11 +328,7 @@ export default function AIOutreachPage() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.copyBtn}
-                  onPress={() => {
-                    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-                      navigator.clipboard.writeText(ps.message);
-                    }
-                  }}
+                  onPress={() => { copyToClipboard(ps.message); }}
                   data-testid={`copy-msg-${ps._id}`}
                 >
                   <Ionicons name="copy" size={14} color="#C9A962" />

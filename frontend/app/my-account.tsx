@@ -21,6 +21,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView,
   TextInput, Platform, Linking, Animated, ActivityIndicator, KeyboardAvoidingView,
 } from 'react-native';
+import { copyToClipboard } from '../utils/clipboard';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -395,7 +396,7 @@ export default function MyAccountScreen() {
   // ── Review share handlers ──────────────────────────────────────────────────
   function handleCopyReview() {
     if (!reviewUrl) return;
-    if (Platform.OS === 'web' && navigator.clipboard) navigator.clipboard.writeText(reviewUrl);
+    copyToClipboard(reviewUrl);
     setCopiedReview(true);
     setTimeout(() => setCopiedReview(false), 2500);
   }
@@ -727,11 +728,7 @@ export default function MyAccountScreen() {
                       {asset.url && (
                         <TouchableOpacity
                           style={[s.assetActionBtn, { backgroundColor: colors.borderLight }]}
-                          onPress={() => {
-                            if (Platform.OS === 'web' && navigator.clipboard && asset.url) {
-                              navigator.clipboard.writeText(asset.url);
-                            }
-                          }}
+                          onPress={() => { if (asset.url) copyToClipboard(asset.url); }}
                         >
                           <Ionicons name="copy-outline" size={13} color="#8E8E93" />
                           <Text style={[s.assetActionTxt, { color: colors.textSecondary }]}>Copy</Text>

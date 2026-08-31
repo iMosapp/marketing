@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { copyToClipboard } from '../../utils/clipboard';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -66,7 +67,7 @@ export function StoreManagement({ user, colors, storeSlug, storeName }: Props) {
                   <Text style={[s.actionLabel, { color: item.color }]}>Preview</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[s.actionBtn, { backgroundColor: '#FF950015' }]}
-                  onPress={() => { if (Platform.OS === 'web' && navigator.clipboard) { navigator.clipboard.writeText(item.previewUrl); showSimpleAlert('Copied!', 'Link copied to clipboard'); } }}>
+                  onPress={() => { copyToClipboard(item.previewUrl); showSimpleAlert('Copied!', 'Link copied to clipboard'); }}>
                   <Ionicons name="copy-outline" size={13} color="#FF9500" />
                   <Text style={[s.actionLabel, { color: '#FF9500' }]}>Copy Link</Text>
                 </TouchableOpacity>

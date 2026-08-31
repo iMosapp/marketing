@@ -7,6 +7,7 @@
  */
 
 import React, { useState } from 'react';
+import { copyToClipboard } from '../utils/clipboard';
 import {
   View, Text, TouchableOpacity, TextInput, StyleSheet,
   ScrollView, Platform, ActivityIndicator, Image,
@@ -107,9 +108,7 @@ export default function BroadcastCardScreen() {
   async function copyLink() {
     if (!cardLink) return;
     try {
-      if (Platform.OS === 'web' && navigator.clipboard) {
-        await navigator.clipboard.writeText(cardLink);
-      }
+      await copyToClipboard(cardLink);
       setCopied(true);
       setTimeout(() => setCopied(false), 3000);
       try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch {}

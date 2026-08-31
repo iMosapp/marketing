@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { copyToClipboard as copyTextNative } from '../../utils/clipboard';
 import {
   View,
   Text,
@@ -125,14 +126,8 @@ export default function DiscountCodesPage() {
   };
   
   const copyToClipboard = async (text: string) => {
-    try {
-      if (typeof navigator !== 'undefined' && navigator.clipboard) {
-        await navigator.clipboard.writeText(text);
-        showSimpleAlert('Copied', `${text} copied to clipboard`);
-      }
-    } catch (error) {
-      console.error('Copy failed:', error);
-    }
+    const ok = await copyTextNative(text);
+    if (ok) showSimpleAlert('Copied', `${text} copied to clipboard`);
   };
   
   const formatDate = (dateStr: string) => {

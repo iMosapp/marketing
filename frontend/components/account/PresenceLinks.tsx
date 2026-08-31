@@ -9,6 +9,7 @@
  */
 
 import React, { useState } from 'react';
+import { copyToClipboard as copyTextNative } from '../../utils/clipboard';
 import { View, Text, TouchableOpacity, Platform, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -28,10 +29,8 @@ function openUrl(url: string) {
 }
 
 function copyToClipboard(url: string, label: string) {
-  if (Platform.OS === 'web' && navigator.clipboard) {
-    navigator.clipboard.writeText(url);
-    showSimpleAlert('Copied!', `${label} copied to clipboard`);
-  }
+  copyTextNative(url);
+  showSimpleAlert('Copied!', `${label} copied to clipboard`);
 }
 
 interface Props {
