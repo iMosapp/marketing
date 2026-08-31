@@ -24,6 +24,22 @@ const THRESHOLD_OPTIONS = [
   { label: '3rd reply',  value: 3 },
 ];
 
+const GOLD = '#C9A962';
+
+const QUIET_START_OPTIONS = [
+  { label: '8 PM',  value: '20:00' },
+  { label: '9 PM',  value: '21:00' },
+  { label: '10 PM', value: '22:00' },
+  { label: '11 PM', value: '23:00' },
+];
+
+const QUIET_END_OPTIONS = [
+  { label: '6 AM', value: '06:00' },
+  { label: '7 AM', value: '07:00' },
+  { label: '8 AM', value: '08:00' },
+  { label: '9 AM', value: '09:00' },
+];
+
 export default function NotificationSettings() {
   const router    = useRouter();
   const colors    = useThemeStore(s => s.colors);
@@ -38,8 +54,19 @@ export default function NotificationSettings() {
   const [smsUrgent,    setSmsUrgent]    = useState<boolean>(saved.sms_you_are_needed         ?? true);
   const [urnThreshold, setUrnThreshold] = useState<number>(saved.you_are_needed_threshold    ?? 2);
   const [alertMode,    setAlertMode]    = useState<'both'|'push'|'sms'>((user as any)?.notification_mode || 'both');
+  const [quietOn,      setQuietOn]      = useState(false);
+  const [quietStart,   setQuietStart]   = useState('21:00');
+  const [quietEnd,     setQuietEnd]     = useState('07:00');
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+
+  useEffect(() => {
+    api.get('/schedule/me').then(r => {
+      setQuietOn(r.data?.overnight_quiet ?? false);
+      setQuietStart(r.data?.overnight_start || '21:00');
+      setQuietEnd(r.data?.overnight_end || '07:00');
+    }).catch(() => {});
+  }, []);
 
   const mark = () => setHasChanges(true);
 
@@ -56,6 +83,15 @@ export default function NotificationSettings() {
       await api.patch(`/users/${user._id}`, { notification_settings: prefs });
       // Save alert delivery mode separately
       await api.patch(`/push/preferences/${user._id}`, { notification_mode: alertMode });
+      // Save quiet hours (schedule doc) with auto-detected timezone
+      let tz: string | undefined;
+      try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { /* noop */ }
+      await api.put('/schedule/me', {
+        overnight_quiet: quietOn,
+        overnight_start: quietStart,
+        overnight_end: quietEnd,
+        ...(tz ? { timezone: tz } : {}),
+      });
       // Update auth store so the value persists across screens
       updateUser({ notification_settings: prefs, notification_mode: alertMode } as any);
       setHasChanges(false);
@@ -143,6 +179,78 @@ export default function NotificationSettings() {
               {alertMode === opt.value && <Ionicons name="checkmark-circle" size={22} color={opt.color} />}
             </TouchableOpacity>
           ))}
+        </View>
+
+        {/* ── Quiet Hours ────────────────────────────────────────────────── */}
+        <Text style={[s.sectionLabel, { color: colors.textSecondary, marginTop: 12 }]}>QUIET HOURS</Text>
+        <View style={[s.card, { backgroundColor: colors.card }]}>
+          <View style={s.row}>
+            <View style={[s.iconWrap, { backgroundColor: GOLD + '20' }]}>
+              <Ionicons name="moon" size={18} color={GOLD} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[s.rowTitle, { color: colors.text }]}>Silent overnight</Text>
+              <Text style={[s.rowSub, { color: colors.textSecondary }]}>
+                Hold pushes overnight — wake up to one morning summary instead of a pile
+              </Text>
+            </View>
+            <Switch
+              value={quietOn}
+              onValueChange={v => { setQuietOn(v); mark(); }}
+              trackColor={{ false: colors.border, true: GOLD + '80' }}
+              thumbColor={quietOn ? GOLD : colors.textSecondary}
+              data-testid="quiet-hours-toggle"
+            />
+          </View>
+
+          {quietOn && (
+            <>
+              <View style={[s.divider, { backgroundColor: colors.border }]} />
+              <Text style={[s.subLabel, { color: colors.textSecondary }]}>Quiet from</Text>
+              <View style={s.chipRow}>
+                {QUIET_START_OPTIONS.map(opt => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    onPress={() => { setQuietStart(opt.value); mark(); }}
+                    style={[
+                      s.chip,
+                      { backgroundColor: colors.surface, borderColor: colors.border },
+                      quietStart === opt.value && s.chipGold,
+                    ]}
+                    testID={`quiet-start-${opt.value.replace(':', '')}`}
+                    dataSet={{ testid: `quiet-start-${opt.value.replace(':', '')}` } as any}
+                  >
+                    <Text style={[s.chipText, { color: quietStart === opt.value ? '#000' : colors.textSecondary }]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={[s.subLabel, { color: colors.textSecondary }]}>Until</Text>
+              <View style={s.chipRow}>
+                {QUIET_END_OPTIONS.map(opt => (
+                  <TouchableOpacity
+                    key={opt.value}
+                    onPress={() => { setQuietEnd(opt.value); mark(); }}
+                    style={[
+                      s.chip,
+                      { backgroundColor: colors.surface, borderColor: colors.border },
+                      quietEnd === opt.value && s.chipGold,
+                    ]}
+                    testID={`quiet-end-${opt.value.replace(':', '')}`}
+                    dataSet={{ testid: `quiet-end-${opt.value.replace(':', '')}` } as any}
+                  >
+                    <Text style={[s.chipText, { color: quietEnd === opt.value ? '#000' : colors.textSecondary }]}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={[s.hint, { color: colors.textTertiary }]}>
+                Pushes during quiet hours are held, then delivered as one "While you were away" summary in the morning. Uses your phone's timezone.
+              </Text>
+            </>
+          )}
         </View>
 
         {/* ── Active Conversation ────────────────────────────────────────── */}
@@ -314,6 +422,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   chip:        { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7, borderWidth: 1 },
   chipActive:  { backgroundColor: '#007AFF', borderColor: '#007AFF' },
   chipUrgent:  { backgroundColor: '#FF3B30', borderColor: '#FF3B30' },
+  chipGold:    { backgroundColor: GOLD, borderColor: GOLD },
   chipText:    { fontSize: 13, fontWeight: '600' },
   hint:        { fontSize: 12, lineHeight: 16 },
   previewCard: { borderRadius: 16, padding: 16, marginBottom: 20 },

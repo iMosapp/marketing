@@ -60,6 +60,9 @@ class ScheduleUpdate(BaseModel):
     rotation_anchor:     Optional[str]           = None   # "YYYY-MM-DD"
     schedule_b:          Optional[WeeklySchedule] = None
     available_override_until: Optional[str]      = None   # ISO datetime or null
+    overnight_quiet:     Optional[bool]          = None   # hold pushes overnight
+    overnight_start:     Optional[str]           = None   # "21:00"
+    overnight_end:       Optional[str]           = None   # "07:00"
 
 
 # ── Utility: is user currently on shift? ─────────────────────────────────────
@@ -129,6 +132,41 @@ async def is_user_available(user_id: str) -> bool:
     return False
 
 
+async def is_quiet_now(user_id: str) -> bool:
+    """True when pushes should be HELD (overnight quiet window, or schedule quiet mode off-shift).
+    Held pushes get delivered as one summary when quiet hours end (see scheduler)."""
+    db = get_db()
+    sched = await db.user_schedules.find_one({"user_id": user_id})
+    if not sched:
+        return False
+
+    override = sched.get("available_override_until")
+    if override:
+        try:
+            if datetime.now(timezone.utc) < datetime.fromisoformat(override.replace("Z", "+00:00")):
+                return False
+        except Exception:
+            pass
+
+    if sched.get("overnight_quiet"):
+        try:
+            import pytz
+            tz = pytz.timezone(sched.get("timezone", "America/Denver"))
+            local_now = datetime.now(timezone.utc).astimezone(tz)
+        except Exception:
+            local_now = datetime.now(timezone.utc)
+        start = sched.get("overnight_start", "21:00")
+        end = sched.get("overnight_end", "07:00")
+        cur = local_now.strftime("%H:%M")
+        in_window = (cur >= start or cur < end) if start > end else (start <= cur < end)
+        if in_window:
+            return True
+
+    if sched.get("notification_quiet") and not await is_user_available(user_id):
+        return True
+    return False
+
+
 async def next_available_window(user_id: str) -> Optional[str]:
     """Return human-readable 'Available from HH:MM' or None."""
     db = get_db()
@@ -181,6 +219,9 @@ def _serialize_schedule(doc: dict) -> dict:
         "rotation_anchor":           doc.get("rotation_anchor"),
         "schedule_b":                doc.get("schedule_b", DEFAULT_SCHEDULE),
         "available_override_until":  doc.get("available_override_until"),
+        "overnight_quiet":           doc.get("overnight_quiet", False),
+        "overnight_start":           doc.get("overnight_start", "21:00"),
+        "overnight_end":             doc.get("overnight_end", "07:00"),
         "updated_at":                doc.get("updated_at").isoformat() if doc.get("updated_at") else None,
     }
 
@@ -205,6 +246,9 @@ async def get_my_schedule(x_user_id: str = Header(None, alias="X-User-ID")):
             "rotation_anchor":       None,
             "schedule_b":            DEFAULT_SCHEDULE,
             "available_override_until": None,
+            "overnight_quiet":       False,
+            "overnight_start":       "21:00",
+            "overnight_end":         "07:00",
             "updated_at":            None,
         }
     return _serialize_schedule(doc)
@@ -229,6 +273,9 @@ async def save_my_schedule(
     if update.schedule_b            is not None: set_doc["schedule_b"]            = update.schedule_b.dict()
     if update.available_override_until is not None:
         set_doc["available_override_until"] = update.available_override_until or None
+    if update.overnight_quiet       is not None: set_doc["overnight_quiet"]       = update.overnight_quiet
+    if update.overnight_start       is not None: set_doc["overnight_start"]       = update.overnight_start
+    if update.overnight_end         is not None: set_doc["overnight_end"]         = update.overnight_end
 
     await db.user_schedules.update_one(
         {"user_id": x_user_id},

@@ -1651,6 +1651,39 @@ async def send_weekly_wins_push():
         logger.info(f"[WeeklyWinsPush] Sent {sent} week-in-review pushes")
 
 
+async def deliver_held_push_summaries():
+    """Every 10 min: when a rep's quiet hours end, send ONE summary of the pushes held overnight."""
+    from routers.database import get_db
+    from routers.user_schedule import is_quiet_now
+    from routers.push_notifications import send_push_to_user
+    db = get_db()
+    now = datetime.now(timezone.utc)
+    user_ids = await db.held_pushes.distinct("user_id", {"delivered": False})
+    for uid in user_ids:
+        try:
+            if await is_quiet_now(uid):
+                continue
+            held = await db.held_pushes.find({"user_id": uid, "delivered": False}).sort("created_at", 1).to_list(50)
+            if not held:
+                continue
+            if len(held) == 1:
+                h = held[0]
+                await send_push_to_user(uid, h.get("title", "Alert"), h.get("body", ""), h.get("url", "/notifications"), h.get("icon", "flame"))
+            else:
+                titles = [h.get("title", "Alert") for h in held[:3]]
+                extra = len(held) - 3
+                body = " · ".join(titles) + (f" · +{extra} more" if extra > 0 else "")
+                await send_push_to_user(uid, f"While you were away — {len(held)} alerts", body, "/notifications", "sunny")
+            await db.held_pushes.update_many({"user_id": uid, "delivered": False}, {"$set": {"delivered": True, "delivered_at": now}})
+            logger.info(f"[HeldPush] Delivered summary of {len(held)} held pushes to {uid}")
+        except Exception as e:
+            logger.warning(f"[HeldPush] Summary failed for {uid}: {e}")
+    try:
+        await db.held_pushes.delete_many({"delivered": True, "created_at": {"$lt": now - timedelta(days=7)}})
+    except Exception:
+        pass
+
+
 def start_scheduler():
     """Register jobs and start the APScheduler."""
     if scheduler.running:
@@ -1737,6 +1770,15 @@ def start_scheduler():
         id="weekly_wins_push",
         replace_existing=True,
         misfire_grace_time=7200,
+    )
+
+    # Every 10 min — deliver held-push summaries when quiet hours end
+    scheduler.add_job(
+        safe_job(deliver_held_push_summaries),
+        IntervalTrigger(minutes=10),
+        id="held_push_summaries",
+        replace_existing=True,
+        misfire_grace_time=600,
     )
 
     # Hourly at :05 — at each rep's 8 AM local, text them who's getting date sends today

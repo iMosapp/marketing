@@ -85,14 +85,22 @@ async def send_push_to_user(user_id: str, title: str, body: str, url: str = "/to
     except Exception:
         mode = "both"
 
-    # Respect quiet-hours schedule
+    # Quiet hours: HOLD the push for a morning summary instead of dropping it
     try:
-        from routers.user_schedule import is_user_available
-        if not await is_user_available(user_id):
-            logger.info(f"[Push] Skipped for {user_id} — outside scheduled hours")
+        from routers.user_schedule import is_quiet_now
+        if await is_quiet_now(user_id):
+            from datetime import datetime as _dt, timezone as _tz
+            db_q = get_db()
+            held_count = await db_q.held_pushes.count_documents({"user_id": user_id, "delivered": False})
+            if held_count < 50:
+                await db_q.held_pushes.insert_one({
+                    "user_id": user_id, "title": title, "body": body, "url": url, "icon": icon,
+                    "delivered": False, "created_at": _dt.now(_tz.utc),
+                })
+            logger.info(f"[Push] Held for {user_id} — quiet hours (will summarize when they end)")
             return 0
     except Exception as e:
-        logger.debug(f"[Push] Schedule check failed (non-fatal): {e}")
+        logger.debug(f"[Push] Quiet-hours check failed (non-fatal): {e}")
 
     db = get_db()
     sent = 0
