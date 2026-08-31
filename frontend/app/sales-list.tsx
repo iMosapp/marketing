@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -214,6 +214,9 @@ export default function SalesListScreen() {
               <Text style={{ fontSize: 18, fontWeight: '700', color: GOLD }}>
                 {(item.name || '?')[0].toUpperCase()}
               </Text>
+              {item.photo_thumbnail ? (
+                <Image source={{ uri: item.photo_thumbnail }} style={[StyleSheet.absoluteFillObject, { borderRadius: 22 }]} />
+              ) : null}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{item.name}</Text>
@@ -261,5 +264,5 @@ const st = StyleSheet.create({
   barCol: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', gap: 3 },
   bar: { width: 14, borderRadius: 4 },
   row: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, padding: 14, marginBottom: 8, borderWidth: 1, gap: 12 },
-  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#C9A96220', alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#C9A96220', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
 });
