@@ -253,6 +253,50 @@ async def queue_ai_reply(
     ]
     is_ai_suspect = any(sig in msg_lower for sig in AI_SUSPECT_SIGNALS)
 
+    # ── Scheduling / appointment approval hold ────────────────────────────────
+    # The rep must approve before Jessi commits to ANY time or visit. This applies
+    # in every mode, including full auto - we never let AI lock in an appointment
+    # on the dealer's behalf. Jessi still DRAFTS the reply; it just waits for a tap.
+    SCHEDULING_SIGNALS = [
+        "appointment", "schedule", "reschedule", "rescheduling", "test drive",
+        "come in", "come by", "come down", "swing by", "stop by", "drop by",
+        "what time", "what day", "book a", "book it", "set a time", "set up a time",
+        "lock in", "lock it in", "lock that in", "pencil me in", "pick it up", "pickup",
+        "today", "tonight", "tomorrow", "this afternoon", "this evening", "this morning",
+        "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+        "o'clock", " am", " pm", "a.m.", "p.m.",
+    ]
+    import re as _re_sched
+    # A short reply that contains a time-like token ("6?", "6pm", "3:30", "at 6")
+    # counts as scheduling when the recent thread was about setting a time.
+    _has_time_token = bool(_re_sched.search(r"\b\d{1,2}(:\d{2})?\s*(am|pm|a\.m\.|p\.m\.)?\b", msg_lower))
+    _recent_for_sched = await db.messages.find(
+        {"conversation_id": conversation_id}, {"content": 1}
+    ).sort("timestamp", -1).limit(5).to_list(5)
+    _recent_blob = " ".join((m.get("content") or "") for m in _recent_for_sched).lower()
+    _sched_context = any(s in _recent_blob for s in (
+        "what time", "what day", "come in", "come by", "come down", "appointment",
+        "schedule", "test drive", "lock", "book", "set up a time", "stop by", "swing by",
+    ))
+    is_scheduling = (
+        any(sig in msg_lower for sig in SCHEDULING_SIGNALS)
+        or (_has_time_token and _sched_context)
+        or (_sched_context and len(msg_lower.strip()) <= 12)
+    )
+    # AI-suspicion always wins over scheduling (a human must step in, no draft hold).
+    if is_ai_suspect:
+        is_scheduling = False
+
+    # Flag the conversation as Waiting when Jessi is holding an appointment draft.
+    if is_scheduling:
+        try:
+            await db.conversations.update_one(
+                {"_id": ObjectId(conversation_id)},
+                {"$set": {"needs_assistance": True, "you_are_needed_at": datetime.utcnow()}}
+            )
+        except Exception:
+            pass
+
     # Full auto mode ("Jessi is handling this") means the rep asked Jessi to answer
     # everything herself. Routine inventory/pricing/scheduling questions must NOT be
     # handed to a human - Jessi answers naturally and keeps auto-sending. The only
@@ -265,7 +309,7 @@ async def queue_ai_reply(
     if is_hot_topic and not is_ai_suspect:
         inventory_context, inventory_media = await _search_inventory_context(db, assigned_user_id, incoming_message)
 
-    if is_hot_topic and not inventory_context and not suppress_hot_escalation:
+    if is_hot_topic and not inventory_context and not suppress_hot_escalation and not is_scheduling:
         logger.info(f"[AIReply] Hot topic detected in message — sending brief reply + escalating for {contact_id}")
         # Generate a brief warm response and immediately flag for rep
         hot_reply = "Good question, let me check on that and get back to you."
@@ -338,7 +382,7 @@ async def queue_ai_reply(
         logger.info(f"[AIReply] Hot topic brief reply queued + rep escalation triggered for {contact_id}")
         return queue_item
 
-    if is_hot_topic and inventory_context and not suppress_hot_escalation:
+    if is_hot_topic and inventory_context and not suppress_hot_escalation and not is_scheduling:
         # Jessi has live inventory facts — answer with real data, but still flag
         # the conversation and notify the rep so they can jump in.
         logger.info(f"[AIReply] Live inventory match — Jessi answering with real data for {contact_id}")
@@ -443,6 +487,11 @@ async def queue_ai_reply(
         needs_approval = True  # Never auto-sends
     elif ai_assist_mode == AI_MODE_AUTO_WITH_APPROVAL and reply_count >= escalation_threshold:
         needs_approval = True  # Escalation threshold hit
+
+    # Appointment/time-setting: rep must approve before it sends, in EVERY mode.
+    # Jessi never commits to a time on the dealer's behalf without a "Looks Good".
+    if is_scheduling:
+        needs_approval = True
 
     # ── Calculate send_at ─────────────────────────────────────────────────────
     delay = get_human_delay(incoming_message)
@@ -1019,6 +1068,23 @@ async def approve_ai_reply(queue_id: str, request: Request):
         "timestamp":       now,
         "status":          "sent" if not result.get("mock") else "sent_mock",
     })
+
+    # Rep approved the draft — the exchange is handled, so leave the Waiting queue
+    # and dismiss any lingering alerts. Jessi stays on and keeps the conversation.
+    if item.get("conversation_id"):
+        try:
+            await db.conversations.update_one(
+                {"_id": ObjectId(item["conversation_id"])},
+                {"$set": {"needs_assistance": False, "unanswered_customer_replies": 0}}
+            )
+            await db.notifications.update_many(
+                {"conversation_id": item["conversation_id"],
+                 "type": {"$in": ["you_are_needed", "ai_draft_approval_required"]},
+                 "dismissed": {"$ne": True}},
+                {"$set": {"dismissed": True, "read": True}}
+            )
+        except Exception:
+            pass
 
     return {"success": True, "sent": True, "body": body}
 

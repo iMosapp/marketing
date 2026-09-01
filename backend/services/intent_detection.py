@@ -225,5 +225,18 @@ async def process_inbound_intent(
             except Exception as push_err:
                 logger.warning(f"[Intent] Push failed: {push_err}")
 
+            # Sync the hot status onto the CONTACT record so it shows the Hot badge
+            # and counts in the Contacts "Hot Leads" list (inbox + contacts stay in
+            # sync). hot_last_at drives the time-based auto-dissolve job.
+            if contact_id:
+                try:
+                    await db.contacts.update_one(
+                        {"_id": __import__("bson").ObjectId(contact_id)},
+                        {"$addToSet": {"tags": "hot"},
+                         "$set": {"hot_opportunity": True, "hot_score": score, "hot_last_at": now}}
+                    )
+                except Exception as tag_err:
+                    logger.warning(f"[Intent] Contact hot-tag sync failed: {tag_err}")
+
     except Exception as e:
         logger.warning(f"[Intent] process_inbound_intent failed: {e}")

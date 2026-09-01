@@ -1,5 +1,16 @@
 # CHANGELOG — iMOs App
 
+## Jun 2026 — Appointment Approval Hold + Hot Lead Sync (COMPLETED)
+- **Issue A:** In full-auto, Jessi was auto-confirming appointment times ("6 works, let me lock that in") with no rep involvement.
+  - **Fix (`routers/ai_reply.py`):** added scheduling detection (`is_scheduling` via keyword list + time-token/short-reply-in-scheduling-context). Any scheduling/time message now forces `needs_approval=True` in EVERY mode and flags the conversation Waiting. Jessi still DRAFTS the reply; it never auto-sends. AI-suspicion still wins (human takeover, no draft hold). Inventory/pricing (non-scheduling) still auto-sends.
+  - **Approve flow:** `approve_ai_reply` now clears `needs_assistance`/counter + dismisses alerts so the convo leaves Waiting and Jessi continues.
+  - **Frontend (`app/thread/[id].tsx`):** new in-thread approval card — "Jessi drafted a reply — approve to send" with **Looks Good / Edit / Take Over**. Loads via `GET /ai-reply/pending/{user_id}` (polled every 4s); approve → `POST /ai-reply/{id}/approve`; take over → `POST /ai-reply/{id}/reject` + AI off. Also fixed a blocking undefined `showToast` (→ `showSimpleAlert`).
+  - Verified backend e2e: scheduling → held for approval + Waiting; pending endpoint returns it; approve → sent + Waiting cleared; inventory control → still auto. ALL PASS. In-thread UI code-complete + bundles clean; not visually testable headless (needs a real inbound SMS to produce a draft) — verify on device.
+- **Issue B (hot lead sync + dissolve):** intent detector only set `hot_opportunity` on the CONVERSATION, so the Contacts "Hot Leads" list/badge (which key off a contact `"hot"` tag) never updated.
+  - **Fix (`services/intent_detection.py`):** when a convo goes hot, also `$addToSet` the `"hot"` tag on the contact + set `hot_opportunity/hot_score/hot_last_at`.
+  - **Dissolve (`scheduler.py`):** new hourly job `dissolve_stale_hot_leads` strips the `"hot"` tag from contacts with `hot_last_at` older than 7 days (leaves manually-tagged hot contacts alone). Scheduler now 28 jobs.
+
+
 ## Jun 2026 — Full-Auto "Jessi Keeps Going" Fix (COMPLETED)
 - **Issue:** In full auto_reply mode ("Jessi is handling this"), inventory/pricing/scheduling questions triggered a canned "let me check" + a You're-Needed human handoff, so Jessi appeared to stop replying. Rep had to toggle AI off/on to resume. "All Good" itself was NOT disabling AI (confirmed in DB) — the hot-topic + count-based escalations were.
 - **Fix (`routers/ai_reply.py`):** added `suppress_hot_escalation = (ai_assist_mode == auto_reply and not AI-suspicion)`. In full-auto, routine inventory/pricing/scheduling questions now fall through to a full natural Jessi reply that auto-sends (uses live inventory context when available). AI-suspicion signals ("are you a robot?") STILL escalate to a human.

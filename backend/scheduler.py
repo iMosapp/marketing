@@ -2018,6 +2018,31 @@ def start_scheduler():
         misfire_grace_time=1800,
     )
 
+    # Hourly — dissolve stale Hot Leads: drop the "hot" tag/flags from contacts with
+    # no hot activity in the last 7 days so the Contacts list stays accurate.
+    async def _dissolve_stale_hot_leads():
+        try:
+            from routers.database import get_db as _gdb
+            _db = _gdb()
+            cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+            res = await _db.contacts.update_many(
+                {"tags": "hot", "hot_last_at": {"$lt": cutoff}},
+                {"$pull": {"tags": "hot"},
+                 "$set": {"hot_opportunity": False}}
+            )
+            if res.modified_count:
+                logger.info(f"[Scheduler] Dissolved {res.modified_count} stale hot lead(s)")
+        except Exception as e:
+            logger.warning(f"[Scheduler] Hot lead dissolve failed: {e}")
+
+    scheduler.add_job(
+        safe_job(_dissolve_stale_hot_leads),
+        IntervalTrigger(hours=1),
+        id="dissolve_stale_hot_leads",
+        replace_existing=True,
+        misfire_grace_time=1800,
+    )
+
     # Every 5 minutes — fire any scheduled broadcasts that are due
     scheduler.add_job(
         safe_job(process_scheduled_broadcasts),

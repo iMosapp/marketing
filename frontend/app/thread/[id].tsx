@@ -216,7 +216,7 @@ function ThreadScreen() {
       const blob = await fetch(uri).then(r => r.blob());
       formData.append('audio', new File([blob], 'voice-note.m4a', { type: 'audio/m4a' }));
       await api.post(`/voice-notes/${user._id}/${cid}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-      showToast('Voice note saved to contact', 'success');
+      showSimpleAlert('Voice note saved', 'Voice note saved to contact');
     } catch { showSimpleAlert('Error', 'Failed to save voice note'); }
     threadRecordingRef.current = null;
   };
@@ -231,6 +231,10 @@ function ThreadScreen() {
     intent: '',
   });
   const [loadingAI, setLoadingAI] = useState(false);
+  const [pendingDraft, setPendingDraft] = useState<any | null>(null);
+  const [draftEditing, setDraftEditing] = useState(false);
+  const [draftEditText, setDraftEditText] = useState('');
+  const [draftBusy, setDraftBusy] = useState(false);
   const [conversationStatus, setConversationStatus] = useState<'active' | 'closed'>('active');
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -767,11 +771,13 @@ function ThreadScreen() {
           lastMessageCountRef.current = incoming.length;
           setMessages(incoming);
         }
+        loadPendingDraft();
       } catch {
         // Non-fatal — silently skip failed polls
       }
     };
 
+    loadPendingDraft();
     // Poll every 4 seconds
     const interval = setInterval(poll, 4000);
     return () => clearInterval(interval);
@@ -1139,6 +1145,57 @@ function ThreadScreen() {
   const handleEditAISuggestion = () => {
     setMessage(aiSuggestion.text);
     setShowAISuggestion(false);
+  };
+
+  // ── Appointment draft awaiting approval ──────────────────────────────────
+  const loadPendingDraft = async () => {
+    const convId = actualConversationId || conversationId;
+    if (!user?._id || !convId) return;
+    try {
+      const res = await api.get(`/ai-reply/pending/${user._id}`);
+      const items = res.data?.pending || [];
+      const match = items.find((it: any) => it.conversation_id === convId) || null;
+      setPendingDraft(match);
+      if (!match) { setDraftEditing(false); }
+    } catch { /* non-fatal */ }
+  };
+
+  const approvePendingDraft = async () => {
+    if (!pendingDraft || !user?._id) return;
+    setDraftBusy(true);
+    try {
+      const body = draftEditing ? draftEditText.trim() : undefined;
+      await api.post(`/ai-reply/${pendingDraft.id}/approve`, { user_id: user._id, body });
+      setPendingDraft(null);
+      setDraftEditing(false);
+      setNeedsAssistance(false);
+      const convId = actualConversationId || conversationId;
+      if (convId) { try { const msgs = await messagesAPI.getThread(convId); setMessages(msgs); } catch {} }
+    } catch {
+      showSimpleAlert('Could not send', 'The draft could not be sent. Please try again.');
+    } finally {
+      setDraftBusy(false);
+    }
+  };
+
+  const takeOverPendingDraft = async () => {
+    if (!pendingDraft || !user?._id) return;
+    setDraftBusy(true);
+    try {
+      await api.post(`/ai-reply/${pendingDraft.id}/reject`, { user_id: user._id });
+      const convId = actualConversationId || conversationId;
+      if (convId) {
+        try { await messagesAPI.updateConversation(user._id, convId, { ai_mode: 'off', ai_enabled: false, needs_assistance: false }); } catch {}
+      }
+      setAiMode('off');
+      setPendingDraft(null);
+      setDraftEditing(false);
+      setNeedsAssistance(false);
+    } catch {
+      showSimpleAlert('Error', 'Could not take over. Please try again.');
+    } finally {
+      setDraftBusy(false);
+    }
   };
 
   const selectTemplate = (template: {_id: string; name: string; content: string; category?: string}) => {
@@ -2277,6 +2334,75 @@ function ThreadScreen() {
           onEdit={handleEditAISuggestion}
           onDismiss={() => setShowAISuggestion(false)}
         />
+      )}
+
+      {/* Appointment draft — waiting for rep approval before it sends */}
+      {pendingDraft && aiMode !== 'off' && (
+        <View
+          style={{ backgroundColor: '#C9A96214', borderTopWidth: 1, borderTopColor: '#C9A96240', paddingHorizontal: 16, paddingVertical: 12, gap: 10 }}
+          testID="pending-draft-approval-card"
+          dataSet={{ testid: 'pending-draft-approval-card' } as any}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Ionicons name="calendar" size={14} color="#C9A962" />
+            <Text style={{ fontSize: 12.5, fontWeight: '800', color: '#C9A962', letterSpacing: 0.3 }}>
+              JESSI DRAFTED A REPLY — APPROVE TO SEND
+            </Text>
+          </View>
+          {draftEditing ? (
+            <TextInput
+              value={draftEditText}
+              onChangeText={setDraftEditText}
+              multiline
+              style={{ backgroundColor: colors.card, color: colors.text, borderRadius: 10, padding: 12, fontSize: 15, minHeight: 70, borderWidth: 1, borderColor: '#C9A96240' }}
+              testID="pending-draft-edit-input"
+              dataSet={{ testid: 'pending-draft-edit-input' } as any}
+            />
+          ) : (
+            <Text style={{ fontSize: 15, color: colors.text, lineHeight: 21 }}>
+              {pendingDraft.body}
+            </Text>
+          )}
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <TouchableOpacity
+              onPress={approvePendingDraft}
+              disabled={draftBusy}
+              style={{ flex: 1, backgroundColor: '#34C759', borderRadius: 10, paddingVertical: 11, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, opacity: draftBusy ? 0.6 : 1 }}
+              activeOpacity={0.8}
+              testID="approve-draft-btn"
+              dataSet={{ testid: 'approve-draft-btn' } as any}
+            >
+              <Ionicons name="checkmark-circle" size={16} color="#000" />
+              <Text style={{ fontSize: 13, fontWeight: '800', color: '#000' }}>{draftEditing ? 'Send Edit' : 'Looks Good'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                if (draftEditing) { setDraftEditing(false); return; }
+                setDraftEditText(pendingDraft.body || '');
+                setDraftEditing(true);
+              }}
+              disabled={draftBusy}
+              style={{ backgroundColor: colors.card, borderRadius: 10, paddingVertical: 11, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, borderWidth: 1, borderColor: '#007AFF55' }}
+              activeOpacity={0.8}
+              testID="edit-draft-btn"
+              dataSet={{ testid: 'edit-draft-btn' } as any}
+            >
+              <Ionicons name={draftEditing ? 'close' : 'create-outline'} size={16} color="#007AFF" />
+              <Text style={{ fontSize: 13, fontWeight: '800', color: '#007AFF' }}>{draftEditing ? 'Cancel' : 'Edit'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={takeOverPendingDraft}
+              disabled={draftBusy}
+              style={{ backgroundColor: colors.card, borderRadius: 10, paddingVertical: 11, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, borderWidth: 1, borderColor: '#C9A96255' }}
+              activeOpacity={0.8}
+              testID="takeover-draft-btn"
+              dataSet={{ testid: 'takeover-draft-btn' } as any}
+            >
+              <Ionicons name="person" size={15} color="#C9A962" />
+              <Text style={{ fontSize: 13, fontWeight: '800', color: '#C9A962' }}>Take Over</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       )}
 
       {/* Persistent AI mode banner — always visible so rep can toggle any time */}
