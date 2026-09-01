@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
   Image, ActivityIndicator, Platform, Animated, ScrollView,
-  KeyboardAvoidingView,
+  KeyboardAvoidingView, Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -502,7 +502,7 @@ export default function SoldQuickScreen() {
           <>
             <TouchableOpacity
               style={[s.input, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
-              onPress={() => setShowDatePicker(v => !v)}
+              onPress={() => { Keyboard.dismiss(); setShowDatePicker(v => !v); }}
               data-testid="sold-date-btn"
             >
               <Text style={{ fontSize: 16, color: colors.text }}>

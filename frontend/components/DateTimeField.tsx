@@ -3,7 +3,7 @@
  * Web: native <input type="date|time">. Native: @react-native-community/datetimepicker.
  */
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, Platform, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
@@ -64,13 +64,13 @@ export function DateTimeField({ colors, date, setDate, time, setTime, accent = '
   return (
     <View>
       <View style={{ flexDirection: 'row', gap: 8 }}>
-        <TouchableOpacity style={[btn, { flex: 1 }]} onPress={() => { setShowDate(v => !v); setShowTime(false); }} testID="dtf-date-btn" dataSet={{ testid: 'dtf-date-btn' } as any}>
+        <TouchableOpacity style={[btn, { flex: 1 }]} onPress={() => { Keyboard.dismiss(); setShowDate(v => !v); setShowTime(false); }} testID="dtf-date-btn" dataSet={{ testid: 'dtf-date-btn' } as any}>
           <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 15, color: colors.text }}>
             {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
           </Text>
           <Ionicons name="calendar-outline" size={17} color={accent} />
         </TouchableOpacity>
-        <TouchableOpacity style={[btn, { width: 130 }]} onPress={() => { setShowTime(v => !v); setShowDate(false); }} testID="dtf-time-btn" dataSet={{ testid: 'dtf-time-btn' } as any}>
+        <TouchableOpacity style={[btn, { width: 130 }]} onPress={() => { Keyboard.dismiss(); setShowTime(v => !v); setShowDate(false); }} testID="dtf-time-btn" dataSet={{ testid: 'dtf-time-btn' } as any}>
           <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 15, color: time ? colors.text : colors.textTertiary }}>
             {time ? fmtTimeLabel(time) : 'Add time'}
           </Text>

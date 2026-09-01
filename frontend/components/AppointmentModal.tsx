@@ -10,6 +10,7 @@ import {
   Alert,
   Platform,
   ScrollView,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -244,14 +245,14 @@ export default function AppointmentModal({
             <View style={styles.dateTimeRow}>
               <TouchableOpacity
                 style={styles.dateButton}
-                onPress={() => setShowDatePicker(true)}
+                onPress={() => { Keyboard.dismiss(); setShowDatePicker(true); }}
               >
                 <Ionicons name="calendar-outline" size={20} color="#007AFF" />
                 <Text style={styles.dateButtonText}>{formatDate(date)}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.timeButton}
-                onPress={() => setShowTimePicker(true)}
+                onPress={() => { Keyboard.dismiss(); setShowTimePicker(true); }}
               >
                 <Ionicons name="time-outline" size={20} color="#007AFF" />
                 <Text style={styles.dateButtonText}>{formatTime(date)}</Text>

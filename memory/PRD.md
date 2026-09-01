@@ -88,3 +88,12 @@ Phase 2 "Relationship OS" UX enhancements: robust backend security, intent-based
 - Switched to `expo-image` (contentFit + memory-disk cache): app/sales-list.tsx, app/l/[username].tsx, app/p/store/[slug].tsx.
 - Left on core Image intentionally: local require() logo assets (imos/_components.tsx), import-guide screenshots, white-label (Image import unused).
 - DELIVERY: frontend/JS change — requires `eas update --branch production` (+ app reopen). Backend deploy alone does NOT update the installed app's JS.
+
+## Keyboard Covers Date/Time Picker Fix (June 2026)
+- Bug: New Task form (calendar) auto-focuses title TextInput; tapping date/time button opened spinner picker WITHOUT dismissing keyboard -> picker hidden behind keyboard. iOS-only (web uses HTML date inputs).
+- Fix: added Keyboard.dismiss() to date/time picker open handlers in:
+  - components/DateTimeField.tsx (covers CalendarTaskModal + AddTaskModal)
+  - components/AppointmentModal.tsx (date + time buttons)
+  - app/contact/sold-wizard.tsx, app/sold-quick.tsx (sale date buttons)
+- DELIVERY: JS change -> requires `eas update --branch production` + app reopen.
+- Not reproducible in web preview / automated tester (native iOS keyboard behavior).
