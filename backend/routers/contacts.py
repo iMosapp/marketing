@@ -424,16 +424,24 @@ async def get_contacts(
         privacy_filter = {"$and": [privacy_filter, *extra_filters]}
 
     if search:
+        s = search.strip()
+        search_or = [
+            {"first_name": {"$regex": s, "$options": "i"}},
+            {"last_name": {"$regex": s, "$options": "i"}},
+            {"phone": {"$regex": s, "$options": "i"}},
+            {"email": {"$regex": s, "$options": "i"}},
+            {"tags": {"$regex": s, "$options": "i"}}
+        ]
+        terms = s.split()
+        if len(terms) >= 2:
+            search_or.append({"$and": [
+                {"first_name": {"$regex": terms[0], "$options": "i"}},
+                {"last_name": {"$regex": " ".join(terms[1:]), "$options": "i"}},
+            ]})
         query = {
             "$and": [
                 privacy_filter,
-                {"$or": [
-                    {"first_name": {"$regex": search, "$options": "i"}},
-                    {"last_name": {"$regex": search, "$options": "i"}},
-                    {"phone": {"$regex": search, "$options": "i"}},
-                    {"email": {"$regex": search, "$options": "i"}},
-                    {"tags": {"$regex": search, "$options": "i"}}
-                ]}
+                {"$or": search_or}
             ]
         }
     else:

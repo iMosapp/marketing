@@ -77,9 +77,18 @@ def serialize_broadcast(broadcast: dict) -> dict:
 
 
 async def get_filtered_contacts(filters: dict, user_id: str) -> List[dict]:
-    """Get contacts matching the filter criteria. Uses user_id (not owner_id)."""
+    """Get contacts matching the filter criteria. Uses user_id (not owner_id).
+    Hand-picked contact_ids are UNIONED with other filters (or used alone if no other filters)."""
     db = get_db()
     query: dict = {"user_id": user_id}
+
+    picked_ids = filters.get("contact_ids") or []
+    other_filter_keys = (
+        "tags", "exclude_tags", "purchase_month", "purchase_year", "days_since_purchase",
+        "days_since_contact", "custom_date_start", "custom_date_end",
+        "purchase_title_contains", "purchase_category", "purchase_history_year",
+    )
+    has_other_filters = any(filters.get(k) for k in other_filter_keys)
 
     # Tag include/exclude
     if filters.get("tags"):
@@ -90,12 +99,17 @@ async def get_filtered_contacts(filters: dict, user_id: str) -> List[dict]:
         else:
             query["tags"] = {"$nin": filters["exclude_tags"]}
 
-    # Specific contact IDs
-    if filters.get("contact_ids"):
-        try:
-            query["_id"] = {"$in": [ObjectId(cid) for cid in filters["contact_ids"]]}
-        except Exception:
-            pass
+    # Specific contact IDs — if ONLY ids picked (no other filters), restrict to them here;
+    # if combined with other filters, they are unioned in after the main query below.
+    picked_oids = []
+    if picked_ids:
+        for cid in picked_ids:
+            try:
+                picked_oids.append(ObjectId(cid))
+            except Exception:
+                raise HTTPException(status_code=400, detail=f"Invalid contact id: {cid}")
+    if picked_oids and not has_other_filters:
+        query["_id"] = {"$in": picked_oids}
 
     # Purchase date filters
     now = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -159,6 +173,18 @@ async def get_filtered_contacts(filters: dict, user_id: str) -> List[dict]:
         query,
         {"_id": 1, "phone": 1, "first_name": 1, "last_name": 1, "email": 1, "tags": 1}
     ).to_list(5000)
+
+    # Union hand-picked contacts with the filtered set
+    if picked_oids and has_other_filters:
+        seen = {str(c["_id"]) for c in contacts}
+        extra_ids = [oid for oid in picked_oids if str(oid) not in seen]
+        if extra_ids:
+            extra = await db.contacts.find(
+                {"_id": {"$in": extra_ids}, "user_id": user_id, "status": {"$nin": ["hidden", "merged", "deleted"]}},
+                {"_id": 1, "phone": 1, "first_name": 1, "last_name": 1, "email": 1, "tags": 1}
+            ).to_list(1000)
+            contacts.extend(extra)
+
     # Only contacts with a phone number
     return [c for c in contacts if c.get("phone")]
 
@@ -208,11 +234,13 @@ async def preview_broadcast_recipients(
     purchase_title_contains: Optional[str] = None,
     purchase_category: Optional[str] = None,
     purchase_history_year: Optional[int] = None,
+    contact_ids: Optional[str] = None,
 ):
     """Preview how many contacts match the filter criteria"""
     filters = {
         "tags": tags.split(",") if tags else [],
         "exclude_tags": exclude_tags.split(",") if exclude_tags else [],
+        "contact_ids": contact_ids.split(",") if contact_ids else [],
         "purchase_month": purchase_month,
         "purchase_year": purchase_year,
         "days_since_purchase": days_since_purchase,

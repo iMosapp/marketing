@@ -144,7 +144,7 @@ export default function MyProfileScreen() {
     ...(perm('content', 'sms_templates') ? [{ icon: 'document-text', title: 'My Templates', subtitle: 'SMS & email templates', color: '#AF52DE', route: '/settings/templates' }] : []),
     { icon: 'color-palette-outline', title: 'Card Templates', subtitle: 'Thank-you & congrats card designs', color: '#FF9500', route: '/settings/card-templates' },
     { icon: 'mail-outline', title: 'Email Signature', subtitle: 'Copy & paste into your email', color: '#5856D6', route: '/email-signature' },
-    { icon: 'megaphone-outline', title: 'Quick Broadcast', subtitle: 'Write a message, copy & share anywhere', color: '#C9A962', route: '/broadcast-message' },
+    { icon: 'megaphone-outline', title: 'Broadcast', subtitle: 'Mass text from your tracking number', color: '#C9A962', route: '/broadcast' },
     { icon: 'gift', title: 'Create a Card to Share', subtitle: 'Pick a template, get a trackable link', color: '#FF9500', route: '/settings/create-card?generic=true' },
   ];
 

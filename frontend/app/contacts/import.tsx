@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Platform,
   Linking,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,12 +16,15 @@ import { useRouter } from 'expo-router';
 import * as Contacts from 'expo-contacts';
 import * as DocumentPicker from 'expo-document-picker';
 import { useAuthStore } from '../../store/authStore';
-import { contactsAPI } from '../../services/api';
+import api, { contactsAPI } from '../../services/api';
 import { showAlert, showSimpleAlert } from '../../services/alert';
 import { useThemeStore } from '../../store/themeStore';
-import axios from 'axios';
 
-const API_URL = process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com';
+// On web use a relative origin so requests hit the same host the app is served from.
+// On native fall back to the configured backend URL.
+const API_URL = Platform.OS === 'web'
+  ? ''
+  : (process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com');
 
 interface PhoneContact {
   id: string;
@@ -56,6 +60,7 @@ export default function ImportContactsScreen() {
   const user = useAuthStore((state) => state.user);
 
   const [importMode, setImportMode] = useState<'select' | 'phone' | 'csv'>('select');
+  const [listTag, setListTag] = useState('');
   const [phoneContacts, setPhoneContacts] = useState<PhoneContact[]>([]);
   const [csvContacts, setCsvContacts] = useState<CsvContact[]>([]);
   const [csvStats, setCsvStats] = useState({ total_parsed: 0, new_contacts: 0, duplicates: 0, skipped_no_info: 0 });
@@ -156,10 +161,10 @@ export default function ImportContactsScreen() {
       }
 
       const endpoint = isVcf
-        ? `${API_URL}/api/contacts/${user._id}/import-vcf/preview`
-        : `${API_URL}/api/contacts/${user._id}/import-csv/preview`;
+        ? `/contacts/${user._id}/import-vcf/preview`
+        : `/contacts/${user._id}/import-csv/preview`;
 
-      const res = await axios.post(
+      const res = await api.post(
         endpoint,
         formData,
         { headers: { 'Content-Type': 'multipart/form-data' } }
@@ -222,13 +227,15 @@ export default function ImportContactsScreen() {
     if (selected.length === 0) { showSimpleAlert('No Selection', 'Please select contacts to import'); return; }
     setImporting(true);
     try {
-      const res = await axios.post(
-        `${API_URL}/api/contacts/${user._id}/import-csv/confirm`,
+      const tagParam = listTag.trim() ? `?list_tag=${encodeURIComponent(listTag.trim())}` : '';
+      const res = await api.post(
+        `/contacts/${user._id}/import-csv/confirm${tagParam}`,
         selected
       );
       const data = res.data;
       let msg = `Imported ${data.imported} contact${data.imported !== 1 ? 's' : ''}`;
       if (data.skipped > 0) msg += `\n${data.skipped} duplicate${data.skipped !== 1 ? 's' : ''} skipped`;
+      if (listTag.trim()) msg += `\nTagged as "${listTag.trim()}" — target this tag in Broadcast`;
       showAlert('Import Complete', msg, [{ text: 'OK', onPress: () => router.back() }]);
     } catch (error) {
       showSimpleAlert('Error', 'Failed to import contacts');
@@ -432,6 +439,20 @@ export default function ImportContactsScreen() {
           <Text style={[styles.statNum, { color: colors.textSecondary }]}>{csvStats.skipped_no_info}</Text>
           <Text style={styles.statLabel}>Skipped</Text>
         </View>
+      </View>
+
+      {/* List tag input */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, marginTop: 10, marginBottom: 10, backgroundColor: colors.card, borderRadius: 12, paddingHorizontal: 12 }}>
+        <Ionicons name="pricetag-outline" size={18} color="#FF9500" />
+        <TextInput
+          style={{ flex: 1, paddingVertical: 12, fontSize: 15, color: colors.text }}
+          placeholder="Tag this list (e.g. 'Spring Event') — optional"
+          placeholderTextColor="#8E8E93"
+          value={listTag}
+          onChangeText={setListTag}
+          testID="list-tag-input"
+          {...({ dataSet: { testid: 'list-tag-input' } } as any)}
+        />
       </View>
 
       {/* Selection bar */}

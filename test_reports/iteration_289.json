@@ -1,0 +1,50 @@
+{
+  "summary": "Iteration 289 — Verified the Quick Broadcast -> Twilio Broadcast rerouting, the new 'Pick Specific Contacts' section, recipient-preview union semantics, draft creation, and CSV 'Tag this list' flow. Backend: 10/10 pytest tests pass (/app/backend/tests/test_broadcast_pick_contacts_289.py). Frontend: full E2E on mobile viewport (390x1600) via Playwright — Hub 'Send a Blast' -> /broadcast/new, my-profile Broadcast row -> /broadcast, 'Upload List' -> /contacts/import, pick-contacts search+checkbox+chip+header count, preview counts (all=51, picked-only=1, Sold tag+outside contact=6, exclude Sold=46), Save Draft created a draft with recipient_count=1 visible in /broadcast. Found and fixed a blocking CSV-import bug (see updated_files). NEVER pressed Send Now / never called POST /broadcast/{id}/send. All test data cleaned up (contacts back to 51, 0 TEST_ tags, draft deleted).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/broadcast/preview", "issue": "Invalid contact_ids (non-ObjectId) are silently swallowed by a bare `except: pass` and the filter is dropped — the response then returns ALL contacts instead of 400. Dangerous for a mass-SMS feature (a malformed id could blast everyone). Recommend validating and returning 400."},
+      {"endpoint": "POST /api/contacts/{user_id}/import-csv/confirm", "issue": "Duplicate-tagging branch updates with only {user_id, phone regex} and update_one — bypasses get_data_filter scope used elsewhere and only tags the first phone-suffix match."},
+      {"endpoint": "POST /api/auth/login", "issue": "Playbook expects lockout after 5 failed attempts; LOGIN_MAX_FAILS defaults to 8. CORS is configured with allow_credentials=False while login sets httpOnly cookies — works today only because web uses same-origin /api + Bearer token."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "app/broadcast/new.tsx (Save Draft)", "issue": "After a successful draft save the screen calls router.back(); when the composer was opened by deep link there is no history so nothing happens and no success toast/confirmation is shown (console: \"The action 'GO_BACK' was not handled by any navigator\"). Draft IS created. Consider router.replace('/broadcast') fallback.", "selector": "[data-testid=\"save-draft-btn\"]", "priority": "MEDIUM"},
+      {"component": "Pick Specific Contacts search", "issue": "Search matches first OR last name only — typing a full name ('Sarah Johnson') returns 0 results, which reads as 'contact not found'. Typing 'Sarah' works.", "selector": "[data-testid=\"pick-contact-search\"]", "priority": "MEDIUM"},
+      {"component": "app/broadcast/new.tsx tag chips", "issue": "Include and Exclude tag chip lists render identical labels with no data-testid on web for the chips (testID present in code but chips are matched only by text), so automation must use nth() to distinguish include vs exclude. Add dataSet testid to tag-include-*/tag-exclude-* like the pick-contact elements.", "selector": "[data-testid=\"tag-include-<id>\"]", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "CSV/VCF list import (Upload List -> /contacts/import)", "issue": "FIXED BY TESTER (needs main-agent review): app/contacts/import.tsx built its URL from EXPO_PUBLIC_BACKEND_URL (=https://app.imonsocial.com) and used raw axios. On web this (a) sent the upload cross-origin to the PRODUCTION backend -> CORS 'Network Error', and (b) bypassed the api.ts auth interceptor -> 401. The entire CSV/VCF import (and therefore the new list_tag feature) was unusable on web. Fixed by using relative base on web + the shared `api` axios instance. Verified end-to-end after the fix.", "affected_selectors": ["[data-testid=\"list-tag-input\"]"]}
+    ],
+    "design_issues": [
+      {"screen": "CSV Preview (/contacts/import)", "issues": ["'Tag this list' input sits flush against the stats bar (Found/New/Duplicates/Skipped) with almost no vertical gap — looks like it overlaps the header row on a 390px viewport", "Placeholder text 'Tag this list (e.g. Spring Event) — optional' is low-contrast grey on dark card"]},
+      {"screen": "Broadcast composer", "issues": ["Both Include and Exclude tag lists render the full tag catalogue twice, making the section extremely long (2x ~25 chips) before reaching Pick Specific Contacts; consider collapsing the exclude list by default"]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_broadcast_pick_contacts_289.py", "/app/backend/tests/cleanup_289.py", "/app/test_reports/pytest/pytest_results_289.xml"],
+  "action_items": [
+    "Review/keep tester's fix in app/contacts/import.tsx (relative API base on web + shared `api` instance with auth interceptor). Apply the same pattern to app/help.tsx and app/admin/brand-assets.tsx which still hardcode https://app.imonsocial.com on web.",
+    "Add a router.replace('/broadcast') fallback + success toast after Save Draft when there is no navigation history.",
+    "Make pick-contact search match full 'First Last' queries.",
+    "Return 400 for malformed contact_ids in GET /api/broadcast/preview instead of silently dropping the filter (mass-SMS blast-radius risk).",
+    "Add dataSet testid to tag-include-*/tag-exclude-* chips for reliable web automation."
+  ],
+  "critical_code_review_comments": [
+    "app/broadcast/new.tsx is 1243 lines — exceeds the 700-line guideline; split the filter sections (tags, pick-contacts, date, purchase, schedule) into components.",
+    "broadcast.get_filtered_contacts uses a bare `except: pass` around ObjectId conversion; a bad id makes the query fall through to 'all contacts' — for a broadcast feature this is a blast-radius bug.",
+    "Frontend has ~10 files duplicating the `process.env.EXPO_PUBLIC_BACKEND_URL || ... || 'https://app.imonsocial.com'` pattern, some without the Platform.OS==='web' guard; centralise it in services/api.ts and export a getApiBase() helper."
+  ],
+  "updated_files": [
+    "/app/frontend/app/contacts/import.tsx (URL base guarded for web + switched raw axios -> shared authenticated `api` instance)",
+    "/app/backend/tests/test_broadcast_pick_contacts_289.py (new)",
+    "/app/backend/tests/cleanup_289.py (new)"
+  ],
+  "success_rate": {"backend": "100% (10/10)", "frontend": "92% (all requested flows verified; CSV import required a tester fix to work at all on web)"},
+  "seed_data_creation": "Temporary only, all deleted: contacts TESTCSV Person289 / TESTUI Person289, tags TEST_LIST_289 / TEST_UI_LIST_289, broadcasts 'TEST_289 Picked Draft' and 'TEST_289 UI Draft'. Verified afterwards: 51 contacts, no TEST_ tags, no TEST_ broadcasts.",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "forest@imosapp.com / Admin123! (user_id 69a0b7095fddcede09591667) — valid, login works, httpOnly cookie set",
+  "context_for_next_testing_agent": "Login: /auth/login, placeholders 'Email'/'Password', button text 'Log In' (exact). RN-web: pick-contacts elements expose data-testid (section-pick-contacts, pick-contact-search, pick-result-<id>, picked-<id>, list-tag-input, save-draft-btn, csv-import-btn); tag chips must be matched by text (include list = .first, exclude list = .nth(1)). Recipient preview text locator: text=/contacts will receive/. Baseline data: 51 contacts total, tag 'Sold' = 5 (John Dealer IS in Sold, Sarah Johnson is NOT — use Sarah for union tests: Sold+Sarah = 6). CSV upload in browser: page.expect_file_chooser + click 'From File (CSV or VCF)' works; write the CSV to /tmp first. NEVER click 'Send Now (n)' or call POST /api/broadcast/{id}/send (real Twilio SMS). Cleanup helper: python /app/backend/tests/cleanup_289.py. Metro caches bundles — after editing frontend run `sudo supervisorctl restart frontend` and wait ~55s.",
+  "rca_of_the_issue": "CSV list import failure RCA: app/contacts/import.tsx defined API_URL = process.env.EXPO_PUBLIC_BACKEND_URL (set to https://app.imonsocial.com in frontend/.env) with no Platform.OS==='web' guard, and issued the multipart upload with a raw `axios.post` instead of the shared services/api.ts instance. Result on the preview domain: browser blocked the cross-origin XHR to the production backend ('Access to XMLHttpRequest ... blocked by CORS'), so the CSV Preview screen (and its new list-tag-input) never rendered; after fixing the base URL the same-origin request returned 401 because the raw axios call carried no Authorization/X-User-ID header from the api.ts request interceptor. Fix: use '' base on web and the shared `api` instance. Verified: preview renders (1 Found / 1 New), list-tag-input accepts 'TEST_UI_LIST_289', Import 1 Contact succeeds, the tag appears as a chip in the broadcast composer and previews 1 recipient."
+}

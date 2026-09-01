@@ -1,5 +1,5 @@
 import React, {
-  useState, useEffect } from 'react';
+  useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuthStore } from '../../store/authStore';
@@ -36,6 +36,7 @@ interface Tag {
 interface FilterState {
   tags: string[];
   exclude_tags: string[];
+  contact_ids: string[];
   purchase_month: number | null;
   purchase_year: number | null;
   days_since_purchase: number | null;
@@ -84,6 +85,7 @@ const { showToast } = useToast();
   const [filters, setFilters] = useState<FilterState>({
     tags: [],
     exclude_tags: [],
+    contact_ids: [],
     purchase_month: null,
     purchase_year: null,
     days_since_purchase: null,
@@ -97,6 +99,13 @@ const { showToast } = useToast();
   
   // Available tags
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+
+  // Pick specific contacts
+  const [pickSearch, setPickSearch] = useState('');
+  const [pickResults, setPickResults] = useState<any[]>([]);
+  const [pickSearching, setPickSearching] = useState(false);
+  const [selectedContacts, setSelectedContacts] = useState<{ id: string; name: string; phone: string }[]>([]);
+  const [showExclude, setShowExclude] = useState(false);
   
   // Preview
   const [previewCount, setPreviewCount] = useState<number | null>(null);
@@ -108,6 +117,7 @@ const { showToast } = useToast();
   // Expanded sections
   const [expandedSections, setExpandedSections] = useState({
     tags: true,
+    pickContacts: false,
     dateFilters: false,
     purchases: false,
     schedule: false,
@@ -119,6 +129,34 @@ const { showToast } = useToast();
   useEffect(() => {
     fetchTags();
   }, []);
+
+  // Refresh tags when returning from CSV list import
+  useFocusEffect(useCallback(() => { fetchTags(); }, [user?._id]));
+
+  // Debounced contact search for hand-picking recipients
+  useEffect(() => {
+    if (!user?._id || pickSearch.trim().length < 2) { setPickResults([]); return; }
+    const t = setTimeout(async () => {
+      setPickSearching(true);
+      try {
+        const r = await api.get(`/contacts/${user._id}`, { params: { search: pickSearch.trim(), limit: 15 } });
+        const list = Array.isArray(r.data) ? r.data : (r.data?.contacts || []);
+        setPickResults(list.filter((c: any) => c.phone));
+      } catch {}
+      setPickSearching(false);
+    }, 400);
+    return () => clearTimeout(t);
+  }, [pickSearch, user?._id]);
+
+  const togglePickContact = (c: any) => {
+    const id = c._id || c.id;
+    const exists = selectedContacts.some(s => s.id === id);
+    const next = exists
+      ? selectedContacts.filter(s => s.id !== id)
+      : [...selectedContacts, { id, name: `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.name || 'Unknown', phone: c.phone || '' }];
+    setSelectedContacts(next);
+    setFilters(prev => ({ ...prev, contact_ids: next.map(s => s.id) }));
+  };
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -151,6 +189,7 @@ const { showToast } = useToast();
       const params = new URLSearchParams({ user_id: user._id });
       if (filters.tags.length > 0) params.append('tags', filters.tags.join(','));
       if (filters.exclude_tags.length > 0) params.append('exclude_tags', filters.exclude_tags.join(','));
+      if (filters.contact_ids.length > 0) params.append('contact_ids', filters.contact_ids.join(','));
       if (filters.purchase_month) params.append('purchase_month', filters.purchase_month.toString());
       if (filters.purchase_year) params.append('purchase_year', filters.purchase_year.toString());
       if (filters.days_since_purchase) params.append('days_since_purchase', filters.days_since_purchase.toString());
@@ -281,7 +320,8 @@ const { showToast } = useToast();
         } else {
           showToast('Saved as draft');
         }
-        router.back();
+        if ((router as any).canGoBack?.()) router.back();
+        else router.replace('/broadcast' as any);
       }
     } catch (error: any) {
       console.error('Error creating broadcast:', error);
@@ -402,7 +442,7 @@ const { showToast } = useToast();
               testID="csv-import-btn"
             >
               <Ionicons name="cloud-upload-outline" size={15} color="#34C759" />
-              <Text style={{ fontSize: 13, fontWeight: '600', color: '#34C759' }}>CSV Import</Text>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: '#34C759' }}>Upload List</Text>
             </Pressable>
           </View>
           {expandedSections.tags && (
@@ -422,6 +462,7 @@ const { showToast } = useToast();
                         ]}
                         onPress={() => toggleTag(tag.name, 'include')}
                         testID={`tag-include-${tag.id}`}
+                        {...({ dataSet: { testid: `tag-include-${tag.id}` } } as any)}
                       >
                         <Text style={[
                           styles.tagChipText,
@@ -433,7 +474,18 @@ const { showToast } = useToast();
                     ))}
                   </View>
                   
-                  <Text style={[styles.filterLabel, { marginTop: 16 }]}>Exclude contacts with these tags:</Text>
+                  <Pressable
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 16 }}
+                    onPress={() => setShowExclude(v => !v)}
+                    testID="toggle-exclude-tags"
+                    {...({ dataSet: { testid: 'toggle-exclude-tags' } } as any)}
+                  >
+                    <Text style={styles.filterLabel}>
+                      Exclude contacts with these tags{filters.exclude_tags.length > 0 ? ` (${filters.exclude_tags.length})` : ''}
+                    </Text>
+                    <Ionicons name={showExclude ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textSecondary} />
+                  </Pressable>
+                  {(showExclude || filters.exclude_tags.length > 0) && (
                   <View style={styles.tagsContainer}>
                     {availableTags.map(tag => (
                       <Pressable
@@ -444,6 +496,7 @@ const { showToast } = useToast();
                         ]}
                         onPress={() => toggleTag(tag.name, 'exclude')}
                         testID={`tag-exclude-${tag.id}`}
+                        {...({ dataSet: { testid: `tag-exclude-${tag.id}` } } as any)}
                       >
                         <Text style={[
                           styles.tagChipText,
@@ -454,8 +507,77 @@ const { showToast } = useToast();
                       </Pressable>
                     ))}
                   </View>
+                  )}
                 </>
               )}
+            </View>
+          )}
+        </View>
+
+        {/* Pick Specific Contacts */}
+        <View style={styles.section}>
+          <Pressable
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 16, paddingBottom: expandedSections.pickContacts ? 0 : 16 }}
+            onPress={() => toggleSection('pickContacts')}
+            testID="section-pick-contacts"
+            {...({ dataSet: { testid: 'section-pick-contacts' } } as any)}
+          >
+            <Ionicons name="person-add-outline" size={20} color="#34C759" />
+            <Text style={[styles.sectionTitle, { flex: 1 }]}>
+              Pick Specific Contacts{selectedContacts.length > 0 ? ` (${selectedContacts.length})` : ''}
+            </Text>
+            <Ionicons name={expandedSections.pickContacts ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textSecondary} />
+          </Pressable>
+          {expandedSections.pickContacts && (
+            <View style={styles.sectionContent}>
+              <Text style={styles.filterLabel}>Hand-pick who gets this blast — added on top of any tag filters:</Text>
+              {selectedContacts.length > 0 && (
+                <View style={[styles.tagsContainer, { marginBottom: 10 }]}>
+                  {selectedContacts.map(c => (
+                    <Pressable
+                      key={c.id}
+                      style={[styles.tagChip, { backgroundColor: '#34C75920', borderColor: '#34C759', flexDirection: 'row', alignItems: 'center', gap: 6 }]}
+                      onPress={() => togglePickContact({ _id: c.id })}
+                      testID={`picked-${c.id}`}
+                      {...({ dataSet: { testid: `picked-${c.id}` } } as any)}
+                    >
+                      <Text style={[styles.tagChipText, { color: '#34C759' }]}>{c.name}</Text>
+                      <Ionicons name="close-circle" size={15} color="#34C759" />
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+              <TextInput
+                style={styles.input}
+                placeholder="Search contacts by name or phone..."
+                placeholderTextColor="#6E6E73"
+                value={pickSearch}
+                onChangeText={setPickSearch}
+                testID="pick-contact-search"
+                {...({ dataSet: { testid: 'pick-contact-search' } } as any)}
+              />
+              {pickSearching && <ActivityIndicator size="small" color="#34C759" style={{ marginTop: 10 }} />}
+              {pickResults.map((c: any) => {
+                const id = c._id || c.id;
+                const isSel = selectedContacts.some(s => s.id === id);
+                return (
+                  <Pressable
+                    key={id}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border }}
+                    onPress={() => togglePickContact(c)}
+                    testID={`pick-result-${id}`}
+                    {...({ dataSet: { testid: `pick-result-${id}` } } as any)}
+                  >
+                    <Ionicons name={isSel ? 'checkbox' : 'square-outline'} size={22} color={isSel ? '#34C759' : colors.textSecondary} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>
+                        {`${c.first_name || ''} ${c.last_name || ''}`.trim() || 'Unknown'}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: colors.textSecondary }}>{c.phone}</Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
             </View>
           )}
         </View>

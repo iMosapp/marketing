@@ -20,7 +20,9 @@ import { showSimpleAlert } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
 const IS_WEB = Platform.OS === 'web';
-const API_BASE = process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com';
+const API_BASE = Platform.OS === 'web'
+  ? ''
+  : (process.env.EXPO_PUBLIC_BACKEND_URL || process.env.REACT_APP_BACKEND_URL || 'https://app.imonsocial.com');
 
 const COLORS = {
   bg: '#000000',

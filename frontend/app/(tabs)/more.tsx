@@ -321,7 +321,7 @@ export default function MoreScreen() {
   // ============================================================
   {
     const brandItems = [
-      { icon: 'megaphone-outline', title: 'Quick Broadcast', subtitle: 'Write a message, copy & share anywhere', color: '#C9A962', publicUrl: null, editRoute: '/broadcast-message' },
+      { icon: 'megaphone-outline', title: 'Broadcast', subtitle: 'Mass text from your tracking number', color: '#C9A962', publicUrl: null, editRoute: '/broadcast' },
       { icon: 'gift',             title: 'Create a Card to Share', subtitle: 'Pick a template, get a trackable link — no recipient needed', color: '#FF9500', publicUrl: null, editRoute: '/settings/create-card?generic=true' },
       { icon: 'id-card',        title: 'My Digital Card',  subtitle: 'How customers see you', color: '#C9A962', publicUrl: user?._id ? `${PROD_BASE}/card/${user._id}` : null,         editRoute: '/settings/store-profile' },
       { icon: 'link',           title: 'My Link Page',     subtitle: 'All your links in one spot', color: '#007AFF', publicUrl: user?._id ? `${PROD_BASE}/l/${user._id}` : null,          editRoute: '/settings/link-page' },
@@ -628,7 +628,7 @@ export default function MoreScreen() {
 
   // Big "What do you want to do?" task tiles
   const taskGrid = [
-    { icon: 'megaphone', label: 'Send a Blast', sub: 'Message many at once', color: '#FF9500', route: '/broadcast-message' },
+    { icon: 'megaphone', label: 'Send a Blast', sub: 'Mass text from your number', color: '#FF9500', route: '/broadcast/new' },
     { icon: 'id-card', label: 'Share My Card', sub: 'Text your digital card', color: '#C9A962', route: '/quick-send/digitalcard' },
     { icon: 'star', label: 'Get Reviews', sub: 'Send your review link', color: '#FFD60A', route: '/quick-send/review' },
     { icon: 'stats-chart', label: 'My Numbers', sub: 'How am I doing?', color: '#34C759', route: '/touchpoints/performance' },

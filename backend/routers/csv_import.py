@@ -452,15 +452,34 @@ async def preview_import(user_id: str, file: UploadFile = File(...)):
 
 
 @router.post("/{user_id}/import-csv/confirm")
-async def confirm_import(user_id: str, contacts: List[dict]):
-    """Import the confirmed contacts. Works for both CSV and VCF previewed contacts."""
+async def confirm_import(user_id: str, contacts: List[dict], list_tag: str = ""):
+    """Import the confirmed contacts. Works for both CSV and VCF previewed contacts.
+    If list_tag is given, all imported (and matched existing) contacts get that tag."""
     db = get_db()
     imported = 0
     skipped = 0
+    list_tag = (list_tag or "").strip()
+
+    if list_tag:
+        existing_tag = await db.tags.find_one({"user_id": user_id, "name": {"$regex": f"^{re.escape(list_tag)}$", "$options": "i"}})
+        if not existing_tag:
+            await db.tags.insert_one({
+                "name": list_tag, "color": "#FF9500", "icon": "pricetag",
+                "scope": "personal", "user_id": user_id, "status": "approved",
+                "created_by": user_id, "created_at": datetime.now(timezone.utc),
+            })
 
     for c in contacts:
         if c.get('is_duplicate'):
             skipped += 1
+            if list_tag and c.get('phone'):
+                dup_suffix = re.sub(r'\D', '', c['phone'])
+                if len(dup_suffix) >= 7:
+                    dup_filter = await get_data_filter(user_id)
+                    await db.contacts.update_many(
+                        {**dup_filter, "phone": {"$regex": dup_suffix[-7:] + "$"}},
+                        {"$addToSet": {"tags": list_tag}}
+                    )
             continue
 
         phone = c.get('phone', '')
@@ -474,6 +493,8 @@ async def confirm_import(user_id: str, contacts: List[dict]):
                 })
                 if existing:
                     skipped += 1
+                    if list_tag:
+                        await db.contacts.update_one({"_id": existing["_id"]}, {"$addToSet": {"tags": list_tag}})
                     continue
 
         now = datetime.now(timezone.utc)
@@ -503,7 +524,7 @@ async def confirm_import(user_id: str, contacts: List[dict]):
             "address_country": c.get('address_country'),
             "birthday": birthday,
             "notes": c.get('notes') or "",
-            "tags": ["csv-import"],
+            "tags": ["csv-import"] + ([list_tag] if list_tag else []),
             "source": "csv",
             "ownership_type": "personal",
             "status": "active",
