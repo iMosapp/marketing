@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -215,7 +216,13 @@ export default function SalesListScreen() {
                 {(item.name || '?')[0].toUpperCase()}
               </Text>
               {item.photo_thumbnail ? (
-                <Image source={{ uri: item.photo_thumbnail }} style={[StyleSheet.absoluteFillObject, { borderRadius: 22 }]} />
+                <Image
+                  source={{ uri: item.photo_thumbnail }}
+                  style={[StyleSheet.absoluteFillObject, { borderRadius: 22 }]}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={150}
+                />
               ) : null}
             </View>
             <View style={{ flex: 1 }}>
