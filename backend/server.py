@@ -715,25 +715,29 @@ async def update_leaderboard_settings(user_id: str, settings: dict):
 
 # ============= SALES ANALYTICS =============
 @api_router.get("/users/{user_id}/sold-performance")
-async def get_sold_performance(user_id: str, months: int = 6):
+async def get_sold_performance(user_id: str, months: int = 6, month: int = 0, year: int = 0):
     """
     Monthly sold performance: count, referrals, repeat buyers, MoM comparison.
     Used for the Home screen widget and Hub performance section.
+    month/year (optional) anchor 'current month' to the client's local date
+    so counts don't roll over early/late across timezones.
     """
     db = get_db()
     from datetime import timezone as tz
     now = datetime.now(tz.utc)
+    anchor_month = month or now.month
+    anchor_year = year or now.year
     results = []
     for i in range(months - 1, -1, -1):
         # Calculate month start/end
-        month_offset = now.month - i - 1
-        year = now.year + (month_offset // 12)
-        month = (month_offset % 12) + 1
-        if month <= 0:
-            month += 12
-            year -= 1
-        start = datetime(year, month, 1, tzinfo=tz.utc)
-        end = datetime(year + (1 if month == 12 else 0), (month % 12) + 1, 1, tzinfo=tz.utc)
+        month_offset = anchor_month - i - 1
+        yr = anchor_year + (month_offset // 12)
+        mo = (month_offset % 12) + 1
+        if mo <= 0:
+            mo += 12
+            yr -= 1
+        start = datetime(yr, mo, 1, tzinfo=tz.utc)
+        end = datetime(yr + (1 if mo == 12 else 0), (mo % 12) + 1, 1, tzinfo=tz.utc)
         start_naive = start.replace(tzinfo=None)
         end_naive = end.replace(tzinfo=None)
 
@@ -758,7 +762,7 @@ async def get_sold_performance(user_id: str, months: int = 6):
             "status": {"$nin": ["hidden", "merged", "deleted"]},
         })
         results.append({
-            "year": year, "month": month,
+            "year": yr, "month": mo,
             "label": start.strftime("%b %Y"),
             "short": start.strftime("%b"),
             "total": total,
@@ -858,12 +862,15 @@ async def get_sold_contacts_list(user_id: str, filter_type: str = "sold", month:
 
 
 @api_router.get("/users/{user_id}/sold-monthly-summary")
-async def get_sold_monthly_summary(user_id: str, filter_type: str = "sold", scope: str = "me"):
-    """Monthly sold counts for the last 24 months plus year totals."""
+async def get_sold_monthly_summary(user_id: str, filter_type: str = "sold", scope: str = "me", month: int = 0, year: int = 0):
+    """Monthly sold counts for the last 24 months plus year totals.
+    month/year (optional) anchor the series to the client's local current month."""
     db = get_db()
     from datetime import timezone as _tz
     now_dt = datetime.now(_tz.utc)
-    window_start = datetime(now_dt.year - 2, now_dt.month, 1)
+    anchor_m = month or now_dt.month
+    anchor_y = year or now_dt.year
+    window_start = datetime(anchor_y - 2, anchor_m, 1)
     match: dict = {
         "user_id": user_id,
         "date_sold": {"$gte": window_start, "$ne": None},
@@ -885,7 +892,7 @@ async def get_sold_monthly_summary(user_id: str, filter_type: str = "sold", scop
     rows = await db.contacts.aggregate(pipeline).to_list(60)
     by_key = {(r["_id"]["y"], r["_id"]["m"]): r["total"] for r in rows}
     months = []
-    y, m = now_dt.year, now_dt.month
+    y, m = anchor_y, anchor_m
     for _ in range(24):
         months.append({"year": y, "month": m, "label": datetime(y, m, 1).strftime("%b %Y"), "total": by_key.get((y, m), 0)})
         m -= 1

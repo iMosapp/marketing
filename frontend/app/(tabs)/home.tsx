@@ -487,7 +487,7 @@ function HomeScreen() {
         // Stagger home intelligence 1s to avoid simultaneous OOM on server
         const t = setTimeout(() => loadHomeIntelligence(), 1000);
         // Always refresh sold performance when returning to home (e.g. after SOLD wizard)
-        api.get(`/users/${user._id}/sold-performance`).then(r => setSoldPerf(r.data)).catch(() => {});
+        api.get(`/users/${user._id}/sold-performance`, { params: { month: new Date().getMonth() + 1, year: new Date().getFullYear() } }).then(r => setSoldPerf(r.data)).catch(() => {});
         return () => clearTimeout(t);
       }
     }, [user?._id])
@@ -508,7 +508,7 @@ function HomeScreen() {
       setStreak(res.data.streak);
       setMy3(res.data.my_3 || []);
       // Load sold performance stats
-      api.get(`/users/${user._id}/sold-performance`).then(r => setSoldPerf(r.data)).catch(() => {});
+      api.get(`/users/${user._id}/sold-performance`, { params: { month: new Date().getMonth() + 1, year: new Date().getFullYear() } }).then(r => setSoldPerf(r.data)).catch(() => {});
       setWinsFeed(res.data.wins_feed || []);
       // Load hot opportunities (conversations with detected buying intent)
       api.get(`/messages/conversations/${user._id}?hot_only=true`)

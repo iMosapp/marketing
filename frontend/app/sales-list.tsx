@@ -37,7 +37,7 @@ export default function SalesListScreen() {
 
   useEffect(() => {
     if (!user?._id) return;
-    api.get(`/users/${user._id}/sold-monthly-summary`, { params: { filter_type: type, scope } })
+    api.get(`/users/${user._id}/sold-monthly-summary`, { params: { filter_type: type, scope, month: now.getMonth() + 1, year: now.getFullYear() } })
       .then(r => { setMonths(r.data.months || []); setYearTotals(r.data.year_totals || {}); })
       .catch(() => {});
   }, [user?._id, type, scope]);
