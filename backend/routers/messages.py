@@ -434,6 +434,7 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
                 "needs_assistance":            False,
                 "unanswered_customer_replies": 0,
                 "rep_engaged":                 True,
+                "ai_paused_for_human":         False,
                 "rep_last_replied_at":         datetime.now(timezone.utc),
             }}
         )
@@ -751,6 +752,7 @@ async def send_via_twilio(request: Request):
                 "needs_assistance":         False,
                 "unanswered_customer_replies": 0,
                 "rep_engaged":              True,
+                "ai_paused_for_human":      False,
                 "rep_last_replied_at":      now,
             }}
         )
@@ -1507,11 +1509,13 @@ async def update_conversation(user_id: str, conversation_id: str, data: dict):
         update_dict['needs_assistance']         = False
         update_dict['unanswered_customer_replies'] = 0
         update_dict['rep_engaged']              = True
+        update_dict['ai_paused_for_human']      = False
 
     # "All Good" — rep acknowledged the waiting state without taking over.
     # Clears the counter + dismisses the You're-Needed alerts; AI mode untouched.
     if data.get('needs_assistance') is False:
         update_dict['unanswered_customer_replies'] = 0
+        update_dict['ai_paused_for_human']         = False
         try:
             await db.notifications.update_many(
                 {"conversation_id": conversation_id, "type": "you_are_needed", "dismissed": {"$ne": True}},
@@ -1669,6 +1673,7 @@ async def get_conversation_info(conversation_id: str):
         "ai_mode":    stored_ai_mode,
         "ai_enabled": stored_ai_enabled,
         "needs_assistance": bool(conv.get("needs_assistance")),
+        "ai_paused_for_human": bool(conv.get("ai_paused_for_human")),
         "unanswered_customer_replies": conv.get("unanswered_customer_replies", 0),
     }
 
@@ -1977,6 +1982,7 @@ async def send_message_simple(user_id: str, message_data: dict):
                 "needs_assistance":          False,
                 "unanswered_customer_replies": 0,
                 "rep_engaged":               True,
+                "ai_paused_for_human":       False,
                 "rep_last_replied_at":       datetime.now(timezone.utc),
             }}
         )

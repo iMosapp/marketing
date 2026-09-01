@@ -586,6 +586,7 @@ function ThreadScreen() {
   // Speed-to-lead: banner shown while an internet lead awaits its first human reply
   const [leadWait, setLeadWait] = useState<any>(null);
   const [needsAssistance, setNeedsAssistance] = useState(false);
+  const [aiPaused, setAiPaused] = useState(false);
 
   // Ensure we have a conversation (create if needed)
   const ensureConversation = async () => {
@@ -616,6 +617,7 @@ function ThreadScreen() {
         setLeadWait({ receivedAt: convInfo.data.lead_received_at, sourceName: convInfo.data.lead_source_name });
       }
       setNeedsAssistance(!!convInfo?.data?.needs_assistance);
+      setAiPaused(!!convInfo?.data?.ai_paused_for_human);
 
       // Auto-mark as read when opening a conversation
       try { await messagesAPI.markAsRead(id as string); } catch {}
@@ -737,6 +739,7 @@ function ThreadScreen() {
         setAiMode('off');
       }
       setNeedsAssistance(!!convInfo?.data?.needs_assistance);
+      setAiPaused(!!convInfo?.data?.ai_paused_for_human);
       
       // Auto-load AI suggestion when there are messages from contacts
       if (data && data.length > 0) {
@@ -885,6 +888,8 @@ function ThreadScreen() {
   const handleSend = async (textToSend?: string) => {
     let contentToSend = textToSend || message.trim();
     if (!contentToSend || !user) return;
+    // Rep is replying — a human is now involved, so lift Jessi's pause locally
+    if (aiPaused) { setAiPaused(false); setNeedsAssistance(false); }
     
     // Resolve personalization merge tags
     const firstName = (contact_name as string || '').split(' ')[0] || '';
@@ -2334,6 +2339,21 @@ function ThreadScreen() {
           onEdit={handleEditAISuggestion}
           onDismiss={() => setShowAISuggestion(false)}
         />
+      )}
+
+      {/* Jessi paused on a fact question — waiting for the rep to reply */}
+      {aiPaused && aiMode !== 'off' && (
+        <View
+          style={{ backgroundColor: '#FF9F0A18', borderTopWidth: 1, borderTopColor: '#FF9F0A44', paddingHorizontal: 16, paddingVertical: 11, flexDirection: 'row', alignItems: 'center', gap: 9 }}
+          testID="ai-paused-banner"
+          dataSet={{ testid: 'ai-paused-banner' } as any}
+        >
+          <Ionicons name="pause-circle" size={18} color="#FF9F0A" />
+          <Text style={{ flex: 1, fontSize: 12.5, color: colors.text, lineHeight: 17 }}>
+            <Text style={{ fontWeight: '800', color: '#FF9F0A' }}>Jessi paused for you. </Text>
+            She replied "let me check on that" and won't answer this inventory/pricing question until you reply.
+          </Text>
+        </View>
       )}
 
       {/* Appointment draft — waiting for rep approval before it sends */}

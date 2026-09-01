@@ -1,5 +1,16 @@
 # CHANGELOG — iMOs App
 
+## Jun 2026 — Fact-Topic Pause (reconciled with earlier full-auto change) (COMPLETED)
+- **User clarification:** until live inventory feeds exist, ANY fact-based question (inventory availability, pricing, financing, colors, models, trims) must get a brief "Let me check on that" and then Jessi must STOP responding until a human is involved. This overrides the earlier "full-auto answers everything" behavior for those topics.
+- **`routers/ai_reply.py`:**
+  - Added `FACT_SIGNALS` + `is_fact_topic`. Fact topics now always take the brief-reply + escalate path (removed the `suppress_hot_escalation` gate) and set a new conversation flag `ai_paused_for_human: True`.
+  - New pause guard at top of `queue_ai_reply`: if `ai_paused_for_human` is set, return None (Jessi stays silent) until a human replies.
+  - Scheduling detection split into STRONG (self-sufficient) vs WEAK (day/time words that need scheduling context via last 2 messages) to kill false positives like "how's it going today". Fact topics take priority over scheduling on mixed messages.
+- **`routers/messages.py`:** clear `ai_paused_for_human` wherever a human gets involved — manual sends (`/send`, `/twilio-send`, `/send/{user_id}`), AI off, and "All Good". Exposed `ai_paused_for_human` in `/conversation/{id}/info`.
+- **`app/thread/[id].tsx`:** orange "Jessi paused for you" banner when `ai_paused_for_human`; cleared locally when the rep sends a reply.
+- **Verified (isolated clean conversation + category matrix):** fact(pricing/availability/financing) → brief reply + pause + silent on next msg; manual reply lifts pause; pure scheduling → draft approval (not paused); mixed fact+schedule → pause wins; general chat (incl. "today" with neutral context) → auto reply; "6?" after "what time…come in" → scheduling approval. ALL PASS. In-thread banner/card bundle clean but not visually testable headless.
+
+
 ## Jun 2026 — Appointment Approval Hold + Hot Lead Sync (COMPLETED)
 - **Issue A:** In full-auto, Jessi was auto-confirming appointment times ("6 works, let me lock that in") with no rep involvement.
   - **Fix (`routers/ai_reply.py`):** added scheduling detection (`is_scheduling` via keyword list + time-token/short-reply-in-scheduling-context). Any scheduling/time message now forces `needs_approval=True` in EVERY mode and flags the conversation Waiting. Jessi still DRAFTS the reply; it never auto-sends. AI-suspicion still wins (human takeover, no draft hold). Inventory/pricing (non-scheduling) still auto-sends.

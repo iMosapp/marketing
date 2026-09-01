@@ -217,6 +217,21 @@ async def queue_ai_reply(
         logger.info(f"[AIReply] Mode off — not queuing for conversation {conversation_id}")
         return None  # Caller already paused + notified rep
 
+    # ── Human-handling pause ──────────────────────────────────────────────────
+    # When a conversation was escalated to a human for a fact-based question that
+    # Jessi can't answer safely (inventory availability, pricing, financing, colors,
+    # models) she STOPS replying entirely until a human gets involved. Cleared when
+    # the rep sends a manual reply, taps All Good, or turns AI off/on.
+    try:
+        _conv_pause = await db.conversations.find_one(
+            {"_id": ObjectId(conversation_id)}, {"ai_paused_for_human": 1}
+        )
+        if _conv_pause and _conv_pause.get("ai_paused_for_human"):
+            logger.info(f"[AIReply] Conversation {conversation_id} paused for human — skipping AI reply")
+            return None
+    except Exception:
+        pass
+
     # ── Content-based immediate escalation ──────────────────────────────────
     # If the customer's message is about specific inventory, pricing, color,
     # or scheduling, flag the conversation for rep attention NOW — don't wait
@@ -253,18 +268,40 @@ async def queue_ai_reply(
     ]
     is_ai_suspect = any(sig in msg_lower for sig in AI_SUSPECT_SIGNALS)
 
+    # ── Fact-based topics Jessi must NOT answer without live data ─────────────
+    # Until inventory feeds are live, any question about inventory availability,
+    # pricing, financing, colors, models or trims gets a brief "let me check" and
+    # then PAUSES the AI until a human steps in. Jessi must never guess hard facts.
+    FACT_SIGNALS = [
+        "in stock", "available", "availability", "do you have", "do you stock",
+        "price", "pricing", "cost", "how much", "what does it cost", "what's the price",
+        "what color", "what colour", "which color", "which colour", "color name", "colour name",
+        "do you have it in", "does it come",
+        "trade", "trade-in", "trade in", "trade value",
+        "finance", "financing", "payment", "monthly", "apr", "interest rate", "lease",
+        "vin", "which one", "which ones", "what models", "which model", "what trim",
+        "trim", "mileage", "how many miles", "msrp", "out the door", "down payment",
+    ]
+    is_fact_topic = (not is_ai_suspect) and any(sig in msg_lower for sig in FACT_SIGNALS)
+
     # ── Scheduling / appointment approval hold ────────────────────────────────
     # The rep must approve before Jessi commits to ANY time or visit. This applies
     # in every mode, including full auto - we never let AI lock in an appointment
     # on the dealer's behalf. Jessi still DRAFTS the reply; it just waits for a tap.
-    SCHEDULING_SIGNALS = [
+    # Strong signals clearly mean scheduling on their own.
+    STRONG_SCHEDULING = [
         "appointment", "schedule", "reschedule", "rescheduling", "test drive",
         "come in", "come by", "come down", "swing by", "stop by", "drop by",
         "what time", "what day", "book a", "book it", "set a time", "set up a time",
-        "lock in", "lock it in", "lock that in", "pencil me in", "pick it up", "pickup",
+        "lock in", "lock it in", "lock that in", "pencil me in", "o'clock",
+    ]
+    # Weak signals (bare day/time words) only count as scheduling when the recent
+    # thread was already about setting a time — otherwise "how's it going today?"
+    # would wrongly trip a hold.
+    WEAK_SCHEDULING = [
         "today", "tonight", "tomorrow", "this afternoon", "this evening", "this morning",
         "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
-        "o'clock", " am", " pm", "a.m.", "p.m.",
+        " am", " pm", "a.m.", "p.m.",
     ]
     import re as _re_sched
     # A short reply that contains a time-like token ("6?", "6pm", "3:30", "at 6")
@@ -272,19 +309,24 @@ async def queue_ai_reply(
     _has_time_token = bool(_re_sched.search(r"\b\d{1,2}(:\d{2})?\s*(am|pm|a\.m\.|p\.m\.)?\b", msg_lower))
     _recent_for_sched = await db.messages.find(
         {"conversation_id": conversation_id}, {"content": 1}
-    ).sort("timestamp", -1).limit(5).to_list(5)
+    ).sort("timestamp", -1).limit(2).to_list(2)
     _recent_blob = " ".join((m.get("content") or "") for m in _recent_for_sched).lower()
     _sched_context = any(s in _recent_blob for s in (
         "what time", "what day", "come in", "come by", "come down", "appointment",
         "schedule", "test drive", "lock", "book", "set up a time", "stop by", "swing by",
     ))
     is_scheduling = (
-        any(sig in msg_lower for sig in SCHEDULING_SIGNALS)
+        any(sig in msg_lower for sig in STRONG_SCHEDULING)
+        or (any(sig in msg_lower for sig in WEAK_SCHEDULING) and _sched_context)
         or (_has_time_token and _sched_context)
         or (_sched_context and len(msg_lower.strip()) <= 12)
     )
     # AI-suspicion always wins over scheduling (a human must step in, no draft hold).
     if is_ai_suspect:
+        is_scheduling = False
+    # Fact-based questions take priority over scheduling: a mixed message like
+    # "do you have it in stock for tomorrow?" must PAUSE for a human, not draft a time.
+    if is_fact_topic:
         is_scheduling = False
 
     # Flag the conversation as Waiting when Jessi is holding an appointment draft.
@@ -297,19 +339,13 @@ async def queue_ai_reply(
         except Exception:
             pass
 
-    # Full auto mode ("Jessi is handling this") means the rep asked Jessi to answer
-    # everything herself. Routine inventory/pricing/scheduling questions must NOT be
-    # handed to a human - Jessi answers naturally and keeps auto-sending. The only
-    # exception is when the customer suspects a bot, where a human must step in.
-    suppress_hot_escalation = (ai_assist_mode == AI_MODE_AUTO_REPLY and not is_ai_suspect)
-
     # If the question is inventory/pricing-related (not AI-suspicion), try LIVE
     # inventory first — Jessi can answer with real availability and pricing.
     inventory_context, inventory_media = "", []
     if is_hot_topic and not is_ai_suspect:
         inventory_context, inventory_media = await _search_inventory_context(db, assigned_user_id, incoming_message)
 
-    if is_hot_topic and not inventory_context and not suppress_hot_escalation and not is_scheduling:
+    if is_hot_topic and not inventory_context and not is_scheduling:
         logger.info(f"[AIReply] Hot topic detected in message — sending brief reply + escalating for {contact_id}")
         # Generate a brief warm response and immediately flag for rep
         hot_reply = "Good question, let me check on that and get back to you."
@@ -323,6 +359,7 @@ async def queue_ai_reply(
                     "needs_assistance": True,
                     "unanswered_customer_replies": 999,  # Forces YOU'RE NEEDED threshold
                     "you_are_needed_at": now,
+                    "ai_paused_for_human": True,  # Jessi stops until a human replies
                 }}
             )
         except Exception:
@@ -382,7 +419,7 @@ async def queue_ai_reply(
         logger.info(f"[AIReply] Hot topic brief reply queued + rep escalation triggered for {contact_id}")
         return queue_item
 
-    if is_hot_topic and inventory_context and not suppress_hot_escalation and not is_scheduling:
+    if is_hot_topic and inventory_context and not is_scheduling:
         # Jessi has live inventory facts — answer with real data, but still flag
         # the conversation and notify the rep so they can jump in.
         logger.info(f"[AIReply] Live inventory match — Jessi answering with real data for {contact_id}")
