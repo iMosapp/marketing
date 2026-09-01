@@ -138,3 +138,10 @@ DELIVERY: backend deploy + `eas update --branch production`. Frontend not visual
 4. Advocate Spotlight: GET /api/relationship-health/{user_id}/advocates (auth-protected). New screen app/advocates.tsx ("Say Thanks" flow), linked from book-of-business.tsx via a "You have N advocates" banner.
 Verified: advocates endpoint 401 unauth / returns 5 with token; people-to-engage hook="Loves Golf"; frontend bundles clean (full rebuild after metro-cache purge). Voice auto-follow-up verified by parse + logic (not E2E — needs a real recording).
 DELIVERY: backend deploy + eas update --branch production.
+
+## Marketing: Relationship OS deck (June 2026)
+- New static presentation at frontend/dist/relationship-os/index.html (marketing site, imonsocial.com — NOT the Expo app).
+- Reuses existing marketing chrome (nav/footer/demo-modal/reveal-scroll, Inter font) with gold (#C9A962) accent.
+- Narrative: hero ("CRM remembers the deal, IMOS remembers the person") -> problem (74% vs 44% loyalty) -> 4 CSS phone mockups (Book of Business, People to Talk To Today, Voice Remember This, Advocate Spotlight) -> flywheel -> stats -> CTA. Demo form posts to app.imonsocial.com/api/demo-requests.
+- Linked from marketing.html Resources dropdown + deck footer.
+- Screenshots are hand-built HTML/CSS (accurate text), not AI images. Verified renders 200 via local static server.
