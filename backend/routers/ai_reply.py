@@ -251,14 +251,21 @@ async def queue_ai_reply(
         "computer", "are you human", "is this automated", "machine", "is this jessi",
         "who is this", "who am i talking to",
     ]
+    is_ai_suspect = any(sig in msg_lower for sig in AI_SUSPECT_SIGNALS)
+
+    # Full auto mode ("Jessi is handling this") means the rep asked Jessi to answer
+    # everything herself. Routine inventory/pricing/scheduling questions must NOT be
+    # handed to a human - Jessi answers naturally and keeps auto-sending. The only
+    # exception is when the customer suspects a bot, where a human must step in.
+    suppress_hot_escalation = (ai_assist_mode == AI_MODE_AUTO_REPLY and not is_ai_suspect)
 
     # If the question is inventory/pricing-related (not AI-suspicion), try LIVE
     # inventory first — Jessi can answer with real availability and pricing.
     inventory_context, inventory_media = "", []
-    if is_hot_topic and not any(sig in msg_lower for sig in AI_SUSPECT_SIGNALS):
+    if is_hot_topic and not is_ai_suspect:
         inventory_context, inventory_media = await _search_inventory_context(db, assigned_user_id, incoming_message)
 
-    if is_hot_topic and not inventory_context:
+    if is_hot_topic and not inventory_context and not suppress_hot_escalation:
         logger.info(f"[AIReply] Hot topic detected in message — sending brief reply + escalating for {contact_id}")
         # Generate a brief warm response and immediately flag for rep
         hot_reply = "Good question, let me check on that and get back to you."
@@ -331,7 +338,7 @@ async def queue_ai_reply(
         logger.info(f"[AIReply] Hot topic brief reply queued + rep escalation triggered for {contact_id}")
         return queue_item
 
-    if is_hot_topic and inventory_context:
+    if is_hot_topic and inventory_context and not suppress_hot_escalation:
         # Jessi has live inventory facts — answer with real data, but still flag
         # the conversation and notify the rep so they can jump in.
         logger.info(f"[AIReply] Live inventory match — Jessi answering with real data for {contact_id}")
@@ -772,6 +779,27 @@ async def process_ai_reply_queue():
                         {"_id": ObjectId(item["conversation_id"]),
                          "$or": [{"ai_enabled": {"$ne": True}}, {"ai_mode": {"$in": [None, "", "off"]}}]},
                         {"$set": {"ai_enabled": True, "ai_mode": item["ai_mode_used"]}}
+                    )
+                except Exception:
+                    pass
+
+            # Full-auto self-heal: when Jessi answers in full auto_reply mode, she has
+            # HANDLED this exchange. Clear the Waiting/You're-Needed state and dismiss any
+            # lingering alerts so the conversation stays with Jessi and doesn't look like
+            # it was handed to a human. Skip for hot-topic escalations (AI-suspicion) and
+            # approval-gated drafts, which genuinely need the rep.
+            if (item.get("conversation_id")
+                    and item.get("ai_mode_used") == AI_MODE_AUTO_REPLY
+                    and not item.get("requires_approval")
+                    and not item.get("hot_topic_escalation")):
+                try:
+                    await db.conversations.update_one(
+                        {"_id": ObjectId(item["conversation_id"])},
+                        {"$set": {"needs_assistance": False, "unanswered_customer_replies": 0}}
+                    )
+                    await db.notifications.update_many(
+                        {"conversation_id": item["conversation_id"], "type": "you_are_needed", "dismissed": {"$ne": True}},
+                        {"$set": {"dismissed": True, "read": True}}
                     )
                 except Exception:
                     pass

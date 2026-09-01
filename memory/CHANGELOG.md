@@ -1,5 +1,16 @@
 # CHANGELOG — iMOs App
 
+## Jun 2026 — Full-Auto "Jessi Keeps Going" Fix (COMPLETED)
+- **Issue:** In full auto_reply mode ("Jessi is handling this"), inventory/pricing/scheduling questions triggered a canned "let me check" + a You're-Needed human handoff, so Jessi appeared to stop replying. Rep had to toggle AI off/on to resume. "All Good" itself was NOT disabling AI (confirmed in DB) — the hot-topic + count-based escalations were.
+- **Fix (`routers/ai_reply.py`):** added `suppress_hot_escalation = (ai_assist_mode == auto_reply and not AI-suspicion)`. In full-auto, routine inventory/pricing/scheduling questions now fall through to a full natural Jessi reply that auto-sends (uses live inventory context when available). AI-suspicion signals ("are you a robot?") STILL escalate to a human.
+- **Fix (`routers/ai_reply.py` post-send):** when Jessi auto-sends in full-auto (non hot-topic, non approval), clears `needs_assistance`/`unanswered_customer_replies` and dismisses lingering "you_are_needed" notifications — the exchange is handled.
+- **Fix (`routers/twilio_webhooks.py`):** count-based You're-Needed escalation is suppressed when conv `ai_mode == auto_reply` (Jessi handles everything; no nagging).
+- Verified via direct `queue_ai_reply` calls: inventory + pricing questions → no handoff, Jessi answers; AI-suspicion → still escalates. ALL PASS.
+
+## Jun 2026 — Marketing Deck Copy (COMPLETED)
+- Reworded Book of Business slide close line in `marketing/build/relationship-os/index.html` to "Stop managing a contact list. Start managing a book of business." (customer-facing presentation).
+
+
 ## Aug 2026 — Click-to-Call Press-1 Gate + In-Call UI (COMPLETED)
 - Rep answers their cell and must **press 1** before the customer is dialed — hang-ups/voicemail no longer trigger customer calls (`twilio_webhooks.py`: Gather gate + `/call-bridge-connect`).
 - Dialer shows live call status + **red hang-up button** (`/call-cancel` kills both legs; `/call-progress` polled every 2s, fed by status callbacks).
