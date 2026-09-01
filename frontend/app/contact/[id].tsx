@@ -63,6 +63,7 @@ import DateModals from '../../components/contact/DateModals';
 import AddTaskModal from '../../components/contact/AddTaskModal';
 import GalleryModal from '../../components/contact/GalleryModal';
 import IntelBriefingCard from '../../components/contact/IntelBriefingCard';
+import { HealthBadge } from '../../components/contact/HealthBadge';
 import QuickActionsRow from '../../components/contact/QuickActionsRow';
 
 const IS_WEB = Platform.OS === 'web';
@@ -2516,6 +2517,9 @@ function ContactDetailScreen() {
           />
 
           {/* ===== QUICK ACTIONS ROW ===== */}
+          {!isNewContact && !isEditing && (
+            <HealthBadge userId={user?._id || ''} contactId={id as string} />
+          )}
           {!isNewContact && !isEditing && (
             <QuickActionsRow
               colors={colors}

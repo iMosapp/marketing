@@ -109,3 +109,25 @@ Phase 2 "Relationship OS" UX enhancements: robust backend security, intent-based
 - Frontend: app/weekly-wins-list.tsx (clone of sales-list pattern, expo-image avatars); WeeklyWinsCard.tsx tiles wired.
 - Verified: backend curl all 4 types OK; frontend bundles clean. NOTE: screenshot tool cannot render this Expo web app headless (blank) — device confirmation after eas update.
 - DELIVERY: backend deploy + `eas update --branch production`.
+
+## Relationship Intelligence — Scope C (June 2026)
+Built the "IMOS remembers the person" layer. 5 items + score:
+1. Relationship Profile at top of contact card — ALREADY existed (IntelBriefingCard @ contact/[id].tsx line ~2539); verified in place.
+2. People to Talk To Today feed — NEW screen app/people-today.tsx + endpoint GET /api/home/people-to-engage/{user_id}?limit (widened get_my_3 via top_n param). Home "See all →" link added to the "Your 3 for Today" header.
+3. Relationship Health Score + Book of Business rollup — NEW router routers/relationship_health.py:
+   - GET /relationship-health/{user_id}/summary  (bucket rollup)
+   - GET /relationship-health/{user_id}/contacts?bucket=  (drill-down, worst-first)
+   - GET /relationship-health/{user_id}/contact/{contact_id}  (badge, scoped by user_id)
+   Buckets: opportunity(🔥 recent engagement/sold<30d) / at_risk(🔴 90d+) / cooling(🟡 45-90d) / advocate(💙 review or referrer) / connected(🟢 <45d).
+   Last-touch derived from contact_events (real event types), NOT the never-written last_contacted_at. Advocate = review events + advocate/referral tags + name appears as a referrer (referred_by_name reverse lookup). 30s TTL cache.
+   Frontend: app/book-of-business.tsx, components/home/BookOfBusinessCard.tsx (home), components/contact/HealthBadge.tsx (contact card).
+4. Human-readable timeline — Feed tab already renders human event titles/descriptions; no change needed.
+5. Touch tagging (Transactional/Promotional/Relationship) — GET /api/home/touch-mix/{user_id}?days heuristic classifier; surfaced as "X% real relationship touches this week" line in BookOfBusinessCard.
+
+SECURITY FIXES (from test iteration 290 — BOLA/PII leak found & fixed):
+- server.py enforce_user_ownership: added '/api/relationship-health/' to PROTECTED_PREFIXES AND changed extraction to scan the path for the FIRST ObjectId segment (covers /api/home/people-to-engage/{uid} & /touch-mix/{uid} & weekly-wins which were previously unauthenticated).
+- health_one now filters db.contacts by user_id (was cross-tenant readable).
+- Query validation: days ge=1 le=365, limit ge=1 le=50 (422 on bad input).
+Verified: tests/test_relationship_health_290_auth.py 10/10 PASS (401 unauth, 403 non-owner). Functional contracts verified via curl with token.
+
+DELIVERY: backend deploy + `eas update --branch production`. Frontend not visually testable in headless preview (Expo web renders blank in automation) — confirm on device.

@@ -1,0 +1,54 @@
+{
+  "summary": "Backend-only testing of the new Relationship Intelligence endpoints (relationship-health summary/contacts/contact, home people-to-engage, home touch-mix) plus regressions on combined home and weekly-wins, using the external REACT_APP_BACKEND_URL. 34 pytest cases run: 28 passed, 6 failed. All functional contracts (shapes, bucket meta, sorting worst-first, count consistency with summary, invalid bucket -> 400, missing/malformed contact -> 404, limit cap at 50, touch-mix math) PASS. Failures are all authorization: the 5 new endpoints are completely unauthenticated and bypass the Phase-2 BOLA middleware, leaking contact PII (names, phones, emails) for any user_id. Also found data-model mismatches in the scoring inputs (fields/event types that do not exist in this DB) that make the buckets materially inaccurate.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "/api/relationship-health/{user_id}/summary | /contacts | /contact/{contact_id}", "issue": "No auth at all. Anonymous GET returns 200 with the full book of business incl. contact names + phone numbers. The BOLA middleware in server.py only guards PROTECTED_PREFIXES and '/api/relationship-health/' is not in that list. Add the prefix to PROTECTED_PREFIXES (or add an auth dependency).", "priority": "CRITICAL"},
+      {"endpoint": "/api/home/people-to-engage/{user_id}, /api/home/touch-mix/{user_id}", "issue": "Bypass BOLA middleware: the segment right after '/api/home/' is 'people-to-engage'/'touch-mix' (not an ObjectId) so the middleware skips the ownership check. Anonymous GET returns 200 with contact_id/first_name/last_name/phone/email/photo_url. Middleware must scan the path for the first ObjectId segment instead of only the segment after the prefix.", "priority": "CRITICAL"},
+      {"endpoint": "/api/relationship-health/{user_id}/contact/{contact_id}", "issue": "Cross-tenant read: query is find_one({'_id': ObjectId(contact_id)}) with NO user_id filter, so any contact in the DB can be read via any user_id in the path. Add 'user_id': user_id to the filter.", "priority": "CRITICAL"},
+      {"endpoint": "relationship_health._score / _last_touch", "issue": "Health scoring reads fields that do not exist in the data. For seed user 69a0b7095fddcede09591667: last_contacted_at exists on 0/100 contacts, left_review on 0, referred on 0 (referrals are actually stored as referred_by / referred_by_name / referral_notes). Result: days_since falls back to updated_at/created_at (record-edit time, not outreach), so any imported/edited contact looks 'Connected', and referrers are never flagged as advocates. Buckets are misleading as shipped.", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "/api/relationship-health/* (OPPORTUNITY_EVENTS/REVIEW_EVENTS)", "issue": "Event-type names mismatch actual contact_events values. Missing from OPPORTUNITY_EVENTS but present in DB: store_card_viewed, link_page_viewed, link_page_link_clicked, links_quick_link_clicked, page_quick_link_clicked, showcase_quick_link_clicked, card_call_clicked/card_text_clicked/card_review_clicked, online_review_clicked, review_page_viewed, media_viewed, vcard_saved (code uses non-existent 'vcard_download'), birthday_card_viewed, thankyou_card_viewed, opt_in_clicked. 'card_viewed', 'link_clicked', 'digital_card_saved' do not exist at all. REVIEW_EVENTS misses internal_review_submitted. Consequence: only 1 of 58 contacts landed in 'opportunity'."},
+      {"endpoint": "/api/relationship-health/{user_id}/summary", "issue": "Bucket precedence puts advocates who are 45+ days silent into cooling/at_risk, so summary.advocates (3) can exceed the 'advocate' bucket count. Intentional? If so document it in the UI, otherwise the Advocate tile under-reports."},
+      {"endpoint": "/api/home/touch-mix/{user_id}", "issue": "Filter is {sender: 'user'} but the messages collection is mixed-schema: 222 docs use sender, 13 have no sender, and 77 use direction:'outbound'/'inbound'. 145 legacy docs have sender='user' with no direction, so inbound legacy messages may be counted as outbound touches. Prefer {$or: [{direction:'outbound'}, {sender:'user'}]} with an explicit inbound exclusion."},
+      {"endpoint": "/api/home/touch-mix/{user_id}", "issue": "No validation on 'days' (negative/huge values accepted; days=-5 silently returns total 0). Add ge=1, le=365. Same for 'limit' on people-to-engage (limit=0/negative silently coerced to 1 rather than 422)."},
+      {"endpoint": "/api/relationship-health/*", "issue": "Performance: _build_book re-fetches up to 5000 contacts + 2 contact_events scans on every request and every bucket drill-down (no cache, unlike home which is TTL-cached 30s). Fine at 58 contacts (~200ms), will be slow for large books; consider a short TTL cache keyed by user_id."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_relationship_health_290.py",
+    "/app/backend/tests/test_relationship_health_290_auth.py",
+    "/app/test_reports/pytest/pytest_results_290.xml",
+    "/app/test_reports/pytest/pytest_results_290_auth.xml"
+  ],
+  "action_items": [
+    "CRITICAL: add '/api/relationship-health/' to PROTECTED_PREFIXES in server.py AND make the BOLA middleware find the first ObjectId segment anywhere in the path so /api/home/people-to-engage/{user_id} and /api/home/touch-mix/{user_id} are covered.",
+    "CRITICAL: scope /relationship-health/{user_id}/contact/{contact_id} query by user_id (currently reads any contact in the DB).",
+    "HIGH: fix scoring inputs — last_contacted_at is never written (derive last touch from contact_events sms_sent/call_outbound/personal_sms/email_sent or messages), and use referred_by/referral_notes + review events instead of the non-existent left_review/referred fields.",
+    "MEDIUM: expand OPPORTUNITY_EVENTS/REVIEW_EVENTS to the event_type names actually emitted (list in report) — currently only 1/58 contacts is an 'opportunity'.",
+    "MEDIUM: touch-mix should handle the mixed messages schema (direction vs sender) and validate days/limit query params."
+  ],
+  "critical_code_review_comments": [
+    "relationship_health.py has zero authentication/authorization — every endpoint trusts the user_id path param; this is the same BOLA class of bug fixed in Phase 2.",
+    "health_one() omits the user_id filter on db.contacts.find_one — cross-tenant data read.",
+    "Scoring silently degrades when its input fields are absent (days_since from updated_at) rather than reporting 'no touch data'; buckets look plausible but are wrong.",
+    "Duplicated CONTACT_PROJ / _photo / _as_utc logic between relationship_health.py and home_intelligence.py — extract to a shared util.",
+    "_build_book has no cache and is invoked per bucket drill-down; home_intelligence uses a TTLCache — be consistent."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_relationship_health_290.py",
+    "/app/backend/tests/test_relationship_health_290_auth.py"
+  ],
+  "success_rate": {"backend": "82% (28/34; all 6 failures are authorization on the new endpoints)", "frontend": "not tested (per request)"},
+  "seed_data_creation": "None — read-only tests against seed user 69a0b7095fddcede09591667 (58 active contacts, 100 total incl. 42 merged).",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "forest@imosapp.com / Admin123! (login OK, token returned, HttpOnly cookie set, bcrypt hash $2b$ verified)",
+  "context_for_next_testing_agent": "Functional contract of all 5 new endpoints is verified good: summary bucket counts sum exactly to total, drill-down counts match summary per bucket, items sorted worst-first (None days_since last), invalid bucket -> 400, missing & malformed contact_id -> 404, people-to-engage returns >3 and caps at 50, touch-mix counts sum to total and relationship_pct = round(rel/total*100), combined home still returns streak/my_3(<=3)/wins_feed with a Bearer token and 401 without, weekly-wins + /list?type=texts OK. Re-run /app/backend/tests/test_relationship_health_290.py and _auth.py after the auth fix; the 5 security assertions in TestNewEndpointAuthorization are the ones that must flip to pass (note: they expect 401 unauthenticated and 403 for a non-owner regular user). Auth playbook: CORS is allow_origins='*' with allow_credentials=False (Bearer-token auth works; cookie auth would not cross-origin) and LOGIN_MAX_FAILS defaults to 8, not 5 — lockout threshold was NOT brute-force tested to avoid locking the admin account.",
+  "rca_of_the_issue": "server.py's enforce_user_ownership middleware only inspects the path segment immediately following a hard-coded prefix list. relationship_health.py registers a brand-new prefix (/api/relationship-health) that was never added to PROTECTED_PREFIXES, and the two new /api/home/<sub-route>/{user_id} routes put a literal segment where the middleware expects the ObjectId, so the OID_RE check fails and the request is waved through unauthenticated. Reproduce: curl -s $REACT_APP_BACKEND_URL/api/relationship-health/69a0b7095fddcede09591667/contacts?bucket=cooling (no headers) -> 200 with 14 contacts incl. phone numbers. Mitigation: regex-scan the whole path for an ObjectId segment and require ownership whenever one is present, plus filter every DB query by user_id."
+}

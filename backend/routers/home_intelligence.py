@@ -11,7 +11,7 @@ import os
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from bson import ObjectId
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from routers.database import get_db
 
@@ -255,12 +255,13 @@ PRIORITY_REASONS = {
 }
 
 
-async def get_my_3(user_id: str, db) -> list:
+async def get_my_3(user_id: str, db, top_n: int = 3) -> list:
     """
     AI-powered daily contact recommendations.
-    Returns up to 3 contacts with reason, context, and a suggested action.
+    Returns up to top_n contacts with reason, context, and a suggested action.
     Optimised: batch contact lookups, lean projections — no N+1 queries, no photo blobs.
     """
+    cap = max(9, top_n + 3)
     now       = datetime.now(timezone.utc)
     scored: list = []
     seen_ids: set = set()
@@ -429,7 +430,7 @@ async def get_my_3(user_id: str, db) -> list:
             await add(c, "purchase_followup", score=6)
 
         # 6. Cooling down — contacts with no recent activity
-        if len(scored) < 6:
+        if len(scored) < cap:
             # Fetch only contact_ids from events (no full docs) — 100 events max
             cutoff_14d = now - timedelta(days=14)
             recent_events = await db.contact_events.find({
@@ -449,10 +450,10 @@ async def get_my_3(user_id: str, db) -> list:
             all_contacts = await db.contacts.find(
                 {"user_id": user_id},
                 CONTACT_PROJ,
-            ).sort("created_at", -1).limit(50).to_list(50)
+            ).sort("created_at", -1).limit(max(50, cap * 6)).to_list(max(50, cap * 6))
 
             for c in all_contacts:
-                if len(scored) >= 9:
+                if len(scored) >= cap:
                     break
                 cid = str(c["_id"])
                 if cid in recently_active or cid in seen_ids:
@@ -473,9 +474,9 @@ async def get_my_3(user_id: str, db) -> list:
     except Exception as e:
         logger.error(f"[Home] My-3 error: {e}")
 
-    # Sort by score descending, return top 3
+    # Sort by score descending, return top_n
     scored.sort(key=lambda x: x["score"], reverse=True)
-    return scored[:3]
+    return scored[:top_n]
 
 
 # ── Wins Feed ────────────────────────────────────────────────────────────────
@@ -697,6 +698,78 @@ async def draft_message(user_id: str, contact_id: str, reason: str = "", context
     except Exception as e:
         logger.warning(f"[HomeDraft] LLM failed, using fallback: {e}")
         return {"message": fallback}
+
+
+# ── People to Talk To Today (full feed) ──────────────────────────────────────
+
+@router.get("/people-to-engage/{user_id}")
+async def people_to_engage(user_id: str, limit: int = Query(25, ge=1, le=50)):
+    """
+    The full 'People You Should Talk To Today' feed — same scoring engine as
+    'My 3 for Today', just uncapped. Each item carries the reason + suggested action.
+    """
+    db = get_db()
+    people = await get_my_3(user_id, db, top_n=limit)
+    return {"count": len(people), "people": people}
+
+
+# ── Touch Mix (Transactional / Promotional / Relationship) ───────────────────
+
+_PROMO_WORDS = (
+    "sale", "deal", "offer", "discount", "special", "% off", "save", "trade",
+    "buy your", "cash offer", "we'd like to buy", "we would like to buy", "limited time",
+    "clearance", "financing", "apr", "lease special", "event",
+)
+_TRANSACT_WORDS = (
+    "oil change", "service", "maintenance", "appointment", "scheduled", "reminder",
+    "due for", "recall", "warranty", "confirm", "confirmation", "your order",
+    "ready for pickup", "invoice", "payment", "paperwork", "documents",
+)
+
+
+def _classify_touch(text: str) -> str:
+    t = (text or "").lower()
+    if any(w in t for w in _PROMO_WORDS):
+        return "promotional"
+    if any(w in t for w in _TRANSACT_WORDS):
+        return "transactional"
+    return "relationship"
+
+
+@router.get("/touch-mix/{user_id}")
+async def touch_mix(user_id: str, days: int = Query(7, ge=1, le=365)):
+    """
+    Classifies the rep's outbound messages over the last N days into
+    Transactional / Promotional / Relationship so they can see if they're
+    actually building relationships or just pushing marketing.
+    """
+    db = get_db()
+    now = datetime.now(timezone.utc)
+    start = now - timedelta(days=days)
+    # Mixed-schema safe: outbound = direction 'outbound' OR sender 'user',
+    # and explicitly exclude anything marked inbound.
+    msgs = await db.messages.find(
+        {
+            "user_id": user_id,
+            "timestamp": {"$gte": start},
+            "$or": [{"direction": "outbound"}, {"sender": "user"}],
+            "direction": {"$ne": "inbound"},
+            "sender": {"$ne": "contact"},
+        },
+        {"content": 1},
+    ).limit(3000).to_list(3000)
+
+    counts = {"relationship": 0, "transactional": 0, "promotional": 0}
+    for m in msgs:
+        counts[_classify_touch(m.get("content", ""))] += 1
+    total = sum(counts.values())
+    rel_pct = round((counts["relationship"] / total) * 100) if total else 0
+    return {
+        "days": days,
+        "total": total,
+        "counts": counts,
+        "relationship_pct": rel_pct,
+    }
 
 
 # ── Combined endpoint ─────────────────────────────────────────────────────────

@@ -29,6 +29,7 @@ import { HomeSmartBar } from '../../components/home/HomeSmartBar';
 import { LeadAlertCard } from '../../components/home/LeadAlertCard';
 import { ReplyHealthCard } from '../../components/home/ReplyHealthCard';
 import { WeeklyWinsCard } from '../../components/home/WeeklyWinsCard';
+import { BookOfBusinessCard } from '../../components/home/BookOfBusinessCard';
 import { QuickActionsFab } from '../../components/home/QuickActionsFab';
 
 const IS_WEB = Platform.OS === 'web';
@@ -1047,6 +1048,9 @@ function HomeScreen() {
                 {my3.length > 0 ? '30 seconds each. Keep the streak alive.' : 'Analysing your relationships...'}
               </Text>
             </View>
+            <TouchableOpacity onPress={() => router.push('/people-today' as any)} style={{ flexShrink: 0, marginRight: 8 }} testID="see-all-people-today">
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#C9A962' }}>See all →</Text>
+            </TouchableOpacity>
             {my3.length > 0 && (
               <View style={{ backgroundColor: '#C9A96220', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4, flexShrink: 0 }}>
                 <Text style={{ fontSize: 13, fontWeight: '700', color: '#C9A962' }}>{my3.length - completedToday.size}/{my3.length}</Text>
@@ -1097,6 +1101,9 @@ function HomeScreen() {
             })
           )}
         </View>
+
+        {/* ── BOOK OF BUSINESS (Relationship Health) ─────── */}
+        <BookOfBusinessCard userId={user?._id || ''} />
 
         {/* ── HOT OPPORTUNITIES ─────────────────────────────── */}
         {hotOpps.length > 0 && (

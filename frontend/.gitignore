@@ -37,3 +37,6 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
+
+# Metro bundler cache (never commit)
+.metro-cache/
