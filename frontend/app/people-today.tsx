@@ -75,6 +75,9 @@ export default function PeopleTodayScreen() {
                     <Ionicons name={item.icon || 'flash'} size={13} color={item.color || GOLD} />
                     <Text style={{ fontSize: 13, color: item.color || GOLD, fontWeight: '600', flex: 1 }} numberOfLines={1}>{item.reason_label}</Text>
                   </View>
+                  {item.hook ? (
+                    <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }} numberOfLines={1}>💬 {item.hook}</Text>
+                  ) : null}
                 </View>
               </TouchableOpacity>
               <TouchableOpacity

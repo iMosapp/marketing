@@ -223,6 +223,17 @@ async def health_contacts(user_id: str, bucket: str = "cooling"):
     return {"bucket": bucket, **BUCKET_META[bucket], "count": len(rows), "items": rows}
 
 
+@router.get("/{user_id}/advocates")
+async def advocates(user_id: str):
+    """Your champions — customers who left a review or sent a referral. For the thank-them flow."""
+    db = get_db()
+    book = await _build_book(db, user_id)
+    rows = [r for r in book if r["is_advocate"]]
+    # freshest advocates first
+    rows.sort(key=lambda r: (r["days_since"] if r["days_since"] is not None else 100000))
+    return {"count": len(rows), "items": rows}
+
+
 @router.get("/{user_id}/contact/{contact_id}")
 async def health_one(user_id: str, contact_id: str):
     """Single-contact health (for the badge on the contact card)."""

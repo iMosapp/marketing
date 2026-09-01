@@ -1084,6 +1084,9 @@ function HomeScreen() {
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: 16, fontWeight: '700', color: done ? colors.textSecondary : colors.text }} numberOfLines={1}>{item.first_name} {item.last_name}</Text>
                       <Text style={{ fontSize: 13, color: item.color, marginTop: 2, fontWeight: '500' }}>{item.reason_label}</Text>
+                      {item.hook ? (
+                        <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }} numberOfLines={1}>💬 {item.hook}</Text>
+                      ) : null}
                     </View>
                     {!done ? (
                       <TouchableOpacity onPress={(e) => { e.stopPropagation?.(); openDraftSheet(item); }}

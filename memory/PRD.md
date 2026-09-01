@@ -131,3 +131,10 @@ SECURITY FIXES (from test iteration 290 — BOLA/PII leak found & fixed):
 Verified: tests/test_relationship_health_290_auth.py 10/10 PASS (401 unauth, 403 non-owner). Functional contracts verified via curl with token.
 
 DELIVERY: backend deploy + `eas update --branch production`. Frontend not visually testable in headless preview (Expo web renders blank in automation) — confirm on device.
+
+## Next Action Items build (June 2026)
+2. Voice "Remember This" auto-follow-up: services/voice_intel.py process_voice_note_intelligence now calls _ensure_followup_from_voice — after a voice note is transcribed+extracted, auto-creates ONE follow-up task (due +3 days, type=follow_up, source=voice_note) if none pending. Smart title from extracted interests/spouse/referral. (One-tap mic already existed in QuickActionsRow.)
+3. Smarter feed reasons: home_intelligence.get_my_3 now projects personal_details and adds a `hook` field via _personal_hook() (e.g. "Loves Golf", "Spouse: Sarah"). Rendered in app/(tabs)/home.tsx My-3 cards and app/people-today.tsx.
+4. Advocate Spotlight: GET /api/relationship-health/{user_id}/advocates (auth-protected). New screen app/advocates.tsx ("Say Thanks" flow), linked from book-of-business.tsx via a "You have N advocates" banner.
+Verified: advocates endpoint 401 unauth / returns 5 with token; people-to-engage hook="Loves Golf"; frontend bundles clean (full rebuild after metro-cache purge). Voice auto-follow-up verified by parse + logic (not E2E — needs a real recording).
+DELIVERY: backend deploy + eas update --branch production.

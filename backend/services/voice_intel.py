@@ -7,7 +7,7 @@ Saves structured data to the contact's personal_details field.
 import os
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from routers.database import get_db
@@ -203,4 +203,48 @@ async def process_voice_note_intelligence(user_id: str, contact_id: str, transcr
     })
 
     logger.info(f"Intelligence extracted from voice note {voice_note_id}: {field_names}")
+
+    # Auto-set a follow-up so a captured memory always turns into a next action
+    try:
+        await _ensure_followup_from_voice(db, user_id, contact_id, details)
+    except Exception as e:
+        logger.warning(f"[VoiceIntel] follow-up creation failed: {e}")
+
     return details
+
+
+async def _ensure_followup_from_voice(db, user_id: str, contact_id: str, details: dict):
+    """Create a single follow-up task after a voice note (skips if one is already pending)."""
+    existing = await db.tasks.find_one({
+        "user_id": user_id,
+        "contact_id": contact_id,
+        "type": "follow_up",
+        "status": {"$in": ["pending", "snoozed", None]},
+    })
+    if existing:
+        return
+
+    contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"first_name": 1})
+    first = (contact or {}).get("first_name") or "your customer"
+    interests = details.get("interests") or []
+    if interests:
+        title = f"Check in with {first} about {interests[0]}"
+    elif details.get("spouse"):
+        title = f"Ask {first} how {details['spouse']} is doing"
+    elif details.get("referral_potential"):
+        title = f"Ask {first} for a referral"
+    else:
+        title = f"Follow up with {first}"
+
+    now = datetime.now(timezone.utc)
+    await db.tasks.insert_one({
+        "user_id": user_id,
+        "contact_id": contact_id,
+        "type": "follow_up",
+        "title": title,
+        "due_date": now + timedelta(days=3),
+        "status": "pending",
+        "source": "voice_note",
+        "created_at": now,
+    })
+    logger.info(f"[VoiceIntel] auto follow-up created for {contact_id}: {title}")

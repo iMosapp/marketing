@@ -255,6 +255,27 @@ PRIORITY_REASONS = {
 }
 
 
+def _personal_hook(contact: dict) -> str:
+    """A short, human tidbit from extracted personal_details to make reasons feel personal."""
+    pd = contact.get("personal_details") or {}
+    if not isinstance(pd, dict):
+        return ""
+    interests = pd.get("interests") or []
+    kids = pd.get("kids") or []
+    if isinstance(interests, list) and interests:
+        return f"Loves {interests[0]}"
+    if pd.get("spouse"):
+        return f"Spouse: {pd['spouse']}"
+    if isinstance(kids, list) and kids:
+        return f"Kids: {', '.join(str(k) for k in kids[:2])}"
+    if pd.get("referral_potential"):
+        return "Possible referral source"
+    notes = pd.get("personal_notes")
+    if notes:
+        return str(notes)[:60]
+    return ""
+
+
 async def get_my_3(user_id: str, db, top_n: int = 3) -> list:
     """
     AI-powered daily contact recommendations.
@@ -270,7 +291,7 @@ async def get_my_3(user_id: str, db, top_n: int = 3) -> list:
     CONTACT_PROJ = {
         "_id": 1, "first_name": 1, "last_name": 1, "phone": 1, "email": 1,
         "photo_url": 1, "photo_thumbnail": 1, "photo_path": 1,
-        "tags": 1, "vehicle": 1, "birthday": 1, "anniversary": 1,
+        "tags": 1, "vehicle": 1, "birthday": 1, "anniversary": 1, "personal_details": 1,
         "last_contacted_at": 1, "last_activity_at": 1, "updated_at": 1, "created_at": 1,
     }
 
@@ -304,6 +325,7 @@ async def get_my_3(user_id: str, db, top_n: int = 3) -> list:
             "photo_url":    contact.get("photo_url") or contact.get("photo_path") or "",
             "reason_key":   reason_key,
             "reason_label": extra_label or meta.get("label", ""),
+            "hook":         _personal_hook(contact),
             "action_label": meta.get("action", "Reach Out"),
             "icon":         meta.get("icon", "person"),
             "color":        meta.get("color", "#007AFF"),

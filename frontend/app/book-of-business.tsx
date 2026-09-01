@@ -60,6 +60,19 @@ export default function BookOfBusinessScreen() {
         <View style={{ paddingVertical: 60, alignItems: 'center' }}><ActivityIndicator size="large" color={GOLD} /></View>
       ) : (
         <>
+          {summary?.advocates > 0 ? (
+            <TouchableOpacity
+              onPress={() => router.push('/advocates' as any)}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, marginTop: 12, backgroundColor: '#0A84FF14', borderColor: '#0A84FF30', borderWidth: 1, borderRadius: 12, padding: 12 }}
+              testID="bob-advocates-link"
+            >
+              <Text style={{ fontSize: 18 }}>💙</Text>
+              <Text style={{ flex: 1, fontSize: 14, fontWeight: '700', color: colors.text }}>
+                You have {summary.advocates} advocate{summary.advocates !== 1 ? 's' : ''} — thank them
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color="#0A84FF" />
+            </TouchableOpacity>
+          ) : null}
           {/* Bucket tiles */}
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.tilesRow} style={{ maxHeight: 108 }}>
             {(summary?.buckets || []).map((b: any) => {
