@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -73,8 +73,8 @@ export default function BookOfBusinessScreen() {
               <Ionicons name="chevron-forward" size={16} color="#0A84FF" />
             </TouchableOpacity>
           ) : null}
-          {/* Bucket tiles */}
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.tilesRow} style={{ maxHeight: 108 }}>
+          {/* Bucket tiles — fixed 5-across row (no horizontal scroll) */}
+          <View style={st.tilesRow}>
             {(summary?.buckets || []).map((b: any) => {
               const isActive = b.key === active;
               return (
@@ -84,13 +84,13 @@ export default function BookOfBusinessScreen() {
                   style={[st.tile, { backgroundColor: isActive ? b.color : colors.card, borderColor: isActive ? b.color : colors.surface }]}
                   testID={`bob-tile-${b.key}`}
                 >
-                  <Text style={{ fontSize: 20 }}>{b.emoji}</Text>
-                  <Text style={{ fontSize: 24, fontWeight: '900', color: isActive ? '#fff' : colors.text }}>{b.count}</Text>
-                  <Text style={{ fontSize: 11, fontWeight: '700', color: isActive ? '#fff' : colors.textSecondary }} numberOfLines={1}>{b.label}</Text>
+                  <Text style={{ fontSize: 18 }}>{b.emoji}</Text>
+                  <Text style={{ fontSize: 20, fontWeight: '900', color: isActive ? '#fff' : colors.text }}>{b.count}</Text>
+                  <Text style={{ fontSize: 10, fontWeight: '700', color: isActive ? '#fff' : colors.textSecondary }} numberOfLines={1} adjustsFontSizeToFit>{b.label}</Text>
                 </TouchableOpacity>
               );
             })}
-          </ScrollView>
+          </View>
 
           {activeMeta ? (
             <View style={st.listHeader}>
@@ -144,8 +144,8 @@ export default function BookOfBusinessScreen() {
 
 const st = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, gap: 12 },
-  tilesRow: { paddingHorizontal: 16, paddingVertical: 12, gap: 10 },
-  tile: { width: 84, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 10, gap: 2 },
+  tilesRow: { flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 12, gap: 6 },
+  tile: { flex: 1, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 10, paddingHorizontal: 2, gap: 2 },
   listHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingBottom: 8 },
   row: { flexDirection: 'row', alignItems: 'center', borderRadius: 14, padding: 12, marginBottom: 8, borderWidth: 1, gap: 12 },
   avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
