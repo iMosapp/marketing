@@ -54,8 +54,7 @@ export function WeeklyWinsCard({ userId, forceShow }: { userId: string; forceSho
             style={{ flex: 1, alignItems: 'center', backgroundColor: '#2C2C2E55', borderRadius: 12, paddingVertical: 10, gap: 3 }}
             testID={`wins-stat-${s.key}`}
             dataSet={{ testid: `wins-stat-${s.key}` }}
-            disabled={s.key !== 'sold'}
-            onPress={() => router.push('/sales-list?type=sold' as any)}
+            onPress={() => router.push(`/weekly-wins-list?type=${s.key}` as any)}
           >
             <Ionicons name={s.icon as any} size={16} color={s.color} />
             <Text style={{ fontSize: 18, fontWeight: '800', color: '#FFF' }}>{s.value}</Text>

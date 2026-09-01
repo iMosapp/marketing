@@ -7,6 +7,7 @@ Powers the addictive daily habit loop:
   - Wins Feed: recent dopamine moments (views, replies, clicks)
 """
 import logging
+import os
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from bson import ObjectId
@@ -39,6 +40,122 @@ async def weekly_wins(user_id: str):
         "scans": scans,
         "new_contacts": new_contacts,
         "waiting_cleared": waiting_cleared,
+    }
+
+
+def _abs_photo(u: str) -> str:
+    if not u:
+        return ""
+    if u.startswith("http") or u.startswith("data:"):
+        return u
+    base = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+    return f"{base}{u}"
+
+
+@router.get("/weekly-wins/{user_id}/list")
+async def weekly_wins_list(user_id: str, type: str = "sold"):
+    """
+    Drill-down list behind each Last Week's Wins tile.
+    type: sold | texts | scans | contacts
+    Returns people/events for the same Mon-Sun window as /weekly-wins.
+    """
+    db = get_db()
+    now = datetime.now(timezone.utc)
+    this_monday = (now - timedelta(days=now.weekday())).replace(hour=0, minute=0, second=0, microsecond=0)
+    start = this_monday - timedelta(days=7)
+    end = this_monday
+
+    def _name(c: dict) -> str:
+        return f"{c.get('first_name','')} {c.get('last_name','')}".strip() or c.get('company', '') or 'Unknown'
+
+    items: list = []
+    title = "Last Week"
+
+    if type == "sold":
+        title = "Sold Last Week"
+        docs = await db.contacts.find(
+            {"user_id": user_id, "date_sold": {"$gte": start, "$lt": end},
+             "status": {"$nin": ["hidden", "merged", "deleted"]}},
+            {"first_name": 1, "last_name": 1, "company": 1, "vehicle": 1, "date_sold": 1, "photo_thumbnail": 1}
+        ).sort("date_sold", -1).to_list(500)
+        items = [{
+            "id": str(c["_id"]), "contact_id": str(c["_id"]), "name": _name(c),
+            "subtitle": c.get("vehicle", ""), "photo_thumbnail": _abs_photo(c.get("photo_thumbnail", "")),
+            "date": c["date_sold"].isoformat() if c.get("date_sold") else "",
+        } for c in docs]
+
+    elif type == "contacts":
+        title = "New Contacts Last Week"
+        docs = await db.contacts.find(
+            {"user_id": user_id, "created_at": {"$gte": start, "$lt": end},
+             "status": {"$nin": ["hidden", "merged", "deleted"]}},
+            {"first_name": 1, "last_name": 1, "company": 1, "phone": 1, "source": 1, "created_at": 1, "photo_thumbnail": 1}
+        ).sort("created_at", -1).to_list(500)
+        items = [{
+            "id": str(c["_id"]), "contact_id": str(c["_id"]), "name": _name(c),
+            "subtitle": c.get("source", "") or c.get("phone", ""),
+            "photo_thumbnail": _abs_photo(c.get("photo_thumbnail", "")),
+            "date": c["created_at"].isoformat() if c.get("created_at") else "",
+        } for c in docs]
+
+    elif type == "texts":
+        title = "Texted Last Week"
+        # Distinct conversations the user sent a message in, most-recent first
+        pipeline = [
+            {"$match": {"user_id": user_id, "sender": "user", "timestamp": {"$gte": start, "$lt": end}}},
+            {"$group": {"_id": "$conversation_id", "last": {"$max": "$timestamp"}, "count": {"$sum": 1}}},
+            {"$sort": {"last": -1}},
+            {"$limit": 500},
+        ]
+        groups = await db.messages.aggregate(pipeline).to_list(500)
+        for g in groups:
+            conv_id = g["_id"]
+            conv = None
+            try:
+                conv = await db.conversations.find_one({"_id": ObjectId(str(conv_id))})
+            except Exception:
+                conv = None
+            contact = None
+            phone = (conv or {}).get("contact_phone", "")
+            cid = (conv or {}).get("contact_id")
+            if cid:
+                try:
+                    contact = await db.contacts.find_one(
+                        {"_id": ObjectId(str(cid))},
+                        {"first_name": 1, "last_name": 1, "company": 1, "phone": 1, "photo_thumbnail": 1}
+                    )
+                except Exception:
+                    contact = None
+            nsent = g.get("count", 0)
+            items.append({
+                "id": str(conv_id),
+                "contact_id": str(cid) if cid else "",
+                "name": _name(contact) if contact else (phone or "Unknown"),
+                "subtitle": f"{nsent} message{'s' if nsent != 1 else ''} sent",
+                "photo_thumbnail": _abs_photo((contact or {}).get("photo_thumbnail", "")),
+                "date": g["last"].isoformat() if g.get("last") else "",
+            })
+
+    elif type == "scans":
+        title = "QR Scans Last Week"
+        docs = await db.card_scans.find(
+            {"user_id": user_id, "scanned_at": {"$gte": start, "$lt": end}}
+        ).sort("scanned_at", -1).to_list(500)
+        items = [{
+            "id": str(d["_id"]), "contact_id": "",
+            "name": "Card scan",
+            "subtitle": "Someone scanned your QR / card link",
+            "photo_thumbnail": "",
+            "date": d["scanned_at"].isoformat() if d.get("scanned_at") else "",
+        } for d in docs]
+
+    return {
+        "type": type,
+        "title": title,
+        "week_start": start.isoformat(),
+        "week_end": end.isoformat(),
+        "count": len(items),
+        "items": items,
     }
 
 
@@ -534,7 +651,6 @@ async def draft_message(user_id: str, contact_id: str, reason: str = "", context
     first = contact.get("first_name", "") or "there"
     fallback = DRAFT_FALLBACKS.get(reason, DRAFT_FALLBACKS["cooling_down"]).format(first=first)
 
-    import os
     api_key = os.getenv("EMERGENT_LLM_KEY")
     if not api_key:
         return {"message": fallback}

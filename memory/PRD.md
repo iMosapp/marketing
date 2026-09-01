@@ -97,3 +97,15 @@ Phase 2 "Relationship OS" UX enhancements: robust backend security, intent-based
   - app/contact/sold-wizard.tsx, app/sold-quick.tsx (sale date buttons)
 - DELIVERY: JS change -> requires `eas update --branch production` + app reopen.
 - Not reproducible in web preview / automated tester (native iOS keyboard behavior).
+
+## Last Week's Wins — Tappable Drill-downs (June 2026)
+- Before: only the "Sold" tile navigated (to /sales-list?type=sold); Texts/QR Scans/New were disabled.
+- Now: all 4 tiles tap to a new screen /weekly-wins-list?type=sold|texts|scans|contacts.
+- Backend: GET /api/home/weekly-wins/{user_id}/list?type=... (home_intelligence.py) — same Mon-Sun window as /weekly-wins so counts match.
+  - sold: contacts with date_sold in window
+  - contacts: contacts with created_at in window (shows source)
+  - texts: distinct conversations user messaged in window (shows msg count), resolved to contact name via conversations.contact_id
+  - scans: card_scans events in window (ANONYMOUS — no contact identity captured; listed by date)
+- Frontend: app/weekly-wins-list.tsx (clone of sales-list pattern, expo-image avatars); WeeklyWinsCard.tsx tiles wired.
+- Verified: backend curl all 4 types OK; frontend bundles clean. NOTE: screenshot tool cannot render this Expo web app headless (blank) — device confirmation after eas update.
+- DELIVERY: backend deploy + `eas update --branch production`.
