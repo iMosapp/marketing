@@ -9,6 +9,7 @@ from typing import List, Optional
 from datetime import datetime, timezone, timedelta
 from bson import ObjectId
 import logging
+import os
 
 from routers.database import get_db
 
@@ -398,7 +399,20 @@ async def send_broadcast(broadcast_id: str, user_id: str):
     stagger = int(broadcast.get("stagger_seconds", 10))  # seconds between each send
     jessi_on = broadcast.get("jessi_replies", False)
     message_template = broadcast.get("message", "")
-    media_urls = broadcast.get("media_urls", [])
+
+    # Sanitize media URLs — Twilio MMS requires PUBLIC https URLs.
+    # Local device paths (file://) or data URIs can never be fetched by Twilio (error 21620).
+    public_base = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+    media_urls = []
+    for u in (broadcast.get("media_urls") or []):
+        if not isinstance(u, str):
+            continue
+        if u.startswith("http://") or u.startswith("https://"):
+            media_urls.append(u)
+        elif u.startswith("/api/"):
+            media_urls.append(f"{public_base}{u}")
+        else:
+            logger.warning(f"[Broadcast] Dropping invalid media URL (not publicly fetchable): {u[:100]}")
 
     recipient_ids = broadcast.get("recipients", [])
     contacts = await db.contacts.find(

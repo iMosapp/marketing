@@ -1167,6 +1167,8 @@ async def process_pending_campaign_steps():
                         media_urls = [vcf_url]
 
                     # Send SMS/MMS via Twilio using rep's dedicated number
+                    twilio_failed = False
+                    twilio_error = ""
                     if contact_phone and channel in ("sms", "mms"):
                         try:
                             from services.twilio_service import send_sms, get_rep_twilio_number
@@ -1177,9 +1179,25 @@ async def process_pending_campaign_steps():
                                 from_phone=rep_number
                             )
                             if not sms_result.get("success"):
-                                logger.error(f"[Scheduler] Campaign SMS failed for step {current_step}: {sms_result.get('error')}")
+                                twilio_failed = True
+                                twilio_error = str(sms_result.get("error", "Twilio send failed"))
+                                logger.error(f"[Scheduler] Campaign SMS failed for step {current_step}: {twilio_error}")
                         except Exception as sms_err:
+                            twilio_failed = True
+                            twilio_error = str(sms_err)
                             logger.error(f"[Scheduler] Campaign SMS send error step {current_step}: {sms_err}")
+
+                    # On Twilio failure: mark FAILED with the error (visible), update broadcast
+                    # counters, and skip message/event logging — nothing was actually sent.
+                    if twilio_failed:
+                        await db.campaign_pending_sends.update_one(
+                            {"_id": send_id},
+                            {"$set": {"status": "failed", "error": twilio_error, "processed_at": now_naive}}
+                        )
+                        if send_doc.get("broadcast_id"):
+                            await _update_broadcast_progress(db, send_doc["broadcast_id"], failed=True)
+                        processed += 1
+                        continue
 
                     # Find the real conversation — try multiple strategies aggressively
                     real_conv = None
@@ -1336,11 +1354,14 @@ async def process_pending_campaign_steps():
                         logger.info(f"[Scheduler] MANUAL task created for step {current_step} to {contact_display}")
 
                 # ── MARK SEND COMPLETE ──
-                final_status = "sent" if delivery_mode == "automated" else "pending_user_action"
+                is_broadcast_send = bool(send_doc.get("broadcast_id"))
+                final_status = "sent" if (delivery_mode == "automated" or is_broadcast_send) else "pending_user_action"
                 await db.campaign_pending_sends.update_one(
                     {"_id": send_id},
                     {"$set": {"status": final_status, "processed_at": now_naive}}
                 )
+                if is_broadcast_send:
+                    await _update_broadcast_progress(db, send_doc["broadcast_id"], failed=False)
 
                 # ── UPDATE ENROLLMENT ──
                 if enrollment_id:
@@ -2019,6 +2040,27 @@ def start_scheduler():
         )
     else:
         logger.info(f"[Scheduler] Started with {job_count} jobs including daily silence follow-ups")
+
+
+async def _update_broadcast_progress(db, broadcast_id: str, failed: bool):
+    """Increment broadcast sent/failed counters; finalize status when the queue drains."""
+    try:
+        oid = ObjectId(broadcast_id)
+    except Exception:
+        return
+    inc_field = "failed_count" if failed else "sent_count"
+    await db.broadcasts.update_one({"_id": oid}, {"$inc": {inc_field: 1}})
+    remaining = await db.campaign_pending_sends.count_documents({
+        "broadcast_id": broadcast_id, "status": {"$in": ["pending", "processing"]}
+    })
+    if remaining == 0:
+        b = await db.broadcasts.find_one({"_id": oid}, {"sent_count": 1})
+        final = "sent" if (b or {}).get("sent_count", 0) > 0 else "failed"
+        await db.broadcasts.update_one({"_id": oid}, {"$set": {
+            "status": final,
+            "completed_at": datetime.now(timezone.utc).isoformat(),
+        }})
+        logger.info(f"[Scheduler] Broadcast {broadcast_id} finalized: {final}")
 
 
 async def process_scheduled_broadcasts():

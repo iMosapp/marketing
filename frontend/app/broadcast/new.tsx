@@ -277,7 +277,7 @@ const { showToast } = useToast();
     setSubmitting(true);
     
     try {
-      // Upload images first if any
+      // Upload images to public storage first — Twilio MMS requires public HTTPS URLs
       const uploadedUrls: string[] = [];
       for (const img of selectedImages) {
         const formData = new FormData();
@@ -292,10 +292,17 @@ const { showToast } = useToast();
             name: img.name,
           } as any);
         }
-        
-        // Upload to your media endpoint (you may need to create this)
-        // For now, we'll use the base64 URL directly
-        uploadedUrls.push(img.uri);
+        try {
+          const up = await api.post(`/images/upload?entity_type=broadcast&entity_id=${user?._id}`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+          if (!up.data?.original_url) throw new Error('no url returned');
+          uploadedUrls.push(up.data.original_url);
+        } catch {
+          showAlert('Photo Upload Failed', 'Your photo could not be uploaded. Remove it or try again — the blast was NOT sent.');
+          setSubmitting(false);
+          return;
+        }
       }
       
       const broadcastData = {
