@@ -848,6 +848,13 @@ async def get_sold_contacts_list(user_id: str, filter_type: str = "sold", month:
         "_id": 1, "first_name": 1, "last_name": 1, "phone": 1, "user_id": 1,
         "vehicle": 1, "date_sold": 1, "sold_count": 1, "referred_by_name": 1, "photo_thumbnail": 1
     }).sort("date_sold", -1).to_list(500)
+    public_base = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+
+    def _abs_photo(u: str) -> str:
+        if not u:
+            return ""
+        return u if u.startswith("http") else f"{public_base}{u}"
+
     return {"contacts": [{
         "_id": str(c["_id"]),
         "name": f"{c.get('first_name','')} {c.get('last_name','')}".strip(),
@@ -856,7 +863,7 @@ async def get_sold_contacts_list(user_id: str, filter_type: str = "sold", month:
         "date_sold": c["date_sold"].isoformat() if c.get("date_sold") else "",
         "sold_count": c.get("sold_count", 1),
         "referred_by_name": c.get("referred_by_name", ""),
-        "photo_thumbnail": c.get("photo_thumbnail", ""),
+        "photo_thumbnail": _abs_photo(c.get("photo_thumbnail", "")),
         "rep_name": rep_names.get(c.get("user_id", ""), ""),
     } for c in contacts], "total": len(contacts)}
 
