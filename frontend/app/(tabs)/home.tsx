@@ -946,7 +946,7 @@ function HomeScreen() {
               onPress={t.onPress}
               activeOpacity={0.75}
               style={{
-                flex: t.hero ? 1.25 : 1,
+                flex: 1,
                 backgroundColor: t.color + (t.hero ? '20' : '12'),
                 borderWidth: 1.5,
                 borderColor: t.color + (t.hero ? '77' : '35'),
