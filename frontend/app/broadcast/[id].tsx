@@ -57,6 +57,22 @@ const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [recipients, setRecipients] = useState<any[]>([]);
+  const [loadingRecipients, setLoadingRecipients] = useState(false);
+
+  const fetchRecipients = async () => {
+    if (!id || !user?._id) return;
+    setLoadingRecipients(true);
+    try {
+      const res = await api.get(`/broadcast/${id}/recipients?user_id=${user._id}`);
+      setRecipients(res.data.recipients || []);
+    } catch {}
+    setLoadingRecipients(false);
+  };
+
+  useEffect(() => {
+    if (broadcast && ['sending', 'sent', 'failed'].includes(broadcast.status)) fetchRecipients();
+  }, [broadcast?.status, id]);
 
   useEffect(() => {
     fetchBroadcast();
@@ -261,7 +277,7 @@ const { showToast } = useToast();
             <Text style={styles.statValue}>{broadcast.recipient_count}</Text>
             <Text style={styles.statLabel}>Recipients</Text>
           </View>
-          {broadcast.status === 'sent' && (
+          {['sent', 'failed', 'sending'].includes(broadcast.status) && (
             <>
               <View style={styles.statDivider} />
               <View style={styles.statItem}>
@@ -276,6 +292,68 @@ const { showToast } = useToast();
             </>
           )}
         </View>
+
+        {/* Delivery Results — per-person status */}
+        {['sending', 'sent', 'failed'].includes(broadcast.status) && (
+          <View style={styles.card} data-testid="delivery-results-card">
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={styles.cardLabel}>Delivery Results</Text>
+              <Pressable
+                onPress={() => { fetchBroadcast(); fetchRecipients(); }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                testID="refresh-results-btn"
+                {...({ dataSet: { testid: 'refresh-results-btn' } } as any)}
+              >
+                <Ionicons name="refresh" size={18} color="#007AFF" />
+              </Pressable>
+            </View>
+            {loadingRecipients && recipients.length === 0 ? (
+              <ActivityIndicator size="small" color="#C9A962" style={{ marginVertical: 16 }} />
+            ) : recipients.length === 0 ? (
+              <Text style={styles.statusSubtext}>No delivery records yet</Text>
+            ) : (
+              recipients.map((r: any, i: number) => {
+                const badge = r.status === 'sent'
+                  ? { label: 'Sent', color: '#34C759', icon: 'checkmark-circle' }
+                  : r.status === 'failed'
+                  ? { label: 'Failed', color: '#FF3B30', icon: 'close-circle' }
+                  : r.status === 'queued'
+                  ? { label: 'Queued', color: '#FF9500', icon: 'time' }
+                  : { label: 'Unconfirmed', color: '#8E8E93', icon: 'help-circle' };
+                return (
+                  <Pressable
+                    key={r.contact_id || i}
+                    onPress={() => r.contact_id && router.push(`/contact/${r.contact_id}` as any)}
+                    style={{
+                      flexDirection: 'row', alignItems: 'center', gap: 10,
+                      paddingVertical: 10,
+                      borderTopWidth: i === 0 ? 0 : 1, borderTopColor: colors.border,
+                    }}
+                    testID={`recipient-row-${i}`}
+                    {...({ dataSet: { testid: `recipient-row-${i}` } } as any)}
+                  >
+                    <Ionicons name={badge.icon as any} size={20} color={badge.color} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>{r.name}</Text>
+                      <Text style={{ fontSize: 12, color: colors.textSecondary }}>{r.phone}</Text>
+                      {r.status === 'failed' && r.error ? (
+                        <Text style={{ fontSize: 12, color: '#FF3B30', marginTop: 2 }}>{r.error}</Text>
+                      ) : null}
+                      {r.status === 'queued' && r.deferred_reason ? (
+                        <Text style={{ fontSize: 12, color: '#FF9500', marginTop: 2 }}>
+                          Held: {r.deferred_reason} — sends at 9 AM
+                        </Text>
+                      ) : null}
+                    </View>
+                    <View style={{ backgroundColor: `${badge.color}20`, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+                      <Text style={{ fontSize: 12, fontWeight: '700', color: badge.color }}>{badge.label}</Text>
+                    </View>
+                  </Pressable>
+                );
+              })
+            )}
+          </View>
+        )}
 
         {/* Filters Used */}
         <View style={styles.card}>

@@ -311,6 +311,46 @@ async def get_broadcast(broadcast_id: str, user_id: str):
     return {"success": True, "broadcast": serialize_broadcast(broadcast)}
 
 
+@router.get("/{broadcast_id}/recipients")
+async def get_broadcast_recipients(broadcast_id: str, user_id: str):
+    """Per-recipient delivery results for a broadcast (sent/failed/queued + error reason)."""
+    db = get_db()
+    try:
+        broadcast = await db.broadcasts.find_one({"_id": ObjectId(broadcast_id), "created_by": user_id}, {"_id": 1})
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid broadcast ID")
+    if not broadcast:
+        raise HTTPException(status_code=404, detail="Broadcast not found")
+
+    docs = await db.campaign_pending_sends.find(
+        {"broadcast_id": broadcast_id},
+        {"contact_id": 1, "contact_name": 1, "contact_phone": 1, "status": 1,
+         "error": 1, "send_at": 1, "processed_at": 1, "deferred_reason": 1}
+    ).sort("send_at", 1).to_list(5000)
+
+    status_map = {
+        "sent": "sent",
+        "failed": "failed",
+        "pending": "queued",
+        "processing": "queued",
+        "pending_user_action": "unconfirmed",
+    }
+    recipients = [{
+        "contact_id": d.get("contact_id", ""),
+        "name": d.get("contact_name", "Unknown"),
+        "phone": d.get("contact_phone", ""),
+        "status": status_map.get(d.get("status", ""), "queued"),
+        "error": d.get("error", ""),
+        "deferred_reason": d.get("deferred_reason", ""),
+        "send_at": d.get("send_at").isoformat() if d.get("send_at") else "",
+        "processed_at": d.get("processed_at").isoformat() if d.get("processed_at") else "",
+    } for d in docs]
+    counts: dict = {}
+    for r in recipients:
+        counts[r["status"]] = counts.get(r["status"], 0) + 1
+    return {"recipients": recipients, "counts": counts, "total": len(recipients)}
+
+
 @router.put("/{broadcast_id}")
 async def update_broadcast(broadcast_id: str, data: BroadcastUpdate, user_id: str):
     """Update a broadcast (only if not yet sent)"""
