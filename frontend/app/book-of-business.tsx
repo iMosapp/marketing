@@ -68,12 +68,12 @@ export default function BookOfBusinessScreen() {
             >
               <Text style={{ fontSize: 18 }}>💙</Text>
               <Text style={{ flex: 1, fontSize: 14, fontWeight: '700', color: colors.text }}>
-                You have {summary.advocates} advocate{summary.advocates !== 1 ? 's' : ''} — thank them
+                You have {summary.advocates} advocate{summary.advocates !== 1 ? 's' : ''} - thank them
               </Text>
               <Ionicons name="chevron-forward" size={16} color="#0A84FF" />
             </TouchableOpacity>
           ) : null}
-          {/* Bucket tiles — fixed 5-across row (no horizontal scroll) */}
+          {/* Bucket tiles - fixed 5-across row (no horizontal scroll) */}
           <View style={st.tilesRow}>
             {(summary?.buckets || []).map((b: any) => {
               const isActive = b.key === active;

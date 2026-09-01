@@ -54,7 +54,7 @@ export default function PeopleTodayScreen() {
           ListEmptyComponent={
             <View style={{ alignItems: 'center', padding: 40 }}>
               <Ionicons name="sparkles-outline" size={48} color={colors.borderLight} />
-              <Text style={{ fontSize: 15, color: colors.textSecondary, textAlign: 'center', marginTop: 16 }}>You're all caught up — no one needs a nudge right now.</Text>
+              <Text style={{ fontSize: 15, color: colors.textSecondary, textAlign: 'center', marginTop: 16 }}>You're all caught up - no one needs a nudge right now.</Text>
             </View>
           }
           renderItem={({ item }) => (

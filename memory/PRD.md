@@ -145,3 +145,7 @@ DELIVERY: backend deploy + eas update --branch production.
 - Narrative: hero ("CRM remembers the deal, IMOS remembers the person") -> problem (74% vs 44% loyalty) -> 4 CSS phone mockups (Book of Business, People to Talk To Today, Voice Remember This, Advocate Spotlight) -> flywheel -> stats -> CTA. Demo form posts to app.imonsocial.com/api/demo-requests.
 - Linked from marketing.html Resources dropdown + deck footer.
 - Screenshots are hand-built HTML/CSS (accurate text), not AI images. Verified renders 200 via local static server.
+
+## STYLE RULE (June 2026) — NEVER USE EM DASHES
+- User directive: NEVER use em dashes (—, &mdash;, &#8212;, &#x2014;) anywhere — marketing site, app UI, or generated content. Use a spaced hyphen " - " or restructure with commas.
+- Swept clean on this date: all of marketing/build/*.html (49 files), marketing/generate_pages.py (28), and the new app screens (book-of-business, people-today).
