@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, ActivityIndicator, Linking, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Linking, Platform } from 'react-native';
+import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../../services/api';
@@ -98,7 +99,7 @@ export default function StorePublicPage() {
       {/* Header */}
       <View style={[styles.header, { backgroundColor: color }]}>
         {store.logo_url ? (
-          <Image source={{ uri: store.logo_url }} style={styles.logo} resizeMode="contain" />
+          <Image source={{ uri: store.logo_url }} style={styles.logo} contentFit="contain" cachePolicy="memory-disk" transition={150} />
         ) : (
           <View style={styles.logoPlaceholder}>
             <Ionicons name="storefront" size={40} color="#fff" />
@@ -182,7 +183,7 @@ export default function StorePublicPage() {
             {team.map((member) => (
               <TouchableOpacity key={member.id} style={styles.teamCard} onPress={() => openLink(`/p/${member.id}`)} data-testid={`team-member-${member.id}`}>
                 {member.photo_url ? (
-                  <Image source={{ uri: member.photo_url }} style={styles.teamPhoto} />
+                  <Image source={{ uri: member.photo_url }} style={styles.teamPhoto} contentFit="cover" cachePolicy="memory-disk" transition={150} />
                 ) : (
                   <View style={[styles.teamPhotoPlaceholder, { backgroundColor: color + '20' }]}>
                     <Ionicons name="person" size={24} color={color} />

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, Linking, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Linking, Platform, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
@@ -103,7 +104,7 @@ export default function PublicLinkPage() {
       <SEOHead type="link" id={username as string} />
       <View style={s.profile}>
         {data.photo_url ? (
-          <Image source={{ uri: data.photo_url }} style={[s.avatar, { borderColor: photoBorderColor }]} />
+          <Image source={{ uri: data.photo_url }} style={[s.avatar, { borderColor: photoBorderColor }]} contentFit="cover" cachePolicy="memory-disk" transition={150} />
         ) : (
           <View style={[s.avatarPlaceholder, { borderColor: photoBorderColor, backgroundColor: isDark ? '#1C1C1E' : '#E5E5EA' }]}>
             <Text style={{ fontSize: 36, fontWeight: '800', color: textColor }}>

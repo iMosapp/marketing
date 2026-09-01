@@ -82,3 +82,9 @@ Phase 2 "Relationship OS" UX enhancements: robust backend security, intent-based
 - Fix: added STRIPE_API_KEY="sk_test_emergent" (Emergent managed claimable sandbox) to /app/backend/.env and restarted backend.
 - Verified live: POST /api/subscriptions/checkout returns a real https://checkout.stripe.com/... URL.
 - Go-live: user claims the sandbox into their own Stripe account (no code change needed).
+
+## iOS Avatar Rendering Fix (June 2026)
+- Root cause: several screens used React Native core `Image` for REMOTE photo avatars. Renders on web, unreliable on iOS with newArchEnabled=true. Working iOS avatars (inbox/thread/more) all use `expo-image`.
+- Switched to `expo-image` (contentFit + memory-disk cache): app/sales-list.tsx, app/l/[username].tsx, app/p/store/[slug].tsx.
+- Left on core Image intentionally: local require() logo assets (imos/_components.tsx), import-guide screenshots, white-label (Image import unused).
+- DELIVERY: frontend/JS change — requires `eas update --branch production` (+ app reopen). Backend deploy alone does NOT update the installed app's JS.
