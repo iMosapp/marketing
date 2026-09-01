@@ -135,11 +135,21 @@ export default function DigitalCardPage() {
   const [matchInfo, setMatchInfo] = useState<any>(null);
   const [pendingShareAction, setPendingShareAction] = useState<{platform: string; payload: any} | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [photoError, setPhotoError] = useState(false);
   
   // Derive theme from brand kit
   const themeMode = (cardData?.brand_kit?.page_theme === 'light') ? 'light' : 'dark';
   const theme = buildTheme(themeMode, cardData?.brand_kit);
   const dynamicStyles = getDynamicStyles(theme);
+
+  // Match the browser body background to the page theme so mobile browser
+  // over-scroll / URL-bar chrome never shows a mismatched black bar.
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      document.body.style.backgroundColor = theme.bg;
+      document.documentElement.style.backgroundColor = theme.bg;
+    }
+  }, [theme.bg]);
   
   // Tracking context — only track when NOT the owner (customer viewing)
   const trackCtx = {
@@ -557,10 +567,11 @@ export default function DigitalCardPage() {
 
               {/* Profile Photo */}
               <View style={styles.photoContainer}>
-                {user.photo_url ? (
+                {user.photo_url && !photoError ? (
                   <Image 
                     source={{ uri: user.photo_url }} 
                     style={[styles.photo, { borderColor: theme.accent }]}
+                    onError={() => setPhotoError(true)}
                   />
                 ) : (
                   <View style={[styles.photoPlaceholder, { backgroundColor: theme.surface, borderColor: theme.accent }]}>

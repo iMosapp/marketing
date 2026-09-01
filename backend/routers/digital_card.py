@@ -7,6 +7,8 @@ from bson import ObjectId
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 import hashlib
+import os
+import base64
 from routers.database import get_db, get_data_filter
 from routers.short_urls import create_short_url, get_short_url_base
 
@@ -72,6 +74,13 @@ async def get_scan_stats(user_id: str):
         for k in day_keys
     ]
     return {"week": week, "total": total, "days": days}
+
+
+def _abs_url(u):
+    if not u or not isinstance(u, str) or u.startswith("http"):
+        return u
+    base = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+    return f"{base}{u}"
 
 
 @router.get("/data/{user_id}")
@@ -198,8 +207,8 @@ async def get_card_data(user_id: str, request: Request, cid: str = None):
             "email": user.get("email", ""),
             "phone": user.get("mvpline_number") or user.get("twilio_number") or user.get("phone", ""),
             "title": user.get("title", "") or user.get("persona", {}).get("title", "Sales Professional"),
-            "photo_url": resolve_user_photo(user),
-            "cover_photo_url": user.get("cover_photo_url"),
+            "photo_url": _abs_url(resolve_user_photo(user)),
+            "cover_photo_url": _abs_url(user.get("cover_photo_url")),
             "bio": user.get("persona", {}).get("bio", "") or user.get("bio", ""),
             "social_links": user.get("social_links", {}),
         },
@@ -207,7 +216,7 @@ async def get_card_data(user_id: str, request: Request, cid: str = None):
             "id": str(store["_id"]) if store else None,
             "name": store.get("name", "") if store else None,
             "slug": store.get("slug", "") if store else None,
-            "logo_url": resolve_store_logo(store),
+            "logo_url": _abs_url(resolve_store_logo(store)),
             "primary_color": store.get("primary_color", "#007AFF") if store else "#007AFF",
             "phone": store.get("phone") if store else None,
             "address": store.get("address") if store else None,
@@ -369,8 +378,31 @@ async def generate_vcard(user_id: str):
         if store.get("website"):
             vcard_lines.append(f"URL:{store.get('website')}")
     
-    if user.get("photo_url"):
-        vcard_lines.append(f"PHOTO;VALUE=URI:{user.get('photo_url')}")
+    if user.get("photo_url") or user.get("photo_path") or user.get("photo_avatar_path"):
+        # Embed the photo as base64 — iOS/Android Contacts ignore URI photos,
+        # so fetch the bytes and inline them (vCard 3.0 ENCODING=b).
+        photo_embedded = False
+        try:
+            from utils.image_urls import resolve_user_photo
+            rel = resolve_user_photo(user)
+            if rel:
+                # Fetch bytes from this same server (relative paths) — avoids
+                # external round-trips and works in every environment.
+                fetch_url = rel if rel.startswith("http") else f"http://127.0.0.1:8001{rel}"
+                sep = "&" if "?" in fetch_url else "?"
+                import httpx
+                async with httpx.AsyncClient(timeout=8) as client:
+                    resp = await client.get(f"{fetch_url}{sep}format=jpeg", follow_redirects=True)
+                if resp.status_code == 200 and len(resp.content) <= 900 * 1024:
+                    b64 = base64.b64encode(resp.content).decode()
+                    vcard_lines.append(f"PHOTO;ENCODING=b;TYPE=JPEG:{b64}")
+                    photo_embedded = True
+        except Exception:
+            pass
+        if not photo_embedded:
+            fallback_url = user.get("photo_url", "")
+            if fallback_url.startswith("http"):
+                vcard_lines.append(f"PHOTO;VALUE=URI:{fallback_url}")
     
     # Add links: landing page, review page, showroom
     base_url = "https://app.imonsocial.com"

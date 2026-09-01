@@ -76,7 +76,7 @@ export const MessageBubble = ({
   let richColor = '#007AFF';
   let richLabel = 'Message';
   if (isReviewLink) { richIcon = 'star'; richColor = '#FFD60A'; richLabel = 'Review Link'; }
-  else if (isDigitalCard) { richIcon = 'card'; richColor = '#5856D6'; richLabel = 'Digital Card'; }
+  else if (isDigitalCard) { richIcon = 'card'; richColor = '#6FA8FF'; richLabel = 'Digital Card'; }
   else if (isCongratsCard) {
     const cardDisplay = CARD_DISPLAY[detectedCardType] || CARD_DISPLAY.congrats;
     richIcon = cardDisplay.icon; richColor = cardDisplay.color; richLabel = cardDisplay.label;
@@ -208,7 +208,9 @@ export const MessageBubble = ({
           {item.content ? (
             <Text style={[
               styles.messageText,
-              isUser ? { color: colors.userBubbleText } : { color: colors.contactBubbleText },
+              isRichContent
+                ? { color: colors.text }
+                : isUser ? { color: colors.userBubbleText } : { color: colors.contactBubbleText },
             ]}>
               {highlight(item.content)}
             </Text>
