@@ -19,6 +19,79 @@ VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
 VAPID_MAILTO = os.environ.get("VAPID_MAILTO", "mailto:notifications@imonsocial.com")
 
+EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
+EXPO_RECEIPTS_URL = "https://exp.host/--/api/v2/push/getReceipts"
+_push_log_indexed = False
+
+
+async def _log_push(user_id: str, title: str, channel: str, outcome: str, details: dict = None):
+    """Keep a 14-day trail of every push attempt so 'why didn't I get that?' is answerable."""
+    global _push_log_indexed
+    try:
+        db = get_db()
+        if not _push_log_indexed:
+            await db.push_log.create_index("created_at", expireAfterSeconds=14 * 24 * 3600)
+            _push_log_indexed = True
+        await db.push_log.insert_one({
+            "user_id": user_id, "title": title, "channel": channel, "outcome": outcome,
+            "details": details or {}, "created_at": datetime.now(timezone.utc),
+        })
+    except Exception as e:
+        logger.debug(f"[Push] log failed (non-fatal): {e}")
+
+
+async def _send_expo(tokens: list, title: str, body: str, data: dict) -> list:
+    """POST to Expo, return one ticket per token. Logs every error and prunes dead tokens."""
+    import httpx
+    db = get_db()
+    tokens = [t for t in tokens if t.get("expo_push_token")]
+    if not tokens:
+        return []
+    messages = [{
+        "to": t["expo_push_token"], "title": title, "body": body,
+        "data": data, "sound": "default", "badge": 1,
+    } for t in tokens]
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(EXPO_PUSH_URL, json=messages,
+                                     headers={"Accept": "application/json", "Content-Type": "application/json"})
+            result = resp.json()
+    except Exception as e:
+        logger.warning(f"[Push] Expo request failed: {e}")
+        return [{"status": "error", "message": str(e), "details": {"error": "RequestFailed"}} for _ in tokens]
+
+    tickets = result.get("data") if isinstance(result, dict) else None
+    if not isinstance(tickets, list):
+        logger.warning(f"[Push] Expo unexpected response: {str(result)[:300]}")
+        return [{"status": "error", "message": str(result)[:200], "details": {"error": "BadResponse"}} for _ in tokens]
+
+    for i, ticket in enumerate(tickets):
+        if not isinstance(ticket, dict) or ticket.get("status") == "ok":
+            continue
+        err = (ticket.get("details") or {}).get("error")
+        logger.warning(f"[Push] Expo ticket error for token {tokens[i]['expo_push_token'][:22]}...: {err} - {ticket.get('message')}")
+        if err in ("DeviceNotRegistered", "InvalidCredentials") and i < len(tokens):
+            await db.expo_push_tokens.delete_one({"_id": tokens[i]["_id"]})
+    ok = sum(1 for t in tickets if isinstance(t, dict) and t.get("status") == "ok")
+    logger.info(f"[Push] Expo accepted {ok}/{len(tokens)} native notifications")
+    return tickets
+
+
+async def _fetch_expo_receipts(ticket_ids: list) -> dict:
+    """APNs/FCM-level delivery results (DeviceNotRegistered, InvalidCredentials...) only show up here."""
+    import httpx
+    ids = [i for i in ticket_ids if i]
+    if not ids:
+        return {}
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(EXPO_RECEIPTS_URL, json={"ids": ids},
+                                     headers={"Accept": "application/json", "Content-Type": "application/json"})
+            return (resp.json() or {}).get("data") or {}
+    except Exception as e:
+        logger.warning(f"[Push] Expo receipts failed: {e}")
+        return {}
+
 
 @router.get("/vapid-key")
 async def get_vapid_key():
@@ -81,6 +154,7 @@ async def send_push_to_user(user_id: str, title: str, body: str, url: str = "/to
         user_doc = await get_db().users.find_one({"_id": ObjectId(user_id)}, {"notification_mode": 1})
         mode = (user_doc or {}).get("notification_mode", "both")
         if mode == "sms":
+            await _log_push(user_id, title, "none", "skipped_sms_only_mode")
             return 0  # User wants SMS only — skip push entirely
     except Exception:
         mode = "both"
@@ -98,6 +172,7 @@ async def send_push_to_user(user_id: str, title: str, body: str, url: str = "/to
                     "delivered": False, "created_at": _dt.now(_tz.utc),
                 })
             logger.info(f"[Push] Held for {user_id} — quiet hours (will summarize when they end)")
+            await _log_push(user_id, title, "none", "held_quiet_hours")
             return 0
     except Exception as e:
         logger.debug(f"[Push] Quiet-hours check failed (non-fatal): {e}")
@@ -108,36 +183,12 @@ async def send_push_to_user(user_id: str, title: str, body: str, url: str = "/to
     # ── Native iOS/Android via Expo Push API ──────────────────────────────────
     tokens = await db.expo_push_tokens.find({"user_id": user_id}).to_list(10)
     if tokens:
-        import httpx
-        messages = [{
-            "to": t["expo_push_token"],
-            "title": title,
-            "body": body,
-            "data": {"url": url, "icon": icon},
-            "sound": "default",
-            "badge": 1,
-        } for t in tokens if t.get("expo_push_token")]
-        if messages:
-            try:
-                async with httpx.AsyncClient(timeout=10.0) as client:
-                    resp = await client.post(
-                        "https://exp.host/--/api/v2/push/send",
-                        json=messages,
-                        headers={"Accept": "application/json", "Content-Type": "application/json"},
-                    )
-                    result = resp.json()
-                    # Clean up invalid tokens
-                    if isinstance(result, dict) and "data" in result:
-                        for i, item in enumerate(result["data"]):
-                            if isinstance(item, dict) and item.get("status") == "error":
-                                details = item.get("details", {})
-                                if details.get("error") in ("DeviceNotRegistered", "InvalidCredentials"):
-                                    if i < len(tokens):
-                                        await db.expo_push_tokens.delete_one({"_id": tokens[i]["_id"]})
-                    sent += len(messages)
-                    logger.info(f"[Push] Expo native sent {len(messages)} notifications to {user_id}")
-            except Exception as e:
-                logger.warning(f"[Push] Expo native failed for {user_id}: {e}")
+        tickets = await _send_expo(tokens, title, body, {"url": url, "icon": icon})
+        ok = [t for t in tickets if t.get("status") == "ok"]
+        sent += len(ok)
+        await _log_push(user_id, title, "expo", "sent" if ok else "expo_error", {
+            "tickets": [{"status": t.get("status"), "id": t.get("id"), "error": (t.get("details") or {}).get("error"), "message": t.get("message")} for t in tickets]
+        })
 
     # ── Web push via VAPID ────────────────────────────────────────────────────
     if VAPID_PRIVATE_KEY:
@@ -226,6 +277,72 @@ async def check_and_notify_milestones(user_id: str, streak: int, level_title: st
             "read": False,
             "created_at": datetime.now(timezone.utc),
         })
+
+
+@router.get("/diagnose/{user_id}")
+async def diagnose_push(user_id: str):
+    """Everything that decides whether a push reaches this user, in one call."""
+    from routers.user_schedule import quiet_status
+    db = get_db()
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"notification_mode": 1, "timezone": 1}) or {}
+    tokens = await db.expo_push_tokens.find({"user_id": user_id}).sort("updated_at", -1).to_list(10)
+    web_subs = await db.push_subscriptions.count_documents({"user_id": user_id})
+    held = await db.held_pushes.count_documents({"user_id": user_id, "delivered": False})
+    recent = await db.push_log.find({"user_id": user_id}).sort("created_at", -1).limit(10).to_list(10)
+    quiet = await quiet_status(user_id)
+    return {
+        "notification_mode": user.get("notification_mode", "both"),
+        "user_timezone": user.get("timezone"),
+        "native_tokens": [{
+            "platform": t.get("platform"),
+            "token_preview": (t.get("expo_push_token") or "")[:24] + "...",
+            "updated_at": str(t.get("updated_at") or ""),
+        } for t in tokens],
+        "web_subscriptions": web_subs,
+        "quiet": quiet,
+        "held_pushes": held,
+        "recent": [{
+            "title": r.get("title"), "channel": r.get("channel"), "outcome": r.get("outcome"),
+            "at": str(r.get("created_at") or ""), "details": r.get("details") or {},
+        } for r in recent],
+    }
+
+
+@router.post("/diagnose/{user_id}/test")
+async def diagnose_push_test(user_id: str):
+    """Send a real test push straight to the device, bypassing quiet hours and SMS-only mode,
+    then pull Expo receipts so APNs-level failures (bad credentials, dead token) are visible."""
+    import asyncio
+    db = get_db()
+    tokens = await db.expo_push_tokens.find({"user_id": user_id}).to_list(10)
+    if not tokens:
+        await _log_push(user_id, "Test push", "expo", "no_native_token")
+        return {"ok": False, "reason": "no_native_token",
+                "hint": "This phone hasn't registered for push. Open the app, allow notifications, then try again."}
+
+    tickets = await _send_expo(tokens, "Test push from i'M On Social",
+                               "If you can read this, alerts are reaching your phone.", {"url": "/notifications", "icon": "checkmark.circle"})
+    ticket_ids = [t.get("id") for t in tickets if isinstance(t, dict) and t.get("status") == "ok"]
+    await asyncio.sleep(3)
+    receipts = await _fetch_expo_receipts(ticket_ids)
+    for tid, rc in receipts.items():
+        err = (rc.get("details") or {}).get("error")
+        if err in ("DeviceNotRegistered", "InvalidCredentials"):
+            logger.warning(f"[Push] Receipt error {err} for user {user_id}: {rc.get('message')}")
+    results = []
+    for i, t in enumerate(tickets):
+        rc = receipts.get(t.get("id")) if isinstance(t, dict) else None
+        results.append({
+            "platform": tokens[i].get("platform") if i < len(tokens) else None,
+            "ticket": t.get("status") if isinstance(t, dict) else "error",
+            "ticket_error": (t.get("details") or {}).get("error") if isinstance(t, dict) else None,
+            "receipt": (rc or {}).get("status") if rc else "pending",
+            "receipt_error": ((rc or {}).get("details") or {}).get("error") if rc else None,
+            "message": (rc or {}).get("message") if rc else (t.get("message") if isinstance(t, dict) else None),
+        })
+    ok = any(r["ticket"] == "ok" and r["receipt"] in ("ok", "pending") for r in results)
+    await _log_push(user_id, "Test push", "expo", "sent" if ok else "expo_error", {"results": results})
+    return {"ok": ok, "results": results}
 
 
 @router.post("/subscribe-native/{user_id}")

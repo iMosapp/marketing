@@ -155,3 +155,6 @@ DELIVERY: backend deploy + eas update --branch production.
 - See CHANGELOG "Auth + Impersonation + AI phone guard". Key endpoints: POST /api/admin/users/{id}/impersonate (super_admin JWT), /api/auth/activate/{request,verify,complete}, /api/auth/forgot-password/{request,verify,reset}. Screens: /auth/activate, /auth/login link, /auth/change-password (no ToS gate).
 - USER TESTING PENDING (frontend): impersonate flow, /auth/activate e2e, first-login Set Password, admin create-user modal copy, thread popup suppression, marketing section.
 - Backlog: rotate production secrets; Wallet cert (.p12) parked; HomeNet/vAuto feed; Zapier instructions.
+
+## Push alerts investigation (June 2026) - OPEN
+- iPhone alerts stopped (prod). Built Push Health Check (Settings -> Notifications) + /api/push/diagnose endpoints so the cause can be read off the device after deploy. See CHANGELOG. Root cause on production not yet confirmed.

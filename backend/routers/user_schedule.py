@@ -66,6 +66,30 @@ class ScheduleUpdate(BaseModel):
 
 
 # ── Utility: is user currently on shift? ─────────────────────────────────────
+_UNKNOWN_TZ = {"", "UTC", "Etc/UTC", "GMT", "Etc/GMT"}
+
+
+async def resolve_user_tz(user_id: str, sched: Optional[dict] = None) -> str:
+    """Best real timezone for quiet-hour math. 'UTC' is treated as unknown (no US rep lives in UTC)."""
+    db = get_db()
+    if sched is None:
+        sched = await db.user_schedules.find_one({"user_id": user_id}) or {}
+    tz = (sched or {}).get("timezone") or ""
+    if tz in _UNKNOWN_TZ:
+        try:
+            u = await db.users.find_one({"_id": ObjectId(user_id)}, {"timezone": 1}) or {}
+            tz = u.get("timezone") or ""
+        except Exception:
+            tz = ""
+    if tz in _UNKNOWN_TZ:
+        tz = "America/Denver"
+    try:
+        import pytz
+        pytz.timezone(tz)
+    except Exception:
+        tz = "America/Denver"
+    return tz
+
 
 async def is_user_available(user_id: str) -> bool:
     """
@@ -94,8 +118,7 @@ async def is_user_available(user_id: str) -> bool:
     # Get current time in user's timezone
     try:
         import pytz
-        tz_str = sched.get("timezone", "America/Denver")
-        tz = pytz.timezone(tz_str)
+        tz = pytz.timezone(await resolve_user_tz(user_id, sched))
         local_now = datetime.now(timezone.utc).astimezone(tz)
     except Exception:
         local_now = datetime.now(timezone.utc)
@@ -151,7 +174,7 @@ async def is_quiet_now(user_id: str) -> bool:
     if sched.get("overnight_quiet"):
         try:
             import pytz
-            tz = pytz.timezone(sched.get("timezone", "America/Denver"))
+            tz = pytz.timezone(await resolve_user_tz(user_id, sched))
             local_now = datetime.now(timezone.utc).astimezone(tz)
         except Exception:
             local_now = datetime.now(timezone.utc)
@@ -165,6 +188,35 @@ async def is_quiet_now(user_id: str) -> bool:
     if sched.get("notification_quiet") and not await is_user_available(user_id):
         return True
     return False
+
+
+async def quiet_status(user_id: str) -> dict:
+    """Explain the quiet-hours decision for diagnostics: which rule (if any) is holding pushes right now."""
+    db = get_db()
+    sched = await db.user_schedules.find_one({"user_id": user_id}) or {}
+    tz_name = await resolve_user_tz(user_id, sched)
+    try:
+        import pytz
+        local_now = datetime.now(timezone.utc).astimezone(pytz.timezone(tz_name))
+    except Exception:
+        local_now = datetime.now(timezone.utc)
+    quiet = await is_quiet_now(user_id) if sched else False
+    reason = None
+    if quiet:
+        start, end = sched.get("overnight_start", "21:00"), sched.get("overnight_end", "07:00")
+        cur = local_now.strftime("%H:%M")
+        in_overnight = sched.get("overnight_quiet") and ((cur >= start or cur < end) if start > end else (start <= cur < end))
+        reason = f"overnight quiet hours {start}-{end}" if in_overnight else "outside your work schedule (quiet mode on)"
+    return {
+        "quiet_now": bool(quiet),
+        "reason": reason,
+        "timezone_saved": sched.get("timezone"),
+        "timezone_used": tz_name,
+        "local_time": local_now.strftime("%a %I:%M %p"),
+        "overnight_quiet": bool(sched.get("overnight_quiet")),
+        "overnight_window": f"{sched.get('overnight_start', '21:00')}-{sched.get('overnight_end', '07:00')}" if sched.get("overnight_quiet") else None,
+        "schedule_quiet_mode": bool(sched.get("notification_quiet")),
+    }
 
 
 async def next_available_window(user_id: str) -> Optional[str]:

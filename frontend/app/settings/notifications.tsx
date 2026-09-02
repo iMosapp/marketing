@@ -10,6 +10,7 @@ import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/common/Toast';
 import api from '../../services/api';
+import { PushDiagnosticsCard } from '../../components/settings/PushDiagnosticsCard';
 
 const THROTTLE_OPTIONS = [
   { label: '5 min',  value: 5 },
@@ -156,6 +157,8 @@ export default function NotificationSettings() {
         )}
 
         {/* ── Alert Delivery Mode ─────────────────────────────────────────── */}
+        {!!user?._id && <PushDiagnosticsCard userId={user._id} colors={colors} />}
+
         <Text style={[s.sectionLabel, { color: colors.textSecondary }]}>ALERT DELIVERY</Text>
         <View style={[s.card, { backgroundColor: colors.card, padding: 0, overflow: 'hidden' }]}>
           {([

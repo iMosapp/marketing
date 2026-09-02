@@ -168,7 +168,7 @@ async def enforce_user_ownership(request: Request, call_next):
         "/api/messages/conversations/", "/api/tags/", "/api/templates/",
         "/api/home/", "/api/activity/", "/api/search/", "/api/notifications-center/",
         "/api/reports/", "/api/push/preferences/", "/api/push/subscribe-native/",
-        "/api/push/status/", "/api/users/", "/api/engagement-signals/",
+        "/api/push/status/", "/api/push/diagnose/", "/api/users/", "/api/engagement-signals/",
         "/api/ai-outreach/", "/api/broadcast/", "/api/bug-reports/",
         "/api/inventory/", "/api/keyword-rules/", "/api/wallet/",
         "/api/relationship-health/",

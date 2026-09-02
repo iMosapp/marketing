@@ -303,3 +303,11 @@
 - Marketing deck (/app/marketing/build/relationship-os/index.html): new section.own "Salespeople leave. Their customers shouldn't leave with them." (store-owned number + CRM retention) between the problem strip and Step 1. Needs Vercel redeploy.
 - Tests: /app/backend/tests/test_activation_impersonation_291.py (25 pass), ai_routing_matrix 28/28. Report /app/test_reports/iteration_291.json. Minor pre-existing notes from tester: seed_admin_user plaintext password on fresh DB, CORS allow_credentials False, unsigned session cookie.
 - Production: needs backend redeploy + eas update / web deploy + marketing Vercel deploy.
+
+## Push Health Check + push hardening (June 2026) - self-tested on preview; production root cause still UNCONFIRMED
+- User report: iPhone app alerts stopped. Schedule quiet mode OFF on prod (per user). Preview evidence only: schedule tz saved as 'UTC' + quiet mode ON was holding pushes (19 held). Cannot see prod data.
+- Backend push_notifications.py: `_send_expo` (per-ticket error logging, prunes DeviceNotRegistered/InvalidCredentials tokens), `_fetch_expo_receipts` (APNs-level results), `_log_push` -> `push_log` collection (14-day TTL) records sent / expo_error / held_quiet_hours / skipped_sms_only_mode / no_native_token.
+- New endpoints: GET /api/push/diagnose/{uid} (mode, tokens, web subs, quiet status + reason + tz used, held count, last 10 attempts) and POST /api/push/diagnose/{uid}/test (bypasses quiet hours + SMS-only, sends real Expo push, waits 3s, returns tickets + receipts). Both ownership-protected in server.py PROTECTED_PREFIXES.
+- user_schedule.py: `resolve_user_tz` treats ''/UTC/GMT as unknown -> user.timezone -> America/Denver; used by is_user_available + overnight quiet. `quiet_status` explains the decision.
+- Frontend: components/settings/PushDiagnosticsCard.tsx ("Push health check" card at top of Settings -> Notifications, testids push-diagnostics-card / push-diag-test-btn / push-diag-test-result). Verified on web preview (shows not-registered + held reason + test result).
+- NEXT: deploy backend + eas update, then user opens Settings -> Notifications on iPhone and taps "Send me a test push"; the card/receipt error pinpoints the cause (no token = permission/registration; InvalidCredentials = APNs key on Expo project; held = quiet hours; SMS-only mode).
