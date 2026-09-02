@@ -1915,8 +1915,8 @@ function ThreadScreen() {
       console.error('MMS send error:', error);
       const detail = error.response?.data?.detail;
       const errorMsg = typeof detail === 'string' ? detail
-        : Array.isArray(detail) ? (detail[0]?.msg || 'Validation error — check file type')
-        : detail ? 'Send failed — server error'
+        : Array.isArray(detail) ? (detail[0]?.msg || 'Validation error - check file type')
+        : detail ? 'Send failed - server error'
         : error.message || 'Failed to send. Please try again.';
       showAlert('Send Failed', errorMsg);
     } finally {
@@ -2351,7 +2351,7 @@ function ThreadScreen() {
           <Ionicons name="pause-circle" size={18} color="#FF9F0A" />
           <Text style={{ flex: 1, fontSize: 12.5, color: colors.text, lineHeight: 17 }}>
             <Text style={{ fontWeight: '800', color: '#FF9F0A' }}>Jessi paused for you. </Text>
-            She replied "let me check on that" and won't answer this inventory/pricing question until you reply.
+            She replied "let me check on that" and won't answer this pricing, inventory or financing question until you reply.
           </Text>
         </View>
       )}
@@ -2366,7 +2366,7 @@ function ThreadScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Ionicons name="calendar" size={14} color="#C9A962" />
             <Text style={{ fontSize: 12.5, fontWeight: '800', color: '#C9A962', letterSpacing: 0.3 }}>
-              JESSI DRAFTED A REPLY — APPROVE TO SEND
+              JESSI DRAFTED A REPLY - APPROVE TO SEND
             </Text>
           </View>
           {draftEditing ? (
@@ -2402,13 +2402,13 @@ function ThreadScreen() {
                 setDraftEditing(true);
               }}
               disabled={draftBusy}
-              style={{ backgroundColor: colors.card, borderRadius: 10, paddingVertical: 11, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, borderWidth: 1, borderColor: '#007AFF55' }}
+              style={{ backgroundColor: colors.card, borderRadius: 10, paddingVertical: 11, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, borderWidth: 1, borderColor: '#C9A96255' }}
               activeOpacity={0.8}
               testID="edit-draft-btn"
               dataSet={{ testid: 'edit-draft-btn' } as any}
             >
-              <Ionicons name={draftEditing ? 'close' : 'create-outline'} size={16} color="#007AFF" />
-              <Text style={{ fontSize: 13, fontWeight: '800', color: '#007AFF' }}>{draftEditing ? 'Cancel' : 'Edit'}</Text>
+              <Ionicons name={draftEditing ? 'close' : 'create-outline'} size={16} color="#C9A962" />
+              <Text style={{ fontSize: 13, fontWeight: '800', color: '#C9A962' }}>{draftEditing ? 'Cancel' : 'Edit'}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={takeOverPendingDraft}
@@ -2441,7 +2441,7 @@ function ThreadScreen() {
         >
           <Ionicons name="pause-circle" size={15} color="#FF9500" />
           <Text style={{ fontSize: 13, color: '#FF9500', fontWeight: '600', flex: 1 }}>
-            All AI is paused (Home switch) — Jessi won't reply
+            All AI is paused (Home switch) - Jessi won't reply
           </Text>
           <View style={{ backgroundColor: '#FF9500', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 }}>
             <Text style={{ fontSize: 12, fontWeight: '800', color: '#000' }}>Resume AI</Text>
@@ -3502,7 +3502,7 @@ function ThreadScreen() {
                         }, 500);
                       } catch (e: any) {
                         const detail = e?.response?.data?.detail;
-                        const msg = typeof detail === 'string' ? detail : 'Merge failed — please try again';
+                        const msg = typeof detail === 'string' ? detail : 'Merge failed - please try again';
                         showSimpleAlert('Error', msg);
                       }
                     }

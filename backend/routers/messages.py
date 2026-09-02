@@ -1504,12 +1504,20 @@ async def update_conversation(user_id: str, conversation_id: str, data: dict):
         raise HTTPException(status_code=400, detail="No valid fields to update")
 
     # When AI is turned OFF — also clear the Waiting queue state so it
-    # moves from Waiting → All and stops nagging the rep
+    # moves from Waiting → All and stops nagging the rep, and drop any
+    # queued/held AI drafts so nothing stale can send or resurface later.
     if update_dict.get('ai_mode') == 'off' or update_dict.get('ai_enabled') is False:
         update_dict['needs_assistance']         = False
         update_dict['unanswered_customer_replies'] = 0
         update_dict['rep_engaged']              = True
         update_dict['ai_paused_for_human']      = False
+        try:
+            await db.ai_reply_queue.update_many(
+                {"conversation_id": conversation_id, "status": "pending"},
+                {"$set": {"status": "cancelled", "cancel_reason": "ai_disabled_by_rep"}},
+            )
+        except Exception:
+            pass
 
     # "All Good" — rep acknowledged the waiting state without taking over.
     # Clears the counter + dismisses the You're-Needed alerts; AI mode untouched.

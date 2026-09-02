@@ -1725,9 +1725,11 @@ async def expire_stale_waiting_flags():
     if not stale:
         return
     ids = [c["_id"] for c in stale]
+    # Lift any fact-question pause too, otherwise Jessi would stay silent forever
+    # on a conversation that no longer shows in the Waiting queue.
     await db.conversations.update_many(
         {"_id": {"$in": ids}},
-        {"$set": {"needs_assistance": False, "unanswered_customer_replies": 0}},
+        {"$set": {"needs_assistance": False, "unanswered_customer_replies": 0, "ai_paused_for_human": False}},
     )
     await db.notifications.update_many(
         {"conversation_id": {"$in": [str(i) for i in ids]}, "type": "you_are_needed", "dismissed": {"$ne": True}},

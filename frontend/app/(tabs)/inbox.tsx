@@ -1472,7 +1472,7 @@ export default function InboxScreen() {
               ) : (
                 <View style={styles.unclaimedBadge}>
                   <Ionicons name="flash" size={12} color="#FF9500" />
-                  <Text style={styles.unclaimedBadgeText}>Jump Ball — hold to act</Text>
+                  <Text style={styles.unclaimedBadgeText}>Jump Ball - hold to act</Text>
                 </View>
               )}
             </View>

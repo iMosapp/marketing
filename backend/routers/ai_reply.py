@@ -191,8 +191,8 @@ async def queue_ai_reply(
                     await db.notifications.insert_one({
                         "user_id":         assigned_user_id,
                         "type":            "ai_paused_customer_waiting",
-                        "title":           f"{cname} replied — AI is paused",
-                        "message":         f"\"{(incoming_message or '')[:80]}\" — Jessi is OFF (Home AI switch). Reply yourself or turn AI back on.",
+                        "title":           f"{cname} replied - AI is paused",
+                        "message":         f"\"{(incoming_message or '')[:80]}\" - Jessi is OFF (Home AI switch). Reply yourself or turn AI back on.",
                         "contact_id":      contact_id,
                         "conversation_id": conversation_id,
                         "read":            False,
@@ -202,7 +202,7 @@ async def queue_ai_reply(
                     from routers.push_notifications import send_push_to_user
                     asyncio.create_task(send_push_to_user(
                         assigned_user_id,
-                        f"{cname} replied — AI is paused",
+                        f"{cname} replied - AI is paused",
                         "Jessi didn't respond because your Home AI switch is off. Reply or resume AI.",
                         f"/thread/{conversation_id}",
                         "alert-circle",
@@ -224,40 +224,34 @@ async def queue_ai_reply(
     # the rep sends a manual reply, taps All Good, or turns AI off/on.
     try:
         _conv_pause = await db.conversations.find_one(
-            {"_id": ObjectId(conversation_id)}, {"ai_paused_for_human": 1}
+            {"_id": ObjectId(conversation_id)}, {"ai_paused_for_human": 1, "needs_assistance": 1}
         )
         if _conv_pause and _conv_pause.get("ai_paused_for_human"):
             logger.info(f"[AIReply] Conversation {conversation_id} paused for human — skipping AI reply")
+            # A paused conversation must always stay visible in the Waiting queue.
+            if not _conv_pause.get("needs_assistance"):
+                await db.conversations.update_one(
+                    {"_id": ObjectId(conversation_id)},
+                    {"$set": {"needs_assistance": True, "you_are_needed_at": datetime.utcnow()}}
+                )
             return None
     except Exception:
         pass
 
-    # ── Content-based immediate escalation ──────────────────────────────────
-    # If the customer's message is about specific inventory, pricing, color,
-    # or scheduling, flag the conversation for rep attention NOW — don't wait
-    # for a message-count threshold. Reply with a brief "let me check" then escalate.
-    ESCALATION_SIGNALS = [
-        # Inventory / pricing — require specific question phrasing
-        "in stock", "available", "availability", "do you have",
-        "price", "pricing", "cost", "how much", "what does it cost", "what's the price",
-        # Color questions (requires the word "color/colour" OR question phrasing with a color)
-        "what color", "what colour", "which color", "which colour",
-        "do you have it in", "come in ", "does it come",
-        "color name", "colour name",
-        # Scheduling / visit intent
-        "appointment", "schedule", "test drive", "come in", "come by", "stop by",
-        # Trade / finance
-        "trade", "trade-in", "trade in", "trade value",
-        "finance", "financing", "payment", "monthly",
-        "vin", "specific", "which one", "which ones", "do you stock",
-        # Customer suspects AI — rep MUST take over immediately
-        "robot", "are you a robot", "is this ai", "is this a bot", "are you real",
-        "talking to a person", "real person", "automated", "chatbot", "ai bot",
-        "computer", "are you human", "is this automated", "machine", "is this jessi",
-        "who is this", "who am i talking to",
-    ]
+    # ── Content-based routing ───────────────────────────────────────────────
+    # Three buckets decide what Jessi does with this message:
+    #   1. AI suspicion  -> brief reply, pause, human takes over
+    #   2. Fact question -> brief "let me check", PAUSE until a human replies
+    #   3. Scheduling    -> Jessi drafts, rep must approve before it sends
+    #   otherwise        -> normal auto reply
+    # All keyword checks are WHOLE-WORD/PHRASE matches: "vin" must never fire on
+    # "having"/"Kevin", "lease" on "please", "apr" on "April".
+    import re as _re_sched
+
+    def _has_phrase(text: str, phrases) -> bool:
+        return any(_re_sched.search(r"(?<![a-z])" + _re_sched.escape(p) + r"(?![a-z])", text) for p in phrases)
+
     msg_lower = (incoming_message or "").lower()
-    is_hot_topic = any(sig in msg_lower for sig in ESCALATION_SIGNALS)
 
     # Customer suspects AI — a rep MUST take over, never let Jessi keep talking
     AI_SUSPECT_SIGNALS = [
@@ -266,7 +260,7 @@ async def queue_ai_reply(
         "computer", "are you human", "is this automated", "machine", "is this jessi",
         "who is this", "who am i talking to",
     ]
-    is_ai_suspect = any(sig in msg_lower for sig in AI_SUSPECT_SIGNALS)
+    is_ai_suspect = _has_phrase(msg_lower, AI_SUSPECT_SIGNALS)
 
     # ── Fact-based topics Jessi must NOT answer without live data ─────────────
     # Until inventory feeds are live, any question about inventory availability,
@@ -282,7 +276,17 @@ async def queue_ai_reply(
         "vin", "which one", "which ones", "what models", "which model", "what trim",
         "trim", "mileage", "how many miles", "msrp", "out the door", "down payment",
     ]
-    is_fact_topic = (not is_ai_suspect) and any(sig in msg_lower for sig in FACT_SIGNALS)
+    # Finance/trade questions are never answered from inventory data either.
+    FINANCE_SIGNALS = [
+        "trade", "trade-in", "trade in", "trade value", "finance", "financing", "payment",
+        "monthly", "apr", "interest rate", "lease", "down payment", "out the door",
+    ]
+    # "I'm available Tuesday" / "are you available?" is about PEOPLE, not inventory.
+    _fact_probe = _re_sched.sub(r"\b(i'?m|i am|we'?re|we are|are you|you|u|is anyone|anyone)\s+(available|free|open)\b", " ", msg_lower)
+    is_fact_topic = (not is_ai_suspect) and _has_phrase(_fact_probe, FACT_SIGNALS)
+    is_finance_topic = is_fact_topic and _has_phrase(_fact_probe, FINANCE_SIGNALS)
+    # Anything a human must handle right now (suspicion or facts) is a "hot topic".
+    is_hot_topic = is_ai_suspect or is_fact_topic
 
     # ── Scheduling / appointment approval hold ────────────────────────────────
     # The rep must approve before Jessi commits to ANY time or visit. This applies
@@ -294,6 +298,8 @@ async def queue_ai_reply(
         "come in", "come by", "come down", "swing by", "stop by", "drop by",
         "what time", "what day", "book a", "book it", "set a time", "set up a time",
         "lock in", "lock it in", "lock that in", "pencil me in", "o'clock",
+        "are you available", "you available", "are you free", "you free", "are you open",
+        "still open", "i'm available", "im available", "i am available", "we're available",
     ]
     # Weak signals (bare day/time words) only count as scheduling when the recent
     # thread was already about setting a time — otherwise "how's it going today?"
@@ -301,25 +307,35 @@ async def queue_ai_reply(
     WEAK_SCHEDULING = [
         "today", "tonight", "tomorrow", "this afternoon", "this evening", "this morning",
         "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
-        " am", " pm", "a.m.", "p.m.",
+        "am", "pm", "a.m.", "p.m.",
     ]
-    import re as _re_sched
     # A short reply that contains a time-like token ("6?", "6pm", "3:30", "at 6")
     # counts as scheduling when the recent thread was about setting a time.
     _has_time_token = bool(_re_sched.search(r"\b\d{1,2}(:\d{2})?\s*(am|pm|a\.m\.|p\.m\.)?\b", msg_lower))
+    # Unambiguous clock reference ("at 6", "6pm", "3:30") - with a day word it is
+    # scheduling on its own ("Tomorrow at 6 please"), no prior context needed.
+    _has_clock_token = bool(_re_sched.search(
+        r"(\bat\s+\d{1,2}(:\d{2})?\b|\b\d{1,2}(:\d{2})?\s*(am|pm|a\.m\.|p\.m\.)\b|\b\d{1,2}:\d{2}\b)", msg_lower))
     _recent_for_sched = await db.messages.find(
         {"conversation_id": conversation_id}, {"content": 1}
     ).sort("timestamp", -1).limit(2).to_list(2)
     _recent_blob = " ".join((m.get("content") or "") for m in _recent_for_sched).lower()
-    _sched_context = any(s in _recent_blob for s in (
+    _sched_context = _has_phrase(_recent_blob, (
         "what time", "what day", "come in", "come by", "come down", "appointment",
-        "schedule", "test drive", "lock", "book", "set up a time", "stop by", "swing by",
+        "schedule", "test drive", "lock in", "lock it in", "lock that in", "book", "book a",
+        "set up a time", "set a time", "stop by", "swing by",
     ))
+    # Once a draft is held for approval, every follow-up stays held until the rep
+    # acts — otherwise Jessi could confirm the time in her next "normal" reply.
+    _hold_carryover = await db.ai_reply_queue.find_one({
+        "conversation_id": conversation_id, "status": STATUS_PENDING, "requires_approval": True,
+    }, {"_id": 1}) is not None
     is_scheduling = (
-        any(sig in msg_lower for sig in STRONG_SCHEDULING)
-        or (any(sig in msg_lower for sig in WEAK_SCHEDULING) and _sched_context)
+        _has_phrase(msg_lower, STRONG_SCHEDULING)
+        or (_has_phrase(msg_lower, WEAK_SCHEDULING) and (_sched_context or _has_clock_token))
         or (_has_time_token and _sched_context)
         or (_sched_context and len(msg_lower.strip()) <= 12)
+        or _hold_carryover
     )
     # AI-suspicion always wins over scheduling (a human must step in, no draft hold).
     if is_ai_suspect:
@@ -339,7 +355,11 @@ async def queue_ai_reply(
             )
         except Exception:
             pass
-        if assigned_user_id:
+        # One alert per hold: don't re-push on every follow-up while the draft waits.
+        _already_alerted = await db.notifications.find_one({
+            "conversation_id": conversation_id, "type": "you_are_needed", "dismissed": {"$ne": True},
+        }, {"_id": 1})
+        if assigned_user_id and not _already_alerted:
             try:
                 _c = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"first_name": 1, "last_name": 1, "name": 1})
                 _cn = ((_c or {}).get("name") or f"{(_c or {}).get('first_name','')} {(_c or {}).get('last_name','')}".strip() or "A customer")
@@ -347,7 +367,7 @@ async def queue_ai_reply(
                     "user_id":         assigned_user_id,
                     "type":            "you_are_needed",
                     "priority":        "urgent",
-                    "title":           f"Approve Jessi's reply — {_cn}",
+                    "title":           f"Approve Jessi's reply - {_cn}",
                     "message":         f"{_cn} wants to set a time. Jessi drafted a reply that needs your OK before it sends.",
                     "contact_id":      contact_id,
                     "conversation_id": conversation_id,
@@ -358,18 +378,19 @@ async def queue_ai_reply(
                 from routers.push_notifications import send_push_to_user
                 asyncio.create_task(send_push_to_user(
                     assigned_user_id,
-                    f"Approve Jessi's reply — {_cn}",
-                    f"\"{(incoming_message or '')[:70]}\" — tap to review and send.",
+                    f"Approve Jessi's reply - {_cn}",
+                    f"\"{(incoming_message or '')[:70]}\" - tap to review and send.",
                     f"/thread/{conversation_id}",
                     "calendar",
                 ))
             except Exception:
                 pass
 
-    # If the question is inventory/pricing-related (not AI-suspicion), try LIVE
-    # inventory first — Jessi can answer with real availability and pricing.
+    # If the question is inventory/pricing-related, try LIVE inventory first so
+    # Jessi can answer with real availability and pricing. Financing, payments and
+    # trade values are never answered from inventory data - a human handles those.
     inventory_context, inventory_media = "", []
-    if is_hot_topic and not is_ai_suspect:
+    if is_fact_topic and not is_finance_topic:
         inventory_context, inventory_media = await _search_inventory_context(db, assigned_user_id, incoming_message)
 
     if is_hot_topic and not inventory_context and not is_scheduling:
@@ -399,8 +420,8 @@ async def queue_ai_reply(
                 from routers.push_notifications import send_push_to_user
                 asyncio.create_task(send_push_to_user(
                     assigned_user_id,
-                    f"You're Needed — {cname_hot}",
-                    f"Asked: \"{(incoming_message or '')[:80]}\" — Jessi passed it to you.",
+                    f"You're Needed - {cname_hot}",
+                    f"Asked: \"{(incoming_message or '')[:80]}\" - Jessi passed it to you.",
                     f"/thread/{conversation_id}",
                     "alert-circle",
                 ))
@@ -464,8 +485,8 @@ async def queue_ai_reply(
                 from routers.push_notifications import send_push_to_user
                 asyncio.create_task(send_push_to_user(
                     assigned_user_id,
-                    f"Inventory Question — {cname_inv}",
-                    f"Asked: \"{(incoming_message or '')[:70]}\" — Jessi replied with live inventory.",
+                    f"Inventory Question - {cname_inv}",
+                    f"Asked: \"{(incoming_message or '')[:70]}\" - Jessi replied with live inventory.",
                     f"/thread/{conversation_id}",
                     "car-sport",
                 ))
@@ -647,11 +668,14 @@ async def queue_ai_reply(
         contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"first_name": 1, "last_name": 1})
         cname = f"{contact.get('first_name','')} {contact.get('last_name','')}".strip() if contact else "Customer"
 
+        if is_scheduling:
+            # Scheduling holds already alerted the rep above ("Approve Jessi's reply").
+            return queue_doc
         if needs_approval:
-            notif_title   = f"Review AI draft — {cname} replied"
+            notif_title   = f"Review AI draft - {cname} replied"
             notif_message = (
                 f"{cname} has replied {reply_count}+ times. "
-                f"AI draft ready — approve before it sends.\n\"{ai_body[:100]}...\""
+                f"AI draft ready - approve before it sends.\n\"{ai_body[:100]}...\""
                 if len(ai_body) > 100 else
                 f"{cname} has replied {reply_count}+ times. AI draft: \"{ai_body}\""
             )
@@ -681,7 +705,7 @@ async def queue_ai_reply(
                 from routers.push_notifications import send_push_to_user
                 asyncio.create_task(send_push_to_user(
                     assigned_user_id,
-                    f"You're Needed — {cname}",
+                    f"You're Needed - {cname}",
                     f"Jessi needs your help. Review the AI draft before it sends.",
                     f"/thread/{conversation_id}",
                     "alert-circle",
@@ -793,6 +817,28 @@ async def process_ai_reply_queue():
                                 {"_id": qid}, {"$set": {"status": STATUS_CANCELLED, "cancel_reason": "ai_disabled_by_rep"}}
                             )
                             continue
+                except Exception:
+                    pass
+
+            # ── Rep replied after this was queued — the human has it, Jessi stays quiet ──
+            if item.get("conversation_id") and item.get("created_at"):
+                try:
+                    _created = item["created_at"]
+                    if _created.tzinfo is None:
+                        _created = _created.replace(tzinfo=timezone.utc)
+                    rep_msg = await db.messages.find_one({
+                        "conversation_id": item["conversation_id"],
+                        "sender":          "user",
+                        "auto_sent":       {"$ne": True},
+                        "ai_generated":    {"$ne": True},
+                        "timestamp":       {"$gt": _created},
+                    }, {"_id": 1})
+                    if rep_msg:
+                        logger.info(f"[AIReply] Skipping queued item — rep replied on conversation {item['conversation_id']}")
+                        await db.ai_reply_queue.update_one(
+                            {"_id": qid}, {"$set": {"status": STATUS_CANCELLED, "cancel_reason": "rep_replied"}}
+                        )
+                        continue
                 except Exception:
                     pass
 
@@ -1198,6 +1244,7 @@ async def send_silence_followups():
     candidates = await db.conversations.find({
         "ai_enabled":        True,
         "ai_mode":           {"$nin": ["off", None, ""]},
+        "ai_paused_for_human": {"$ne": True},
         "status":            {"$nin": ["closed", "archived"]},
         "last_message_at":   {"$gte": window_start, "$lte": window_end},
         "unanswered_customer_replies": {"$gte": 2},
@@ -1215,6 +1262,19 @@ async def send_silence_followups():
         if not contact_id or not user_id:
             skipped += 1
             continue
+
+        # ── Never nudge while a draft awaits the rep's approval or the Home AI switch is off ──
+        try:
+            if await db.ai_reply_queue.find_one({"conversation_id": conv_id, "status": STATUS_PENDING,
+                                                 "requires_approval": True}, {"_id": 1}):
+                skipped += 1
+                continue
+            _rep = await db.users.find_one({"_id": ObjectId(user_id)}, {"ai_master_paused": 1})
+            if _rep and _rep.get("ai_master_paused"):
+                skipped += 1
+                continue
+        except Exception:
+            pass
 
         # ── Check rep's local time — only send during their 10 AM hour ──────────
         try:

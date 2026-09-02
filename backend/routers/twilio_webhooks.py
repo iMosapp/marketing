@@ -426,7 +426,7 @@ async def incoming_message(
             {"_id": ObjectId(conversation_id)},
             {"$inc": {"unanswered_customer_replies": 1}},
             return_document=_RD.AFTER,
-            projection={"unanswered_customer_replies": 1, "ai_mode": 1, "ai_enabled": 1, "rep_sms_notified_at": 1, "needs_assistance": 1}
+            projection={"unanswered_customer_replies": 1, "ai_mode": 1, "ai_enabled": 1, "rep_sms_notified_at": 1, "needs_assistance": 1, "ai_paused_for_human": 1}
         )
         conv_unanswered = (convo_update or {}).get("unanswered_customer_replies", 1) if convo_update else 1
         logger.info(f"[Webhook] Unanswered count for conv {conversation_id}: {conv_unanswered}")
@@ -434,7 +434,9 @@ async def incoming_message(
         # ── Auto-clear Waiting: customer answered happily after an AI reply ─────
         # A short positive closer means nothing is left to do — clear the flag,
         # reset the counter, dismiss You're-Needed alerts. AI mode untouched.
-        is_satisfied = _is_satisfied_reply(Body)
+        # NEVER auto-clear while Jessi is paused on a fact question: "ok thanks"
+        # after "let me check on that" still needs the rep's real answer.
+        is_satisfied = _is_satisfied_reply(Body) and not (convo_update or {}).get("ai_paused_for_human")
         if is_satisfied and convo_update:
             _cf = convo_update
             _ai_on = _cf.get("ai_enabled") is not False and _cf.get("ai_mode") not in ("off", "draft_only", "assisted")
@@ -846,7 +848,7 @@ async def incoming_message(
                     "user_id":         user_id,
                     "type":            "you_are_needed",
                     "priority":        "urgent",
-                    "title":           f"{cname_esc} needs you — {effective_reply_count} messages waiting",
+                    "title":           f"{cname_esc} needs you - {effective_reply_count} messages waiting",
                     "message":         f"You have {effective_reply_count} unanswered messages from {cname_esc}. The AI has been helping but your personal touch is needed.",
                     "contact_id":      contact_id,
                     "conversation_id": conversation_id,
@@ -899,7 +901,7 @@ async def incoming_message(
             try:
                 cname = contact.get("name") or f"{contact.get('first_name','')} {contact.get('last_name','')}".strip() or from_phone
                 notif_type  = "you_are_needed" if (max_reply_count >= 2 and not is_satisfied) else "customer_reply"
-                notif_title = (f"{cname} needs you — {max_reply_count} unanswered" if notif_type == "you_are_needed"
+                notif_title = (f"{cname} needs you - {max_reply_count} unanswered" if notif_type == "you_are_needed"
                                else f"{cname} replied")
                 await db.notifications.insert_one({
                     "user_id": user_id, "type": notif_type,
@@ -1567,7 +1569,7 @@ async def handle_recording_complete(
                 "user_id":       user_id,
                 "type":          "call_recorded",
                 "priority":      "normal",
-                "title":         f"Call summary ready — {contact_name}",
+                "title":         f"Call summary ready - {contact_name}",
                 "message":       notif_msg,
                 "contact_id":    contact_id,
                 "recording_url": RecordingUrl,

@@ -1,5 +1,26 @@
 # CHANGELOG — iMOs App
 
+## Jun 2026 — AI Routing Stabilization Review (COMPLETED, 28/28 regression matrix)
+- **Why:** user reported "sloppy" regressions from the previous session's AI routing edits. Full review of `ai_reply.py`, `twilio_webhooks.py`, `messages.py`, `scheduler.py`, `thread/[id].tsx`. Reproduced 11 defects with a new deterministic harness BEFORE fixing.
+- **Fixed (backend `routers/ai_reply.py`):**
+  - Substring keyword matching -> whole-word `_has_phrase`. "having"/"Kevin"/"driving" no longer trip the "vin" fact pause; "please" no longer matches "lease" (which was silently DISABLING the appointment hold on "Tomorrow at 6 please"); "April" no longer matches "apr".
+  - Fact list unified: mileage / lease / APR / MSRP / trim / down payment / interest rate now pause like price/stock did (they were only in FACT_SIGNALS, never in the old escalation list, so Jessi guessed them).
+  - "I'm available Tuesday" / "are you available?" are scheduling, not an inventory fact pause.
+  - Finance/trade/payment questions never answered from live inventory data.
+  - Scheduling hold sent TWO pushes + two notifications per message; now exactly one, and follow-ups while a draft is held don't re-push.
+  - Hold carry-over: while a scheduling draft awaits approval, every follow-up is also held (Jessi could previously confirm the time in her next "normal" reply).
+  - Day word + clock time ("Saturday at 10am") is scheduling without needing prior context.
+  - Pause guard re-asserts `needs_assistance` so a paused conversation can never silently leave Waiting.
+  - `process_ai_reply_queue`: cancels a queued AI reply when the rep replied after it was queued (`cancel_reason=rep_replied`) - was double-replying customers.
+  - `send_silence_followups`: skips paused convs, convs with a held draft, and master-paused reps (was going to "just check in" on paused threads).
+- **Fixed (`twilio_webhooks.py`):** happy "ok thanks" no longer auto-clears Waiting while `ai_paused_for_human` (rep still owes the real answer).
+- **Fixed (`scheduler.py`):** 3-day Waiting expiry also lifts the pause (otherwise Jessi stayed silent forever with no Waiting badge).
+- **Fixed (`messages.py`):** turning AI off cancels all pending/held drafts for the conversation (stale draft could resurface + send when AI was re-enabled).
+- **Frontend:** em dashes removed from approval card header, thread banners/alerts, inbox Jump Ball badge; Edit button de-blued to gold; paused banner copy covers financing.
+- **Guardrail:** `/app/memory/AI_ROUTING_RULES.md` (state machine + invariants) and `backend/tests/ai_routing_matrix.py` (28 cases, stubs LLM/push/Twilio, self-cleaning). MUST pass before finishing any change to these files.
+- **Ships:** backend Deploy + `eas update --branch production --message "AI routing stabilization"`.
+
+
 ## Jun 2026 — "You're Needed" push regression FIX (COMPLETED)
 - **Regression cause (mine):** in the first task I added `and not conv_full_auto` to the count-based "You're Needed" escalation in `routers/twilio_webhooks.py` to "avoid nagging in full auto". That block also contains the rep push + urgent SMS, so it silenced ALL those alerts for full-auto conversations (which is how the user runs everything). Pushes that "worked for months" stopped.
 - **Fix:** reverted that suppression — the count-based escalation + push + SMS fire again for everyone. Also removed the post-send full-auto self-heal reset in `routers/ai_reply.py` (it cleared needs_assistance/unanswered after each auto-reply, undermining escalations). "All Good" still clears via the update_conversation endpoint.
