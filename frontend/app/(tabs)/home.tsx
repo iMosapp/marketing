@@ -1113,49 +1113,54 @@ function HomeScreen() {
                   data-testid={`my3-card-${idx}`}
                 >
                   <View style={{ height: 3, backgroundColor: done ? '#34C759' : item.color }} />
-                  <View style={{ flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 }}>
-                    <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: item.color + '20', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      <Ionicons name={item.icon as any} size={20} color={item.color} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 16, fontWeight: '700', color: done ? colors.textSecondary : colors.text }} numberOfLines={1}>{item.first_name} {item.last_name}</Text>
-                      <Text style={{ fontSize: 13, color: item.color, marginTop: 2, fontWeight: '500' }}>{item.reason_label}</Text>
-                      {item.hook ? (
-                        <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }} numberOfLines={1}>💬 {item.hook}</Text>
+                  <View style={{ padding: 14 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: item.color + '20', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Ionicons name={item.icon as any} size={20} color={item.color} />
+                      </View>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={{ fontSize: 16, fontWeight: '700', color: done ? colors.textSecondary : colors.text }} numberOfLines={1}>{item.first_name} {item.last_name}</Text>
+                        <Text style={{ fontSize: 13, color: item.color, marginTop: 2, fontWeight: '500' }} numberOfLines={2}>{item.reason_label}</Text>
+                        {item.hook ? (
+                          <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }} numberOfLines={1}>💬 {item.hook}</Text>
+                        ) : null}
+                      </View>
+                      {done ? (
+                        <View style={{ backgroundColor: '#34C75920', borderRadius: 20, padding: 8 }}>
+                          <Ionicons name="checkmark" size={16} color="#34C759" />
+                        </View>
                       ) : null}
                     </View>
                     {!done ? (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
                         <TouchableOpacity onPress={(e) => { e.stopPropagation?.(); openDraftSheet(item); }}
-                          style={{ backgroundColor: item.color, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8 }}>
+                          style={{ backgroundColor: item.color, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 9 }}
+                          testID={`my3-action-${idx}`}
+                          dataSet={{ testid: `my3-action-${idx}` } as any}>
                           <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>{item.action_label}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                           onPress={(e: any) => { e?.stopPropagation?.(); markMy3Done(item.contact_id); }}
                           hitSlop={6}
-                          style={{ width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: '#34C75955', alignItems: 'center', justifyContent: 'center' }}
+                          style={{ width: 34, height: 34, borderRadius: 17, borderWidth: 1, borderColor: '#34C75955', alignItems: 'center', justifyContent: 'center' }}
                           testID={`my3-done-${idx}`}
                           dataSet={{ testid: `my3-done-${idx}` } as any}
                           accessibilityLabel="Mark done"
                         >
-                          <Ionicons name="checkmark" size={16} color="#34C759" />
+                          <Ionicons name="checkmark" size={17} color="#34C759" />
                         </TouchableOpacity>
                         <TouchableOpacity
                           onPress={(e: any) => { e?.stopPropagation?.(); skipForToday(item.contact_id); }}
                           hitSlop={6}
-                          style={{ width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}
+                          style={{ width: 34, height: 34, borderRadius: 17, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}
                           testID={`my3-skip-${idx}`}
                           dataSet={{ testid: `my3-skip-${idx}` } as any}
                           accessibilityLabel="Skip for today"
                         >
-                          <Ionicons name="close" size={16} color={colors.textSecondary} />
+                          <Ionicons name="close" size={17} color={colors.textSecondary} />
                         </TouchableOpacity>
                       </View>
-                    ) : (
-                      <View style={{ backgroundColor: '#34C75920', borderRadius: 20, padding: 8 }}>
-                        <Ionicons name="checkmark" size={16} color="#34C759" />
-                      </View>
-                    )}
+                    ) : null}
                   </View>
                 </TouchableOpacity>
               );

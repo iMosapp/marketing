@@ -159,6 +159,7 @@ DELIVERY: backend deploy + eas update --branch production.
 ## Home "Do This Next" / "3 for Today" Skip + auto-complete (June 2026) - DONE, verified in preview, awaiting production deploy
 - Backend home_intelligence.py: db.home_daily_picks (stable per-day picks), db.home_action_state {user_id, day, key, status done|dismissed}. POST /api/home/{uid}/my3/done and /my3/dismiss; dismiss pulls in a replacement pick. `done` auto-derived from _touched_today (outbound contact_events + outbound messages today) so texting from contact card/inbox/cards completes the item. GET /api/home/{uid} returns my_3[].done + dismissed_keys.
 - Frontend home.tsx: Skip on each My-3 card (my3-skip-*), Done check (my3-done-*), Skip on Do This Next (next-move-skip; keys hot:{id} / overdue / pending_tasks / contact_id). Re-verified via curl June 2026 (dismiss -> replacement filled; done flag from outbound text).
+- Layout fix (June 2026, user screenshot from prod: text squeezed to 5-char column): My-3 card is now two rows - info row (icon + name + reason numberOfLines=2 + hook, full width) then right-aligned action row (action button my3-action-*, done check, skip). Verified via 390px screenshot on preview. Needs eas update.
 - User chose to deploy + test on phone. Ship: backend Deploy + `eas update --branch production`.
 
 ## Push alerts investigation (June 2026) - OPEN
