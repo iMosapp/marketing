@@ -11,7 +11,7 @@ import os
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from bson import ObjectId
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException
 
 from routers.database import get_db
 from utils.photo_url import abs_photo_url, contact_photo_url
@@ -272,9 +272,9 @@ def _personal_hook(contact: dict) -> str:
     return ""
 
 
-async def get_my_3(user_id: str, db, top_n: int = 3) -> list:
+async def _score_my3(user_id: str, db, top_n: int = 3) -> list:
     """
-    AI-powered daily contact recommendations.
+    AI-powered daily contact recommendations (raw scorer; see get_my_3 for the daily picks layer).
     Returns up to top_n contacts with reason, context, and a suggested action.
     Optimised: batch contact lookups, lean projections — no N+1 queries, no photo blobs.
     """
@@ -655,6 +655,145 @@ Rules:
 - Output ONLY the message text. No quotes, no preamble, no options."""
 
 
+# ── "Your 3 for Today": stable daily picks + done / dismissed state ─────────
+# Outbound activity types that count as "you reached out today"
+OUTBOUND_EVENT_TYPES = {
+    "sms_sent", "personal_sms", "email_sent", "call_placed", "voice_note",
+    "digital_card_sent", "digital_card_shared", "congrats_card_sent", "birthday_card_sent",
+    "thank_you_card_sent", "review_request_sent", "review_invite_sent", "showcase_shared",
+    "showroom_shared", "campaign_message_sent", "broadcast_sent", "ai_reply_sent",
+}
+
+
+async def _local_day(user_id: str, db):
+    """(YYYY-MM-DD, start_utc, end_utc) for the rep's own calendar day."""
+    import pytz
+    from routers.user_schedule import resolve_user_tz
+    tz = pytz.timezone(await resolve_user_tz(user_id))
+    local_now = datetime.now(timezone.utc).astimezone(tz)
+    start_local = tz.localize(datetime(local_now.year, local_now.month, local_now.day))
+    start_utc = start_local.astimezone(timezone.utc)
+    return local_now.strftime("%Y-%m-%d"), start_utc, start_utc + timedelta(days=1)
+
+
+async def _touched_today(user_id: str, db, start_utc) -> set:
+    """Contacts the rep already reached out to today (contact events + outbound messages)."""
+    touched = set()
+    try:
+        evs = await db.contact_events.find(
+            {"user_id": user_id, "timestamp": {"$gte": start_utc}, "event_type": {"$in": list(OUTBOUND_EVENT_TYPES)}},
+            {"contact_id": 1},
+        ).limit(300).to_list(300)
+        touched.update(str(e["contact_id"]) for e in evs if e.get("contact_id"))
+        msgs = await db.messages.find(
+            {"user_id": user_id, "direction": "outbound", "contact_id": {"$ne": None}, "timestamp": {"$gte": start_utc}},
+            {"contact_id": 1},
+        ).limit(300).to_list(300)
+        touched.update(str(m["contact_id"]) for m in msgs if m.get("contact_id"))
+    except Exception as e:
+        logger.debug(f"[Home] touched_today lookup failed: {e}")
+    return touched
+
+
+def _fallback_item(contact: dict) -> dict:
+    return {
+        "contact_id":   str(contact["_id"]),
+        "first_name":   contact.get("first_name", ""),
+        "last_name":    contact.get("last_name", ""),
+        "phone":        contact.get("phone", ""),
+        "email":        contact.get("email", ""),
+        "photo_url":    contact_photo_url(contact),
+        "reason_key":   "keep_in_touch",
+        "reason_label": "Keep the relationship warm",
+        "hook":         _personal_hook(contact),
+        "action_label": "Text",
+        "icon":         "chatbubble",
+        "color":        "#C9A962",
+        "score":        3,
+    }
+
+
+async def get_my_3(user_id: str, db, top_n: int = 3) -> list:
+    """
+    Today's 3, locked in for the day: completing one shows a check instead of swapping in a
+    stranger, dismissing one pulls in a replacement, and reaching out from anywhere
+    (contact card, inbox, cards) counts as done automatically.
+    """
+    day, start_utc, _ = await _local_day(user_id, db)
+    states = await db.home_action_state.find({"user_id": user_id, "day": day}).to_list(200)
+    dismissed = {s["key"] for s in states if s.get("status") == "dismissed"}
+    done = {s["key"] for s in states if s.get("status") == "done"}
+    done |= await _touched_today(user_id, db, start_utc)
+
+    candidates = await _score_my3(user_id, db, top_n=12)
+    by_id = {c["contact_id"]: c for c in candidates}
+
+    picks_doc = await db.home_daily_picks.find_one({"user_id": user_id, "day": day})
+    picks = [p for p in (picks_doc or {}).get("picks", []) if p not in dismissed]
+    if not picks_doc:
+        picks = [c["contact_id"] for c in candidates if c["contact_id"] not in dismissed and c["contact_id"] not in done][:top_n]
+    if len(picks) < top_n:
+        for c in candidates:
+            if len(picks) >= top_n:
+                break
+            cid = c["contact_id"]
+            if cid not in picks and cid not in dismissed and cid not in done:
+                picks.append(cid)
+    if picks != (picks_doc or {}).get("picks"):
+        await db.home_daily_picks.update_one(
+            {"user_id": user_id, "day": day},
+            {"$set": {"picks": picks, "updated_at": datetime.now(timezone.utc)}, "$setOnInsert": {"created_at": datetime.now(timezone.utc)}},
+            upsert=True,
+        )
+
+    items = []
+    missing = [p for p in picks if p not in by_id]
+    fallback_docs = {}
+    if missing:
+        oids = [ObjectId(m) for m in missing if ObjectId.is_valid(m)]
+        for d in await db.contacts.find({"_id": {"$in": oids}}, {"first_name": 1, "last_name": 1, "phone": 1, "email": 1, "photo_url": 1, "photo_thumbnail": 1, "photo_path": 1, "personal_details": 1, "vehicle": 1}).to_list(len(oids)):
+            fallback_docs[str(d["_id"])] = d
+    for cid in picks:
+        item = by_id.get(cid) or (_fallback_item(fallback_docs[cid]) if cid in fallback_docs else None)
+        if item:
+            items.append({**item, "done": cid in done})
+    return items
+
+
+@router.post("/{user_id}/my3/done")
+async def mark_my3_done(user_id: str, data: dict):
+    """Rep finished (or manually checked off) one of today's 3."""
+    key = (data or {}).get("contact_id") or (data or {}).get("key")
+    if not key:
+        raise HTTPException(status_code=400, detail="contact_id required")
+    db = get_db()
+    day, _, _ = await _local_day(user_id, db)
+    await db.home_action_state.update_one(
+        {"user_id": user_id, "day": day, "key": key},
+        {"$set": {"status": "done", "source": (data or {}).get("source", "manual"), "updated_at": datetime.now(timezone.utc)}},
+        upsert=True,
+    )
+    _home_cache.pop(user_id, None)
+    return {"ok": True, "key": key, "status": "done"}
+
+
+@router.post("/{user_id}/my3/dismiss")
+async def dismiss_my3(user_id: str, data: dict):
+    """Skip one of today's 3 (or a Do-This-Next suggestion) for the rest of today; a replacement fills in."""
+    key = (data or {}).get("contact_id") or (data or {}).get("key")
+    if not key:
+        raise HTTPException(status_code=400, detail="contact_id or key required")
+    db = get_db()
+    day, _, _ = await _local_day(user_id, db)
+    await db.home_action_state.update_one(
+        {"user_id": user_id, "day": day, "key": key},
+        {"$set": {"status": "dismissed", "updated_at": datetime.now(timezone.utc)}},
+        upsert=True,
+    )
+    _home_cache.pop(user_id, None)
+    return {"ok": True, "key": key, "status": "dismissed"}
+
+
 @router.get("/draft/{user_id}/{contact_id}")
 async def draft_message(user_id: str, contact_id: str, reason: str = "", context: str = ""):
     """Generate one ready-to-send text message for a contact, tailored to why they're being recommended."""
@@ -727,7 +866,7 @@ async def people_to_engage(user_id: str, limit: int = Query(25, ge=1, le=50)):
     'My 3 for Today', just uncapped. Each item carries the reason + suggested action.
     """
     db = get_db()
-    people = await get_my_3(user_id, db, top_n=limit)
+    people = await _score_my3(user_id, db, top_n=limit)
     return {"count": len(people), "people": people}
 
 
@@ -803,12 +942,12 @@ async def get_home_data(user_id: str):
     """
     import asyncio
 
-    # Return cached result if fresh
+    db = get_db()
+
+    # Return cached result if fresh (done / skipped flags are always recomputed: they're cheap and must feel live)
     cached = _home_cache.get(user_id)
     if cached is not None:
-        return cached
-
-    db = get_db()
+        return await _apply_today_state(user_id, db, cached)
 
     # Run all three in parallel with a hard 8s timeout
     try:
@@ -833,9 +972,27 @@ async def get_home_data(user_id: str):
         "wins_feed": wins_data   if not isinstance(wins_data,   Exception) else [],
     }
 
-    # Cache the result
+    # Cache the heavy part, then layer today's live state on top
     _home_cache[user_id] = result
-    return result
+    return await _apply_today_state(user_id, db, result)
+
+
+async def _apply_today_state(user_id: str, db, base: dict) -> dict:
+    """Fresh done/skipped flags on every request so a text sent from the contact card
+    shows as completed the moment the rep lands back on Home."""
+    try:
+        day, start_utc, _ = await _local_day(user_id, db)
+        states = await db.home_action_state.find({"user_id": user_id, "day": day}, {"key": 1, "status": 1}).to_list(200)
+        done = {x["key"] for x in states if x.get("status") == "done"} | await _touched_today(user_id, db, start_utc)
+        dismissed = [x["key"] for x in states if x.get("status") == "dismissed"]
+    except Exception as e:
+        logger.debug(f"[Home] today-state failed: {e}")
+        done, dismissed = set(), []
+    return {
+        **base,
+        "my_3": [{**m, "done": m.get("contact_id") in done} for m in base.get("my_3", [])],
+        "dismissed_keys": dismissed,
+    }
 
 
 @router.delete("/{user_id}/cache")

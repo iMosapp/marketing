@@ -380,6 +380,7 @@ function HomeScreen() {
   const [my3, setMy3] = useState<any[]>([]);
   const [winsFeed, setWinsFeed] = useState<any[]>([]);
   const [completedToday, setCompletedToday] = useState<Set<string>>(new Set());
+  const [dismissedKeys, setDismissedKeys] = useState<Set<string>>(new Set());
   const [loadingMy3, setLoadingMy3] = useState(false);
   const [soldPerf, setSoldPerf] = useState<any>(null);
   const [hotOpps, setHotOpps] = useState<any[]>([]);
@@ -507,7 +508,11 @@ function HomeScreen() {
     try {
       const res = await api.get(`/home/${user._id}`);
       setStreak(res.data.streak);
-      setMy3(res.data.my_3 || []);
+      const my3Items: any[] = res.data.my_3 || [];
+      setMy3(my3Items);
+      // Server knows what was already done today (from any screen) and what was skipped
+      setCompletedToday(new Set(my3Items.filter((m: any) => m.done).map((m: any) => m.contact_id)));
+      setDismissedKeys(new Set(res.data.dismissed_keys || []));
       // Load sold performance stats
       api.get(`/users/${user._id}/sold-performance`, { params: { month: new Date().getMonth() + 1, year: new Date().getFullYear() } }).then(r => setSoldPerf(r.data)).catch(() => {});
       setWinsFeed(res.data.wins_feed || []);
@@ -765,43 +770,61 @@ function HomeScreen() {
   const [draftSheet, setDraftSheet] = useState<any>(null);
   const openDraftSheet = (item: any) => setDraftSheet(item);
 
+  // Persisted "done" / "skip" for today's 3 and Do-This-Next (survives reloads, syncs across devices)
+  const markMy3Done = async (contactId: string, source = 'manual') => {
+    setCompletedToday(p => new Set([...p, contactId]));
+    try { await api.post(`/home/${user?._id}/my3/done`, { contact_id: contactId, source }); } catch {}
+  };
+  const skipForToday = async (key: string) => {
+    setDismissedKeys(p => new Set([...p, key]));
+    try {
+      await api.post(`/home/${user?._id}/my3/dismiss`, { key });
+      await loadHomeIntelligence(true); // a replacement fills the slot
+    } catch {}
+  };
+
   // ── ONE clear next action, picked by priority ──
   const nextMove = (() => {
-    if (hotOpps.length > 0) {
-      const c: any = hotOpps[0];
+    const hot: any = hotOpps.find((c: any) => !dismissedKeys.has(`hot:${c._id}`));
+    if (hot) {
+      const c: any = hot;
       return {
         icon: 'flame', color: '#FF3B30',
         label: `Reply to ${c.contact_name || c.contact_phone || 'a hot lead'}`,
         sub: c.intent_signals?.[0] || 'High buying intent — strike while it\'s hot',
         btn: 'Open Chat',
+        skipKey: `hot:${c._id}`,
         onPress: () => router.push(`/thread/${c._id}` as any),
       };
     }
-    if ((taskSummary?.overdue || 0) > 0) {
+    if ((taskSummary?.overdue || 0) > 0 && !dismissedKeys.has('overdue')) {
       return {
         icon: 'alert-circle', color: '#FF9500',
         label: `Clear ${taskSummary.overdue} overdue touchpoint${taskSummary.overdue === 1 ? '' : 's'}`,
         sub: 'A quick text keeps them from going cold',
         btn: "Let's Go",
+        skipKey: 'overdue',
         onPress: () => router.push('/(tabs)/touchpoints?period=today' as any),
       };
     }
-    const next3: any = my3.find((m: any) => !completedToday.has(m.contact_id));
+    const next3: any = my3.find((m: any) => !completedToday.has(m.contact_id) && !dismissedKeys.has(m.contact_id));
     if (next3) {
       return {
         icon: next3.icon || 'chatbubble', color: next3.color || '#C9A962',
         label: `${next3.action_label || 'Text'} ${next3.first_name || ''}`.trim(),
         sub: next3.reason_label || '30 seconds, big impact',
         btn: 'Do It',
+        skipKey: next3.contact_id,
         onPress: () => openDraftSheet(next3),
       };
     }
-    if (pendingTasks.length > 0) {
+    if (pendingTasks.length > 0 && !dismissedKeys.has('pending_tasks')) {
       return {
         icon: 'checkbox', color: '#C9A962',
         label: 'Knock out today\'s touchpoints',
         sub: `${taskSummary?.pending_today || pendingTasks.length} waiting for you`,
         btn: 'Start',
+        skipKey: 'pending_tasks',
         onPress: () => router.push('/(tabs)/touchpoints?period=today' as any),
       };
     }
@@ -810,6 +833,7 @@ function HomeScreen() {
       label: 'All caught up!',
       sub: 'Perfect time to ask a happy customer for a review',
       btn: 'Get Reviews',
+      skipKey: null as string | null,
       onPress: () => router.push('/quick-send/review' as any),
     };
   })();
@@ -917,7 +941,19 @@ function HomeScreen() {
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
             <Ionicons name="arrow-forward-circle" size={14} color={nextMove.color} />
-            <Text style={{ fontSize: 11, fontWeight: '900', color: nextMove.color, letterSpacing: 1.2 }}>DO THIS NEXT</Text>
+            <Text style={{ fontSize: 11, fontWeight: '900', color: nextMove.color, letterSpacing: 1.2, flex: 1 }}>DO THIS NEXT</Text>
+            {nextMove.skipKey ? (
+              <TouchableOpacity
+                onPress={(e: any) => { e?.stopPropagation?.(); skipForToday(nextMove.skipKey as string); }}
+                hitSlop={10}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 3, paddingVertical: 2, paddingHorizontal: 6 }}
+                testID="next-move-skip"
+                dataSet={{ testid: 'next-move-skip' } as any}
+              >
+                <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textSecondary }}>Skip</Text>
+                <Ionicons name="close" size={14} color={colors.textSecondary} />
+              </TouchableOpacity>
+            ) : null}
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <View style={{ width: 48, height: 48, borderRadius: 14, backgroundColor: nextMove.color + '22', alignItems: 'center', justifyContent: 'center' }}>
@@ -1089,10 +1125,32 @@ function HomeScreen() {
                       ) : null}
                     </View>
                     {!done ? (
-                      <TouchableOpacity onPress={(e) => { e.stopPropagation?.(); openDraftSheet(item); }}
-                        style={{ backgroundColor: item.color, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8 }}>
-                        <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>{item.action_label}</Text>
-                      </TouchableOpacity>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <TouchableOpacity onPress={(e) => { e.stopPropagation?.(); openDraftSheet(item); }}
+                          style={{ backgroundColor: item.color, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8 }}>
+                          <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>{item.action_label}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={(e: any) => { e?.stopPropagation?.(); markMy3Done(item.contact_id); }}
+                          hitSlop={6}
+                          style={{ width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: '#34C75955', alignItems: 'center', justifyContent: 'center' }}
+                          testID={`my3-done-${idx}`}
+                          dataSet={{ testid: `my3-done-${idx}` } as any}
+                          accessibilityLabel="Mark done"
+                        >
+                          <Ionicons name="checkmark" size={16} color="#34C759" />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={(e: any) => { e?.stopPropagation?.(); skipForToday(item.contact_id); }}
+                          hitSlop={6}
+                          style={{ width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }}
+                          testID={`my3-skip-${idx}`}
+                          dataSet={{ testid: `my3-skip-${idx}` } as any}
+                          accessibilityLabel="Skip for today"
+                        >
+                          <Ionicons name="close" size={16} color={colors.textSecondary} />
+                        </TouchableOpacity>
+                      </View>
                     ) : (
                       <View style={{ backgroundColor: '#34C75920', borderRadius: 20, padding: 8 }}>
                         <Ionicons name="checkmark" size={16} color="#34C759" />
@@ -1466,7 +1524,7 @@ function HomeScreen() {
         userId={user?._id}
         item={draftSheet}
         onClose={() => setDraftSheet(null)}
-        onUsed={(it) => setCompletedToday(p => new Set([...p, it.contact_id]))}
+        onUsed={(it) => markMy3Done(it.contact_id, 'draft_sheet')}
       />
 
       <ContactActionModal visible={showContactAction} onClose={() => setShowContactAction(false)} colors={colors} userId={user?._id || ''} initialMode={contactActionMode} />
