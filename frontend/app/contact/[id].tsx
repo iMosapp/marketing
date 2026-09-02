@@ -2564,7 +2564,7 @@ function ContactDetailScreen() {
               colors={colors}
               intelData={intelData}
               refreshing={intelRefreshing}
-              onPress={() => setContactTab('details')}
+              onRefresh={refreshIntel}
             />
           )}
 
