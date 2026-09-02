@@ -283,12 +283,35 @@ if _cors_env and _cors_env != "*":
 else:
     _allowed_origins = ["*"]
 logger.info(f"[CORS] Allowed origins: {_allowed_origins}")
+
+# Lead-intake endpoints are called from the marketing site (imonsocial.com, Vercel previews,
+# partner pages). Those must accept any origin even when the app API is locked down.
+PUBLIC_CORS_PREFIXES = ("/api/demo-requests",)
+
+
+class PathAwareCORS:
+    """Strict allowlist for the app API, wide open for public lead-intake routes."""
+
+    def __init__(self, app, strict: dict):
+        self.strict = CORSMiddleware(app, **strict)
+        self.public = CORSMiddleware(app, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] == "http" and scope.get("path", "").startswith(PUBLIC_CORS_PREFIXES):
+            return await self.public(scope, receive, send)
+        return await self.strict(scope, receive, send)
+
+
 app.add_middleware(
-    CORSMiddleware,
-    allow_origins=_allowed_origins,
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    PathAwareCORS,
+    strict=dict(
+        allow_origins=_allowed_origins,
+        # Any imonsocial.com subdomain (marketing site, www, app) is always trusted
+        allow_origin_regex=r"https://([a-z0-9-]+\.)*imonsocial\.com",
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    ),
 )
 
 
