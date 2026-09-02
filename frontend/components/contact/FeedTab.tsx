@@ -25,12 +25,41 @@ export default function FeedTab(props: any) {
     hasMoreEvents, loadMoreEvents, loadingMoreEvents,
     showLogReply, setShowLogReply, replyText, setReplyText,
     replyPhoto, setReplyPhoto, submittingReply, handleLogReply, pickReplyPhoto,
-    setShowAddTask,
+    setShowAddTask, openInboxThread, openingInbox,
   } = props;
   const router = useRouter();
+  const MESSAGE_EVENTS = new Set(['sms_sent', 'personal_sms', 'customer_reply', 'campaign_message_sent', 'broadcast_sent', 'ai_reply_sent', 'message_sent', 'message_received']);
+  const isMessageEvent = (evt: any) => MESSAGE_EVENTS.has(evt.event_type) || evt.category === 'message' || evt.direction === 'inbound';
+  const inboxStatus = contact?.ai_mode === 'auto' || contact?.ai_mode === 'auto_reply' ? 'Jessi is handling this thread' : 'Full two-way conversation, Jessi drafts and history';
 
   return (
     <>
+      {/* Open the real conversation (inbox thread) for this contact */}
+      {!isNewContact && !!contact?.phone && openInboxThread && (
+        <TouchableOpacity
+          onPress={openInboxThread}
+          disabled={openingInbox}
+          activeOpacity={0.75}
+          style={{
+            marginHorizontal: 16, marginBottom: 10, paddingVertical: 11, paddingHorizontal: 14,
+            flexDirection: 'row', alignItems: 'center', gap: 10,
+            borderRadius: 14, backgroundColor: '#C9A96214', borderWidth: 1, borderColor: '#C9A96240',
+          }}
+          data-testid="feed-open-inbox"
+          testID="feed-open-inbox"
+          dataSet={{ testid: 'feed-open-inbox' } as any}
+        >
+          <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: '#C9A962', alignItems: 'center', justifyContent: 'center' }}>
+            {openingInbox ? <ActivityIndicator size="small" color="#000" /> : <Ionicons name="chatbubbles" size={17} color="#000" />}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>Open conversation in Inbox</Text>
+            <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }} numberOfLines={1}>{inboxStatus}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#C9A962" />
+        </TouchableOpacity>
+      )}
+
       {/* Suggested Actions (inline at top of feed) */}
       {suggestedActions.length > 0 && (
         <View style={[s.section, { paddingTop: 4 }]} data-testid="suggested-actions">
@@ -347,6 +376,16 @@ export default function FeedTab(props: any) {
                           <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 }} onPress={() => router.push(evt.link as any)}>
                             <Ionicons name="open-outline" size={14} color="#007AFF" />
                             <Text style={{ fontSize: 13, fontWeight: '600', color: '#007AFF' }}>View Card</Text>
+                          </TouchableOpacity>
+                        )}
+                        {isMessageEvent(evt) && openInboxThread && (
+                          <TouchableOpacity
+                            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 }}
+                            onPress={openInboxThread}
+                            data-testid={`feed-event-inbox-${evtKey}`}
+                          >
+                            <Ionicons name="chatbubbles-outline" size={14} color="#C9A962" />
+                            <Text style={{ fontSize: 13, fontWeight: '600', color: '#C9A962' }}>Reply in Inbox</Text>
                           </TouchableOpacity>
                         )}
                       </View>

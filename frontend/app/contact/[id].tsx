@@ -1334,6 +1334,31 @@ function ContactDetailScreen() {
                 router.push(`/settings/create-card?${params.toString()}` as any);
   };
 
+  // Open (or create) this contact's inbox thread so the rep can continue the real conversation there
+  const [openingInbox, setOpeningInbox] = useState(false);
+  const openInboxThread = async () => {
+    if (!user?._id || openingInbox) return;
+    if (!contact.phone) {
+      showSimpleAlert('No phone number', 'Add a mobile number to this contact to open a text thread.');
+      return;
+    }
+    setOpeningInbox(true);
+    try {
+      const conv = await messagesAPI.createConversation(user._id, {
+        contact_id: id as string,
+        contact_phone: contact.phone,
+      });
+      const conversationId = conv?._id || conv?.id;
+      if (!conversationId) throw new Error('No conversation returned');
+      router.push(`/thread/${conversationId}` as any);
+    } catch (e) {
+      console.warn('openInboxThread failed', e);
+      showSimpleAlert('Could not open inbox', 'Please try again in a moment.');
+    } finally {
+      setOpeningInbox(false);
+    }
+  };
+
   // ===== QUICK ACTIONS =====
 
   const sendReviewCard = async () => {
@@ -2495,9 +2520,24 @@ function ContactDetailScreen() {
               </TouchableOpacity>
             </View>
           ) : (
-            <TouchableOpacity onPress={() => setIsEditing(true)} style={s.headerBtn} data-testid="contact-edit-button">
-              <Text style={s.headerAction}>Edit</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              {!isNewContact && !!contact.phone && (
+                <TouchableOpacity
+                  onPress={openInboxThread}
+                  disabled={openingInbox}
+                  style={s.headerBtn}
+                  data-testid="contact-open-inbox-button"
+                  testID="contact-open-inbox-button"
+                  dataSet={{ testid: 'contact-open-inbox-button' } as any}
+                  accessibilityLabel="Open conversation in Inbox"
+                >
+                  {openingInbox ? <ActivityIndicator size="small" color="#C9A962" /> : <Ionicons name="chatbubbles" size={22} color="#C9A962" />}
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity onPress={() => setIsEditing(true)} style={s.headerBtn} data-testid="contact-edit-button">
+                <Text style={s.headerAction}>Edit</Text>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
 
@@ -2640,6 +2680,8 @@ function ContactDetailScreen() {
               user={user}
               contactId={id as string}
               isNewContact={isNewContact}
+              openInboxThread={openInboxThread}
+              openingInbox={openingInbox}
               suggestedActions={suggestedActions}
               handleSuggestedAction={handleSuggestedAction}
               taskTitle={taskTitle}
