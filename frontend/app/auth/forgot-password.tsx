@@ -14,12 +14,41 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { authAPI } from '../../services/api';
+import { useAuthStore } from '../../store/authStore';
 import { showAlert, showSimpleAlert } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
 type Step = 'email' | 'code' | 'password';
+export type CodeFlowMode = 'reset' | 'activate';
 
-export default function ForgotPasswordScreen() {
+const COPY = {
+  reset: {
+    title: 'Reset Your Password',
+    description: "Enter your phone number or email. We'll text a 6-digit code to your registered mobile number.",
+    requestBtn: 'Send Reset Code',
+    sentTitle: 'Code Sent',
+    sentBody: 'A 6-digit reset code has been sent via text to your registered phone number. Check your messages.',
+    codeTitle: 'Check Your Texts',
+    codeDescription: "Enter the 6-digit code texted to your registered phone number.\nDidn't get it? Check that your phone number is on your account.",
+    passwordTitle: 'New Password',
+    passwordDescription: 'Create a new password for your account.',
+    submitBtn: 'Reset Password',
+  },
+  activate: {
+    title: 'Activate Your Account',
+    description: "Enter the mobile number your manager put on your account. We'll text you a 6-digit code to verify it's you.",
+    requestBtn: 'Text Me a Code',
+    sentTitle: 'Code Sent',
+    sentBody: 'We just texted a 6-digit activation code to that number. Enter it on the next screen.',
+    codeTitle: 'Check Your Texts',
+    codeDescription: "Enter the 6-digit code we just texted you.\nNo text? Make sure this is the number your manager used to set up your account.",
+    passwordTitle: 'Choose Your Password',
+    passwordDescription: "Phone verified. Now create the password you'll use to log in.",
+    submitBtn: 'Activate & Log In',
+  },
+};
+
+export default function ForgotPasswordScreen({ mode = 'reset' }: { mode?: CodeFlowMode }) {
   const { colors: themeColors } = useThemeStore();
   // Force light theme for public auth page
   const colors = {
@@ -34,6 +63,9 @@ export default function ForgotPasswordScreen() {
   };
   const styles = getStyles(colors);
   const router = useRouter();
+  const login = useAuthStore((s) => s.login);
+  const copy = COPY[mode];
+  const isActivate = mode === 'activate';
   
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
@@ -42,25 +74,22 @@ export default function ForgotPasswordScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [devCode, setDevCode] = useState<string | null>(null);
+  const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
   
   const handleRequestCode = async () => {
     if (!email.trim()) {
-      showSimpleAlert('Error', 'Please enter your phone number or email');
+      showSimpleAlert('Error', isActivate ? 'Please enter your mobile number' : 'Please enter your phone number or email');
       return;
     }
 
     setLoading(true);
     try {
       // Send phone or email — backend handles both
-      await authAPI.forgotPassword(email.trim());
-      showAlert(
-        'Code Sent',
-        'A 6-digit reset code has been sent via text to your registered phone number. Check your messages.',
-        [{ text: 'OK', onPress: () => setStep('code') }]
-      );
+      if (isActivate) await authAPI.activateRequest(email.trim());
+      else await authAPI.forgotPassword(email.trim());
+      showAlert(copy.sentTitle, copy.sentBody, [{ text: 'OK', onPress: () => setStep('code') }]);
     } catch (error: any) {
-      const message = error?.response?.data?.detail || 'Failed to send reset code. Make sure you have a phone number registered on your account.';
+      const message = error?.response?.data?.detail || 'Failed to send code. Make sure you have a phone number registered on your account.';
       showSimpleAlert('Error', message);
     } finally {
       setLoading(false);
@@ -75,7 +104,12 @@ export default function ForgotPasswordScreen() {
 
     setLoading(true);
     try {
-      await authAPI.verifyResetCode(email.trim(), code);
+      if (isActivate) {
+        const res = await authAPI.activateVerify(email.trim(), code);
+        setVerifiedEmail(res?.email || null);
+      } else {
+        await authAPI.verifyResetCode(email.trim(), code);
+      }
       setStep('password');
     } catch (error: any) {
       const message = error?.response?.data?.detail || 'Invalid or expired code';
@@ -98,6 +132,23 @@ export default function ForgotPasswordScreen() {
 
     setLoading(true);
     try {
+      if (isActivate) {
+        const res = await authAPI.activateComplete(email.trim(), code, newPassword);
+        const loginEmail = res?.email || verifiedEmail;
+        if (loginEmail) {
+          try {
+            await login(loginEmail, newPassword);
+            router.replace('/');
+            return;
+          } catch {
+            // fall through to manual login prompt
+          }
+        }
+        showAlert('Account Activated', 'Your password is set. Log in to get started.', [
+          { text: 'Log In', onPress: () => router.replace('/auth/login') },
+        ]);
+        return;
+      }
       await authAPI.resetPassword(email.trim(), code, newPassword);
       showAlert(
         'Password Reset',
@@ -105,7 +156,7 @@ export default function ForgotPasswordScreen() {
         [{ text: 'Log In', onPress: () => router.replace('/auth/login') }]
       );
     } catch (error: any) {
-      const message = error?.response?.data?.detail || 'Failed to reset password';
+      const message = error?.response?.data?.detail || (isActivate ? 'Failed to activate account' : 'Failed to reset password');
       showSimpleAlert('Error', message);
     } finally {
       setLoading(false);
@@ -114,32 +165,34 @@ export default function ForgotPasswordScreen() {
 
   const renderEmailStep = () => (
     <>
-      <Text style={styles.stepTitle}>Reset Your Password</Text>
-      <Text style={styles.stepDescription}>
-        Enter your phone number or email. We'll text a 6-digit code to your registered mobile number.
-      </Text>
+      <Text style={styles.stepTitle} testID="code-flow-title" dataSet={{ testid: 'code-flow-title' }}>{copy.title}</Text>
+      <Text style={styles.stepDescription}>{copy.description}</Text>
 
       <TextInput
         style={styles.input}
-        placeholder="Phone number or email"
+        placeholder={isActivate ? 'Mobile number' : 'Phone number or email'}
         placeholderTextColor={colors.textSecondary}
         value={email}
         onChangeText={setEmail}
-        keyboardType="default"
+        keyboardType={isActivate ? 'phone-pad' : 'default'}
         autoCapitalize="none"
         autoCorrect={false}
         autoFocus
+        testID="code-flow-identifier"
+        dataSet={{ testid: 'code-flow-identifier' }}
       />
       
       <TouchableOpacity
         style={[styles.button, loading && styles.buttonDisabled]}
         onPress={handleRequestCode}
         disabled={loading}
+        testID="code-flow-request-btn"
+        dataSet={{ testid: 'code-flow-request-btn' }}
       >
         {loading ? (
-          <ActivityIndicator color={colors.text} />
+          <ActivityIndicator color="#FFFFFF" />
         ) : (
-          <Text style={styles.buttonText}>Send Reset Code</Text>
+          <Text style={styles.buttonText}>{copy.requestBtn}</Text>
         )}
       </TouchableOpacity>
     </>
@@ -147,11 +200,8 @@ export default function ForgotPasswordScreen() {
   
   const renderCodeStep = () => (
     <>
-      <Text style={styles.stepTitle}>Check Your Texts</Text>
-      <Text style={styles.stepDescription}>
-        Enter the 6-digit code texted to your registered phone number.
-        {'\n'}Didn't get it? Check that your phone number is on your account.
-      </Text>
+      <Text style={styles.stepTitle}>{copy.codeTitle}</Text>
+      <Text style={styles.stepDescription}>{copy.codeDescription}</Text>
 
       <TextInput
         style={[styles.input, styles.codeInput]}
@@ -162,15 +212,19 @@ export default function ForgotPasswordScreen() {
         keyboardType="number-pad"
         maxLength={6}
         autoFocus
+        testID="code-flow-code-input"
+        dataSet={{ testid: 'code-flow-code-input' }}
       />
       
       <TouchableOpacity
         style={[styles.button, loading && styles.buttonDisabled]}
         onPress={handleVerifyCode}
         disabled={loading}
+        testID="code-flow-verify-btn"
+        dataSet={{ testid: 'code-flow-verify-btn' }}
       >
         {loading ? (
-          <ActivityIndicator color={colors.text} />
+          <ActivityIndicator color="#FFFFFF" />
         ) : (
           <Text style={styles.buttonText}>Verify Code</Text>
         )}
@@ -180,6 +234,8 @@ export default function ForgotPasswordScreen() {
         style={styles.linkButton}
         onPress={handleRequestCode}
         disabled={loading}
+        testID="code-flow-resend-btn"
+        dataSet={{ testid: 'code-flow-resend-btn' }}
       >
         <Text style={styles.linkText}>Didn't receive code? Resend</Text>
       </TouchableOpacity>
@@ -188,10 +244,8 @@ export default function ForgotPasswordScreen() {
   
   const renderPasswordStep = () => (
     <>
-      <Text style={styles.stepTitle}>New Password</Text>
-      <Text style={styles.stepDescription}>
-        Create a new password for your account.
-      </Text>
+      <Text style={styles.stepTitle}>{copy.passwordTitle}</Text>
+      <Text style={styles.stepDescription}>{copy.passwordDescription}</Text>
       
       <View style={styles.passwordContainer}>
         <TextInput
@@ -203,6 +257,8 @@ export default function ForgotPasswordScreen() {
           secureTextEntry={!showPassword}
           autoCapitalize="none"
           autoFocus
+          testID="code-flow-password"
+          dataSet={{ testid: 'code-flow-password' }}
         />
         <TouchableOpacity
           style={styles.eyeButton}
@@ -224,19 +280,32 @@ export default function ForgotPasswordScreen() {
         onChangeText={setConfirmPassword}
         secureTextEntry={!showPassword}
         autoCapitalize="none"
+        testID="code-flow-password-confirm"
+        dataSet={{ testid: 'code-flow-password-confirm' }}
       />
       
       <TouchableOpacity
         style={[styles.button, loading && styles.buttonDisabled]}
         onPress={handleResetPassword}
         disabled={loading}
+        testID="code-flow-submit-btn"
+        dataSet={{ testid: 'code-flow-submit-btn' }}
       >
         {loading ? (
-          <ActivityIndicator color={colors.text} />
+          <ActivityIndicator color="#FFFFFF" />
         ) : (
-          <Text style={styles.buttonText}>Reset Password</Text>
+          <Text style={styles.buttonText}>{copy.submitBtn}</Text>
         )}
       </TouchableOpacity>
+
+      {isActivate && (
+        <Text style={styles.legalText}>
+          By continuing you agree to our{' '}
+          <Text style={styles.legalLink} onPress={() => router.push('/terms')}>Terms of Service</Text>
+          {' '}and{' '}
+          <Text style={styles.legalLink} onPress={() => router.push('/privacy')}>Privacy Policy</Text>.
+        </Text>
+      )}
     </>
   );
   
@@ -252,7 +321,7 @@ export default function ForgotPasswordScreen() {
             <TouchableOpacity
               onPress={() => {
                 if (step === 'email') {
-                  router.back();
+                  if (router.canGoBack()) router.back(); else router.replace('/auth/login');
                 } else if (step === 'code') {
                   setStep('email');
                 } else {
@@ -260,6 +329,8 @@ export default function ForgotPasswordScreen() {
                 }
               }}
               style={styles.backButton}
+              testID="code-flow-back-btn"
+              dataSet={{ testid: 'code-flow-back-btn' }}
             >
               <Ionicons name="chevron-back" size={28} color="#007AFF" />
             </TouchableOpacity>
@@ -290,8 +361,10 @@ export default function ForgotPasswordScreen() {
           <TouchableOpacity
             style={styles.cancelButton}
             onPress={() => router.replace('/auth/login')}
+            testID="code-flow-cancel-btn"
+            dataSet={{ testid: 'code-flow-cancel-btn' }}
           >
-            <Text style={styles.cancelText}>Cancel and return to login</Text>
+            <Text style={styles.cancelText}>{isActivate ? 'Already activated? Log in' : 'Cancel and return to login'}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -408,6 +481,17 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: '#007AFF',
     fontSize: 17,
   },
+  legalText: {
+    marginTop: 16,
+    fontSize: 13,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  legalLink: {
+    color: '#007AFF',
+    fontWeight: '600',
+  },
   cancelButton: {
     marginTop: 32,
     alignItems: 'center',
@@ -415,26 +499,5 @@ const getStyles = (colors: any) => StyleSheet.create({
   cancelText: {
     color: colors.textSecondary,
     fontSize: 17,
-  },
-  devCodeBox: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#FF9500',
-    marginBottom: 8,
-  },
-  devCodeLabel: {
-    fontSize: 14,
-    color: '#FF9500',
-    marginBottom: 4,
-    textTransform: 'uppercase',
-  },
-  devCodeText: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text,
-    textAlign: 'center',
-    letterSpacing: 4,
   },
 });

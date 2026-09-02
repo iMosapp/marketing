@@ -18,6 +18,7 @@ from bson import ObjectId
 
 from fastapi import APIRouter, HTTPException
 from routers.database import get_db
+from utils.photo_url import contact_photo_url
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +80,7 @@ def _as_utc(v):
 
 
 def _photo(c: dict) -> str:
-    return c.get("photo_thumbnail") or c.get("photo_url") or c.get("photo_path") or ""
+    return contact_photo_url(c)
 
 
 def _norm_name(c: dict) -> str:
@@ -107,7 +108,7 @@ def _score(c: dict, last_touch, opp_ids: set, advocate_ids: set, referrer_names:
     days_since = (now - last_touch).days if last_touch else None
 
     if is_opportunity:
-        bucket, reason = "opportunity", "Active now — recent engagement signal"
+        bucket, reason = "opportunity", "Active now - recent engagement signal"
     elif days_since is None or days_since >= 90:
         bucket = "at_risk"
         reason = f"{days_since} days silent" if days_since is not None else "No contact on record"

@@ -54,17 +54,27 @@ async def _resolve_user_from_request(request: Request) -> Optional[dict]:
 
     # ── Path 2: Impersonation session token ───────────────────────────────────
     if token.startswith("impersonate_"):
-        try:
-            db = get_db()
-            session = await db.impersonation_sessions.find_one({"token": token})
-            if session:
-                uid = session.get("impersonated_user_id") or session.get("user_id")
-                if uid:
-                    return await get_user_by_id(str(uid))
-        except Exception:
-            pass
+        uid = await resolve_impersonation_session(token)
+        if uid:
+            return await get_user_by_id(uid)
 
     return None
+
+
+async def resolve_impersonation_session(token: str) -> Optional[str]:
+    """Return the impersonated user's id for a live impersonate_* token, else None."""
+    from datetime import datetime
+    try:
+        session = await get_db().impersonation_sessions.find_one({"token": token})
+    except Exception:
+        return None
+    if not session:
+        return None
+    expires_at = session.get("expires_at")
+    if expires_at and expires_at <= datetime.utcnow():
+        return None
+    uid = session.get("impersonated_user_id") or session.get("user_id") or session.get("target_user_id")
+    return str(uid) if uid else None
 
 
 async def get_current_user(request: Request) -> dict:

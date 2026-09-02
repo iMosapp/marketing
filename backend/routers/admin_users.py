@@ -3,9 +3,9 @@ admin_users.py — User management: CRUD, pending users, impersonation, permissi
 Extracted from admin.py for focused ownership of user logic.
 The single source of truth for how users are created, modified, and managed.
 """
-from fastapi import APIRouter, HTTPException, Header, Body, UploadFile, File
+from fastapi import APIRouter, HTTPException, Header, Body, UploadFile, File, Request
 from bson import ObjectId
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 import logging
 import secrets
@@ -40,6 +40,18 @@ class AddTeamMemberRequest(BaseModel):
     role: str = "user"
     store_id: str
     added_by: str
+
+
+ACTIVATE_URL = f"{APP_URL}/auth/activate"
+ACTIVATION_SMS = (
+    "Welcome to I'm On Social, {first_name}! Your account is ready.\n\n"
+    "1. Download the app:\n"
+    "Apple: https://apps.apple.com/app/im-on-social/id6743597907\n"
+    "Android: https://play.google.com/store/apps/details?id=com.imonsocial.app\n"
+    "2. Tap \"Activate my account\" and enter this phone number.\n"
+    "3. Enter the code we text you and choose your password.\n\n"
+    f"On a computer? {ACTIVATE_URL}"
+)
 
 # ============= USER MANAGEMENT ENDPOINTS =============
 @router.post("/users")
@@ -153,7 +165,11 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
     phone = data.get('phone', '').strip()
     user_role = data.get('role', 'user')
     send_invite = data.get('send_invite', True)
-    send_sms = data.get('send_sms', False)
+    send_sms = data.get('send_sms', True)
+
+    # Store phones in E.164 so activation / reset codes can be texted reliably
+    from routers.auth import _to_e164
+    phone = _to_e164(phone) or phone
     
     # Optional enrichment fields
     title = data.get('title', '').strip()
@@ -212,6 +228,8 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
         "status": "active",
         "is_active": True,
         "needs_password_change": True,
+        "activation_pending": True,
+        "phone_verified": False,
         "stats": {
             'contacts_added': 0,
             'messages_sent': 0,
@@ -263,7 +281,7 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
     except Exception as e:
         logger.error(f"Failed to seed defaults for new user {user_id}: {e}")
     
-    # Send invite email if requested
+    # Send invite email if requested — activation instructions, no password in the email
     invite_sent = False
     if send_invite and email:
         # Get inviter name for email
@@ -276,34 +294,30 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
         invite_sent = await send_invite_email(
             email=email,
             name=name,
-            temp_password=temp_password,
+            temp_password=None,
             role=user_role,
-            inviter_name=inviter_name
+            inviter_name=inviter_name,
+            phone=phone,
         )
         if invite_sent:
             logger.info(f"Invite email sent to {email}")
         else:
             logger.warning(f"Failed to send invite email to {email}")
     
-    # Send SMS if requested
+    # Send activation SMS — the user verifies this number with a text code and sets their own password
     sms_sent = False
     if send_sms and phone:
         try:
-            sms_body = (
-                f"Welcome to I'm On Social, {first_name}! "
-                f"Your login: {email}\n"
-                f"Temp password: {temp_password}\n\n"
-                f"Download the app:\n"
-                f"Apple: https://apps.apple.com/app/im-on-social/id6743597907\n"
-                f"Android: https://play.google.com/store/apps/details?id=com.imonsocial.app\n\n"
-                f"Or log in at: https://app.imonsocial.com"
-            )
+            sms_body = ACTIVATION_SMS.format(first_name=first_name)
             from services.twilio_service import send_sms as send_sms_func
-            await send_sms_func(phone, sms_body)
-            sms_sent = True
-            logger.info(f"Invite SMS sent to {phone}")
+            sms_result = await send_sms_func(phone, sms_body)
+            sms_sent = bool(sms_result.get("success"))
+            if sms_sent:
+                logger.info(f"Activation SMS sent to {phone}")
+            else:
+                logger.warning(f"Activation SMS failed to {phone}: {sms_result.get('error')}")
         except Exception as e:
-            logger.warning(f"Failed to send invite SMS to {phone}: {e}")
+            logger.warning(f"Failed to send activation SMS to {phone}: {e}")
     
     # Link source contact to the new user (tag + store info)
     source_contact_id = data.get('source_contact_id')
@@ -418,7 +432,9 @@ async def create_user_with_invite(data: dict, x_user_id: str = Header(None, alia
         "sms_sent": sms_sent,
         "contact_created": contact_created,
         "temp_password": temp_password,
-        "message": f"User created successfully. {'Invite email sent.' if invite_sent else ''} {'SMS sent.' if sms_sent else ''} {'Added to your contacts.' if contact_created else ''}".strip()
+        "activation_flow": True,
+        "activate_url": ACTIVATE_URL,
+        "message": f"User created. {'Invite email sent.' if invite_sent else ''} {'Activation text sent.' if sms_sent else ''} {'Added to your contacts.' if contact_created else ''}".strip()
     }
 @router.get("/users")
 async def list_users(
@@ -1072,13 +1088,24 @@ async def get_user_detail(user_id: str, x_user_id: str = Header(None, alias="X-U
     }
 
 
+IMPERSONATION_TTL_HOURS = 8
+
+
 @router.post("/users/{user_id}/impersonate")
-async def impersonate_user(user_id: str):
+async def impersonate_user(user_id: str, request: Request):
     """
-    Generate an impersonation token for an admin to act as another user.
+    Generate an impersonation token for a super admin to act as another user.
     Returns a token and user data that can be used to temporarily become that user.
     """
     db = get_db()
+
+    requesting_user = await get_requesting_user(request)
+    if not requesting_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    if requesting_user.get('role') != 'super_admin':
+        raise HTTPException(status_code=403, detail="Only super admins can impersonate users")
+    if str(requesting_user['_id']) == user_id:
+        raise HTTPException(status_code=400, detail="You are already logged in as this user")
     
     try:
         user = await db.users.find_one({"_id": ObjectId(user_id)})
@@ -1088,16 +1115,19 @@ async def impersonate_user(user_id: str):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Generate impersonation token (using same mock pattern as auth)
     impersonation_token = f"impersonate_{secrets.token_hex(12)}"
-    
-    # Store the impersonation session (optional - for tracking)
+    now = datetime.utcnow()
+
+    # Field names MUST match what rbac._resolve_user_from_request / server.py middleware read
     await db.impersonation_sessions.insert_one({
         "token": impersonation_token,
-        "target_user_id": user_id,
-        "created_at": datetime.utcnow(),
-        "expires_at": datetime.utcnow()  # Can add expiration if needed
+        "impersonated_user_id": user_id,
+        "user_id": user_id,
+        "admin_user_id": str(requesting_user['_id']),
+        "created_at": now,
+        "expires_at": now + timedelta(hours=IMPERSONATION_TTL_HOURS),
     })
+    logger.info(f"[IMPERSONATION] {requesting_user.get('email')} started session as {user.get('email')} ({user_id})")
     
     # Prepare user data (same format as login response)
     from permissions import merge_permissions

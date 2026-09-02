@@ -339,8 +339,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             return;
           }
 
-          // Restore impersonation state
-          const originalAuthStr = await safeAsyncGet('original_auth');
+          // Restore impersonation state (AsyncStorage first, IDB fallback for iOS)
+          const originalAuthStr = (await safeAsyncGet('original_auth')) || (await safeIdbGet('imonsocial_original_auth'));
           const brandingStr = await safeAsyncGet('partner_branding') || await safeIdbGet('imonsocial_branding');
           const partnerBranding = safeParse(brandingStr);
           let isImpersonating = false;

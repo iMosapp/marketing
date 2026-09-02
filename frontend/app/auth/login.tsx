@@ -557,6 +557,18 @@ export default function LoginScreen() {
                 </View>
               ) : null}
 
+              {/* First-time users: verify phone by text code, then set a password */}
+              <TouchableOpacity
+                onPress={() => router.push('/auth/activate' as any)}
+                activeOpacity={0.7}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 18, paddingVertical: 10 }}
+                testID="activate-account-link"
+                dataSet={{ testid: 'activate-account-link' }}
+              >
+                <Ionicons name="phone-portrait-outline" size={17} color="#C9A962" />
+                <Text style={{ fontSize: 15, fontWeight: '600', color: '#C9A962' }}>First time here? Activate my account</Text>
+              </TouchableOpacity>
+
               {/* Quick Card QR — share your card without signing in */}
               {lastCardUser?.id ? (
                 <TouchableOpacity

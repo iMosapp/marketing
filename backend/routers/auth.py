@@ -181,32 +181,6 @@ if RESEND_API_KEY:
 reset_codes = {}  # Legacy in-memory — only kept for imports; new flow uses MongoDB
 
 # ── SMS helper ────────────────────────────────────────────────────────────────
-async def _send_sms_reset_code(phone: str, code: str) -> bool:
-    """Send a 6-digit reset code via Twilio SMS. Returns True on success."""
-    twilio_sid = os.environ.get("TWILIO_ACCOUNT_SID")
-    twilio_token = os.environ.get("TWILIO_AUTH_TOKEN")
-    from_phone = os.environ.get("TWILIO_PHONE_NUMBER")
-    if not twilio_sid or not twilio_token or not from_phone:
-        logger.warning("[ResetSMS] Twilio not configured — cannot send SMS code")
-        return False
-    try:
-        import httpx as _httpx
-        async with _httpx.AsyncClient(timeout=8.0) as client:
-            resp = await client.post(
-                f"https://api.twilio.com/2010-04-01/Accounts/{twilio_sid}/Messages.json",
-                auth=(twilio_sid, twilio_token),
-                data={"From": from_phone, "To": phone,
-                      "Body": f"Your I'm On Social reset code is: {code}\n\nExpires in 10 minutes. Do not share this code."}
-            )
-        if resp.status_code == 201:
-            logger.info(f"[ResetSMS] Code sent to {phone[-4:]}")
-            return True
-        logger.warning(f"[ResetSMS] Twilio returned {resp.status_code}: {resp.text[:200]}")
-        return False
-    except Exception as e:
-        logger.error(f"[ResetSMS] Failed to send SMS: {e}")
-        return False
-
 async def send_welcome_email(user: dict):
     """Send welcome email to new user"""
     if not RESEND_API_KEY:
@@ -783,218 +757,267 @@ async def logout_session():
     resp.delete_cookie("imonsocial_uid")
     return resp
 
-@router.post("/forgot-password/request")
-async def request_password_reset(data: dict, request: Request = None):
-    """
-    Request a 6-digit SMS reset code.
-    Accepts phone number OR email. Looks up the user, sends code via Twilio SMS
-    to their registered phone. Falls back to email if no phone on file.
-    Stores code in MongoDB (survives restarts) with 10-min TTL + 5-attempt lockout.
-    """
+# ── Shared SMS verification-code flow (password reset + account activation) ──
+_CODE_TTL_SECONDS = 600
+_CODE_MAX_ATTEMPTS = 5
+
+_CODE_COPY = {
+    "reset": {
+        "sms": "Your I'm On Social reset code is: {code}\n\nExpires in 10 minutes. Do not share this code.",
+        "subject": "Your I'm On Social Reset Code",
+        "heading": "Password Reset",
+        "safe_msg": "If an account exists, a reset code has been sent via text",
+    },
+    "activate": {
+        "sms": "Your I'm On Social activation code is: {code}\n\nEnter it in the app to set your password. Expires in 10 minutes.",
+        "subject": "Your I'm On Social Activation Code",
+        "heading": "Activate Your Account",
+        "safe_msg": "If an account exists for that number, an activation code has been sent via text",
+    },
+}
+
+
+def _to_e164(phone: Optional[str]) -> Optional[str]:
+    """Normalize a US/intl phone to E.164. Returns None when it can't be a real number."""
+    import re
+    if not phone:
+        return None
+    digits = re.sub(r'\D', '', str(phone))
+    if len(digits) == 10:
+        return f"+1{digits}"
+    if len(digits) == 11 and digits.startswith("1"):
+        return f"+{digits}"
+    if len(digits) >= 10:
+        return f"+{digits}"
+    return None
+
+
+async def _find_user_by_identifier(identifier: str) -> Optional[dict]:
+    """Look up a user by email or phone. Phone matches any stored format (+1..., 10 digits, (801) 634-9122)."""
     import re
     db = get_db()
-    identifier = (data.get('phone') or data.get('email') or '').strip()
+    identifier = (identifier or '').strip()
+    if not identifier:
+        return None
+    digits = re.sub(r'\D', '', identifier)
+    is_phone = len(digits) >= 10 and '@' not in identifier
+    if is_phone:
+        last10 = digits[-10:]
+        loose = r'\D*'.join(last10) + r'\D*$'
+        return await db.users.find_one({"$or": [
+            {"phone": f"+1{last10}"},
+            {"phone": last10},
+            {"phone": {"$regex": loose}},
+        ]})
+    escaped = re.escape(identifier.lower())
+    return await db.users.find_one({"email": {"$regex": f"^{escaped}$", "$options": "i"}})
+
+
+async def _send_code_sms(phone: str, code: str, purpose: str) -> bool:
+    """Text a 6-digit code via the shared Twilio service (A2P messaging service, E.164)."""
+    e164 = _to_e164(phone)
+    if not e164:
+        logger.warning(f"[CodeSMS] Unusable phone on file ({purpose}): {phone!r}")
+        return False
+    try:
+        from services.twilio_service import send_sms
+        result = await send_sms(e164, _CODE_COPY[purpose]["sms"].format(code=code))
+        if result.get("success"):
+            logger.info(f"[CodeSMS] {purpose} code sent to ...{e164[-4:]} (mock={result.get('mock')})")
+            return True
+        logger.warning(f"[CodeSMS] Twilio failed ({purpose}) → ...{e164[-4:]}: {result.get('error')}")
+        return False
+    except Exception as e:
+        logger.error(f"[CodeSMS] Failed to send {purpose} code: {e}")
+        return False
+
+
+async def _send_code_email(user: dict, code: str, purpose: str) -> bool:
+    if not (RESEND_API_KEY and user.get("email")):
+        return False
+    copy = _CODE_COPY[purpose]
+    try:
+        await asyncio.to_thread(resend.Emails.send, {
+            "from": f"I'm On Social <{SENDER_EMAIL}>",
+            "to": [user["email"]],
+            "reply_to": "support@imonsocial.com",
+            "subject": copy["subject"],
+            "html": f"""<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:40px 20px">
+                <h2 style="color:#1A1A1A">{copy["heading"]}</h2>
+                <p style="color:#555">Your code:</p>
+                <div style="text-align:center;margin:32px 0">
+                  <span style="background:#FBF7EC;border:2px solid #C9A962;border-radius:12px;padding:16px 40px;letter-spacing:8px;font-size:28px;font-weight:700;color:#1A1A1A">{code}</span>
+                </div>
+                <p style="color:#999;font-size:13px">Expires in 10 minutes.</p>
+              </div>"""
+        })
+        return True
+    except Exception as e:
+        logger.warning(f"[CodeEmail] {purpose} email fallback failed: {e}")
+        return False
+
+
+async def _issue_verification_code(identifier: str, purpose: str, request: Optional[Request]) -> dict:
+    """Rate-limit, generate, store and deliver a 6-digit code. Always returns a non-enumerating message."""
+    db = get_db()
+    copy = _CODE_COPY[purpose]
     if not identifier:
         raise HTTPException(status_code=400, detail="Phone number or email is required")
 
-    # Per-IP throttle — stops a single source hammering reset for many accounts
-    try:
-        ip = _client_ip(request)
-        window_start = datetime.utcnow().timestamp() - (_RESET_IP_WINDOW_MIN * 60)
-        ip_recent = await db.password_reset_tokens.count_documents({
-            "request_ip": ip,
-            "created_at": {"$gte": window_start},
-        })
-        if ip_recent >= _RESET_IP_MAX:
-            raise HTTPException(status_code=429, detail="Too many reset requests. Please wait a few minutes.")
-    except HTTPException:
-        raise
-    except Exception:
-        pass
+    # Per-IP throttle — stops a single source hammering many accounts
+    ip = _client_ip(request)
+    window_start = datetime.utcnow().timestamp() - (_RESET_IP_WINDOW_MIN * 60)
+    ip_recent = await db.password_reset_tokens.count_documents({
+        "request_ip": ip,
+        "created_at": {"$gte": window_start},
+    })
+    if ip_recent >= _RESET_IP_MAX:
+        raise HTTPException(status_code=429, detail="Too many requests. Please wait a few minutes.")
 
-    # Normalize phone to E.164 if it looks like a phone
-    digits = re.sub(r'\D', '', identifier)
-    is_phone = len(digits) >= 10 and '@' not in identifier
-    user = None
-
-    if is_phone:
-        e164 = f"+1{digits[-10:]}" if len(digits) == 10 else f"+{digits}"
-        user = await db.users.find_one({"$or": [{"phone": e164}, {"phone": digits[-10:]}]})
-        if not user:
-            # Try Twilio number too
-            user = await db.users.find_one({"twilio_number": e164})
-    else:
-        escaped = re.escape(identifier.lower())
-        user = await db.users.find_one({"email": {"$regex": f"^{escaped}$", "$options": "i"}})
-
-    # Always return the same message to prevent enumeration
-    safe_response = {"message": "If an account exists, a reset code has been sent via text"}
-
+    user = await _find_user_by_identifier(identifier)
+    # Same shape whether or not the account exists (no enumeration)
+    safe_response = {"message": copy["safe_msg"], "channel": "sms"}
     if not user:
         return safe_response
 
-    # Rate limit: no more than 3 requests per email per 10 minutes
+    # Per-user throttle: max 3 codes per 10 minutes
     recent = await db.password_reset_tokens.count_documents({
         "user_id": str(user["_id"]),
-        "created_at": {"$gte": datetime.utcnow().timestamp() - 600},
+        "created_at": {"$gte": datetime.utcnow().timestamp() - _CODE_TTL_SECONDS},
     })
     if recent >= 3:
-        raise HTTPException(status_code=429, detail="Too many reset requests. Please wait 10 minutes.")
+        raise HTTPException(status_code=429, detail="Too many requests. Please wait 10 minutes.")
 
     code = str(secrets.randbelow(900000) + 100000)
     now_ts = datetime.utcnow().timestamp()
-
     await db.password_reset_tokens.insert_one({
         "user_id": str(user["_id"]),
-        "email":   (user.get("email") or "").lower(),
-        "code":    code,
-        "created_at":  now_ts,
-        "expires_at":  now_ts + 600,  # 10 minutes
-        "attempts":    0,
-        "used":        False,
-        "request_ip":  _client_ip(request),
+        "email": (user.get("email") or "").lower(),
+        "purpose": purpose,
+        "code": code,
+        "created_at": now_ts,
+        "expires_at": now_ts + _CODE_TTL_SECONDS,
+        "attempts": 0,
+        "used": False,
+        "request_ip": ip,
     })
 
-    # Get the phone to send to
-    send_phone = user.get("phone") or user.get("twilio_number") or ""
-    sent_via_sms = False
-    if send_phone:
-        sent_via_sms = await _send_sms_reset_code(send_phone, code)
+    sent_sms = await _send_code_sms(user.get("phone") or "", code, purpose)
+    if not sent_sms:
+        await _send_code_email(user, code, purpose)
 
-    # Fall back to email if SMS failed or no phone
-    if not sent_via_sms and RESEND_API_KEY and user.get("email"):
-        try:
-            import asyncio as _aio
-            await _aio.to_thread(resend.Emails.send, {
-                "from": f"I'm On Social <{SENDER_EMAIL}>",
-                "to": [user["email"]],
-                "reply_to": "support@imonsocial.com",
-                "subject": "Your I'm On Social Reset Code",
-                "html": f"""<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:40px 20px">
-                    <h2 style="color:#1A1A1A">Password Reset</h2>
-                    <p style="color:#555">Your reset code:</p>
-                    <div style="text-align:center;margin:32px 0">
-                      <span style="background:#F0F4FF;border:2px solid #007AFF;border-radius:12px;padding:16px 40px;letter-spacing:8px;font-size:28px;font-weight:700;color:#007AFF">{code}</span>
-                    </div>
-                    <p style="color:#999;font-size:13px">Expires in 10 minutes.</p>
-                  </div>"""
-            })
-        except Exception as e:
-            logger.warning(f"[Reset] Email fallback failed: {e}")
-
-    return safe_response
+    return {**safe_response, "channel": "sms" if sent_sms else "email"}
 
 
-@router.post("/forgot-password/verify")
-async def verify_reset_code(data: dict):
-    """
-    Verify the 6-digit SMS reset code.
-    Accepts email or phone + code. Max 5 attempts before lockout.
-    """
-    import re
+async def _check_verification_code(identifier: str, code: str, purpose: str, consume: bool = False):
+    """Validate identifier + code. Returns (user, token_doc). Raises 400/429 on failure."""
     db = get_db()
-    identifier = (data.get('email') or data.get('phone') or '').strip().lower()
-    code = (data.get('code') or '').strip()
-
     if not identifier or not code:
         raise HTTPException(status_code=400, detail="Phone/email and code are required")
 
-    # Find user
-    digits = re.sub(r'\D', '', identifier)
-    is_phone = len(digits) >= 10 and '@' not in identifier
-    user = None
-    if is_phone:
-        e164 = f"+1{digits[-10:]}" if len(digits) == 10 else f"+{digits}"
-        user = await db.users.find_one({"$or": [{"phone": e164}, {"phone": digits[-10:]}]})
-    else:
-        escaped = re.escape(identifier)
-        user = await db.users.find_one({"email": {"$regex": f"^{escaped}$", "$options": "i"}})
-
+    user = await _find_user_by_identifier(identifier)
     if not user:
-        raise HTTPException(status_code=400, detail="No reset request found")
+        raise HTTPException(status_code=400, detail="No matching request found")
 
     now_ts = datetime.utcnow().timestamp()
     token = await db.password_reset_tokens.find_one({
         "user_id": str(user["_id"]),
+        "purpose": purpose,
         "expires_at": {"$gt": now_ts},
         "used": False,
     }, sort=[("created_at", -1)])
 
     if not token:
-        raise HTTPException(status_code=400, detail="No valid reset code found. Please request a new one.")
-
-    if token.get("attempts", 0) >= 5:
+        raise HTTPException(status_code=400, detail="No valid code found. Please request a new one.")
+    if token.get("attempts", 0) >= _CODE_MAX_ATTEMPTS:
         raise HTTPException(status_code=429, detail="Too many incorrect attempts. Please request a new code.")
-
-    if token["code"] != code:
-        await db.password_reset_tokens.update_one(
-            {"_id": token["_id"]},
-            {"$inc": {"attempts": 1}}
-        )
-        remaining = 4 - token.get("attempts", 0)
+    if token["code"] != code.strip():
+        await db.password_reset_tokens.update_one({"_id": token["_id"]}, {"$inc": {"attempts": 1}})
+        remaining = _CODE_MAX_ATTEMPTS - 1 - token.get("attempts", 0)
         raise HTTPException(status_code=400, detail=f"Incorrect code. {remaining} attempts remaining.")
 
+    if consume:
+        await db.password_reset_tokens.update_one(
+            {"_id": token["_id"]}, {"$set": {"used": True, "used_at": now_ts}}
+        )
+    return user, token
+
+
+def _identifier_from(data: dict) -> str:
+    return (data.get('phone') or data.get('email') or '').strip()
+
+
+# ── Password reset (SMS code) ─────────────────────────────────────────────────
+@router.post("/forgot-password/request")
+async def request_password_reset(data: dict, request: Request = None):
+    """Text a 6-digit reset code to the user's phone (email fallback). Accepts phone or email."""
+    return await _issue_verification_code(_identifier_from(data), "reset", request)
+
+
+@router.post("/forgot-password/verify")
+async def verify_reset_code(data: dict):
+    user, _ = await _check_verification_code(_identifier_from(data), data.get('code') or '', "reset")
     return {"message": "Code verified", "verified": True, "user_id": str(user["_id"])}
 
 
 @router.post("/forgot-password/reset")
 async def reset_password(data: dict):
-    """Reset password using verified code. Marks token as used."""
-    import re
-    db = get_db()
-    identifier = (data.get('email') or data.get('phone') or '').strip().lower()
-    code = (data.get('code') or '').strip()
+    """Reset password using a verified code. Marks the code as used."""
     new_password = data.get('new_password', '')
-
-    if not all([identifier, code, new_password]):
-        raise HTTPException(status_code=400, detail="Phone/email, code, and new password are required")
     if len(new_password) < 6:
         raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
-
-    # Find user
-    digits = re.sub(r'\D', '', identifier)
-    is_phone = len(digits) >= 10 and '@' not in identifier
-    user = None
-    if is_phone:
-        e164 = f"+1{digits[-10:]}" if len(digits) == 10 else f"+{digits}"
-        user = await db.users.find_one({"$or": [{"phone": e164}, {"phone": digits[-10:]}]})
-    else:
-        escaped = re.escape(identifier)
-        user = await db.users.find_one({"email": {"$regex": f"^{escaped}$", "$options": "i"}})
-
-    if not user:
-        raise HTTPException(status_code=400, detail="Invalid reset request")
-
-    now_ts = datetime.utcnow().timestamp()
-    token = await db.password_reset_tokens.find_one({
-        "user_id": str(user["_id"]),
-        "code": code,
-        "expires_at": {"$gt": now_ts},
-        "used": False,
-        "attempts": {"$lt": 5},
-    }, sort=[("created_at", -1)])
-
-    if not token:
-        raise HTTPException(status_code=400, detail="Invalid or expired reset code")
-
-    # Update password
-    result = await db.users.update_one(
+    user, _ = await _check_verification_code(_identifier_from(data), data.get('code') or '', "reset", consume=True)
+    await get_db().users.update_one(
         {"_id": user["_id"]},
-        {"$set": {"password": hash_password(new_password), "needs_password_change": False}}
+        {"$set": {"password": hash_password(new_password), "needs_password_change": False, "updated_at": datetime.utcnow()}}
     )
-    if result.modified_count == 0:
-        raise HTTPException(status_code=400, detail="Failed to update password")
-
-    # Mark token as used (prevents reuse)
-    await db.password_reset_tokens.update_one(
-        {"_id": token["_id"]},
-        {"$set": {"used": True, "used_at": now_ts}}
-    )
-
     logger.info(f"[Reset] Password reset completed for user {user['_id']}")
     return {"message": "Password updated successfully"}
 
 
+# ── Account activation (new users verify their phone by text, then set a password) ──
+@router.post("/activate/request")
+async def request_activation_code(data: dict, request: Request = None):
+    """New-user activation: text a 6-digit code to the phone the admin put on the account."""
+    return await _issue_verification_code(_identifier_from(data), "activate", request)
+
+
+@router.post("/activate/verify")
+async def verify_activation_code(data: dict):
+    user, _ = await _check_verification_code(_identifier_from(data), data.get('code') or '', "activate")
+    return {
+        "message": "Code verified",
+        "verified": True,
+        "email": user.get("email"),
+        "first_name": user.get("first_name") or (user.get("name") or "").split(" ")[0],
+    }
+
+
+@router.post("/activate/complete")
+async def complete_activation(data: dict):
+    """Set the user's first password after phone verification. Returns email for auto-login."""
+    new_password = data.get('new_password', '')
+    if len(new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    user, _ = await _check_verification_code(_identifier_from(data), data.get('code') or '', "activate", consume=True)
+    now = datetime.utcnow()
+    await get_db().users.update_one(
+        {"_id": user["_id"]},
+        {"$set": {
+            "password": hash_password(new_password),
+            "needs_password_change": False,
+            "activation_pending": False,
+            "phone_verified": True,
+            "phone_verified_at": now,
+            "activated_at": now,
+            "tos_accepted": True,
+            "tos_accepted_at": now,
+            "is_active": True,
+            "updated_at": now,
+        }}
+    )
+    logger.info(f"[Activate] Account activated via SMS code for user {user['_id']}")
+    return {"message": "Account activated", "email": user.get("email")}
 
 @router.post("/change-password")
 async def change_password(data: dict):

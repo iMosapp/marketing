@@ -251,7 +251,7 @@ export default function UsersScreen() {
 
   const handleCopyCredentials = async () => {
     if (createdUser) {
-      const credentials = `Email: ${createdUser.email}\nPassword: ${createdUser.temp_password}`;
+      const credentials = `Welcome to I'm On Social, ${createdUser.name}!\n\n1. Download the app: https://app.imonsocial.com\n2. Tap "Activate my account" and enter your mobile number\n3. Enter the code we text you and choose your password\n\nLogin email: ${createdUser.email}\nBackup password (only if the text doesn't arrive): ${createdUser.temp_password}`;
       try {
         if (Platform.OS === 'web') {
           await navigator.clipboard.writeText(credentials);
@@ -678,7 +678,7 @@ export default function UsersScreen() {
             
             <Text style={styles.successTitle}>User Created!</Text>
             <Text style={styles.successSubtitle}>
-              Share these credentials with {createdUser?.name}
+              {createdUser?.name} will get a text and email with activation steps: open the app, tap "Activate my account", verify with a 6-digit code, then choose a password.
             </Text>
             
             <View style={styles.credentialsBox}>
@@ -688,7 +688,7 @@ export default function UsersScreen() {
               </View>
               {createdUser?.temp_password && (
                 <View style={styles.credentialRow}>
-                  <Text style={styles.credentialLabel}>Password:</Text>
+                  <Text style={styles.credentialLabel}>Backup password:</Text>
                   <Text style={styles.credentialValue}>{createdUser?.temp_password}</Text>
                 </View>
               )}
@@ -704,7 +704,7 @@ export default function UsersScreen() {
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <Ionicons name="copy-outline" size={18} color="#FFFFFF" />
-                    <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>Copy Password</Text>
+                    <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>Copy Backup</Text>
                   </View>
                 </WebSafeButton>
                 
@@ -746,7 +746,7 @@ export default function UsersScreen() {
               
               <Text style={styles.successTitle}>User Created!</Text>
               <Text style={styles.successSubtitle}>
-                Share these credentials with {createdUser?.name}
+                {createdUser?.name} will get a text and email with activation steps: open the app, tap "Activate my account", verify with a 6-digit code, then choose a password.
               </Text>
               
               <View style={styles.credentialsBox}>
@@ -756,7 +756,7 @@ export default function UsersScreen() {
                 </View>
                 {createdUser?.temp_password && (
                   <View style={styles.credentialRow}>
-                    <Text style={styles.credentialLabel}>Password:</Text>
+                    <Text style={styles.credentialLabel}>Backup password:</Text>
                     <Text style={styles.credentialValue}>{createdUser?.temp_password}</Text>
                   </View>
                 )}
@@ -772,7 +772,7 @@ export default function UsersScreen() {
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                       <Ionicons name="copy-outline" size={18} color="#FFFFFF" />
-                      <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>Copy Password</Text>
+                      <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>Copy Backup</Text>
                     </View>
                   </WebSafeButton>
                   

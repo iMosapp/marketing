@@ -59,6 +59,36 @@ nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(20px);-webkit
 .vs .c .big{font-size:21px;font-weight:800;color:#fff;line-height:1.3}
 @media(max-width:768px){.problem h2{font-size:26px}}
 
+/* OWNERSHIP / TURNOVER */
+.own{padding:96px 24px;max-width:1140px;margin:0 auto;display:flex;align-items:center;gap:64px}
+.own .copy{flex:1}
+.own .copy h2{font-size:38px;font-weight:900;letter-spacing:-.025em;line-height:1.1;margin-bottom:16px}
+.own .copy h2 .g{color:var(--gold)}
+.own .copy p{font-size:17px;color:var(--text-2);line-height:1.65;margin-bottom:18px}
+.own .copy ul{list-style:none;display:flex;flex-direction:column;gap:12px;margin-top:6px}
+.own .copy ul li{display:flex;gap:12px;align-items:flex-start;font-size:15px;color:var(--text)}
+.own .copy ul li i{color:var(--gold);margin-top:4px;font-size:14px}
+.own .visual{flex:0 0 440px;max-width:100%}
+.hand{background:#0A0A0F;border-radius:24px;padding:26px;color:#fff;box-shadow:0 30px 70px rgba(0,0,0,.22);border:1px solid #222}
+.hand .num{display:flex;align-items:center;gap:12px;background:rgba(201,169,98,.1);border:1px solid rgba(201,169,98,.35);border-radius:14px;padding:14px 16px}
+.hand .num i{color:var(--gold);font-size:18px}
+.hand .num .n{font-size:20px;font-weight:900;letter-spacing:.5px}
+.hand .num .o{font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--gold);margin-top:2px}
+.hand .reps{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:22px 0 18px}
+.hand .rep{flex:1;text-align:center;background:#17171b;border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:14px 10px}
+.hand .rep .av{width:44px;height:44px;border-radius:22px;margin:0 auto 8px;background:#2a2a30;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:var(--gold)}
+.hand .rep.gone{opacity:.45}
+.hand .rep.gone .av{color:#999}
+.hand .rep .nm{font-size:13px;font-weight:700}
+.hand .rep .st{font-size:11px;color:#8a8a90;margin-top:2px}
+.hand .arrow{color:var(--gold);font-size:20px;flex:0 0 auto}
+.hand .keep{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.hand .keep .k2{background:#17171b;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:10px 12px}
+.hand .keep .k2 .v{font-size:17px;font-weight:900;color:#fff}
+.hand .keep .k2 .l{font-size:10.5px;color:#9a9aa0;margin-top:1px;font-weight:600}
+.hand .foot{margin-top:16px;text-align:center;font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--gold)}
+@media(max-width:900px){.own{flex-direction:column;gap:36px;padding:60px 20px;text-align:center}.own .copy ul li{text-align:left}.own .copy h2{font-size:28px}.own .visual{flex:0 0 auto;width:100%;max-width:440px}}
+
 /* FEATURE STEPS */
 .step{padding:88px 24px;max-width:1140px;margin:0 auto;display:flex;align-items:center;gap:64px}
 .step.alt{flex-direction:row-reverse}
@@ -75,6 +105,19 @@ nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(20px);-webkit
 
 /* PHONE MOCKUP */
 .phone{width:300px;border-radius:44px;background:#000;padding:11px;box-shadow:0 40px 90px rgba(0,0,0,.28);border:1px solid #222;flex-shrink:0}
+.phone img.shot{display:block;width:100%;height:auto;border-radius:34px;background:#000}
+.real-tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--gold);margin-top:14px;justify-content:center;width:100%}
+.real-tag i{font-size:10px}
+/* IN YOUR POCKET (real Home + Inbox) */
+.pocket{background:var(--bg-2);padding:84px 24px}
+.pocket .k{max-width:1000px;margin:0 auto;text-align:center}
+.pocket h2{font-size:38px;font-weight:900;letter-spacing:-.02em;margin-bottom:12px}
+.pocket .sub{font-size:17px;color:var(--text-2);max-width:620px;margin:0 auto 48px}
+.pocket .pair{display:flex;justify-content:center;gap:56px;flex-wrap:wrap}
+.pocket .ph{display:flex;flex-direction:column;align-items:center;max-width:320px}
+.pocket .ph h4{font-size:18px;font-weight:800;margin-top:26px;margin-bottom:6px}
+.pocket .ph p{font-size:14px;color:var(--text-2);line-height:1.5;text-align:center}
+@media(max-width:768px){.pocket h2{font-size:28px}.pocket .pair{gap:40px}}
 .screen{border-radius:34px;overflow:hidden;background:#0B0B0F;color:#fff;font-size:12px;height:600px;display:flex;flex-direction:column}
 .st-bar{display:flex;justify-content:space-between;align-items:center;padding:12px 20px 6px;font-size:11px;font-weight:700;color:#fff}
 .sc-hd{padding:6px 16px 12px;border-bottom:1px solid rgba(255,255,255,.07)}
@@ -201,6 +244,39 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
   </div>
 </section>
 
+<!-- OWNERSHIP: TURNOVER -->
+<section class="own">
+  <div class="copy rv">
+    <span class="eyebrow" style="margin-bottom:16px">Built for turnover</span>
+    <h2>Salespeople leave.<br/><span class="g">Their customers shouldn't leave with them.</span></h2>
+    <p>Every dealership knows the drill: a rep quits and 500 relationships walk out the door on a personal cell phone. Customers keep texting the old number, nobody answers, and the store starts over from zero.</p>
+    <p>With i'M On Social, <strong>the company owns the phone number</strong> and every conversation attached to it. When a rep leaves, the number, the texts, the notes and the birthdays all stay with the store. The next rep picks up mid-conversation, and the customer never even feels the handoff.</p>
+    <ul>
+      <li><i class="fa-solid fa-circle-check"></i><span><strong>Store-owned tracking numbers.</strong> Reps text and call from a number you control, not their personal cell.</span></li>
+      <li><i class="fa-solid fa-circle-check"></i><span><strong>Relationships stay in your CRM.</strong> Contacts, message history, voice notes and follow-ups live in the store's book of business.</span></li>
+      <li><i class="fa-solid fa-circle-check"></i><span><strong>One-tap reassignment.</strong> Move a departing rep's people to a new rep with the full history intact, then keep the number ringing.</span></li>
+      <li><i class="fa-solid fa-circle-check"></i><span><strong>Nothing to chase down.</strong> No begging for a personal phone, no lost spreadsheets, no "who was working with Mike?"</span></li>
+    </ul>
+  </div>
+  <div class="visual rv">
+    <div class="hand">
+      <div class="num"><i class="fa-solid fa-phone"></i><div><div class="n">(435) 220-3414</div><div class="o">Store-owned line, stays put</div></div></div>
+      <div class="reps">
+        <div class="rep gone"><div class="av">TJ</div><div class="nm">Tyler J.</div><div class="st">Left in March</div></div>
+        <div class="arrow"><i class="fa-solid fa-arrow-right-long"></i></div>
+        <div class="rep"><div class="av">BW</div><div class="nm">Bridger W.</div><div class="st">Picked up April 1</div></div>
+      </div>
+      <div class="keep">
+        <div class="k2"><div class="v">1,240</div><div class="l">contacts kept</div></div>
+        <div class="k2"><div class="v">3 yrs</div><div class="l">of texts &amp; notes kept</div></div>
+        <div class="k2"><div class="v">86</div><div class="l">birthdays still firing</div></div>
+        <div class="k2"><div class="v">0</div><div class="l">customers re-introduced</div></div>
+      </div>
+      <div class="foot"><i class="fa-solid fa-lock"></i> The relationship belongs to the store</div>
+    </div>
+  </div>
+</section>
+
 <div id="tour"></div>
 
 <!-- STEP 1: BOOK OF BUSINESS -->
@@ -218,25 +294,10 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
     <p style="margin-top:16px;font-weight:700;color:#111">Stop managing a contact list. Start managing a book of business.</p>
   </div>
   <div class="visual rv">
-    <div class="phone"><div class="screen">
-      <div class="st-bar"><span>9:41</span><span><i class="fa-solid fa-signal"></i> <i class="fa-solid fa-wifi"></i> <i class="fa-solid fa-battery-full"></i></span></div>
-      <div class="sc-hd"><div class="t">Book of Business</div><div class="s">1,052 relationships &middot; 1,044 need attention</div></div>
-      <div class="sc-body">
-        <div class="banner"><span style="font-size:15px">&#128153;</span><span class="tx">You have 7 advocates - thank them</span><i class="fa-solid fa-chevron-right" style="color:#0A84FF"></i></div>
-        <div class="pill-row">
-          <div class="pill" style="background:#17171b;border-color:#FF3B3055"><div class="num" style="color:#FF3B30">&#128293;</div><div class="num" style="color:#FF3B30;font-size:15px">1</div><div class="lab">Opp'ty</div></div>
-          <div class="pill on" style="background:#FF453A"><div class="num" style="color:#fff">&#128308;</div><div class="num" style="color:#fff;font-size:15px">1041</div><div class="lab" style="color:#fff">At Risk</div></div>
-          <div class="pill"><div class="num" style="color:#FF9F0A">&#128993;</div><div class="num" style="color:#FF9F0A;font-size:15px">2</div><div class="lab">Cooling</div></div>
-          <div class="pill"><div class="num" style="color:#0A84FF">&#128153;</div><div class="num" style="color:#0A84FF;font-size:15px">7</div><div class="lab">Advocate</div></div>
-          <div class="pill"><div class="num" style="color:#30D158">&#128994;</div><div class="num" style="color:#30D158;font-size:15px">1</div><div class="lab">Conn.</div></div>
-        </div>
-        <div style="font-size:12px;font-weight:800;color:#FF453A;margin:4px 0 2px">&#128308; At Risk &middot; 1,041</div>
-        <div class="crow"><div class="av" style="background:linear-gradient(135deg,#8a5,#463)">LW</div><div><div class="nm">Liv Ward</div><div class="rs" style="color:#8a8a90">174 days silent</div></div></div>
-        <div class="crow"><div class="av" style="background:#FF453A22;color:#FF453A">AP</div><div><div class="nm">Aaron Parsons</div><div class="rs" style="color:#8a8a90">168 days silent</div></div></div>
-        <div class="crow"><div class="av" style="background:#FF453A22;color:#FF453A">AN</div><div><div class="nm">Adam Newsom</div><div class="rs" style="color:#8a8a90">168 days silent</div></div></div>
-      </div>
-      <div class="tabbar"><i class="fa-solid fa-house on"></i><i class="fa-regular fa-comment"></i><i class="fa-solid fa-users"></i><i class="fa-regular fa-calendar"></i></div>
-    </div></div>
+    <div>
+      <div class="phone"><img class="shot" src="img/book-of-business.webp" alt="Book of Business screen - five relationship health buckets with 1,052 relationships scored" width="924" height="2000" loading="lazy"></div>
+      <div class="real-tag"><i class="fa-solid fa-mobile-screen"></i> Real app screenshot</div>
+    </div>
   </div>
 </section>
 
@@ -247,31 +308,16 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
     <h3>A morning list of exactly who to reach out to - and why</h3>
     <p>No more staring at a giant contact list wondering where to start. i'M On Social hands you a short, ranked list every day with the reason baked in and a personal detail to open with.</p>
     <ul>
-      <li><i class="fa-solid fa-circle-check"></i> <span>"Birthday tomorrow", "1 year since purchase", "clicked your Bronco page twice"</span></li>
-      <li><i class="fa-solid fa-circle-check"></i> <span>A personal hook underneath: <em>&#128172; Loves golf &middot; Spouse: Sarah</em></span></li>
-      <li><i class="fa-solid fa-circle-check"></i> <span>One tap to <strong>Start Conversation</strong> - no digging required</span></li>
+      <li><i class="fa-solid fa-circle-check"></i> <span>"Viewed your card 12h ago", "Replied to your message", "61 days since last contact"</span></li>
+      <li><i class="fa-solid fa-circle-check"></i> <span>A personal hook underneath: <em>&#128172; Loves fly fishing &middot; Loves traveling to Key West</em></span></li>
+      <li><i class="fa-solid fa-circle-check"></i> <span>One tap to <strong>Follow Up</strong>, <strong>Reply Now</strong> or <strong>Check In</strong> - no digging required</span></li>
     </ul>
   </div>
   <div class="visual rv">
-    <div class="phone"><div class="screen">
-      <div class="st-bar"><span>9:41</span><span><i class="fa-solid fa-signal"></i> <i class="fa-solid fa-wifi"></i> <i class="fa-solid fa-battery-full"></i></span></div>
-      <div class="sc-hd"><div class="t">People to Talk To Today</div><div class="s">6 worth reaching out to, and why</div></div>
-      <div class="sc-body">
-        <div class="crow" style="flex-direction:column;align-items:stretch;gap:8px">
-          <div style="display:flex;gap:10px;align-items:center"><div class="av" style="background:#FF3B3022;color:#FF3B30">&#127874;</div><div style="flex:1"><div class="nm">Mike Peterson</div><div class="rs" style="color:#FF3B30;font-weight:700">&#128293; Birthday tomorrow</div><div class="hk">&#128172; Loves camping &middot; Wife: Sarah</div></div></div>
-          <div class="cta-s"><i class="fa-solid fa-comment"></i> Start Conversation</div>
-        </div>
-        <div class="crow" style="flex-direction:column;align-items:stretch;gap:8px">
-          <div style="display:flex;gap:10px;align-items:center"><div class="av" style="background:#0A84FF22;color:#0A84FF">ST</div><div style="flex:1"><div class="nm">Sarah Tolman</div><div class="rs" style="color:#0A84FF;font-weight:700">&#127937; 1 year since her Tahoe</div><div class="hk">&#128172; Kids: Emma, Jack</div></div></div>
-          <div class="cta-s"><i class="fa-solid fa-comment"></i> Start Conversation</div>
-        </div>
-        <div class="crow" style="flex-direction:column;align-items:stretch;gap:8px">
-          <div style="display:flex;gap:10px;align-items:center"><div class="av" style="background:#FF9F0A22;color:#FF9F0A">TA</div><div style="flex:1"><div class="nm">Tom Anderson</div><div class="rs" style="color:#FF9F0A;font-weight:700">&#128064; Clicked your Bronco page 2&times;</div><div class="hk">&#128172; Loves golf</div></div></div>
-          <div class="cta-s"><i class="fa-solid fa-comment"></i> Start Conversation</div>
-        </div>
-      </div>
-      <div class="tabbar"><i class="fa-solid fa-house on"></i><i class="fa-regular fa-comment"></i><i class="fa-solid fa-users"></i><i class="fa-regular fa-calendar"></i></div>
-    </div></div>
+    <div>
+      <div class="phone"><img class="shot" src="img/people-today.webp" alt="People to Talk To Today screen - ranked list with the reason to reach out and a personal hook under each name" width="924" height="2000" loading="lazy"></div>
+      <div class="real-tag"><i class="fa-solid fa-mobile-screen"></i> Real app screenshot</div>
+    </div>
   </div>
 </section>
 
@@ -341,6 +387,27 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
       </div>
       <div class="tabbar"><i class="fa-solid fa-house on"></i><i class="fa-regular fa-comment"></i><i class="fa-solid fa-users"></i><i class="fa-regular fa-calendar"></i></div>
     </div></div>
+  </div>
+</section>
+
+<!-- IN YOUR POCKET: REAL HOME + INBOX -->
+<section class="pocket">
+  <div class="k">
+    <h2 class="rv">It all lives on the two screens you already open every day</h2>
+    <p class="sub rv">No new dashboard to learn. Your book of business feeds Home and Inbox directly, so the next best conversation is always one tap away.</p>
+    <div class="pair">
+      <div class="ph rv">
+        <div class="phone"><img class="shot" src="img/home.webp" alt="Home screen - Do This Next card, quick actions, streak, monthly sales and Your 3 for Today" width="924" height="2000" loading="lazy"></div>
+        <h4>Home: "Do This Next"</h4>
+        <p>One highlighted action, your streak, this month's numbers and Your 3 for Today - the whole day in 30 seconds.</p>
+      </div>
+      <div class="ph rv">
+        <div class="phone"><img class="shot" src="img/inbox.webp" alt="Inbox screen - Hot, Waiting, Unread and All filters with Auto (AI) and Human badges on each conversation" width="924" height="2000" loading="lazy"></div>
+        <h4>Inbox: AI and you, side by side</h4>
+        <p>Every thread is tagged <strong>Auto</strong> or <strong>Human</strong> so you always know who is talking. Hot and Waiting filters put the urgent ones first.</p>
+      </div>
+    </div>
+    <div class="real-tag" style="margin-top:36px"><i class="fa-solid fa-mobile-screen"></i> Real app screenshots</div>
   </div>
 </section>
 

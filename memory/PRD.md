@@ -150,3 +150,8 @@ DELIVERY: backend deploy + eas update --branch production.
 ## STYLE RULE (June 2026) — NEVER USE EM DASHES
 - User directive: NEVER use em dashes (—, &mdash;, &#8212;, &#x2014;) anywhere — marketing site, app UI, or generated content. Use a spaced hyphen " - " or restructure with commas.
 - Swept clean on this date: all of marketing/build/*.html (49 files), marketing/generate_pages.py (28), and the new app screens (book-of-business, people-today).
+
+## Auth flows + Impersonation fix + AI phone guard (June 2026)
+- See CHANGELOG "Auth + Impersonation + AI phone guard". Key endpoints: POST /api/admin/users/{id}/impersonate (super_admin JWT), /api/auth/activate/{request,verify,complete}, /api/auth/forgot-password/{request,verify,reset}. Screens: /auth/activate, /auth/login link, /auth/change-password (no ToS gate).
+- USER TESTING PENDING (frontend): impersonate flow, /auth/activate e2e, first-login Set Password, admin create-user modal copy, thread popup suppression, marketing section.
+- Backlog: rotate production secrets; Wallet cert (.p12) parked; HomeNet/vAuto feed; Zapier instructions.

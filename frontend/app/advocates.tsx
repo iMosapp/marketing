@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
-import { Image } from 'expo-image';
+import { Avatar } from '../components/Avatar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -56,13 +56,14 @@ export default function AdvocatesScreen() {
           renderItem={({ item }) => (
             <View style={[st.card, { backgroundColor: colors.card, borderColor: `${BLUE}30` }]} testID={`advocate-item-${item.contact_id}`}>
               <TouchableOpacity style={st.rowTop} onPress={() => router.push(`/contact/${item.contact_id}` as any)} activeOpacity={0.7}>
-                <View style={[st.avatar, { backgroundColor: `${BLUE}22` }]}>
-                  {item.photo_thumbnail ? (
-                    <Image source={{ uri: item.photo_thumbnail }} style={[StyleSheet.absoluteFillObject, { borderRadius: 24 }]} contentFit="cover" cachePolicy="memory-disk" transition={150} />
-                  ) : (
-                    <Text style={{ color: BLUE, fontWeight: '800', fontSize: 16 }}>{`${(item.name || '?')[0]}`.toUpperCase()}</Text>
-                  )}
-                </View>
+                <Avatar
+                  photo={item.photo_thumbnail}
+                  name={item.name || '?'}
+                  sizePx={48}
+                  color={`${BLUE}22`}
+                  textStyle={{ color: BLUE, fontWeight: '800', fontSize: 16 }}
+                  style={st.avatar}
+                />
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }} numberOfLines={1}>{item.name}</Text>
                   <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }} numberOfLines={1}>

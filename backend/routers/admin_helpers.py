@@ -6,6 +6,7 @@ import os
 import asyncio
 import logging
 import resend
+from typing import Optional
 from bson import ObjectId
 from fastapi import Header
 
@@ -45,9 +46,10 @@ async def get_requesting_user(request_or_header=None) -> dict:
 
 
 async def send_invite_email(
-    email: str, name: str, temp_password: str, role: str, inviter_name: str = None
+    email: str, name: str, temp_password: Optional[str], role: str, inviter_name: str = None,
+    phone: str = None,
 ) -> bool:
-    """Send an invite email to a new user with temporary credentials."""
+    """Send an invite email. With temp_password=None it sends text-code activation steps instead."""
     import base64 as b64_mod
 
     if not RESEND_API_KEY:
@@ -61,6 +63,38 @@ async def send_invite_email(
     }.get(role, 'Team Member')
 
     login_url = f"{APP_URL}/imos/login"
+    activate_url = f"{APP_URL}/auth/activate"
+    phone_hint = f" ending in <strong>{phone[-4:]}</strong>" if phone and len(phone) >= 4 else ""
+
+    if temp_password:
+        creds_block = f"""
+                        <div style="background-color: #f8f9fa; padding: 20px 24px; border-radius: 12px; margin: 0 0 24px 0; border: 1px solid #e9ecef;">
+                            <p style="margin: 0 0 14px 0; font-weight: 700; color: #333; font-size: 14px;">Your Login Credentials</p>
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <tr>
+                                    <td style="padding: 8px 0; color: #666; font-size: 14px; width: 160px;">Email:</td>
+                                    <td style="padding: 8px 0;"><code style="background: #fff; padding: 5px 12px; border-radius: 6px; color: #111; font-size: 14px; border: 1px solid #ddd;">{email}</code></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #666; font-size: 14px;">Temporary Password:</td>
+                                    <td style="padding: 8px 0;"><code style="background: #fff; padding: 5px 12px; border-radius: 6px; color: #111; font-size: 14px; font-weight: 600; border: 1px solid #ddd;">{temp_password}</code></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <p style="font-size: 14px; color: #666; margin: 0 0 28px 0;">You'll be prompted to create a new password when you first log in.</p>"""
+        cta_url, cta_label = login_url, "Get Started"
+    else:
+        creds_block = f"""
+                        <div style="background-color: #FBF7EC; padding: 20px 24px; border-radius: 12px; margin: 0 0 24px 0; border: 1px solid #EBDDB8;">
+                            <p style="margin: 0 0 14px 0; font-weight: 700; color: #333; font-size: 14px;">Activate in 3 quick steps</p>
+                            <ol style="margin: 0; padding-left: 20px; color: #444; font-size: 14px; line-height: 1.8;">
+                                <li>Download the app: <a href="https://apps.apple.com/app/im-on-social/id6743597907" style="color:#007AFF">iPhone</a> or <a href="https://play.google.com/store/apps/details?id=com.imonsocial.app" style="color:#007AFF">Android</a></li>
+                                <li>Tap <strong>"Activate my account"</strong> and enter your mobile number{phone_hint}</li>
+                                <li>Enter the code we text you and choose your password</li>
+                            </ol>
+                        </div>
+                        <p style="font-size: 14px; color: #666; margin: 0 0 28px 0;">No temporary passwords to juggle. Your login email is <strong>{email}</strong>.</p>"""
+        cta_url, cta_label = activate_url, "Activate My Account"
 
     logo_b64 = ""
     logo_path = os.path.join(
@@ -91,23 +125,10 @@ async def send_invite_email(
                             <strong style="color: #007AFF;">{role_title}</strong>
                             {f' by {inviter_name}' if inviter_name else ''}.
                         </p>
-                        <div style="background-color: #f8f9fa; padding: 20px 24px; border-radius: 12px; margin: 0 0 24px 0; border: 1px solid #e9ecef;">
-                            <p style="margin: 0 0 14px 0; font-weight: 700; color: #333; font-size: 14px;">Your Login Credentials</p>
-                            <table style="width: 100%; border-collapse: collapse;">
-                                <tr>
-                                    <td style="padding: 8px 0; color: #666; font-size: 14px; width: 160px;">Email:</td>
-                                    <td style="padding: 8px 0;"><code style="background: #fff; padding: 5px 12px; border-radius: 6px; color: #111; font-size: 14px; border: 1px solid #ddd;">{email}</code></td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 8px 0; color: #666; font-size: 14px;">Temporary Password:</td>
-                                    <td style="padding: 8px 0;"><code style="background: #fff; padding: 5px 12px; border-radius: 6px; color: #111; font-size: 14px; font-weight: 600; border: 1px solid #ddd;">{temp_password}</code></td>
-                                </tr>
-                            </table>
-                        </div>
-                        <p style="font-size: 14px; color: #666; margin: 0 0 28px 0;">You'll be prompted to create a new password when you first log in.</p>
+                        {creds_block}
                         <div style="text-align: center;">
-                            <a href="{login_url}" style="display: inline-block; background-color: #007AFF; color: #ffffff; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px;">
-                                Get Started
+                            <a href="{cta_url}" style="display: inline-block; background-color: #007AFF; color: #ffffff; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px;">
+                                {cta_label}
                             </a>
                         </div>
                     </div>

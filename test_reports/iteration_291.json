@@ -1,0 +1,47 @@
+{
+  "summary": "Backend-only verification of iteration 291 fixes: admin impersonation, SMS activation flow, forgot-password refactor, admin create-user E.164 normalization, and the AI personal-phone guard. Created /app/backend/tests/test_activation_impersonation_291.py (25 tests) -> 25/25 passing against the public preview URL. Also re-ran tests/test_predeployment_regression_252.py -k Impersonation (3/3 pass) and tests/ai_routing_matrix.py (28/28 passed). No functional defects found in the code under test. SMS safety respected: only 500-555-0177 / 500-555-0006 / 500-555-9999 (Twilio magic test range) were ever texted; no send flows were triggered for forest@imosapp.com or mjeast1985@gmail.com. Test-created user + auto-created contact + its reset tokens were hard-deleted (verified empty in Mongo).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "startup seed_admin_user (server.py:1983)", "issue": "Default admin is inserted with a PLAINTEXT password ('I'm On Social2026!') instead of a bcrypt hash, and the seeder only runs when users collection is empty (never updates an existing admin whose password changed). On a fresh DB the seeded admin could not log in via hash_password/verify."},
+      {"endpoint": "CORS (server.py:287)", "issue": "allow_credentials=False while auth relies on httpOnly cookies (imonsocial_session). Works today only because the app is same-origin behind the proxy; any cross-origin client using cookies will break. Ingress also returns 'access-control-allow-origin: *' with no allow-credentials."},
+      {"endpoint": "POST /api/auth/login (session cookie)", "issue": "imonsocial_session cookie value is the raw user _id with no signature/HMAC; anyone who can set that cookie could restore a session as any user. Pre-existing design, not part of this batch, but worth hardening."}
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "verified_behaviours": [
+    "Impersonation: super-admin JWT -> POST /api/admin/users/69c75782e051d06491e6fa9f/impersonate returns 200, success true, token 'impersonate_...', user._id == target (Matthew Easton), not the admin.",
+    "Impersonated reads: GET /api/home/weekly-wins/<id> and GET /api/relationship-health/<id>/summary with Bearer <impersonate token> + X-User-ID -> 200.",
+    "Negatives: no auth -> 401; impersonate token used as bearer to impersonate -> 403; impersonating own id -> 400; 'Bearer impersonate_deadbeef' on weekly-wins -> 401.",
+    "Mongo impersonation_sessions doc has impersonated_user_id, user_id, admin_user_id and expires_at exactly 8h after created_at.",
+    "Admin session restore unaffected: fresh cookie login -> GET /api/auth/me returns forest@imosapp.com / super_admin.",
+    "Admin create-user: phone '(500) 555-0177' stored as '+15005550177'; activation_pending true, phone_verified false, needs_password_change true; response has activation_flow true, activate_url ending '/auth/activate', temp_password present.",
+    "Activation: /activate/request returns exactly {message, channel}; wrong code -> 400 'Incorrect code. 4 attempts remaining.'; activation code rejected by /forgot-password/verify (purpose isolation); correct verify -> 200 {verified, email}; complete with 'abc' -> 400; complete with 'NewPass123!' -> 200 {message:'Account activated', email}; reusing the consumed code -> 400; login afterwards returns needs_password_change false, phone_verified true, activation_pending false, tos_accepted true.",
+    "Non-enumeration: unknown phone 5005559999 -> 200 {message, channel:'sms'} (same shape as a real user).",
+    "Rate limit: 4th /activate/request for the same user inside 10 min -> 429.",
+    "Forgot-password regression: email request -> {message, channel}; verify -> 200 verified; reset to 'Reset456!' -> 200 and login works; reset back to 'NewPass123!' -> 200 and login works. Digits-only phone '5005550006' resolves to the user stored as '+15005550006' and creates a reset token for the same user_id.",
+    "AI guard: enforce_business_number swaps both '8016349122' and '(801) 634-9122' to '(435) 220-3414'; no-op when business_phone is None; clean_ai_text for forest replaces the personal cell; build_clone_system_prompt(forest) contains a 'PHONE NUMBER RULE' paragraph with '(435) 220-3414'.",
+    "Playbook checks: password hashes are bcrypt $2b$; login sets HttpOnly+Secure+SameSite=lax session cookie."
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_activation_impersonation_291.py",
+    "/app/test_reports/pytest/iteration_291.xml"
+  ],
+  "action_items": [
+    "Optional (out of this batch): hash the seeded default admin password and make seed_admin_user idempotent/update-on-change.",
+    "Optional: set CORS allow_credentials=True with explicit origins, and sign the session cookie."
+  ],
+  "critical_code_review_comments": [
+    "server.py seed_admin_user inserts an unhashed password - any fresh-DB deployment gets an admin that cannot authenticate through verify_password.",
+    "_issue_verification_code per-IP throttle (6 / 10 min) is keyed on client-supplied cf-connecting-ip / x-forwarded-for, so a caller that spoofs XFF bypasses it (the per-user 3/10min throttle still caps abuse). Consider trusting only the proxy-verified IP.",
+    "routers/admin_users.py create_user_with_invite is a very long single function (~280 lines, contact linking + seeding + SMS + email); worth extracting helpers."
+  ],
+  "updated_files": ["/app/backend/tests/test_activation_impersonation_291.py"],
+  "success_rate": {"backend": "100% (25/25 new tests, 3/3 impersonation regression, 28/28 ai routing matrix)", "frontend": "not tested (backend-only request)"},
+  "seed_data_creation": "Created one throwaway user act-<random>@invalid.imonsocial.test with phone +15005550177 per run; hard-deleted via DELETE /api/admin/users/{id}/hard plus its 'new-user' contact and reset tokens. Verified no leftovers. activation-tester@invalid.imonsocial.test password restored to NewPass123!.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "forest@imosapp.com / Admin123! (super admin, id 69a0b7095fddcede09591667); activation-tester@invalid.imonsocial.test / NewPass123! (phone +15005550006)",
+  "context_for_next_testing_agent": "Re-run with: cd /app/backend && python -m pytest tests/test_activation_impersonation_291.py -q. The suite self-cleans (hard-deletes its created user) and clears the activation-tester's password_reset_tokens before the forgot-password class so the 3-codes/10-min per-user throttle doesn't cause false failures; it also sends a unique X-Forwarded-For per group to avoid the 6/10min per-IP throttle. tests/test_predeployment_regression_252.py needs env REACT_APP_BACKEND_URL, TEST_ADMIN_PASS='Admin123!', TEST_USER_PASS='NavyBean1!' (it reads them from the process env, not .env). Codes live in Mongo collection password_reset_tokens (fields purpose/code/used). SMS safety: only 500-555-XXXX numbers.",
+  "rca_of_the_issue": "No product defect reproduced. The only test failures seen were self-inflicted: (1) two consecutive asyncio.run() calls reuse a loop-bound motor client -> 'Event loop is closed' (fixed by running both DB-backed AI checks in one loop); (2) the per-user 3-codes/10-min throttle carried over between runs for the shared activation-tester account (fixed by clearing that user's tokens in a class fixture)."
+}

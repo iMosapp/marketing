@@ -365,9 +365,9 @@ Return ONLY the message text, nothing else. No quotes, no explanation."""
         if upcoming_actions:
             intent = upcoming_actions[0].get("type", "general")
 
-        # Post-process: remove em-dashes
-        clean = suggestion.strip().strip('"').strip("'")
-        clean = clean.replace('\u2014', ',').replace('\u2013', '-')
+        # Post-process: em-dashes, banned words, business-number guard
+        from utils.text_sanitize import clean_ai_text
+        clean = await clean_ai_text(suggestion.strip().strip('"').strip("'"), user_id)
 
         return {
             "suggestion": clean,

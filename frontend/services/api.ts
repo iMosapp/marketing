@@ -109,8 +109,15 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    // While impersonating, NEVER restore from the admin's cookie — that silently
+    // swaps the session back to the admin ("impersonating myself" bug)
+    let impersonating = false;
+    try {
+      const { useAuthStore } = await import('../store/authStore');
+      impersonating = useAuthStore.getState().isImpersonating;
+    } catch {}
     // If we get a 401 and haven't already tried to restore, try cookie-based restore
-    if (error.response?.status === 401 && !originalRequest._retried && !isRestoringSession 
+    if (error.response?.status === 401 && !impersonating && !originalRequest._retried && !isRestoringSession 
         && !originalRequest.url?.includes('/auth/me') && !originalRequest.url?.includes('/auth/login')) {
       originalRequest._retried = true;
       isRestoringSession = true;
@@ -240,6 +247,22 @@ export const authAPI = {
       new_password: newPassword 
     });
     return response.data;
+  },
+
+  // New-user activation: verify phone by text code, then set first password
+  activateRequest: async (identifier: string) => {
+    const response = await api.post('/auth/activate/request', { phone: identifier });
+    return response.data;
+  },
+
+  activateVerify: async (identifier: string, code: string) => {
+    const response = await api.post('/auth/activate/verify', { phone: identifier, code });
+    return response.data as { verified: boolean; email: string; first_name?: string };
+  },
+
+  activateComplete: async (identifier: string, code: string, newPassword: string) => {
+    const response = await api.post('/auth/activate/complete', { phone: identifier, code, new_password: newPassword });
+    return response.data as { message: string; email: string };
   },
 
   changePassword: async (userId: string, currentPassword: string, newPassword: string) => {

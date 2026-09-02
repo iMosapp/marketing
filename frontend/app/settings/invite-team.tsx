@@ -173,13 +173,14 @@ export default function InviteTeamScreen() {
   const getInviteText = () => {
     if (!inviteResult) return '';
     return (
-      `Welcome to I'm On Social, ${inviteResult.name}!\n\n` +
-      `Your login: ${inviteResult.email}\n` +
-      `Temp password: ${inviteResult.password}\n\n` +
-      `Download the app:\n` +
+      `Welcome to I'm On Social, ${inviteResult.name}! Your account is ready.\n\n` +
+      `1. Download the app:\n` +
       `Apple: https://apps.apple.com/app/im-on-social/id6743597907\n` +
-      `Android: https://play.google.com/store/apps/details?id=com.imonsocial.app\n\n` +
-      `Or log in at: https://app.imonsocial.com`
+      `Android: https://play.google.com/store/apps/details?id=com.imonsocial.app\n` +
+      `2. Tap "Activate my account" and enter this phone number.\n` +
+      `3. Enter the code we text you and choose your password.\n\n` +
+      `Login email: ${inviteResult.email}\n` +
+      `On a computer? https://app.imonsocial.com/auth/activate`
     );
   };
 
@@ -278,7 +279,7 @@ export default function InviteTeamScreen() {
               {inviteResult.sms_sent && (
                 <View style={[styles.successBanner, { marginBottom: 0 }]}>
                   <Ionicons name="chatbubble" size={16} color="#34C759" />
-                  <Text style={styles.successText}>SMS sent with login info &amp; app links</Text>
+                  <Text style={styles.successText}>Text sent with activation steps &amp; app links</Text>
                 </View>
               )}
               {inviteResult.contact_created && (
@@ -306,7 +307,7 @@ export default function InviteTeamScreen() {
                     showSimpleAlert('Copied', 'Password copied to clipboard');
                   } catch {}
                 }}>
-                  <Text style={styles.credLabel}>Password</Text>
+                  <Text style={styles.credLabel}>Backup password</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <Text style={[styles.credValue, { color: '#007AFF' }]} selectable>{inviteResult.password}</Text>
                     <Ionicons name="copy-outline" size={14} color="#007AFF" />
@@ -516,8 +517,8 @@ export default function InviteTeamScreen() {
             <View style={styles.smsToggleLeft}>
               <Ionicons name="chatbubble-outline" size={18} color={sendSms ? '#34C759' : colors.textSecondary} />
               <View>
-                <Text style={[styles.inputLabel, { marginBottom: 0 }]}>Send SMS with login info</Text>
-                <Text style={{ fontSize: 14, color: colors.textSecondary }}>App links + temp password via text</Text>
+                <Text style={[styles.inputLabel, { marginBottom: 0 }]}>Text activation steps</Text>
+                <Text style={{ fontSize: 14, color: colors.textSecondary }}>App links + "Activate my account" instructions via text</Text>
               </View>
             </View>
             <View style={[styles.toggle, sendSms && styles.toggleActive]}>

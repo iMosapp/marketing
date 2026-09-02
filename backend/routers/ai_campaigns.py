@@ -255,6 +255,16 @@ async def build_clone_system_prompt(user_id: str) -> str:
     if never_say_parts:
         prompt += f"\n\nNEVER say or write these phrases: {', '.join(never_say_parts)}"
 
+    # Contact-info rule: the dedicated business line is the ONLY number a customer ever gets
+    business_number = user.get("twilio_number") or user.get("mvpline_number")
+    if business_number:
+        from utils.text_sanitize import format_phone_display
+        prompt += (
+            f"\n\nPHONE NUMBER RULE: Your work number is {format_phone_display(business_number)}. "
+            f"If you ever tell the customer how to call or text you, give ONLY that number. "
+            f"Never share any other phone number, even if one appears earlier in the conversation."
+        )
+
     return prompt
 
 

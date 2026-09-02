@@ -14,6 +14,7 @@ from bson import ObjectId
 from fastapi import APIRouter, Query
 
 from routers.database import get_db
+from utils.photo_url import abs_photo_url, contact_photo_url
 
 router = APIRouter(prefix="/home", tags=["home"])
 logger = logging.getLogger(__name__)
@@ -44,12 +45,7 @@ async def weekly_wins(user_id: str):
 
 
 def _abs_photo(u: str) -> str:
-    if not u:
-        return ""
-    if u.startswith("http") or u.startswith("data:"):
-        return u
-    base = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
-    return f"{base}{u}"
+    return abs_photo_url(u)
 
 
 @router.get("/weekly-wins/{user_id}/list")
@@ -322,7 +318,7 @@ async def get_my_3(user_id: str, db, top_n: int = 3) -> list:
             "last_name":    contact.get("last_name", ""),
             "phone":        contact.get("phone", ""),
             "email":        contact.get("email", ""),
-            "photo_url":    contact.get("photo_url") or contact.get("photo_path") or "",
+            "photo_url":    contact_photo_url(contact),
             "reason_key":   reason_key,
             "reason_label": extra_label or meta.get("label", ""),
             "hook":         _personal_hook(contact),

@@ -206,17 +206,12 @@ async def enforce_user_ownership(request: Request, call_next):
         caller_id = payload.get("sub")
         caller_role = payload.get("role", "user") or "user"
     elif token.startswith("impersonate_"):
-        # Impersonation session
-        try:
-            session = await get_db().impersonation_sessions.find_one({"token": token})
-            if session:
-                uid = session.get("impersonated_user_id") or session.get("user_id")
-                if uid:
-                    caller_id = str(uid)
-                    # Impersonating admin can access anyone
-                    caller_role = "super_admin"
-        except Exception:
-            pass
+        from routers.rbac import resolve_impersonation_session
+        uid = await resolve_impersonation_session(token)
+        if uid:
+            caller_id = uid
+            # Impersonating admin can access anyone
+            caller_role = "super_admin"
 
     if not caller_id:
         return _JSONResponse({"detail": "Authentication required"}, status_code=401)

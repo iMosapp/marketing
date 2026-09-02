@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
-import { Image } from 'expo-image';
+import { Avatar } from '../components/Avatar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -29,7 +29,6 @@ export default function PeopleTodayScreen() {
 
   useEffect(() => { load(); }, [load]);
 
-  const initials = (p: any) => `${(p.first_name || '')[0] || ''}${(p.last_name || '')[0] || ''}`.toUpperCase() || '?';
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
@@ -60,13 +59,14 @@ export default function PeopleTodayScreen() {
           renderItem={({ item }) => (
             <View style={[st.card, { backgroundColor: colors.card, borderColor: colors.surface }]} testID={`people-today-item-${item.contact_id}`}>
               <TouchableOpacity style={st.rowTop} onPress={() => router.push(`/contact/${item.contact_id}` as any)} activeOpacity={0.7}>
-                <View style={[st.avatar, { backgroundColor: `${item.color || GOLD}22` }]}>
-                  {item.photo_url ? (
-                    <Image source={{ uri: item.photo_url }} style={[StyleSheet.absoluteFillObject, { borderRadius: 24 }]} contentFit="cover" cachePolicy="memory-disk" transition={150} />
-                  ) : (
-                    <Text style={{ color: item.color || GOLD, fontWeight: '800', fontSize: 16 }}>{initials(item)}</Text>
-                  )}
-                </View>
+                <Avatar
+                  photo={item.photo_url}
+                  name={`${item.first_name || ''} ${item.last_name || ''}`.trim()}
+                  sizePx={48}
+                  color={`${item.color || GOLD}22`}
+                  textStyle={{ color: item.color || GOLD, fontWeight: '800', fontSize: 16 }}
+                  style={st.avatar}
+                />
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }} numberOfLines={1}>
                     {`${item.first_name || ''} ${item.last_name || ''}`.trim() || item.phone || 'Contact'}

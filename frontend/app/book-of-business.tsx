@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
-import { Image } from 'expo-image';
+import { Avatar } from '../components/Avatar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -118,15 +118,14 @@ export default function BookOfBusinessScreen() {
                   onPress={() => router.push(`/contact/${item.contact_id}` as any)}
                   testID={`bob-item-${item.contact_id}`}
                 >
-                  <View style={[st.avatar, { backgroundColor: `${activeMeta?.color || GOLD}22` }]}>
-                    {item.photo_thumbnail ? (
-                      <Image source={{ uri: item.photo_thumbnail }} style={[StyleSheet.absoluteFillObject, { borderRadius: 22 }]} contentFit="cover" cachePolicy="memory-disk" transition={150} />
-                    ) : (
-                      <Text style={{ color: activeMeta?.color || GOLD, fontWeight: '800' }}>
-                        {`${(item.name || '?')[0]}`.toUpperCase()}
-                      </Text>
-                    )}
-                  </View>
+                  <Avatar
+                    photo={item.photo_thumbnail}
+                    name={item.name || '?'}
+                    sizePx={44}
+                    color={`${activeMeta?.color || GOLD}22`}
+                    textStyle={{ color: activeMeta?.color || GOLD, fontWeight: '800' }}
+                    style={st.avatar}
+                  />
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }} numberOfLines={1}>{item.name}</Text>
                     <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }} numberOfLines={1}>{item.reason}</Text>

@@ -867,6 +867,17 @@ function ThreadScreen() {
 
   const loadAISuggestion = async () => {
     if (!conversationId || aiMode === 'off') return;
+    // Jessi already has a draft waiting for approval on this thread: that IS the
+    // suggestion, so never stack the "Jessi suggests" popup on top of it.
+    if (pendingDraft) return;
+    if (user?._id) {
+      try {
+        const res = await api.get(`/ai-reply/pending/${user._id}`);
+        const items = res.data?.pending || [];
+        const convId = actualConversationId || conversationId;
+        if (items.some((it: any) => it.conversation_id === convId)) return;
+      } catch { /* non-fatal, fall through */ }
+    }
     
     try {
       setLoadingAI(true);
@@ -1161,6 +1172,7 @@ function ThreadScreen() {
       const items = res.data?.pending || [];
       const match = items.find((it: any) => it.conversation_id === convId) || null;
       setPendingDraft(match);
+      if (match) { setShowAISuggestion(false); }
       if (!match) { setDraftEditing(false); }
     } catch { /* non-fatal */ }
   };
@@ -2331,7 +2343,7 @@ function ThreadScreen() {
       )}
       
       {/* AI Suggestion */}
-      {showAISuggestion && aiMode !== 'off' && aiSuggestion.text && (
+      {showAISuggestion && !pendingDraft && aiMode !== 'off' && aiSuggestion.text && (
         <AISuggestion
           suggestion={aiSuggestion.text}
           intent={aiSuggestion.intent}
