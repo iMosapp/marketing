@@ -1,5 +1,12 @@
 # CHANGELOG — iMOs App
 
+## Jun 2026 — "You're Needed" push regression FIX (COMPLETED)
+- **Regression cause (mine):** in the first task I added `and not conv_full_auto` to the count-based "You're Needed" escalation in `routers/twilio_webhooks.py` to "avoid nagging in full auto". That block also contains the rep push + urgent SMS, so it silenced ALL those alerts for full-auto conversations (which is how the user runs everything). Pushes that "worked for months" stopped.
+- **Fix:** reverted that suppression — the count-based escalation + push + SMS fire again for everyone. Also removed the post-send full-auto self-heal reset in `routers/ai_reply.py` (it cleared needs_assistance/unanswered after each auto-reply, undermining escalations). "All Good" still clears via the update_conversation endpoint.
+- **Added:** scheduling/appointment holds now create a `you_are_needed` notification + push ("Approve Jessi's reply — {name}") so the rep knows a draft is waiting. Fact-topic + AI-suspicion pushes already fired from the hot-topic path.
+- **Note:** the PREVIEW database has 0 expo push tokens (normal — real device tokens live in PRODUCTION), so a live push can't be delivered from preview. Verified instead that the escalation logic + notification docs fire for fact/scheduling/count paths. Requires production redeploy to reach the user's phone.
+
+
 ## Jun 2026 — Fact-Topic Pause (reconciled with earlier full-auto change) (COMPLETED)
 - **User clarification:** until live inventory feeds exist, ANY fact-based question (inventory availability, pricing, financing, colors, models, trims) must get a brief "Let me check on that" and then Jessi must STOP responding until a human is involved. This overrides the earlier "full-auto answers everything" behavior for those topics.
 - **`routers/ai_reply.py`:**

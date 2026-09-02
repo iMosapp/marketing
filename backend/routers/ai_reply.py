@@ -329,7 +329,8 @@ async def queue_ai_reply(
     if is_fact_topic:
         is_scheduling = False
 
-    # Flag the conversation as Waiting when Jessi is holding an appointment draft.
+    # Flag the conversation as Waiting when Jessi is holding an appointment draft,
+    # and push the rep so they know a reply needs their approval.
     if is_scheduling:
         try:
             await db.conversations.update_one(
@@ -338,6 +339,32 @@ async def queue_ai_reply(
             )
         except Exception:
             pass
+        if assigned_user_id:
+            try:
+                _c = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"first_name": 1, "last_name": 1, "name": 1})
+                _cn = ((_c or {}).get("name") or f"{(_c or {}).get('first_name','')} {(_c or {}).get('last_name','')}".strip() or "A customer")
+                await db.notifications.insert_one({
+                    "user_id":         assigned_user_id,
+                    "type":            "you_are_needed",
+                    "priority":        "urgent",
+                    "title":           f"Approve Jessi's reply — {_cn}",
+                    "message":         f"{_cn} wants to set a time. Jessi drafted a reply that needs your OK before it sends.",
+                    "contact_id":      contact_id,
+                    "conversation_id": conversation_id,
+                    "read":            False,
+                    "dismissed":       False,
+                    "created_at":      datetime.utcnow(),
+                })
+                from routers.push_notifications import send_push_to_user
+                asyncio.create_task(send_push_to_user(
+                    assigned_user_id,
+                    f"Approve Jessi's reply — {_cn}",
+                    f"\"{(incoming_message or '')[:70]}\" — tap to review and send.",
+                    f"/thread/{conversation_id}",
+                    "calendar",
+                ))
+            except Exception:
+                pass
 
     # If the question is inventory/pricing-related (not AI-suspicion), try LIVE
     # inventory first — Jessi can answer with real availability and pricing.
@@ -865,27 +892,6 @@ async def process_ai_reply_queue():
                         {"_id": ObjectId(item["conversation_id"]),
                          "$or": [{"ai_enabled": {"$ne": True}}, {"ai_mode": {"$in": [None, "", "off"]}}]},
                         {"$set": {"ai_enabled": True, "ai_mode": item["ai_mode_used"]}}
-                    )
-                except Exception:
-                    pass
-
-            # Full-auto self-heal: when Jessi answers in full auto_reply mode, she has
-            # HANDLED this exchange. Clear the Waiting/You're-Needed state and dismiss any
-            # lingering alerts so the conversation stays with Jessi and doesn't look like
-            # it was handed to a human. Skip for hot-topic escalations (AI-suspicion) and
-            # approval-gated drafts, which genuinely need the rep.
-            if (item.get("conversation_id")
-                    and item.get("ai_mode_used") == AI_MODE_AUTO_REPLY
-                    and not item.get("requires_approval")
-                    and not item.get("hot_topic_escalation")):
-                try:
-                    await db.conversations.update_one(
-                        {"_id": ObjectId(item["conversation_id"])},
-                        {"$set": {"needs_assistance": False, "unanswered_customer_replies": 0}}
-                    )
-                    await db.notifications.update_many(
-                        {"conversation_id": item["conversation_id"], "type": "you_are_needed", "dismissed": {"$ne": True}},
-                        {"$set": {"dismissed": True, "read": True}}
                     )
                 except Exception:
                     pass

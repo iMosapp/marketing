@@ -3491,7 +3491,7 @@ function ThreadScreen() {
                           secondary_id: secondaryId,
                         });
                         const moved = mergeRes.data?.messages_moved || 0;
-                        showToast(`Merged — ${moved} message${moved !== 1 ? 's' : ''} combined`, 'success');
+                        showSimpleAlert('Merged', `${moved} message${moved !== 1 ? 's' : ''} combined`);
                         // Navigate to the primary (kept) conversation, not the closed one
                         setTimeout(() => {
                           if (convId === primaryId) {

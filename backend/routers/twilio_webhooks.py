@@ -801,12 +801,7 @@ async def incoming_message(
 
         effective_reply_count = max(max_reply_count, conv_unanswered)
 
-        # In full auto mode ("Jessi is handling this"), the rep asked Jessi to answer
-        # everything herself, so don't nag with count-based "You're Needed" escalations.
-        # Content-based escalations (AI suspicion) still fire from queue_ai_reply.
-        conv_full_auto = _conv_mode == "auto_reply"
-
-        if effective_reply_count >= urn_threshold and not is_stop and user_id and not is_satisfied and not conv_full_auto:
+        if effective_reply_count >= urn_threshold and not is_stop and user_id and not is_satisfied:
             try:
                 cname_esc = contact.get("name") or f"{contact.get('first_name','')} {contact.get('last_name','')}".strip() or from_phone
                 # If the stored name is a generic auto-generated "Lead (XXXX)", try to find
