@@ -218,7 +218,7 @@ function ContactDetailScreen() {
   const EVENT_PAGE_SIZE = 100;
 
   // Tab state for Feed vs Details
-  const [contactTab, setContactTab] = useState<'feed' | 'details' | 'calls'>('feed');
+  const [contactTab, setContactTab] = useState<'feed' | 'details' | 'calls'>('details');
   const [callLogs, setCallLogs] = useState<any[]>([]);
   const [callLogsLoading, setCallLogsLoading] = useState(false);
 
@@ -2568,16 +2568,9 @@ function ContactDetailScreen() {
             />
           )}
 
-          {/* ===== FEED / DETAILS / CALLS TAB BAR ===== */}
+          {/* ===== DETAILS / CALLS / FEED TAB BAR ===== */}
           {!isNewContact && !isEditing && (
             <View style={s.tabBar} data-testid="contact-tab-bar">
-              <TouchableOpacity
-                style={[s.tabBtn, contactTab === 'feed' && s.tabBtnActive]}
-                onPress={() => setContactTab('feed')}
-                data-testid="tab-feed"
-              >
-                <Text style={[s.tabBtnText, contactTab === 'feed' && s.tabBtnTextActive]}>Feed</Text>
-              </TouchableOpacity>
               <TouchableOpacity
                 style={[s.tabBtn, contactTab === 'details' && s.tabBtnActive]}
                 onPress={() => setContactTab('details')}
@@ -2603,6 +2596,13 @@ function ContactDetailScreen() {
                 data-testid="tab-calls"
               >
                 <Text style={[s.tabBtnText, contactTab === 'calls' && s.tabBtnTextActive]}>Calls</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.tabBtn, contactTab === 'feed' && s.tabBtnActive]}
+                onPress={() => setContactTab('feed')}
+                data-testid="tab-feed"
+              >
+                <Text style={[s.tabBtnText, contactTab === 'feed' && s.tabBtnTextActive]}>Feed</Text>
               </TouchableOpacity>
             </View>
           )}
