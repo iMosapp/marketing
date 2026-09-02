@@ -22,6 +22,7 @@ import api from '../../../services/api';
 import { useToast } from '../../../components/common/Toast';
 
 import { useThemeStore } from '../../../store/themeStore';
+import { ContactModeToggle, LeadCallLadder, WebsiteFormRouting, type CallAttempt } from '../../../components/admin/LeadWorkflowControls';
 const IS_WEB = Platform.OS === 'web';
 
 interface LeadSource {
@@ -117,7 +118,12 @@ export default function LeadSourceDetailScreen() {
     auto_call_on_claim: false,
     claim_timeout_minutes: 5,
     notify_all_on_intake: true,
+    contact_mode: 'text_only' as 'text_only' | 'text_and_call',
+    call_attempts: [] as CallAttempt[],
+    website_default: false,
+    website_pages: [] as string[],
   });
+  const [websitePages, setWebsitePages] = useState<{ pages: string[]; routed: Record<string, { id: string; name: string }> }>({ pages: [], routed: {} });
   const [workflowUsers, setWorkflowUsers] = useState<any[]>([]);  // All reps to choose from
   const [vaProfiles, setVaProfiles] = useState<any[]>([]);
   const [savingWorkflow, setSavingWorkflow] = useState(false);
@@ -155,21 +161,24 @@ export default function LeadSourceDetailScreen() {
   });
 
   useEffect(() => {
-    if (id) {
+    // Wait for auth to hydrate: several requests need user._id (direct URL loads used to 404)
+    if (id && user?._id) {
       fetchData();
     }
-  }, [id]);
+  }, [id, user?._id]);
 
   const fetchData = async () => {
     try {
-      const [sourceRes, statsRes, teamsRes, workflowRes, usersRes, vaRes] = await Promise.all([
+      const [sourceRes, statsRes, teamsRes, workflowRes, usersRes, vaRes, pagesRes] = await Promise.all([
         api.get(`/lead-sources/${id}`),
         api.get(`/lead-sources/stats/${id}`),
         api.get(`/admin/team/shared-inboxes?user_id=${user?._id}`),
         api.get(`/lead-sources/${id}/workflow`).catch(() => ({ data: {} })),
         api.get(`/admin/team/users?user_id=${user?._id}`, { headers: { 'X-User-ID': user?._id } }).catch(() => ({ data: [] })),
         api.get('/va-profiles', { headers: { 'X-User-ID': user?._id } }).catch(() => ({ data: { profiles: [] } })),
+        api.get('/lead-sources/website-pages').catch(() => ({ data: { pages: [], routed: {} } })),
       ]);
+      if (pagesRes.data?.pages) setWebsitePages(pagesRes.data);
       
       if (sourceRes.data.success) {
         const sourceData = sourceRes.data.lead_source;
@@ -665,7 +674,7 @@ export default function LeadSourceDetailScreen() {
               <View>
                 <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Response Workflow</Text>
                 <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
-                  {workflow.intake_text ? '✓ Intake text set' : 'No intake text'} · {workflow.workflow_user_ids.length} reps · {workflow.auto_call_on_claim ? 'Auto-call on' : 'No auto-call'}
+                  {workflow.intake_text ? '✓ Intake text set' : 'No intake text'} · {workflow.workflow_user_ids.length} reps · {workflow.contact_mode === 'text_and_call' ? `Text + Call (${workflow.call_attempts.length} attempts)` : 'Text only'}{workflow.website_default ? ' · Website catch-all' : workflow.website_pages.length ? ` · ${workflow.website_pages.length} web pages` : ''}
                 </Text>
               </View>
             </View>
@@ -730,6 +739,38 @@ export default function LeadSourceDetailScreen() {
                   );
                 })}
               </View>
+
+              {/* ── Customer contact mode + call ladder ───────────── */}
+              <ContactModeToggle
+                value={workflow.contact_mode}
+                onChange={v => setWorkflow(prev => ({
+                  ...prev,
+                  contact_mode: v,
+                  call_attempts: v === 'text_and_call' && prev.call_attempts.length === 0
+                    ? [{ user_ids: [...prev.workflow_user_ids], delay_seconds: 60 }]
+                    : prev.call_attempts,
+                }))}
+                colors={colors}
+              />
+              {workflow.contact_mode === 'text_and_call' && (
+                <LeadCallLadder
+                  attempts={workflow.call_attempts}
+                  reps={workflowUsers.filter((u: any) => u.role !== 'super_admin' || u._id === user?._id)}
+                  onChange={a => setWorkflow(prev => ({ ...prev, call_attempts: a }))}
+                  colors={colors}
+                />
+              )}
+
+              {/* ── Website form routing ──────────────────────────── */}
+              <WebsiteFormRouting
+                isDefault={workflow.website_default}
+                pages={workflow.website_pages}
+                allPages={websitePages.pages}
+                routed={websitePages.routed}
+                sourceId={String(id)}
+                onChange={patch => setWorkflow(prev => ({ ...prev, ...patch }))}
+                colors={colors}
+              />
 
               {/* ── Auto-Call Toggle ──────────────────────────────── */}
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 }}>

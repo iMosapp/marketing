@@ -630,6 +630,8 @@ api_router.include_router(reports.router)
 api_router.include_router(broadcast.router)
 api_router.include_router(lead_sources.router)
 api_router.include_router(lead_intake.router)
+from routers import lead_call_webhooks
+api_router.include_router(lead_call_webhooks.router)
 api_router.include_router(ai_reply.router)
 api_router.include_router(home_intelligence.router)
 api_router.include_router(relationship_health.router)

@@ -158,3 +158,8 @@ DELIVERY: backend deploy + eas update --branch production.
 
 ## Push alerts investigation (June 2026) - OPEN
 - iPhone alerts stopped (prod). Built Push Health Check (Settings -> Notifications) + /api/push/diagnose endpoints so the cause can be read off the device after deploy. See CHANGELOG. Root cause on production not yet confirmed.
+
+## Lead Call Engine + website form routing (June 2026) - DONE (backend tested 20/20, UI smoke-tested)
+- Marketing Book a Demo forms -> Lead Source (page-specific or catch-all) -> contact/thread with attribution -> intake text -> push -> CallDrip ladder (<=4 attempts, press 1 to claim, whisper, bridge). Config in Admin -> Lead Sources -> Response Workflow.
+- Also fixed: CORS for marketing forms (PathAwareCORS), lead-sources auth.
+- Next ideas: business-hours gate for ladder, attempt timeline on the thread, per-source response-time analytics using attribution.

@@ -17,6 +17,10 @@ from routers.database import get_db
 router = APIRouter(prefix="/demo-requests", tags=["demo-requests"])
 logger = logging.getLogger(__name__)
 
+
+class _AlreadyRouted(Exception):
+    """Control-flow marker: a Lead Source workflow already handled this demo request."""
+
 _RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 _SALES_EMAIL    = os.environ.get("SALES_EMAIL", os.environ.get("ADMIN_EMAIL", "sales@imonsocial.com"))
 
@@ -175,6 +179,58 @@ async def _email_new_lead(demo: dict, conv_id: str = "") -> None:
         logger.info(f"[DemoRequest] Lead email sent to {_SALES_EMAIL} for {name}")
     except Exception as e:
         logger.error(f"[DemoRequest] Lead email failed: {e}")
+
+
+async def _find_website_lead_source(db, page: str) -> Optional[dict]:
+    """A lead source that explicitly claims this marketing page, else the website catch-all."""
+    base = {"is_active": {"$ne": False}}
+    if page and page != "unknown":
+        src = await db.lead_sources.find_one({**base, "website_pages": page})
+        if src:
+            return src
+    return await db.lead_sources.find_one({**base, "website_default": True})
+
+
+async def _route_demo_to_lead_source(demo: dict, source: dict) -> str:
+    """Push a website form into the full Lead Source pipeline (contact, thread, intake text,
+    rep push, and the Text + Call ladder). Returns the conversation id."""
+    from routers.lead_intake import process_inbound_lead
+    name_parts = (demo.get("name") or "").strip().split(" ", 1)
+    page = demo.get("source_page") or "website"
+    page_label = page.replace("_", " ").title()
+    for raw, nice in (("Os", "OS"), ("Tiktok", "TikTok"), ("Sms", "SMS"), ("Appdirectory", "App Directory"), ("Seo", "SEO"), ("Imonsocial", "I'm On Social")):
+        page_label = page_label.replace(raw, nice)
+    page_label = f"the {page_label} page"
+    normalized = {
+        "first_name":       name_parts[0] if name_parts else "",
+        "last_name":        name_parts[1] if len(name_parts) > 1 else "",
+        "full_name":        demo.get("name", ""),
+        "phone":            demo.get("phone", ""),
+        "email":            demo.get("email", ""),
+        "company":          demo.get("company", ""),
+        "industry":         demo.get("business_type", ""),
+        "vehicle_interest": "Demo request",
+        "comments":         demo.get("message", ""),
+        "source_name":      source.get("name", "Website"),
+        "attribution": {
+            "kind":            "website_form",
+            "source":          demo.get("source", ""),
+            "page":            page,
+            "source_label":    page_label,
+            "position":        demo.get("source_position", ""),
+            "channel":         demo.get("channel", ""),
+            "utm_source":      demo.get("utm_source", ""),
+            "utm_medium":      demo.get("utm_medium", ""),
+            "utm_campaign":    demo.get("utm_campaign", ""),
+            "utm_content":     demo.get("utm_content", ""),
+            "utm_term":        demo.get("utm_term", ""),
+            "referrer":        demo.get("referrer", ""),
+            "referred_by":     demo.get("referred_by_name", ""),
+            "demo_request_id": demo.get("demo_request_id", ""),
+        },
+    }
+    result = await process_inbound_lead(normalized, source, get_db())
+    return result.get("conversation_id", "")
 
 
 async def _route_demo_to_inbox(demo: dict) -> None:
@@ -358,12 +414,32 @@ async def create_demo_request(data: dict):
     # NOTE: Fired AFTER conversation is created below so we can pass the thread link.
     # _email_and_route is called at the bottom with conv_id.
 
-    # === ROUTE TO SHARED INBOX (if one is configured to receive website leads) ===
-    asyncio.create_task(_route_demo_to_inbox(demo))
-
-    # === CREATE CONTACT + INBOX THREAD FOR FAST RESPONSE ===
+    # === ROUTE TO A LEAD SOURCE WORKFLOW (page-specific, else website catch-all) ===
     conv_id = ""  # will be set if conversation is created successfully
+    routed_source = None
+    if demo.get("phone") or demo.get("email"):
+        try:
+            routed_source = await _find_website_lead_source(db, demo.get("source_page", ""))
+            if routed_source:
+                conv_id = await _route_demo_to_lead_source({**demo, "demo_request_id": demo_id}, routed_source)
+                await db.demo_requests.update_one(
+                    {"_id": ObjectId(demo_id)},
+                    {"$set": {"lead_source_id": str(routed_source["_id"]), "lead_source_name": routed_source.get("name"),
+                              "conversation_id": conv_id}},
+                )
+                logger.info(f"[DemoRequest] Routed '{lead_name}' ({demo.get('source_page')}) -> lead source {routed_source.get('name')} conv={conv_id}")
+        except Exception as route_err:
+            logger.warning(f"[DemoRequest] Lead source routing failed, falling back: {route_err}")
+            routed_source, conv_id = None, ""
+
+    # === ROUTE TO SHARED INBOX (legacy; only when no lead source handled it) ===
+    if not routed_source:
+        asyncio.create_task(_route_demo_to_inbox(demo))
+
+    # === CREATE CONTACT + INBOX THREAD FOR FAST RESPONSE (legacy path) ===
     try:
+        if routed_source:
+            raise _AlreadyRouted()
         # Pretty source name for display
         source_labels = {
             "seo_page": "SEO & AEO", "store_reviews_page": "Store Reviews",
@@ -491,6 +567,15 @@ async def create_demo_request(data: dict):
                 except Exception:
                     pass
 
+    except _AlreadyRouted:
+        # Lead source pipeline already built the contact + thread; point admin pushes at it
+        _app_url = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+        for uid in notify_user_ids:
+            try:
+                from routers.push_notifications import send_push_to_user as _push
+                asyncio.create_task(_push(uid, f"New Lead: {lead_name}", notif_body, f"{_app_url}/thread/{conv_id}", "person.fill.badge.plus"))
+            except Exception:
+                pass
     except Exception as e:
         # Don't fail the demo request if inbox creation fails
         import traceback

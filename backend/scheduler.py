@@ -1949,6 +1949,16 @@ def start_scheduler():
         misfire_grace_time=60,
     )
 
+    # Every 15 seconds — CallDrip-style rep dialing ladder for Text + Call lead sources
+    from services.lead_call_engine import process_lead_call_jobs as _lead_calls
+    scheduler.add_job(
+        safe_job(_lead_calls),
+        IntervalTrigger(seconds=15),
+        id="lead_call_engine",
+        replace_existing=True,
+        misfire_grace_time=30,
+    )
+
     # Every 60 seconds — send due AI reply queue items (60s is invisible to users vs 30s)
     from routers.ai_reply import process_ai_reply_queue as _process_ai_queue
     scheduler.add_job(

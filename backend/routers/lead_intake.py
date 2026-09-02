@@ -623,6 +623,7 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         "matched_inventory": matched_vehicle,
         "media_urls":        lead_media,
         "extra_fields":      normalized.get("extra_fields", {}),
+        "attribution":       normalized.get("attribution") or None,
         "assigned_to":       assigned_user_id,
         "draft_message":     first_message,
         "scheduled_send_at": scheduled_send_at,
@@ -653,6 +654,7 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         "ai_mode":          "assist",
         "draft_message":    first_message,
         "is_internet_lead": True,
+        "attribution":      normalized.get("attribution") or None,
         "created_at":       now,
         "updated_at":       now,
         "last_message_at":  now,
@@ -1890,6 +1892,27 @@ async def _fire_intake_workflow(source, lead_doc, conv_id, contact_id, phone_e16
                             pass
                 except Exception as notif_err:
                     logger.debug(f"[IntakeWorkflow] Notification failed for {uid}: {notif_err}")
+
+        # ── 3. Text + Call: start the CallDrip-style rep dialing ladder ──────
+        if source.get("contact_mode") == "text_and_call" and phone_e164:
+            try:
+                from services.lead_call_engine import start_call_workflow
+                attribution = normalized.get("attribution") or {}
+                lead_summary = {
+                    "name":         normalized.get("full_name") or f"{normalized.get('first_name','')} {normalized.get('last_name','')}".strip(),
+                    "source_label": attribution.get("source_label") or source_name,
+                    "company":      normalized.get("company", ""),
+                    "industry":     normalized.get("industry", ""),
+                    "interest":     normalized.get("vehicle_interest", ""),
+                    "comments":     normalized.get("comments", ""),
+                }
+                await start_call_workflow(
+                    source=source, conversation_id=conv_id, contact_id=contact_id,
+                    customer_phone=phone_e164, lead=lead_summary,
+                    assigned_user_id=lead_doc.get("assigned_to"),
+                )
+            except Exception as call_err:
+                logger.warning(f"[IntakeWorkflow] Call engine start failed: {call_err}")
 
         logger.info(f"[IntakeWorkflow] Complete for {phone_e164} | reps_notified={len(notif_recipients if notify_all and workflow_user_ids else workflow_user_ids)}/{len(workflow_user_ids)}")
     except Exception as e:

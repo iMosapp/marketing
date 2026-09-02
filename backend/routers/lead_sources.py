@@ -1,7 +1,7 @@
 """
 Lead Sources Router - Manages lead sources, webhooks, and routing logic
 """
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends
 from pydantic import BaseModel, Field
 from typing import Optional, List, Literal
 from datetime import datetime, timezone
@@ -14,7 +14,35 @@ from routers.database import get_db
 from routers.notifications import create_notification, create_team_notifications
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/lead-sources", tags=["Lead Sources"])
+
+MANAGER_ROLES = {"super_admin", "admin", "org_admin", "store_manager", "manager"}
+
+
+async def require_user(request: Request) -> dict:
+    """Every lead-source route needs a logged-in user, except the API-key protected /inbound webhook."""
+    if "/lead-sources/inbound/" in request.url.path:
+        return {}
+    from routers.admin_helpers import get_requesting_user
+    user = await get_requesting_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    request.state.user = user
+    return user
+
+
+async def require_manager(request: Request) -> dict:
+    user = await require_user(request)
+    if user.get("role") not in MANAGER_ROLES:
+        raise HTTPException(status_code=403, detail="Manager or admin role required")
+    return user
+
+
+def _assert_self_or_manager(user: dict, user_id: str):
+    if str(user.get("_id")) != str(user_id) and user.get("role") not in MANAGER_ROLES:
+        raise HTTPException(status_code=403, detail="You can only claim leads as yourself")
+
+
+router = APIRouter(prefix="/lead-sources", tags=["Lead Sources"], dependencies=[Depends(require_user)])
 
 # Models
 class LeadSourceCreate(BaseModel):
@@ -42,6 +70,12 @@ class InboundLead(BaseModel):
     vehicle_interest: Optional[str] = None
     custom_fields: Optional[dict] = None
 
+class CallAttempt(BaseModel):
+    """One rung of the rep escalation ladder: who rings, and how long after the previous attempt."""
+    user_ids: List[str] = []
+    delay_seconds: int = 60
+
+
 class WorkflowConfig(BaseModel):
     """Configuration for automated lead response workflow."""
     intake_text: str = ""                       # Template with {{first_name}}, {{vehicle}}, etc.
@@ -53,6 +87,19 @@ class WorkflowConfig(BaseModel):
     auto_call_on_claim: bool = False            # Auto-dial customer when rep claims
     claim_timeout_minutes: int = 5             # Before escalating to next rep
     notify_all_on_intake: bool = True           # Blast all workflow reps with push
+    contact_mode: Literal["text_only", "text_and_call"] = "text_only"
+    call_attempts: List[CallAttempt] = []       # Up to 4 attempts (CallDrip-style rep dialing)
+    website_default: bool = False               # Catch-all for marketing "Book a Demo" forms
+    website_pages: List[str] = []               # Specific marketing pages routed here
+
+
+# Marketing pages that post Book a Demo forms (source like "pricing_hero" -> page "pricing")
+WEBSITE_PAGES = [
+    "homepage", "pricing", "features", "relationship_os", "why_imonsocial", "presentation",
+    "calendar_systems", "calendar_systems_dealers", "insurance", "tiktok", "outreach",
+    "appdirectory", "training", "sms_terms", "ad_showcase", "ad_autopilot", "dealers",
+    "organizations", "individuals", "digital_card", "showcase", "seo", "store_reviews",
+]
 
 MERGE_FIELDS = ["first_name", "last_name", "full_name", "vehicle", "year", "make", "model", "lead_source", "phone", "rep_name"]
 
@@ -76,6 +123,7 @@ def hydrate_intake_text(template: str, lead_data: dict, source_name: str = "", r
     }
     for key, value in replacements.items():
         text = text.replace(f"{{{{{key}}}}}", str(value))
+        text = text.replace(f"{{{key}}}", str(value))  # single-brace {first_name} works too
     return text.strip()
 
 def serialize_lead_source(source: dict) -> dict:
@@ -113,13 +161,17 @@ def serialize_lead_source(source: dict) -> dict:
             "auto_call_on_claim":      source.get("auto_call_on_claim", False),
             "claim_timeout_minutes":   source.get("claim_timeout_minutes", 5),
             "notify_all_on_intake":    source.get("notify_all_on_intake", True),
+            "contact_mode":            source.get("contact_mode", "text_only"),
+            "call_attempts":           source.get("call_attempts", []),
+            "website_default":         source.get("website_default", False),
+            "website_pages":           source.get("website_pages", []),
         },
     }
 
 # ============ LEAD SOURCE MANAGEMENT ============
 
 @router.post("")
-async def create_lead_source(source: LeadSourceCreate, store_id: str, organization_id: Optional[str] = None):
+async def create_lead_source(source: LeadSourceCreate, store_id: str, organization_id: Optional[str] = None, _m: dict = Depends(require_manager)):
     """Create a new lead source for a store"""
     db = get_db()
     
@@ -277,6 +329,21 @@ async def get_lead_source_stats(source_id: str):
         }
     }
 
+@router.get("/website-pages")
+async def list_website_pages():
+    """Known marketing pages (static list + anything seen in demo requests) for the routing UI."""
+    db = get_db()
+    seen = await db.demo_requests.distinct("source_page")
+    pages = list(dict.fromkeys(WEBSITE_PAGES + [p for p in seen if p and p != "unknown"]))
+    routed = {}
+    async for src in db.lead_sources.find({"$or": [{"website_default": True}, {"website_pages.0": {"$exists": True}}]}, {"name": 1, "website_default": 1, "website_pages": 1}):
+        for p in src.get("website_pages", []):
+            routed[p] = {"id": str(src["_id"]), "name": src.get("name")}
+        if src.get("website_default"):
+            routed["__default__"] = {"id": str(src["_id"]), "name": src.get("name")}
+    return {"pages": pages, "routed": routed}
+
+
 @router.get("/{source_id}")
 async def get_lead_source(source_id: str):
     """Get a specific lead source"""
@@ -292,7 +359,7 @@ async def get_lead_source(source_id: str):
     }
 
 @router.patch("/{source_id}")
-async def update_lead_source(source_id: str, updates: LeadSourceUpdate):
+async def update_lead_source(source_id: str, updates: LeadSourceUpdate, _m: dict = Depends(require_manager)):
     """Update a lead source"""
     db = get_db()
     
@@ -317,7 +384,7 @@ async def update_lead_source(source_id: str, updates: LeadSourceUpdate):
     }
 
 @router.delete("/{source_id}")
-async def delete_lead_source(source_id: str):
+async def delete_lead_source(source_id: str, _m: dict = Depends(require_manager)):
     """Delete a lead source"""
     db = get_db()
     
@@ -576,8 +643,9 @@ async def receive_inbound_lead(source_id: str, lead: InboundLead, request: Reque
 # ============ CLAIM LEAD (for Jump Ball) ============
 
 @router.post("/claim/{conversation_id}")
-async def claim_lead(conversation_id: str, user_id: str):
+async def claim_lead(conversation_id: str, user_id: str, request: Request):
     """Claim an unclaimed lead (for jump ball assignment)"""
+    _assert_self_or_manager(request.state.user, user_id)
     db = get_db()
     
     conversation = await db.conversations.find_one({"_id": ObjectId(conversation_id)})
@@ -594,6 +662,7 @@ async def claim_lead(conversation_id: str, user_id: str):
             "claimed": True,
             "claimed_by": user_id,
             "assigned_to": user_id,
+            "claim_source": "app",
             "claimed_at": datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }}
@@ -601,6 +670,10 @@ async def claim_lead(conversation_id: str, user_id: str):
     
     if result.modified_count == 0:
         raise HTTPException(status_code=400, detail="Could not claim lead - may already be claimed")
+
+    # Stop the phone dialing ladder, if one is running for this lead
+    from services.lead_call_engine import mark_claimed
+    await mark_claimed(conversation_id, user_id, via="app")
     
     # Also update the contact to be owned by this user so it appears in their contacts
     if conversation.get("contact_id"):
@@ -644,37 +717,40 @@ async def get_workflow_config(source_id: str):
 
 
 @router.put("/{source_id}/workflow")
-async def save_workflow_config(source_id: str, config: WorkflowConfig):
+async def save_workflow_config(source_id: str, config: WorkflowConfig, _m: dict = Depends(require_manager)):
     """Save the workflow automation config for a lead source."""
     db = get_db()
     source = await db.lead_sources.find_one({"_id": ObjectId(source_id)})
     if not source:
         raise HTTPException(status_code=404, detail="Lead source not found")
-    await db.lead_sources.update_one(
-        {"_id": ObjectId(source_id)},
-        {"$set": {
-            "intake_text":             config.intake_text,
-            "intake_delay_seconds":    config.intake_delay_seconds,
-            "va_enabled":              config.va_enabled,
-            "va_profile_id":           config.va_profile_id,
-            "va_prompt_override":      config.va_prompt_override,
-            "workflow_user_ids":       config.workflow_user_ids,
-            "auto_call_on_claim":      config.auto_call_on_claim,
-            "claim_timeout_minutes":   config.claim_timeout_minutes,
-            "notify_all_on_intake":    config.notify_all_on_intake,
-            "updated_at":              datetime.now(timezone.utc),
-        }}
-    )
+    # Only touch fields the client actually sent (a partial save must not reset the VA or wipe the ladder)
+    updates = config.dict(exclude_unset=True)
+    if "call_attempts" in updates:
+        updates["call_attempts"] = [
+            {"user_ids": a.get("user_ids", []), "delay_seconds": max(30, int(60 if a.get("delay_seconds") is None else a["delay_seconds"]))}
+            for a in updates["call_attempts"][:4]
+        ]
+    updates["updated_at"] = datetime.now(timezone.utc)
+    await db.lead_sources.update_one({"_id": ObjectId(source_id)}, {"$set": updates})
+    if config.website_default:
+        # Only one catch-all for website forms
+        await db.lead_sources.update_many(
+            {"_id": {"$ne": ObjectId(source_id)}, "website_default": True},
+            {"$set": {"website_default": False}},
+        )
     return {"success": True, "message": "Workflow config saved"}
 
 
+
+
 @router.post("/claim-and-call/{conversation_id}")
-async def claim_and_call(conversation_id: str, user_id: str):
+async def claim_and_call(conversation_id: str, user_id: str, request: Request):
     """
     Claim a lead AND immediately call the customer.
     Called when a rep taps 'Claim & Call' on a Jump Ball lead.
     """
     import os, asyncio as _aio
+    _assert_self_or_manager(request.state.user, user_id)
     db = get_db()
 
     conv = await db.conversations.find_one({"_id": ObjectId(conversation_id)})
@@ -684,8 +760,10 @@ async def claim_and_call(conversation_id: str, user_id: str):
     # Claim the conversation
     await db.conversations.update_one(
         {"_id": ObjectId(conversation_id)},
-        {"$set": {"claimed": True, "claimed_by": user_id, "claimed_at": datetime.now(timezone.utc)}}
+        {"$set": {"claimed": True, "claimed_by": user_id, "claimed_at": datetime.now(timezone.utc), "claim_source": "app"}}
     )
+    from services.lead_call_engine import mark_claimed
+    await mark_claimed(conversation_id, user_id, via="app")
 
     # Get lead source workflow config for auto_call setting
     source_id = conv.get("lead_source_id")
