@@ -156,6 +156,11 @@ DELIVERY: backend deploy + eas update --branch production.
 - USER TESTING PENDING (frontend): impersonate flow, /auth/activate e2e, first-login Set Password, admin create-user modal copy, thread popup suppression, marketing section.
 - Backlog: rotate production secrets; Wallet cert (.p12) parked; HomeNet/vAuto feed; Zapier instructions.
 
+## Home "Do This Next" / "3 for Today" Skip + auto-complete (June 2026) - DONE, verified in preview, awaiting production deploy
+- Backend home_intelligence.py: db.home_daily_picks (stable per-day picks), db.home_action_state {user_id, day, key, status done|dismissed}. POST /api/home/{uid}/my3/done and /my3/dismiss; dismiss pulls in a replacement pick. `done` auto-derived from _touched_today (outbound contact_events + outbound messages today) so texting from contact card/inbox/cards completes the item. GET /api/home/{uid} returns my_3[].done + dismissed_keys.
+- Frontend home.tsx: Skip on each My-3 card (my3-skip-*), Done check (my3-done-*), Skip on Do This Next (next-move-skip; keys hot:{id} / overdue / pending_tasks / contact_id). Re-verified via curl June 2026 (dismiss -> replacement filled; done flag from outbound text).
+- User chose to deploy + test on phone. Ship: backend Deploy + `eas update --branch production`.
+
 ## Push alerts investigation (June 2026) - OPEN
 - iPhone alerts stopped (prod). Built Push Health Check (Settings -> Notifications) + /api/push/diagnose endpoints so the cause can be read off the device after deploy. See CHANGELOG. Root cause on production not yet confirmed.
 
