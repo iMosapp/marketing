@@ -10,7 +10,7 @@ import { IntelRenderer } from '../../utils/contactHelpers';
 const GOLD = '#C9A962';
 const SECTIONS = ['Quick Take', 'Key Facts', 'Communication Patterns', 'Personal Notes', 'Before Your Next Interaction'];
 
-function parseSections(text: string): Record<string, string[]> {
+export function parseSections(text: string): Record<string, string[]> {
   const out: Record<string, string[]> = {};
   let current = '';
   text.split('\n').map(l => l.trim()).filter(Boolean).forEach(line => {

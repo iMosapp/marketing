@@ -82,7 +82,7 @@ export default function DetailsTab(props: any) {
     voiceNotes, voiceNotesLoading, isRecording, recordingTime, uploadingVoiceNote,
     playingNoteId, showAllNotes, startRecording, stopRecording, playVoiceNote,
     deleteVoiceNote, formatRecordingTime, maxRecordingSeconds,
-    referrals, contactEnrollments, toggleDateOptin, reloadContact,
+    referrals, contactEnrollments, toggleDateOptin, reloadContact, header,
   } = props;
   const router = useRouter();
   const [bdayModalOpen, setBdayModalOpen] = useState(false);
@@ -100,6 +100,9 @@ export default function DetailsTab(props: any) {
 
   return (
     <>
+      {/* Relationship Intel brief + action tracker (passed in from the screen) */}
+      {header}
+
       {/* Voice Notes — full history, all visible */}
       <View style={[s.section, { paddingTop: 4 }]} data-testid="voice-notes-section">
           <View style={s.sectionHeaderRow}>

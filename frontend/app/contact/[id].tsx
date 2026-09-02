@@ -63,6 +63,7 @@ import DateModals from '../../components/contact/DateModals';
 import AddTaskModal from '../../components/contact/AddTaskModal';
 import GalleryModal from '../../components/contact/GalleryModal';
 import IntelBriefingCard from '../../components/contact/IntelBriefingCard';
+import IntelTeaser from '../../components/contact/IntelTeaser';
 import { HealthBadge } from '../../components/contact/HealthBadge';
 import QuickActionsRow from '../../components/contact/QuickActionsRow';
 
@@ -1316,6 +1317,23 @@ function ContactDetailScreen() {
     return null;
   };
 
+  const openSoldWizard = () => {
+                // Route to create-card (congrats) — same flow as home screen SOLD tile.
+                // Pre-fills the contact's name + phone so "Via Text" fires
+                // VCF → card (2 min) → review (5 min) → Sold tag automatically.
+                const params = new URLSearchParams();
+                params.set('type', 'congrats');
+                const contactName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim();
+                if (contactName) params.set('prefillName', contactName);
+                if (contact.phone) params.set('prefillPhone', contact.phone);
+                if (contact.email) params.set('prefillEmail', contact.email);
+                // Pass contact_id so Sold tag gets applied to THIS existing contact
+                params.set('for_contact', id as string);
+                params.set('return_to_contact', 'true');
+                params.set('sold_flow', 'true');
+                router.push(`/settings/create-card?${params.toString()}` as any);
+  };
+
   // ===== QUICK ACTIONS =====
 
   const sendReviewCard = async () => {
@@ -2535,80 +2553,19 @@ function ContactDetailScreen() {
               onEmail={() => { setComposerMode('email'); composerInputRef.current?.focus(); }}
               onNote={() => (isRecording ? stopRecording() : startRecording())}
               onTask={() => setShowAddTask(true)}
+              showSold={!contact.tags.includes('Sold')}
+              onSold={openSoldWizard}
             />
           )}
 
-          {/* ===== RELATIONSHIP INTEL BRIEFING (auto-updating) ===== */}
+          {/* ===== ONE-LINE INTEL TEASER (full brief lives in Details) ===== */}
           {!isNewContact && !isEditing && (
-            <IntelBriefingCard
+            <IntelTeaser
               colors={colors}
               intelData={intelData}
               refreshing={intelRefreshing}
-              onRefresh={refreshIntel}
+              onPress={() => setContactTab('details')}
             />
-          )}
-
-          {/* ===== SOLD WIZARD BUTTON ===== */}
-          {!isNewContact && !isEditing && !contact.tags.includes('Sold') && (
-            <TouchableOpacity
-              style={{
-                flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
-                marginHorizontal: 16, marginBottom: 10, marginTop: 4,
-                backgroundColor: '#C9A962', borderRadius: 14, paddingVertical: 16,
-              }}
-              onPress={() => {
-                // Route to create-card (congrats) — same flow as home screen SOLD tile.
-                // Pre-fills the contact's name + phone so "Via Text" fires
-                // VCF → card (2 min) → review (5 min) → Sold tag automatically.
-                const params = new URLSearchParams();
-                params.set('type', 'congrats');
-                const contactName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim();
-                if (contactName) params.set('prefillName', contactName);
-                if (contact.phone) params.set('prefillPhone', contact.phone);
-                if (contact.email) params.set('prefillEmail', contact.email);
-                // Pass contact_id so Sold tag gets applied to THIS existing contact
-                params.set('for_contact', id as string);
-                params.set('return_to_contact', 'true');
-                params.set('sold_flow', 'true');
-                router.push(`/settings/create-card?${params.toString()}` as any);
-              }}
-              data-testid="sold-wizard-btn"
-            >
-              <Ionicons name="checkmark-circle" size={22} color="#000" />
-              <Text style={{ fontSize: 18, fontWeight: '800', color: '#000', letterSpacing: 0.3 }}>SOLD!</Text>
-            </TouchableOpacity>
-          )}
-
-          {/* ===== ACTION PROGRESS TRACKER (above tabs) ===== */}
-          {!isNewContact && !isEditing && actionProgress.length > 0 && (
-            <View style={s.progressSection} data-testid="action-progress">
-              <View style={s.progressHeader}>
-                <Text style={s.progressLabel}>{progressCompleted}/{progressTotal} Actions</Text>
-                <View style={s.progressBarBg}>
-                  <View style={[s.progressBarFill, { width: `${progressTotal > 0 ? (progressCompleted / progressTotal) * 100 : 0}%` }]} />
-                </View>
-              </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.progressRow}>
-                {actionProgress.map((a: any) => (
-                  <TouchableOpacity
-                    key={a.key}
-                    style={[s.progressItem, a.done && s.progressItemDone]}
-                    onPress={() => !a.done && handleQuickAction(a.key === 'personal_sms' ? 'sms' : a.key === 'congrats_card_sent' ? 'congrats' : a.key === 'review_request_sent' ? 'review' : a.key === 'email_sent' ? 'email' : a.key === 'link_page_shared' ? 'linkpage' : a.key === 'digital_card_sent' ? 'digitalcard' : a.key)}
-                    activeOpacity={a.done ? 1 : 0.7}
-                    data-testid={`progress-${a.key}`}
-                  >
-                    <View style={[s.progressIcon, { backgroundColor: a.done ? `${a.color}25` : colors.card }]}>
-                      {a.done ? (
-                        <Ionicons name="checkmark-circle" size={18} color={a.color} />
-                      ) : (
-                        <Ionicons name={(a.icon || 'ellipse-outline') as any} size={16} color={colors.borderLight} />
-                      )}
-                    </View>
-                    <Text style={[s.progressText, a.done && { color: a.color }]} numberOfLines={1}>{a.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
           )}
 
           {/* ===== FEED / DETAILS / CALLS TAB BAR ===== */}
@@ -2747,6 +2704,51 @@ function ContactDetailScreen() {
               referrals={referrals}
               contactEnrollments={contactEnrollments}
               toggleDateOptin={toggleDateOptin}
+              header={(
+                <>
+              {/* ===== RELATIONSHIP INTEL BRIEFING (lives with its sources) ===== */}
+              <IntelBriefingCard
+                  colors={colors}
+                  intelData={intelData}
+                  refreshing={intelRefreshing}
+                  onRefresh={refreshIntel}
+                />
+
+
+              {/* ===== ACTION PROGRESS TRACKER ===== */}
+              {actionProgress.length > 0 && (
+                <View style={s.progressSection} data-testid="action-progress">
+                  <View style={s.progressHeader}>
+                    <Text style={s.progressLabel}>{progressCompleted}/{progressTotal} Actions</Text>
+                    <View style={s.progressBarBg}>
+                      <View style={[s.progressBarFill, { width: `${progressTotal > 0 ? (progressCompleted / progressTotal) * 100 : 0}%` }]} />
+                    </View>
+                  </View>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.progressRow}>
+                    {actionProgress.map((a: any) => (
+                      <TouchableOpacity
+                        key={a.key}
+                        style={[s.progressItem, a.done && s.progressItemDone]}
+                        onPress={() => !a.done && handleQuickAction(a.key === 'personal_sms' ? 'sms' : a.key === 'congrats_card_sent' ? 'congrats' : a.key === 'review_request_sent' ? 'review' : a.key === 'email_sent' ? 'email' : a.key === 'link_page_shared' ? 'linkpage' : a.key === 'digital_card_sent' ? 'digitalcard' : a.key)}
+                        activeOpacity={a.done ? 1 : 0.7}
+                        data-testid={`progress-${a.key}`}
+                      >
+                        <View style={[s.progressIcon, { backgroundColor: a.done ? `${a.color}25` : colors.card }]}>
+                          {a.done ? (
+                            <Ionicons name="checkmark-circle" size={18} color={a.color} />
+                          ) : (
+                            <Ionicons name={(a.icon || 'ellipse-outline') as any} size={16} color={colors.borderLight} />
+                          )}
+                        </View>
+                        <Text style={[s.progressText, a.done && { color: a.color }]} numberOfLines={1}>{a.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+
+                </>
+              )}
             />
           )}
 
