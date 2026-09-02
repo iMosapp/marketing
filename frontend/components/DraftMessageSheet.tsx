@@ -7,11 +7,12 @@ import api from '../services/api';
 
 // "What to send" sheet — full reason + AI-drafted ready-to-send message.
 // item: { contact_id, first_name, last_name, phone, reason_key, reason_label, icon, color, context? }
-export function DraftMessageSheet({ userId, item, onClose, onUsed }: {
+export function DraftMessageSheet({ userId, item, onClose, onUsed, hideViewContact }: {
   userId?: string;
   item: any | null;
   onClose: () => void;
   onUsed?: (item: any) => void;
+  hideViewContact?: boolean;
 }) {
   const { colors } = useThemeStore();
   const router = useRouter();
@@ -50,14 +51,14 @@ export function DraftMessageSheet({ userId, item, onClose, onUsed }: {
     <Modal visible={!!item} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' }} activeOpacity={1} onPress={onClose}>
         <TouchableOpacity activeOpacity={1} onPress={() => {}}>
-          <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 34 }} data-testid="draft-sheet">
+          <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 34 }} testID="draft-sheet" dataSet={{ testid: 'draft-sheet' } as any}>
             <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 16 }} />
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 }}>
               <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: (item?.color || '#C9A962') + '20', alignItems: 'center', justifyContent: 'center' }}>
                 <Ionicons name={(item?.icon as any) || 'chatbubble'} size={19} color={item?.color || '#C9A962'} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 19, fontWeight: '800', color: colors.text }} data-testid="draft-sheet-name">
+                <Text style={{ fontSize: 19, fontWeight: '800', color: colors.text }} testID="draft-sheet-name" dataSet={{ testid: 'draft-sheet-name' } as any}>
                   Text {`${item?.first_name || ''} ${item?.last_name || ''}`.trim() || 'them'}
                 </Text>
                 <Text style={{ fontSize: 13, color: item?.color || colors.textSecondary, fontWeight: '600', marginTop: 1 }}>
@@ -73,7 +74,7 @@ export function DraftMessageSheet({ userId, item, onClose, onUsed }: {
                   <Text style={{ fontSize: 13, color: colors.textSecondary }}>Writing your message...</Text>
                 </View>
               ) : (
-                <Text style={{ fontSize: 16, color: colors.text, lineHeight: 23 }} data-testid="draft-message-text">{msg}</Text>
+                <Text style={{ fontSize: 16, color: colors.text, lineHeight: 23 }} testID="draft-message-text" dataSet={{ testid: 'draft-message-text' } as any}>{msg}</Text>
               )}
             </View>
             <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 8, textAlign: 'center' }}>
@@ -84,7 +85,7 @@ export function DraftMessageSheet({ userId, item, onClose, onUsed }: {
               onPress={useMessage}
               disabled={loading}
               style={{ backgroundColor: loading ? colors.border : '#007AFF', borderRadius: 16, paddingVertical: 15, alignItems: 'center', marginTop: 14, flexDirection: 'row', justifyContent: 'center', gap: 8 }}
-              data-testid="draft-send-btn"
+              testID="draft-send-btn" dataSet={{ testid: 'draft-send-btn' } as any}
             >
               <Ionicons name="paper-plane" size={17} color="#fff" />
               <Text style={{ fontSize: 16, fontWeight: '800', color: '#fff' }}>Use This Message</Text>
@@ -95,19 +96,21 @@ export function DraftMessageSheet({ userId, item, onClose, onUsed }: {
                 onPress={() => item && fetchDraft(item)}
                 disabled={loading}
                 style={{ flex: 1, borderRadius: 16, paddingVertical: 13, alignItems: 'center', borderWidth: 1, borderColor: colors.border, flexDirection: 'row', justifyContent: 'center', gap: 6 }}
-                data-testid="draft-regenerate-btn"
+                testID="draft-regenerate-btn" dataSet={{ testid: 'draft-regenerate-btn' } as any}
               >
                 <Ionicons name="refresh" size={15} color={colors.text} />
                 <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>Different Message</Text>
               </TouchableOpacity>
+              {!hideViewContact && (
               <TouchableOpacity
                 onPress={() => { const cid = item?.contact_id; onClose(); if (cid) router.push(`/contact/${cid}` as any); }}
                 style={{ flex: 1, borderRadius: 16, paddingVertical: 13, alignItems: 'center', borderWidth: 1, borderColor: colors.border, flexDirection: 'row', justifyContent: 'center', gap: 6 }}
-                data-testid="draft-view-contact-btn"
+                testID="draft-view-contact-btn" dataSet={{ testid: 'draft-view-contact-btn' } as any}
               >
                 <Ionicons name="person" size={15} color={colors.text} />
                 <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>View Contact</Text>
               </TouchableOpacity>
+              )}
             </View>
           </View>
         </TouchableOpacity>

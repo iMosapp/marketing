@@ -66,6 +66,7 @@ import IntelBriefingCard from '../../components/contact/IntelBriefingCard';
 import IntelTeaser from '../../components/contact/IntelTeaser';
 import { HealthBadge } from '../../components/contact/HealthBadge';
 import QuickActionsRow from '../../components/contact/QuickActionsRow';
+import ContactTasksCard from '../../components/contact/ContactTasksCard';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -487,6 +488,7 @@ function ContactDetailScreen() {
   const [newTaskTime, setNewTaskTime] = useState<string | null>(null);
   const [newTaskApptType, setNewTaskApptType] = useState<string | null>(null);
   const [savingTask, setSavingTask] = useState(false);
+  const [tasksRefreshKey, setTasksRefreshKey] = useState(0);
   const [replyText, setReplyText] = useState('');
   const [replyPhoto, setReplyPhoto] = useState<string | null>(null);
   const [submittingReply, setSubmittingReply] = useState(false);
@@ -690,6 +692,7 @@ function ContactDetailScreen() {
       setNewTaskDate(new Date());
       setNewTaskTime(null);
       setNewTaskApptType(null);
+      setTasksRefreshKey(k => k + 1);
       showSimpleAlert('Task Added', `"${newTaskTitle.trim()}" added to your touchpoints.`);
     } catch { showSimpleAlert('Error', 'Could not save task. Try again.'); }
     finally { setSavingTask(false); }
@@ -1639,6 +1642,7 @@ function ContactDetailScreen() {
       if (taskId && typeof taskId === 'string' && user?._id) {
         try {
           await api.patch(`/tasks/${user._id}/${taskId}`, { action: 'complete' });
+          setTasksRefreshKey(k => k + 1);
         } catch {}
       }
     } catch (e: any) {
@@ -2595,6 +2599,20 @@ function ContactDetailScreen() {
               onTask={() => setShowAddTask(true)}
               showSold={!contact.tags.includes('Sold')}
               onSold={openSoldWizard}
+            />
+          )}
+
+          {/* ===== UP NEXT: open tasks for this contact ===== */}
+          {!isNewContact && !isEditing && (
+            <ContactTasksCard
+              colors={colors}
+              userId={user?._id || ''}
+              contactId={id as string}
+              contact={contact}
+              featuredTaskId={typeof taskId === 'string' && taskId ? taskId : undefined}
+              refreshKey={tasksRefreshKey}
+              onAddTask={() => setShowAddTask(true)}
+              showToast={showToast}
             />
           )}
 

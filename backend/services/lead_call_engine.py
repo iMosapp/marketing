@@ -57,8 +57,10 @@ def normalize_attempts(raw: list, fallback_user_ids: list) -> list:
 
 
 async def start_call_workflow(source: dict, conversation_id: str, contact_id: str,
-                              customer_phone: str, lead: dict, assigned_user_id: Optional[str] = None) -> Optional[str]:
-    """Create the dialing job. Attempt 1 fires on the next scheduler tick (<= 15s)."""
+                              customer_phone: str, lead: dict, assigned_user_id: Optional[str] = None,
+                              not_before: Optional[datetime] = None, deferred_reasons: Optional[list] = None) -> Optional[str]:
+    """Create the dialing job. Attempt 1 fires on the next scheduler tick (<= 15s), or at
+    `not_before` when the store is closed / outside the customer's texting window."""
     db = get_db()
     attempts = normalize_attempts(source.get("call_attempts"), source.get("workflow_user_ids") or [])
     if not attempts or not customer_phone:
@@ -73,6 +75,7 @@ async def start_call_workflow(source: dict, conversation_id: str, contact_id: st
         return str(existing["_id"])
 
     now = datetime.now(timezone.utc)
+    deferred = bool(not_before and not_before > now)
     doc = {
         "token": secrets.token_urlsafe(16),
         "conversation_id": conversation_id,
@@ -83,8 +86,11 @@ async def start_call_workflow(source: dict, conversation_id: str, contact_id: st
         "lead": lead,
         "attempts": attempts,
         "attempt_index": 0,
-        "next_attempt_at": now,
+        "next_attempt_at": not_before if deferred else now,
         "status": "active",
+        "deferred": deferred,
+        "deferred_until": not_before if deferred else None,
+        "deferred_reasons": deferred_reasons or [],
         "claimed_by": None,
         "claimed_via": None,
         "calls": [],
@@ -92,8 +98,18 @@ async def start_call_workflow(source: dict, conversation_id: str, contact_id: st
         "updated_at": now,
     }
     res = await db[COLL].insert_one(doc)
-    logger.info(f"[LeadCall] Job {res.inserted_id} created for conv {conversation_id} with {len(attempts)} attempt(s)")
+    logger.info(f"[LeadCall] Job {res.inserted_id} created for conv {conversation_id} with {len(attempts)} attempt(s)"
+                + (f", deferred until {not_before.isoformat()} ({deferred_reasons})" if deferred else ""))
     return str(res.inserted_id)
+
+
+async def _rep_already_engaged(db, conversation_id: str) -> bool:
+    """A human rep texted or called this lead already (Jessi and intake texts don't count)."""
+    hit = await db.messages.find_one(
+        {"conversation_id": conversation_id, "sender": "user", "direction": {"$ne": "inbound"}},
+        {"_id": 1},
+    )
+    return hit is not None
 
 
 async def _from_number_for(db, source: dict, rep: dict) -> str:
@@ -154,6 +170,7 @@ async def _run_attempt(db, job: dict):
             "attempt_index": idx + 1,
             "updated_at": datetime.now(timezone.utc),
             "next_attempt_at": datetime.now(timezone.utc) + timedelta(seconds=max(next_delay, RING_SECONDS + 5)),
+            **({"deferred": False, "was_deferred": True, "released_at": datetime.now(timezone.utc)} if job.get("deferred") else {}),
             **({"status": "exhausted", "exhausted_at": datetime.now(timezone.utc)} if is_last else {}),
         },
     }
@@ -188,8 +205,14 @@ async def process_lead_call_jobs():
             continue
         # Skip if the conversation got claimed in-app between ticks
         conv = await db.conversations.find_one({"_id": ObjectId(job["conversation_id"])}, {"claimed_by": 1, "claim_source": 1})
-        if conv and conv.get("claimed_by") and conv.get("claim_source") == "app":
-            await mark_claimed(job["conversation_id"], conv["claimed_by"], via="app")
+        first_rung = job["attempt_index"] == 0
+        if conv and conv.get("claimed_by") and (conv.get("claim_source") == "app" or (job.get("deferred") and first_rung)):
+            await mark_claimed(job["conversation_id"], conv["claimed_by"], via=conv.get("claim_source") or "app")
+            continue
+        # An overnight lead a rep already texted/called by morning does not need the ladder
+        if job.get("deferred") and first_rung and await _rep_already_engaged(db, job["conversation_id"]):
+            await db[COLL].update_one({"_id": job["_id"]}, {"$set": {"status": "handled", "handled_reason": "rep_replied", "updated_at": now}})
+            logger.info(f"[LeadCall] Deferred job {job['_id']} skipped: rep already engaged the lead")
             continue
         try:
             await _run_attempt(db, job)
@@ -269,11 +292,147 @@ async def _notify_claimed(job: dict, winner_id: str):
 
 
 async def record_call_status(job_id: str, user_id: str, call_sid: str, status: str):
+    """Twilio final status (completed / no-answer / busy / failed / canceled). Never overwrites
+    an outcome we learned from the rep's keypress (answered / passed / claimed / late)."""
     db = get_db()
+    now = datetime.now(timezone.utc)
     await db[COLL].update_one(
         {"_id": ObjectId(job_id), "calls.call_sid": call_sid},
-        {"$set": {"calls.$.status": status, "updated_at": datetime.now(timezone.utc)}},
+        {"$set": {"calls.$.twilio_status": status, "calls.$.ended_at": now, "updated_at": now}},
     )
+    await db[COLL].update_one(
+        {"_id": ObjectId(job_id), "calls": {"$elemMatch": {"call_sid": call_sid, "status": {"$in": ["ringing", "queued"]}}}},
+        {"$set": {"calls.$.status": status}},
+    )
+
+
+async def record_call_event(job_id: str, call_sid: str, **fields):
+    """Mark what the rep did on a ringing leg: answered_at, passed, late, claimed."""
+    if not call_sid:
+        return
+    db = get_db()
+    sets = {f"calls.$.{k}": v for k, v in fields.items()}
+    sets["updated_at"] = datetime.now(timezone.utc)
+    await db[COLL].update_one({"_id": ObjectId(job_id), "calls.call_sid": call_sid}, {"$set": sets})
+
+
+def _outcome(c: dict, job: dict) -> str:
+    if c.get("status") == "no_phone":
+        return "no_phone"
+    if c.get("status") in ("twilio_disabled", "failed"):
+        return "failed"
+    if c.get("passed"):
+        return "passed"
+    if job.get("claimed_via") == "phone" and job.get("claimed_by") == c.get("user_id") and c.get("answered_at"):
+        return "claimed"
+    if c.get("late"):
+        return "late"
+    if c.get("answered_at"):
+        return "answered"
+    st = c.get("twilio_status") or c.get("status")
+    if st in ("no-answer", "busy", "canceled", "completed"):
+        return "no_answer"
+    return "ringing"
+
+
+async def timeline_for_conversation(conversation_id: str) -> dict:
+    """Everything a manager wants to see about how a lead was worked: every ring, pass, claim."""
+    db = get_db()
+    conv = await db.conversations.find_one({"_id": ObjectId(conversation_id)}) or {}
+    job = await db[COLL].find_one({"conversation_id": conversation_id}, sort=[("created_at", -1)])
+    plan = conv.get("routing_plan") or {}
+    received = conv.get("created_at")
+    if isinstance(received, str):
+        try:
+            received = datetime.fromisoformat(received)
+        except Exception:
+            received = None
+    if received is not None and received.tzinfo is None:
+        received = received.replace(tzinfo=timezone.utc)
+
+    ids = set()
+    if job:
+        ids |= {c.get("user_id") for c in job.get("calls", []) if c.get("user_id")}
+        ids |= {u for a in job.get("attempts", []) for u in a.get("user_ids", [])}
+        if job.get("claimed_by"):
+            ids.add(job["claimed_by"])
+    if conv.get("claimed_by"):
+        ids.add(conv["claimed_by"])
+    names = {}
+    oids = [ObjectId(i) for i in ids if ObjectId.is_valid(i)]
+    if oids:
+        async for u in db.users.find({"_id": {"$in": oids}}, {"name": 1, "first_name": 1}):
+            names[str(u["_id"])] = u.get("name") or u.get("first_name") or "Rep"
+
+    def iso(v):
+        return v.isoformat() if isinstance(v, datetime) else v
+
+    intake = await db.messages.find_one({"conversation_id": conversation_id, "is_intake_text": True}, {"timestamp": 1})
+    deferred_intake = await db.lead_deferred_actions.find_one({"conversation_id": conversation_id, "kind": "intake_text"}, {"run_at": 1, "status": 1})
+    first_human = await db.messages.find_one(
+        {"conversation_id": conversation_id, "sender": "user", "direction": {"$ne": "inbound"}}, {"timestamp": 1}, sort=[("timestamp", 1)]
+    )
+
+    out = {
+        "conversation_id": conversation_id,
+        "received_at": iso(received),
+        "is_test": bool(conv.get("is_test")),
+        "plan": plan,
+        "jessi_on": conv.get("ai_mode") == "auto_reply" and conv.get("ai_enabled") is not False,
+        "sms_consent": conv.get("sms_consent"),
+        "intake": {
+            "sent_at": iso((intake or {}).get("timestamp")),
+            "scheduled_for": iso((deferred_intake or {}).get("run_at")) if deferred_intake and deferred_intake.get("status") == "pending" else None,
+        },
+        "first_human_reply_at": iso((first_human or {}).get("timestamp")),
+        "claimed_by": conv.get("claimed_by"),
+        "claimed_by_name": names.get(conv.get("claimed_by") or ""),
+        "claimed_at": iso(conv.get("claimed_at")),
+        "claim_source": conv.get("claim_source"),
+        "job": None,
+    }
+    if job:
+        claimed_at = job.get("claimed_at")
+        if isinstance(claimed_at, datetime) and claimed_at.tzinfo is None:
+            claimed_at = claimed_at.replace(tzinfo=timezone.utc)
+        # Overnight leads: measure from the first ring, not from the 2 AM form submit
+        clock_start = received
+        if job.get("was_deferred") or job.get("deferred"):
+            first_ring = next((c.get("at") for c in job.get("calls", []) if c.get("at")), None)
+            if isinstance(first_ring, datetime):
+                clock_start = first_ring if first_ring.tzinfo else first_ring.replace(tzinfo=timezone.utc)
+        tts = None
+        if claimed_at and clock_start:
+            tts = max(0, int((claimed_at - clock_start).total_seconds()))
+        out["job"] = {
+            "status": job.get("status"),
+            "deferred": bool(job.get("deferred")),
+            "was_deferred": bool(job.get("was_deferred") or job.get("deferred")),
+            "deferred_until": iso(job.get("deferred_until")),
+            "released_at": iso(job.get("released_at")),
+            "deferred_reasons": job.get("deferred_reasons") or [],
+            "handled_reason": job.get("handled_reason"),
+            "attempt_index": job.get("attempt_index", 0),
+            "attempts": [
+                {"n": i + 1, "delay_seconds": a.get("delay_seconds", 0),
+                 "reps": [{"user_id": u, "name": names.get(u, "Rep")} for u in a.get("user_ids", [])]}
+                for i, a in enumerate(job.get("attempts", []))
+            ],
+            "calls": [
+                {"attempt": c.get("attempt"), "user_id": c.get("user_id"), "name": names.get(c.get("user_id") or "", c.get("rep_name") or "Rep"),
+                 "outcome": _outcome(c, job), "at": iso(c.get("at")), "answered_at": iso(c.get("answered_at")),
+                 "ended_at": iso(c.get("ended_at")), "error": c.get("error")}
+                for c in job.get("calls", [])
+            ],
+            "claimed_by": job.get("claimed_by"),
+            "claimed_by_name": names.get(job.get("claimed_by") or ""),
+            "claimed_via": job.get("claimed_via"),
+            "claimed_at": iso(claimed_at),
+            "time_to_claim_seconds": tts,
+            "exhausted_at": iso(job.get("exhausted_at")),
+            "next_attempt_at": iso(job.get("next_attempt_at")) if job.get("status") == "active" else None,
+        }
+    return out
 
 
 # ── TwiML ─────────────────────────────────────────────────────────────────────
@@ -287,7 +446,8 @@ def twiml(*parts: str) -> str:
 
 def twiml_answer(job: dict, action_url: str) -> str:
     src = (job.get("lead") or {}).get("source_label") or job.get("source_name") or "your website"
-    prompt = _say(f"New lead from {src}. Press 1 to claim this lead.")
+    kind = "Overnight lead" if job.get("deferred") else "New lead"
+    prompt = _say(f"{kind} from {src}. Press 1 to claim this lead.")
     gather = f'<Gather numDigits="1" timeout="6" action="{escape(action_url)}" method="POST">{prompt}</Gather>'
     return twiml(gather, gather, _say("No response received. Goodbye."), "<Hangup/>")
 

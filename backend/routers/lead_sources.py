@@ -7,6 +7,7 @@ from typing import Optional, List, Literal
 from datetime import datetime, timezone
 from bson import ObjectId
 import os
+import re
 import secrets
 import logging
 
@@ -91,6 +92,12 @@ class WorkflowConfig(BaseModel):
     call_attempts: List[CallAttempt] = []       # Up to 4 attempts (CallDrip-style rep dialing)
     website_default: bool = False               # Catch-all for marketing "Book a Demo" forms
     website_pages: List[str] = []               # Specific marketing pages routed here
+    after_hours_mode: Literal["text_and_ai", "ring_anyway"] = "text_and_ai"   # store closed: text + Jessi, ladder at opening
+    text_window_start: str = "09:00"            # business-initiated texts/calls, customer-local time
+    text_window_end: str = "20:00"
+
+
+_HHMM = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
 
 # Marketing pages that post Book a Demo forms (source like "pricing_hero" -> page "pricing")
@@ -130,7 +137,7 @@ def serialize_lead_source(source: dict) -> dict:
     """Convert MongoDB document to JSON-serializable dict"""
     _base = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com")).rstrip("/")
     _sid = str(source["_id"])
-    _wh = source.get("webhook_url") or ""
+    _wh = source.get("webhook_url") or f"/api/lead-sources/inbound/{_sid}"
     if _wh.startswith("/"):
         _wh = f"{_base}{_wh}"
     return {
@@ -165,6 +172,9 @@ def serialize_lead_source(source: dict) -> dict:
             "call_attempts":           source.get("call_attempts", []),
             "website_default":         source.get("website_default", False),
             "website_pages":           source.get("website_pages", []),
+            "after_hours_mode":        source.get("after_hours_mode", "text_and_ai"),
+            "text_window_start":       source.get("text_window_start", "09:00"),
+            "text_window_end":         source.get("text_window_end", "20:00"),
         },
     }
 
@@ -708,12 +718,26 @@ async def claim_lead(conversation_id: str, user_id: str, request: Request):
 
 @router.get("/{source_id}/workflow")
 async def get_workflow_config(source_id: str):
-    """Get the workflow automation config for a lead source."""
+    """Get the workflow automation config for a lead source (plus the store's hours for the after-hours rule)."""
     db = get_db()
     source = await db.lead_sources.find_one({"_id": ObjectId(source_id)})
     if not source:
         raise HTTPException(status_code=404, detail="Lead source not found")
-    return serialize_lead_source(source).get("workflow", {})
+    cfg = serialize_lead_source(source).get("workflow", {})
+    store = {}
+    if source.get("store_id") and ObjectId.is_valid(str(source["store_id"])):
+        store = await db.stores.find_one({"_id": ObjectId(source["store_id"])}, {"business_hours": 1, "timezone": 1, "name": 1}) or {}
+    from services.lead_timing import store_hours_status
+    st = store_hours_status(store)
+    cfg["store_hours"] = {
+        "store_name": store.get("name"),
+        "timezone": st["tz"],
+        "configured": st["configured"],
+        "open_now": st["open"],
+        "opens_at": st["opens_at"].isoformat() if st.get("opens_at") else None,
+        "hours": store.get("business_hours") or {},
+    }
+    return cfg
 
 
 @router.put("/{source_id}/workflow")
@@ -725,6 +749,9 @@ async def save_workflow_config(source_id: str, config: WorkflowConfig, _m: dict 
         raise HTTPException(status_code=404, detail="Lead source not found")
     # Only touch fields the client actually sent (a partial save must not reset the VA or wipe the ladder)
     updates = config.dict(exclude_unset=True)
+    for k in ("text_window_start", "text_window_end"):
+        if k in updates and not _HHMM.match(updates[k] or ""):
+            raise HTTPException(status_code=400, detail=f"{k} must be HH:MM (24h)")
     if "call_attempts" in updates:
         updates["call_attempts"] = [
             {"user_ids": a.get("user_ids", []), "delay_seconds": max(30, int(60 if a.get("delay_seconds") is None else a["delay_seconds"]))}
@@ -739,6 +766,82 @@ async def save_workflow_config(source_id: str, config: WorkflowConfig, _m: dict 
             {"$set": {"website_default": False}},
         )
     return {"success": True, "message": "Workflow config saved"}
+
+
+@router.get("/call-timeline/{conversation_id}")
+async def call_timeline(conversation_id: str, request: Request):
+    """Every ring, pass and claim for a lead's call ladder, plus how its intake was timed."""
+    if not ObjectId.is_valid(conversation_id):
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    db = get_db()
+    conv = await db.conversations.find_one({"_id": ObjectId(conversation_id)}, {"user_id": 1, "assigned_to": 1, "claimed_by": 1, "store_id": 1, "is_internet_lead": 1})
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    user = request.state.user
+    uid = str(user.get("_id"))
+    if user.get("role") not in MANAGER_ROLES and uid not in {str(conv.get("user_id")), str(conv.get("assigned_to")), str(conv.get("claimed_by"))}:
+        job = await db.lead_call_jobs.find_one({"conversation_id": conversation_id, "attempts.user_ids": uid}, {"_id": 1})
+        if not job:
+            raise HTTPException(status_code=403, detail="Not your lead")
+    from services.lead_call_engine import timeline_for_conversation
+    return await timeline_for_conversation(conversation_id)
+
+
+class TestLead(BaseModel):
+    phone: str
+    first_name: str = "Test"
+    last_name: str = "Lead"
+    include_ladder: bool = True
+    comments: str = "Test lead sent from the Lead Source screen"
+
+
+@router.post("/{source_id}/test-lead")
+async def send_test_lead(source_id: str, body: TestLead, request: Request, _m: dict = Depends(require_manager)):
+    """Run a fake website lead through this source's REAL workflow (intake text, rep push,
+    ladder, after-hours rule) so routing can be verified without touching the public site."""
+    db = get_db()
+    source = await db.lead_sources.find_one({"_id": ObjectId(source_id)})
+    if not source:
+        raise HTTPException(status_code=404, detail="Lead source not found")
+    digits = re.sub(r"\D", "", body.phone or "")
+    if len(digits) not in (10, 11):
+        raise HTTPException(status_code=400, detail="Enter a valid 10-digit phone number")
+    if not body.include_ladder:
+        source = {**source, "contact_mode": "text_only"}
+    user = request.state.user
+    normalized = {
+        "first_name": body.first_name.strip() or "Test",
+        "last_name": body.last_name.strip() or "Lead",
+        "full_name": f"{body.first_name.strip() or 'Test'} {body.last_name.strip() or 'Lead'}",
+        "phone": body.phone,
+        "email": "",
+        "company": "Test Company",
+        "industry": "",
+        "vehicle_interest": "Demo request",
+        "comments": body.comments,
+        "source_name": source.get("name", "Website"),
+        "is_test": True,
+        "sms_opt_in": True,
+        "attribution": {
+            "kind": "test",
+            "source": "lead_source_test_button",
+            "page": "test",
+            "source_label": "a test lead",
+            "sent_by": str(user.get("_id")),
+        },
+    }
+    from routers.lead_intake import process_inbound_lead
+    result = await process_inbound_lead(normalized, source, db)
+    plan = result.get("plan") or {}
+    return {
+        "success": True,
+        "conversation_id": result.get("conversation_id"),
+        "contact_id": result.get("contact_id"),
+        "plan": plan,
+        "intake_text_configured": bool((source.get("intake_text") or "").strip()),
+        "ladder_configured": source.get("contact_mode") == "text_and_call" and bool(source.get("call_attempts") or source.get("workflow_user_ids")),
+        "reps_notified": len(source.get("workflow_user_ids") or []) if source.get("notify_all_on_intake", True) else 0,
+    }
 
 
 

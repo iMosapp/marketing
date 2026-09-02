@@ -33,6 +33,7 @@ import { CallLogCard } from '../../components/thread/CallLogCard';
 import { MessageBubble } from '../../components/thread/MessageBubble';
 import { ThreadSearchBar } from '../../components/thread/ThreadSearchBar';
 import { LeadWaitBanner } from '../../components/LeadWaitTimer';
+import { LeadCallTimeline } from '../../components/LeadCallTimeline';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { messagesAPI, templatesAPI, emailAPI } from '../../services/api';
@@ -585,6 +586,7 @@ function ThreadScreen() {
   
   // Speed-to-lead: banner shown while an internet lead awaits its first human reply
   const [leadWait, setLeadWait] = useState<any>(null);
+  const [isInternetLead, setIsInternetLead] = useState(false);
   const [needsAssistance, setNeedsAssistance] = useState(false);
   const [aiPaused, setAiPaused] = useState(false);
 
@@ -613,6 +615,7 @@ function ThreadScreen() {
       }
 
       // Speed-to-lead: unanswered internet lead → show waiting banner
+      setIsInternetLead(!!convInfo?.data?.is_internet_lead);
       if (convInfo?.data?.is_internet_lead && convInfo.data.awaiting_first_reply) {
         setLeadWait({ receivedAt: convInfo.data.lead_received_at, sourceName: convInfo.data.lead_source_name });
       }
@@ -642,6 +645,7 @@ function ThreadScreen() {
           if (savedMode && ['auto_reply', 'assisted', 'draft_only', 'off'].includes(savedMode)) {
             setAiMode(savedMode as any);
           }
+          setIsInternetLead(!!convInfo?.data?.is_internet_lead);
         }).catch(() => {});
         
         // id is confirmed as a contact_id — set it for intel loading
@@ -2155,6 +2159,11 @@ function ThreadScreen() {
       {leadWait && conversationStatus !== 'closed' && (
         <LeadWaitBanner receivedAt={leadWait.receivedAt} sourceName={leadWait.sourceName} />
       )}
+
+      {/* Internet lead: how it was routed + every ring / pass / claim on the call ladder */}
+      {isInternetLead && actualConversationId ? (
+        <LeadCallTimeline conversationId={actualConversationId} colors={colors} />
+      ) : null}
       
       {/* Inline Email Prompt */}
       {showEmailPrompt && (

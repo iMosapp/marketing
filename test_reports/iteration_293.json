@@ -1,0 +1,52 @@
+{
+  "summary": "Full backend + frontend verification of the after-hours rule, Send Test Lead button and Attempt Timeline. New pytest suite /app/backend/tests/test_lead_after_hours_293.py (26 cases) passes 26/26: workflow GET store_hours shape, HH:MM validation (25:99, 9:00, abc, '' all 400), 401/403 on PUT, persistence + exclude_unset partial save (ladder/intake_text/window untouched), test-lead validation (bad phone 400, unauth 401, non-manager 403, unknown source 404), in-hours pipeline (conversation is_internet_lead/is_test/routing_plan/rep_phone/sms_consent, contact tagged 'Test Lead', inbound_leads status 'skipped', is_intake_text message), window-closed deferral to tomorrow 09:00 Denver with 1-lead/min stagger and ladder = intake+60s, store-closed path (intake sent now, ai_mode auto_reply + ai_enabled + after_hours_lead, job deferred reasons ['store_closed'], next_attempt_at 09:05 local), morning release (status sent) and cancel on rep reply (reason rep_replied) plus job handled/rep_replied, deferred job release firing a real attempt to Activation Tester only, simulated Twilio answer/claim/status webhooks -> answered_at, passed, claimed, conversation claimed_by/claim_source=phone, timeline outcomes ['passed','claimed'] + time_to_claim_seconds + claimed_by_name 'Activation Tester', timeline auth (401/403/404), token-spoof guard, and 5 pure timing-rule cases (ring_anyway ignores store hours, both gates at 3 AM, customer-tz from area code). Regressions green: test_lead_call_engine_ladder.py 20/20, ai_routing_matrix.py 28/28. Frontend (web preview, admin login): Response Workflow section renders After Store Hours toggles, store-hours line with Edit, TCPA presets + custom inputs, preset switch updates the 'Currently ...' line, Save Workflow persists across reload, Test Lead card sent 5005550184 (prefilled real number replaced) and returned all 5 result lines, 'Open the lead's thread' navigated to /thread/{id}, LeadCallTimeline rendered under the lead banner ('Text only · reps answer replies') and expanded to Lead received (test) / Intake text sent / texting-consent line. All test data cleaned (cleanup_test_leads.py) and Website source + store business_hours restored exactly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "services/lead_call_engine.process_lead_call_jobs", "issue": "lead_call_jobs.deferred / deferred_until are never cleared once the deferred attempt actually fires. After release the job still reports deferred=true, so GET /api/lead-sources/call-timeline keeps emitting the 'Ladder held until opening' row and job.deferred=true while the ladder is live."},
+      {"endpoint": "services/lead_timing.store_hours_status", "issue": "Line ~92 (next-open-day branch): `minute=om + OPEN_BUFFER_MINUTES if om + OPEN_BUFFER_MINUTES < 60 else om` silently drops the 5-minute buffer instead of rolling into the next hour, e.g. a store opening at 09:57 gets next_attempt_at 09:57 (before opening) rather than 10:02."},
+      {"endpoint": "GET /api/lead-sources/call-timeline/{id}", "issue": "time_to_claim_seconds = claimed_at - conversation.created_at, so an overnight-deferred lead reports the whole overnight wait as 'time to claim' (UI shows 'Claimed by X in H:MM'). Consider measuring from the first ring for deferred jobs."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "app/admin/lead-sources/[id].tsx + app/auth/login.tsx", "issue": "Raw data-testid props on RN primitives are stripped by react-native-web, so only WebButton-wrapped ids exist in the DOM (back-btn/edit-btn/delete-btn). Missing at runtime: workflow-toggle, intake-text-input, auto-call-toggle, va-enabled-toggle, va-option-*, adf-url-copy, email-intake-url-copy, monthly-cost-input, login-email-input, login-password-input. Had to fall back to text/placeholder selectors. New components (LeadTimingControls, LeadCallTimeline) use testID+dataSet and work fine - do the same for these.", "selector": "[data-testid=\"workflow-toggle\"]", "priority": "MEDIUM"},
+      {"component": "Lead source detail - Webhook URL", "issue": "Webhook URL box renders empty and the Example Request block shows `curl -X POST \"\"` for the Website source (source.webhook_url blank).", "selector": "text=Webhook URL", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "Send a test lead", "issue": "The phone field is prefilled with the logged-in admin's REAL cell (8016349122) and one tap on test-lead-send-btn immediately sends a live SMS and (with the ladder checked) rings reps - no confirmation step. Recommend a confirm dialog or no prefill.", "affected_selectors": ["[data-testid=\"test-lead-phone\"]", "[data-testid=\"test-lead-send-btn\"]"]},
+      {"flow": "Repeat test leads to the same phone", "issue": "Contact/thread dedup means a second test lead to the same number reuses the old contact, so the thread header keeps the previous name and older Jessi messages while the timeline card only describes the newest lead. Expected dedup, but confusing for repeated tests."}
+    ],
+    "design_issues": [
+      {"screen": "Lead source > Response Workflow", "issues": ["No visual defects found: After Store Hours segmented control, store-hours line, TCPA preset chips and custom HH:MM inputs all legible on dark theme with adequate contrast; selected chip is gold on black."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_lead_after_hours_293.py",
+    "/app/test_reports/pytest/pytest_results_293.xml",
+    "/app/backend/tests/test_lead_call_engine_ladder.py",
+    "/app/backend/tests/ai_routing_matrix.py"
+  ],
+  "action_items": [
+    "Clear job.deferred/deferred_until when a deferred ladder attempt fires (stale flag leaks into the timeline API/UI row).",
+    "Fix the OPEN_BUFFER minute overflow in lead_timing.store_hours_status next-open-day branch.",
+    "Convert the remaining raw data-testid props on lead-source and login screens to testID + dataSet so [data-testid] selectors exist in RN-web DOM.",
+    "Consider a confirmation step (or removing the real-cell prefill) before Send test lead fires live SMS/calls.",
+    "Optional: measure time_to_claim from the first ring for overnight-deferred leads; populate/hide the empty Webhook URL + curl example."
+  ],
+  "critical_code_review_comments": [
+    "lead_sources.save_workflow_config correctly uses exclude_unset and validates HH:MM; verified a partial PUT does not wipe call_attempts/intake_text.",
+    "lead_call_webhooks._load_job requires job id + per-job token; verified a bogus token is a no-op ('no longer available') and record_call_event ignores unknown CallSids, so webhooks cannot be spoofed.",
+    "call_timeline authorises manager roles or owner/assignee/claimer/ladder membership; non-manager off-ladder gets 403, bad ObjectId 404 - good.",
+    "routers/lead_sources.py is 929 lines and lead_intake.py 2023 lines - both above the 700-line guideline; consider splitting workflow/test-lead/timeline endpoints and the intake workflow firing logic into modules.",
+    "build_contact_plan's jessi_on is `va_enabled OR (closed and text_and_ai)`; with va_enabled=false and the store open the test-lead card correctly reports 'Jessi is off', but the OR means va_enabled=false cannot keep Jessi off after hours - confirm that is intended."
+  ],
+  "updated_files": ["/app/backend/tests/test_lead_after_hours_293.py"],
+  "success_rate": {"backend": "100% (26/26 new + 20/20 ladder + 28/28 AI routing)", "frontend": "100% of tested flows (workflow config, save/persist, test lead, timeline)"},
+  "seed_data_creation": "Test leads to Twilio test numbers 5005550182/0183/0184 only; ladder rang Activation Tester (+15005550006) only. All is_test contacts/conversations/messages/jobs/deferred actions and lead_release_slots deleted via tests/cleanup_test_leads.py; Website source (window 09:00-20:00, text_and_ai, text_and_call, website_default, intake_text, ladder = Activation Tester 30s/60s) and store business_hours verified restored.",
+  "should_call_test_agent_after_fix": false,
+  "should_main_agent_self_test": true,
+  "test_credentials": "forest@imosapp.com / Admin123! (super_admin), mjeast1985@gmail.com / NavyBean1! (non-manager 403 checks)",
+  "context_for_next_testing_agent": "Run the new suite with `python -m pytest tests/test_lead_after_hours_293.py -q -p no:randomly` from /app/backend (order-dependent: test_10 seeds the deferred conversation used by 12/13/14; it clears lead_release_slots for a deterministic stagger). It uses one shared asyncio loop (asyncio.set_event_loop) so motor calls work in sync tests - pytest-asyncio is NOT installed. The session fixture snapshots and restores the Website source workflow + store business_hours. Frontend: RN-web strips raw data-testid, so on the lead-source screen click by text ('Response Workflow') and login via input[placeholder=\"Email\"]/[placeholder=\"Password\"]; the new LeadTimingControls/LeadCallTimeline testids do work. Always replace the prefilled real phone with a 500-555-01xx number before pressing Send test lead. Finish with tests/cleanup_test_leads.py.",
+  "rca_of_the_issue": "Stale deferred flag: start_call_workflow sets deferred/deferred_until when not_before is in the future, but neither process_lead_call_jobs nor _run_attempt unsets them after the attempt fires, so timeline_for_conversation keeps reporting deferred=true (LeadCallTimeline row 'Ladder held until opening' persists; the header is unaffected only because attempt_index>0). Repro: create a deferred job, force next_attempt_at into the past, run process_lead_call_jobs(), inspect the job/timeline."
+}

@@ -212,6 +212,7 @@ async def _route_demo_to_lead_source(demo: dict, source: dict) -> str:
         "vehicle_interest": "Demo request",
         "comments":         demo.get("message", ""),
         "source_name":      source.get("name", "Website"),
+        "sms_opt_in":       bool(demo.get("sms_opt_in")),
         "attribution": {
             "kind":            "website_form",
             "source":          demo.get("source", ""),
@@ -318,6 +319,7 @@ async def create_demo_request(data: dict):
         "referrer": data.get("referrer", "").strip(),
         "referred_by": data.get("ref", "").strip(),
         "business_type": data.get("business_type", "").strip(),
+        "sms_opt_in": bool(data.get("sms_opt_in")),
         "status": "new",
         "created_at": datetime.now(timezone.utc).isoformat(),
     }

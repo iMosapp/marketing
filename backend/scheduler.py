@@ -1959,6 +1959,16 @@ def start_scheduler():
         misfire_grace_time=30,
     )
 
+    # Every 30 seconds — release overnight intake texts once the customer's texting window opens (staggered)
+    from routers.lead_intake import process_lead_deferred_actions as _lead_deferred
+    scheduler.add_job(
+        safe_job(_lead_deferred),
+        IntervalTrigger(seconds=30),
+        id="lead_deferred_actions",
+        replace_existing=True,
+        misfire_grace_time=60,
+    )
+
     # Every 60 seconds — send due AI reply queue items (60s is invisible to users vs 30s)
     from routers.ai_reply import process_ai_reply_queue as _process_ai_queue
     scheduler.add_job(

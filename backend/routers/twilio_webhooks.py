@@ -239,6 +239,17 @@ async def incoming_message(
 
         is_new_contact = False
         if not contact:
+            # Internet lead replying to its intake text: the lead thread already knows its contact
+            # (owned by the store or the assigned rep) - reuse it instead of minting "Lead (1234)".
+            lead_conv = await db.conversations.find_one(
+                {"rep_phone": to_phone, "contact_phone": from_phone, "is_internet_lead": True, "contact_id": {"$ne": None}},
+                {"contact_id": 1},
+            )
+            if lead_conv and ObjectId.is_valid(str(lead_conv.get("contact_id"))):
+                contact = await db.contacts.find_one({"_id": ObjectId(lead_conv["contact_id"])})
+                if contact:
+                    logger.info(f"[Webhook] Reusing internet-lead contact {lead_conv['contact_id']} for {from_phone}")
+        if not contact:
             is_new_contact = True
             # Enrich: try to find the contact's real name from any other rep's namespace
             # This prevents "Lead (9122)" when "Forest Ward" is already known in the system
@@ -1030,6 +1041,7 @@ async def initiate_outbound_call(request: Request):
     customer_phone = body.get("customer_phone", "")
     contact_id     = body.get("contact_id", "")
     conversation_id = body.get("conversation_id", "")  # thread to log the call in
+    task_id        = body.get("task_id", "")  # task the rep tapped Call from (auto-completes once connected)
 
     if not rep_user_id or not customer_phone:
         raise HTTPException(status_code=400, detail="rep_user_id and customer_phone required")
@@ -1067,6 +1079,7 @@ async def initiate_outbound_call(request: Request):
         "rep_user_id":       rep_user_id,
         "contact_id":        contact_id or None,
         "conversation_id":   conversation_id or None,
+        "task_id":           task_id or None,
         "created_at":        datetime.utcnow(),
     }
 
@@ -1266,6 +1279,12 @@ async def handle_recording_complete(
             contact_id   = pending.get("contact_id")
             from_phone   = pending.get("customer_phone") or from_phone
             direction    = "outbound"
+            if pending.get("task_id") and int(RecordingDuration or 0) > 0:
+                try:
+                    from routers.tasks import complete_task_from_call
+                    await complete_task_from_call(user_id, pending["task_id"], CallSid, int(RecordingDuration or 0))
+                except Exception as _te:
+                    logger.warning(f"[Voice] task auto-complete failed: {_te}")
 
     # Check contact_events for inbound call that was logged
     if not user_id and CallSid:

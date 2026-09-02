@@ -471,6 +471,69 @@ async def get_task_summary(user_id: str):
     return result
 
 
+def _as_utc(dt):
+    return dt.replace(tzinfo=timezone.utc) if isinstance(dt, datetime) and dt.tzinfo is None else dt
+
+
+@router.get("/{user_id}/contact/{contact_id}")
+async def get_contact_tasks(user_id: str, contact_id: str, limit: int = 20):
+    """Open (pending/snoozed) tasks for ONE contact, overdue first — powers the contact page 'Up Next' card."""
+    db = get_db()
+    now = datetime.now(timezone.utc)
+    today_start, _ = await get_user_day_bounds(user_id, "today")
+    cid_values: list = [contact_id]
+    if ObjectId.is_valid(contact_id):
+        cid_values.append(ObjectId(contact_id))
+    docs = await db.tasks.find({
+        "user_id": user_id,
+        "contact_id": {"$in": cid_values},
+        "status": {"$in": ["pending", "snoozed", None]},
+        "completed": {"$ne": True},
+        "type": {"$nin": ["campaign_send", "campaign_step"]},
+    }).sort("due_date", 1).limit(limit).to_list(limit)
+    out = []
+    for t in docs:
+        due = _as_utc(t.get("due_date"))
+        overdue = False
+        if isinstance(due, datetime):
+            overdue = due < now if t.get("has_time") else due < today_start
+        d = _serialize(t)
+        d["is_overdue"] = overdue
+        out.append(d)
+    out.sort(key=lambda d: (not d["is_overdue"], d.get("due_date") or "9999"))
+    return {"tasks": out, "count": len(out)}
+
+
+async def complete_task_from_call(user_id: str, task_id: str, call_sid: str = "", duration_s: int = 0) -> bool:
+    """Auto-complete the task a rep tapped 'Call' from, once the customer actually answered."""
+    db = get_db()
+    if not user_id or not ObjectId.is_valid(task_id or ""):
+        return False
+    task = await db.tasks.find_one({"_id": ObjectId(task_id), "user_id": user_id, "completed": {"$ne": True}})
+    if not task:
+        return False
+    now = datetime.now(timezone.utc)
+    await db.tasks.update_one({"_id": task["_id"]}, {"$set": {
+        "status": "completed", "completed": True, "completed_at": now,
+        "completed_via": "call_connected", "completed_call_sid": call_sid,
+    }})
+    if task.get("contact_id"):
+        try:
+            await db.contact_events.insert_one({
+                "event_type": "task_completed",
+                "title": f"Task Completed: {task.get('title', '')}",
+                "user_id": user_id,
+                "contact_id": str(task["contact_id"]),
+                "description": f"Auto-completed, call connected ({duration_s}s)",
+                "timestamp": now,
+                "source": task.get("source", "manual"),
+            })
+        except Exception as e:
+            logger.warning(f"[Tasks] call-complete event log failed: {e}")
+    logger.info(f"[Tasks] Auto-completed task {task_id} via connected call {call_sid}")
+    return True
+
+
 @router.get("/{user_id}/calendar")
 async def get_calendar_tasks(user_id: str, year: int, month: int):
     """Tasks + appointments for the Calendar screen (padded month window; client maps to local days)."""

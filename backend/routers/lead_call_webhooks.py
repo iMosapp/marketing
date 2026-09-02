@@ -3,6 +3,7 @@ Twilio voice webhooks for the Lead Call Engine (rep answers -> press 1 -> whispe
 URLs carry job id + per-job secret token so they can't be spoofed.
 """
 import logging
+from datetime import datetime, timezone
 from fastapi import APIRouter, Request, Response, Form
 from bson import ObjectId
 
@@ -28,11 +29,13 @@ async def _load_job(request: Request):
 
 
 @router.post("/answer")
-async def lead_call_answer(request: Request):
+async def lead_call_answer(request: Request, CallSid: str = Form(default="")):
     job, user_id = await _load_job(request)
     if not job:
         return _xml(eng.twiml(eng._say("Sorry, this lead is no longer available. Goodbye."), "<Hangup/>"))
+    await eng.record_call_event(str(job["_id"]), CallSid, answered_at=datetime.now(timezone.utc), status="answered")
     if job.get("claimed_by"):
+        await eng.record_call_event(str(job["_id"]), CallSid, late=True)
         name = await _rep_name(job["claimed_by"])
         return _xml(eng.twiml_already_claimed(name))
     action = f"{eng._app_url()}/api/webhooks/twilio/lead-call/claim?job={job['_id']}&u={user_id}&t={job['token']}"
@@ -40,15 +43,18 @@ async def lead_call_answer(request: Request):
 
 
 @router.post("/claim")
-async def lead_call_claim(request: Request, Digits: str = Form(default="")):
+async def lead_call_claim(request: Request, Digits: str = Form(default=""), CallSid: str = Form(default="")):
     job, user_id = await _load_job(request)
     if not job:
         return _xml(eng.twiml(eng._say("Sorry, this lead is no longer available. Goodbye."), "<Hangup/>"))
     if Digits.strip() != "1":
+        await eng.record_call_event(str(job["_id"]), CallSid, passed=True, status="passed")
         return _xml(eng.twiml_passed())
     won, job = await eng.try_claim_by_phone(str(job["_id"]), user_id)
     if not won:
+        await eng.record_call_event(str(job["_id"]), CallSid, late=True, status="late")
         return _xml(eng.twiml_already_claimed(await _rep_name(job.get("claimed_by"))))
+    await eng.record_call_event(str(job["_id"]), CallSid, status="claimed")
     db = get_db()
     rep = await db.users.find_one({"_id": ObjectId(user_id)}, {"twilio_number": 1, "mvpline_number": 1}) or {}
     source = await db.lead_sources.find_one({"_id": ObjectId(job["lead_source_id"])}) if job.get("lead_source_id") else {}
@@ -57,7 +63,7 @@ async def lead_call_claim(request: Request, Digits: str = Form(default="")):
         "conversation_id": job["conversation_id"], "user_id": user_id, "contact_id": job.get("contact_id"),
         "sender": "user", "direction": "outbound", "channel": "voice", "type": "call_log",
         "content": f"Claimed by phone and called {job['customer_phone']}", "call_status": "placed",
-        "timestamp": eng.datetime.now(eng.timezone.utc),
+        "timestamp": datetime.now(timezone.utc),
     })
     logger.info(f"[LeadCall] {user_id} claimed job {job['_id']} by phone; bridging to {job['customer_phone']}")
     return _xml(eng.twiml_claimed_and_bridge(job, caller_id))

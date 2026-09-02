@@ -20,6 +20,7 @@ export default function CallScreen() {
   const contactName  = (useLocalSearchParams().contact_name  as string) || 'Unknown';
   const contactPhone = (useLocalSearchParams().phone         as string) || '';
   const conversationId = (useLocalSearchParams().conversation_id as string) || '';
+  const taskId       = (useLocalSearchParams().task_id       as string) || '';
 
   const rep             = user as any;
   const repTwilioNumber = rep?.twilio_number || rep?.mvpline_number || '';
@@ -47,6 +48,7 @@ export default function CallScreen() {
         customer_phone:  contactPhone,
         contact_id:      contactId,
         conversation_id: conversationId,  // links call to inbox thread
+        task_id:         taskId || undefined,  // auto-completes the task once the customer answers
       });
       setCallSid(res.data.call_sid || '');
       setCallState('ringing');
@@ -92,6 +94,9 @@ export default function CallScreen() {
           description: `Called ${contactName}${durationSecs > 0 ? ` — ${callMins}min` : ''}${callNotes ? `\n${callNotes}` : ''}`,
           category:    'call',
         }).catch(() => {});
+      }
+      if (taskId && durationSecs > 0) {
+        await api.patch(`/tasks/${user._id}/${taskId}`, { action: 'complete' }).catch(() => {});
       }
       setShowLogModal(false);
       router.back();

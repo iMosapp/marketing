@@ -347,7 +347,7 @@ export default function CalendarScreen() {
                     <TouchableOpacity
                       key={`task-${ev.task_id}`}
                       style={[styles.eventRow, styles.taskRow, ev.completed && { opacity: 0.55 }]}
-                      onPress={() => ev.contact_id && router.push(`/contact/${ev.contact_id}`)}
+                      onPress={() => ev.contact_id && router.push(`/contact/${ev.contact_id}?taskId=${ev.task_id}` as any)}
                       activeOpacity={ev.contact_id ? 0.7 : 1}
                       {...tid(`cal-task-row-${ev.task_id}`)}
                     >

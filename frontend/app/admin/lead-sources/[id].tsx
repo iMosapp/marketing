@@ -23,6 +23,7 @@ import { useToast } from '../../../components/common/Toast';
 
 import { useThemeStore } from '../../../store/themeStore';
 import { ContactModeToggle, LeadCallLadder, WebsiteFormRouting, type CallAttempt } from '../../../components/admin/LeadWorkflowControls';
+import { AfterHoursRule, TestLeadCard, type StoreHours } from '../../../components/admin/LeadTimingControls';
 const IS_WEB = Platform.OS === 'web';
 
 interface LeadSource {
@@ -122,7 +123,11 @@ export default function LeadSourceDetailScreen() {
     call_attempts: [] as CallAttempt[],
     website_default: false,
     website_pages: [] as string[],
+    after_hours_mode: 'text_and_ai' as 'text_and_ai' | 'ring_anyway',
+    text_window_start: '09:00',
+    text_window_end: '20:00',
   });
+  const [storeHours, setStoreHours] = useState<StoreHours | null>(null);
   const [websitePages, setWebsitePages] = useState<{ pages: string[]; routed: Record<string, { id: string; name: string }> }>({ pages: [], routed: {} });
   const [workflowUsers, setWorkflowUsers] = useState<any[]>([]);  // All reps to choose from
   const [vaProfiles, setVaProfiles] = useState<any[]>([]);
@@ -199,7 +204,9 @@ export default function LeadSourceDetailScreen() {
 
       // Load workflow config
       if (workflowRes.data && Object.keys(workflowRes.data).length > 0) {
-        setWorkflow(prev => ({ ...prev, ...workflowRes.data }));
+        const { store_hours, ...cfg } = workflowRes.data;
+        setWorkflow(prev => ({ ...prev, ...cfg }));
+        if (store_hours) setStoreHours(store_hours);
       }
 
       // Load all reps for workflow assignment (scoped to same account)
@@ -441,7 +448,7 @@ export default function LeadSourceDetailScreen() {
                 placeholder="e.g. 1200 — powers cost-per-sale in Source ROI"
                 placeholderTextColor="#6E6E73"
                 keyboardType="decimal-pad"
-                data-testid="monthly-cost-input"
+                testID="monthly-cost-input" dataSet={{ testid: 'monthly-cost-input' } as any}
               />
             </View>
 
@@ -553,7 +560,7 @@ export default function LeadSourceDetailScreen() {
                 <TouchableOpacity
                   style={styles.credentialBox}
                   onPress={() => copyToClipboard(source.adf_url!, 'ADF URL')}
-                  data-testid="adf-url-copy"
+                  testID="adf-url-copy" dataSet={{ testid: 'adf-url-copy' } as any}
                 >
                   <Text style={styles.credentialValue} numberOfLines={2}>{source.adf_url}</Text>
                   <Ionicons name="copy-outline" size={18} color="#007AFF" />
@@ -574,7 +581,7 @@ export default function LeadSourceDetailScreen() {
                 <TouchableOpacity
                   style={styles.credentialBox}
                   onPress={() => copyToClipboard(source.email_inbound_url!, 'Email Intake URL')}
-                  data-testid="email-intake-url-copy"
+                  testID="email-intake-url-copy" dataSet={{ testid: 'email-intake-url-copy' } as any}
                 >
                   <Text style={styles.credentialValue} numberOfLines={2}>{source.email_inbound_url}</Text>
                   <Ionicons name="copy-outline" size={18} color="#007AFF" />
@@ -665,7 +672,7 @@ export default function LeadSourceDetailScreen() {
           <TouchableOpacity
             onPress={() => setShowWorkflow(v => !v)}
             style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
-            data-testid="workflow-toggle"
+            testID="workflow-toggle" dataSet={{ testid: 'workflow-toggle' } as any}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: '#C9A96220', alignItems: 'center', justifyContent: 'center' }}>
@@ -674,7 +681,7 @@ export default function LeadSourceDetailScreen() {
               <View>
                 <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Response Workflow</Text>
                 <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
-                  {workflow.intake_text ? '✓ Intake text set' : 'No intake text'} · {workflow.workflow_user_ids.length} reps · {workflow.contact_mode === 'text_and_call' ? `Text + Call (${workflow.call_attempts.length} attempts)` : 'Text only'}{workflow.website_default ? ' · Website catch-all' : workflow.website_pages.length ? ` · ${workflow.website_pages.length} web pages` : ''}
+                  {workflow.intake_text ? '✓ Intake text set' : 'No intake text'} · {workflow.workflow_user_ids.length} reps · {workflow.contact_mode === 'text_and_call' ? `Text + Call (${workflow.call_attempts.length} attempts)` : 'Text only'}{workflow.website_default ? ' · Website catch-all' : workflow.website_pages.length ? ` · ${workflow.website_pages.length} web pages` : ''}{workflow.after_hours_mode === 'text_and_ai' ? ' · After hours: Jessi' : ''}
                 </Text>
               </View>
             </View>
@@ -709,7 +716,7 @@ export default function LeadSourceDetailScreen() {
                   multiline
                   placeholder={`Hey {{first_name}}! I saw you were interested in the {{vehicle}}. This is {{rep_name}} from the dealership — what questions do you have?`}
                   placeholderTextColor={colors.textSecondary}
-                  data-testid="intake-text-input"
+                  testID="intake-text-input" dataSet={{ testid: 'intake-text-input' } as any}
                 />
               </View>
 
@@ -761,6 +768,17 @@ export default function LeadSourceDetailScreen() {
                 />
               )}
 
+              {/* ── After-hours rule + TCPA texting window ────────── */}
+              <AfterHoursRule
+                mode={workflow.after_hours_mode}
+                windowStart={workflow.text_window_start}
+                windowEnd={workflow.text_window_end}
+                storeHours={storeHours}
+                onChange={patch => setWorkflow(prev => ({ ...prev, ...patch }))}
+                onEditHours={() => router.push('/settings/store-profile' as any)}
+                colors={colors}
+              />
+
               {/* ── Website form routing ──────────────────────────── */}
               <WebsiteFormRouting
                 isDefault={workflow.website_default}
@@ -783,7 +801,7 @@ export default function LeadSourceDetailScreen() {
                 <TouchableOpacity
                   onPress={() => setWorkflow(prev => ({ ...prev, auto_call_on_claim: !prev.auto_call_on_claim }))}
                   style={{ width: 50, height: 28, borderRadius: 14, backgroundColor: workflow.auto_call_on_claim ? '#34C759' : colors.surface, borderWidth: 1, borderColor: workflow.auto_call_on_claim ? '#34C759' : colors.border, justifyContent: 'center', paddingHorizontal: 3 }}
-                  data-testid="auto-call-toggle"
+                  testID="auto-call-toggle" dataSet={{ testid: 'auto-call-toggle' } as any}
                 >
                   <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff', transform: [{ translateX: workflow.auto_call_on_claim ? 22 : 0 }] }} />
                 </TouchableOpacity>
@@ -800,7 +818,7 @@ export default function LeadSourceDetailScreen() {
                 <TouchableOpacity
                   onPress={() => setWorkflow(prev => ({ ...prev, va_enabled: !prev.va_enabled }))}
                   style={{ width: 50, height: 28, borderRadius: 14, backgroundColor: workflow.va_enabled ? '#007AFF' : colors.surface, borderWidth: 1, borderColor: workflow.va_enabled ? '#007AFF' : colors.border, justifyContent: 'center', paddingHorizontal: 3 }}
-                  data-testid="va-enabled-toggle"
+                  testID="va-enabled-toggle" dataSet={{ testid: 'va-enabled-toggle' } as any}
                 >
                   <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff', transform: [{ translateX: workflow.va_enabled ? 22 : 0 }] }} />
                 </TouchableOpacity>
@@ -828,7 +846,7 @@ export default function LeadSourceDetailScreen() {
                       <TouchableOpacity
                         onPress={() => setWorkflow(prev => ({ ...prev, va_profile_id: '' }))}
                         style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: 10, backgroundColor: !workflow.va_profile_id ? colors.accent + '20' : colors.surface, borderWidth: 1, borderColor: !workflow.va_profile_id ? colors.accent : colors.border }}
-                        data-testid="va-none-option"
+                        testID="va-none-option" dataSet={{ testid: 'va-none-option' } as any}
                       >
                         <Ionicons name="close-circle-outline" size={18} color={!workflow.va_profile_id ? colors.accent : colors.textSecondary} />
                         <Text style={{ color: !workflow.va_profile_id ? colors.accent : colors.text, fontWeight: '600' }}>No VA (use default Jessi)</Text>
@@ -839,7 +857,7 @@ export default function LeadSourceDetailScreen() {
                           key={va._id}
                           onPress={() => setWorkflow(prev => ({ ...prev, va_profile_id: va._id }))}
                           style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: 10, backgroundColor: workflow.va_profile_id === va._id ? (va.avatar_color || colors.accent) + '20' : colors.surface, borderWidth: 1, borderColor: workflow.va_profile_id === va._id ? (va.avatar_color || colors.accent) : colors.border }}
-                          data-testid={`va-option-${va._id}`}
+                          testID={`va-option-${va._id}`} dataSet={{ testid: `va-option-${va._id}` } as any}
                         >
                           <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: (va.avatar_color || '#C9A962') + '30', alignItems: 'center', justifyContent: 'center' }}>
                             <Text style={{ color: va.avatar_color || '#C9A962', fontWeight: '800', fontSize: 14 }}>{(va.name || 'V').charAt(0)}</Text>
@@ -886,6 +904,16 @@ export default function LeadSourceDetailScreen() {
                   : <Text style={{ color: '#000', fontWeight: '700', fontSize: 15 }}>Save Workflow</Text>
                 }
               </WebButton>
+
+              {/* ── Send a test lead through this workflow ────────── */}
+              <TestLeadCard
+                sourceId={String(id)}
+                defaultPhone={(user as any)?.phone || ''}
+                contactMode={workflow.contact_mode}
+                hasIntakeText={!!workflow.intake_text?.trim()}
+                colors={colors}
+                onOpenThread={convId => router.push(`/thread/${convId}` as any)}
+              />
 
             </View>
           )}

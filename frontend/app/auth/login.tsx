@@ -474,7 +474,7 @@ export default function LoginScreen() {
                 blurOnSubmit={false}
                 onTouchStart={() => focusInput(emailInputRef)}
                 onSubmitEditing={() => focusInput(passwordInputRef)}
-                data-testid="login-email-input"
+                testID="login-email-input" dataSet={{ testid: 'login-email-input' } as any}
               />
               
               <View style={styles.passwordContainer}>
@@ -502,7 +502,7 @@ export default function LoginScreen() {
                   returnKeyType="done"
                   onTouchStart={() => focusInput(passwordInputRef)}
                   onSubmitEditing={handleLogin}
-                  data-testid="login-password-input"
+                  testID="login-password-input" dataSet={{ testid: 'login-password-input' } as any}
                 />
                 <TouchableOpacity
                   style={styles.eyeButton}
@@ -575,7 +575,7 @@ export default function LoginScreen() {
                   onPress={() => setShowLoginQR(true)}
                   activeOpacity={0.7}
                   style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 16, paddingVertical: 10 }}
-                  data-testid="login-qr-btn"
+                  testID="login-qr-btn" dataSet={{ testid: 'login-qr-btn' } as any}
                 >
                   <Ionicons name="qr-code-outline" size={17} color="#C9A962" />
                   <Text style={{ fontSize: 15, fontWeight: '600', color: '#C9A962' }}>My Card QR</Text>
@@ -592,7 +592,7 @@ export default function LoginScreen() {
                     {lastCardUser?.name ? `${lastCardUser.name.split(' ')[0]}'s Card` : 'My Card'}
                   </Text>
                   <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.6)', marginBottom: 20 }}>Have them scan it</Text>
-                  <View style={{ backgroundColor: '#FFF', padding: 18, borderRadius: 20 }} data-testid="login-qr-code">
+                  <View style={{ backgroundColor: '#FFF', padding: 18, borderRadius: 20 }} testID="login-qr-code" dataSet={{ testid: 'login-qr-code' } as any}>
                     <QRCode
                       value={`${process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'}/card/${lastCardUser?.id}`}
                       size={240}
@@ -603,7 +603,7 @@ export default function LoginScreen() {
                   <TouchableOpacity
                     onPress={() => setShowLoginQR(false)}
                     style={{ marginTop: 24, paddingHorizontal: 32, paddingVertical: 12, borderRadius: 22, borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' }}
-                    data-testid="login-qr-close"
+                    testID="login-qr-close" dataSet={{ testid: 'login-qr-close' } as any}
                   >
                     <Text style={{ fontSize: 16, fontWeight: '700', color: '#FFF' }}>Close</Text>
                   </TouchableOpacity>
@@ -615,7 +615,7 @@ export default function LoginScreen() {
                   style={[styles.biometricButton, biometricLoading && styles.buttonDisabled]}
                   onPress={handleBiometricLogin}
                   disabled={biometricLoading}
-                  data-testid="biometric-login-button"
+                  testID="biometric-login-button" dataSet={{ testid: 'biometric-login-button' } as any}
                 >
                   <Ionicons
                     name={getBiometricIcon(biometricStatus.biometricType) as any}
@@ -653,7 +653,7 @@ export default function LoginScreen() {
                         window.location.href = '/install.html';
                       }
                     }}
-                    data-testid="install-app-btn"
+                    testID="install-app-btn" dataSet={{ testid: 'install-app-btn' } as any}
                   >
                     <Ionicons name="download" size={18} color="#007AFF" />
                     <Text style={[styles.refreshButtonText, { color: '#007AFF' }]}>Install App on Your Phone</Text>

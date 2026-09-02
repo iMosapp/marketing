@@ -585,8 +585,24 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
             pass
 
     # ── Determine send time (after-hours logic)
-    scheduled_send_at = calculate_send_time(store)
-    is_immediate = (scheduled_send_at - now).total_seconds() < 120
+    # Business-initiated contact (intake text, AI first message, rep call ladder) respects the
+    # customer's texting window and the store's hours; overnight leads are released staggered.
+    from services.lead_timing import build_contact_plan, parse_iso
+    plan = await build_contact_plan(db, source, store, phone_e164, now)
+    scheduled_send_at = parse_iso(plan["intake_at"]) or (now + timedelta(seconds=LEAD_SEND_DELAY_SECONDS))
+    if not plan["intake_deferred"]:
+        scheduled_send_at = now + timedelta(seconds=LEAD_SEND_DELAY_SECONDS)
+    is_immediate = not plan["intake_deferred"]
+    is_test = bool(normalized.get("is_test"))
+    sms_opt_in = bool(normalized.get("sms_opt_in"))
+
+    if sms_opt_in:
+        await db.contacts.update_one(
+            {"_id": ObjectId(contact_id)},
+            {"$set": {"sms_consent": True, "sms_consent_at": now, "sms_consent_source": (normalized.get("attribution") or {}).get("kind") or "lead_form"}},
+        )
+    if is_test:
+        await db.contacts.update_one({"_id": ObjectId(contact_id)}, {"$addToSet": {"tags": "Test Lead"}, "$set": {"is_test": True}})
 
     # ── Match vehicle of interest against live inventory
     matched_vehicle = await _match_lead_inventory(db, normalized, store_id)
@@ -628,7 +644,11 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         "draft_message":     first_message,
         "scheduled_send_at": scheduled_send_at,
         "is_after_hours":    not is_immediate,
-        "status":            "queued",   # queued → sent | failed
+        "is_test":           is_test,
+        # The workflow intake text is the first touch when configured; the legacy AI first
+        # message only runs for sources without one (never two texts in 90 seconds).
+        "status":            "skipped" if (source.get("intake_text") or "").strip() else "queued",   # queued → sent | failed
+        "skip_reason":       "intake_text_workflow" if (source.get("intake_text") or "").strip() else None,
         "raw_body":          raw_body[:4000] if raw_body else "",
         "received_at":       now,
         "created_at":        now,
@@ -651,9 +671,16 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         "status":           "active",
         "claimed":          assigned_user_id is not None,
         "claimed_by":       assigned_user_id,
-        "ai_mode":          "assist",
+        # Jessi answers the lead's replies (any hour, consumer-initiated) when the source's
+        # AI toggle is on or the store is closed under the after-hours rule.
+        "ai_mode":          "auto_reply" if plan["jessi_on"] else "assist",
+        "ai_enabled":       True if plan["jessi_on"] else None,
         "draft_message":    first_message,
         "is_internet_lead": True,
+        "is_test":          is_test,
+        "after_hours_lead": bool(plan["after_hours"]),
+        "routing_plan":     plan,
+        "sms_consent":      {"opted_in": True, "at": now.isoformat(), "source": (normalized.get("attribution") or {}).get("kind") or "lead_form"} if sms_opt_in else None,
         "attribution":      normalized.get("attribution") or None,
         "created_at":       now,
         "updated_at":       now,
@@ -696,13 +723,13 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
     asyncio.create_task(_fire_intake_workflow(
         source=source, lead_doc=lead_doc, conv_id=conv_id,
         contact_id=contact_id, phone_e164=phone_e164,
-        normalized=normalized, db=db, now=now,
+        normalized=normalized, db=db, now=now, plan=plan,
     ))
 
     logger.info(
         f"[LeadIntake] Lead received: {full_name} | {phone_e164} | "
-        f"source={source.get('name')} | send_at={scheduled_send_at.isoformat()} | "
-        f"after_hours={not is_immediate}"
+        f"source={source.get('name')} | intake_at={plan['intake_at']} | "
+        f"after_hours={plan['after_hours']} | ladder_deferred={plan['ladder_deferred']}"
     )
 
     return {
@@ -712,8 +739,9 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         "is_new_contact": is_new_contact,
         "draft_message":  first_message,
         "scheduled_send_at": scheduled_send_at.isoformat(),
-        "is_after_hours":   not is_immediate,
+        "is_after_hours":   bool(plan["after_hours"]),
         "assigned_to":      assigned_user_id,
+        "plan":             plan,
     }
 
 
@@ -1751,17 +1779,79 @@ async def _get_on_shift_reps(user_ids: list, fallback_all: bool = True) -> list:
         return user_ids   # safe fallback
 
 
-async def _fire_intake_workflow(source, lead_doc, conv_id, contact_id, phone_e164, normalized, db, now):
+async def _send_intake_sms(db, conv_id: str, to_phone: str, from_number: str, body: str) -> dict:
+    """Send the intake text and log it on the thread. Returns the twilio_service result."""
+    from services.twilio_service import send_sms
+    result = await send_sms(to_phone, body, from_phone=from_number or None)
+    if result.get("success"):
+        now = datetime.now(timezone.utc)
+        await db.messages.insert_one({
+            "conversation_id": conv_id,
+            "content":         body,
+            "sender":          "ai",
+            "direction":       "outbound",
+            "channel":         "sms",
+            "ai_generated":    True,
+            "is_intake_text":  True,
+            "mocked":          bool(result.get("mock")),
+            "timestamp":       now,
+        })
+        await db.conversations.update_one({"_id": ObjectId(conv_id)}, {"$set": {"last_message_at": now}})
+        logger.info(f"[IntakeWorkflow] Intake text sent to {to_phone}")
+    else:
+        logger.warning(f"[IntakeWorkflow] Intake text send failed: {result.get('error')}")
+    return result
+
+
+async def process_lead_deferred_actions():
+    """Scheduler (every 30s): release overnight intake texts once the customer's texting window
+    opens. Staggered at plan time, so a pile of overnight leads trickles out one per minute."""
+    db = get_db()
+    now = datetime.now(timezone.utc)
+    due = await db.lead_deferred_actions.find({"status": "pending", "run_at": {"$lte": now}}).sort("run_at", 1).to_list(25)
+    for action in due:
+        try:
+            conv_id = action["conversation_id"]
+            from services.lead_call_engine import _rep_already_engaged
+            if await _rep_already_engaged(db, conv_id):
+                await db.lead_deferred_actions.update_one({"_id": action["_id"]}, {"$set": {"status": "cancelled", "reason": "rep_replied", "updated_at": now}})
+                continue
+            result = await _send_intake_sms(db, conv_id, action["to"], action.get("from_number", ""), action["body"])
+            await db.lead_deferred_actions.update_one(
+                {"_id": action["_id"]},
+                {"$set": {"status": "sent" if result.get("success") else "failed", "error": result.get("error"), "sent_at": now, "updated_at": now}},
+            )
+        except Exception as e:
+            logger.warning(f"[IntakeWorkflow] Deferred action {action.get('_id')} failed: {e}")
+            await db.lead_deferred_actions.update_one({"_id": action["_id"]}, {"$set": {"status": "failed", "error": str(e)[:300], "updated_at": now}})
+
+
+def _local_clock(iso_utc: str, tz_name: str) -> str:
+    """'9:05 AM' / 'Mon 9:05 AM' in the given zone, for rep-facing copy."""
+    from services.lead_timing import parse_iso, _tz
+    dt = parse_iso(iso_utc)
+    if not dt:
+        return ""
+    local = dt.astimezone(_tz(tz_name))
+    same_day = local.date() == datetime.now(timezone.utc).astimezone(_tz(tz_name)).date()
+    return local.strftime("%-I:%M %p") if same_day else local.strftime("%a %-I:%M %p")
+
+
+async def _fire_intake_workflow(source, lead_doc, conv_id, contact_id, phone_e164, normalized, db, now, plan=None):
     """
     Fires instantly when a lead arrives:
-    1. Sends the instant intake text (with merge fields) if configured
+    1. Sends the instant intake text (with merge fields) if configured - or queues it for the
+       customer's texting window (staggered) when the lead lands overnight
     2. Blasts all workflow reps with push + in-app notification
+    3. Starts the Text + Call rep ladder (deferred to store opening under the after-hours rule)
     """
     try:
+        plan = plan or {}
         source_name         = source.get("name", "Lead Source")
         intake_text         = source.get("intake_text", "").strip()
         workflow_user_ids   = source.get("workflow_user_ids", [])
         notify_all          = source.get("notify_all_on_intake", True)
+        store_tz            = plan.get("store_tz") or "America/Denver"
 
         # ── 1. Send instant intake text ──────────────────────────────────────
         if intake_text and phone_e164:
@@ -1778,48 +1868,39 @@ async def _fire_intake_workflow(source, lead_doc, conv_id, contact_id, phone_e16
             }
             message_body = hydrate_intake_text(intake_text, lead_data, source_name)
 
-            # Find a Twilio number to send from — prefer first on-shift rep's number
+            # Send from the assigned rep's business number so the customer's reply lands in
+            # this thread and that rep's inbox; otherwise the first on-shift workflow rep.
             from_number = None
-            if workflow_user_ids:
-                # Get on-shift reps to pick a sender from
-                sender_pool = await _get_on_shift_reps(workflow_user_ids, fallback_all=True)
-                rep = await db.users.find_one(
-                    {"_id": ObjectId(sender_pool[0])},
-                    {"twilio_number": 1, "mvpline_number": 1}
-                )
-                from_number = (rep or {}).get("twilio_number") or (rep or {}).get("mvpline_number")
+            sender_ids = ([lead_doc.get("assigned_to")] if lead_doc.get("assigned_to") else []) + list(workflow_user_ids)
+            if sender_ids:
+                pool = await _get_on_shift_reps(sender_ids, fallback_all=True) if not lead_doc.get("assigned_to") else sender_ids
+                for uid in pool:
+                    try:
+                        rep = await db.users.find_one({"_id": ObjectId(uid)}, {"twilio_number": 1, "mvpline_number": 1})
+                    except Exception:
+                        rep = None
+                    from_number = (rep or {}).get("twilio_number") or (rep or {}).get("mvpline_number")
+                    if from_number:
+                        break
 
             if not from_number:
                 from_number = os.environ.get("TWILIO_PHONE_NUMBER", "")
 
             if from_number and message_body:
-                try:
-                    import asyncio as _aio
-                    from twilio.rest import Client as _TC
-                    tw_sid   = os.environ.get("TWILIO_ACCOUNT_SID", "")
-                    tw_token = os.environ.get("TWILIO_AUTH_TOKEN", "")
-                    if tw_sid and tw_token:
-                        client = _TC(tw_sid, tw_token)
-                        await _aio.to_thread(
-                            client.messages.create,
-                            to=phone_e164,
-                            from_=from_number,
-                            body=message_body,
-                        )
-                        # Save as a message in the conversation
-                        await db.messages.insert_one({
-                            "conversation_id": conv_id,
-                            "content":         message_body,
-                            "sender":          "ai",
-                            "direction":       "outbound",
-                            "channel":         "sms",
-                            "ai_generated":    True,
-                            "is_intake_text":  True,
-                            "timestamp":       now,
-                        })
-                        logger.info(f"[IntakeWorkflow] Intake text sent to {phone_e164}")
-                except Exception as send_err:
-                    logger.warning(f"[IntakeWorkflow] Intake text send failed: {send_err}")
+                # rep_phone lets the Twilio webhook route the customer's reply into THIS thread
+                await db.conversations.update_one({"_id": ObjectId(conv_id)}, {"$set": {"rep_phone": from_number}})
+                if plan.get("intake_deferred"):
+                    from services.lead_timing import parse_iso
+                    await db.lead_deferred_actions.insert_one({
+                        "kind": "intake_text", "conversation_id": conv_id, "contact_id": contact_id,
+                        "source_id": str(source.get("_id", "")), "store_id": source.get("store_id"),
+                        "to": phone_e164, "from_number": from_number, "body": message_body,
+                        "run_at": parse_iso(plan["intake_at"]), "reason": plan.get("intake_reason"),
+                        "status": "pending", "created_at": now,
+                    })
+                    logger.info(f"[IntakeWorkflow] Intake text for {phone_e164} held until {plan['intake_at']} ({plan.get('intake_reason')})")
+                else:
+                    await _send_intake_sms(db, conv_id, phone_e164, from_number, message_body)
 
         # ── 2. Blast workflow reps with notification ──────────────────────────
         if notify_all and workflow_user_ids:
@@ -1827,6 +1908,13 @@ async def _fire_intake_workflow(source, lead_doc, conv_id, contact_id, phone_e16
             vehicle   = normalized.get("vehicle_interest", "") or " ".join(filter(None, [normalized.get("vehicle_year"), normalized.get("vehicle_make"), normalized.get("vehicle_model")]))
             notif_title = f"New Lead: {full_name}"
             notif_body  = f"{source_name} | {vehicle}" if vehicle else source_name
+            if plan.get("ladder_deferred") and source.get("contact_mode") == "text_and_call":
+                when = _local_clock(plan.get("ladder_at"), store_tz)
+                notif_body += f" | After hours: {'Jessi is replying, ' if plan.get('jessi_on') else ''}calls ring at {when}"
+            elif plan.get("after_hours") and plan.get("jessi_on"):
+                notif_body += " | After hours: Jessi is replying"
+            if plan.get("intake_deferred"):
+                notif_body += f" | Intake text goes out {_local_clock(plan.get('intake_at'), store_tz)}"
             app_url     = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
             conv_link   = f"{app_url}/thread/{conv_id}"
 
@@ -1897,6 +1985,7 @@ async def _fire_intake_workflow(source, lead_doc, conv_id, contact_id, phone_e16
         if source.get("contact_mode") == "text_and_call" and phone_e164:
             try:
                 from services.lead_call_engine import start_call_workflow
+                from services.lead_timing import parse_iso
                 attribution = normalized.get("attribution") or {}
                 lead_summary = {
                     "name":         normalized.get("full_name") or f"{normalized.get('first_name','')} {normalized.get('last_name','')}".strip(),
@@ -1910,6 +1999,8 @@ async def _fire_intake_workflow(source, lead_doc, conv_id, contact_id, phone_e16
                     source=source, conversation_id=conv_id, contact_id=contact_id,
                     customer_phone=phone_e164, lead=lead_summary,
                     assigned_user_id=lead_doc.get("assigned_to"),
+                    not_before=parse_iso(plan.get("ladder_at")) if plan.get("ladder_deferred") else None,
+                    deferred_reasons=plan.get("ladder_reasons") or [],
                 )
             except Exception as call_err:
                 logger.warning(f"[IntakeWorkflow] Call engine start failed: {call_err}")
