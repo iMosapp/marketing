@@ -19,7 +19,20 @@ from routers.database import get_db
 
 logger = logging.getLogger(__name__)
 
-MAX_AUTO_RETRIES = 4
+DEFAULT_CADENCE = {
+    "enabled": True,
+    "first_minutes": 30,     # miss #1 -> try again in N minutes
+    "second_hours": 3,       # miss #2 -> later the same day
+    "morning_hour": 10,      # "next morning" time for miss #3 and evening rollovers
+    "fourth_days": 2,        # miss #4 -> N days later at morning_hour
+    "evening_cutoff": 19,    # a retry landing at/after this local hour rolls to next morning
+    "max_auto": 4,           # misses that get an auto retry; the next one is the final "text or park" task
+}
+CADENCE_LIMITS = {
+    "first_minutes": (5, 240), "second_hours": (1, 8), "morning_hour": (7, 12),
+    "fourth_days": (1, 7), "evening_cutoff": (16, 22), "max_auto": (1, 6),
+}
+MAX_AUTO_RETRIES = DEFAULT_CADENCE["max_auto"]
 VOICEMAIL_HINTS = (
     "leave a message", "leave your message", "leave me a message", "after the tone", "at the tone", "after the beep",
     "record your message", "voicemail", "voice mail", "mailbox", "not available", "can't take your call",
@@ -85,36 +98,74 @@ async def _tz_for(user_id: str) -> ZoneInfo:
         return ZoneInfo("America/Denver")
 
 
+def normalize_cadence(raw: dict | None) -> dict:
+    """Fill defaults + clamp to sane ranges. Unknown keys dropped."""
+    out = dict(DEFAULT_CADENCE)
+    for k, (lo, hi) in CADENCE_LIMITS.items():
+        v = (raw or {}).get(k)
+        if v is None:
+            continue
+        try:
+            out[k] = max(lo, min(hi, int(v)))
+        except (TypeError, ValueError):
+            pass
+    if raw is not None and "enabled" in raw:
+        out["enabled"] = bool(raw.get("enabled"))
+    return out
+
+
+async def cadence_for(user_id: str) -> dict:
+    db = get_db()
+    u = await db.users.find_one({"_id": ObjectId(user_id)}, {"call_retry_cadence": 1}) if ObjectId.is_valid(user_id) else None
+    return normalize_cadence((u or {}).get("call_retry_cadence"))
+
+
 def _at(d: datetime, hour: int) -> datetime:
     return d.replace(hour=hour, minute=0, second=0, microsecond=0)
 
 
-def _next_business_morning(local: datetime) -> datetime:
-    d = _at(local + timedelta(days=1), 10)
+def _next_business_morning(local: datetime, hour: int = 10) -> datetime:
+    d = _at(local + timedelta(days=1), hour)
     while d.weekday() == 6:  # dealers work Saturdays; skip Sundays only
         d += timedelta(days=1)
     return d
 
 
-def next_retry_due(attempt: int, now_utc: datetime, tz: ZoneInfo) -> datetime:
+def next_retry_due(attempt: int, now_utc: datetime, tz: ZoneInfo, cadence: dict | None = None) -> datetime:
+    c = normalize_cadence(cadence)
     local = now_utc.astimezone(tz)
+    morning = c["morning_hour"]
+    cutoff = c["evening_cutoff"]
+    if attempt > c["max_auto"]:
+        return _next_business_morning(local, morning).astimezone(timezone.utc)
     if attempt == 1:
-        due = local + timedelta(minutes=30)
-        if due.hour >= 20 or due.hour < 8:
-            due = _next_business_morning(local)
+        due = local + timedelta(minutes=c["first_minutes"])
+        if due.hour >= cutoff + 1 or due.hour < 8:
+            due = _next_business_morning(local, morning)
     elif attempt == 2:
-        due = local + timedelta(hours=3)
-        if due.hour >= 19 or due.hour < 8:
-            due = _next_business_morning(local)
+        due = local + timedelta(hours=c["second_hours"])
+        if due.hour >= cutoff or due.hour < 8:
+            due = _next_business_morning(local, morning)
     elif attempt == 3:
-        due = _next_business_morning(local)
+        due = _next_business_morning(local, morning)
     elif attempt == 4:
-        due = _at(local + timedelta(days=2), 10)
+        due = _at(local + timedelta(days=c["fourth_days"]), morning)
         while due.weekday() == 6:
             due += timedelta(days=1)
     else:
-        due = _next_business_morning(local)
+        due = _next_business_morning(local, morning)
     return due.astimezone(timezone.utc)
+
+
+def preview_schedule(cadence: dict, tz: ZoneInfo, now_utc: datetime | None = None) -> list:
+    """What the reminders would look like if a call went to voicemail right now."""
+    c = normalize_cadence(cadence)
+    now = now_utc or datetime.now(timezone.utc)
+    out = []
+    for attempt in range(1, c["max_auto"] + 2):
+        due = next_retry_due(attempt, now, tz, c)
+        out.append({"attempt": attempt, "final": attempt > c["max_auto"], "due": due.isoformat(), "label": _due_label(due, now, tz)})
+    return out
 
 
 def _due_label(due_utc: datetime, now_utc: datetime, tz: ZoneInfo) -> str:
@@ -179,6 +230,8 @@ async def _on_connected(db, user_id, contact, pending, call_sid, duration_s, now
 async def _on_missed(db, user_id, contact, first, pending, outcome, source, call_sid, now) -> dict:
     contact_id = str(contact["_id"])
     tz = await _tz_for(user_id)
+    cadence = await cadence_for(user_id)
+    max_auto = cadence["max_auto"]
     state = contact.get("call_retry") or {}
     last_at = state.get("last_at")
     if isinstance(last_at, datetime) and last_at.tzinfo is None:
@@ -189,8 +242,16 @@ async def _on_missed(db, user_id, contact, first, pending, outcome, source, call
     conversation_id = pending.get("conversation_id") or None
 
     task_id, due_utc, label = None, None, ""
-    if attempt <= MAX_AUTO_RETRIES:
-        due_utc = next_retry_due(attempt, now, tz)
+    if not cadence["enabled"]:
+        await db.contacts.update_one({"_id": contact["_id"]}, {"$set": {"call_retry": {
+            "attempts": attempt, "last_at": now, "last_outcome": outcome, "next_due": None, "task_id": None}}})
+        await db.contact_events.insert_one({
+            "event_type": f"call_{outcome}", "title": "Left voicemail" if outcome == "voicemail" else ("Line busy" if outcome == "busy" else "No answer"),
+            "user_id": user_id, "contact_id": contact_id, "description": f"Miss #{attempt}. Auto-retries are off in your settings.",
+            "category": "call", "icon": "call", "color": "#FF9F0A", "call_sid": call_sid, "source": source, "timestamp": now, "created_at": now})
+        return {"applied": True, "outcome": outcome, "attempt": attempt, "task_id": None, "due": None, "label": "", "disabled": True}
+    if attempt <= max_auto:
+        due_utc = next_retry_due(attempt, now, tz, cadence)
         label = _due_label(due_utc, now, tz)
         tip = " Tip: shoot a quick \"just tried you\" text too." if attempt >= 3 else ""
         line = f"{first} {verb} at {stamp} (miss #{attempt}). Try again {label}.{tip}"
@@ -218,8 +279,8 @@ async def _on_missed(db, user_id, contact, first, pending, outcome, source, call
                 "channel": "", "conversation_id": conversation_id, "created_at": now,
             })
             task_id = str(res.inserted_id)
-    elif attempt == MAX_AUTO_RETRIES + 1:
-        due_utc = next_retry_due(attempt, now, tz)
+    elif attempt == max_auto + 1:
+        due_utc = next_retry_due(attempt, now, tz, cadence)
         label = _due_label(due_utc, now, tz)
         res = await db.tasks.insert_one({
             "user_id": user_id, "contact_id": contact_id, "contact_name": contact.get("name") or first,
@@ -239,14 +300,14 @@ async def _on_missed(db, user_id, contact, first, pending, outcome, source, call
     title = "Left voicemail" if outcome == "voicemail" else ("Line busy" if outcome == "busy" else "No answer")
     await db.contact_events.insert_one({
         "event_type": f"call_{outcome}", "title": title, "user_id": user_id, "contact_id": contact_id,
-        "description": (f"Retry set for {label} (miss #{attempt})" if task_id and attempt <= MAX_AUTO_RETRIES
-                        else f"Miss #{attempt}. Auto-retries stopped." if attempt > MAX_AUTO_RETRIES else f"Miss #{attempt}"),
+        "description": (f"Retry set for {label} (miss #{attempt})" if task_id and attempt <= max_auto
+                        else f"Miss #{attempt}. Auto-retries stopped." if attempt > max_auto else f"Miss #{attempt}"),
         "category": "call", "icon": "call", "color": "#FF9F0A", "call_sid": call_sid, "source": source,
         "timestamp": now, "created_at": now,
     })
     if task_id:
         push_title = f"{first} {verb}"
-        push_body = (f"Try again {label} · miss #{attempt}" if attempt <= MAX_AUTO_RETRIES
+        push_body = (f"Try again {label} · miss #{attempt}" if attempt <= max_auto
                      else f"{attempt} misses. Text or park? Task added for {label}.")
         try:
             from routers.push_notifications import send_push_to_user

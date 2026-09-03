@@ -21,6 +21,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="messaging-channels" />
       <Stack.Screen name="notifications" />
       <Stack.Screen name="schedule" />
+      <Stack.Screen name="call-retries" />
     </Stack>
   );
 }

@@ -107,6 +107,28 @@ async def initiate_call(user_id: str, data: dict):
     }
 
 
+@router.get("/{user_id}/retry-cadence")
+async def get_retry_cadence(user_id: str):
+    """Per-rep voicemail retry timing + a live preview of what a miss right now would schedule."""
+    from services.call_followup import cadence_for, preview_schedule, _tz_for, DEFAULT_CADENCE, CADENCE_LIMITS
+    cadence = await cadence_for(user_id)
+    tz = await _tz_for(user_id)
+    return {"cadence": cadence, "defaults": DEFAULT_CADENCE, "limits": {k: list(v) for k, v in CADENCE_LIMITS.items()},
+            "timezone": str(tz), "preview": preview_schedule(cadence, tz)}
+
+
+@router.put("/{user_id}/retry-cadence")
+async def save_retry_cadence(user_id: str, data: dict):
+    from services.call_followup import normalize_cadence, preview_schedule, _tz_for
+    if not ObjectId.is_valid(user_id):
+        raise HTTPException(status_code=400, detail="Invalid user")
+    cadence = normalize_cadence(data or {})
+    db = get_db()
+    await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"call_retry_cadence": cadence}})
+    tz = await _tz_for(user_id)
+    return {"success": True, "cadence": cadence, "preview": preview_schedule(cadence, tz)}
+
+
 @router.post("/{user_id}/outcome")
 async def log_call_outcome(user_id: str, data: dict):
     """Native-dialer calls: rep picks Talked / Voicemail / No answer / Busy -> same follow-up engine as Twilio calls."""

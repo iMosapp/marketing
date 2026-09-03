@@ -571,6 +571,7 @@ export default function MoreScreen() {
       // Notification preferences — visible to ALL users so everyone can control SMS vs Push
       { icon: 'chatbubble-ellipses-outline', title: 'Notification Preferences', subtitle: 'SMS alerts, push delivery & quiet times', onPress: () => router.push('/settings/notifications'), color: '#FF9500' },
       { icon: 'time-outline', title: 'My Schedule', subtitle: 'Work hours & notification quiet times', onPress: () => router.push('/settings/schedule'), color: '#34C759' },
+      { icon: 'call-outline', title: 'Call Retries', subtitle: 'When to try again after voicemail or no answer', onPress: () => router.push('/settings/call-retries' as any), color: '#FF9F0A' },
       { icon: 'calendar-outline', title: 'Calendar', subtitle: 'Connect calendars', onPress: () => router.push('/settings/calendar'), color: '#007AFF' },
       { icon: 'help-circle-outline', title: 'Help Center', subtitle: 'How-to guides & FAQs', onPress: () => router.push('/help' as any), color: '#007AFF' },
       { icon: 'bug-outline', title: 'Report a Bug', subtitle: 'Flag an issue or share feedback', onPress: () => router.push('/report-bug' as any), color: '#FF3B30' },
