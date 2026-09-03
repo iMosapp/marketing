@@ -196,6 +196,7 @@
     .rv.vis{opacity:1;transform:translateY(0)}
     .rv-1{transition-delay:.1s}.rv-2{transition-delay:.2s}.rv-3{transition-delay:.3s}
   </style>
+<script src="/lead-retry.js"></script>
 </head>
 <body>
 
@@ -670,7 +671,7 @@ async function submitDemoForm(e){
       document.getElementById('demoFormWrap').style.display='none';
       document.getElementById('demoSuccessWrap').style.display='block';
     }else{throw new Error()}
-  }catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert('Something went wrong. Please try again.')}
+  }catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert("We couldn't reach our server just now. Please try again in a moment, or email sales@imonsocial.com and we'll get you set up.")}
 }
 </script>
 <script>window.IMOS_API=window.IMOS_API||(location.hostname.includes("imonsocial.com")?"https://app.imonsocial.com":"");</script><script src="/chat-widget.js"></script>
@@ -719,7 +720,7 @@ async function submitContactForm(e){
     });
     if(r.ok){document.getElementById('contactFormWrap').style.display='none';document.getElementById('contactSuccessWrap').style.display='block';}
     else throw new Error();
-  }catch(ex){btn.disabled=false;btn.textContent='Send Message';alert('Something went wrong. Please try again.');}
+  }catch(ex){btn.disabled=false;btn.textContent='Send Message';alert("We couldn't reach our server just now. Please try again in a moment, or email sales@imonsocial.com and we'll get you set up.");}
 }
 </script>
 </body>

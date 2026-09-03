@@ -103,6 +103,7 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
   .legal-related a{display:inline-block;font-size:15px;font-weight:600;color:#007AFF;margin-right:20px;text-decoration:none;}
   .legal-related a:hover{text-decoration:underline;}
   </style>
+<script src="/lead-retry.js"></script>
 </head>
 <body>
 <nav>
@@ -266,7 +267,7 @@ async function submitDemoForm(e){
     });
     if(r.ok){document.getElementById('demoFormWrap').style.display='none';document.getElementById('demoSuccessWrap').style.display='block';}
     else throw new Error();
-  }catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert('Something went wrong. Please try again.');}
+  }catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert("We couldn't reach our server just now. Please try again in a moment, or email sales@imonsocial.com and we'll get you set up.");}
 }
 </script>
 <div class="demo-overlay" id="contactModal">
@@ -313,7 +314,7 @@ async function submitContactForm(e){
     });
     if(r.ok){document.getElementById('contactFormWrap').style.display='none';document.getElementById('contactSuccessWrap').style.display='block';}
     else throw new Error();
-  }catch(ex){btn.disabled=false;btn.textContent='Send Message';alert('Something went wrong. Please try again.');}
+  }catch(ex){btn.disabled=false;btn.textContent='Send Message';alert("We couldn't reach our server just now. Please try again in a moment, or email sales@imonsocial.com and we'll get you set up.");}
 }
 </script>
 <script>

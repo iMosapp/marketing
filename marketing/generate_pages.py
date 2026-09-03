@@ -360,7 +360,7 @@ async function submitContactForm(e){
     });
     if(r.ok){document.getElementById('contactFormWrap').style.display='none';document.getElementById('contactSuccessWrap').style.display='block';}
     else throw new Error();
-  }catch(ex){btn.disabled=false;btn.textContent='Send Message';alert('Something went wrong. Please try again.');}
+  }catch(ex){btn.disabled=false;btn.textContent='Send Message';alert("We couldn't reach our server just now. Please try again in a moment, or email sales@imonsocial.com and we'll get you set up.");}
 }
 </script>"""
 
@@ -424,7 +424,7 @@ async function submitDemoForm(e){
     });
     if(r.ok){document.getElementById('demoFormWrap').style.display='none';document.getElementById('demoSuccessWrap').style.display='block';}
     else throw new Error();
-  }catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert('Something went wrong. Please try again.');}
+  }catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert("We couldn't reach our server just now. Please try again in a moment, or email sales@imonsocial.com and we'll get you set up.");}
 }
 </script>"""
 
@@ -454,6 +454,7 @@ TEMPLATE = """<!DOCTYPE html>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>{css}</style>
+<script src="/lead-retry.js"></script>
 </head>
 <body>
 {nav}
@@ -544,6 +545,7 @@ DEMO_PAGE_HTML = """<!DOCTYPE html>
   .benefit h4{{font-size:15px;font-weight:700;color:#1C1C1E;margin-bottom:3px;}}
   .benefit p{{font-size:13px;color:#636366;margin:0;}}
   </style>
+<script src="/lead-retry.js"></script>
 </head>
 <body>
 {nav}
@@ -609,8 +611,8 @@ async function submitDemo() {{
     if(r.ok){{
       document.getElementById('form-area').style.display='none';
       document.getElementById('success-area').style.display='block';
-    }}else{{btn.disabled=false;btn.innerHTML='Request My Demo <i class="fa-solid fa-arrow-right"></i>';alert('Something went wrong. Please try again.');}}
-  }}catch(e){{btn.disabled=false;btn.innerHTML='Request My Demo <i class="fa-solid fa-arrow-right"></i>';alert('Something went wrong. Please try again.');}}
+    }}else{{btn.disabled=false;btn.innerHTML='Request My Demo <i class="fa-solid fa-arrow-right"></i>';alert("We couldn't reach our server just now. Please try again in a moment, or email sales@imonsocial.com and we'll get you set up.");}}
+  }}catch(e){{btn.disabled=false;btn.innerHTML='Request My Demo <i class="fa-solid fa-arrow-right"></i>';alert("We couldn't reach our server just now. Please try again in a moment, or email sales@imonsocial.com and we'll get you set up.");}}
 }}
 </script>
 </body>
@@ -646,6 +648,7 @@ LEGAL_TEMPLATE = """<!DOCTYPE html>
   .legal-related a{{display:inline-block;font-size:15px;font-weight:600;color:#007AFF;margin-right:20px;text-decoration:none;}}
   .legal-related a:hover{{text-decoration:underline;}}
   </style>
+<script src="/lead-retry.js"></script>
 </head>
 <body>
 {nav}

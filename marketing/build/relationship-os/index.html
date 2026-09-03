@@ -189,6 +189,7 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
 .dm-field input,.dm-field select{width:100%;padding:12px 14px;border:1px solid var(--border-2);border-radius:10px;font-size:15px;font-family:'Inter',sans-serif;outline:none}
 .dm-submit{width:100%;padding:14px;background:var(--gold);color:#1a1a1a;font-size:16px;font-weight:800;border:none;border-radius:980px;cursor:pointer;margin-top:8px}
 </style>
+<script src="/lead-retry.js"></script>
 </head>
 <body>
 <nav>
@@ -486,7 +487,7 @@ let _demoSource='';
 function openDemoModal(e,source){e&&e.preventDefault();_demoSource=source||'';document.getElementById('demoModal').classList.add('active');document.body.style.overflow='hidden'}
 function closeDemoModal(){document.getElementById('demoModal').classList.remove('active');document.body.style.overflow=''}
 document.getElementById('demoModal').addEventListener('click',function(e){if(e.target===this)closeDemoModal()});
-async function submitDemoForm(e){e.preventDefault();var btn=document.getElementById('dmSubmitBtn');btn.disabled=true;btn.textContent='Submitting...';try{var res=await fetch('https://app.imonsocial.com/api/demo-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('dm-name').value,email:document.getElementById('dm-email').value,phone:document.getElementById('dm-phone').value,business_type:document.getElementById('dm-type').value,company:document.getElementById('dm-company').value,lead_source:_demoSource||'relationship_os_page'})});if(res.ok){document.getElementById('demoFormWrap').style.display='none';document.getElementById('demoSuccessWrap').style.display='block'}else{throw new Error()}}catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert('Something went wrong. Please try again.')}}
+async function submitDemoForm(e){e.preventDefault();var btn=document.getElementById('dmSubmitBtn');btn.disabled=true;btn.textContent='Submitting...';try{var res=await fetch('https://app.imonsocial.com/api/demo-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('dm-name').value,email:document.getElementById('dm-email').value,phone:document.getElementById('dm-phone').value,business_type:document.getElementById('dm-type').value,company:document.getElementById('dm-company').value,lead_source:_demoSource||'relationship_os_page'})});if(res.ok){document.getElementById('demoFormWrap').style.display='none';document.getElementById('demoSuccessWrap').style.display='block'}else{throw new Error()}}catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert("We couldn't reach our server just now. Please try again in a moment, or email sales@imonsocial.com and we'll get you set up.")}}
 </script>
 <script>window.IMOS_API=window.IMOS_API||(location.hostname.includes("imonsocial.com")?"https://app.imonsocial.com":"");</script><script src="/chat-widget.js"></script>
 </body>

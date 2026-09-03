@@ -160,6 +160,7 @@ footer{border-top:1px solid var(--border);background:var(--bg-2)}
 .closer .btn-primary{margin:0 auto}
 @media(max-width:768px){.hero-dark{padding:140px 24px 80px}.hero-dark h1{font-size:36px}.features-grid{grid-template-columns:1fr}.section h2,.closer h2{font-size:32px}.section,.section-alt,.section-dark{padding:80px 24px}.closer{padding:80px 24px}}
 </style>
+<script src="/lead-retry.js"></script>
 </head>
 <body>
 <nav>
@@ -503,7 +504,7 @@ async function submitDemoForm(e){
     });
     if(r.ok){document.getElementById('demoFormWrap').style.display='none';document.getElementById('demoSuccessWrap').style.display='block';}
     else throw new Error();
-  }catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert('Something went wrong. Please try again.');}
+  }catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert("We couldn't reach our server just now. Please try again in a moment, or email sales@imonsocial.com and we'll get you set up.");}
 }
 </script>
 
@@ -553,7 +554,7 @@ async function submitContactForm(e){
     });
     if(r.ok){document.getElementById('contactFormWrap').style.display='none';document.getElementById('contactSuccessWrap').style.display='block';}
     else throw new Error();
-  }catch(ex){btn.disabled=false;btn.textContent='Send Message';alert('Something went wrong. Please try again.');}
+  }catch(ex){btn.disabled=false;btn.textContent='Send Message';alert("We couldn't reach our server just now. Please try again in a moment, or email sales@imonsocial.com and we'll get you set up.");}
 }
 </script>
 </body>
@@ -603,7 +604,7 @@ async function submitContactForm(e){
     });
     if(r.ok){document.getElementById('contactFormWrap').style.display='none';document.getElementById('contactSuccessWrap').style.display='block';}
     else throw new Error();
-  }catch(ex){btn.disabled=false;btn.textContent='Send Message';alert('Something went wrong. Please try again.');}
+  }catch(ex){btn.disabled=false;btn.textContent='Send Message';alert("We couldn't reach our server just now. Please try again in a moment, or email sales@imonsocial.com and we'll get you set up.");}
 }
 </script>
 </body>

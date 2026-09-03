@@ -28,6 +28,7 @@
     .back-link{display:inline-flex;align-items:center;gap:8px;color:rgba(255,255,255,.4);text-decoration:none;font-size:14px;font-weight:600;margin-bottom:32px;transition:color .2s}
     .back-link:hover{color:#FFF}
   </style>
+<script src="/lead-retry.js"></script>
 </head>
 <body>
   <div class="hub">
@@ -164,7 +165,7 @@ async function submitPresForm(e){
     });
     if(r.ok){document.getElementById('presFormWrap').style.display='none';document.getElementById('presSuccessWrap').style.display='block'}
     else throw new Error();
-  }catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert('Something went wrong. Please try again.')}
+  }catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert("We couldn't reach our server just now. Please try again in a moment, or email sales@imonsocial.com and we'll get you set up.")}
 }
 </script>
 </body>

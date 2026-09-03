@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="/deck.css">
+<script src="/lead-retry.js"></script>
 </head>
 <body>
   <div class="progress-bar" id="progress"></div>
@@ -178,7 +179,7 @@ async function submitPresForm(e){
     });
     if(r.ok){document.getElementById('presFormWrap').style.display='none';document.getElementById('presSuccessWrap').style.display='block'}
     else throw new Error();
-  }catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert('Something went wrong. Please try again.')}
+  }catch(ex){btn.disabled=false;btn.textContent='Book My Demo';alert("We couldn't reach our server just now. Please try again in a moment, or email sales@imonsocial.com and we'll get you set up.")}
 }
 </script>
 </body>
