@@ -6,7 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Switch, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/common/Toast';
@@ -47,17 +47,25 @@ export default function CallRetriesPage() {
   const { user } = useAuthStore();
   const { showToast } = useToast();
   const router = useRouter();
+  const { scope } = useLocalSearchParams<{ scope?: string }>();
+  const storeMode = scope === 'store';
   const s = getStyles(colors);
   const [cadence, setCadence] = useState<Cadence>(DEFAULTS);
   const [preview, setPreview] = useState<any[]>([]);
+  const [meta, setMeta] = useState<any>({});
+  const [applyToAll, setApplyToAll] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
 
-  useEffect(() => {
+  const load = () => {
     if (!user?._id) return;
-    api.get(`/calls/${user._id}/retry-cadence`).then(r => { setCadence({ ...DEFAULTS, ...r.data.cadence }); setPreview(r.data.preview || []); }).catch(() => {}).finally(() => setLoading(false));
-  }, [user?._id]);
+    api.get(`/calls/${user._id}/retry-cadence${storeMode ? '/store' : ''}`)
+      .then(r => { setCadence({ ...DEFAULTS, ...r.data.cadence }); setPreview(r.data.preview || []); setMeta(r.data); })
+      .catch((e: any) => showToast(e?.response?.data?.detail || 'Could not load', 'error'))
+      .finally(() => setLoading(false));
+  };
+  useEffect(load, [user?._id, storeMode]);
 
   const patch = (p: Partial<Cadence>) => { setCadence(c => ({ ...c, ...p })); setDirty(true); };
 
@@ -65,13 +73,34 @@ export default function CallRetriesPage() {
     if (!user?._id) return;
     setSaving(true);
     try {
-      const r = await api.put(`/calls/${user._id}/retry-cadence`, cadence);
+      const r = storeMode
+        ? await api.put(`/calls/${user._id}/retry-cadence/store`, { ...cadence, apply_to_all: applyToAll })
+        : await api.put(`/calls/${user._id}/retry-cadence`, cadence);
       setCadence({ ...DEFAULTS, ...r.data.cadence });
       setPreview(r.data.preview || []);
       setDirty(false);
-      showToast('Retry timing saved', 'success');
-    } catch { showToast('Could not save', 'error'); } finally { setSaving(false); }
+      if (storeMode) {
+        showToast(applyToAll && r.data.overrides_cleared ? `Team default saved · ${r.data.overrides_cleared} rep${r.data.overrides_cleared === 1 ? '' : 's'} reset to it` : 'Team default saved', 'success');
+        setApplyToAll(false);
+        load();
+      } else {
+        setMeta((m: any) => ({ ...m, source: 'personal' }));
+        showToast('Retry timing saved', 'success');
+      }
+    } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not save', 'error'); } finally { setSaving(false); }
   };
+
+  const useTeamDefault = async () => {
+    if (!user?._id) return;
+    setSaving(true);
+    try {
+      const r = await api.delete(`/calls/${user._id}/retry-cadence`);
+      setCadence({ ...DEFAULTS, ...r.data.cadence }); setPreview(r.data.preview || []); setMeta((m: any) => ({ ...m, ...r.data })); setDirty(false);
+      showToast('Back on the team default', 'success');
+    } catch { showToast('Could not reset', 'error'); } finally { setSaving(false); }
+  };
+
+  const inheritedLabel = meta.source === 'store' ? "your store's default" : meta.source === 'global' ? 'the company default' : meta.source === 'default' ? 'the built-in default' : '';
 
   const localPreview = () => {
     // client-side echo so the numbers move as you tap; server preview replaces it on save
@@ -103,7 +132,7 @@ export default function CallRetriesPage() {
         <TouchableOpacity onPress={() => router.back()} style={s.back} {...tid('call-retries-back')}>
           <Ionicons name="chevron-back" size={28} color={colors.accent} />
         </TouchableOpacity>
-        <Text style={s.title}>Call Retries</Text>
+        <Text style={s.title}>{storeMode ? 'Team Call Retries' : 'Call Retries'}</Text>
         <TouchableOpacity onPress={save} disabled={saving || !dirty} style={[s.saveBtn, !dirty && { opacity: 0.4 }]} {...tid('call-retries-save')}>
           {saving ? <ActivityIndicator size="small" color="#000" /> : <Text style={s.saveBtnText}>Save</Text>}
         </TouchableOpacity>
@@ -111,11 +140,46 @@ export default function CallRetriesPage() {
 
       {loading ? <ActivityIndicator color={GOLD} style={{ marginTop: 40 }} /> : (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 60 }}>
+          {storeMode ? (
+            <View style={[s.card, { borderWidth: 1, borderColor: `${GOLD}55` }]} {...tid('store-cadence-info')}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="people" size={16} color={GOLD} />
+                <Text style={s.cardTitle}>Default for {meta.scope_name || 'your store'}</Text>
+              </View>
+              <Text style={s.cardSub}>
+                New reps inherit this automatically. {meta.reps_total ?? 0} rep{meta.reps_total === 1 ? '' : 's'} on the team
+                {meta.reps_with_override ? `, ${meta.reps_with_override} ${meta.reps_with_override === 1 ? 'has' : 'have'} their own timing.` : ', nobody has custom timing.'}
+              </Text>
+              {!!meta.reps_with_override && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
+                  <Text style={{ fontSize: 14, color: colors.text, flex: 1, paddingRight: 12 }}>Also reset those {meta.reps_with_override} to this default when I save</Text>
+                  <Switch value={applyToAll} onValueChange={v => { setApplyToAll(v); setDirty(true); }} trackColor={{ true: GOLD, false: colors.border }} thumbColor="#FFF" {...tid('store-cadence-apply-all')} />
+                </View>
+              )}
+            </View>
+          ) : (
+            !!inheritedLabel && meta.source !== 'personal' && (
+              <View style={[s.card, { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: `${GOLD}44` }]} {...tid('cadence-source-banner')}>
+                <Ionicons name="link" size={16} color={GOLD} />
+                <Text style={{ fontSize: 13, color: colors.textSecondary, flex: 1 }}>You're using {inheritedLabel}. Change anything below to make it your own.</Text>
+              </View>
+            )
+          )}
+          {!storeMode && meta.source === 'personal' && (meta.store_cadence || meta.global_cadence) && (
+            <View style={[s.card, { flexDirection: 'row', alignItems: 'center', gap: 10 }]} {...tid('cadence-source-banner')}>
+              <Ionicons name="person" size={16} color={GOLD} />
+              <Text style={{ fontSize: 13, color: colors.textSecondary, flex: 1 }}>These are your personal settings.</Text>
+              <TouchableOpacity onPress={useTeamDefault} disabled={saving} {...tid('cadence-use-team-default')}>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: GOLD }}>Use team default</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           <View style={s.card}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ flex: 1, paddingRight: 12 }}>
                 <Text style={s.cardTitle}>Auto "try again" reminders</Text>
-                <Text style={s.cardSub}>When a call hits voicemail or nobody answers, Jessi schedules the next attempt for you. A connected call clears the streak.</Text>
+                <Text style={s.cardSub}>When a call hits voicemail or nobody answers, Jessi schedules the next attempt{storeMode ? ' for the rep' : ' for you'}. A connected call clears the streak.</Text>
               </View>
               <Switch value={cadence.enabled} onValueChange={v => patch({ enabled: v })} trackColor={{ true: GOLD, false: colors.border }} thumbColor="#FFF" {...tid('call-retries-enabled')} />
             </View>
@@ -158,8 +222,21 @@ export default function CallRetriesPage() {
           )}
 
           <TouchableOpacity onPress={() => patch({ ...DEFAULTS })} style={{ alignSelf: 'center', marginTop: 8, paddingVertical: 8, paddingHorizontal: 14 }} {...tid('call-retries-reset')}>
-            <Text style={{ fontSize: 13, fontWeight: '700', color: GOLD }}>Reset to Forest's defaults (30 min · +3 hrs · 10 AM · 2 days)</Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: GOLD }}>Reset to built-in defaults (30 min · +3 hrs · 10 AM · 2 days)</Text>
           </TouchableOpacity>
+
+          {!storeMode && meta.is_manager && (
+            <TouchableOpacity onPress={() => router.push('/settings/call-retries?scope=store' as any)} style={[s.card, { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16, borderWidth: 1, borderColor: `${GOLD}55` }]} {...tid('cadence-edit-store')}>
+              <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: `${GOLD}22`, alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="people" size={18} color={GOLD} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.cardTitle}>Team default</Text>
+                <Text style={s.cardSub}>Set the timing every new rep starts with{meta.has_store ? '' : ' (company-wide)'}.</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
         </ScrollView>
       )}
     </SafeAreaView>

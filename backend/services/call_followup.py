@@ -114,10 +114,33 @@ def normalize_cadence(raw: dict | None) -> dict:
     return out
 
 
-async def cadence_for(user_id: str) -> dict:
+async def resolve_cadence(user_id: str) -> dict:
+    """personal override -> store default -> org-wide default (settings) -> built-in. Returns {cadence, source, store_cadence, global_cadence}."""
     db = get_db()
-    u = await db.users.find_one({"_id": ObjectId(user_id)}, {"call_retry_cadence": 1}) if ObjectId.is_valid(user_id) else None
-    return normalize_cadence((u or {}).get("call_retry_cadence"))
+    u = await db.users.find_one({"_id": ObjectId(user_id)}, {"call_retry_cadence": 1, "store_id": 1}) if ObjectId.is_valid(user_id) else None
+    u = u or {}
+    store_raw = None
+    sid = str(u.get("store_id") or "")
+    if ObjectId.is_valid(sid):
+        st = await db.stores.find_one({"_id": ObjectId(sid)}, {"call_retry_cadence": 1})
+        store_raw = (st or {}).get("call_retry_cadence")
+    g = await db.settings.find_one({"key": "call_retry_cadence_default"}, {"value": 1})
+    global_raw = (g or {}).get("value")
+    if u.get("call_retry_cadence"):
+        cadence, source = normalize_cadence(u["call_retry_cadence"]), "personal"
+    elif store_raw:
+        cadence, source = normalize_cadence(store_raw), "store"
+    elif global_raw:
+        cadence, source = normalize_cadence(global_raw), "global"
+    else:
+        cadence, source = dict(DEFAULT_CADENCE), "default"
+    return {"cadence": cadence, "source": source,
+            "store_cadence": normalize_cadence(store_raw) if store_raw else None,
+            "global_cadence": normalize_cadence(global_raw) if global_raw else None}
+
+
+async def cadence_for(user_id: str) -> dict:
+    return (await resolve_cadence(user_id))["cadence"]
 
 
 def _at(d: datetime, hour: int) -> datetime:

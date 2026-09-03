@@ -3,7 +3,7 @@ Calls router - handles call logs and dialer functionality
 """
 from fastapi import APIRouter, HTTPException, Request, Response
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 import logging
 
@@ -107,18 +107,25 @@ async def initiate_call(user_id: str, data: dict):
     }
 
 
+CADENCE_MANAGER_ROLES = ("super_admin", "admin", "manager", "store_manager", "org_admin")
+
+
 @router.get("/{user_id}/retry-cadence")
 async def get_retry_cadence(user_id: str):
-    """Per-rep voicemail retry timing + a live preview of what a miss right now would schedule."""
-    from services.call_followup import cadence_for, preview_schedule, _tz_for, DEFAULT_CADENCE, CADENCE_LIMITS
-    cadence = await cadence_for(user_id)
+    """Per-rep voicemail retry timing (personal -> store -> org default) + a live preview of what a miss right now would schedule."""
+    from services.call_followup import resolve_cadence, preview_schedule, _tz_for, DEFAULT_CADENCE, CADENCE_LIMITS
+    res = await resolve_cadence(user_id)
     tz = await _tz_for(user_id)
-    return {"cadence": cadence, "defaults": DEFAULT_CADENCE, "limits": {k: list(v) for k, v in CADENCE_LIMITS.items()},
-            "timezone": str(tz), "preview": preview_schedule(cadence, tz)}
+    db = get_db()
+    u = await db.users.find_one({"_id": ObjectId(user_id)}, {"role": 1, "store_id": 1}) if ObjectId.is_valid(user_id) else None
+    return {**res, "defaults": DEFAULT_CADENCE, "limits": {k: list(v) for k, v in CADENCE_LIMITS.items()},
+            "timezone": str(tz), "preview": preview_schedule(res["cadence"], tz),
+            "is_manager": bool(u and u.get("role") in CADENCE_MANAGER_ROLES), "has_store": bool(u and u.get("store_id"))}
 
 
 @router.put("/{user_id}/retry-cadence")
 async def save_retry_cadence(user_id: str, data: dict):
+    """Personal override for this rep."""
     from services.call_followup import normalize_cadence, preview_schedule, _tz_for
     if not ObjectId.is_valid(user_id):
         raise HTTPException(status_code=400, detail="Invalid user")
@@ -126,7 +133,72 @@ async def save_retry_cadence(user_id: str, data: dict):
     db = get_db()
     await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"call_retry_cadence": cadence}})
     tz = await _tz_for(user_id)
-    return {"success": True, "cadence": cadence, "preview": preview_schedule(cadence, tz)}
+    return {"success": True, "cadence": cadence, "source": "personal", "preview": preview_schedule(cadence, tz)}
+
+
+@router.delete("/{user_id}/retry-cadence")
+async def clear_retry_cadence(user_id: str):
+    """Drop the personal override so the rep inherits the store / org default again."""
+    from services.call_followup import resolve_cadence, preview_schedule, _tz_for
+    if not ObjectId.is_valid(user_id):
+        raise HTTPException(status_code=400, detail="Invalid user")
+    db = get_db()
+    await db.users.update_one({"_id": ObjectId(user_id)}, {"$unset": {"call_retry_cadence": ""}})
+    res = await resolve_cadence(user_id)
+    tz = await _tz_for(user_id)
+    return {"success": True, **res, "preview": preview_schedule(res["cadence"], tz)}
+
+
+async def _cadence_scope(db, user_id: str):
+    """Managers edit their store's default; store-less super/org admins edit the org-wide default."""
+    u = await db.users.find_one({"_id": ObjectId(user_id)}, {"role": 1, "store_id": 1}) if ObjectId.is_valid(user_id) else None
+    if not u or u.get("role") not in CADENCE_MANAGER_ROLES:
+        raise HTTPException(status_code=403, detail="Managers only")
+    sid = str(u.get("store_id") or "")
+    if ObjectId.is_valid(sid):
+        return {"scope": "store", "store_id": sid, "rep_filter": {"$or": [{"store_id": sid}, {"store_id": ObjectId(sid)}], "active": {"$ne": False}}}
+    if u.get("role") in ("super_admin", "org_admin"):
+        return {"scope": "global", "store_id": None, "rep_filter": {"active": {"$ne": False}}}
+    raise HTTPException(status_code=400, detail="Your account isn't linked to a store yet")
+
+
+@router.get("/{user_id}/retry-cadence/store")
+async def get_store_retry_cadence(user_id: str):
+    from services.call_followup import normalize_cadence, preview_schedule, _tz_for, DEFAULT_CADENCE
+    db = get_db()
+    scope = await _cadence_scope(db, user_id)
+    if scope["scope"] == "store":
+        st = await db.stores.find_one({"_id": ObjectId(scope["store_id"])}, {"call_retry_cadence": 1, "name": 1})
+        raw, name = (st or {}).get("call_retry_cadence"), (st or {}).get("name") or "your store"
+    else:
+        g = await db.settings.find_one({"key": "call_retry_cadence_default"}, {"value": 1})
+        raw, name = (g or {}).get("value"), "the whole organization"
+    reps_total = await db.users.count_documents(scope["rep_filter"])
+    reps_custom = await db.users.count_documents({**scope["rep_filter"], "call_retry_cadence": {"$exists": True}})
+    cadence = normalize_cadence(raw) if raw else dict(DEFAULT_CADENCE)
+    tz = await _tz_for(user_id)
+    return {"scope": scope["scope"], "scope_name": name, "is_set": bool(raw), "cadence": cadence, "preview": preview_schedule(cadence, tz),
+            "reps_total": reps_total, "reps_with_override": reps_custom}
+
+
+@router.put("/{user_id}/retry-cadence/store")
+async def save_store_retry_cadence(user_id: str, data: dict):
+    """Body = cadence fields (+ apply_to_all: true to wipe every rep's personal override so they inherit now)."""
+    from services.call_followup import normalize_cadence, preview_schedule, _tz_for
+    db = get_db()
+    scope = await _cadence_scope(db, user_id)
+    cadence = normalize_cadence(data or {})
+    now = datetime.now(timezone.utc)
+    if scope["scope"] == "store":
+        await db.stores.update_one({"_id": ObjectId(scope["store_id"])}, {"$set": {"call_retry_cadence": cadence, "call_retry_cadence_updated_at": now, "call_retry_cadence_updated_by": user_id}})
+    else:
+        await db.settings.update_one({"key": "call_retry_cadence_default"}, {"$set": {"value": cadence, "updated_at": now, "updated_by": user_id}}, upsert=True)
+    cleared = 0
+    if data.get("apply_to_all"):
+        r = await db.users.update_many({**scope["rep_filter"], "call_retry_cadence": {"$exists": True}}, {"$unset": {"call_retry_cadence": ""}})
+        cleared = r.modified_count
+    tz = await _tz_for(user_id)
+    return {"success": True, "scope": scope["scope"], "cadence": cadence, "preview": preview_schedule(cadence, tz), "overrides_cleared": cleared}
 
 
 @router.post("/{user_id}/outcome")

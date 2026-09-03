@@ -253,3 +253,9 @@ DELIVERY: backend deploy + eas update --branch production.
 - GET/PUT /api/calls/{uid}/retry-cadence (PUT = full replace, clamped; returns preview list [{attempt, final, due, label}] in the rep's tz).
 - UI: app/settings/call-retries.tsx (steppers cad-first/second/morning/fourth/cutoff/max, toggle call-retries-enabled, save call-retries-save, preview call-retries-preview, reset call-retries-reset); entry in More > Settings "Call Retries" (below My Schedule). Client-side preview uses phone time until saved (server preview after).
 - SHIP: backend Deploy + eas update.
+
+## Manager Cadence Defaults (June 2026) - DONE (API verified end-to-end; UI screenshot of team screen)
+- Resolution order services/call_followup.resolve_cadence: personal (users.call_retry_cadence) -> store (stores.call_retry_cadence) -> org-wide (settings key call_retry_cadence_default; used by store-less super/org admins like Forest) -> built-in DEFAULT_CADENCE. Returns {cadence, source personal|store|global|default, store_cadence, global_cadence}.
+- Endpoints (routers/calls.py): GET /api/calls/{uid}/retry-cadence now includes source/is_manager/has_store; DELETE drops the personal override ("Use team default"); GET/PUT /api/calls/{uid}/retry-cadence/store (managers only, 403 otherwise; scope store vs global; PUT body cadence + apply_to_all -> $unset every team rep's personal override; returns reps_total / reps_with_override / overrides_cleared).
+- UI: app/settings/call-retries.tsx handles ?scope=store ("Team Call Retries": scope info card store-cadence-info, "Also reset those N reps" switch store-cadence-apply-all). Personal screen: source banner (cadence-source-banner) "You're using your store's/company default" or "These are your personal settings · Use team default" (cadence-use-team-default); managers see a "Team default" card (cadence-edit-store) linking to the store screen.
+- SHIP: backend Deploy + eas update.
