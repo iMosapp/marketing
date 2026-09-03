@@ -14,6 +14,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional
 from zoneinfo import ZoneInfo
 import logging
+import re
 from cachetools import TTLCache
 
 from routers.database import get_db, get_user_by_id
@@ -504,6 +505,61 @@ async def get_contact_tasks(user_id: str, contact_id: str, limit: int = 20):
     return {"tasks": out, "count": len(out)}
 
 
+_TEAM_ROLES = ("super_admin", "admin", "manager", "store_manager", "org_admin")
+
+
+@router.get("/{user_id}/team")
+async def get_team_tasks(user_id: str, limit_per_rep: int = 50):
+    """Manager view: every open customer task per rep (store scope; admins see all). Non-managers get is_manager=false."""
+    db = get_db()
+    me = await db.users.find_one({"_id": ObjectId(user_id)}, {"role": 1, "store_id": 1})
+    role = (me or {}).get("role", "user")
+    if role not in _TEAM_ROLES:
+        return {"is_manager": False, "totals": {"open": 0, "overdue": 0, "today": 0}, "reps": []}
+    users_q: dict = {"active": {"$ne": False}, "status": {"$ne": "deactivated"}}
+    if role not in ("super_admin", "org_admin"):
+        users_q["store_id"] = me.get("store_id")
+    reps = await db.users.find(users_q, {"name": 1, "photo_url": 1, "role": 1}).to_list(300)
+    rep_ids = [str(r["_id"]) for r in reps]
+    now = datetime.now(timezone.utc)
+    today_start, today_end = await get_user_day_bounds(user_id, "today")
+    docs = await db.tasks.find({
+        "user_id": {"$in": rep_ids},
+        "status": {"$in": ["pending", "snoozed", None]},
+        "completed": {"$ne": True},
+        "type": {"$nin": ["campaign_send", "campaign_step"]},
+        "$nor": [{"source": "system", "type": "follow_up"}],
+    }, {"title": 1, "due_date": 1, "has_time": 1, "appointment_type": 1, "type": 1, "source": 1,
+        "contact_id": 1, "contact_name": 1, "user_id": 1, "priority": 1}).sort("due_date", 1).to_list(3000)
+    by_rep: dict = {rid: [] for rid in rep_ids}
+    totals = {"open": 0, "overdue": 0, "today": 0}
+    for t in docs:
+        due = _as_utc(t.get("due_date"))
+        overdue = isinstance(due, datetime) and (due < now if t.get("has_time") else due < today_start)
+        is_today = isinstance(due, datetime) and today_start <= due < today_end and not overdue
+        d = _serialize(t)
+        d["is_overdue"] = overdue
+        d["is_today"] = is_today
+        by_rep.setdefault(str(t.get("user_id")), []).append(d)
+        totals["open"] += 1
+        totals["overdue"] += int(overdue)
+        totals["today"] += int(is_today)
+    out = []
+    for r in reps:
+        rid = str(r["_id"])
+        tasks = by_rep.get(rid, [])
+        if not tasks:
+            continue
+        tasks.sort(key=lambda d: (not d["is_overdue"], d.get("due_date") or "9999"))
+        out.append({
+            "user_id": rid, "name": r.get("name") or "Rep", "photo_url": r.get("photo_url"), "role": r.get("role"),
+            "open": len(tasks), "overdue": sum(1 for d in tasks if d["is_overdue"]), "today": sum(1 for d in tasks if d["is_today"]),
+            "tasks": tasks[:limit_per_rep],
+        })
+    out.sort(key=lambda r: (-r["overdue"], -r["open"], r["name"].lower()))
+    return {"is_manager": True, "totals": totals, "reps": out}
+
+
 async def complete_task_from_call(user_id: str, task_id: str, call_sid: str = "", duration_s: int = 0) -> bool:
     """Auto-complete the task a rep tapped 'Call' from, once the customer actually answered."""
     db = get_db()
@@ -564,20 +620,85 @@ async def get_calendar_tasks(user_id: str, year: int, month: int):
     return {"tasks": out}
 
 
+_CALL_EXTRACT_PROMPT = (
+    "You extract scheduled commitments from sales call transcripts. "
+    "Return ONLY strict JSON: {\"found\": bool, \"title\": str, \"local_datetime\": \"YYYY-MM-DDTHH:MM\", "
+    "\"appointment_type\": \"call|text|appointment|task\", \"has_time\": bool}. "
+    "Only report a commitment when a SPECIFIC future day (and ideally time) was clearly agreed, "
+    "e.g. 'I'll call you tomorrow at 2' or 'come by Saturday morning'. "
+    "Resolve relative dates using the current local datetime provided. "
+    "If a day was agreed but no time, set has_time false and use 09:00. "
+    "Title should be short and actionable, e.g. 'Call Forest about trade-in'. "
+    "If nothing specific was scheduled, return {\"found\": false}."
+)
+
+_TEXT_EXTRACT_PROMPT = (
+    "You read ONE text message a CUSTOMER sent to their sales rep and decide if it asks the rep to do "
+    "something on a SPECIFIC future day/time. The task is for the REP. "
+    "Return ONLY strict JSON: {\"found\": bool, \"title\": str, \"local_datetime\": \"YYYY-MM-DDTHH:MM\", "
+    "\"appointment_type\": \"call|text|appointment|task\", \"has_time\": bool}. "
+    "Examples: 'call me Thursday' -> Call {name} (Thursday, has_time false, 09:00); "
+    "'text me after 5' -> Text {name} (today 17:00, has_time true); "
+    "'I'll come by Saturday at 2' -> Appointment with {name} (Saturday 14:00); "
+    "'can you send the pics tomorrow' -> Text {name} the photos (tomorrow 09:00). "
+    "Resolve relative dates from the current local datetime provided; if the named day already passed today, use next week. "
+    "Vague timing ('sometime', 'soon', 'later this month', 'when you get a chance') -> found false. "
+    "Questions about the rep's availability ('are you open Saturday?') and past events -> found false. "
+    "Title short and actionable, starting with Call/Text/Meet/Send. "
+    "If nothing specific, return {\"found\": false}."
+)
+
+_SCHED_HINT = re.compile(
+    r"\b(mon|tue|wed|thu|fri|sat|sun)[a-z]*\b|\btomorrow\b|\btonight\b|\bnext (week|month)\b"
+    r"|\bthis (weekend|week|afternoon|evening|morning)\b|\b\d{1,2}(:\d{2})?\s*(am|pm|a\.m|p\.m)\b|\bnoon\b"
+    r"|\b(call|text|hit|ring|reach|come|stop|swing|drop|see) (me|by|in|you)\b|\bafter (work|lunch|\d)"
+    r"|\bweekend\b|\bin (an|a|\d+) (hour|hours|days?|weeks?)\b|\b(morning|afternoon|evening)\b",
+    re.I,
+)
+
+
+def text_has_schedule_hint(text: str) -> bool:
+    """Cheap pre-filter so we only spend an LLM call on texts that mention a day/time."""
+    if not text or len(text) < 8:
+        return False
+    stripped = re.sub(r"\bgood (morning|afternoon|evening|night)\b", "", text, flags=re.I)
+    return bool(_SCHED_HINT.search(stripped))
+
+
 async def extract_appointment_from_call(user_id: str, contact_id: str, contact_name: str, transcript: str, call_sid: str = ""):
-    """AI-extract a scheduled commitment ("I'll call you tomorrow at 2") from a call transcript
-    and auto-create the appointment task + notify the rep."""
-    if not transcript or len(transcript) < 40 or not user_id:
+    """AI-extract a scheduled commitment ("I'll call you tomorrow at 2") from a call transcript."""
+    if not transcript or len(transcript) < 40:
+        return None
+    return await _extract_commitment(user_id, contact_id, contact_name, transcript, mode="call", ref_id=call_sid)
+
+
+async def extract_task_from_text(user_id: str, contact_id: str, contact_name: str, text: str, message_id: str = ""):
+    """AI-extract a rep to-do from a CUSTOMER text ("call me Thursday") and put it on the contact + calendar."""
+    if not text_has_schedule_hint(text or ""):
+        return None
+    db = get_db()
+    if message_id and await db.tasks.find_one({"source_message_id": message_id}):
+        return None
+    return await _extract_commitment(user_id, contact_id, contact_name, text, mode="text", ref_id=message_id)
+
+
+async def _extract_commitment(user_id: str, contact_id: str, contact_name: str, text: str, *, mode: str, ref_id: str = ""):
+    if not text or not user_id:
         return None
     db = get_db()
     tz = None
     try:
         import pytz
-        u = await db.users.find_one({"_id": ObjectId(user_id)}, {"timezone": 1})
-        tz = pytz.timezone((u or {}).get("timezone") or "America/Denver")
+        u = await db.users.find_one({"_id": ObjectId(user_id)}, {"timezone": 1, "store_id": 1})
+        tz_name = (u or {}).get("timezone")
+        if (not tz_name or tz_name == "UTC") and (u or {}).get("store_id"):
+            store = await db.stores.find_one({"_id": ObjectId(str(u["store_id"]))}, {"timezone": 1})
+            tz_name = (store or {}).get("timezone") or tz_name
+        tz = pytz.timezone(tz_name if tz_name and tz_name != "UTC" else "America/Denver")
     except Exception:
         pass
     now_local = datetime.now(tz) if tz else datetime.now(timezone.utc)
+    first = (contact_name or "").split()[0] if contact_name else "the customer"
 
     try:
         import os as _os
@@ -588,27 +709,18 @@ async def extract_appointment_from_call(user_id: str, contact_id: str, contact_n
         chat = LlmChat(
             api_key=_os.environ.get("EMERGENT_LLM_KEY", ""),
             session_id=f"appt-{_uuid.uuid4().hex[:12]}",
-            system_message=(
-                "You extract scheduled commitments from sales call transcripts. "
-                "Return ONLY strict JSON: {\"found\": bool, \"title\": str, \"local_datetime\": \"YYYY-MM-DDTHH:MM\", "
-                "\"appointment_type\": \"call|text|appointment|task\", \"has_time\": bool}. "
-                "Only report a commitment when a SPECIFIC future day (and ideally time) was clearly agreed, "
-                "e.g. 'I'll call you tomorrow at 2' or 'come by Saturday morning'. "
-                "Resolve relative dates using the current local datetime provided. "
-                "If a day was agreed but no time, set has_time false and use 09:00. "
-                "Title should be short and actionable, e.g. 'Call Forest about trade-in'. "
-                "If nothing specific was scheduled, return {\"found\": false}."
-            ),
+            system_message=(_TEXT_EXTRACT_PROMPT.replace("{name}", first) if mode == "text" else _CALL_EXTRACT_PROMPT),
         ).with_model("openai", "gpt-5.2")
+        body_label = "Customer text message" if mode == "text" else "Transcript"
         resp = await _aio.wait_for(chat.send_message(UserMessage(text=(
             f"Current local datetime: {now_local.strftime('%A %Y-%m-%dT%H:%M')}\n"
             f"Customer name: {contact_name or 'Unknown'}\n"
-            f"Transcript:\n{transcript[:6000]}"
+            f"{body_label}:\n{text[:6000]}"
         ))), timeout=25.0)
-        text = resp if isinstance(resp, str) else getattr(resp, "text", str(resp))
-        data = _json.loads(text[text.find("{"):text.rfind("}") + 1])
+        text_out = resp if isinstance(resp, str) else getattr(resp, "text", str(resp))
+        data = _json.loads(text_out[text_out.find("{"):text_out.rfind("}") + 1])
     except Exception as e:
-        logger.warning(f"[ApptExtract] extraction failed for call {call_sid}: {e}")
+        logger.warning(f"[ApptExtract] extraction failed ({mode} {ref_id}): {e}")
         return None
 
     if not data.get("found") or not data.get("local_datetime"):
@@ -638,6 +750,8 @@ async def extract_appointment_from_call(user_id: str, contact_id: str, contact_n
     if appt_type not in ("call", "text", "appointment", "task", "test_drive", "delivery", "meeting", "other"):
         appt_type = "task"
     title = (data.get("title") or "").strip() or f"Appointment with {contact_name}".strip()
+    is_text = mode == "text"
+    origin = "From their text" if is_text else "From your call"
 
     task = {
         "user_id": user_id,
@@ -645,10 +759,11 @@ async def extract_appointment_from_call(user_id: str, contact_id: str, contact_n
         "contact_name": contact_name or "",
         "contact_phone": "",
         "type": "appointment",
-        "source": "call_extraction",
-        "call_sid": call_sid,
+        "source": "text_extraction" if is_text else "call_extraction",
+        "call_sid": "" if is_text else ref_id,
+        "source_message_id": ref_id if is_text else "",
         "title": title,
-        "description": "Auto-created from your phone call",
+        "description": f"{origin}: \"{text.strip()[:160]}\"" if is_text else "Auto-created from your phone call",
         "suggested_message": "",
         "action_type": "manual",
         "priority": "high",
@@ -669,16 +784,18 @@ async def extract_appointment_from_call(user_id: str, contact_id: str, contact_n
         "created_at": datetime.now(timezone.utc),
     }
     result = await db.tasks.insert_one(task)
+    task_id = str(result.inserted_id)
 
     label = local_dt.strftime("%a %b %-d · %-I:%M %p") if has_time else local_dt.strftime("%a %b %-d")
+    head = "Task added" if is_text else "Appointment added"
     try:
         await db.notifications.insert_one({
             "user_id": user_id,
             "type": "appointment_extracted",
-            "title": f"Appointment added — {contact_name or 'contact'}",
-            "message": f"From your call: \"{title}\" · {label}. It's on your calendar.",
+            "title": f"{head} - {contact_name or 'contact'}",
+            "message": f"{origin}: \"{title}\" · {label}. It's on your calendar.",
             "contact_id": contact_id,
-            "task_id": str(result.inserted_id),
+            "task_id": task_id,
             "read": False, "dismissed": False,
             "created_at": datetime.now(timezone.utc),
         })
@@ -686,15 +803,15 @@ async def extract_appointment_from_call(user_id: str, contact_id: str, contact_n
         from routers.push_notifications import send_push_to_user
         _aio2.create_task(send_push_to_user(
             user_id,
-            f"Appointment added — {contact_name or 'contact'}",
-            f"{title} · {label} (from your call)",
-            f"/contact/{contact_id}" if contact_id else "/dates-calendar",
+            f"{head} - {contact_name or 'contact'}",
+            f"{title} · {label} ({origin.lower()})",
+            f"/contact/{contact_id}?taskId={task_id}" if contact_id else "/dates-calendar",
             "calendar",
         ))
     except Exception:
         pass
-    logger.info(f"[ApptExtract] Created '{title}' at {due_utc.isoformat()} for contact {contact_id}")
-    return str(result.inserted_id)
+    logger.info(f"[ApptExtract] Created '{title}' at {due_utc.isoformat()} for contact {contact_id} ({mode})")
+    return task_id
 
 
 @router.post("/{user_id}")
@@ -873,11 +990,20 @@ async def update_task(user_id: str, task_id: str, update_data: dict):
                 logger.warning(f"Failed to update campaign enrollment on task complete: {e}")
 
     elif action == "snooze":
-        hours = update_data.get("snooze_hours", 24)
-        snooze_until = datetime.now(timezone.utc) + timedelta(hours=hours)
+        snooze_until = None
+        if update_data.get("snooze_until"):
+            try:
+                snooze_until = datetime.fromisoformat(str(update_data["snooze_until"]).replace("Z", "+00:00"))
+            except Exception:
+                snooze_until = None
+        if not snooze_until:
+            hours = update_data.get("snooze_hours", 24)
+            snooze_until = datetime.now(timezone.utc) + timedelta(hours=hours)
         updates["status"] = "snoozed"
         updates["snoozed_until"] = snooze_until
         updates["due_date"] = snooze_until
+        updates["reminded_15"] = False
+        updates["reminded_due"] = False
 
     elif action == "reopen":
         # Undo a swipe complete/snooze — restore the task to pending

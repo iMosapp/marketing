@@ -415,6 +415,15 @@ async def incoming_message(
         except Exception as kt_err:
             logger.warning(f"[KeywordTag] schedule failed: {kt_err}")
 
+        # ── "call me Thursday" -> task on the contact (fire-and-forget, never touches routing) ──
+        try:
+            from routers.tasks import extract_task_from_text, text_has_schedule_hint
+            if text_has_schedule_hint(Body or ""):
+                _cn = (contact.get("name") or f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip() or f"({from_phone[-4:]})")
+                asyncio.create_task(extract_task_from_text(user_id, contact_id, _cn, Body or "", str(msg_insert.inserted_id)))
+        except Exception as tx_err:
+            logger.warning(f"[TaskExtract] schedule failed: {tx_err}")
+
         # ── Auto-reopen closed conversation when customer replies ──────────────
         # If the conversation was marked closed, reopen it so the rep sees it
         # in their active inbox instead of the Closed tab.

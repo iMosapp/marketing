@@ -101,13 +101,32 @@ export default function ContactTasksCard({ colors, userId, contactId, contact, f
 
   const complete = async (t: any) => {
     setTasks(prev => prev.filter(x => x._id !== t._id));
-    setUndo(t);
+    setUndo({ ...t, _undoKind: 'done' });
     clearTimeout(undoTimer.current);
     undoTimer.current = setTimeout(() => setUndo(null), 6000);
     try { await api.patch(`/tasks/${userId}/${t._id}`, { action: 'complete' }); } catch { load(); }
   };
 
-  const undoComplete = async () => {
+  const snoozeTarget = (kind: 'tomorrow' | 'next_week') => {
+    const d = new Date();
+    d.setHours(9, 0, 0, 0);
+    if (kind === 'tomorrow') d.setDate(d.getDate() + 1);
+    else d.setDate(d.getDate() + (((8 - d.getDay()) % 7) || 7));
+    return d;
+  };
+
+  const snooze = async (t: any, kind: 'tomorrow' | 'next_week') => {
+    const until = snoozeTarget(kind);
+    setTasks(prev => prev
+      .map(x => x._id === t._id ? { ...x, due_date: until.toISOString(), has_time: true, is_overdue: false, status: 'snoozed' } : x)
+      .sort((a, b) => Number(!a.is_overdue) - Number(!b.is_overdue) || new Date(a.due_date || 0).getTime() - new Date(b.due_date || 0).getTime()));
+    setUndo({ ...t, _undoKind: 'snooze', _label: kind === 'tomorrow' ? 'Tomorrow 9 AM' : `${format(until, 'EEE')} 9 AM` });
+    clearTimeout(undoTimer.current);
+    undoTimer.current = setTimeout(() => setUndo(null), 6000);
+    try { await api.patch(`/tasks/${userId}/${t._id}`, { action: 'snooze', snooze_until: until.toISOString() }); } catch { load(); }
+  };
+
+  const undoLast = async () => {
     const t = undo;
     setUndo(null);
     clearTimeout(undoTimer.current);
@@ -170,6 +189,21 @@ export default function ContactTasksCard({ colors, userId, contactId, contact, f
               )}
               <ActionBtn green icon="checkmark" label="Done" onPress={() => complete(featured)} testid="contact-task-done-btn" colors={colors} />
             </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 }}>
+              <Ionicons name="alarm-outline" size={13} color={colors.textTertiary} />
+              <Text style={{ fontSize: 12, color: colors.textTertiary, fontWeight: '600' }}>Snooze</Text>
+              {([['tomorrow', 'Tomorrow'], ['next_week', 'Next week']] as const).map(([k, label]) => (
+                <TouchableOpacity
+                  key={k}
+                  onPress={() => snooze(featured, k)}
+                  style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, backgroundColor: colors.surface }}
+                  testID={`contact-task-snooze-${k}`}
+                  dataSet={{ testid: `contact-task-snooze-${k}` } as any}
+                >
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: colors.text }}>{label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         </View>
       )}
@@ -220,9 +254,11 @@ export default function ContactTasksCard({ colors, userId, contactId, contact, f
       )}
 
       {undo && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 9, backgroundColor: `${GREEN}15`, borderTopWidth: 1, borderTopColor: colors.border }} testID="contact-task-undo-bar" dataSet={{ testid: 'contact-task-undo-bar' } as any}>
-          <Text style={{ fontSize: 13, color: GREEN, fontWeight: '700' }} numberOfLines={1}>Done: {undo.title}</Text>
-          <TouchableOpacity onPress={undoComplete} testID="contact-task-undo-btn" dataSet={{ testid: 'contact-task-undo-btn' } as any}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 14, paddingVertical: 9, backgroundColor: undo._undoKind === 'snooze' ? `${GOLD}15` : `${GREEN}15`, borderTopWidth: 1, borderTopColor: colors.border }} testID="contact-task-undo-bar" dataSet={{ testid: 'contact-task-undo-bar' } as any}>
+          <Text style={{ fontSize: 13, color: undo._undoKind === 'snooze' ? GOLD : GREEN, fontWeight: '700', flex: 1, marginRight: 10 }} numberOfLines={1}>
+            {undo._undoKind === 'snooze' ? `Snoozed to ${undo._label}: ${undo.title}` : `Done: ${undo.title}`}
+          </Text>
+          <TouchableOpacity onPress={undoLast} testID="contact-task-undo-btn" dataSet={{ testid: 'contact-task-undo-btn' } as any}>
             <Text style={{ fontSize: 13, fontWeight: '800', color: GOLD }}>Undo</Text>
           </TouchableOpacity>
         </View>
