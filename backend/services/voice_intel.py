@@ -15,7 +15,13 @@ from bson import ObjectId
 
 logger = logging.getLogger(__name__)
 
-EXTRACTION_PROMPT = """You are a CRM data extraction expert. Analyze this voice memo transcript from an automotive salesperson about their customer. Extract any personal details mentioned.
+SOURCE_DESCRIPTIONS = {
+    "voice_note": "voice memo transcript from a salesperson about their customer",
+    "text": "text-message conversation between a salesperson (REP), their AI assistant (AI) and the customer (CUSTOMER). Only extract facts about the CUSTOMER, never about the rep",
+    "call": "transcript of a recorded phone call between a salesperson and their customer. Only extract facts about the customer",
+}
+
+EXTRACTION_PROMPT = """You are a CRM data extraction expert. Analyze this __SOURCE__. Extract any personal details mentioned.
 
 ## Rules:
 - Only extract information that is EXPLICITLY mentioned in the transcript
@@ -52,8 +58,8 @@ EXTRACTION_PROMPT = """You are a CRM data extraction expert. Analyze this voice 
 Respond ONLY with valid JSON."""
 
 
-async def extract_personal_details(transcript: str) -> dict:
-    """Use AI to extract personal details from a voice memo transcript."""
+async def extract_personal_details(transcript: str, source: str = "voice_note") -> dict:
+    """Use AI to extract personal details from a voice memo, text thread or call transcript."""
     api_key = os.getenv("EMERGENT_LLM_KEY")
     if not api_key:
         logger.warning("No EMERGENT_LLM_KEY - skipping extraction")
@@ -68,12 +74,13 @@ async def extract_personal_details(transcript: str) -> dict:
     chat = LlmChat(
         api_key=api_key,
         session_id=session_id,
-        system_message=EXTRACTION_PROMPT,
+        system_message=EXTRACTION_PROMPT.replace("__SOURCE__", SOURCE_DESCRIPTIONS.get(source, SOURCE_DESCRIPTIONS["voice_note"])),
     ).with_model("openai", "gpt-5.2")
 
+    label = {"text": "Text conversation", "call": "Call transcript"}.get(source, "Voice memo transcript")
     try:
         response = await chat.send_message(
-            UserMessage(text=f"Voice memo transcript:\n\n{transcript}")
+            UserMessage(text=f"{label}:\n\n{transcript}")
         )
 
         # Parse JSON
@@ -248,3 +255,87 @@ async def _ensure_followup_from_voice(db, user_id: str, contact_id: str, details
         "created_at": now,
     })
     logger.info(f"[VoiceIntel] auto follow-up created for {contact_id}: {title}")
+
+
+def _ts(v):
+    if isinstance(v, datetime):
+        return v if v.tzinfo else v.replace(tzinfo=timezone.utc)
+    if isinstance(v, str):
+        try:
+            d = datetime.fromisoformat(v.replace("Z", "+00:00"))
+            return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
+        except Exception:
+            return None
+    return None
+
+
+async def process_conversation_intelligence(user_id: str, contact_id: str) -> dict:
+    """Run the same extractor over NEW inbox texts and recorded-call transcripts since the last pass.
+
+    Cursor lives on the contact (conv_intel_cursor) so each text/call is analyzed once. Newest info wins.
+    """
+    db = get_db()
+    if not ObjectId.is_valid(contact_id):
+        return {}
+    contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"conv_intel_cursor": 1, "first_name": 1})
+    if not contact:
+        return {}
+    since = _ts((contact.get("conv_intel_cursor") or {}).get("at"))
+    now = datetime.now(timezone.utc)
+
+    conv_ids = [str(c["_id"]) async for c in db.conversations.find({"contact_id": contact_id}, {"_id": 1})]
+    match = {"$or": [{"contact_id": contact_id}] + ([{"conversation_id": {"$in": conv_ids}}] if conv_ids else []),
+             "sender": {"$nin": ["ai_draft", "system"]}, "type": {"$nin": ["event", "call_log"]}}
+    pipeline = [{"$match": match},
+                {"$addFields": {"_ts": {"$ifNull": ["$timestamp", "$created_at"]}}},
+                {"$sort": {"_ts": 1}},
+                {"$project": {"content": 1, "sender": 1, "direction": 1, "_ts": 1}}]
+    lines, customer_chars, newest = [], 0, since
+    async for m in db.messages.aggregate(pipeline):
+        ts = _ts(m.get("_ts"))
+        if not ts or (since and ts <= since):
+            continue
+        body = (m.get("content") or "").strip()
+        if not body:
+            continue
+        inbound = m.get("sender") == "contact" or m.get("direction") == "inbound"
+        who = "CUSTOMER" if inbound else ("AI" if m.get("sender") == "ai" else "REP")
+        if inbound:
+            customer_chars += len(body)
+        lines.append(f"[{ts.strftime('%b %d')}] {who}: {body[:400]}")
+        newest = ts if not newest or ts > newest else newest
+
+    call_q = {"contact_id": contact_id, "transcript": {"$nin": [None, ""]}}
+    if since:
+        call_q["created_at"] = {"$gt": since}
+    calls = await db.call_logs.find(call_q, {"transcript": 1, "created_at": 1, "direction": 1}).sort("created_at", 1).to_list(5)
+
+    if customer_chars < 15 and not calls:
+        if lines:
+            await db.contacts.update_one({"_id": contact["_id"]}, {"$set": {"conv_intel_cursor": {"at": now, "fields": []}}})
+        return {}
+
+    details: dict = {}
+    if customer_chars >= 15:
+        details.update(await extract_personal_details("\n".join(lines[-60:]), source="text"))
+    for c in calls:
+        details.update(await extract_personal_details(c["transcript"][:6000], source="call"))
+        ts = _ts(c.get("created_at"))
+        newest = ts if ts and (not newest or ts > newest) else newest
+
+    await db.contacts.update_one({"_id": contact["_id"]},
+                                 {"$set": {"conv_intel_cursor": {"at": now, "fields": list(details.keys())}}})
+    if not details:
+        return {}
+    await merge_personal_details(contact_id, details)
+    field_names = ", ".join(details.keys())
+    src = " + ".join(x for x, ok in (("texts", customer_chars >= 15), ("calls", bool(calls))) if ok)
+    await db.contact_events.insert_one({
+        "event_type": "intelligence_extracted", "title": "Personal Details Updated",
+        "description": f"AI updated from {src}: {field_names}", "contact_id": contact_id, "user_id": user_id,
+        "channel": "ai", "category": "intelligence", "icon": "sparkles", "color": "#AF52DE",
+        "content": json.dumps(details), "metadata": {"source": src, "fields": list(details.keys())},
+        "timestamp": now, "created_at": now,
+    })
+    logger.info(f"[ConvIntel] {contact_id}: {field_names} from {src}")
+    return details

@@ -2,6 +2,8 @@
 AI Contact Summary  - "Relationship Intel"
 Generates an on-demand AI briefing about a contact using all available data.
 """
+import asyncio
+import json
 import os
 import logging
 from datetime import datetime, timezone
@@ -26,17 +28,26 @@ async def _gather_contact_context(db, user_id: str, contact_id: str) -> dict:
     if not contact:
         raise HTTPException(status_code=404, detail="Contact not found")
     
-    # Messages (last 50)
-    messages = await db.messages.find(
-        {"contact_id": contact_id},
-        {"_id": 0, "content": 1, "direction": 1, "channel": 1, "created_at": 1, "sender_name": 1}
-    ).sort("created_at", -1).limit(50).to_list(50)
+    # Messages (last 60): inbox texts are keyed by conversation_id + timestamp, older docs by contact_id + created_at
+    messages = await db.messages.aggregate([
+        {"$match": {**(await _message_match(db, contact_id)), "sender": {"$ne": "ai_draft"}, "type": {"$ne": "event"}}},
+        {"$addFields": {"_ts": {"$ifNull": ["$timestamp", "$created_at"]}}},
+        {"$sort": {"_ts": -1}},
+        {"$limit": 60},
+        {"$project": {"_id": 0, "content": 1, "sender": 1, "direction": 1, "channel": 1, "type": 1, "created_at": "$_ts"}},
+    ]).to_list(60)
     
     # Contact events
     events = await db.contact_events.find(
         {"contact_id": contact_id},
         {"_id": 0, "event_type": 1, "title": 1, "description": 1, "timestamp": 1, "channel": 1}
     ).sort("timestamp", -1).limit(30).to_list(30)
+
+    # Recorded phone calls (transcript + AI summary)
+    calls = await db.call_logs.find(
+        {"contact_id": contact_id},
+        {"_id": 0, "transcript": 1, "ai_summary": 1, "duration_s": 1, "direction": 1, "created_at": 1}
+    ).sort("created_at", -1).limit(5).to_list(5)
     
     # Voice note transcripts
     voice_notes = await db.voice_notes.find(
@@ -55,8 +66,27 @@ async def _gather_contact_context(db, user_id: str, contact_id: str) -> dict:
         "messages": messages,
         "events": events,
         "voice_notes": voice_notes,
+        "calls": calls,
         "tasks": tasks,
     }
+
+
+async def _message_match(db, contact_id: str) -> dict:
+    conv_ids = [str(c["_id"]) async for c in db.conversations.find({"contact_id": contact_id}, {"_id": 1})]
+    ors = [{"contact_id": contact_id}]
+    if conv_ids:
+        ors.append({"conversation_id": {"$in": conv_ids}})
+    return {"$or": ors}
+
+
+def _msg_label(m: dict) -> str:
+    if m.get("sender") == "contact" or m.get("direction") == "inbound":
+        return "← Customer"
+    if m.get("sender") == "ai":
+        return "→ Jessi (AI assistant)"
+    if m.get("type") == "call_log":
+        return "· Call"
+    return "→ You"
 
 
 def _build_prompt(ctx: dict) -> str:
@@ -103,18 +133,48 @@ def _build_prompt(ctx: dict) -> str:
     if anniversary: sections.append(f"Anniversary: {anniversary}")
     if date_sold: sections.append(f"Date sold: {date_sold}")
     if notes: sections.append(f"Notes: {notes}")
+    for label, key in (("Vehicle", "vehicle"), ("Occupation", "occupation"), ("Employer", "employer"), ("City", "address_city")):
+        if contact.get(key): sections.append(f"{label}: {contact[key]}")
+
+    # Personal details captured from voice notes, texts and calls (newest wins)
+    pd = contact.get("personal_details") or {}
+    pd_lines = []
+    for k, v in pd.items():
+        if v in (None, "", [], {}):
+            continue
+        if isinstance(v, list):
+            v = "; ".join(json.dumps(i) if isinstance(i, dict) else str(i) for i in v)
+        pd_lines.append(f"  {k.replace('_', ' ')}: {v}")
+    if pd_lines:
+        sections.append("\nKNOWN PERSONAL DETAILS:")
+        sections.extend(pd_lines)
     
     # Messages
     if ctx["messages"]:
-        sections.append("\nRECENT MESSAGES (newest first):")
-        for m in ctx["messages"][:30]:
-            direction = "→ Sent" if m.get("direction") == "outbound" else "← Received"
-            channel = m.get("channel", "sms")
+        sections.append("\nRECENT TEXT THREAD (newest first; Jessi is the rep's AI assistant):")
+        for m in ctx["messages"][:40]:
+            content = (m.get("content") or "").strip()
+            if not content:
+                continue
+            channel = m.get("channel") or "sms"
             date = m.get("created_at", "")
             if isinstance(date, datetime):
                 date = date.strftime("%b %d, %Y %I:%M %p")
-            content = (m.get("content") or "")[:200]
-            sections.append(f"  {direction} ({channel}) {date}: {content}")
+            sections.append(f"  {_msg_label(m)} ({channel}) {date}: {content[:240]}")
+
+    # Recorded calls
+    if ctx.get("calls"):
+        sections.append("\nRECORDED PHONE CALLS:")
+        for c in ctx["calls"]:
+            date = c.get("created_at", "")
+            if isinstance(date, datetime):
+                date = date.strftime("%b %d, %Y")
+            dur = c.get("duration_s") or 0
+            sections.append(f"  [{date}] {c.get('direction') or 'call'} · {dur // 60}m {dur % 60}s")
+            if c.get("ai_summary"):
+                sections.append(f"    Summary: {c['ai_summary'][:500]}")
+            if c.get("transcript"):
+                sections.append(f"    Transcript: {c['transcript'][:600]}")
     
     # Events
     if ctx["events"]:
@@ -160,6 +220,16 @@ async def generate_contact_intel(user_id: str, contact_id: str):
     ctx = await _gather_contact_context(db, user_id, contact_id)
     contact_data = _build_prompt(ctx)
     name = f"{ctx['contact'].get('first_name', '')} {ctx['contact'].get('last_name', '')}".strip()
+
+    # New texts / call transcripts since the last pass update personal_details (same extractor as voice notes)
+    async def _extract():
+        try:
+            from services.voice_intel import process_conversation_intelligence
+            return await process_conversation_intelligence(user_id, contact_id)
+        except Exception as e:
+            logger.warning(f"[ContactIntel] conversation extraction failed: {e}")
+            return {}
+    extraction = asyncio.create_task(_extract())
     
     # Call GPT-5.2
     try:
@@ -217,9 +287,20 @@ RULES:
     except Exception as e:
         logger.error(f"AI summary generation failed: {e}")
         raise HTTPException(status_code=500, detail=f"AI generation failed: {str(e)}")
+
+    from utils.text_sanitize import no_em_dash
+    summary_text = no_em_dash(summary_text)
+    extracted = await extraction
     
     # Cache the summary
     now = datetime.now(timezone.utc)
+    data_points = {
+        "messages": sum(1 for m in ctx["messages"] if (m.get("content") or "").strip()),
+        "events": len(ctx["events"]),
+        "voice_notes": len(ctx["voice_notes"]),
+        "calls": len(ctx.get("calls") or []),
+        "tasks": len(ctx["tasks"]),
+    }
     await db.contact_intel.update_one(
         {"contact_id": contact_id, "user_id": user_id},
         {"$set": {
@@ -228,12 +309,7 @@ RULES:
             "summary": summary_text,
             "contact_name": name,
             "generated_at": now,
-            "data_points": {
-                "messages": len(ctx["messages"]),
-                "events": len(ctx["events"]),
-                "voice_notes": len(ctx["voice_notes"]),
-                "tasks": len(ctx["tasks"]),
-            },
+            "data_points": data_points,
         }},
         upsert=True,
     )
@@ -242,12 +318,8 @@ RULES:
         "summary": summary_text,
         "contact_name": name,
         "generated_at": now.isoformat(),
-        "data_points": {
-            "messages": len(ctx["messages"]),
-            "events": len(ctx["events"]),
-            "voice_notes": len(ctx["voice_notes"]),
-            "tasks": len(ctx["tasks"]),
-        },
+        "data_points": data_points,
+        "details_updated": sorted(extracted.keys()) if extracted else [],
     }
 
 
@@ -264,17 +336,26 @@ def _to_utc_dt(v):
 
 
 async def _latest_activity(db, contact_id: str):
-    """Newest timestamp across messages, events, and voice notes for a contact."""
+    """Newest timestamp across texts (any conversation), events, voice notes and recorded calls."""
     candidates = []
-    m = await db.messages.find({"contact_id": contact_id}, {"created_at": 1}).sort("created_at", -1).limit(1).to_list(1)
+    m = await db.messages.aggregate([
+        {"$match": {**(await _message_match(db, contact_id)), "sender": {"$ne": "ai_draft"}}},
+        {"$addFields": {"_ts": {"$ifNull": ["$timestamp", "$created_at"]}}},
+        {"$sort": {"_ts": -1}}, {"$limit": 1}, {"$project": {"_ts": 1}},
+    ]).to_list(1)
     if m:
-        candidates.append(_to_utc_dt(m[0].get("created_at")))
-    e = await db.contact_events.find({"contact_id": contact_id}, {"timestamp": 1}).sort("timestamp", -1).limit(1).to_list(1)
+        candidates.append(_to_utc_dt(m[0].get("_ts")))
+    # AI's own extraction events don't count as new customer activity
+    e = await db.contact_events.find({"contact_id": contact_id, "event_type": {"$ne": "intelligence_extracted"}},
+                                     {"timestamp": 1}).sort("timestamp", -1).limit(1).to_list(1)
     if e:
         candidates.append(_to_utc_dt(e[0].get("timestamp")))
     v = await db.voice_notes.find({"contact_id": contact_id}, {"created_at": 1}).sort("created_at", -1).limit(1).to_list(1)
     if v:
         candidates.append(_to_utc_dt(v[0].get("created_at")))
+    c = await db.call_logs.find({"contact_id": contact_id}, {"created_at": 1}).sort("created_at", -1).limit(1).to_list(1)
+    if c:
+        candidates.append(_to_utc_dt(c[0].get("created_at")))
     candidates = [c for c in candidates if c]
     return max(candidates) if candidates else None
 
