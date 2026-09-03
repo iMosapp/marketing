@@ -11,7 +11,15 @@ import { useAuthStore } from '../store/authStore';
 import { Avatar } from '../components/Avatar';
 import { HomeSmartBar } from '../components/home/HomeSmartBar';
 import { whenLabel, taskKind } from '../components/contact/ContactTasksCard';
+import { useToast } from '../components/common/Toast';
 import api from '../services/api';
+
+const agoLabel = (iso: string) => {
+  const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  if (m < 60) return `${m}m ago`;
+  const h = Math.round(m / 60);
+  return h < 24 ? `${h}h ago` : `${Math.round(h / 24)}d ago`;
+};
 
 const GOLD = '#C9A962';
 const RED = '#FF453A';
@@ -30,6 +38,21 @@ export default function TeamTasksScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<Filter>('all');
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [nudging, setNudging] = useState<string | null>(null);
+  const { showToast } = useToast();
+
+  const nudge = async (rep: any) => {
+    setNudging(rep.user_id);
+    try {
+      const r = await api.post(`/tasks/${user?._id}/team/nudge/${rep.user_id}`);
+      showToast(`Nudged ${rep.name.split(' ')[0]} about ${r.data.overdue} overdue`, 'success');
+      load();
+    } catch (e: any) {
+      showToast(e?.response?.data?.detail || 'Could not nudge', 'error');
+    } finally {
+      setNudging(null);
+    }
+  };
 
   const load = useCallback(async () => {
     if (!user?._id) return;
@@ -119,8 +142,21 @@ export default function TeamTasksScreen() {
                     <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text }} numberOfLines={1}>{rep.name}</Text>
                     <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
                       {rep.tasks.length} open{overdueN ? ` · ` : ''}{overdueN ? <Text style={{ color: RED, fontWeight: '700' }}>{overdueN} overdue</Text> : null}
+                      {rep.last_nudged_at ? <Text style={{ color: colors.textTertiary }}> · nudged {agoLabel(rep.last_nudged_at)}</Text> : null}
                     </Text>
                   </View>
+                  {rep.overdue > 0 && rep.user_id !== user?._id && (
+                    <TouchableOpacity
+                      onPress={() => nudge(rep)}
+                      disabled={nudging === rep.user_id}
+                      hitSlop={6}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, backgroundColor: `${RED}18`, borderWidth: 1, borderColor: `${RED}55`, opacity: nudging === rep.user_id ? 0.5 : 1 }}
+                      {...tid(`team-tasks-nudge-${rep.user_id}`)}
+                    >
+                      <Ionicons name="notifications" size={13} color={RED} />
+                      <Text style={{ fontSize: 12, fontWeight: '800', color: RED }}>Nudge</Text>
+                    </TouchableOpacity>
+                  )}
                   <Ionicons name={isCollapsed ? 'chevron-down' : 'chevron-up'} size={18} color={colors.textTertiary} />
                 </TouchableOpacity>
 

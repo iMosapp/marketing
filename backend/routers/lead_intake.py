@@ -281,6 +281,9 @@ _DAY_NAMES = ["monday", "tuesday", "wednesday", "thursday",
               "friday", "saturday", "sunday"]
 
 LEAD_SEND_DELAY_SECONDS = 90   # fire 90 s after receipt if within hours
+# Generic instant confirmation for opted-in form leads when the source has no intake text yet.
+DEFAULT_FORM_CONFIRMATION = "Hi {{first_name}}, we got it! Someone from {{store_name}} will reach out shortly. Reply STOP to opt out."
+
 LEAD_MORNING_BUFFER_MINUTES = 5  # fire X min after opening to avoid exact-on-open blasts
 
 
@@ -519,6 +522,17 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
     if contact_query["$or"]:
         existing_contact = await db.contacts.find_one(contact_query)
 
+    # Returning customer: an existing contact owned by an ACTIVE rep in this store goes straight to
+    # that rep (skips the shared queue + ladder). Store-owned / orphaned contacts are treated as new.
+    owner_id = None
+    if existing_contact:
+        cand = str(existing_contact.get("user_id") or "")
+        if cand and cand != store_id and ObjectId.is_valid(cand):
+            owner = await db.users.find_one(
+                {"_id": ObjectId(cand), "active": {"$ne": False}, "status": {"$ne": "deactivated"}}, {"store_id": 1})
+            if owner and (not store_id or str(owner.get("store_id") or "") == store_id):
+                owner_id = cand
+
     if existing_contact:
         contact_id = str(existing_contact["_id"])
         is_new_contact = False
@@ -576,7 +590,8 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         is_new_contact = True
 
     # ── Resolve assigned user (for AI message)
-    assigned_user_id = await _resolve_assignment(db, source)
+    assigned_user_id = owner_id or await _resolve_assignment(db, source)
+    routing_kind = "returning_owner" if owner_id else ("assigned" if assigned_user_id else "queue")
     assigned_user = None
     if assigned_user_id:
         try:
@@ -595,6 +610,12 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
     is_immediate = not plan["intake_deferred"]
     is_test = bool(normalized.get("is_test"))
     sms_opt_in = bool(normalized.get("sms_opt_in"))
+
+    # Form leads that opted in always get an instant, generic "we got it" text even when the
+    # store never wrote an intake text (the rep isn't known yet, so no rep name).
+    if sms_opt_in and not (source.get("intake_text") or "").strip():
+        source = {**source, "intake_text": DEFAULT_FORM_CONFIRMATION.replace(
+            "{{store_name}}", (store.get("name") or "").strip() or "our team")}
 
     if sms_opt_in:
         await db.contacts.update_one(
@@ -641,6 +662,7 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         "extra_fields":      normalized.get("extra_fields", {}),
         "attribution":       normalized.get("attribution") or None,
         "assigned_to":       assigned_user_id,
+        "routing_kind":      routing_kind,
         "draft_message":     first_message,
         "scheduled_send_at": scheduled_send_at,
         "is_after_hours":    not is_immediate,
@@ -671,6 +693,13 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         "status":           "active",
         "claimed":          assigned_user_id is not None,
         "claimed_by":       assigned_user_id,
+        "claimed_at":       now.isoformat() if assigned_user_id else None,
+        "claim_source":     routing_kind if assigned_user_id else None,
+        "routing_kind":     routing_kind,
+        # Returning-customer safety net: manager alert, then auto-release to the shared queue
+        "owner_alert_at":   now + timedelta(minutes=int(source.get("returning_alert_minutes") or 10)) if owner_id else None,
+        "release_at":       now + timedelta(minutes=int(source.get("returning_release_minutes") or 30)) if owner_id else None,
+        "owner_alerted":    False,
         # Jessi answers the lead's replies (any hour, consumer-initiated) when the source's
         # AI toggle is on or the store is closed under the after-hours rule.
         "ai_mode":          "auto_reply" if plan["jessi_on"] else "assist",
@@ -708,13 +737,13 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
             _veh_note = normalized.get("vehicle_interest") or "New inquiry"
             if matched_vehicle:
                 _veh_note += f" — IN STOCK ({matched_vehicle.get('name', '')})"
-            asyncio.create_task(send_push_to_user(
-                assigned_user_id,
-                f"🔥 New Lead — {full_name}",
-                f"{_veh_note} via {source.get('name', 'internet lead')}",
-                f"/thread/{conv_id}",
-                "flash",
-            ))
+            if owner_id:
+                _title = f"Returning customer: {full_name}"
+                _body = f"Your customer came back via {source.get('name', 'the website')} · {_veh_note}. Reply now, it's yours."
+            else:
+                _title = f"🔥 New Lead — {full_name}"
+                _body = f"{_veh_note} via {source.get('name', 'internet lead')}"
+            asyncio.create_task(send_push_to_user(assigned_user_id, _title, _body, f"/thread/{conv_id}", "flash"))
         except Exception as e:
             logger.warning(f"[LeadIntake] Rep push failed: {e}")
 
@@ -1852,6 +1881,10 @@ async def _fire_intake_workflow(source, lead_doc, conv_id, contact_id, phone_e16
         workflow_user_ids   = source.get("workflow_user_ids", [])
         notify_all          = source.get("notify_all_on_intake", True)
         store_tz            = plan.get("store_tz") or "America/Denver"
+        # Returning customer already routed to their own rep: no jump-ball blast, no ladder
+        if lead_doc.get("routing_kind") == "returning_owner":
+            notify_all = False
+            source = {**source, "contact_mode": "text_only"}
 
         # ── 1. Send instant intake text ──────────────────────────────────────
         if intake_text and phone_e164:

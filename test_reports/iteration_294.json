@@ -1,0 +1,42 @@
+{
+  "summary": "Tested the Shared Internet Leads Queue end-to-end. Backend: 12 pytest cases in /app/backend/tests/test_lead_queue_294.py covering queue summary, full queue, reps, claim/release/reassign, workflow queue timers + validation, and BOLA/ownership. 10/12 passed; both failures are a CRITICAL auth gap: every /api/leads/queue/* endpoint is completely unauthenticated (no token needed) and not covered by enforce_user_ownership. Frontend (Expo web, forest@imosapp.com): Home leads-waiting strip, Inbox 3-way toggle + badge, filter chips/counts, claim -> thread nav + toast, '...' menu release, manager reassign sheet + reassign back, and Admin > Lead Sources > Lead Queue Timers steppers/digest chips with save+reload persistence ALL work. One real defect found: a hard load / deep link of /inbox (or /inbox?segment=leads) renders the PUBLIC MARKETING page instead of the app inbox, which is exactly the URL used by the release-to-queue push notification. All app state and Website workflow timers restored to 5/15/10/30/18 and Alpha/Bravo/Charlie unclaimed, Delta/Echo claimed by forest (verified via API at the end).",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "GET/POST /api/leads/queue/* (all routes)", "issue": "No authentication at all. `curl` with NO Authorization header returns 200 with full lead data: GET /api/leads/queue/{FOREST_ID}/summary and /reps (leaks the entire 87-user roster with names/roles/open lead counts). Mutating routes are also open - POST /api/leads/queue/{uid}/release/{conv} without a token reaches the handler (returns 404 'Lead not found' for a fake id, i.e. it executes business logic), so an anonymous caller can release/reassign any lead. Root cause: server.py enforce_user_ownership ALWAYS_SKIP contains '/api/leads/' and is evaluated BEFORE PROTECTED_PREFIXES, so the '/api/leads/queue/' entry in PROTECTED_PREFIXES is dead code; routers/lead_queue.py itself has no Depends(auth)/request.state.user check. Expected 403 for cross-user and 401 without token.", "priority": "CRITICAL"},
+      {"endpoint": "GET /api/leads/queue/{other_user_id}/summary", "issue": "Plain user (mjeast1985@gmail.com) token can read super-admin forest's queue summary (200 instead of 403) - BOLA. Same root cause as above.", "priority": "CRITICAL"}
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Deep link / hard reload of Inbox Leads segment", "issue": "Navigating directly to {BASE}/inbox?segment=leads (or /inbox) while authenticated redirects to /inbox/ and renders the public marketing site ('Products / Your Digital Presence / Book a Demo'), not the app Inbox. /home loads the app correctly. This is the exact URL used in the lead_queue release push notification (send_push_to_user(..., '/inbox?segment=leads')) and in the Home strip fallback, so a rep tapping the 'Up for grabs' push lands on the marketing page. In-app navigation (Home strip tap -> /inbox?segment=leads&t=...) works fine.", "affected_selectors": ["leads-queue-panel", "leads-inbox-toggle"]}
+    ],
+    "design_issues": [
+      {"screen": "Inbox > Leads > Reassign sheet (lead-reassign-sheet)", "issues": ["Lists all 87 active store users including obvious contact-converted/test accounts (John Test Contact, Link Verify, Link Test, Prefill Test...) with no search box and no way to filter - unusable at scale; consider limiting to reps on the source workflow + search.", "The signed-in manager (Forest) is listed as a reassign target for his own lead."]},
+      {"screen": "Admin > Lead Sources > Lead Queue Timers", "issues": ["'Turns red after' stepper uses step=5 with min = green+1, so from 20 five minus-taps lands on 6 and 15 becomes unreachable from below (6 -> 11 -> 16). Consider step=5 snapping to multiples of 5 or step=1.", "Stepper testids are semantic-mismatched: the 'Turns amber after' row is timer-green and 'Turns red after' is timer-amber (works, but confusing)."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_lead_queue_294.py",
+    "/app/test_reports/pytest/lead_queue_294.xml"
+  ],
+  "action_items": [
+    "CRITICAL: secure /api/leads/queue/*. Remove '/api/leads/' from ALWAYS_SKIP in server.py enforce_user_ownership (or narrow it to the public intake path only, e.g. '/api/leads/intake') so the existing '/api/leads/queue/' PROTECTED_PREFIX takes effect, AND add an explicit auth dependency + self-or-manager assertion inside routers/lead_queue.py (summary, queue, reps, reassign, release) so mutating routes can never run anonymously.",
+    "Fix the /inbox deep link: authenticated hard loads of /inbox?segment=leads must render the app inbox, not the marketing site (affects the release-to-queue push notification target).",
+    "Reassign picker: restrict/search the rep list (workflow members + on-shift first) and exclude the acting manager."
+  ],
+  "critical_code_review_comments": [
+    "server.py: ALWAYS_SKIP is checked before PROTECTED_PREFIXES, making the '/api/leads/queue/' protection entry unreachable - verify no other PROTECTED_PREFIX is shadowed the same way ('/api/admin/', '/api/profile/' are also blanket-skipped).",
+    "routers/lead_queue.py relies entirely on middleware for authorization; release_lead/reassign_lead take user_id from the path with no JWT identity check, so identity is fully client-supplied.",
+    "queue_reps returns every active user in the store (87 rows incl. converted contacts) - filter to reps who can actually own a lead."
+  ],
+  "updated_files": ["/app/backend/tests/test_lead_queue_294.py"],
+  "success_rate": {"backend": "83% (10/12 - both failures are the same auth gap)", "frontend": "92% (12/13 checks; only the /inbox deep link fails)"},
+  "seed_data_creation": "None created. Used existing seeded demo leads (Queue Alpha/Bravo/Charlie unclaimed, Mine Delta/Echo claimed by forest). Tests claim/release/reassign them and restore the original state; final API check confirmed the exact original state and workflow timers 5/15/10/30/18.",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "forest@imosapp.com / Admin123! (super_admin, uid 69a0b7095fddcede09591667); mjeast1985@gmail.com / NavyBean1! (plain user, used for BOLA checks)",
+  "context_for_next_testing_agent": "Run `cd /app/backend && python -m pytest tests/test_lead_queue_294.py -v -p no:randomly` - it is self-restoring (reassign back to forest, re-claim Mine Echo, release Queue Alpha, restore timers). The two TestSecurity failures (test_cross_user_summary_forbidden, test_no_token) are the CRITICAL unauthenticated-queue bug; re-run them first after the fix, and also verify POST /api/leads/queue/{uid}/release/{conv} without a token returns 401 (currently reaches the handler). Frontend: do NOT use page.goto('/inbox...') - it renders the marketing site; navigate in-app by tapping [data-testid=leads-waiting-strip] on /home after login. NEVER tap lead-claim-call-* (live Twilio). Verified working UI: leads-waiting-strip/title/sub, my-inbox|leads-inbox|team-inbox toggles + leads-inbox-badge, leads-filter-* chips with matching counts, lead-status-*, lead-claim-*, lead-menu-sheet (open/reassign/release), lead-reassign-sheet + lead-reassign-rep-*, queue-timers steppers + digest-hour chips with save/reload persistence.",
+  "rca_of_the_issue": "enforce_user_ownership in /app/backend/server.py returns early for any path starting with a prefix in ALWAYS_SKIP, and that tuple includes '/api/leads/'. Because the ALWAYS_SKIP loop runs before the PROTECTED_PREFIXES match, the '/api/leads/queue/' entry added for this feature never executes, and routers/lead_queue.py has no auth dependency of its own - so all queue read and write endpoints are anonymous. Reproduce: `curl -s https://<base>/api/leads/queue/69a0b7095fddcede09591667/reps` (200 + full user roster) and `curl -X POST https://<base>/api/leads/queue/69a0b7095fddcede09591667/release/000000000000000000000000` (404 'Lead not found' - handler executed). Mitigation: narrow the ALWAYS_SKIP entry to the public lead intake path and add an explicit auth/self-or-manager guard in lead_queue.py."
+}

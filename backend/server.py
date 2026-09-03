@@ -158,7 +158,8 @@ async def enforce_user_ownership(request: Request, call_next):
         "/api/seo/sitemap", "/api/directory/", "/api/analytics/",
         "/api/integrations/public", "/api/demo/", "/api/leads/",
     )
-    if any(path.startswith(p) for p in ALWAYS_SKIP):
+    # /api/leads/ is public intake, but the shared queue under it is per-user data
+    if any(path.startswith(p) for p in ALWAYS_SKIP) and not path.startswith("/api/leads/queue/"):
         return await call_next(request)
 
     # ── Routes protected: resource/{user_id}/... ──────────────────────────────
@@ -168,7 +169,7 @@ async def enforce_user_ownership(request: Request, call_next):
         "/api/messages/conversations/", "/api/tags/", "/api/templates/",
         "/api/home/", "/api/activity/", "/api/search/", "/api/notifications-center/",
         "/api/reports/", "/api/push/preferences/", "/api/push/subscribe-native/",
-        "/api/push/status/", "/api/push/diagnose/", "/api/users/", "/api/engagement-signals/",
+        "/api/push/status/", "/api/push/diagnose/", "/api/push/morning-brief/", "/api/leads/queue/", "/api/users/", "/api/engagement-signals/",
         "/api/ai-outreach/", "/api/broadcast/", "/api/bug-reports/",
         "/api/inventory/", "/api/keyword-rules/", "/api/wallet/",
         "/api/relationship-health/",
@@ -630,6 +631,8 @@ api_router.include_router(reports.router)
 api_router.include_router(broadcast.router)
 api_router.include_router(lead_sources.router)
 api_router.include_router(lead_intake.router)
+from routers import lead_queue
+api_router.include_router(lead_queue.router)
 from routers import lead_call_webhooks
 api_router.include_router(lead_call_webhooks.router)
 api_router.include_router(ai_reply.router)

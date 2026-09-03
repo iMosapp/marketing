@@ -26,7 +26,7 @@ import { NotificationBell } from '../../components/notifications/NotificationBel
 import { UniversalShareModal } from '../../components/UniversalShareModal';
 import { DraftMessageSheet } from '../../components/DraftMessageSheet';
 import { HomeSmartBar } from '../../components/home/HomeSmartBar';
-import { LeadAlertCard } from '../../components/home/LeadAlertCard';
+import { LeadsWaitingStrip } from '../../components/home/LeadsWaitingStrip';
 import { ReplyHealthCard } from '../../components/home/ReplyHealthCard';
 import { WeeklyWinsCard } from '../../components/home/WeeklyWinsCard';
 import { BookOfBusinessCard } from '../../components/home/BookOfBusinessCard';
@@ -896,8 +896,8 @@ function HomeScreen() {
         ) : (
         <>
 
-        {/* ── SPEED-TO-LEAD ALERT — unanswered internet leads ── */}
-        <LeadAlertCard userId={user?._id || ''} />
+        {/* ── LEADS WAITING — shared queue + my unanswered internet leads ── */}
+        <LeadsWaitingStrip userId={user?._id || ''} />
 
         {/* ── AI REPLY HEALTH — failed sends in the last day ── */}
         <ReplyHealthCard userId={user?._id || ''} />

@@ -23,7 +23,7 @@ import { useToast } from '../../../components/common/Toast';
 
 import { useThemeStore } from '../../../store/themeStore';
 import { ContactModeToggle, LeadCallLadder, WebsiteFormRouting, type CallAttempt } from '../../../components/admin/LeadWorkflowControls';
-import { AfterHoursRule, TestLeadCard, type StoreHours } from '../../../components/admin/LeadTimingControls';
+import { AfterHoursRule, TestLeadCard, QueueTimers, type StoreHours } from '../../../components/admin/LeadTimingControls';
 const IS_WEB = Platform.OS === 'web';
 
 interface LeadSource {
@@ -126,6 +126,11 @@ export default function LeadSourceDetailScreen() {
     after_hours_mode: 'text_and_ai' as 'text_and_ai' | 'ring_anyway',
     text_window_start: '09:00',
     text_window_end: '20:00',
+    timer_green_minutes: 5,
+    timer_amber_minutes: 15,
+    returning_alert_minutes: 10,
+    returning_release_minutes: 30,
+    digest_hour: 18,
   });
   const [storeHours, setStoreHours] = useState<StoreHours | null>(null);
   const [websitePages, setWebsitePages] = useState<{ pages: string[]; routed: Record<string, { id: string; name: string }> }>({ pages: [], routed: {} });
@@ -776,6 +781,13 @@ export default function LeadSourceDetailScreen() {
                 storeHours={storeHours}
                 onChange={patch => setWorkflow(prev => ({ ...prev, ...patch }))}
                 onEditHours={() => router.push('/settings/store-profile' as any)}
+                colors={colors}
+              />
+
+              {/* ── Shared queue timers + returning-customer safety net + digest ── */}
+              <QueueTimers
+                values={workflow}
+                onChange={patch => setWorkflow(prev => ({ ...prev, ...patch }))}
                 colors={colors}
               />
 

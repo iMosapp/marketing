@@ -24,7 +24,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { NotificationBell } from '../../components/notifications/NotificationBell';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import LeadsQueuePanel from '../../components/inbox/LeadsQueuePanel';
+import api from '../../services/api';
 import { Image } from 'expo-image';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
 import { useAuthStore } from '../../store/authStore';
@@ -164,7 +166,18 @@ export default function InboxScreen() {
   const [refreshing, setRefreshing] = useState(false);
   
   // Inbox view toggle (My Inbox vs Team Inbox)
-  const [inboxView, setInboxView] = useState<'my' | 'team'>('my');
+  const [inboxView, setInboxView] = useState<'my' | 'leads' | 'team'>('my');
+  const [leadsSummary, setLeadsSummary] = useState<{ visible: boolean; waiting: number; red?: number; mine_waiting?: number; heat?: string | null } | null>(null);
+  const { segment, t: segmentNonce } = useLocalSearchParams<{ segment?: string; t?: string }>();
+
+  const loadLeadsSummary = useCallback(async () => {
+    if (!user?._id) return;
+    try { const r = await api.get(`/leads/queue/${user._id}/summary`); setLeadsSummary(r.data); } catch {}
+  }, [user?._id]);
+  useEffect(() => { loadLeadsSummary(); }, [loadLeadsSummary]);
+  useFocusEffect(useCallback(() => { loadLeadsSummary(); }, [loadLeadsSummary]));
+  useEffect(() => { if (segment === 'leads') setInboxView('leads'); }, [segment, segmentNonce]);
+  const showLeadsSegment = !!leadsSummary && (leadsSummary.visible || (leadsSummary.mine_waiting || 0) > 0);
   const [teamConversations, setTeamConversations] = useState<any[]>([]);
   const [loadingTeam, setLoadingTeam] = useState(false);
   
@@ -243,11 +256,13 @@ export default function InboxScreen() {
     }
   };
   
-  const handleInboxViewChange = async (view: 'my' | 'team') => {
+  const handleInboxViewChange = async (view: 'my' | 'leads' | 'team') => {
     triggerHaptic('medium');
     setInboxView(view);
     if (view === 'team') {
       await loadTeamConversations();
+    } else if (view === 'leads') {
+      loadLeadsSummary();
     }
   };
   
@@ -1653,6 +1668,7 @@ export default function InboxScreen() {
           <Pressable
             style={[
               styles.inboxToggleOption,
+              showLeadsSegment && styles.inboxToggleOptionTight,
               inboxView === 'my' && styles.inboxToggleOptionActive,
             ]}
             onPress={() => handleInboxViewChange('my')}
@@ -1660,13 +1676,41 @@ export default function InboxScreen() {
             dataSet={{ testid: 'my-inbox-toggle' } as any}
           >
             <Ionicons name="person" size={14} color={inboxView === 'my' ? '#000' : colors.textSecondary} />
-            <Text style={[styles.inboxToggleText, { color: colors.textSecondary }, inboxView === 'my' && styles.inboxToggleTextActive]}>
+            <Text style={[styles.inboxToggleText, { color: colors.textSecondary }, showLeadsSegment && styles.inboxToggleTextTight, inboxView === 'my' && styles.inboxToggleTextActive]}>
               My Inbox
             </Text>
           </Pressable>
+          {showLeadsSegment && (() => {
+            const n = (leadsSummary?.waiting || 0) + (leadsSummary?.mine_waiting || 0);
+            const badgeBg = leadsSummary?.heat === 'red' ? '#FF453A' : leadsSummary?.heat === 'amber' ? '#FF9F0A' : '#34C759';
+            return (
+              <Pressable
+                style={[
+                  styles.inboxToggleOption,
+                  styles.inboxToggleOptionTight,
+                  inboxView === 'leads' && styles.inboxToggleOptionActive,
+                ]}
+                onPress={() => handleInboxViewChange('leads')}
+                testID="leads-inbox-toggle"
+                dataSet={{ testid: 'leads-inbox-toggle' } as any}
+              >
+                <Ionicons name="flame" size={14} color={inboxView === 'leads' ? '#000' : colors.textSecondary} />
+                <Text style={[styles.inboxToggleText, { color: colors.textSecondary }, styles.inboxToggleTextTight, inboxView === 'leads' && styles.inboxToggleTextActive]}>
+                  Leads
+                </Text>
+                {n > 0 && (
+                  <View style={{ minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, backgroundColor: badgeBg, alignItems: 'center', justifyContent: 'center' }}
+                    testID="leads-inbox-badge" dataSet={{ testid: 'leads-inbox-badge' } as any}>
+                    <Text style={{ fontSize: 11, fontWeight: '800', color: '#FFF' }}>{n}</Text>
+                  </View>
+                )}
+              </Pressable>
+            );
+          })()}
           <Pressable
             style={[
               styles.inboxToggleOption,
+              showLeadsSegment && styles.inboxToggleOptionTight,
               inboxView === 'team' && styles.inboxToggleOptionActive,
             ]}
             onPress={() => handleInboxViewChange('team')}
@@ -1674,7 +1718,7 @@ export default function InboxScreen() {
             dataSet={{ testid: 'team-inbox-toggle' } as any}
           >
             <Ionicons name="people" size={14} color={inboxView === 'team' ? '#000' : colors.textSecondary} />
-            <Text style={[styles.inboxToggleText, { color: colors.textSecondary }, inboxView === 'team' && styles.inboxToggleTextActive]}>
+            <Text style={[styles.inboxToggleText, { color: colors.textSecondary }, showLeadsSegment && styles.inboxToggleTextTight, inboxView === 'team' && styles.inboxToggleTextActive]}>
               Team Inbox
             </Text>
           </Pressable>
@@ -1754,7 +1798,14 @@ export default function InboxScreen() {
       })()}
 
       {/* Conversation List */}
-      {loading || (inboxView === 'team' && loadingTeam) ? (
+      {inboxView === 'leads' ? (
+        <LeadsQueuePanel
+          userId={user?._id}
+          colors={{ card: colors.surface, text: colors.textPrimary, textSecondary: colors.textSecondary, textTertiary: colors.textSecondary, border: colors.border }}
+          showToast={showToast}
+          onCounts={(c: any) => setLeadsSummary(prev => prev ? { ...prev, waiting: c.unclaimed, red: c.red } : prev)}
+        />
+      ) : loading || (inboxView === 'team' && loadingTeam) ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.accent} />
         </View>
@@ -3007,6 +3058,13 @@ const styles = StyleSheet.create({
   },
   inboxToggleOptionActive: {
     backgroundColor: COLORS_DARK.accent,
+  },
+  inboxToggleOptionTight: {
+    paddingHorizontal: 6,
+    gap: 4,
+  },
+  inboxToggleTextTight: {
+    fontSize: 13,
   },
   inboxToggleText: {
     fontSize: 15,

@@ -95,6 +95,11 @@ class WorkflowConfig(BaseModel):
     after_hours_mode: Literal["text_and_ai", "ring_anyway"] = "text_and_ai"   # store closed: text + Jessi, ladder at opening
     text_window_start: str = "09:00"            # business-initiated texts/calls, customer-local time
     text_window_end: str = "20:00"
+    timer_green_minutes: int = 5                # queue "Waiting" timer turns amber after this
+    timer_amber_minutes: int = 15               # ...and red after this
+    returning_alert_minutes: int = 10           # returning customer routed to owner: alert managers if no reply
+    returning_release_minutes: int = 30         # ...then release back to the shared queue
+    digest_hour: int = 18                       # managers' daily red-leads report (store local hour)
 
 
 _HHMM = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
@@ -175,6 +180,11 @@ def serialize_lead_source(source: dict) -> dict:
             "after_hours_mode":        source.get("after_hours_mode", "text_and_ai"),
             "text_window_start":       source.get("text_window_start", "09:00"),
             "text_window_end":         source.get("text_window_end", "20:00"),
+            "timer_green_minutes":     source.get("timer_green_minutes", 5),
+            "timer_amber_minutes":     source.get("timer_amber_minutes", 15),
+            "returning_alert_minutes": source.get("returning_alert_minutes", 10),
+            "returning_release_minutes": source.get("returning_release_minutes", 30),
+            "digest_hour":             source.get("digest_hour", 18),
         },
     }
 
@@ -664,6 +674,17 @@ async def claim_lead(conversation_id: str, user_id: str, request: Request):
     
     if conversation.get("claimed"):
         raise HTTPException(status_code=400, detail=f"Lead already claimed by {conversation.get('claimed_by')}")
+
+    # Only reps on this source's workflow (or managers) can claim from the shared queue
+    source = None
+    if conversation.get("lead_source_id") and ObjectId.is_valid(str(conversation["lead_source_id"])):
+        source = await db.lead_sources.find_one({"_id": ObjectId(conversation["lead_source_id"])})
+    requester = request.state.user or {}
+    is_mgr = requester.get("role") in ("super_admin", "admin", "manager", "store_manager", "org_admin")
+    if source and not is_mgr:
+        from routers.lead_queue import source_member_ids
+        if user_id not in source_member_ids(source):
+            raise HTTPException(status_code=403, detail=f"You're not on the {source.get('name', 'lead source')} workflow")
     
     # Claim the lead
     result = await db.conversations.update_one(
@@ -672,7 +693,11 @@ async def claim_lead(conversation_id: str, user_id: str, request: Request):
             "claimed": True,
             "claimed_by": user_id,
             "assigned_to": user_id,
+            "user_id": user_id,
             "claim_source": "app",
+            "routing_kind": "claimed",
+            "owner_alert_at": None,
+            "release_at": None,
             "claimed_at": datetime.now(timezone.utc).isoformat(),
             "updated_at": datetime.now(timezone.utc).isoformat(),
         }}
@@ -698,15 +723,30 @@ async def claim_lead(conversation_id: str, user_id: str, request: Request):
         )
     
     # Update lead source weighted counts if applicable
-    if conversation.get("lead_source_id"):
-        source = await db.lead_sources.find_one({"_id": ObjectId(conversation["lead_source_id"])})
-        if source and source.get("assignment_method") == "weighted_round_robin":
-            member_counts = source.get("member_lead_counts", {})
-            member_counts[user_id] = member_counts.get(user_id, 0) + 1
-            await db.lead_sources.update_one(
-                {"_id": source["_id"]},
-                {"$set": {"member_lead_counts": member_counts}}
-            )
+    if source and source.get("assignment_method") == "weighted_round_robin":
+        member_counts = source.get("member_lead_counts", {})
+        member_counts[user_id] = member_counts.get(user_id, 0) + 1
+        await db.lead_sources.update_one(
+            {"_id": source["_id"]},
+            {"$set": {"member_lead_counts": member_counts}}
+        )
+
+    # Quiet in-app notice (no push) to the other workflow reps so the card's disappearance makes sense
+    try:
+        from routers.lead_queue import source_member_ids
+        claimer = await db.users.find_one({"_id": ObjectId(user_id)}, {"name": 1})
+        who = ((claimer or {}).get("name") or "A teammate").split()[0]
+        others = [m for m in source_member_ids(source or {}) if m != user_id]
+        if others:
+            await db.notifications.insert_many([{
+                "user_id": uid, "type": "lead_claimed", "priority": "low",
+                "title": f"{who} claimed {conversation.get('contact_name') or 'a lead'}",
+                "message": f"{(source or {}).get('name', 'Lead')} · no action needed",
+                "conversation_id": conversation_id, "contact_id": conversation.get("contact_id"),
+                "read": False, "dismissed": False, "created_at": datetime.now(timezone.utc),
+            } for uid in others])
+    except Exception as e:
+        logger.debug(f"[Claim] quiet notice failed: {e}")
     
     return {
         "success": True,
@@ -757,6 +797,15 @@ async def save_workflow_config(source_id: str, config: WorkflowConfig, _m: dict 
             {"user_ids": a.get("user_ids", []), "delay_seconds": max(30, int(60 if a.get("delay_seconds") is None else a["delay_seconds"]))}
             for a in updates["call_attempts"][:4]
         ]
+    for k, lo, hi in (("timer_green_minutes", 1, 120), ("timer_amber_minutes", 2, 240),
+                      ("returning_alert_minutes", 1, 240), ("returning_release_minutes", 2, 720), ("digest_hour", 0, 23)):
+        if k in updates:
+            updates[k] = max(lo, min(hi, int(updates[k])))
+    if "timer_green_minutes" in updates or "timer_amber_minutes" in updates:
+        g = updates.get("timer_green_minutes", source.get("timer_green_minutes", 5))
+        a = updates.get("timer_amber_minutes", source.get("timer_amber_minutes", 15))
+        if a <= g:
+            raise HTTPException(status_code=400, detail="Amber must be later than green")
     updates["updated_at"] = datetime.now(timezone.utc)
     await db.lead_sources.update_one({"_id": ObjectId(source_id)}, {"$set": updates})
     if config.website_default:
@@ -863,8 +912,13 @@ async def claim_and_call(conversation_id: str, user_id: str, request: Request):
     # Claim the conversation
     await db.conversations.update_one(
         {"_id": ObjectId(conversation_id)},
-        {"$set": {"claimed": True, "claimed_by": user_id, "claimed_at": datetime.now(timezone.utc), "claim_source": "app"}}
+        {"$set": {"claimed": True, "claimed_by": user_id, "assigned_to": user_id, "user_id": user_id, "routing_kind": "claimed",
+                  "owner_alert_at": None, "release_at": None,
+                  "claimed_at": datetime.now(timezone.utc), "claim_source": "app"}}
     )
+    if conv.get("contact_id") and ObjectId.is_valid(str(conv["contact_id"])):
+        await db.contacts.update_one({"_id": ObjectId(conv["contact_id"])},
+                                     {"$set": {"user_id": user_id, "claimed_by": user_id, "updated_at": datetime.now(timezone.utc).isoformat()}})
     from services.lead_call_engine import mark_claimed
     await mark_claimed(conversation_id, user_id, via="app")
 

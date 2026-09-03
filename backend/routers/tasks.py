@@ -545,19 +545,74 @@ async def get_team_tasks(user_id: str, limit_per_rep: int = 50):
         totals["overdue"] += int(overdue)
         totals["today"] += int(is_today)
     out = []
+    nudges: dict = {}
+    if rep_ids:
+        async for n in db.task_nudges.find({"rep_id": {"$in": rep_ids}}, {"rep_id": 1, "sent_at": 1}).sort("sent_at", -1):
+            nudges.setdefault(n["rep_id"], n["sent_at"])
     for r in reps:
         rid = str(r["_id"])
         tasks = by_rep.get(rid, [])
         if not tasks:
             continue
         tasks.sort(key=lambda d: (not d["is_overdue"], d.get("due_date") or "9999"))
+        last_nudge = nudges.get(rid)
         out.append({
             "user_id": rid, "name": r.get("name") or "Rep", "photo_url": r.get("photo_url"), "role": r.get("role"),
             "open": len(tasks), "overdue": sum(1 for d in tasks if d["is_overdue"]), "today": sum(1 for d in tasks if d["is_today"]),
+            "last_nudged_at": last_nudge.isoformat() if isinstance(last_nudge, datetime) else None,
             "tasks": tasks[:limit_per_rep],
         })
     out.sort(key=lambda r: (-r["overdue"], -r["open"], r["name"].lower()))
     return {"is_manager": True, "totals": totals, "reps": out}
+
+
+NUDGE_COOLDOWN_HOURS = 4
+
+
+@router.post("/{user_id}/team/nudge/{rep_id}")
+async def nudge_rep(user_id: str, rep_id: str):
+    """Manager taps a rep in Team Tasks: one push 'you've got N overdue'. Cooldown so nobody gets spammed."""
+    db = get_db()
+    me = await db.users.find_one({"_id": ObjectId(user_id)}, {"role": 1, "name": 1, "store_id": 1})
+    if not me or me.get("role") not in _TEAM_ROLES:
+        raise HTTPException(status_code=403, detail="Managers only")
+    rep = await db.users.find_one({"_id": ObjectId(rep_id)}, {"name": 1, "store_id": 1})
+    if not rep:
+        raise HTTPException(status_code=404, detail="Rep not found")
+    if me.get("role") not in ("super_admin", "org_admin") and str(rep.get("store_id")) != str(me.get("store_id")):
+        raise HTTPException(status_code=403, detail="Rep is not on your team")
+    now = datetime.now(timezone.utc)
+    last = await db.task_nudges.find_one({"rep_id": rep_id}, sort=[("sent_at", -1)])
+    if last and (now - _as_utc(last["sent_at"])) < timedelta(hours=NUDGE_COOLDOWN_HOURS):
+        mins = int((now - _as_utc(last["sent_at"])).total_seconds() // 60)
+        raise HTTPException(status_code=429, detail=f"Already nudged {mins}m ago by {last.get('manager_name', 'a manager')}")
+    today_start, _ = await get_user_day_bounds(rep_id, "today")
+    open_q = {"user_id": rep_id, "status": {"$in": ["pending", "snoozed", None]}, "completed": {"$ne": True},
+              "type": {"$nin": ["campaign_send", "campaign_step"]}, "$nor": [{"source": "system", "type": "follow_up"}]}
+    docs = await db.tasks.find(open_q, {"due_date": 1, "has_time": 1, "title": 1, "contact_name": 1}).to_list(500)
+    overdue = [t for t in docs if isinstance(t.get("due_date"), datetime)
+               and (_as_utc(t["due_date"]) < now if t.get("has_time") else _as_utc(t["due_date"]) < today_start)]
+    if not overdue:
+        raise HTTPException(status_code=400, detail="Nothing overdue for this rep")
+    overdue.sort(key=lambda t: _as_utc(t["due_date"]))
+    first_name = (me.get("name") or "Your manager").split()[0]
+    n = len(overdue)
+    oldest = overdue[0]
+    who = f" ({oldest['contact_name']})" if oldest.get("contact_name") else ""
+    title = f"Heads up from {first_name}"
+    body = f"You've got {n} overdue task{'s' if n != 1 else ''}. Oldest: {oldest.get('title', 'task')}{who}"
+    await db.notifications.insert_one({
+        "user_id": rep_id, "type": "manager_nudge", "title": title, "message": body,
+        "from_user_id": user_id, "read": False, "dismissed": False, "created_at": now,
+    })
+    try:
+        from routers.push_notifications import send_push_to_user
+        await send_push_to_user(rep_id, title, body, "/touchpoints?filter=overdue", "alert-circle")
+    except Exception as e:
+        logger.warning(f"[Tasks] nudge push failed: {e}")
+    await db.task_nudges.insert_one({"manager_id": user_id, "manager_name": me.get("name"), "rep_id": rep_id,
+                                     "overdue_count": n, "sent_at": now})
+    return {"sent": True, "overdue": n, "rep_name": rep.get("name"), "sent_at": now.isoformat()}
 
 
 async def complete_task_from_call(user_id: str, task_id: str, call_sid: str = "", duration_s: int = 0) -> bool:

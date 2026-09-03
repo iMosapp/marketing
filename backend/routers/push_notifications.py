@@ -434,55 +434,112 @@ async def send_push_native(user_id: str, title: str, body: str, data: dict = Non
 
 
 
+async def _compose_morning_brief(db, u: dict, tzinfo):
+    """(title, body) for a user's Morning Task Brief, or None when nothing is due."""
+    from routers.tasks import get_user_day_bounds
+    uid = str(u["_id"])
+    today_start, today_end = await get_user_day_bounds(uid, "today")
+    docs = await db.tasks.find({
+        "user_id": uid,
+        "status": {"$in": ["pending", "snoozed", None]},
+        "completed": {"$ne": True},
+        "type": {"$nin": ["campaign_send", "campaign_step"]},
+        "$nor": [{"source": "system", "type": "follow_up"}],
+        "due_date": {"$lt": today_end},
+    }, {"title": 1, "contact_name": 1, "due_date": 1, "has_time": 1}).sort("due_date", 1).to_list(200)
+    if not docs:
+        return None
+    overdue = [t for t in docs if t.get("due_date") and t["due_date"].replace(tzinfo=timezone.utc) < today_start]
+    today = [t for t in docs if t not in overdue]
+    n_today, n_over = len(today), len(overdue)
+    first = (u.get("name") or "").split()[0] if u.get("name") else ""
+    parts = []
+    for t in (today or overdue)[:3]:
+        label = t.get("title", "Task")
+        if t.get("contact_name") and t["contact_name"].split()[0].lower() not in label.lower():
+            label += f" ({t['contact_name'].split()[0]})"
+        if t.get("has_time") and t.get("due_date"):
+            lt = t["due_date"].replace(tzinfo=timezone.utc).astimezone(tzinfo)
+            label += f" {lt.strftime('%-I:%M %p')}"
+        parts.append(label)
+    extra = max(0, (n_today if today else n_over) - 3)
+    summary = " · ".join(parts) + (f" +{extra} more" if extra else "")
+    greet = f"Good morning{', ' + first if first else ''}"
+    if n_today:
+        title = f"{greet} - {n_today} task{'s' if n_today != 1 else ''} today"
+        if n_over:
+            summary += f" · {n_over} overdue"
+    else:
+        title = f"{greet} - {n_over} overdue task{'s' if n_over != 1 else ''}"
+    return title, summary
+
+
+async def _user_tzinfo(db, u: dict, store_tz_cache: dict):
+    from zoneinfo import ZoneInfo
+    tz_name = u.get("timezone")
+    if (not tz_name or tz_name == "UTC") and u.get("store_id"):
+        sid = str(u["store_id"])
+        if sid not in store_tz_cache:
+            st = await db.stores.find_one({"_id": ObjectId(sid)}, {"timezone": 1}) if ObjectId.is_valid(sid) else None
+            store_tz_cache[sid] = (st or {}).get("timezone")
+        tz_name = store_tz_cache[sid] or tz_name
+    try:
+        return ZoneInfo(tz_name if tz_name and tz_name != "UTC" else "America/Denver")
+    except Exception:
+        return ZoneInfo("America/Denver")
+
+
 async def send_daily_task_digest():
     """
-    Morning push digest — called by scheduler at 2pm UTC (~7am PDT / 9am CDT).
-    Sends each active user a push notification with their pending touchpoints for today.
-    Only fires if they have push subscriptions and pending tasks.
+    Morning Task Brief. Scheduler calls this every 15 minutes; each active user gets ONE push per day
+    in the 07:00-07:15 window of THEIR local time (user tz -> store tz -> America/Denver), listing
+    today's tasks with customer names. Users with nothing due today are skipped.
     """
     db = get_db()
-    if not VAPID_PRIVATE_KEY:
-        logger.info("[Push Digest] VAPID not configured, skipping")
-        return
-
-    from datetime import date
-    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-    today_end   = today_start.replace(hour=23, minute=59, second=59)
-
-    # Get users who have push subscriptions
-    subs = await db.push_subscriptions.find({}, {"user_id": 1}).to_list(500)
-    user_ids_with_push = list({s["user_id"] for s in subs})
-
+    now_utc = datetime.now(timezone.utc)
+    users = await db.users.find(
+        {"active": {"$ne": False}, "status": {"$ne": "deactivated"}, "morning_brief_enabled": {"$ne": False}},
+        {"name": 1, "timezone": 1, "store_id": 1, "morning_brief_sent_on": 1},
+    ).to_list(2000)
+    store_tz_cache: dict = {}
     sent = 0
-    for user_id in user_ids_with_push:
+    for u in users:
+        uid = str(u["_id"])
         try:
-            # Count pending tasks due today
-            count = await db.tasks.count_documents({
-                "user_id": user_id,
-                "status": {"$in": ["pending", "pending_user_action"]},
-                "$or": [
-                    {"due_date": {"$gte": today_start.replace(tzinfo=None), "$lte": today_end.replace(tzinfo=None)}},
-                    {"due_date": {"$exists": False}},  # undated tasks always show
-                ],
-            })
-            if count == 0:
+            tzinfo = await _user_tzinfo(db, u, store_tz_cache)
+            local = now_utc.astimezone(tzinfo)
+            if not (local.hour == 7 and local.minute < 15):
                 continue
-
-            label = "touchpoint" if count == 1 else "touchpoints"
-            n = await send_push_to_user(
-                user_id,
-                f"You have {count} {label} today",
-                "Tap to open your Touchpoints and get started.",
-                "/touchpoints",
-                "checkmark-circle",
-            )
+            today_key = local.strftime("%Y-%m-%d")
+            if u.get("morning_brief_sent_on") == today_key:
+                continue
+            brief = await _compose_morning_brief(db, u, tzinfo)
+            if not brief:
+                continue
+            n = await send_push_to_user(uid, brief[0], brief[1], "/touchpoints", "sunny")
+            await db.users.update_one({"_id": u["_id"]}, {"$set": {"morning_brief_sent_on": today_key}})
             if n > 0:
                 sent += 1
         except Exception as e:
-            logger.warning(f"[Push Digest] Error for {user_id}: {e}")
-
-    logger.info(f"[Push Digest] Morning digest sent to {sent}/{len(user_ids_with_push)} users")
+            logger.warning(f"[Morning Brief] Error for {uid}: {e}")
+    if sent:
+        logger.info(f"[Morning Brief] Sent to {sent} users")
     return sent
+
+
+@router.post("/morning-brief/{user_id}/send-now")
+async def send_morning_brief_now(user_id: str):
+    """Preview: build and push this user's Morning Task Brief right now (ignores the 7 AM window)."""
+    db = get_db()
+    u = await db.users.find_one({"_id": ObjectId(user_id)}, {"name": 1, "timezone": 1, "store_id": 1})
+    if not u:
+        raise HTTPException(status_code=404, detail="User not found")
+    tzinfo = await _user_tzinfo(db, u, {})
+    brief = await _compose_morning_brief(db, u, tzinfo)
+    if not brief:
+        return {"sent": False, "reason": "Nothing due today", "title": None, "body": None}
+    n = await send_push_to_user(user_id, brief[0], brief[1], "/touchpoints", "sunny")
+    return {"sent": n > 0, "devices": n, "title": brief[0], "body": brief[1]}
 
 
 async def send_push_to_users(user_ids: list, title: str, body: str, url: str = "/", icon: str = "flame"):

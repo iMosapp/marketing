@@ -26,6 +26,22 @@ export const PushDiagnosticsCard = ({ userId, colors }: { userId: string; colors
   const [diag, setDiag] = useState<Diag | null>(null);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
+  const [briefing, setBriefing] = useState(false);
+  const [briefResult, setBriefResult] = useState<string | null>(null);
+
+  const sendBrief = async () => {
+    setBriefing(true);
+    setBriefResult(null);
+    try {
+      const r = await api.post(`/push/morning-brief/${userId}/send-now`);
+      if (r.data?.sent) setBriefResult(`Sent: "${r.data.title}" - ${r.data.body}`);
+      else setBriefResult(r.data?.reason === 'Nothing due today' ? 'Nothing due today, so no brief would go out.' : `Built "${r.data?.title}" but no phone received it.`);
+    } catch (e: any) {
+      setBriefResult(e?.response?.data?.detail || 'Could not build the brief');
+    } finally {
+      setBriefing(false);
+    }
+  };
 
   const load = () => api.get(`/push/diagnose/${userId}`).then(r => setDiag(r.data)).catch(() => {});
   useEffect(() => { load(); }, [userId]);
@@ -90,6 +106,21 @@ export const PushDiagnosticsCard = ({ userId, colors }: { userId: string; colors
         )}
       </TouchableOpacity>
       {testResult && <Text style={[st.result, { color: colors.textSecondary }]} testID="push-diag-test-result" dataSet={{ testid: 'push-diag-test-result' } as any}>{testResult}</Text>}
+      <TouchableOpacity
+        style={[st.btn, { backgroundColor: 'transparent', borderWidth: 1, borderColor: GOLD + '80' }, briefing && { opacity: 0.6 }]}
+        onPress={sendBrief}
+        disabled={briefing}
+        testID="push-diag-brief-btn"
+        dataSet={{ testid: 'push-diag-brief-btn' } as any}
+      >
+        {briefing ? <ActivityIndicator size="small" color={GOLD} /> : (
+          <>
+            <Ionicons name="sunny" size={15} color={GOLD} />
+            <Text style={[st.btnText, { color: GOLD }]}>Preview my 7 AM task brief</Text>
+          </>
+        )}
+      </TouchableOpacity>
+      {briefResult && <Text style={[st.result, { color: colors.textSecondary }]} testID="push-diag-brief-result" dataSet={{ testid: 'push-diag-brief-result' } as any}>{briefResult}</Text>}
       {Platform.OS === 'web' && phones === 0 && (
         <Text style={[st.hint, { color: colors.textTertiary }]}>Open this screen inside the iPhone app to register that phone.</Text>
       )}

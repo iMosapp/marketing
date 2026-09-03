@@ -1797,13 +1797,13 @@ def start_scheduler():
         misfire_grace_time=3600,
     )
 
-    # Daily at 2 PM UTC (~7 AM PDT / 9 AM CDT) — morning push digest with today's touchpoints
+    # Every 15 min: Morning Task Brief lands at 7:00-7:15 in each user's LOCAL time (one per day)
     scheduler.add_job(
         safe_job(send_morning_push_digest),
-        CronTrigger(hour=14, minute=0),
+        IntervalTrigger(minutes=15),
         id="morning_push_digest",
         replace_existing=True,
-        misfire_grace_time=3600,
+        misfire_grace_time=600,
     )
 
     # Weekly Monday at 9 AM UTC - send power rankings emails
@@ -1883,6 +1883,33 @@ def start_scheduler():
         replace_existing=True,
         misfire_grace_time=300,
     )
+
+    # Every minute: returning-customer leads whose rep went quiet -> manager alert (10m), auto-release (30m)
+    async def _lead_queue_escalations():
+        from routers.lead_queue import process_returning_lead_escalations
+        await process_returning_lead_escalations()
+
+    scheduler.add_job(
+        safe_job(_lead_queue_escalations),
+        IntervalTrigger(minutes=1),
+        id="lead_queue_escalations",
+        replace_existing=True,
+        misfire_grace_time=120,
+    )
+
+    # Every 15 min: at each store's digest hour (6 PM local default) managers get the red-leads report
+    async def _red_leads_digest():
+        from routers.lead_queue import send_red_leads_digest
+        await send_red_leads_digest()
+
+    scheduler.add_job(
+        safe_job(_red_leads_digest),
+        IntervalTrigger(minutes=15),
+        id="red_leads_digest",
+        replace_existing=True,
+        misfire_grace_time=600,
+    )
+
 
     # Daily 15:00 UTC (~9 AM Central) — nudge store admins about vehicles missing photos
     async def _photo_reminders():

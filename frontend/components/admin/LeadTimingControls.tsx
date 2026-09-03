@@ -100,6 +100,79 @@ export const AfterHoursRule = ({ mode, windowStart, windowEnd, storeHours, onCha
   );
 };
 
+export type QueueTimerValues = {
+  timer_green_minutes: number; timer_amber_minutes: number;
+  returning_alert_minutes: number; returning_release_minutes: number; digest_hour: number;
+};
+
+const Stepper = ({ label, hint, value, min, max, step = 1, onChange, colors, testid }: {
+  label: string; hint?: string; value: number; min: number; max: number; step?: number; onChange: (v: number) => void; colors: any; testid: string;
+}) => {
+  const bump = (d: number) => {
+    const next = step > 1 ? (d > 0 ? Math.floor(value / step) * step + step : Math.ceil(value / step) * step - step) : value + d;
+    onChange(Math.max(min, Math.min(max, next)));
+  };
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 10 }} testID={testid} dataSet={{ testid } as any}>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 13, color: colors.text, fontWeight: '600' }}>{label}</Text>
+        {hint ? <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 1 }}>{hint}</Text> : null}
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 10, borderWidth: 1, borderColor: colors.border }}>
+        <TouchableOpacity onPress={() => bump(-step)} disabled={value <= min} style={{ paddingHorizontal: 10, paddingVertical: 6, opacity: value <= min ? 0.35 : 1 }} testID={`${testid}-minus`} dataSet={{ testid: `${testid}-minus` } as any}>
+          <Ionicons name="remove" size={16} color={GOLD} />
+        </TouchableOpacity>
+        <Text style={{ minWidth: 58, textAlign: 'center', fontSize: 13, fontWeight: '800', color: colors.text }} testID={`${testid}-value`} dataSet={{ testid: `${testid}-value` } as any}>{value} min</Text>
+        <TouchableOpacity onPress={() => bump(step)} disabled={value >= max} style={{ paddingHorizontal: 10, paddingVertical: 6, opacity: value >= max ? 0.35 : 1 }} testID={`${testid}-plus`} dataSet={{ testid: `${testid}-plus` } as any}>
+          <Ionicons name="add" size={16} color={GOLD} />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+export const QueueTimers = ({ values, onChange, colors }: { values: QueueTimerValues; onChange: (patch: Partial<QueueTimerValues>) => void; colors: any }) => {
+  const g = values.timer_green_minutes ?? 5;
+  const a = values.timer_amber_minutes ?? 15;
+  return (
+    <View testID="queue-timers" dataSet={{ testid: 'queue-timers' } as any}>
+      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 4 }}>Lead Queue Timers</Text>
+      <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 4, lineHeight: 17 }}>
+        The waiting timer on Inbox {'>'} Leads and the Home strip: green under {g} min, amber until {a}, red after that.
+      </Text>
+      <Stepper label="Turns amber after" value={g} min={1} max={120} colors={colors} testid="timer-green"
+        onChange={v => onChange(v >= a ? { timer_green_minutes: v, timer_amber_minutes: v + 5 } : { timer_green_minutes: v })} />
+      <Stepper label="Turns red after" value={a} min={g + 1} max={240} step={5} colors={colors} testid="timer-amber"
+        onChange={v => onChange({ timer_amber_minutes: Math.max(g + 1, v) })} />
+
+      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginTop: 14, marginBottom: 4 }}>Returning Customers</Text>
+      <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 4, lineHeight: 17 }}>
+        A lead from someone who already has a rep goes straight to that rep, no jump ball. If the rep stays quiet, managers hear about it, then the lead drops back into the shared queue.
+      </Text>
+      <Stepper label="Alert managers after" value={values.returning_alert_minutes ?? 10} min={1} max={240} step={5} colors={colors} testid="returning-alert"
+        onChange={v => onChange({ returning_alert_minutes: v })} />
+      <Stepper label="Release to queue after" value={values.returning_release_minutes ?? 30} min={Math.max(2, (values.returning_alert_minutes ?? 10) + 5)} max={720} step={5} colors={colors} testid="returning-release"
+        onChange={v => onChange({ returning_release_minutes: v })} />
+
+      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginTop: 14, marginBottom: 6 }}>Daily Manager Report</Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+        {[16, 17, 18, 19, 20].map(h => {
+          const on = (values.digest_hour ?? 18) === h;
+          return (
+            <TouchableOpacity key={h} onPress={() => onChange({ digest_hour: h })}
+              style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: on ? GOLD : colors.card, borderWidth: 1, borderColor: on ? GOLD : colors.border }}
+              testID={`digest-hour-${h}`} dataSet={{ testid: `digest-hour-${h}` } as any}>
+              <Text style={{ fontSize: 12, fontWeight: on ? '700' : '500', color: on ? '#000' : colors.text }}>{clock12(`${String(h).padStart(2, '0')}:00`)}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 6 }}>Managers get one push at {clock12(`${String(values.digest_hour ?? 18).padStart(2, '0')}:00`)} store time: leads answered fast vs. leads that went red, by rep.</Text>
+    </View>
+  );
+};
+
+
 export const TestLeadCard = ({ sourceId, defaultPhone, contactMode, hasIntakeText, colors, onOpenThread }: {
   sourceId: string; defaultPhone?: string; contactMode: 'text_only' | 'text_and_call'; hasIntakeText: boolean; colors: any; onOpenThread: (conversationId: string) => void;
 }) => {
