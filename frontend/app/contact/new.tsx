@@ -14,7 +14,7 @@ import {
   ScrollView, KeyboardAvoidingView, Platform,
   ActivityIndicator, Modal, FlatList,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -46,6 +46,7 @@ const EMPTY_CONTACT = {
 };
 
 export default function NewContactScreen() {
+  const insets = useSafeAreaInsets();
   const { colors } = useThemeStore();
   const s = getS(colors);
   const router = useRouter();
@@ -670,8 +671,8 @@ export default function NewContactScreen() {
       </Modal>
 
       {/* ── Referral Picker Modal ── */}
-      <Modal visible={showReferralPicker} animationType="slide" transparent={false}>
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <Modal visible={showReferralPicker} animationType="slide" transparent={false} onRequestClose={() => setShowReferralPicker(false)}>
+        <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
               <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text }}>Select Referrer</Text>
@@ -699,7 +700,7 @@ export default function NewContactScreen() {
               ))}
             </ScrollView>
           </KeyboardAvoidingView>
-        </SafeAreaView>
+        </View>
       </Modal>
 
       {/* ── Date Picker Modal ── */}

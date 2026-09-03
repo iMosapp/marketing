@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import api from '../../services/api';
 import { showSimpleAlert, showConfirm } from '../../services/alert';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
@@ -32,6 +32,7 @@ interface Props {
 }
 
 export function ProfileGallery({ userId, colors, onSetProfilePhoto }: Props) {
+  const insets = useSafeAreaInsets();
   const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -208,7 +209,7 @@ export function ProfileGallery({ userId, colors, onSetProfilePhoto }: Props) {
 
       {/* Full-screen viewer */}
       <Modal visible={viewerIndex >= 0} animationType="fade" transparent={false} onRequestClose={() => setViewerIndex(-1)}>
-        <SafeAreaView style={s.viewerContainer}>
+        <View style={[s.viewerContainer, { paddingTop: insets.top }]}>
           {/* Top bar */}
           <View style={s.viewerHeader}>
             <TouchableOpacity onPress={() => setViewerIndex(-1)} style={s.viewerBtn}>
@@ -264,7 +265,7 @@ export function ProfileGallery({ userId, colors, onSetProfilePhoto }: Props) {
               </View>
             ))}
           </ScrollView>
-        </SafeAreaView>
+        </View>
       </Modal>
     </View>
   );

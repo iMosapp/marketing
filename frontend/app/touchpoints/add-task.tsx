@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, FlatList, Modal,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
@@ -30,6 +30,7 @@ function getInitials(name: string) {
 }
 
 export default function AddTaskScreen() {
+  const insets = useSafeAreaInsets();
   const { colors } = useThemeStore();
   const router = useRouter();
   const params = useLocalSearchParams<{ contactId?: string; contactName?: string; contactPhone?: string }>();
@@ -259,10 +260,10 @@ export default function AddTaskScreen() {
       </ScrollView>
 
       {/* Contact Picker Modal */}
-      <Modal visible={showContactPicker} animationType="slide" transparent={false}>
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
+      <Modal visible={showContactPicker} animationType="slide" transparent={false} onRequestClose={() => setShowContactPicker(false)}>
+        <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
-            <TouchableOpacity onPress={() => setShowContactPicker(false)} style={{ padding: 4 }} data-testid="contact-picker-back">
+            <TouchableOpacity onPress={() => setShowContactPicker(false)} style={{ padding: 8, marginLeft: -8 }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} data-testid="contact-picker-back">
               <Ionicons name="chevron-back" size={24} color={colors.text} />
             </TouchableOpacity>
             <Text style={{ fontSize: 19, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' }}>Select Contact</Text>
@@ -310,7 +311,7 @@ export default function AddTaskScreen() {
               ListEmptyComponent={<Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: 24, fontSize: 16 }}>{contactSearch ? 'No contacts found' : 'No contacts yet'}</Text>}
             />
           )}
-        </SafeAreaView>
+        </View>
       </Modal>
     </SafeAreaView>
   );

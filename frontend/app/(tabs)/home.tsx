@@ -13,7 +13,7 @@ import {
   Modal,
   FlatList,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
@@ -41,6 +41,7 @@ function ContactActionModal({
   visible: boolean; onClose: () => void; colors: any; userId: string; initialMode: 'search' | 'keypad';
 }) {
   const styles = getStyles(colors);
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [mode, setMode] = useState<'search' | 'keypad'>(initialMode);
   const [contacts, setContacts] = useState<any[]>([]);
@@ -196,11 +197,12 @@ function ContactActionModal({
   const goToImportFromPhone = () => { onClose(); router.push('/contacts/import' as any); };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={false}>
-      <SafeAreaView style={[{ flex: 1, backgroundColor: colors.bg }]} edges={['top']}>
+    <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
+      {/* RN Modal renders outside the SafeAreaProvider window: apply the screen-level insets by hand */}
+      <View style={[{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }]}>
         {/* Clean header */}
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
-          <TouchableOpacity onPress={onClose} style={{ padding: 4 }} data-testid="close-action-modal">
+          <TouchableOpacity onPress={onClose} style={{ padding: 8, marginLeft: -8 }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} data-testid="close-action-modal">
             <Ionicons name="chevron-back" size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={{ fontSize: 19, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' }}>{initialMode === 'keypad' ? 'Keypad' : 'Add Contact'}</Text>
@@ -355,7 +357,7 @@ function ContactActionModal({
             <View style={{ height: 8 }} />
           </View>
         )}
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }
@@ -471,6 +473,7 @@ function HomeScreen() {
 
   // Contact picker for quick actions (share card, review, showcase → contact record)
   const [showActionPicker, setShowActionPicker] = useState(false);
+  const insets = useSafeAreaInsets();
   const [pendingAction, setPendingAction] = useState('');
   const [actionPickerTitle, setActionPickerTitle] = useState('');
   const [actionContacts, setActionContacts] = useState<any[]>([]);
@@ -1535,10 +1538,10 @@ function HomeScreen() {
       <ContactActionModal visible={showContactAction} onClose={() => setShowContactAction(false)} colors={colors} userId={user?._id || ''} initialMode={contactActionMode} />
 
       {/* Action Picker — Pick a contact then navigate to their record to complete the action */}
-      <Modal visible={showActionPicker} animationType="slide" transparent={false}>
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
+      <Modal visible={showActionPicker} animationType="slide" transparent={false} onRequestClose={() => setShowActionPicker(false)}>
+        <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
-            <TouchableOpacity onPress={() => setShowActionPicker(false)} style={{ padding: 4 }} data-testid="action-picker-back-btn">
+            <TouchableOpacity onPress={() => setShowActionPicker(false)} style={{ padding: 8, marginLeft: -8 }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} data-testid="action-picker-back-btn">
               <Ionicons name="chevron-back" size={24} color={colors.text} />
             </TouchableOpacity>
             <Text style={{ fontSize: 19, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' }}>
@@ -1593,12 +1596,12 @@ function HomeScreen() {
               }
             />
           )}
-        </SafeAreaView>
+        </View>
       </Modal>
 
       {/* Send a Card  - Step 1: Template Picker, Step 2: Contact Search */}
-      <Modal visible={showSendCard} animationType="slide" transparent={false}>
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
+      <Modal visible={showSendCard} animationType="slide" transparent={false} onRequestClose={() => setShowSendCard(false)}>
+        <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
             <TouchableOpacity onPress={() => { if (sendCardStep === 'contact') { setSendCardStep('type'); } else { setShowSendCard(false); } }} style={{ padding: 4 }} data-testid="send-card-back-btn">
               <Ionicons name="chevron-back" size={24} color={colors.text} />
@@ -1701,7 +1704,7 @@ function HomeScreen() {
               )}
             </>
           )}
-        </SafeAreaView>
+        </View>
       </Modal>
     </SafeAreaView>
   );
