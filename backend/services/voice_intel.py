@@ -113,55 +113,151 @@ async def extract_personal_details(transcript: str, source: str = "voice_note") 
         return {}
 
 
-async def merge_personal_details(contact_id: str, new_details: dict):
+# Identity-like facts: a customer TEXT that contradicts a saved value asks the rep before overwriting.
+# (Voice notes are the rep's own words and keep "newest memo wins".)
+CONFIRM_FIELDS = {"spouse_name", "occupation", "employer", "vehicle_purchased", "vehicle_color", "trade_in",
+                  "neighborhood", "pets", "favorite_restaurant", "communication_preference"}
+
+FIELD_LABELS = {
+    "spouse_name": "Spouse", "spouse_details": "Spouse details", "kids": "Kids", "interests": "Interests",
+    "occupation": "Occupation", "employer": "Employer", "vehicle_purchased": "Vehicle", "vehicle_color": "Vehicle color",
+    "vehicle_details": "Vehicle details", "trade_in": "Trade-in", "purchase_context": "Why they bought",
+    "important_dates": "Important dates", "pets": "Pets", "favorite_restaurant": "Favorite restaurant",
+    "neighborhood": "Neighborhood", "referral_potential": "Referral potential", "personal_notes": "Personal notes",
+    "communication_preference": "Contact preference",
+}
+
+
+def _norm(v) -> str:
+    return " ".join(str(v or "").lower().split())
+
+
+def _is_refinement(old, new) -> bool:
+    """'2024 Tahoe' -> '2024 Chevrolet Tahoe' is the same fact with more detail, not a contradiction."""
+    a, b = set(_norm(old).replace(",", " ").split()), set(_norm(new).replace(",", " ").split())
+    return bool(a and b) and (a <= b or b <= a)
+
+
+def _item_key(item) -> str:
+    if isinstance(item, dict):
+        name = _norm(item.get("name"))
+        return f"name:{name}" if name else json.dumps({k: _norm(v) for k, v in item.items()}, sort_keys=True)
+    return _norm(item)
+
+
+async def merge_personal_details(contact_id: str, new_details: dict, confirm_conflicts: bool = False, source: str = "voice_note"):
     """Merge newly extracted details into the contact's personal_details field.
-    Existing values are preserved — new data supplements, doesn't overwrite.
+    Lists merge (dedup); scalars: newest wins, unless confirm_conflicts and the field is identity-like and
+    already holds a different value -> parked in contacts.detail_suggestions for the rep to confirm.
+    Returns {"applied": {field: value}, "suggested": [suggestion docs]}.
     """
     if not new_details:
-        return
+        return {"applied": {}, "suggested": []}
 
     db = get_db()
     contact = await db.contacts.find_one(
         {"_id": ObjectId(contact_id)},
-        {"personal_details": 1}
+        {"personal_details": 1, "detail_suggestions": 1, "detail_suggestions_rejected": 1}
     )
     existing = (contact or {}).get("personal_details", {})
+    pending = list((contact or {}).get("detail_suggestions") or [])
+    rejected = {(r.get("field"), _norm(r.get("new"))) for r in ((contact or {}).get("detail_suggestions_rejected") or [])}
 
     merged = {**existing}
+    applied: dict = {}
+    suggested: list = []
 
     for key, value in new_details.items():
+        if confirm_conflicts and key in CONFIRM_FIELDS and not isinstance(value, list):
+            old = merged.get(key)
+            if old not in (None, "", [], {}) and _norm(old) != _norm(value):
+                if _is_refinement(old, value):
+                    pass  # same fact with more detail ("2024 Tahoe" -> "2024 Chevrolet Tahoe"): let it through
+                elif (key, _norm(value)) in rejected or any(p.get("field") == key and _norm(p.get("new")) == _norm(value) for p in pending):
+                    continue
+                else:
+                    import secrets
+                    sug = {"id": secrets.token_hex(5), "field": key, "label": FIELD_LABELS.get(key, key.replace("_", " ").title()),
+                           "old": old, "new": value, "source": source, "created_at": datetime.now(timezone.utc)}
+                    pending.append(sug)
+                    suggested.append(sug)
+                    continue
         if isinstance(value, list) and isinstance(merged.get(key), list):
-            # Merge lists (dedup by checking stringified items)
-            existing_strs = {json.dumps(item, sort_keys=True) if isinstance(item, dict) else str(item) for item in merged[key]}
+            # Merge lists (dedup: kids by name, strings case-insensitively)
+            existing_keys = {_item_key(item) for item in merged[key]}
+            added = []
             for item in value:
-                item_str = json.dumps(item, sort_keys=True) if isinstance(item, dict) else str(item)
-                if item_str not in existing_strs:
-                    merged[key].append(item)
+                k = _item_key(item)
+                if k in existing_keys:
+                    continue
+                existing_keys.add(k)
+                merged[key].append(item)
+                added.append(item)
+            if added:
+                applied[key] = added
         else:
             # Newest info wins — a fresh voice memo is the latest ground truth
             # (new job, spouse name correction, new vehicle, etc.)
+            if _norm(merged.get(key)) != _norm(value):
+                applied[key] = value
             merged[key] = value
 
     # Save merged details and update key contact fields
     update_fields = {"personal_details": merged, "updated_at": datetime.now(timezone.utc)}
+    if suggested:
+        update_fields["detail_suggestions"] = pending
 
-    # Also update top-level contact fields — newest memo wins
-    if new_details.get("vehicle_purchased"):
-        update_fields["vehicle"] = new_details["vehicle_purchased"]
+    # Also update top-level contact fields — newest memo wins (only for values actually applied)
+    if applied.get("vehicle_purchased"):
+        update_fields["vehicle"] = applied["vehicle_purchased"]
 
-    if new_details.get("occupation"):
-        update_fields["occupation"] = new_details["occupation"]
+    if applied.get("occupation"):
+        update_fields["occupation"] = applied["occupation"]
 
-    if new_details.get("employer"):
-        update_fields["employer"] = new_details["employer"]
+    if applied.get("employer"):
+        update_fields["employer"] = applied["employer"]
 
     await db.contacts.update_one(
         {"_id": ObjectId(contact_id)},
         {"$set": update_fields}
     )
 
-    logger.info(f"Personal details merged for contact {contact_id}: {list(new_details.keys())}")
-    return merged
+    logger.info(f"Personal details merged for contact {contact_id}: applied={list(applied.keys())} suggested={[x['field'] for x in suggested]}")
+    return {"applied": applied, "suggested": suggested}
+
+
+async def resolve_detail_suggestion(user_id: str, contact_id: str, suggestion_id: str, accept: bool) -> dict:
+    """Rep confirms (apply new value) or keeps the old value (remember the rejection so it isn't re-suggested)."""
+    db = get_db()
+    contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"detail_suggestions": 1, "personal_details": 1, "first_name": 1})
+    if not contact:
+        return {"ok": False, "error": "Contact not found"}
+    pending = list(contact.get("detail_suggestions") or [])
+    sug = next((p for p in pending if p.get("id") == suggestion_id), None)
+    if not sug:
+        return {"ok": False, "error": "Suggestion not found"}
+    remaining = [p for p in pending if p.get("id") != suggestion_id]
+    now = datetime.now(timezone.utc)
+    update: dict = {"$set": {"detail_suggestions": remaining, "updated_at": now}}
+    if accept:
+        pd = {**(contact.get("personal_details") or {}), sug["field"]: sug["new"]}
+        update["$set"]["personal_details"] = pd
+        top = {"vehicle_purchased": "vehicle", "occupation": "occupation", "employer": "employer"}.get(sug["field"])
+        if top:
+            update["$set"][top] = sug["new"]
+    else:
+        update["$push"] = {"detail_suggestions_rejected": {"field": sug["field"], "new": sug["new"], "at": now}}
+    await db.contacts.update_one({"_id": contact["_id"]}, update)
+    label = sug.get("label") or sug["field"]
+    await db.contact_events.insert_one({
+        "event_type": "detail_confirmed" if accept else "detail_kept",
+        "title": f"{label} {'updated' if accept else 'kept'}",
+        "description": f"{label}: {sug['old']} -> {sug['new']} (from {sug.get('source', 'texts')}, {'confirmed' if accept else 'declined'} by rep)",
+        "contact_id": contact_id, "user_id": user_id, "channel": "ai", "category": "intelligence",
+        "icon": "checkmark-circle" if accept else "close-circle", "color": "#34C759" if accept else "#8E8E93",
+        "timestamp": now, "created_at": now,
+    })
+    return {"ok": True, "accepted": accept, "field": sug["field"], "value": sug["new"] if accept else sug["old"], "remaining": remaining}
 
 
 async def process_voice_note_intelligence(user_id: str, contact_id: str, transcript: str, voice_note_id: str):
@@ -327,15 +423,29 @@ async def process_conversation_intelligence(user_id: str, contact_id: str) -> di
                                  {"$set": {"conv_intel_cursor": {"at": now, "fields": list(details.keys())}}})
     if not details:
         return {}
-    await merge_personal_details(contact_id, details)
-    field_names = ", ".join(details.keys())
     src = " + ".join(x for x, ok in (("texts", customer_chars >= 15), ("calls", bool(calls))) if ok)
+    result = await merge_personal_details(contact_id, details, confirm_conflicts=True, source=src)
+    applied, suggested = result["applied"], result["suggested"]
+    if not applied and not suggested:
+        return {}
+    if applied:
+        await db.contacts.update_one({"_id": contact["_id"]}, {"$set": {"conv_intel_last": {
+            "at": now, "source": src, "fields": list(applied.keys()),
+            "labels": [FIELD_LABELS.get(k, k.replace("_", " ").title()) for k in applied.keys()],
+            "values": {k: (v if isinstance(v, (str, int, float)) else json.dumps(v)) for k, v in applied.items()},
+        }}})
+    desc = []
+    if applied:
+        desc.append("AI updated from " + src + ": " + ", ".join(FIELD_LABELS.get(k, k) for k in applied))
+    if suggested:
+        desc.append("needs your OK: " + ", ".join(f"{x['label']} {x['old']} -> {x['new']}" for x in suggested))
     await db.contact_events.insert_one({
-        "event_type": "intelligence_extracted", "title": "Personal Details Updated",
-        "description": f"AI updated from {src}: {field_names}", "contact_id": contact_id, "user_id": user_id,
+        "event_type": "intelligence_extracted", "title": "Personal Details Updated" if applied else "Detail Change Spotted",
+        "description": " · ".join(desc), "contact_id": contact_id, "user_id": user_id,
         "channel": "ai", "category": "intelligence", "icon": "sparkles", "color": "#AF52DE",
-        "content": json.dumps(details), "metadata": {"source": src, "fields": list(details.keys())},
+        "content": json.dumps({"applied": applied, "suggested": [{k: v for k, v in x.items() if k != "created_at"} for x in suggested]}, default=str),
+        "metadata": {"source": src, "fields": list(applied.keys()), "suggested": [x["field"] for x in suggested]},
         "timestamp": now, "created_at": now,
     })
-    logger.info(f"[ConvIntel] {contact_id}: {field_names} from {src}")
-    return details
+    logger.info(f"[ConvIntel] {contact_id}: applied={list(applied.keys())} suggested={[x['field'] for x in suggested]} from {src}")
+    return {"applied": applied, "suggested": suggested}

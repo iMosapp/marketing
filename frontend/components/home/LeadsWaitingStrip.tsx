@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import api from '../../services/api';
 import { fmtWait } from '../inbox/LeadsQueuePanel';
+import { noteLeadQueueCount } from '../../utils/leadChime';
 
 const HEAT: Record<string, string> = { green: '#34C759', amber: '#FF9F0A', red: '#FF3B30' };
 const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
@@ -23,7 +24,7 @@ export function LeadsWaitingStrip({ userId }: { userId: string }) {
       if (!userId) return;
       let alive = true;
       const load = () =>
-        api.get(`/leads/queue/${userId}/summary`).then(r => { if (alive) { setData(r.data); setFetchedAt(Date.now()); } }).catch(() => {});
+        api.get(`/leads/queue/${userId}/summary`).then(r => { if (alive) { setData(r.data); setFetchedAt(Date.now()); noteLeadQueueCount(r.data?.waiting); } }).catch(() => {});
       load();
       const t = setInterval(load, 30000);
       return () => { alive = false; clearInterval(t); };

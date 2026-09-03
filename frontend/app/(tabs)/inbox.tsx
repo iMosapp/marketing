@@ -27,6 +27,7 @@ import { NotificationBell } from '../../components/notifications/NotificationBel
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import LeadsQueuePanel from '../../components/inbox/LeadsQueuePanel';
 import api from '../../services/api';
+import { noteLeadQueueCount } from '../../utils/leadChime';
 import { Image } from 'expo-image';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
 import { useAuthStore } from '../../store/authStore';
@@ -172,7 +173,7 @@ export default function InboxScreen() {
 
   const loadLeadsSummary = useCallback(async () => {
     if (!user?._id) return;
-    try { const r = await api.get(`/leads/queue/${user._id}/summary`); setLeadsSummary(r.data); } catch {}
+    try { const r = await api.get(`/leads/queue/${user._id}/summary`); setLeadsSummary(r.data); noteLeadQueueCount(r.data?.waiting); } catch {}
   }, [user?._id]);
   useEffect(() => { loadLeadsSummary(); }, [loadLeadsSummary]);
   useFocusEffect(useCallback(() => { loadLeadsSummary(); }, [loadLeadsSummary]));

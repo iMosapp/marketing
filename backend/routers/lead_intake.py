@@ -743,7 +743,8 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
             else:
                 _title = f"🔥 New Lead — {full_name}"
                 _body = f"{_veh_note} via {source.get('name', 'internet lead')}"
-            asyncio.create_task(send_push_to_user(assigned_user_id, _title, _body, f"/thread/{conv_id}", "flash"))
+            from routers.push_notifications import LEAD_SOUND, LEAD_CHANNEL
+            asyncio.create_task(send_push_to_user(assigned_user_id, _title, _body, f"/thread/{conv_id}", "flash", sound=LEAD_SOUND, channel_id=LEAD_CHANNEL))
         except Exception as e:
             logger.warning(f"[LeadIntake] Rep push failed: {e}")
 
@@ -1971,11 +1972,11 @@ async def _fire_intake_workflow(source, lead_doc, conv_id, contact_id, phone_e16
                     })
                     # Push notification
                     try:
-                        from routers.push_notifications import send_push_to_user
+                        from routers.push_notifications import send_push_to_user, LEAD_SOUND, LEAD_CHANNEL
                         import asyncio as _aio2
                         _aio2.create_task(send_push_to_user(
                             uid, notif_title, f"{notif_body} — tap to claim",
-                            conv_link, "flash"
+                            conv_link, "flash", sound=LEAD_SOUND, channel_id=LEAD_CHANNEL
                         ))
                     except Exception:
                         pass

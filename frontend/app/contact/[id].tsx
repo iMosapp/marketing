@@ -2772,6 +2772,10 @@ function ContactDetailScreen() {
                   intelData={intelData}
                   refreshing={intelRefreshing}
                   onRefresh={refreshIntel}
+                  userId={user?._id}
+                  contactId={id as string}
+                  onUpdate={(patch: any) => setIntelData((prev: any) => ({ ...(prev || {}), ...patch }))}
+                  onDetailsChanged={() => loadContact()}
                 />
 
 

@@ -407,7 +407,7 @@ async def create_demo_request(data: dict):
             from routers.push_notifications import send_push_to_user
             import asyncio
             asyncio.create_task(
-                send_push_to_user(uid, f"New Lead: {lead_name}", notif_body, "/inbox", "person.fill.badge.plus")
+                send_push_to_user(uid, f"New Lead: {lead_name}", notif_body, "/(tabs)/inbox?segment=leads", "person.fill.badge.plus", sound="lead_chime.wav", channel_id="leads")
             )
         except Exception:
             pass
@@ -565,7 +565,7 @@ async def create_demo_request(data: dict):
             for uid in notify_user_ids:
                 try:
                     from routers.push_notifications import send_push_to_user as _push
-                    asyncio.create_task(_push(uid, f"New Lead: {lead_name}", notif_body, thread_url, "person.fill.badge.plus"))
+                    asyncio.create_task(_push(uid, f"New Lead: {lead_name}", notif_body, thread_url, "person.fill.badge.plus", sound="lead_chime.wav", channel_id="leads"))
                 except Exception:
                     pass
 
@@ -575,7 +575,7 @@ async def create_demo_request(data: dict):
         for uid in notify_user_ids:
             try:
                 from routers.push_notifications import send_push_to_user as _push
-                asyncio.create_task(_push(uid, f"New Lead: {lead_name}", notif_body, f"{_app_url}/thread/{conv_id}", "person.fill.badge.plus"))
+                asyncio.create_task(_push(uid, f"New Lead: {lead_name}", notif_body, f"{_app_url}/thread/{conv_id}", "person.fill.badge.plus", sound="lead_chime.wav", channel_id="leads"))
             except Exception:
                 pass
     except Exception as e:

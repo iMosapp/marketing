@@ -10,6 +10,7 @@ import { ToastProvider } from '../components/common/Toast';
 import JessieFloatingChat, { JESSI_BAR_HEIGHT } from '../components/JessieFloatingChat';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { initGlobalErrorHandlers } from '../services/errorReporter';
+import { playLeadChime, isLeadPush } from '../utils/leadChime';
 
 function usePWAMetaTags() {
   useEffect(() => {
@@ -143,7 +144,21 @@ export default function RootLayout() {
 
         // Handle foreground/background taps
         const sub = Notifications.addNotificationResponseReceivedListener(handleNotificationResponse);
-        responseSubRemove = () => sub.remove();
+        // Android: dedicated high-importance channel so lead alerts get their own chime + vibration
+        if (Platform.OS === 'android') {
+          Notifications.setNotificationChannelAsync('leads', {
+            name: 'New Leads',
+            importance: Notifications.AndroidImportance.MAX,
+            sound: 'lead_chime.wav',
+            vibrationPattern: [0, 200, 120, 200, 120, 400],
+            lightColor: '#C9A962',
+          }).catch(() => {});
+        }
+        // Lead push while the app is open: play the chime in-app (OS may not sound a foreground push)
+        const recvSub = Notifications.addNotificationReceivedListener((n: any) => {
+          if (isLeadPush(n?.request?.content?.data)) playLeadChime();
+        });
+        responseSubRemove = () => { sub.remove(); recvSub.remove(); };
       } catch {}
     })();
 

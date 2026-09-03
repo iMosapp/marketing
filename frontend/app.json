@@ -78,7 +78,12 @@
     "plugins": [
       "expo-router",
       "expo-updates",
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "sounds": ["./assets/sounds/lead_chime.wav"]
+        }
+      ],
       [
         "expo-splash-screen",
         {

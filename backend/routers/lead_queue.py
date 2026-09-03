@@ -382,10 +382,10 @@ async def reassign_lead(user_id: str, conv_id: str, body: ReassignBody):
     await _system_message(db, conv_id, f"Reassigned from {prev_name} to {to_name} by {mgr}" + (f": {body.note}" if body.note else ""))
     lead_name = conv.get("contact_name") or "a lead"
     try:
-        from routers.push_notifications import send_push_to_user
+        from routers.push_notifications import send_push_to_user, LEAD_SOUND, LEAD_CHANNEL
         asyncio.create_task(send_push_to_user(body.to_user_id, f"Lead handed to you: {lead_name}",
                                               f"{mgr} moved this {conv.get('lead_source_name') or 'internet'} lead to you. Reply now.",
-                                              f"/thread/{conv_id}", "person.fill.badge.plus"))
+                                              f"/thread/{conv_id}", "person.fill.badge.plus", sound=LEAD_SOUND, channel_id=LEAD_CHANNEL))
     except Exception:
         pass
     docs = [{"user_id": body.to_user_id, "type": "lead_reassigned", "title": f"Lead handed to you: {lead_name}",
@@ -421,11 +421,11 @@ async def release_to_queue(db, conv: dict, actor_id: Optional[str], reason: str)
     src = await db.lead_sources.find_one({"_id": ObjectId(conv["lead_source_id"])}) if ObjectId.is_valid(str(conv.get("lead_source_id") or "")) else None
     members = [m for m in source_member_ids(src or {}) if m != prev_id]
     try:
-        from routers.push_notifications import send_push_to_user
+        from routers.push_notifications import send_push_to_user, LEAD_SOUND, LEAD_CHANNEL
         for uid in members:
             asyncio.create_task(send_push_to_user(uid, f"Up for grabs: {lead_name}",
                                                   f"{_display_name(prev) or 'Their rep'} hasn't answered this {(src or {}).get('name', 'internet')} lead. Tap to claim.",
-                                                  "/(tabs)/inbox?segment=leads", "flame"))
+                                                  "/(tabs)/inbox?segment=leads", "flame", sound=LEAD_SOUND, channel_id=LEAD_CHANNEL))
     except Exception:
         pass
     if members:

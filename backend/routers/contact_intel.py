@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from bson import ObjectId
 
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 from routers.database import get_db
 
 logger = logging.getLogger(__name__)
@@ -291,6 +292,7 @@ RULES:
     from utils.text_sanitize import no_em_dash
     summary_text = no_em_dash(summary_text)
     extracted = await extraction
+    learned = await _learned_state(db, contact_id)
     
     # Cache the summary
     now = datetime.now(timezone.utc)
@@ -319,8 +321,44 @@ RULES:
         "contact_name": name,
         "generated_at": now.isoformat(),
         "data_points": data_points,
-        "details_updated": sorted(extracted.keys()) if extracted else [],
+        "details_updated": sorted((extracted or {}).get("applied", {}).keys()),
+        **learned,
     }
+
+
+def _jsonable(v):
+    if isinstance(v, datetime):
+        return v.isoformat()
+    if isinstance(v, dict):
+        return {k: _jsonable(x) for k, x in v.items()}
+    if isinstance(v, list):
+        return [_jsonable(x) for x in v]
+    return v
+
+
+async def _learned_state(db, contact_id: str) -> dict:
+    """What Jessi recently learned (chip) + detail changes waiting for the rep's OK."""
+    if not ObjectId.is_valid(contact_id):
+        return {"last_learned": None, "suggestions": []}
+    c = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"conv_intel_last": 1, "detail_suggestions": 1}) or {}
+    return {"last_learned": _jsonable(c.get("conv_intel_last")), "suggestions": _jsonable(c.get("detail_suggestions") or [])}
+
+
+class SuggestionDecision(BaseModel):
+    action: str  # accept | reject
+
+
+@router.post("/{user_id}/{contact_id}/suggestions/{suggestion_id}")
+async def decide_suggestion(user_id: str, contact_id: str, suggestion_id: str, body: SuggestionDecision):
+    """Rep confirms a detail change spotted in texts/calls (accept) or keeps the saved value (reject)."""
+    if body.action not in ("accept", "reject"):
+        raise HTTPException(status_code=400, detail="action must be accept or reject")
+    from services.voice_intel import resolve_detail_suggestion
+    res = await resolve_detail_suggestion(user_id, contact_id, suggestion_id, body.action == "accept")
+    if not res.get("ok"):
+        raise HTTPException(status_code=404, detail=res.get("error", "Not found"))
+    return {"success": True, "accepted": res["accepted"], "field": res["field"], "value": res["value"],
+            "suggestions": _jsonable(res["remaining"])}
 
 
 def _to_utc_dt(v):
@@ -346,7 +384,7 @@ async def _latest_activity(db, contact_id: str):
     if m:
         candidates.append(_to_utc_dt(m[0].get("_ts")))
     # AI's own extraction events don't count as new customer activity
-    e = await db.contact_events.find({"contact_id": contact_id, "event_type": {"$ne": "intelligence_extracted"}},
+    e = await db.contact_events.find({"contact_id": contact_id, "event_type": {"$nin": ["intelligence_extracted", "detail_confirmed", "detail_kept"]}},
                                      {"timestamp": 1}).sort("timestamp", -1).limit(1).to_list(1)
     if e:
         candidates.append(_to_utc_dt(e[0].get("timestamp")))
@@ -369,8 +407,9 @@ async def get_cached_intel(user_id: str, contact_id: str):
         {"_id": 0}
     )
     latest = await _latest_activity(db, contact_id)
+    learned = await _learned_state(db, contact_id)
     if not doc:
-        return {"summary": None, "generated_at": None, "stale": latest is not None}
+        return {"summary": None, "generated_at": None, "stale": latest is not None, **learned}
 
     gen = _to_utc_dt(doc.get("generated_at"))
     stale = bool(latest and gen and latest > gen)
@@ -380,6 +419,7 @@ async def get_cached_intel(user_id: str, contact_id: str):
         "generated_at": doc["generated_at"].isoformat() if doc.get("generated_at") else None,
         "data_points": doc.get("data_points", {}),
         "stale": stale,
+        **learned,
     }
 
 

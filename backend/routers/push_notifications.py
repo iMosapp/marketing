@@ -40,7 +40,7 @@ async def _log_push(user_id: str, title: str, channel: str, outcome: str, detail
         logger.debug(f"[Push] log failed (non-fatal): {e}")
 
 
-async def _send_expo(tokens: list, title: str, body: str, data: dict) -> list:
+async def _send_expo(tokens: list, title: str, body: str, data: dict, sound: str = "default", channel_id: str = None) -> list:
     """POST to Expo, return one ticket per token. Logs every error and prunes dead tokens."""
     import httpx
     db = get_db()
@@ -49,7 +49,8 @@ async def _send_expo(tokens: list, title: str, body: str, data: dict) -> list:
         return []
     messages = [{
         "to": t["expo_push_token"], "title": title, "body": body,
-        "data": data, "sound": "default", "badge": 1,
+        "data": data, "sound": sound or "default", "badge": 1,
+        **({"channelId": channel_id} if channel_id else {}),
     } for t in tokens]
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -145,9 +146,15 @@ async def test_push(user_id: str):
 
 
 
-async def send_push_to_user(user_id: str, title: str, body: str, url: str = "/touchpoints/performance", icon: str = "flame"):
+LEAD_SOUND = "lead_chime.wav"      # bundled via app.json expo-notifications sounds; iOS falls back to default if missing
+LEAD_CHANNEL = "leads"             # Android channel registered by the app at startup
+
+
+async def send_push_to_user(user_id: str, title: str, body: str, url: str = "/touchpoints/performance", icon: str = "flame",
+                            sound: str = "default", channel_id: str = None):
     """Send a push notification — handles BOTH native iOS (Expo) and web (VAPID).
     Respects user's notification_mode preference: 'push', 'sms', or 'both'.
+    sound/channel_id let lead alerts use the distinct chime (LEAD_SOUND / LEAD_CHANNEL).
     """
     # Check user's notification preference
     try:
@@ -183,7 +190,7 @@ async def send_push_to_user(user_id: str, title: str, body: str, url: str = "/to
     # ── Native iOS/Android via Expo Push API ──────────────────────────────────
     tokens = await db.expo_push_tokens.find({"user_id": user_id}).to_list(10)
     if tokens:
-        tickets = await _send_expo(tokens, title, body, {"url": url, "icon": icon})
+        tickets = await _send_expo(tokens, title, body, {"url": url, "icon": icon, "sound": sound or "default"}, sound=sound, channel_id=channel_id)
         ok = [t for t in tickets if t.get("status") == "ok"]
         sent += len(ok)
         await _log_push(user_id, title, "expo", "sent" if ok else "expo_error", {
@@ -198,7 +205,7 @@ async def send_push_to_user(user_id: str, title: str, body: str, url: str = "/to
             try:
                 webpush(
                     subscription_info=subscription_info,
-                    data=json.dumps({"title": title, "body": body, "url": url, "icon": icon}),
+                    data=json.dumps({"title": title, "body": body, "url": url, "icon": icon, "sound": sound or "default"}),
                     vapid_private_key=VAPID_PRIVATE_KEY,
                     vapid_claims={"sub": VAPID_MAILTO},
                 )
