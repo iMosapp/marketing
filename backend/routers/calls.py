@@ -201,6 +201,33 @@ async def save_store_retry_cadence(user_id: str, data: dict):
     return {"success": True, "scope": scope["scope"], "cadence": cadence, "preview": preview_schedule(cadence, tz), "overrides_cleared": cleared}
 
 
+@router.post("/{user_id}/just-tried/{task_id}")
+async def just_tried_text(user_id: str, task_id: str):
+    """One-tap 'just tried you' SMS from a voicemail retry task; respects the texting window (queues if closed)."""
+    from services.call_followup import send_just_tried_text
+    res = await send_just_tried_text(user_id, task_id)
+    if not res.get("ok"):
+        err = res.get("error", "Could not send")
+        raise HTTPException(status_code=404 if "not found" in err.lower() else 400, detail=err)
+    return res
+
+
+@router.get("/{user_id}/just-tried-preview/{task_id}")
+async def just_tried_preview(user_id: str, task_id: str):
+    """What the one-tap text will say (for the button label / confirmation)."""
+    from services.call_followup import just_tried_template
+    db = get_db()
+    task = await db.tasks.find_one({"_id": ObjectId(task_id), "user_id": user_id}) if ObjectId.is_valid(task_id) else None
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    conv = None
+    if task.get("conversation_id") and ObjectId.is_valid(str(task["conversation_id"])):
+        conv = await db.conversations.find_one({"_id": ObjectId(str(task["conversation_id"]))}, {"lead_source_id": 1})
+    template, source = await just_tried_template(db, user_id, conv)
+    first = (task.get("contact_name") or "there").split(" ")[0]
+    return {"template": template, "source": source, "preview": template.replace("{first_name}", first)}
+
+
 @router.post("/{user_id}/outcome")
 async def log_call_outcome(user_id: str, data: dict):
     """Native-dialer calls: rep picks Talked / Voicemail / No answer / Busy -> same follow-up engine as Twilio calls."""

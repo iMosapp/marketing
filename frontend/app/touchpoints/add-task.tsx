@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, FlatList, Modal,
+  View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, FlatList, Modal, Platform,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -260,8 +260,9 @@ export default function AddTaskScreen() {
       </ScrollView>
 
       {/* Contact Picker Modal */}
-      <Modal visible={showContactPicker} animationType="slide" transparent={false} onRequestClose={() => setShowContactPicker(false)}>
-        <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
+      <Modal visible={showContactPicker} animationType="slide" transparent={false} presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'} onRequestClose={() => setShowContactPicker(false)} onDismiss={() => setShowContactPicker(false)}>
+        <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: Platform.OS === 'ios' ? 0 : insets.top }}>
+          {Platform.OS === 'ios' && <View style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: 'rgba(142,142,147,0.45)', marginTop: 6, marginBottom: 2 }} />}
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
             <TouchableOpacity onPress={() => setShowContactPicker(false)} style={{ padding: 8, marginLeft: -8 }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} data-testid="contact-picker-back">
               <Ionicons name="chevron-back" size={24} color={colors.text} />

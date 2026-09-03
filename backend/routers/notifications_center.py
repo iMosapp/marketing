@@ -35,6 +35,7 @@ FOR_YOU_TYPES = {
     "keyword_alert":             ("leads", 1),
     "customer_reply":            ("replies", 2),
     "customer_reply_ai_handling": ("replies", 2),
+    "call_retry_replied":        ("replies", 1),
     "appointment_extracted":     ("appts", 2),
     "task_reminder":             ("appts", 2),
 }
@@ -76,7 +77,7 @@ def _notif_link(n: dict) -> str | None:
     conversation_id = n.get("conversation_id", "")
     contact_id = n.get("contact_id", "")
     ntype = n.get("type", "")
-    if ntype in ("you_are_needed", "customer_reply", "customer_reply_ai_handling", "slow_lead") and conversation_id:
+    if ntype in ("you_are_needed", "customer_reply", "customer_reply_ai_handling", "slow_lead", "call_retry_replied") and conversation_id:
         return f"/thread/{conversation_id}"
     if ntype in ("appointment_extracted", "task_reminder"):
         return f"/contact/{contact_id}" if contact_id else "/dates-calendar"

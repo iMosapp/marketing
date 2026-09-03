@@ -197,9 +197,10 @@ function ContactActionModal({
   const goToImportFromPhone = () => { onClose(); router.push('/contacts/import' as any); };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={false} onRequestClose={onClose}>
-      {/* RN Modal renders outside the SafeAreaProvider window: apply the screen-level insets by hand */}
-      <View style={[{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }]}>
+    <Modal visible={visible} animationType="slide" transparent={false} presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'} onRequestClose={onClose} onDismiss={onClose}>
+      {/* iOS pageSheet sits below the status bar and swipes down to close; Android stays full-screen so we pad the inset by hand */}
+      <View style={[{ flex: 1, backgroundColor: colors.bg, paddingTop: Platform.OS === 'ios' ? 0 : insets.top }]}>
+        {Platform.OS === 'ios' && <View style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: 'rgba(142,142,147,0.45)', marginTop: 6, marginBottom: 2 }} />}
         {/* Clean header */}
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
           <TouchableOpacity onPress={onClose} style={{ padding: 8, marginLeft: -8 }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} data-testid="close-action-modal">
@@ -1538,8 +1539,9 @@ function HomeScreen() {
       <ContactActionModal visible={showContactAction} onClose={() => setShowContactAction(false)} colors={colors} userId={user?._id || ''} initialMode={contactActionMode} />
 
       {/* Action Picker — Pick a contact then navigate to their record to complete the action */}
-      <Modal visible={showActionPicker} animationType="slide" transparent={false} onRequestClose={() => setShowActionPicker(false)}>
-        <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
+      <Modal visible={showActionPicker} animationType="slide" transparent={false} presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'} onRequestClose={() => setShowActionPicker(false)} onDismiss={() => setShowActionPicker(false)}>
+        <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: Platform.OS === 'ios' ? 0 : insets.top }}>
+          {Platform.OS === 'ios' && <View style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: 'rgba(142,142,147,0.45)', marginTop: 6, marginBottom: 2 }} />}
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
             <TouchableOpacity onPress={() => setShowActionPicker(false)} style={{ padding: 8, marginLeft: -8 }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} data-testid="action-picker-back-btn">
               <Ionicons name="chevron-back" size={24} color={colors.text} />
@@ -1600,8 +1602,9 @@ function HomeScreen() {
       </Modal>
 
       {/* Send a Card  - Step 1: Template Picker, Step 2: Contact Search */}
-      <Modal visible={showSendCard} animationType="slide" transparent={false} onRequestClose={() => setShowSendCard(false)}>
-        <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
+      <Modal visible={showSendCard} animationType="slide" transparent={false} presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'} onRequestClose={() => setShowSendCard(false)} onDismiss={() => setShowSendCard(false)}>
+        <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: Platform.OS === 'ios' ? 0 : insets.top }}>
+          {Platform.OS === 'ios' && <View style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: 'rgba(142,142,147,0.45)', marginTop: 6, marginBottom: 2 }} />}
           <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
             <TouchableOpacity onPress={() => { if (sendCardStep === 'contact') { setSendCardStep('type'); } else { setShowSendCard(false); } }} style={{ padding: 4 }} data-testid="send-card-back-btn">
               <Ionicons name="chevron-back" size={24} color={colors.text} />

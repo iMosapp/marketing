@@ -10,6 +10,7 @@ import { useThemeStore } from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
 import { resolvePhotoUrl } from '../utils/photoUrl';
 import api from '../services/api';
+import { CallRetriesCard } from '../components/leads/CallRetriesCard';
 
 const ACCENT = '#AF52DE';
 
@@ -53,6 +54,7 @@ export default function LeadsDashboard() {
   const [leads, setLeads] = useState<any[]>([]);
   const [roi, setRoi] = useState<any>(null);
   const [speed, setSpeed] = useState<any>(null);
+  const [retries, setRetries] = useState<any>(null);
   const [roiDays, setRoiDays] = useState(90);
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -63,14 +65,16 @@ export default function LeadsDashboard() {
     try {
       const storeParam = user.store_id ? `store_id=${user.store_id}&` : '';
       const statusParam = statusFilter !== 'all' ? `status=${statusFilter}&` : '';
-      const [leadsRes, roiRes, speedRes] = await Promise.all([
+      const [leadsRes, roiRes, speedRes, retryRes] = await Promise.all([
         api.get(`/leads/?${storeParam}${statusParam}limit=100`),
         api.get(`/leads/analytics/sources?${storeParam}days=${roiDays}`),
         api.get(`/leads/analytics/response-times?${storeParam}days=${roiDays}`),
+        api.get(`/leads/analytics/call-retries?${storeParam}days=${roiDays}`).catch(() => ({ data: null })),
       ]);
       setLeads(leadsRes.data || []);
       setRoi(roiRes.data || null);
       setSpeed(speedRes.data || null);
+      setRetries(retryRes.data || null);
     } catch (e) {
       console.error('Leads fetch failed:', e);
     } finally {
@@ -140,7 +144,7 @@ export default function LeadsDashboard() {
         </View>
       ) : (
         <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 10 }}>
-          {[30, 90, 365].map(d => {
+          {[7, 30, 90, 365].map(d => {
             const active = roiDays === d;
             return (
               <TouchableOpacity
@@ -151,7 +155,7 @@ export default function LeadsDashboard() {
                 testID={`roi-days-${d}`}
                 dataSet={{ testid: `roi-days-${d}` } as any}
               >
-                <Text style={{ fontSize: 13, fontWeight: '600', color: active ? '#FFF' : colors.textSecondary }}>{d === 365 ? '1 Year' : `${d} Days`}</Text>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: active ? '#FFF' : colors.textSecondary }}>{d === 365 ? '1 Year' : d === 7 ? 'This Week' : `${d} Days`}</Text>
               </TouchableOpacity>
             );
           })}
@@ -242,12 +246,13 @@ export default function LeadsDashboard() {
             )
           ) : tab === 'speed' ? (
             /* ─── Speed to Lead tab ─── */
-            !speed || (speed.overall?.measured === 0 && speed.overall?.unanswered === 0) ? (
-              <View style={{ alignItems: 'center', paddingTop: 50 }}>
+            <>
+            {!speed || (speed.overall?.measured === 0 && speed.overall?.unanswered === 0) ? (
+              <View style={{ alignItems: 'center', paddingVertical: 30 }}>
                 <Ionicons name="stopwatch-outline" size={44} color={colors.textSecondary} />
                 <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginTop: 12 }}>No response data yet</Text>
                 <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginTop: 6, paddingHorizontal: 32 }}>
-                  Once reps start replying to internet leads, you'll see who answers fastest here.
+                  Once reps start replying to internet leads, you&apos;ll see who answers fastest here.
                 </Text>
               </View>
             ) : (
@@ -296,7 +301,9 @@ export default function LeadsDashboard() {
                   );
                 })}
               </>
-            )
+            )}
+            <CallRetriesCard data={retries} colors={colors} />
+            </>
           ) : (
             /* ─── Source ROI tab ─── */
             !roi || roi.sources.length === 0 ? (
@@ -304,7 +311,7 @@ export default function LeadsDashboard() {
                 <Ionicons name="trending-up-outline" size={44} color={colors.textSecondary} />
                 <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginTop: 12 }}>No lead data yet</Text>
                 <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginTop: 6, paddingHorizontal: 32 }}>
-                  Once leads start arriving, you'll see which sources actually turn into conversations and sales.
+                  Once leads start arriving, you&apos;ll see which sources actually turn into conversations and sales.
                 </Text>
               </View>
             ) : (

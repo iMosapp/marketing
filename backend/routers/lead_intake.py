@@ -1441,6 +1441,71 @@ async def lead_response_times(
     }
 
 
+@router.get("/analytics/call-retries")
+async def call_retry_outcomes(
+    request:  Request,
+    store_id: Optional[str] = None,
+    days:     int = 7,
+):
+    """Voicemail retries: per rep, how many missed calls turned into a connection (or a text back)."""
+    caller_id = _require_auth(request)
+    db = get_db()
+    days = min(max(days, 1), 365)
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    caller = await db.users.find_one({"_id": ObjectId(caller_id)}, {"role": 1}) if ObjectId.is_valid(caller_id) else None
+    is_manager = (caller or {}).get("role") in ("super_admin", "admin", "manager", "store_manager", "org_admin")
+    scope: dict = {"user_id": caller_id}
+    if is_manager:
+        scope = {"user_id": {"$in": [str(u["_id"]) async for u in db.users.find({"store_id": store_id}, {"_id": 1})]}} if store_id else {}
+
+    def _blank():
+        return {"misses": 0, "voicemails": 0, "retries": 0, "connected": 0, "replied": 0, "open": 0, "gave_up": 0, "just_tried": 0}
+    per: dict = {}
+    async for e in db.contact_events.find({**scope, "event_type": {"$in": ["call_voicemail", "call_no_answer", "call_busy"]},
+                                           "timestamp": {"$gte": since}}, {"user_id": 1, "event_type": 1}):
+        r = per.setdefault(str(e.get("user_id")), _blank())
+        r["misses"] += 1
+        if e.get("event_type") == "call_voicemail":
+            r["voicemails"] += 1
+    task_q = {**scope, "auto_kind": {"$in": ["call_retry", "call_retry_final"]},
+              "$or": [{"created_at": {"$gte": since}}, {"completed_at": {"$gte": since}}, {"completed": {"$ne": True}}]}
+    async for t in db.tasks.find(task_q, {"user_id": 1, "auto_kind": 1, "completed": 1, "completed_via": 1,
+                                          "completed_at": 1, "created_at": 1, "just_tried_sent_at": 1}):
+        r = per.setdefault(str(t.get("user_id")), _blank())
+        created = t.get("created_at")
+        in_window = isinstance(created, datetime) and (created.replace(tzinfo=created.tzinfo or timezone.utc) >= since)
+        if t.get("auto_kind") == "call_retry_final":
+            if in_window:
+                r["gave_up"] += 1
+            continue
+        r["retries"] += 1
+        if not t.get("completed"):
+            r["open"] += 1
+        elif t.get("completed_via") == "call_connected":
+            r["connected"] += 1
+        elif t.get("completed_via") == "customer_replied":
+            r["replied"] += 1
+        if t.get("just_tried_sent_at"):
+            r["just_tried"] += 1
+
+    names = {}
+    oids = [ObjectId(u) for u in per if ObjectId.is_valid(u)]
+    if oids:
+        async for u in db.users.find({"_id": {"$in": oids}}, {"name": 1}):
+            names[str(u["_id"])] = u.get("name", "")
+
+    def _rate(r):
+        done = r["retries"] - r["open"] + r["gave_up"]
+        return int(round(100 * (r["connected"] + r["replied"]) / done)) if done else None
+    reps = [{"user_id": uid, "name": names.get(uid) or "Unknown", **r, "reach_rate": _rate(r)} for uid, r in per.items()]
+    reps.sort(key=lambda r: (-(r["connected"] + r["replied"]), -r["misses"]))
+    totals = _blank()
+    for r in per.values():
+        for k in totals:
+            totals[k] += r[k]
+    return {"days": days, "is_manager": is_manager, "totals": {**totals, "reach_rate": _rate(totals)}, "reps": reps}
+
+
 @router.get("/awaiting/{user_id}")
 async def awaiting_leads(user_id: str):
     """Speed-to-lead: this rep's internet leads still waiting on a first human reply."""

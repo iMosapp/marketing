@@ -33,6 +33,7 @@ CADENCE_LIMITS = {
     "fourth_days": (1, 7), "evening_cutoff": (16, 22), "max_auto": (1, 6),
 }
 MAX_AUTO_RETRIES = DEFAULT_CADENCE["max_auto"]
+DEFAULT_JUST_TRIED = "Hey {first_name}, it's {sender_name}. Just tried to give you a call, no rush at all. Call or text me back whenever works for you."
 VOICEMAIL_HINTS = (
     "leave a message", "leave your message", "leave me a message", "after the tone", "at the tone", "after the beep",
     "record your message", "voicemail", "voice mail", "mailbox", "not available", "can't take your call",
@@ -111,6 +112,9 @@ def normalize_cadence(raw: dict | None) -> dict:
             pass
     if raw is not None and "enabled" in raw:
         out["enabled"] = bool(raw.get("enabled"))
+    jt = (raw or {}).get("just_tried_text")
+    if isinstance(jt, str) and jt.strip():
+        out["just_tried_text"] = jt.strip()[:320]
     return out
 
 
@@ -345,9 +349,153 @@ async def _on_missed(db, user_id, contact, first, pending, outcome, source, call
     return {"applied": True, "outcome": outcome, "attempt": attempt, "task_id": task_id, "due": due_utc.isoformat() if due_utc else None, "label": label}
 
 
+async def on_customer_replied(user_id: str, contact_id: str, conversation_id: str | None, body: str) -> dict:
+    """Customer texted back while a retry task was open: close the retry, drop any queued "just tried" text, ping the rep."""
+    db = get_db()
+    if not user_id or not ObjectId.is_valid(contact_id):
+        return {"closed": 0}
+    open_tasks = await db.tasks.find({"user_id": user_id, "contact_id": contact_id, "completed": {"$ne": True},
+                                      "auto_kind": {"$in": ["call_retry", "call_retry_final"]}}).to_list(10)
+    if not open_tasks:
+        return {"closed": 0}
+    now = datetime.now(timezone.utc)
+    ids = [t["_id"] for t in open_tasks]
+    preview = (body or "").strip().replace("\n", " ")[:100]
+    await db.tasks.update_many({"_id": {"$in": ids}}, {"$set": {
+        "status": "completed", "completed": True, "completed_at": now, "completed_via": "customer_replied",
+        "completed_reply": preview, "updated_at": now}})
+    cancelled = await db.campaign_pending_sends.update_many(
+        {"task_id": {"$in": [str(i) for i in ids]}, "type": "direct_scheduled", "status": "pending"},
+        {"$set": {"status": "cancelled", "cancel_reason": "customer_replied", "cancelled_at": now}})
+    await db.contacts.update_one({"_id": ObjectId(contact_id)}, {"$set": {"call_retry": None}})
+    contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"first_name": 1, "name": 1}) or {}
+    first = (contact.get("first_name") or (contact.get("name") or "").split(" ")[0] or "They").strip()
+    just_tried = any(t.get("just_tried_sent_at") for t in open_tasks)
+    title = f"{first} replied to your just-tried text" if just_tried else f"{first} texted back after your voicemail"
+    push_body = (f"\"{preview}\" · retry task closed" if preview else "Retry task closed, reply in the thread")
+    link = f"/thread/{conversation_id}" if conversation_id else f"/contact/{contact_id}"
+    await db.contact_events.insert_one({
+        "event_type": "call_retry_replied", "title": title, "user_id": user_id, "contact_id": contact_id,
+        "description": f"Closed {len(ids)} retry task(s)" + (f", cancelled {cancelled.modified_count} queued text" if cancelled.modified_count else "") + ". Keep it going by text.",
+        "category": "call", "icon": "chatbubble-ellipses", "color": "#34C759", "timestamp": now, "created_at": now})
+    await db.notifications.insert_one({
+        "user_id": user_id, "type": "call_retry_replied", "title": title, "message": push_body, "contact_id": contact_id,
+        "contact_name": contact.get("name") or first, "conversation_id": conversation_id or "", "task_id": str(ids[0]),
+        "read": False, "dismissed": False, "created_at": now})
+    try:
+        from routers.push_notifications import send_push_to_user
+        asyncio.create_task(send_push_to_user(user_id, title, push_body, link, "chatbubble-ellipses"))
+    except Exception:
+        pass
+    logger.info(f"[CallFollowup] {contact_id} texted back: closed {len(ids)} retry task(s), cancelled {cancelled.modified_count} queued text(s)")
+    return {"closed": len(ids), "cancelled_texts": cancelled.modified_count, "just_tried": just_tried}
+
+
 async def record_manual_outcome(user_id: str, contact_id: str, outcome: str, duration_s: int = 0,
                                 conversation_id: str = "", task_id: str = "") -> dict:
     """Native-dialer calls: the rep tells us how it went."""
     stub = {"rep_user_id": user_id, "contact_id": contact_id, "conversation_id": conversation_id or None,
             "task_id": task_id or None, "call_sid": f"manual-{int(datetime.now(timezone.utc).timestamp())}"}
     return await apply_call_outcome(stub, outcome, duration_s, source="manual")
+
+
+async def just_tried_template(db, user_id: str, conversation: dict | None) -> tuple[str, str]:
+    """Lead-source workflow text -> rep/team cadence text -> built-in. Returns (template, source_label)."""
+    sid = str((conversation or {}).get("lead_source_id") or "")
+    if ObjectId.is_valid(sid):
+        src = await db.lead_sources.find_one({"_id": ObjectId(sid)}, {"just_tried_text": 1, "name": 1})
+        if src and (src.get("just_tried_text") or "").strip():
+            return src["just_tried_text"].strip(), f"{src.get('name') or 'lead source'} workflow"
+    cad = await cadence_for(user_id)
+    if cad.get("just_tried_text"):
+        return cad["just_tried_text"], "your retry settings"
+    return DEFAULT_JUST_TRIED, "default"
+
+
+async def send_just_tried_text(user_id: str, task_id: str) -> dict:
+    """One tap from a retry task: text the customer now if inside texting hours, else queue it for when the window opens."""
+    from services.lead_timing import window_status, customer_timezone, store_timezone
+    db = get_db()
+    if not ObjectId.is_valid(task_id):
+        return {"ok": False, "error": "Bad task id"}
+    task = await db.tasks.find_one({"_id": ObjectId(task_id), "user_id": user_id})
+    if not task:
+        return {"ok": False, "error": "Task not found"}
+    contact_id = str(task.get("contact_id") or "")
+    contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}) if ObjectId.is_valid(contact_id) else None
+    if not contact:
+        return {"ok": False, "error": "Contact not found"}
+    phone = contact.get("phone") or task.get("contact_phone")
+    if not phone:
+        return {"ok": False, "error": "No phone number on file"}
+    if contact.get("opted_out") or contact.get("sms_consent_status") == "opted_out" or contact.get("do_not_text"):
+        return {"ok": False, "error": "This contact opted out of texts"}
+
+    conv = None
+    if task.get("conversation_id") and ObjectId.is_valid(str(task["conversation_id"])):
+        conv = await db.conversations.find_one({"_id": ObjectId(str(task["conversation_id"]))})
+    if not conv:
+        conv = await db.conversations.find_one({"contact_id": contact_id, "user_id": user_id}) or \
+               await db.conversations.find_one({"contact_id": contact_id})
+    template, template_source = await just_tried_template(db, user_id, conv)
+
+    # texting hours: the lead source window if there is one, else the default window, in the customer's local time
+    src = None
+    sid = str((conv or {}).get("lead_source_id") or "")
+    if ObjectId.is_valid(sid):
+        src = await db.lead_sources.find_one({"_id": ObjectId(sid)}, {"text_window_start": 1, "text_window_end": 1})
+    store = None
+    store_sid = str(contact.get("store_id") or (conv or {}).get("store_id") or "")
+    if ObjectId.is_valid(store_sid):
+        store = await db.stores.find_one({"_id": ObjectId(store_sid)}, {"timezone": 1})
+    tz_name = customer_timezone(phone, store_timezone(store or {}))
+    win = window_status(src or {}, tz_name)
+    now = datetime.now(timezone.utc)
+    first = (contact.get("first_name") or (contact.get("name") or "").split(" ")[0] or "there").strip()
+
+    if win["inside"]:
+        from routers.messages import send_message_simple
+        payload = {"content": template, "contact_id": contact_id, "channel": "sms"}
+        if conv and str(conv.get("user_id")) == user_id:
+            payload["conversation_id"] = str(conv["_id"])
+        try:
+            res = await send_message_simple(user_id, payload)
+        except Exception as e:  # HTTPException or Twilio failure
+            detail = getattr(e, "detail", None) or str(e)
+            return {"ok": False, "error": f"Could not send: {detail}"}
+        if (res or {}).get("status") == "failed":
+            return {"ok": False, "error": f"Text failed: {(res or {}).get('error') or 'carrier rejected the number'}"}
+        await db.tasks.update_one({"_id": task["_id"]}, {"$set": {"just_tried_sent_at": now, "just_tried_text": template}})
+        await db.contact_events.insert_one({
+            "event_type": "just_tried_text", "title": "\"Just tried you\" text sent", "user_id": user_id, "contact_id": contact_id,
+            "description": f"After voicemail: {template[:120]}", "category": "sms", "icon": "chatbubble", "color": "#34C759",
+            "timestamp": now, "created_at": now})
+        return {"ok": True, "sent": True, "scheduled_for": None, "template_source": template_source,
+                "message_id": (res or {}).get("message_id") or (res or {}).get("_id"), "preview": template.replace("{first_name}", first)}
+
+    # outside the window: queue for when it opens (scheduler drains campaign_pending_sends every few minutes)
+    opens = win["opens_at"]
+    rep = await db.users.find_one({"_id": ObjectId(user_id)}, {"twilio_number": 1, "mvpline_number": 1, "name": 1})
+    try:
+        from routers.messages import substitute_template_vars
+        template = await substitute_template_vars(template, user_id, contact_id)   # {sender_name}/{company} resolved now; scheduler handles the rest
+    except Exception:
+        pass
+    await db.campaign_pending_sends.insert_one({
+        "user_id": user_id, "contact_id": contact_id, "contact_name": contact.get("name") or first, "contact_phone": phone,
+        "rep_phone": (rep or {}).get("twilio_number") or (rep or {}).get("mvpline_number"),
+        "message_template": template, "channel": "sms", "delivery_mode": "automated",
+        "send_at": opens.replace(tzinfo=None), "status": "pending", "step": 0, "enrollment_id": "", "campaign_id": "",
+        "campaign_name": "Just tried you", "media_urls": [], "event_type": "just_tried_text", "created_at": now,
+        "type": "direct_scheduled", "task_id": task_id,
+    })
+    await db.tasks.update_one({"_id": task["_id"]}, {"$set": {"just_tried_scheduled_for": opens, "just_tried_text": template}})
+    from zoneinfo import ZoneInfo
+    local = opens.astimezone(ZoneInfo(tz_name))
+    label = local.strftime("%-I:%M %p") + ("" if local.date() == now.astimezone(ZoneInfo(tz_name)).date() else local.strftime(" %a"))
+    await db.contact_events.insert_one({
+        "event_type": "just_tried_text", "title": "\"Just tried you\" text scheduled", "user_id": user_id, "contact_id": contact_id,
+        "description": f"Outside texting hours ({win['start']}-{win['end']} their time). Sends at {label}.", "category": "sms",
+        "icon": "time", "color": "#FF9F0A", "timestamp": now, "created_at": now})
+    return {"ok": True, "sent": False, "scheduled_for": opens.isoformat(), "scheduled_label": label, "template_source": template_source,
+            "window": f"{win['start']}-{win['end']}", "preview": template.replace("{first_name}", first)}

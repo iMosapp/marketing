@@ -671,8 +671,9 @@ export default function NewContactScreen() {
       </Modal>
 
       {/* ── Referral Picker Modal ── */}
-      <Modal visible={showReferralPicker} animationType="slide" transparent={false} onRequestClose={() => setShowReferralPicker(false)}>
-        <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: insets.top }}>
+      <Modal visible={showReferralPicker} animationType="slide" transparent={false} presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'} onRequestClose={() => setShowReferralPicker(false)} onDismiss={() => setShowReferralPicker(false)}>
+        <View style={{ flex: 1, backgroundColor: colors.bg, paddingTop: Platform.OS === 'ios' ? 0 : insets.top }}>
+          {Platform.OS === 'ios' && <View style={{ alignSelf: 'center', width: 36, height: 5, borderRadius: 3, backgroundColor: 'rgba(142,142,147,0.45)', marginTop: 6, marginBottom: 2 }} />}
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
               <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text }}>Select Referrer</Text>

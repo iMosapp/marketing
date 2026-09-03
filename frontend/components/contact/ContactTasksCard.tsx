@@ -99,6 +99,18 @@ export default function ContactTasksCard({ colors, userId, contactId, contact, f
 
   const name = `${contact?.first_name || ''} ${contact?.last_name || ''}`.trim();
 
+  const [sendingJT, setSendingJT] = useState(false);
+  const justTried = async (t: any) => {
+    if (sendingJT) return;
+    setSendingJT(true);
+    try {
+      const r = await api.post(`/calls/${userId}/just-tried/${t._id}`);
+      showToast?.(r.data.sent ? `Text sent to ${t.contact_name?.split(' ')[0] || 'them'}` : `Outside texting hours · sends at ${r.data.scheduled_label}`, 'success');
+      setTasks(prev => prev.map(x => x._id === t._id ? { ...x, just_tried_sent_at: r.data.sent ? new Date().toISOString() : x.just_tried_sent_at, just_tried_scheduled_for: r.data.scheduled_for || x.just_tried_scheduled_for } : x));
+    } catch (e: any) { showToast?.(e?.response?.data?.detail || 'Could not send', 'error'); }
+    finally { setSendingJT(false); }
+  };
+
   const complete = async (t: any) => {
     setTasks(prev => prev.filter(x => x._id !== t._id));
     setUndo({ ...t, _undoKind: 'done' });
@@ -179,7 +191,11 @@ export default function ContactTasksCard({ colors, userId, contactId, contact, f
               {fKind === 'call' ? (
                 <>
                   <ActionBtn primary icon="call" label="Call now" onPress={() => call(featured)} testid="contact-task-call-btn" colors={colors} />
-                  <ActionBtn icon="sparkles" label="Write It" onPress={() => writeIt(featured)} testid="contact-task-write-btn" colors={colors} />
+                  {featured.auto_kind === 'call_retry' ? (
+                    <ActionBtn icon={featured.just_tried_sent_at || featured.just_tried_scheduled_for ? 'checkmark-done' : 'chatbubble'} label={featured.just_tried_sent_at ? 'Text sent' : featured.just_tried_scheduled_for ? 'Text queued' : 'Just tried you'} onPress={() => justTried(featured)} testid="contact-task-just-tried-btn" colors={colors} />
+                  ) : (
+                    <ActionBtn icon="sparkles" label="Write It" onPress={() => writeIt(featured)} testid="contact-task-write-btn" colors={colors} />
+                  )}
                 </>
               ) : (
                 <>

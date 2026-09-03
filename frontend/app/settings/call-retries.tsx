@@ -3,7 +3,7 @@
  * Live preview shows exactly what a miss right now would schedule.
  */
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Switch, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Switch, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -16,7 +16,8 @@ const GOLD = '#C9A962';
 const AMBER = '#FF9F0A';
 const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 
-type Cadence = { enabled: boolean; first_minutes: number; second_hours: number; morning_hour: number; fourth_days: number; evening_cutoff: number; max_auto: number };
+type Cadence = { enabled: boolean; first_minutes: number; second_hours: number; morning_hour: number; fourth_days: number; evening_cutoff: number; max_auto: number; just_tried_text?: string };
+const DEFAULT_JUST_TRIED = "Hey {first_name}, it's {sender_name}. Just tried to give you a call, no rush at all. Call or text me back whenever works for you.";
 const DEFAULTS: Cadence = { enabled: true, first_minutes: 30, second_hours: 3, morning_hour: 10, fourth_days: 2, evening_cutoff: 19, max_auto: 4 };
 
 const hour12 = (h: number) => `${h % 12 || 12} ${h >= 12 ? 'PM' : 'AM'}`;
@@ -201,6 +202,31 @@ export default function CallRetriesPage() {
                 <Stepper label="Auto retries before 'text or park'" hint="After this many misses you get one final task instead of more calls" value={cadence.max_auto} display={(v: number) => `${v} tries`} min={1} max={6} colors={colors} testid="cad-max" onChange={(v: number) => patch({ max_auto: v })} />
               </View>
             </>
+          )}
+
+          {cadence.enabled && (
+            <View style={s.card} {...tid('just-tried-card')}>
+              <Text style={s.sectionLabel}>"Just tried you" text</Text>
+              <Text style={[s.cardSub, { marginBottom: 8 }]}>One tap on a retry task sends this. Lead sources can override it in their workflow; it always waits for texting hours.</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                {['{first_name}', '{sender_name}', '{company}'].map(f => (
+                  <TouchableOpacity key={f} onPress={() => patch({ just_tried_text: ((cadence.just_tried_text ?? DEFAULT_JUST_TRIED) + ' ' + f).trimStart() })}
+                    style={{ backgroundColor: colors.surface, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: colors.border }}>
+                    <Text style={{ fontSize: 11, fontWeight: '700', color: GOLD, fontFamily: 'monospace' }}>{f}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TextInput
+                value={cadence.just_tried_text ?? ''}
+                onChangeText={v => patch({ just_tried_text: v.slice(0, 320) })}
+                multiline
+                placeholder={DEFAULT_JUST_TRIED}
+                placeholderTextColor={colors.textSecondary}
+                style={{ backgroundColor: colors.surface, borderRadius: 10, padding: 12, color: colors.text, fontSize: 15, borderWidth: 1, borderColor: colors.border, minHeight: 84, textAlignVertical: 'top' }}
+                {...tid('just-tried-input')}
+              />
+              <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 6 }}>{(cadence.just_tried_text || '').length}/320 · blank = built-in default</Text>
+            </View>
           )}
 
           {cadence.enabled && (

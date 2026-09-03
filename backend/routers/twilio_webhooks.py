@@ -424,6 +424,14 @@ async def incoming_message(
         except Exception as tx_err:
             logger.warning(f"[TaskExtract] schedule failed: {tx_err}")
 
+        # ── Customer texted back while a voicemail retry was open -> close it + ping the rep (fire-and-forget) ──
+        if (Body or "").strip().upper() not in ("STOP", "STOPALL", "UNSUBSCRIBE", "CANCEL", "END", "QUIT"):
+            try:
+                from services.call_followup import on_customer_replied
+                asyncio.create_task(on_customer_replied(user_id, contact_id, conversation_id, Body or ""))
+            except Exception as cr_err:
+                logger.warning(f"[CallRetry] reply hook failed: {cr_err}")
+
         # ── Auto-reopen closed conversation when customer replies ──────────────
         # If the conversation was marked closed, reopen it so the rep sees it
         # in their active inbox instead of the Closed tab.

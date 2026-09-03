@@ -187,6 +187,15 @@ function TouchpointsScreen() {
     completeTask(task._id);
   };
 
+  const handleJustTried = async (task: any) => {
+    try {
+      const r = await api.post(`/calls/${user?._id}/just-tried/${task._id}`);
+      const first = (task.contact_name || 'them').split(' ')[0];
+      showSimpleAlert(r.data.sent ? 'Text sent' : 'Text queued', r.data.sent ? `"Just tried you" text sent to ${first}.` : `Outside ${first}'s texting hours (${r.data.window}). It sends at ${r.data.scheduled_label}.`);
+      loadData();
+    } catch (e: any) { showSimpleAlert('Could not send', e?.response?.data?.detail || 'Please try again.'); }
+  };
+
   const handleText = async (task: any) => {
     const phone = task.contact_phone;
     if (!phone) { showSimpleAlert('No Number', 'No phone number for this contact.'); return; }
@@ -432,7 +441,7 @@ function TouchpointsScreen() {
           {overdueTasks.length > 0 && (
             <>
               <Text style={{ fontSize: 13, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, textTransform: 'uppercase', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 6 }}>Overdue</Text>
-              {overdueTasks.map(task => <TaskCard key={task._id} task={task} colors={colors} onComplete={completeTask} onSnooze={snoozeTask} onCall={handleCall} onText={handleText} onDraft={openDraft} />)}
+              {overdueTasks.map(task => <TaskCard key={task._id} task={task} colors={colors} onComplete={completeTask} onSnooze={snoozeTask} onCall={handleCall} onText={handleText} onDraft={openDraft} onJustTried={handleJustTried} />)}
             </>
           )}
 
@@ -440,7 +449,7 @@ function TouchpointsScreen() {
           {todayTasks.length > 0 && (
             <>
               <Text style={{ fontSize: 13, fontWeight: '700', color: '#48484A', letterSpacing: 1.5, textTransform: 'uppercase', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 6 }}>Today</Text>
-              {todayTasks.map(task => <TaskCard key={task._id} task={task} colors={colors} onComplete={completeTask} onSnooze={snoozeTask} onCall={handleCall} onText={handleText} onDraft={openDraft} />)}
+              {todayTasks.map(task => <TaskCard key={task._id} task={task} colors={colors} onComplete={completeTask} onSnooze={snoozeTask} onCall={handleCall} onText={handleText} onDraft={openDraft} onJustTried={handleJustTried} />)}
             </>
           )}
 
@@ -482,8 +491,8 @@ function TouchpointsScreen() {
   );
 }
 
-function TaskCard({ task, colors, onComplete, onSnooze, onCall, onText, onDraft }: {
-  task: any; colors: any; onComplete: (id: string) => void; onSnooze: (id: string) => void; onCall: (t: any) => void; onText: (t: any) => void; onDraft: (t: any) => void;
+function TaskCard({ task, colors, onComplete, onSnooze, onCall, onText, onDraft, onJustTried }: {
+  task: any; colors: any; onComplete: (id: string) => void; onSnooze: (id: string) => void; onCall: (t: any) => void; onText: (t: any) => void; onDraft: (t: any) => void; onJustTried?: (t: any) => void;
 }) {
   const overdue = isOverdue(task);
   const highPri = task.priority === 'high' && !overdue;
@@ -496,7 +505,10 @@ function TaskCard({ task, colors, onComplete, onSnooze, onCall, onText, onDraft 
   // Determine which action buttons to show
   const showCall = task.action_type === 'call' || task.type === 'follow_up' || task.type === 'birthday' || overdue;
   const showText = true;
-  const textLabel = task.source === 'campaign' ? 'Send Text' : 'Text';
+  const isRetry = task.auto_kind === 'call_retry';
+  const jtDone = !!task.just_tried_sent_at;
+  const jtQueued = !jtDone && !!task.just_tried_scheduled_for;
+  const textLabel = isRetry ? (jtDone ? 'Text sent' : jtQueued ? 'Text queued' : 'Just tried you') : task.source === 'campaign' ? 'Send Text' : 'Text';
 
   const cardContent = (
     <View style={{ backgroundColor: colors.card }}>
@@ -544,8 +556,8 @@ function TaskCard({ task, colors, onComplete, onSnooze, onCall, onText, onDraft 
           </TouchableOpacity>
         )}
         {showText && (
-          <TouchableOpacity onPress={() => onText(task)} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 13 }} data-testid={`task-text-${task._id}`}>
-            <Ionicons name="chatbubble" size={17} color="#34C759" />
+          <TouchableOpacity onPress={() => (isRetry && onJustTried ? onJustTried(task) : onText(task))} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 13 }} data-testid={isRetry ? `task-just-tried-${task._id}` : `task-text-${task._id}`}>
+            <Ionicons name={jtDone || jtQueued ? 'checkmark-done' : 'chatbubble'} size={17} color="#34C759" />
             <Text style={{ fontSize: 15, fontWeight: '600', color: '#34C759' }}>{textLabel}</Text>
           </TouchableOpacity>
         )}

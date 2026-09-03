@@ -131,6 +131,7 @@ export default function LeadSourceDetailScreen() {
     returning_alert_minutes: 10,
     returning_release_minutes: 30,
     digest_hour: 18,
+    just_tried_text: '',
   });
   const [storeHours, setStoreHours] = useState<StoreHours | null>(null);
   const [websitePages, setWebsitePages] = useState<{ pages: string[]; routed: Record<string, { id: string; name: string }> }>({ pages: [], routed: {} });
@@ -722,6 +723,31 @@ export default function LeadSourceDetailScreen() {
                   placeholder={`Hey {{first_name}}! I saw you were interested in the {{vehicle}}. This is {{rep_name}} from the dealership — what questions do you have?`}
                   placeholderTextColor={colors.textSecondary}
                   testID="intake-text-input" dataSet={{ testid: 'intake-text-input' } as any}
+                />
+              </View>
+
+              {/* ── "Just tried you" text (voicemail follow-up, one tap from the retry task) ── */}
+              <View>
+                <Text style={styles.label}>"Just Tried You" Text</Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 8 }}>
+                  One tap from a voicemail retry task sends this to leads from this source. Respects the texting window above. Blank = the rep's team default.
+                </Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                  {['{first_name}', '{sender_name}', '{company}'].map(f => (
+                    <TouchableOpacity key={f} onPress={() => setWorkflow(prev => ({ ...prev, just_tried_text: (prev.just_tried_text || '') + f }))}
+                      style={{ backgroundColor: colors.surface, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: colors.border }}>
+                      <Text style={{ fontSize: 11, fontWeight: '700', color: '#C9A962', fontFamily: 'monospace' }}>{f}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <TextInput
+                  style={[styles.input, { height: 84, textAlignVertical: 'top' }]}
+                  value={workflow.just_tried_text}
+                  onChangeText={v => setWorkflow(prev => ({ ...prev, just_tried_text: v.slice(0, 320) }))}
+                  multiline
+                  placeholder={`Hey {first_name}, it's {sender_name}. Just tried to give you a call, no rush at all. Call or text me back whenever works for you.`}
+                  placeholderTextColor={colors.textSecondary}
+                  testID="just-tried-text-input" dataSet={{ testid: 'just-tried-text-input' } as any}
                 />
               </View>
 
