@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import api from '../services/api';
+import { showSimpleAlert } from '../services/alert';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
 
@@ -36,6 +37,13 @@ export default function CallScreen() {
   const [callNotes,    setCallNotes]    = useState('');
   const [callMins,     setCallMins]     = useState('');
   const [logging,      setLogging]      = useState(false);
+  const [outcome,      setOutcome]      = useState<'connected' | 'voicemail' | 'no_answer' | 'busy' | ''>('');
+  const OUTCOMES: { k: 'connected' | 'voicemail' | 'no_answer' | 'busy'; label: string; icon: any; color: string }[] = [
+    { k: 'connected', label: 'Talked', icon: 'checkmark-circle', color: '#34C759' },
+    { k: 'voicemail', label: 'Voicemail', icon: 'recording', color: '#FF9F0A' },
+    { k: 'no_answer', label: 'No answer', icon: 'call-outline', color: '#FF9F0A' },
+    { k: 'busy', label: 'Busy', icon: 'remove-circle', color: '#FF453A' },
+  ];
 
   // ── Twilio Click-to-Call flow ───────────────────────────────────────────────
   const placeTwilioCall = async () => {
@@ -95,10 +103,20 @@ export default function CallScreen() {
           category:    'call',
         }).catch(() => {});
       }
-      if (taskId && durationSecs > 0) {
+      let followUp: any = null;
+      if (contactId && outcome) {
+        // Talked -> completes the task you called from; voicemail / no answer / busy -> "try again" task on the retry cadence
+        followUp = await api.post(`/calls/${user._id}/outcome`, {
+          contact_id: contactId, conversation_id: conversationId || undefined, task_id: taskId || undefined,
+          outcome, duration: durationSecs,
+        }).then(r => r.data).catch(() => null);
+      } else if (taskId && durationSecs > 0) {
         await api.patch(`/tasks/${user._id}/${taskId}`, { action: 'complete' }).catch(() => {});
       }
       setShowLogModal(false);
+      if (followUp?.label && outcome !== 'connected') {
+        showSimpleAlert('Follow-up set', `Reminder to try ${contactName.split(' ')[0]} again ${followUp.label}.`);
+      }
       router.back();
     } catch (e) {
       console.error('Failed to log call:', e);
@@ -219,6 +237,24 @@ export default function CallScreen() {
           <View style={{ padding: 24 }}>
             <Text style={{ color: colors.text, fontSize: 22, fontWeight: '800', marginBottom: 4 }}>{contactName}</Text>
             <Text style={{ color: colors.textSecondary, marginBottom: 28 }}>{contactPhone}</Text>
+
+            <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '700', marginBottom: 8, textTransform: 'uppercase' }}>How did it go?</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+              {OUTCOMES.map(o => {
+                const on = outcome === o.k;
+                return (
+                  <TouchableOpacity key={o.k} onPress={() => setOutcome(on ? '' : o.k)}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 9, borderRadius: 18, borderWidth: 1.5, borderColor: on ? o.color : colors.border, backgroundColor: on ? `${o.color}22` : colors.card }}
+                    testID={`call-outcome-${o.k}`} dataSet={{ testid: `call-outcome-${o.k}` } as any}>
+                    <Ionicons name={o.icon} size={15} color={on ? o.color : colors.textSecondary} />
+                    <Text style={{ fontSize: 14, fontWeight: '700', color: on ? o.color : colors.text }}>{o.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            {outcome && outcome !== 'connected' ? (
+              <Text style={{ color: '#FF9F0A', fontSize: 12, marginTop: -10, marginBottom: 16 }}>Jessi will set a "try again" reminder: 30 min for the first miss, later today for the second, next morning after that.</Text>
+            ) : null}
 
             <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '700', marginBottom: 8, textTransform: 'uppercase' }}>Duration (minutes)</Text>
             <TextInput

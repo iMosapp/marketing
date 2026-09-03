@@ -5,7 +5,7 @@ import asyncio
 from fastapi import APIRouter, Request, Form, HTTPException
 from fastapi.responses import Response
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
 import logging
 import os
@@ -1279,6 +1279,7 @@ async def handle_recording_complete(
     contact_id = None
     from_phone = normalize_phone(From) if From else ""
     direction  = "inbound"
+    pending    = None
 
     # Check pending_calls (outbound calls store context here)
     if CallSid:
@@ -1288,12 +1289,7 @@ async def handle_recording_complete(
             contact_id   = pending.get("contact_id")
             from_phone   = pending.get("customer_phone") or from_phone
             direction    = "outbound"
-            if pending.get("task_id") and int(RecordingDuration or 0) > 0:
-                try:
-                    from routers.tasks import complete_task_from_call
-                    await complete_task_from_call(user_id, pending["task_id"], CallSid, int(RecordingDuration or 0))
-                except Exception as _te:
-                    logger.warning(f"[Voice] task auto-complete failed: {_te}")
+            # Task auto-complete + voicemail retry now happen AFTER the transcript says who answered (see _transcribe_and_save)
 
     # Check contact_events for inbound call that was logged
     if not user_id and CallSid:
@@ -1514,8 +1510,20 @@ async def handle_recording_complete(
             "created_at":       now,
         })
 
+        # Outbound click-to-call: voicemail / no answer -> retry task; live person -> complete the task you called from
+        if pending and direction == "outbound":
+            try:
+                from services.call_followup import detect_outcome, apply_call_outcome
+                _outcome = await detect_outcome(transcript, dur)
+                await db.call_logs.update_one({"call_sid": CallSid}, {"$set": {"outcome": _outcome}})
+                await apply_call_outcome(pending, _outcome, dur, source="transcript")
+                if _outcome != "connected":
+                    ai_summary = (f"[{'Voicemail' if _outcome == 'voicemail' else 'No answer'}] " + ai_summary).strip()
+            except Exception as _oe:
+                logger.warning(f"[Voice] call outcome handling failed: {_oe}")
+
         # Auto-extract scheduled appointments from the call ("I'll call you tomorrow at 2")
-        if transcript and user_id:
+        if transcript and user_id and not (pending and direction == "outbound" and ai_summary.startswith("[Voicemail]")):
             try:
                 from routers.tasks import extract_appointment_from_call
                 asyncio.create_task(extract_appointment_from_call(
@@ -1560,8 +1568,8 @@ async def handle_recording_complete(
             )
 
             # Update the thread message with recording + summary (so inbox shows the full call card)
-            pending = await db.pending_calls.find_one({"call_sid": CallSid})
-            conv_id_for_update = (pending or {}).get("conversation_id")
+            _pc = pending or await db.pending_calls.find_one({"call_sid": CallSid})
+            conv_id_for_update = (_pc or {}).get("conversation_id")
             if conv_id_for_update:
                 duration_label = f"{dur // 60}m {dur % 60}s" if dur >= 60 else f"{dur}s"
                 call_content = f"📱 Outbound call — {duration_label}"
@@ -1737,12 +1745,14 @@ async def call_bridge_connect(
 
     customer_phone = pending.get("customer_phone", "")
     caller_number  = pending.get("rep_twilio_number", "")
+    _app = os.environ.get('PUBLIC_FACING_URL', os.environ.get('APP_URL', 'https://app.imonsocial.com'))
     twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Say>Connecting your call now.</Say>
   <Dial callerId="{caller_number}" timeout="30"
         record="record-from-answer-dual"
-        recordingStatusCallback="{os.environ.get('PUBLIC_FACING_URL', os.environ.get('APP_URL', 'https://app.imonsocial.com'))}/api/webhooks/twilio/recording-complete"
+        action="{_app}/api/webhooks/twilio/call-bridge-result" method="POST"
+        recordingStatusCallback="{_app}/api/webhooks/twilio/recording-complete"
         recordingStatusCallbackMethod="POST">
     <Number>{customer_phone}</Number>
   </Dial>
@@ -1750,6 +1760,36 @@ async def call_bridge_connect(
 
     logger.info(f"[Voice] Press-1 confirmed — bridging {caller_number} → {customer_phone}")
     return Response(content=twiml, media_type="application/xml")
+
+
+@router.post("/call-bridge-result")
+async def call_bridge_result(
+    request: Request,
+    CallSid: str = Form(default=""),
+    DialCallStatus: str = Form(default=""),
+    DialCallDuration: str = Form(default="0"),
+    DialCallSid: str = Form(default=""),
+):
+    """<Dial action>: how the customer leg ended. busy / no-answer / failed -> retry task now;
+    completed -> the recording transcript decides voicemail vs. connected (fallback by duration if no recording)."""
+    db = get_db()
+    dur = int(DialCallDuration or 0)
+    logger.info(f"[Voice] Dial result {CallSid}: {DialCallStatus} ({dur}s)")
+    pending = await db.pending_calls.find_one({"call_sid": CallSid}) if CallSid else None
+    if pending:
+        await db.pending_calls.update_one({"_id": pending["_id"]}, {"$set": {
+            "dial_status": DialCallStatus, "dial_duration_s": dur, "customer_call_sid": DialCallSid, "dial_ended_at": datetime.now(timezone.utc)}})
+        from services.call_followup import apply_call_outcome
+        if DialCallStatus in ("busy", "no-answer", "failed", "canceled") or (DialCallStatus in ("completed", "answered") and dur < 8):
+            asyncio.create_task(apply_call_outcome(pending, "busy" if DialCallStatus == "busy" else "no_answer", dur, source="dial_status"))
+        elif DialCallStatus in ("completed", "answered"):
+            async def _fallback():
+                await asyncio.sleep(240)
+                fresh = await db.pending_calls.find_one({"_id": pending["_id"]})
+                if fresh and not fresh.get("outcome_applied"):
+                    await apply_call_outcome(fresh, "connected" if dur >= 60 else "voicemail", dur, source="duration_fallback")
+            asyncio.create_task(_fallback())
+    return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response><Hangup/></Response>', media_type="application/xml")
 
 
 @router.post("/call-cancel")

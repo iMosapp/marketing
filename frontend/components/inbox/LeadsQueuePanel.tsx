@@ -71,6 +71,14 @@ function LeadCard({ it, now, me, isManager, canClaim, colors, onClaim, onClaimCa
         </Text>
       )}
       {!!it.comments && <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 4, fontStyle: 'italic' }} numberOfLines={2}>"{it.comments}"</Text>}
+      {!!it.handoff_note?.text && (
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 6, backgroundColor: `${AMBER}14`, borderLeftWidth: 2, borderLeftColor: AMBER, paddingHorizontal: 8, paddingVertical: 5, borderRadius: 6 }} {...tid(`lead-handoff-${it.id}`)}>
+          <Ionicons name="return-down-forward" size={13} color={AMBER} style={{ marginTop: 1 }} />
+          <Text style={{ fontSize: 12, color: colors.text, flex: 1 }} numberOfLines={3}>
+            <Text style={{ fontWeight: '800', color: AMBER }}>{it.handoff_note.by_name || 'Previous rep'}: </Text>{it.handoff_note.text}
+          </Text>
+        </View>
+      )}
       {it.claimed && (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
           <Avatar photo={it.claimed_by_photo} name={it.claimed_by_name || '?'} size="sm" />
@@ -109,6 +117,8 @@ export default function LeadsQueuePanel({ userId, colors, showToast, onCounts }:
   const [reps, setReps] = useState<any[]>([]);
   const [repSearch, setRepSearch] = useState('');
   const [showAllReps, setShowAllReps] = useState(false);
+  const [releaseFor, setReleaseFor] = useState<any>(null);
+  const [handoffNote, setHandoffNote] = useState('');
   const busy = useRef(false);
 
   const load = useCallback(async () => {
@@ -157,11 +167,19 @@ export default function LeadsQueuePanel({ userId, colors, showToast, onCounts }:
     }
   };
 
-  const release = async (it: any) => {
+  const openRelease = (it: any) => {
     setMenuFor(null);
+    setHandoffNote('');
+    setReleaseFor(it);
+  };
+
+  const release = async () => {
+    const it = releaseFor;
+    if (!it) return;
+    setReleaseFor(null);
     try {
-      await api.post(`/leads/queue/${userId}/release/${it.id}`);
-      showToast?.('Back in the queue', 'success');
+      await api.post(`/leads/queue/${userId}/release/${it.id}`, { note: handoffNote.trim() });
+      showToast?.(handoffNote.trim() ? 'Back in the queue with your note' : 'Back in the queue', 'success');
       load();
     } catch (e: any) { showToast?.(e?.response?.data?.detail || 'Could not release', 'error'); }
   };
@@ -170,6 +188,7 @@ export default function LeadsQueuePanel({ userId, colors, showToast, onCounts }:
     setMenuFor(null);
     setReassignFor(it);
     setRepSearch('');
+    setHandoffNote('');
     setShowAllReps(false);
     try { const r = await api.get(`/leads/queue/${userId}/reps`); setReps(r.data.reps || []); } catch { setReps([]); }
   };
@@ -185,7 +204,7 @@ export default function LeadsQueuePanel({ userId, colors, showToast, onCounts }:
     const it = reassignFor;
     setReassignFor(null);
     try {
-      await api.post(`/leads/queue/${userId}/reassign/${it.id}`, { to_user_id: rep.user_id });
+      await api.post(`/leads/queue/${userId}/reassign/${it.id}`, { to_user_id: rep.user_id, note: handoffNote.trim() });
       showToast?.(`${it.contact_name.split(' ')[0]} moved to ${rep.name.split(' ')[0]}`, 'success');
       load();
     } catch (e: any) { showToast?.(e?.response?.data?.detail || 'Could not reassign', 'error'); }
@@ -239,7 +258,7 @@ export default function LeadsQueuePanel({ userId, colors, showToast, onCounts }:
             {[
               { k: 'open', label: 'Open thread', icon: 'chatbubble', onPress: () => { const it = menuFor; setMenuFor(null); router.push(`/thread/${it.id}` as any); } },
               ...(data.is_manager ? [{ k: 'reassign', label: 'Reassign to…', icon: 'swap-horizontal', onPress: () => openReassign(menuFor) }] : []),
-              { k: 'release', label: 'Release to queue', icon: 'arrow-undo', color: AMBER, onPress: () => release(menuFor) },
+              { k: 'release', label: 'Release to queue', icon: 'arrow-undo', color: AMBER, onPress: () => openRelease(menuFor) },
             ].map((a: any) => (
               <TouchableOpacity key={a.k} onPress={a.onPress} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13 }} {...tid(`lead-menu-${a.k}`)}>
                 <Ionicons name={a.icon} size={18} color={a.color || colors.text} />
@@ -250,11 +269,41 @@ export default function LeadsQueuePanel({ userId, colors, showToast, onCounts }:
         </Pressable>
       </Modal>
 
+      <Modal visible={!!releaseFor} transparent animationType="slide" onRequestClose={() => setReleaseFor(null)}>
+        <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' }} onPress={() => setReleaseFor(null)}>
+          <Pressable onPress={() => {}} style={{ backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, paddingBottom: 36 }} {...tid('lead-release-sheet')}>
+            <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text }}>Release {releaseFor?.contact_name?.split(' ')[0]} to the queue</Text>
+            <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>Leave one line so the next rep knows where things stand.</Text>
+            <TextInput
+              value={handoffNote}
+              onChangeText={t => setHandoffNote(t.slice(0, 200))}
+              placeholder='e.g. "Left VM twice, wants a Tahoe under 60k, best after 5"'
+              placeholderTextColor={colors.textSecondary}
+              autoFocus
+              multiline
+              style={{ marginTop: 12, minHeight: 64, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, color: colors.text, borderRadius: 12, borderWidth: 1, borderColor: `${AMBER}66`, backgroundColor: `${AMBER}0F`, textAlignVertical: 'top' }}
+              {...tid('lead-release-note')}
+            />
+            <Text style={{ fontSize: 11, color: colors.textTertiary, textAlign: 'right', marginTop: 4 }}>{handoffNote.length}/200</Text>
+            <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+              <TouchableOpacity onPress={() => setReleaseFor(null)} style={{ flex: 1, paddingVertical: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }} {...tid('lead-release-cancel')}>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={release} style={{ flex: 2, paddingVertical: 12, borderRadius: 12, backgroundColor: AMBER, alignItems: 'center' }} {...tid('lead-release-confirm')}>
+                <Text style={{ fontSize: 15, fontWeight: '800', color: '#000' }}>{handoffNote.trim() ? 'Release with note' : 'Release without note'}</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <Modal visible={!!reassignFor} transparent animationType="slide" onRequestClose={() => setReassignFor(null)}>
         <Pressable style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' }} onPress={() => setReassignFor(null)}>
           <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, paddingBottom: 36, maxHeight: '70%' }} {...tid('lead-reassign-sheet')}>
             <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text }}>Move {reassignFor?.contact_name} to…</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}>
+            <TextInput value={handoffNote} onChangeText={t => setHandoffNote(t.slice(0, 200))} placeholder="One line for the next rep (optional)" placeholderTextColor={colors.textSecondary}
+              style={{ marginTop: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 14, color: colors.text, borderRadius: 12, borderWidth: 1, borderColor: `${AMBER}66`, backgroundColor: `${AMBER}0F` }} {...tid('lead-reassign-note')} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}>
               <Ionicons name="search" size={15} color={colors.textSecondary} />
               <TextInput value={repSearch} onChangeText={setRepSearch} placeholder="Search reps" placeholderTextColor={colors.textSecondary}
                 style={{ flex: 1, paddingVertical: 9, fontSize: 14, color: colors.text }} {...tid('lead-reassign-search')} />

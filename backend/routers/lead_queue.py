@@ -204,6 +204,7 @@ async def _build_items(db, convs: list, sources_by_id: dict, now: datetime) -> l
             "waiting_since": _iso(waiting_since),
             "waiting_seconds": waiting_s,
             "heat": heat,
+            "handoff_note": ({**c["handoff_note"], "at": _iso(c["handoff_note"].get("at"))} if isinstance(c.get("handoff_note"), dict) and c["handoff_note"].get("text") else None),
             "green_m": th["timer_green_minutes"],
             "amber_m": th["timer_amber_minutes"],
             "owner_alert_at": _iso(c.get("owner_alert_at")),
@@ -380,6 +381,9 @@ async def reassign_lead(user_id: str, conv_id: str, body: ReassignBody):
         pass
     to_name, prev_name, mgr = _display_name(to_rep), _display_name(prev) or "the queue", (me.get("name") or "a manager").split()[0]
     await _system_message(db, conv_id, f"Reassigned from {prev_name} to {to_name} by {mgr}" + (f": {body.note}" if body.note else ""))
+    if (body.note or "").strip():
+        await db.conversations.update_one({"_id": conv["_id"]}, {"$set": {"handoff_note": {
+            "text": body.note.strip()[:200], "by": user_id, "by_name": mgr, "at": now, "kind": "reassign"}}})
     lead_name = conv.get("contact_name") or "a lead"
     try:
         from routers.push_notifications import send_push_to_user, LEAD_SOUND, LEAD_CHANNEL
@@ -399,45 +403,55 @@ async def reassign_lead(user_id: str, conv_id: str, body: ReassignBody):
     return {"success": True, "claimed_by": body.to_user_id, "claimed_by_name": to_name}
 
 
-async def release_to_queue(db, conv: dict, actor_id: Optional[str], reason: str) -> dict:
-    """Put a claimed lead back in the shared queue and tell the workflow reps."""
+async def release_to_queue(db, conv: dict, actor_id: Optional[str], reason: str, note: str = "") -> dict:
+    """Put a claimed lead back in the shared queue and tell the workflow reps. `note` = one-liner for the next rep."""
     now = datetime.now(timezone.utc)
     conv_id = str(conv["_id"])
     store_id = str(conv.get("store_id") or "")
     prev_id = str(conv.get("claimed_by") or "")
-    await db.conversations.update_one({"_id": conv["_id"]}, {"$set": {
-        "claimed": False, "claimed_by": None, "assigned_to": None, "user_id": store_id or conv.get("user_id"),
-        "routing_kind": "queue", "released_at": now, "released_by": actor_id, "release_reason": reason,
-        "owner_alert_at": None, "release_at": None, "updated_at": now.isoformat(),
-    }})
-    if conv.get("contact_id") and ObjectId.is_valid(str(conv["contact_id"])) and store_id:
-        await db.contacts.update_one({"_id": ObjectId(conv["contact_id"])},
-                                     {"$set": {"user_id": store_id, "claimed_by": None, "released_from": prev_id or None, "updated_at": now.isoformat()}})
+    note = (note or "").strip()[:200]
     prev = await db.users.find_one({"_id": ObjectId(prev_id)}, {"name": 1, "first_name": 1, "last_name": 1}) if ObjectId.is_valid(prev_id) else None
     actor = await db.users.find_one({"_id": ObjectId(actor_id)}, {"name": 1}) if actor_id and ObjectId.is_valid(actor_id) else None
     who = (actor or {}).get("name", "").split()[0] if actor else "Jessi"
-    await _system_message(db, conv_id, f"Released back to the lead queue by {who}" + (f" ({reason})" if reason else ""))
+    sets = {
+        "claimed": False, "claimed_by": None, "assigned_to": None, "user_id": store_id or conv.get("user_id"),
+        "routing_kind": "queue", "released_at": now, "released_by": actor_id, "release_reason": reason,
+        "owner_alert_at": None, "release_at": None, "updated_at": now.isoformat(),
+    }
+    if note:
+        sets["handoff_note"] = {"text": note, "by": actor_id, "by_name": who, "at": now, "kind": "release"}
+    await db.conversations.update_one({"_id": conv["_id"]}, {"$set": sets})
+    if conv.get("contact_id") and ObjectId.is_valid(str(conv["contact_id"])) and store_id:
+        await db.contacts.update_one({"_id": ObjectId(conv["contact_id"])},
+                                     {"$set": {"user_id": store_id, "claimed_by": None, "released_from": prev_id or None, "updated_at": now.isoformat()}})
+    await _system_message(db, conv_id, f"Released back to the lead queue by {who}" + (f" ({reason})" if reason else "") + (f' · Note for the next rep: "{note}"' if note else ""))
     lead_name = conv.get("contact_name") or "A lead"
     src = await db.lead_sources.find_one({"_id": ObjectId(conv["lead_source_id"])}) if ObjectId.is_valid(str(conv.get("lead_source_id") or "")) else None
     members = [m for m in source_member_ids(src or {}) if m != prev_id]
+    push_body = (f"{who}: \"{note}\" · Tap to claim." if note
+                 else f"{_display_name(prev) or 'Their rep'} hasn't answered this {(src or {}).get('name', 'internet')} lead. Tap to claim.")
     try:
         from routers.push_notifications import send_push_to_user, LEAD_SOUND, LEAD_CHANNEL
         for uid in members:
-            asyncio.create_task(send_push_to_user(uid, f"Up for grabs: {lead_name}",
-                                                  f"{_display_name(prev) or 'Their rep'} hasn't answered this {(src or {}).get('name', 'internet')} lead. Tap to claim.",
+            asyncio.create_task(send_push_to_user(uid, f"Up for grabs: {lead_name}", push_body,
                                                   "/(tabs)/inbox?segment=leads", "flame", sound=LEAD_SOUND, channel_id=LEAD_CHANNEL))
     except Exception:
         pass
     if members:
         await db.notifications.insert_many([{
             "user_id": uid, "type": "lead_released", "title": f"Up for grabs: {lead_name}",
-            "message": f"Back in the queue ({reason or 'released'})", "conversation_id": conv_id, "contact_id": conv.get("contact_id"),
+            "message": (f"{who}: \"{note}\"" if note else f"Back in the queue ({reason or 'released'})"),
+            "conversation_id": conv_id, "contact_id": conv.get("contact_id"),
             "read": False, "dismissed": False, "created_at": now} for uid in members])
-    return {"success": True, "released": True, "notified": len(members)}
+    return {"success": True, "released": True, "notified": len(members), "handoff_note": note or None}
+
+
+class ReleaseBody(BaseModel):
+    note: str = ""
 
 
 @router.post("/{user_id}/release/{conv_id}")
-async def release_lead(user_id: str, conv_id: str):
+async def release_lead(user_id: str, conv_id: str, body: Optional[ReleaseBody] = None):
     db = get_db()
     me = await _me(db, user_id)
     conv = await _conv(db, conv_id)
@@ -445,7 +459,8 @@ async def release_lead(user_id: str, conv_id: str):
         raise HTTPException(status_code=403, detail="Only the rep who claimed it or a manager can release it")
     if not conv.get("claimed"):
         raise HTTPException(status_code=400, detail="Lead is already in the queue")
-    return await release_to_queue(db, conv, user_id, "released by " + ("manager" if me["is_manager"] else "rep"))
+    return await release_to_queue(db, conv, user_id, "released by " + ("manager" if me["is_manager"] else "rep"),
+                                  note=(body.note if body else ""))
 
 
 # ── Scheduler jobs ────────────────────────────────────────────────────────────

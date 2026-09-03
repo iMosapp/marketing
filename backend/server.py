@@ -172,7 +172,7 @@ async def enforce_user_ownership(request: Request, call_next):
         "/api/push/status/", "/api/push/diagnose/", "/api/push/morning-brief/", "/api/leads/queue/", "/api/users/", "/api/engagement-signals/",
         "/api/ai-outreach/", "/api/broadcast/", "/api/bug-reports/",
         "/api/inventory/", "/api/keyword-rules/", "/api/wallet/",
-        "/api/relationship-health/",
+        "/api/relationship-health/", "/api/calls/",
     )
 
     matched_prefix = next((p for p in PROTECTED_PREFIXES if path.startswith(p)), None)

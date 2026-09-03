@@ -107,6 +107,20 @@ async def initiate_call(user_id: str, data: dict):
     }
 
 
+@router.post("/{user_id}/outcome")
+async def log_call_outcome(user_id: str, data: dict):
+    """Native-dialer calls: rep picks Talked / Voicemail / No answer / Busy -> same follow-up engine as Twilio calls."""
+    outcome = (data.get("outcome") or "").strip()
+    if outcome not in ("connected", "voicemail", "no_answer", "busy"):
+        raise HTTPException(status_code=400, detail="outcome must be connected, voicemail, no_answer or busy")
+    contact_id = str(data.get("contact_id") or "")
+    if not ObjectId.is_valid(contact_id):
+        raise HTTPException(status_code=400, detail="contact_id required")
+    from services.call_followup import record_manual_outcome
+    return await record_manual_outcome(user_id, contact_id, outcome, int(data.get("duration") or 0),
+                                       str(data.get("conversation_id") or ""), str(data.get("task_id") or ""))
+
+
 @router.get("/{user_id}/contact/{contact_id}")
 async def get_contact_calls(user_id: str, contact_id: str):
     """Get all call logs + recordings for a specific contact."""
