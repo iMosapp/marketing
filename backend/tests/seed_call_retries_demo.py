@@ -31,10 +31,13 @@ async def main(cmd):
                     "completed": False, "due_date": now + timedelta(hours=2), "created_at": now - timedelta(hours=3), "seed_tag": TAG}
             base.update(kw); return base
         docs = []
-        docs += [task(completed=True, status="completed", completed_via="call_connected", completed_at=now - timedelta(hours=1)) for _ in range(p["connected"])]
-        docs += [task(completed=True, status="completed", completed_via="customer_replied", completed_at=now - timedelta(hours=1), just_tried_sent_at=now - timedelta(hours=2)) for _ in range(p["replied"])]
-        docs += [task(just_tried_sent_at=now - timedelta(hours=2)) if k < (p["just_tried"] - p["replied"]) else task() for k in range(p["open"])]
-        docs += [task(auto_kind="call_retry_final", type="task", title="Seed: 6 tries, no connection") for _ in range(p["gave_up"])]
+        docs += [task(completed=True, status="completed", completed_via="call_connected", completed_at=now - timedelta(hours=1), retry_attempt=[1, 3][k % 2]) for k in range(p["connected"])]
+        docs += [task(completed=True, status="completed", completed_via="customer_replied", completed_at=now - timedelta(hours=1), retry_attempt=2,
+                      just_tried_sent_at=now - timedelta(hours=1, minutes=35)) for _ in range(p["replied"])]
+        docs += [task(retry_attempt=1, **({"just_tried_sent_at": now - timedelta(hours=2)} if k < (p["just_tried"] - p["replied"]) else {})) for k in range(p["open"])]
+        docs += [task(auto_kind="call_retry_final", type="task", title="Seed: 6 tries, no connection", retry_attempt=6) for _ in range(p["gave_up"])]
+        # a few closed-without-text misses so the with/without split has a sample
+        docs += [task(completed=True, status="completed", completed_via="manual", completed_at=now - timedelta(hours=1), retry_attempt=1) for _ in range(2)]
         await db.tasks.insert_many(docs)
     print("seeded for", list(plan), "other =", other.get("name"))
 

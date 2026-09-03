@@ -1441,6 +1441,66 @@ async def lead_response_times(
     }
 
 
+def _retry_by_attempt(tasks: list) -> list:
+    """Outcomes grouped by which miss (# attempt) the retry task was on when it closed."""
+    out: dict = {}
+    for t in tasks:
+        a = max(1, int(t.get("retry_attempt") or 1))
+        b = out.setdefault(a, {"attempt": a, "retries": 0, "connected": 0, "replied": 0, "just_tried": 0})
+        b["retries"] += 1
+        if t.get("just_tried_sent_at"):
+            b["just_tried"] += 1
+        via = t.get("completed_via") if t.get("completed") else None
+        if via == "call_connected":
+            b["connected"] += 1
+        elif via == "customer_replied":
+            b["replied"] += 1
+    return [out[k] for k in sorted(out)]
+
+
+def _retry_reach_split(tasks: list) -> tuple:
+    """(reach% with a just-tried text, n, reach% without, n) over closed retries."""
+    def _rate(sub):
+        closed = [t for t in sub if t.get("completed")]
+        reached = sum(1 for t in closed if t.get("completed_via") in ("call_connected", "customer_replied"))
+        return (int(round(100 * reached / len(closed))) if closed else None), len(closed)
+    w, nw = _rate([t for t in tasks if t.get("just_tried_sent_at")])
+    wo, nwo = _rate([t for t in tasks if not t.get("just_tried_sent_at")])
+    return w, nw, wo, nwo
+
+
+def _median_reply_minutes(tasks: list):
+    mins = []
+    for t in tasks:
+        a, b = t.get("just_tried_sent_at"), t.get("completed_at")
+        if t.get("completed_via") == "customer_replied" and isinstance(a, datetime) and isinstance(b, datetime):
+            d = (b.replace(tzinfo=None) - a.replace(tzinfo=None)).total_seconds() / 60
+            if 0 <= d <= 7 * 24 * 60:
+                mins.append(d)
+    if not mins:
+        return None
+    mins.sort()
+    return int(round(mins[len(mins) // 2]))
+
+
+def _retry_coach_tip(r: dict, tasks: list, team_best: int | None) -> str:
+    w, nw, wo, nwo = _retry_reach_split(tasks)
+    if nw >= 2 and nwo >= 2 and w is not None and wo is not None:
+        if w > wo:
+            verb = "doubles" if wo and w >= 2 * wo else "lifts"
+            return f"Texting after a miss {verb} your reach rate: {wo}% without a text, {w}% with one. Send the just-tried text every time."
+        return f"Your calls alone reach {wo}%; texts aren't adding much yet. Try texting right after miss #1 instead of later."
+    replied_by = {b["attempt"]: b["replied"] for b in _retry_by_attempt(tasks) if b["replied"]}
+    if replied_by:
+        best = max(replied_by, key=lambda k: (replied_by[k], -k))
+        return f"Most of your texts back land after miss #{best}. Send the just-tried text by then at the latest."
+    if r["misses"] and not r["just_tried"]:
+        return "No just-tried texts this period. One tap after a voicemail is the easiest way to get a reply."
+    if team_best:
+        return f"Team-wide, texts back come most often after miss #{team_best}. Text by then and you'll catch most of them."
+    return "Text right after the first voicemail. A quick just-tried text gets most replies within the hour."
+
+
 @router.get("/analytics/call-retries")
 async def call_retry_outcomes(
     request:  Request,
@@ -1461,6 +1521,7 @@ async def call_retry_outcomes(
     def _blank():
         return {"misses": 0, "voicemails": 0, "retries": 0, "connected": 0, "replied": 0, "open": 0, "gave_up": 0, "just_tried": 0}
     per: dict = {}
+    tasks_by_user: dict = {}
     async for e in db.contact_events.find({**scope, "event_type": {"$in": ["call_voicemail", "call_no_answer", "call_busy"]},
                                            "timestamp": {"$gte": since}}, {"user_id": 1, "event_type": 1}):
         r = per.setdefault(str(e.get("user_id")), _blank())
@@ -1469,15 +1530,17 @@ async def call_retry_outcomes(
             r["voicemails"] += 1
     task_q = {**scope, "auto_kind": {"$in": ["call_retry", "call_retry_final"]},
               "$or": [{"created_at": {"$gte": since}}, {"completed_at": {"$gte": since}}, {"completed": {"$ne": True}}]}
-    async for t in db.tasks.find(task_q, {"user_id": 1, "auto_kind": 1, "completed": 1, "completed_via": 1,
+    async for t in db.tasks.find(task_q, {"user_id": 1, "auto_kind": 1, "completed": 1, "completed_via": 1, "retry_attempt": 1,
                                           "completed_at": 1, "created_at": 1, "just_tried_sent_at": 1}):
-        r = per.setdefault(str(t.get("user_id")), _blank())
+        uid = str(t.get("user_id"))
+        r = per.setdefault(uid, _blank())
         created = t.get("created_at")
         in_window = isinstance(created, datetime) and (created.replace(tzinfo=created.tzinfo or timezone.utc) >= since)
         if t.get("auto_kind") == "call_retry_final":
             if in_window:
                 r["gave_up"] += 1
             continue
+        tasks_by_user.setdefault(uid, []).append(t)
         r["retries"] += 1
         if not t.get("completed"):
             r["open"] += 1
@@ -1494,16 +1557,32 @@ async def call_retry_outcomes(
         async for u in db.users.find({"_id": {"$in": oids}}, {"name": 1}):
             names[str(u["_id"])] = u.get("name", "")
 
+    all_tasks = [t for ts in tasks_by_user.values() for t in ts]
+    by_attempt = _retry_by_attempt(all_tasks)
+    replied_total = sum(b["replied"] for b in by_attempt)
+    best = max((b for b in by_attempt if b["replied"]), key=lambda b: (b["replied"], -b["attempt"]), default=None)
+    insight = {
+        "best_attempt": best["attempt"] if best else None,
+        "replied_total": replied_total,
+        "share_pct": int(round(100 * best["replied"] / replied_total)) if best else None,
+        "median_reply_minutes": _median_reply_minutes(all_tasks),
+    }
+    team_best = insight["best_attempt"]
+
     def _rate(r):
         done = r["retries"] - r["open"] + r["gave_up"]
         return int(round(100 * (r["connected"] + r["replied"]) / done)) if done else None
-    reps = [{"user_id": uid, "name": names.get(uid) or "Unknown", **r, "reach_rate": _rate(r)} for uid, r in per.items()]
+    reps = [{"user_id": uid, "name": names.get(uid) or "Unknown", **r, "reach_rate": _rate(r),
+             "tip": _retry_coach_tip(r, tasks_by_user.get(uid, []), team_best)} for uid, r in per.items()]
     reps.sort(key=lambda r: (-(r["connected"] + r["replied"]), -r["misses"]))
     totals = _blank()
     for r in per.values():
         for k in totals:
             totals[k] += r[k]
-    return {"days": days, "is_manager": is_manager, "totals": {**totals, "reach_rate": _rate(totals)}, "reps": reps}
+    mine = per.get(caller_id) or _blank()
+    return {"days": days, "is_manager": is_manager, "totals": {**totals, "reach_rate": _rate(totals)}, "reps": reps,
+            "by_attempt": by_attempt, "insight": insight,
+            "my_tip": _retry_coach_tip(mine, tasks_by_user.get(caller_id, []), team_best)}
 
 
 @router.get("/awaiting/{user_id}")
