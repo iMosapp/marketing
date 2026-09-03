@@ -2091,53 +2091,58 @@ function ThreadScreen() {
           <TouchableOpacity onPress={() => router.push(`/contact/${contactIdForNav || id}` as any)} data-testid="thread-contact-name-link">
             <Text style={[styles.headerName, { color: colors.textPrimary }]} numberOfLines={1}>{contactName}</Text>
           </TouchableOpacity>
-          {conversationStatus === 'closed' && (
+          {conversationStatus === 'closed' ? (
             <TouchableOpacity onPress={toggleConversationStatus} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
               <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: '#8E8E93' }} />
               <Text style={{ fontSize: 12, color: '#8E8E93', fontWeight: '600' }}>Closed</Text>
               <Text style={{ fontSize: 12, color: '#34C759', fontWeight: '600' }}>· Tap to Reopen</Text>
             </TouchableOpacity>
-          )}
+          ) : contactPhone ? (
+            <Text style={[styles.headerPhone, { fontSize: 13 }]} numberOfLines={1} data-testid="thread-contact-phone">{contactPhone.replace(/^\+?1?(\d{3})(\d{3})(\d{4})$/, '($1) $2-$3')}</Text>
+          ) : null}
         </View>
 
-        {/* Phone + Voice Note action icons */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginRight: 4 }}>
-          <TouchableOpacity
-            onPress={() => {
-              if (threadSearchOpen) { setThreadSearchOpen(false); setThreadSearchQuery(''); }
-              else setThreadSearchOpen(true);
-            }}
-            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: threadSearchOpen ? '#FFD60A' : colors.surface, alignItems: 'center', justifyContent: 'center' }}
-            data-testid="thread-search-btn"
-          >
-            <Ionicons name="search" size={17} color={threadSearchOpen ? '#000' : colors.accent} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => {
-              const phone = contactPhone || '';
-              const cid   = contactIdForNav || (id as string) || '';
-              if (phone) {
-                router.push({ pathname: '/call-screen', params: { phone, contact_name: contactName, contact_id: cid, conversation_id: id as string } } as any);
-              } else {
-                showSimpleAlert('No Phone', 'No phone number for this contact.');
-              }
-            }}
-            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' }}
-            data-testid="thread-call-btn"
-          >
-            <Ionicons name="call" size={17} color="#C9A962" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={isThreadRecording ? stopThreadVoiceNote : startThreadVoiceNote}
-            style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: isThreadRecording ? '#FF3B30' : colors.surface, alignItems: 'center', justifyContent: 'center' }}
-            data-testid="thread-mic-btn"
-          >
-            <Ionicons name={isThreadRecording ? 'stop' : 'mic'} size={17} color={isThreadRecording ? '#fff' : '#C9A962'} />
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity onPress={() => setShowSettings(true)} style={styles.settingsButton}>
+        <TouchableOpacity onPress={() => setShowSettings(true)} style={styles.settingsButton} data-testid="thread-more-btn">
           <Ionicons name="ellipsis-horizontal" size={24} color={colors.accent} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Quick actions live under the name so the header never crowds it out */}
+      <View style={styles.headerActions} data-testid="thread-header-actions">
+        <TouchableOpacity
+          onPress={() => {
+            if (threadSearchOpen) { setThreadSearchOpen(false); setThreadSearchQuery(''); }
+            else setThreadSearchOpen(true);
+          }}
+          style={[styles.headerActionPill, { backgroundColor: threadSearchOpen ? '#FFD60A' : colors.surface }]}
+          data-testid="thread-search-btn"
+        >
+          <Ionicons name="search" size={15} color={threadSearchOpen ? '#000' : '#C9A962'} />
+          <Text style={[styles.headerActionLabel, { color: threadSearchOpen ? '#000' : colors.textPrimary }]}>Search</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => {
+            const phone = contactPhone || '';
+            const cid   = contactIdForNav || (id as string) || '';
+            if (phone) {
+              router.push({ pathname: '/call-screen', params: { phone, contact_name: contactName, contact_id: cid, conversation_id: id as string } } as any);
+            } else {
+              showSimpleAlert('No Phone', 'No phone number for this contact.');
+            }
+          }}
+          style={[styles.headerActionPill, { backgroundColor: colors.surface }]}
+          data-testid="thread-call-btn"
+        >
+          <Ionicons name="call" size={15} color="#C9A962" />
+          <Text style={[styles.headerActionLabel, { color: colors.textPrimary }]}>Call</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={isThreadRecording ? stopThreadVoiceNote : startThreadVoiceNote}
+          style={[styles.headerActionPill, { backgroundColor: isThreadRecording ? '#FF3B30' : colors.surface }]}
+          data-testid="thread-mic-btn"
+        >
+          <Ionicons name={isThreadRecording ? 'stop' : 'mic'} size={15} color={isThreadRecording ? '#fff' : '#C9A962'} />
+          <Text style={[styles.headerActionLabel, { color: isThreadRecording ? '#fff' : colors.textPrimary }]}>{isThreadRecording ? 'Stop' : 'Voice Memo'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -3629,6 +3634,27 @@ const getStyles = (colors: any) => StyleSheet.create({
   headerPhone: {
     fontSize: 15,
     color: colors.textSecondary,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 10,
+    backgroundColor: colors.background,
+  },
+  headerActionPill: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 34,
+    borderRadius: 17,
+  },
+  headerActionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   settingsButton: {
     padding: 8,

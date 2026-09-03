@@ -574,8 +574,8 @@ export default function ContactsScreen() {
           ItemSeparatorComponent={ListSeparator}
           initialNumToRender={15}
           maxToRenderPerBatch={10}
-          windowSize={5}
-          removeClippedSubviews={Platform.OS !== 'web'}
+          windowSize={7}
+          removeClippedSubviews={false}
           onEndReached={loadMoreContacts}
           onEndReachedThreshold={0.3}
           refreshControl={
