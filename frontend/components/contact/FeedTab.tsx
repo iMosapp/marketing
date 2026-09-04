@@ -53,7 +53,7 @@ export default function FeedTab(props: any) {
             {openingInbox ? <ActivityIndicator size="small" color="#000" /> : <Ionicons name="chatbubbles" size={17} color="#000" />}
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>Open conversation in Inbox</Text>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>Open conversation in Inbox</Text>
             <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }} numberOfLines={1}>{inboxStatus}</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color="#C9A962" />
@@ -166,14 +166,14 @@ export default function FeedTab(props: any) {
                 style={{ backgroundColor: '#FF950020', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}
                 data-testid="sold-workflow-retry-btn"
               >
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#FF9500' }}>
+                <Text style={{ fontSize: 13, fontWeight: '600', color: '#FF9500' }}>
                   {contact.sold_workflow_status === 'validation_failed' ? 'Fix & Complete' : 'Retry'}
                 </Text>
               </TouchableOpacity>
             )}
           </View>
           {contact.sold_workflow_last_error && (
-            <Text style={{ fontSize: 14, color: '#FF3B30', marginTop: 6 }}>
+            <Text style={{ fontSize: 13, color: '#FF3B30', marginTop: 6 }}>
               {contact.sold_workflow_last_error}
             </Text>
           )}
@@ -358,7 +358,7 @@ export default function FeedTab(props: any) {
 
                   {/* Label + optional expanded content */}
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '500', color: colors.text }} numberOfLines={isExpanded ? undefined : 1}>
+                    <Text style={{ fontSize: 15, fontWeight: '500', color: colors.text }} numberOfLines={isExpanded ? undefined : 1}>
                       {cleanLabel}
                     </Text>
                     {isExpanded && hasDetail && (

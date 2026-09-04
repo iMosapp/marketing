@@ -91,6 +91,7 @@ export default function ContactTasksCard({ colors, userId, contactId, contact, f
   }, [load]));
 
   const featured = useMemo(() => tasks.find(t => t._id === featuredId) || tasks[0] || null, [tasks, featuredId]);
+  const [sendingJT, setSendingJT] = useState(false);
   const others = tasks.filter(t => t !== featured);
   const visibleOthers = showAll ? others : others.slice(0, 2);
   const hiddenCount = others.length - visibleOthers.length;
@@ -99,7 +100,6 @@ export default function ContactTasksCard({ colors, userId, contactId, contact, f
 
   const name = `${contact?.first_name || ''} ${contact?.last_name || ''}`.trim();
 
-  const [sendingJT, setSendingJT] = useState(false);
   const justTried = async (t: any) => {
     if (sendingJT) return;
     setSendingJT(true);
@@ -180,7 +180,7 @@ export default function ContactTasksCard({ colors, userId, contactId, contact, f
           </View>
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ fontSize: 11, fontWeight: '800', letterSpacing: 0.8, color: accent }}>{fw.overdue ? 'OVERDUE' : 'UP NEXT'}</Text>
+              <Text style={{ fontSize: 12, fontWeight: '700', letterSpacing: 0.8, color: accent }}>{fw.overdue ? 'OVERDUE' : 'UP NEXT'}</Text>
               <Text style={{ fontSize: 12, fontWeight: '700', color: fw.overdue ? RED : colors.textSecondary }} testID="contact-task-when" dataSet={{ testid: 'contact-task-when' } as any}>{fw.text}</Text>
             </View>
             <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text, marginTop: 4, lineHeight: 21 }} testID="contact-task-title" dataSet={{ testid: 'contact-task-title' } as any}>{featured.title}</Text>
@@ -239,7 +239,7 @@ export default function ContactTasksCard({ colors, userId, contactId, contact, f
               <Ionicons name={(TYPE_ICON[taskKind(t)] || 'checkbox') as any} size={14} color={w.overdue ? RED : colors.textSecondary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>{t.title}</Text>
+              <Text numberOfLines={1} style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>{t.title}</Text>
               <Text style={{ fontSize: 12, fontWeight: '700', color: w.overdue ? RED : colors.textSecondary, marginTop: 1 }}>{w.text}</Text>
             </View>
             <TouchableOpacity onPress={() => complete(t)} hitSlop={8} testID={`contact-task-check-${t._id}`} dataSet={{ testid: `contact-task-check-${t._id}` } as any}>

@@ -121,7 +121,7 @@ function ContactDetailScreen() {
       overflow: 'hidden' as const,
     },
     cardInput: {
-      fontSize: 18,
+      fontSize: 16,
       color: colors.text,
       paddingVertical: 14,
       paddingHorizontal: 16,
@@ -2553,7 +2553,7 @@ function ContactDetailScreen() {
                 <Ionicons name="checkbox-outline" size={18} color="#007AFF" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#007AFF', textTransform: 'uppercase', letterSpacing: 0.5 }}>Task</Text>
+                <Text style={{ fontSize: 12, fontWeight: '700', color: '#007AFF', textTransform: 'uppercase', letterSpacing: 0.8 }}>Task</Text>
                 <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginTop: 1 }}>{taskTitle}</Text>
               </View>
               <Text style={{ fontSize: 13, color: colors.textTertiary }}>Send below</Text>

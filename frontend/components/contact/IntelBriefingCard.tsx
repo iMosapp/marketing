@@ -50,9 +50,9 @@ function SuggestionRow({ s, colors, busy, onDecide }: any) {
     <View style={{ borderRadius: 12, borderWidth: 1, borderColor: `${AMBER}66`, backgroundColor: `${AMBER}12`, padding: 10, marginBottom: 8 }} {...tid(`intel-suggestion-${s.id}`)}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         <Ionicons name="help-circle" size={14} color={AMBER} />
-        <Text style={{ fontSize: 12, fontWeight: '800', color: AMBER, letterSpacing: 0.5 }}>JESSI NOTICED A CHANGE · from {s.source || 'texts'}</Text>
+        <Text style={{ fontSize: 12, fontWeight: '700', color: AMBER, letterSpacing: 0.8 }}>JESSI NOTICED A CHANGE · from {s.source || 'texts'}</Text>
       </View>
-      <Text style={{ fontSize: 14, color: colors.text, marginTop: 5, lineHeight: 19 }}>
+      <Text style={{ fontSize: 13, color: colors.text, marginTop: 5, lineHeight: 19 }}>
         <Text style={{ fontWeight: '700' }}>{s.label}: </Text>
         <Text style={{ color: colors.textSecondary, textDecorationLine: 'line-through' }}>{String(s.old)}</Text>
         {'  →  '}
@@ -136,7 +136,7 @@ export default function IntelBriefingCard({ colors, intelData, refreshing, onRef
           <View style={{ width: 26, height: 26, borderRadius: 8, backgroundColor: `${GOLD}20`, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="sparkles" size={14} color={GOLD} />
           </View>
-          <Text style={{ fontSize: 12, fontWeight: '800', color: GOLD, letterSpacing: 1.2 }}>RELATIONSHIP INTEL</Text>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: GOLD, letterSpacing: 0.8 }}>RELATIONSHIP INTEL</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }} testID="intel-status" dataSet={{ testid: 'intel-status' }}>
           {refreshing ? (
@@ -174,13 +174,13 @@ export default function IntelBriefingCard({ colors, intelData, refreshing, onRef
           {keyFacts.map((f, i) => (
             <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 5 }}>
               <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: GOLD, marginTop: 7 }} />
-              <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 19, flex: 1 }}>{f}</Text>
+              <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 19, flex: 1 }}>{f}</Text>
             </View>
           ))}
           {nextUp ? (
             <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 3 }}>
               <Ionicons name="flag" size={13} color={GOLD} style={{ marginTop: 3 }} />
-              <Text style={{ fontSize: 14, color: colors.text, lineHeight: 19, flex: 1, fontWeight: '500' }}>
+              <Text style={{ fontSize: 13, color: colors.text, lineHeight: 19, flex: 1, fontWeight: '500' }}>
                 <Text style={{ color: GOLD, fontWeight: '700' }}>Next: </Text>{nextUp}
               </Text>
             </View>
@@ -216,11 +216,11 @@ export default function IntelBriefingCard({ colors, intelData, refreshing, onRef
       ) : refreshing ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 }}>
           <ActivityIndicator size="small" color={GOLD} />
-          <Text style={{ fontSize: 14, color: colors.textSecondary, fontStyle: 'italic' }}>Building your briefing…</Text>
+          <Text style={{ fontSize: 13, color: colors.textSecondary, fontStyle: 'italic' }}>Building your briefing…</Text>
         </View>
       ) : (
         <View style={{ paddingTop: 8 }}>
-          <Text style={{ fontSize: 14, color: colors.textSecondary, lineHeight: 19 }}>
+          <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 19 }}>
             Intel builds itself from texts, calls, and voice notes — check back after your first interaction.
           </Text>
           <TouchableOpacity

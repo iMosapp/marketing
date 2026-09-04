@@ -31,8 +31,8 @@ export default function CallsTab({ colors, callLogs, callLogsLoading, onRefresh 
       ) : callLogs.length === 0 ? (
         <View style={{ alignItems: 'center', padding: 40 }}>
           <Ionicons name="call-outline" size={48} color={colors.textSecondary} />
-          <Text style={{ color: colors.text, fontSize: 17, fontWeight: '600', marginTop: 12 }}>No calls yet</Text>
-          <Text style={{ color: colors.textSecondary, fontSize: 14, marginTop: 4, textAlign: 'center' }}>
+          <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginTop: 12 }}>No calls yet</Text>
+          <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 4, textAlign: 'center' }}>
             Call logs and AI summaries will appear here after calls are made or received.
           </Text>
         </View>
@@ -61,7 +61,7 @@ export default function CallsTab({ colors, callLogs, callLogsLoading, onRefresh 
                 </View>
                 {!hasData && isRecent && (
                   <View style={{ backgroundColor: '#FF950015', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
-                    <Text style={{ fontSize: 10, color: '#FF9500', fontWeight: '700' }}>PROCESSING</Text>
+                    <Text style={{ fontSize: 11, color: '#FF9500', fontWeight: '700' }}>PROCESSING</Text>
                   </View>
                 )}
               </View>
@@ -69,7 +69,7 @@ export default function CallsTab({ colors, callLogs, callLogsLoading, onRefresh 
               {/* AI Summary */}
               {call.ai_summary ? (
                 <View style={{ backgroundColor: '#C9A96210', borderRadius: 10, padding: 10, marginBottom: 8, borderLeftWidth: 3, borderLeftColor: '#C9A962' }}>
-                  <Text style={{ color: '#C9A962', fontSize: 11, fontWeight: '800', marginBottom: 5, letterSpacing: 0.5 }}>AI KEY INFO</Text>
+                  <Text style={{ color: '#C9A962', fontSize: 12, fontWeight: '700', marginBottom: 5, letterSpacing: 0.8 }}>AI KEY INFO</Text>
                   <Text style={{ color: colors.text, fontSize: 13, lineHeight: 19 }}>{call.ai_summary}</Text>
                 </View>
               ) : !hasData && !isRecent ? (

@@ -103,6 +103,9 @@ export default function DetailsTab(props: any) {
       {/* Relationship Intel brief + action tracker (passed in from the screen) */}
       {header}
 
+      {/* Personal Intelligence (from voice memo extraction) */}
+      <PersonalIntelSection contactId={contactId} userId={userId} colors={colors} />
+
       {/* Voice Notes — full history, all visible */}
       <View style={[s.section, { paddingTop: 4 }]} data-testid="voice-notes-section">
           <View style={s.sectionHeaderRow}>
@@ -188,9 +191,6 @@ export default function DetailsTab(props: any) {
             </View>
           ) : null}
         </View>
-
-      {/* Personal Intelligence (from voice memo extraction) */}
-      <PersonalIntelSection contactId={contactId} userId={userId} colors={colors} />
 
       {/* Purchase History */}
       {!isNewContact && (

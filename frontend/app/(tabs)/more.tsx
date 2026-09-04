@@ -1232,7 +1232,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontWeight: '800',
   },
   partnerName: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700',
   },
   partnerPowered: {
@@ -1254,7 +1254,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 16,
   },
   title: {
-    fontSize: 34,
+    fontSize: 28,
     fontWeight: 'bold',
     color: colors.text,
   },
@@ -1278,12 +1278,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   impersonationTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
   },
   impersonationSubtitle: {
-    fontSize: 15,
+    fontSize: 13,
     color: 'rgba(255,255,255,0.8)',
     marginTop: 2,
   },
@@ -1314,7 +1314,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: '#C9A962',
   },
   onboardingBody: {
-    fontSize: 14,
+    fontSize: 13,
     color: 'rgba(255,255,255,0.75)',
     lineHeight: 20,
     marginBottom: 10,
@@ -1329,7 +1329,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   onboardingCheckText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#FF9500',
     fontWeight: '600',
   },
@@ -1344,7 +1344,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 20,
   },
   onboardingCTAText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: '#000',
   },
@@ -1432,7 +1432,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   profileAvatarText: {
     color: colors.text,
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '600',
   },
   // Profile Info
@@ -1467,7 +1467,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   profileName: {
-    fontSize: 19,
+    fontSize: 20,
     fontWeight: '700',
     color: '#FFFFFF',
     marginBottom: 1,
@@ -1477,7 +1477,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     textShadowRadius: 3,
   },
   profileTitle: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#C9A962',
     fontWeight: '600',
     textTransform: 'uppercase',
@@ -1494,7 +1494,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   recentLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     textTransform: 'uppercase' as const,
     letterSpacing: 0.8,
@@ -1542,15 +1542,15 @@ const getStyles = (colors: any) => StyleSheet.create({
   hubSearchWrap: { paddingHorizontal: 16, marginTop: 4, marginBottom: 4 },
   hubSearchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1.5 },
   hubSearchInput: { flex: 1, fontSize: 15, padding: 0 },
-  taskGridLabel: { fontSize: 13, fontWeight: '800', color: '#C9A962', letterSpacing: 0.6, textTransform: 'uppercase', marginHorizontal: 16, marginTop: 14, marginBottom: 10 },
+  taskGridLabel: { fontSize: 12, fontWeight: '700', color: '#C9A962', letterSpacing: 0.8, textTransform: 'uppercase', marginHorizontal: 16, marginTop: 14, marginBottom: 10 },
   taskGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, paddingHorizontal: 16, marginBottom: 16 },
   taskTile: { width: '48%', flexGrow: 1, borderRadius: 16, borderWidth: 1.5, padding: 14, gap: 8 },
   taskTileIcon: { width: 42, height: 42, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
-  taskTileLabel: { fontSize: 15, fontWeight: '800' },
-  taskTileSub: { fontSize: 11, marginTop: -5 },
+  taskTileLabel: { fontSize: 15, fontWeight: '700' },
+  taskTileSub: { fontSize: 12, marginTop: -4 },
   countPill: { borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2, marginRight: 8 },
   countPillText: { fontSize: 11, fontWeight: '700' },
-  adminSubLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 0.8, marginTop: 10, marginBottom: 6, marginLeft: 4 },
+  adminSubLabel: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginTop: 10, marginBottom: 6, marginLeft: 4 },
   // Section Header Card (standalone card)
   sectionHeaderCard: {
     flexDirection: 'row',
@@ -1568,8 +1568,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 12,
   },
   sectionTitleText: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     flex: 1,
   },
   // Indented child item card
@@ -1599,12 +1599,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   menuTitle: {
-    fontSize: 17,
-    fontWeight: '500',
+    fontSize: 16,
+    fontWeight: '600',
     marginBottom: 1,
   },
   menuSubtitle: {
-    fontSize: 14,
+    fontSize: 13,
   },
   notificationBadge: {
     backgroundColor: '#FF3B30',
@@ -1617,7 +1617,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   notificationBadgeText: {
     color: colors.text,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
   },
   // Legal Section
@@ -1636,11 +1636,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 6,
   },
   legalText: {
-    fontSize: 15,
+    fontSize: 13,
     color: '#6E6E73',
   },
   legalDivider: {
-    fontSize: 15,
+    fontSize: 13,
     color: colors.borderLight,
   },
   versionContainer: {
@@ -1656,7 +1656,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     height: 14,
   },
   version: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6E6E73',
   },
   themeToggleCard: {
@@ -1674,11 +1674,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 12,
   },
   themeToggleTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '600',
   },
   themeToggleSub: {
-    fontSize: 14,
+    fontSize: 13,
     marginTop: 1,
   },
   // Quick Actions
@@ -1693,9 +1693,9 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 10,
   },
   quickActionsTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
-    letterSpacing: 1.2,
+    letterSpacing: 0.8,
   },
   quickActionsGrid: {
     flexDirection: 'row',
@@ -1767,7 +1767,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   editActionBadgeText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '800',
     color: colors.text,
   },
