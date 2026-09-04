@@ -8,6 +8,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/common/Toast';
 import { copyToClipboard } from '../../utils/clipboard';
 import api from '../../services/api';
+import { FacebookRecipe } from '../../components/leads/FacebookRecipe';
 
 const GOLD = '#C9A962';
 const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
@@ -82,7 +83,7 @@ export default function LeadConnectScreen() {
   const [showKey, setShowKey] = useState(false);
   const [baseline, setBaseline] = useState<string | null | undefined>(undefined);
 
-  useEffect(() => {
+  const loadSources = useCallback(() => {
     const storeId = user?.store_id || user?._id;
     if (!storeId) return;
     api.get(`/lead-sources?store_id=${storeId}`).then(r => {
@@ -91,6 +92,7 @@ export default function LeadConnectScreen() {
       setSelected(prev => prev || list.find(x => x.is_active)?.id || list[0]?.id || null);
     }).catch(() => showToast('Could not load lead sources', 'error')).finally(() => setLoading(false));
   }, [user?._id, user?.store_id]);
+  useFocusEffect(loadSources);
 
   const refresh = useCallback(async () => {
     if (!selected) return;
@@ -141,6 +143,8 @@ export default function LeadConnectScreen() {
             )}
             <Text style={s.cardSub}>One source per feed keeps Proof honest: you will see cost per sale for each one.</Text>
           </Step>
+
+          <FacebookRecipe sources={sources} selected={selected} onSelect={setSelected} webhookUrl={info?.webhook_url} apiKey={info?.source.api_key} headerName={info?.header_name} colors={colors} onCopy={copy} />
 
           {info && (
             <>

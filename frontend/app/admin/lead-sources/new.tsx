@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '../../../store/authStore';
 import api from '../../../services/api';
 import { useToast } from '../../../components/common/Toast';
@@ -30,6 +30,7 @@ export default function NewLeadSourceScreen() {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
   const router = useRouter();
+  const prefill = useLocalSearchParams<{ name?: string; description?: string }>();
   const { user } = useAuthStore();
   const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -37,8 +38,8 @@ export default function NewLeadSourceScreen() {
   const [loadingTeams, setLoadingTeams] = useState(true);
   
   const [formData, setFormData] = useState({
-    name: '',
-    description: '',
+    name: typeof prefill.name === 'string' ? prefill.name : '',
+    description: typeof prefill.description === 'string' ? prefill.description : '',
     team_id: '',
     assignment_method: 'jump_ball' as 'jump_ball' | 'round_robin' | 'weighted_round_robin',
     is_active: true,
@@ -387,7 +388,7 @@ export default function NewLeadSourceScreen() {
         <View style={styles.infoBox}>
           <Ionicons name="information-circle" size={20} color="#007AFF" />
           <Text style={styles.infoText}>
-            After creating this lead source, you'll receive a webhook URL and API key. 
+            {"After creating this lead source, you'll receive a webhook URL and API key."} 
             Use these to send leads from external systems (RMS platforms, ad platforms, landing pages, etc.)
           </Text>
         </View>

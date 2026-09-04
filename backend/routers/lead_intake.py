@@ -1178,6 +1178,15 @@ async def receive_webhook_lead(source_id: str, request: Request):
         normalized["source_name"] = source.get("name", "")
     if str(raw.get("is_test", raw.get("test", ""))).strip().lower() in ("1", "true", "yes"):
         normalized["is_test"] = True
+    ad = {k: str(raw[k]).strip() for k in ("campaign_name", "adset_name", "ad_name", "form_name", "platform") if raw.get(k)}
+    if ad and not normalized.get("attribution"):
+        platform = ad.get("platform", "").lower()
+        network = "Instagram" if platform.startswith("ig") or "insta" in platform else "Facebook"
+        normalized["attribution"] = {
+            "kind": "ad", "source": "meta_lead_ad", "page": ad.get("form_name"),
+            "source_label": f"{network} ad: {ad['campaign_name']}" if ad.get("campaign_name") else f"{network} lead ad",
+            "campaign": ad.get("campaign_name"), "adset": ad.get("adset_name"), "ad": ad.get("ad_name"), "form": ad.get("form_name"),
+        }
 
     result = await process_inbound_lead(normalized, source, db, raw_body=body_str)
     return {"success": True, **result}
