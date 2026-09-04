@@ -53,7 +53,7 @@ export function SmartListBar({ counts, active, onSelect }: {
           <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 15, fontWeight: '800', color: allActive ? '#C9A962' : colors.text, lineHeight: 17 }}>
             {counts.all ?? '—'}
           </Text>
-          <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 10, fontWeight: '600', color: colors.textSecondary, lineHeight: 12 }}>
+          <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 11, fontWeight: '600', color: colors.textSecondary, lineHeight: 13 }}>
             All Contacts
           </Text>
         </View>
@@ -89,7 +89,7 @@ export function SmartListBar({ counts, active, onSelect }: {
               <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 15, fontWeight: '800', color: isActive ? sl.color : colors.text, lineHeight: 17 }}>
                 {count}
               </Text>
-              <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 10, fontWeight: '600', color: colors.textSecondary, lineHeight: 12 }}>
+              <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 11, fontWeight: '600', color: colors.textSecondary, lineHeight: 13 }}>
                 {sl.label.replace('\n', ' ')}
               </Text>
             </View>

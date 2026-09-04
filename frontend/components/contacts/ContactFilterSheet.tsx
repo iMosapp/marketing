@@ -10,7 +10,7 @@ const GOLD = '#C9A962';
 function Section({ title, children, colors }: any) {
   return (
     <View style={{ marginBottom: 18 }}>
-      <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 12, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.6, marginBottom: 8 }}>
+      <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 12, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.8, marginBottom: 8 }}>
         {title}
       </Text>
       {children}
@@ -39,7 +39,7 @@ function Segmented({ options, value, onChange, colors, testPrefix }: {
           testID={`${testPrefix}-${opt.key}`} dataSet={{ testid: `${testPrefix}-${opt.key}` } as any}
         >
           {opt.icon ? <Ionicons name={opt.icon as any} size={13} color={value === opt.key ? '#000' : colors.textSecondary} /> : null}
-          <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 14, fontWeight: '600', color: value === opt.key ? '#000' : colors.textSecondary }}>
+          <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 13, fontWeight: '600', color: value === opt.key ? '#000' : colors.textSecondary }}>
             {opt.label}
           </Text>
         </TouchableOpacity>
@@ -79,9 +79,9 @@ export function ContactFilterSheet({
           <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 34, maxHeight: 560 }} testID="contact-filter-sheet" dataSet={{ testid: "contact-filter-sheet" } as any}>
             <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 14 }} />
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 19, fontWeight: '800', color: colors.text }}>Filters</Text>
+              <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 17, fontWeight: '800', color: colors.text }}>Filters</Text>
               <TouchableOpacity onPress={onReset} testID="filter-reset-btn" dataSet={{ testid: "filter-reset-btn" } as any}>
-                <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 14, fontWeight: '600', color: GOLD }}>Reset</Text>
+                <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 13, fontWeight: '600', color: GOLD }}>Reset</Text>
               </TouchableOpacity>
             </View>
 
@@ -125,7 +125,7 @@ export function ContactFilterSheet({
                       onPress={() => onCrmFilter(f.key)}
                       testID={`filter-crm-${f.key}`} dataSet={{ testid: `filter-crm-${f.key}` } as any}
                     >
-                      <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 14, fontWeight: '600', color: crmFilter === f.key ? '#000' : colors.textSecondary }}>
+                      <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 13, fontWeight: '600', color: crmFilter === f.key ? '#000' : colors.textSecondary }}>
                         {f.label}
                       </Text>
                     </TouchableOpacity>
@@ -148,7 +148,7 @@ export function ContactFilterSheet({
                         testID={`filter-tag-${tag.name}`} dataSet={{ testid: `filter-tag-${tag.name}` } as any}
                       >
                         <Ionicons name={tag.icon as any} size={12} color={selectedTag === tag.name ? '#FFF' : tag.color} />
-                        <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 14, fontWeight: '600', color: selectedTag === tag.name ? '#FFF' : tag.color }}>
+                        <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 13, fontWeight: '600', color: selectedTag === tag.name ? '#FFF' : tag.color }}>
                           {tag.name}
                         </Text>
                         {tag.contact_count > 0 && (

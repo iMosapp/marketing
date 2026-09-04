@@ -53,7 +53,7 @@ export function HomeSmartBar({ items }: { items: HomeSmartItem[] }) {
             <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 15, fontWeight: '800', color: colors.text, lineHeight: 17 }}>
               {it.value}
             </Text>
-            <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 10, fontWeight: '600', color: colors.textSecondary, lineHeight: 12 }}>
+            <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 11, fontWeight: '600', color: colors.textSecondary, lineHeight: 13 }}>
               {it.label}
             </Text>
           </View>

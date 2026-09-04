@@ -190,7 +190,7 @@ function ContactRowInner({
             dataSet={{ testid: `bday-chip-${item._id}` }}
           >
             <Ionicons name="gift" size={10} color="#AF52DE" />
-            <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 10.5, fontWeight: '800', color: '#AF52DE' }}>
+            <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 11, fontWeight: '800', color: '#AF52DE' }}>
               {bd === 0 ? 'Today!' : `${bd}d`}
             </Text>
             {enrolled && <Ionicons name="notifications" size={9} color="#34C759" />}

@@ -632,9 +632,9 @@ export default function MoreScreen() {
 
   // Big "What do you want to do?" task tiles
   const taskGrid = [
-    { icon: 'megaphone', label: 'Send a Blast', sub: 'Mass text from your number', color: '#FF9500', route: '/broadcast/new' },
-    { icon: 'id-card', label: 'Share My Card', sub: 'Text your digital card', color: '#C9A962', route: '/quick-send/digitalcard' },
-    { icon: 'star', label: 'Get Reviews', sub: 'Send your review link', color: '#FFD60A', route: '/quick-send/review' },
+    { icon: 'megaphone', label: 'Send a Blast', sub: 'Mass text', color: '#FF9500', route: '/broadcast/new' },
+    { icon: 'id-card', label: 'Share My Card', sub: 'Text your card', color: '#C9A962', route: '/quick-send/digitalcard' },
+    { icon: 'star', label: 'Get Reviews', sub: 'Send review link', color: '#FFD60A', route: '/quick-send/review' },
     { icon: 'stats-chart', label: 'My Numbers', sub: 'How am I doing?', color: '#34C759', route: '/touchpoints/performance' },
     { icon: 'search', label: 'Find a Word', sub: 'Search texts & calls', color: '#32ADE6', route: '/keyword-search' },
     { icon: 'car-sport', label: 'Inventory', sub: 'What\'s on the lot', color: '#AF52DE', route: '/inventory' },
@@ -1071,7 +1071,7 @@ export default function MoreScreen() {
                 <Ionicons name={t.icon as any} size={22} color={t.color} />
               </View>
               <Text style={[styles.taskTileLabel, { color: colors.text }]}>{t.label}</Text>
-              <Text style={[styles.taskTileSub, { color: colors.textTertiary }]}>{t.sub}</Text>
+              <Text style={[styles.taskTileSub, { color: colors.textTertiary }]} numberOfLines={1}>{t.sub}</Text>
             </TouchableOpacity>
           ))}
         </View>

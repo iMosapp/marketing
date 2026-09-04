@@ -46,7 +46,7 @@ export function ReplyHealthCard({ userId }: { userId: string }) {
         <Ionicons name="warning" size={17} color={AMBER} />
       </View>
       <View style={{ flex: 1 }}>
-        <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 14.5, fontWeight: '800', color: AMBER }}>
+        <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 15, fontWeight: '800', color: AMBER }}>
           {title}
         </Text>
         <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 12, color: '#8E8E93', marginTop: 1 }} numberOfLines={1}>

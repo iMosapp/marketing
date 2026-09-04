@@ -1057,7 +1057,7 @@ export default function InboxScreen() {
               {isHot && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#FF3B3015', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: '#FF3B3030' }}>
                   <Ionicons name="flame" size={11} color="#FF3B30" />
-                  <Text style={{ fontSize: 10, fontWeight: '800', color: '#FF3B30', letterSpacing: 0.3 }}>HOT</Text>
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: '#FF3B30', letterSpacing: 0.3 }}>HOT</Text>
                 </View>
               )}
               {item.is_internet_lead && item.awaiting_first_reply && item.status !== 'closed' && (
@@ -1111,7 +1111,7 @@ export default function InboxScreen() {
                 data-testid={`ai-mode-toggle-${item._id}`}
               >
                 <Ionicons name={icon as any} size={10} color={fg} />
-                <Text style={{ fontSize: 10, fontWeight: '700', color: fg, letterSpacing: 0.3 }}>{label}</Text>
+                <Text style={{ fontSize: 11, fontWeight: '700', color: fg, letterSpacing: 0.3 }}>{label}</Text>
               </TouchableOpacity>
             );
           })()}
@@ -1169,7 +1169,7 @@ export default function InboxScreen() {
                         data-testid={`take-over-btn-${item._id}`}
                       >
                         <Ionicons name="person" size={10} color="#fff" />
-                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#fff' }}>Take Over</Text>
+                        <Text style={{ fontSize: 11, fontWeight: '800', color: '#fff' }}>Take Over</Text>
                       </TouchableOpacity>
                     )}
                     {/* Re-enable Jessi: shown when AI is already off but badge still active */}
@@ -1184,7 +1184,7 @@ export default function InboxScreen() {
                         data-testid={`reenable-jessi-btn-${item._id}`}
                       >
                         <Ionicons name="sparkles" size={10} color="#34C759" />
-                        <Text style={{ fontSize: 10, fontWeight: '800', color: '#34C759' }}>Re-enable Jessi</Text>
+                        <Text style={{ fontSize: 11, fontWeight: '800', color: '#34C759' }}>Re-enable Jessi</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -1211,7 +1211,7 @@ export default function InboxScreen() {
                     dataSet={{ testid: `all-good-btn-${item._id}` } as any}
                   >
                     <Ionicons name="checkmark" size={11} color="#000" />
-                    <Text style={{ fontSize: 10, fontWeight: '800', color: '#000' }}>All Good</Text>
+                    <Text style={{ fontSize: 11, fontWeight: '800', color: '#000' }}>All Good</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -1300,7 +1300,7 @@ export default function InboxScreen() {
                   }}>
                     <Ionicons name={action.icon as any} size={18} color={action.color} />
                   </View>
-                  <Text style={{ fontSize: 10, fontWeight: '600', color: action.color === colors.textSecondary ? colors.textSecondary : action.color }}>
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: action.color === colors.textSecondary ? colors.textSecondary : action.color }}>
                     {action.label}
                   </Text>
                 </TouchableOpacity>
@@ -1508,7 +1508,7 @@ export default function InboxScreen() {
                   <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: action.color + '18', alignItems: 'center', justifyContent: 'center' }}>
                     <Ionicons name={action.icon as any} size={18} color={action.color} />
                   </View>
-                  <Text style={{ fontSize: 10, fontWeight: '600', color: action.color }}>{action.label}</Text>
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: action.color }}>{action.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -1787,7 +1787,7 @@ export default function InboxScreen() {
                     <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 15, fontWeight: '800', lineHeight: 17, color: isActive ? activeColor : colors.textPrimary }}>
                       {count > 99 ? '99+' : count}
                     </Text>
-                    <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 10, fontWeight: '600', lineHeight: 12, color: colors.textSecondary }}>
+                    <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 11, fontWeight: '600', lineHeight: 13, color: colors.textSecondary }}>
                       {label}
                     </Text>
                   </View>
@@ -2171,7 +2171,7 @@ export default function InboxScreen() {
               New Task
             </Text>
             <TouchableOpacity onPress={handleSubmitTask} disabled={taskSaving} data-testid="task-modal-save">
-              <Text style={{ fontSize: 18, fontWeight: '600', color: taskSaving ? colors.textTertiary : '#007AFF' }}>
+              <Text style={{ fontSize: 17, fontWeight: '600', color: taskSaving ? colors.textTertiary : '#007AFF' }}>
                 {taskSaving ? 'Saving...' : 'Save'}
               </Text>
             </TouchableOpacity>
@@ -2266,7 +2266,7 @@ export default function InboxScreen() {
                 );
               })}
             </View>
-            <Text style={{ fontSize: 14, color: colors.textTertiary, marginTop: 4, marginBottom: 12 }}>
+            <Text style={{ fontSize: 13, color: colors.textTertiary, marginTop: 4, marginBottom: 12 }}>
               Due: {format(taskDueDate, 'EEE, MMM d \'at\' h:mm a')}
             </Text>
 
@@ -2331,7 +2331,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#007AFF30',
   },
   modeIndicatorText: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '500',
     color: '#007AFF',
   },
@@ -2374,7 +2374,7 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS_DARK.border,
   },
   selectionCount: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: COLORS_DARK.textPrimary,
     letterSpacing: -0.2,
@@ -2407,7 +2407,7 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    fontSize: 17,
+    fontSize: 16,
     color: COLORS.textPrimary,
     letterSpacing: -0.1,
     paddingVertical: 0,
@@ -2448,7 +2448,7 @@ const styles = StyleSheet.create({
   },
   filterText: {
     color: COLORS.textSecondary,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     letterSpacing: 0.2,
   },
@@ -2474,7 +2474,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   tabLabel: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '500',
     letterSpacing: 0.2,
     textAlign: 'center',
@@ -2489,7 +2489,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   tabBadgeText: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '700',
   },
   imosLogoFilter: {
@@ -2677,7 +2677,7 @@ const styles = StyleSheet.create({
     minWidth: 0, // Important for text truncation
   },
   contactName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: COLORS.textPrimary,
     letterSpacing: -0.2,
@@ -2703,7 +2703,7 @@ const styles = StyleSheet.create({
     flexShrink: 0, // Don't shrink the tag
   },
   aiOutcomeTagText: {
-    fontSize: 8,
+    fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.2,
     textTransform: 'uppercase',
@@ -2723,7 +2723,7 @@ const styles = StyleSheet.create({
   
   // Timestamp & Message
   timestamp: {
-    fontSize: 15,
+    fontSize: 13,
     color: COLORS.textSecondary,
     fontWeight: '500',
     flexShrink: 0,
@@ -2734,7 +2734,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   messageText: {
-    fontSize: 16,
+    fontSize: 15,
     color: COLORS.textSecondary,
     letterSpacing: -0.1,
   },
@@ -2823,14 +2823,14 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   emptyTitle: {
-    fontSize: 21,
+    fontSize: 17,
     fontWeight: '700',
     color: COLORS.textPrimary,
     marginBottom: 8,
     letterSpacing: -0.3,
   },
   emptySubtext: {
-    fontSize: 17,
+    fontSize: 15,
     color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 22,
@@ -2846,7 +2846,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
     letterSpacing: -0.1,
@@ -2867,12 +2867,12 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
   },
   modalCancel: {
-    fontSize: 18,
+    fontSize: 17,
     color: COLORS.accent,
     fontWeight: '500',
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: COLORS.textPrimary,
     letterSpacing: -0.2,
@@ -2894,7 +2894,7 @@ const styles = StyleSheet.create({
   modalSearchInput: {
     flex: 1,
     paddingVertical: 12,
-    fontSize: 18,
+    fontSize: 16,
     color: COLORS.textPrimary,
   },
   modalSeparator: {
@@ -2926,7 +2926,7 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   contactAvatarText: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '600',
     color: COLORS.textPrimary,
   },
@@ -2934,13 +2934,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contactNameModal: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: COLORS.textPrimary,
     letterSpacing: -0.2,
   },
   contactPhone: {
-    fontSize: 16,
+    fontSize: 13,
     color: COLORS.textSecondary,
     marginTop: 2,
   },
@@ -2976,13 +2976,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   phoneNumberLabel: {
-    fontSize: 14,
+    fontSize: 13,
     color: COLORS.textSecondary,
     fontWeight: '500',
     letterSpacing: 0.2,
   },
   phoneNumberValue: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: COLORS.success,
     letterSpacing: -0.2,
@@ -3005,13 +3005,13 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   restrictedTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
     color: COLORS.textPrimary,
     marginBottom: 12,
   },
   restrictedText: {
-    fontSize: 18,
+    fontSize: 15,
     color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
@@ -3031,7 +3031,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   restrictedButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -3101,7 +3101,7 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   leadSourceTagText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '600',
     color: '#5856D6',
     textTransform: 'uppercase',
@@ -3118,7 +3118,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   teamBadgeText: {
-    fontSize: 13,
+    fontSize: 12,
     color: COLORS_DARK.textSecondary,
   },
   claimedBadge: {
@@ -3167,7 +3167,7 @@ const styles = StyleSheet.create({
     width: 36, height: 36, borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginRight: 12,
   },
   swipeTagName: {
-    flex: 1, fontSize: 18, fontWeight: '500', color: '#000000',
+    flex: 1, fontSize: 16, fontWeight: '500', color: '#000000',
   },
   // Quick Task modal styles
   taskLabel: {
@@ -3183,7 +3183,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 13,
-    fontSize: 18,
+    fontSize: 16,
     marginBottom: 16,
   },
   taskTypeRow: {
@@ -3202,7 +3202,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   taskTypeText: {
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '600',
     color: '#8E8E93',
   },

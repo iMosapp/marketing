@@ -456,7 +456,7 @@ export default function ContactsScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
             <Text maxFontSizeMultiplier={1.0} style={[styles.title, { color: colors.text }]}>Contacts</Text>
             {totalContacts > 0 && (
-              <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 14, fontWeight: '600', color: colors.textTertiary }} testID="contacts-total-count" dataSet={{ testid: "contacts-total-count" } as any}>
+              <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 13, fontWeight: '600', color: colors.textTertiary }} testID="contacts-total-count" dataSet={{ testid: "contacts-total-count" } as any}>
                 {totalContacts}
               </Text>
             )}
@@ -509,7 +509,7 @@ export default function ContactsScreen() {
                 backgroundColor: GOLD, borderRadius: 8, minWidth: 15, height: 15,
                 alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3,
               }}>
-                <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 10, fontWeight: '800', color: '#000' }}>{activeFilterCount}</Text>
+                <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 11, fontWeight: '800', color: '#000' }}>{activeFilterCount}</Text>
               </View>
             )}
           </View>
@@ -643,11 +643,11 @@ export default function ContactsScreen() {
           <TouchableOpacity activeOpacity={1} onPress={() => {}}>
             <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 34 }} testID="bulk-crm-sheet" dataSet={{ testid: "bulk-crm-sheet" } as any}>
               <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: 'center', marginBottom: 16 }} />
-              <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 19, fontWeight: '800', color: colors.text }}>Push {selectedIds.size} Contact{selectedIds.size === 1 ? '' : 's'} to CRM</Text>
+              <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 17, fontWeight: '800', color: colors.text }}>Push {selectedIds.size} Contact{selectedIds.size === 1 ? '' : 's'} to CRM</Text>
               <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4, lineHeight: 18 }}>
                 Each contact is sent as its own industry-standard ADF/XML lead to your CRM&apos;s intake address.
               </Text>
-              <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginTop: 16, marginBottom: 6, letterSpacing: 0.4 }}>CRM INTAKE EMAIL</Text>
+              <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginTop: 16, marginBottom: 6, letterSpacing: 0.8 }}>CRM INTAKE EMAIL</Text>
               <TextInput
                 maxFontSizeMultiplier={1.0}
                 value={bulkEmail}
@@ -700,7 +700,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   selectHeaderTitle: {
     flex: 1,
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
   },
   headerButtons: {
@@ -712,7 +712,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
   },
   searchContainer: {
@@ -749,13 +749,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 24,
   },
   emptyText: {
-    fontSize: 21,
+    fontSize: 17,
     fontWeight: '600',
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtext: {
-    fontSize: 16,
+    fontSize: 15,
     textAlign: 'center',
   },
   importButton: {
@@ -769,7 +769,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   importButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -789,12 +789,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 24,
   },
   restrictedTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
     marginBottom: 12,
   },
   restrictedText: {
-    fontSize: 18,
+    fontSize: 15,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 32,
@@ -810,7 +810,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   restrictedButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#007AFF',
   },

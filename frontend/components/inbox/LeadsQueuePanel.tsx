@@ -302,11 +302,11 @@ export default function LeadsQueuePanel({ userId, colors, showToast, onCounts }:
           <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, paddingBottom: 36, maxHeight: '70%' }} {...tid('lead-reassign-sheet')}>
             <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text }}>Move {reassignFor?.contact_name} to…</Text>
             <TextInput value={handoffNote} onChangeText={t => setHandoffNote(t.slice(0, 200))} placeholder="One line for the next rep (optional)" placeholderTextColor={colors.textSecondary}
-              style={{ marginTop: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 14, color: colors.text, borderRadius: 12, borderWidth: 1, borderColor: `${AMBER}66`, backgroundColor: `${AMBER}0F` }} {...tid('lead-reassign-note')} />
+              style={{ marginTop: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 15, color: colors.text, borderRadius: 12, borderWidth: 1, borderColor: `${AMBER}66`, backgroundColor: `${AMBER}0F` }} {...tid('lead-reassign-note')} />
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}>
               <Ionicons name="search" size={15} color={colors.textSecondary} />
               <TextInput value={repSearch} onChangeText={setRepSearch} placeholder="Search reps" placeholderTextColor={colors.textSecondary}
-                style={{ flex: 1, paddingVertical: 9, fontSize: 14, color: colors.text }} {...tid('lead-reassign-search')} />
+                style={{ flex: 1, paddingVertical: 9, fontSize: 15, color: colors.text }} {...tid('lead-reassign-search')} />
             </View>
             {!repSearch && reps.some(r => r.on_workflow) && (
               <TouchableOpacity onPress={() => setShowAllReps(v => !v)} style={{ paddingVertical: 8 }} {...tid('lead-reassign-toggle-all')}>

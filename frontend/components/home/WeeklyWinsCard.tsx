@@ -45,7 +45,7 @@ export function WeeklyWinsCard({ userId, forceShow }: { userId: string; forceSho
         <View style={{ width: 26, height: 26, borderRadius: 8, backgroundColor: `${GOLD}20`, alignItems: 'center', justifyContent: 'center' }}>
           <Ionicons name="sparkles" size={14} color={GOLD} />
         </View>
-        <Text style={{ fontSize: 12, fontWeight: '800', color: GOLD, letterSpacing: 1.2 }}>LAST WEEK'S WINS</Text>
+        <Text style={{ fontSize: 12, fontWeight: '700', color: GOLD, letterSpacing: 0.8 }}>LAST WEEK'S WINS</Text>
       </View>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         {stats.map(s => (
@@ -57,8 +57,8 @@ export function WeeklyWinsCard({ userId, forceShow }: { userId: string; forceSho
             onPress={() => router.push(`/weekly-wins-list?type=${s.key}` as any)}
           >
             <Ionicons name={s.icon as any} size={16} color={s.color} />
-            <Text style={{ fontSize: 18, fontWeight: '800', color: '#FFF' }}>{s.value}</Text>
-            <Text style={{ fontSize: 10, fontWeight: '600', color: '#8E8E93', letterSpacing: 0.3 }}>{s.label}</Text>
+            <Text style={{ fontSize: 17, fontWeight: '800', color: '#FFF' }}>{s.value}</Text>
+            <Text style={{ fontSize: 11, fontWeight: '600', color: '#8E8E93', letterSpacing: 0.3 }}>{s.label}</Text>
           </TouchableOpacity>
         ))}
       </View>

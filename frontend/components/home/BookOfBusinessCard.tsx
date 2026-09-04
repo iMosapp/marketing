@@ -38,7 +38,7 @@ export const BookOfBusinessCard = ({ userId }: { userId: string }) => {
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text }}>Your Book of Business</Text>
+          <Text style={{ fontSize: 17, fontWeight: '800', color: colors.text }}>Your Book of Business</Text>
           <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
             {summary.total} relationships · {summary.needs_attention} need attention
           </Text>
@@ -49,7 +49,7 @@ export const BookOfBusinessCard = ({ userId }: { userId: string }) => {
         {(summary.buckets || []).map((b: any) => (
           <View key={b.key} style={{ flex: 1, alignItems: 'center', backgroundColor: `${b.color}14`, borderRadius: 12, paddingVertical: 10, gap: 2 }}>
             <Text style={{ fontSize: 20, fontWeight: '900', color: b.color }}>{b.count}</Text>
-            <Text style={{ fontSize: 10, fontWeight: '700', color: colors.textSecondary }} numberOfLines={1}>{b.label}</Text>
+            <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSecondary }} numberOfLines={1}>{b.label}</Text>
           </View>
         ))}
       </View>

@@ -333,8 +333,8 @@ export default function ActivityTab() {
             <View style={[s.emptyIcon, { backgroundColor: colors.surface }]}>
               <Ionicons name="pulse-outline" size={32} color={colors.textTertiary} />
             </View>
-            <Text style={[{ fontSize: 18, fontWeight: '700', color: colors.textSecondary }]}>No activity yet</Text>
-            <Text style={[{ fontSize: 14, marginTop: 4, textAlign: 'center', paddingHorizontal: 40, color: colors.textTertiary }]}>
+            <Text style={[{ fontSize: 16, fontWeight: '700', color: colors.textSecondary }]}>No activity yet</Text>
+            <Text style={[{ fontSize: 13, marginTop: 4, textAlign: 'center', paddingHorizontal: 40, color: colors.textTertiary }]}>
               Share your card or send a message to get started
             </Text>
           </View>
@@ -385,12 +385,12 @@ const s = StyleSheet.create({
   root: { flex: 1 },
   header: { paddingHorizontal: 16, paddingBottom: 6 },
   headerTitle: { fontSize: 28, fontWeight: '800' },
-  headerSub: { fontSize: 14, marginTop: 2 },
+  headerSub: { fontSize: 13, marginTop: 2 },
 
   // Date dividers
   dateRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12 },
   dateLine: { flex: 1, height: 1 },
-  dateText: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.2 },
+  dateText: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 },
 
   // Single event card (compact)
   singleCard: { marginHorizontal: 12, marginBottom: 6, borderRadius: 14, overflow: 'hidden' },
@@ -399,7 +399,7 @@ const s = StyleSheet.create({
   // Grouped contact card
   groupCard: { marginHorizontal: 12, marginBottom: 14, borderRadius: 18, overflow: 'hidden' },
   groupHeader: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingTop: 14, paddingBottom: 10 },
-  groupName: { fontSize: 17, fontWeight: '700' },
+  groupName: { fontSize: 16, fontWeight: '700' },
   groupPhotoWrap: { paddingHorizontal: 12, marginBottom: 4 },
   vehicleTag: { flexDirection: 'row', alignItems: 'center', marginTop: 4, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, alignSelf: 'flex-start' },
 
@@ -407,13 +407,13 @@ const s = StyleSheet.create({
   touchList: { marginHorizontal: 14, marginBottom: 10, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 4 },
   touchRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
   touchDot: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  touchLabel: { flex: 1, fontSize: 14, marginLeft: 10 },
+  touchLabel: { flex: 1, fontSize: 13, marginLeft: 10 },
   touchTime: { fontSize: 12, marginLeft: 8 },
 
   // Milestone Card (standalone)
   mileCard: { marginHorizontal: 12, marginBottom: 10, borderRadius: 16, borderWidth: 1, flexDirection: 'row', alignItems: 'center', padding: 14, borderStyle: 'dashed' },
   mileIcon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  mileLabel: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
+  mileLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8 },
   mileName: { fontSize: 16, fontWeight: '700', marginTop: 2 },
 
   // Empty
