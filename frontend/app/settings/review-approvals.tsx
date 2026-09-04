@@ -342,9 +342,9 @@ const styles = (colors: any) => StyleSheet.create({
   pageChipText:{ fontSize: 13, fontWeight: '500' },
   btnRow:      { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 4 },
   rejectBtn:   { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  rejectTxt:   { fontSize: 14, color: '#FF3B30', fontWeight: '600' },
+  rejectTxt:   { fontSize: 15, color: '#FF3B30', fontWeight: '600' },
   platformBadge:{ width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
   empty:       { alignItems: 'center', paddingTop: 60, gap: 10 },
-  emptyTitle:  { fontSize: 18, fontWeight: '700', color: colors.text },
+  emptyTitle:  { fontSize: 17, fontWeight: '700', color: colors.text },
   emptyBody:   { fontSize: 15, color: colors.textSecondary, textAlign: 'center', maxWidth: 280 },
 });

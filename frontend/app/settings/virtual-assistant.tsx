@@ -381,7 +381,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   header:             { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   backBtn:            { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
   editBtn:            { width: 36, height: 36, borderRadius: 18, backgroundColor: '#C9A96220', alignItems: 'center', justifyContent: 'center' },
-  headerTitle:        { fontSize: 18, fontWeight: '700', color: colors.text },
+  headerTitle:        { fontSize: 17, fontWeight: '700', color: colors.text },
   content:            { padding: 20, paddingBottom: 60 },
 
   // Identity
@@ -389,17 +389,17 @@ const getStyles = (colors: any) => StyleSheet.create({
   avatarWrap:         { position: 'relative' },
   avatar:             { width: 54, height: 54, borderRadius: 27, borderWidth: 2, borderColor: '#C9A962' },
   avatarFallback:     { backgroundColor: '#C9A96240', alignItems: 'center', justifyContent: 'center' },
-  avatarInitials:     { fontSize: 22, fontWeight: '800', color: '#C9A962' },
+  avatarInitials:     { fontSize: 20, fontWeight: '800', color: '#C9A962' },
   statusDot:          { position: 'absolute', bottom: 1, right: 1, width: 14, height: 14, borderRadius: 7, borderWidth: 2, borderColor: colors.card },
-  vaName:             { fontSize: 17, fontWeight: '700', color: colors.text, marginBottom: 3 },
+  vaName:             { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 3 },
   vaSubtitle:         { fontSize: 13, color: colors.textSecondary },
   paBadge:            { backgroundColor: '#C9A96225', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: '#C9A962' },
-  paBadgeText:        { fontSize: 10, fontWeight: '800', color: '#C9A962', letterSpacing: 0.8 },
+  paBadgeText:        { fontSize: 11, fontWeight: '800', color: '#C9A962', letterSpacing: 0.8 },
 
   // Completeness
   completenessCard:   { backgroundColor: colors.card, borderRadius: 14, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: colors.border },
   completenessRow:    { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  completenessTitle:  { fontSize: 14, fontWeight: '600', color: colors.text, flex: 1, marginRight: 8 },
+  completenessTitle:  { fontSize: 15, fontWeight: '600', color: colors.text, flex: 1, marginRight: 8 },
   completenessScore:  { fontSize: 20, fontWeight: '800' },
   progressTrack:      { height: 8, backgroundColor: colors.border, borderRadius: 4, overflow: 'hidden', marginBottom: 8 },
   progressFill:       { height: '100%', borderRadius: 4 },
@@ -408,7 +408,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   // Section
   section:            { marginBottom: 24 },
   sectionTitle:       { fontSize: 17, fontWeight: '700', color: colors.text, marginBottom: 6 },
-  sectionSub:         { fontSize: 14, color: colors.textSecondary, marginBottom: 14 },
+  sectionSub:         { fontSize: 13, color: colors.textSecondary, marginBottom: 14 },
 
   // Chips
   chipsRow:           { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -424,9 +424,9 @@ const getStyles = (colors: any) => StyleSheet.create({
   emptySection:       { backgroundColor: colors.card, borderRadius: 12, padding: 14, marginTop: 8, borderWidth: 1, borderColor: colors.border },
   emptySectionTitle:  { fontSize: 13, color: colors.textSecondary, marginBottom: 10 },
   emptyRow:           { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 },
-  emptyLabel:         { fontSize: 14, color: colors.textSecondary },
+  emptyLabel:         { fontSize: 13, color: colors.textSecondary },
   addInfoBtn:         { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12, alignSelf: 'flex-start', backgroundColor: '#C9A96218', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8 },
-  addInfoBtnText:     { fontSize: 14, fontWeight: '600', color: '#C9A962' },
+  addInfoBtnText:     { fontSize: 13, fontWeight: '600', color: '#C9A962' },
 
   // Preview
   scenarioPill:       { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.card, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 9, borderWidth: 1.5, borderColor: '#C9A96240', marginBottom: 14 },
@@ -437,12 +437,12 @@ const getStyles = (colors: any) => StyleSheet.create({
   customerBubbleLabel:{ fontSize: 11, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 5 },
   customerBubbleText: { fontSize: 15, color: colors.text, lineHeight: 21, fontStyle: 'italic' },
   generateBtn:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#C9A962', borderRadius: 14, padding: 16 },
-  generateBtnText:    { fontSize: 17, fontWeight: '700', color: '#000' },
+  generateBtnText:    { fontSize: 16, fontWeight: '700', color: '#000' },
 
   replyWrap:          { marginTop: 16 },
   replyHeader:        { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
   replyAvatar:        { width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: '#C9A962', backgroundColor: '#C9A96240', alignItems: 'center', justifyContent: 'center' },
-  replyName:          { fontSize: 14, fontWeight: '700', color: colors.text },
+  replyName:          { fontSize: 15, fontWeight: '700', color: colors.text },
   replyMeta:          { fontSize: 12, color: '#C9A962' },
   replyBubble:        { backgroundColor: '#C9A96220', borderRadius: 16, borderTopLeftRadius: 4, padding: 16, borderWidth: 1, borderColor: '#C9A96240' },
   replyText:          { fontSize: 16, color: colors.text, lineHeight: 23 },
@@ -451,9 +451,9 @@ const getStyles = (colors: any) => StyleSheet.create({
   // Info box
   infoBox:            { backgroundColor: '#C9A96210', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: '#C9A96230', alignItems: 'center' },
   infoTitle:          { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 8 },
-  infoText:           { fontSize: 14, color: colors.textSecondary, lineHeight: 21, textAlign: 'center' },
+  infoText:           { fontSize: 13, color: colors.textSecondary, lineHeight: 21, textAlign: 'center' },
 
   // Edit CTA
   editProfileBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#C9A962', borderRadius: 14, padding: 17, marginTop: 8 },
-  editProfileBtnText: { fontSize: 17, fontWeight: '700', color: '#000' },
+  editProfileBtnText: { fontSize: 16, fontWeight: '700', color: '#000' },
 });

@@ -518,7 +518,7 @@ export default function InviteTeamScreen() {
               <Ionicons name="chatbubble-outline" size={18} color={sendSms ? '#34C759' : colors.textSecondary} />
               <View>
                 <Text style={[styles.inputLabel, { marginBottom: 0 }]}>Text activation steps</Text>
-                <Text style={{ fontSize: 14, color: colors.textSecondary }}>App links + "Activate my account" instructions via text</Text>
+                <Text style={{ fontSize: 13, color: colors.textSecondary }}>App links + "Activate my account" instructions via text</Text>
               </View>
             </View>
             <View style={[styles.toggle, sendSms && styles.toggleActive]}>
@@ -610,7 +610,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
@@ -630,7 +630,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
@@ -673,7 +673,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    fontSize: 18,
+    fontSize: 16,
     color: colors.text,
     paddingVertical: 14,
   },
@@ -706,7 +706,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   roleOptionText: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textSecondary,
   },
@@ -714,7 +714,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   roleDesc: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6E6E73',
     marginTop: 1,
   },
@@ -747,7 +747,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   sendButtonText: {
     color: colors.text,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
   },
   emptyText: {
@@ -782,7 +782,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   memberName: {
     color: colors.text,
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '500',
   },
   memberEmail: {
@@ -796,7 +796,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
   },
   roleBadgeText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
   },
   deleteButton: {
@@ -860,7 +860,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   copyButtonText: {
     color: colors.text,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
   },
   newInviteButton: {

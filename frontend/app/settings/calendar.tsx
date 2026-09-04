@@ -384,7 +384,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
@@ -422,7 +422,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   cardTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
@@ -490,11 +490,11 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   calendarName: {
     flex: 1,
-    fontSize: 18,
+    fontSize: 16,
     color: colors.text,
   },
   primaryBadge: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textSecondary,
     marginRight: 8,
     backgroundColor: '#3C3C3E',

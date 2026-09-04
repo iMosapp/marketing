@@ -244,7 +244,7 @@ export const MessageBubble = ({
             {item.auto_tags.map((t: string) => (
               <View key={t} style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#5856D620', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 }}>
                 <Ionicons name="pricetag" size={9} color="#5856D6" />
-                <Text style={{ fontSize: 10, color: '#5856D6', fontWeight: '600' }}>{t}</Text>
+                <Text style={{ fontSize: 11, color: '#5856D6', fontWeight: '600' }}>{t}</Text>
               </View>
             ))}
           </View>

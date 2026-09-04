@@ -221,7 +221,7 @@ export default function KeywordRulesScreen() {
               <Text style={styles.sectionTitle}>THIS WEEK</Text>
               <View style={styles.insightsCard} data-testid="keyword-insights-card">
                 <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <Text style={{ fontSize: 22, fontWeight: '800', color: colors.text }}>
+                  <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text }}>
                     {insights.total_this_week}
                     <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary }}>  keyword hit{insights.total_this_week === 1 ? '' : 's'}</Text>
                   </Text>
@@ -278,7 +278,7 @@ export default function KeywordRulesScreen() {
                     );
                   })}
                 </View>
-                <Text style={{ fontSize: 10, color: colors.textTertiary, marginTop: 5, textAlign: 'right' }}>Last 8 weeks · this week in purple</Text>
+                <Text style={{ fontSize: 11, color: colors.textTertiary, marginTop: 5, textAlign: 'right' }}>Last 8 weeks · this week in purple</Text>
               </View>
             </>
           )}
@@ -444,7 +444,7 @@ export default function KeywordRulesScreen() {
 
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <View style={{ flex: 1, marginRight: 12 }}>
-                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>Instant alert</Text>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>Instant alert</Text>
                 <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>Push notification the moment a customer says or texts this</Text>
               </View>
               <Switch
@@ -477,7 +477,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
   backBtn: { padding: 4 },
-  headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: colors.text, marginLeft: 6 },
+  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.text, marginLeft: 6 },
   addBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#5856D6', alignItems: 'center', justifyContent: 'center' },
   loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   explainer: { flexDirection: 'row', gap: 10, backgroundColor: '#5856D615', borderRadius: 12, padding: 12, margin: 16, alignItems: 'flex-start' },
@@ -493,12 +493,12 @@ const getStyles = (colors: any) => StyleSheet.create({
   iconBtn: { padding: 6 },
   eventRow: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: colors.card, borderRadius: 12, padding: 12, marginHorizontal: 16, marginBottom: 8, borderWidth: 1, borderColor: colors.border },
   eventIcon: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
-  eventName: { fontSize: 14, fontWeight: '600', color: colors.text },
+  eventName: { fontSize: 15, fontWeight: '600', color: colors.text },
   eventTime: { fontSize: 11, color: colors.textTertiary },
   eventSnippet: { fontSize: 12, color: colors.textSecondary, marginTop: 3, fontStyle: 'italic' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   modalCard: { backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 36 },
-  modalTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
+  modalTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
   fieldLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginBottom: 6, letterSpacing: 0.4 },
   input: { backgroundColor: colors.surface, borderRadius: 10, padding: 12, fontSize: 15, color: colors.text, marginBottom: 16, borderWidth: 1, borderColor: colors.border },
   colorDot: { width: 30, height: 30, borderRadius: 15 },

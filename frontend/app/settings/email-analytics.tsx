@@ -340,7 +340,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
@@ -409,12 +409,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   statValue: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
     color: colors.text,
   },
   statLabel: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -424,7 +424,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 8,
   },
   percentageText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
   },
 
@@ -480,7 +480,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   emptyActivityText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
     marginTop: 16,
@@ -511,7 +511,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   activityRecipient: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
   },
@@ -524,7 +524,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'flex-end',
   },
   activityStatus: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
   },
   activityTime: {

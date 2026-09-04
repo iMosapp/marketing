@@ -198,7 +198,7 @@ export default function SchedulePage() {
         {/* Live status pill */}
         <View style={[s.statusPill, { backgroundColor: isAvailable ? '#34C75920' : '#FF3B3020', borderColor: isAvailable ? '#34C759' : '#FF3B30' }]}>
           <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: isAvailable ? '#34C759' : '#FF3B30', marginRight: 8 }} />
-          <Text style={{ color: isAvailable ? '#34C759' : '#FF3B30', fontWeight: '700', fontSize: 14 }}>
+          <Text style={{ color: isAvailable ? '#34C759' : '#FF3B30', fontWeight: '700', fontSize: 15 }}>
             {isAvailable ? 'Available now' : 'Off shift'}
           </Text>
           {overrideLabel && <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 8 }}>({overrideLabel})</Text>}
@@ -429,7 +429,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   center:       { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   back:         { width: 40 },
-  title:        { fontSize: 18, fontWeight: '700', color: colors.text },
+  title:        { fontSize: 17, fontWeight: '700', color: colors.text },
   saveBtn:      { backgroundColor: colors.accent, borderRadius: 10, paddingHorizontal: 18, paddingVertical: 8 },
   saveBtnText:  { color: '#000', fontWeight: '700', fontSize: 15 },
   statusPill:   { flexDirection: 'row', alignItems: 'center', borderRadius: 20, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 8, marginBottom: 16 },
@@ -447,14 +447,14 @@ const getStyles = (colors: any) => StyleSheet.create({
   dayGrid:      { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
   dayCard:      { width: '13%', minWidth: 44, backgroundColor: colors.card, borderRadius: 12, padding: 8, alignItems: 'center', borderWidth: 1.5, borderColor: colors.border, minHeight: 72 },
   dayLabel:     { fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginBottom: 4 },
-  dayHours:     { fontSize: 10, color: colors.accent, textAlign: 'center', fontWeight: '600' },
+  dayHours:     { fontSize: 11, color: colors.accent, textAlign: 'center', fontWeight: '600' },
   dayOff:       { fontSize: 11, color: colors.textSecondary, fontStyle: 'italic' },
   overrideRow:  { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
   overrideChip: { backgroundColor: colors.surface, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, borderWidth: 1, borderColor: colors.accent },
   overrideText: { color: colors.accent, fontSize: 13, fontWeight: '600' },
   overlay:      { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
   sheet:        { backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '85%' },
-  sheetTitle:   { fontSize: 18, fontWeight: '700', color: colors.text },
+  sheetTitle:   { fontSize: 17, fontWeight: '700', color: colors.text },
   offButton:    { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, borderColor: colors.border, padding: 12, marginBottom: 16 },
   blockRow:     { flexDirection: 'row', alignItems: 'center', marginBottom: 12, backgroundColor: colors.surface, borderRadius: 12, padding: 12 },
   blockLabel:   { fontSize: 12, color: colors.textSecondary, marginBottom: 4, fontWeight: '600' },

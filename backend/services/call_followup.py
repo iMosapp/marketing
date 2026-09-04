@@ -27,10 +27,12 @@ DEFAULT_CADENCE = {
     "fourth_days": 2,        # miss #4 -> N days later at morning_hour
     "evening_cutoff": 19,    # a retry landing at/after this local hour rolls to next morning
     "max_auto": 4,           # misses that get an auto retry; the next one is the final "text or park" task
+    "auto_just_tried": False,   # send the "just tried you" text automatically after a miss (once per streak)
+    "auto_just_tried_from": 1,  # ...starting at this miss number
 }
 CADENCE_LIMITS = {
     "first_minutes": (5, 240), "second_hours": (1, 8), "morning_hour": (7, 12),
-    "fourth_days": (1, 7), "evening_cutoff": (16, 22), "max_auto": (1, 6),
+    "fourth_days": (1, 7), "evening_cutoff": (16, 22), "max_auto": (1, 6), "auto_just_tried_from": (1, 6),
 }
 MAX_AUTO_RETRIES = DEFAULT_CADENCE["max_auto"]
 DEFAULT_JUST_TRIED = "Hey {first_name}, it's {sender_name}. Just tried to give you a call, no rush at all. Call or text me back whenever works for you."
@@ -112,6 +114,8 @@ def normalize_cadence(raw: dict | None) -> dict:
             pass
     if raw is not None and "enabled" in raw:
         out["enabled"] = bool(raw.get("enabled"))
+    if raw is not None and "auto_just_tried" in raw:
+        out["auto_just_tried"] = bool(raw.get("auto_just_tried"))
     jt = (raw or {}).get("just_tried_text")
     if isinstance(jt, str) and jt.strip():
         out["just_tried_text"] = jt.strip()[:320]
@@ -280,7 +284,7 @@ async def _on_missed(db, user_id, contact, first, pending, outcome, source, call
     if attempt <= max_auto:
         due_utc = next_retry_due(attempt, now, tz, cadence)
         label = _due_label(due_utc, now, tz)
-        tip = " Tip: shoot a quick \"just tried you\" text too." if attempt >= 3 else ""
+        tip = " Tip: shoot a quick \"just tried you\" text too." if attempt >= 3 and not cadence.get("auto_just_tried") else ""
         line = f"{first} {verb} at {stamp} (miss #{attempt}). Try again {label}.{tip}"
         existing = await db.tasks.find_one({"user_id": user_id, "contact_id": contact_id, "completed": {"$ne": True},
                                             "auto_kind": {"$in": ["call_retry", "call_retry_final"]}})
@@ -324,6 +328,22 @@ async def _on_missed(db, user_id, contact, first, pending, outcome, source, call
     await db.contacts.update_one({"_id": contact["_id"]}, {"$set": {"call_retry": {
         "attempts": attempt, "last_at": now, "last_outcome": outcome, "next_due": due_utc, "task_id": task_id}}})
 
+    # Auto "just tried you" text: once per miss streak, from the configured miss number, voicemail/no-answer only
+    auto_note = ""
+    if (cadence.get("auto_just_tried") and task_id and attempt <= max_auto and outcome in ("voicemail", "no_answer")
+            and attempt >= int(cadence.get("auto_just_tried_from") or 1)):
+        t = await db.tasks.find_one({"_id": ObjectId(task_id)}, {"just_tried_sent_at": 1, "just_tried_scheduled_for": 1})
+        if t and not t.get("just_tried_sent_at") and not t.get("just_tried_scheduled_for"):
+            try:
+                jt = await send_just_tried_text(user_id, task_id, auto=True)
+            except Exception as e:
+                jt = {"ok": False, "error": str(e)}
+            if jt.get("ok"):
+                auto_note = " · text sent" if jt.get("sent") else f" · text queued for {jt.get('scheduled_label')}"
+            else:
+                auto_note = " · auto-text skipped"
+                logger.info(f"[CallFollowup] auto just-tried skipped for {contact_id}: {jt.get('error')}")
+
     title = "Left voicemail" if outcome == "voicemail" else ("Line busy" if outcome == "busy" else "No answer")
     await db.contact_events.insert_one({
         "event_type": f"call_{outcome}", "title": title, "user_id": user_id, "contact_id": contact_id,
@@ -334,7 +354,7 @@ async def _on_missed(db, user_id, contact, first, pending, outcome, source, call
     })
     if task_id:
         push_title = f"{first} {verb}"
-        push_body = (f"Try again {label} · miss #{attempt}" if attempt <= max_auto
+        push_body = (f"Try again {label} · miss #{attempt}{auto_note}" if attempt <= max_auto
                      else f"{attempt} misses. Text or park? Task added for {label}.")
         try:
             from routers.push_notifications import send_push_to_user
@@ -412,8 +432,8 @@ async def just_tried_template(db, user_id: str, conversation: dict | None) -> tu
     return DEFAULT_JUST_TRIED, "default"
 
 
-async def send_just_tried_text(user_id: str, task_id: str) -> dict:
-    """One tap from a retry task: text the customer now if inside texting hours, else queue it for when the window opens."""
+async def send_just_tried_text(user_id: str, task_id: str, auto: bool = False) -> dict:
+    """One tap from a retry task (or auto after a miss): text the customer now if inside texting hours, else queue it for when the window opens."""
     from services.lead_timing import window_status, customer_timezone, store_timezone
     db = get_db()
     if not ObjectId.is_valid(task_id):
@@ -465,9 +485,9 @@ async def send_just_tried_text(user_id: str, task_id: str) -> dict:
             return {"ok": False, "error": f"Could not send: {detail}"}
         if (res or {}).get("status") == "failed":
             return {"ok": False, "error": f"Text failed: {(res or {}).get('error') or 'carrier rejected the number'}"}
-        await db.tasks.update_one({"_id": task["_id"]}, {"$set": {"just_tried_sent_at": now, "just_tried_text": template}})
+        await db.tasks.update_one({"_id": task["_id"]}, {"$set": {"just_tried_sent_at": now, "just_tried_text": template, "just_tried_auto": auto}})
         await db.contact_events.insert_one({
-            "event_type": "just_tried_text", "title": "\"Just tried you\" text sent", "user_id": user_id, "contact_id": contact_id,
+            "event_type": "just_tried_text", "title": "\"Just tried you\" text " + ("auto-sent" if auto else "sent"), "user_id": user_id, "contact_id": contact_id,
             "description": f"After voicemail: {template[:120]}", "category": "sms", "icon": "chatbubble", "color": "#34C759",
             "timestamp": now, "created_at": now})
         return {"ok": True, "sent": True, "scheduled_for": None, "template_source": template_source,
@@ -489,12 +509,12 @@ async def send_just_tried_text(user_id: str, task_id: str) -> dict:
         "campaign_name": "Just tried you", "media_urls": [], "event_type": "just_tried_text", "created_at": now,
         "type": "direct_scheduled", "task_id": task_id,
     })
-    await db.tasks.update_one({"_id": task["_id"]}, {"$set": {"just_tried_scheduled_for": opens, "just_tried_text": template}})
+    await db.tasks.update_one({"_id": task["_id"]}, {"$set": {"just_tried_scheduled_for": opens, "just_tried_text": template, "just_tried_auto": auto}})
     from zoneinfo import ZoneInfo
     local = opens.astimezone(ZoneInfo(tz_name))
     label = local.strftime("%-I:%M %p") + ("" if local.date() == now.astimezone(ZoneInfo(tz_name)).date() else local.strftime(" %a"))
     await db.contact_events.insert_one({
-        "event_type": "just_tried_text", "title": "\"Just tried you\" text scheduled", "user_id": user_id, "contact_id": contact_id,
+        "event_type": "just_tried_text", "title": "\"Just tried you\" text " + ("auto-scheduled" if auto else "scheduled"), "user_id": user_id, "contact_id": contact_id,
         "description": f"Outside texting hours ({win['start']}-{win['end']} their time). Sends at {label}.", "category": "sms",
         "icon": "time", "color": "#FF9F0A", "timestamp": now, "created_at": now})
     return {"ok": True, "sent": False, "scheduled_for": opens.isoformat(), "scheduled_label": label, "template_source": template_source,

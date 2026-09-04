@@ -301,7 +301,7 @@ function TouchpointsScreen() {
         <TouchableOpacity onPress={() => router.back()} style={{ padding: 4, marginRight: 8 }} data-testid="touchpoints-back-btn">
           <Ionicons name="chevron-back" size={24} color={colors.accent} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 19, fontWeight: '700', color: colors.text, flex: 1 }}>Today's Touchpoints</Text>
+        <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text, flex: 1 }}>Today's Touchpoints</Text>
         <TouchableOpacity onPress={() => router.push('/touchpoints/add-task' as any)} style={{ padding: 4 }} data-testid="touchpoints-add-btn">
           <Ionicons name="add-circle-outline" size={24} color={colors.accent} />
         </TouchableOpacity>
@@ -318,15 +318,15 @@ function TouchpointsScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, gap: 6 }}>
               {SCORE_ITEMS_ACTIONS.map(s => (
                 <View key={s.key} style={{ minWidth: 72, backgroundColor: colors.card, borderRadius: 12, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: colors.border }}>
-                  <Text style={{ fontSize: 21, fontWeight: '700', color: s.color }}>{scoreValues[s.key]}</Text>
-                  <Text numberOfLines={1} style={{ fontSize: 9, color: colors.textSecondary, fontWeight: '600', letterSpacing: 0.3, marginTop: 1 }}>{s.label}</Text>
+                  <Text style={{ fontSize: 20, fontWeight: '700', color: s.color }}>{scoreValues[s.key]}</Text>
+                  <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textSecondary, fontWeight: '600', letterSpacing: 0.3, marginTop: 1 }}>{s.label}</Text>
                 </View>
               ))}
               <View style={{ width: 1, backgroundColor: colors.border, marginHorizontal: 4 }} />
               {SCORE_ITEMS_ENGAGE.map(s => (
                 <View key={s.key} style={{ minWidth: 72, backgroundColor: colors.card, borderRadius: 12, padding: 10, alignItems: 'center', borderWidth: 1, borderColor: colors.border }}>
-                  <Text style={{ fontSize: 21, fontWeight: '700', color: s.color }}>{scoreValues[s.key]}</Text>
-                  <Text numberOfLines={1} style={{ fontSize: 9, color: colors.textSecondary, fontWeight: '600', letterSpacing: 0.3, marginTop: 1 }}>{s.label}</Text>
+                  <Text style={{ fontSize: 20, fontWeight: '700', color: s.color }}>{scoreValues[s.key]}</Text>
+                  <Text numberOfLines={1} style={{ fontSize: 11, color: colors.textSecondary, fontWeight: '600', letterSpacing: 0.3, marginTop: 1 }}>{s.label}</Text>
                 </View>
               ))}
             </ScrollView>
@@ -338,7 +338,7 @@ function TouchpointsScreen() {
             <View style={{ backgroundColor: colors.border, borderRadius: 5, height: 8, overflow: 'hidden', marginBottom: 6 }}>
               <View style={{ height: '100%', backgroundColor: colors.accent, borderRadius: 5, width: `${summary?.progress_pct || 0}%` }} />
             </View>
-            <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center' }}>
+            <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center' }}>
               {summary?.completed_today || 0} of {summary?.total_today || 0} touchpoints completed
             </Text>
           </View>
@@ -354,8 +354,8 @@ function TouchpointsScreen() {
               <Ionicons name="stats-chart" size={20} color="#34C759" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text }}>My Performance</Text>
-              <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 2 }}>Day / Week / Month stats + click-throughs</Text>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>My Performance</Text>
+              <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>Day / Week / Month stats + click-throughs</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#48484A" />
           </TouchableOpacity>
@@ -371,8 +371,8 @@ function TouchpointsScreen() {
               <Ionicons name="people" size={20} color="#FF9500" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text }}>Customer Performance</Text>
-              <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 2 }}>Ranked engagement across your contacts</Text>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>Customer Performance</Text>
+              <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>Ranked engagement across your contacts</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#48484A" />
           </TouchableOpacity>
@@ -456,7 +456,7 @@ function TouchpointsScreen() {
           {filtered.length === 0 && (
             <View style={{ alignItems: 'center', paddingVertical: 40 }}>
               <Ionicons name="checkmark-done-circle-outline" size={48} color={colors.textTertiary} />
-              <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textSecondary, marginTop: 12 }}>All caught up!</Text>
+              <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textSecondary, marginTop: 12 }}>All caught up!</Text>
               <Text style={{ fontSize: 15, color: colors.textTertiary, marginTop: 4 }}>No touchpoints for today</Text>
             </View>
           )}
@@ -482,7 +482,7 @@ function TouchpointsScreen() {
             {undo.action === 'complete' ? 'Done' : 'Snoozed 24h'} — {undo.task.contact_name || undo.task.title}
           </Text>
           <TouchableOpacity onPress={handleUndo} style={{ paddingHorizontal: 14, paddingVertical: 7, borderRadius: 9, backgroundColor: 'rgba(201,169,98,0.18)' }} data-testid="undo-btn">
-            <Text style={{ color: '#C9A962', fontSize: 14, fontWeight: '800', letterSpacing: 0.5 }}>UNDO</Text>
+            <Text style={{ color: '#C9A962', fontSize: 15, fontWeight: '800', letterSpacing: 0.5 }}>UNDO</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -515,10 +515,10 @@ function TaskCard({ task, colors, onComplete, onSnooze, onCall, onText, onDraft,
       {/* Top */}
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', padding: 14, gap: 12 }}>
         <View style={{ width: 42, height: 42, borderRadius: 12, backgroundColor: avatar.bg, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontWeight: '700', fontSize: 17, color: avatar.text }}>{initials}</Text>
+          <Text style={{ fontWeight: '700', fontSize: 16, color: avatar.text }}>{initials}</Text>
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>{task.contact_name || 'Unknown'}</Text>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{task.contact_name || 'Unknown'}</Text>
           <Text style={{ fontSize: 15, color: '#AEAEB2', marginTop: 2 }} numberOfLines={2}>{task.description || task.title}</Text>
           <View style={{ flexDirection: 'row', gap: 6, marginTop: 6, alignItems: 'center', flexWrap: 'wrap' }}>
             {badges.map((b, i) => (

@@ -16,9 +16,9 @@ const GOLD = '#C9A962';
 const AMBER = '#FF9F0A';
 const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 
-type Cadence = { enabled: boolean; first_minutes: number; second_hours: number; morning_hour: number; fourth_days: number; evening_cutoff: number; max_auto: number; just_tried_text?: string };
+type Cadence = { enabled: boolean; first_minutes: number; second_hours: number; morning_hour: number; fourth_days: number; evening_cutoff: number; max_auto: number; just_tried_text?: string; auto_just_tried?: boolean; auto_just_tried_from?: number };
 const DEFAULT_JUST_TRIED = "Hey {first_name}, it's {sender_name}. Just tried to give you a call, no rush at all. Call or text me back whenever works for you.";
-const DEFAULTS: Cadence = { enabled: true, first_minutes: 30, second_hours: 3, morning_hour: 10, fourth_days: 2, evening_cutoff: 19, max_auto: 4 };
+const DEFAULTS: Cadence = { enabled: true, first_minutes: 30, second_hours: 3, morning_hour: 10, fourth_days: 2, evening_cutoff: 19, max_auto: 4, auto_just_tried: false, auto_just_tried_from: 1 };
 
 const hour12 = (h: number) => `${h % 12 || 12} ${h >= 12 ? 'PM' : 'AM'}`;
 
@@ -34,7 +34,7 @@ function Stepper({ label, hint, value, display, min, max, step = 1, onChange, co
         <TouchableOpacity onPress={() => bump(-step)} disabled={value <= min} style={{ paddingHorizontal: 12, paddingVertical: 8, opacity: value <= min ? 0.35 : 1 }} {...tid(`${testid}-minus`)}>
           <Ionicons name="remove" size={18} color={GOLD} />
         </TouchableOpacity>
-        <Text style={{ minWidth: 78, textAlign: 'center', fontSize: 14, fontWeight: '800', color: colors.text }} {...tid(`${testid}-value`)}>{display(value)}</Text>
+        <Text style={{ minWidth: 78, textAlign: 'center', fontSize: 15, fontWeight: '800', color: colors.text }} {...tid(`${testid}-value`)}>{display(value)}</Text>
         <TouchableOpacity onPress={() => bump(step)} disabled={value >= max} style={{ paddingHorizontal: 12, paddingVertical: 8, opacity: value >= max ? 0.35 : 1 }} {...tid(`${testid}-plus`)}>
           <Ionicons name="add" size={18} color={GOLD} />
         </TouchableOpacity>
@@ -153,7 +153,7 @@ export default function CallRetriesPage() {
               </Text>
               {!!meta.reps_with_override && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
-                  <Text style={{ fontSize: 14, color: colors.text, flex: 1, paddingRight: 12 }}>Also reset those {meta.reps_with_override} to this default when I save</Text>
+                  <Text style={{ fontSize: 13, color: colors.text, flex: 1, paddingRight: 12 }}>Also reset those {meta.reps_with_override} to this default when I save</Text>
                   <Switch value={applyToAll} onValueChange={v => { setApplyToAll(v); setDirty(true); }} trackColor={{ true: GOLD, false: colors.border }} thumbColor="#FFF" {...tid('store-cadence-apply-all')} />
                 </View>
               )}
@@ -226,6 +226,30 @@ export default function CallRetriesPage() {
                 {...tid('just-tried-input')}
               />
               <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 6 }}>{(cadence.just_tried_text || '').length}/320 · blank = built-in default</Text>
+
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.border }}>
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>Send it automatically</Text>
+                  <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>Right after a voicemail or no-answer, once per miss streak. Skips opted-out contacts and waits for texting hours.</Text>
+                </View>
+                <Switch value={!!cadence.auto_just_tried} onValueChange={v => patch({ auto_just_tried: v })} trackColor={{ true: GOLD, false: colors.border }} thumbColor="#FFF" {...tid('auto-just-tried-toggle')} />
+              </View>
+              {cadence.auto_just_tried && (
+                <View style={{ marginTop: 10 }} {...tid('auto-just-tried-from')}>
+                  <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 6 }}>Send starting at</Text>
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    {[1, 2, 3].map(n => {
+                      const on = (cadence.auto_just_tried_from || 1) === n;
+                      return (
+                        <TouchableOpacity key={n} onPress={() => patch({ auto_just_tried_from: n })} {...tid(`auto-just-tried-from-${n}`)}
+                          style={{ flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 10, backgroundColor: on ? GOLD : colors.surface, borderWidth: 1, borderColor: on ? GOLD : colors.border }}>
+                          <Text style={{ fontSize: 13, fontWeight: '700', color: on ? '#000' : colors.text }}>Miss #{n}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </View>
+              )}
             </View>
           )}
 
@@ -237,7 +261,7 @@ export default function CallRetriesPage() {
                   <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: r.final ? colors.surface : `${AMBER}33`, alignItems: 'center', justifyContent: 'center' }}>
                     {r.final ? <Ionicons name="flag" size={12} color={colors.textSecondary} /> : <Text style={{ fontSize: 12, fontWeight: '800', color: AMBER }}>{r.attempt}</Text>}
                   </View>
-                  <Text style={{ fontSize: 14, color: colors.text, flex: 1 }}>
+                  <Text style={{ fontSize: 13, color: colors.text, flex: 1 }}>
                     {r.final ? 'Final "text or park" task ' : `Try again ${r.attempt === 1 ? '' : `(miss #${r.attempt}) `}`}
                     <Text style={{ fontWeight: '700', color: r.final ? colors.textSecondary : colors.text }}>{r.label}</Text>
                   </Text>
@@ -273,7 +297,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   back: { width: 40 },
-  title: { fontSize: 18, fontWeight: '700', color: colors.text },
+  title: { fontSize: 17, fontWeight: '700', color: colors.text },
   saveBtn: { backgroundColor: colors.accent, borderRadius: 10, paddingHorizontal: 18, paddingVertical: 8 },
   saveBtnText: { color: '#000', fontWeight: '700', fontSize: 15 },
   card: { backgroundColor: colors.card, borderRadius: 14, padding: 16, marginBottom: 12 },

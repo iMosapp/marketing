@@ -425,8 +425,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 21,
-    fontWeight: 'bold',
+    fontSize: 17,
+    fontWeight: '700',
     color: colors.text,
   },
   content: {
@@ -462,7 +462,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   settingTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
@@ -479,7 +479,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 12,
   },
   unavailableText: {
-    fontSize: 17,
+    fontSize: 16,
     color: colors.textSecondary,
     textAlign: 'center',
   },
@@ -512,16 +512,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   modalCancel: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#007AFF',
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
   modalSave: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -546,7 +546,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   passwordInput: {
     flex: 1,
     padding: 16,
-    fontSize: 18,
+    fontSize: 16,
     color: colors.text,
   },
   eyeButton: {
@@ -556,7 +556,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
-    fontSize: 18,
+    fontSize: 16,
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.surface,

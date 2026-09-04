@@ -289,7 +289,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: colors.card,
   },
   backButton: { padding: 4 },
-  headerTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
+  headerTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
   tabs: { flexDirection: 'row', paddingHorizontal: 16, paddingTop: 12, gap: 8 },
   tab: {
     flex: 1, paddingVertical: 10, alignItems: 'center', justifyContent: 'center',
@@ -306,7 +306,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingTop: 12,
   },
-  summaryText: { fontSize: 14, color: colors.text, fontWeight: '600' },
+  summaryText: { fontSize: 15, color: colors.text, fontWeight: '600' },
   filterRow: { flexDirection: 'row', gap: 6 },
   filterChip: {
     paddingVertical: 5, paddingHorizontal: 12, borderRadius: 14,
@@ -325,7 +325,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 8,
     paddingHorizontal: 18, paddingVertical: 8,
   },
-  selectAllText: { fontSize: 14, fontWeight: '600', color: '#C9A962' },
+  selectAllText: { fontSize: 15, fontWeight: '600', color: '#C9A962' },
   contactRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
     backgroundColor: colors.card, borderRadius: 12, padding: 12, marginBottom: 8,

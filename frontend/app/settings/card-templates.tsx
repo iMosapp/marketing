@@ -307,7 +307,7 @@ export default function ManageCardTemplatesPage() {
                     {isProtected && (
                       <View style={{ backgroundColor: '#34C75918', borderRadius: 6, paddingHorizontal: 6, paddingVertical: 1, flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                         <Ionicons name="shield-checkmark" size={10} color="#34C759" />
-                        <Text style={{ fontSize: 10, color: '#34C759', fontWeight: '700' }}>Default</Text>
+                        <Text style={{ fontSize: 11, color: '#34C759', fontWeight: '700' }}>Default</Text>
                       </View>
                     )}
                     {t.customized && !isProtected && (
@@ -351,17 +351,17 @@ const getS = (colors: any) => StyleSheet.create({
   center:          { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
   hBtn:            { padding: 4, minWidth: 40 },
-  headerTitle:     { fontSize: 18, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' },
+  headerTitle:     { fontSize: 17, fontWeight: '700', color: colors.text, flex: 1, textAlign: 'center' },
   saveHeaderBtn:   { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10, minWidth: 60, alignItems: 'center' },
   saveHeaderTxt:   { fontSize: 15, fontWeight: '700', color: '#fff' },
   content:         { flex: 1, padding: 16 },
-  note:            { fontSize: 14, color: colors.textSecondary, marginBottom: 16, lineHeight: 20 },
+  note:            { fontSize: 13, color: colors.textSecondary, marginBottom: 16, lineHeight: 20 },
   // Card list
   card:            { backgroundColor: colors.card, borderRadius: 14, marginBottom: 10, overflow: 'hidden' },
   cardMain:        { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
   cardIcon:        { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   cardTitle:       { fontSize: 16, fontWeight: '700', color: colors.text },
-  cardMsg:         { fontSize: 14, color: colors.textSecondary, marginTop: 2 },
+  cardMsg:         { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
   deleteBtn:       { borderTopWidth: 1, borderTopColor: colors.border, padding: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center' },
   deleteInsideBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 14, marginTop: 12, marginBottom: 40, borderWidth: 1.5, borderColor: '#FF3B3040', backgroundColor: '#FF3B3008' },
   deleteInsideBtnText: { fontSize: 16, fontWeight: '600', color: '#FF3B30' },
@@ -379,5 +379,5 @@ const getS = (colors: any) => StyleSheet.create({
   colorChip:       { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   colorChipSelected: { borderWidth: 2.5, borderColor: '#fff' },
   saveBtn:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16, borderRadius: 14, marginTop: 24, marginBottom: 40 },
-  saveBtnText:     { fontSize: 17, fontWeight: '700', color: '#fff' },
+  saveBtnText:     { fontSize: 16, fontWeight: '700', color: '#fff' },
 });

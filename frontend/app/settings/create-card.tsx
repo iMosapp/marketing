@@ -466,10 +466,10 @@ export default function CreateCardPage() {
               <Ionicons name="checkmark-circle" size={60} color="#34C759" />
             </View>
             <Text style={{ fontSize: 30, fontWeight: '900', color: '#C9A962', marginBottom: 6 }}>SOLD!</Text>
-            <Text style={{ fontSize: 18, fontWeight: '600', color: colors.text, marginBottom: 4, textAlign: 'center' }}>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 4, textAlign: 'center' }}>
               Sequence started for {recipientName}
             </Text>
-            <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginBottom: 28 }}>
+            <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginBottom: 28 }}>
               3 texts will go out automatically — no action needed
             </Text>
             {/* Sequence timeline */}
@@ -486,7 +486,7 @@ export default function CreateCardPage() {
                     <Ionicons name={item.icon as any} size={18} color={item.color} />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>{item.label}</Text>
+                    <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>{item.label}</Text>
                   </View>
                   <Text style={{ fontSize: 12, fontWeight: '700', color: item.done ? '#34C759' : item.color }}>
                     {item.done ? 'Sent ✓' : item.time}
@@ -509,7 +509,7 @@ export default function CreateCardPage() {
               }}
               data-testid="sold-success-done"
             >
-              <Text style={{ fontSize: 17, fontWeight: '700', color: '#000' }}>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: '#000' }}>
                 {for_contact ? 'Done — Back to Contact' : 'Done — Back to Home'}
               </Text>
             </TouchableOpacity>
@@ -635,7 +635,7 @@ export default function CreateCardPage() {
               {[{ action: 'use_existing', icon: 'checkmark-circle', color: '#34C759', text: 'Use Existing Contact' }, { action: 'update_name', icon: 'create', color: '#007AFF', text: `Update to "${matchInfo.provided_name}"` }, { action: 'create_new', icon: 'person-add', color: '#FF9500', text: 'Create New Contact' }].map(opt => (
                 <TouchableOpacity key={opt.action} style={s.modalAction} onPress={() => resolveMatch(opt.action)}><Ionicons name={opt.icon as any} size={20} color={opt.color} /><Text style={s.modalActionText}>{opt.text}</Text></TouchableOpacity>
               ))}
-              <TouchableOpacity onPress={() => { setMatchModalVisible(false); setMatchInfo(null); }} style={{ marginTop: 4, padding: 12, alignItems: 'center' }}><Text style={{ fontSize: 17, color: colors.textSecondary }}>Cancel</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => { setMatchModalVisible(false); setMatchInfo(null); }} style={{ marginTop: 4, padding: 12, alignItems: 'center' }}><Text style={{ fontSize: 16, color: colors.textSecondary }}>Cancel</Text></TouchableOpacity>
             </View>
           </View>
         )}
@@ -687,7 +687,7 @@ export default function CreateCardPage() {
                 return (
                   <View key={tag} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${tagObj?.color || accent}25`, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
                     <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: tagObj?.color || accent }} />
-                    <Text style={{ fontSize: 14, color: tagObj?.color || accent, fontWeight: '600' }}>{tag}</Text>
+                    <Text style={{ fontSize: 15, color: tagObj?.color || accent, fontWeight: '600' }}>{tag}</Text>
                   </View>
                 );
               })}
@@ -723,7 +723,7 @@ export default function CreateCardPage() {
             <Ionicons name={meta.icon as any} size={22} color={accent} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>{meta.label}</Text>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{meta.label}</Text>
             <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>{meta.headline}</Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: accent + '20', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 }}>
@@ -807,7 +807,7 @@ export default function CreateCardPage() {
                     </>
                   ) : null}
                   <TouchableOpacity onPress={() => setShowTypePicker(false)} style={{ marginTop: 8, padding: 14, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 17, color: colors.textSecondary }}>Cancel</Text>
+                    <Text style={{ fontSize: 16, color: colors.textSecondary }}>Cancel</Text>
                   </TouchableOpacity>
                 </ScrollView>
               </View>
@@ -860,7 +860,7 @@ export default function CreateCardPage() {
         )}
         {isFromContact && customerName ? (
           <View style={{ marginTop: 8, marginBottom: 4 }}>
-            <Text style={{ fontSize: 17, color: colors.textSecondary }}>For: <Text style={{ fontWeight: '600', color: colors.text }}>{customerName}</Text></Text>
+            <Text style={{ fontSize: 16, color: colors.textSecondary }}>For: <Text style={{ fontWeight: '600', color: colors.text }}>{customerName}</Text></Text>
           </View>
         ) : null}
         <Text style={[s.fieldLabel, { marginTop: 16 }]}>PERSONAL MESSAGE (OPTIONAL)</Text>
@@ -868,7 +868,7 @@ export default function CreateCardPage() {
 
         {/* Tag Picker */}
         <Text style={[s.fieldLabel, { marginTop: 20 }]}>APPLY TAG (OPTIONAL)</Text>
-        <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 8 }}>
+        <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 8 }}>
           Applying a tag starts the associated follow-up campaign
         </Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 }} data-testid="card-tag-picker">
@@ -962,7 +962,7 @@ export default function CreateCardPage() {
             {[{ action: 'use_existing', icon: 'checkmark-circle', color: '#34C759', text: 'Use Existing Contact' }, { action: 'update_name', icon: 'create', color: '#007AFF', text: `Update to "${matchInfo.provided_name}"` }, { action: 'create_new', icon: 'person-add', color: '#FF9500', text: 'Create New Contact' }].map(opt => (
               <TouchableOpacity key={opt.action} style={s.modalAction} onPress={() => resolveMatch(opt.action)}><Ionicons name={opt.icon as any} size={20} color={opt.color} /><Text style={s.modalActionText}>{opt.text}</Text></TouchableOpacity>
             ))}
-            <TouchableOpacity onPress={() => { setMatchModalVisible(false); setMatchInfo(null); }} style={{ marginTop: 4, padding: 12, alignItems: 'center' }}><Text style={{ fontSize: 17, color: colors.textSecondary }}>Cancel</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => { setMatchModalVisible(false); setMatchInfo(null); }} style={{ marginTop: 4, padding: 12, alignItems: 'center' }}><Text style={{ fontSize: 16, color: colors.textSecondary }}>Cancel</Text></TouchableOpacity>
           </View>
         </View>
       )}
@@ -973,7 +973,7 @@ export default function CreateCardPage() {
 const getS = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 28, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.surface },
-  headerTitle: { fontSize: 19, fontWeight: '700', color: colors.text },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
   scroll: { flex: 1, paddingHorizontal: 20 },
   fieldLabel: { fontSize: 12, fontWeight: '700', color: '#6E6E73', marginTop: 16, marginBottom: 6, letterSpacing: 1 },
   input: { backgroundColor: colors.card, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 12, fontSize: 16, color: colors.text, borderWidth: 1.5, borderColor: colors.borderLight },
@@ -982,11 +982,11 @@ const getS = (colors: any) => StyleSheet.create({
   photoPlaceholder: { width: 160, height: 160, borderRadius: 32, backgroundColor: colors.card, borderWidth: 2, borderColor: colors.surface, borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center' },
   photoPlaceholderText: { fontSize: 15, color: '#8E8E93', marginTop: 8 },
   createBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 12, paddingVertical: 16, marginTop: 30, gap: 8 },
-  createBtnText: { fontSize: 18, fontWeight: '700', color: colors.text },
+  createBtnText: { fontSize: 16, fontWeight: '700', color: colors.text },
   // Share screen (matches UniversalShareModal)
   shareModalInner: { flex: 1, backgroundColor: colors.card, padding: 24, paddingBottom: 40 },
   shareHandle: { width: 40, height: 4, backgroundColor: colors.borderLight, borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
-  shareTitle: { fontSize: 21, fontWeight: '700', color: colors.text, textAlign: 'center', marginBottom: 4 },
+  shareTitle: { fontSize: 20, fontWeight: '700', color: colors.text, textAlign: 'center', marginBottom: 4 },
   shareSubtitle: { fontSize: 16, color: '#8E8E93', textAlign: 'center', marginBottom: 24 },
   recipientSection: { marginBottom: 16, gap: 8 },
   recipientLabel: { fontSize: 12, fontWeight: '700', color: '#6E6E73', letterSpacing: 1 },
@@ -994,40 +994,40 @@ const getS = (colors: any) => StyleSheet.create({
   shareOptionsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', gap: 16 },
   shareOption: { width: '30%', alignItems: 'center' },
   shareOptionIcon: { width: 60, height: 60, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  shareOptionText: { fontSize: 14, fontWeight: '500', color: colors.text, textAlign: 'center' },
+  shareOptionText: { fontSize: 15, fontWeight: '500', color: colors.text, textAlign: 'center' },
   createAnotherBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 24, paddingVertical: 14 },
-  createAnotherText: { fontSize: 17, fontWeight: '600' },
+  createAnotherText: { fontSize: 16, fontWeight: '600' },
   cancelBtn: { marginTop: 8, paddingVertical: 16, backgroundColor: colors.surface, borderRadius: 12 },
-  cancelBtnText: { fontSize: 18, fontWeight: '600', color: '#FF3B30', textAlign: 'center' },
+  cancelBtnText: { fontSize: 16, fontWeight: '600', color: '#FF3B30', textAlign: 'center' },
   // Preview
   previewCard: { backgroundColor: '#1A1A1A', borderRadius: 20, padding: 30, width: '100%', maxWidth: 380, alignItems: 'center', marginTop: 20, borderWidth: 1, borderColor: colors.surface },
   previewHeadline: { fontSize: 32, fontWeight: '800', marginBottom: 20, textAlign: 'center' },
   previewPhotoRing: { borderWidth: 4, borderRadius: 20, padding: 4, marginBottom: 16 },
   previewPhoto: { width: 140, height: 140, borderRadius: 16 },
   previewName: { fontSize: 24, fontWeight: '700', color: '#FFFFFF', marginBottom: 12, textAlign: 'center' },
-  previewMessage: { fontSize: 17, color: '#FFFFFFCC', textAlign: 'center', lineHeight: 22, marginBottom: 12 },
+  previewMessage: { fontSize: 16, color: '#FFFFFFCC', textAlign: 'center', lineHeight: 22, marginBottom: 12 },
   previewCustomBox: { borderLeftWidth: 3, paddingLeft: 14, paddingVertical: 6, width: '100%', marginBottom: 16 },
   previewCustomMsg: { fontSize: 16, fontStyle: 'italic', color: '#FFFFFFBB', lineHeight: 20 },
   previewDivider: { width: 50, height: 3, borderRadius: 2, marginVertical: 16 },
-  previewSalesName: { fontSize: 18, fontWeight: '700', color: '#FFFFFF', marginBottom: 2 },
+  previewSalesName: { fontSize: 16, fontWeight: '700', color: '#FFFFFF', marginBottom: 2 },
   previewSalesTitle: { fontSize: 15, fontWeight: '500' },
   previewActions: { flexDirection: 'row', gap: 12, marginTop: 24, width: '100%', maxWidth: 380 },
   previewEditBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16, borderRadius: 12, borderWidth: 1.5 },
-  previewEditText: { fontSize: 18, fontWeight: '600' },
+  previewEditText: { fontSize: 16, fontWeight: '600' },
   previewSendBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16, borderRadius: 12 },
-  previewSendText: { fontSize: 18, fontWeight: '700', color: colors.text },
+  previewSendText: { fontSize: 16, fontWeight: '700', color: colors.text },
   // Match modal
   modalOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', zIndex: 9999 },
   modalCard: { backgroundColor: colors.card, borderRadius: 16, padding: 24, width: '90%', maxWidth: 380 },
-  modalTitle: { fontSize: 19, fontWeight: '700', color: colors.text, textAlign: 'center', marginBottom: 8 },
+  modalTitle: { fontSize: 20, fontWeight: '700', color: colors.text, textAlign: 'center', marginBottom: 8 },
   modalSub: { fontSize: 16, color: '#8E8E93', textAlign: 'center', marginBottom: 16 },
   modalBox: { backgroundColor: colors.surface, borderRadius: 10, padding: 14, alignItems: 'center' },
   modalBoxLabel: { fontSize: 12, fontWeight: '700', color: '#6E6E73', letterSpacing: 1, marginBottom: 6 },
-  modalBoxName: { fontSize: 18, fontWeight: '600', color: colors.text },
+  modalBoxName: { fontSize: 16, fontWeight: '600', color: colors.text },
   modalBoxPhone: { fontSize: 15, color: '#8E8E93', marginTop: 2 },
   modalDivRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 12 },
   modalDivLine: { flex: 1, height: 1, backgroundColor: colors.surface },
-  modalDivText: { fontSize: 14, color: '#6E6E73', marginHorizontal: 12 },
+  modalDivText: { fontSize: 13, color: '#6E6E73', marginHorizontal: 12 },
   modalAction: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, padding: 14, borderRadius: 10, gap: 10, marginBottom: 8 },
-  modalActionText: { fontSize: 17, color: colors.text, fontWeight: '500', flex: 1 },
+  modalActionText: { fontSize: 16, color: colors.text, fontWeight: '500', flex: 1 },
 });

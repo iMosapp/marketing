@@ -275,7 +275,7 @@ export default function TemplatesSettings() {
           <View style={[styles.modalContainer, { paddingTop: insets.top }]}>
             {/* Ask Jessi bar — stays visible in the modal */}
             <View style={[styles.jessiBar, { backgroundColor: colors.surface || '#F2F2F7' }]}>
-              <Text style={{ fontSize: 14, color: colors.textSecondary }}>Have questions? Ask Jessi</Text>
+              <Text style={{ fontSize: 13, color: colors.textSecondary }}>Have questions? Ask Jessi</Text>
             </View>
 
             <View style={styles.modalHeader}>
@@ -402,7 +402,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 40,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
@@ -454,7 +454,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   templateName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
   },
@@ -488,7 +488,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     lineHeight: 20,
   },
   usageCount: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#6E6E73',
     marginTop: 8,
   },
@@ -503,7 +503,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderStyle: 'dashed',
   },
   createText: {
-    fontSize: 17,
+    fontSize: 16,
     color: '#007AFF',
     marginTop: 8,
     fontWeight: '500',
@@ -530,16 +530,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.card,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
   cancelButton: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#007AFF',
   },
   saveButton: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#007AFF',
     fontWeight: '600',
   },
@@ -564,7 +564,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
-    fontSize: 18,
+    fontSize: 16,
     color: colors.text,
   },
   contentInput: {

@@ -450,7 +450,7 @@ export default function TagsSettings() {
                   </View>
                 )}
                 <View>
-                  <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>{contactListTag?.name}</Text>
+                  <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{contactListTag?.name}</Text>
                   <Text style={{ fontSize: 13, color: colors.textSecondary }}>{tagContacts.length} contact{tagContacts.length !== 1 ? 's' : ''}</Text>
                 </View>
               </View>
@@ -474,7 +474,7 @@ export default function TagsSettings() {
                   <View key={contact._id} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.surface }}>
                     {/* Avatar */}
                     <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: (contactListTag?.color || '#007AFF') + '20', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                      <Text style={{ fontSize: 17, fontWeight: '700', color: contactListTag?.color || '#007AFF' }}>
+                      <Text style={{ fontSize: 16, fontWeight: '700', color: contactListTag?.color || '#007AFF' }}>
                         {(contact.name || '?')[0].toUpperCase()}
                       </Text>
                     </View>
@@ -672,7 +672,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 40,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
@@ -725,7 +725,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   pendingCreator: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#FF9500',
     marginTop: 2,
   },
@@ -774,7 +774,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   tagName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
   },
@@ -804,7 +804,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 4,
   },
   createText: {
-    fontSize: 17,
+    fontSize: 16,
     color: '#007AFF',
     marginTop: 8,
     fontWeight: '500',
@@ -824,16 +824,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.card,
   },
   modalTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
   cancelButton: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#007AFF',
   },
   saveButton: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#007AFF',
     fontWeight: '600',
   },
@@ -857,7 +857,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   previewText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
   },
   inputLabel: {
@@ -870,7 +870,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
-    fontSize: 18,
+    fontSize: 16,
     color: colors.text,
   },
   colorGrid: {
@@ -929,7 +929,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   modalSaveBtnText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
   },
   modalCancelBtn: {
@@ -939,7 +939,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   modalCancelBtnText: {
     color: colors.textSecondary,
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '600',
   },
 });

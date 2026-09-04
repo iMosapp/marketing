@@ -239,7 +239,7 @@ const { showToast } = useToast();
             <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 10, borderWidth: 1, borderColor: /^#[0-9A-Fa-f]{6}$/.test(hexInput) ? hexInput + '60' : colors.border, overflow: 'hidden' }}>
               <View style={{ width: 28, height: 28, marginLeft: 8, borderRadius: 6, backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(hexInput) ? hexInput : colors.border }} />
               <TextInput
-                style={{ flex: 1, padding: 10, fontSize: 17, color: colors.text, fontFamily: 'monospace' }}
+                style={{ flex: 1, padding: 10, fontSize: 16, color: colors.text, fontFamily: 'monospace' }}
                 value={hexInput}
                 onChangeText={handleHexChange}
                 placeholder="#000000"
@@ -256,7 +256,7 @@ const { showToast } = useToast();
           {Platform.OS === 'web' && (
             <TouchableOpacity onPress={openNativePicker} style={{ alignItems: 'center', opacity: 0.6 }}>
               <Ionicons name="color-palette-outline" size={22} color={colors.textSecondary} />
-              <Text style={{ fontSize: 10, color: colors.textSecondary, marginTop: 2 }}>Pick</Text>
+              <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>Pick</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -572,7 +572,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
@@ -580,7 +580,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 4,
   },
   saveText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: '#007AFF',
   },
@@ -616,7 +616,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   previewCompany: {
-    fontSize: 19,
+    fontSize: 22,
     fontWeight: '700',
     color: colors.text,
   },
@@ -640,7 +640,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   previewFooterText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#999',
   },
 
@@ -658,7 +658,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
-    fontSize: 18,
+    fontSize: 16,
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.surface,
@@ -675,11 +675,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   uploadButtonText: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '600',
   },
   inputHelper: {
-    fontSize: 14,
+    fontSize: 15,
     marginBottom: 6,
   },
   
@@ -755,7 +755,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
-    fontSize: 17,
+    fontSize: 16,
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.surface,

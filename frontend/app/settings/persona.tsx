@@ -557,7 +557,7 @@ const { showToast } = useToast();
             </TouchableOpacity>
             {generatedBio ? (
               <View style={{ backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#34C759' }}>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#34C759', marginBottom: 10 }}>AI-GENERATED BIO (PREVIEW)</Text>
+                <Text style={{ fontSize: 15, fontWeight: '600', color: '#34C759', marginBottom: 10 }}>AI-GENERATED BIO (PREVIEW)</Text>
                 <TextInput
                   style={[styles.addInput, { height: 200, textAlignVertical: 'top', marginBottom: 12, lineHeight: 22, paddingTop: 14 }]}
                   value={generatedBio}
@@ -571,13 +571,13 @@ const { showToast } = useToast();
                     style={{ flex: 1, backgroundColor: '#34C759', borderRadius: 10, padding: 12, alignItems: 'center' }}
                     onPress={handleAcceptBio}
                   >
-                    <Text style={{ color: '#fff', fontWeight: '600', fontSize: 17 }}>Use This Bio</Text>
+                    <Text style={{ color: '#fff', fontWeight: '600', fontSize: 16 }}>Use This Bio</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={{ flex: 1, backgroundColor: colors.card, borderRadius: 10, padding: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.textSecondary }}
                     onPress={() => setGeneratedBio('')}
                   >
-                    <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 17 }}>Dismiss</Text>
+                    <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 16 }}>Dismiss</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -960,7 +960,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 60,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
@@ -969,7 +969,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'flex-end',
   },
   saveButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#007AFF',
     fontWeight: '600',
   },
@@ -984,7 +984,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 24,
   },
   previewLabel: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textSecondary,
     marginBottom: 12,
   },
@@ -1031,7 +1031,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: '#007AFF15',
   },
   toneLabel: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
     marginTop: 8,
@@ -1040,7 +1040,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: '#007AFF',
   },
   toneDesc: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -1129,11 +1129,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
-    fontSize: 18,
+    fontSize: 16,
     color: colors.text,
   },
   inputHint: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6E6E73',
     marginTop: 6,
   },
@@ -1147,13 +1147,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     minHeight: 70,
   },
   switchLabel: {
-    fontSize: 17,
+    fontSize: 16,
     color: colors.text,
     fontWeight: '500',
     flex: 1,
   },
   switchHint: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textSecondary,
     marginTop: 2,
     paddingRight: 60,
@@ -1195,7 +1195,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 10,
     padding: 12,
-    fontSize: 17,
+    fontSize: 16,
     color: colors.text,
   },
   bioInput: {
@@ -1221,7 +1221,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   saveButtonLargeText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
   },
@@ -1245,12 +1245,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 2,
   },
   progressLabel: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textSecondary,
     fontWeight: '500',
   },
   stepTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
     color: colors.text,
     marginBottom: 6,
@@ -1274,7 +1274,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   whyText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textSecondary,
     lineHeight: 20,
   },
@@ -1292,7 +1292,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   fieldHint: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.textSecondary,
     marginBottom: 10,
   },
@@ -1313,12 +1313,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 80,
   },
   navBackText: {
-    fontSize: 17,
+    fontSize: 16,
     color: '#007AFF',
     fontWeight: '500',
   },
   navDots: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textSecondary,
     letterSpacing: 2,
   },
@@ -1333,7 +1333,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   navNextText: {
-    fontSize: 17,
+    fontSize: 16,
     color: '#FFF',
     fontWeight: '600',
   },

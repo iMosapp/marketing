@@ -300,7 +300,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 60,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
   },
@@ -309,7 +309,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'flex-end',
   },
   saveButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#007AFF',
     fontWeight: '600',
   },
@@ -358,7 +358,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   platformName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 4,
@@ -403,7 +403,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 10,
     padding: 14,
-    fontSize: 17,
+    fontSize: 16,
     color: colors.text,
     marginBottom: 12,
   },
@@ -417,7 +417,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   addButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
   },

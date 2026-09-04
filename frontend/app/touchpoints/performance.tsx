@@ -123,7 +123,7 @@ export default function PerformanceScreen() {
         <TouchableOpacity onPress={() => router.back()} style={{ padding: 4, marginRight: 8 }} data-testid="performance-back-btn">
           <Ionicons name="chevron-back" size={24} color={colors.accent} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 19, fontWeight: '700', color: colors.text, flex: 1 }}>My Performance</Text>
+        <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text, flex: 1 }}>My Performance</Text>
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
@@ -177,7 +177,7 @@ export default function PerformanceScreen() {
                       : `Get ${sc.streak_threshold || 5}+ touchpoints to start`}
                   </Text>
                 </View>
-                <Text style={{ fontSize: 14, color: scUp ? '#34C759' : '#FF9500', fontWeight: '500', marginTop: 8 }}>
+                <Text style={{ fontSize: 15, color: scUp ? '#34C759' : '#FF9500', fontWeight: '500', marginTop: 8 }}>
                   {sc.today === 0 ? "No touchpoints yet today — let's get started!" : scDiff > 0 ? "Great work! You're ahead of yesterday. Keep it up!" : scDiff === 0 ? "On pace with yesterday. Push for more!" : "Behind yesterday's pace. Time to make some moves!"}
                 </Text>
               </View>
@@ -188,28 +188,28 @@ export default function PerformanceScreen() {
               <View style={{ marginHorizontal: 16, marginBottom: 14, flexDirection: 'row', gap: 8 }} data-testid="personal-bests">
                 <View style={{ flex: 1, backgroundColor: colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}>
                   <Ionicons name="trophy" size={18} color="#FFD60A" />
-                  <Text style={{ fontSize: 22, fontWeight: '800', color: '#FFD60A', marginTop: 4 }}>{data.personal_bests.best_day}</Text>
+                  <Text style={{ fontSize: 20, fontWeight: '800', color: '#FFD60A', marginTop: 4 }}>{data.personal_bests.best_day}</Text>
                   <Text style={{ fontSize: 12, color: colors.textSecondary, fontWeight: '600' }}>BEST DAY</Text>
                   {data.personal_bests.best_day_date && (
-                    <Text style={{ fontSize: 9, color: colors.textTertiary, marginTop: 2 }}>
+                    <Text style={{ fontSize: 11, color: colors.textTertiary, marginTop: 2 }}>
                       {new Date(data.personal_bests.best_day_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </Text>
                   )}
                 </View>
                 <View style={{ flex: 1, backgroundColor: colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}>
                   <Ionicons name="ribbon" size={18} color="#AF52DE" />
-                  <Text style={{ fontSize: 22, fontWeight: '800', color: '#AF52DE', marginTop: 4 }}>{data.personal_bests.best_week}</Text>
+                  <Text style={{ fontSize: 20, fontWeight: '800', color: '#AF52DE', marginTop: 4 }}>{data.personal_bests.best_week}</Text>
                   <Text style={{ fontSize: 12, color: colors.textSecondary, fontWeight: '600' }}>BEST WEEK</Text>
                 </View>
                 <View style={{ flex: 1, backgroundColor: colors.card, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}>
                   <Ionicons name="flash" size={18} color={sc && sc.today > data.personal_bests.best_day ? '#34C759' : colors.textSecondary} />
-                  <Text style={{ fontSize: 22, fontWeight: '800', color: sc && sc.today > data.personal_bests.best_day ? '#34C759' : colors.text, marginTop: 4 }}>{sc?.today || 0}</Text>
+                  <Text style={{ fontSize: 20, fontWeight: '800', color: sc && sc.today > data.personal_bests.best_day ? '#34C759' : colors.text, marginTop: 4 }}>{sc?.today || 0}</Text>
                   <Text style={{ fontSize: 12, color: colors.textSecondary, fontWeight: '600' }}>TODAY</Text>
                   {sc && sc.today > data.personal_bests.best_day && (
-                    <Text style={{ fontSize: 9, color: '#34C759', fontWeight: '700', marginTop: 2 }}>NEW RECORD!</Text>
+                    <Text style={{ fontSize: 11, color: '#34C759', fontWeight: '700', marginTop: 2 }}>NEW RECORD!</Text>
                   )}
                   {sc && sc.today <= data.personal_bests.best_day && data.personal_bests.best_day > 0 && (
-                    <Text style={{ fontSize: 9, color: colors.textTertiary, marginTop: 2 }}>
+                    <Text style={{ fontSize: 11, color: colors.textTertiary, marginTop: 2 }}>
                       {data.personal_bests.best_day - sc.today} to beat
                     </Text>
                   )}
@@ -269,7 +269,7 @@ export default function PerformanceScreen() {
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
           <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '70%', paddingBottom: 30 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
-              <Text style={{ fontSize: 18, fontWeight: '700', color: colors.text }}>{detailModal.title}</Text>
+              <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>{detailModal.title}</Text>
               <TouchableOpacity onPress={() => setDetailModal(prev => ({ ...prev, visible: false }))} data-testid="close-detail-modal">
                 <Ionicons name="close-circle" size={28} color={colors.textSecondary} />
               </TouchableOpacity>
@@ -293,10 +293,10 @@ export default function PerformanceScreen() {
                     }}
                   >
                     <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 17, fontWeight: '600', color: colors.text }}>{item.contact_name || 'Unknown Contact'}</Text>
-                      <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 2 }}>{eventLabel(item.event_type)}{item.content ? ` - ${item.content.substring(0, 50)}` : ''}</Text>
+                      <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>{item.contact_name || 'Unknown Contact'}</Text>
+                      <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>{eventLabel(item.event_type)}{item.content ? ` - ${item.content.substring(0, 50)}` : ''}</Text>
                     </View>
-                    <Text style={{ fontSize: 14, color: colors.textTertiary }}>{item.timestamp ? formatTime(item.timestamp) : ''}</Text>
+                    <Text style={{ fontSize: 13, color: colors.textTertiary }}>{item.timestamp ? formatTime(item.timestamp) : ''}</Text>
                     {item.contact_id && <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} style={{ marginLeft: 4 }} />}
                   </TouchableOpacity>
                 )}
@@ -320,7 +320,7 @@ function StatCard({ icon, iconColor, iconBg, value, label, colors, onPress }: an
       <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: iconBg, alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
         <Ionicons name={icon} size={18} color={iconColor} />
       </View>
-      <Text style={{ fontSize: 22, fontWeight: '700', color: colors.text }}>{value}</Text>
+      <Text style={{ fontSize: 20, fontWeight: '700', color: colors.text }}>{value}</Text>
       <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ fontSize: 11, color: '#636366', fontWeight: '600', marginTop: 2, textAlign: 'center' }}>{label}</Text>
     </TouchableOpacity>
   );
@@ -338,9 +338,9 @@ function EngCard({ icon, iconColor, iconBg, title, value, sub, colors, onPress }
         <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: iconBg, alignItems: 'center', justifyContent: 'center' }}>
           <Ionicons name={icon} size={16} color={iconColor} />
         </View>
-        <Text style={{ fontSize: 14, color: colors.textSecondary, fontWeight: '600' }}>{title}</Text>
+        <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '600' }}>{title}</Text>
       </View>
-      <Text style={{ fontSize: 26, fontWeight: '700', color: iconColor }}>{value}</Text>
+      <Text style={{ fontSize: 20, fontWeight: '700', color: iconColor }}>{value}</Text>
       <Text style={{ fontSize: 13, color: '#636366', marginTop: 2 }}>{sub}</Text>
     </TouchableOpacity>
   );
@@ -361,7 +361,7 @@ function CtrRow({ icon, iconColor, iconBg, label, sub, value, valueColor, colors
         <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>{label}</Text>
         <Text style={{ fontSize: 13, color: '#636366', marginTop: 1 }}>{sub}</Text>
       </View>
-      <Text style={{ fontSize: 19, fontWeight: '700', color: valueColor }}>{value}</Text>
+      <Text style={{ fontSize: 20, fontWeight: '700', color: valueColor }}>{value}</Text>
       {onPress && <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} style={{ marginLeft: 4 }} />}
     </TouchableOpacity>
   );

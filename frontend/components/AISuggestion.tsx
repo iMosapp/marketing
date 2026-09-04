@@ -114,7 +114,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   suggestionText: {
-    fontSize: 17,
+    fontSize: 16,
     color: colors.text,
     lineHeight: 21,
   },

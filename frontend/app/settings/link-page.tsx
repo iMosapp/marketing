@@ -143,7 +143,7 @@ export default function EditLinkPage() {
         </TouchableOpacity>
         <Text style={[s.headerTitle, { color: colors.text }]}>My Link Page</Text>
         <TouchableOpacity onPress={handleSave} disabled={saving} data-testid="linkpage-save">
-          {saving ? <ActivityIndicator size="small" color={colors.accent} /> : <Text style={{ color: colors.accent, fontSize: 18, fontWeight: '700' }}>Save</Text>}
+          {saving ? <ActivityIndicator size="small" color={colors.accent} /> : <Text style={{ color: colors.accent, fontSize: 17, fontWeight: '700' }}>Save</Text>}
         </TouchableOpacity>
       </View>
 
@@ -152,11 +152,11 @@ export default function EditLinkPage() {
         <TouchableOpacity style={[s.urlCard, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={copyLink} data-testid="linkpage-copy-url">
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 13, color: colors.textSecondary, fontWeight: '600', marginBottom: 2 }}>YOUR LINK</Text>
-            <Text style={{ fontSize: 17, color: colors.accent, fontWeight: '700' }}>app.imonsocial.com/l/{username}</Text>
+            <Text style={{ fontSize: 16, color: colors.accent, fontWeight: '700' }}>app.imonsocial.com/l/{username}</Text>
           </View>
           <View style={[s.copyBadge, { backgroundColor: `${colors.accent}20` }]}>
             <Ionicons name="copy-outline" size={16} color={colors.accent} />
-            <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '700' }}>Copy</Text>
+            <Text style={{ color: colors.accent, fontSize: 15, fontWeight: '700' }}>Copy</Text>
           </View>
         </TouchableOpacity>
         <Text style={[s.statsText, { color: colors.textSecondary }]}>{views} page views</Text>
@@ -207,7 +207,7 @@ export default function EditLinkPage() {
                 <View style={[s.themePreviewBar, { backgroundColor: t === 'dark' ? colors.card : '#fff' }]} />
                 <View style={[s.themePreviewBar, { backgroundColor: t === 'dark' ? colors.card : '#fff', width: '70%' }]} />
               </View>
-              <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', marginTop: 4 }}>{t === 'dark' ? 'Dark' : 'Light'}</Text>
+              <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600', marginTop: 4 }}>{t === 'dark' ? 'Dark' : 'Light'}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -222,7 +222,7 @@ export default function EditLinkPage() {
 
         {/* Social Links  - prefix + username input (like My Profile) */}
         <Text style={[s.sectionTitle, { color: colors.textSecondary }]}>SOCIAL LINKS</Text>
-        <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 12, opacity: 0.7 }}>
+        <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 12, opacity: 0.7 }}>
           Just enter your username  - the URL is built automatically.
         </Text>
         {SOCIAL_PLATFORMS.map(platform => {
@@ -322,11 +322,11 @@ const s = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 28, paddingBottom: 12, borderBottomWidth: 0.5 },
   backBtn: { padding: 4 },
-  headerTitle: { flex: 1, fontSize: 19, fontWeight: '700', textAlign: 'center' },
+  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', textAlign: 'center' },
   content: { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
   urlCard: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 14, borderWidth: 1, gap: 12 },
   copyBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
-  statsText: { fontSize: 14, textAlign: 'center', marginTop: 8, marginBottom: 16 },
+  statsText: { fontSize: 15, textAlign: 'center', marginTop: 8, marginBottom: 16 },
   sectionTitle: { fontSize: 13, fontWeight: '700', letterSpacing: 1.5, marginTop: 20, marginBottom: 8 },
   input: { padding: 12, borderRadius: 10, fontSize: 17, borderWidth: 1, marginBottom: 8 },
   multiline: { minHeight: 70, textAlignVertical: 'top' },
