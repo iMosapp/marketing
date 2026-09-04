@@ -44,46 +44,33 @@ async def clocks_for_leads(db, leads: list) -> dict:
         return {}
     conv_ids = [l["conversation_id"] for l in leads]
     contact_ids = [str(l["contact_id"]) for l in leads if l.get("contact_id")]
-    earliest = min((_utc(l.get("received_at")) for l in leads if _utc(l.get("received_at"))), default=None)
-    floor = (earliest - timedelta(minutes=5)) if earliest else None
 
-    # texts: first ai, first human, all inbound timestamps
-    pipeline = [
+    # Everything is measured from when THIS lead arrived. A returning customer lands in an existing
+    # thread with months of history, so every event is filtered per lead to >= received_at - 5 min.
+    texts: dict = {}
+    async for row in db.messages.aggregate([
         {"$match": {"conversation_id": {"$in": conv_ids}, "sender": {"$in": ["ai", "user", "contact"]}}},
-        {"$addFields": {"_ts": {"$ifNull": ["$timestamp", "$created_at"]}}},
-        {"$match": {"_ts": {"$ne": None}}},
-        {"$sort": {"_ts": 1}},
-        {"$group": {
-            "_id": "$conversation_id",
-            "ai_first": {"$min": {"$cond": [{"$and": [{"$eq": ["$sender", "ai"]}, {"$ne": ["$direction", "inbound"]}]}, "$_ts", None]}},
-            "human_first": {"$min": {"$cond": [{"$and": [{"$eq": ["$sender", "user"]}, {"$ne": ["$direction", "inbound"]}, {"$ne": ["$auto_sent", True]}]}, "$_ts", None]}},
-            "human_rows": {"$push": {"$cond": [{"$and": [{"$eq": ["$sender", "user"]}, {"$ne": ["$direction", "inbound"]}, {"$ne": ["$auto_sent", True]}]},
-                                               {"ts": "$_ts", "rep": {"$ifNull": ["$user_id", "$sender_id"]}}, None]}},
-            "inbound": {"$push": {"$cond": [{"$or": [{"$eq": ["$sender", "contact"]}, {"$eq": ["$direction", "inbound"]}]}, "$_ts", None]}},
-            "out_count": {"$sum": {"$cond": [{"$and": [{"$in": ["$sender", ["ai", "user"]]}, {"$ne": ["$direction", "inbound"]}]}, 1, 0]}},
-        }},
-    ]
-    texts = {}
-    async for row in db.messages.aggregate(pipeline):
-        texts[row["_id"]] = row
+        {"$project": {"conversation_id": 1, "sender": 1, "direction": 1, "auto_sent": 1,
+                      "_ts": {"$ifNull": ["$timestamp", "$created_at"]}, "rep": {"$ifNull": ["$user_id", "$sender_id"]}}},
+    ]):
+        ts = _utc(row.get("_ts"))
+        if ts:
+            row["_ts"] = ts
+            texts.setdefault(row["conversation_id"], []).append(row)
 
-    # calls to the customer, by contact
     calls: dict = {}
+    logs: dict = {}
     if contact_ids:
-        cq = {"contact_id": {"$in": contact_ids}, "type": {"$in": ["outbound", "completed", "answered"]}}
-        if floor:
-            cq["timestamp"] = {"$gte": floor.replace(tzinfo=None)}
-        async for row in db.calls.aggregate([{"$match": cq}, {"$group": {"_id": "$contact_id", "first": {"$min": "$timestamp"}, "user_id": {"$first": "$user_id"}, "n": {"$sum": 1}}}]):
-            calls[row["_id"]] = row
-        lq = {"contact_id": {"$in": contact_ids}, "direction": {"$ne": "inbound"}}
-        if floor:
-            lq["timestamp"] = {"$gte": floor.replace(tzinfo=None)}
-        async for row in db.call_logs.aggregate([{"$match": lq}, {"$group": {"_id": "$contact_id", "first": {"$min": "$timestamp"}, "user_id": {"$first": "$user_id"}, "n": {"$sum": 1}}}]):
-            prev = calls.get(row["_id"])
-            if prev:
-                prev["n"] = max(prev.get("n", 0), row.get("n", 0))
-            if not prev or (_utc(row["first"]) or datetime.max.replace(tzinfo=timezone.utc)) < (_utc(prev["first"]) or datetime.max.replace(tzinfo=timezone.utc)):
-                calls[row["_id"]] = row
+        async for row in db.calls.find({"contact_id": {"$in": contact_ids}, "type": {"$in": ["outbound", "completed", "answered"]}},
+                                       {"contact_id": 1, "timestamp": 1, "user_id": 1}):
+            ts = _utc(row.get("timestamp"))
+            if ts:
+                calls.setdefault(row["contact_id"], []).append((ts, row.get("user_id")))
+        async for row in db.call_logs.find({"contact_id": {"$in": contact_ids}, "direction": {"$ne": "inbound"}},
+                                           {"contact_id": 1, "timestamp": 1, "user_id": 1}):
+            ts = _utc(row.get("timestamp"))
+            if ts:
+                logs.setdefault(row["contact_id"], []).append((ts, row.get("user_id")))
     bridged: dict = {}
     async for job in db.lead_call_jobs.find({"conversation_id": {"$in": conv_ids}, "claimed_via": "press_1", "claimed_at": {"$ne": None}},
                                             {"conversation_id": 1, "claimed_at": 1, "claimed_by": 1}):
@@ -93,22 +80,34 @@ async def clocks_for_leads(db, leads: list) -> dict:
     for l in leads:
         cid = l["conversation_id"]
         received = _utc(l.get("received_at")) or _utc(l.get("created_at"))
-        t = texts.get(cid, {})
-        c = calls.get(str(l.get("contact_id") or ""))
+        floor = (received - timedelta(minutes=5)) if received else None
+        after = (lambda ts: floor is None or ts >= floor)
+        rows = [r for r in texts.get(cid, []) if after(r["_ts"])]
+        outbound = [r for r in rows if r.get("direction") != "inbound" and r.get("sender") in ("ai", "user")]
+        human_rows = sorted((r for r in outbound if r.get("sender") == "user" and r.get("auto_sent") is not True), key=lambda r: r["_ts"])
+        ai_first = min((r["_ts"] for r in outbound if r.get("sender") == "ai"), default=None)
+        human_first = human_rows[0]["_ts"] if human_rows else None
+        human_rep = next((r.get("rep") for r in human_rows if r.get("rep")), None)
+        inbound = [r["_ts"] for r in rows if r.get("sender") == "contact" or r.get("direction") == "inbound"]
+
+        ckey = str(l.get("contact_id") or "")
+        c_rows = [x for x in calls.get(ckey, []) if after(x[0])]
+        l_rows = [x for x in logs.get(ckey, []) if after(x[0])]
         b = bridged.get(cid)
         first_call = None
         call_rep = None
-        for cand, rep in ((_utc((c or {}).get("first")), (c or {}).get("user_id")), (_utc((b or {}).get("claimed_at")), (b or {}).get("claimed_by"))):
-            if cand and (received is None or cand >= received - timedelta(minutes=5)) and (first_call is None or cand < first_call):
+        cands = c_rows + l_rows
+        if b and _utc(b.get("claimed_at")) and after(_utc(b.get("claimed_at"))):
+            cands.append((_utc(b.get("claimed_at")), b.get("claimed_by")))
+        for cand, rep in cands:
+            if first_call is None or cand < first_call:
                 first_call, call_rep = cand, rep
-        ai_first = _utc(t.get("ai_first"))
-        human_first = _utc(t.get("human_first"))
-        human_rep = next((r.get("rep") for r in sorted((r for r in t.get("human_rows", []) if r), key=lambda r: r["ts"]) if r.get("rep")), None)
+
         text_first = min((x for x in (ai_first, human_first) if x), default=None)
         outbound_first = min((x for x in (ai_first, human_first, first_call) if x), default=None)
         reply = None
         if text_first:
-            reply = min((x for x in (_utc(v) for v in t.get("inbound", []) if v) if x and x > outbound_first), default=None)
+            reply = min((x for x in inbound if x > outbound_first), default=None)
         out[cid] = {
             "received_at": received,
             "first_call_at": first_call, "call_rep": str(call_rep) if call_rep else None,
@@ -120,10 +119,10 @@ async def clocks_for_leads(db, leads: list) -> dict:
             "call_secs": _secs(received, first_call), "human_secs": _secs(received, human_first),
             "ai_secs": _secs(received, ai_first), "reply_secs": _secs(outbound_first, reply) if reply else None,
             "assigned_to": str(l.get("assigned_to")) if l.get("assigned_to") else None,
-            "outbound_texts": int(t.get("out_count") or 0),
-            "inbound_texts": len([v for v in t.get("inbound", []) if v]),
-            "calls": int((c or {}).get("n") or 0) + (1 if b else 0),
-            "contact_id": str(l.get("contact_id") or ""),
+            "outbound_texts": len(outbound),
+            "inbound_texts": len(inbound),
+            "calls": max(len(c_rows), len(l_rows)) + (1 if b else 0),
+            "contact_id": ckey,
         }
     return out
 

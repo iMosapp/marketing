@@ -1522,7 +1522,7 @@ async def compute_proof(db, store_id: Optional[str], days: int) -> dict:
         s = sum(1 for r in grp if r.get("contact_id") in sold)
         texted_g = [r for r in grp if r.get("texted")]
         replied_g = [r for r in texted_g if r.get("reply_secs") is not None]
-        touch = [t for t in ((r.get("received_at") and r.get("first_outbound_at") and int((r["first_outbound_at"] - r["received_at"]).total_seconds())) for r in grp) if isinstance(t, int)]
+        touch = [t for t in ((r.get("received_at") and r.get("first_outbound_at") and int((r["first_outbound_at"] - r["received_at"]).total_seconds())) for r in grp) if isinstance(t, int) and t >= 0]
         dts = [d for d in (_days_to_sold(r) for r in grp) if d is not None]
         monthly = cost_by_name.get(name)
         period_cost = round(monthly * days / 30, 2) if monthly else None

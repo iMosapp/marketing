@@ -4,12 +4,10 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import * as Sharing from 'expo-sharing';
 import { File as ExpoFile, Paths } from 'expo-file-system';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../services/api';
 import { useToast } from '../common/Toast';
 
 const GOLD = '#C9A962';
-const DISMISS_KEY = 'proof_cost_prompt_dismissed_until';
 const fmtSecs = (s: number | null | undefined) => s == null ? '--' : s < 60 ? `${s}s` : s < 3600 ? `${Math.round(s / 60)}m` : s < 86400 ? `${Math.round(s / 3600)}h` : `${Math.round(s / 86400)}d`;
 const money = (n: number | null | undefined) => n == null ? '--' : `$${Math.round(n).toLocaleString()}`;
 
@@ -31,58 +29,6 @@ const STYLES = [
   { key: 'dark-square', label: 'Dark 1:1', theme: 'dark', format: 'square' },
   { key: 'light-square', label: 'Light 1:1', theme: 'light', format: 'square' },
 ];
-
-const SourceCostPrompt = ({ items, colors, onSaved }: { items: { source_id: string; source_name: string; leads: number }[]; colors: any; onSaved: () => void }) => {
-  const { showToast } = useToast();
-  const [hidden, setHidden] = useState(true);
-  const [vals, setVals] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState<string | null>(null);
-  useEffect(() => {
-    AsyncStorage.getItem(DISMISS_KEY).then(v => setHidden(!!v && Number(v) > Date.now())).catch(() => setHidden(false));
-  }, []);
-  if (hidden || !items.length) return null;
-  const dismiss = async () => {
-    await AsyncStorage.setItem(DISMISS_KEY, String(Date.now() + 30 * 86400000));
-    setHidden(true);
-  };
-  const save = async (id: string) => {
-    const n = Number(String(vals[id] || '').replace(/[^0-9.]/g, ''));
-    if (!n) return;
-    setSaving(id);
-    try {
-      await api.patch(`/lead-sources/${id}`, { monthly_cost: n });
-      showToast('Monthly spend saved', 'success');
-      onSaved();
-    } catch (e: any) {
-      showToast(e?.response?.data?.detail || 'Could not save', 'error');
-    } finally {
-      setSaving(null);
-    }
-  };
-  return (
-    <View style={{ backgroundColor: colors.card, borderRadius: 14, padding: 14, gap: 10, borderWidth: 1, borderColor: `${GOLD}44` }} testID="source-cost-prompt" dataSet={{ testid: 'source-cost-prompt' } as any}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <Ionicons name="cash-outline" size={16} color={GOLD} />
-        <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text, flex: 1 }}>Optional: what do these sources cost per month?</Text>
-        <TouchableOpacity onPress={dismiss} testID="source-cost-dismiss" dataSet={{ testid: 'source-cost-dismiss' } as any}><Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary }}>Skip</Text></TouchableOpacity>
-      </View>
-      <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>Add a number and cost per sale fills in automatically. Leave it blank and everything else still works.</Text>
-      {items.map(it => (
-        <View key={it.source_id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }} testID={`source-cost-row-${it.source_id}`} dataSet={{ testid: `source-cost-row-${it.source_id}` } as any}>
-          <Text style={{ flex: 1, fontSize: 15, color: colors.text }} numberOfLines={1}>{it.source_name} <Text style={{ color: colors.textSecondary, fontSize: 12 }}>· {it.leads} leads</Text></Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bg, borderRadius: 8, paddingHorizontal: 8, height: 34, width: 110 }}>
-            <Text style={{ color: colors.textSecondary, fontSize: 15 }}>$</Text>
-            <TextInput value={vals[it.source_id] || ''} onChangeText={t => setVals(v => ({ ...v, [it.source_id]: t }))} keyboardType="numeric" placeholder="per mo" placeholderTextColor={colors.textSecondary}
-              style={{ flex: 1, color: colors.text, fontSize: 15, paddingVertical: 0 }} testID={`source-cost-input-${it.source_id}`} dataSet={{ testid: `source-cost-input-${it.source_id}` } as any} />
-          </View>
-          <TouchableOpacity onPress={() => save(it.source_id)} disabled={saving === it.source_id} style={{ backgroundColor: GOLD, borderRadius: 8, paddingHorizontal: 12, height: 34, justifyContent: 'center' }} testID={`source-cost-save-${it.source_id}`} dataSet={{ testid: `source-cost-save-${it.source_id}` } as any}>
-            {saving === it.source_id ? <ActivityIndicator size="small" color="#000" /> : <Text style={{ fontSize: 13, fontWeight: '700', color: '#000' }}>Save</Text>}
-          </TouchableOpacity>
-        </View>
-      ))}
-    </View>
-  );
-};
 
 const Card = ({ title, children, colors, testid, right }: any) => (
   <View style={{ backgroundColor: colors.card, borderRadius: 14, padding: 14, gap: 10 }} testID={testid} dataSet={{ testid } as any}>
@@ -115,29 +61,82 @@ const BucketBars = ({ rows, colors }: { rows: Bucket[]; colors: any }) => {
   );
 };
 
-const SourceRow = ({ s, colors }: { s: Source; colors: any }) => (
-  <View style={{ gap: 6, paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.border }} testID={`proof-source-${s.source_name}`} dataSet={{ testid: `proof-source-${s.source_name}` } as any}>
-    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-      <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text, flex: 1 }} numberOfLines={1}>{s.source_name}</Text>
-      <Text style={{ fontSize: 15, fontWeight: '800', color: s.cost_per_sale != null ? GOLD : colors.textSecondary }}>{s.cost_per_sale != null ? `${money(s.cost_per_sale)} / sale` : s.period_cost ? 'no sales yet' : 'no cost set'}</Text>
-    </View>
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-      {[
-        `${s.leads} leads`, `${s.sold} sold${s.close_rate != null ? ` (${s.close_rate}%)` : ''}`,
-        s.first_touch_avg_seconds != null ? `first touch ${fmtSecs(s.first_touch_avg_seconds)}` : 'never touched',
-        s.reply_rate != null ? `${s.reply_rate}% replied` : null,
-        s.avg_touches != null ? `${s.avg_touches} touches avg` : null,
-        s.avg_days_to_sold != null ? `${s.avg_days_to_sold} days to sold` : null,
-        s.period_cost != null ? `spent ${money(s.period_cost)}` : null,
-        s.cost_per_lead != null ? `${money(s.cost_per_lead)} / lead` : null,
-      ].filter(Boolean).map((chip, i) => (
-        <View key={i} style={{ backgroundColor: colors.bg, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-          <Text style={{ fontSize: 12, color: colors.textSecondary }}>{chip}</Text>
+const SpendEditor = ({ s, days, colors, onSaved }: { s: Source; days: number; colors: any; onSaved: () => void }) => {
+  const { showToast } = useToast();
+  const [val, setVal] = useState(s.monthly_cost != null ? String(Math.round(s.monthly_cost)) : '');
+  const [saving, setSaving] = useState(false);
+  const monthly = Number(String(val).replace(/[^0-9.]/g, '')) || 0;
+  const period = monthly * days / 30;
+  const save = async () => {
+    if (!s.source_id) return;
+    setSaving(true);
+    try {
+      await api.patch(`/lead-sources/${s.source_id}`, { monthly_cost: monthly });
+      showToast(monthly ? `${s.source_name} spend saved` : `${s.source_name} spend cleared`, 'success');
+      onSaved();
+    } catch (e: any) {
+      showToast(e?.response?.data?.detail || 'Could not save', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <View style={{ backgroundColor: colors.bg, borderRadius: 10, padding: 12, gap: 8, borderWidth: 1, borderColor: `${GOLD}44` }} testID={`spend-editor-${s.source_id}`} dataSet={{ testid: `spend-editor-${s.source_id}` } as any}>
+      <Text style={{ fontSize: 12, fontWeight: '700', color: colors.text, letterSpacing: 0.8 }}>{`${s.source_name.toUpperCase()} MONTHLY SPEND`}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 8, paddingHorizontal: 10, height: 40, flex: 1 }}>
+          <Text style={{ color: colors.textSecondary, fontSize: 16 }}>$</Text>
+          <TextInput value={val} onChangeText={t => setVal(t.replace(/[^0-9.]/g, ''))} keyboardType="numeric" placeholder="0" placeholderTextColor={colors.textSecondary} autoFocus
+            style={{ flex: 1, color: colors.text, fontSize: 16, fontWeight: '700', paddingVertical: 0 }} testID={`spend-input-${s.source_id}`} dataSet={{ testid: `spend-input-${s.source_id}` } as any} />
+          <Text style={{ color: colors.textSecondary, fontSize: 13 }}>/mo</Text>
         </View>
-      ))}
+        <TouchableOpacity onPress={save} disabled={saving} style={{ backgroundColor: GOLD, borderRadius: 8, paddingHorizontal: 14, height: 40, justifyContent: 'center' }} testID={`spend-save-${s.source_id}`} dataSet={{ testid: `spend-save-${s.source_id}` } as any}>
+          {saving ? <ActivityIndicator size="small" color="#000" /> : <Text style={{ fontSize: 13, fontWeight: '700', color: '#000' }}>Save</Text>}
+        </TouchableOpacity>
+      </View>
+      <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }} testID={`spend-math-${s.source_id}`} dataSet={{ testid: `spend-math-${s.source_id}` } as any}>
+        {monthly
+          ? `${money(period)} over ${days} days ÷ ${s.leads} lead${s.leads === 1 ? '' : 's'} = ${money(period / Math.max(1, s.leads))} per lead${s.sold ? ` · ÷ ${s.sold} sold = ${money(period / s.sold)} per sale` : ' · no sales yet, so no cost per sale'}`
+          : 'Enter what this source bills you each month. Cost per lead and per sale fill in for every window.'}
+      </Text>
     </View>
-  </View>
-);
+  );
+};
+
+const SourceRow = ({ s, colors, canEdit, days, onSaved }: { s: Source; colors: any; canEdit?: boolean; days: number; onSaved?: () => void }) => {
+  const [editing, setEditing] = useState(false);
+  const editable = !!canEdit && !!s.source_id;
+  return (
+    <View style={{ gap: 6, paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.border }} testID={`proof-source-${s.source_name}`} dataSet={{ testid: `proof-source-${s.source_name}` } as any}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text, flex: 1 }} numberOfLines={1}>{s.source_name}</Text>
+        <Text style={{ fontSize: 15, fontWeight: '800', color: s.cost_per_sale != null ? GOLD : colors.textSecondary }}>{s.cost_per_sale != null ? `${money(s.cost_per_sale)} / sale` : s.period_cost ? 'no sales yet' : editable ? '' : 'no cost set'}</Text>
+        {editable && (
+          <TouchableOpacity onPress={() => setEditing(v => !v)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, height: 28, borderRadius: 14, backgroundColor: s.monthly_cost ? colors.bg : `${GOLD}22`, borderWidth: 1, borderColor: `${GOLD}66` }} testID={`spend-edit-${s.source_id}`} dataSet={{ testid: `spend-edit-${s.source_id}` } as any}>
+            <Ionicons name={editing ? 'close' : s.monthly_cost ? 'pencil' : 'add'} size={12} color={GOLD} />
+            <Text style={{ fontSize: 12, fontWeight: '700', color: GOLD }}>{editing ? 'Close' : s.monthly_cost ? `${money(s.monthly_cost)}/mo` : 'Add spend'}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+      {editing && <SpendEditor s={s} days={days} colors={colors} onSaved={() => { setEditing(false); onSaved && onSaved(); }} />}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+        {[
+          `${s.leads} leads`, `${s.sold} sold${s.close_rate != null ? ` (${s.close_rate}%)` : ''}`,
+          s.first_touch_avg_seconds != null ? `first touch ${fmtSecs(s.first_touch_avg_seconds)}` : 'never touched',
+          s.reply_rate != null ? `${s.reply_rate}% replied` : null,
+          s.avg_touches != null ? `${s.avg_touches} touches avg` : null,
+          s.avg_days_to_sold != null ? `${s.avg_days_to_sold} days to sold` : null,
+          s.period_cost != null ? `spent ${money(s.period_cost)}` : null,
+          s.cost_per_lead != null ? `${money(s.cost_per_lead)} / lead` : null,
+        ].filter(Boolean).map((chip, i) => (
+          <View key={i} style={{ backgroundColor: colors.bg, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+            <Text style={{ fontSize: 12, color: colors.textSecondary }}>{chip}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+};
 
 const ProspectLinkCard = ({ colors, storeParam, hasStore }: { colors: any; storeParam: string; hasStore: boolean }) => {
   const { showToast } = useToast();
@@ -282,7 +281,6 @@ export const ProofPanel = ({ data, colors, isManager, storeParam = '', days = 90
       <Card title="SPEED OF FIRST TOUCH (CALL, TEXT OR AI)" colors={colors} testid="proof-first-touch"><BucketBars rows={data.speed_first_touch} colors={colors} /></Card>
 
       <Card title="TRUE COST PER SALE BY SOURCE" colors={colors} testid="proof-sources">
-        {isManager && !publicToken && !!data.unpriced_sources?.length && <SourceCostPrompt items={data.unpriced_sources} colors={colors} onSaved={() => onRefresh && onRefresh()} />}
         {tts?.avg_days != null && (
           <View style={{ flexDirection: 'row', gap: 8 }} testID="proof-time-to-sold" dataSet={{ testid: 'proof-time-to-sold' } as any}>
             {[{ l: 'AVG DAYS', v: tts.avg_days }, { l: 'MEDIAN DAYS', v: tts.median_days }, { l: 'FASTEST', v: tts.fastest_days }].map(x => (
@@ -293,10 +291,10 @@ export const ProofPanel = ({ data, colors, isManager, storeParam = '', days = 90
             ))}
           </View>
         )}
-        {(data.sources || []).length ? (data.sources || []).map(s => <SourceRow key={s.source_name} s={s} colors={colors} />) : (
+        {(data.sources || []).length ? (data.sources || []).map(s => <SourceRow key={s.source_name} s={s} colors={colors} days={days} canEdit={!!isManager && !publicToken} onSaved={onRefresh} />) : (
           <Text style={{ fontSize: 13, color: colors.textSecondary }}>No sources in this window.</Text>
         )}
-        <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>Spend comes from the monthly cost on each source in Lead Source Config, prorated to this window. Sold is any lead whose contact got a sold photo.</Text>
+        <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>{isManager && !publicToken ? 'Tap Add spend or the $/mo pill on any source to set what it bills you each month. ' : ''}Spend is the monthly amount prorated to this window, split by leads received and by leads sold. Sold is any lead whose contact got a sold photo.</Text>
       </Card>
 
       {!!data.reps?.length && (
