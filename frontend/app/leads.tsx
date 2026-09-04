@@ -252,7 +252,7 @@ export default function LeadsDashboard() {
               })
             )
           ) : tab === 'proof' ? (
-            <ProofPanel data={proof} colors={colors} isManager={isManager} storeParam={user?.store_id ? `store_id=${user.store_id}&` : ''} days={roiDays} onRefresh={fetchData} />
+            <ProofPanel data={proof} colors={colors} isManager={isManager} storeParam={user?.store_id ? `store_id=${user.store_id}&` : ''} days={roiDays} onRefresh={fetchData} hasStore={!!user?.store_id} />
           ) : tab === 'speed' ? (
             /* ─── Speed to Lead tab ─── */
             <>

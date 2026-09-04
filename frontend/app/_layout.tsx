@@ -188,7 +188,7 @@ export default function RootLayout() {
   
   // Hide Jessi on auth/public/customer-facing screens
   // These are ALL routes where a customer/public visitor could land
-  const publicRoutes = ['auth', 'index', 'onboarding', 'p', 'card', 'congrats', 'opt-in', 'review', 'showcase', 'l', 'birthday', 'timeline', 'imos', 'import-guide', 'cs-login'];
+  const publicRoutes = ['auth', 'index', 'onboarding', 'p', 'card', 'proof', 'congrats', 'opt-in', 'review', 'showcase', 'l', 'birthday', 'timeline', 'imos', 'import-guide', 'cs-login'];
   const isPublicScreen = !segments.length || publicRoutes.includes(segments[0]);
   // Double-check with pathname for routes that sometimes resolve differently
   const pathname = segments.join('/');

@@ -21,6 +21,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import PlainTextResponse
+from pydantic import BaseModel
 
 from routers.database import get_db
 
@@ -1606,6 +1607,26 @@ async def compute_proof(db, store_id: Optional[str], days: int) -> dict:
         best_cost.sort(key=lambda s: s["cost_per_sale"])
         b, w = best_cost[0], best_cost[-1]
         headlines.append(f"True cost per sale: {b['source_name']} ${b['cost_per_sale']:,.0f} vs {w['source_name']} ${w['cost_per_sale']:,.0f}.")
+    by_rep: dict = {}
+    for r in rows:
+        rid = str(r.get("human_rep") or r.get("call_rep") or r.get("assigned_to") or "") or None
+        if rid:
+            by_rep.setdefault(rid, []).append(r)
+    rep_names = {}
+    rep_oids = [ObjectId(x) for x in by_rep if ObjectId.is_valid(x)]
+    if rep_oids:
+        async for u in db.users.find({"_id": {"$in": rep_oids}}, {"name": 1}):
+            rep_names[str(u["_id"])] = u.get("name", "")
+    reps = []
+    for rid, grp in by_rep.items():
+        tg = [r for r in grp if r.get("texted")]
+        rg = [r for r in tg if r.get("reply_secs") is not None]
+        sg = [r for r in tg if r.get("reply_secs") is None]
+        hs = [r["human_secs"] for r in grp if r.get("human_secs") is not None]
+        reps.append({"user_id": rid, "name": rep_names.get(rid) or "Unknown", "leads": len(grp), **rate(grp),
+                     "replied": rate(rg), "silent": rate(sg), "reply_rate": int(round(100 * len(rg) / len(tg))) if tg else None,
+                     "first_text_avg_seconds": int(sum(hs) / len(hs)) if hs else None})
+    reps.sort(key=lambda x: (-(x["sold"]), -(x["leads"])))
     unpriced = [{"source_id": x["source_id"], "source_name": x["source_name"], "leads": x["leads"]} for x in sources
                 if x["leads"] and not x.get("monthly_cost") and x.get("source_id") and x["source_name"] != "Unknown"]
     return {
@@ -1614,7 +1635,7 @@ async def compute_proof(db, store_id: Optional[str], days: int) -> dict:
         "small_sample": len(rows) < 30,
         "reply": reply_cmp, "speed_human_text": speed, "speed_first_touch": first_touch,
         "touchpoints": touches, "conversation_depth": conversation, "headlines": headlines,
-        "time_to_sold": time_to_sold, "sources": sources, "unpriced_sources": unpriced,
+        "time_to_sold": time_to_sold, "sources": sources, "unpriced_sources": unpriced, "reps": reps,
         "benchmark": "Harvard Business Review: contacting a lead within 1 hour makes qualifying it 7x more likely than waiting 2 hours or more.",
     }
 
@@ -1625,24 +1646,98 @@ async def lead_engagement_proof(request: Request, store_id: Optional[str] = None
     return await compute_proof(get_db(), store_id, days)
 
 
+async def store_display_name(db, store_id) -> str:
+    if store_id and ObjectId.is_valid(str(store_id)):
+        st = await db.stores.find_one({"_id": ObjectId(str(store_id))}, {"name": 1})
+        return (st or {}).get("name") or ""
+    return ""
+
+
+def proof_png_response(proof: dict, store_name: str, theme: str, fmt: str):
+    from services.proof_card import render_proof_card
+    from fastapi.responses import Response
+    png = render_proof_card(proof, store_name, theme=("light" if theme == "light" else "dark"), square=(fmt == "square"))
+    return Response(content=png, media_type="image/png", headers={"Cache-Control": "no-store", "Content-Disposition": "inline; filename=imos-proof.png"})
+
+
 @router.get("/analytics/proof-card.png")
-async def lead_engagement_proof_card(request: Request, store_id: Optional[str] = None, days: int = 90):
-    """Branded PNG of the proof headlines, ready to text or post."""
+async def lead_engagement_proof_card(request: Request, store_id: Optional[str] = None, days: int = 90, theme: str = "dark", format: str = "portrait"):
+    """Branded PNG of the proof headlines, ready to text or post. theme=dark|light, format=portrait|square."""
     caller_id = _require_auth(request)
     db = get_db()
     proof = await compute_proof(db, store_id, days)
-    store_name = ""
     sid = store_id
     if not sid and ObjectId.is_valid(caller_id):
         u = await db.users.find_one({"_id": ObjectId(caller_id)}, {"store_id": 1})
         sid = (u or {}).get("store_id")
-    if sid and ObjectId.is_valid(str(sid)):
-        st = await db.stores.find_one({"_id": ObjectId(str(sid))}, {"name": 1})
-        store_name = (st or {}).get("name") or ""
-    from services.proof_card import render_proof_card
-    from fastapi.responses import Response
-    png = render_proof_card(proof, store_name)
-    return Response(content=png, media_type="image/png", headers={"Cache-Control": "no-store", "Content-Disposition": "inline; filename=imos-proof.png"})
+    return proof_png_response(proof, await store_display_name(db, sid), theme, format)
+
+
+async def _caller_store(db, caller_id: str, store_id: Optional[str]) -> tuple:
+    """(store_id, user) for proof-link management. Managers only, scoped to their own store unless super admin."""
+    user = await db.users.find_one({"_id": ObjectId(caller_id)}, {"role": 1, "store_id": 1, "name": 1}) if ObjectId.is_valid(caller_id) else None
+    if not user or user.get("role") not in ("super_admin", "admin", "manager", "store_manager", "org_admin"):
+        raise HTTPException(status_code=403, detail="Manager role required")
+    sid = store_id if (store_id and user.get("role") == "super_admin") else user.get("store_id")
+    if not sid:
+        raise HTTPException(status_code=400, detail="No store on this account")
+    return str(sid), user
+
+
+def _proof_public_url(token: str) -> str:
+    base = (os.environ.get("PUBLIC_FACING_URL") or os.environ.get("APP_URL") or "https://app.imonsocial.com").rstrip("/")
+    return f"{base}/proof/{token}"
+
+
+@router.get("/analytics/proof-link")
+async def get_proof_link(request: Request, store_id: Optional[str] = None):
+    caller_id = _require_auth(request)
+    db = get_db()
+    sid, _ = await _caller_store(db, caller_id, store_id)
+    st = await db.stores.find_one({"_id": ObjectId(sid)}, {"proof_share": 1}) or {}
+    ps = st.get("proof_share") or {}
+    return {"enabled": bool(ps.get("enabled")) and bool(ps.get("token")), "url": _proof_public_url(ps["token"]) if ps.get("token") else None,
+            "views": ps.get("views", 0), "last_viewed_at": ps.get("last_viewed_at")}
+
+
+class ProofLinkBody(BaseModel):
+    enabled: bool = True
+    rotate: bool = False
+
+
+@router.post("/analytics/proof-link")
+async def set_proof_link(body: ProofLinkBody, request: Request, store_id: Optional[str] = None):
+    """Enable, disable or rotate the public proof page link for the manager's store."""
+    caller_id = _require_auth(request)
+    db = get_db()
+    sid, user = await _caller_store(db, caller_id, store_id)
+    st = await db.stores.find_one({"_id": ObjectId(sid)}, {"proof_share": 1}) or {}
+    ps = dict(st.get("proof_share") or {})
+    if body.rotate or not ps.get("token"):
+        import secrets
+        ps["token"] = secrets.token_urlsafe(12)
+        ps["created_at"] = datetime.now(timezone.utc)
+        ps["created_by"] = caller_id
+        ps["views"] = 0
+    ps["enabled"] = body.enabled
+    ps["updated_at"] = datetime.now(timezone.utc)
+    await db.stores.update_one({"_id": ObjectId(sid)}, {"$set": {"proof_share": ps}})
+    return {"enabled": ps["enabled"], "url": _proof_public_url(ps["token"]), "views": ps.get("views", 0)}
+
+
+async def public_proof_payload(db, token: str, days: int) -> dict:
+    st = await db.stores.find_one({"proof_share.token": token}, {"name": 1, "proof_share": 1, "city": 1, "state": 1})
+    if not st or not (st.get("proof_share") or {}).get("enabled"):
+        raise HTTPException(status_code=404, detail="This proof link is not active")
+    days = days if days in (30, 90, 365) else 90
+    proof = await compute_proof(db, str(st["_id"]), days)
+    proof.pop("unpriced_sources", None)
+    proof["reps"] = [{k: v for k, v in r.items() if k != "user_id"} for r in proof.get("reps", [])]
+    for s in proof.get("sources", []):
+        s.pop("source_id", None)
+    proof["store_name"] = st.get("name") or "Dealership"
+    proof["generated_at"] = datetime.now(timezone.utc).isoformat()
+    return proof
 
 
 def _retry_by_attempt(tasks: list) -> list:

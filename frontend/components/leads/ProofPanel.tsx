@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Platform, ActivityIndicator, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import * as Sharing from 'expo-sharing';
@@ -22,7 +22,15 @@ type Proof = {
   speed_human_text: Bucket[]; speed_first_touch: Bucket[]; touchpoints: Bucket[]; conversation_depth: Bucket[]; headlines: string[];
   time_to_sold?: { count: number; avg_days: number | null; median_days: number | null; fastest_days: number | null };
   sources?: Source[]; benchmark?: string; unpriced_sources?: { source_id: string; source_name: string; leads: number }[];
+  reps?: RepRow[]; store_name?: string;
 };
+type RepRow = { user_id?: string; name: string; leads: number; sold: number; close_rate: number | null; replied: { leads: number; sold: number; close_rate: number | null }; silent: { leads: number; sold: number; close_rate: number | null }; reply_rate: number | null; first_text_avg_seconds: number | null };
+const STYLES = [
+  { key: 'dark-portrait', label: 'Dark 4:5', theme: 'dark', format: 'portrait' },
+  { key: 'light-portrait', label: 'Light 4:5', theme: 'light', format: 'portrait' },
+  { key: 'dark-square', label: 'Dark 1:1', theme: 'dark', format: 'square' },
+  { key: 'light-square', label: 'Light 1:1', theme: 'light', format: 'square' },
+];
 
 const SourceCostPrompt = ({ items, colors, onSaved }: { items: { source_id: string; source_name: string; leads: number }[]; colors: any; onSaved: () => void }) => {
   const { showToast } = useToast();
@@ -131,30 +139,87 @@ const SourceRow = ({ s, colors }: { s: Source; colors: any }) => (
   </View>
 );
 
-export const ProofPanel = ({ data, colors, isManager, storeParam = '', days = 90, onRefresh }: { data: Proof | null; colors: any; isManager?: boolean; storeParam?: string; days?: number; onRefresh?: () => void }) => {
+const ProspectLinkCard = ({ colors, storeParam, hasStore }: { colors: any; storeParam: string; hasStore: boolean }) => {
   const { showToast } = useToast();
-  const [sharing, setSharing] = useState(false);
+  const [state, setState] = useState<{ enabled: boolean; url: string | null; views?: number } | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!hasStore) return;
+    api.get(`/leads/analytics/proof-link?${storeParam}`).then(r => setState(r.data)).catch(() => setState(null));
+  }, [hasStore, storeParam]);
+  const set = async (enabled: boolean, rotate = false) => {
+    setBusy(true);
+    try {
+      const r = await api.post(`/leads/analytics/proof-link?${storeParam}`, { enabled, rotate });
+      setState(r.data);
+      showToast(enabled ? (rotate ? 'New link created' : 'Public proof link is live') : 'Link turned off', 'success');
+    } catch (e: any) {
+      showToast(e?.response?.data?.detail || 'Could not update link', 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+  const copyLink = async () => {
+    if (!state?.url) return;
+    await Clipboard.setStringAsync(state.url);
+    showToast('Link copied', 'success');
+  };
+  return (
+    <Card title="PROSPECT PROOF LINK" colors={colors} testid="prospect-link-card"
+      right={hasStore ? <Switch value={!!state?.enabled} onValueChange={v => set(v)} disabled={busy} trackColor={{ true: GOLD, false: colors.border }} thumbColor="#FFF" testID="prospect-link-toggle" /> : null}>
+      {!hasStore ? (
+        <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>A public link needs a store on your account. Ask an admin to add you to a store.</Text>
+      ) : state?.enabled && state.url ? (
+        <>
+          <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>Anyone with this link sees these numbers live, no login. Send it to a dealer you are pitching.</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.bg, borderRadius: 10, padding: 10 }}>
+            <Ionicons name="link-outline" size={16} color={GOLD} />
+            <Text style={{ flex: 1, fontSize: 13, color: colors.text }} numberOfLines={1} testID="prospect-link-url" dataSet={{ testid: 'prospect-link-url' } as any}>{state.url.replace(/^https?:\/\//, '')}</Text>
+            <TouchableOpacity onPress={copyLink} style={{ backgroundColor: GOLD, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }} testID="prospect-link-copy" dataSet={{ testid: 'prospect-link-copy' } as any}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: '#000' }}>Copy</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={{ fontSize: 12, color: colors.textSecondary }}>{`${state.views || 0} view${state.views === 1 ? '' : 's'}`}</Text>
+            <TouchableOpacity onPress={() => set(true, true)} disabled={busy} testID="prospect-link-rotate" dataSet={{ testid: 'prospect-link-rotate' } as any}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textSecondary }}>New link (old one stops working)</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      ) : (
+        <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>Turn this on to get a public page with your live numbers that you can text to a prospect. Turn it off any time.</Text>
+      )}
+    </Card>
+  );
+};
+
+export const ProofPanel = ({ data, colors, isManager, storeParam = '', days = 90, onRefresh, publicToken, hasStore }: { data: Proof | null; colors: any; isManager?: boolean; storeParam?: string; days?: number; onRefresh?: () => void; publicToken?: string; hasStore?: boolean }) => {
+  const { showToast } = useToast();
+  const [sharing, setSharing] = useState<string | null>(null);
+  const [pickStyle, setPickStyle] = useState(false);
   if (!data) return null;
   const rp = data.reply.replied, sl = data.reply.silent;
   const tts = data.time_to_sold;
-  const shareImage = async () => {
-    setSharing(true);
+  const shareImage = async (style = STYLES[0]) => {
+    setSharing(style.key);
+    setPickStyle(false);
     try {
-      const res = await api.get(`/leads/analytics/proof-card.png?${storeParam}days=${days}`, { responseType: Platform.OS === 'web' ? 'blob' : 'arraybuffer' });
+      const path = publicToken ? `/public/proof/${publicToken}/card.png?days=${days}` : `/leads/analytics/proof-card.png?${storeParam}days=${days}`;
+      const res = await api.get(`${path}&theme=${style.theme}&format=${style.format}`, { responseType: Platform.OS === 'web' ? 'blob' : 'arraybuffer' });
       if (Platform.OS === 'web') {
         const url = URL.createObjectURL(res.data);
-        const a = document.createElement('a'); a.href = url; a.download = 'imos-proof.png'; a.click();
+        const a = document.createElement('a'); a.href = url; a.download = `imos-proof-${style.key}.png`; a.click();
         setTimeout(() => URL.revokeObjectURL(url), 5000);
         showToast('Proof image downloaded', 'success');
       } else {
-        const file = new ExpoFile(Paths.cache, 'imos-proof.png');
+        const file = new ExpoFile(Paths.cache, `imos-proof-${style.key}.png`);
         file.write(new Uint8Array(res.data));
         if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(file.uri, { mimeType: 'image/png', dialogTitle: 'Share proof' });
       }
     } catch (e: any) {
       showToast(e?.response?.data?.detail || 'Could not build the image', 'error');
     } finally {
-      setSharing(false);
+      setSharing(null);
     }
   };
   const copy = async () => {
@@ -167,11 +232,21 @@ export const ProofPanel = ({ data, colors, isManager, storeParam = '', days = 90
     <View style={{ gap: 10 }} testID="proof-panel" dataSet={{ testid: 'proof-panel' } as any}>
       <Card title="DOES ENGAGEMENT CLOSE DEALS?" colors={colors} testid="proof-summary"
         right={<View style={{ flexDirection: 'row', gap: 14 }}>
-          <TouchableOpacity onPress={shareImage} disabled={sharing} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }} testID="proof-share-image" dataSet={{ testid: 'proof-share-image' } as any}>
+          <TouchableOpacity onPress={() => setPickStyle(v => !v)} disabled={!!sharing} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }} testID="proof-share-image" dataSet={{ testid: 'proof-share-image' } as any}>
             {sharing ? <ActivityIndicator size="small" color={GOLD} /> : <Ionicons name="image-outline" size={14} color={GOLD} />}<Text style={{ fontSize: 12, fontWeight: '700', color: GOLD }}>Share image</Text></TouchableOpacity>
           <TouchableOpacity onPress={copy} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }} testID="proof-copy" dataSet={{ testid: 'proof-copy' } as any}>
             <Ionicons name="copy-outline" size={14} color={GOLD} /><Text style={{ fontSize: 12, fontWeight: '700', color: GOLD }}>Copy</Text></TouchableOpacity>
         </View>}>
+        {pickStyle && (
+          <View style={{ flexDirection: 'row', gap: 6 }} testID="proof-style-picker" dataSet={{ testid: 'proof-style-picker' } as any}>
+            {STYLES.map(st => (
+              <TouchableOpacity key={st.key} onPress={() => shareImage(st)} style={{ flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: 8, backgroundColor: st.theme === 'light' ? '#F4F1EA' : '#0B0B0C', borderWidth: 1, borderColor: `${GOLD}66` }} testID={`proof-style-${st.key}`} dataSet={{ testid: `proof-style-${st.key}` } as any}>
+                <Ionicons name={st.format === 'square' ? 'square-outline' : 'tablet-portrait-outline'} size={14} color={st.theme === 'light' ? '#9C7A2F' : GOLD} />
+                <Text style={{ fontSize: 11, fontWeight: '700', color: st.theme === 'light' ? '#111113' : '#FFF', marginTop: 2 }}>{st.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
         <Text style={{ fontSize: 15, color: colors.text }}>{`${data.leads} internet leads · ${data.sold} sold · ${data.close_rate ?? 0}% close rate`}</Text>
         {data.small_sample && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -207,7 +282,7 @@ export const ProofPanel = ({ data, colors, isManager, storeParam = '', days = 90
       <Card title="SPEED OF FIRST TOUCH (CALL, TEXT OR AI)" colors={colors} testid="proof-first-touch"><BucketBars rows={data.speed_first_touch} colors={colors} /></Card>
 
       <Card title="TRUE COST PER SALE BY SOURCE" colors={colors} testid="proof-sources">
-        {isManager && !!data.unpriced_sources?.length && <SourceCostPrompt items={data.unpriced_sources} colors={colors} onSaved={() => onRefresh && onRefresh()} />}
+        {isManager && !publicToken && !!data.unpriced_sources?.length && <SourceCostPrompt items={data.unpriced_sources} colors={colors} onSaved={() => onRefresh && onRefresh()} />}
         {tts?.avg_days != null && (
           <View style={{ flexDirection: 'row', gap: 8 }} testID="proof-time-to-sold" dataSet={{ testid: 'proof-time-to-sold' } as any}>
             {[{ l: 'AVG DAYS', v: tts.avg_days }, { l: 'MEDIAN DAYS', v: tts.median_days }, { l: 'FASTEST', v: tts.fastest_days }].map(x => (
@@ -223,6 +298,32 @@ export const ProofPanel = ({ data, colors, isManager, storeParam = '', days = 90
         )}
         <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>Spend comes from the monthly cost on each source in Lead Source Config, prorated to this window. Sold is any lead whose contact got a sold photo.</Text>
       </Card>
+
+      {!!data.reps?.length && (
+        <Card title="REPS: SPEED PAYS" colors={colors} testid="proof-reps">
+          {data.reps.map((r, i) => (
+            <View key={r.user_id || r.name + i} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingTop: i ? 10 : 0, borderTopWidth: i ? 1 : 0, borderTopColor: colors.border }} testID={`proof-rep-${r.user_id || i}`} dataSet={{ testid: `proof-rep-${r.user_id || i}` } as any}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }} numberOfLines={1}>{r.name}</Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary }} numberOfLines={1}>
+                  {`${r.leads} lead${r.leads === 1 ? '' : 's'} · ${r.sold} sold${r.first_text_avg_seconds != null ? ` · first text ${fmtSecs(r.first_text_avg_seconds)}` : ''}${r.reply_rate != null ? ` · ${r.reply_rate}% replied` : ''}`}
+                </Text>
+              </View>
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={{ fontSize: 15, fontWeight: '800' }}>
+                  <Text style={{ color: r.replied.leads ? '#34C759' : colors.textSecondary }}>{r.replied.leads ? `${r.replied.close_rate}%` : '--'}</Text>
+                  <Text style={{ color: colors.textSecondary, fontWeight: '600' }}> vs </Text>
+                  <Text style={{ color: r.silent.leads ? '#FF9500' : colors.textSecondary }}>{r.silent.leads ? `${r.silent.close_rate}%` : '--'}</Text>
+                </Text>
+                <Text style={{ fontSize: 10, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.4 }}>REPLIED VS SILENT</Text>
+              </View>
+            </View>
+          ))}
+          <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>Close rate on leads that texted back vs leads that never did, per rep. Faster first texts move more leads into the green column.</Text>
+        </Card>
+      )}
+
+      {isManager && !publicToken && <ProspectLinkCard colors={colors} storeParam={storeParam} hasStore={!!hasStore} />}
 
       <Card title="SPEED OF FIRST HUMAN TEXT" colors={colors} testid="proof-human-speed"><BucketBars rows={data.speed_human_text} colors={colors} /></Card>
       <Card title="TOUCHPOINTS PER LEAD (TEXTS + CALLS)" colors={colors} testid="proof-touchpoints"><BucketBars rows={data.touchpoints} colors={colors} /></Card>

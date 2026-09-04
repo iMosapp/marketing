@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type ThemeMode = 'dark' | 'light';
 
-const COLORS = {
+export const COLORS = {
   dark: {
     bg: '#000000',
     card: '#1C1C1E',
