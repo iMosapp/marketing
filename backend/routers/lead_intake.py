@@ -13,6 +13,7 @@ import asyncio
 import logging
 import os
 import re
+import math
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from typing import Optional
@@ -1224,6 +1225,18 @@ def _resp_seconds(received, ts) -> Optional[int]:
         return None
 
 
+def _parse_dt(v) -> Optional[datetime]:
+    if isinstance(v, datetime):
+        return v if v.tzinfo else v.replace(tzinfo=timezone.utc)
+    if isinstance(v, str) and v:
+        try:
+            d = datetime.fromisoformat(v.replace("Z", "+00:00"))
+            return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
+        except ValueError:
+            return None
+    return None
+
+
 def _require_auth(request: Request) -> str:
     """JWT gate for read/analytics endpoints (intake POSTs stay public for providers)."""
     auth = request.headers.get("Authorization", "")
@@ -1484,7 +1497,8 @@ def _bucket_rows(rows: list, sold: set, key, buckets: list) -> list:
 async def compute_proof(db, store_id: Optional[str], days: int) -> dict:
     """Does engagement move the close rate? Replied vs silent, speed buckets, touchpoint buckets, per source cost, all against date_sold."""
     days = min(max(days, 1), 1095)
-    since = datetime.now(timezone.utc) - timedelta(days=days)
+    now = datetime.now(timezone.utc)
+    since = now - timedelta(days=days)
     query: dict = {"received_at": {"$gte": since}, "conversation_id": {"$nin": [None, ""]}, "is_test": {"$ne": True}}
     if store_id:
         query["store_id"] = store_id
@@ -1525,11 +1539,32 @@ async def compute_proof(db, store_id: Optional[str], days: int) -> dict:
                     "median_days": sorted(tts)[len(tts) // 2] if tts else None, "fastest_days": min(tts) if tts else None}
 
     cost_by_name = {}
+    since_by_name = {}
     cost_q: dict = {"monthly_cost": {"$gt": 0}}
     if store_id:
         cost_q["store_id"] = store_id
-    async for src in db.lead_sources.find(cost_q, {"name": 1, "monthly_cost": 1}):
+    async for src in db.lead_sources.find(cost_q, {"name": 1, "monthly_cost": 1, "spend_started_at": 1}):
         cost_by_name[src.get("name", "")] = float(src["monthly_cost"])
+        since_by_name[src.get("name", "")] = _parse_dt(src.get("spend_started_at"))
+    first_lead_q: dict = {"is_test": {"$ne": True}}
+    if store_id:
+        first_lead_q["store_id"] = store_id
+    first_lead_by_src: dict = {}
+    async for row in db.inbound_leads.aggregate([{"$match": first_lead_q}, {"$group": {"_id": "$source_name", "first": {"$min": "$received_at"}}}]):
+        first_lead_by_src[row["_id"]] = _parse_dt(row.get("first"))
+    first_lead_by_camp: dict = {}
+    async for row in db.inbound_leads.aggregate([{"$match": {**first_lead_q, "attribution.campaign": {"$nin": [None, ""]}}},
+                                                 {"$group": {"_id": {"$toLower": {"$trim": {"input": "$attribution.campaign"}}}, "first": {"$min": "$received_at"}}}]):
+        first_lead_by_camp[row["_id"]] = _parse_dt(row.get("first"))
+
+    def months_charged(started):
+        """Monthly bills only count for months the source was actually paying inside this window.
+        A $1,000/mo source that started this month is $1,000 in the 90-day view, not $3,000."""
+        full = days / 30
+        if not started or started <= since:
+            return round(full, 4)
+        overlap_days = max(0.0, (now - started).total_seconds() / 86400)
+        return round(min(full, max(1, math.ceil(overlap_days / 30))), 4)
 
     def group_stats(grp, period_cost):
         s = sum(1 for r in grp if r.get("contact_id") in sold)
@@ -1556,16 +1591,21 @@ async def compute_proof(db, store_id: Optional[str], days: int) -> dict:
     sources = []
     for name, grp in by_src.items():
         monthly = cost_by_name.get(name)
-        period_cost = round(monthly * days / 30, 2) if monthly else None
-        sources.append({"source_name": name, "source_id": src_ids.get(name), "monthly_cost": monthly, **group_stats(grp, period_cost)})
+        started = since_by_name.get(name) or first_lead_by_src.get(name)
+        months = months_charged(started) if monthly else None
+        period_cost = round(monthly * months, 2) if monthly else None
+        sources.append({"source_name": name, "source_id": src_ids.get(name), "monthly_cost": monthly, "months_charged": months,
+                        "spend_started_at": started.isoformat() if (monthly and started) else None, **group_stats(grp, period_cost)})
     sources.sort(key=lambda x: (-(x["sold"]), -(x["leads"])))
     src_period_cost = {x["source_name"]: x["period_cost"] for x in sources}
 
     # Ad level: leads whose attribution carries a campaign (Facebook / Instagram lead ads via Connect)
     camp_cost: dict = {}
+    camp_since: dict = {}
     if store_id:
-        async for c in db.campaign_costs.find({"store_id": store_id, "monthly_cost": {"$gt": 0}}, {"campaign_key": 1, "monthly_cost": 1}):
+        async for c in db.campaign_costs.find({"store_id": store_id, "monthly_cost": {"$gt": 0}}, {"campaign_key": 1, "monthly_cost": 1, "spend_started_at": 1}):
             camp_cost[c["campaign_key"]] = float(c["monthly_cost"])
+            camp_since[c["campaign_key"]] = _parse_dt(c.get("spend_started_at"))
     by_camp: dict = {}
     for r in rows:
         camp = (r.get("attribution") or {}).get("campaign")
@@ -1576,8 +1616,10 @@ async def compute_proof(db, store_id: Optional[str], days: int) -> dict:
         key = camp.lower()
         monthly = camp_cost.get(key)
         src_name = max((r["source_name"] for r in grp), key=lambda n: sum(1 for x in grp if x["source_name"] == n))
+        started = camp_since.get(key) or first_lead_by_camp.get(key)
+        months = months_charged(started) if monthly else None
         if monthly:
-            period_cost, cost_mode = round(monthly * days / 30, 2), "set"
+            period_cost, cost_mode = round(monthly * months, 2), "set"
         elif src_period_cost.get(src_name) and by_src.get(src_name):
             period_cost, cost_mode = round(src_period_cost[src_name] * len(grp) / len(by_src[src_name]), 2), "estimated"
         else:
@@ -1590,6 +1632,7 @@ async def compute_proof(db, store_id: Optional[str], days: int) -> dict:
         ads = sorted(({"ad": a, "leads": len(g), "sold": sum(1 for r in g if r.get("contact_id") in sold)} for a, g in by_ad.items()),
                      key=lambda x: (-x["sold"], -x["leads"]))
         campaigns.append({"campaign": camp, "campaign_key": key, "source_name": src_name, "monthly_cost": monthly, "cost_mode": cost_mode,
+                          "months_charged": months, "spend_started_at": started.isoformat() if (monthly and started) else None,
                           "ads": ads[:5], "ad_count": len(ads), **group_stats(grp, period_cost)})
     campaigns.sort(key=lambda x: (-(x["sold"]), -(x["leads"])))
 
@@ -1815,6 +1858,7 @@ class CampaignCostBody(BaseModel):
     campaign: str
     monthly_cost: float = 0
     store_id: Optional[str] = None
+    spend_started_at: Optional[str] = None
 
 
 @router.put("/campaign-costs")
@@ -1828,7 +1872,8 @@ async def set_campaign_cost(body: CampaignCostBody, request: Request):
         raise HTTPException(status_code=400, detail="Campaign name required")
     if body.monthly_cost and body.monthly_cost > 0:
         await db.campaign_costs.update_one({"store_id": sid, "campaign_key": key},
-                                           {"$set": {"campaign": body.campaign.strip(), "monthly_cost": float(body.monthly_cost), "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+                                           {"$set": {"campaign": body.campaign.strip(), "monthly_cost": float(body.monthly_cost), "spend_started_at": body.spend_started_at or None,
+                                                     "updated_at": datetime.now(timezone.utc)}}, upsert=True)
     else:
         await db.campaign_costs.delete_one({"store_id": sid, "campaign_key": key})
     return {"success": True, "campaign": body.campaign.strip(), "monthly_cost": float(body.monthly_cost or 0)}

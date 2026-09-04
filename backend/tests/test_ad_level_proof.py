@@ -37,24 +37,25 @@ async def main():
         p = await compute_proof(db, STORE, 90)
         camps = {c["campaign"]: c for c in p["campaigns"]}
         a, b = camps["June Truck Month"], camps["Spring Clearance"]
-        src_period = 3000 * 90 / 30  # 9000
+        src_period = 3000  # source started paying inside the window (first lead 10d ago) -> 1 month charged, not 3
         checks = {
             "two campaigns": len(camps) == 2,
             "A leads/sold": (a["leads"], a["sold"], a["close_rate"]) == (4, 2, 50),
             "B leads/sold": (b["leads"], b["sold"]) == (2, 0),
-            "A estimated spend = 9000 * 4/8": a["cost_mode"] == "estimated" and abs(a["period_cost"] - src_period * 4 / 8) < 0.01,
-            "A est cost per sale = 4500/2": abs(a["cost_per_sale"] - 2250) < 0.01,
+            "A estimated spend = 3000 * 4/8": a["cost_mode"] == "estimated" and abs(a["period_cost"] - src_period * 4 / 8) < 0.01,
+            "A est cost per sale = 1500/2": abs(a["cost_per_sale"] - 750) < 0.01,
+            "source months_charged = 1": next(s for s in p["sources"] if s["source_name"] == "Probe FB Source")["months_charged"] == 1,
             "best ad first": a["ads"][0]["ad"] == "Blue F-150 video" and a["ads"][0]["sold"] == 2 and a["ad_count"] == 2,
             "sorted sold first": p["campaigns"][0]["campaign"] == "June Truck Month",
             "headline present": any(h.startswith("Ad that sells: June Truck Month") for h in p["headlines"]),
-            "source row unchanged": next(s for s in p["sources"] if s["source_name"] == "Probe FB Source")["cost_per_sale"] == 3000.0,
+            "source row unchanged": next(s for s in p["sources"] if s["source_name"] == "Probe FB Source")["cost_per_sale"] == 1000.0,
         }
         # set a real campaign spend and recompute
         await db.campaign_costs.insert_one({"store_id": STORE, "campaign_key": "june truck month", "campaign": "June Truck Month", "monthly_cost": 1200, "probe": TAG})
         p2 = await compute_proof(db, STORE, 90)
         a2 = next(c for c in p2["campaigns"] if c["campaign"] == "June Truck Month")
-        checks["set spend wins: 1200*3 = 3600"] = a2["cost_mode"] == "set" and a2["period_cost"] == 3600 and a2["monthly_cost"] == 1200
-        checks["set cost per sale 1800"] = a2["cost_per_sale"] == 1800
+        checks["set spend wins: 1200 x 1 month = 1200"] = a2["cost_mode"] == "set" and a2["period_cost"] == 1200 and a2["monthly_cost"] == 1200
+        checks["set cost per sale 600"] = a2["cost_per_sale"] == 600
         for k, ok in checks.items():
             print("PASS" if ok else "FAIL", k)
         print([h for h in p["headlines"] if "Ad that sells" in h])

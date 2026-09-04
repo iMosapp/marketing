@@ -60,6 +60,7 @@ class LeadSourceUpdate(BaseModel):
     assignment_method: Optional[Literal["jump_ball", "round_robin", "weighted_round_robin"]] = None
     is_active: Optional[bool] = None
     monthly_cost: Optional[float] = None
+    spend_started_at: Optional[str] = None
 
 class InboundLead(BaseModel):
     first_name: Optional[str] = None
@@ -158,6 +159,7 @@ def serialize_lead_source(source: dict) -> dict:
         "adf_url": f"{_base}/api/leads/adf?source_id={_sid}",
         "email_inbound_url": f"{_base}/api/leads/email-inbound?source_id={_sid}",
         "monthly_cost": source.get("monthly_cost"),
+        "spend_started_at": source.get("spend_started_at"),
         "api_key": source.get("api_key"),
         "is_active": source.get("is_active", True),
         "lead_count": source.get("lead_count", 0),
@@ -386,6 +388,8 @@ async def update_lead_source(source_id: str, updates: LeadSourceUpdate, _m: dict
     db = get_db()
     
     update_data = {k: v for k, v in updates.dict().items() if v is not None}
+    if update_data.get("spend_started_at") == "":
+        update_data["spend_started_at"] = None
     if not update_data:
         raise HTTPException(status_code=400, detail="No updates provided")
     

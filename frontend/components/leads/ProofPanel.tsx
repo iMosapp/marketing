@@ -10,8 +10,33 @@ import { useToast } from '../common/Toast';
 const GOLD = '#C9A962';
 const fmtSecs = (s: number | null | undefined) => s == null ? '--' : s < 60 ? `${s}s` : s < 3600 ? `${Math.round(s / 60)}m` : s < 86400 ? `${Math.round(s / 3600)}h` : `${Math.round(s / 86400)}d`;
 const money = (n: number | null | undefined) => n == null ? '--' : `$${Math.round(n).toLocaleString()}`;
+const monthStart = (back: number) => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth() - back, 1); };
+const monthLabel = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+const monthsCharged = (days: number, since: Date | null) => {
+  const full = days / 30;
+  if (!since || since.getTime() <= Date.now() - days * 86400000) return full;
+  return Math.min(full, Math.max(1, Math.ceil((Date.now() - since.getTime()) / 86400000 / 30)));
+};
+const fmtMonths = (m: number) => m >= 1 ? `${Math.round(m * 10) / 10} mo` : `${Math.round(m * 30)} days`;
+type SinceBack = number | null | 'first';
+const SINCE_OPTS: { label: string; back: SinceBack }[] = [{ label: 'This month', back: 0 }, { label: 'Last month', back: 1 }, { label: '2 months ago', back: 2 }, { label: 'Longer', back: null }];
+const sinceBack = (iso?: string | null): SinceBack => {
+  if (!iso) return 0;
+  const d = new Date(iso); const n = new Date();
+  const diff = (n.getFullYear() - d.getFullYear()) * 12 + (n.getMonth() - d.getMonth());
+  if (diff > 2) return null;
+  return d.getDate() === 1 ? Math.max(0, diff) : 'first';
+};
+const SpendMath = ({ monthly, months, sold, colors, since }: { monthly: number; months: number; sold: number; colors: any; since?: string | null }) => {
+  const period = monthly * months;
+  return (
+    <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>
+      {`${money(monthly)}/mo × ${fmtMonths(months)} paying in this window = ${money(period)}${sold ? ` ÷ ${sold} sold = ${money(period / sold)} / sale` : ' · no sales yet'}${since ? ` · paying since ${new Date(since).getDate() === 1 ? monthLabel(new Date(since)) : new Date(since).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}`}
+    </Text>
+  );
+};
 
-type Source = { source_id?: string | null; source_name: string; leads: number; sold: number; close_rate: number | null; reply_rate: number | null; first_touch_avg_seconds: number | null; touched_pct: number | null; avg_touches: number | null; avg_days_to_sold: number | null; monthly_cost: number | null; period_cost: number | null; cost_per_lead: number | null; cost_per_sale: number | null };
+type Source = { source_id?: string | null; source_name: string; leads: number; sold: number; close_rate: number | null; reply_rate: number | null; first_touch_avg_seconds: number | null; touched_pct: number | null; avg_touches: number | null; avg_days_to_sold: number | null; monthly_cost: number | null; period_cost: number | null; cost_per_lead: number | null; cost_per_sale: number | null; months_charged?: number | null; spend_started_at?: string | null };
 
 type Campaign = Omit<Source, 'source_id' | 'source_name'> & { campaign: string; campaign_key: string; source_name: string; cost_mode: 'set' | 'estimated' | null; ads: { ad: string; leads: number; sold: number }[]; ad_count: number };
 type Bucket = { label: string; leads: number; sold: number; close_rate: number | null; reply_rate: number | null };
@@ -51,8 +76,9 @@ const CampaignRow = ({ c, colors, canEdit, days, storeParam, onSaved }: { c: Cam
           </TouchableOpacity>
         )}
       </View>
-      {editing && <SpendEditor s={{ id: c.campaign_key, label: c.campaign, monthly_cost: c.monthly_cost, leads: c.leads, sold: c.sold, hint: 'Enter this campaign\'s monthly spend from Ads Manager. Until then we estimate it from the source spend by lead share.' }} days={days} colors={colors}
-        onSave={async monthly => { await api.put('/leads/campaign-costs', { campaign: c.campaign, monthly_cost: monthly, ...(storeId ? { store_id: storeId } : {}) }); }} onSaved={() => { setEditing(false); onSaved && onSaved(); }} />}
+      {editing && <SpendEditor s={{ id: c.campaign_key, label: c.campaign, monthly_cost: c.monthly_cost, leads: c.leads, sold: c.sold, hint: 'Enter this campaign\'s monthly spend from Ads Manager. Until then we estimate it from the source spend by lead share.', spend_started_at: c.spend_started_at }} days={days} colors={colors}
+        onSave={async (monthly, sinceIso) => { await api.put('/leads/campaign-costs', { campaign: c.campaign, monthly_cost: monthly, spend_started_at: sinceIso, ...(storeId ? { store_id: storeId } : {}) }); }} onSaved={() => { setEditing(false); onSaved && onSaved(); }} />}
+      {!editing && !!c.monthly_cost && c.months_charged != null && <SpendMath monthly={c.monthly_cost} months={c.months_charged} sold={c.sold} colors={colors} since={c.months_charged < days / 30 ? c.spend_started_at : null} />}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
         {[
           `${c.leads} leads`, `${c.sold} sold${c.close_rate != null ? ` (${c.close_rate}%)` : ''}`,
@@ -103,17 +129,22 @@ const BucketBars = ({ rows, colors }: { rows: Bucket[]; colors: any }) => {
   );
 };
 
-type SpendTarget = { id: string; label: string; monthly_cost: number | null; leads: number; sold: number; hint?: string };
-const SpendEditor = ({ s, days, colors, onSave, onSaved }: { s: SpendTarget; days: number; colors: any; onSave: (monthly: number) => Promise<void>; onSaved: () => void }) => {
+type SpendTarget = { id: string; label: string; monthly_cost: number | null; leads: number; sold: number; hint?: string; spend_started_at?: string | null };
+const SpendEditor = ({ s, days, colors, onSave, onSaved }: { s: SpendTarget; days: number; colors: any; onSave: (monthly: number, sinceIso: string) => Promise<void>; onSaved: () => void }) => {
   const { showToast } = useToast();
   const [val, setVal] = useState(s.monthly_cost != null ? String(Math.round(s.monthly_cost)) : '');
+  const [back, setBack] = useState<SinceBack>(sinceBack(s.spend_started_at));
   const [saving, setSaving] = useState(false);
   const monthly = Number(String(val).replace(/[^0-9.]/g, '')) || 0;
-  const period = monthly * days / 30;
+  const firstLead = s.spend_started_at ? new Date(s.spend_started_at) : null;
+  const sinceDate = back === 'first' && firstLead ? firstLead : back == null ? monthStart(13) : monthStart(typeof back === 'number' ? back : 0);
+  const opts = firstLead && sinceBack(s.spend_started_at) === 'first' ? [{ label: `Since first lead (${firstLead.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`, back: 'first' as SinceBack }, ...SINCE_OPTS] : SINCE_OPTS;
+  const months = monthsCharged(days, sinceDate);
+  const period = monthly * months;
   const save = async () => {
     setSaving(true);
     try {
-      await onSave(monthly);
+      await onSave(monthly, sinceDate.toISOString());
       showToast(monthly ? `${s.label} spend saved` : `${s.label} spend cleared`, 'success');
       onSaved();
     } catch (e: any) {
@@ -136,10 +167,18 @@ const SpendEditor = ({ s, days, colors, onSave, onSaved }: { s: SpendTarget; day
           {saving ? <ActivityIndicator size="small" color="#000" /> : <Text style={{ fontSize: 13, fontWeight: '700', color: '#000' }}>Save</Text>}
         </TouchableOpacity>
       </View>
+      <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.6 }}>PAYING SINCE</Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+        {opts.map(o => (
+          <TouchableOpacity key={o.label} onPress={() => setBack(o.back)} style={{ paddingHorizontal: 10, height: 28, borderRadius: 14, justifyContent: 'center', backgroundColor: back === o.back ? GOLD : colors.card, borderWidth: 1, borderColor: back === o.back ? GOLD : colors.border }} testID={`spend-since-${s.id}-${o.back ?? 'longer'}`} dataSet={{ testid: `spend-since-${s.id}-${o.back ?? 'longer'}` } as any}>
+            <Text style={{ fontSize: 12, fontWeight: '700', color: back === o.back ? '#000' : colors.text }}>{typeof o.back === 'number' ? `${o.label} (${monthLabel(monthStart(o.back))})` : o.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
       <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }} testID={`spend-math-${s.id}`} dataSet={{ testid: `spend-math-${s.id}` } as any}>
         {monthly
-          ? `${money(period)} over ${days} days ÷ ${s.leads} lead${s.leads === 1 ? '' : 's'} = ${money(period / Math.max(1, s.leads))} per lead${s.sold ? ` · ÷ ${s.sold} sold = ${money(period / s.sold)} per sale` : ' · no sales yet, so no cost per sale'}`
-          : (s.hint || 'Enter what this source bills you each month. Cost per lead and per sale fill in for every window.')}
+          ? `${money(monthly)}/mo × ${fmtMonths(months)} paying in this ${days}-day window = ${money(period)} ÷ ${s.leads} lead${s.leads === 1 ? '' : 's'} = ${money(period / Math.max(1, s.leads))} per lead${s.sold ? ` · ÷ ${s.sold} sold = ${money(period / s.sold)} per sale` : ' · no sales yet, so no cost per sale'}. Only months you were actually paying count.`
+          : (s.hint || 'Enter what this source bills you each month, then tell us when you started paying. Cost per lead and per sale fill in for every window.')}
       </Text>
     </View>
   );
@@ -160,8 +199,9 @@ const SourceRow = ({ s, colors, canEdit, days, onSaved }: { s: Source; colors: a
           </TouchableOpacity>
         )}
       </View>
-      {editing && <SpendEditor s={{ id: s.source_id || '', label: s.source_name, monthly_cost: s.monthly_cost, leads: s.leads, sold: s.sold }} days={days} colors={colors}
-        onSave={async monthly => { await api.patch(`/lead-sources/${s.source_id}`, { monthly_cost: monthly }); }} onSaved={() => { setEditing(false); onSaved && onSaved(); }} />}
+      {editing && <SpendEditor s={{ id: s.source_id || '', label: s.source_name, monthly_cost: s.monthly_cost, leads: s.leads, sold: s.sold, spend_started_at: s.spend_started_at }} days={days} colors={colors}
+        onSave={async (monthly, sinceIso) => { await api.patch(`/lead-sources/${s.source_id}`, { monthly_cost: monthly, spend_started_at: sinceIso }); }} onSaved={() => { setEditing(false); onSaved && onSaved(); }} />}
+      {!editing && !!s.monthly_cost && s.months_charged != null && <SpendMath monthly={s.monthly_cost} months={s.months_charged} sold={s.sold} colors={colors} since={s.months_charged < days / 30 ? s.spend_started_at : null} />}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
         {[
           `${s.leads} leads`, `${s.sold} sold${s.close_rate != null ? ` (${s.close_rate}%)` : ''}`,
@@ -337,7 +377,7 @@ export const ProofPanel = ({ data, colors, isManager, storeParam = '', days = 90
         {(data.sources || []).length ? (data.sources || []).map(s => <SourceRow key={s.source_name} s={s} colors={colors} days={days} canEdit={!!isManager && !publicToken} onSaved={onRefresh} />) : (
           <Text style={{ fontSize: 13, color: colors.textSecondary }}>No sources in this window.</Text>
         )}
-        <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>{isManager && !publicToken ? 'Tap Add spend or the $/mo pill on any source to set what it bills you each month. ' : ''}Spend is the monthly amount prorated to this window, split by leads received and by leads sold. Sold is any lead whose contact got a sold photo.</Text>
+        <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>{isManager && !publicToken ? 'Tap Add spend or the $/mo pill on any source to set what it bills you each month. ' : ''}Spend counts only the months a source was actually paying inside this window: $1,000/mo that started this month is $1,000 in the 90-day view, not $3,000. Then it is split by leads received and by leads sold. Sold is any lead whose contact got a sold photo.</Text>
       </Card>
 
       {!!data.campaigns?.length && !publicToken && (
