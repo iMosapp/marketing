@@ -9,6 +9,7 @@ import { useToast } from '../../components/common/Toast';
 import { copyToClipboard } from '../../utils/clipboard';
 import api from '../../services/api';
 import { FacebookRecipe } from '../../components/leads/FacebookRecipe';
+import { SourceHealthCard } from '../../components/leads/SourceHealthCard';
 
 const GOLD = '#C9A962';
 const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
@@ -120,6 +121,8 @@ export default function LeadConnectScreen() {
       </View>
       {loading ? <ActivityIndicator color={GOLD} style={{ marginTop: 40 }} /> : (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 60, gap: 12 }} {...tid('lead-connect-scroll')}>
+          <SourceHealthCard colors={colors} onPick={setSelected} />
+
           <View style={[s.card, { borderWidth: 1, borderColor: `${GOLD}55` }]}>
             <Text style={s.cardSub}>{"Point any app at iMOS. Zapier, Make, a website form, a Facebook lead ad. Every lead that lands here gets the full treatment: instant text from the rep's number, the call ladder, speed clocks and a spot in Proof."}</Text>
           </View>

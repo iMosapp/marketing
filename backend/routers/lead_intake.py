@@ -1759,6 +1759,18 @@ _CONNECT_SAMPLE = {
 }
 
 
+@router.get("/sources/health")
+async def sources_health(request: Request, store_id: Optional[str] = None):
+    """Per-source health for the caller's store: quiet / slow / healthy / new, with the alert threshold."""
+    caller_id = _require_auth(request)
+    db = get_db()
+    sid, _user = await _caller_store(db, caller_id, store_id)
+    from services.source_health import source_health, FLOOR_HOURS, GAP_MULTIPLIER, MIN_LEADS_28D
+    rows = await source_health(db, sid)
+    return {"sources": rows, "rule": {"floor_hours": FLOOR_HOURS, "gap_multiplier": GAP_MULTIPLIER, "min_leads_28d": MIN_LEADS_28D},
+            "quiet_count": sum(1 for r in rows if r["status"] == "quiet")}
+
+
 @router.get("/connect/{source_id}")
 async def connect_status(source_id: str, request: Request):
     """Everything the Connect screen needs for one source: URL, key, sample payload, accepted

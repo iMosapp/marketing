@@ -55,6 +55,7 @@ export default function NotificationSettings() {
   const [smsUrgent,    setSmsUrgent]    = useState<boolean>(saved.sms_you_are_needed         ?? true);
   const [urnThreshold, setUrnThreshold] = useState<number>(saved.you_are_needed_threshold    ?? 2);
   const [weeklyProof,  setWeeklyProof]  = useState<boolean>(saved.weekly_proof_push          ?? true);
+  const [sourceHealth, setSourceHealth] = useState<boolean>(saved.source_health_alerts       ?? true);
   const isManager = ['super_admin', 'admin', 'manager', 'store_manager', 'org_admin'].includes((user as any)?.role);
   const [alertMode,    setAlertMode]    = useState<'both'|'push'|'sms'>((user as any)?.notification_mode || 'both');
   const [quietOn,      setQuietOn]      = useState(false);
@@ -83,6 +84,7 @@ export default function NotificationSettings() {
         sms_you_are_needed:            smsUrgent,
         you_are_needed_threshold:      urnThreshold,
         weekly_proof_push:             weeklyProof,
+        source_health_alerts:          sourceHealth,
       };
       await api.patch(`/users/${user._id}`, { notification_settings: prefs });
       // Save alert delivery mode separately
@@ -385,6 +387,24 @@ export default function NotificationSettings() {
                   trackColor={{ false: colors.border, true: '#C9A96280' }}
                   thumbColor={weeklyProof ? '#C9A962' : colors.textSecondary}
                   testID="weekly-proof-push-toggle"
+                />
+              </View>
+              <View style={[s.row, { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12, marginTop: 12 }]}>
+                <View style={[s.iconWrap, { backgroundColor: '#FF3B3020' }]}>
+                  <Ionicons name="pulse" size={18} color="#FF3B30" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.rowTitle, { color: colors.text }]}>Quiet source alerts</Text>
+                  <Text style={[s.rowSub, { color: colors.textSecondary }]}>
+                    A push when a lead source that normally produces goes 48 hours (or 3x its usual gap) without a lead. A broken Zap or vendor feed never hides.
+                  </Text>
+                </View>
+                <Switch
+                  value={sourceHealth}
+                  onValueChange={v => { setSourceHealth(v); mark(); }}
+                  trackColor={{ false: colors.border, true: '#C9A96280' }}
+                  thumbColor={sourceHealth ? '#C9A962' : colors.textSecondary}
+                  testID="source-health-alerts-toggle"
                 />
               </View>
             </View>

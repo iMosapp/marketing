@@ -1720,6 +1720,11 @@ async def send_weekly_proof_push():
         logger.info(f"[WeeklyProofPush] Sent {sent} proof pushes")
 
 
+async def run_source_health_alerts_job():
+    from services.source_health import run_source_health_alerts
+    await run_source_health_alerts()
+
+
 async def deliver_held_push_summaries():
     """Every 10 min: when a rep's quiet hours end, send ONE summary of the pushes held overnight."""
     from routers.database import get_db
@@ -1887,6 +1892,16 @@ def start_scheduler():
         replace_existing=True,
         misfire_grace_time=7200,
     )
+
+    # Every 6 h - push managers when a lead source that normally produces goes quiet (broken Zap / vendor feed)
+    scheduler.add_job(
+        safe_job(run_source_health_alerts_job),
+        IntervalTrigger(hours=6),
+        id="source_health_alerts",
+        replace_existing=True,
+        misfire_grace_time=3600,
+    )
+
 
     # Every 10 min — deliver held-push summaries when quiet hours end
     scheduler.add_job(
