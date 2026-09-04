@@ -1,142 +1,186 @@
 {
-  "theme": "dark",
-  "archetype": "Archetype 5 (Jewel & Luxury) adapted for iOS Native App",
-  "design_philosophy": "Instagram/Facebook style profile editing. Natural, photo-forward, and easy. A mobile-first premium dark mode with gold and vibrant iOS accents.",
-  "colors": {
-    "background": "#000000",
-    "surface": "#1C1C1E",
-    "surface_secondary": "#2C2C2E",
-    "text_primary": "#FFFFFF",
-    "text_secondary": "#8E8E93",
-    "accent_gold": "#C9A962",
-    "accent_blue": "#007AFF",
-    "accent_green": "#34C759",
-    "border": "#38383A",
-    "overlay": "rgba(0,0,0,0.5)",
-    "error": "#FF453A"
+  "app_context": {
+    "name": "i'M On Social (iMOS)",
+    "type": "mobile_web_app",
+    "theme": "dark",
+    "accent_color": "#C9A962",
+    "type_scale": {
+      "header": 28,
+      "title": 20,
+      "nav": 17,
+      "row_title": 16,
+      "body": 15,
+      "secondary": 13,
+      "eyebrow": 12,
+      "badges": 11
+    },
+    "copy_rule": "NO EM DASHES IN ANY PROPOSED COPY EVER"
   },
-  "typography": {
-    "font_family": "System",
-    "h1": {
-      "font_size": 24,
-      "font_weight": "bold",
-      "line_height": 32,
-      "letter_spacing": 0.5
-    },
-    "h2": {
-      "font_size": 20,
-      "font_weight": "600",
-      "line_height": 28
-    },
-    "h3": {
-      "font_size": 18,
-      "font_weight": "600",
-      "line_height": 24
-    },
-    "body": {
-      "font_size": 16,
-      "font_weight": "400",
-      "line_height": 22
-    },
-    "small": {
-      "font_size": 14,
-      "font_weight": "400",
-      "line_height": 20
-    },
-    "micro": {
-      "font_size": 12,
-      "font_weight": "500",
-      "line_height": 16
-    }
-  },
-  "layout": {
-    "global_padding": 16,
-    "border_radius": {
-      "small": 8,
-      "medium": 12,
-      "large": 16,
-      "full": 9999
-    },
-    "spacing": {
-      "xs": 4,
-      "sm": 8,
-      "md": 16,
-      "lg": 24,
-      "xl": 32
-    }
-  },
-  "components_guidelines": {
-    "cover_photo": {
-      "height": 160,
-      "overlay": "Use a subtle dark gradient at the bottom to ensure the overlapping profile photo and toggle buttons pop."
-    },
-    "profile_photo": {
-      "size": 100,
-      "border_width": 3,
-      "border_color": "#000000",
-      "completeness_ring_color": "#C9A962",
-      "offset_top": -50,
-      "edit_icon_overlay": "Small circular button at the bottom right of the avatar."
-    },
-    "inline_editable_fields": {
-      "behavior": "Render as TextInputs but style them seamlessly like Text. Use placeholder text color #8E8E93. Include a small subtle Ionicons 'pencil' icon near the name to indicate editability."
-    },
-    "social_chips": {
-      "height": 32,
-      "padding_horizontal": 12,
-      "background": "#1C1C1E",
-      "border": "1px solid #38383A",
-      "border_radius": 16,
-      "icon_color": "#FFFFFF"
-    },
-    "asset_cards": {
-      "layout": "2-column flex wrap grid (48% width each) with 4% gap.",
-      "background": "#1C1C1E",
-      "border_radius": 16,
-      "padding": 12,
-      "preview_image_height": 100,
-      "preview_border_radius": 8,
-      "title_style": "small text, font-weight 600, margin-top 8px"
-    },
-    "photo_gallery": {
-      "layout": "3-column grid, square aspect ratio images. Gap of 2px between images."
-    },
-    "collapsible_address": {
-      "header": "Row with title and chevron-down/up icon.",
-      "content": "Indented or styled with a left border using accent_gold."
-    },
-    "settings_list": {
-      "row_style": "Row layout, icon on left, text in middle, chevron-forward on right. Padding vertical 16px, border-bottom 1px solid #38383A."
-    }
-  },
-  "image_urls": {
-    "cover_photo": {
-      "url": "https://images.unsplash.com/photo-1643324896137-f0928e76202a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDN8MHwxfHNlYXJjaHwxfHxkYXJrJTIwbW9kZSUyMGFic3RyYWN0JTIwdGV4dHVyZSUyMGdvbGR8ZW58MHx8fHwxNzc0NzIzMzAzfDA&ixlib=rb-4.1.0&q=85",
-      "description": "Dark gold abstract texture for the profile cover banner."
-    },
-    "profile_photo": {
-      "url": "https://images.unsplash.com/photo-1758534063829-a72058381e21?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njd8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBoZWFkc2hvdCUyMGRhcmslMjBiYWNrZ3JvdW5kfGVufDB8fHx8MTc3NDcyMzI5N3ww&ixlib=rb-4.1.0&q=85",
-      "description": "Professional high-quality portrait for the main user avatar."
-    },
-    "asset_previews": [
-      "https://images.pexels.com/photos/6638409/pexels-photo-6638409.png?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
-      "https://images.pexels.com/photos/36136699/pexels-photo-36136699.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
-    ],
-    "gallery_photos": [
-      "https://images.unsplash.com/photo-1763893296686-208b12fed9b8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzV8MHwxfHNlYXJjaHwxfHxsaWZlc3R5bGUlMjBwcm9mZXNzaW9uYWwlMjBwb3J0cmFpdHxlbnwwfHx8fDE3NzQ3MjMyOTh8MA&ixlib=rb-4.1.0&q=85",
-      "https://images.unsplash.com/photo-1580974869414-5e7b7e796a24?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzV8MHwxfHNlYXJjaHwyfHxsaWZlc3R5bGUlMjBwcm9mZXNzaW9uYWwlMjBwb3J0cmFpdHxlbnwwfHx8fDE3NzQ3MjMyOTh8MA&ixlib=rb-4.1.0&q=85",
-      "https://images.unsplash.com/photo-1774414489761-6b9bf1d86cfd?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzV8MHwxfHNlYXJjaHwzfHxsaWZlc3R5bGUlMjBwcm9mZXNzaW9uYWwlMjBwb3J0cmFpdHxlbnwwfHx8fDE3NzQ3MjMyOTh8MA&ixlib=rb-4.1.0&q=85",
-      "https://images.pexels.com/photos/36645466/pexels-photo-36645466.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
-      "https://images.pexels.com/photos/18003662/pexels-photo-18003662.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+  "information_architecture_proposal": {
+    "summary": "Consolidate all lead-related flows into a primary 'Leads' hub section while deduplicating scattered items across Manage, Settings, and Admin. Daily salesperson workflows stay accessible in 'My Brand' and 'My Tools' without duplicate clutter.",
+    "section_order": [
+      {
+        "id": "leads",
+        "title": "Leads",
+        "icon": "flame",
+        "color": "#FF3B30",
+        "subtitle": "Queue, retries, source tracking and auto-text rules",
+        "defaultExpanded": true,
+        "items": [
+          {
+            "id": "internet_leads",
+            "title": "Internet Leads",
+            "subtitle": "Shared lead queue, speed-to-lead and call retries report",
+            "route": "/leads",
+            "icon": "globe",
+            "color": "#FF3B30",
+            "visibility": "all_users"
+          },
+          {
+            "id": "call_retries",
+            "title": "Call Retries",
+            "subtitle": "Voicemail retry cadence and auto just-tried-you text",
+            "route": "/settings/call-retries",
+            "icon": "call",
+            "color": "#FF9F0A",
+            "visibility": "all_users"
+          },
+          {
+            "id": "lead_source_queue",
+            "title": "Lead Source Queue",
+            "subtitle": "Inbound lead status and queued auto-text logs",
+            "route": "/admin/internet-leads",
+            "icon": "flash",
+            "color": "#C9A962",
+            "visibility": "managers_only"
+          },
+          {
+            "id": "lead_source_config",
+            "title": "Lead Source Config",
+            "subtitle": "ADF webhooks, texting windows and call ladder",
+            "route": "/admin/lead-sources",
+            "icon": "megaphone",
+            "color": "#5856D6",
+            "visibility": "managers_only"
+          },
+          {
+            "id": "team_availability",
+            "title": "Team Availability",
+            "subtitle": "Shift status driving active lead distribution",
+            "route": "/admin/team-availability",
+            "icon": "radio-button-on",
+            "color": "#34C759",
+            "visibility": "managers_only"
+          }
+        ]
+      },
+      {
+        "id": "my_brand",
+        "title": "My Brand",
+        "icon": "sparkles",
+        "color": "#C9A962",
+        "subtitle": "Personal cards, link pages, showcases and templates",
+        "defaultExpanded": true
+      },
+      {
+        "id": "manage",
+        "title": "Manage",
+        "icon": "settings-outline",
+        "color": "#8E8E93",
+        "subtitle": "Tags, search, inventory, reviews and campaigns",
+        "items": [
+          "Tags",
+          "Calendar",
+          "Keyword Auto-Tags",
+          "Keyword Search",
+          "Inventory",
+          "Campaigns (Managers)",
+          "Review Center",
+          "Showcase",
+          "Review Links"
+        ]
+      },
+      {
+        "id": "my_tools",
+        "title": "My Tools",
+        "icon": "apps",
+        "color": "#007AFF",
+        "subtitle": "Daily touchpoints, AI assistants and team chat"
+      },
+      {
+        "id": "performance",
+        "title": "My Performance",
+        "icon": "stats-chart",
+        "color": "#34C759",
+        "subtitle": "Personal metrics, team sales, engagement and health"
+      },
+      {
+        "id": "learning",
+        "title": "Learning",
+        "icon": "school",
+        "color": "#FF9500",
+        "subtitle": "Training hub, SOPs and video guides"
+      },
+      {
+        "id": "settings",
+        "title": "Settings",
+        "icon": "settings",
+        "color": "#8E8E93",
+        "subtitle": "Security, schedule, notification alerts and support"
+      },
+      {
+        "id": "admin_hub",
+        "title": "Admin",
+        "icon": "shield-half",
+        "color": "#FF3B30",
+        "subtitle": "Store setup, account management and internal operations",
+        "groups": [
+          "Set Up",
+          "Account Management",
+          "Internal Operations"
+        ]
+      }
     ]
   },
-  "instructions_to_main_agent": [
-    "CRITICAL: The user strictly requested React Native / Expo Web components. You MUST output JSX using ONLY React Native components: <View>, <Text>, <ScrollView>, <TouchableOpacity>, <TextInput>.",
-    "Do NOT use HTML tags (like <div>, <span>, <p>, <img>).",
-    "Use 'expo-image' (import { Image } from 'expo-image') for photos.",
-    "Use '@expo/vector-icons/Ionicons' for all icons (no emojis).",
-    "STYLING: Use React Native's StyleSheet API. Do NOT output Tailwind CSS classes (className) on standard elements unless you are 100% sure NativeWind is configured for RN components. Assume standard React Native StyleSheet objects for safety.",
-    "The component should look like a mobile-first Instagram/Facebook profile redesign for an A+B hybrid presence view.",
-    "Add 'testID' attributes (equivalent to data-testid in RN) to all interactive elements."
-  ]
+  "tile_grid_recommendation": {
+    "title": "WHAT DO YOU WANT TO DO?",
+    "layout": "2 columns, 6 tiles",
+    "tiles": [
+      { "label": "Internet Leads", "sub": "Incoming lead queue", "icon": "flame", "color": "#FF3B30", "route": "/leads" },
+      { "label": "Send a Blast", "sub": "Mass text", "icon": "megaphone", "color": "#FF9500", "route": "/broadcast/new" },
+      { "label": "Share My Card", "sub": "Text digital card", "icon": "id-card", "color": "#C9A962", "route": "/quick-send/digitalcard" },
+      { "label": "Get Reviews", "sub": "Send review link", "icon": "star", "color": "#FFD60A", "route": "/quick-send/review" },
+      { "label": "My Numbers", "sub": "How am I doing?", "icon": "stats-chart", "color": "#34C759", "route": "/touchpoints/performance" },
+      { "label": "Inventory", "sub": "What is on the lot", "icon": "car-sport", "color": "#32ADE6", "route": "/inventory" }
+    ]
+  },
+  "duplicates_resolution": {
+    "broadcast": "Kept as tile action and inside Campaigns section; removed secondary standalone duplicate inside My Brand menu.",
+    "inventory": "Kept as top tile action for quick access and inside Manage section for full lot browsing.",
+    "calendar": "Consolidated under Manage for daily activity scheduling; removed duplicate calendar entry from personal Settings.",
+    "call_retries": "Moved to new Leads section as core rep setting; removed duplicate from Settings.",
+    "leaderboard": "Personal rep position stays in My Performance; cross-account organization ranking stays in Admin > Account Management.",
+    "imos_demo_leads": "Lead Attribution and Hot Leads remain strictly in Admin > Account Management under title 'iMOS Website Leads' to avoid confusion with dealership sales leads."
+  },
+  "visual_and_ui_guidance": {
+    "leads_section_styling": "Uses flame red (#FF3B30) icon background and badge border. Default expanded on Hub load for immediate visibility.",
+    "badge_treatment": "Red numeric badge pill (#FF3B30) for waiting leads count on Internet Leads row and Leads section header pill.",
+    "admin_grouping": "Admin sections remain visually distinct with dark translucent background, muted text label headers, and shield-half red emblem.",
+    "type_scale_adherence": "Strictly adheres to 28 header, 20 title, 17 nav, 16 row title, 15 body, 13 secondary, 12 eyebrow, 11 badge scale."
+  },
+  "implementation_blueprint": {
+    "file_target": "/app/frontend/app/(tabs)/more.tsx",
+    "changes": [
+      "Add 'leads' section object with Internet Leads, Call Retries, Lead Source Queue, Lead Source Config, and Team Availability.",
+      "Remove Internet Leads from 'manage' section.",
+      "Remove Call Retries from 'settings' section.",
+      "Remove Lead Source Queue, Lead Source Config, and Team Availability from 'setup_manage' section.",
+      "Update taskGrid array to feature 'Internet Leads' as the top-left primary action tile."
+    ]
+  },
+  "GENERAL UI UX DESIGN GUIDELINES": {
+    "data_testid_rule": "All interactive buttons, headers, tiles, and input elements must include a data-testid attribute in kebab-case format.",
+    "no_transparent_overlays": "Never use completely transparent backgrounds for dropdowns, headers, or overlays.",
+    "micro_interactions": "Ensure proper activeOpacity, touch feedback, and smooth LayoutAnimation transitions for section toggles."
+  }
 }

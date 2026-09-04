@@ -68,8 +68,9 @@ export default function MoreScreen() {
   const { status: pushStatus, enable: enablePush, disable: disablePush, subscribing: pushSubscribing, isSupported: pushSupported } = usePushNotifications();
   const [pendingUsersCount, setPendingUsersCount] = useState(0);
   const [exitingImpersonation, setExitingImpersonation] = useState(false);
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['leads']));
   const [hubSearch, setHubSearch] = useState('');
+  const [leadsWaiting, setLeadsWaiting] = useState(0);
   const sectionRefs = useRef<Record<string, View | null>>({});
   const scrollRef = useRef<ScrollView>(null);
   const [storeSlug, setStoreSlug] = useState<string | null>(null);
@@ -115,9 +116,12 @@ export default function MoreScreen() {
 
   const isPinned = useCallback((title: string) => pinnedTools.some(p => p.title === title), [pinnedTools]);
   
-  // Load pending count for super admins
+  // Load pending count for super admins + leads waiting badge
   useFocusEffect(
     useCallback(() => {
+      if (user?._id) {
+        api.get(`/leads/queue/${user._id}/summary`).then(r => setLeadsWaiting((r.data?.waiting || 0) + (r.data?.mine_waiting || 0))).catch(() => {});
+      }
       if (user?.role === 'super_admin' || originalUser?.role === 'super_admin') {
         fetchPendingCount();
       }
@@ -127,7 +131,7 @@ export default function MoreScreen() {
       } else if (user?.store_id) {
         fetchStoreSlug();
       }
-    }, [user?.role, originalUser?.role, user?.store_slug, user?.store_id])
+    }, [user?.role, originalUser?.role, user?.store_slug, user?.store_id, user?._id])
   );
   
   const fetchPendingCount = async () => {
@@ -348,6 +352,29 @@ export default function MoreScreen() {
   }
 
   // ============================================================
+  // ============================================================
+  // SECTION LEADS: everything lead related in one spot (reps + managers)
+  // ============================================================
+  {
+    const leadItems: (MenuItem & { permKey?: string; badge?: number })[] = [
+      { icon: 'globe', title: 'Internet Leads', subtitle: 'Shared lead queue, speed to lead and call retries report', onPress: () => router.push('/leads' as any), color: '#FF3B30', badge: leadsWaiting || undefined },
+      { icon: 'call', title: 'Call Retries', subtitle: 'Voicemail retry timing and the auto "just tried you" text', onPress: () => router.push('/settings/call-retries' as any), color: '#FF9F0A' },
+    ];
+    if (isAdmin && perm('admin')) {
+      if (perm('admin', 'contact_tags')) {
+        leadItems.push(
+          { icon: 'flash', title: 'Lead Source Queue', subtitle: 'Inbound lead log and queued auto-text status', onPress: () => router.push('/admin/internet-leads'), color: '#C9A962' },
+          { icon: 'megaphone', title: 'Lead Source Config', subtitle: 'ADF webhooks, texting windows and call ladder', onPress: () => router.push('/admin/lead-sources'), color: '#5856D6' },
+        );
+      }
+      if (perm('admin', 'users')) {
+        leadItems.push({ icon: 'radio-button-on', title: 'Team Availability', subtitle: 'Who is on shift, drives lead routing', onPress: () => router.push('/admin/team-availability'), color: '#34C759' });
+      }
+    }
+    sections.push({ id: 'leads', title: 'Leads', icon: 'flame', color: '#FF3B30', items: leadItems, defaultExpanded: true } as any);
+  }
+
+  // ============================================================
   // SECTION MANAGE — right under My Brand (most-used daily section)
   // Tags, Campaigns, Reviews, Showcase — role-gated
   // Only org_admin / super_admin can manage/edit campaigns
@@ -355,19 +382,18 @@ export default function MoreScreen() {
   {
     const canManageCampaigns = !repPreview && (user?.role === 'super_admin' || user?.role === 'org_admin');
     const manageItems: (MenuItem & { permKey?: string })[] = [
-      { icon: 'pricetags',  title: 'Tags',       subtitle: 'All tags — personal, account & org', onPress: () => router.push('/settings/tags'),             color: '#FF9500' },
-      { icon: 'calendar',   title: 'Calendar', subtitle: 'Appointments, tasks, birthdays & sold dates', onPress: () => router.push('/dates-calendar' as any), color: '#AF52DE' },
-      { icon: 'pricetags-outline', title: 'Keyword Auto-Tags', subtitle: 'Auto-tag calls & texts by keywords', onPress: () => router.push('/settings/keyword-rules' as any), color: '#5856D6' },
-      { icon: 'search-circle', title: 'Keyword Search', subtitle: 'Find any word in texts & call transcripts', onPress: () => router.push('/keyword-search' as any), color: '#32ADE6' },
-      { icon: 'car-sport',  title: 'Inventory',  subtitle: 'Vehicles Jessi can quote & check',   onPress: () => router.push('/inventory' as any),          color: '#32ADE6' },
-      { icon: 'globe',      title: 'Internet Leads', subtitle: 'Incoming leads & source ROI',    onPress: () => router.push('/leads' as any),              color: '#AF52DE' },
-      ...(canManageCampaigns ? [{ icon: 'megaphone' as any,  title: 'Campaigns',  subtitle: 'Build & manage automated campaigns', onPress: () => router.push('/campaigns' as any), color: '#FF2D55' }] : []),
-      { icon: 'star',       title: 'Review Center', subtitle: 'Approve, publish & track reviews', onPress: () => router.push('/settings/review-approvals'), color: '#FFD60A' },
+      { icon: 'pricetags',  title: 'Tags',       subtitle: 'All tags: personal, account and org', onPress: () => router.push('/settings/tags'),             color: '#FF9500' },
+      { icon: 'calendar',   title: 'Calendar', subtitle: 'Appointments, tasks, birthdays and sold dates', onPress: () => router.push('/dates-calendar' as any), color: '#AF52DE' },
+      { icon: 'pricetags-outline', title: 'Keyword Auto-Tags', subtitle: 'Auto-tag calls and texts by keywords', onPress: () => router.push('/settings/keyword-rules' as any), color: '#5856D6' },
+      { icon: 'search-circle', title: 'Keyword Search', subtitle: 'Find any word in texts and call transcripts', onPress: () => router.push('/keyword-search' as any), color: '#32ADE6' },
+      { icon: 'car-sport',  title: 'Inventory',  subtitle: 'Vehicles Jessi can quote and check',   onPress: () => router.push('/inventory' as any),          color: '#32ADE6' },
+      ...(canManageCampaigns ? [{ icon: 'megaphone' as any,  title: 'Campaigns',  subtitle: 'Build and manage automated campaigns', onPress: () => router.push('/campaigns' as any), color: '#FF2D55' }] : []),
+      { icon: 'star',       title: 'Review Center', subtitle: 'Approve, publish and track reviews', onPress: () => router.push('/settings/review-approvals'), color: '#FFD60A' },
       { icon: 'images',     title: 'Showcase',      subtitle: 'Approve showcase entries',          onPress: () => router.push('/settings/showcase-approvals'), color: '#34C759' },
     ];
     if (isAdmin) {
       manageItems.push(
-        { icon: 'star-outline', title: 'Review Links', subtitle: 'Google, Facebook & Yelp links', onPress: () => router.push('/settings/review-links'), color: '#FFD60A' },
+        { icon: 'star-outline', title: 'Review Links', subtitle: 'Google, Facebook and Yelp links', onPress: () => router.push('/settings/review-links'), color: '#FFD60A' },
       );
     }
     sections.push({ id: 'manage', title: 'Manage', icon: 'settings-outline', color: '#8E8E93', items: manageItems });
@@ -473,11 +499,8 @@ export default function MoreScreen() {
       { permKey: 'brand_kit', icon: 'color-palette', title: 'Brand Kit', subtitle: 'Email branding & colors', onPress: () => router.push('/settings/brand-kit'), color: '#AF52DE' },
       { permKey: 'brand_kit', icon: 'chatbubbles', title: 'Messaging Channels', subtitle: 'SMS, WhatsApp, Messenger & more', onPress: () => router.push('/settings/messaging-channels'), color: '#25D366' },
       { permKey: 'notifications', icon: 'notifications', title: 'SMS Notifications', subtitle: 'Active conversations & You\'re Needed alerts', onPress: () => router.push('/settings/notifications'), color: '#FF9500' },
-      { permKey: 'contact_tags', icon: 'flash', title: 'Lead Source Queue', subtitle: 'Inbound leads & auto-text routing', onPress: () => router.push('/admin/internet-leads'), color: '#C9A962' },
       { permKey: 'admin', icon: 'call', title: 'Phone Numbers', subtitle: 'Twilio inventory & billing', onPress: () => router.push('/admin/twilio-numbers'), color: '#34C759' },
-      { permKey: 'contact_tags', icon: 'megaphone', title: 'Lead Source Config', subtitle: 'Configure ADF webhooks & sources', onPress: () => router.push('/admin/lead-sources'), color: '#5856D6' },
       { permKey: 'users', icon: 'people', title: 'Team Members', subtitle: 'Manage users & permissions', onPress: () => router.push('/admin/users'), color: '#007AFF' },
-      { permKey: 'users', icon: 'radio-button-on', title: 'Team Availability', subtitle: 'Who\'s on shift right now', onPress: () => router.push('/admin/team-availability'), color: '#34C759' },
       { permKey: 'invite_team', icon: 'person-add', title: 'Invite Team', subtitle: 'Send invitations', onPress: () => router.push('/settings/invite-team'), color: '#C9A962' },
       { permKey: 'integrations', icon: 'git-network', title: 'Integrations', subtitle: 'API keys & webhooks', onPress: () => router.push('/settings/integrations'), color: '#5856D6' },
     ];
@@ -506,8 +529,8 @@ export default function MoreScreen() {
       { icon: 'podium', title: 'Leaderboard', subtitle: 'Performance across all accounts', onPress: () => router.push('/admin/leaderboard'), color: '#AF52DE' },
       { icon: 'pulse', title: 'Activity Feed', subtitle: 'Team activity across accounts', onPress: () => router.push('/(tabs)/activity-feed' as any), color: '#5856D6' },
       ...(isSuperAdmin ? [
-        { icon: 'analytics', title: 'Lead Attribution', subtitle: 'Demo requests & referrals', onPress: () => router.push('/admin/lead-tracking'), color: '#C9A962' },
-        { icon: 'flame', title: 'Hot Leads', subtitle: 'Website demo requests — new leads', onPress: () => router.push('/admin/hot-leads'), color: '#FF3B30' },
+        { icon: 'analytics', title: 'iMOS Website Leads', subtitle: 'Demo requests and referrals for iMOS itself, not dealership leads', onPress: () => router.push('/admin/lead-tracking'), color: '#C9A962' },
+        { icon: 'flame', title: 'iMOS Hot Leads', subtitle: 'New demo requests from the iMOS website', onPress: () => router.push('/admin/hot-leads'), color: '#FF3B30' },
       ] : []),
     ];
     sections.push({ id: 'account_mgmt', title: 'Account Management', icon: 'briefcase', color: '#007AFF', items });
@@ -571,8 +594,7 @@ export default function MoreScreen() {
       // Notification preferences — visible to ALL users so everyone can control SMS vs Push
       { icon: 'chatbubble-ellipses-outline', title: 'Notification Preferences', subtitle: 'SMS alerts, push delivery & quiet times', onPress: () => router.push('/settings/notifications'), color: '#FF9500' },
       { icon: 'time-outline', title: 'My Schedule', subtitle: 'Work hours & notification quiet times', onPress: () => router.push('/settings/schedule'), color: '#34C759' },
-      { icon: 'call-outline', title: 'Call Retries', subtitle: 'When to try again after voicemail or no answer', onPress: () => router.push('/settings/call-retries' as any), color: '#FF9F0A' },
-      { icon: 'calendar-outline', title: 'Calendar', subtitle: 'Connect calendars', onPress: () => router.push('/settings/calendar'), color: '#007AFF' },
+      { icon: 'calendar-outline', title: 'Calendar Sync', subtitle: 'Connect Google or Apple calendar', onPress: () => router.push('/settings/calendar'), color: '#007AFF' },
       { icon: 'help-circle-outline', title: 'Help Center', subtitle: 'How-to guides & FAQs', onPress: () => router.push('/help' as any), color: '#007AFF' },
       { icon: 'bug-outline', title: 'Report a Bug', subtitle: 'Flag an issue or share feedback', onPress: () => router.push('/report-bug' as any), color: '#FF3B30' },
       ...(pushSupported ? [{
@@ -632,11 +654,11 @@ export default function MoreScreen() {
 
   // Big "What do you want to do?" task tiles
   const taskGrid = [
+    { icon: 'flame', label: 'Internet Leads', sub: 'Incoming lead queue', color: '#FF3B30', route: '/leads', badge: leadsWaiting },
     { icon: 'megaphone', label: 'Send a Blast', sub: 'Mass text', color: '#FF9500', route: '/broadcast/new' },
     { icon: 'id-card', label: 'Share My Card', sub: 'Text your card', color: '#C9A962', route: '/quick-send/digitalcard' },
     { icon: 'star', label: 'Get Reviews', sub: 'Send review link', color: '#FFD60A', route: '/quick-send/review' },
     { icon: 'stats-chart', label: 'My Numbers', sub: 'How am I doing?', color: '#34C759', route: '/touchpoints/performance' },
-    { icon: 'search', label: 'Find a Word', sub: 'Search texts & calls', color: '#32ADE6', route: '/keyword-search' },
     { icon: 'car-sport', label: 'Inventory', sub: 'What\'s on the lot', color: '#AF52DE', route: '/inventory' },
   ];
 
@@ -794,6 +816,11 @@ export default function MoreScreen() {
             <Ionicons name={section.icon as any} size={20} color={section.color} />
           </View>
           <Text style={[styles.sectionTitleText, { color: colors.text }]}>{section.title}</Text>
+          {section.id === 'leads' && leadsWaiting > 0 && (
+            <View style={[styles.countPill, { backgroundColor: '#FF3B30' }]} data-testid="section-leads-waiting-badge">
+              <Text style={[styles.countPillText, { color: '#FFF' }]}>{leadsWaiting > 99 ? '99+' : leadsWaiting} waiting</Text>
+            </View>
+          )}
           <View style={[styles.countPill, { backgroundColor: colors.surface }]}>
             <Text style={[styles.countPillText, { color: colors.textSecondary }]}>{itemCount + (((section as any)._brandItems || []).length)}</Text>
           </View>
@@ -1067,8 +1094,15 @@ export default function MoreScreen() {
               activeOpacity={0.75}
               data-testid={`task-${t.label.toLowerCase().replace(/\s+/g, '-')}`}
             >
-              <View style={[styles.taskTileIcon, { backgroundColor: `${t.color}1E` }]}>
-                <Ionicons name={t.icon as any} size={22} color={t.color} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={[styles.taskTileIcon, { backgroundColor: `${t.color}1E` }]}>
+                  <Ionicons name={t.icon as any} size={22} color={t.color} />
+                </View>
+                {!!(t as any).badge && (
+                  <View style={{ backgroundColor: '#FF3B30', borderRadius: 10, minWidth: 22, height: 20, paddingHorizontal: 6, alignItems: 'center', justifyContent: 'center' }} data-testid="task-internet-leads-badge">
+                    <Text style={{ fontSize: 11, fontWeight: '800', color: '#FFF' }}>{(t as any).badge > 99 ? '99+' : (t as any).badge}</Text>
+                  </View>
+                )}
               </View>
               <Text style={[styles.taskTileLabel, { color: colors.text }]}>{t.label}</Text>
               <Text style={[styles.taskTileSub, { color: colors.textTertiary }]} numberOfLines={1}>{t.sub}</Text>
