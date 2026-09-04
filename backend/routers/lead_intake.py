@@ -1135,9 +1135,9 @@ async def receive_webhook_lead(source_id: str, request: Request):
     if not source:
         raise HTTPException(status_code=404, detail="Lead source not found")
 
-    api_key = request.headers.get("X-API-Key")
+    api_key = request.headers.get("X-API-Key") or request.query_params.get("api_key")
     if source.get("api_key") and not api_key:
-        raise HTTPException(status_code=401, detail="X-API-Key header required")
+        raise HTTPException(status_code=401, detail="X-API-Key header (or ?api_key=) required")
     if source.get("api_key") and api_key != source["api_key"]:
         raise HTTPException(status_code=401, detail="Invalid API key")
 
@@ -1176,6 +1176,8 @@ async def receive_webhook_lead(source_id: str, request: Request):
     normalized = normalize_fields(raw)
     if not normalized.get("source_name"):
         normalized["source_name"] = source.get("name", "")
+    if str(raw.get("is_test", raw.get("test", ""))).strip().lower() in ("1", "true", "yes"):
+        normalized["is_test"] = True
 
     result = await process_inbound_lead(normalized, source, db, raw_body=body_str)
     return {"success": True, **result}
@@ -1723,6 +1725,73 @@ async def set_proof_link(body: ProofLinkBody, request: Request, store_id: Option
     ps["updated_at"] = datetime.now(timezone.utc)
     await db.stores.update_one({"_id": ObjectId(sid)}, {"$set": {"proof_share": ps}})
     return {"enabled": ps["enabled"], "url": _proof_public_url(ps["token"]), "views": ps.get("views", 0)}
+
+
+_CONNECT_FIELDS = [
+    ("phone", "Phone (required)", ["phone", "phone_number", "mobile", "cell"]),
+    ("first_name", "First name", ["first_name", "firstname", "fname"]),
+    ("last_name", "Last name", ["last_name", "lastname", "lname"]),
+    ("full_name", "Full name (if you only have one name field)", ["name", "full_name", "customer_name"]),
+    ("email", "Email", ["email", "email_address"]),
+    ("vehicle_year", "Vehicle year", ["year", "vehicle_year"]),
+    ("vehicle_make", "Vehicle make", ["make", "vehicle_make"]),
+    ("vehicle_model", "Vehicle model", ["model", "vehicle_model"]),
+    ("vehicle_stock", "Stock number", ["stock", "stock_number"]),
+    ("vehicle_vin", "VIN", ["vin"]),
+    ("comments", "Customer message", ["comments", "message", "notes", "inquiry"]),
+    ("source_name", "Source label (optional, overrides the source name)", ["source", "lead_source", "provider"]),
+    ("is_test", "Test lead flag: true keeps it out of Proof", ["is_test", "test"]),
+]
+
+_CONNECT_SAMPLE = {
+    "first_name": "Jordan", "last_name": "Lee", "phone": "5551234567", "email": "jordan@example.com",
+    "year": "2024", "make": "Ford", "model": "F-150", "stock_number": "F24-118",
+    "comments": "Is this truck still available? Can I come by Saturday?", "is_test": True,
+}
+
+
+@router.get("/connect/{source_id}")
+async def connect_status(source_id: str, request: Request):
+    """Everything the Connect screen needs for one source: URL, key, sample payload, accepted
+    field names and the most recent lead so a Zap test can be confirmed live."""
+    caller_id = _require_auth(request)
+    db = get_db()
+    if not ObjectId.is_valid(source_id):
+        raise HTTPException(status_code=400, detail="Invalid source ID")
+    source = await db.lead_sources.find_one({"_id": ObjectId(source_id)})
+    if not source:
+        raise HTTPException(status_code=404, detail="Lead source not found")
+    sid, user = await _caller_store(db, caller_id, str(source.get("store_id") or ""))
+    if user.get("role") != "super_admin" and str(source.get("store_id")) != sid:
+        raise HTTPException(status_code=403, detail="That source belongs to another store")
+
+    since = datetime.now(timezone.utc) - timedelta(hours=24)
+    received_24h = await db.inbound_leads.count_documents({"source_id": source_id, "received_at": {"$gte": since}})
+    last = await db.inbound_leads.find_one({"source_id": source_id}, sort=[("received_at", -1)])
+    last_lead = None
+    if last:
+        rcv = last.get("received_at")
+        if isinstance(rcv, datetime) and rcv.tzinfo is None:
+            rcv = rcv.replace(tzinfo=timezone.utc)
+        phone = re.sub(r"\D", "", str(last.get("phone") or ""))
+        last_lead = {
+            "id": str(last["_id"]), "name": last.get("full_name") or "No name", "phone_last4": phone[-4:] if phone else None,
+            "received_at": rcv.isoformat() if isinstance(rcv, datetime) else None,
+            "seconds_ago": int((datetime.now(timezone.utc) - rcv).total_seconds()) if isinstance(rcv, datetime) else None,
+            "is_test": bool(last.get("is_test")), "status": last.get("status"), "conversation_id": last.get("conversation_id"),
+            "vehicle": last.get("vehicle_interest") if isinstance(last.get("vehicle_interest"), str) else None,
+        }
+    base = (os.environ.get("PUBLIC_FACING_URL") or os.environ.get("APP_URL") or "https://app.imonsocial.com").rstrip("/")
+    return {
+        "source": {"id": source_id, "name": source.get("name"), "is_active": source.get("is_active", True),
+                   "api_key": source.get("api_key"), "lead_count": source.get("lead_count", 0)},
+        "webhook_url": f"{base}/api/leads/webhook/{source_id}",
+        "header_name": "X-API-Key",
+        "sample_payload": _CONNECT_SAMPLE,
+        "fields": [{"key": k, "label": lbl, "aliases": al} for k, lbl, al in _CONNECT_FIELDS],
+        "last_lead": last_lead,
+        "received_24h": received_24h,
+    }
 
 
 async def public_proof_payload(db, token: str, days: int) -> dict:

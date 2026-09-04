@@ -365,6 +365,7 @@ export default function MoreScreen() {
         leadItems.push(
           { icon: 'flash', title: 'Lead Source Queue', subtitle: 'Inbound lead log and queued auto-text status', onPress: () => router.push('/admin/internet-leads'), color: '#C9A962' },
           { icon: 'megaphone', title: 'Lead Source Config', subtitle: 'ADF webhooks, texting windows and call ladder', onPress: () => router.push('/admin/lead-sources'), color: '#5856D6' },
+          { icon: 'link', title: 'Connect Zapier / Make', subtitle: 'Send leads from any app to a source', onPress: () => router.push('/admin/lead-connect' as any), color: '#FF4A00' },
         );
       }
       if (perm('admin', 'users')) {
