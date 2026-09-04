@@ -1488,14 +1488,16 @@ async def compute_proof(db, store_id: Optional[str], days: int) -> dict:
     query: dict = {"received_at": {"$gte": since}, "conversation_id": {"$nin": [None, ""]}, "is_test": {"$ne": True}}
     if store_id:
         query["store_id"] = store_id
-    leads = await db.inbound_leads.find(query, {"conversation_id": 1, "received_at": 1, "assigned_to": 1, "contact_id": 1, "created_at": 1, "source_name": 1, "source_id": 1}).to_list(5000)
+    leads = await db.inbound_leads.find(query, {"conversation_id": 1, "received_at": 1, "assigned_to": 1, "contact_id": 1, "created_at": 1, "source_name": 1, "source_id": 1, "attribution": 1}).to_list(5000)
     from services.lead_clocks import clocks_for_leads
     clocks = await clocks_for_leads(db, leads)
     rows = list(clocks.values())
     src_by_conv = {l["conversation_id"]: (l.get("source_name") or "Unknown") for l in leads}
+    attr_by_conv = {l["conversation_id"]: l.get("attribution") for l in leads if isinstance(l.get("attribution"), dict)}
     src_ids = {(l.get("source_name") or "Unknown"): str(l.get("source_id") or "") for l in leads if l.get("source_id")}
     for cid, r in clocks.items():
         r["source_name"] = src_by_conv.get(cid, "Unknown")
+        r["attribution"] = attr_by_conv.get(cid)
 
     sold: set = set()
     sold_at: dict = {}
@@ -1523,33 +1525,73 @@ async def compute_proof(db, store_id: Optional[str], days: int) -> dict:
                     "median_days": sorted(tts)[len(tts) // 2] if tts else None, "fastest_days": min(tts) if tts else None}
 
     cost_by_name = {}
-    async for src in db.lead_sources.find({"monthly_cost": {"$gt": 0}}, {"name": 1, "monthly_cost": 1}):
+    cost_q: dict = {"monthly_cost": {"$gt": 0}}
+    if store_id:
+        cost_q["store_id"] = store_id
+    async for src in db.lead_sources.find(cost_q, {"name": 1, "monthly_cost": 1}):
         cost_by_name[src.get("name", "")] = float(src["monthly_cost"])
-    by_src: dict = {}
-    for r in rows:
-        by_src.setdefault(r["source_name"], []).append(r)
-    sources = []
-    for name, grp in by_src.items():
+
+    def group_stats(grp, period_cost):
         s = sum(1 for r in grp if r.get("contact_id") in sold)
         texted_g = [r for r in grp if r.get("texted")]
         replied_g = [r for r in texted_g if r.get("reply_secs") is not None]
         touch = [t for t in ((r.get("received_at") and r.get("first_outbound_at") and int((r["first_outbound_at"] - r["received_at"]).total_seconds())) for r in grp) if isinstance(t, int) and t >= 0]
         dts = [d for d in (_days_to_sold(r) for r in grp) if d is not None]
-        monthly = cost_by_name.get(name)
-        period_cost = round(monthly * days / 30, 2) if monthly else None
-        sources.append({
-            "source_name": name, "source_id": src_ids.get(name), "leads": len(grp), "sold": s,
+        return {
+            "leads": len(grp), "sold": s,
             "close_rate": int(round(100 * s / len(grp))) if grp else None,
             "reply_rate": int(round(100 * len(replied_g) / len(texted_g))) if texted_g else None,
             "first_touch_avg_seconds": int(sum(touch) / len(touch)) if touch else None,
             "touched_pct": int(round(100 * len(touch) / len(grp))) if grp else None,
             "avg_touches": round(sum(int(r.get("outbound_texts") or 0) + int(r.get("calls") or 0) for r in grp) / len(grp), 1) if grp else None,
             "avg_days_to_sold": round(sum(dts) / len(dts), 1) if dts else None,
-            "monthly_cost": monthly, "period_cost": period_cost,
+            "period_cost": period_cost,
             "cost_per_lead": round(period_cost / len(grp), 2) if period_cost and grp else None,
             "cost_per_sale": round(period_cost / s, 2) if period_cost and s else None,
-        })
+        }
+
+    by_src: dict = {}
+    for r in rows:
+        by_src.setdefault(r["source_name"], []).append(r)
+    sources = []
+    for name, grp in by_src.items():
+        monthly = cost_by_name.get(name)
+        period_cost = round(monthly * days / 30, 2) if monthly else None
+        sources.append({"source_name": name, "source_id": src_ids.get(name), "monthly_cost": monthly, **group_stats(grp, period_cost)})
     sources.sort(key=lambda x: (-(x["sold"]), -(x["leads"])))
+    src_period_cost = {x["source_name"]: x["period_cost"] for x in sources}
+
+    # Ad level: leads whose attribution carries a campaign (Facebook / Instagram lead ads via Connect)
+    camp_cost: dict = {}
+    if store_id:
+        async for c in db.campaign_costs.find({"store_id": store_id, "monthly_cost": {"$gt": 0}}, {"campaign_key": 1, "monthly_cost": 1}):
+            camp_cost[c["campaign_key"]] = float(c["monthly_cost"])
+    by_camp: dict = {}
+    for r in rows:
+        camp = (r.get("attribution") or {}).get("campaign")
+        if camp:
+            by_camp.setdefault(str(camp).strip(), []).append(r)
+    campaigns = []
+    for camp, grp in by_camp.items():
+        key = camp.lower()
+        monthly = camp_cost.get(key)
+        src_name = max((r["source_name"] for r in grp), key=lambda n: sum(1 for x in grp if x["source_name"] == n))
+        if monthly:
+            period_cost, cost_mode = round(monthly * days / 30, 2), "set"
+        elif src_period_cost.get(src_name) and by_src.get(src_name):
+            period_cost, cost_mode = round(src_period_cost[src_name] * len(grp) / len(by_src[src_name]), 2), "estimated"
+        else:
+            period_cost, cost_mode = None, None
+        by_ad: dict = {}
+        for r in grp:
+            ad = (r.get("attribution") or {}).get("ad") or (r.get("attribution") or {}).get("form")
+            if ad:
+                by_ad.setdefault(str(ad).strip(), []).append(r)
+        ads = sorted(({"ad": a, "leads": len(g), "sold": sum(1 for r in g if r.get("contact_id") in sold)} for a, g in by_ad.items()),
+                     key=lambda x: (-x["sold"], -x["leads"]))
+        campaigns.append({"campaign": camp, "campaign_key": key, "source_name": src_name, "monthly_cost": monthly, "cost_mode": cost_mode,
+                          "ads": ads[:5], "ad_count": len(ads), **group_stats(grp, period_cost)})
+    campaigns.sort(key=lambda x: (-(x["sold"]), -(x["leads"])))
 
     def rate(grp):
         s = sum(1 for r in grp if r.get("contact_id") in sold)
@@ -1618,6 +1660,16 @@ async def compute_proof(db, store_id: Optional[str], days: int) -> dict:
         best_cost.sort(key=lambda s: s["cost_per_sale"])
         b, w = best_cost[0], best_cost[-1]
         headlines.append(f"True cost per sale: {b['source_name']} ${b['cost_per_sale']:,.0f} vs {w['source_name']} ${w['cost_per_sale']:,.0f}.")
+    camp_sold = [c for c in campaigns if c["sold"]]
+    if len(campaigns) >= 2 and camp_sold:
+        b = camp_sold[0]
+        dud = next((c for c in reversed(campaigns) if c["leads"] >= 3 and not c["sold"]), None)
+        line = f"Ad that sells: {b['campaign']} closed {b['sold']} of {b['leads']} ({b['close_rate']}%)"
+        if b.get("cost_per_sale"):
+            line += f" at ${b['cost_per_sale']:,.0f} per sale" + (" (est.)" if b.get("cost_mode") == "estimated" else "")
+        if dud:
+            line += f", while {dud['campaign']} sent {dud['leads']} leads and sold none"
+        headlines.append(line + ".")
     by_rep: dict = {}
     for r in rows:
         rid = str(r.get("human_rep") or r.get("call_rep") or r.get("assigned_to") or "") or None
@@ -1646,7 +1698,7 @@ async def compute_proof(db, store_id: Optional[str], days: int) -> dict:
         "small_sample": len(rows) < 30,
         "reply": reply_cmp, "speed_human_text": speed, "speed_first_touch": first_touch,
         "touchpoints": touches, "conversation_depth": conversation, "headlines": headlines,
-        "time_to_sold": time_to_sold, "sources": sources, "unpriced_sources": unpriced, "reps": reps,
+        "time_to_sold": time_to_sold, "sources": sources, "unpriced_sources": unpriced, "reps": reps, "campaigns": campaigns,
         "benchmark": "Harvard Business Review: contacting a lead within 1 hour makes qualifying it 7x more likely than waiting 2 hours or more.",
     }
 
@@ -1759,6 +1811,29 @@ _CONNECT_SAMPLE = {
 }
 
 
+class CampaignCostBody(BaseModel):
+    campaign: str
+    monthly_cost: float = 0
+    store_id: Optional[str] = None
+
+
+@router.put("/campaign-costs")
+async def set_campaign_cost(body: CampaignCostBody, request: Request):
+    """Monthly ad spend for one campaign (from Ads Manager). 0 clears it and Proof falls back to the source estimate."""
+    caller_id = _require_auth(request)
+    db = get_db()
+    sid, _user = await _caller_store(db, caller_id, body.store_id)
+    key = body.campaign.strip().lower()
+    if not key:
+        raise HTTPException(status_code=400, detail="Campaign name required")
+    if body.monthly_cost and body.monthly_cost > 0:
+        await db.campaign_costs.update_one({"store_id": sid, "campaign_key": key},
+                                           {"$set": {"campaign": body.campaign.strip(), "monthly_cost": float(body.monthly_cost), "updated_at": datetime.now(timezone.utc)}}, upsert=True)
+    else:
+        await db.campaign_costs.delete_one({"store_id": sid, "campaign_key": key})
+    return {"success": True, "campaign": body.campaign.strip(), "monthly_cost": float(body.monthly_cost or 0)}
+
+
 @router.get("/sources/health")
 async def sources_health(request: Request, store_id: Optional[str] = None):
     """Per-source health for the caller's store: quiet / slow / healthy / new, with the alert threshold."""
@@ -1822,6 +1897,8 @@ async def public_proof_payload(db, token: str, days: int) -> dict:
     days = days if days in (30, 90, 365) else 90
     proof = await compute_proof(db, str(st["_id"]), days)
     proof.pop("unpriced_sources", None)
+    proof.pop("campaigns", None)
+    proof["headlines"] = [h for h in proof.get("headlines", []) if not h.startswith("Ad that sells")]
     proof["reps"] = [{k: v for k, v in r.items() if k != "user_id"} for r in proof.get("reps", [])]
     for s in proof.get("sources", []):
         s.pop("source_id", None)

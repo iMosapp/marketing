@@ -13,6 +13,7 @@ const money = (n: number | null | undefined) => n == null ? '--' : `$${Math.roun
 
 type Source = { source_id?: string | null; source_name: string; leads: number; sold: number; close_rate: number | null; reply_rate: number | null; first_touch_avg_seconds: number | null; touched_pct: number | null; avg_touches: number | null; avg_days_to_sold: number | null; monthly_cost: number | null; period_cost: number | null; cost_per_lead: number | null; cost_per_sale: number | null };
 
+type Campaign = Omit<Source, 'source_id' | 'source_name'> & { campaign: string; campaign_key: string; source_name: string; cost_mode: 'set' | 'estimated' | null; ads: { ad: string; leads: number; sold: number }[]; ad_count: number };
 type Bucket = { label: string; leads: number; sold: number; close_rate: number | null; reply_rate: number | null };
 type Proof = {
   days: number; leads: number; sold: number; close_rate: number | null; small_sample: boolean;
@@ -20,7 +21,7 @@ type Proof = {
   speed_human_text: Bucket[]; speed_first_touch: Bucket[]; touchpoints: Bucket[]; conversation_depth: Bucket[]; headlines: string[];
   time_to_sold?: { count: number; avg_days: number | null; median_days: number | null; fastest_days: number | null };
   sources?: Source[]; benchmark?: string; unpriced_sources?: { source_id: string; source_name: string; leads: number }[];
-  reps?: RepRow[]; store_name?: string;
+  reps?: RepRow[]; store_name?: string; campaigns?: Campaign[];
 };
 type RepRow = { user_id?: string; name: string; leads: number; sold: number; close_rate: number | null; replied: { leads: number; sold: number; close_rate: number | null }; silent: { leads: number; sold: number; close_rate: number | null }; reply_rate: number | null; first_text_avg_seconds: number | null };
 const STYLES = [
@@ -29,6 +30,47 @@ const STYLES = [
   { key: 'dark-square', label: 'Dark 1:1', theme: 'dark', format: 'square' },
   { key: 'light-square', label: 'Light 1:1', theme: 'light', format: 'square' },
 ];
+
+const CampaignRow = ({ c, colors, canEdit, days, storeParam, onSaved }: { c: Campaign; colors: any; canEdit?: boolean; days: number; storeParam?: string; onSaved?: () => void }) => {
+  const [editing, setEditing] = useState(false);
+  const est = c.cost_mode === 'estimated';
+  const best = c.ads[0];
+  const storeId = (storeParam || '').match(/store_id=([^&]+)/)?.[1];
+  return (
+    <View style={{ gap: 6, paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.border }} testID={`proof-campaign-${c.campaign_key}`} dataSet={{ testid: `proof-campaign-${c.campaign_key}` } as any}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }} numberOfLines={1}>{c.campaign}</Text>
+          <Text style={{ fontSize: 11, color: colors.textSecondary }} numberOfLines={1}>{c.source_name}{c.ad_count ? ` · ${c.ad_count} ad${c.ad_count === 1 ? '' : 's'}` : ''}</Text>
+        </View>
+        <Text style={{ fontSize: 15, fontWeight: '800', color: c.cost_per_sale != null ? GOLD : colors.textSecondary }}>{c.cost_per_sale != null ? `${money(c.cost_per_sale)} / sale${est ? ' est.' : ''}` : c.period_cost ? 'no sales yet' : ''}</Text>
+        {canEdit && (
+          <TouchableOpacity onPress={() => setEditing(v => !v)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, height: 28, borderRadius: 14, backgroundColor: c.monthly_cost ? colors.bg : `${GOLD}22`, borderWidth: 1, borderColor: `${GOLD}66` }} testID={`campaign-spend-edit-${c.campaign_key}`} dataSet={{ testid: `campaign-spend-edit-${c.campaign_key}` } as any}>
+            <Ionicons name={editing ? 'close' : c.monthly_cost ? 'pencil' : 'add'} size={12} color={GOLD} />
+            <Text style={{ fontSize: 12, fontWeight: '700', color: GOLD }}>{editing ? 'Close' : c.monthly_cost ? `${money(c.monthly_cost)}/mo` : 'Ad spend'}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+      {editing && <SpendEditor s={{ id: c.campaign_key, label: c.campaign, monthly_cost: c.monthly_cost, leads: c.leads, sold: c.sold, hint: 'Enter this campaign\'s monthly spend from Ads Manager. Until then we estimate it from the source spend by lead share.' }} days={days} colors={colors}
+        onSave={async monthly => { await api.put('/leads/campaign-costs', { campaign: c.campaign, monthly_cost: monthly, ...(storeId ? { store_id: storeId } : {}) }); }} onSaved={() => { setEditing(false); onSaved && onSaved(); }} />}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+        {[
+          `${c.leads} leads`, `${c.sold} sold${c.close_rate != null ? ` (${c.close_rate}%)` : ''}`,
+          c.reply_rate != null ? `${c.reply_rate}% replied` : null,
+          c.first_touch_avg_seconds != null ? `first touch ${fmtSecs(c.first_touch_avg_seconds)}` : null,
+          c.avg_days_to_sold != null ? `${c.avg_days_to_sold} days to sold` : null,
+          c.period_cost != null ? `spent ${money(c.period_cost)}${est ? ' est.' : ''}` : null,
+          c.cost_per_lead != null ? `${money(c.cost_per_lead)} / lead` : null,
+        ].filter(Boolean).map((chip, i) => (
+          <View key={i} style={{ backgroundColor: colors.bg, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+            <Text style={{ fontSize: 12, color: colors.textSecondary }}>{chip}</Text>
+          </View>
+        ))}
+      </View>
+      {best && <Text style={{ fontSize: 12, color: colors.textSecondary }} numberOfLines={2} testID={`proof-campaign-best-${c.campaign_key}`} dataSet={{ testid: `proof-campaign-best-${c.campaign_key}` } as any}>{`${best.sold ? 'Best ad' : 'Top ad'}: ${best.ad} · ${best.sold} of ${best.leads} sold${c.ads.length > 1 && !c.ads[c.ads.length - 1].sold ? ` · ${c.ads[c.ads.length - 1].ad} sold 0 of ${c.ads[c.ads.length - 1].leads}` : ''}`}</Text>}
+    </View>
+  );
+};
 
 const Card = ({ title, children, colors, testid, right }: any) => (
   <View style={{ backgroundColor: colors.card, borderRadius: 14, padding: 14, gap: 10 }} testID={testid} dataSet={{ testid } as any}>
@@ -61,18 +103,18 @@ const BucketBars = ({ rows, colors }: { rows: Bucket[]; colors: any }) => {
   );
 };
 
-const SpendEditor = ({ s, days, colors, onSaved }: { s: Source; days: number; colors: any; onSaved: () => void }) => {
+type SpendTarget = { id: string; label: string; monthly_cost: number | null; leads: number; sold: number; hint?: string };
+const SpendEditor = ({ s, days, colors, onSave, onSaved }: { s: SpendTarget; days: number; colors: any; onSave: (monthly: number) => Promise<void>; onSaved: () => void }) => {
   const { showToast } = useToast();
   const [val, setVal] = useState(s.monthly_cost != null ? String(Math.round(s.monthly_cost)) : '');
   const [saving, setSaving] = useState(false);
   const monthly = Number(String(val).replace(/[^0-9.]/g, '')) || 0;
   const period = monthly * days / 30;
   const save = async () => {
-    if (!s.source_id) return;
     setSaving(true);
     try {
-      await api.patch(`/lead-sources/${s.source_id}`, { monthly_cost: monthly });
-      showToast(monthly ? `${s.source_name} spend saved` : `${s.source_name} spend cleared`, 'success');
+      await onSave(monthly);
+      showToast(monthly ? `${s.label} spend saved` : `${s.label} spend cleared`, 'success');
       onSaved();
     } catch (e: any) {
       showToast(e?.response?.data?.detail || 'Could not save', 'error');
@@ -81,23 +123,23 @@ const SpendEditor = ({ s, days, colors, onSaved }: { s: Source; days: number; co
     }
   };
   return (
-    <View style={{ backgroundColor: colors.bg, borderRadius: 10, padding: 12, gap: 8, borderWidth: 1, borderColor: `${GOLD}44` }} testID={`spend-editor-${s.source_id}`} dataSet={{ testid: `spend-editor-${s.source_id}` } as any}>
-      <Text style={{ fontSize: 12, fontWeight: '700', color: colors.text, letterSpacing: 0.8 }}>{`${s.source_name.toUpperCase()} MONTHLY SPEND`}</Text>
+    <View style={{ backgroundColor: colors.bg, borderRadius: 10, padding: 12, gap: 8, borderWidth: 1, borderColor: `${GOLD}44` }} testID={`spend-editor-${s.id}`} dataSet={{ testid: `spend-editor-${s.id}` } as any}>
+      <Text style={{ fontSize: 12, fontWeight: '700', color: colors.text, letterSpacing: 0.8 }}>{`${s.label.toUpperCase()} MONTHLY SPEND`}</Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 8, paddingHorizontal: 10, height: 40, flex: 1 }}>
           <Text style={{ color: colors.textSecondary, fontSize: 16 }}>$</Text>
           <TextInput value={val} onChangeText={t => setVal(t.replace(/[^0-9.]/g, ''))} keyboardType="numeric" placeholder="0" placeholderTextColor={colors.textSecondary} autoFocus
-            style={{ flex: 1, color: colors.text, fontSize: 16, fontWeight: '700', paddingVertical: 0 }} testID={`spend-input-${s.source_id}`} dataSet={{ testid: `spend-input-${s.source_id}` } as any} />
+            style={{ flex: 1, color: colors.text, fontSize: 16, fontWeight: '700', paddingVertical: 0 }} testID={`spend-input-${s.id}`} dataSet={{ testid: `spend-input-${s.id}` } as any} />
           <Text style={{ color: colors.textSecondary, fontSize: 13 }}>/mo</Text>
         </View>
-        <TouchableOpacity onPress={save} disabled={saving} style={{ backgroundColor: GOLD, borderRadius: 8, paddingHorizontal: 14, height: 40, justifyContent: 'center' }} testID={`spend-save-${s.source_id}`} dataSet={{ testid: `spend-save-${s.source_id}` } as any}>
+        <TouchableOpacity onPress={save} disabled={saving} style={{ backgroundColor: GOLD, borderRadius: 8, paddingHorizontal: 14, height: 40, justifyContent: 'center' }} testID={`spend-save-${s.id}`} dataSet={{ testid: `spend-save-${s.id}` } as any}>
           {saving ? <ActivityIndicator size="small" color="#000" /> : <Text style={{ fontSize: 13, fontWeight: '700', color: '#000' }}>Save</Text>}
         </TouchableOpacity>
       </View>
-      <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }} testID={`spend-math-${s.source_id}`} dataSet={{ testid: `spend-math-${s.source_id}` } as any}>
+      <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }} testID={`spend-math-${s.id}`} dataSet={{ testid: `spend-math-${s.id}` } as any}>
         {monthly
           ? `${money(period)} over ${days} days ÷ ${s.leads} lead${s.leads === 1 ? '' : 's'} = ${money(period / Math.max(1, s.leads))} per lead${s.sold ? ` · ÷ ${s.sold} sold = ${money(period / s.sold)} per sale` : ' · no sales yet, so no cost per sale'}`
-          : 'Enter what this source bills you each month. Cost per lead and per sale fill in for every window.'}
+          : (s.hint || 'Enter what this source bills you each month. Cost per lead and per sale fill in for every window.')}
       </Text>
     </View>
   );
@@ -118,7 +160,8 @@ const SourceRow = ({ s, colors, canEdit, days, onSaved }: { s: Source; colors: a
           </TouchableOpacity>
         )}
       </View>
-      {editing && <SpendEditor s={s} days={days} colors={colors} onSaved={() => { setEditing(false); onSaved && onSaved(); }} />}
+      {editing && <SpendEditor s={{ id: s.source_id || '', label: s.source_name, monthly_cost: s.monthly_cost, leads: s.leads, sold: s.sold }} days={days} colors={colors}
+        onSave={async monthly => { await api.patch(`/lead-sources/${s.source_id}`, { monthly_cost: monthly }); }} onSaved={() => { setEditing(false); onSaved && onSaved(); }} />}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
         {[
           `${s.leads} leads`, `${s.sold} sold${s.close_rate != null ? ` (${s.close_rate}%)` : ''}`,
@@ -296,6 +339,14 @@ export const ProofPanel = ({ data, colors, isManager, storeParam = '', days = 90
         )}
         <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>{isManager && !publicToken ? 'Tap Add spend or the $/mo pill on any source to set what it bills you each month. ' : ''}Spend is the monthly amount prorated to this window, split by leads received and by leads sold. Sold is any lead whose contact got a sold photo.</Text>
       </Card>
+
+      {!!data.campaigns?.length && !publicToken && (
+        <Card title="WHICH AD ACTUALLY SELLS" colors={colors} testid="proof-campaigns">
+          <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>Facebook and Instagram leads carry their campaign and ad name in from Connect. Close rate and cost per sale by campaign, so budget follows sales, not clicks.</Text>
+          {data.campaigns.map(c => <CampaignRow key={c.campaign_key} c={c} colors={colors} days={days} storeParam={storeParam} canEdit={!!isManager} onSaved={onRefresh} />)}
+          <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>{'"est." means the campaign is carrying its share of the source spend by lead count. Tap Ad spend to enter the real monthly number from Ads Manager.'}</Text>
+        </Card>
+      )}
 
       {!!data.reps?.length && (
         <Card title="REPS: SPEED PAYS" colors={colors} testid="proof-reps">
