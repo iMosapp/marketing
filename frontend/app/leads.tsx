@@ -11,6 +11,8 @@ import { useAuthStore } from '../store/authStore';
 import { resolvePhotoUrl } from '../utils/photoUrl';
 import api from '../services/api';
 import { CallRetriesCard } from '../components/leads/CallRetriesCard';
+import { StopTheClockCard } from '../components/leads/StopTheClockCard';
+import { ProofPanel } from '../components/leads/ProofPanel';
 
 const ACCENT = '#AF52DE';
 
@@ -50,11 +52,12 @@ export default function LeadsDashboard() {
   const { user } = useAuthStore();
   const router = useRouter();
 
-  const [tab, setTab] = useState<'leads' | 'roi' | 'speed'>('leads');
+  const [tab, setTab] = useState<'leads' | 'roi' | 'speed' | 'proof'>('leads');
   const [leads, setLeads] = useState<any[]>([]);
   const [roi, setRoi] = useState<any>(null);
   const [speed, setSpeed] = useState<any>(null);
   const [retries, setRetries] = useState<any>(null);
+  const [proof, setProof] = useState<any>(null);
   const [roiDays, setRoiDays] = useState(90);
   const [statusFilter, setStatusFilter] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -65,16 +68,18 @@ export default function LeadsDashboard() {
     try {
       const storeParam = user.store_id ? `store_id=${user.store_id}&` : '';
       const statusParam = statusFilter !== 'all' ? `status=${statusFilter}&` : '';
-      const [leadsRes, roiRes, speedRes, retryRes] = await Promise.all([
+      const [leadsRes, roiRes, speedRes, retryRes, proofRes] = await Promise.all([
         api.get(`/leads/?${storeParam}${statusParam}limit=100`),
         api.get(`/leads/analytics/sources?${storeParam}days=${roiDays}`),
         api.get(`/leads/analytics/response-times?${storeParam}days=${roiDays}`),
         api.get(`/leads/analytics/call-retries?${storeParam}days=${roiDays}`).catch(() => ({ data: null })),
+        api.get(`/leads/analytics/proof?${storeParam}days=${roiDays}`).catch(() => ({ data: null })),
       ]);
       setLeads(leadsRes.data || []);
       setRoi(roiRes.data || null);
       setSpeed(speedRes.data || null);
       setRetries(retryRes.data || null);
+      setProof(proofRes.data || null);
     } catch (e) {
       console.error('Leads fetch failed:', e);
     } finally {
@@ -104,13 +109,13 @@ export default function LeadsDashboard() {
 
       {/* Tabs */}
       <View style={{ flexDirection: 'row', alignSelf: 'center', backgroundColor: colors.card, borderRadius: 10, padding: 3, marginBottom: 10 }}>
-        {([['leads', 'Leads', 'people-outline'], ['roi', 'Source ROI', 'trending-up-outline'], ['speed', 'Speed', 'stopwatch-outline']] as const).map(([k, label, icon]) => (
+        {([['leads', 'Leads', 'people-outline'], ['roi', 'ROI', 'trending-up-outline'], ['speed', 'Speed', 'stopwatch-outline'], ['proof', 'Proof', 'ribbon-outline']] as const).map(([k, label, icon]) => (
           <TouchableOpacity
             key={k}
             onPress={() => setTab(k)}
             style={{
               flexDirection: 'row', alignItems: 'center', gap: 6,
-              paddingVertical: 7, paddingHorizontal: 16, borderRadius: 8,
+              paddingVertical: 7, paddingHorizontal: 12, borderRadius: 8,
               backgroundColor: tab === k ? colors.bg : 'transparent',
             }}
             data-testid={`leads-tab-${k}`}
@@ -244,6 +249,8 @@ export default function LeadsDashboard() {
                 );
               })
             )
+          ) : tab === 'proof' ? (
+            <ProofPanel data={proof} colors={colors} />
           ) : tab === 'speed' ? (
             /* ─── Speed to Lead tab ─── */
             <>
@@ -257,24 +264,12 @@ export default function LeadsDashboard() {
               </View>
             ) : (
               <>
-                {/* Overall stats */}
-                <View style={{ flexDirection: 'row', gap: 8 }} testID="speed-overall-stats" dataSet={{ testid: 'speed-overall-stats' }}>
-                  {[
-                    { label: 'TEAM AVG', val: fmtDuration(speed.overall.avg_seconds), color: speed.overall.avg_seconds != null ? speedColor(speed.overall.avg_seconds) : colors.text },
-                    { label: 'MEASURED', val: String(speed.overall.measured), color: '#007AFF' },
-                    { label: 'NO REPLY YET', val: String(speed.overall.unanswered), color: '#FF9500' },
-                  ].map(s => (
-                    <View key={s.label} style={{ flex: 1, alignItems: 'center', backgroundColor: colors.card, borderRadius: 12, paddingVertical: 12 }}>
-                      <Text style={{ fontSize: 20, fontWeight: '800', color: s.color }} numberOfLines={1}>{s.val}</Text>
-                      <Text style={{ fontSize: 10, fontWeight: '600', color: colors.textSecondary, letterSpacing: 0.5 }} numberOfLines={1}>{s.label}</Text>
-                    </View>
-                  ))}
-                </View>
+                <StopTheClockCard clocks={speed.clocks} customer={speed.customer} leads={(speed.overall?.measured || 0) + (speed.overall?.unanswered || 0)} colors={colors} fmt={fmtDuration} speedColor={speedColor} />
 
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: `${ACCENT}12`, borderRadius: 10, padding: 10 }}>
                   <Ionicons name="flash" size={15} color={ACCENT} />
                   <Text style={{ fontSize: 13, color: colors.textSecondary, flex: 1 }}>
-                    Time from lead arrival to the first human rep reply. Under 5 minutes wins deals.
+                    Rep ranking is by first human text. Under 5 minutes wins deals.
                   </Text>
                 </View>
 
@@ -282,20 +277,25 @@ export default function LeadsDashboard() {
                 {speed.reps.map((r: any, i: number) => {
                   const rankColors = ['#C9A962', '#A8A8A8', '#CD7F32'];
                   const rankColor = rankColors[i] || colors.textSecondary;
+                  const bits = [
+                    r.call_avg_seconds != null ? `call ${fmtDuration(r.call_avg_seconds)}` : null,
+                    r.reply_rate != null ? `${r.reply_rate}% replied` : null,
+                    r.reply_avg_seconds != null ? `back in ${fmtDuration(r.reply_avg_seconds)}` : null,
+                  ].filter(Boolean);
                   return (
                     <View key={r.user_id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.card, borderRadius: 12, padding: 14 }} testID={`speed-rep-${r.user_id}`} dataSet={{ testid: `speed-rep-${r.user_id}` }}>
                       <View style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: `${rankColor}22` }}>
-                        <Text style={{ fontSize: 14, fontWeight: '800', color: rankColor }}>{i + 1}</Text>
+                        <Text style={{ fontSize: 13, fontWeight: '800', color: rankColor }}>{i + 1}</Text>
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }} numberOfLines={1}>{r.name}</Text>
-                        <Text style={{ fontSize: 12, color: colors.textSecondary }} numberOfLines={1}>
-                          {r.count} lead{r.count !== 1 ? 's' : ''} · fastest {fmtDuration(r.fastest_seconds)}
+                        <Text style={{ fontSize: 12, color: colors.textSecondary }} numberOfLines={2}>
+                          {`${r.leads ?? r.count} lead${(r.leads ?? r.count) !== 1 ? 's' : ''}${bits.length ? ' · ' + bits.join(' · ') : ''}`}
                         </Text>
                       </View>
                       <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={{ fontSize: 17, fontWeight: '800', color: speedColor(r.avg_seconds) }}>{fmtDuration(r.avg_seconds)}</Text>
-                        <Text style={{ fontSize: 10, fontWeight: '600', color: colors.textSecondary, letterSpacing: 0.4 }}>AVG RESPONSE</Text>
+                        <Text style={{ fontSize: 17, fontWeight: '800', color: r.avg_seconds != null ? speedColor(r.avg_seconds) : colors.textSecondary }}>{r.avg_seconds != null ? fmtDuration(r.avg_seconds) : 'no text'}</Text>
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.4 }}>FIRST TEXT</Text>
                       </View>
                     </View>
                   );

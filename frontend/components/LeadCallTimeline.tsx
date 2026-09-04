@@ -18,6 +18,12 @@ const OUTCOME: Record<string, { label: string; color: string; icon: string }> = 
 };
 
 const mmss = (s?: number | null) => s == null ? '' : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+const fmtClock = (s?: number | null) => {
+  if (s == null) return '--';
+  if (s < 3600) return mmss(s);
+  if (s < 86400) return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
+  return `${Math.floor(s / 86400)}d ${Math.floor((s % 86400) / 3600)}h`;
+};
 const reasons = (r: string[] = []) => r.map(x => x === 'store_closed' ? 'store closed' : 'texting window').join(' + ');
 
 export const LeadCallTimeline = ({ conversationId, colors }: { conversationId: string; colors: any }) => {
@@ -52,7 +58,7 @@ export const LeadCallTimeline = ({ conversationId, colors }: { conversationId: s
     title = plan.jessi_on ? 'Text only · Jessi answering replies' : 'Text only · reps answer replies';
     sub = data.intake?.sent_at ? `Intake text sent ${whenLabel(data.intake.sent_at)}` : data.intake?.scheduled_for ? `Intake text goes out ${whenLabel(data.intake.scheduled_for)}` : 'No intake text';
   } else if (job.status === 'claimed') {
-    title = `Claimed by ${job.claimed_by_name || 'a rep'} in ${mmss(job.time_to_claim_seconds)}`;
+    title = `Claimed by ${job.claimed_by_name || 'a rep'} in ${fmtClock(job.time_to_claim_seconds)}`;
     sub = `${job.claimed_via === 'phone' ? 'Pressed 1 on the call' : 'Claimed in the app'} · attempt ${job.calls.filter((c: any) => c.outcome === 'claimed')[0]?.attempt || job.attempt_index || 1} of ${job.attempts.length}`;
     tone = '#34C759';
   } else if (job.status === 'handled') {
@@ -100,7 +106,22 @@ export const LeadCallTimeline = ({ conversationId, colors }: { conversationId: s
       </TouchableOpacity>
       {open && (
         <View style={{ paddingHorizontal: 12, paddingBottom: 12, gap: 8 }} testID="lead-call-timeline-rows" dataSet={{ testid: 'lead-call-timeline-rows' } as any}>
-          {rows.map((r, i) => (
+          {data.clocks && (
+            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 2 }} testID="lead-clocks" dataSet={{ testid: 'lead-clocks' } as any}>
+              {[
+                { label: 'CALL', secs: data.clocks.call_secs, icon: 'call' },
+                { label: 'HUMAN TEXT', secs: data.clocks.human_secs, icon: 'chatbubble' },
+                { label: 'AI REPLY', secs: data.clocks.ai_secs, icon: 'sparkles' },
+                { label: 'THEY REPLIED', secs: data.clocks.reply_secs, icon: 'arrow-undo' },
+              ].map(c => (
+                <View key={c.label} style={{ flex: 1, alignItems: 'center', backgroundColor: colors.bg || colors.surface, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 2 }}>
+                  <Ionicons name={c.icon as any} size={12} color={c.secs != null ? tone : colors.textSecondary} />
+                  <Text style={{ fontSize: 13, fontWeight: '800', color: c.secs != null ? colors.text : colors.textSecondary, marginTop: 2 }} numberOfLines={1}>{fmtClock(c.secs)}</Text>
+                  <Text style={{ fontSize: 9, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.3 }} numberOfLines={1}>{c.label}</Text>
+                </View>
+              ))}
+            </View>
+          )}          {rows.map((r, i) => (
             <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
               <Text style={{ width: 62, fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>{whenLabel(r.at)}</Text>
               <Ionicons name={r.icon as any} size={14} color={r.color} style={{ marginTop: 1 }} />

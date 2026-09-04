@@ -1392,43 +1392,56 @@ async def lead_response_times(
     if store_id:
         query["store_id"] = store_id
     leads = await db.inbound_leads.find(
-        query, {"conversation_id": 1, "received_at": 1, "assigned_to": 1}
+        query, {"conversation_id": 1, "received_at": 1, "assigned_to": 1, "contact_id": 1, "created_at": 1}
     ).to_list(3000)
 
     conv_map = {l["conversation_id"]: l for l in leads}
-    first = await _first_human_replies(db, list(conv_map.keys()))
+    from services.lead_clocks import clocks_for_leads, summarize_clocks
+    clocks = await clocks_for_leads(db, leads)
 
     per_rep: dict = {}
     all_secs: list = []
+    rep_rows: dict = {}
     for cid, l in conv_map.items():
-        fr = first.get(cid)
-        if not fr or not isinstance(l.get("received_at"), datetime):
+        r = clocks.get(cid)
+        if not r:
             continue
-        secs = _resp_seconds(l["received_at"], fr["ts"])
-        if secs is None:
-            continue
-        rep_id = str(fr.get("rep_id") or l.get("assigned_to") or "") or "unassigned"
-        per_rep.setdefault(rep_id, []).append(secs)
-        all_secs.append(secs)
+        rep_id = str(r.get("human_rep") or r.get("call_rep") or r.get("assigned_to") or "") or "unassigned"
+        rep_rows.setdefault(rep_id, []).append(r)
+        if r.get("human_secs") is not None:
+            per_rep.setdefault(rep_id, []).append(r["human_secs"])
+            all_secs.append(r["human_secs"])
 
     names = {}
-    rep_oids = [ObjectId(r) for r in per_rep if ObjectId.is_valid(r)]
+    rep_oids = [ObjectId(r) for r in rep_rows if ObjectId.is_valid(r)]
     if rep_oids:
         async for u in db.users.find({"_id": {"$in": rep_oids}}, {"name": 1}):
             names[str(u["_id"])] = u.get("name", "")
 
     reps = []
-    for rid, secs in per_rep.items():
+    for rid, rows in rep_rows.items():
+        secs = per_rep.get(rid, [])
+        s = summarize_clocks(rows)
+        if s["clocks"]["call"]["measured"] == 0 and not secs and s["customer"]["texted"] == 0:
+            continue
         reps.append({
             "user_id":        rid,
             "name":           names.get(rid) or ("Unassigned" if rid == "unassigned" else "Unknown"),
             "count":          len(secs),
-            "avg_seconds":    int(sum(secs) / len(secs)),
-            "fastest_seconds": min(secs),
-            "slowest_seconds": max(secs),
+            "avg_seconds":    int(sum(secs) / len(secs)) if secs else None,
+            "fastest_seconds": min(secs) if secs else None,
+            "slowest_seconds": max(secs) if secs else None,
+            "leads":          len(rows),
+            "call_avg_seconds": s["clocks"]["call"]["avg_seconds"],
+            "call_measured":  s["clocks"]["call"]["measured"],
+            "reply_rate":     s["customer"]["reply_rate"],
+            "replied":        s["customer"]["replied"],
+            "texted":         s["customer"]["texted"],
+            "reply_avg_seconds": s["customer"]["avg_seconds"],
         })
-    reps.sort(key=lambda r: r["avg_seconds"])
+    reps.sort(key=lambda r: (r["avg_seconds"] is None, r["avg_seconds"] or 0))
 
+    team = summarize_clocks(list(clocks.values()))
     return {
         "days": days,
         "overall": {
@@ -1437,7 +1450,176 @@ async def lead_response_times(
             "unanswered":      len(conv_map) - len(all_secs),
             "fastest_seconds": min(all_secs) if all_secs else None,
         },
+        "clocks": team["clocks"],
+        "customer": team["customer"],
         "reps": reps,
+    }
+
+
+def _bucket_rows(rows: list, sold: set, key, buckets: list) -> list:
+    """buckets: [(label, predicate)] over per-lead clock rows. Returns leads/sold/close_rate/reply_rate per bucket."""
+    out = []
+    for label, pred in buckets:
+        grp = [r for r in rows if pred(r.get(key))]
+        s = sum(1 for r in grp if r.get("contact_id") in sold)
+        rep = sum(1 for r in grp if r.get("reply_secs") is not None)
+        out.append({"label": label, "leads": len(grp), "sold": s,
+                    "close_rate": int(round(100 * s / len(grp))) if grp else None,
+                    "reply_rate": int(round(100 * rep / len(grp))) if grp else None})
+    return out
+
+
+@router.get("/analytics/proof")
+async def lead_engagement_proof(
+    request:  Request,
+    store_id: Optional[str] = None,
+    days:     int = 365,
+):
+    """Does engagement move the close rate? Replied vs silent, speed buckets, touchpoint buckets, all against date_sold."""
+    _require_auth(request)
+    db = get_db()
+    days = min(max(days, 1), 1095)
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    query: dict = {"received_at": {"$gte": since}, "conversation_id": {"$nin": [None, ""]}, "is_test": {"$ne": True}}
+    if store_id:
+        query["store_id"] = store_id
+    leads = await db.inbound_leads.find(query, {"conversation_id": 1, "received_at": 1, "assigned_to": 1, "contact_id": 1, "created_at": 1, "source_name": 1, "source_id": 1}).to_list(5000)
+    from services.lead_clocks import clocks_for_leads
+    clocks = await clocks_for_leads(db, leads)
+    rows = list(clocks.values())
+    src_by_conv = {l["conversation_id"]: (l.get("source_name") or "Unknown") for l in leads}
+    for cid, r in clocks.items():
+        r["source_name"] = src_by_conv.get(cid, "Unknown")
+
+    sold: set = set()
+    sold_at: dict = {}
+    oids = [ObjectId(r["contact_id"]) for r in rows if ObjectId.is_valid(r.get("contact_id") or "")]
+    if oids:
+        async for c in db.contacts.find({"_id": {"$in": oids}, "date_sold": {"$nin": [None, ""]}}, {"_id": 1, "date_sold": 1}):
+            sold.add(str(c["_id"]))
+            ds = c.get("date_sold")
+            if isinstance(ds, str):
+                try:
+                    ds = datetime.fromisoformat(ds.replace("Z", "+00:00"))
+                except Exception:
+                    ds = None
+            if isinstance(ds, datetime):
+                sold_at[str(c["_id"])] = ds if ds.tzinfo else ds.replace(tzinfo=timezone.utc)
+
+    def _days_to_sold(r):
+        ds, rcv = sold_at.get(r.get("contact_id")), r.get("received_at")
+        if not ds or not rcv:
+            return None
+        d = (ds - rcv).total_seconds() / 86400
+        return round(d, 1) if d >= 0 else None
+    tts = [d for d in (_days_to_sold(r) for r in rows) if d is not None]
+    time_to_sold = {"count": len(tts), "avg_days": round(sum(tts) / len(tts), 1) if tts else None,
+                    "median_days": sorted(tts)[len(tts) // 2] if tts else None, "fastest_days": min(tts) if tts else None}
+
+    cost_by_name = {}
+    async for src in db.lead_sources.find({"monthly_cost": {"$gt": 0}}, {"name": 1, "monthly_cost": 1}):
+        cost_by_name[src.get("name", "")] = float(src["monthly_cost"])
+    by_src: dict = {}
+    for r in rows:
+        by_src.setdefault(r["source_name"], []).append(r)
+    sources = []
+    for name, grp in by_src.items():
+        s = sum(1 for r in grp if r.get("contact_id") in sold)
+        texted_g = [r for r in grp if r.get("texted")]
+        replied_g = [r for r in texted_g if r.get("reply_secs") is not None]
+        touch = [t for t in ((r.get("received_at") and r.get("first_outbound_at") and int((r["first_outbound_at"] - r["received_at"]).total_seconds())) for r in grp) if isinstance(t, int)]
+        dts = [d for d in (_days_to_sold(r) for r in grp) if d is not None]
+        monthly = cost_by_name.get(name)
+        period_cost = round(monthly * days / 30, 2) if monthly else None
+        sources.append({
+            "source_name": name, "leads": len(grp), "sold": s,
+            "close_rate": int(round(100 * s / len(grp))) if grp else None,
+            "reply_rate": int(round(100 * len(replied_g) / len(texted_g))) if texted_g else None,
+            "first_touch_avg_seconds": int(sum(touch) / len(touch)) if touch else None,
+            "touched_pct": int(round(100 * len(touch) / len(grp))) if grp else None,
+            "avg_touches": round(sum(int(r.get("outbound_texts") or 0) + int(r.get("calls") or 0) for r in grp) / len(grp), 1) if grp else None,
+            "avg_days_to_sold": round(sum(dts) / len(dts), 1) if dts else None,
+            "monthly_cost": monthly, "period_cost": period_cost,
+            "cost_per_lead": round(period_cost / len(grp), 2) if period_cost and grp else None,
+            "cost_per_sale": round(period_cost / s, 2) if period_cost and s else None,
+        })
+    sources.sort(key=lambda x: (-(x["sold"]), -(x["leads"])))
+
+    def rate(grp):
+        s = sum(1 for r in grp if r.get("contact_id") in sold)
+        return {"leads": len(grp), "sold": s, "close_rate": int(round(100 * s / len(grp))) if grp else None}
+
+    texted = [r for r in rows if r.get("texted")]
+    replied = [r for r in texted if r.get("reply_secs") is not None]
+    silent = [r for r in texted if r.get("reply_secs") is None]
+    reply_cmp = {"replied": rate(replied), "silent": rate(silent)}
+    rr, sr = reply_cmp["replied"]["close_rate"], reply_cmp["silent"]["close_rate"]
+    reply_cmp["lift"] = round(rr / sr, 1) if rr is not None and sr else None
+
+    speed = _bucket_rows(rows, sold, "human_secs", [
+        ("Under 5 min", lambda s: s is not None and s < 300),
+        ("5 to 30 min", lambda s: s is not None and 300 <= s < 1800),
+        ("30 min to 2 h", lambda s: s is not None and 1800 <= s < 7200),
+        ("2 to 24 h", lambda s: s is not None and 7200 <= s < 86400),
+        ("Over 24 h", lambda s: s is not None and s >= 86400),
+        ("No human text", lambda s: s is None),
+    ])
+    # first touch of any kind (AI, human or call)
+    def _touch_secs(r):
+        a, b = r.get("received_at"), r.get("first_outbound_at")
+        return int((b - a).total_seconds()) if a and b else None
+    for r in rows:
+        r["_touch_secs"] = _touch_secs(r)
+    first_touch = _bucket_rows(rows, sold, "_touch_secs", [
+        ("Under 5 min", lambda s: s is not None and s < 300),
+        ("5 to 30 min", lambda s: s is not None and 300 <= s < 1800),
+        ("30 min to 2 h", lambda s: s is not None and 1800 <= s < 7200),
+        ("Over 2 h", lambda s: s is not None and s >= 7200),
+        ("Never touched", lambda s: s is None),
+    ])
+    for r in rows:
+        r["_touches"] = int(r.get("outbound_texts") or 0) + int(r.get("calls") or 0)
+    touches = _bucket_rows(rows, sold, "_touches", [
+        ("0", lambda n: n == 0), ("1", lambda n: n == 1), ("2 to 3", lambda n: 2 <= n <= 3),
+        ("4 to 6", lambda n: 4 <= n <= 6), ("7+", lambda n: n >= 7),
+    ])
+    conversation = _bucket_rows(rows, sold, "inbound_texts", [
+        ("No reply", lambda n: n == 0), ("1 reply", lambda n: n == 1), ("2 to 4 replies", lambda n: 2 <= n <= 4), ("5+ replies", lambda n: n >= 5),
+    ])
+
+    headlines = []
+    if rr is not None and sr is not None and replied and silent:
+        headlines.append(f"Leads that texted back closed at {rr}% vs {sr}% for leads that stayed silent" + (f" ({reply_cmp['lift']}x)" if reply_cmp["lift"] else "") + ".")
+    fast = next((b for b in first_touch if b["label"] == "Under 5 min" and b["leads"]), None)
+    slow = [b for b in first_touch if b["label"] in ("30 min to 2 h", "Over 2 h") and b["leads"]]
+    if fast and slow and fast["close_rate"] is not None:
+        slow_leads = sum(b["leads"] for b in slow); slow_sold = sum(b["sold"] for b in slow)
+        slow_rate = int(round(100 * slow_sold / slow_leads)) if slow_leads else None
+        if slow_rate is not None:
+            headlines.append(f"First touch under 5 minutes closed at {fast['close_rate']}% vs {slow_rate}% when it took over 30 minutes.")
+    many = [b for b in touches if b["label"] in ("4 to 6", "7+") and b["leads"]]
+    few = [b for b in touches if b["label"] in ("0", "1") and b["leads"]]
+    if many and few:
+        ml, ms = sum(b["leads"] for b in many), sum(b["sold"] for b in many)
+        fl, fs = sum(b["leads"] for b in few), sum(b["sold"] for b in few)
+        if ml and fl:
+            headlines.append(f"Leads with 4 or more touches closed at {int(round(100 * ms / ml))}% vs {int(round(100 * fs / fl))}% with one touch or none.")
+    total_sold = len([r for r in rows if r.get("contact_id") in sold])
+    if time_to_sold["avg_days"] is not None:
+        headlines.append(f"Sold leads went from submission to sold in {time_to_sold['avg_days']} days on average (fastest {time_to_sold['fastest_days']}).")
+    best_cost = [s for s in sources if s.get("cost_per_sale")]
+    if len(best_cost) >= 2:
+        best_cost.sort(key=lambda s: s["cost_per_sale"])
+        b, w = best_cost[0], best_cost[-1]
+        headlines.append(f"True cost per sale: {b['source_name']} ${b['cost_per_sale']:,.0f} vs {w['source_name']} ${w['cost_per_sale']:,.0f}.")
+    return {
+        "days": days, "leads": len(rows), "sold": total_sold,
+        "close_rate": int(round(100 * total_sold / len(rows))) if rows else None,
+        "small_sample": len(rows) < 30,
+        "reply": reply_cmp, "speed_human_text": speed, "speed_first_touch": first_touch,
+        "touchpoints": touches, "conversation_depth": conversation, "headlines": headlines,
+        "time_to_sold": time_to_sold, "sources": sources,
+        "benchmark": "Harvard Business Review: contacting a lead within 1 hour makes qualifying it 7x more likely than waiting 2 hours or more.",
     }
 
 

@@ -385,6 +385,7 @@ async def timeline_for_conversation(conversation_id: str) -> dict:
             "scheduled_for": iso((deferred_intake or {}).get("run_at")) if deferred_intake and deferred_intake.get("status") == "pending" else None,
         },
         "first_human_reply_at": iso((first_human or {}).get("timestamp")),
+        "clocks": None,
         "claimed_by": conv.get("claimed_by"),
         "claimed_by_name": names.get(conv.get("claimed_by") or ""),
         "claimed_at": iso(conv.get("claimed_at")),
@@ -432,6 +433,11 @@ async def timeline_for_conversation(conversation_id: str) -> dict:
             "exhausted_at": iso(job.get("exhausted_at")),
             "next_attempt_at": iso(job.get("next_attempt_at")) if job.get("status") == "active" else None,
         }
+    try:
+        from services.lead_clocks import clocks_for_conversation
+        out["clocks"] = await clocks_for_conversation(db, conversation_id)
+    except Exception as e:
+        logger.warning(f"[LeadTimeline] clocks failed for {conversation_id}: {e}")
     return out
 
 
