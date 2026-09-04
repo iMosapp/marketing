@@ -1,14 +1,19 @@
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, TextInput, Platform, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
+import * as Sharing from 'expo-sharing';
+import { File as ExpoFile, Paths } from 'expo-file-system';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import api from '../../services/api';
 import { useToast } from '../common/Toast';
 
 const GOLD = '#C9A962';
+const DISMISS_KEY = 'proof_cost_prompt_dismissed_until';
 const fmtSecs = (s: number | null | undefined) => s == null ? '--' : s < 60 ? `${s}s` : s < 3600 ? `${Math.round(s / 60)}m` : s < 86400 ? `${Math.round(s / 3600)}h` : `${Math.round(s / 86400)}d`;
 const money = (n: number | null | undefined) => n == null ? '--' : `$${Math.round(n).toLocaleString()}`;
 
-type Source = { source_name: string; leads: number; sold: number; close_rate: number | null; reply_rate: number | null; first_touch_avg_seconds: number | null; touched_pct: number | null; avg_touches: number | null; avg_days_to_sold: number | null; monthly_cost: number | null; period_cost: number | null; cost_per_lead: number | null; cost_per_sale: number | null };
+type Source = { source_id?: string | null; source_name: string; leads: number; sold: number; close_rate: number | null; reply_rate: number | null; first_touch_avg_seconds: number | null; touched_pct: number | null; avg_touches: number | null; avg_days_to_sold: number | null; monthly_cost: number | null; period_cost: number | null; cost_per_lead: number | null; cost_per_sale: number | null };
 
 type Bucket = { label: string; leads: number; sold: number; close_rate: number | null; reply_rate: number | null };
 type Proof = {
@@ -16,7 +21,59 @@ type Proof = {
   reply: { replied: { leads: number; sold: number; close_rate: number | null }; silent: { leads: number; sold: number; close_rate: number | null }; lift: number | null };
   speed_human_text: Bucket[]; speed_first_touch: Bucket[]; touchpoints: Bucket[]; conversation_depth: Bucket[]; headlines: string[];
   time_to_sold?: { count: number; avg_days: number | null; median_days: number | null; fastest_days: number | null };
-  sources?: Source[]; benchmark?: string;
+  sources?: Source[]; benchmark?: string; unpriced_sources?: { source_id: string; source_name: string; leads: number }[];
+};
+
+const SourceCostPrompt = ({ items, colors, onSaved }: { items: { source_id: string; source_name: string; leads: number }[]; colors: any; onSaved: () => void }) => {
+  const { showToast } = useToast();
+  const [hidden, setHidden] = useState(true);
+  const [vals, setVals] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState<string | null>(null);
+  useEffect(() => {
+    AsyncStorage.getItem(DISMISS_KEY).then(v => setHidden(!!v && Number(v) > Date.now())).catch(() => setHidden(false));
+  }, []);
+  if (hidden || !items.length) return null;
+  const dismiss = async () => {
+    await AsyncStorage.setItem(DISMISS_KEY, String(Date.now() + 30 * 86400000));
+    setHidden(true);
+  };
+  const save = async (id: string) => {
+    const n = Number(String(vals[id] || '').replace(/[^0-9.]/g, ''));
+    if (!n) return;
+    setSaving(id);
+    try {
+      await api.patch(`/lead-sources/${id}`, { monthly_cost: n });
+      showToast('Monthly spend saved', 'success');
+      onSaved();
+    } catch (e: any) {
+      showToast(e?.response?.data?.detail || 'Could not save', 'error');
+    } finally {
+      setSaving(null);
+    }
+  };
+  return (
+    <View style={{ backgroundColor: colors.card, borderRadius: 14, padding: 14, gap: 10, borderWidth: 1, borderColor: `${GOLD}44` }} testID="source-cost-prompt" dataSet={{ testid: 'source-cost-prompt' } as any}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <Ionicons name="cash-outline" size={16} color={GOLD} />
+        <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text, flex: 1 }}>Optional: what do these sources cost per month?</Text>
+        <TouchableOpacity onPress={dismiss} testID="source-cost-dismiss" dataSet={{ testid: 'source-cost-dismiss' } as any}><Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary }}>Skip</Text></TouchableOpacity>
+      </View>
+      <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>Add a number and cost per sale fills in automatically. Leave it blank and everything else still works.</Text>
+      {items.map(it => (
+        <View key={it.source_id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }} testID={`source-cost-row-${it.source_id}`} dataSet={{ testid: `source-cost-row-${it.source_id}` } as any}>
+          <Text style={{ flex: 1, fontSize: 15, color: colors.text }} numberOfLines={1}>{it.source_name} <Text style={{ color: colors.textSecondary, fontSize: 12 }}>· {it.leads} leads</Text></Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.bg, borderRadius: 8, paddingHorizontal: 8, height: 34, width: 110 }}>
+            <Text style={{ color: colors.textSecondary, fontSize: 15 }}>$</Text>
+            <TextInput value={vals[it.source_id] || ''} onChangeText={t => setVals(v => ({ ...v, [it.source_id]: t }))} keyboardType="numeric" placeholder="per mo" placeholderTextColor={colors.textSecondary}
+              style={{ flex: 1, color: colors.text, fontSize: 15, paddingVertical: 0 }} testID={`source-cost-input-${it.source_id}`} dataSet={{ testid: `source-cost-input-${it.source_id}` } as any} />
+          </View>
+          <TouchableOpacity onPress={() => save(it.source_id)} disabled={saving === it.source_id} style={{ backgroundColor: GOLD, borderRadius: 8, paddingHorizontal: 12, height: 34, justifyContent: 'center' }} testID={`source-cost-save-${it.source_id}`} dataSet={{ testid: `source-cost-save-${it.source_id}` } as any}>
+            {saving === it.source_id ? <ActivityIndicator size="small" color="#000" /> : <Text style={{ fontSize: 13, fontWeight: '700', color: '#000' }}>Save</Text>}
+          </TouchableOpacity>
+        </View>
+      ))}
+    </View>
+  );
 };
 
 const Card = ({ title, children, colors, testid, right }: any) => (
@@ -74,11 +131,32 @@ const SourceRow = ({ s, colors }: { s: Source; colors: any }) => (
   </View>
 );
 
-export const ProofPanel = ({ data, colors }: { data: Proof | null; colors: any }) => {
+export const ProofPanel = ({ data, colors, isManager, storeParam = '', days = 90, onRefresh }: { data: Proof | null; colors: any; isManager?: boolean; storeParam?: string; days?: number; onRefresh?: () => void }) => {
   const { showToast } = useToast();
+  const [sharing, setSharing] = useState(false);
   if (!data) return null;
   const rp = data.reply.replied, sl = data.reply.silent;
   const tts = data.time_to_sold;
+  const shareImage = async () => {
+    setSharing(true);
+    try {
+      const res = await api.get(`/leads/analytics/proof-card.png?${storeParam}days=${days}`, { responseType: Platform.OS === 'web' ? 'blob' : 'arraybuffer' });
+      if (Platform.OS === 'web') {
+        const url = URL.createObjectURL(res.data);
+        const a = document.createElement('a'); a.href = url; a.download = 'imos-proof.png'; a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        showToast('Proof image downloaded', 'success');
+      } else {
+        const file = new ExpoFile(Paths.cache, 'imos-proof.png');
+        file.write(new Uint8Array(res.data));
+        if (await Sharing.isAvailableAsync()) await Sharing.shareAsync(file.uri, { mimeType: 'image/png', dialogTitle: 'Share proof' });
+      }
+    } catch (e: any) {
+      showToast(e?.response?.data?.detail || 'Could not build the image', 'error');
+    } finally {
+      setSharing(false);
+    }
+  };
   const copy = async () => {
     const src = (data.sources || []).filter(s => s.leads).map(s => `• ${s.source_name}: ${s.leads} leads, ${s.sold} sold${s.close_rate != null ? ` (${s.close_rate}%)` : ''}${s.cost_per_sale != null ? `, ${money(s.cost_per_sale)} per sale` : ''}${s.first_touch_avg_seconds != null ? `, first touch ${fmtSecs(s.first_touch_avg_seconds)}` : ''}`);
     const lines = [`iMOS internet lead proof (last ${data.days} days, ${data.leads} leads, ${data.close_rate ?? 0}% closed)`, ...data.headlines.map(h => `• ${h}`), ...(src.length ? ['', 'By source:', ...src] : [])];
@@ -88,8 +166,12 @@ export const ProofPanel = ({ data, colors }: { data: Proof | null; colors: any }
   return (
     <View style={{ gap: 10 }} testID="proof-panel" dataSet={{ testid: 'proof-panel' } as any}>
       <Card title="DOES ENGAGEMENT CLOSE DEALS?" colors={colors} testid="proof-summary"
-        right={<TouchableOpacity onPress={copy} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }} testID="proof-copy" dataSet={{ testid: 'proof-copy' } as any}>
-          <Ionicons name="copy-outline" size={14} color={GOLD} /><Text style={{ fontSize: 12, fontWeight: '700', color: GOLD }}>Copy</Text></TouchableOpacity>}>
+        right={<View style={{ flexDirection: 'row', gap: 14 }}>
+          <TouchableOpacity onPress={shareImage} disabled={sharing} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }} testID="proof-share-image" dataSet={{ testid: 'proof-share-image' } as any}>
+            {sharing ? <ActivityIndicator size="small" color={GOLD} /> : <Ionicons name="image-outline" size={14} color={GOLD} />}<Text style={{ fontSize: 12, fontWeight: '700', color: GOLD }}>Share image</Text></TouchableOpacity>
+          <TouchableOpacity onPress={copy} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }} testID="proof-copy" dataSet={{ testid: 'proof-copy' } as any}>
+            <Ionicons name="copy-outline" size={14} color={GOLD} /><Text style={{ fontSize: 12, fontWeight: '700', color: GOLD }}>Copy</Text></TouchableOpacity>
+        </View>}>
         <Text style={{ fontSize: 15, color: colors.text }}>{`${data.leads} internet leads · ${data.sold} sold · ${data.close_rate ?? 0}% close rate`}</Text>
         {data.small_sample && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -125,6 +207,7 @@ export const ProofPanel = ({ data, colors }: { data: Proof | null; colors: any }
       <Card title="SPEED OF FIRST TOUCH (CALL, TEXT OR AI)" colors={colors} testid="proof-first-touch"><BucketBars rows={data.speed_first_touch} colors={colors} /></Card>
 
       <Card title="TRUE COST PER SALE BY SOURCE" colors={colors} testid="proof-sources">
+        {isManager && !!data.unpriced_sources?.length && <SourceCostPrompt items={data.unpriced_sources} colors={colors} onSaved={() => onRefresh && onRefresh()} />}
         {tts?.avg_days != null && (
           <View style={{ flexDirection: 'row', gap: 8 }} testID="proof-time-to-sold" dataSet={{ testid: 'proof-time-to-sold' } as any}>
             {[{ l: 'AVG DAYS', v: tts.avg_days }, { l: 'MEDIAN DAYS', v: tts.median_days }, { l: 'FASTEST', v: tts.fastest_days }].map(x => (

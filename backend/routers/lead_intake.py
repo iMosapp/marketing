@@ -1469,15 +1469,8 @@ def _bucket_rows(rows: list, sold: set, key, buckets: list) -> list:
     return out
 
 
-@router.get("/analytics/proof")
-async def lead_engagement_proof(
-    request:  Request,
-    store_id: Optional[str] = None,
-    days:     int = 365,
-):
-    """Does engagement move the close rate? Replied vs silent, speed buckets, touchpoint buckets, all against date_sold."""
-    _require_auth(request)
-    db = get_db()
+async def compute_proof(db, store_id: Optional[str], days: int) -> dict:
+    """Does engagement move the close rate? Replied vs silent, speed buckets, touchpoint buckets, per source cost, all against date_sold."""
     days = min(max(days, 1), 1095)
     since = datetime.now(timezone.utc) - timedelta(days=days)
     query: dict = {"received_at": {"$gte": since}, "conversation_id": {"$nin": [None, ""]}, "is_test": {"$ne": True}}
@@ -1488,6 +1481,7 @@ async def lead_engagement_proof(
     clocks = await clocks_for_leads(db, leads)
     rows = list(clocks.values())
     src_by_conv = {l["conversation_id"]: (l.get("source_name") or "Unknown") for l in leads}
+    src_ids = {(l.get("source_name") or "Unknown"): str(l.get("source_id") or "") for l in leads if l.get("source_id")}
     for cid, r in clocks.items():
         r["source_name"] = src_by_conv.get(cid, "Unknown")
 
@@ -1532,7 +1526,7 @@ async def lead_engagement_proof(
         monthly = cost_by_name.get(name)
         period_cost = round(monthly * days / 30, 2) if monthly else None
         sources.append({
-            "source_name": name, "leads": len(grp), "sold": s,
+            "source_name": name, "source_id": src_ids.get(name), "leads": len(grp), "sold": s,
             "close_rate": int(round(100 * s / len(grp))) if grp else None,
             "reply_rate": int(round(100 * len(replied_g) / len(texted_g))) if texted_g else None,
             "first_touch_avg_seconds": int(sum(touch) / len(touch)) if touch else None,
@@ -1612,15 +1606,43 @@ async def lead_engagement_proof(
         best_cost.sort(key=lambda s: s["cost_per_sale"])
         b, w = best_cost[0], best_cost[-1]
         headlines.append(f"True cost per sale: {b['source_name']} ${b['cost_per_sale']:,.0f} vs {w['source_name']} ${w['cost_per_sale']:,.0f}.")
+    unpriced = [{"source_id": x["source_id"], "source_name": x["source_name"], "leads": x["leads"]} for x in sources
+                if x["leads"] and not x.get("monthly_cost") and x.get("source_id") and x["source_name"] != "Unknown"]
     return {
         "days": days, "leads": len(rows), "sold": total_sold,
         "close_rate": int(round(100 * total_sold / len(rows))) if rows else None,
         "small_sample": len(rows) < 30,
         "reply": reply_cmp, "speed_human_text": speed, "speed_first_touch": first_touch,
         "touchpoints": touches, "conversation_depth": conversation, "headlines": headlines,
-        "time_to_sold": time_to_sold, "sources": sources,
+        "time_to_sold": time_to_sold, "sources": sources, "unpriced_sources": unpriced,
         "benchmark": "Harvard Business Review: contacting a lead within 1 hour makes qualifying it 7x more likely than waiting 2 hours or more.",
     }
+
+
+@router.get("/analytics/proof")
+async def lead_engagement_proof(request: Request, store_id: Optional[str] = None, days: int = 365):
+    _require_auth(request)
+    return await compute_proof(get_db(), store_id, days)
+
+
+@router.get("/analytics/proof-card.png")
+async def lead_engagement_proof_card(request: Request, store_id: Optional[str] = None, days: int = 90):
+    """Branded PNG of the proof headlines, ready to text or post."""
+    caller_id = _require_auth(request)
+    db = get_db()
+    proof = await compute_proof(db, store_id, days)
+    store_name = ""
+    sid = store_id
+    if not sid and ObjectId.is_valid(caller_id):
+        u = await db.users.find_one({"_id": ObjectId(caller_id)}, {"store_id": 1})
+        sid = (u or {}).get("store_id")
+    if sid and ObjectId.is_valid(str(sid)):
+        st = await db.stores.find_one({"_id": ObjectId(str(sid))}, {"name": 1})
+        store_name = (st or {}).get("name") or ""
+    from services.proof_card import render_proof_card
+    from fastapi.responses import Response
+    png = render_proof_card(proof, store_name)
+    return Response(content=png, media_type="image/png", headers={"Cache-Control": "no-store", "Content-Disposition": "inline; filename=imos-proof.png"})
 
 
 def _retry_by_attempt(tasks: list) -> list:

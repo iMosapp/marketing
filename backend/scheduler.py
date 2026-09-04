@@ -1674,6 +1674,52 @@ async def send_weekly_wins_push():
         logger.info(f"[WeeklyWinsPush] Sent {sent} week-in-review pushes")
 
 
+async def send_weekly_proof_push():
+    """Monday morning: managers get last week's close rate by reply speed and the best cost-per-sale source. Opt-out via notification_settings.weekly_proof_push."""
+    from routers.database import get_db
+    from routers.push_notifications import send_push_to_user
+    from routers.lead_intake import compute_proof
+    db = get_db()
+    now = datetime.now(timezone.utc)
+    week_key = (now - timedelta(days=now.weekday())).strftime("%Y-%m-%d")
+    managers = await db.users.find({"role": {"$in": ["manager", "store_manager", "org_admin", "admin", "super_admin"]},
+                                    "status": {"$nin": ["disabled", "suspended"]}}, {"_id": 1, "store_id": 1, "notification_settings": 1}).to_list(500)
+    sent = 0
+    proof_cache: dict = {}
+    for m in managers:
+        uid = str(m["_id"])
+        try:
+            if (m.get("notification_settings") or {}).get("weekly_proof_push") is False:
+                continue
+            if await db.weekly_proof_push_log.find_one({"user_id": uid, "week": week_key}):
+                continue
+            store_id = m.get("store_id")
+            if not store_id:
+                continue
+            if store_id not in proof_cache:
+                proof_cache[store_id] = await compute_proof(db, store_id, 7)
+            p = proof_cache[store_id]
+            if not p.get("leads"):
+                continue
+            fast = next((b for b in p["speed_first_touch"] if b["label"] == "Under 5 min" and b["leads"]), None)
+            slow = [b for b in p["speed_first_touch"] if b["label"] in ("30 min to 2 h", "Over 2 h") and b["leads"]]
+            bits = [f"{p['leads']} lead{'s' if p['leads'] != 1 else ''}, {p['sold']} sold ({p['close_rate'] or 0}%)"]
+            if fast and slow:
+                sl, ss = sum(b["leads"] for b in slow), sum(b["sold"] for b in slow)
+                bits.append(f"under 5 min closed {fast['close_rate']}% vs {int(round(100 * ss / sl)) if sl else 0}% slower")
+            priced = [s for s in p.get("sources", []) if s.get("cost_per_sale")]
+            if priced:
+                best = min(priced, key=lambda s: s["cost_per_sale"])
+                bits.append(f"best cost per sale {best['source_name']} ${best['cost_per_sale']:,.0f}")
+            await send_push_to_user(uid, "Last week's lead proof", " · ".join(bits) + ".", "/leads?tab=proof", "ribbon")
+            await db.weekly_proof_push_log.insert_one({"user_id": uid, "week": week_key, "sent_at": now})
+            sent += 1
+        except Exception as e:
+            logger.warning(f"[WeeklyProofPush] Failed for {uid}: {e}")
+    if sent:
+        logger.info(f"[WeeklyProofPush] Sent {sent} proof pushes")
+
+
 async def deliver_held_push_summaries():
     """Every 10 min: when a rep's quiet hours end, send ONE summary of the pushes held overnight."""
     from routers.database import get_db
@@ -1829,6 +1875,15 @@ def start_scheduler():
         safe_job(send_weekly_wins_push),
         CronTrigger(day_of_week='mon', hour=14, minute=45),
         id="weekly_wins_push",
+        replace_existing=True,
+        misfire_grace_time=7200,
+    )
+
+    # Monday 14:50 UTC - managers get last week's lead proof (opt-out in Notification Preferences)
+    scheduler.add_job(
+        safe_job(send_weekly_proof_push),
+        CronTrigger(day_of_week='mon', hour=14, minute=50),
+        id="weekly_proof_push",
         replace_existing=True,
         misfire_grace_time=7200,
     )

@@ -4,7 +4,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { useThemeStore } from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
@@ -51,8 +51,10 @@ export default function LeadsDashboard() {
   const { colors } = useThemeStore();
   const { user } = useAuthStore();
   const router = useRouter();
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const isManager = ['super_admin', 'admin', 'manager', 'store_manager', 'org_admin'].includes((user as any)?.role);
 
-  const [tab, setTab] = useState<'leads' | 'roi' | 'speed' | 'proof'>('leads');
+  const [tab, setTab] = useState<'leads' | 'roi' | 'speed' | 'proof'>((['leads', 'roi', 'speed', 'proof'].includes(String(params.tab)) ? params.tab : 'leads') as any);
   const [leads, setLeads] = useState<any[]>([]);
   const [roi, setRoi] = useState<any>(null);
   const [speed, setSpeed] = useState<any>(null);
@@ -250,7 +252,7 @@ export default function LeadsDashboard() {
               })
             )
           ) : tab === 'proof' ? (
-            <ProofPanel data={proof} colors={colors} />
+            <ProofPanel data={proof} colors={colors} isManager={isManager} storeParam={user?.store_id ? `store_id=${user.store_id}&` : ''} days={roiDays} onRefresh={fetchData} />
           ) : tab === 'speed' ? (
             /* ─── Speed to Lead tab ─── */
             <>

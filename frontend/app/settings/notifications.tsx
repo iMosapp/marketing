@@ -54,6 +54,8 @@ export default function NotificationSettings() {
   const [throttleMin,  setThrottleMin]  = useState<number>(saved.sms_active_throttle_minutes ?? 30);
   const [smsUrgent,    setSmsUrgent]    = useState<boolean>(saved.sms_you_are_needed         ?? true);
   const [urnThreshold, setUrnThreshold] = useState<number>(saved.you_are_needed_threshold    ?? 2);
+  const [weeklyProof,  setWeeklyProof]  = useState<boolean>(saved.weekly_proof_push          ?? true);
+  const isManager = ['super_admin', 'admin', 'manager', 'store_manager', 'org_admin'].includes((user as any)?.role);
   const [alertMode,    setAlertMode]    = useState<'both'|'push'|'sms'>((user as any)?.notification_mode || 'both');
   const [quietOn,      setQuietOn]      = useState(false);
   const [quietStart,   setQuietStart]   = useState('21:00');
@@ -80,6 +82,7 @@ export default function NotificationSettings() {
         sms_active_throttle_minutes:   throttleMin,
         sms_you_are_needed:            smsUrgent,
         you_are_needed_threshold:      urnThreshold,
+        weekly_proof_push:             weeklyProof,
       };
       await api.patch(`/users/${user._id}`, { notification_settings: prefs });
       // Save alert delivery mode separately
@@ -194,7 +197,7 @@ export default function NotificationSettings() {
             <View style={{ flex: 1 }}>
               <Text style={[s.rowTitle, { color: colors.text }]}>Silent overnight</Text>
               <Text style={[s.rowSub, { color: colors.textSecondary }]}>
-                Hold pushes overnight — wake up to one morning summary instead of a pile
+                Hold pushes overnight, wake up to one morning summary instead of a pile
               </Text>
             </View>
             <Switch
@@ -303,7 +306,7 @@ export default function NotificationSettings() {
                 ))}
               </View>
               <Text style={[s.hint, { color: colors.textTertiary }]}>
-                After receiving a notification for a conversation, you won't be texted again for this window — prevents spam during active exchanges.
+                After receiving a notification for a conversation, you won't be texted again for this window, prevents spam during active exchanges.
               </Text>
             </>
           )}
@@ -318,7 +321,7 @@ export default function NotificationSettings() {
               <Ionicons name="alert-circle" size={18} color="#FF3B30" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[s.rowTitle, { color: colors.text }]}>Urgent — customer waiting</Text>
+              <Text style={[s.rowTitle, { color: colors.text }]}>Urgent: customer waiting</Text>
               <Text style={[s.rowSub, { color: colors.textSecondary }]}>
                 Text me when a customer replies multiple times without a response
               </Text>
@@ -356,11 +359,37 @@ export default function NotificationSettings() {
                 ))}
               </View>
               <Text style={[s.hint, { color: colors.textTertiary }]}>
-                The urgent notification fires every time the threshold is hit — no rate limit. This always gets through.
+                The urgent notification fires every time the threshold is hit, no rate limit. This always gets through.
               </Text>
             </>
           )}
         </View>
+
+        {isManager && (
+          <>
+            <Text style={[s.sectionLabel, { color: colors.textSecondary, marginTop: 24 }]}>MANAGER DIGESTS</Text>
+            <View style={[s.card, { backgroundColor: colors.card }]}>
+              <View style={s.row}>
+                <View style={[s.iconWrap, { backgroundColor: '#C9A96220' }]}>
+                  <Ionicons name="ribbon" size={18} color="#C9A962" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[s.rowTitle, { color: colors.text }]}>Monday lead proof</Text>
+                  <Text style={[s.rowSub, { color: colors.textSecondary }]}>
+                    One push each Monday with last week's close rate by reply speed and the best cost per sale source. Skipped on weeks with no leads.
+                  </Text>
+                </View>
+                <Switch
+                  value={weeklyProof}
+                  onValueChange={v => { setWeeklyProof(v); mark(); }}
+                  trackColor={{ false: colors.border, true: '#C9A96280' }}
+                  thumbColor={weeklyProof ? '#C9A962' : colors.textSecondary}
+                  testID="weekly-proof-push-toggle"
+                />
+              </View>
+            </View>
+          </>
+        )}
 
         {/* Message preview */}
         <Text style={[s.sectionLabel, { color: colors.textSecondary, marginTop: 24 }]}>WHAT YOU'LL RECEIVE</Text>
