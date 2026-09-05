@@ -30,6 +30,8 @@ import { resolveUserPhotoUrlHiRes, resolvePhotoUrl } from '../../utils/photoUrl'
 import { NotificationBell } from '../../components/notifications/NotificationBell';
 import { BRAND } from '../../config/brand';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
+import { AppHome } from '../../components/hub/AppHome';
+import { slug as hubSlug, HubApp, HubFolderDef } from '../../components/hub/layout';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -70,6 +72,8 @@ export default function MoreScreen() {
   const [exitingImpersonation, setExitingImpersonation] = useState(false);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['leads']));
   const [hubSearch, setHubSearch] = useState('');
+  const [hubDragging, setHubDragging] = useState(false);
+  const [hubDragging, setHubDragging] = useState(false);
   const [leadsWaiting, setLeadsWaiting] = useState(0);
   const sectionRefs = useRef<Record<string, View | null>>({});
   const scrollRef = useRef<ScrollView>(null);
@@ -663,6 +667,32 @@ export default function MoreScreen() {
     { icon: 'car-sport', label: 'Inventory', sub: 'What\'s on the lot', color: '#AF52DE', route: '/inventory' },
   ];
 
+  // ── App grid catalog: every section becomes a folder, favourites sit loose on the home grid ──
+  const FOLDER_FOR: Record<string, string> = { account_mgmt: 'admin', internal_ops: 'admin', setup_manage: 'setup' };
+  const hubFolderDefs: HubFolderDef[] = [];
+  const seenFolder = new Set<string>();
+  const hubApps: HubApp[] = [];
+  const seenApp = new Set<string>();
+  const pushApp = (a: HubApp) => { if (!seenApp.has(a.id)) { seenApp.add(a.id); hubApps.push(a); } };
+  for (const sec of allSections) {
+    const fid = FOLDER_FOR[sec.id] || sec.id;
+    if (!seenFolder.has(fid)) {
+      seenFolder.add(fid);
+      hubFolderDefs.push(fid === 'admin' ? { id: 'admin', title: 'Admin', icon: 'shield-half', color: '#FF3B30' } : fid === 'setup' ? { id: 'setup', title: 'Set Up', icon: 'construct', color: '#FF9500' } : { id: sec.id, title: sec.title, icon: sec.icon, color: sec.color });
+    }
+    for (const b of ((sec as any)._brandItems || []) as any[]) {
+      pushApp({ id: hubSlug(b.title), title: b.title, subtitle: b.subtitle, icon: b.icon, color: b.color, folder: fid, onPress: () => b.editRoute && router.push(b.editRoute as any) });
+    }
+    for (const it of sec.items as any[]) {
+      pushApp({ id: hubSlug(it.title), title: it.title, subtitle: it.subtitle, icon: it.icon, color: it.color, badge: it.badge, statusDot: it.statusDot, folder: fid, onPress: () => { trackVisit({ title: it.title, icon: it.icon, color: it.color, subtitle: it.subtitle }); it.onPress(); } });
+    }
+  }
+  for (const t of taskGrid) {
+    pushApp({ id: hubSlug(t.label), title: t.label, subtitle: t.sub, icon: t.icon, color: t.color, badge: (t as any).badge, folder: 'my_tools', onPress: () => router.push(t.route as any) });
+  }
+  if (!seenFolder.has('my_tools')) hubFolderDefs.push({ id: 'my_tools', title: 'My Tools', icon: 'apps', color: '#007AFF' });
+  const hubDefaultLoose = taskGrid.map(t => hubSlug(t.label));
+
   function openExternal(url: string) {
     // Append self_preview=1 so tracking ignores salesperson viewing their own page
     const sep = url.includes('?') ? '&' : '?';
@@ -846,7 +876,7 @@ export default function MoreScreen() {
   return (
     <>
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
-      <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent}>
+      <ScrollView ref={scrollRef} contentContainerStyle={styles.scrollContent} scrollEnabled={!hubDragging}>
         {/* Impersonation Banner */}
         {isImpersonating && (
           <TouchableOpacity 
@@ -1084,101 +1114,15 @@ export default function MoreScreen() {
           </View>
         ) : (
         <>
-        {/* ── What do you want to do? ── */}
-        <Text style={styles.taskGridLabel}>What do you want to do?</Text>
-        <View style={styles.taskGrid} data-testid="hub-task-grid">
-          {taskGrid.map(t => (
-            <TouchableOpacity
-              key={t.label}
-              style={[styles.taskTile, { backgroundColor: colors.card, borderColor: `${t.color}35` }]}
-              onPress={() => router.push(t.route as any)}
-              activeOpacity={0.75}
-              data-testid={`task-${t.label.toLowerCase().replace(/\s+/g, '-')}`}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <View style={[styles.taskTileIcon, { backgroundColor: `${t.color}1E` }]}>
-                  <Ionicons name={t.icon as any} size={22} color={t.color} />
-                </View>
-                {!!(t as any).badge && (
-                  <View style={{ backgroundColor: '#FF3B30', borderRadius: 10, minWidth: 22, height: 20, paddingHorizontal: 6, alignItems: 'center', justifyContent: 'center' }} data-testid="task-internet-leads-badge">
-                    <Text style={{ fontSize: 11, fontWeight: '800', color: '#FFF' }}>{(t as any).badge > 99 ? '99+' : (t as any).badge}</Text>
-                  </View>
-                )}
-              </View>
-              <Text style={[styles.taskTileLabel, { color: colors.text }]}>{t.label}</Text>
-              <Text style={[styles.taskTileSub, { color: colors.textTertiary }]} numberOfLines={1}>{t.sub}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Pinned Tools — your permanent quick-launch bar */}
-        {pinnedTools.length > 0 && (
-          <View style={styles.recentSection} data-testid="pinned-tools-section">
-            <Text style={[styles.recentLabel, { color: colors.textTertiary }]}>Pinned</Text>
-            <View style={styles.recentRow}>
-              {pinnedTools.map((pt) => {
-                const match = allSections.flatMap(s => s.items).find(i => i.title === pt.title);
-                return (
-                  <TouchableOpacity
-                    key={pt.title}
-                    style={[styles.recentChip, { backgroundColor: colors.card, borderWidth: 1, borderColor: `${pt.color}30` }]}
-                    onPress={() => {
-                      if (match) {
-                        trackVisit({ title: match.title, icon: match.icon, color: match.color, subtitle: match.subtitle });
-                        match.onPress();
-                      }
-                    }}
-                    onLongPress={() => togglePin(pt)}
-                    activeOpacity={0.7}
-                    data-testid={`pinned-${pt.title.toLowerCase().replace(/\s+/g, '-')}`}
-                  >
-                    <View style={[styles.recentChipIcon, { backgroundColor: `${pt.color}20` }]}>
-                      <Ionicons name={pt.icon as any} size={16} color={pt.color} />
-                    </View>
-                    <Text style={[styles.recentChipText, { color: colors.text }]} numberOfLines={1}>{pt.title}</Text>
-                    <Ionicons name="bookmark" size={12} color={pt.color} style={{ opacity: 0.5 }} />
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        )}
-
-        {/* Everyday sections */}
-        {everydaySections.map(section => renderSection(section))}
-
-        {/* Single Admin section — all admin/setup/ops tools in one place */}
-        {adminSections.length > 0 && (
-          <View style={styles.sectionWrapper} data-testid="section-admin-hub">
-            <TouchableOpacity
-              style={[styles.sectionHeaderCard, { backgroundColor: colors.card }]}
-              onPress={() => toggleSection('admin_hub')}
-              activeOpacity={0.7}
-              data-testid="section-header-admin-hub"
-            >
-              <View style={[styles.sectionIcon, { backgroundColor: '#FF3B3020' }]}>
-                <Ionicons name="shield-half" size={20} color="#FF3B30" />
-              </View>
-              <Text style={[styles.sectionTitleText, { color: colors.text }]}>Admin</Text>
-              <View style={[styles.countPill, { backgroundColor: colors.surface }]}>
-                <Text style={[styles.countPillText, { color: colors.textSecondary }]}>
-                  {adminSections.reduce((a, s) => a + s.items.length, 0)}
-                </Text>
-              </View>
-              <Ionicons
-                name={expandedSections.has('admin_hub') ? 'chevron-up' : 'chevron-down'}
-                size={20}
-                color={colors.textSecondary}
-              />
-            </TouchableOpacity>
-            {expandedSections.has('admin_hub') && adminSections.map(sub => (
-              <View key={sub.id}>
-                <Text style={[styles.adminSubLabel, { color: colors.textTertiary }]}>{sub.title.toUpperCase()}</Text>
-                {sub.items.map((item, index) => renderMenuItem(item, index))}
-              </View>
-            ))}
-          </View>
-        )}
+        <AppHome
+          apps={hubApps}
+          folderDefs={hubFolderDefs}
+          defaultLoose={hubDefaultLoose}
+          userId={String(user?._id || 'anon')}
+          remoteLayout={(user as any)?.hub_layout || null}
+          colors={colors}
+          onDragging={setHubDragging}
+        />
         </>
         )}
         

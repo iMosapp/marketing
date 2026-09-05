@@ -1120,7 +1120,7 @@ async def patch_user_profile(user_id: str, data: dict):
     db = get_db()
     allowed_fields = ['name', 'phone', 'persona', 'settings', 'photo_url', 'bio', 'social_links',
                       'timezone', 'address', 'city', 'state', 'zip_code', 'country',
-                      'notification_settings', 'ai_master_paused']
+                      'notification_settings', 'ai_master_paused', 'hub_layout']
     update_dict = {k: v for k, v in data.items() if k in allowed_fields}
     
     if not update_dict:
