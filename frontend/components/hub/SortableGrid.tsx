@@ -23,6 +23,11 @@ type Props = {
   /** Fires once when a dragged tile is pulled well past the grid edge (drag out of a folder) */
   onDragOutside?: (key: string) => void;
   outsideMargin?: number;
+  /** 'vertical' ignores left/right pulls for onDragOutside (paged folders use the sides for page hops) */
+  outsideAxis?: 'both' | 'vertical';
+  /** Fires after the tile hangs off the left/right edge for edgeHoldMs (hop to the previous/next page). Ends the drag. */
+  onEdgeHold?: (key: string, dir: 'left' | 'right') => void;
+  edgeHoldMs?: number;
   testID?: string;
 };
 
@@ -37,7 +42,7 @@ const haptic = (style: 'light' | 'medium') => {
 
 /** iOS-style grid: tap to open, hold to enter edit mode, drag to reorder while editing,
  *  hover over a folder/app to drop into it, pull past the edge to drag out. */
-export const SortableGrid = ({ items, columns, cellW, cellH, gap, editing, renderItem, onPress, onLongPress, onReorder, onDragging, canDropOn, onDropOn, onDragOutside, outsideMargin = 56, testID }: Props) => {
+export const SortableGrid = ({ items, columns, cellW, cellH, gap, editing, renderItem, onPress, onLongPress, onReorder, onDragging, canDropOn, onDropOn, onDragOutside, outsideMargin = 56, outsideAxis = 'both', onEdgeHold, edgeHoldMs = 450, testID }: Props) => {
   const [dragKey, setDragKey] = useState<string | null>(null);
   const [hoverKey, setHoverKey] = useState<string | null>(null);
   const dragX = useSharedValue(0);
@@ -98,6 +103,18 @@ export const SortableGrid = ({ items, columns, cellW, cellH, gap, editing, rende
   const latest = useRef({ target: 0, inCenter: false });
   const pending = useRef<{ target: number; timer: any } | null>(null);
   const clearPending = useCallback(() => { if (pending.current) clearTimeout(pending.current.timer); pending.current = null; }, []);
+  const edgeHold = useRef<{ dir: 'left' | 'right'; timer: any } | null>(null);
+  const clearEdge = useCallback(() => { if (edgeHold.current) clearTimeout(edgeHold.current.timer); edgeHold.current = null; }, []);
+
+  // Ends the drag without a drop animation (the tile is about to appear somewhere else).
+  const cancelDrag = useCallback(() => {
+    dragRef.current = null;
+    clearPending();
+    clearHover();
+    setDragKey(null);
+    dragScale.value = 1;
+    onDragging && onDragging(false);
+  }, [clearPending, clearHover, onDragging]);
 
   const decide = useCallback(() => {
     pending.current = null;
@@ -118,15 +135,27 @@ export const SortableGrid = ({ items, columns, cellW, cellH, gap, editing, rende
     moveTo(target);
   }, [canDropOn, moveTo, clearHover]);
 
-  const track = useCallback((target: number, inCenter: boolean, outside: boolean) => {
+  const track = useCallback((target: number, inCenter: boolean, outside: boolean, edge: 'left' | 'right' | null) => {
     const key = dragRef.current;
     if (!key) return;
     if (outside && onDragOutside && !outFired.current) {
       outFired.current = true;
       clearPending();
       clearHover();
+      clearEdge();
       onDragOutside(key);
       return;
+    }
+    if (onEdgeHold) {
+      if (!edge) clearEdge();
+      else if (edgeHold.current?.dir !== edge) {
+        clearEdge();
+        edgeHold.current = { dir: edge, timer: setTimeout(() => {
+          edgeHold.current = null;
+          cancelDrag();
+          onEdgeHold(key, edge);
+        }, edgeHoldMs) };
+      }
     }
     latest.current = { target, inCenter };
     moved.current = true;
@@ -141,7 +170,7 @@ export const SortableGrid = ({ items, columns, cellW, cellH, gap, editing, rende
     if (pending.current?.target === target) return;
     clearPending();
     pending.current = { target, timer: setTimeout(decide, SETTLE_MS) };
-  }, [onDragOutside, clearHover, clearPending, moveTo, decide]);
+  }, [onDragOutside, onEdgeHold, edgeHoldMs, clearHover, clearPending, clearEdge, cancelDrag, moveTo, decide]);
 
   const finish = useCallback(() => {
     const key = dragRef.current;
@@ -149,6 +178,7 @@ export const SortableGrid = ({ items, columns, cellW, cellH, gap, editing, rende
     dragRef.current = null;
     const wasPending = !!pending.current;
     clearPending();
+    clearEdge();
     const h = hover.current;
     clearHover();
     onDragging && onDragging(false);
@@ -187,10 +217,13 @@ export const SortableGrid = ({ items, columns, cellW, cellH, gap, editing, rende
       const dx = cx - (col * stepX + cellW / 2);
       const dy = cy - (row * stepY + cellW / 2);
       const inCenter = Math.abs(dx) < cellW * 0.32 && Math.abs(dy) < cellW * 0.32;
-      const outside = cx < -outsideMargin || cx > gridW + outsideMargin || cy < -outsideMargin || cy > gridH + outsideMargin;
-      runOnJS(invoke)('track', Math.min(row * columns + col, count - 1), inCenter, outside);
+      const outsideY = cy < -outsideMargin || cy > gridH + outsideMargin;
+      const outsideX = cx < -outsideMargin || cx > gridW + outsideMargin;
+      const outside = outsideY || (outsideAxis === 'both' && outsideX);
+      const edge = dragX.value < -24 ? 'left' : dragX.value + cellW > gridW + 24 ? 'right' : null;
+      runOnJS(invoke)('track', Math.min(row * columns + col, count - 1), inCenter, outside, edge);
     })
-    .onFinalize(() => { 'worklet'; runOnJS(invoke)('finish'); }), [editing, cellW, columns, rows, count, stepX, stepY, gridW, gridH, outsideMargin, invoke]);
+    .onFinalize(() => { 'worklet'; runOnJS(invoke)('finish'); }), [editing, cellW, columns, rows, count, stepX, stepY, gridW, gridH, outsideMargin, outsideAxis, invoke]);
 
   // Recreated every render on purpose: a memoised gesture stops receiving pointer events after the
   // first state change on web. Render order is stable (sorted by key) so a reorder never moves a node
