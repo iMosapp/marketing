@@ -7,6 +7,7 @@ import time
 import pytest
 import requests
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 from bson import ObjectId
 from pymongo import MongoClient
 from dotenv import load_dotenv
@@ -158,6 +159,26 @@ class TestDismiss:
         assert r.status_code == 200 and r.json()["restored"] == 2
         back = {n["id"] for n in feed(uid, tok)["notifications"]}
         assert set(ids) <= back
+
+    def test_snooze_hides_until_morning_then_returns_today(self, admin, seed):
+        uid, tok = admin
+        tid = f"task_{seed['task_id']}"
+        r = requests.post(f"{API}/notification-center/{uid}/snooze", json={"ids": [tid]}, headers=H(tok), timeout=30)
+        assert r.status_code == 200 and r.json()["snoozed"] == 1
+        until = datetime.fromisoformat(r.json()["until"])
+        tzname = (DB.users.find_one({"_id": ObjectId(uid)}, {"timezone": 1}) or {}).get("timezone") or "America/Denver"
+        assert until > datetime.now(timezone.utc) and until.astimezone(ZoneInfo(tzname)).hour == 8
+        assert tid not in {n["id"] for n in feed(uid, tok)["notifications"]}
+        # undo
+        r = requests.post(f"{API}/notification-center/{uid}/unsnooze", json={"ids": [tid]}, headers=H(tok), timeout=30)
+        assert r.status_code == 200
+        assert tid in {n["id"] for n in feed(uid, tok)["notifications"]}
+        # an expired snooze brings the item back under TODAY (not buried in LATER)
+        past = (datetime.now(timezone.utc) - timedelta(minutes=5)).isoformat()
+        requests.post(f"{API}/notification-center/{uid}/snooze", json={"ids": [tid], "until": past}, headers=H(tok), timeout=30)
+        row = [n for n in feed(uid, tok)["notifications"] if n["id"] == tid][0]
+        assert row["bucket"] == "today" and row.get("snoozed_until") == past
+        requests.post(f"{API}/notification-center/{uid}/unsnooze", json={"ids": [tid]}, headers=H(tok), timeout=30)
 
     def test_clear_all_then_undo(self, admin, seed):
         uid, tok = admin

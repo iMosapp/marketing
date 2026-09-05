@@ -29,6 +29,7 @@ import { HomeSmartBar } from '../../components/home/HomeSmartBar';
 import { LeadsWaitingStrip } from '../../components/home/LeadsWaitingStrip';
 import { ReplyHealthCard } from '../../components/home/ReplyHealthCard';
 import { WeeklyWinsCard } from '../../components/home/WeeklyWinsCard';
+import { HotVehiclesCard } from '../../components/home/HotVehiclesCard';
 import { BookOfBusinessCard } from '../../components/home/BookOfBusinessCard';
 import { QuickActionsFab } from '../../components/home/QuickActionsFab';
 
@@ -1008,6 +1009,9 @@ function HomeScreen() {
 
         {/* ── WEEKLY WINS — Monday morning recap ── */}
         <WeeklyWinsCard userId={user?._id || ''} forceShow={winsParam === '1'} />
+
+        {/* ── HOT VEHICLES — what shoppers are opening and asking about this week ── */}
+        <HotVehiclesCard userId={user?._id || ''} variant="home" />
 
         {streak && (
           <TouchableOpacity

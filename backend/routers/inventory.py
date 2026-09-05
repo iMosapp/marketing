@@ -4,7 +4,7 @@ Feeds the same db.inventory collection as the HomeNet-compatible webhook API
 (/api/webhooks/inventory/*), so a live feed can plug in later with zero rework.
 """
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, HTTPException, Body, UploadFile, File
 from bson import ObjectId
 
@@ -39,6 +39,106 @@ async def _scope_query(user_id: str) -> dict:
     if user.get("role") == "super_admin":
         return {}
     return {"$or": [{"created_by_user_id": user_id}, {"assigned_to_user_id": user_id}]}
+
+
+@router.get("/{user_id}/hot")
+async def hot_vehicles(user_id: str, days: int = 7, limit: int = 8):
+    """Vehicles shoppers are opening (tracked lot links) and asking Jessi about most this week, store-wide.
+    Reps use it to know what to push. Score = 2 x link opens + asks."""
+    db = get_db()
+    scope = await _scope_query(user_id)
+    days = max(1, min(days, 30))
+    now = datetime.now(timezone.utc)
+    since = now - timedelta(days=days)
+    prev_since = since - timedelta(days=days)
+    items = await db.inventory.find(scope, {"name": 1, "price": 1, "status": 1, "attributes": 1, "primary_image": 1, "photo_url": 1,
+                                             "photos": 1, "listing_url": 1, "created_at": 1}).limit(2000).to_list(2000)
+    if not items:
+        return {"success": True, "days": days, "vehicles": [], "total_shoppers": 0}
+    by_id = {str(it["_id"]): it for it in items}
+    ids = list(by_id.keys())
+
+    stats: dict = {}
+
+    def bump(iid, kind, contact_id, ts, when="cur"):
+        s = stats.setdefault(iid, {"clicks": 0, "asks": 0, "prev": 0, "contacts": {}, "last": None})
+        if when == "prev":
+            s["prev"] += 1
+            return
+        s[kind] += 1
+        if contact_id:
+            c = s["contacts"].setdefault(str(contact_id), {"clicks": 0, "asks": 0, "last": None})
+            c[kind] += 1
+            if ts and (c["last"] is None or ts > c["last"]):
+                c["last"] = ts
+        if ts and (s["last"] is None or ts > s["last"]):
+            s["last"] = ts
+
+    def _ts(v):
+        if isinstance(v, datetime):
+            return v if v.tzinfo else v.replace(tzinfo=timezone.utc)
+        try:
+            d = datetime.fromisoformat(str(v).replace("Z", "+00:00"))
+            return d if d.tzinfo else d.replace(tzinfo=timezone.utc)
+        except Exception:
+            return None
+
+    clicks = await db.contact_events.find(
+        {"event_type": "vehicle_link_clicked", "metadata.inventory_id": {"$in": ids}, "timestamp": {"$gte": prev_since}},
+        {"metadata": 1, "contact_id": 1, "timestamp": 1}).limit(5000).to_list(5000)
+    for ev in clicks:
+        ts = _ts(ev.get("timestamp"))
+        bump(ev["metadata"]["inventory_id"], "clicks", ev.get("contact_id"), ts, "cur" if (ts and ts >= since) else "prev")
+    asks = await db.inventory_interest.find(
+        {"inventory_id": {"$in": ids}, "timestamp": {"$gte": prev_since}},
+        {"inventory_id": 1, "contact_id": 1, "timestamp": 1}).limit(5000).to_list(5000)
+    for ev in asks:
+        ts = _ts(ev.get("timestamp"))
+        bump(ev["inventory_id"], "asks", ev.get("contact_id"), ts, "cur" if (ts and ts >= since) else "prev")
+
+    ranked = [(iid, s) for iid, s in stats.items() if s["clicks"] + s["asks"] > 0]
+    ranked.sort(key=lambda kv: (kv[1]["clicks"] * 2 + kv[1]["asks"], kv[1]["last"] or datetime.min.replace(tzinfo=timezone.utc)), reverse=True)
+    ranked = ranked[:limit]
+
+    contact_ids = {cid for _, s in ranked for cid in s["contacts"] if ObjectId.is_valid(cid)}
+    contacts = {}
+    if contact_ids:
+        docs = await db.contacts.find({"_id": {"$in": [ObjectId(c) for c in contact_ids]}},
+                                      {"first_name": 1, "last_name": 1, "user_id": 1, "phone": 1}).to_list(500)
+        contacts = {str(c["_id"]): c for c in docs}
+    rep_ids = {str(c.get("user_id")) for c in contacts.values() if c.get("user_id") and ObjectId.is_valid(str(c.get("user_id")))}
+    reps = {}
+    if rep_ids:
+        rdocs = await db.users.find({"_id": {"$in": [ObjectId(r) for r in rep_ids]}}, {"name": 1, "first_name": 1}).to_list(200)
+        reps = {str(r["_id"]): (r.get("first_name") or (r.get("name") or "").split(" ")[0] or "Rep") for r in rdocs}
+
+    out = []
+    all_shoppers = set()
+    for iid, s in ranked:
+        it = by_id[iid]
+        a = it.get("attributes") or {}
+        shoppers = []
+        for cid, c in sorted(s["contacts"].items(), key=lambda kv: kv[1]["last"] or datetime.min.replace(tzinfo=timezone.utc), reverse=True):
+            all_shoppers.add(cid)
+            doc = contacts.get(cid) or {}
+            name = f"{doc.get('first_name', '')} {doc.get('last_name', '')}".strip() or "Shopper"
+            shoppers.append({"contact_id": cid, "name": name, "clicks": c["clicks"], "asks": c["asks"],
+                             "rep": reps.get(str(doc.get("user_id")), ""), "mine": str(doc.get("user_id")) == user_id,
+                             "last": c["last"].isoformat() if c["last"] else None})
+        photo = None
+        gallery = _gallery(it)
+        if gallery:
+            photo = gallery[0].get("url") or gallery[0].get("thumb_url")
+        score = s["clicks"] * 2 + s["asks"]
+        out.append({
+            "inventory_id": iid, "name": it.get("name", ""), "price": it.get("price"), "status": it.get("status", "available"),
+            "stock_number": a.get("stock_number", ""), "color": a.get("color", ""), "mileage": a.get("mileage", ""),
+            "photo": photo, "primary_image": it.get("primary_image"), "listing_url": it.get("listing_url"),
+            "clicks": s["clicks"], "asks": s["asks"], "shoppers": shoppers, "shopper_count": len(shoppers),
+            "score": score, "prev_score": s["prev"], "trend": "new" if s["prev"] == 0 else ("up" if score > s["prev"] else ("down" if score < s["prev"] else "flat")),
+            "last_activity": s["last"].isoformat() if s["last"] else None,
+        })
+    return {"success": True, "days": days, "vehicles": out, "total_shoppers": len(all_shoppers)}
 
 
 @router.get("/{user_id}")

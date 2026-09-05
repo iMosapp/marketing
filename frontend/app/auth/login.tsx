@@ -308,7 +308,7 @@ export default function LoginScreen() {
         });
         // Report to backend error log for visibility in admin dashboard
         try {
-          import('../services/errorReporter').then(({ reportError }) => {
+          import('../../services/errorReporter').then(({ reportError }) => {
             reportError({
               error_message: `Login error on mobile: ${error?.name || 'unknown'} — ${error?.message || 'no message'} | code: ${error?.code || 'none'} | status: ${error?.response?.status || 'none'}`,
               error_type: 'js_error',

@@ -140,6 +140,8 @@ def _detect_event_type(doc: dict) -> tuple:
         return "training_video_clicked", "Watched Training Video", "play-circle", "#AF52DE"
     if link_type == "review_request" or "/review/" in original_url:
         return "review_link_clicked", "Clicked Review Link", "star", "#FFD60A"
+    if link_type == "vehicle_listing":
+        return "vehicle_link_clicked", "Viewed Vehicle Online", "car-sport", "#32ADE6"
     if link_type == "business_card" or "/p/" in original_url or "/card/" in original_url:
         return "digital_card_viewed", "Viewed Digital Card", "eye", "#007AFF"
     if "/showcase/" in original_url or link_type == "showcase":
@@ -210,9 +212,11 @@ async def _log_link_click_event(db, doc: dict, short_code: str):
         "icon": icon,
         "color": color,
         "title": title,
-        "description": f"{contact_name or 'Contact'} opened the shared link",
+        "description": (f"{contact_name or 'Contact'} opened the {(doc.get('metadata') or {}).get('vehicle') or 'vehicle'} listing"
+                        if doc.get("link_type") == "vehicle_listing" else f"{contact_name or 'Contact'} opened the shared link"),
         "category": "customer_activity",
-        "metadata": {"short_code": short_code, "link_type": doc.get("link_type", "")},
+        "metadata": {"short_code": short_code, "link_type": doc.get("link_type", ""), "vehicle": (doc.get("metadata") or {}).get("vehicle"),
+                     "inventory_id": (doc.get("metadata") or {}).get("inventory_id")},
         "timestamp": datetime.utcnow(),
     })
 
@@ -269,6 +273,7 @@ async def _log_link_click_event(db, doc: dict, short_code: str):
             "showcase": "showcase_viewed",
             "link_page": "link_page_viewed",
             "training_video": "training_video_clicked",
+            "vehicle_listing": "vehicle_viewed",
         }
         signal_type = signal_map.get(link_type, "link_clicked")
         await record_signal(
@@ -276,7 +281,8 @@ async def _log_link_click_event(db, doc: dict, short_code: str):
             user_id=user_id,
             contact_id=contact_id,
             contact_name=contact_name,
-            metadata={"short_code": short_code, "link_type": link_type},
+            metadata={"short_code": short_code, "link_type": link_type, "vehicle": (doc.get("metadata") or {}).get("vehicle"),
+                      "inventory_id": (doc.get("metadata") or {}).get("inventory_id")},
         )
     except Exception:
         pass

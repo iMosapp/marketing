@@ -267,6 +267,9 @@ async def _build_feed(user_id: str) -> dict:
                 bucket = "now"
             shown_name = name or "this customer"
             title = verb.format(name=shown_name, first=_first(shown_name), title=n.get("title", ntype.replace("_", " ").title()))
+            if ntype == "engagement_signal" and n.get("signal_type") == "vehicle_viewed" and n.get("vehicle"):
+                bucket, label, icon = "now", "Text", "car-sport"
+                title = f"Text {_first(shown_name)} about the {n.get('vehicle_short') or n['vehicle']}"
             link = _notif_link(n)
             context = body
             if ntype in ("new_lead", "lead_assigned") and name and body.lower().startswith(name.lower()):
@@ -311,11 +314,22 @@ async def _build_feed(user_id: str) -> dict:
                       "body": ev.get("description", ""), "context": ev.get("description", ""), "link": f"/contact/{ev.get('contact_id', '')}",
                       "action": None, "timestamp": _ts(ev.get("timestamp")), "read": True, "source": "activity"})
 
-    # overlays: read + dismissed (virtual ids live in notification_reads)
+    # overlays: read + dismissed + snoozed (virtual ids live in notification_reads)
     items = [n for n in items if n["id"] not in dismissed_ids]
+    snoozed = reads.get("snoozed") or {}
+    kept = []
     for n in items:
+        until = snoozed.get(n["id"])
+        if until:
+            if _dt(until) > now:
+                continue  # still snoozed
+            if n.get("bucket") == "later":
+                n["bucket"] = "today"  # snooze is over: back on today's list
+            n["snoozed_until"] = until
         if n["id"] in read_ids:
             n["read"] = True
+        kept.append(n)
+    items = kept
 
     # buckets in order; newest first inside a bucket, unread before read
     grouped = []
@@ -435,6 +449,45 @@ async def undismiss_notifications(user_id: str, data: dict = None):
         await db.notification_reads.update_one({"user_id": user_id}, {"$pull": {"dismissed_ids": {"$in": virtual}}})
     _notifications_cache.pop(user_id, None)
     return {"success": True, "restored": len(real) + len(virtual)}
+
+
+async def _next_morning(db, user_id: str) -> datetime:
+    """8:00 AM in the user's timezone: today if it is still early, otherwise tomorrow."""
+    from zoneinfo import ZoneInfo
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"timezone": 1}) if ObjectId.is_valid(user_id) else None
+    tzname = (user or {}).get("timezone") or "America/Denver"
+    try:
+        tz = ZoneInfo(tzname)
+    except Exception:
+        tz = ZoneInfo("America/Denver")
+    local_now = datetime.now(tz)
+    target = local_now.replace(hour=8, minute=0, second=0, microsecond=0)
+    if target <= local_now + timedelta(minutes=30):
+        target += timedelta(days=1)
+    return target.astimezone(timezone.utc)
+
+
+@router.post("/{user_id}/snooze")
+async def snooze_notifications(user_id: str, data: dict = None):
+    """Swipe right: hide the alert until tomorrow morning (or an explicit `until` ISO time), then it comes back under TODAY."""
+    db = get_db()
+    ids = [str(i) for i in (data or {}).get("ids", [])]
+    if not ids:
+        return {"success": True, "snoozed": 0}
+    until = _dt((data or {}).get("until")) if (data or {}).get("until") else await _next_morning(db, user_id)
+    await db.notification_reads.update_one({"user_id": user_id}, {"$set": {f"snoozed.{i}": until.isoformat() for i in ids}}, upsert=True)
+    _notifications_cache.pop(user_id, None)
+    return {"success": True, "snoozed": len(ids), "until": until.isoformat()}
+
+
+@router.post("/{user_id}/unsnooze")
+async def unsnooze_notifications(user_id: str, data: dict = None):
+    db = get_db()
+    ids = [str(i) for i in (data or {}).get("ids", [])]
+    if ids:
+        await db.notification_reads.update_one({"user_id": user_id}, {"$unset": {f"snoozed.{i}": "" for i in ids}})
+    _notifications_cache.pop(user_id, None)
+    return {"success": True, "restored": len(ids)}
 
 
 @router.post("/{user_id}/clear-all")

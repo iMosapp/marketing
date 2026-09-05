@@ -50,6 +50,7 @@ EVENT_TYPE_LABELS = {
     "new_contact": "Contact Created",
     "link_click": "Link Clicked",
     "link_clicked": "Link Clicked",
+    "vehicle_link_clicked": "Viewed Vehicle Online",
     "voice_note": "Voice Note",
     "new_contact_added": "New Contact Added",
     "note_updated": "Note Updated",

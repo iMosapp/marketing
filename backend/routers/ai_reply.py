@@ -72,30 +72,31 @@ def get_human_delay(incoming_message: str = "") -> int:
 # ── Live inventory lookup for Jessi ──────────────────────────────────────────
 
 
-async def _search_inventory_context(db, user_id: str, message: str):
+async def _search_inventory_context(db, user_id: str, message: str, contact_id: str = None):
     """Search the store's live inventory for vehicles matching the customer's message
     (model words, body type, fuel, price / year / mileage bounds).
-    Returns (context_str, media_urls) - ('', []) if nothing fits."""
+    Returns (context_str, media_urls, listing_link) - ('', [], None) if nothing fits.
+    listing_link is a tracked short link to the vehicle's web page when ONE vehicle is clearly meant."""
     import os as _os
     from services import vehicle_search as vs
     try:
         user = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1})
         if not user:
-            return "", []
+            return "", [], None
         sid = user.get("store_id")
         scope = {"store_id": str(sid)} if sid else {"$or": [
             {"created_by_user_id": user_id}, {"assigned_to_user_id": user_id}]}
 
         q = vs.parse_query(message)
         if not q["tokens"] and not q["has_filters"]:
-            return "", []
+            return "", [], None
 
         items = await db.inventory.find({"status": "available", "is_visible": {"$ne": False}, **scope}).limit(400).to_list(400)
         if not items:
-            return "", []
+            return "", [], None
         matches, exact = vs.select_matches(items, q)
         if not matches:
-            return "", []
+            return "", [], None
 
         public_url = _os.environ.get("PUBLIC_FACING_URL", _os.environ.get("APP_URL", "https://app.imonsocial.com")).rstrip("/")
 
@@ -122,7 +123,27 @@ async def _search_inventory_context(db, user_id: str, message: str):
             return sum(1 for t in set(tokens) if t in blob)
         named = [it for it in top if _name_hits(it) > 0]
         specific = exact and (len(top) == 1 or len(named) == 1)
-        media = _photos(named[0] if named else top[0])[:3] if specific else []
+        focus = named[0] if named else top[0]
+        media = _photos(focus)[:3] if specific else []
+        link = None
+        if specific:
+            try:
+                await db.inventory_interest.insert_one({
+                    "inventory_id": str(focus["_id"]), "contact_id": contact_id, "user_id": user_id,
+                    "store_id": focus.get("store_id"), "kind": "asked", "message": (message or "")[:200],
+                    "timestamp": datetime.now(timezone.utc)})
+            except Exception:
+                pass
+        if specific and str(focus.get("listing_url") or "").startswith("http"):
+            try:
+                from routers.short_urls import create_short_url
+                short = await create_short_url(
+                    focus["listing_url"], "vehicle_listing",
+                    reference_id=f"{focus['_id']}:{contact_id or 'anon'}", user_id=user_id,
+                    metadata={"contact_id": contact_id, "inventory_id": str(focus["_id"]), "vehicle": focus.get("name", "")})
+                link = {"url": short["short_url"], "vehicle": focus.get("name", "")}
+            except Exception as e:
+                logger.debug(f"[AIReply] vehicle short link failed: {e}")
         if not media:
             media = [u for it in top for u in _photos(it)[:1]][:3]
 
@@ -135,11 +156,11 @@ async def _search_inventory_context(db, user_id: str, message: str):
             else:
                 header = (f"NO EXACT MATCH in stock for: {asked}. Closest options (be upfront about how they differ, "
                           f"e.g. over budget or older):")
-            return header + "\n" + "\n".join(lines), media
-        return "\n".join(lines), media
+            return header + "\n" + "\n".join(lines), media, link
+        return "\n".join(lines), media, link
     except Exception as e:
         logger.debug(f"[AIReply] Inventory search failed: {e}")
-        return "", []
+        return "", [], None
 
 
 # ── Core queue function — called by inbound webhook ──────────────────────────
@@ -386,9 +407,9 @@ async def queue_ai_reply(
     # If the question is inventory/pricing-related, try LIVE inventory first so
     # Jessi can answer with real availability and pricing. Financing, payments and
     # trade values are never answered from inventory data - a human handles those.
-    inventory_context, inventory_media = "", []
+    inventory_context, inventory_media, inventory_link = "", [], None
     if is_fact_topic and not is_finance_topic:
-        inventory_context, inventory_media = await _search_inventory_context(db, assigned_user_id, incoming_message)
+        inventory_context, inventory_media, inventory_link = await _search_inventory_context(db, assigned_user_id, incoming_message, contact_id)
 
     if is_hot_topic and not inventory_context and not is_scheduling:
         logger.info(f"[AIReply] Hot topic detected in message — sending brief reply + escalating for {contact_id}")
@@ -522,7 +543,8 @@ async def queue_ai_reply(
                 f"{inventory_context}\n"
                 "Answer using ONLY these vehicles. Mention price/color/mileage when relevant. "
                 "If it says NO EXACT MATCH, be honest that nothing fits exactly, offer the closest option and why it "
-                "is close, and offer to keep an eye out. If it lists a count higher than shown, say there are more.\n\n"
+                "is close, and offer to keep an eye out. If it lists a count higher than shown, say there are more. "
+                "Never write a web address; if a link is available it is added after your reply automatically.\n\n"
             )
         user_prompt = (
             f"Customer context:\n{contact_context}\n\n"
@@ -552,6 +574,8 @@ async def queue_ai_reply(
                    else str(response)).strip('"\'')
         ai_body = no_em_dash(ai_body)
         ai_body = await clean_ai_text(ai_body, assigned_user_id)
+        if inventory_link and inventory_link["url"] not in ai_body:
+            ai_body = f"{ai_body.rstrip()}\n\nAll the photos and details: {inventory_link['url']}"
 
     except Exception as e:
         logger.error(f"[AIReply] Draft generation failed for {contact_id}: {e}")

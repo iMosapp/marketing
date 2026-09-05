@@ -23,7 +23,35 @@ SIGNAL_TYPES = {
     "link_page_viewed": {"icon": "link", "color": "#AF52DE", "label": "Viewed Your Link Page"},
     "contact_saved": {"icon": "person-add", "color": "#34C759", "label": "Saved Your Contact"},
     "link_clicked": {"icon": "open", "color": "#007AFF", "label": "Clicked Your Link"},
+    "vehicle_viewed": {"icon": "car-sport", "color": "#32ADE6", "label": "Viewed a Vehicle Online"},
 }
+
+
+def short_vehicle(name: str) -> str:
+    """'2024 Toyota Tacoma TRD Off-Road' -> 'Tacoma' (year + make dropped); anything else unchanged."""
+    parts = (name or "").split()
+    if len(parts) >= 3 and parts[0].isdigit() and len(parts[0]) == 4:
+        return parts[2]
+    return name or ""
+
+
+def _vehicle_prefill(first: str, vehicle: str) -> str:
+    return f"Hey {first}, saw you were checking out the {vehicle}. Want me to set it aside so you can see it in person?"
+
+
+async def _vehicle_thread_link(db, user_id: str, contact_id: str, first: str, vehicle: str) -> str:
+    """Thread deep link (existing conversation, else the contact id which the thread screen resolves) + prefilled text."""
+    from urllib.parse import quote
+    target = contact_id
+    try:
+        conv = await db.conversations.find_one(
+            {"contact_id": contact_id, "$or": [{"user_id": user_id}, {"assigned_user_id": user_id}]},
+            {"_id": 1}, sort=[("updated_at", -1)])
+        if conv:
+            target = str(conv["_id"])
+    except Exception:
+        pass
+    return f"/thread/{target}?prefill={quote(_vehicle_prefill(first, vehicle))}"
 
 
 async def record_signal(
@@ -99,16 +127,36 @@ async def record_signal(
     await db.engagement_signals.insert_one(signal_doc)
 
     # Build notification message
+    vehicle = (metadata or {}).get("vehicle")
+    inventory_id = (metadata or {}).get("inventory_id")
+    link = f"/contact/{contact_id}" if contact_id else "/notifications"
     if is_return_visit:
         if view_count >= 3:
             title = f"{contact_name} keeps coming back"
             body = f"Viewed your content {view_count + 1} times. Hot lead!"
         else:
             title = f"{contact_name} looked again"
-            body = f"{type_info['label']} — this is a return visit"
+            body = f"{type_info['label']} - this is a return visit"
     else:
         title = f"{contact_name} just engaged"
         body = type_info["label"]
+    if signal_type == "vehicle_viewed" and vehicle and contact_id:
+        # Hot shopper alert: vehicle first, deep link straight into the thread with a ready-to-send text
+        first = contact_name.split(" ")[0] if contact_name != "Someone" else "them"
+        short = short_vehicle(vehicle)
+        vehicle_views = await db.engagement_signals.count_documents({
+            "user_id": user_id, "contact_id": contact_id, "signal_type": "vehicle_viewed",
+            **({"metadata.inventory_id": inventory_id} if inventory_id else {"metadata.vehicle": vehicle}),
+        })
+        if vehicle_views > 1:
+            title = f"{first} is back on the {short}"
+            body = f"{vehicle}, opened {vehicle_views} times. Text {first} while it's top of mind."
+        else:
+            title = f"{first} just opened the {short}"
+            body = f"{vehicle}. Text {first} while it's top of mind."
+        link = await _vehicle_thread_link(db, user_id, contact_id, first, vehicle)
+    elif vehicle:
+        body = f"Opened the {vehicle} listing" + (f" ({view_count + 1} views)" if is_return_visit else "")
 
     # Create notification for the salesperson
     notif_doc = {
@@ -123,6 +171,10 @@ async def record_signal(
         "color": type_info["color"],
         "is_return_visit": is_return_visit,
         "view_count": view_count + 1,
+        "vehicle": vehicle,
+        "vehicle_short": short_vehicle(vehicle) if vehicle else None,
+        "inventory_id": inventory_id,
+        "link": link,
         "read": False,
         "dismissed": False,
         "created_at": now,
@@ -134,7 +186,7 @@ async def record_signal(
         from routers.push_notifications import send_push_to_user
         import asyncio
         asyncio.create_task(
-            send_push_to_user(user_id, title, body, f"/contact/{contact_id}", type_info.get("icon", "eye"))
+            send_push_to_user(user_id, title, body, link, type_info.get("icon", "eye"))
         )
     except Exception as e:
         logger.debug(f"Push notification skipped for engagement signal: {e}")

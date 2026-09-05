@@ -12,12 +12,13 @@ import { PhotoGallerySheet, pickPhotoBase64 } from '../components/inventory/Phot
 import { useThemeStore } from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
 import { resolvePhotoUrl } from '../utils/photoUrl';
+import { HotVehiclesCard } from '../components/home/HotVehiclesCard';
 import api from '../services/api';
 import { showSimpleAlert, showConfirm } from '../services/alert';
 
 const ACCENT = '#32ADE6';
 
-const EMPTY_FORM = { year: '', make: '', model: '', trim: '', body_type: '', color: '', mileage: '', price: '', stock_number: '', vin: '', description: '' };
+const EMPTY_FORM = { year: '', make: '', model: '', trim: '', body_type: '', color: '', mileage: '', price: '', stock_number: '', vin: '', listing_url: '', description: '' };
 const BODY_TYPES = ['Truck', 'SUV', 'Sedan', 'Van', 'Coupe', 'Convertible', 'Hatchback', 'Wagon'];
 
 export default function InventoryScreen() {
@@ -176,12 +177,12 @@ export default function InventoryScreen() {
         <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, flex: 1 }} numberOfLines={1}>Inventory</Text>
         {['store_manager', 'org_admin', 'super_admin', 'admin'].includes(user?.role || '') && (
           <TouchableOpacity
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.card, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12 }}
+            style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card, borderRadius: 10 }}
             onPress={() => router.push('/admin/inventory-feed' as any)}
             data-testid="inventory-feed-btn"
+            accessibilityLabel="Inventory feed"
           >
-            <Ionicons name="cloud-download-outline" size={16} color={ACCENT} />
-            <Text style={{ fontSize: 13, fontWeight: '600', color: ACCENT }}>Feed</Text>
+            <Ionicons name="cloud-download-outline" size={18} color={ACCENT} />
           </TouchableOpacity>
         )}
         <TouchableOpacity
@@ -268,6 +269,9 @@ export default function InventoryScreen() {
           contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 10 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchItems(); }} tintColor={colors.textSecondary} />}
         >
+          <View style={{ marginHorizontal: -16 }}>
+            <HotVehiclesCard userId={user?._id || ''} variant="full" />
+          </View>
           {items.length === 0 ? (
             <View style={{ alignItems: 'center', paddingTop: 50 }}>
               <Ionicons name="car-sport-outline" size={44} color={colors.textSecondary} />
@@ -289,12 +293,12 @@ export default function InventoryScreen() {
                         <View style={{ width: 62, height: 62, borderRadius: 10, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' }}>
                           <ActivityIndicator size="small" color={ACCENT} />
                         </View>
-                      ) : item.photo_url ? (
+                      ) : (item.photo_url || item.primary_image) ? (
                         <View>
-                          <Image source={{ uri: resolvePhotoUrl(item.photo_url) || '' }} style={{ width: 62, height: 62, borderRadius: 10, backgroundColor: colors.surface }} contentFit="cover" />
+                          <Image source={{ uri: item.photo_url ? (resolvePhotoUrl(item.photo_url) || '') : item.primary_image }} style={{ width: 62, height: 62, borderRadius: 10, backgroundColor: colors.surface }} contentFit="cover" />
                           <View style={{ position: 'absolute', bottom: -4, right: -4, backgroundColor: '#0B0B0D', borderRadius: 9, paddingHorizontal: 5, paddingVertical: 1, flexDirection: 'row', alignItems: 'center', gap: 2, borderWidth: 1, borderColor: colors.border }} data-testid={`inventory-photo-count-${item._id}`}>
                             <Ionicons name="images" size={9} color={colors.textSecondary} />
-                            <Text style={{ fontSize: 9, fontWeight: '700', color: colors.textSecondary }}>{(item.photos || []).length || 1}</Text>
+                            <Text style={{ fontSize: 9, fontWeight: '700', color: colors.textSecondary }}>{(item.photos || []).length || (item.images || []).length || 1}</Text>
                           </View>
                         </View>
                       ) : (
@@ -320,6 +324,18 @@ export default function InventoryScreen() {
                     <View style={{ backgroundColor: sold ? '#FF3B3018' : '#34C75918', paddingVertical: 3, paddingHorizontal: 10, borderRadius: 6 }}>
                       <Text style={{ fontSize: 11, fontWeight: '700', color: sold ? '#FF3B30' : '#34C759' }}>{sold ? 'SOLD' : 'AVAILABLE'}</Text>
                     </View>
+                    {item.listing_url ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: `${ACCENT}18`, paddingVertical: 3, paddingHorizontal: 8, borderRadius: 6 }} data-testid={`inventory-link-${item._id}`}>
+                        <Ionicons name="link" size={11} color={ACCENT} />
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: ACCENT }}>WEB PAGE</Text>
+                      </View>
+                    ) : null}
+                    {item.feed_id ? (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: colors.surface, paddingVertical: 3, paddingHorizontal: 8, borderRadius: 6 }}>
+                        <Ionicons name="cloud-download-outline" size={11} color={colors.textSecondary} />
+                        <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSecondary }}>FEED</Text>
+                      </View>
+                    ) : null}
                     <View style={{ flex: 1 }} />
                     <TouchableOpacity
                       style={{ paddingVertical: 6, paddingHorizontal: 12, borderRadius: 8, backgroundColor: colors.surface }}
@@ -403,7 +419,7 @@ export default function InventoryScreen() {
                 })}
               </View>
               <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 12 }}>
-                Jessi uses this when a customer asks for "trucks" or "SUVs". Leave blank and she guesses from the model.
+                {'Jessi uses this when a customer asks for "trucks" or "SUVs". Leave blank and she guesses from the model.'}
               </Text>
               <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.8, marginBottom: 5 }}>VIN (OPTIONAL)</Text>
               <TextInput
@@ -413,6 +429,21 @@ export default function InventoryScreen() {
                 autoCapitalize="characters"
                 data-testid="inventory-form-vin"
               />
+              <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.8, marginBottom: 5 }}>WEBSITE LINK (OPTIONAL)</Text>
+              <TextInput
+                style={{ backgroundColor: colors.card, borderRadius: 10, padding: 12, fontSize: 14, color: colors.text, marginBottom: 4 }}
+                value={form.listing_url}
+                onChangeText={(v) => setForm(prev => ({ ...prev, listing_url: v }))}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+                placeholder="https://yourdealer.com/inventory/..."
+                placeholderTextColor={colors.textTertiary}
+                data-testid="inventory-form-listing-url"
+              />
+              <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 12 }}>
+                Jessi texts this page (as a tracked short link) when a customer asks about this exact vehicle, so they can see every photo.
+              </Text>
               <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.8, marginBottom: 5 }}>NOTES (OPTIONAL)</Text>
               <TextInput
                 style={{ backgroundColor: colors.card, borderRadius: 10, padding: 12, fontSize: 15, color: colors.text, height: 70, textAlignVertical: 'top' }}

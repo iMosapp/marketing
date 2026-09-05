@@ -8,6 +8,7 @@ import { useThemeStore } from '../../store/themeStore';
 const GOLD = '#C9A962';
 const RED = '#FF3B30';
 const GRAY = '#8E8E93';
+const SNOOZE = '#5E5CE6';
 
 export interface AlertItem {
   id: string;
@@ -52,9 +53,10 @@ interface Props {
   item: AlertItem;
   onOpen: (item: AlertItem) => void;
   onDismiss: (item: AlertItem) => void;
+  onSnooze?: (item: AlertItem) => void;
 }
 
-export function AlertRow({ item, onOpen, onDismiss }: Props) {
+export function AlertRow({ item, onOpen, onDismiss, onSnooze }: Props) {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
   const swipeRef = useRef<Swipeable>(null);
@@ -100,6 +102,7 @@ export function AlertRow({ item, onOpen, onDismiss }: Props) {
     return (
       <View style={styles.swipeWrap}>
         <WebSwipeableItem
+          leftActions={onSnooze ? [{ key: `snooze-${item.id}`, icon: 'moon', label: 'Snooze', color: '#fff', bgColor: SNOOZE, onPress: () => onSnooze(item) }] : []}
           rightActions={[{ key: `dismiss-${item.id}`, icon: 'close', label: 'Dismiss', color: '#fff', bgColor: RED, onPress: () => onDismiss(item) }]}
         >
           {row}
@@ -114,8 +117,20 @@ export function AlertRow({ item, onOpen, onDismiss }: Props) {
         ref={swipeRef}
         friction={2}
         rightThreshold={48}
+        leftThreshold={48}
         overshootRight={false}
-        onSwipeableOpen={(dir) => { if (dir === 'right') { swipeRef.current?.close(); onDismiss(item); } }}
+        overshootLeft={false}
+        onSwipeableOpen={(dir) => {
+          swipeRef.current?.close();
+          if (dir === 'right') onDismiss(item);
+          else if (dir === 'left' && onSnooze) onSnooze(item);
+        }}
+        renderLeftActions={onSnooze ? () => (
+          <RectButton style={styles.snoozePane} onPress={() => { swipeRef.current?.close(); onSnooze(item); }}>
+            <Ionicons name="moon" size={22} color="#fff" />
+            <Text maxFontSizeMultiplier={1} style={styles.dismissText}>Snooze</Text>
+          </RectButton>
+        ) : undefined}
         renderRightActions={() => (
           <RectButton style={styles.dismissPane} onPress={() => { swipeRef.current?.close(); onDismiss(item); }}>
             <Ionicons name="close" size={22} color="#fff" />
@@ -144,6 +159,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   actionBtn: { backgroundColor: GOLD, borderRadius: 14, paddingHorizontal: 13, paddingVertical: 8, minWidth: 64, alignItems: 'center' },
   actionText: { fontSize: 13, fontWeight: '800', color: '#000' },
   dismissPane: { width: 88, backgroundColor: RED, alignItems: 'center', justifyContent: 'center', gap: 3 },
+  snoozePane: { width: 88, backgroundColor: SNOOZE, alignItems: 'center', justifyContent: 'center', gap: 3 },
   dismissText: { color: '#fff', fontSize: 12, fontWeight: '700' },
 });
 

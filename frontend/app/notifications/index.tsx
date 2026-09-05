@@ -28,7 +28,7 @@ export default function AlertsPage() {
   const [items, setItems] = useState<AlertItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [undo, setUndo] = useState<{ ids: string[]; items: AlertItem[]; label: string } | null>(null);
+  const [undo, setUndo] = useState<{ ids: string[]; items: AlertItem[]; label: string; kind: 'dismiss' | 'snooze' } | null>(null);
   const undoTimer = useRef<any>(null);
 
   const fetchAlerts = useCallback(async () => {
@@ -51,23 +51,34 @@ export default function AlertsPage() {
     setRefreshing(false);
   };
 
-  const showUndo = (ids: string[], removed: AlertItem[], label: string) => {
+  const showUndo = (ids: string[], removed: AlertItem[], label: string, kind: 'dismiss' | 'snooze' = 'dismiss') => {
     if (undoTimer.current) clearTimeout(undoTimer.current);
-    setUndo({ ids, items: removed, label });
+    setUndo({ ids, items: removed, label, kind });
     undoTimer.current = setTimeout(() => setUndo(null), 6000);
   };
 
   const handleUndo = async () => {
     if (!undo || !user?._id) return;
     if (undoTimer.current) clearTimeout(undoTimer.current);
-    const { ids, items: restored } = undo;
+    const { ids, items: restored, kind } = undo;
     setUndo(null);
     setItems(prev => {
       const have = new Set(prev.map(i => i.id));
       return [...prev, ...restored.filter(i => !have.has(i.id))];
     });
-    try { await api.post(`/notification-center/${user._id}/undismiss`, { ids }); } catch { /* silent */ }
+    try { await api.post(`/notification-center/${user._id}/${kind === 'snooze' ? 'unsnooze' : 'undismiss'}`, { ids }); } catch { /* silent */ }
     fetchAlerts();
+  };
+
+  const snooze = async (n: AlertItem) => {
+    if (!user?._id) return;
+    setItems(prev => prev.filter(i => i.id !== n.id));
+    try {
+      const res = await api.post(`/notification-center/${user._id}/snooze`, { ids: [n.id] });
+      const until = res.data?.until ? new Date(res.data.until) : null;
+      const when = until ? until.toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : 'tomorrow morning';
+      showUndo([n.id], [n], `Snoozed until ${when}`, 'snooze');
+    } catch { showUndo([n.id], [n], 'Snoozed until tomorrow morning', 'snooze'); }
   };
 
   const open = async (n: AlertItem) => {
@@ -158,13 +169,13 @@ export default function AlertsPage() {
                     <Text maxFontSizeMultiplier={1} style={[styles.bucketLabel, { color: b.color }]}>{b.label}</Text>
                     <Text maxFontSizeMultiplier={1} style={styles.bucketCount}>{group.length}</Text>
                   </View>
-                  {group.map(n => <AlertRow key={n.id} item={n} onOpen={open} onDismiss={dismiss} />)}
+                  {group.map(n => <AlertRow key={n.id} item={n} onOpen={open} onDismiss={dismiss} onSnooze={snooze} />)}
                 </View>
               );
             })
           )}
           {items.length > 0 && (
-            <Text maxFontSizeMultiplier={1} style={styles.hint}>Swipe left to dismiss · Tap to jump in</Text>
+            <Text maxFontSizeMultiplier={1} style={styles.hint}>Swipe left to dismiss · Swipe right to snooze until morning · Tap to jump in</Text>
           )}
           <View style={{ height: 80 }} />
         </ScrollView>
@@ -172,7 +183,7 @@ export default function AlertsPage() {
 
       {undo && (
         <View style={styles.undoBar} {...tid('alerts-undo-bar')}>
-          <Ionicons name="close-circle" size={20} color={GOLD} />
+          <Ionicons name={undo.kind === 'snooze' ? 'moon' : 'close-circle'} size={20} color={GOLD} />
           <Text maxFontSizeMultiplier={1} style={styles.undoText} numberOfLines={1}>{undo.label}</Text>
           <TouchableOpacity onPress={handleUndo} style={styles.undoBtn} {...tid('alerts-undo-btn')}>
             <Text maxFontSizeMultiplier={1} style={styles.undoBtnText}>UNDO</Text>
