@@ -237,6 +237,13 @@ export const MessageBubble = ({
             </View>
           )}
 
+          {isUser && (item as any).status === 'delivered' && (
+            <View style={styles.personalSmsBadge} data-testid="message-delivered-badge">
+              <Ionicons name="checkmark-done" size={12} color="#34C759" />
+              <Text style={[styles.personalSmsText, { color: '#34C759' }]}>Delivered</Text>
+            </View>
+          )}
+
           {isUser && (item as any).status === 'failed' && (
             <View style={styles.personalSmsBadge} data-testid="message-failed-badge">
               <Ionicons name="alert-circle" size={10} color="#FF453A" />

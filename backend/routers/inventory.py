@@ -24,6 +24,7 @@ def _serialize(item: dict) -> dict:
     for k in ("created_at", "updated_at"):
         if hasattr(item.get(k), "isoformat"):
             item[k] = item[k].isoformat()
+    item["photos"] = _gallery(item)
     return item
 
 
@@ -223,28 +224,80 @@ async def delete_inventory_item(user_id: str, item_id: str):
     return {"success": True}
 
 
+MAX_PHOTOS = 6
+
+
+def _gallery(item: dict) -> list:
+    """Photo gallery, folding in the legacy single cover photo."""
+    photos = list(item.get("photos") or [])
+    if not photos and item.get("photo_full_path"):
+        photos = [{"full_path": item["photo_full_path"], "thumb_url": item.get("photo_url") or f"/api/images/{item['photo_full_path']}"}]
+    return photos
+
+
+def _gallery_set(photos: list) -> dict:
+    cover = photos[0] if photos else None
+    return {
+        "photos": photos,
+        "photo_url": cover["thumb_url"] if cover else None,
+        "photo_full_path": cover["full_path"] if cover else None,
+        "updated_at": datetime.now(timezone.utc),
+    }
+
+
 @router.post("/{user_id}/{item_id}/photo")
 async def upload_inventory_photo(user_id: str, item_id: str, data: dict = Body(...)):
-    """Attach a photo to a vehicle (base64) — Jessi texts it when quoting this car."""
+    """Add a photo to a vehicle (base64). Up to MAX_PHOTOS; Jessi texts the first three when quoting this car."""
     db = get_db()
     photo = data.get("photo") or data.get("photo_url")
     if not photo:
         raise HTTPException(status_code=400, detail="photo is required")
     scope = await _scope_query(user_id)
-    item = await db.inventory.find_one({"$and": [{"_id": ObjectId(item_id)}, scope or {}]}, {"_id": 1})
+    item = await db.inventory.find_one({"$and": [{"_id": ObjectId(item_id)}, scope or {}]}, {"photos": 1, "photo_url": 1, "photo_full_path": 1})
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
+    photos = _gallery(item)
+    if len(photos) >= MAX_PHOTOS:
+        raise HTTPException(status_code=400, detail=f"Up to {MAX_PHOTOS} photos per vehicle")
     from utils.image_storage import upload_image
     result = await upload_image(photo, prefix="inventory", entity_id=item_id)
     if not result:
         raise HTTPException(status_code=500, detail="Photo upload failed")
-    photo_url = f"/api/images/{result['thumbnail_path']}"
-    await db.inventory.update_one({"_id": ObjectId(item_id)}, {"$set": {
-        "photo_url": photo_url,
-        "photo_full_path": result["original_path"],
-        "updated_at": datetime.now(timezone.utc),
-    }})
-    return {"success": True, "photo_url": photo_url}
+    photos.append({"full_path": result["original_path"], "thumb_url": f"/api/images/{result['thumbnail_path']}"})
+    await db.inventory.update_one({"_id": ObjectId(item_id)}, {"$set": _gallery_set(photos)})
+    return {"success": True, "photo_url": photos[0]["thumb_url"], "photos": photos}
+
+
+@router.delete("/{user_id}/{item_id}/photo/{index}")
+async def delete_inventory_photo(user_id: str, item_id: str, index: int):
+    """Remove one photo from the vehicle's gallery; the first remaining photo becomes the cover."""
+    db = get_db()
+    scope = await _scope_query(user_id)
+    item = await db.inventory.find_one({"$and": [{"_id": ObjectId(item_id)}, scope or {}]}, {"photos": 1, "photo_url": 1, "photo_full_path": 1})
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    photos = _gallery(item)
+    if not 0 <= index < len(photos):
+        raise HTTPException(status_code=404, detail="Photo not found")
+    photos.pop(index)
+    await db.inventory.update_one({"_id": ObjectId(item_id)}, {"$set": _gallery_set(photos)})
+    return {"success": True, "photos": photos}
+
+
+@router.put("/{user_id}/{item_id}/photo/{index}/cover")
+async def set_inventory_cover(user_id: str, item_id: str, index: int):
+    """Move a photo to the front so it is the cover and the first one Jessi sends."""
+    db = get_db()
+    scope = await _scope_query(user_id)
+    item = await db.inventory.find_one({"$and": [{"_id": ObjectId(item_id)}, scope or {}]}, {"photos": 1, "photo_url": 1, "photo_full_path": 1})
+    if not item:
+        raise HTTPException(status_code=404, detail="Item not found")
+    photos = _gallery(item)
+    if not 0 <= index < len(photos):
+        raise HTTPException(status_code=404, detail="Photo not found")
+    photos.insert(0, photos.pop(index))
+    await db.inventory.update_one({"_id": ObjectId(item_id)}, {"$set": _gallery_set(photos)})
+    return {"success": True, "photos": photos}
 
 
 CSV_HEADER_ALIASES = {

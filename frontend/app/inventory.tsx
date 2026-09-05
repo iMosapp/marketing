@@ -7,8 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
-import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
+import { PhotoGallerySheet, pickPhotoBase64 } from '../components/inventory/PhotoGallerySheet';
 import { useThemeStore } from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
 import { resolvePhotoUrl } from '../utils/photoUrl';
@@ -21,7 +21,7 @@ const EMPTY_FORM = { year: '', make: '', model: '', trim: '', color: '', mileage
 
 export default function InventoryScreen() {
   const { colors } = useThemeStore();
-  const { user } = useAuthStore();
+  const { user, isLoading: authLoading } = useAuthStore();
   const router = useRouter();
 
   const [items, setItems] = useState<any[]>([]);
@@ -35,28 +35,29 @@ export default function InventoryScreen() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [photoUploadingId, setPhotoUploadingId] = useState<string | null>(null);
+  const [galleryItem, setGalleryItem] = useState<any | null>(null);
 
   const handleAddPhoto = async (item: any) => {
     if (!user?._id) return;
+    if ((item.photos || []).length > 0) { setGalleryItem(item); return; }
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        quality: 0.7,
-        base64: true,
-        allowsEditing: true,
-        aspect: [4, 3],
-      });
-      if (result.canceled || !result.assets?.[0]?.base64) return;
+      const photo = await pickPhotoBase64();
+      if (!photo) return;
       setPhotoUploadingId(item._id);
-      await api.post(`/inventory/${user._id}/${item._id}/photo`, {
-        photo: `data:image/jpeg;base64,${result.assets[0].base64}`,
-      });
-      fetchItems();
+      const r = await api.post(`/inventory/${user._id}/${item._id}/photo`, { photo });
+      applyPhotos(item._id, r.data.photos || []);
     } catch {
       showSimpleAlert('Error', 'Could not upload the photo. Please try again.');
     } finally {
       setPhotoUploadingId(null);
     }
+  };
+
+  const applyPhotos = (itemId: string, photos: any[]) => {
+    const cover = photos[0];
+    const patch = { photos, photo_url: cover?.thumb_url || null, photo_full_path: cover?.full_path || null };
+    setItems(prev => prev.map(i => (i._id === itemId ? { ...i, ...patch } : i)));
+    setGalleryItem((g: any) => (g && g._id === itemId ? { ...g, ...patch } : g));
   };
 
   const fetchItems = useCallback(async () => {
@@ -77,12 +78,13 @@ export default function InventoryScreen() {
   }, [user?._id, search, statusFilter]);
 
   useFocusEffect(useCallback(() => {
+    if (authLoading) return; // session still hydrating (cold start / web reload)
     if (!user?._id) {
       router.replace('/auth/login' as any);
       return;
     }
     fetchItems();
-  }, [fetchItems, user?._id]));
+  }, [fetchItems, user?._id, authLoading]));
 
   const handleAdd = async () => {
     if (!user?._id) return;
@@ -203,7 +205,7 @@ export default function InventoryScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, marginBottom: 10, backgroundColor: '#FF950014', borderRadius: 10, padding: 10 }} data-testid="inventory-photo-reminder-banner">
           <Ionicons name="camera" size={15} color="#FF9500" />
           <Text style={{ fontSize: 13, color: colors.textSecondary, flex: 1 }}>
-            <Text style={{ fontWeight: '700', color: '#FF9500' }}>{counts.missing_photos} in-stock vehicle{counts.missing_photos !== 1 ? 's' : ''} missing photos</Text> — leads get the car's picture texted automatically once one is added.
+            <Text style={{ fontWeight: '700', color: '#FF9500' }}>{counts.missing_photos} in-stock vehicle{counts.missing_photos !== 1 ? 's' : ''} missing photos</Text> - leads get the car&apos;s picture texted automatically once one is added.
           </Text>
         </View>
       )}
@@ -277,7 +279,13 @@ export default function InventoryScreen() {
                           <ActivityIndicator size="small" color={ACCENT} />
                         </View>
                       ) : item.photo_url ? (
-                        <Image source={{ uri: resolvePhotoUrl(item.photo_url) || '' }} style={{ width: 62, height: 62, borderRadius: 10, backgroundColor: colors.surface }} contentFit="cover" />
+                        <View>
+                          <Image source={{ uri: resolvePhotoUrl(item.photo_url) || '' }} style={{ width: 62, height: 62, borderRadius: 10, backgroundColor: colors.surface }} contentFit="cover" />
+                          <View style={{ position: 'absolute', bottom: -4, right: -4, backgroundColor: '#0B0B0D', borderRadius: 9, paddingHorizontal: 5, paddingVertical: 1, flexDirection: 'row', alignItems: 'center', gap: 2, borderWidth: 1, borderColor: colors.border }} data-testid={`inventory-photo-count-${item._id}`}>
+                            <Ionicons name="images" size={9} color={colors.textSecondary} />
+                            <Text style={{ fontSize: 9, fontWeight: '700', color: colors.textSecondary }}>{(item.photos || []).length || 1}</Text>
+                          </View>
+                        </View>
                       ) : (
                         <View style={{ width: 62, height: 62, borderRadius: 10, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border, borderStyle: 'dashed' }}>
                           <Ionicons name="camera-outline" size={20} color={colors.textSecondary} />
@@ -323,6 +331,12 @@ export default function InventoryScreen() {
           )}
         </ScrollView>
       )}
+
+      <PhotoGallerySheet
+        visible={!!galleryItem} userId={user?._id || ''} item={galleryItem} colors={colors}
+        onClose={() => setGalleryItem(null)} onChanged={applyPhotos}
+        onError={(m) => showSimpleAlert('Photos', m)}
+      />
 
       {/* Add Vehicle Modal */}
       <Modal visible={showAdd} animationType="slide" transparent onRequestClose={() => setShowAdd(false)}>

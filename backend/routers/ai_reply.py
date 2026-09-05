@@ -127,8 +127,38 @@ async def _search_inventory_context(db, user_id: str, message: str):
 
         items.sort(key=_hits, reverse=True)
         public_url = _os.environ.get("PUBLIC_FACING_URL", _os.environ.get("APP_URL", "https://app.imonsocial.com")).rstrip("/")
-        lines, media = [], []
-        for it in items[:3]:
+
+        def _photos(it):
+            """Full-size, MMS-safe photo URLs for a vehicle: manual gallery first, then feed images."""
+            urls = []
+            for p in it.get("photos") or []:
+                if p.get("full_path"):
+                    urls.append(f"{public_url}/api/images/{p['full_path']}?format=jpeg")
+            if not urls and it.get("photo_full_path"):
+                urls.append(f"{public_url}/api/images/{it['photo_full_path']}?format=jpeg")
+            for u in [it.get("primary_image")] + list(it.get("images") or []):
+                if u and str(u).startswith("http") and u not in urls:
+                    urls.append(u)
+            return urls
+
+        top = items[:3]
+        # "Specific" = exactly one of the candidates is named in the message (model / trim / stock #).
+        # A comparison ("Tacoma or the F-150?") names two, so each gets one cover photo instead.
+        def _name_hits(it):
+            a = it.get("attributes") or {}
+            blob = f"{it.get('name', '')} {a.get('model', '')} {a.get('trim', '')} {a.get('stock_number', '')}".lower()
+            return sum(1 for t in set(tokens) if t in blob)
+        named = [it for it in top if _name_hits(it) > 0]
+        specific = len(top) == 1 or len(named) == 1
+        if specific:
+            media = _photos(named[0] if named else top[0])[:3]
+        else:
+            media = []
+        if not media:
+            media = [u for it in top for u in _photos(it)[:1]][:3]
+
+        lines = []
+        for it in top:
             a = it.get("attributes") or {}
             bits = [it.get("name", "")]
             if a.get("color"):
@@ -140,15 +170,6 @@ async def _search_inventory_context(db, user_id: str, message: str):
             if a.get("stock_number"):
                 bits.append(f"Stock #{a['stock_number']}")
             lines.append(" — ".join(str(b) for b in bits if b))
-            # Attach the top matching vehicle's photo so Jessi can text the exact car.
-            # Stored as WebP; carriers only take JPEG/PNG/GIF, so ask for the JPEG rendition.
-            if not media:
-                if it.get("photo_full_path"):
-                    media.append(f"{public_url}/api/images/{it['photo_full_path']}?format=jpeg")
-                elif it.get("photo_url"):
-                    pu = it["photo_url"]
-                    pu = pu if pu.startswith("http") else f"{public_url}{pu}"
-                    media.append(f"{pu}{'&' if '?' in pu else '?'}format=jpeg" if "/api/images/" in pu and "format=" not in pu else pu)
         return "\n".join(f"• {l}" for l in lines), media
     except Exception as e:
         logger.debug(f"[AIReply] Inventory search failed: {e}")

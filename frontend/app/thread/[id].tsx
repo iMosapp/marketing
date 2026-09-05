@@ -765,6 +765,7 @@ function ThreadScreen() {
   // appear instantly without closing and reopening the thread.
   // Also uses the WebSocket hook if available.
   const lastMessageCountRef = useRef(0);
+  const lastStatusSigRef = useRef('');
   useEffect(() => {
     if (loading) return; // Don't poll while initial load is in progress
     const convId = actualConversationId || id as string;
@@ -774,8 +775,11 @@ function ThreadScreen() {
       try {
         const data = await messagesAPI.getThread(convId);
         const incoming = data || [];
-        if (incoming.length !== lastMessageCountRef.current) {
+        // Delivery receipts / failures change a message's status without changing the count
+        const sig = incoming.slice(-10).map((m: any) => `${m.status || ''}${m.media_dropped ? 'm' : ''}`).join(',');
+        if (incoming.length !== lastMessageCountRef.current || sig !== lastStatusSigRef.current) {
           lastMessageCountRef.current = incoming.length;
+          lastStatusSigRef.current = sig;
           setMessages(incoming);
         }
         loadPendingDraft();
