@@ -1736,6 +1736,15 @@ async def startup_event():
         except Exception as e:
             logger.warning(f"[Startup] Doc sync failed: {e}")
     _aio2.create_task(_doc_sync())
+
+    # One-time: put past leads, texts and calls on the Activity feed (see utils/activity_log.py)
+    async def _activity_backfill():
+        try:
+            from utils.activity_log import run_backfill_once
+            await run_backfill_once(get_db())
+        except Exception as e:
+            logger.warning(f"[Startup] Activity backfill failed: {e}")
+    _aio2.create_task(_activity_backfill())
     # Removes any accidentally-stored test prompts from the ai_clone_prompts collection
     try:
         db = get_db()

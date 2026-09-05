@@ -176,6 +176,14 @@ async def _run_attempt(db, job: dict):
     }
     await db[COLL].update_one({"_id": job["_id"], "status": "active"}, update)
     logger.info(f"[LeadCall] Attempt {idx + 1}/{len(job['attempts'])} fired for job {job_id}: {[(p['user_id'], p['status']) for p in placed]}")
+    # Activity feed: each rep that was rung sees the attempt on the lead's timeline
+    from utils.activity_log import log_activity
+    lead_name = (job.get("lead") or {}).get("name") or "New lead"
+    for p in placed:
+        if p.get("status") == "ringing" and job.get("contact_id"):
+            await log_activity(db, user_id=p["user_id"], contact_id=job["contact_id"], event_type="lead_call_attempt",
+                               description=f"Attempt {idx + 1} of {len(job['attempts'])} · {job.get('source_name', 'Lead')} · {lead_name}",
+                               ref=p.get("call_sid"), metadata={"job_id": job_id, "attempt": idx + 1})
     if is_last:
         asyncio.create_task(_notify_exhausted(job))
 
@@ -259,10 +267,13 @@ async def _apply_claim_to_conversation(db, job: dict, user_id: str, via: str):
                   "claimed_at": now.isoformat(), "claim_source": via, "updated_at": now.isoformat()}},
     )
     if job.get("contact_id"):
-        await db.contacts.update_one(
+        prev = await db.contacts.find_one_and_update(
             {"_id": ObjectId(job["contact_id"])},
             {"$set": {"user_id": user_id, "claimed_by": user_id, "claimed_at": now.isoformat(), "updated_at": now.isoformat()}},
         )
+        from utils.activity_log import on_lead_claimed
+        await on_lead_claimed(db, contact_id=job["contact_id"], user_id=user_id, via=via,
+                              previous_owner=str((prev or {}).get("user_id") or ""))
 
 
 async def _hangup_other_calls(job: dict, keep_user_id: str):

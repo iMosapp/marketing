@@ -1157,6 +1157,10 @@ async def approve_ai_reply(queue_id: str, request: Request):
         "timestamp":       now,
         "status":          "sent" if not result.get("mock") else "sent_mock",
     })
+    from utils.activity_log import log_activity
+    await log_activity(db, user_id=str(item.get("assigned_user_id") or user_id or ""), contact_id=str(item["contact_id"]),
+                       event_type="ai_reply_sent", description=body, channel="sms",
+                       ref=result.get("message_sid") or result.get("sid"), metadata={"approved_by": user_id})
 
     # Rep approved the draft — the exchange is handled, so leave the Waiting queue
     # and dismiss any lingering alerts. Jessi stays on and keeps the conversation.

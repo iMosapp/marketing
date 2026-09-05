@@ -718,7 +718,7 @@ async def claim_lead(conversation_id: str, user_id: str, request: Request):
     
     # Also update the contact to be owned by this user so it appears in their contacts
     if conversation.get("contact_id"):
-        await db.contacts.update_one(
+        prev_contact = await db.contacts.find_one_and_update(
             {"_id": ObjectId(conversation["contact_id"])},
             {"$set": {
                 "user_id": user_id,
@@ -727,6 +727,9 @@ async def claim_lead(conversation_id: str, user_id: str, request: Request):
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }}
         )
+        from utils.activity_log import on_lead_claimed
+        await on_lead_claimed(db, contact_id=str(conversation["contact_id"]), user_id=user_id, via="app",
+                              previous_owner=str((prev_contact or {}).get("user_id") or ""))
     
     # Update lead source weighted counts if applicable
     if source and source.get("assignment_method") == "weighted_round_robin":
@@ -925,8 +928,11 @@ async def claim_and_call(conversation_id: str, user_id: str, request: Request):
                   "claimed_at": datetime.now(timezone.utc), "claim_source": "app"}}
     )
     if conv.get("contact_id") and ObjectId.is_valid(str(conv["contact_id"])):
-        await db.contacts.update_one({"_id": ObjectId(conv["contact_id"])},
+        prev_contact = await db.contacts.find_one_and_update({"_id": ObjectId(conv["contact_id"])},
                                      {"$set": {"user_id": user_id, "claimed_by": user_id, "updated_at": datetime.now(timezone.utc).isoformat()}})
+        from utils.activity_log import on_lead_claimed
+        await on_lead_claimed(db, contact_id=str(conv["contact_id"]), user_id=user_id, via="app",
+                              previous_owner=str((prev_contact or {}).get("user_id") or ""), note="Claimed and called from the app")
     from services.lead_call_engine import mark_claimed
     await mark_claimed(conversation_id, user_id, via="app")
 

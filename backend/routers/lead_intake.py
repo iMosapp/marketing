@@ -726,6 +726,16 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         {"$set": {"conversation_id": conv_id}}
     )
 
+    # Activity feed: the lead itself is the first touch (owner = assigned rep, else the store queue;
+    # on_lead_claimed moves store-owned history to whoever claims it)
+    from utils.activity_log import log_activity
+    await log_activity(
+        db, user_id=assigned_user_id or store_id or "", contact_id=contact_id,
+        event_type="returning_lead" if not is_new_contact else "new_lead",
+        description=" · ".join(filter(None, [source.get("name", ""), lead_doc["vehicle_interest"] or normalized.get("comments", "")[:80] or "New inquiry"])),
+        metadata={"lead_id": lead_id, "conversation_id": conv_id, "source_id": str(source.get("_id", ""))},
+    )
+
     # Increment source lead count
     if source.get("_id"):
         await db.lead_sources.update_one(
@@ -840,6 +850,7 @@ async def process_queued_leads():
         try:
             phone   = lead.get("phone", "")
             message = lead.get("draft_message", "")
+            rep_uid, result = None, {}
 
             if phone and message:
                 from services.twilio_service import send_sms, TWILIO_ENABLED
@@ -887,6 +898,14 @@ async def process_queued_leads():
                     )
                 except Exception:
                     pass
+            if lead.get("contact_id"):
+                from utils.activity_log import log_activity, owner_for_contact
+                await log_activity(
+                    db, user_id=await owner_for_contact(db, lead["contact_id"], rep_uid or lead.get("store_id") or ""),
+                    contact_id=lead["contact_id"], event_type="auto_text_sent", description=message, channel="sms",
+                    ref=result.get("message_sid") if not mocked else None,
+                    metadata={"kind": "ai_first_message", "mock": mocked},
+                )
 
             logger.info(f"[LeadIntake] Sent {'(MOCK) ' if mocked else ''}to {phone}: {message[:60]}…")
 
@@ -2482,6 +2501,12 @@ async def _send_intake_sms(db, conv_id: str, to_phone: str, from_number: str, bo
             "timestamp":       now,
         })
         await db.conversations.update_one({"_id": ObjectId(conv_id)}, {"$set": {"last_message_at": now}})
+        from utils.activity_log import log_activity, contact_for_conversation, owner_for_contact
+        contact_id, conv_owner = await contact_for_conversation(db, conv_id)
+        if contact_id:
+            await log_activity(db, user_id=await owner_for_contact(db, contact_id, conv_owner), contact_id=contact_id,
+                               event_type="auto_text_sent", description=body, channel="sms", ref=result.get("message_sid"),
+                               metadata={"kind": "intake_text", "mock": bool(result.get("mock"))})
         logger.info(f"[IntakeWorkflow] Intake text sent to {to_phone}")
     else:
         logger.warning(f"[IntakeWorkflow] Intake text send failed: {result.get('error')}")

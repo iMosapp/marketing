@@ -65,6 +65,11 @@ async def lead_call_claim(request: Request, Digits: str = Form(default=""), Call
         "content": f"Claimed by phone and called {job['customer_phone']}", "call_status": "placed",
         "timestamp": datetime.now(timezone.utc),
     })
+    if job.get("contact_id"):
+        from utils.activity_log import log_activity
+        await log_activity(db, user_id=user_id, contact_id=job["contact_id"], event_type="lead_call_connected",
+                           description=f"Pressed 1 and got bridged to {job['customer_phone']}", ref=f"{CallSid}:bridge",
+                           metadata={"job_id": str(job["_id"])})
     logger.info(f"[LeadCall] {user_id} claimed job {job['_id']} by phone; bridging to {job['customer_phone']}")
     return _xml(eng.twiml_claimed_and_bridge(job, caller_id))
 

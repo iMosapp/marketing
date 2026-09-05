@@ -297,7 +297,7 @@ async def claim_chat_lead(conversation_id: str, user_id: str):
     # Also reassign the contact to the claimer
     contact_id = conv.get("contact_id")
     if contact_id:
-        await db.contacts.update_one(
+        prev_contact = await db.contacts.find_one_and_update(
             {"_id": ObjectId(contact_id)},
             {"$set": {
                 "user_id": user_id,
@@ -305,6 +305,9 @@ async def claim_chat_lead(conversation_id: str, user_id: str):
                 "claimed_at": datetime.now(timezone.utc),
             }}
         )
+        from utils.activity_log import on_lead_claimed
+        await on_lead_claimed(db, contact_id=str(contact_id), user_id=user_id, via="chat",
+                              previous_owner=str((prev_contact or {}).get("user_id") or ""))
 
     return {"success": True, "message": "Lead claimed successfully", "claimed_by": user_id}
 

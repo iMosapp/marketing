@@ -165,7 +165,7 @@ async def get_master_feed(user_id: str, limit: int = 25, skip: int = 0):
     }
     MILESTONE_EVENTS = {
         "new_contact_added", "campaign_enrolled", "review_submitted",
-        "referral_made",
+        "referral_made", "new_lead", "returning_lead", "lead_claimed", "lead_reassigned",
     }
 
     def classify_visual(evt_type, contact_info):
@@ -197,7 +197,7 @@ async def get_master_feed(user_id: str, limit: int = 25, skip: int = 0):
             "event_type": evt_type,
             "visual_type": visual_type,
             "title": derived_title,
-            "description": evt.get("description", ""),
+            "description": evt.get("description") or evt.get("content_preview") or "",
             "icon": evt.get("icon", "flag"),
             "color": evt.get("color", "#8E8E93"),
             "timestamp": evt.get("timestamp"),
@@ -613,6 +613,20 @@ async def log_contact_event(user_id: str, contact_id: str, event_data: dict):
     # Store the sharing channel if provided (e.g., sms, whatsapp, email, etc.)
     if event_data.get("channel"):
         event["channel"] = event_data["channel"]
+
+    # The send endpoints (/messages/twilio-send etc.) now log the touch themselves with a Twilio ref.
+    # Older app screens still POST the same event right after sending: fold those into the auto-logged row.
+    from datetime import timedelta as _td
+    auto = await db.contact_events.find_one_and_update(
+        {"contact_id": contact_id, "event_type": event["event_type"], "ref": {"$exists": True},
+         "timestamp": {"$gte": event["timestamp"] - _td(seconds=90)}},
+        {"$set": {k: v for k, v in event.items() if k in ("title", "icon", "color", "category", "channel")}},
+        sort=[("timestamp", -1)], return_document=True,
+    )
+    if auto:
+        auto.pop("_id", None)
+        auto["timestamp"] = _ts_iso(auto["timestamp"])
+        return auto
 
     await db.contact_events.insert_one(event)
     event.pop("_id", None)

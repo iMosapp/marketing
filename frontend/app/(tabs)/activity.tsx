@@ -54,10 +54,22 @@ const ENGAGEMENT_LABELS: Record<string, string> = {
 
 const MILESTONE_META: Record<string, { icon: string; color: string; label: string }> = {
   new_contact_added: { icon: 'person-add', color: '#007AFF', label: 'New Relationship Started' },
+  new_lead: { icon: 'flash', color: '#FF3B30', label: 'New Lead Arrived' },
+  returning_lead: { icon: 'refresh-circle', color: '#FF9500', label: 'Returning Lead' },
+  lead_claimed: { icon: 'hand-right', color: '#34C759', label: 'Lead Claimed' },
+  lead_reassigned: { icon: 'swap-horizontal', color: '#5AC8FA', label: 'Lead Handed to You' },
   campaign_enrolled: { icon: 'rocket', color: '#AF52DE', label: 'Campaign Launched' },
   review_submitted: { icon: 'star', color: '#FFD60A', label: 'Review Received' },
   referral_made: { icon: 'people', color: '#34C759', label: 'Referral Connection' },
 };
+
+// Touches whose text is worth a one-line preview under the label
+const PREVIEW_TYPES = new Set([
+  'sms_sent', 'personal_sms', 'mms_sent', 'auto_text_sent', 'ai_reply_sent', 'customer_reply', 'campaign_step_sent',
+  'just_tried_text', 'lead_call_attempt', 'lead_call_connected', 'outbound_call', 'inbound_call', 'call_placed',
+  'call_voicemail', 'call_no_answer', 'call_busy', 'lead_released', 'new_lead', 'returning_lead', 'lead_claimed', 'lead_reassigned',
+  'task_created', 'task_completed', 'note_updated', 'voice_note',
+]);
 
 const EVENT_ICON: Record<string, string> = {
   digital_card_viewed: 'card',
@@ -134,6 +146,9 @@ const SingleEventCard = ({ item, colors, router }: any) => {
             <Text style={{ fontWeight: '700' }}>{c.name || 'Customer'}</Text>
             {' '}<Text style={{ color: colors.textSecondary }}>{label}</Text>
           </Text>
+          {PREVIEW_TYPES.has(item.event_type) && item.description ? (
+            <Text style={{ fontSize: 13, color: colors.textTertiary, marginTop: 2 }} numberOfLines={1} data-testid="feed-single-preview">{item.description}</Text>
+          ) : null}
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 3 }}>
             <Ionicons name={getEventIcon(item) as any} size={13} color={getEventColor(item)} />
             <Text style={{ fontSize: 12, color: colors.textTertiary, marginLeft: 5 }}>{formatFeedTime(item.timestamp)}</Text>
@@ -184,11 +199,16 @@ const GroupedContactCard = ({ group, colors, router }: any) => {
           const isLast = idx === group.events.length - 1;
 
           return (
-            <View key={`tp-${idx}`} style={[s.touchRow, !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]}>
+            <View key={`tp-${idx}`} style={[s.touchRow, !isLast && { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }]} data-testid={`feed-touch-${evt.event_type}`}>
               <View style={[s.touchDot, { backgroundColor: color + '18' }]}>
                 <Ionicons name={icon as any} size={14} color={color} />
               </View>
-              <Text style={[s.touchLabel, { color: colors.textSecondary }]} numberOfLines={1}>{label}</Text>
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text style={[s.touchLabel, { color: colors.textSecondary, marginLeft: 0 }]} numberOfLines={1}>{label}</Text>
+                {PREVIEW_TYPES.has(evt.event_type) && evt.description ? (
+                  <Text style={{ fontSize: 12, color: colors.textTertiary, marginTop: 1 }} numberOfLines={1} data-testid="feed-touch-preview">{evt.description}</Text>
+                ) : null}
+              </View>
               <Text style={[s.touchTime, { color: colors.textTertiary }]}>{formatFeedTime(evt.timestamp)}</Text>
             </View>
           );
@@ -372,7 +392,7 @@ export default function ActivityTab() {
             </TouchableOpacity>
           ) : feed.length > 0 ? (
             <Text style={{ textAlign: 'center', color: colors.textTertiary, fontSize: 13, paddingVertical: 20 }}>
-              You've reached the beginning
+              You&apos;ve reached the beginning
             </Text>
           ) : null
         }
@@ -407,7 +427,7 @@ const s = StyleSheet.create({
   touchList: { marginHorizontal: 14, marginBottom: 10, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: 4 },
   touchRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
   touchDot: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  touchLabel: { flex: 1, fontSize: 13, marginLeft: 10 },
+  touchLabel: { fontSize: 13, marginLeft: 10 },
   touchTime: { fontSize: 12, marginLeft: 8 },
 
   // Milestone Card (standalone)

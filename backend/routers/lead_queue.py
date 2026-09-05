@@ -374,6 +374,10 @@ async def reassign_lead(user_id: str, conv_id: str, body: ReassignBody):
     if conv.get("contact_id") and ObjectId.is_valid(str(conv["contact_id"])):
         await db.contacts.update_one({"_id": ObjectId(conv["contact_id"])},
                                      {"$set": {"user_id": body.to_user_id, "claimed_by": body.to_user_id, "updated_at": now.isoformat()}})
+        from utils.activity_log import on_lead_claimed
+        await on_lead_claimed(db, contact_id=str(conv["contact_id"]), user_id=body.to_user_id, via="reassigned",
+                              previous_owner=prev_id, event_type="lead_reassigned",
+                              note=f"Handed over by {(me.get('name') or 'a manager').split()[0]}" + (f": {body.note.strip()[:120]}" if (body.note or '').strip() else ""))
     try:
         from services.lead_call_engine import mark_claimed
         await mark_claimed(conv_id, body.to_user_id, via="reassigned")
@@ -424,6 +428,10 @@ async def release_to_queue(db, conv: dict, actor_id: Optional[str], reason: str,
     if conv.get("contact_id") and ObjectId.is_valid(str(conv["contact_id"])) and store_id:
         await db.contacts.update_one({"_id": ObjectId(conv["contact_id"])},
                                      {"$set": {"user_id": store_id, "claimed_by": None, "released_from": prev_id or None, "updated_at": now.isoformat()}})
+        if prev_id:
+            from utils.activity_log import log_activity
+            await log_activity(db, user_id=prev_id, contact_id=str(conv["contact_id"]), event_type="lead_released",
+                               description=f"Released by {who}" + (f" ({reason})" if reason else "") + (f": {note}" if note else ""))
     await _system_message(db, conv_id, f"Released back to the lead queue by {who}" + (f" ({reason})" if reason else "") + (f' · Note for the next rep: "{note}"' if note else ""))
     lead_name = conv.get("contact_name") or "A lead"
     src = await db.lead_sources.find_one({"_id": ObjectId(conv["lead_source_id"])}) if ObjectId.is_valid(str(conv.get("lead_source_id") or "")) else None

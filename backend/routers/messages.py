@@ -777,6 +777,12 @@ async def send_via_twilio(request: Request):
         "media_urls": media_urls,
         "timestamp": now,
     })
+    from utils.activity_log import log_activity, contact_for_conversation
+    evt_contact = contact_id or (await contact_for_conversation(db, conv_id))[0]
+    if evt_contact:
+        await log_activity(db, user_id=user_id, contact_id=evt_contact,
+                           event_type=event_type if event_type != "personal_sms" or not media_urls else "mms_sent",
+                           description=body, channel="sms", ref=result.get("message_sid"), metadata={"has_media": bool(media_urls)})
     return {"success": True, "message_sid": result.get("message_sid"), "mock": result.get("mock", False), "conversation_id": conv_id}
 
 
@@ -938,6 +944,12 @@ async def send_mms_message(
     )
     
     await increment_user_stat(user_id, "messages_sent")
+    if sms_result.get('success'):
+        from utils.activity_log import log_activity, contact_for_conversation
+        mms_contact = conv.get("contact_id") or (await contact_for_conversation(db, actual_conv_id))[0]
+        if mms_contact:
+            await log_activity(db, user_id=user_id, contact_id=str(mms_contact), event_type="mms_sent",
+                               description=content or "Photo", channel="sms", ref=sms_result.get("message_sid"))
     
     # Return with actual conversation ID so frontend can update
     message['conversation_id'] = actual_conv_id
