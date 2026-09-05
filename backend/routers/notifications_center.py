@@ -40,6 +40,7 @@ ACTION_TYPES = {
     "appointment_extracted":      ("today", "Confirm {first}'s appointment",    "Review",   "calendar"),
     "task_reminder":              ("today", "{title}",                          "Open",     "alarm"),
     "manager_nudge":              ("today", "{title}",                          "Open",     "megaphone"),
+    "inventory_feed_issue":       ("today", "{title}",                          "Fix",      "cloud-offline"),
 }
 BUCKETS = ("now", "today", "later")
 # legacy category (older app builds filter on it)
@@ -107,6 +108,8 @@ def _notif_link(n: dict) -> str | None:
         return f"/contact/{contact_id}" if contact_id else "/dates-calendar"
     if ntype == "manager_nudge":
         return "/touchpoints"
+    if n.get("link"):
+        return n["link"]
     if ntype == "engagement_signal" and conversation_id:
         return f"/thread/{conversation_id}"
     if contact_id:

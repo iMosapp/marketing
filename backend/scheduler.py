@@ -1805,6 +1805,13 @@ async def expire_stale_waiting_flags():
     logger.info(f"[WaitingExpire] Quietly cleared {len(ids)} stale waiting flags (>3 days)")
 
 
+async def run_inventory_feeds():
+    """Hourly: pull every enabled dealer inventory feed."""
+    from routers.database import get_db
+    from services.inventory_feed import run_all_feeds
+    return await run_all_feeds(get_db())
+
+
 def start_scheduler():
     """Register jobs and start the APScheduler."""
     if scheduler.running:
@@ -1827,6 +1834,15 @@ def start_scheduler():
         id="daily_lifecycle_scan",
         replace_existing=True,
         misfire_grace_time=3600,
+    )
+
+    # Hourly at :20 - pull dealer inventory feeds (URL / SFTP), only re-imports when the file changed
+    scheduler.add_job(
+        safe_job(run_inventory_feeds),
+        CronTrigger(minute=20),
+        id="hourly_inventory_feeds",
+        replace_existing=True,
+        misfire_grace_time=1800,
     )
 
     # Daily at 7 AM UTC  - send scheduled reports

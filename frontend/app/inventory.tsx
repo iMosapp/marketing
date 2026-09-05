@@ -174,6 +174,16 @@ export default function InventoryScreen() {
           <Ionicons name="chevron-back" size={26} color={colors.text} />
         </TouchableOpacity>
         <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, flex: 1 }} numberOfLines={1}>Inventory</Text>
+        {['store_manager', 'org_admin', 'super_admin', 'admin'].includes(user?.role || '') && (
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.card, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12 }}
+            onPress={() => router.push('/admin/inventory-feed' as any)}
+            data-testid="inventory-feed-btn"
+          >
+            <Ionicons name="cloud-download-outline" size={16} color={ACCENT} />
+            <Text style={{ fontSize: 13, fontWeight: '600', color: ACCENT }}>Feed</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.card, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12 }}
           onPress={handleCSVUpload}

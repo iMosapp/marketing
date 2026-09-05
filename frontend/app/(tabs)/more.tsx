@@ -396,6 +396,7 @@ export default function MoreScreen() {
     ];
     if (isAdmin) {
       manageItems.push(
+        { icon: 'cloud-download', title: 'Inventory Feed', subtitle: 'HomeNet, vAuto or catalog link, pulled hourly', onPress: () => router.push('/admin/inventory-feed' as any), color: '#32ADE6' },
         { icon: 'star-outline', title: 'Review Links', subtitle: 'Google, Facebook and Yelp links', onPress: () => router.push('/settings/review-links'), color: '#FFD60A' },
       );
     }

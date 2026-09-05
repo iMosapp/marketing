@@ -168,7 +168,7 @@ async def enforce_user_ownership(request: Request, call_next):
     PROTECTED_PREFIXES = (
         "/api/contacts/", "/api/tasks/", "/api/campaigns/", "/api/voice-notes/",
         "/api/messages/conversations/", "/api/tags/", "/api/templates/",
-        "/api/home/", "/api/activity/", "/api/search/", "/api/notification-center/",
+        "/api/home/", "/api/activity/", "/api/search/", "/api/notification-center/", "/api/inventory-feeds/",
         "/api/reports/", "/api/push/preferences/", "/api/push/subscribe-native/",
         "/api/push/status/", "/api/push/diagnose/", "/api/push/morning-brief/", "/api/leads/queue/", "/api/users/", "/api/engagement-signals/",
         "/api/ai-outreach/", "/api/broadcast/", "/api/bug-reports/",
@@ -693,6 +693,8 @@ from routers import bug_reports
 api_router.include_router(bug_reports.router)
 from routers import inventory as inventory_mgmt
 api_router.include_router(inventory_mgmt.router)
+from routers import inventory_feeds
+api_router.include_router(inventory_feeds.router)
 api_router.include_router(wallet_pass.router)
 
 # ============= WEBSOCKET ENDPOINT =============

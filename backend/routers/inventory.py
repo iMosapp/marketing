@@ -3,10 +3,7 @@ Inventory Management Router — user-facing CRUD + CSV import for store inventor
 Feeds the same db.inventory collection as the HomeNet-compatible webhook API
 (/api/webhooks/inventory/*), so a live feed can plug in later with zero rework.
 """
-import csv
-import io
 import logging
-import uuid
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Body, UploadFile, File
 from bson import ObjectId
@@ -16,7 +13,7 @@ from routers.database import get_db
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/inventory", tags=["Inventory"])
 
-ATTR_FIELDS = ("year", "make", "model", "trim", "body_type", "color", "mileage", "stock_number", "vin")
+from services.inventory_feed import ATTR_FIELDS, build_item as _build_item, parse_inventory_csv  # shared with automatic feeds
 
 
 def _serialize(item: dict) -> dict:
@@ -133,44 +130,6 @@ async def send_missing_photo_reminders() -> dict:
 
     logger.info(f"[PhotoReminder] {notified} admins notified across {len(by_scope)} scopes")
     return {"notified": notified, "scopes": len(by_scope)}
-
-
-def _build_item(user_id: str, store_id: str, data: dict, source: str) -> dict:
-    attributes = {}
-    for f in ATTR_FIELDS:
-        v = data.get(f)
-        if v not in (None, ""):
-            attributes[f] = str(v).strip()
-    name = (data.get("name") or "").strip()
-    if not name:
-        name = " ".join(str(attributes.get(f, "")).strip() for f in ("year", "make", "model", "trim") if attributes.get(f)).strip()
-    if not name:
-        return None
-    price = None
-    raw_price = data.get("price")
-    if raw_price not in (None, ""):
-        try:
-            price = float(str(raw_price).replace("$", "").replace(",", "").strip())
-        except Exception:
-            price = None
-    now = datetime.now(timezone.utc)
-    return {
-        "external_id": f"{source}-{uuid.uuid4().hex[:12]}",
-        "name": name,
-        "category": "vehicle",
-        "status": (data.get("status") or "available").strip().lower() or "available",
-        "price": price,
-        "currency": "USD",
-        "store_id": store_id,
-        "created_by_user_id": user_id,
-        "description": (data.get("description") or "").strip(),
-        "attributes": attributes,
-        "tags": [],
-        "is_visible": True,
-        "source_system": source,
-        "created_at": now,
-        "updated_at": now,
-    }
 
 
 @router.post("/{user_id}")
@@ -300,24 +259,6 @@ async def set_inventory_cover(user_id: str, item_id: str, index: int):
     return {"success": True, "photos": photos}
 
 
-CSV_HEADER_ALIASES = {
-    "year": "year", "yr": "year",
-    "make": "make", "manufacturer": "make",
-    "model": "model",
-    "trim": "trim", "series": "trim",
-    "body": "body_type", "body type": "body_type", "body_type": "body_type", "body style": "body_type", "body_style": "body_type",
-    "bodystyle": "body_type", "vehicle type": "body_type", "type": "body_type",
-    "color": "color", "colour": "color", "exterior color": "color", "ext color": "color", "exterior": "color",
-    "mileage": "mileage", "miles": "mileage", "odometer": "mileage",
-    "price": "price", "list price": "price", "selling price": "price", "asking price": "price", "internet price": "price",
-    "stock": "stock_number", "stock#": "stock_number", "stock #": "stock_number", "stock number": "stock_number", "stock_number": "stock_number", "stocknumber": "stock_number",
-    "vin": "vin",
-    "status": "status",
-    "name": "name", "title": "name", "vehicle": "name",
-    "description": "description", "desc": "description", "notes": "description",
-}
-
-
 @router.post("/{user_id}/csv")
 async def import_inventory_csv(user_id: str, file: UploadFile = File(...)):
     db = get_db()
@@ -332,22 +273,12 @@ async def import_inventory_csv(user_id: str, file: UploadFile = File(...)):
     except Exception:
         text = raw.decode("latin-1", errors="ignore")
 
-    reader = csv.DictReader(io.StringIO(text))
-    if not reader.fieldnames:
-        raise HTTPException(status_code=400, detail="CSV has no header row")
-
-    header_map = {}
-    for h in reader.fieldnames:
-        key = (h or "").strip().lower()
-        if key in CSV_HEADER_ALIASES:
-            header_map[h] = CSV_HEADER_ALIASES[key]
-
-    if not header_map:
+    rows, fields, _ = parse_inventory_csv(text)
+    if not fields:
         raise HTTPException(status_code=400, detail="No recognized columns. Expected headers like: year, make, model, price, color, mileage, stock, vin")
 
     docs, skipped = [], 0
-    for row in reader:
-        data = {header_map[h]: (row.get(h) or "").strip() for h in header_map}
+    for data in rows:
         item = _build_item(user_id, store_id, data, "csv")
         if item:
             docs.append(item)
