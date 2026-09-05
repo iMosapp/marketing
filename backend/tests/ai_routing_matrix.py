@@ -158,6 +158,20 @@ async def main():
     q = await db.ai_reply_queue.find_one({"_id": _pending["_id"]})
     check("rep replied cancels AI", {"status": q.get("status"), "reason": q.get("cancel_reason")}, status="cancelled", reason="rep_replied")
 
+    # 14 Shopping asks (body type / price) hit live inventory owned by this rep
+    inv = await db.inventory.insert_many([
+        {"name": "2024 Toyota Tacoma TRD Off-Road", "status": "available", "price": 42995.0, "created_by_user_id": uid,
+         "attributes": {"year": "2024", "make": "Toyota", "model": "Tacoma", "trim": "TRD Off-Road", "color": "Red"}, "created_at": datetime.utcnow()},
+        {"name": "2024 Honda Civic Sport", "status": "available", "price": 28995.0, "created_by_user_id": uid,
+         "attributes": {"year": "2024", "make": "Honda", "model": "Civic", "trim": "Sport"}, "created_at": datetime.utcnow()},
+    ])
+    await reset(); check("trucks under budget = live answer", await fire("Any trucks under $50k?"), outcome="auto", paused=False, waiting=True)
+    await reset(); check("over budget = closest, still answers", await fire("Any trucks under $20k?"), outcome="auto", paused=False, waiting=True)
+    await reset(); check("hybrid SUV w/ none in stock = pause", await fire("Got any hybrid SUVs?"), outcome="pause", paused=True, waiting=True)
+    await reset(); check("'love my truck' stays auto", await fire("I love my truck, thanks!"), outcome="auto", paused=False, waiting=False)
+    await reset(); check("sedan question = live answer", await fire("What sedans do you have?"), outcome="auto", waiting=True)
+    await db.inventory.delete_many({"_id": {"$in": inv.inserted_ids}})
+
     # cleanup
     await db.ai_reply_queue.delete_many({"conversation_id": conv})
     await db.messages.delete_many({"conversation_id": conv})

@@ -25,8 +25,7 @@ import { useThemeStore } from '../../store/themeStore';
 import { showSimpleAlert, showAlert } from '../../services/alert';
 import api from '../../services/api';
 import { Image as ExpoImage } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
-import { resolveUserPhotoUrlHiRes, resolvePhotoUrl } from '../../utils/photoUrl';
+import { resolveUserPhotoUrlHiRes } from '../../utils/photoUrl';
 import { NotificationBell } from '../../components/notifications/NotificationBell';
 import { BRAND } from '../../config/brand';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
@@ -968,95 +967,9 @@ export default function MoreScreen() {
           );
         })()}
 
-        {/* Profile Card — cover photo background, bell only */}
-        <View style={styles.profileCardContainer}>
-          <TouchableOpacity
-            style={styles.profileCard}
-            onPress={() => router.push('/my-profile' as any)}
-            activeOpacity={0.9}
-            data-testid="profile-card"
-          >
-            {/* Cover photo or gold gradient fallback */}
-            {(user as any)?.cover_photo_url ? (
-              <ExpoImage
-                source={{ uri: resolvePhotoUrl((user as any).cover_photo_url) || '' }}
-                style={StyleSheet.absoluteFill}
-                contentFit="cover"
-                placeholder={null}
-              />
-            ) : (
-              <LinearGradient
-                colors={['#1a1200', '#2c1f00', '#3d2c00', '#C9A96225']}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                style={StyleSheet.absoluteFill}
-              />
-            )}
-            {/* Dark gradient so text is always readable */}
-            <LinearGradient
-              colors={['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.75)']}
-              style={StyleSheet.absoluteFill}
-            />
-
-            {/* Bell — top right */}
-            <View style={styles.profileCardBell}>
-              <NotificationBell />
-            </View>
-
-            {/* Profile photo + name row — pinned to bottom */}
-            <View style={styles.profileCardBottom}>
-              {/* Rounded-square avatar */}
-              {(user as any)?.photo_url ? (
-                <ExpoImage
-                  source={{ uri: resolveUserPhotoUrlHiRes(user as any) || '' }}
-                  style={styles.profileAvatarImage}
-                  contentFit="cover"
-                  placeholder={null}
-                />
-              ) : (
-                <View style={[styles.profileAvatar]}>
-                  <Text style={styles.profileAvatarText}>
-                    {user?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || '?'}
-                  </Text>
-                </View>
-              )}
-              <View style={{ flex: 1 }}>
-                <Text style={styles.profileName}>{user?.name || 'Guest'}</Text>
-                {(user as any)?.persona?.title || (user as any)?.title ? (
-                  <Text style={styles.profileTitle}>
-                    {(user as any)?.persona?.title || (user as any)?.title}
-                  </Text>
-                ) : null}
-                <Text style={styles.profileEmail}>{user?.email || ''}</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-          <View style={styles.profileCardHint}>
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity
-                style={[styles.editProfileBtn, { flex: 1, flexDirection: 'column', backgroundColor: '#C9A96218', borderColor: '#C9A962' }]}
-                onPress={() => router.push('/my-profile' as any)}
-                activeOpacity={0.8}
-                data-testid="edit-profile-hint-btn"
-              >
-                <Ionicons name="person" size={18} color="#C9A962" />
-                <Text style={[styles.editProfileBtnText, { fontSize: 13, textAlign: 'center', marginTop: 3 }]}>My Profile</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.editProfileBtn, { flex: 1, flexDirection: 'column', backgroundColor: '#C9A96218', borderColor: '#C9A962' }]}
-                onPress={() => router.push('/settings/virtual-assistant')}
-                activeOpacity={0.8}
-                data-testid="virtual-assistant-btn"
-              >
-                <Ionicons name="person-circle" size={18} color="#C9A962" />
-                <Text style={[styles.editProfileBtnText, { fontSize: 13, textAlign: 'center', marginTop: 3 }]}>My VA</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-        
-        {/* ── Hub Search — find anything instantly ── */}
-        <View style={styles.hubSearchWrap}>
-          <View style={[styles.hubSearchBar, { backgroundColor: colors.card, borderColor: hubQ ? '#C9A962' : colors.border }]}>
+        {/* ── Top: search first, bell beside it ── */}
+        <View style={styles.hubTopRow}>
+          <View style={[styles.hubSearchBar, { flex: 1, backgroundColor: colors.card, borderColor: hubQ ? '#C9A962' : colors.border }]}>
             <Ionicons name="search" size={17} color={hubQ ? '#C9A962' : colors.textSecondary} />
             <TextInput
               style={[styles.hubSearchInput, { color: colors.text }]}
@@ -1073,6 +986,64 @@ export default function MoreScreen() {
               </TouchableOpacity>
             )}
           </View>
+          <View style={[styles.hubBell, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <NotificationBell />
+          </View>
+        </View>
+
+        {/* ── Compact profile strip: who you are + the two things you touch most ── */}
+        <View style={[styles.profileStrip, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <TouchableOpacity
+            style={styles.profileStripIdentity}
+            onPress={() => router.push('/my-profile' as any)}
+            activeOpacity={0.8}
+            data-testid="profile-card"
+          >
+            {(user as any)?.photo_url ? (
+              <ExpoImage
+                source={{ uri: resolveUserPhotoUrlHiRes(user as any) || '' }}
+                style={styles.stripAvatar}
+                contentFit="cover"
+                placeholder={null}
+              />
+            ) : (
+              <View style={[styles.stripAvatar, { backgroundColor: '#C9A96222', alignItems: 'center', justifyContent: 'center' }]}>
+                <Text style={{ fontSize: 16, fontWeight: '800', color: '#C9A962' }}>
+                  {user?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || '?'}
+                </Text>
+              </View>
+            )}
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={[styles.stripName, { color: colors.text }]} numberOfLines={1}>{user?.name || 'Guest'}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                {(user as any)?.persona?.title || (user as any)?.title ? (
+                  <Text style={styles.stripTitle} numberOfLines={1}>
+                    {(user as any)?.persona?.title || (user as any)?.title}
+                  </Text>
+                ) : (
+                  <Text style={[styles.stripTitle, { color: colors.textTertiary }]} numberOfLines={1}>{user?.email || ''}</Text>
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.stripPill}
+            onPress={() => router.push('/my-profile' as any)}
+            activeOpacity={0.8}
+            data-testid="edit-profile-hint-btn"
+          >
+            <Ionicons name="person" size={14} color="#C9A962" />
+            <Text style={styles.stripPillText}>Profile</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.stripPill}
+            onPress={() => router.push('/settings/virtual-assistant')}
+            activeOpacity={0.8}
+            data-testid="virtual-assistant-btn"
+          >
+            <Ionicons name="person-circle" size={14} color="#C9A962" />
+            <Text style={styles.stripPillText}>My VA</Text>
+          </TouchableOpacity>
         </View>
 
         {/* ── Rep Preview banner / toggle ── */}
@@ -1092,11 +1063,11 @@ export default function MoreScreen() {
         {reallyAdmin && !repPreview && (
           <TouchableOpacity
             onPress={() => setRepPreview(true)}
-            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginHorizontal: 16, marginBottom: 8, paddingVertical: 8 }}
+            style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end', gap: 4, marginRight: 16, marginTop: -2, marginBottom: 2, paddingVertical: 4, paddingHorizontal: 6 }}
             data-testid="rep-preview-toggle"
           >
-            <Ionicons name="eye-outline" size={14} color={colors.textTertiary} />
-            <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textTertiary }}>View as Rep</Text>
+            <Ionicons name="eye-outline" size={12} color={colors.textTertiary} />
+            <Text style={{ fontSize: 11, fontWeight: '600', color: colors.textTertiary }}>View as Rep</Text>
           </TouchableOpacity>
         )}
 
@@ -1518,6 +1489,15 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   // ── Hub search + task grid (simplified hub) ──
   hubSearchWrap: { paddingHorizontal: 16, marginTop: 4, marginBottom: 4 },
+  hubTopRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, marginTop: 4, marginBottom: 10 },
+  hubBell: { width: 46, height: 46, borderRadius: 14, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  profileStrip: { flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, marginBottom: 6, padding: 10, borderRadius: 16, borderWidth: 1 },
+  profileStripIdentity: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, minWidth: 0 },
+  stripAvatar: { width: 44, height: 44, borderRadius: 12, borderWidth: 1.5, borderColor: '#C9A962' },
+  stripName: { fontSize: 16, fontWeight: '800' },
+  stripTitle: { fontSize: 11, fontWeight: '700', color: '#C9A962', letterSpacing: 0.6, textTransform: 'uppercase', marginTop: 1, flexShrink: 1 },
+  stripPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, height: 34, borderRadius: 17, backgroundColor: '#C9A96218', borderWidth: 1, borderColor: '#C9A96266' },
+  stripPillText: { fontSize: 12, fontWeight: '700', color: '#C9A962' },
   hubSearchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1.5 },
   hubSearchInput: { flex: 1, fontSize: 15, padding: 0 },
   taskGridLabel: { fontSize: 12, fontWeight: '700', color: '#C9A962', letterSpacing: 0.8, textTransform: 'uppercase', marginHorizontal: 16, marginTop: 14, marginBottom: 10 },

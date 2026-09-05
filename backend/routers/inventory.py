@@ -16,7 +16,7 @@ from routers.database import get_db
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/inventory", tags=["Inventory"])
 
-ATTR_FIELDS = ("year", "make", "model", "trim", "color", "mileage", "stock_number", "vin")
+ATTR_FIELDS = ("year", "make", "model", "trim", "body_type", "color", "mileage", "stock_number", "vin")
 
 
 def _serialize(item: dict) -> dict:
@@ -305,6 +305,8 @@ CSV_HEADER_ALIASES = {
     "make": "make", "manufacturer": "make",
     "model": "model",
     "trim": "trim", "series": "trim",
+    "body": "body_type", "body type": "body_type", "body_type": "body_type", "body style": "body_type", "body_style": "body_type",
+    "bodystyle": "body_type", "vehicle type": "body_type", "type": "body_type",
     "color": "color", "colour": "color", "exterior color": "color", "ext color": "color", "exterior": "color",
     "mileage": "mileage", "miles": "mileage", "odometer": "mileage",
     "price": "price", "list price": "price", "selling price": "price", "asking price": "price", "internet price": "price",

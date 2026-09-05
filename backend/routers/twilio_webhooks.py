@@ -1023,6 +1023,9 @@ async def message_status_callback(
         if result.modified_count > 0:
             logger.info(f"Updated message {MessageSid} status to {MessageStatus}")
 
+        if MessageStatus in ("delivered", "undelivered", "failed"):
+            await _record_send_receipt(db, MessageSid, MessageStatus, ErrorCode or "", ErrorMessage or "")
+
         if MessageStatus in ("failed", "undelivered"):
             await _handle_failed_outbound(db, MessageSid, From, ErrorCode or "", ErrorMessage or "")
         
@@ -1030,6 +1033,21 @@ async def message_status_callback(
         logger.error(f"Error updating message status: {str(e)}")
     
     return Response(content="OK", media_type="text/plain")
+
+
+async def _record_send_receipt(db, sid: str, status: str, code: str, error: str):
+    """Carrier receipt for a scheduled/broadcast send: stamp the pending-send row once and roll the
+    broadcast's delivered / undelivered counters (idempotent - Twilio may repeat callbacks)."""
+    final = "delivered" if status == "delivered" else "undelivered"
+    res = await db.campaign_pending_sends.find_one_and_update(
+        {"message_sid": sid, "delivery_status": {"$nin": ["delivered", "undelivered"]}},
+        {"$set": {"delivery_status": final, "delivery_error": (f"{code} {error}".strip() if final == "undelivered" else ""),
+                  "delivered_at": datetime.now(timezone.utc) if final == "delivered" else None}},
+        projection={"broadcast_id": 1},
+    )
+    if res and res.get("broadcast_id") and ObjectId.is_valid(str(res["broadcast_id"])):
+        await db.broadcasts.update_one({"_id": ObjectId(res["broadcast_id"])},
+                                       {"$inc": {"delivered_count" if final == "delivered" else "undelivered_count": 1}})
 
 
 MEDIA_ERROR_CODES = {"11200", "12300", "12400", "21620", "21623", "30008"}

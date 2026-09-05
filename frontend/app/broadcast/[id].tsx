@@ -39,6 +39,8 @@ interface Broadcast {
   recipient_count: number;
   sent_count: number;
   failed_count: number;
+  delivered_count?: number;
+  undelivered_count?: number;
   scheduled_at: string | null;
   sent_at: string | null;
   created_at: string;
@@ -58,6 +60,7 @@ const { showToast } = useToast();
   const [sending, setSending] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [recipients, setRecipients] = useState<any[]>([]);
+  const [deliverySummary, setDeliverySummary] = useState<{ delivered: number; accepted: number; undelivered: number; awaiting_receipt: number } | null>(null);
   const [loadingRecipients, setLoadingRecipients] = useState(false);
 
   const fetchRecipients = async () => {
@@ -66,6 +69,7 @@ const { showToast } = useToast();
     try {
       const res = await api.get(`/broadcast/${id}/recipients?user_id=${user._id}`);
       setRecipients(res.data.recipients || []);
+      setDeliverySummary(res.data.summary || null);
     } catch {}
     setLoadingRecipients(false);
   };
@@ -76,7 +80,7 @@ const { showToast } = useToast();
 
   useEffect(() => {
     fetchBroadcast();
-  }, [id]);
+  }, [id, user?._id]);
 
   const fetchBroadcast = async () => {
     if (!id || !user?._id) return;
@@ -285,15 +289,20 @@ const { showToast } = useToast();
                 <Text style={styles.statLabel}>Sent</Text>
               </View>
               <View style={styles.statDivider} />
+              <View style={styles.statItem} testID="stat-delivered" {...({ dataSet: { testid: 'stat-delivered' } } as any)}>
+                <Text style={[styles.statValue, { color: '#C9A962' }]}>{broadcast.delivered_count || 0}</Text>
+                <Text style={styles.statLabel}>Delivered</Text>
+              </View>
+              <View style={styles.statDivider} />
               <View style={styles.statItem}>
-                <Text style={[styles.statValue, { color: '#FF3B30' }]}>{broadcast.failed_count}</Text>
+                <Text style={[styles.statValue, { color: '#FF3B30' }]}>{(broadcast.failed_count || 0) + (broadcast.undelivered_count || 0)}</Text>
                 <Text style={styles.statLabel}>Failed</Text>
               </View>
             </>
           )}
         </View>
 
-        {/* Delivery Results — per-person status */}
+        {/* Delivery Results - per-person status */}
         {['sending', 'sent', 'failed'].includes(broadcast.status) && (
           <View style={styles.card} data-testid="delivery-results-card">
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -304,17 +313,37 @@ const { showToast } = useToast();
                 testID="refresh-results-btn"
                 {...({ dataSet: { testid: 'refresh-results-btn' } } as any)}
               >
-                <Ionicons name="refresh" size={18} color="#007AFF" />
+                <Ionicons name="refresh" size={18} color="#C9A962" />
               </Pressable>
             </View>
+            {deliverySummary && deliverySummary.accepted > 0 ? (
+              <View
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}
+                testID="delivery-summary"
+                {...({ dataSet: { testid: 'delivery-summary' } } as any)}
+              >
+                <Ionicons name="checkmark-done" size={18} color="#34C759" />
+                <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>
+                  {deliverySummary.delivered} of {deliverySummary.accepted} delivered
+                </Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary }}>
+                  {deliverySummary.undelivered > 0 ? `· ${deliverySummary.undelivered} bounced` : ''}
+                  {deliverySummary.awaiting_receipt > 0 ? `· ${deliverySummary.awaiting_receipt} waiting on carrier` : ''}
+                </Text>
+              </View>
+            ) : null}
             {loadingRecipients && recipients.length === 0 ? (
               <ActivityIndicator size="small" color="#C9A962" style={{ marginVertical: 16 }} />
             ) : recipients.length === 0 ? (
               <Text style={styles.statusSubtext}>No delivery records yet</Text>
             ) : (
               recipients.map((r: any, i: number) => {
-                const badge = r.status === 'sent'
-                  ? { label: 'Sent', color: '#34C759', icon: 'checkmark-circle' }
+                const badge = r.status === 'delivered'
+                  ? { label: 'Delivered', color: '#34C759', icon: 'checkmark-done-circle' }
+                  : r.status === 'sent'
+                  ? { label: 'Sent', color: '#8E8E93', icon: 'checkmark-circle' }
+                  : r.status === 'undelivered'
+                  ? { label: 'Not delivered', color: '#FF3B30', icon: 'alert-circle' }
                   : r.status === 'failed'
                   ? { label: 'Failed', color: '#FF3B30', icon: 'close-circle' }
                   : r.status === 'queued'
@@ -336,12 +365,12 @@ const { showToast } = useToast();
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>{r.name}</Text>
                       <Text style={{ fontSize: 12, color: colors.textSecondary }}>{r.phone}</Text>
-                      {r.status === 'failed' && r.error ? (
+                      {(r.status === 'failed' || r.status === 'undelivered') && r.error ? (
                         <Text style={{ fontSize: 12, color: '#FF3B30', marginTop: 2 }}>{r.error}</Text>
                       ) : null}
                       {r.status === 'queued' && r.deferred_reason ? (
                         <Text style={{ fontSize: 12, color: '#FF9500', marginTop: 2 }}>
-                          Held: {r.deferred_reason} — sends at 9 AM
+                          Held: {r.deferred_reason} - sends at 9 AM
                         </Text>
                       ) : null}
                     </View>

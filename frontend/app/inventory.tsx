@@ -17,7 +17,8 @@ import { showSimpleAlert, showConfirm } from '../services/alert';
 
 const ACCENT = '#32ADE6';
 
-const EMPTY_FORM = { year: '', make: '', model: '', trim: '', color: '', mileage: '', price: '', stock_number: '', vin: '', description: '' };
+const EMPTY_FORM = { year: '', make: '', model: '', trim: '', body_type: '', color: '', mileage: '', price: '', stock_number: '', vin: '', description: '' };
+const BODY_TYPES = ['Truck', 'SUV', 'Sedan', 'Van', 'Coupe', 'Convertible', 'Hatchback', 'Wagon'];
 
 export default function InventoryScreen() {
   const { colors } = useThemeStore();
@@ -268,7 +269,7 @@ export default function InventoryScreen() {
           ) : (
             items.map((item: any) => {
               const a = item.attributes || {};
-              const subBits = [a.color, a.mileage ? `${a.mileage} mi` : '', a.stock_number ? `Stock #${a.stock_number}` : ''].filter(Boolean);
+              const subBits = [a.body_type, a.color, a.mileage ? `${a.mileage} mi` : '', a.stock_number ? `Stock #${a.stock_number}` : ''].filter(Boolean);
               const sold = item.status === 'sold';
               return (
                 <View key={item._id} style={{ backgroundColor: colors.card, borderRadius: 12, padding: 14 }} data-testid={`inventory-item-${item._id}`}>
@@ -374,6 +375,26 @@ export default function InventoryScreen() {
                   ))}
                 </View>
               ))}
+              <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.8, marginBottom: 5 }}>BODY TYPE (OPTIONAL)</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 6 }}>
+                {BODY_TYPES.map(bt => {
+                  const on = form.body_type === bt;
+                  return (
+                    <TouchableOpacity
+                      key={bt}
+                      onPress={() => setForm(prev => ({ ...prev, body_type: on ? '' : bt }))}
+                      style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, backgroundColor: on ? ACCENT : colors.card, borderWidth: 1, borderColor: on ? ACCENT : colors.border }}
+                      testID={`inventory-body-${bt.toLowerCase()}`}
+                      {...({ dataSet: { testid: `inventory-body-${bt.toLowerCase()}` } } as any)}
+                    >
+                      <Text style={{ fontSize: 13, fontWeight: '600', color: on ? '#fff' : colors.text }}>{bt}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 12 }}>
+                Jessi uses this when a customer asks for "trucks" or "SUVs". Leave blank and she guesses from the model.
+              </Text>
               <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.8, marginBottom: 5 }}>VIN (OPTIONAL)</Text>
               <TextInput
                 style={{ backgroundColor: colors.card, borderRadius: 10, padding: 12, fontSize: 15, color: colors.text, marginBottom: 12 }}

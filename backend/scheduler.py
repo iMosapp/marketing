@@ -1058,6 +1058,7 @@ async def process_pending_campaign_steps():
                 channel = send_doc.get("channel", "sms")
                 delivery_mode = send_doc.get("delivery_mode", "auto")
                 campaign_ai_enabled = send_doc.get("ai_enabled", False)
+                sms_sid = None
 
                 # Mark send as processing immediately (prevents double-processing)
                 await db.campaign_pending_sends.update_one(
@@ -1182,6 +1183,8 @@ async def process_pending_campaign_steps():
                                 twilio_failed = True
                                 twilio_error = str(sms_result.get("error", "Twilio send failed"))
                                 logger.error(f"[Scheduler] Campaign SMS failed for step {current_step}: {twilio_error}")
+                            else:
+                                sms_sid = sms_result.get("message_sid") or sms_result.get("sid")
                         except Exception as sms_err:
                             twilio_failed = True
                             twilio_error = str(sms_err)
@@ -1268,7 +1271,9 @@ async def process_pending_campaign_steps():
                         "auto_sent": True, "campaign_id": send_doc.get("campaign_id"),
                         "campaign_step": current_step, "channel": channel,
                         "user_id": user_id, "contact_id": contact_id,
-                        "media_urls": media_urls,
+                        "media_urls": media_urls, "has_media": bool(media_urls),
+                        "twilio_sid": sms_sid, "status": "sent" if sms_sid else None,
+                        "broadcast_id": send_doc.get("broadcast_id"),
                     })
                     event_type = "email_sent" if channel == "email" else "sms_sent"
                     await db.contact_events.insert_one({
@@ -1356,9 +1361,13 @@ async def process_pending_campaign_steps():
                 # ── MARK SEND COMPLETE ──
                 is_broadcast_send = bool(send_doc.get("broadcast_id"))
                 final_status = "sent" if (delivery_mode == "automated" or is_broadcast_send) else "pending_user_action"
+                complete_set = {"status": final_status, "processed_at": now_naive}
+                if sms_sid:
+                    complete_set["message_sid"] = sms_sid
+                    complete_set["delivery_status"] = "sent"  # carrier receipt lands via /webhooks/twilio/status
                 await db.campaign_pending_sends.update_one(
                     {"_id": send_id},
-                    {"$set": {"status": final_status, "processed_at": now_naive}}
+                    {"$set": complete_set}
                 )
                 if is_broadcast_send:
                     await _update_broadcast_progress(db, send_doc["broadcast_id"], failed=False)

@@ -71,20 +71,13 @@ def get_human_delay(incoming_message: str = "") -> int:
 
 # ── Live inventory lookup for Jessi ──────────────────────────────────────────
 
-_INV_STOPWORDS = {
-    "the", "and", "you", "your", "have", "has", "does", "what", "which", "with",
-    "how", "much", "many", "any", "are", "was", "for", "can", "could", "would",
-    "come", "there", "that", "this", "one", "ones", "get", "got", "still", "about",
-    "price", "pricing", "cost", "stock", "available", "availability", "color",
-    "colour", "much", "like", "want", "looking", "interested", "info", "more",
-}
-
 
 async def _search_inventory_context(db, user_id: str, message: str):
-    """Search the store's live inventory for vehicles matching the customer's
-    message. Returns (bullet_list_str, media_urls) — ('' , []) if no matches."""
-    import re as _re
+    """Search the store's live inventory for vehicles matching the customer's message
+    (model words, body type, fuel, price / year / mileage bounds).
+    Returns (context_str, media_urls) - ('', []) if nothing fits."""
     import os as _os
+    from services import vehicle_search as vs
     try:
         user = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1})
         if not user:
@@ -93,39 +86,17 @@ async def _search_inventory_context(db, user_id: str, message: str):
         scope = {"store_id": str(sid)} if sid else {"$or": [
             {"created_by_user_id": user_id}, {"assigned_to_user_id": user_id}]}
 
-        raw_tokens = [w for w in _re.findall(r"[a-z0-9]+", (message or "").lower())
-                      if len(w) >= 3 and w not in _INV_STOPWORDS]
-        tokens = []
-        for t in raw_tokens[:8]:
-            tokens.append(t)
-            if t.endswith("s") and len(t) > 3:
-                tokens.append(t[:-1])  # "tacomas" should match "Tacoma"
-        if not tokens:
+        q = vs.parse_query(message)
+        if not q["tokens"] and not q["has_filters"]:
             return "", []
 
-        token_ors = []
-        for t in tokens:
-            rx = {"$regex": t, "$options": "i"}
-            token_ors += [
-                {"name": rx}, {"description": rx},
-                {"attributes.make": rx}, {"attributes.model": rx},
-                {"attributes.color": rx}, {"attributes.trim": rx},
-            ]
-        query = {
-            "status": "available", "is_visible": {"$ne": False},
-            "$and": [scope, {"$or": token_ors}],
-        }
-        items = await db.inventory.find(query).limit(12).to_list(12)
+        items = await db.inventory.find({"status": "available", "is_visible": {"$ne": False}, **scope}).limit(400).to_list(400)
         if not items:
             return "", []
+        matches, exact = vs.select_matches(items, q)
+        if not matches:
+            return "", []
 
-        def _hits(it):
-            blob = f"{it.get('name', '')} {it.get('description', '')} " + \
-                   " ".join(str(v) for v in (it.get("attributes") or {}).values())
-            blob = blob.lower()
-            return sum(1 for t in set(tokens) if t in blob)
-
-        items.sort(key=_hits, reverse=True)
         public_url = _os.environ.get("PUBLIC_FACING_URL", _os.environ.get("APP_URL", "https://app.imonsocial.com")).rstrip("/")
 
         def _photos(it):
@@ -141,36 +112,31 @@ async def _search_inventory_context(db, user_id: str, message: str):
                     urls.append(u)
             return urls
 
-        top = items[:3]
+        top = matches[:3]
+        tokens = q["tokens"]
         # "Specific" = exactly one of the candidates is named in the message (model / trim / stock #).
-        # A comparison ("Tacoma or the F-150?") names two, so each gets one cover photo instead.
+        # A comparison ("Tacoma or the F-150?") or a filter ask ("any trucks?") gets one cover photo each.
         def _name_hits(it):
             a = it.get("attributes") or {}
             blob = f"{it.get('name', '')} {a.get('model', '')} {a.get('trim', '')} {a.get('stock_number', '')}".lower()
             return sum(1 for t in set(tokens) if t in blob)
         named = [it for it in top if _name_hits(it) > 0]
-        specific = len(top) == 1 or len(named) == 1
-        if specific:
-            media = _photos(named[0] if named else top[0])[:3]
-        else:
-            media = []
+        specific = exact and (len(top) == 1 or len(named) == 1)
+        media = _photos(named[0] if named else top[0])[:3] if specific else []
         if not media:
             media = [u for it in top for u in _photos(it)[:1]][:3]
 
-        lines = []
-        for it in top:
-            a = it.get("attributes") or {}
-            bits = [it.get("name", "")]
-            if a.get("color"):
-                bits.append(str(a["color"]))
-            if it.get("price"):
-                bits.append(f"${it['price']:,.0f}")
-            if a.get("mileage"):
-                bits.append(f"{a['mileage']} miles")
-            if a.get("stock_number"):
-                bits.append(f"Stock #{a['stock_number']}")
-            lines.append(" — ".join(str(b) for b in bits if b))
-        return "\n".join(f"• {l}" for l in lines), media
+        lines = [f"• {vs.describe_vehicle(it)}" for it in top]
+        asked = vs.describe_filters(q)
+        if q["has_filters"]:
+            if exact:
+                header = f"Customer is asking for: {asked}. MATCHES ({len(matches)} in stock"
+                header += f", showing {len(top)}):" if len(matches) > len(top) else "):"
+            else:
+                header = (f"NO EXACT MATCH in stock for: {asked}. Closest options (be upfront about how they differ, "
+                          f"e.g. over budget or older):")
+            return header + "\n" + "\n".join(lines), media
+        return "\n".join(lines), media
     except Exception as e:
         logger.debug(f"[AIReply] Inventory search failed: {e}")
         return "", []
@@ -307,6 +273,14 @@ async def queue_ai_reply(
     # "I'm available Tuesday" / "are you available?" is about PEOPLE, not inventory.
     _fact_probe = _re_sched.sub(r"\b(i'?m|i am|we'?re|we are|are you|you|u|is anyone|anyone)\s+(available|free|open)\b", " ", msg_lower)
     is_fact_topic = (not is_ai_suspect) and _has_phrase(_fact_probe, FACT_SIGNALS)
+    # Shopping asks ("any trucks under $30k?", "hybrid SUVs?") are fact questions too:
+    # answered from live inventory when it matches, otherwise "let me check" + rep.
+    if not is_fact_topic and not is_ai_suspect:
+        try:
+            from services.vehicle_search import is_shopping_message
+            is_fact_topic = is_shopping_message(incoming_message)
+        except Exception:
+            pass
     is_finance_topic = is_fact_topic and _has_phrase(_fact_probe, FINANCE_SIGNALS)
     # Anything a human must handle right now (suspicion or facts) is a "hot topic".
     is_hot_topic = is_ai_suspect or is_fact_topic
@@ -544,10 +518,11 @@ async def queue_ai_reply(
         inv_block = ""
         if inventory_context:
             inv_block = (
-                "LIVE INVENTORY MATCHES (current and accurate — quote these facts):\n"
+                "LIVE INVENTORY (current and accurate - quote these facts, never invent other vehicles):\n"
                 f"{inventory_context}\n"
-                "Answer the customer's question using ONLY these vehicles. Mention price/color/mileage "
-                "when relevant. If none of them fit what they asked, say you'll double-check what's on the lot.\n\n"
+                "Answer using ONLY these vehicles. Mention price/color/mileage when relevant. "
+                "If it says NO EXACT MATCH, be honest that nothing fits exactly, offer the closest option and why it "
+                "is close, and offer to keep an eye out. If it lists a count higher than shown, say there are more.\n\n"
             )
         user_prompt = (
             f"Customer context:\n{contact_context}\n\n"

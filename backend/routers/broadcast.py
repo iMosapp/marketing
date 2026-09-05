@@ -72,6 +72,8 @@ def serialize_broadcast(broadcast: dict) -> dict:
         "recipient_count": broadcast.get("recipient_count", 0),
         "sent_count": broadcast.get("sent_count", 0),
         "failed_count": broadcast.get("failed_count", 0),
+        "delivered_count": broadcast.get("delivered_count", 0),
+        "undelivered_count": broadcast.get("undelivered_count", 0),
         "jessi_replies": broadcast.get("jessi_replies", False),
         "recipients": broadcast.get("recipients", []),
     }
@@ -325,7 +327,8 @@ async def get_broadcast_recipients(broadcast_id: str, user_id: str):
     docs = await db.campaign_pending_sends.find(
         {"broadcast_id": broadcast_id},
         {"contact_id": 1, "contact_name": 1, "contact_phone": 1, "status": 1,
-         "error": 1, "send_at": 1, "processed_at": 1, "deferred_reason": 1}
+         "error": 1, "send_at": 1, "processed_at": 1, "deferred_reason": 1,
+         "delivery_status": 1, "delivery_error": 1, "delivered_at": 1}
     ).sort("send_at", 1).to_list(5000)
 
     status_map = {
@@ -335,20 +338,33 @@ async def get_broadcast_recipients(broadcast_id: str, user_id: str):
         "processing": "queued",
         "pending_user_action": "unconfirmed",
     }
-    recipients = [{
-        "contact_id": d.get("contact_id", ""),
-        "name": d.get("contact_name", "Unknown"),
-        "phone": d.get("contact_phone", ""),
-        "status": status_map.get(d.get("status", ""), "queued"),
-        "error": d.get("error", ""),
-        "deferred_reason": d.get("deferred_reason", ""),
-        "send_at": d.get("send_at").isoformat() if d.get("send_at") else "",
-        "processed_at": d.get("processed_at").isoformat() if d.get("processed_at") else "",
-    } for d in docs]
+    recipients = []
+    for d in docs:
+        status = status_map.get(d.get("status", ""), "queued")
+        delivery = d.get("delivery_status") or ""
+        if status == "sent" and delivery == "delivered":
+            status = "delivered"
+        elif status == "sent" and delivery == "undelivered":
+            status = "undelivered"
+        recipients.append({
+            "contact_id": d.get("contact_id", ""),
+            "name": d.get("contact_name", "Unknown"),
+            "phone": d.get("contact_phone", ""),
+            "status": status,
+            "error": d.get("error", "") or (d.get("delivery_error", "") if status == "undelivered" else ""),
+            "deferred_reason": d.get("deferred_reason", ""),
+            "send_at": d.get("send_at").isoformat() if d.get("send_at") else "",
+            "processed_at": d.get("processed_at").isoformat() if d.get("processed_at") else "",
+            "delivered_at": d.get("delivered_at").isoformat() if d.get("delivered_at") else "",
+        })
     counts: dict = {}
     for r in recipients:
         counts[r["status"]] = counts.get(r["status"], 0) + 1
-    return {"recipients": recipients, "counts": counts, "total": len(recipients)}
+    # "3 of 4 delivered": delivered vs everything Twilio accepted (sent + delivered + undelivered)
+    accepted = counts.get("sent", 0) + counts.get("delivered", 0) + counts.get("undelivered", 0)
+    return {"recipients": recipients, "counts": counts, "total": len(recipients),
+            "summary": {"delivered": counts.get("delivered", 0), "accepted": accepted,
+                        "undelivered": counts.get("undelivered", 0), "awaiting_receipt": counts.get("sent", 0)}}
 
 
 @router.put("/{broadcast_id}")

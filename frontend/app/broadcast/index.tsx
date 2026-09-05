@@ -23,6 +23,8 @@ interface Broadcast {
   recipient_count: number;
   sent_count: number;
   failed_count: number;
+  delivered_count?: number;
+  undelivered_count?: number;
   scheduled_at: string | null;
   sent_at: string | null;
   created_at: string;
@@ -139,10 +141,20 @@ export default function BroadcastListScreen() {
               <Ionicons name="people" size={14} color={colors.textSecondary} />
               <Text style={styles.statText}>{item.recipient_count} recipients</Text>
             </View>
-            {item.status === 'sent' && (
-              <View style={styles.stat}>
+            {['sent', 'sending', 'failed'].includes(item.status) && item.sent_count > 0 && (
+              <View style={styles.stat} testID={`broadcast-delivered-${item.id}`} {...({ dataSet: { testid: `broadcast-delivered-${item.id}` } } as any)}>
                 <Ionicons name="checkmark-done" size={14} color="#34C759" />
-                <Text style={styles.statText}>{item.sent_count} sent</Text>
+                <Text style={styles.statText}>
+                  {(item.delivered_count || 0) > 0
+                    ? `${item.delivered_count} of ${item.sent_count} delivered`
+                    : `${item.sent_count} sent`}
+                </Text>
+              </View>
+            )}
+            {(item.undelivered_count || 0) + (item.failed_count || 0) > 0 && (
+              <View style={styles.stat}>
+                <Ionicons name="alert-circle" size={14} color="#FF3B30" />
+                <Text style={[styles.statText, { color: '#FF3B30' }]}>{(item.undelivered_count || 0) + (item.failed_count || 0)} failed</Text>
               </View>
             )}
             {item.media_urls?.length > 0 && (
@@ -335,7 +347,8 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 16,
+    flexWrap: 'wrap',
+    gap: 12,
   },
   stat: {
     flexDirection: 'row',
