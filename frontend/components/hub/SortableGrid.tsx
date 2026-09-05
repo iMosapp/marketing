@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { View, Pressable, Platform } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, runOnJS, LinearTransition } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, runOnJS, LinearTransition, Easing } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 
 export type GridItem = { key: string };
@@ -28,6 +28,7 @@ type Props = {
 
 const DWELL_MS = 600;
 const SETTLE_MS = 170;
+const EASE = Easing.out(Easing.cubic);
 
 const haptic = (style: 'light' | 'medium') => {
   if (Platform.OS === 'web') return;
@@ -74,7 +75,7 @@ export const SortableGrid = ({ items, columns, cellW, cellH, gap, editing, rende
     moved.current = false;
     const p = slot(idx);
     dragX.value = p.x; dragY.value = p.y;
-    dragScale.value = withSpring(1.12);
+    dragScale.value = withTiming(1.12, { duration: 140, easing: EASE });
     setDragKey(key);
     onDragging && onDragging(true);
     haptic('medium');
@@ -159,8 +160,8 @@ export const SortableGrid = ({ items, columns, cellW, cellH, gap, editing, rende
       return;
     }
     const p = slot(currentIndex.current);
-    dragX.value = withSpring(p.x, { damping: 22, stiffness: 240 });
-    dragY.value = withSpring(p.y, { damping: 22, stiffness: 240 });
+    dragX.value = withTiming(p.x, { duration: 200, easing: EASE });
+    dragY.value = withTiming(p.y, { duration: 200, easing: EASE });
     dragScale.value = withTiming(1, { duration: 160 });
     setTimeout(() => setDragKey(null), 220);
   }, [slot, onDragging, onDropOn, clearHover, clearPending, moveTo]);
@@ -209,7 +210,7 @@ export const SortableGrid = ({ items, columns, cellW, cellH, gap, editing, rende
         const p = slot(indexOf[it.key] ?? 0);
         const hidden = dragKey === it.key;
         return (
-          <Animated.View key={it.key} layout={LinearTransition.springify().damping(20).stiffness(220)} style={{ position: 'absolute', left: p.x, top: p.y, width: cellW, height: cellH, opacity: hidden ? 0 : 1 }}>
+          <Animated.View key={it.key} layout={LinearTransition.duration(220).easing(EASE)} style={{ position: 'absolute', left: p.x, top: p.y, width: cellW, height: cellH, opacity: hidden ? 0 : 1 }}>
             <GestureDetector gesture={pans[it.key]}>
               <Animated.View>
                 <Pressable

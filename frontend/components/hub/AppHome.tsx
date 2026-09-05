@@ -24,6 +24,8 @@ export const AppHome = ({ apps, folderDefs, defaultLoose, userId, remoteLayout, 
   const [stored, setStored] = useState<HubLayout | null | undefined>(undefined);
   const [editing, setEditing] = useState(false);
   const [openFolder, setOpenFolder] = useState<string | null>(null);
+  const [restoreFolder, setRestoreFolder] = useState(false);
+  const returnFolder = useRef<string | null>(null);
   const [moving, setMoving] = useState<{ app: HubApp; from: string | null } | null>(null);
   const [renaming, setRenaming] = useState<{ id: string; title: string } | null>(null);
   const [landing, setLanding] = useState<string | null>(null);
@@ -48,6 +50,14 @@ export const AppHome = ({ apps, folderDefs, defaultLoose, userId, remoteLayout, 
     });
     return () => { alive = false; };
   }, [userId, synced, applyRecent]));
+
+  // Coming back from an app that was opened inside a folder lands you back inside that folder.
+  useFocusEffect(useCallback(() => {
+    if (!returnFolder.current) return;
+    setRestoreFolder(true);
+    setOpenFolder(returnFolder.current);
+    returnFolder.current = null;
+  }, []));
 
   const launch = useCallback((app: HubApp) => {
     const next = mergeRecent([{ id: app.id, at: new Date().toISOString() }], recentRef.current);
@@ -104,7 +114,8 @@ export const AppHome = ({ apps, folderDefs, defaultLoose, userId, remoteLayout, 
   };
 
   const reset = async () => { await clearLayout(userId); setStored(null); setEditing(false); };
-  const open = (app: HubApp) => { setOpenFolder(null); setTimeout(() => launch(app), openFolder ? 120 : 0); };
+  const showFolder = (fid: string) => { setRestoreFolder(false); setOpenFolder(fid); };
+  const open = (app: HubApp) => { returnFolder.current = openFolder; setOpenFolder(null); setTimeout(() => launch(app), openFolder ? 120 : 0); };
   const flash = (id: string) => { setLanding(id); setTimeout(() => setLanding(null), 1700); };
 
   const dragOut = (app: HubApp, from: string) => {
@@ -133,7 +144,7 @@ export const AppHome = ({ apps, folderDefs, defaultLoose, userId, remoteLayout, 
 
   const badgeTap = (fid: string) => {
     const waiting = folderApps(fid).filter(a => a.badge);
-    if (waiting.length === 1) launch(waiting[0]); else setOpenFolder(fid);
+    if (waiting.length === 1) launch(waiting[0]); else showFolder(fid);
   };
 
   const folderDests = Object.entries(layout.folders).map(([id, f]) => ({ id, title: f.title, count: f.items.length }));
@@ -194,7 +205,7 @@ export const AppHome = ({ apps, folderDefs, defaultLoose, userId, remoteLayout, 
           onPress={key => {
             if (isFolderKey(key)) {
               if (editing) setRenaming({ id: keyId(key), title: layout.folders[keyId(key)]?.title || '' });
-              else setOpenFolder(keyId(key));
+              else showFolder(keyId(key));
               return;
             }
             const a = byId[keyId(key)];
@@ -210,7 +221,7 @@ export const AppHome = ({ apps, folderDefs, defaultLoose, userId, remoteLayout, 
       {openFolder && layout.folders[openFolder] && (
         <FolderModal
           visible title={layout.folders[openFolder].title} apps={folderApps(openFolder)} colors={colors} editing={editing}
-          onClose={() => setOpenFolder(null)} onOpenApp={open}
+          onClose={() => setOpenFolder(null)} onOpenApp={open} restore={restoreFolder}
           onStartEditing={() => setEditing(true)} onStopEditing={() => setEditing(false)}
           onReorder={ids => reorderFolder(openFolder, ids)} onRename={t => renameFolder(openFolder, t)}
           onMoveRequest={a => setMoving({ app: a, from: openFolder })}

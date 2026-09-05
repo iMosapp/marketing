@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { View, Text, Modal, Pressable, TouchableOpacity, TextInput, ScrollView, useWindowDimensions, Platform, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeIn, FadeOut, ZoomIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, ZoomIn, Easing } from 'react-native-reanimated';
 import { SortableGrid } from './SortableGrid';
 import { AppTile, Jiggle } from './Tiles';
 import type { HubApp } from './layout';
@@ -24,9 +24,11 @@ type Props = {
   onRename: (title: string) => void;
   onMoveRequest: (app: HubApp) => void;
   onDragOut: (app: HubApp) => void;
+  /** true when re-opening the folder the user just came back from: no zoom, just appear */
+  restore?: boolean;
 };
 
-export const FolderModal = ({ visible, title, apps, colors, editing, onClose, onOpenApp, onStartEditing, onStopEditing, onReorder, onRename, onMoveRequest, onDragOut }: Props) => {
+export const FolderModal = ({ visible, title, apps, colors, editing, onClose, onOpenApp, onStartEditing, onStopEditing, onReorder, onRename, onMoveRequest, onDragOut, restore }: Props) => {
   const { width, height } = useWindowDimensions();
   const cardW = Math.min(width - 24, 440);
   const columns = 4;
@@ -40,7 +42,7 @@ export const FolderModal = ({ visible, title, apps, colors, editing, onClose, on
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>
-      <Animated.View entering={FadeIn.duration(160)} exiting={FadeOut.duration(140)} style={StyleSheet.absoluteFill}>
+      <Animated.View entering={FadeIn.duration(restore ? 80 : 160)} exiting={FadeOut.duration(140)} style={StyleSheet.absoluteFill}>
         <Pressable style={StyleSheet.absoluteFill} onPress={editing ? onStopEditing : onClose} {...tid('folder-backdrop')}>
           {Platform.OS === 'web'
             ? <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.72)' }]} />
@@ -48,7 +50,7 @@ export const FolderModal = ({ visible, title, apps, colors, editing, onClose, on
           <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.35)' }]} />
         </Pressable>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 12 }} pointerEvents="box-none">
-          <Animated.View entering={ZoomIn.springify().damping(18).stiffness(220)} style={{ width: cardW, borderRadius: 28, backgroundColor: colors.surface || colors.card, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', padding: 16, paddingTop: 14 }} {...tid('folder-modal')}>
+          <Animated.View entering={restore ? FadeIn.duration(80) : ZoomIn.duration(180).easing(Easing.out(Easing.cubic))} style={{ width: cardW, borderRadius: 28, backgroundColor: colors.surface || colors.card, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', padding: 16, paddingTop: 14 }} {...tid('folder-modal')}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 }}>
               {editing ? (
                 <TextInput value={name} onChangeText={setName} onBlur={() => name.trim() && onRename(name.trim())} onSubmitEditing={() => name.trim() && onRename(name.trim())}

@@ -41,7 +41,6 @@ export const Landing = ({ on, children }: { on: boolean; children: React.ReactNo
   const style = useAnimatedStyle(() => ({
     borderRadius: TILE_RADIUS + 4,
     shadowColor: '#C9A962', shadowOpacity: glow.value * 0.9, shadowRadius: 14, shadowOffset: { width: 0, height: 0 },
-    transform: [{ scale: 1 + glow.value * 0.06 }],
   }));
   return <Animated.View style={style}>{children}</Animated.View>;
 };
