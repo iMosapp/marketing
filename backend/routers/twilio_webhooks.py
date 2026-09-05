@@ -1022,11 +1022,64 @@ async def message_status_callback(
         
         if result.modified_count > 0:
             logger.info(f"Updated message {MessageSid} status to {MessageStatus}")
+
+        if MessageStatus in ("failed", "undelivered"):
+            await _handle_failed_outbound(db, MessageSid, From, ErrorCode or "", ErrorMessage or "")
         
     except Exception as e:
         logger.error(f"Error updating message status: {str(e)}")
     
     return Response(content="OK", media_type="text/plain")
+
+
+MEDIA_ERROR_CODES = {"11200", "12300", "12400", "21620", "21623", "30008"}
+
+
+async def _handle_failed_outbound(db, sid: str, from_number: str, code: str, error: str):
+    """A text we thought went out did not. Resend text-only when the photo was the problem, then tell the rep."""
+    msg = await db.messages.find_one({"twilio_sid": sid})
+    if not msg or msg.get("failure_handled"):
+        return
+    await db.messages.update_one({"_id": msg["_id"]}, {"$set": {"failure_handled": True}})
+    conv = await db.conversations.find_one({"_id": ObjectId(msg["conversation_id"])}) if msg.get("conversation_id") and ObjectId.is_valid(str(msg.get("conversation_id"))) else None
+    user_id = str(msg.get("user_id") or (conv or {}).get("assigned_to") or (conv or {}).get("user_id") or "")
+    contact_id = str(msg.get("contact_id") or (conv or {}).get("contact_id") or "")
+    phone = (conv or {}).get("contact_phone") or ""
+    if not phone and contact_id and ObjectId.is_valid(contact_id):
+        phone = ((await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"phone": 1})) or {}).get("phone", "")
+    name = "your customer"
+    if contact_id and ObjectId.is_valid(contact_id):
+        c = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"first_name": 1, "last_name": 1})
+        if c:
+            name = f"{c.get('first_name', '')} {c.get('last_name', '')}".strip() or name
+
+    resent = False
+    if msg.get("has_media") and code in MEDIA_ERROR_CODES and phone and msg.get("content") and not msg.get("retry_of"):
+        from services.twilio_service import send_sms
+        r = await send_sms(phone, msg["content"], from_phone=from_number or None)
+        if r.get("success"):
+            resent = True
+            now = datetime.now(timezone.utc)
+            await db.messages.insert_one({
+                "conversation_id": msg.get("conversation_id"), "user_id": msg.get("user_id"), "contact_id": msg.get("contact_id"),
+                "content": msg["content"], "sender": msg.get("sender", "user"), "direction": "outbound", "channel": "sms",
+                "ai_generated": bool(msg.get("ai_generated")), "twilio_sid": r.get("message_sid"), "status": "sent",
+                "retry_of": sid, "media_dropped": True, "timestamp": now,
+            })
+            logger.info(f"[Status] {sid} failed with {code}; resent text-only as {r.get('message_sid')}")
+
+    if not user_id:
+        return
+    try:
+        from routers.push_notifications import send_push_to_user
+        who = "Jessi's text" if msg.get("ai_generated") else "Your text"
+        if resent:
+            title, body = f"{who} to {name}: photo did not go through", "The carrier rejected the picture, so the message was re-sent without it."
+        else:
+            title, body = f"{who} to {name} did not deliver", f"{(error or 'Carrier rejected the message')[:80]}. Open the thread to try again."
+        await send_push_to_user(user_id, title, body, url=f"/thread/{msg.get('conversation_id')}" if msg.get("conversation_id") else "/inbox", icon="alert-circle")
+    except Exception as e:
+        logger.debug(f"[Status] failure push skipped: {e}")
 
 
 @router.get("/test")

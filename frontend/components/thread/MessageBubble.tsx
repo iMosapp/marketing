@@ -236,6 +236,20 @@ export const MessageBubble = ({
               <Text style={[styles.personalSmsText, { color: '#AF52DE' }]}>Sent via email</Text>
             </View>
           )}
+
+          {isUser && (item as any).status === 'failed' && (
+            <View style={styles.personalSmsBadge} data-testid="message-failed-badge">
+              <Ionicons name="alert-circle" size={10} color="#FF453A" />
+              <Text style={[styles.personalSmsText, { color: '#FF453A', flexShrink: 1 }]} numberOfLines={2}>Not delivered{(item as any).error_message ? ` · ${String((item as any).error_message).slice(0, 60)}` : ''}</Text>
+            </View>
+          )}
+
+          {isUser && (item as any).media_dropped && (
+            <View style={styles.personalSmsBadge} data-testid="message-media-dropped-badge">
+              <Ionicons name="image-outline" size={10} color="#FF9F0A" />
+              <Text style={[styles.personalSmsText, { color: '#FF9F0A', flexShrink: 1 }]} numberOfLines={2}>Sent without the photo (carrier rejected it)</Text>
+            </View>
+          )}
         </View>
 
         {/* Auto-applied keyword tags */}

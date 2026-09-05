@@ -59,6 +59,28 @@ async def get_rep_twilio_number(user_id: str) -> str | None:
 
 
 
+MMS_SAFE_TYPES = ("image/jpeg", "image/jpg", "image/png", "image/gif")
+
+
+def mms_safe_media(urls: Optional[List[str]]) -> List[str]:
+    """Our image store serves WebP, which US carriers reject (Twilio 12300). Ask for a JPEG rendition."""
+    out = []
+    for u in urls or []:
+        if not u:
+            continue
+        if "/api/images/" in u and "format=" not in u:
+            u = f"{u}{'&' if '?' in u else '?'}format=jpeg"
+        out.append(u)
+    return out
+
+
+def _status_callback_url() -> Optional[str]:
+    base = (os.environ.get("PUBLIC_FACING_URL") or os.environ.get("APP_URL") or "").rstrip("/")
+    if not base.startswith("https://") or "localhost" in base:
+        return None
+    return f"{base}/api/webhooks/twilio/status"
+
+
 async def send_sms(
     to_phone: str,
     message: str,
@@ -79,6 +101,7 @@ async def send_sms(
         from_phone: Rep's dedicated Twilio number — ALWAYS pass this for rep-to-customer sends
     """
     to_phone = normalize_phone(to_phone)
+    media_urls = mms_safe_media(media_urls)
 
     if not TWILIO_ENABLED or not twilio_client:
         logger.info(f"[MOCK SMS] To: {to_phone} | from: {from_phone or 'messaging_svc'} | {message[:60]}...")
@@ -87,6 +110,7 @@ async def send_sms(
         return {
             "success": True,
             "message_sid": "MOCK_" + str(abs(hash(message + to_phone)))[:8],
+            "sid": "MOCK_" + str(abs(hash(message + to_phone)))[:8],
             "mock": True,
         }
 
@@ -105,6 +129,9 @@ async def send_sms(
 
         if media_urls:
             params["media_url"] = media_urls
+        cb = _status_callback_url()
+        if cb:
+            params["status_callback"] = cb  # delivery failures land in /api/webhooks/twilio/status
 
         msg = twilio_client.messages.create(**params)
         logger.info(f"Twilio sent: {msg.sid} → {to_phone} from {params.get('from_', 'messaging_svc')} | status={msg.status}")
@@ -112,6 +139,7 @@ async def send_sms(
         return {
             "success":     True,
             "message_sid": msg.sid,
+            "sid":         msg.sid,
             "status":      msg.status,
             "mock":        False,
         }

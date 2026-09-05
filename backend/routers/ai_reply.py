@@ -140,13 +140,15 @@ async def _search_inventory_context(db, user_id: str, message: str):
             if a.get("stock_number"):
                 bits.append(f"Stock #{a['stock_number']}")
             lines.append(" — ".join(str(b) for b in bits if b))
-            # Attach the top matching vehicle's photo so Jessi can text the exact car
+            # Attach the top matching vehicle's photo so Jessi can text the exact car.
+            # Stored as WebP; carriers only take JPEG/PNG/GIF, so ask for the JPEG rendition.
             if not media:
                 if it.get("photo_full_path"):
-                    media.append(f"{public_url}/api/images/{it['photo_full_path']}")
+                    media.append(f"{public_url}/api/images/{it['photo_full_path']}?format=jpeg")
                 elif it.get("photo_url"):
                     pu = it["photo_url"]
-                    media.append(pu if pu.startswith("http") else f"{public_url}{pu}")
+                    pu = pu if pu.startswith("http") else f"{public_url}{pu}"
+                    media.append(f"{pu}{'&' if '?' in pu else '?'}format=jpeg" if "/api/images/" in pu and "format=" not in pu else pu)
         return "\n".join(f"• {l}" for l in lines), media
     except Exception as e:
         logger.debug(f"[AIReply] Inventory search failed: {e}")
@@ -720,6 +722,24 @@ async def queue_ai_reply(
 
 # ── Scheduler functions ───────────────────────────────────────────────────────
 
+async def _notify_send_failure(db, user_id: Optional[str], contact_id: Optional[str], conversation_id: Optional[str], reason: str):
+    """Jessi could not get a text out: tell the rep so the customer is not left hanging."""
+    if not user_id:
+        return
+    try:
+        name = "your customer"
+        if contact_id and ObjectId.is_valid(str(contact_id)):
+            c = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"first_name": 1, "last_name": 1})
+            if c:
+                name = f"{c.get('first_name', '')} {c.get('last_name', '')}".strip() or name
+        from routers.push_notifications import send_push_to_user
+        await send_push_to_user(user_id, f"Jessi's text to {name} did not send",
+                                f"{reason[:90]}. Open the thread and send it yourself.",
+                                url=f"/thread/{conversation_id}" if conversation_id else "/inbox", icon="alert-circle")
+    except Exception as e:
+        logger.debug(f"[AIReply] failure push skipped: {e}")
+
+
 async def process_ai_reply_queue():
     """
     Called every 60 seconds by the scheduler.
@@ -884,6 +904,22 @@ async def process_ai_reply_queue():
                     except Exception:
                         pass
             result = await send_sms(phone, item["body"], from_phone=rep_twilio_number, media_urls=item.get("media_urls") or None)
+            media_dropped = False
+            if not result.get("success") and item.get("media_urls"):
+                # Photo rejected up front (bad URL / type) - the answer still matters more than the picture
+                logger.warning(f"[AIReply] MMS rejected for queue {qid} ({result.get('error')}), retrying text-only")
+                result = await send_sms(phone, item["body"], from_phone=rep_twilio_number)
+                media_dropped = result.get("success", False)
+            if not result.get("success"):
+                err = f"[{result.get('error_code', '')}] {result.get('error', 'send failed')}".strip()
+                await db.ai_reply_queue.update_one({"_id": qid}, {"$set": {"status": STATUS_FAILED, "error": err, "failed_at": now}})
+                await db.messages.insert_one({
+                    "conversation_id": item.get("conversation_id"), "content": item["body"], "sender": "ai", "direction": "outbound",
+                    "channel": "sms", "ai_generated": True, "timestamp": now, "status": "failed", "error_message": err,
+                    "has_media": bool(item.get("media_urls")), "media_urls": item.get("media_urls") or [],
+                })
+                await _notify_send_failure(db, item.get("assigned_user_id"), item.get("contact_id"), item.get("conversation_id"), err)
+                continue
             mocked = result.get("mock", True)
 
             await db.ai_reply_queue.update_one(
@@ -928,6 +964,7 @@ async def process_ai_reply_queue():
                 "status":          "sent" if not mocked else "sent_mock",
                 "has_media":       bool(item.get("media_urls")),
                 "media_urls":      item.get("media_urls") or [],
+                "media_dropped":   media_dropped,
             })
 
             # Sync conversation's AI mode so the UI reflects reality
