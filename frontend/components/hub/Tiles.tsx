@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming, withDelay, cancelAnimation } from 'react-native-reanimated';
 import type { HubApp } from './layout';
@@ -7,11 +7,16 @@ import type { HubApp } from './layout';
 export const TILE_RADIUS = 18;
 const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 
-const Badge = ({ n }: { n?: number }) => !n ? null : (
-  <View style={styles.badge} {...tid('tile-badge')}>
-    <Text style={styles.badgeText}>{n > 99 ? '99+' : n}</Text>
-  </View>
-);
+const Badge = ({ n, onPress }: { n?: number; onPress?: () => void }) => {
+  if (!n) return null;
+  const label = <Text style={styles.badgeText}>{n > 99 ? '99+' : n}</Text>;
+  if (!onPress) return <View style={styles.badge} {...tid('tile-badge')}>{label}</View>;
+  return (
+    <Pressable onPress={(e: any) => { e?.stopPropagation?.(); onPress(); }} hitSlop={10} style={styles.badge} {...tid('tile-badge-btn')}>
+      {label}
+    </Pressable>
+  );
+};
 
 export const Jiggle = ({ on, children, seed = 0 }: { on: boolean; children: React.ReactNode; seed?: number }) => {
   const rot = useSharedValue(0);
@@ -55,7 +60,7 @@ export const AppTile = ({ app, size, colors, editing, dimLabel, hovered }: { app
   </View>
 );
 
-export const FolderTile = ({ title, apps, size, colors, editing, badge, hovered }: { title: string; apps: HubApp[]; size: number; colors: any; editing?: boolean; badge?: number; hovered?: boolean }) => {
+export const FolderTile = ({ title, apps, size, colors, editing, badge, hovered, onBadgePress }: { title: string; apps: HubApp[]; size: number; colors: any; editing?: boolean; badge?: number; hovered?: boolean; onBadgePress?: () => void }) => {
   const mini = Math.floor((size - 22) / 3);
   return (
     <View style={{ width: size, alignItems: 'center', transform: [{ scale: hovered ? 1.1 : 1 }] }} {...tid(`folder-tile-${title}`)}>
@@ -68,7 +73,7 @@ export const FolderTile = ({ title, apps, size, colors, editing, badge, hovered 
             </View>
           ))}
         </View>
-        <Badge n={badge} />
+        <Badge n={badge} onPress={onBadgePress} />
         {editing && <View style={styles.editRing} />}
       </View>
       <Text style={[styles.label, { color: colors.text }]} numberOfLines={2}>{title}</Text>

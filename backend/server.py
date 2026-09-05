@@ -1120,11 +1120,18 @@ async def patch_user_profile(user_id: str, data: dict):
     db = get_db()
     allowed_fields = ['name', 'phone', 'persona', 'settings', 'photo_url', 'bio', 'social_links',
                       'timezone', 'address', 'city', 'state', 'zip_code', 'country',
-                      'notification_settings', 'ai_master_paused', 'hub_layout']
+                      'notification_settings', 'ai_master_paused', 'hub_layout', 'hub_recent']
     update_dict = {k: v for k, v in data.items() if k in allowed_fields}
     
     if not update_dict:
         raise HTTPException(status_code=400, detail="No valid fields to update")
+
+    if 'hub_recent' in update_dict:
+        rec = update_dict['hub_recent']
+        if not isinstance(rec, list) or len(rec) > 12 or any(
+            not isinstance(e, dict) or not isinstance(e.get('id'), str) or not isinstance(e.get('at'), str) for e in rec
+        ):
+            raise HTTPException(status_code=400, detail="hub_recent must be a list of {id, at}")
     
     # Block raw base64 from being stored as photo_url — it causes massive MongoDB docs,
     # breaks resolve_user_photo(), and bypasses the WebP/thumbnail pipeline.

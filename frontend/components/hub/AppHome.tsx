@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, useWindowDimensions, Modal, Pressable, TextInput, StyleSheet, ScrollView } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from 'expo-router';
 import { Ionicons as Icon } from '@expo/vector-icons';
 import { SortableGrid } from './SortableGrid';
 import { AppTile, FolderTile, Jiggle, Landing } from './Tiles';
 import { FolderModal } from './FolderModal';
 import { MoveSheet } from './MoveSheet';
-import { HubApp, HubFolderDef, HubLayout, reconcile, loadLayout, saveLayout, clearLayout, isFolderKey, keyId, slug } from './layout';
+import { HubApp, HubFolderDef, HubLayout, RecentEntry, reconcile, loadLayout, saveLayout, clearLayout, isFolderKey, keyId, slug, mergeRecent, loadRecentLocal, fetchRecentRemote, saveRecent } from './layout';
 
 const GOLD = '#C9A962';
 const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
@@ -27,21 +27,36 @@ export const AppHome = ({ apps, folderDefs, defaultLoose, userId, remoteLayout, 
   const [moving, setMoving] = useState<{ app: HubApp; from: string | null } | null>(null);
   const [renaming, setRenaming] = useState<{ id: string; title: string } | null>(null);
   const [landing, setLanding] = useState<string | null>(null);
-  const [recent, setRecent] = useState<string[]>([]);
+  const [recent, setRecent] = useState<RecentEntry[]>([]);
+  const recentRef = useRef<RecentEntry[]>([]);
   const saveTimer = useRef<any>(null);
-  const recentKey = `hub_recent:${userId}`;
+  const recentTimer = useRef<any>(null);
+  const synced = userId !== 'anon';
 
   useEffect(() => { loadLayout(userId, remoteLayout).then(l => setStored(l)); }, [userId]);
-  useEffect(() => { AsyncStorage.getItem(recentKey).then(r => { if (r) setRecent(JSON.parse(r)); }).catch(() => { /* noop */ }); }, [recentKey]);
+
+  const applyRecent = useCallback((list: RecentEntry[]) => { recentRef.current = list; setRecent(list); }, []);
+  useEffect(() => { loadRecentLocal(userId).then(local => applyRecent(mergeRecent(local, recentRef.current))); }, [userId, applyRecent]);
+  useFocusEffect(useCallback(() => {
+    if (!synced) return;
+    let alive = true;
+    fetchRecentRemote(userId).then(remote => {
+      if (!alive || !remote) return;
+      const merged = mergeRecent(recentRef.current, remote);
+      applyRecent(merged);
+      saveRecent(userId, merged, false);
+    });
+    return () => { alive = false; };
+  }, [userId, synced, applyRecent]));
 
   const launch = useCallback((app: HubApp) => {
-    setRecent(prev => {
-      const next = [app.id, ...prev.filter(id => id !== app.id)].slice(0, 3);
-      AsyncStorage.setItem(recentKey, JSON.stringify(next)).catch(() => { /* noop */ });
-      return next;
-    });
+    const next = mergeRecent([{ id: app.id, at: new Date().toISOString() }], recentRef.current);
+    applyRecent(next);
+    saveRecent(userId, next, false);
+    if (recentTimer.current) clearTimeout(recentTimer.current);
+    if (synced) recentTimer.current = setTimeout(() => saveRecent(userId, next, true), 600);
     app.onPress();
-  }, [recentKey]);
+  }, [userId, synced, applyRecent]);
 
   const byId = useMemo(() => Object.fromEntries(apps.map(a => [a.id, a])), [apps]);
   const layout = useMemo(() => (stored === undefined ? null : reconcile(stored, apps, folderDefs, defaultLoose)), [stored, apps, folderDefs, defaultLoose]);
@@ -114,7 +129,12 @@ export const AppHome = ({ apps, folderDefs, defaultLoose, userId, remoteLayout, 
     commit(next);
   };
   const canDropHome = (dragK: string, targetK: string) => !isFolderKey(dragK) && !!byId[keyId(dragK)] && (isFolderKey(targetK) || !!byId[keyId(targetK)]);
-  const recentApps = recent.map(id => byId[id]).filter(Boolean) as HubApp[];
+  const recentApps = recent.map(e => byId[e.id]).filter(Boolean).slice(0, 3) as HubApp[];
+
+  const badgeTap = (fid: string) => {
+    const waiting = folderApps(fid).filter(a => a.badge);
+    if (waiting.length === 1) launch(waiting[0]); else setOpenFolder(fid);
+  };
 
   const folderDests = Object.entries(layout.folders).map(([id, f]) => ({ id, title: f.title, count: f.items.length }));
 
@@ -166,7 +186,7 @@ export const AppHome = ({ apps, folderDefs, defaultLoose, userId, remoteLayout, 
             const jig = editing && !dragging && !hovered;
             if (isFolderKey(key)) {
               const fid = keyId(key);
-              return <Jiggle on={jig} seed={key.length}><FolderTile title={layout.folders[fid]?.title || fid} apps={folderApps(fid)} size={cellW} colors={colors} editing={editing} badge={folderBadge(fid)} hovered={hovered} /></Jiggle>;
+              return <Jiggle on={jig} seed={key.length}><FolderTile title={layout.folders[fid]?.title || fid} apps={folderApps(fid)} size={cellW} colors={colors} editing={editing} badge={folderBadge(fid)} hovered={hovered} onBadgePress={editing || dragging ? undefined : () => badgeTap(fid)} /></Jiggle>;
             }
             const a = byId[keyId(key)];
             return a ? <Jiggle on={jig} seed={key.length}><Landing on={landing === a.id}><AppTile app={a} size={cellW} colors={colors} editing={editing} hovered={hovered} /></Landing></Jiggle> : null;

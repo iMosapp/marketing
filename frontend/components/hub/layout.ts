@@ -74,3 +74,30 @@ export async function clearLayout(userId: string) {
   try { await AsyncStorage.removeItem(key(userId)); } catch { /* noop */ }
   api.patch(`/users/${userId}`, { hub_layout: null }).catch(() => { /* noop */ });
 }
+
+/** Recently launched apps: newest first, synced to the account so phone and tablet agree. */
+export type RecentEntry = { id: string; at: string };
+const RECENT_MAX = 6;
+const recentKey = (userId: string) => `hub_recent_v2:${userId}`;
+
+export function mergeRecent(...lists: (RecentEntry[] | null | undefined)[]): RecentEntry[] {
+  const best = new Map<string, string>();
+  for (const list of lists) for (const e of list || []) {
+    if (!e || typeof e.id !== 'string' || typeof e.at !== 'string') continue;
+    if ((best.get(e.id) || '') < e.at) best.set(e.id, e.at);
+  }
+  return Array.from(best, ([id, at]) => ({ id, at })).sort((a, b) => (a.at < b.at ? 1 : -1)).slice(0, RECENT_MAX);
+}
+
+export async function loadRecentLocal(userId: string): Promise<RecentEntry[]> {
+  try { const raw = await AsyncStorage.getItem(recentKey(userId)); return raw ? mergeRecent(JSON.parse(raw)) : []; } catch { return []; }
+}
+
+export async function fetchRecentRemote(userId: string): Promise<RecentEntry[] | null> {
+  try { const r = await api.get(`/users/${userId}`); return mergeRecent(r.data?.hub_recent); } catch { return null; }
+}
+
+export function saveRecent(userId: string, list: RecentEntry[], remote: boolean) {
+  AsyncStorage.setItem(recentKey(userId), JSON.stringify(list)).catch(() => { /* noop */ });
+  if (remote) api.patch(`/users/${userId}`, { hub_recent: list }).catch(() => { /* offline: local copy merges next time */ });
+}
