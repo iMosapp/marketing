@@ -102,17 +102,17 @@ export function useNotifications(): UseNotificationsResult {
     } catch { /* silent */ }
   }, [user?._id]);
 
-  // Initial fetch + poll every 15 seconds
+  // Badge count on mount + poll every 15 seconds
   useEffect(() => {
     if (!user?._id) {
       setNotifications([]);
       setUnreadCount(0);
       return;
     }
-    refreshNotifications();
+    fetchUnreadCount();
     const interval = setInterval(fetchUnreadCount, 15000);
     return () => clearInterval(interval);
-  }, [user?._id, refreshNotifications, fetchUnreadCount]);
+  }, [user?._id, fetchUnreadCount]);
 
   return {
     notifications,

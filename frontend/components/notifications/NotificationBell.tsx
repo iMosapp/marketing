@@ -1,447 +1,50 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  Pressable,
-  StyleSheet,
-  Platform,
-  Modal,
-} from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useNotifications } from '../../hooks/useNotifications';
-
 import { useThemeStore } from '../../store/themeStore';
-import { useAuthStore } from '../../store/authStore';
-const IS_WEB = Platform.OS === 'web';
 
-const GOLD = '#C9A962';
-
-function getNotifIcon(type: string): string {
-  switch (type) {
-    case 'you_are_needed': return 'alert-circle';
-    case 'slow_lead': return 'time';
-    case 'new_lead': case 'lead_assigned': return 'person-add';
-    case 'jump_ball': return 'flash';
-    case 'engagement_signal': return 'flame';
-    case 'keyword_alert': return 'key';
-    case 'customer_reply': return 'chatbubble';
-    case 'customer_reply_ai_handling': return 'sparkles';
-    case 'appointment_extracted': return 'calendar';
-    case 'task_reminder': return 'alarm';
-    case 'task_overdue': return 'alert-circle';
-    case 'task_due_soon': return 'time';
-    case 'unread_message': return 'chatbubble';
-    case 'flagged': return 'flag';
-    case 'link_click': return 'open';
-    case 'review_submitted': return 'star';
-    case 'new_contact': return 'person-add';
-    case 'digital_card_sent': return 'card';
-    case 'review_request_sent': return 'star-half';
-    case 'congrats_card_sent': return 'gift';
-    case 'birthday_card_sent': return 'gift';
-    case 'thank_you_card_sent': case 'thankyou_card_sent': return 'thumbs-up';
-    case 'holiday_card_sent': return 'snow';
-    case 'welcome_card_sent': return 'hand-left';
-    case 'anniversary_card_sent': return 'heart';
-    case 'email_sent': return 'mail';
-    case 'sms_sent': return 'chatbox';
-    case 'badge_earned': return 'trophy';
-    case 'milestone': return 'trophy';
-    case 'ai_outreach': return 'sparkles';
-    case 'call_recorded': return 'mic';
-    case 'photo_reminder': return 'image';
-    case 'campaign_send': return 'megaphone';
-    case 'date_trigger': return 'calendar';
-    case 'new_demo_request': return 'person-add';
-    default: return 'notifications';
-  }
-}
-
-function getNotifColor(type: string): string {
-  switch (type) {
-    case 'you_are_needed': case 'slow_lead': case 'task_overdue': return '#FF3B30';
-    case 'jump_ball': case 'engagement_signal': case 'task_due_soon': case 'flagged': return '#FF9500';
-    case 'new_lead': case 'lead_assigned': case 'new_demo_request': return GOLD;
-    case 'customer_reply': case 'customer_reply_ai_handling': case 'unread_message': return GOLD;
-    case 'appointment_extracted': case 'task_reminder': case 'keyword_alert': return GOLD;
-    case 'review_submitted': case 'new_review': case 'badge_earned': case 'milestone': return '#FFD60A';
-    default: return '#8E8E93';
-  }
-}
-
-function getCategoryLabel(cat: string): string {
-  switch (cat) {
-    case 'urgent': return 'Needs You';
-    case 'leads': return 'Leads';
-    case 'replies': return 'Replies';
-    case 'appts': return 'Appts';
-    default: return 'All';
-  }
-}
-
-function getCategoryIcon(cat: string): string {
-  switch (cat) {
-    case 'urgent': return 'alert-circle';
-    case 'leads': return 'person-add';
-    case 'replies': return 'chatbubble';
-    case 'appts': return 'calendar';
-    default: return 'apps';
-  }
-}
-
-function formatTime(isoString: string) {
-  try {
-    const d = new Date(isoString);
-    const now = new Date();
-    const diff = now.getTime() - d.getTime();
-    if (diff < 60000) return 'Just now';
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-    if (diff < 172800000) return 'Yesterday';
-    return d.toLocaleDateString();
-  } catch { return ''; }
-}
-
+// Bell = badge + one tap straight into the Alerts screen (no dropdown to dig through).
 export function NotificationBell() {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
   const router = useRouter();
-  const { user } = useAuthStore();
-  const {
-    notifications,
-    unreadCount,
-    refreshNotifications,
-    markAsRead,
-    markAllRead,
-    categoryFilter,
-    setCategoryFilter,
-    categoryCounts,
-  } = useNotifications();
-  const [open, setOpen] = useState(false);
-
-  const handlePress = () => {
-    if (!open) refreshNotifications();
-    setOpen(!open);
-  };
-
-  const handleNotificationPress = async (n: any) => {
-    markAsRead(n.id);
-    setOpen(false);
-
-    // For new leads with a demo_request_id: claim the lead → navigate to contact with prefill
-    if (n.type === 'new_lead' && n.demo_request_id && n.source === 'leads') {
-      try {
-        const API = process.env.REACT_APP_BACKEND_URL || '';
-        const userId = user?._id || '';
-        const res = await fetch(`${API}/api/demo-requests/${n.demo_request_id}/claim`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userId }),
-        });
-        const result = await res.json();
-        if (result.contact_id) {
-          router.push({
-            pathname: `/contact/${result.contact_id}`,
-            params: { prefill: result.prefill_message || '' },
-          } as any);
-          return;
-        }
-      } catch (e) {
-        // Fall through to default link behavior
-      }
-    }
-
-    if (n.link) {
-      router.push(n.link as any);
-    }
-  };
-
-  const categories = ['all', 'urgent', 'leads', 'replies', 'appts'];
+  const { unreadCount } = useNotifications();
 
   return (
     <View style={styles.wrapper}>
       <TouchableOpacity
         style={styles.button}
-        onPress={handlePress}
-        data-testid="notification-bell-btn"
+        onPress={() => router.push('/notifications' as any)}
+        testID="notification-bell-btn"
+        {...({ dataSet: { testid: 'notification-bell-btn' } } as any)}
       >
         <Ionicons name="notifications-outline" size={22} color={colors.text} />
         {unreadCount > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+          <View style={styles.badge} testID="notification-bell-badge" {...({ dataSet: { testid: 'notification-bell-badge' } } as any)}>
+            <Text maxFontSizeMultiplier={1} style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
           </View>
         )}
       </TouchableOpacity>
-
-      {open && (
-        <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-          <Pressable style={styles.overlay} onPress={() => setOpen(false)}>
-            <Pressable style={styles.dropdown} onPress={(e) => e.stopPropagation()}>
-            {/* Header */}
-            <View style={styles.dropdownHeader}>
-              <Text style={styles.dropdownTitle} numberOfLines={1} adjustsFontSizeToFit>Alerts</Text>
-              <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-                {unreadCount > 0 && (
-                  <TouchableOpacity onPress={markAllRead} data-testid="mark-all-read-btn">
-                    <Text style={styles.markAll} numberOfLines={1}>Mark all read</Text>
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                  onPress={() => { setOpen(false); router.push('/(tabs)/notifications' as any); }}
-                  data-testid="view-all-notifications-btn"
-                >
-                  <Text style={[styles.markAll, { color: colors.textSecondary }]} numberOfLines={1}>View All</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Category Filters */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryBar}
-              contentContainerStyle={{ paddingHorizontal: 12, gap: 6 }}>
-              {categories.map(cat => {
-                const isActive = categoryFilter === cat;
-                const count = cat === 'all'
-                  ? Object.values(categoryCounts).reduce((s: number, v: any) => s + v, 0)
-                  : (categoryCounts[cat] || 0);
-                return (
-                  <TouchableOpacity
-                    key={cat}
-                    style={[styles.categoryChip, isActive && styles.categoryChipActive]}
-                    onPress={() => setCategoryFilter(cat)}
-                    data-testid={`notif-filter-${cat}`}
-                  >
-                    <Ionicons
-                      name={getCategoryIcon(cat) as any}
-                      size={13}
-                      color={isActive ? '#000' : colors.textSecondary}
-                    />
-                    <Text style={[styles.categoryChipText, isActive && styles.categoryChipTextActive]}>
-                      {getCategoryLabel(cat)}{count > 0 ? ` (${count})` : ''}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-
-            {/* Notification List */}
-            <ScrollView style={styles.list} contentContainerStyle={{ paddingBottom: 8 }}>
-              {notifications.length === 0 ? (
-                <View style={styles.emptyContainer}>
-                  <Ionicons name="checkmark-circle" size={32} color={colors.borderLight} />
-                  <Text style={styles.empty}>All caught up!</Text>
-                </View>
-              ) : (
-                notifications.slice(0, 25).map((n: any) => (
-                  <TouchableOpacity
-                    key={n.id}
-                    style={[styles.item, !n.read && styles.itemUnread]}
-                    onPress={() => handleNotificationPress(n)}
-                    data-testid={`notification-item-${n.id}`}
-                  >
-                    <View style={[styles.iconCircle, { backgroundColor: getNotifColor(n.type) + '20' }]}>
-                      <Ionicons name={getNotifIcon(n.type) as any} size={16} color={getNotifColor(n.type)} />
-                    </View>
-                    <View style={styles.itemContent}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Text style={styles.itemTitle} numberOfLines={1}>{n.title}</Text>
-                        {!n.read && <View style={styles.dot} />}
-                      </View>
-                      {(n.body || n.contact_name) && (
-                        <Text style={styles.itemBody} numberOfLines={2}>
-                          {n.body || n.contact_name}
-                        </Text>
-                      )}
-                      <Text style={styles.itemTime}>{formatTime(n.timestamp || n.created_at)}</Text>
-                    </View>
-                  </TouchableOpacity>
-                ))
-              )}
-            </ScrollView>
-          </Pressable>
-        </Pressable>
-        </Modal>
-      )}
     </View>
   );
 }
 
 const getStyles = (colors: any) => StyleSheet.create({
-  wrapper: {
-    position: 'relative',
-    zIndex: 9999,
-    ...(IS_WEB ? { overflow: 'visible' as any } : {}),
-  },
+  wrapper: { position: 'relative' },
   button: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.surface,
+    width: 40, height: 40, borderRadius: 12,
+    backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: colors.surface,
   },
   badge: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    backgroundColor: '#FF3B30',
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 5,
-    borderWidth: 1.5,
-    borderColor: '#fff',
+    position: 'absolute', top: -6, right: -6,
+    backgroundColor: '#FF3B30', borderRadius: 10, minWidth: 20, height: 20,
+    alignItems: 'center', justifyContent: 'center', paddingHorizontal: 5,
+    borderWidth: 1.5, borderColor: '#fff',
   },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#fff',
-  },
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-  },
-  dropdown: {
-    position: 'absolute',
-    top: IS_WEB ? 60 : 48,
-    right: IS_WEB ? 16 : 0,
-    left: IS_WEB ? undefined : 0,
-    width: IS_WEB ? Math.min(380, (typeof window !== 'undefined' ? window.innerWidth : 380) - 32) : '100%',
-    maxWidth: IS_WEB ? 380 : '100%',
-    maxHeight: 520,
-    backgroundColor: colors.card,
-    borderRadius: IS_WEB ? 16 : 0,
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
-    borderBottomLeftRadius: 16,
-    borderBottomRightRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.surface,
-    overflow: 'hidden',
-    ...(IS_WEB ? {
-      boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
-    } : {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.6,
-      shadowRadius: 16,
-      elevation: 20,
-    }),
-  },
-  dropdownHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-  },
-  dropdownTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: colors.text,
-    flexShrink: 1,
-    marginRight: 8,
-  },
-  markAll: {
-    fontSize: 15,
-    color: GOLD,
-    fontWeight: '600',
-  },
-  categoryBar: {
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-    maxHeight: 46,
-  },
-  categoryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 16,
-    backgroundColor: colors.surface,
-    marginRight: 6,
-  },
-  categoryChipActive: {
-    backgroundColor: GOLD,
-  },
-  categoryChipText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  categoryChipTextActive: {
-    color: '#000',
-    fontWeight: '700',
-  },
-  list: {
-    maxHeight: 400,
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: 40,
-    gap: 8,
-  },
-  empty: {
-    textAlign: 'center',
-    color: '#6E6E73',
-    fontSize: 16,
-  },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-    gap: 10,
-  },
-  itemUnread: {
-    backgroundColor: GOLD + '0C',
-  },
-  iconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: GOLD,
-  },
-  itemContent: {
-    flex: 1,
-  },
-  itemTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    flex: 1,
-  },
-  itemBody: {
-    fontSize: 15,
-    color: colors.textSecondary,
-    lineHeight: 18,
-    marginTop: 1,
-    flexShrink: 1,
-    flexWrap: 'wrap',
-  },
-  itemTime: {
-    fontSize: 13,
-    color: '#6E6E73',
-    marginTop: 3,
-  },
+  badgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
 });
+
+export default NotificationBell;
