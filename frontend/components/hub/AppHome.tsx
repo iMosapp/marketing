@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, useWindowDimensions, Modal, Pressable, TextInput, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, useWindowDimensions, Modal, Pressable, TextInput, StyleSheet, ScrollView } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons as Icon } from '@expo/vector-icons';
 import { SortableGrid } from './SortableGrid';
-import { AppTile, FolderTile, Jiggle } from './Tiles';
+import { AppTile, FolderTile, Jiggle, Landing } from './Tiles';
 import { FolderModal } from './FolderModal';
 import { MoveSheet } from './MoveSheet';
 import { HubApp, HubFolderDef, HubLayout, reconcile, loadLayout, saveLayout, clearLayout, isFolderKey, keyId, slug } from './layout';
@@ -25,9 +26,22 @@ export const AppHome = ({ apps, folderDefs, defaultLoose, userId, remoteLayout, 
   const [openFolder, setOpenFolder] = useState<string | null>(null);
   const [moving, setMoving] = useState<{ app: HubApp; from: string | null } | null>(null);
   const [renaming, setRenaming] = useState<{ id: string; title: string } | null>(null);
+  const [landing, setLanding] = useState<string | null>(null);
+  const [recent, setRecent] = useState<string[]>([]);
   const saveTimer = useRef<any>(null);
+  const recentKey = `hub_recent:${userId}`;
 
   useEffect(() => { loadLayout(userId, remoteLayout).then(l => setStored(l)); }, [userId]);
+  useEffect(() => { AsyncStorage.getItem(recentKey).then(r => { if (r) setRecent(JSON.parse(r)); }).catch(() => { /* noop */ }); }, [recentKey]);
+
+  const launch = useCallback((app: HubApp) => {
+    setRecent(prev => {
+      const next = [app.id, ...prev.filter(id => id !== app.id)].slice(0, 3);
+      AsyncStorage.setItem(recentKey, JSON.stringify(next)).catch(() => { /* noop */ });
+      return next;
+    });
+    app.onPress();
+  }, [recentKey]);
 
   const byId = useMemo(() => Object.fromEntries(apps.map(a => [a.id, a])), [apps]);
   const layout = useMemo(() => (stored === undefined ? null : reconcile(stored, apps, folderDefs, defaultLoose)), [stored, apps, folderDefs, defaultLoose]);
@@ -75,7 +89,32 @@ export const AppHome = ({ apps, folderDefs, defaultLoose, userId, remoteLayout, 
   };
 
   const reset = async () => { await clearLayout(userId); setStored(null); setEditing(false); };
-  const open = (app: HubApp) => { setOpenFolder(null); setTimeout(() => app.onPress(), openFolder ? 120 : 0); };
+  const open = (app: HubApp) => { setOpenFolder(null); setTimeout(() => launch(app), openFolder ? 120 : 0); };
+  const flash = (id: string) => { setLanding(id); setTimeout(() => setLanding(null), 1700); };
+
+  const dragOut = (app: HubApp, from: string) => {
+    moveApp(app, from, { type: 'home' });
+    setOpenFolder(null);
+    flash(app.id);
+  };
+
+  const dropOnHome = (dragK: string, targetK: string) => {
+    const app = byId[keyId(dragK)];
+    if (!app) return;
+    if (isFolderKey(targetK)) { moveApp(app, null, { type: 'folder', id: keyId(targetK) }); return; }
+    const other = byId[keyId(targetK)];
+    if (!other) return;
+    const def = folderDefs.find(f => f.id === other.folder);
+    const title = def?.title && !layout.folders[def.id] ? def.title : 'New Folder';
+    const next: HubLayout = { ...layout, home: layout.home.filter(k => k !== dragK && k !== targetK), folders: { ...layout.folders } };
+    let fid = slug(title) || `folder-${Date.now()}`;
+    while (next.folders[fid]) fid = `${fid}-2`;
+    next.folders[fid] = { title, items: [other.id, app.id] };
+    next.home.push(`f:${fid}`);
+    commit(next);
+  };
+  const canDropHome = (dragK: string, targetK: string) => !isFolderKey(dragK) && !!byId[keyId(dragK)] && (isFolderKey(targetK) || !!byId[keyId(targetK)]);
+  const recentApps = recent.map(id => byId[id]).filter(Boolean) as HubApp[];
 
   const folderDests = Object.entries(layout.folders).map(([id, f]) => ({ id, title: f.title, count: f.items.length }));
 
@@ -96,18 +135,41 @@ export const AppHome = ({ apps, folderDefs, defaultLoose, userId, remoteLayout, 
           <Text style={{ fontSize: 11, color: colors.textTertiary || colors.textSecondary }}>Hold to rearrange</Text>
         )}
       </View>
+      {editing && (
+        <Text style={{ fontSize: 11, color: colors.textTertiary || colors.textSecondary, marginTop: -4, marginBottom: 10 }} {...tid('arrange-hint')}>
+          Drag to reorder. Hold an app over a folder to file it, or over another app to make a folder. Open a folder and pull an app past the edge to bring it home.
+        </Text>
+      )}
+      {recentApps.length > 0 && !editing && (
+        <View style={{ marginBottom: 14 }} {...tid('recent-row')}>
+          <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 1, color: colors.textTertiary || colors.textSecondary, marginBottom: 8 }}>RECENT</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+            {recentApps.map(a => (
+              <TouchableOpacity key={a.id} onPress={() => launch(a)} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 6, paddingRight: 14, height: 40, borderRadius: 20, backgroundColor: colors.card, borderWidth: 1, borderColor: `${a.color}44` }} {...tid(`recent-${a.id}`)}>
+                <View style={{ width: 28, height: 28, borderRadius: 9, backgroundColor: `${a.color}22`, alignItems: 'center', justifyContent: 'center' }}><Icon name={a.icon as any} size={15} color={a.color} /></View>
+                <View>
+                  <Text style={{ fontSize: 13, fontWeight: '700', color: colors.text }} numberOfLines={1}>{a.title}</Text>
+                  {!!a.badge && <Text style={{ fontSize: 10, fontWeight: '700', color: '#FF3B30' }}>{a.badge} waiting</Text>}
+                </View>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
       <View style={{ alignItems: 'center' }}>
         <SortableGrid
           testID="home-grid"
           items={homeItems} columns={columns} cellW={cellW} cellH={cellH} gap={gap} editing={editing}
-          renderItem={(key, dragging) => {
-            const jig = editing && !dragging;
+          canDropOn={canDropHome}
+          onDropOn={dropOnHome}
+          renderItem={(key, dragging, hovered) => {
+            const jig = editing && !dragging && !hovered;
             if (isFolderKey(key)) {
               const fid = keyId(key);
-              return <Jiggle on={jig} seed={key.length}><FolderTile title={layout.folders[fid]?.title || fid} apps={folderApps(fid)} size={cellW} colors={colors} editing={editing} badge={folderBadge(fid)} /></Jiggle>;
+              return <Jiggle on={jig} seed={key.length}><FolderTile title={layout.folders[fid]?.title || fid} apps={folderApps(fid)} size={cellW} colors={colors} editing={editing} badge={folderBadge(fid)} hovered={hovered} /></Jiggle>;
             }
             const a = byId[keyId(key)];
-            return a ? <Jiggle on={jig} seed={key.length}><AppTile app={a} size={cellW} colors={colors} editing={editing} /></Jiggle> : null;
+            return a ? <Jiggle on={jig} seed={key.length}><Landing on={landing === a.id}><AppTile app={a} size={cellW} colors={colors} editing={editing} hovered={hovered} /></Landing></Jiggle> : null;
           }}
           onPress={key => {
             if (isFolderKey(key)) {
@@ -117,7 +179,7 @@ export const AppHome = ({ apps, folderDefs, defaultLoose, userId, remoteLayout, 
             }
             const a = byId[keyId(key)];
             if (!a) return;
-            if (editing) setMoving({ app: a, from: null }); else a.onPress();
+            if (editing) setMoving({ app: a, from: null }); else launch(a);
           }}
           onLongPress={() => setEditing(true)}
           onReorder={reorderHome}
@@ -132,6 +194,7 @@ export const AppHome = ({ apps, folderDefs, defaultLoose, userId, remoteLayout, 
           onStartEditing={() => setEditing(true)} onStopEditing={() => setEditing(false)}
           onReorder={ids => reorderFolder(openFolder, ids)} onRename={t => renameFolder(openFolder, t)}
           onMoveRequest={a => setMoving({ app: a, from: openFolder })}
+          onDragOut={a => dragOut(a, openFolder)}
         />
       )}
 

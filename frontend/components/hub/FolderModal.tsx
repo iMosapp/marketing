@@ -23,9 +23,10 @@ type Props = {
   onReorder: (ids: string[]) => void;
   onRename: (title: string) => void;
   onMoveRequest: (app: HubApp) => void;
+  onDragOut: (app: HubApp) => void;
 };
 
-export const FolderModal = ({ visible, title, apps, colors, editing, onClose, onOpenApp, onStartEditing, onStopEditing, onReorder, onRename, onMoveRequest }: Props) => {
+export const FolderModal = ({ visible, title, apps, colors, editing, onClose, onOpenApp, onStartEditing, onStopEditing, onReorder, onRename, onMoveRequest, onDragOut }: Props) => {
   const { width, height } = useWindowDimensions();
   const cardW = Math.min(width - 24, 440);
   const columns = 4;
@@ -76,10 +77,12 @@ export const FolderModal = ({ visible, title, apps, colors, editing, onClose, on
                 onPress={key => { const a = byId[key]; if (!a) return; if (editing) onMoveRequest(a); else onOpenApp(a); }}
                 onLongPress={onStartEditing}
                 onReorder={onReorder}
+                onDragOutside={key => { const a = byId[key]; if (a) onDragOut(a); }}
+                outsideMargin={48}
               />
             </ScrollView>
             <Text style={{ fontSize: 11, color: colors.textTertiary || colors.textSecondary, textAlign: 'center', marginTop: 12 }}>
-              {editing ? 'Drag to reorder. Tap an app to move it somewhere else.' : 'Hold any app to rearrange or rename this folder.'}
+              {editing ? 'Drag to reorder, or pull an app past the edge to drop it on the home screen. Tap one to move it.' : 'Hold any app to rearrange or rename this folder.'}
             </Text>
           </Animated.View>
         </View>

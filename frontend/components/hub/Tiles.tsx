@@ -27,9 +27,23 @@ export const Jiggle = ({ on, children, seed = 0 }: { on: boolean; children: Reac
   return <Animated.View style={style}>{children}</Animated.View>;
 };
 
-export const AppTile = ({ app, size, colors, editing, dimLabel }: { app: HubApp; size: number; colors: any; editing?: boolean; dimLabel?: boolean }) => (
-  <View style={{ width: size, alignItems: 'center' }} {...tid(`app-tile-${app.id}`)}>
-    <View style={[styles.tile, { width: size, height: size, backgroundColor: colors.card, borderColor: `${app.color}55` }]}>
+/** Gold flash that fades out: marks where a dragged-out app just landed. */
+export const Landing = ({ on, children }: { on: boolean; children: React.ReactNode }) => {
+  const glow = useSharedValue(0);
+  useEffect(() => {
+    if (on) glow.value = withSequence(withTiming(1, { duration: 120 }), withTiming(1, { duration: 900 }), withTiming(0, { duration: 600 }));
+  }, [on]);
+  const style = useAnimatedStyle(() => ({
+    borderRadius: TILE_RADIUS + 4,
+    shadowColor: '#C9A962', shadowOpacity: glow.value * 0.9, shadowRadius: 14, shadowOffset: { width: 0, height: 0 },
+    transform: [{ scale: 1 + glow.value * 0.06 }],
+  }));
+  return <Animated.View style={style}>{children}</Animated.View>;
+};
+
+export const AppTile = ({ app, size, colors, editing, dimLabel, hovered }: { app: HubApp; size: number; colors: any; editing?: boolean; dimLabel?: boolean; hovered?: boolean }) => (
+  <View style={{ width: size, alignItems: 'center', transform: [{ scale: hovered ? 1.08 : 1 }] }} {...tid(`app-tile-${app.id}`)}>
+    <View style={[styles.tile, { width: size, height: size, backgroundColor: colors.card, borderColor: hovered ? '#C9A962' : `${app.color}55`, borderWidth: hovered ? 2 : 1 }]}>
       <View style={[StyleSheet.absoluteFill, { borderRadius: TILE_RADIUS, backgroundColor: `${app.color}1A` }]} />
       <View style={styles.gloss} />
       <Ionicons name={app.icon as any} size={Math.round(size * 0.42)} color={app.color} />
@@ -41,11 +55,11 @@ export const AppTile = ({ app, size, colors, editing, dimLabel }: { app: HubApp;
   </View>
 );
 
-export const FolderTile = ({ title, apps, size, colors, editing, badge }: { title: string; apps: HubApp[]; size: number; colors: any; editing?: boolean; badge?: number }) => {
+export const FolderTile = ({ title, apps, size, colors, editing, badge, hovered }: { title: string; apps: HubApp[]; size: number; colors: any; editing?: boolean; badge?: number; hovered?: boolean }) => {
   const mini = Math.floor((size - 22) / 3);
   return (
-    <View style={{ width: size, alignItems: 'center' }} {...tid(`folder-tile-${title}`)}>
-      <View style={[styles.tile, { width: size, height: size, backgroundColor: colors.surface || colors.card, borderColor: 'rgba(255,255,255,0.10)', padding: 8 }]}>
+    <View style={{ width: size, alignItems: 'center', transform: [{ scale: hovered ? 1.1 : 1 }] }} {...tid(`folder-tile-${title}`)}>
+      <View style={[styles.tile, { width: size, height: size, backgroundColor: hovered ? 'rgba(201,169,98,0.18)' : (colors.surface || colors.card), borderColor: hovered ? '#C9A962' : 'rgba(255,255,255,0.10)', borderWidth: hovered ? 2 : 1, padding: 8 }]}>
         <View style={styles.gloss} />
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 3, width: mini * 3 + 6 }}>
           {apps.slice(0, 9).map(a => (

@@ -73,7 +73,6 @@ export default function MoreScreen() {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['leads']));
   const [hubSearch, setHubSearch] = useState('');
   const [hubDragging, setHubDragging] = useState(false);
-  const [hubDragging, setHubDragging] = useState(false);
   const [leadsWaiting, setLeadsWaiting] = useState(0);
   const sectionRefs = useRef<Record<string, View | null>>({});
   const scrollRef = useRef<ScrollView>(null);

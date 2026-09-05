@@ -12,37 +12,66 @@ type Props = {
   cellH: number;
   gap: number;
   editing: boolean;
-  renderItem: (key: string, dragging: boolean) => React.ReactNode;
+  renderItem: (key: string, dragging: boolean, hovered: boolean) => React.ReactNode;
   onPress: (key: string) => void;
   onLongPress: (key: string) => void;
   onReorder: (keys: string[]) => void;
   onDragging?: (active: boolean) => void;
+  /** iOS "hold over another icon": return true if dragKey may be dropped onto targetKey */
+  canDropOn?: (dragKey: string, targetKey: string) => boolean;
+  onDropOn?: (dragKey: string, targetKey: string) => void;
+  /** Fires once when a dragged tile is pulled well past the grid edge (drag out of a folder) */
+  onDragOutside?: (key: string) => void;
+  outsideMargin?: number;
   testID?: string;
 };
+
+const DWELL_MS = 600;
+const SETTLE_MS = 170;
 
 const haptic = (style: 'light' | 'medium') => {
   if (Platform.OS === 'web') return;
   Haptics.impactAsync(style === 'light' ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Medium).catch(() => { /* noop */ });
 };
 
-/** iOS-style grid: tap to open, hold to enter edit mode, drag to reorder while editing. */
-export const SortableGrid = ({ items, columns, cellW, cellH, gap, editing, renderItem, onPress, onLongPress, onReorder, onDragging, testID }: Props) => {
+/** iOS-style grid: tap to open, hold to enter edit mode, drag to reorder while editing,
+ *  hover over a folder/app to drop into it, pull past the edge to drag out. */
+export const SortableGrid = ({ items, columns, cellW, cellH, gap, editing, renderItem, onPress, onLongPress, onReorder, onDragging, canDropOn, onDropOn, onDragOutside, outsideMargin = 56, testID }: Props) => {
   const [dragKey, setDragKey] = useState<string | null>(null);
+  const [hoverKey, setHoverKey] = useState<string | null>(null);
   const dragX = useSharedValue(0);
   const dragY = useSharedValue(0);
   const dragScale = useSharedValue(1);
+  const startX = useSharedValue(0);
+  const startY = useSharedValue(0);
   const orderRef = useRef(items.map(i => i.key));
   orderRef.current = items.map(i => i.key);
   const currentIndex = useRef(0);
-  const rows = Math.max(1, Math.ceil(items.length / columns));
+  const dragRef = useRef<string | null>(null);
+  const hover = useRef<{ key: string; armed: boolean; timer: any } | null>(null);
+  const outFired = useRef(false);
+  const moved = useRef(false);
+  const count = items.length;
+  const rows = Math.max(1, Math.ceil(count / columns));
   const stepX = cellW + gap;
   const stepY = cellH + gap;
+  const gridW = columns * stepX - gap;
+  const gridH = rows * stepY - gap;
 
   const slot = useCallback((i: number) => ({ x: (i % columns) * stepX, y: Math.floor(i / columns) * stepY }), [columns, stepX, stepY]);
+
+  const clearHover = useCallback(() => {
+    if (hover.current?.timer) clearTimeout(hover.current.timer);
+    hover.current = null;
+    setHoverKey(null);
+  }, []);
 
   const begin = useCallback((key: string) => {
     const idx = orderRef.current.indexOf(key);
     currentIndex.current = idx;
+    dragRef.current = key;
+    outFired.current = false;
+    moved.current = false;
     const p = slot(idx);
     dragX.value = p.x; dragY.value = p.y;
     dragScale.value = withSpring(1.12);
@@ -63,42 +92,111 @@ export const SortableGrid = ({ items, columns, cellW, cellH, gap, editing, rende
     onReorder(next);
   }, [onReorder]);
 
+  // iOS feel: entering another tile's slot does nothing for a beat; if you are still there it either
+  // shifts the tile out of the way (edge) or starts the drop hover (centre).
+  const latest = useRef({ target: 0, inCenter: false });
+  const pending = useRef<{ target: number; timer: any } | null>(null);
+  const clearPending = useCallback(() => { if (pending.current) clearTimeout(pending.current.timer); pending.current = null; }, []);
+
+  const decide = useCallback(() => {
+    pending.current = null;
+    const key = dragRef.current;
+    const { target, inCenter } = latest.current;
+    if (!key || target === currentIndex.current) return;
+    const overKey = orderRef.current[target];
+    if (inCenter && overKey && canDropOn && canDropOn(key, overKey)) {
+      if (hover.current?.key !== overKey) {
+        clearHover();
+        const h = { key: overKey, armed: false, timer: null as any };
+        h.timer = setTimeout(() => { h.armed = true; setHoverKey(overKey); haptic('light'); }, DWELL_MS - SETTLE_MS);
+        hover.current = h;
+      }
+      return;
+    }
+    clearHover();
+    moveTo(target);
+  }, [canDropOn, moveTo, clearHover]);
+
+  const track = useCallback((target: number, inCenter: boolean, outside: boolean) => {
+    const key = dragRef.current;
+    if (!key) return;
+    if (outside && onDragOutside && !outFired.current) {
+      outFired.current = true;
+      clearPending();
+      clearHover();
+      onDragOutside(key);
+      return;
+    }
+    latest.current = { target, inCenter };
+    moved.current = true;
+    if (target === currentIndex.current) { clearPending(); clearHover(); return; }
+    const overKey = orderRef.current[target];
+    if (hover.current) {
+      if (hover.current.key === overKey && inCenter) return;
+      const slidOffCentre = hover.current.key === overKey && !inCenter;
+      clearHover();
+      if (slidOffCentre) { moveTo(target); return; }
+    }
+    if (pending.current?.target === target) return;
+    clearPending();
+    pending.current = { target, timer: setTimeout(decide, SETTLE_MS) };
+  }, [onDragOutside, clearHover, clearPending, moveTo, decide]);
+
   const finish = useCallback(() => {
+    const key = dragRef.current;
+    if (!key) return;
+    dragRef.current = null;
+    const wasPending = !!pending.current;
+    clearPending();
+    const h = hover.current;
+    clearHover();
+    onDragging && onDragging(false);
+    if ((wasPending || (h && !h.armed)) && latest.current.target !== currentIndex.current) moveTo(latest.current.target);
+    if (h?.armed && onDropOn) {
+      dragScale.value = withTiming(0.6, { duration: 140 });
+      setTimeout(() => { setDragKey(null); dragScale.value = 1; }, 150);
+      onDropOn(key, h.key);
+      return;
+    }
     const p = slot(currentIndex.current);
     dragX.value = withSpring(p.x, { damping: 22, stiffness: 240 });
     dragY.value = withSpring(p.y, { damping: 22, stiffness: 240 });
     dragScale.value = withTiming(1, { duration: 160 });
-    onDragging && onDragging(false);
     setTimeout(() => setDragKey(null), 220);
-  }, [slot, onDragging]);
+  }, [slot, onDragging, onDropOn, clearHover, clearPending, moveTo]);
 
-  const startX = useSharedValue(0);
-  const startY = useSharedValue(0);
+  // Gesture objects must survive re-renders and reorders, so worklets call through a stable bridge.
+  const handlers = useRef({ begin, track, finish });
+  handlers.current = { begin, track, finish };
+  const invoke = useCallback((name: 'begin' | 'track' | 'finish', ...args: any[]) => (handlers.current[name] as any)(...args), []);
 
   const makePan = useCallback((key: string) => Gesture.Pan()
     .enabled(editing)
     .minDistance(4)
-    .onBegin(() => {
-      'worklet';
-      runOnJS(begin)(key);
-    })
-    .onStart(() => {
-      'worklet';
-      startX.value = dragX.value; startY.value = dragY.value;
-    })
+    .onBegin(() => { 'worklet'; runOnJS(invoke)('begin', key); })
+    .onStart(() => { 'worklet'; startX.value = dragX.value; startY.value = dragY.value; })
     .onUpdate(e => {
       'worklet';
       dragX.value = startX.value + e.translationX;
       dragY.value = startY.value + e.translationY;
       const cx = dragX.value + cellW / 2;
-      const cy = dragY.value + cellH / 2;
+      const cy = dragY.value + cellW / 2;
       const col = Math.min(columns - 1, Math.max(0, Math.floor(cx / stepX)));
       const row = Math.min(rows - 1, Math.max(0, Math.floor(cy / stepY)));
-      runOnJS(moveTo)(row * columns + col);
+      const dx = cx - (col * stepX + cellW / 2);
+      const dy = cy - (row * stepY + cellW / 2);
+      const inCenter = Math.abs(dx) < cellW * 0.32 && Math.abs(dy) < cellW * 0.32;
+      const outside = cx < -outsideMargin || cx > gridW + outsideMargin || cy < -outsideMargin || cy > gridH + outsideMargin;
+      runOnJS(invoke)('track', Math.min(row * columns + col, count - 1), inCenter, outside);
     })
-    .onFinalize(() => { 'worklet'; runOnJS(finish)(); }), [editing, cellW, cellH, columns, rows, stepX, stepY, begin, moveTo, finish]);
+    .onFinalize(() => { 'worklet'; runOnJS(invoke)('finish'); }), [editing, cellW, columns, rows, count, stepX, stepY, gridW, gridH, outsideMargin, invoke]);
 
-  const pans = useMemo(() => Object.fromEntries(items.map(i => [i.key, makePan(i.key)])), [items, makePan]);
+  // Recreated every render on purpose: a memoised gesture stops receiving pointer events after the
+  // first state change on web. Render order is stable (sorted by key) so a reorder never moves a node
+  // under an active pointer.
+  const pans = Object.fromEntries(items.map(i => [i.key, makePan(i.key)]));
+  const stableItems = useMemo(() => [...items].sort((a, b) => a.key.localeCompare(b.key)), [items]);
+  const indexOf = useMemo(() => Object.fromEntries(items.map((it, i) => [it.key, i])), [items]);
 
   const overlayStyle = useAnimatedStyle(() => ({
     position: 'absolute', left: 0, top: 0, width: cellW, zIndex: 50,
@@ -106,23 +204,23 @@ export const SortableGrid = ({ items, columns, cellW, cellH, gap, editing, rende
   }));
 
   return (
-    <View style={{ width: columns * stepX - gap, height: rows * stepY - gap, position: 'relative' }} testID={testID} dataSet={testID ? ({ testid: testID } as any) : undefined}>
-      {items.map((it, i) => {
-        const p = slot(i);
+    <View style={{ width: gridW, height: gridH, position: 'relative' }} testID={testID} dataSet={testID ? ({ testid: testID } as any) : undefined}>
+      {stableItems.map(it => {
+        const p = slot(indexOf[it.key] ?? 0);
         const hidden = dragKey === it.key;
         return (
           <Animated.View key={it.key} layout={LinearTransition.springify().damping(20).stiffness(220)} style={{ position: 'absolute', left: p.x, top: p.y, width: cellW, height: cellH, opacity: hidden ? 0 : 1 }}>
             <GestureDetector gesture={pans[it.key]}>
               <Animated.View>
                 <Pressable
-                  onPress={() => onPress(it.key)}
+                  onPress={() => { if (moved.current) { moved.current = false; return; } onPress(it.key); }}
                   onLongPress={() => { if (!editing) { haptic('medium'); onLongPress(it.key); } }}
                   delayLongPress={320}
                   style={({ pressed }) => ({ opacity: pressed && !editing ? 0.7 : 1, transform: [{ scale: pressed && !editing ? 0.96 : 1 }] })}
                   testID={`grid-cell-${it.key}`}
                   dataSet={{ testid: `grid-cell-${it.key}` } as any}
                 >
-                  {renderItem(it.key, false)}
+                  {renderItem(it.key, false, hoverKey === it.key)}
                 </Pressable>
               </Animated.View>
             </GestureDetector>
@@ -131,7 +229,7 @@ export const SortableGrid = ({ items, columns, cellW, cellH, gap, editing, rende
       })}
       {dragKey && (
         <Animated.View style={overlayStyle} pointerEvents="none">
-          {renderItem(dragKey, true)}
+          {renderItem(dragKey, true, false)}
         </Animated.View>
       )}
     </View>
