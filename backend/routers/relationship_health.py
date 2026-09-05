@@ -28,9 +28,11 @@ BUCKET_META = {
     "opportunity": {"label": "Opportunity", "emoji": "🔥", "color": "#FF3B30", "icon": "flame",           "order": 0},
     "at_risk":     {"label": "At Risk",     "emoji": "🔴", "color": "#FF453A", "icon": "alert-circle",     "order": 1},
     "cooling":     {"label": "Cooling",     "emoji": "🟡", "color": "#FF9F0A", "icon": "time",             "order": 2},
-    "advocate":    {"label": "Advocate",    "emoji": "💙", "color": "#0A84FF", "icon": "heart",            "order": 3},
-    "connected":   {"label": "Connected",   "emoji": "🟢", "color": "#30D158", "icon": "checkmark-circle", "order": 4},
+    "connected":   {"label": "Connected",   "emoji": "🟢", "color": "#30D158", "icon": "checkmark-circle", "order": 3},
 }
+# Advocate is who someone is (left a review / sent a referral), not how warm they are.
+# It rides along as a flag on every row and has its own banner + list, never a bucket.
+ADVOCATE_META = {"label": "Advocate", "emoji": "💙", "color": "#0A84FF", "icon": "heart"}
 
 # Engagement / intent signals (customer engaging with the rep) — within 14 days => Opportunity
 OPPORTUNITY_EVENTS = {
@@ -114,10 +116,10 @@ def _score(c: dict, last_touch, opp_ids: set, advocate_ids: set, referrer_names:
         reason = f"{days_since} days silent" if days_since is not None else "No contact on record"
     elif days_since >= 45:
         bucket, reason = "cooling", f"{days_since} days since last contact"
-    elif is_advocate:
-        bucket, reason = "advocate", "Left a review or sent a referral"
     else:
         bucket, reason = "connected", "Engaged recently"
+    if is_advocate:
+        reason = f"Advocate · {reason}"
 
     name = f"{c.get('first_name','')} {c.get('last_name','')}".strip() or c.get("company", "") or "Unknown"
     return {
@@ -206,6 +208,7 @@ async def health_summary(user_id: str):
     return {
         "total": len(book),
         "advocates": advocates,
+        "advocate_meta": ADVOCATE_META,
         "buckets": buckets,
         "needs_attention": counts.get("at_risk", 0) + counts.get("cooling", 0),
         "opportunities": counts.get("opportunity", 0),
@@ -215,6 +218,8 @@ async def health_summary(user_id: str):
 @router.get("/{user_id}/contacts")
 async def health_contacts(user_id: str, bucket: str = "cooling"):
     """Drill-down list of contacts in a given bucket, worst-first (most days silent)."""
+    if bucket == "advocate":  # app builds before the Advocate tile was retired
+        return {"bucket": "advocate", **ADVOCATE_META, **(await advocates(user_id))}
     if bucket not in BUCKET_META:
         raise HTTPException(status_code=400, detail="Invalid bucket")
     db = get_db()
@@ -250,4 +255,4 @@ async def health_one(user_id: str, contact_id: str):
     ref_raw = await db.contacts.distinct("referred_by_name", {"user_id": user_id})
     referrer_names = {str(n).strip().lower() for n in ref_raw if n}
     row = _score(c, _best_last_touch(c, last_touch_map), opp_ids, adv_ids, referrer_names, now)
-    return {**row, **BUCKET_META[row["bucket"]]}
+    return {**row, **BUCKET_META[row["bucket"]], "advocate_meta": ADVOCATE_META if row["is_advocate"] else None}

@@ -28,8 +28,9 @@ export const HealthBadge = ({ userId, contactId }: { userId: string; contactId: 
     >
       <Ionicons name={h.icon} size={14} color={h.color} />
       <Text style={{ fontSize: 13, fontWeight: '800', color: h.color }}>{h.label}</Text>
+      {h.is_advocate ? <Ionicons name="heart" size={13} color="#0A84FF" testID="contact-health-advocate" /> : null}
       {h.reason ? (
-        <Text style={{ fontSize: 12, color: h.color, opacity: 0.85 }} numberOfLines={1}>· {h.reason}</Text>
+        <Text style={{ fontSize: 12, color: h.color, opacity: 0.85 }} numberOfLines={1}>· {h.is_advocate ? String(h.reason).replace(/^Advocate · /, '') : h.reason}</Text>
       ) : null}
     </TouchableOpacity>
   );

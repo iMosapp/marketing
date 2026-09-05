@@ -128,7 +128,10 @@ export default function BookOfBusinessScreen() {
                   />
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }} numberOfLines={1}>{item.name}</Text>
-                    <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }} numberOfLines={1}>{item.reason}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                      {item.is_advocate ? <Ionicons name="heart" size={12} color="#0A84FF" testID={`bob-advocate-${item.contact_id}`} /> : null}
+                      <Text style={{ fontSize: 13, color: item.is_advocate ? '#0A84FF' : colors.textSecondary, flex: 1 }} numberOfLines={1}>{item.reason}</Text>
+                    </View>
                   </View>
                   <Ionicons name="chevron-forward" size={16} color={colors.borderLight} />
                 </TouchableOpacity>

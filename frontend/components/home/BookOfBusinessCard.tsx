@@ -53,6 +53,15 @@ export const BookOfBusinessCard = ({ userId }: { userId: string }) => {
           </View>
         ))}
       </View>
+      {summary.advocates > 0 ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 }} testID="book-of-business-advocates">
+          <Ionicons name="heart" size={13} color="#0A84FF" />
+          <Text style={{ fontSize: 12, color: colors.textSecondary }}>
+            <Text style={{ fontWeight: '800', color: '#0A84FF' }}>{summary.advocates}</Text>
+            {' '}advocate{summary.advocates !== 1 ? 's' : ''} across every group - worth a thank you
+          </Text>
+        </View>
+      ) : null}
       {touch && touch.total > 0 ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 }}>
           <Ionicons name="heart" size={13} color="#C9A962" />
