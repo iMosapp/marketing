@@ -56,7 +56,8 @@ export const AppHome = ({ apps, folderDefs, defaultLoose, userId, remoteLayout, 
   useFocusEffect(useCallback(() => {
     if (!returnFolder.current) return;
     setRestoreFolder(true);
-    setOpenFolder(returnFolder.current);
+    setRestorePage(returnFolder.current.page);
+    setOpenFolder(returnFolder.current.id);
     returnFolder.current = null;
   }, []));
 
@@ -116,7 +117,7 @@ export const AppHome = ({ apps, folderDefs, defaultLoose, userId, remoteLayout, 
 
   const reset = async () => { await clearLayout(userId); setStored(null); setEditing(false); };
   const showFolder = (fid: string) => { setRestoreFolder(false); setOpenFolder(fid); };
-  const open = (app: HubApp) => { returnFolder.current = openFolder; setOpenFolder(null); setTimeout(() => launch(app), openFolder ? 120 : 0); };
+  const open = (app: HubApp, page = 0) => { returnFolder.current = openFolder ? { id: openFolder, page } : null; setOpenFolder(null); setTimeout(() => launch(app), openFolder ? 120 : 0); };
   const flash = (id: string) => { setLanding(id); setTimeout(() => setLanding(null), 1700); };
 
   const dragOut = (app: HubApp, from: string) => {
@@ -153,7 +154,7 @@ export const AppHome = ({ apps, folderDefs, defaultLoose, userId, remoteLayout, 
   return (
     <View style={{ paddingHorizontal: 16, paddingTop: 6 }} {...tid('app-home')}>
       <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 30, marginBottom: 10 }}>
-        <Text style={{ flex: 1, fontSize: 12, fontWeight: '700', letterSpacing: 1, color: colors.textTertiary || colors.textSecondary }}>{editing ? 'ARRANGE' : 'APPS'}</Text>
+        <Text style={{ flex: 1, fontSize: 12, fontWeight: '700', letterSpacing: 1, color: colors.textTertiary || colors.textSecondary }}>{editing ? 'ARRANGE' : 'TOOLS'}</Text>
         {editing ? (
           <>
             <TouchableOpacity onPress={reset} style={{ paddingHorizontal: 12, height: 30, borderRadius: 15, justifyContent: 'center' }} {...tid('apps-reset')}>
@@ -169,7 +170,7 @@ export const AppHome = ({ apps, folderDefs, defaultLoose, userId, remoteLayout, 
       </View>
       {editing && (
         <Text style={{ fontSize: 11, color: colors.textTertiary || colors.textSecondary, marginTop: -4, marginBottom: 10 }} {...tid('arrange-hint')}>
-          Drag to reorder. Hold an app over a folder to file it, or over another app to make a folder. Open a folder and pull an app past the edge to bring it home.
+          Drag to reorder. Hold a tool over a folder to file it, or over another tool to make a folder. Open a folder and pull a tool past the edge to bring it home.
         </Text>
       )}
       {recentApps.length > 0 && !editing && (
@@ -222,7 +223,7 @@ export const AppHome = ({ apps, folderDefs, defaultLoose, userId, remoteLayout, 
       {openFolder && layout.folders[openFolder] && (
         <FolderModal
           visible title={layout.folders[openFolder].title} apps={folderApps(openFolder)} colors={colors} editing={editing}
-          onClose={() => setOpenFolder(null)} onOpenApp={open} restore={restoreFolder}
+          onClose={() => setOpenFolder(null)} onOpenApp={open} restore={restoreFolder} initialPage={restoreFolder ? restorePage : 0}
           onStartEditing={() => setEditing(true)} onStopEditing={() => setEditing(false)}
           onReorder={ids => reorderFolder(openFolder, ids)} onRename={t => renameFolder(openFolder, t)}
           onMoveRequest={a => setMoving({ app: a, from: openFolder })}
@@ -250,7 +251,7 @@ export const AppHome = ({ apps, folderDefs, defaultLoose, userId, remoteLayout, 
                   <Text style={{ fontSize: 13, fontWeight: '700', color: '#000' }}>Save</Text>
                 </TouchableOpacity>
               </View>
-              <Text style={{ fontSize: 11, color: colors.textSecondary }}>Removing a folder puts its apps back on the home screen.</Text>
+              <Text style={{ fontSize: 11, color: colors.textSecondary }}>Removing a folder puts its tools back on the home screen.</Text>
             </View>
           </View>
         </Modal>

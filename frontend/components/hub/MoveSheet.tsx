@@ -47,7 +47,7 @@ export const MoveSheet = ({ app, currentFolder, folders, colors, onClose, onMove
           <ScrollView showsVerticalScrollIndicator={false}>
             <Row id="move-home" icon="home" color={GOLD} title="Home screen" sub="Sits out on the grid" colors={colors} active={currentFolder === null} onPress={() => onMove({ type: 'home' })} />
             {folders.map(f => (
-              <Row key={f.id} id={`move-folder-${f.id}`} icon="folder" color="#007AFF" title={f.title} sub={`${f.count} app${f.count === 1 ? '' : 's'}`} colors={colors} active={currentFolder === f.id} onPress={() => onMove({ type: 'folder', id: f.id })} />
+              <Row key={f.id} id={`move-folder-${f.id}`} icon="folder" color="#007AFF" title={f.title} sub={`${f.count} tool${f.count === 1 ? '' : 's'}`} colors={colors} active={currentFolder === f.id} onPress={() => onMove({ type: 'folder', id: f.id })} />
             ))}
             {creating ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8 }}>

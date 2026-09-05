@@ -76,9 +76,9 @@ export const FolderModal = ({ visible, title, apps, colors, editing, onClose, on
 
   const hint = editing
     ? paged
-      ? 'Drag to reorder. Hold an app at the side to move it to the next page, or pull it above or below to drop it on the home screen. Tap one to move it.'
-      : 'Drag to reorder, or pull an app past the edge to drop it on the home screen. Tap one to move it.'
-    : paged ? 'Swipe for more. Hold any app to rearrange or rename this folder.' : 'Hold any app to rearrange or rename this folder.';
+      ? 'Drag to reorder. Hold a tool at the side to move it to the next page, or pull it above or below to drop it on the home screen. Tap one to move it.'
+      : 'Drag to reorder, or pull a tool past the edge to drop it on the home screen. Tap one to move it.'
+    : paged ? 'Swipe for more. Hold any tool to rearrange or rename this folder.' : 'Hold any tool to rearrange or rename this folder.';
 
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose} statusBarTranslucent>

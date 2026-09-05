@@ -160,9 +160,9 @@ export default function TabLayout() {
       <Tabs.Screen
         name="more"
         options={{
-          title: 'Apps',
+          title: 'Tools',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="apps" size={size} color={color} />
+            <Ionicons name="grid" size={size} color={color} />
           ),
         }}
       />
