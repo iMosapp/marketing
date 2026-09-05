@@ -65,7 +65,7 @@ export const FolderTile = ({ title, apps, size, colors, editing, badge, hovered,
     <View style={{ width: size, alignItems: 'center', transform: [{ scale: hovered ? 1.1 : 1 }] }} {...tid(`folder-tile-${title}`)}>
       <View style={[styles.tile, { width: size, height: size, backgroundColor: hovered ? 'rgba(201,169,98,0.18)' : (colors.surface || colors.card), borderColor: hovered ? '#C9A962' : 'rgba(255,255,255,0.10)', borderWidth: hovered ? 2 : 1, padding: 8 }]}>
         <View style={styles.gloss} />
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 3, width: mini * 3 + 6 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignContent: 'flex-start', gap: 3, width: mini * 3 + 6, height: mini * 3 + 6 }}>
           {apps.slice(0, 9).map(a => (
             <View key={a.id} style={{ width: mini, height: mini, borderRadius: Math.max(4, mini * 0.3), backgroundColor: `${a.color}33`, alignItems: 'center', justifyContent: 'center' }}>
               <Ionicons name={a.icon as any} size={Math.max(9, Math.round(mini * 0.6))} color={a.color} />
