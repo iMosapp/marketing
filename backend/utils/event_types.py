@@ -43,6 +43,7 @@ EVENT_TYPE_LABELS = {
     "anniversary_card_sent": "Anniversary Card Sent",
     "vcard_sent": "vCard Shared",
     "vcf_sent": "vCard Shared",
+    "thank_you_text_sent": "Thank-You Text Sent",
     "showcase_shared": "Showcase Shared",
     "link_page_shared": "Link Page Shared",
     "call_placed": "Call Placed",
@@ -126,6 +127,9 @@ EVENT_META = {
     "link_page_shared":    ("link",                "#AF52DE", "share"),
     "showcase_shared":     ("images",              "#5AC8FA", "share"),
     "congrats_card_sent":  ("gift",                "#C9A962", "share"),
+    "thank_you_text_sent": ("heart",               "#0A84FF", "share"),
+    "thankyou_card_sent":  ("heart",               "#34C759", "share"),
+    "thank_you_card_sent": ("heart",               "#34C759", "share"),
 }
 
 # ===== card_type field → event_type and display info =====

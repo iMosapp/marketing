@@ -65,7 +65,7 @@ CONTACT_PROJ = {
     "photo_thumbnail": 1, "photo_url": 1, "photo_path": 1, "vehicle": 1,
     "tags": 1, "date_sold": 1,
     "referred_by": 1, "referred_by_name": 1, "referral_notes": 1,
-    "last_activity_at": 1, "created_at": 1,
+    "last_activity_at": 1, "created_at": 1, "last_thanked_at": 1,
 }
 
 
@@ -122,9 +122,11 @@ def _score(c: dict, last_touch, opp_ids: set, advocate_ids: set, referrer_names:
         reason = f"Advocate · {reason}"
 
     name = f"{c.get('first_name','')} {c.get('last_name','')}".strip() or c.get("company", "") or "Unknown"
+    thanked = _as_utc(c.get("last_thanked_at"))
     return {
         "contact_id": cid,
         "name": name,
+        "first_name": c.get("first_name", ""),
         "phone": c.get("phone", ""),
         "photo_thumbnail": _photo(c),
         "vehicle": c.get("vehicle", ""),
@@ -133,6 +135,7 @@ def _score(c: dict, last_touch, opp_ids: set, advocate_ids: set, referrer_names:
         "days_since": days_since,
         "is_advocate": is_advocate,
         "last_touch": last_touch.isoformat() if last_touch else None,
+        "thanked_days": (now - thanked).days if thanked else None,
     }
 
 
@@ -237,7 +240,89 @@ async def advocates(user_id: str):
     rows = [r for r in book if r["is_advocate"]]
     # freshest advocates first
     rows.sort(key=lambda r: (r["days_since"] if r["days_since"] is not None else 100000))
-    return {"count": len(rows), "items": rows}
+    return {"count": len(rows), "thanked_30d": sum(1 for r in rows if r["thanked_days"] is not None and r["thanked_days"] <= 30), "items": rows}
+
+
+THANK_TEXT = "Hey {first}, just wanted to say thank you. Customers like you are the reason I love what I do. If you ever need anything, I'm one text away. - {rep}"
+THANK_CARD = "Hey {first}, a little thank you from me. You've been a huge part of my year and I don't take that for granted. - {rep}"
+
+
+@router.get("/{user_id}/advocates/{contact_id}/thank")
+async def thank_preview(user_id: str, contact_id: str):
+    """Prefilled thank-you copy for the one-step sheet."""
+    db = get_db()
+    c = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"first_name": 1, "phone": 1}) if ObjectId.is_valid(contact_id) else None
+    if not c:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    rep = await db.users.find_one({"_id": ObjectId(user_id)}, {"name": 1, "first_name": 1, "twilio_number": 1, "mvpline_number": 1}) or {}
+    rep_first = (rep.get("first_name") or (rep.get("name") or "").split(" ")[0] or "me").strip()
+    first = (c.get("first_name") or "there").strip()
+    return {
+        "text": THANK_TEXT.format(first=first, rep=rep_first),
+        "card": THANK_CARD.format(first=first, rep=rep_first),
+        "has_phone": bool(c.get("phone")),
+        "via_twilio": bool(rep.get("twilio_number") or rep.get("mvpline_number")),
+    }
+
+
+@router.post("/{user_id}/advocates/{contact_id}/thank")
+async def thank_advocate(user_id: str, contact_id: str, body: dict):
+    """One step: send a thank-you text, or build a thank-you card and text the link. Logs the touch."""
+    from services.twilio_service import send_sms, normalize_phone
+    from utils.activity_log import log_activity
+    mode = body.get("mode") if body.get("mode") in ("text", "card") else "text"
+    db = get_db()
+    c = await db.contacts.find_one({"_id": ObjectId(contact_id)}) if ObjectId.is_valid(contact_id) else None
+    if not c:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    phone = c.get("phone") or ""
+    if not phone:
+        raise HTTPException(status_code=400, detail="This advocate has no phone number on file")
+    rep = await db.users.find_one({"_id": ObjectId(user_id)}, {"name": 1, "first_name": 1, "twilio_number": 1, "mvpline_number": 1}) or {}
+    rep_first = (rep.get("first_name") or (rep.get("name") or "").split(" ")[0] or "me").strip()
+    first = (c.get("first_name") or "there").strip()
+    message = (body.get("message") or "").strip() or (THANK_CARD if mode == "card" else THANK_TEXT).format(first=first, rep=rep_first)
+
+    card = None
+    if mode == "card":
+        from routers.congrats_cards import auto_create_card
+        card = await auto_create_card(user_id, contact_id, card_type="thankyou", custom_message=message)
+        if card and card.get("already_exists") and not card.get("short_url"):
+            existing = await db.congrats_cards.find_one({"card_id": card["card_id"]}, {"short_url": 1})
+            card["short_url"] = (existing or {}).get("short_url")
+        if not card or not card.get("short_url"):
+            raise HTTPException(status_code=500, detail="Could not build the thank-you card")
+    sms_body = f"{message}\n{card['short_url']}" if card else message
+
+    now = datetime.now(timezone.utc)
+    rep_number = rep.get("twilio_number") or rep.get("mvpline_number")
+    sent_via = "native"
+    sid = None
+    if rep_number:
+        result = await send_sms(phone, sms_body, from_phone=rep_number)
+        if not result.get("success"):
+            raise HTTPException(status_code=502, detail=result.get("error") or "Text failed to send")
+        sent_via, sid = ("mock" if result.get("mock") else "twilio"), result.get("message_sid")
+        to_norm = normalize_phone(phone)
+        conv = await db.conversations.find_one({"user_id": user_id, "contact_id": contact_id}) or \
+               await db.conversations.find_one({"user_id": user_id, "contact_phone": to_norm})
+        if not conv:
+            r = await db.conversations.insert_one({"user_id": user_id, "rep_phone": rep_number, "contact_id": contact_id, "contact_phone": to_norm,
+                                                   "status": "active", "created_at": now, "updated_at": now, "last_message_at": now})
+            conv_id = str(r.inserted_id)
+        else:
+            conv_id = str(conv["_id"])
+            await db.conversations.update_one({"_id": conv["_id"]}, {"$set": {"last_message_at": now, "rep_engaged": True, "rep_last_replied_at": now}})
+        await db.messages.insert_one({"conversation_id": conv_id, "user_id": user_id, "contact_id": contact_id, "content": sms_body,
+                                      "direction": "outbound", "channel": "sms", "sender": "user", "twilio_sid": sid,
+                                      "status": "sent" if sent_via == "twilio" else "sent_mock", "event_type": "thankyou_card_sent" if card else "thank_you_text_sent",
+                                      "timestamp": now})
+
+    await log_activity(db, user_id=user_id, contact_id=contact_id, event_type="thankyou_card_sent" if card else "thank_you_text_sent",
+                       description=message, channel="sms", ref=sid, metadata={"mode": mode, "card_id": (card or {}).get("card_id"), "via": sent_via})
+    await db.contacts.update_one({"_id": c["_id"]}, {"$set": {"last_thanked_at": now, "updated_at": now.isoformat()}})
+    _book_cache.pop(user_id, None)
+    return {"ok": True, "mode": mode, "via": sent_via, "phone": phone, "body": sms_body, "card_url": (card or {}).get("short_url"), "thanked_at": now.isoformat()}
 
 
 @router.get("/{user_id}/contact/{contact_id}")
