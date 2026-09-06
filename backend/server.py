@@ -695,6 +695,8 @@ from routers import inventory as inventory_mgmt
 api_router.include_router(inventory_mgmt.router)
 from routers import inventory_feeds
 api_router.include_router(inventory_feeds.router)
+from routers import promo_videos
+api_router.include_router(promo_videos.router)
 api_router.include_router(wallet_pass.router)
 
 # ============= WEBSOCKET ENDPOINT =============
