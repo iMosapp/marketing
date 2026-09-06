@@ -5,7 +5,7 @@ Manages push subscriptions and sends milestone notifications.
 import os
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, HTTPException, Request
 from pywebpush import webpush, WebPushException
 from bson import ObjectId
@@ -150,6 +150,26 @@ LEAD_SOUND = "lead_chime.wav"      # bundled via app.json expo-notifications sou
 LEAD_CHANNEL = "leads"             # Android channel registered by the app at startup
 
 
+async def _mirror_to_alerts(db, user_id: str, title: str, body: str, url: str, icon: str):
+    """Every push also lands in Alerts so it can be revisited (banner gone, phone missed it, etc.).
+    Skipped when the sender already wrote a matching notification in the last few minutes."""
+    try:
+        now = datetime.now(timezone.utc)
+        dup = await db.notifications.find_one(
+            {"user_id": user_id, "created_at": {"$gte": now - timedelta(minutes=3)},
+             "$or": [{"title": title}, {"message": body}]}, {"_id": 1})
+        if dup:
+            return
+        await db.notifications.insert_one({
+            "type": "push", "user_id": user_id, "title": title, "message": body, "link": url or "/notifications",
+            "icon": icon or "notifications", "read": False, "dismissed": False, "created_at": now,
+        })
+        from routers.notifications_center import invalidate_feed
+        invalidate_feed(user_id)
+    except Exception as e:
+        logger.debug(f"[Push] alerts mirror failed (non-fatal): {e}")
+
+
 async def send_push_to_user(user_id: str, title: str, body: str, url: str = "/touchpoints/performance", icon: str = "flame",
                             sound: str = "default", channel_id: str = None):
     """Send a push notification — handles BOTH native iOS (Expo) and web (VAPID).
@@ -165,6 +185,8 @@ async def send_push_to_user(user_id: str, title: str, body: str, url: str = "/to
             return 0  # User wants SMS only — skip push entirely
     except Exception:
         mode = "both"
+
+    await _mirror_to_alerts(get_db(), user_id, title, body, url, icon)
 
     # Quiet hours: HOLD the push for a morning summary instead of dropping it
     try:

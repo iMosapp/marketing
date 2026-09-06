@@ -1,0 +1,6 @@
+{
+  "cleanUrls": true,
+  "redirects": [
+    { "source": "/get/:code", "destination": "https://app.imonsocial.com/api/get/:code", "permanent": false }
+  ]
+}

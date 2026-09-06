@@ -71,6 +71,8 @@ async def _notify_owner(db, owner_id: str, title: str, body: str, ntype: str):
         "type": ntype, "user_id": owner_id, "title": title, "message": body, "icon": "phone-portrait",
         "color": "#34C759", "link": "/share-app", "read": False, "dismissed": False, "created_at": _now(),
     })
+    from routers.notifications_center import invalidate_feed
+    invalidate_feed(owner_id)
     try:
         from routers.push_notifications import send_push_to_user
         await send_push_to_user(owner_id, title, body, "/share-app", "phone-portrait")

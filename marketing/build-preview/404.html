@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>i'M On Social</title>
+<script>
+  // /get/<code> install links must work even when host-level redirects are not configured.
+  (function () {
+    var m = /^\/get\/([A-Za-z0-9\-]+)\/?$/.exec(location.pathname);
+    if (m) location.replace('https://app.imonsocial.com/api/get/' + m[1].toLowerCase());
+  })();
+</script>
+<style>
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0A0A0F;color:#fff;font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;text-align:center;padding:24px}
+  h1{font-size:28px;margin:0 0 10px}p{color:rgba(255,255,255,.6);margin:0 0 24px}
+  a{display:inline-block;background:#C9A962;color:#000;font-weight:700;padding:12px 22px;border-radius:999px;text-decoration:none}
+</style>
+</head>
+<body>
+  <div>
+    <h1>That page moved.</h1>
+    <p>Looking for the app? Tap below and we will send you to the right place.</p>
+    <a href="https://app.imonsocial.com/api/get/site">Get the iPhone app</a>
+    <p style="margin-top:18px"><a href="/" style="background:transparent;color:#C9A962;padding:0">Back to imonsocial.com</a></p>
+  </div>
+</body>
+</html>

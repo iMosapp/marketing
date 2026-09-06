@@ -180,6 +180,8 @@ async def record_signal(
         "created_at": now,
     }
     await db.notifications.insert_one(notif_doc)
+    from routers.notifications_center import invalidate_feed
+    invalidate_feed(user_id)
 
     # Send push notification to the salesperson (non-blocking)
     try:

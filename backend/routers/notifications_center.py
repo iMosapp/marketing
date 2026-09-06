@@ -43,12 +43,13 @@ ACTION_TYPES = {
     "inventory_feed_issue":       ("today", "{title}",                          "Fix",      "cloud-offline"),
     "app_install":                ("today", "{title}",                          "See",      "phone-portrait"),
     "app_signup":                 ("today", "{title}",                          "See",      "person-add"),
+    "push":                       ("today", "{title}",                          "Open",     "notifications"),
 }
 BUCKETS = ("now", "today", "later")
 # legacy category (older app builds filter on it)
 _CATEGORY = {"you_are_needed": "urgent", "slow_lead": "urgent", "customer_reply": "replies", "call_retry_replied": "replies",
              "ai_draft_approval_required": "replies", "keyword_alert": "replies", "appointment_extracted": "appts",
-             "task_reminder": "appts", "manager_nudge": "appts"}
+             "task_reminder": "appts", "manager_nudge": "appts", "push": "appts"}
 FOR_YOU_CATEGORIES = ("urgent", "leads", "replies", "appts")
 VIRTUAL_PREFIXES = ("task_", "task_soon_", "msg_", "flag_", "evt_", "csend_")
 
@@ -167,6 +168,11 @@ def _task_action(t: dict, contact: dict | None, overdue: bool, now: datetime) ->
             "contact_name": name, "contact_id": contact_id, "task_id": task_id}
 
 
+def invalidate_feed(user_id: str) -> None:
+    """Call after inserting a notification so Alerts shows it immediately instead of after the 30s cache."""
+    _notifications_cache.pop(user_id, None)
+
+
 async def _get_full_feed(user_id: str) -> dict:
     if user_id in _notifications_cache:
         return _notifications_cache[user_id]
@@ -200,9 +206,16 @@ async def _build_feed(user_id: str) -> dict:
     stale_ids: list = []
     seen_keys: set = set()
     keep: list = []
+    # a mirrored push is redundant when a real alert with the same title/body landed within 3 minutes
+    real_titles = {(n.get("title"), _dt(n.get("created_at"))) for n in notifs if n.get("type") != "push"}
     for n in notifs:
         ntype = n.get("type", "")
-        if ntype in ACTION_TYPES:
+        if ntype == "push":
+            t0 = _dt(n.get("created_at"))
+            if any(t == n.get("title") and abs((t0 - ts).total_seconds()) < 180 for t, ts in real_titles):
+                stale_ids.append(n["_id"])
+                continue
+        if ntype in ACTION_TYPES and ntype != "push":
             key = (ntype, str(n.get("conversation_id") or n.get("contact_id") or n.get("contact_name") or n["_id"]))
             if key in seen_keys:
                 stale_ids.append(n["_id"])
