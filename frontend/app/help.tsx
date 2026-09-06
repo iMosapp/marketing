@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useThemeStore } from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
+import { WelcomeTour } from '../components/home/WelcomeTour';
 
 const API = Platform.OS === 'web'
   ? ''
@@ -147,6 +148,7 @@ export default function HelpPage() {
   const [loading, setLoading] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAI, setShowAI] = useState(false);
+  const [showTour, setShowTour] = useState(false);
   const chatRef = useRef<ScrollView>(null);
 
   const isManager = MANAGER_ROLES.includes(user?.role || '') || !!(user as any)?.partner_id;
@@ -229,6 +231,8 @@ export default function HelpPage() {
         ) : null}
       </View>
 
+      <WelcomeTour visible={showTour} onClose={() => setShowTour(false)} />
+
       {/* AI Chat or Articles */}
       {showAI ? (
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -253,6 +257,17 @@ export default function HelpPage() {
         </KeyboardAvoidingView>
       ) : (
         <ScrollView style={s.list} contentContainerStyle={s.listContent}>
+          {!query.trim() && (
+            <TouchableOpacity onPress={() => setShowTour(true)} activeOpacity={0.8}
+              style={[s.tourRow, { backgroundColor: colors.card }]} testID="help-replay-tour" dataSet={{ testid: 'help-replay-tour' } as any}>
+              <View style={s.tourIcon}><Ionicons name="play" size={16} color="#000" /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.articleTitle, { color: colors.text }]}>Show me around Home</Text>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>The three cards, in 60 seconds</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+            </TouchableOpacity>
+          )}
           {filtered.length === 0 && (
             <View style={s.emptyState}>
               <Ionicons name="search-outline" size={40} color={colors.textTertiary} />
@@ -309,6 +324,8 @@ export default function HelpPage() {
 }
 
 const s = StyleSheet.create({
+  tourRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: '#C9A96255' },
+  tourIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#C9A962', alignItems: 'center', justifyContent: 'center' },
   safe: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
   backBtn: { padding: 4 },

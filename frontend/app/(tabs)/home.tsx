@@ -33,6 +33,7 @@ import { HotVehiclesCard } from '../../components/home/HotVehiclesCard';
 import { BookOfBusinessCard } from '../../components/home/BookOfBusinessCard';
 import { QuickActionsFab } from '../../components/home/QuickActionsFab';
 import { NeedsReplyCard } from '../../components/home/NeedsReplyCard';
+import { WelcomeTour, shouldShowWelcomeTour, markWelcomeTourSeen } from '../../components/home/WelcomeTour';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -846,8 +847,16 @@ function HomeScreen() {
 
   const simpleHome = user?.role === 'user' && !(user as any)?.partner_id;
 
+  const [showTour, setShowTour] = useState(false);
+  useEffect(() => {
+    if (!simpleHome || !initialLoaded || !user?._id) return;
+    shouldShowWelcomeTour(user._id).then(show => { if (show) setShowTour(true); });
+  }, [simpleHome, initialLoaded, user?._id]);
+  const closeTour = () => { setShowTour(false); if (user?._id) markWelcomeTourSeen(user._id); };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']} data-testid={simpleHome ? 'home-simple' : 'home-full'}>
+      <WelcomeTour visible={showTour} onClose={closeTour} />
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <View style={{ flex: 1 }}>
           <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>
