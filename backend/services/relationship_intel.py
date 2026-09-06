@@ -335,7 +335,7 @@ async def build_relationship_brief(user_id: str, contact_id: str, campaign_conte
         if personal.get("trade_in"):
             ai_parts.append(f"  Trade-in: {personal['trade_in']}")
         if personal.get("purchase_context"):
-            ai_parts.append(f"  Why they bought: {personal['purchase_context']}")
+            ai_parts.append(f"  Hot buttons (what matters to them): {personal['purchase_context']}")
         if personal.get("pets"):
             ai_parts.append(f"  Pets: {personal['pets']}")
         if personal.get("neighborhood"):

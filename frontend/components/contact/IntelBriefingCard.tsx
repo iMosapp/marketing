@@ -24,10 +24,10 @@ function LearnedChip({ learned, colors }: any) {
   return (
     <View style={{ marginBottom: 10 }}>
       <TouchableOpacity onPress={() => setOpen(v => !v)} activeOpacity={0.7}
-        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: '#AF52DE22', borderWidth: 1, borderColor: '#AF52DE55' }}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', maxWidth: '100%', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: '#AF52DE22', borderWidth: 1, borderColor: '#AF52DE55' }}
         {...tid('intel-learned-chip')}>
         <Ionicons name="sparkles" size={12} color="#C77DFF" />
-        <Text style={{ fontSize: 12, fontWeight: '700', color: '#C77DFF' }} numberOfLines={1}>
+        <Text style={{ flexShrink: 1, fontSize: 12, fontWeight: '700', color: '#C77DFF' }} numberOfLines={1}>
           Updated from {learned.source || 'texts'}: {labels.slice(0, 3).join(', ')}{labels.length > 3 ? ` +${labels.length - 3}` : ''} · {timeAgo(learned.at)}
         </Text>
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={12} color="#C77DFF" />

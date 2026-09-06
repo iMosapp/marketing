@@ -37,7 +37,7 @@ const FIELDS: { key: string; label: string; icon: string; multi?: boolean }[] = 
   { key: 'vehicle_color', label: 'Vehicle Color', icon: 'color-palette' },
   { key: 'vehicle_details', label: 'Vehicle Details', icon: 'car-outline' },
   { key: 'trade_in', label: 'Trade-in', icon: 'swap-horizontal' },
-  { key: 'purchase_context', label: 'Why They Bought', icon: 'chatbox-ellipses', multi: true },
+  { key: 'purchase_context', label: 'Hot Buttons', icon: 'flame', multi: true },
   { key: 'pets', label: 'Pets', icon: 'paw' },
   { key: 'neighborhood', label: 'Area / Neighborhood', icon: 'location' },
   { key: 'referral_potential', label: 'Referral Potential', icon: 'people-circle' },
@@ -111,7 +111,7 @@ function buildViewItems(d: PersonalDetails): { label: string; value: string; ico
   if (d.occupation) items.push({ label: 'Work', value: `${d.occupation}${d.employer ? ` at ${d.employer}` : ''}`, icon: 'briefcase' });
   if (d.vehicle_purchased) items.push({ label: 'Vehicle', value: `${d.vehicle_purchased}${d.vehicle_color ? ` (${d.vehicle_color})` : ''}${d.vehicle_details ? ` — ${d.vehicle_details}` : ''}`, icon: 'car' });
   if (d.trade_in) items.push({ label: 'Trade-in', value: d.trade_in, icon: 'swap-horizontal' });
-  if (d.purchase_context) items.push({ label: 'Why they bought', value: d.purchase_context, icon: 'chatbox-ellipses' });
+  if (d.purchase_context) items.push({ label: 'Hot buttons', value: d.purchase_context, icon: 'flame' });
   if (d.pets) items.push({ label: 'Pets', value: d.pets, icon: 'paw' });
   if (d.neighborhood) items.push({ label: 'Area', value: d.neighborhood, icon: 'location' });
   if (d.referral_potential) items.push({ label: 'Referral lead', value: d.referral_potential, icon: 'people-circle' });

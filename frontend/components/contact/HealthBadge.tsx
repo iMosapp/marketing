@@ -23,14 +23,14 @@ export const HealthBadge = ({ userId, contactId }: { userId: string; contactId: 
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={() => router.push('/book-of-business' as any)}
-      style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 7, marginHorizontal: 16, marginBottom: 10, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, backgroundColor: `${h.color}1A`, borderWidth: 1, borderColor: `${h.color}40` }}
+      style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', maxWidth: '100%', gap: 7, marginHorizontal: 16, marginBottom: 10, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, backgroundColor: `${h.color}1A`, borderWidth: 1, borderColor: `${h.color}40` }}
       testID="contact-health-badge"
     >
       <Ionicons name={h.icon} size={14} color={h.color} />
       <Text style={{ fontSize: 13, fontWeight: '800', color: h.color }}>{h.label}</Text>
       {h.is_advocate ? <Ionicons name="heart" size={13} color="#0A84FF" testID="contact-health-advocate" /> : null}
       {h.reason ? (
-        <Text style={{ fontSize: 12, color: h.color, opacity: 0.85 }} numberOfLines={1}>· {h.is_advocate ? String(h.reason).replace(/^Advocate · /, '') : h.reason}</Text>
+        <Text style={{ flexShrink: 1, fontSize: 12, color: h.color, opacity: 0.85 }} numberOfLines={1}>· {h.is_advocate ? String(h.reason).replace(/^Advocate · /, '') : h.reason}</Text>
       ) : null}
     </TouchableOpacity>
   );
