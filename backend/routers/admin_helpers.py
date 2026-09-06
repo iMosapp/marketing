@@ -88,7 +88,7 @@ async def send_invite_email(
                         <div style="background-color: #FBF7EC; padding: 20px 24px; border-radius: 12px; margin: 0 0 24px 0; border: 1px solid #EBDDB8;">
                             <p style="margin: 0 0 14px 0; font-weight: 700; color: #333; font-size: 14px;">Activate in 3 quick steps</p>
                             <ol style="margin: 0; padding-left: 20px; color: #444; font-size: 14px; line-height: 1.8;">
-                                <li>Download the app: <a href="https://apps.apple.com/app/im-on-social/id6743597907" style="color:#007AFF">iPhone</a> or <a href="https://play.google.com/store/apps/details?id=com.imonsocial.app" style="color:#007AFF">Android</a></li>
+                                <li>Download the app on iPhone: <a href="https://apps.apple.com/us/app/im-on-social/id6774618559" style="color:#007AFF">App Store</a> <span style="color:#888">(Android coming soon)</span></li>
                                 <li>Tap <strong>"Activate my account"</strong> and enter your mobile number{phone_hint}</li>
                                 <li>Enter the code we text you and choose your password</li>
                             </ol>

@@ -32,6 +32,7 @@ import { WeeklyWinsCard } from '../../components/home/WeeklyWinsCard';
 import { HotVehiclesCard } from '../../components/home/HotVehiclesCard';
 import { BookOfBusinessCard } from '../../components/home/BookOfBusinessCard';
 import { QuickActionsFab } from '../../components/home/QuickActionsFab';
+import { NeedsReplyCard } from '../../components/home/NeedsReplyCard';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -843,8 +844,10 @@ function HomeScreen() {
     };
   })();
 
+  const simpleHome = user?.role === 'user' && !(user as any)?.partner_id;
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']} data-testid={simpleHome ? 'home-simple' : 'home-full'}>
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <View style={{ flex: 1 }}>
           <Text maxFontSizeMultiplier={1.0} style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>
@@ -901,6 +904,7 @@ function HomeScreen() {
         ) : (
         <>
 
+        {!simpleHome && (<>
         {/* ── LEADS WAITING — shared queue + my unanswered internet leads ── */}
         <LeadsWaitingStrip userId={user?._id || ''} />
 
@@ -932,6 +936,7 @@ function HomeScreen() {
             },
           ]}
         />
+        </>)}
 
         {/* ── DO THIS NEXT — one clear action ─── */}
         <TouchableOpacity
@@ -974,6 +979,7 @@ function HomeScreen() {
           </View>
         </TouchableOpacity>
 
+        {!simpleHome && (<>
         {/* ── QUICK ACTIONS — compact row, SOLD! front and center ── */}
         <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 16 }}>
           {[
@@ -1079,6 +1085,7 @@ function HomeScreen() {
             )}
           </View>
         )}
+        </>)}
 
         {/* ── MY 3 FOR TODAY ────────────────────────────── */}
         <View
@@ -1176,6 +1183,9 @@ function HomeScreen() {
           )}
         </View>
 
+        {simpleHome && <NeedsReplyCard userId={user?._id || ''} />}
+
+        {!simpleHome && (<>
         {/* ── BOOK OF BUSINESS (Relationship Health) ─────── */}
         <BookOfBusinessCard userId={user?._id || ''} />
 
@@ -1354,6 +1364,7 @@ function HomeScreen() {
 
           {/* Activity Feed tile */}
         </View>
+        </>)}
         </>
         )}
       </ScrollView>
@@ -1361,6 +1372,7 @@ function HomeScreen() {
       {/* ── Floating quick actions (secondary actions) ── */}
       <QuickActionsFab
         actions={[
+          ...(simpleHome ? [{ key: 'sold', icon: 'trophy', label: 'SOLD!', color: '#C9A962', onPress: () => router.push('/sold-quick' as any) }] : []),
           { key: 'dates-calendar', icon: 'calendar', label: 'Calendar', color: '#AF52DE', onPress: () => router.push('/dates-calendar' as any) },
           { key: 'send-photo', icon: 'camera', label: 'Send Photo', color: '#32ADE6', onPress: () => router.push('/quick-send/photo' as any) },
           { key: 'voice-note', icon: 'mic', label: 'Voice Note', color: '#34C759', onPress: () => openActionPicker('voice', 'Voice Note — pick a person') },

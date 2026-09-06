@@ -110,6 +110,11 @@ async def list_sops(
     """List all SOPs, optionally filtered by department or category"""
     user = await verify_internal_access(x_user_id)
     db = get_db()
+    try:
+        from content.training_2026 import apply_training_refresh
+        await apply_training_refresh(db)
+    except Exception as e:
+        logging.getLogger(__name__).error(f"training refresh failed: {e}")
     
     # Build query
     query = {"is_published": True}

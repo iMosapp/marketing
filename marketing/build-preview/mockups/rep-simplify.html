@@ -1,0 +1,156 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockups: Rep Home, Rep Tools, Phone Numbers</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0B0B0C;--card:#1C1C1E;--card2:#2C2C2E;--line:#2A2A2C;--gold:#C9A962;--text:#F5F5F7;--muted:#8E8E93;--green:#34C759;--red:#FF453A;--blue:#32ADE6;--purple:#AF52DE}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#151517;color:var(--text);font-family:Inter,-apple-system,sans-serif;padding:32px 20px 60px}
+  h1{font-size:22px;font-weight:800;margin-bottom:6px}
+  .lead{color:var(--muted);font-size:14px;margin-bottom:28px;max-width:900px;line-height:1.5}
+  .row{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start}
+  .mock{display:flex;flex-direction:column;gap:12px;align-items:center}
+  .mock h2{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:700}
+  .mock p{font-size:12px;color:var(--muted);max-width:340px;text-align:center;line-height:1.5}
+  .phone{width:390px;height:844px;background:var(--bg);border-radius:44px;border:8px solid #000;box-shadow:0 30px 80px rgba(0,0,0,.6);overflow:hidden;position:relative;display:flex;flex-direction:column}
+  .screen{flex:1;overflow:hidden;padding:54px 16px 0;display:flex;flex-direction:column;gap:14px}
+  .tabbar{height:78px;background:#0f0f10;border-top:1px solid var(--line);display:flex;justify-content:space-around;align-items:flex-start;padding-top:10px}
+  .tab{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;color:var(--muted)}.tab.on{color:var(--gold)}
+  .tab i{width:22px;height:22px;border-radius:6px;background:currentColor;opacity:.9;display:block}
+  .hdr{display:flex;justify-content:space-between;align-items:flex-end}
+  .hdr small{font-size:12px;color:var(--muted);display:block}.hdr b{font-size:28px;font-weight:800}
+  .hdr .r{display:flex;gap:8px;align-items:center}
+  .pill{background:#2A2418;border:1px solid var(--gold);color:var(--gold);font-size:11px;font-weight:700;padding:5px 9px;border-radius:999px}
+  .ic{width:34px;height:34px;border-radius:17px;background:var(--card);display:grid;place-items:center;color:var(--text);font-size:14px}
+  .card{background:var(--card);border-radius:18px;padding:14px}
+  .card.gold{border:1.5px solid var(--gold);background:#17150f}
+  .lbl{font-size:11px;letter-spacing:.14em;font-weight:700;color:var(--gold);text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
+  .lbl span{color:var(--muted);letter-spacing:0;text-transform:none;font-weight:600}
+  .next{display:flex;gap:12px;align-items:center;margin-top:10px}
+  .next .star{width:46px;height:46px;border-radius:12px;background:#2A2418;display:grid;place-items:center;color:var(--gold);font-size:20px}
+  .next b{font-size:16px;display:block}.next small{font-size:12px;color:var(--muted)}
+  .btn{background:var(--gold);color:#000;font-weight:800;font-size:12px;padding:9px 14px;border-radius:999px;white-space:nowrap}
+  .btn.ghost{background:transparent;border:1px solid var(--gold);color:var(--gold)}
+  .li{display:flex;gap:12px;align-items:center;padding:12px 0;border-top:1px solid var(--line)}.li:first-of-type{border-top:0}
+  .av{width:40px;height:40px;border-radius:20px;background:#2C2C2E;display:grid;place-items:center;font-weight:700;color:var(--gold);font-size:13px;flex:none}
+  .li .t{flex:1;min-width:0}.li .t b{font-size:15px;display:block}.li .t small{font-size:12px;color:var(--muted);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .li .t small em{color:var(--gold);font-style:normal;font-weight:600}
+  .time{font-size:11px;color:var(--muted)}.dot{width:8px;height:8px;border-radius:4px;background:var(--red);display:inline-block;margin-right:6px}
+  .tag{font-size:10px;font-weight:700;padding:3px 7px;border-radius:6px;background:#3a1d1d;color:var(--red)}
+  .fab{position:absolute;right:20px;bottom:98px;width:56px;height:56px;border-radius:28px;background:var(--gold);color:#000;font-size:30px;display:grid;place-items:center;box-shadow:0 10px 30px rgba(201,169,98,.35)}
+  .prog{height:6px;background:#2C2C2E;border-radius:3px;margin-top:10px;overflow:hidden}.prog i{display:block;height:100%;width:33%;background:var(--gold)}
+  .done{color:var(--green);font-size:12px;font-weight:700}
+  /* tools */
+  .search{background:var(--card);border-radius:14px;padding:12px 14px;color:var(--muted);font-size:14px;display:flex;justify-content:space-between}
+  .me{background:var(--card);border-radius:16px;padding:12px;display:flex;gap:10px;align-items:center}
+  .me .av{background:#5a4a2a;color:#fff}
+  .me b{font-size:15px;display:block}.me small{font-size:11px;color:var(--muted)}
+  .me .btn.ghost{margin-left:auto;font-size:11px;padding:7px 10px;border-color:#444;color:var(--text)}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px 10px;margin-top:6px}
+  .app{display:flex;flex-direction:column;align-items:center;gap:7px;font-size:11px;font-weight:600;text-align:center}
+  .app .tile{width:72px;height:72px;border-radius:20px;display:grid;place-items:center;font-size:28px;background:var(--card)}
+  .app .tile.folder{padding:8px;grid-template-columns:1fr 1fr;gap:6px;place-items:stretch}
+  .app .tile.folder i{border-radius:7px;display:block}
+  .hint{font-size:11px;color:var(--muted);text-align:center;margin-top:auto;padding-bottom:12px}
+  /* phone numbers */
+  .chips{display:flex;gap:8px}.chip{flex:1;background:var(--card);border-radius:12px;padding:10px;text-align:center}
+  .chip b{font-size:18px;display:block}.chip small{font-size:10px;color:var(--muted)}
+  .num{display:flex;flex-direction:column;gap:8px;background:var(--card);border-radius:16px;padding:12px 14px}
+  .num .top{display:flex;justify-content:space-between;align-items:center}
+  .num .n{font-size:16px;font-weight:700;letter-spacing:.02em}
+  .ok{font-size:10px;font-weight:700;color:var(--green)}.warn{font-size:10px;font-weight:700;color:#FF9F0A}
+  .who{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}.who .av{width:24px;height:24px;border-radius:12px;font-size:10px}
+  .acts{display:flex;gap:8px}.acts .btn{font-size:11px;padding:7px 11px}
+  .sheet{position:absolute;left:0;right:0;bottom:78px;background:#1C1C1E;border-radius:24px 24px 0 0;padding:16px 16px 18px;box-shadow:0 -20px 60px rgba(0,0,0,.6)}
+  .sheet h3{font-size:16px;font-weight:800;margin-bottom:10px}
+  .input{background:#0B0B0C;border:1px solid #333;border-radius:12px;padding:12px;font-size:16px;letter-spacing:.1em;display:flex;justify-content:space-between;color:var(--text)}
+  .res{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+  .res b{font-size:15px}.res small{font-size:11px;color:var(--muted);display:block}
+  .scrim{position:absolute;inset:0;background:rgba(0,0,0,.45)}
+  .note{margin-top:34px;background:#1C1C1E;border-radius:16px;padding:18px 20px;max-width:900px;font-size:13px;line-height:1.6;color:#D1D1D6}
+  .note b{color:var(--gold)}
+</style></head>
+<body>
+<h1>Rep-first simplification: 3 mockups for approval</h1>
+<p class="lead">Left: the rep's Home reduced to Do This Next, Your 3 for Today, and what needs a reply in the Inbox. Middle: the rep's Tools screen down to five items. Right: one Phone Numbers screen that buys, assigns and pools. Managers and admins keep their current screens; only role "salesperson" gets the simplified views.</p>
+
+<div class="row">
+  <!-- REP HOME -->
+  <div class="mock"><h2>A · Rep Home</h2>
+  <div class="phone"><div class="screen">
+    <div class="hdr"><div><small>Good morning</small><b>Forest</b></div><div class="r"><div class="ic">▦</div><div class="pill">✦ AI ON</div><div class="ic">🔔</div></div></div>
+    <div class="card gold"><div class="lbl">Do this next</div>
+      <div class="next"><div class="star">★</div><div style="flex:1"><b>Text Steve about Lake Powell</b><small>Back from the trip this week. Ask how it went.</small></div><div class="btn">Write it</div></div>
+    </div>
+    <div class="card"><div class="lbl">Your 3 for today <span>1 of 3 done</span></div>
+      <div class="li"><div class="av">SM</div><div class="t"><b>Steve Miller</b><small>Back from <em>Lake Powell</em>. Ask how it went.</small></div><div class="btn">Text</div></div>
+      <div class="li"><div class="av">MM</div><div class="t"><b>Michelle Miller</b><small><em>Birthday Friday.</em> Bought the Tacoma with Steve.</small></div><div class="btn">Text</div></div>
+      <div class="li" style="opacity:.55"><div class="av">JR</div><div class="t"><b>Jenna Rowe</b><small>Thanked for her 5 star review</small></div><div class="done">Done ✓</div></div>
+      <div class="prog"><i></i></div>
+    </div>
+    <div class="card"><div class="lbl">Needs a reply <span>Open Inbox →</span></div>
+      <div class="li"><div class="av">SM</div><div class="t"><b><span class="dot"></span>Sarah Mitchell</b><small>Do you have the Tacoma in lunar rock?</small></div><div><span class="tag">WAITING 6m</span></div></div>
+      <div class="li"><div class="av">TB</div><div class="t"><b><span class="dot"></span>Tod Baker</b><small>Sounds good, when can I come by?</small></div><div class="time">22m</div></div>
+      <div class="li"><div class="av">JK</div><div class="t"><b>Jacob Kim</b><small>Jessi: Sent 3 photos of the 4Runner</small></div><div class="time">1h</div></div>
+    </div>
+    <div class="hint">Everything else (streak, month sales, touchpoints, SEO) moves to Tools › Today and My Numbers. The gold + still opens Call · Voice Note · Send Photo · Calendar · SOLD!</div>
+  </div>
+  <div class="fab">+</div>
+  <div class="tabbar"><div class="tab on"><i></i>Home</div><div class="tab"><i></i>Contacts</div><div class="tab"><i></i>Inbox</div><div class="tab"><i></i>Activity</div><div class="tab"><i></i>Tools</div></div>
+  </div>
+  <p>Removed for reps: smart bar chips, 4 quick tiles, streak card, September Sales, Your Day touchpoints card, SEO Health.</p>
+  </div>
+
+  <!-- REP TOOLS -->
+  <div class="mock"><h2>B · Rep Tools</h2>
+  <div class="phone"><div class="screen">
+    <div class="search"><span>🔍 Search anything…</span><span>🔔</span></div>
+    <div class="me"><div class="av">FM</div><div><b>Forest Miller</b><small>Sales · i'M On Social</small></div><div class="btn ghost">Profile</div><div class="btn ghost">My VA</div></div>
+    <div class="lbl" style="margin-top:8px">Tools</div>
+    <div class="grid">
+      <div class="app"><div class="tile folder"><i style="background:#FF9F0A"></i><i style="background:#C9A962"></i><i style="background:#34C759"></i><i style="background:#5856D6"></i></div>Today</div>
+      <div class="app"><div class="tile folder"><i style="background:#C9A962"></i><i style="background:#FFD60A"></i><i style="background:#32ADE6"></i><i style="background:#34C759"></i></div>My Brand</div>
+      <div class="app"><div class="tile" style="background:#0f2a3a;color:#32ADE6">🚗</div>Inventory</div>
+      <div class="app"><div class="tile" style="background:#2a2010;color:#FF9F0A">🎓</div>Learning</div>
+      <div class="app"><div class="tile" style="background:#222;color:#ccc">⚙️</div>Settings</div>
+    </div>
+    <div class="card" style="margin-top:10px"><div class="lbl">Inside the folders</div>
+      <div style="font-size:12px;line-height:1.9;color:#D1D1D6;margin-top:6px">
+        <b style="color:var(--gold)">Today</b> · Tasks · Calendar · Touchpoints · My Numbers (streak, month sales)<br>
+        <b style="color:var(--gold)">My Brand</b> · My Card · Get Reviews · Showcase · Share the App<br>
+        <b style="color:var(--gold)">Learning</b> · Training Hub · Help<br>
+        <b style="color:var(--gold)">Settings</b> · Profile · My VA (Jessi) · Notifications · Security
+      </div>
+    </div>
+    <div class="hint">Hidden for reps: Internet Leads, Send a Blast, Campaigns, Manage, My Performance, Leads folder, Set Up, Admin. Managers still see everything.</div>
+  </div>
+  <div class="tabbar"><div class="tab"><i></i>Home</div><div class="tab"><i></i>Contacts</div><div class="tab"><i></i>Inbox</div><div class="tab"><i></i>Activity</div><div class="tab on"><i></i>Tools</div></div>
+  </div>
+  <p>Five items instead of fourteen. A manager can still grant a rep extra tools (Campaigns, Blast, Leads) from Team Members › permissions.</p>
+  </div>
+
+  <!-- PHONE NUMBERS -->
+  <div class="mock"><h2>C · Phone Numbers (one screen)</h2>
+  <div class="phone"><div class="screen">
+    <div class="hdr"><div><small>Set Up</small><b style="font-size:22px">Phone Numbers</b></div><div class="btn">+ Buy a number</div></div>
+    <div class="chips"><div class="chip"><b>3</b><small>Numbers</small></div><div class="chip"><b>2</b><small>Assigned</small></div><div class="chip"><b>1</b><small>In pool</small></div><div class="chip"><b>$3.45</b><small>/ month</small></div></div>
+    <div class="num"><div class="top"><span class="n">(435) 220-3414</span><span class="ok">● Texts & calls OK</span></div><div class="who"><div class="av">FM</div>Forest Miller · Sales</div><div class="acts"><div class="btn ghost">Reassign</div><div class="btn ghost">Move to pool</div></div></div>
+    <div class="num"><div class="top"><span class="n">(435) 220-3921</span><span class="ok">● Texts & calls OK</span></div><div class="who"><div class="av">AR</div>Ana Rivera · Sales</div><div class="acts"><div class="btn ghost">Reassign</div><div class="btn ghost">Move to pool</div></div></div>
+    <div class="num"><div class="top"><span class="n">(801) 555-0148</span><span class="warn">● In pool · Jessi answers</span></div><div class="who">Unassigned. Jessi handles inbound for the store.</div><div class="acts"><div class="btn">Assign to a rep</div></div></div>
+  </div>
+  <div class="scrim"></div>
+  <div class="sheet"><h3>Buy a number</h3>
+    <div class="input"><span>Area code&nbsp; <b>435</b></span><span style="color:var(--gold);font-size:13px">Search</span></div>
+    <div class="res"><div><b>(435) 220-7710</b><small>St. George, UT · $1.15/mo</small></div><div class="btn">Buy & assign</div></div>
+    <div class="res"><div><b>(435) 220-7742</b><small>St. George, UT · $1.15/mo</small></div><div class="btn">Buy & assign</div></div>
+    <div class="res"><div><b>(435) 419-0033</b><small>Cedar City, UT · $1.15/mo</small></div><div class="btn">Buy & assign</div></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:10px">Buy & assign picks the rep in one step and wires texting + calling automatically. Nothing else to configure.</div>
+  </div>
+  <div class="tabbar"><div class="tab"><i></i>Home</div><div class="tab"><i></i>Contacts</div><div class="tab"><i></i>Inbox</div><div class="tab"><i></i>Activity</div><div class="tab on"><i></i>Tools</div></div>
+  </div>
+  <p>Replaces both "Phone Numbers" and "Phone Assignments". Buy, assign, reassign, pool, and health in one list.</p>
+  </div>
+</div>
+
+<div class="note"><b>Decisions to confirm:</b> (1) Home for reps keeps the gold + button with SOLD! added, so logging a sale stays one tap. (2) Tools for reps has exactly five items; reps who need Campaigns or Blast get them via manager permission. (3) Phone Assignments is retired; its "shared inbox" option moves into the Reassign menu. (4) Managers, org admins and super admins see no change to Home or Tools.</div>
+</body></html>

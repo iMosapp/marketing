@@ -465,6 +465,13 @@ async def get_tracks(request: Request, role: Optional[str] = Query(None)):
     db = get_db()
     user_id = request.headers.get("X-User-ID")
 
+    try:
+        from content.training_2026 import apply_training_refresh
+        await apply_training_refresh(db)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"training refresh failed: {e}")
+
     # Auto-seed missing tracks (not just when zero)
     existing_slugs_cursor = db.training_tracks.find({}, {"slug": 1, "_id": 0})
     existing_slugs = {doc["slug"] async for doc in existing_slugs_cursor}

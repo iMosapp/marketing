@@ -8,6 +8,9 @@ export type HubApp = {
 export type HubFolderDef = { id: string; title: string; icon: string; color: string };
 export type HubLayout = { v: 1; home: string[]; folders: Record<string, { title: string; items: string[] }>; updated_at?: string };
 
+// "userId:rep" = a scoped layout (rep-first Tools). Stored locally only; never synced onto the account record.
+const isScoped = (userId: string) => userId.includes(':');
+
 export const slug = (s: string) => s.toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 export const isFolderKey = (k: string) => k.startsWith('f:');
 export const keyId = (k: string) => k.slice(2);
@@ -66,13 +69,13 @@ export async function loadLayout(userId: string, remote?: HubLayout | null): Pro
 export async function saveLayout(userId: string, layout: HubLayout) {
   const stamped = { ...layout, updated_at: new Date().toISOString() };
   try { await AsyncStorage.setItem(key(userId), JSON.stringify(stamped)); } catch { /* noop */ }
-  api.patch(`/users/${userId}`, { hub_layout: stamped }).catch(() => { /* offline: local copy wins next time */ });
+  if (!isScoped(userId)) api.patch(`/users/${userId}`, { hub_layout: stamped }).catch(() => { /* offline: local copy wins next time */ });
   return stamped;
 }
 
 export async function clearLayout(userId: string) {
   try { await AsyncStorage.removeItem(key(userId)); } catch { /* noop */ }
-  api.patch(`/users/${userId}`, { hub_layout: null }).catch(() => { /* noop */ });
+  if (!isScoped(userId)) api.patch(`/users/${userId}`, { hub_layout: null }).catch(() => { /* noop */ });
 }
 
 /** Recently launched apps: newest first, synced to the account so phone and tablet agree. */
@@ -94,10 +97,11 @@ export async function loadRecentLocal(userId: string): Promise<RecentEntry[]> {
 }
 
 export async function fetchRecentRemote(userId: string): Promise<RecentEntry[] | null> {
+  if (isScoped(userId)) return null;
   try { const r = await api.get(`/users/${userId}`); return mergeRecent(r.data?.hub_recent); } catch { return null; }
 }
 
 export function saveRecent(userId: string, list: RecentEntry[], remote: boolean) {
   AsyncStorage.setItem(recentKey(userId), JSON.stringify(list)).catch(() => { /* noop */ });
-  if (remote) api.patch(`/users/${userId}`, { hub_recent: list }).catch(() => { /* offline: local copy merges next time */ });
+  if (remote && !isScoped(userId)) api.patch(`/users/${userId}`, { hub_recent: list }).catch(() => { /* offline: local copy merges next time */ });
 }

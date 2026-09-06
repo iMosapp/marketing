@@ -36,6 +36,7 @@ export default function TwilioNumbersDashboard() {
   const [searching, setSearching] = useState(false);
   const [available, setAvailable] = useState<any[]>([]);
   const [purchasing, setPurchasing] = useState<string | null>(null);
+  const [buyFor, setBuyFor] = useState<any | null>(null); // rep to assign the new number to (null = pool)
 
   // Assign flow
   const [showAssign, setShowAssign] = useState(false);
@@ -73,11 +74,12 @@ export default function TwilioNumbersDashboard() {
   const purchaseNumber = async (phone: string) => {
     setPurchasing(phone);
     try {
-      await api.post('/admin/twilio/numbers/purchase', { phone_number: phone });
-      showSimpleAlert('Purchased', `${phone} added to your account. Assign it to a rep from the dashboard.`);
+      await api.post('/admin/twilio/numbers/purchase', { phone_number: phone, user_id: buyFor?._id || null });
+      showSimpleAlert('Done', buyFor ? `${phone} is live and assigned to ${buyFor.name}. Texting and calling are wired up.` : `${phone} is live in the number pool. Jessi answers it until you assign a rep.`);
       setShowPurchase(false);
       setAvailable([]);
       setAreaCode('');
+      setBuyFor(null);
       load();
     } catch (e: any) {
       showSimpleAlert('Error', e?.response?.data?.detail || 'Purchase failed.');
@@ -142,7 +144,7 @@ export default function TwilioNumbersDashboard() {
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>Phone Numbers</Text>
-        <TouchableOpacity style={s.buyBtn} onPress={() => { setShowPurchase(true); setAvailable([]); }}>
+        <TouchableOpacity style={s.buyBtn} onPress={() => { setShowPurchase(true); setAvailable([]); setBuyFor(null); loadUsers(); }} data-testid="phone-numbers-buy-btn">
           <Ionicons name="add" size={18} color="#000" />
           <Text style={s.buyBtnText}>Buy</Text>
         </TouchableOpacity>
@@ -205,7 +207,7 @@ export default function TwilioNumbersDashboard() {
               <View style={{ gap: 4, marginBottom: 8 }}>
                 <View style={[s.assignedRow, { marginBottom: 0 }]}>
                   <Ionicons name="alert-circle" size={16} color="#FF9500" />
-                  <Text style={[s.assignedText, { color: '#FF9500' }]}>Unassigned — in number pool</Text>
+                  <Text style={[s.assignedText, { color: '#FF9500' }]}>In pool. Jessi answers inbound for the store.</Text>
                 </View>
                 {num.previous_owner?.name && (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 22 }}>
@@ -234,7 +236,7 @@ export default function TwilioNumbersDashboard() {
                 color={num.webhook_correct ? '#34C759' : '#FF3B30'}
               />
               <Text style={{ fontSize: 12, color: num.webhook_correct ? '#34C759' : '#FF3B30', flex: 1 }} numberOfLines={1}>
-                {num.webhook_correct ? 'Webhook correct' : num.webhook_url || 'No webhook set'}
+                {num.webhook_correct ? 'Texts and calls OK' : 'Needs a fix: texts will not reach the app'}
               </Text>
               {!num.webhook_correct && (
                 <TouchableOpacity
@@ -287,8 +289,21 @@ export default function TwilioNumbersDashboard() {
           </View>
           <ScrollView contentContainerStyle={{ padding: 20 }}>
             <Text style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 16, lineHeight: 20 }}>
-              Numbers are $1.15/month each. Enter an area code to find available local numbers.
+              Numbers are $1.15/month each. Pick who gets it, enter an area code, then tap Buy. Texting and calling are wired automatically.
             </Text>
+            <Text style={{ fontSize: 12, fontWeight: '700', letterSpacing: 0.8, color: colors.textSecondary, marginBottom: 8 }}>ASSIGN TO</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }} contentContainerStyle={{ gap: 8 }}>
+              {[{ _id: null, name: 'Number pool' }, ...users.filter(u => u.role !== 'super_admin' || users.length < 3)].map(u => {
+                const on = (buyFor?._id || null) === u._id;
+                return (
+                  <TouchableOpacity key={u._id || 'pool'} onPress={() => setBuyFor(u._id ? u : null)}
+                    style={{ paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, backgroundColor: on ? '#C9A962' : colors.card, borderWidth: 1, borderColor: on ? '#C9A962' : colors.border }}
+                    data-testid={`buy-assign-${u._id || 'pool'}`}>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: on ? '#000' : colors.text }}>{u.name}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
             <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
               <TextInput
                 style={{ flex: 1, backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 20, color: colors.text, borderWidth: 1, borderColor: colors.border, fontFamily: 'monospace' }}
@@ -321,7 +336,7 @@ export default function TwilioNumbersDashboard() {
                 >
                   {purchasing === n.phone_number
                     ? <ActivityIndicator size="small" color="#fff" />
-                    : <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>Buy</Text>
+                    : <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>{buyFor ? 'Buy & assign' : 'Buy'}</Text>
                   }
                 </TouchableOpacity>
               </View>

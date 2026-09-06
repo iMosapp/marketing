@@ -436,7 +436,7 @@ export default function UserDetailScreen() {
             setShowMergeModal(false);
             setMergeEmail('');
             showSimpleAlert('Merged', res.data.message || 'Accounts merged successfully.');
-            loadUser();
+            loadUserData();
           } catch (e: any) {
             showSimpleAlert('Error', e?.response?.data?.detail || 'Merge failed.');
           }

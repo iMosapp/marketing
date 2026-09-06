@@ -234,7 +234,7 @@ const PAGE_CATALOG: Category[] = [
       { name: 'Company Directory', description: 'Team roster & leaderboards', path: '/imos/directory', icon: 'people-outline', color: '#AF52DE', requiresAuth: false, audience: 'Admins' },
       { name: 'Shared Inboxes', description: 'Phone number assignments', path: '/imos/shared-inboxes', icon: 'mail-outline', color: '#007AFF', requiresAuth: false, audience: 'Super Admin' },
       { name: 'Bulk Transfer', description: 'Transfer contacts between users', path: '/imos/bulk-transfer', icon: 'swap-horizontal-outline', color: '#FF3B30', requiresAuth: false, audience: 'Super Admin' },
-      { name: 'Phone Assignments', description: 'Twilio number management', path: '/imos/phone-assignments', icon: 'call-outline', color: '#32ADE6', requiresAuth: false, audience: 'Super Admin' },
+      { name: 'Phone Numbers', description: 'Buy, assign and pool Twilio numbers', path: '/imos/phone-assignments', icon: 'call-outline', color: '#32ADE6', requiresAuth: false, audience: 'Super Admin' },
       { name: 'Partner Agreements', description: 'Reseller contracts', path: '/imos/partner-agreements', icon: 'document-text-outline', color: '#FF9500', requiresAuth: false, audience: 'Super Admin' },
       { name: 'Billing', description: 'Subscription & billing info', path: '/imos/billing', icon: 'card-outline', color: '#34C759', requiresAuth: false, audience: 'Admins' },
       { name: 'Activity Feed', description: 'Recent admin activity', path: '/imos/activity-feed', icon: 'pulse-outline', color: '#FF2D55', requiresAuth: false, audience: 'Admins' },

@@ -174,9 +174,9 @@ export default function InviteTeamScreen() {
     if (!inviteResult) return '';
     return (
       `Welcome to I'm On Social, ${inviteResult.name}! Your account is ready.\n\n` +
-      `1. Download the app:\n` +
-      `Apple: https://apps.apple.com/app/im-on-social/id6743597907\n` +
-      `Android: https://play.google.com/store/apps/details?id=com.imonsocial.app\n` +
+      `1. Download the app on iPhone:\n` +
+      `https://apps.apple.com/us/app/im-on-social/id6774618559\n` +
+      `(Android coming soon)\n` +
       `2. Tap "Activate my account" and enter this phone number.\n` +
       `3. Enter the code we text you and choose your password.\n\n` +
       `Login email: ${inviteResult.email}\n` +

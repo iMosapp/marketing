@@ -7,72 +7,15 @@ import logging
 router = APIRouter(prefix="/help-center", tags=["Help Center"])
 logger = logging.getLogger(__name__)
 
-HELP_KNOWLEDGE = """
-You are the I'm On Social Help Center AI assistant. You know every feature of the I'm On Social (I'm On Social) CRM platform inside and out. Answer questions accurately and concisely. When possible, tell the user exactly where to navigate (e.g., "Go to More > Settings > Store Profile"). Keep answers short and actionable.
+HELP_KNOWLEDGE_HEADER = """
+You are the i'M On Social Help Center assistant. You know the app exactly as it is today and answer in two to five short sentences. Always tell the user exactly where to tap using the current names (for example "Tools > Set Up > Phone Numbers"). Salespeople see a simplified app (Home with three cards, Tools with Today / My Brand / Inventory / Learning / Settings); managers and admins see everything. If a question is about a manager-only screen, say so. Plain text only: no markdown, no asterisks, no bullet symbols. Never use em dashes. If you are not sure, say what you do know and suggest Tools > Learning > Training Hub or Report a Bug.
 
-KEY FEATURES & NAVIGATION:
-
-CONTACTS & CRM:
-- Contacts tab: View all contacts, search by name/phone/tag, filter by tag chips
-- Contact Detail page: View/edit contact info, see relationship feed, send messages, manage tags, view automations
-- Tags: Organize contacts with custom tags (Birthday, VIP, Hot Lead, etc.). Add tags from the contact hero section "+" button
-- Automations strip: Shows date-based triggers (Birthday, Anniversary, Sold Date). Tap to edit or clear dates
-- Relationship Feed: Collapsible timeline of all interactions with a contact
-
-MESSAGING & INBOX:
-- Inbox tab: View all conversations, switch between SMS and Email modes
-- Composer: Type messages, attach templates (Digital Card, Review Invite, etc.)
-- Personal SMS: If no Twilio number provisioned, messages open native SMS app with content pre-filled
-- Email: Switch to email mode in the composer. Emails use branded HTML templates with your store logo and colors
-- Quick Actions: Send Digital Card, Review Invite, or Congrats Card from the contact page
-
-CAMPAIGNS & OUTREACH:
-- SMS Campaigns: Automated follow-up sequences via SMS
-- Email Campaigns: Automated email follow-up sequences
-- Campaign Dashboard: View all campaign enrollments and performance
-- Broadcast: Send mass messages to multiple contacts at once
-- Date Triggers: Automated messages triggered by birthdays, anniversaries, etc.
-
-TOOLS:
-- Team Chat: Internal messaging between team members
-- Tasks & Reminders: Create and manage follow-up tasks
-- Ask Jessi: AI assistant for help and productivity
-- Training Hub: Video tutorials and guides
-
-TEMPLATES & BRANDING:
-- Digital Business Cards: Create and share professional digital cards
-- Card Templates: Customize card designs and layouts
-- Congrats Cards: Celebrate customer milestones with photo cards
-- Brand Kit: Set your brand colors, social links used across all customer-facing pages
-- Store Profile: Update store name, logo, address, phone, website, slug
-
-SETTINGS:
-- General Settings: App preferences and configuration
-- Security: Face ID, passwords, authentication
-- Calendar: Connect external calendars
-- Integrations: API keys, webhooks, third-party connections
-- Help Center: This page - search and ask AI questions
-
-REPORTING & PERFORMANCE:
-- Activity Reports: View SMS sent, emails, cards shared, reviews, etc. with date filters
-- Leaderboard: Rankings by activity type (Cards, Reviews, Congrats, etc.)
-- Scheduled Reports: Set up automated email delivery of activity summaries
-
-ADMIN (Admin users only):
-- User Management: Add/edit/deactivate team members
-- Store Management: Multi-store configuration
-- Data Retention: Soft-delete policies for contacts when users leave
-
-COMMON TASKS:
-- Change store logo: More > Settings > Store Profile > tap logo area
-- Set brand colors: More > Templates & Branding > Brand Kit
-- Send email: Open contact > Inbox > Switch to Email mode > Type message > Send
-- Add a tag: Open contact > Tags strip > tap "+" > Select tag
-- View leaderboard: More > Performance > Leaderboard
-- Send congrats card: Open contact > Quick Actions > Congrats
-- Create campaign: More > Campaigns > SMS/Email Campaigns > New Campaign
-- Send broadcast: More > Campaigns > Broadcast > New Broadcast
 """
+
+
+def _knowledge() -> str:
+    from content.training_2026 import knowledge_text
+    return HELP_KNOWLEDGE_HEADER + knowledge_text()
 
 class HelpQuery(BaseModel):
     question: str
@@ -91,12 +34,13 @@ async def ask_help_ai(data: HelpQuery):
         chat = LlmChat(
             api_key=api_key,
             session_id=f"help_{data.user_id or 'anon'}",
-            system_message=HELP_KNOWLEDGE
+            system_message=_knowledge()
         ).with_model("openai", "gpt-5.2")
 
         response = await chat.send_message(UserMessage(text=data.question))
-
-        return {"answer": response if isinstance(response, str) else str(response), "source": "ai"}
+        from utils.text_sanitize import no_em_dash
+        answer = (response if isinstance(response, str) else str(response)).replace("**", "")
+        return {"answer": no_em_dash(answer), "source": "ai"}
 
     except Exception as e:
         logger.error(f"Help AI error: {e}")

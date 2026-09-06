@@ -167,7 +167,7 @@ export default function TrainingHubScreen() {
       <View style={s.heroSection}>
         <View style={s.heroIcon}><Ionicons name="school" size={32} color="#C9A962" /></View>
         <Text style={s.heroTitle}>Training Hub</Text>
-        <Text style={s.heroDesc}>Role-based learning paths to get you up and running. Complete at your own pace — you can always come back.</Text>
+        <Text style={s.heroDesc}>Short lessons that match the app exactly as it looks today. Go at your own pace, you can always come back.</Text>
       </View>
 
       {/* Overall Progress */}

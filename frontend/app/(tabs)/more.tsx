@@ -557,7 +557,6 @@ export default function MoreScreen() {
       { icon: 'receipt', title: 'Create Quote', subtitle: 'Generate new quote', onPress: () => router.push('/admin/create-quote'), color: '#34C759' },
       { icon: 'ticket', title: 'Discount Codes', subtitle: 'Promo codes', onPress: () => router.push('/admin/discount-codes'), color: '#5856D6' },
       // System
-      { icon: 'call', title: 'Phone Assignments', subtitle: 'Twilio numbers', onPress: () => router.push('/admin/phone-assignments'), color: '#32ADE6' },
       { icon: 'mail', title: 'Shared Inboxes', subtitle: 'Phone number users', onPress: () => router.push('/admin/shared-inboxes'), color: '#007AFF' },
       { icon: 'swap-horizontal', title: 'Bulk Transfer', subtitle: 'Transfer contacts between users', onPress: () => router.push('/admin/bulk-transfer'), color: '#FF3B30' },
       { icon: 'map-outline', title: 'App Directory', subtitle: 'Browse & share pages', onPress: () => router.push('/admin/app-directory'), color: '#5AC8FA' },
@@ -691,7 +690,46 @@ export default function MoreScreen() {
     pushApp({ id: hubSlug(t.label), title: t.label, subtitle: t.sub, icon: t.icon, color: t.color, badge: (t as any).badge, folder: 'my_tools', onPress: () => router.push(t.route as any) });
   }
   if (!seenFolder.has('my_tools')) hubFolderDefs.push({ id: 'my_tools', title: 'My Tools', icon: 'apps', color: '#007AFF' });
-  const hubDefaultLoose = taskGrid.map(t => hubSlug(t.label));
+  let hubDefaultLoose = taskGrid.map(t => hubSlug(t.label));
+
+  // ── Rep-first Tools: salespeople (and "view as rep") get five items; managers/admins/partners keep the full hub ──
+  const simpleTools = repPreview || (user?.role === 'user' && !(user as any)?.partner_id);
+  let simpleApps: HubApp[] = [];
+  let simpleFolders: HubFolderDef[] = [];
+  if (simpleTools) {
+    const go = (route: string, title: string, icon: string, color: string, subtitle: string) => () => { trackVisit({ title, icon, color, subtitle }); router.push(route as any); };
+    const mk = (folder: string, title: string, subtitle: string, icon: string, color: string, route: string, badge?: number): HubApp =>
+      ({ id: hubSlug(title), title, subtitle, icon, color, folder, badge, onPress: go(route, title, icon, color, subtitle) });
+    simpleFolders = [
+      { id: 'today', title: 'Today', icon: 'sunny', color: '#FF9F0A' },
+      { id: 'my_brand', title: 'My Brand', icon: 'sparkles', color: '#C9A962' },
+      { id: 'learning', title: 'Learning', icon: 'school', color: '#FF9500' },
+      { id: 'settings', title: 'Settings', icon: 'settings', color: '#8E8E93' },
+    ];
+    simpleApps = [
+      mk('today', 'Touchpoints', 'Today\'s tasks and follow-ups', 'checkbox', '#C9A962', '/(tabs)/touchpoints'),
+      mk('today', 'Calendar', 'Appointments, birthdays and sold dates', 'calendar', '#AF52DE', '/dates-calendar'),
+      mk('today', 'My Numbers', 'Streak, month sales, how am I doing', 'stats-chart', '#34C759', '/touchpoints/performance'),
+      mk('today', 'AI Follow-ups', 'Smart outreach suggestions', 'sparkles', '#FF9F0A', '/(tabs)/ai-outreach'),
+      mk('my_brand', 'My Digital Card', 'How customers see you', 'id-card', '#C9A962', '/settings/store-profile'),
+      mk('my_brand', 'Share My Card', 'Text your card to a customer', 'paper-plane', '#C9A962', '/quick-send/digitalcard'),
+      mk('my_brand', 'Get Reviews', 'Send your review link', 'star', '#FFD60A', '/quick-send/review'),
+      mk('my_brand', 'My Showcase', 'Your customer gallery', 'images', '#34C759', '/showroom-manage'),
+      mk('my_brand', 'My Link Page', 'All your links in one spot', 'link', '#007AFF', '/settings/link-page'),
+      mk('my_brand', 'Share the App', 'Your install link + QR, see who installed', 'phone-portrait-outline', '#34C759', '/share-app'),
+      mk('learning', 'Training Hub', 'Learn the app in short lessons', 'school', '#FF9500', '/training-hub'),
+      mk('learning', 'Help Center', 'How-to guides and FAQs', 'help-circle', '#32ADE6', '/help'),
+      mk('learning', 'Report a Bug', 'Flag an issue or share feedback', 'bug', '#FF453A', '/report-bug'),
+      mk('settings', 'My Profile', 'Your info and public pages', 'person', '#C9A962', '/my-profile'),
+      mk('settings', 'My VA', 'Your AI assistant, Jessi', 'sparkles', '#AF52DE', '/settings/virtual-assistant'),
+      mk('settings', 'Notifications', 'SMS alerts, push and quiet times', 'notifications', '#FF9F0A', '/settings/notifications'),
+      mk('settings', 'My Schedule', 'Work hours and quiet times', 'time', '#32ADE6', '/settings/schedule'),
+      mk('settings', 'My Templates', 'SMS and email templates', 'document-text', '#AF52DE', '/settings/templates'),
+      mk('settings', 'Security', 'Password and Face ID', 'lock-closed', '#8E8E93', '/settings/security'),
+      mk('loose', 'Inventory', 'What\'s on the lot', 'car-sport', '#32ADE6', '/inventory'),
+    ];
+    hubDefaultLoose = ['inventory'];
+  }
 
   function openExternal(url: string) {
     // Append self_preview=1 so tracking ignores salesperson viewing their own page
@@ -1087,11 +1125,12 @@ export default function MoreScreen() {
         ) : (
         <>
         <AppHome
-          apps={hubApps}
-          folderDefs={hubFolderDefs}
+          key={simpleTools ? 'simple' : 'full'}
+          apps={simpleTools ? simpleApps : hubApps}
+          folderDefs={simpleTools ? simpleFolders : hubFolderDefs}
           defaultLoose={hubDefaultLoose}
-          userId={String(user?._id || 'anon')}
-          remoteLayout={(user as any)?.hub_layout || null}
+          userId={simpleTools ? `${String(user?._id || 'anon')}:rep` : String(user?._id || 'anon')}
+          remoteLayout={simpleTools ? null : ((user as any)?.hub_layout || null)}
           colors={colors}
           onDragging={setHubDragging}
         />
