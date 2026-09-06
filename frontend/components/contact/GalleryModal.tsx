@@ -178,6 +178,7 @@ export default function GalleryModal(props: any) {
                 )}
                 <TouchableOpacity
                   style={[s.viewerActionBtn, { backgroundColor: '#5856D6' }]}
+                  // eslint-disable-next-line react-hooks/rules-of-hooks -- callback prop, not a hook
                   onPress={() => usePhotoForCard(allPhotos[selectedPhotoIndex]?.url)}
                   data-testid="use-for-card-btn"
                 >

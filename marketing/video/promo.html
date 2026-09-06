@@ -1,0 +1,280 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0B0B0C; --card: #161618; --card2: #1E1E21; --line: #2A2A2C;
+    --gold: #C9A962; --gold2: #E3C98A; --text: #F5F5F7; --muted: #8E8E93; --green: #34C759; --red: #FF453A; --blue: #32ADE6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; overflow: hidden; }
+  body { width: var(--W); height: var(--H); position: relative; }
+  #stage { position: absolute; inset: 0; }
+  .grain { position: absolute; inset: 0; pointer-events: none; opacity: .07; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='300' height='300' filter='url(%23n)' opacity='.9'/></svg>"); }
+  .glow { position: absolute; width: 1400px; height: 1400px; border-radius: 50%; left: 50%; top: 58%; transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(201,169,98,.20) 0%, rgba(201,169,98,.05) 35%, transparent 62%); pointer-events: none; }
+
+  .scene { position: absolute; inset: 0; animation: sceneOut 350ms ease both; animation-delay: calc(var(--dur) - 350ms); }
+  .inner { position: absolute; inset: 0; animation: sceneIn 450ms ease both; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 170px 90px 220px; gap: 60px; }
+  body.r16x9 .inner { flex-direction: row; justify-content: space-between; padding: 90px 140px; gap: 80px; }
+  .copy { display: flex; flex-direction: column; gap: 26px; width: 100%; }
+  body.r16x9 .copy { width: 860px; }
+  .eyebrow { color: var(--gold); font-weight: 700; letter-spacing: .28em; font-size: 26px; text-transform: uppercase; }
+  h1 { font-size: 84px; line-height: 1.02; font-weight: 900; letter-spacing: -.035em; }
+  body.r16x9 h1 { font-size: 88px; }
+  h1 .g { color: var(--gold); }
+  h1 .dim { color: var(--muted); }
+  .sub { font-size: 38px; line-height: 1.35; color: var(--muted); font-weight: 500; max-width: 900px; }
+  .sub b { color: var(--text); font-weight: 600; }
+
+  .in { animation: rise 650ms cubic-bezier(.2,.8,.2,1) both; animation-delay: var(--d, 0ms); }
+  .pop { animation: pop 520ms cubic-bezier(.2,.9,.3,1.2) both; animation-delay: var(--d, 0ms); }
+  .slide { animation: slideL 600ms cubic-bezier(.2,.8,.2,1) both; animation-delay: var(--d, 0ms); }
+  .fade { animation: fadeIn 500ms ease both; animation-delay: var(--d, 0ms); }
+  .out { animation: fadeOut 400ms ease both; animation-delay: var(--d, 0ms); }
+
+  @keyframes sceneIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes sceneOut { from { opacity: 1; } to { opacity: 0; } }
+  @keyframes rise { from { opacity: 0; transform: translateY(48px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: none; } }
+  @keyframes slideL { from { opacity: 0; transform: translateX(70px); } to { opacity: 1; transform: none; } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+  @keyframes strike { from { width: 0; } to { width: 100%; } }
+  @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: .55; } }
+  @keyframes shimmer { from { background-position: 0% 50%; } to { background-position: 200% 50%; } }
+  @keyframes bounceIn { 0% { opacity: 0; transform: translateY(-120px); } 60% { opacity: 1; transform: translateY(12px); } 100% { opacity: 1; transform: none; } }
+  @keyframes floatY { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+  @keyframes wave { 0%, 100% { transform: scaleY(.35); } 50% { transform: scaleY(1); } }
+  @keyframes toStore { to { transform: translate(var(--tx), var(--ty)) scale(.7); opacity: .95; } }
+  @keyframes gray { to { filter: grayscale(1); opacity: .35; } }
+  @keyframes dash { to { stroke-dashoffset: 0; } }
+  @property --num { syntax: '<integer>'; initial-value: 0; inherits: false; }
+  @keyframes count { from { --num: 0; } to { --num: 74; } }
+
+  /* CRM row */
+  .crm { width: 100%; max-width: 900px; background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 34px 40px; display: flex; flex-direction: column; gap: 18px; font-family: 'Inter', monospace; }
+  .crm .row { display: flex; justify-content: space-between; font-size: 30px; color: var(--muted); }
+  .crm .row b { color: var(--text); font-weight: 600; }
+  .crm .tag { color: var(--green); font-weight: 700; letter-spacing: .1em; font-size: 24px; }
+  .strikewrap { position: relative; display: inline-block; }
+  .strikewrap::after { content: ''; position: absolute; left: 0; top: 52%; height: 8px; background: var(--red); border-radius: 4px; width: 0; animation: strike 450ms ease both; animation-delay: var(--d); }
+
+  /* stat */
+  .big { font-size: 300px; font-weight: 900; letter-spacing: -.06em; line-height: .9; color: var(--gold);
+    animation: count 1600ms cubic-bezier(.2,.8,.2,1) both; animation-delay: var(--d); counter-reset: num var(--num); }
+  .big::before { content: counter(num) '%'; }
+  body.r16x9 .big { font-size: 260px; }
+
+  /* phone */
+  .phone { position: relative; width: 590px; height: 1220px; border-radius: 72px; background: #000; border: 3px solid #2C2C2E; box-shadow: 0 60px 120px rgba(0,0,0,.6), inset 0 0 0 10px #0a0a0a; flex: none; overflow: hidden; }
+  .phonewrap { flex: none; width: 590px; height: 1220px; }
+  body.r16x9 .phonewrap { width: 425px; height: 878px; }
+  body.r16x9 .phone { transform: scale(.72); transform-origin: top left; }
+  body.r16x9 .inner > .copy.center:only-child { margin: 0 auto; }
+  .screen { position: absolute; inset: 14px; border-radius: 60px; background: var(--bg); overflow: hidden; padding: 70px 30px 30px; display: flex; flex-direction: column; gap: 20px; }
+  .notch { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 170px; height: 42px; border-radius: 30px; background: #000; z-index: 3; }
+  .status { position: absolute; top: 24px; left: 50px; right: 50px; display: flex; justify-content: space-between; font-size: 22px; font-weight: 600; z-index: 2; }
+  .hdr { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 8px; }
+  .hdr .hi { font-size: 22px; color: var(--muted); font-weight: 500; }
+  .hdr .name { font-size: 34px; font-weight: 800; letter-spacing: -.02em; }
+  .avatar { width: 58px; height: 58px; border-radius: 50%; background: linear-gradient(135deg, #3a3a3c, #1c1c1e); display: grid; place-items: center; font-weight: 700; font-size: 20px; color: var(--gold); border: 2px solid var(--line); flex: none; }
+  .sec { font-size: 20px; color: var(--gold); letter-spacing: .22em; font-weight: 700; text-transform: uppercase; margin-top: 10px; display: flex; align-items: center; gap: 10px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 26px; padding: 22px 24px; display: flex; gap: 18px; align-items: center; }
+  .card .who { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .card .n { font-size: 26px; font-weight: 700; letter-spacing: -.01em; }
+  .card .why { font-size: 21px; color: var(--muted); line-height: 1.3; }
+  .card .why b { color: var(--gold); font-weight: 600; }
+  .btn { background: var(--gold); color: #000; font-weight: 800; font-size: 20px; padding: 14px 22px; border-radius: 999px; flex: none; }
+  .btn.ghost { background: transparent; border: 1.5px solid var(--gold); color: var(--gold); }
+  .dot { width: 14px; height: 14px; border-radius: 50%; background: var(--red); animation: pulse 1200ms ease-in-out infinite; }
+
+  .note { background: var(--card2); border: 1px solid var(--line); border-radius: 26px; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+  .note .tag { font-size: 18px; color: var(--muted); display: flex; align-items: center; gap: 10px; font-weight: 600; }
+  .note .tag i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: var(--red); }
+  .note q { font-size: 23px; line-height: 1.4; color: var(--text); font-style: italic; quotes: '"' '"'; }
+  .bars { display: flex; gap: 6px; align-items: center; height: 44px; }
+  .bars i { width: 6px; height: 40px; background: var(--gold); border-radius: 3px; animation: wave 900ms ease-in-out infinite; transform-origin: center; }
+  .chips { display: flex; flex-wrap: wrap; gap: 12px; }
+  .chip { background: rgba(201,169,98,.12); border: 1px solid rgba(201,169,98,.45); color: var(--gold2); border-radius: 999px; padding: 12px 20px; font-size: 21px; font-weight: 600; }
+  .task { background: rgba(52,199,89,.10); border: 1px solid rgba(52,199,89,.4); border-radius: 20px; padding: 18px 22px; font-size: 21px; color: #B6F0C4; font-weight: 600; display: flex; gap: 12px; align-items: center; }
+  .task i { width: 26px; height: 26px; border-radius: 50%; background: var(--green); display: inline-grid; place-items: center; color: #000; font-style: normal; font-weight: 900; font-size: 17px; }
+
+  .push { position: absolute; left: 22px; right: 22px; top: 78px; z-index: 5; background: rgba(40,40,44,.92); backdrop-filter: blur(18px); border-radius: 30px; padding: 20px 22px; display: flex; gap: 16px; align-items: flex-start; box-shadow: 0 24px 60px rgba(0,0,0,.5); animation: bounceIn 700ms cubic-bezier(.2,.8,.2,1) both; animation-delay: var(--d); }
+  .push .ic { width: 58px; height: 58px; border-radius: 16px; background: linear-gradient(135deg, var(--gold), #9a7d3e); flex: none; display: grid; place-items: center; }
+  .push .ic img { width: 42px; height: 42px; }
+  .push .t { font-size: 23px; font-weight: 700; line-height: 1.2; }
+  .push .b { font-size: 20px; color: #D1D1D6; line-height: 1.3; margin-top: 4px; }
+  .push .time { margin-left: auto; font-size: 17px; color: #AEAEB2; flex: none; }
+  .thread { display: flex; flex-direction: column; gap: 14px; margin-top: auto; }
+  .bubble { max-width: 86%; padding: 16px 20px; border-radius: 26px; font-size: 22px; line-height: 1.35; }
+  .bubble.them { background: #26262A; align-self: flex-start; border-bottom-left-radius: 8px; }
+  .bubble.me { background: var(--gold); color: #000; align-self: flex-end; border-bottom-right-radius: 8px; font-weight: 500; }
+  .composer { display: flex; gap: 12px; align-items: flex-end; background: var(--card); border: 1px solid var(--gold); border-radius: 30px; padding: 16px 18px; }
+  .composer .txt { flex: 1; font-size: 21px; line-height: 1.35; color: var(--text); }
+  .composer .send { width: 52px; height: 52px; border-radius: 50%; background: var(--gold); display: grid; place-items: center; color: #000; font-weight: 900; font-size: 24px; flex: none; }
+  .hot { display: flex; gap: 12px; overflow: hidden; }
+  .hotcard { flex: none; width: 190px; background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .hotcard .v { font-size: 19px; font-weight: 700; line-height: 1.2; }
+  .hotcard .c { font-size: 17px; color: var(--muted); }
+  .hotcard .c b { color: var(--red); }
+
+  /* store scene */
+  .org { position: relative; width: 900px; height: 900px; flex: none; }
+  body.r16x9 .org { zoom: .9; }
+  .rep { position: absolute; width: 230px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .rep .av { width: 120px; height: 120px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 40px; color: #000; border: 4px solid var(--bg); box-shadow: 0 0 0 3px var(--line); }
+  .rep .nm { font-size: 24px; font-weight: 700; }
+  .rep .rl { font-size: 18px; color: var(--muted); }
+  .rep .left { position: absolute; top: -10px; right: 6px; background: var(--red); color: #fff; font-size: 16px; font-weight: 800; padding: 6px 12px; border-radius: 999px; letter-spacing: .06em; }
+  .store { position: absolute; left: calc(50% - 165px); top: calc(50% - 165px); width: 330px; height: 330px; border-radius: 48px; background: linear-gradient(160deg, #1f1f22, #101012); border: 2px solid var(--gold); box-shadow: 0 0 0 18px rgba(201,169,98,.08), 0 0 90px rgba(201,169,98,.28); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+  .store .lbl { font-size: 22px; color: var(--gold); letter-spacing: .24em; font-weight: 700; }
+  .store .cnt { font-size: 92px; font-weight: 900; letter-spacing: -.05em; }
+  .store .snm { font-size: 20px; color: var(--muted); }
+  .cont { position: absolute; width: 64px; height: 64px; border-radius: 50%; background: var(--card2); border: 2px solid var(--line); display: grid; place-items: center; font-size: 22px; font-weight: 700; color: var(--gold2); animation: toStore 900ms cubic-bezier(.3,.8,.3,1) both; animation-delay: var(--d); }
+  .org svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .org svg line { stroke: var(--line); stroke-width: 3; stroke-dasharray: 600; stroke-dashoffset: 600; animation: dash 900ms ease both; }
+
+  /* end card */
+  .logo { width: 380px; height: 380px; object-fit: contain; }
+  .url { font-size: 44px; color: var(--gold); font-weight: 700; letter-spacing: .02em; }
+  .cta { display: inline-flex; align-items: center; gap: 16px; background: var(--gold); color: #000; padding: 26px 48px; border-radius: 999px; font-weight: 800; font-size: 36px; }
+  .center { align-items: center; text-align: center; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div class="grain"></div>
+<script>
+const q = new URLSearchParams(location.search);
+const ratio = q.get('ratio') || '9x16';
+const W = ratio === '16x9' ? 1920 : 1080, H = ratio === '16x9' ? 1080 : 1920;
+document.documentElement.style.setProperty('--W', W + 'px');
+document.documentElement.style.setProperty('--H', H + 'px');
+if (ratio === '16x9') document.body.classList.add('r16x9');
+
+const phone = (inner) => `<div class="phonewrap pop" style="--d:250ms"><div class="phone"><div class="notch"></div><div class="status"><span>9:41</span><span>●●● ▲ ▮</span></div><div class="screen">${inner}</div></div></div>`;
+const hdr = `<div class="hdr"><div><div class="hi">Good morning,</div><div class="name">Forest</div></div><div class="avatar">FM</div></div>`;
+
+const SCENES = {
+  hook: () => `
+    <div class="copy center">
+      <div class="eyebrow in" style="--d:0ms">Your CRM</div>
+      <div class="crm in" style="--d:200ms">
+        <div class="row"><b>Deal #48213</b><span class="tag">CLOSED</span></div>
+        <div class="row"><span>2023 Tacoma TRD Off-Road</span><b>$41,900</b></div>
+        <div class="row"><span>Customer</span><b>Steve Miller</b></div>
+        <div class="row"><span>Next contact</span><b class="strikewrap" style="--d:2600ms">Never</b></div>
+      </div>
+      <h1 class="in" style="--d:900ms">It remembers <span class="g">the deal.</span></h1>
+      <h1 class="in" style="--d:2500ms"><span class="dim">Then it forgets</span> the person.</h1>
+    </div>`,
+
+  stat: () => `
+    <div class="copy center">
+      <div class="big" style="--d:150ms"></div>
+      <div class="sub in" style="--d:600ms;font-size:46px;color:var(--text)">of customers who go back to <b style="color:var(--gold)">their salesperson</b> buy again.</div>
+      <div class="sub in" style="--d:2600ms">Most never hear from them after delivery.</div>
+    </div>`,
+
+  today: () => `
+    <div class="copy">
+      <div class="eyebrow in" style="--d:0ms">The Relationship OS</div>
+      <h1 class="in" style="--d:150ms">Every morning: <span class="g">who to call,</span> and why.</h1>
+    </div>
+    ${phone(`${hdr}
+      <div class="sec in" style="--d:900ms">Your 3 for today</div>
+      <div class="card slide" style="--d:1100ms"><div class="avatar">SM</div><div class="who"><div class="n">Steve Miller</div><div class="why">Back from <b>Lake Powell</b> this week. Ask how it went.</div></div><div class="btn">Text</div></div>
+      <div class="card slide" style="--d:1500ms"><div class="avatar">MM</div><div class="who"><div class="n">Michelle Miller</div><div class="why"><b>Birthday Friday.</b> Bought the Tacoma with Steve.</div></div><div class="btn">Text</div></div>
+      <div class="card slide" style="--d:1900ms"><div class="avatar">JR</div><div class="who"><div class="n">Jenna Rowe</div><div class="why">Left a <b>5 star review</b> yesterday. Say thanks.</div></div><div class="btn ghost">Thanks</div></div>
+      <div class="sec in" style="--d:2500ms">This month</div>
+      <div class="card in" style="--d:2700ms"><div class="who"><div class="n">12 sold</div><div class="why"><b>7 repeat and referral.</b> Streak: 21 days.</div></div></div>
+    `)}`,
+
+  memory: () => `
+    <div class="copy">
+      <div class="eyebrow in" style="--d:0ms">Zero forms</div>
+      <h1 class="in" style="--d:150ms">Reps just talk. <span class="g">It remembers.</span></h1>
+    </div>
+    ${phone(`${hdr}
+      <div class="note in" style="--d:700ms">
+        <div class="tag"><i></i> Voice note · Steve Miller</div>
+        <div class="bars">${Array.from({length: 22}, (_, i) => `<i style="animation-delay:${(i * 73) % 900}ms;height:${18 + ((i * 37) % 26)}px"></i>`).join('')}</div>
+        <q>Just closed with Steve and Michelle. Daughter's at Utah State, they're headed to Lake Powell next month, and Steve rides a Harley. Michelle's birthday is October 3.</q>
+      </div>
+      <div class="sec in" style="--d:2000ms">Captured</div>
+      <div class="chips">
+        <span class="chip pop" style="--d:2200ms">Michelle (wife)</span>
+        <span class="chip pop" style="--d:2450ms">Daughter at Utah State</span>
+        <span class="chip pop" style="--d:2700ms">Lake Powell trip</span>
+        <span class="chip pop" style="--d:2950ms">Rides a Harley</span>
+        <span class="chip pop" style="--d:3200ms">Michelle's birthday Oct 3</span>
+      </div>
+      <div class="task in" style="--d:3900ms"><i>✓</i> Follow-up set: Ask Steve how Lake Powell was · Fri</div>
+    `)}`,
+
+  hot: () => `
+    <div class="copy">
+      <div class="eyebrow in" style="--d:0ms">Live shopper signals</div>
+      <h1 class="in" style="--d:150ms">Know the moment <span class="g">they're looking.</span></h1>
+    </div>
+    ${phone(`
+      <div class="push" style="--d:900ms"><div class="ic"><img src="assets/logo.png" alt="" /></div><div><div class="t">Sarah just opened the Tacoma</div><div class="b">2024 Toyota Tacoma TRD Off-Road. Text Sarah while it's top of mind.</div></div><div class="time">now</div></div>
+      <div class="hdr" style="margin-top:110px"><div><div class="hi">Inbox</div><div class="name">Sarah Mitchell</div></div><div class="avatar">SM</div></div>
+      <div class="sec in" style="--d:2300ms"><span class="dot"></span> Hot this week</div>
+      <div class="hot in" style="--d:2400ms">
+        <div class="hotcard"><div class="v">2024 Tacoma TRD</div><div class="c"><b>6 opens</b> · 3 shoppers</div></div>
+        <div class="hotcard"><div class="v">2023 4Runner</div><div class="c"><b>4 opens</b> · 2 shoppers</div></div>
+        <div class="hotcard"><div class="v">2024 Tundra</div><div class="c"><b>3 opens</b></div></div>
+      </div>
+      <div class="thread">
+        <div class="bubble them in" style="--d:2000ms">Do you have the Tacoma in the lunar rock color?</div>
+        <div class="bubble me in" style="--d:2600ms">We do! Here it is on the lot: imos.link/tacoma</div>
+        <div class="composer in" style="--d:3400ms"><div class="txt">Hey Sarah, saw you were checking out the Tacoma. Want me to set it aside so you can see it in person?</div><div class="send">↑</div></div>
+      </div>
+    `)}`,
+
+  store: () => `
+    <div class="copy center">
+      <div class="eyebrow in" style="--d:0ms">Built for the store</div>
+      <h1 class="in" style="--d:150ms">Reps leave. <span class="g">Relationships stay.</span></h1>
+    </div>
+    <div class="org in" style="--d:500ms">
+      <svg viewBox="0 0 900 900"><line x1="160" y1="150" x2="450" y2="450" style="animation-delay:900ms"/><line x1="740" y1="150" x2="450" y2="450" style="animation-delay:1000ms"/><line x1="160" y1="760" x2="450" y2="450" style="animation-delay:1100ms"/><line x1="740" y1="760" x2="450" y2="450" style="animation-delay:1200ms"/></svg>
+      <div class="rep" style="left:45px;top:40px"><div class="av" style="background:#E3C98A">JT</div><div class="nm">Jake T.</div><div class="rl">Sales · 4 yrs</div></div>
+      <div class="rep" style="left:625px;top:40px"><div class="av" style="background:#8FD3F4">AR</div><div class="nm">Ana R.</div><div class="rl">Sales · 2 yrs</div></div>
+      <div class="rep" style="left:45px;top:650px;animation:gray 600ms ease both;animation-delay:2300ms"><div class="left fade" style="--d:2200ms">MOVED ON</div><div class="av" style="background:#F4A38F">DM</div><div class="nm">Derek M.</div><div class="rl">Sales · 6 yrs</div></div>
+      <div class="rep" style="left:625px;top:650px"><div class="av" style="background:#B8E986">KP</div><div class="nm">Kara P.</div><div class="rl">Sales · 1 yr</div></div>
+      <div class="cont" style="left:30px;top:560px;--tx:390px;--ty:-160px;--d:2700ms">SM</div>
+      <div class="cont" style="left:110px;top:590px;--tx:310px;--ty:-190px;--d:2800ms">JR</div>
+      <div class="cont" style="left:190px;top:560px;--tx:230px;--ty:-160px;--d:2900ms">MM</div>
+      <div class="cont" style="left:270px;top:600px;--tx:160px;--ty:-200px;--d:3000ms">TB</div>
+      <div class="store pop" style="--d:700ms"><div class="lbl">Your store</div><div class="cnt">1,284</div><div class="snm">relationships kept</div></div>
+    </div>`,
+
+  end: () => `
+    <div class="copy center" style="gap:44px">
+      <img class="logo pop" style="--d:100ms" src="assets/logo.png" alt="i'M On Social" />
+      <h1 class="in" style="--d:500ms">Be the salesperson <span class="g">they never forget.</span></h1>
+      <div class="sub in" style="--d:1100ms">The Relationship OS for dealerships.</div>
+      <div class="cta in" style="--d:1600ms">Book a demo</div>
+      <div class="url in" style="--d:1900ms">imonsocial.com</div>
+    </div>`,
+};
+
+window.showScene = (id, durMs) => {
+  const stage = document.getElementById('stage');
+  stage.innerHTML = `<div class="scene" style="--dur:${durMs}ms"><div class="glow"></div><div class="inner">${SCENES[id]()}</div></div>`;
+  document.getAnimations().forEach(a => a.pause());
+  return true;
+};
+window.seek = (t) => { document.getAnimations().forEach(a => { a.pause(); a.currentTime = t; }); return true; };
+window.SCENE_IDS = Object.keys(SCENES);
+window.ready = document.fonts.ready.then(() => true);
+</script>
+</body>
+</html>

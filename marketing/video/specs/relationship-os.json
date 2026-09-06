@@ -1,0 +1,16 @@
+{
+  "id": "relationship-os",
+  "title": "The CRM remembers the deal. IMOS remembers the person.",
+  "voice": "onyx",
+  "model": "tts-1-hd",
+  "speed": 1.0,
+  "scenes": [
+    {"id": "hook",   "min_ms": 5200, "vo": "Your CRM remembers the deal. Then it forgets the person."},
+    {"id": "stat",   "min_ms": 5600, "vo": "Seventy-four percent of customers who go back to their salesperson buy again. Most never hear from them after delivery."},
+    {"id": "today",  "min_ms": 6200, "vo": "I'm On Social gives every rep a book of business that runs itself. Every morning: three people to talk to, and exactly why."},
+    {"id": "memory", "min_ms": 6200, "vo": "Reps just talk. It remembers the family, the trip, the birthday, and turns every one into a follow-up."},
+    {"id": "hot",    "min_ms": 6000, "vo": "When a shopper opens a lot photo, the rep knows in seconds. The text is already written."},
+    {"id": "store",  "min_ms": 5200, "vo": "And when a rep moves on, the relationships stay with your store."},
+    {"id": "end",    "min_ms": 5200, "vo": "I'm On Social. The Relationship OS for dealerships. Book a demo at I'm On Social dot com."}
+  ]
+}

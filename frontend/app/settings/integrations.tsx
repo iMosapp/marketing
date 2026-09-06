@@ -620,7 +620,7 @@ const { showToast } = useToast();
               All API requests require an API key passed in the header:
             </Text>
             <View style={styles.codeBlockMulti}>
-              <Text style={styles.codeComment}>// Include with every request</Text>
+              <Text style={styles.codeComment}>{'// Include with every request'}</Text>
               <Text style={styles.codeText}>X-API-Key: imos_your_key_here</Text>
             </View>
             <Text style={[styles.docParagraph, { marginTop: 8 }]}>
@@ -652,7 +652,7 @@ const { showToast } = useToast();
               Contacts and Users support external system IDs for syncing:
             </Text>
             <View style={styles.codeBlockMulti}>
-              <Text style={styles.codeComment}>// Map your system IDs</Text>
+              <Text style={styles.codeComment}>{'// Map your system IDs'}</Text>
               <Text style={styles.codeText}>{'{'}</Text>
               <Text style={styles.codeText}>  "external_id": "SF-12345",</Text>
               <Text style={styles.codeText}>  "external_ids": {'{'}</Text>
@@ -769,7 +769,7 @@ const { showToast } = useToast();
           <View style={styles.docCard}>
             <Text style={styles.docCardTitle}>JavaScript (fetch)</Text>
             <View style={styles.codeBlockMulti}>
-              <Text style={styles.codeComment}>// List contacts with search</Text>
+              <Text style={styles.codeComment}>{'// List contacts with search'}</Text>
               <Text style={styles.codeText}>const res = await fetch(</Text>
               <Text style={styles.codeText}>  '{APP_URL}/api/v1/contacts?search=john',</Text>
               <Text style={styles.codeText}>  {'{ headers: { "X-API-Key": key } }'}</Text>
