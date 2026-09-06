@@ -213,6 +213,16 @@ export default function RootLayout() {
     }
   }, []);
 
+  // Share-the-app attribution: first open per device, then tie the install to whoever signs in
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    import('../services/installBeacon').then(m => m.reportFirstOpen());
+  }, []);
+  useEffect(() => {
+    if (!isAuthenticated || !user?._id || Platform.OS === 'web') return;
+    import('../services/installBeacon').then(m => m.claimInstall(user._id));
+  }, [isAuthenticated, user?._id]);
+
   // Register push token whenever user is authenticated — runs after BOTH fresh login AND session restore
   useEffect(() => {
     if (!isAuthenticated || !user?._id || Platform.OS === 'web') return;

@@ -2,5 +2,12 @@
   "buildCommand": "",
   "outputDirectory": "build",
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/get/:code",
+      "destination": "https://app.imonsocial.com/api/get/:code",
+      "permanent": false
+    }
+  ]
 }

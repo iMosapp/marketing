@@ -340,6 +340,7 @@ export default function MoreScreen() {
       { permKey: 'sms_templates', icon: 'document-text', title: 'My Templates', subtitle: 'SMS & email templates', onPress: () => router.push('/settings/templates'), color: '#AF52DE' },
       { icon: 'color-palette-outline', title: 'Card Templates', subtitle: 'Thank-you & congrats card designs', onPress: () => router.push('/settings/card-templates'), color: '#FF9500' },
       { icon: 'mail-outline', title: 'Email Signature', subtitle: 'Copy & paste into your email', onPress: () => router.push('/email-signature' as any), color: '#5856D6' },
+      { icon: 'phone-portrait-outline', title: 'Share the App', subtitle: 'Your install link + QR, see who installed', onPress: () => router.push('/share-app' as any), color: '#34C759' },
     ];
     const filteredMenu = menuItems.filter(i => !i.permKey || perm('content', i.permKey));
     sections.push({

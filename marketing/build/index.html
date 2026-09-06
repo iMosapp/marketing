@@ -24,6 +24,26 @@
     html{scroll-behavior:smooth}
     body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
 
+    /* GET THE APP */
+    .getapp{padding:100px 24px;background:#0A0A0F;color:#FFF;position:relative;overflow:hidden}
+    .getapp::before{content:'';position:absolute;top:-260px;left:50%;transform:translateX(-50%);width:900px;height:600px;background:radial-gradient(ellipse,rgba(201,169,98,.14) 0%,transparent 60%);pointer-events:none}
+    .getapp-inner{max-width:1040px;margin:0 auto;display:grid;grid-template-columns:1.2fr .8fr;gap:56px;align-items:center;position:relative}
+    .getapp .sec-tag{color:#C9A962}
+    .getapp h2{font-size:44px;font-weight:900;line-height:1.08;letter-spacing:-.03em;margin-bottom:16px}
+    .getapp p{font-size:18px;color:rgba(255,255,255,.6);line-height:1.6;max-width:520px;margin-bottom:32px}
+    .getapp-btns{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+    .appstore-btn{display:inline-flex;align-items:center;gap:12px;background:#FFF;color:#000;border-radius:14px;padding:12px 22px 12px 18px;text-decoration:none;transition:transform .2s,box-shadow .2s;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .appstore-btn:hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(0,0,0,.45)}
+    .appstore-btn i{font-size:30px}
+    .appstore-btn small{display:block;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#555;line-height:1}
+    .appstore-btn strong{display:block;font-size:20px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+    .getapp-note{font-size:14px;color:rgba(255,255,255,.45)}
+    .getapp-qr{background:#FFF;border-radius:28px;padding:26px;display:flex;flex-direction:column;align-items:center;gap:14px;justify-self:center;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+    .getapp-qr img{width:220px;height:220px;display:block}
+    .getapp-qr span{font-size:14px;font-weight:700;color:#111;display:flex;align-items:center;gap:8px}
+    .getapp-qr span i{color:#C9A962}
+    @media(max-width:768px){.getapp{padding:72px 24px}.getapp-inner{grid-template-columns:1fr;gap:36px;text-align:center}.getapp h2{font-size:32px}.getapp p{margin-left:auto;margin-right:auto;font-size:16px}.getapp-btns{justify-content:center}.getapp-qr{display:none}}
+
     /* NAV */
     nav{position:fixed;top:0;left:0;right:0;z-index:1000;transition:all .3s}
     nav.scrolled{background:rgba(255,255,255,.96);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 1px 0 var(--border-2)}
@@ -535,6 +555,28 @@
 </section>
 
 <!-- BOTTOM CTA -->
+<!-- GET THE APP -->
+<section class="getapp" id="get-the-app">
+  <div class="getapp-inner">
+    <div class="rv">
+      <div class="sec-tag">Get the app</div>
+      <h2>Your book of business, in your pocket.</h2>
+      <p>Every customer, every follow-up, every review request, on the phone you already carry. Download i'M On Social for iPhone and be the salesperson they never forget.</p>
+      <div class="getapp-btns">
+        <a class="appstore-btn" href="/get/site" aria-label="Download on the App Store">
+          <i class="fa-brands fa-apple"></i>
+          <span><small>Download on the</small><strong>App Store</strong></span>
+        </a>
+        <span class="getapp-note">Android coming soon</span>
+      </div>
+    </div>
+    <div class="getapp-qr rv rv-1">
+      <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0nMS4wJyBlbmNvZGluZz0nVVRGLTgnPz4KPHN2ZyB3aWR0aD0iMzFtbSIgaGVpZ2h0PSIzMW1tIiB2ZXJzaW9uPSIxLjEiIHZpZXdCb3g9IjAgMCAzMSAzMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMSwxSDJWMkgxek0yLDFIM1YySDJ6TTMsMUg0VjJIM3pNNCwxSDVWMkg0ek01LDFINlYySDV6TTYsMUg3VjJINnpNNywxSDhWMkg3ek0xMCwxSDExVjJIMTB6TTExLDFIMTJWMkgxMXpNMTMsMUgxNFYySDEzek0xNiwxSDE3VjJIMTZ6TTE3LDFIMThWMkgxN3pNMTgsMUgxOVYySDE4ek0xOSwxSDIwVjJIMTl6TTIwLDFIMjFWMkgyMHpNMjMsMUgyNFYySDIzek0yNCwxSDI1VjJIMjR6TTI1LDFIMjZWMkgyNXpNMjYsMUgyN1YySDI2ek0yNywxSDI4VjJIMjd6TTI4LDFIMjlWMkgyOHpNMjksMUgzMFYySDI5ek0xLDJIMlYzSDF6TTcsMkg4VjNIN3pNMTIsMkgxM1YzSDEyek0xOCwySDE5VjNIMTh6TTIxLDJIMjJWM0gyMXpNMjMsMkgyNFYzSDIzek0yOSwySDMwVjNIMjl6TTEsM0gyVjRIMXpNMywzSDRWNEgzek00LDNINVY0SDR6TTUsM0g2VjRINXpNNywzSDhWNEg3ek05LDNIMTBWNEg5ek0xMCwzSDExVjRIMTB6TTExLDNIMTJWNEgxMXpNMTMsM0gxNFY0SDEzek0xNSwzSDE2VjRIMTV6TTE3LDNIMThWNEgxN3pNMjEsM0gyMlY0SDIxek0yMywzSDI0VjRIMjN6TTI1LDNIMjZWNEgyNXpNMjYsM0gyN1Y0SDI2ek0yNywzSDI4VjRIMjd6TTI5LDNIMzBWNEgyOXpNMSw0SDJWNUgxek0zLDRINFY1SDN6TTQsNEg1VjVINHpNNSw0SDZWNUg1ek03LDRIOFY1SDd6TTksNEgxMFY1SDl6TTEwLDRIMTFWNUgxMHpNMTIsNEgxM1Y1SDEyek0xNyw0SDE4VjVIMTd6TTE4LDRIMTlWNUgxOHpNMjAsNEgyMVY1SDIwek0yMyw0SDI0VjVIMjN6TTI1LDRIMjZWNUgyNXpNMjYsNEgyN1Y1SDI2ek0yNyw0SDI4VjVIMjd6TTI5LDRIMzBWNUgyOXpNMSw1SDJWNkgxek0zLDVINFY2SDN6TTQsNUg1VjZINHpNNSw1SDZWNkg1ek03LDVIOFY2SDd6TTksNUgxMFY2SDl6TTEwLDVIMTFWNkgxMHpNMTEsNUgxMlY2SDExek0xMyw1SDE0VjZIMTN6TTE0LDVIMTVWNkgxNHpNMTUsNUgxNlY2SDE1ek0xNiw1SDE3VjZIMTZ6TTE5LDVIMjBWNkgxOXpNMjAsNUgyMVY2SDIwek0yMSw1SDIyVjZIMjF6TTIzLDVIMjRWNkgyM3pNMjUsNUgyNlY2SDI1ek0yNiw1SDI3VjZIMjZ6TTI3LDVIMjhWNkgyN3pNMjksNUgzMFY2SDI5ek0xLDZIMlY3SDF6TTcsNkg4VjdIN3pNOSw2SDEwVjdIOXpNMTAsNkgxMVY3SDEwek0xNCw2SDE1VjdIMTR6TTE1LDZIMTZWN0gxNXpNMTYsNkgxN1Y3SDE2ek0xNyw2SDE4VjdIMTd6TTE4LDZIMTlWN0gxOHpNMjEsNkgyMlY3SDIxek0yMyw2SDI0VjdIMjN6TTI5LDZIMzBWN0gyOXpNMSw3SDJWOEgxek0yLDdIM1Y4SDJ6TTMsN0g0VjhIM3pNNCw3SDVWOEg0ek01LDdINlY4SDV6TTYsN0g3VjhINnpNNyw3SDhWOEg3ek05LDdIMTBWOEg5ek0xMSw3SDEyVjhIMTF6TTEzLDdIMTRWOEgxM3pNMTUsN0gxNlY4SDE1ek0xNyw3SDE4VjhIMTd6TTE5LDdIMjBWOEgxOXpNMjEsN0gyMlY4SDIxek0yMyw3SDI0VjhIMjN6TTI0LDdIMjVWOEgyNHpNMjUsN0gyNlY4SDI1ek0yNiw3SDI3VjhIMjZ6TTI3LDdIMjhWOEgyN3pNMjgsN0gyOVY4SDI4ek0yOSw3SDMwVjhIMjl6TTksOEgxMFY5SDl6TTEyLDhIMTNWOUgxMnpNMTMsOEgxNFY5SDEzek0xNCw4SDE1VjlIMTR6TTE2LDhIMTdWOUgxNnpNMjAsOEgyMVY5SDIwek0yMSw4SDIyVjlIMjF6TTEsOUgyVjEwSDF6TTMsOUg0VjEwSDN6TTQsOUg1VjEwSDR6TTUsOUg2VjEwSDV6TTYsOUg3VjEwSDZ6TTcsOUg4VjEwSDd6TTEwLDlIMTFWMTBIMTB6TTEzLDlIMTRWMTBIMTN6TTE1LDlIMTZWMTBIMTV6TTE2LDlIMTdWMTBIMTZ6TTE4LDlIMTlWMTBIMTh6TTIwLDlIMjFWMTBIMjB6TTIzLDlIMjRWMTBIMjN6TTI0LDlIMjVWMTBIMjR6TTI1LDlIMjZWMTBIMjV6TTI2LDlIMjdWMTBIMjZ6TTI3LDlIMjhWMTBIMjd6TTQsMTBINVYxMUg0ek01LDEwSDZWMTFINXpNOCwxMEg5VjExSDh6TTExLDEwSDEyVjExSDExek0xMywxMEgxNFYxMUgxM3pNMTYsMTBIMTdWMTFIMTZ6TTE3LDEwSDE4VjExSDE3ek0xOSwxMEgyMFYxMUgxOXpNMjAsMTBIMjFWMTFIMjB6TTIxLDEwSDIyVjExSDIxek0yMywxMEgyNFYxMUgyM3pNMjQsMTBIMjVWMTFIMjR6TTI1LDEwSDI2VjExSDI1ek0yOSwxMEgzMFYxMUgyOXpNMSwxMUgyVjEySDF6TTIsMTFIM1YxMkgyek0zLDExSDRWMTJIM3pNNSwxMUg2VjEySDV6TTYsMTFIN1YxMkg2ek03LDExSDhWMTJIN3pNOCwxMUg5VjEySDh6TTksMTFIMTBWMTJIOXpNMTAsMTFIMTFWMTJIMTB6TTEzLDExSDE0VjEySDEzek0yMSwxMUgyMlYxMkgyMXpNMjIsMTFIMjNWMTJIMjJ6TTIsMTJIM1YxM0gyek0zLDEySDRWMTNIM3pNNSwxMkg2VjEzSDV6TTgsMTJIOVYxM0g4ek05LDEySDEwVjEzSDl6TTE1LDEySDE2VjEzSDE1ek0xNywxMkgxOFYxM0gxN3pNMjAsMTJIMjFWMTNIMjB6TTIzLDEySDI0VjEzSDIzek0yNCwxMkgyNVYxM0gyNHpNMjYsMTJIMjdWMTNIMjZ6TTI4LDEySDI5VjEzSDI4ek02LDEzSDdWMTRINnpNNywxM0g4VjE0SDd6TTksMTNIMTBWMTRIOXpNMTAsMTNIMTFWMTRIMTB6TTExLDEzSDEyVjE0SDExek0xMiwxM0gxM1YxNEgxMnpNMTcsMTNIMThWMTRIMTd6TTE4LDEzSDE5VjE0SDE4ek0yNiwxM0gyN1YxNEgyNnpNMjcsMTNIMjhWMTRIMjd6TTEsMTRIMlYxNUgxek0zLDE0SDRWMTVIM3pNNCwxNEg1VjE1SDR6TTYsMTRIN1YxNUg2ek0xMiwxNEgxM1YxNUgxMnpNMTQsMTRIMTVWMTVIMTR6TTE1LDE0SDE2VjE1SDE1ek0xNiwxNEgxN1YxNUgxNnpNMjAsMTRIMjFWMTVIMjB6TTIxLDE0SDIyVjE1SDIxek0yMiwxNEgyM1YxNUgyMnpNMjMsMTRIMjRWMTVIMjN6TTI0LDE0SDI1VjE1SDI0ek0yNSwxNEgyNlYxNUgyNXpNMjksMTRIMzBWMTVIMjl6TTEsMTVIMlYxNkgxek01LDE1SDZWMTZINXpNNiwxNUg3VjE2SDZ6TTcsMTVIOFYxNkg3ek05LDE1SDEwVjE2SDl6TTEyLDE1SDEzVjE2SDEyek0xNCwxNUgxNVYxNkgxNHpNMTUsMTVIMTZWMTZIMTV6TTE2LDE1SDE3VjE2SDE2ek0xNywxNUgxOFYxNkgxN3pNMjMsMTVIMjRWMTZIMjN6TTI0LDE1SDI1VjE2SDI0ek0yNiwxNUgyN1YxNkgyNnpNMjcsMTVIMjhWMTZIMjd6TTEsMTZIMlYxN0gxek0yLDE2SDNWMTdIMnpNMywxNkg0VjE3SDN6TTQsMTZINVYxN0g0ek05LDE2SDEwVjE3SDl6TTEwLDE2SDExVjE3SDEwek0xMSwxNkgxMlYxN0gxMXpNMTIsMTZIMTNWMTdIMTJ6TTE0LDE2SDE1VjE3SDE0ek0xNiwxNkgxN1YxN0gxNnpNMTksMTZIMjBWMTdIMTl6TTIwLDE2SDIxVjE3SDIwek0yMSwxNkgyMlYxN0gyMXpNMjMsMTZIMjRWMTdIMjN6TTI0LDE2SDI1VjE3SDI0ek0yOCwxNkgyOVYxN0gyOHpNMiwxN0gzVjE4SDJ6TTMsMTdINFYxOEgzek02LDE3SDdWMThINnpNNywxN0g4VjE4SDd6TTgsMTdIOVYxOEg4ek05LDE3SDEwVjE4SDl6TTEyLDE3SDEzVjE4SDEyek0xNSwxN0gxNlYxOEgxNXpNMTYsMTdIMTdWMThIMTZ6TTE4LDE3SDE5VjE4SDE4ek0xOSwxN0gyMFYxOEgxOXpNMjAsMTdIMjFWMThIMjB6TTI2LDE3SDI3VjE4SDI2ek0yNywxN0gyOFYxOEgyN3pNMSwxOEgyVjE5SDF6TTIsMThIM1YxOUgyek0xMCwxOEgxMVYxOUgxMHpNMTMsMThIMTRWMTlIMTN6TTE2LDE4SDE3VjE5SDE2ek0xNywxOEgxOFYxOUgxN3pNMTgsMThIMTlWMTlIMTh6TTE5LDE4SDIwVjE5SDE5ek0yMCwxOEgyMVYxOUgyMHpNMjIsMThIMjNWMTlIMjJ6TTIzLDE4SDI0VjE5SDIzek0yNCwxOEgyNVYxOUgyNHpNMjUsMThIMjZWMTlIMjV6TTI3LDE4SDI4VjE5SDI3ek0yOSwxOEgzMFYxOUgyOXpNMSwxOUgyVjIwSDF6TTUsMTlINlYyMEg1ek02LDE5SDdWMjBINnpNNywxOUg4VjIwSDd6TTEwLDE5SDExVjIwSDEwek0xMSwxOUgxMlYyMEgxMXpNMTIsMTlIMTNWMjBIMTJ6TTEzLDE5SDE0VjIwSDEzek0xOCwxOUgxOVYyMEgxOHpNMjIsMTlIMjNWMjBIMjJ6TTI0LDE5SDI1VjIwSDI0ek0yNSwxOUgyNlYyMEgyNXpNMjcsMTlIMjhWMjBIMjd6TTEsMjBIMlYyMUgxek0zLDIwSDRWMjFIM3pNNCwyMEg1VjIxSDR6TTUsMjBINlYyMUg1ek02LDIwSDdWMjFINnpNMTIsMjBIMTNWMjFIMTJ6TTE1LDIwSDE2VjIxSDE1ek0xNywyMEgxOFYyMUgxN3pNMjEsMjBIMjJWMjFIMjF6TTIzLDIwSDI0VjIxSDIzek0yNCwyMEgyNVYyMUgyNHpNMjgsMjBIMjlWMjFIMjh6TTEsMjFIMlYyMkgxek0zLDIxSDRWMjJIM3pNNCwyMUg1VjIySDR6TTUsMjFINlYyMkg1ek03LDIxSDhWMjJIN3pNOSwyMUgxMFYyMkg5ek0xMCwyMUgxMVYyMkgxMHpNMTgsMjFIMTlWMjJIMTh6TTIwLDIxSDIxVjIySDIwek0yMSwyMUgyMlYyMkgyMXpNMjIsMjFIMjNWMjJIMjJ6TTIzLDIxSDI0VjIySDIzek0yNCwyMUgyNVYyMkgyNHpNMjUsMjFIMjZWMjJIMjV6TTI3LDIxSDI4VjIySDI3ek0yOCwyMUgyOVYyMkgyOHpNMjksMjFIMzBWMjJIMjl6TTksMjJIMTBWMjNIOXpNMTEsMjJIMTJWMjNIMTF6TTE0LDIySDE1VjIzSDE0ek0xNSwyMkgxNlYyM0gxNXpNMTYsMjJIMTdWMjNIMTZ6TTIxLDIySDIyVjIzSDIxek0yNSwyMkgyNlYyM0gyNXpNMjYsMjJIMjdWMjNIMjZ6TTI3LDIySDI4VjIzSDI3ek0yOCwyMkgyOVYyM0gyOHpNMjksMjJIMzBWMjNIMjl6TTEsMjNIMlYyNEgxek0yLDIzSDNWMjRIMnpNMywyM0g0VjI0SDN6TTQsMjNINVYyNEg0ek01LDIzSDZWMjRINXpNNiwyM0g3VjI0SDZ6TTcsMjNIOFYyNEg3ek0xMCwyM0gxMVYyNEgxMHpNMTEsMjNIMTJWMjRIMTF6TTEzLDIzSDE0VjI0SDEzek0xNCwyM0gxNVYyNEgxNHpNMTUsMjNIMTZWMjRIMTV6TTE2LDIzSDE3VjI0SDE2ek0xNywyM0gxOFYyNEgxN3pNMTgsMjNIMTlWMjRIMTh6TTE5LDIzSDIwVjI0SDE5ek0yMCwyM0gyMVYyNEgyMHpNMjEsMjNIMjJWMjRIMjF6TTIzLDIzSDI0VjI0SDIzek0yNSwyM0gyNlYyNEgyNXpNMjYsMjNIMjdWMjRIMjZ6TTI3LDIzSDI4VjI0SDI3ek0xLDI0SDJWMjVIMXpNNywyNEg4VjI1SDd6TTksMjRIMTBWMjVIOXpNMTEsMjRIMTJWMjVIMTF6TTEzLDI0SDE0VjI1SDEzek0xNCwyNEgxNVYyNUgxNHpNMTYsMjRIMTdWMjVIMTZ6TTE3LDI0SDE4VjI1SDE3ek0yMCwyNEgyMVYyNUgyMHpNMjEsMjRIMjJWMjVIMjF6TTI1LDI0SDI2VjI1SDI1ek0yOSwyNEgzMFYyNUgyOXpNMSwyNUgyVjI2SDF6TTMsMjVINFYyNkgzek00LDI1SDVWMjZINHpNNSwyNUg2VjI2SDV6TTcsMjVIOFYyNkg3ek05LDI1SDEwVjI2SDl6TTExLDI1SDEyVjI2SDExek0xMiwyNUgxM1YyNkgxMnpNMTMsMjVIMTRWMjZIMTN6TTE1LDI1SDE2VjI2SDE1ek0xNiwyNUgxN1YyNkgxNnpNMTgsMjVIMTlWMjZIMTh6TTIxLDI1SDIyVjI2SDIxek0yMiwyNUgyM1YyNkgyMnpNMjMsMjVIMjRWMjZIMjN6TTI0LDI1SDI1VjI2SDI0ek0yNSwyNUgyNlYyNkgyNXpNMjcsMjVIMjhWMjZIMjd6TTI5LDI1SDMwVjI2SDI5ek0xLDI2SDJWMjdIMXpNMywyNkg0VjI3SDN6TTQsMjZINVYyN0g0ek01LDI2SDZWMjdINXpNNywyNkg4VjI3SDd6TTksMjZIMTBWMjdIOXpNMTQsMjZIMTVWMjdIMTR6TTE3LDI2SDE4VjI3SDE3ek0xOCwyNkgxOVYyN0gxOHpNMTksMjZIMjBWMjdIMTl6TTIwLDI2SDIxVjI3SDIwek0yNiwyNkgyN1YyN0gyNnpNMjcsMjZIMjhWMjdIMjd6TTEsMjdIMlYyOEgxek0zLDI3SDRWMjhIM3pNNCwyN0g1VjI4SDR6TTUsMjdINlYyOEg1ek03LDI3SDhWMjhIN3pNOSwyN0gxMFYyOEg5ek0xMCwyN0gxMVYyOEgxMHpNMTIsMjdIMTNWMjhIMTJ6TTE2LDI3SDE3VjI4SDE2ek0xOSwyN0gyMFYyOEgxOXpNMjIsMjdIMjNWMjhIMjJ6TTIzLDI3SDI0VjI4SDIzek0yNCwyN0gyNVYyOEgyNHpNMjUsMjdIMjZWMjhIMjV6TTI2LDI3SDI3VjI4SDI2ek0yNywyN0gyOFYyOEgyN3pNMjgsMjdIMjlWMjhIMjh6TTEsMjhIMlYyOUgxek03LDI4SDhWMjlIN3pNMTAsMjhIMTFWMjlIMTB6TTExLDI4SDEyVjI5SDExek0xMiwyOEgxM1YyOUgxMnpNMTQsMjhIMTVWMjlIMTR6TTE1LDI4SDE2VjI5SDE1ek0xNiwyOEgxN1YyOUgxNnpNMTcsMjhIMThWMjlIMTd6TTIxLDI4SDIyVjI5SDIxek0yMiwyOEgyM1YyOUgyMnpNMjMsMjhIMjRWMjlIMjN6TTI0LDI4SDI1VjI5SDI0ek0yNSwyOEgyNlYyOUgyNXpNMjYsMjhIMjdWMjlIMjZ6TTI4LDI4SDI5VjI5SDI4ek0xLDI5SDJWMzBIMXpNMiwyOUgzVjMwSDJ6TTMsMjlINFYzMEgzek00LDI5SDVWMzBINHpNNSwyOUg2VjMwSDV6TTYsMjlIN1YzMEg2ek03LDI5SDhWMzBIN3pNOSwyOUgxMFYzMEg5ek0xMCwyOUgxMVYzMEgxMHpNMTEsMjlIMTJWMzBIMTF6TTEzLDI5SDE0VjMwSDEzek0xNCwyOUgxNVYzMEgxNHpNMTUsMjlIMTZWMzBIMTV6TTE2LDI5SDE3VjMwSDE2ek0xNywyOUgxOFYzMEgxN3pNMTgsMjlIMTlWMzBIMTh6TTIwLDI5SDIxVjMwSDIwek0yNywyOUgyOFYzMEgyN3oiIGlkPSJxci1wYXRoIiBmaWxsPSIjMDAwMDAwIiBmaWxsLW9wYWNpdHk9IjEiIGZpbGwtcnVsZT0ibm9uemVybyIgc3Ryb2tlPSJub25lIiAvPjwvc3ZnPg==" alt="QR code to download i'M On Social on the App Store" width="220" height="220"/>
+      <span><i class="fa-solid fa-camera"></i> Point your iPhone camera here</span>
+    </div>
+  </div>
+</section>
+
 <section class="cta-bottom">
   <h2>You just need help remembering who you know.</h2>
   <p>Be the one they never forget. Start building your reputation today.</p>
@@ -576,7 +618,7 @@
       <a href="https://app.imonsocial.com">Sign In</a>
       <a href="/training/">Training</a>
       <a href="/help/">Help Center</a>
-      <a href="https://app.imonsocial.com/install.html">Install App</a>
+      <a href="/get/site">Get the iPhone App</a>
     </div>
   </div>
   <div class="ft-bottom">

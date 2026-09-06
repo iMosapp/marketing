@@ -25,3 +25,11 @@ ESLint arm imports eslint-config-expo, oxlint arm loads eslint-plugin-expo (.oxl
 Persistent fix: frontend/scripts/link-global-lint-deps.js runs from the `yarn start` script (supervisor) and
 re-creates both symlinks on every frontend start. If the error appears right after a restart, run:
     node /app/frontend/scripts/link-global-lint-deps.js
+
+## REAL ROOT CAUSE (confirmed from /var/log/e1_agent.log, Sep 6 2026)
+The pre-completion check runs the oxlint arm on /app/frontend (`lint_javascript_oxlint path=/app/frontend
+engine_success=False`). engine_success is `oxlint ok AND ImportValidator ok`. ImportValidator failed on
+`frontend/plugins/visual-edits/dev-server-setup.js` (platform plugin) which requires `express`, not listed in
+package.json. Fix: `cd /app/frontend && yarn add -D express` (done). Verify with:
+    /opt/plugins-venv/bin/python -c "import asyncio,sys; sys.path.insert(0,'/opt/plugins-venv/lib/python3.11/site-packages'); from linters.lint_tools import run_javascript_oxlint_linter as r; print(asyncio.run(r(['/app/frontend'])).engine_success)"
+Must print True. The eslint-config-expo symlink fix above is still needed for the ESLint arm.

@@ -41,6 +41,8 @@ ACTION_TYPES = {
     "task_reminder":              ("today", "{title}",                          "Open",     "alarm"),
     "manager_nudge":              ("today", "{title}",                          "Open",     "megaphone"),
     "inventory_feed_issue":       ("today", "{title}",                          "Fix",      "cloud-offline"),
+    "app_install":                ("today", "{title}",                          "See",      "phone-portrait"),
+    "app_signup":                 ("today", "{title}",                          "See",      "person-add"),
 }
 BUCKETS = ("now", "today", "later")
 # legacy category (older app builds filter on it)

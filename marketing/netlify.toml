@@ -5,3 +5,9 @@
 
 [build.environment]
   NODE_VERSION = "18"
+
+[[redirects]]
+  from = "/get/*"
+  to = "https://app.imonsocial.com/api/get/:splat"
+  status = 302
+  force = true

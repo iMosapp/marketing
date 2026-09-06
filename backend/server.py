@@ -173,7 +173,7 @@ async def enforce_user_ownership(request: Request, call_next):
         "/api/push/status/", "/api/push/diagnose/", "/api/push/morning-brief/", "/api/leads/queue/", "/api/users/", "/api/engagement-signals/",
         "/api/ai-outreach/", "/api/broadcast/", "/api/bug-reports/",
         "/api/inventory/", "/api/keyword-rules/", "/api/wallet/",
-        "/api/relationship-health/", "/api/calls/",
+        "/api/relationship-health/", "/api/calls/", "/api/app-links/",
     )
 
     matched_prefix = next((p for p in PROTECTED_PREFIXES if path.startswith(p)), None)
@@ -697,6 +697,8 @@ from routers import inventory_feeds
 api_router.include_router(inventory_feeds.router)
 from routers import promo_videos
 api_router.include_router(promo_videos.router)
+from routers import app_links
+api_router.include_router(app_links.router)
 api_router.include_router(wallet_pass.router)
 
 # ============= WEBSOCKET ENDPOINT =============

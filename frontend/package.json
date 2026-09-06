@@ -79,6 +79,7 @@
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "eslint-formatter-unix": "^9.0.1",
+    "express": "^5.2.1",
     "serve": "^14.2.5",
     "typescript": "~5.9.3"
   },
