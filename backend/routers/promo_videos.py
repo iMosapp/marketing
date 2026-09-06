@@ -20,7 +20,7 @@ async def promo_index():
 
 @router.get("/{filename}")
 async def promo_video(filename: str, request: Request):
-    if not re.fullmatch(r"[a-z0-9\-]+\.mp4", filename):
+    if not re.fullmatch(r"[a-z0-9\-]+\.(mp4|mp3)", filename):
         raise HTTPException(404)
     path = VIDEO_DIR / filename
     if not path.exists():
@@ -28,7 +28,7 @@ async def promo_video(filename: str, request: Request):
     size = path.stat().st_size
     rng = request.headers.get("range")
     if not rng:
-        return FileResponse(path, media_type="video/mp4", headers={"Accept-Ranges": "bytes"})
+        return FileResponse(path, media_type=("audio/mpeg" if filename.endswith(".mp3") else "video/mp4"), headers={"Accept-Ranges": "bytes"})
     m = re.fullmatch(r"bytes=(\d*)-(\d*)", rng.strip())
     if not m:
         raise HTTPException(416)
@@ -41,7 +41,7 @@ async def promo_video(filename: str, request: Request):
         f.seek(start)
         data = f.read(end - start + 1)
     return Response(
-        content=data, status_code=206, media_type="video/mp4",
+        content=data, status_code=206, media_type=("audio/mpeg" if filename.endswith(".mp3") else "video/mp4"),
         headers={"Content-Range": f"bytes {start}-{end}/{size}", "Accept-Ranges": "bytes",
                  "Content-Length": str(len(data)), "Cache-Control": "public, max-age=3600"},
     )
