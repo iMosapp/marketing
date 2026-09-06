@@ -541,7 +541,12 @@ function ContactDetailScreen() {
     try {
       setLoading(true);
       const data = await contactsAPI.getById(user._id, id as string);
-      const parseDate = (d: any): Date | null => d ? new Date(d) : null;
+      // Calendar dates arrive as "YYYY-MM-DD" or UTC midnight ("...T00:00:00Z"); read them as local dates or Sep 11 shows as Sep 10 in US zones
+      const parseDate = (d: any): Date | null => {
+        if (!d) return null;
+        const m = /^(\d{4})-(\d{2})-(\d{2})(?:T00:00:00(?:\.0+)?(?:Z|\+00:00)?)?$/.exec(String(d));
+        return m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(d);
+      };
       const customDates = (data.custom_dates || []).map((cd: any) => ({
         name: cd.name, date: parseDate(cd.date),
       }));

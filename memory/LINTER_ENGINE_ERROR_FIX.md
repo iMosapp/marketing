@@ -19,3 +19,9 @@ Verify with the exact harness command:
 
 Lint findings do not block; only an engine crash does. Also done: /app/eslint.config.js (root) so eslint resolves
 from any cwd, and /app/frontend/eslint.config.js disables the 4 slow import/* rules (full lint 100s -> 12s).
+
+UPDATE: the symlink is lost on container restart (/usr/lib is not persistent). Both lint arms need it:
+ESLint arm imports eslint-config-expo, oxlint arm loads eslint-plugin-expo (.oxlintrc-expo.json jsPlugins).
+Persistent fix: frontend/scripts/link-global-lint-deps.js runs from the `yarn start` script (supervisor) and
+re-creates both symlinks on every frontend start. If the error appears right after a restart, run:
+    node /app/frontend/scripts/link-global-lint-deps.js

@@ -14,10 +14,12 @@ import PersonalIntelSection from '../PersonalIntelSection';
 import PurchaseHistorySection from './PurchaseHistorySection';
 import CrmPushSection from './CrmPushSection';
 
+const toYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
 function BirthdayModal({ visible, onClose, onSave, current, s, colors, saving }: any) {
   const [dateStr, setDateStr] = useState('');
   useEffect(() => {
-    if (visible) setDateStr(current ? new Date(current).toISOString().split('T')[0] : '');
+    if (visible) setDateStr(current ? toYMD(new Date(current)) : '');
   }, [visible, current]);
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
@@ -44,7 +46,7 @@ function BirthdayModal({ visible, onClose, onSave, current, s, colors, saving }:
               value={dateStr ? new Date(dateStr + 'T12:00:00') : new Date(1990, 0, 1)}
               mode="date"
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              onChange={(_: any, d?: Date) => { if (d) setDateStr(d.toISOString().split('T')[0]); }}
+              onChange={(_: any, d?: Date) => { if (d) setDateStr(toYMD(d)); }}
               style={{ height: 150, marginVertical: 8 }}
             />
           )}
