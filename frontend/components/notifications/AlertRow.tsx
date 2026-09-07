@@ -76,9 +76,9 @@ export function AlertRow({ item, onOpen, onDismiss, onSnooze }: Props) {
         <Ionicons name={icon as any} size={17} color={tint} />
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
-        <Text maxFontSizeMultiplier={1} style={styles.title} numberOfLines={1}>{item.title}</Text>
+        <Text maxFontSizeMultiplier={1} style={styles.title} numberOfLines={item.type === 'push' ? 2 : 1}>{item.title}</Text>
         {context ? (
-          <Text maxFontSizeMultiplier={1} style={styles.context} numberOfLines={2}>{context}</Text>
+          <Text maxFontSizeMultiplier={1} style={styles.context} numberOfLines={item.type === 'push' ? undefined : 2}>{context}</Text>
         ) : null}
         <Text maxFontSizeMultiplier={1} style={styles.time}>{formatAlertTime(item.timestamp)}</Text>
       </View>

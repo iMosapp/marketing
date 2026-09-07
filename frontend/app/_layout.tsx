@@ -94,11 +94,14 @@ export default function RootLayout() {
   const mode = useThemeStore((state) => state.mode);
   const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const authLoading = useAuthStore((state) => state.isLoading);
   const segments = useSegments();
   const [mounted, setMounted] = useState(false);
 
 
   // Clear badge + notification tap navigation
+  const pendingPushUrl = useRef<string | null>(null);
+  const [pushNavTick, setPushNavTick] = useState(0);
   useEffect(() => {
     if (Platform.OS === 'web') return;
     let responseSubRemove: (() => void) | null = null;
@@ -109,18 +112,16 @@ export default function RootLayout() {
       let url = data?.url || data?.screen || '';
       // Strip domain if backend sent a full URL (e.g. https://app.imonsocial.com/thread/abc)
       if (url.startsWith('http')) {
-        try { url = new URL(url).pathname; } catch {}
+        try { url = new URL(url).pathname + new URL(url).search; } catch {}
       }
       // Handle custom scheme (imos://thread/abc → /thread/abc)
       if (url.startsWith('imos://')) {
         url = url.replace('imos:/', '');
       }
       if (url && url !== '/') {
-        // Delay navigation to allow router to fully initialize
-        setTimeout(() => {
-          try { router.push(url as any); }
-          catch (e) { console.warn('[Push] Navigation failed:', e); }
-        }, 800);
+        // Held until the session is restored; navigating earlier gets wiped by the auth redirect
+        pendingPushUrl.current = url;
+        setPushNavTick(t => t + 1);
       }
     };
 
@@ -177,6 +178,18 @@ export default function RootLayout() {
     };
   }, []);
 
+
+  // Fire the held push deep link once the session is restored (cold start) or right away (warm tap)
+  useEffect(() => {
+    const url = pendingPushUrl.current;
+    if (!url || authLoading || !isAuthenticated) return;
+    const t = setTimeout(() => {
+      pendingPushUrl.current = null;
+      try { router.push(url as any); }
+      catch (e) { console.warn('[Push] Navigation failed:', e); }
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [pushNavTick, authLoading, isAuthenticated]);
 
   // Sync theme mode to data-theme on <html> so CSS can target dark/light autofill colors
   // Also re-applies whenever segments change (e.g. after returning from login page which forced 'light')
