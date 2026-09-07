@@ -552,7 +552,7 @@ export default function QuickSendPage() {
           </Text>
         </TouchableOpacity>
 
-        {!matchedContact && firstName.trim() && phone.trim() && (
+        {!matchedContact && !!firstName.trim() && !!phone.trim() && (
           <Text style={{ fontSize: 15, color: colors.textTertiary, textAlign: 'center', marginTop: 10 }}>
             New contact will be auto-created when you send
           </Text>

@@ -128,7 +128,7 @@ export default function SOPsPage() {
               const isExpanded = expandedId === sop.id;
               return (
                 <TouchableOpacity
-                  key={sop.id}
+                  key={sop.id || sop._id || sop.title}
                   style={[s.sopCard, { backgroundColor: colors.card }]}
                   onPress={() => setExpandedId(isExpanded ? null : sop.id)}
                   activeOpacity={0.7}

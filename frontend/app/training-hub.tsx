@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 import api from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
+import { ScreenHeader } from '../components/common/ScreenHeader';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -391,17 +392,16 @@ export default function TrainingHubScreen() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => {
+      <ScreenHeader
+        title={selectedLesson ? selectedLesson.title : selectedTrack ? selectedTrack.title : 'Training Hub'}
+        testID="training-hub-header"
+        onBack={() => {
           if (selectedLesson) setSelectedLesson(null);
           else if (selectedTrack) setSelectedTrack(null);
-          else router.back();
-        }} style={s.headerBackBtn}>
-          <Ionicons name="arrow-back" size={22} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>{selectedLesson ? selectedLesson.title : selectedTrack ? selectedTrack.title : 'Training Hub'}</Text>
-        <View style={{ width: 36 }} />
-      </View>
+          else if (router.canGoBack()) router.back();
+          else router.replace('/(tabs)/more' as any);
+        }}
+      />
       <ScrollView ref={scrollRef} contentContainerStyle={s.content}
         refreshControl={!selectedTrack ? <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadData(); }} tintColor="#C9A962" /> : undefined}
         showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">

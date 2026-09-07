@@ -6,6 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useThemeStore } from '../store/themeStore';
+import { ScreenHeader, HeaderIconButton } from '../components/common/ScreenHeader';
 import { useAuthStore } from '../store/authStore';
 import { WelcomeTour } from '../components/home/WelcomeTour';
 
@@ -195,17 +196,8 @@ export default function HelpPage() {
   }, [chatMessages]);
 
   return (
-    <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]}>
-      {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn} testID="help-back-btn" dataSet={{ testid: 'help-back-btn' } as any}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[s.headerTitle, { color: colors.text }]}>Help Center</Text>
-        <TouchableOpacity onPress={() => { setShowAI(!showAI); if (!showAI && chatMessages.length === 0) setChatMessages([{ role: 'assistant', text: 'Ask me anything about the app. Where is something, how to do it, what a button does.' }]); }} style={[s.aiToggle, { backgroundColor: colors.card }]} testID="help-ai-toggle" dataSet={{ testid: 'help-ai-toggle' } as any}>
-          <Ionicons name={showAI ? 'book-outline' : 'sparkles'} size={20} color={showAI ? colors.text : '#C9A962'} />
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={[s.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+      <ScreenHeader title="Help Center" testID="help-header" right={<HeaderIconButton icon={showAI ? 'book-outline' : 'sparkles'} onPress={() => { setShowAI(!showAI); if (!showAI && chatMessages.length === 0) setChatMessages([{ role: 'assistant', text: 'Ask me anything about the app. Where is something, how to do it, what a button does.' }]); }} testID="help-ai-toggle" />} />
 
       {/* Search Bar */}
       <View style={[s.searchWrap, { backgroundColor: colors.card }]}>

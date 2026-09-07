@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderTextButton } from '../../components/common/ScreenHeader';
 import api from '../../services/api';
 import { showSimpleAlert, showConfirm } from '../../services/alert';
 
@@ -131,24 +132,15 @@ export default function TwilioNumbersDashboard() {
   };
 
   if (loading) return (
-    <SafeAreaView style={s.container}>
+    <SafeAreaView style={s.container} edges={['top']}>
+      <ScreenHeader title="Phone Numbers" testID="phone-numbers-header" />
       <ActivityIndicator size="large" color="#C9A962" style={{ marginTop: 80 }} />
     </SafeAreaView>
   );
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Phone Numbers</Text>
-        <TouchableOpacity style={s.buyBtn} onPress={() => { setShowPurchase(true); setAvailable([]); setBuyFor(null); loadUsers(); }} data-testid="phone-numbers-buy-btn">
-          <Ionicons name="add" size={18} color="#000" />
-          <Text style={s.buyBtnText}>Buy</Text>
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader title="Phone Numbers" testID="phone-numbers-header" right={<HeaderTextButton label="Buy" onPress={() => { setShowPurchase(true); setAvailable([]); setBuyFor(null); loadUsers(); }} testID="phone-numbers-buy-btn" />} />
 
       <ScrollView
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor="#C9A962" />}
@@ -193,7 +185,7 @@ export default function TwilioNumbersDashboard() {
             {/* Assigned user or pool info */}
             {num.assigned_to ? (
               <View style={s.assignedRow}>
-                <Ionicons name="person-circle" size={16} color="#007AFF" />
+                <Ionicons name="person-circle" size={16} color="#C9A962" />
                 <Text style={s.assignedText}>
                   {num.assigned_to.name} — {num.store_name || 'No store'}
                 </Text>
@@ -241,12 +233,12 @@ export default function TwilioNumbersDashboard() {
               {!num.webhook_correct && (
                 <TouchableOpacity
                   onPress={() => fixWebhook(num.sid)}
-                  style={{ backgroundColor: '#007AFF20', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}
+                  style={{ backgroundColor: '#C9A96220', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}
                   disabled={fixingWebhook === num.sid}
                 >
                   {fixingWebhook === num.sid
-                    ? <ActivityIndicator size="small" color="#007AFF" />
-                    : <Text style={{ fontSize: 11, fontWeight: '700', color: '#007AFF' }}>Fix</Text>
+                    ? <ActivityIndicator size="small" color="#C9A962" />
+                    : <Text style={{ fontSize: 11, fontWeight: '700', color: '#C9A962' }}>Fix</Text>
                   }
                 </TouchableOpacity>
               )}
@@ -255,8 +247,8 @@ export default function TwilioNumbersDashboard() {
             {/* Actions */}
             <View style={s.actionRow}>
               <TouchableOpacity style={s.actionBtn} onPress={() => { setAssignTarget(num); loadUsers(); setShowAssign(true); }}>
-                <Ionicons name="swap-horizontal" size={14} color="#007AFF" />
-                <Text style={[s.actionBtnText, { color: '#007AFF' }]}>
+                <Ionicons name="swap-horizontal" size={14} color="#C9A962" />
+                <Text style={[s.actionBtnText, { color: '#C9A962' }]}>
                   {num.assigned_to ? 'Reassign' : 'Assign'}
                 </Text>
               </TouchableOpacity>
@@ -330,13 +322,13 @@ export default function TwilioNumbersDashboard() {
                 </View>
                 <Text style={{ fontSize: 13, color: '#34C759', fontWeight: '600' }}>$1.15/mo</Text>
                 <TouchableOpacity
-                  style={{ backgroundColor: '#007AFF', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9, opacity: purchasing === n.phone_number ? 0.6 : 1 }}
+                  style={{ backgroundColor: '#C9A962', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9, opacity: purchasing === n.phone_number ? 0.6 : 1 }}
                   onPress={() => purchaseNumber(n.phone_number)}
                   disabled={purchasing !== null}
                 >
                   {purchasing === n.phone_number
-                    ? <ActivityIndicator size="small" color="#fff" />
-                    : <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>{buyFor ? 'Buy & assign' : 'Buy'}</Text>
+                    ? <ActivityIndicator size="small" color="#000" />
+                    : <Text style={{ fontSize: 13, fontWeight: '700', color: '#000' }}>{buyFor ? 'Buy & assign' : 'Buy'}</Text>
                   }
                 </TouchableOpacity>
               </View>
@@ -363,8 +355,8 @@ export default function TwilioNumbersDashboard() {
             {users.filter(u => u.role !== 'super_admin' || users.length < 3).map(u => (
               <TouchableOpacity key={u._id} style={[s.card, { flexDirection: 'row', alignItems: 'center', gap: 12 }]}
                 onPress={() => assignTarget && assignNumber(assignTarget.sid, u._id)}>
-                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#007AFF20', alignItems: 'center', justifyContent: 'center' }}>
-                  <Ionicons name="person" size={18} color="#007AFF" />
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#C9A96220', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="person" size={18} color="#C9A962" />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>{u.name}</Text>
@@ -419,7 +411,7 @@ const getS = (colors: any) => StyleSheet.create({
   statsLine:    { flexDirection: 'row', gap: 14, marginBottom: 8 },
   webhookRow:   { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 8, padding: 8, marginBottom: 8 },
   actionRow:    { flexDirection: 'row', gap: 8 },
-  actionBtn:    { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: colors.bg, borderRadius: 10, paddingVertical: 9, borderWidth: 1, borderColor: '#007AFF40' },
+  actionBtn:    { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: colors.bg, borderRadius: 10, paddingVertical: 9, borderWidth: 1, borderColor: '#C9A96240' },
   actionBtnText:{ fontSize: 13, fontWeight: '600' },
   modalHeader:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border },
 });

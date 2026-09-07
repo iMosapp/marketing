@@ -247,7 +247,7 @@ export default function SharedInboxesPage() {
         <View style={styles.inboxInfo}>
           <Text style={styles.inboxName}>{inbox.name}</Text>
           <Text style={styles.inboxPhone}>{inbox.phone_number}</Text>
-          {inbox.description && (
+          {!!inbox.description && (
             <Text style={styles.inboxDescription}>{inbox.description}</Text>
           )}
           {inbox.receives_demo_requests && (

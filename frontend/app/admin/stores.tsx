@@ -168,7 +168,7 @@ export default function StoresScreen() {
         </View>
         <View style={styles.storeInfo}>
           <View style={styles.storeNameRow}>
-            <Text style={[styles.storeName, item.active === false && styles.inactiveText]}>{item.name}</Text>
+            <Text style={[styles.storeName, item.active === false && styles.inactiveText]} numberOfLines={1}>{item.name}</Text>
             <View style={[styles.statusDot, { backgroundColor: item.active !== false ? '#34C759' : '#FF3B30' }]} />
           </View>
           <Text style={styles.storeLocation}>
@@ -505,6 +505,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   storeInfo: {
     flex: 1,
+    minWidth: 0,
   },
   storeNameRow: {
     flexDirection: 'row',
@@ -512,9 +513,10 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   storeName: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: colors.text,
+    flexShrink: 1,
   },
   statusDot: {
     width: 8,

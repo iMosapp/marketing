@@ -349,7 +349,7 @@ export default function InviteTeamScreen() {
 
           {/* First + Last Name side by side */}
           <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.inputLabel}>First Name *</Text>
               <View style={styles.inputRow}>
                 <Ionicons name="person-outline" size={18} color={colors.textSecondary} />
@@ -364,7 +364,7 @@ export default function InviteTeamScreen() {
                 />
               </View>
             </View>
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.inputLabel}>Last Name *</Text>
               <View style={styles.inputRow}>
                 <TextInput
@@ -656,9 +656,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14,
     gap: 10,
+    minWidth: 0,
   },
   textInput: {
     flex: 1,
+    minWidth: 0,
     fontSize: FS.body,
     color: colors.text,
     paddingVertical: 14,

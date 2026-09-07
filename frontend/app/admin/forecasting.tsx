@@ -84,6 +84,7 @@ const InputField = React.memo(({ label, value, onChangeText, suffix }: {
 const inputStyles = StyleSheet.create({
   inputGroup: {
     flex: 1,
+    minWidth: 0,
   },
   inputLabel: {
     fontSize: 14,
@@ -97,9 +98,11 @@ const inputStyles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     height: 44,
+    minWidth: 0,
   },
   input: {
     flex: 1,
+    minWidth: 0,
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '600',

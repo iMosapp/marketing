@@ -116,7 +116,7 @@ export default function IndividualsScreen() {
       <View style={styles.individualInfo}>
         <Text style={styles.individualName}>{item.name || 'Unnamed'}</Text>
         <Text style={styles.individualEmail}>{item.email}</Text>
-        {item.title && (
+        {!!item.title && (
           <Text style={styles.individualTitle}>{item.title}</Text>
         )}
       </View>
@@ -133,7 +133,7 @@ export default function IndividualsScreen() {
             {item.is_active ? 'Active' : 'Inactive'}
           </Text>
         </View>
-        {item.subscription_status && (
+        {!!item.subscription_status && (
           <Text style={styles.subscriptionText}>
             {item.subscription_status}
           </Text>
