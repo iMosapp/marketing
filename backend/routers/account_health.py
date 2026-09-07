@@ -148,10 +148,8 @@ async def _get_user_metrics(db, user_id: str, days: int = 30) -> dict:
     }
 
 
-@router.get("/overview")
-async def get_accounts_overview(period: int = 30):
-    """List all user accounts with health scores for the dashboard."""
-    db = get_db()
+async def _health_rows(db, period: int = 30) -> list:
+    """Score every active non-super-admin account (fast counts, same math as the dashboard)."""
     cutoff = datetime.utcnow() - timedelta(days=period)
 
     users = await db.users.find(
@@ -169,7 +167,7 @@ async def get_accounts_overview(period: int = 30):
         campaigns = await db.campaigns.count_documents({"user_id": uid, "active": True})
 
         last_login = u.get("last_login")
-        days_since = (datetime.utcnow() - last_login).days if last_login else 999
+        days_since = (datetime.utcnow() - last_login).days if isinstance(last_login, datetime) else 999
 
         health = _health_score({
             "days_since_login": days_since,
@@ -213,7 +211,13 @@ async def get_accounts_overview(period: int = 30):
             "created_at": u.get("created_at").isoformat() if isinstance(u.get("created_at"), datetime) else str(u.get("created_at", "")),
             "tos_accepted": u.get("tos_accepted", False),
         })
+    return accounts
 
+
+@router.get("/overview")
+async def get_accounts_overview(period: int = 30):
+    """List all user accounts with health scores for the dashboard."""
+    accounts = await _health_rows(get_db(), period)
     # Sort by health score ascending (worst first)
     accounts.sort(key=lambda x: x["health"]["score"])
     return accounts
@@ -895,3 +899,216 @@ async def run_monthly_health_reports():
 
     logger.info(f"[HealthScheduler] Monthly reports complete: {sent} sent")
     return sent
+
+
+# ==================== Weekly "slipped to Critical" alert (Mondays, super admins) ====================
+from fastapi import Depends
+from routers.rbac import require_role
+
+ALERT_SCHEDULE_LABEL = "Every Monday, 9:10 AM Mountain"
+
+
+def _week_key(now: datetime) -> str:
+    return (now - timedelta(days=now.weekday())).strftime("%Y-%m-%d")
+
+
+def _utc(dt):
+    if isinstance(dt, datetime) and dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+async def _alert_baseline(db, now: datetime):
+    """Last week's snapshot: newest one taken 6+ days ago, else the newest we have."""
+    snap = await db.account_health_snapshots.find_one({"taken_at": {"$lte": now - timedelta(days=6)}}, sort=[("taken_at", -1)])
+    if not snap:
+        snap = await db.account_health_snapshots.find_one({}, sort=[("taken_at", -1)])
+    return snap
+
+
+def _alert_diff(rows: list, baseline: dict | None) -> dict:
+    prev = (baseline or {}).get("grades") or {}
+    out = {"slipped_critical": [], "slipped_risk": [], "recovered": [], "still_critical": []}
+    for r in rows:
+        p = prev.get(r["user_id"])
+        r["prev_score"] = p.get("score") if p else None
+        r["prev_grade"] = p.get("grade") if p else None
+        grade = r["health"]["grade"]
+        if grade == "Critical":
+            (out["slipped_critical"] if p and p.get("grade") != "Critical" else out["still_critical"]).append(r)
+        elif grade == "At Risk" and p and p.get("grade") == "Healthy":
+            out["slipped_risk"].append(r)
+        if p and p.get("grade") == "Critical" and grade != "Critical":
+            out["recovered"].append(r)
+    for k in out:
+        out[k].sort(key=lambda x: x["health"]["score"])
+    return out
+
+
+def _login_text(days: int) -> str:
+    if days <= 0:
+        return "today"
+    if days >= 999:
+        return "never"
+    return f"{days} days ago"
+
+
+def _alert_row_html(r: dict, color: str) -> str:
+    prev = f"{r['prev_score']} &rarr; " if r.get("prev_score") is not None else ""
+    where = " &middot; ".join([x for x in [r.get("organization"), r.get("store")] if x]) or r.get("email", "")
+    return f"""
+    <tr>
+      <td style="padding:12px 0;border-top:1px solid #EEE;vertical-align:top;width:44px">
+        <div style="width:36px;height:36px;border-radius:18px;background:{color};color:#FFF;font-size:13px;font-weight:800;line-height:36px;text-align:center">{r['health']['score']}</div>
+      </td>
+      <td style="padding:12px 8px;border-top:1px solid #EEE;vertical-align:top">
+        <div style="font-size:15px;font-weight:700;color:#1D1D1F">{r.get('name') or r.get('email', '')}</div>
+        <div style="font-size:12px;color:#888;margin-top:2px">{where}</div>
+        <div style="font-size:12px;color:#555;margin-top:4px">Score {prev}<b>{r['health']['score']}</b> &middot; last login {_login_text(r.get('days_since_login', 999))} &middot; {r.get('messages_30d', 0)} texts in 30 days &middot; {r.get('contacts', 0)} contacts</div>
+      </td>
+      <td style="padding:12px 0;border-top:1px solid #EEE;vertical-align:middle;text-align:right;white-space:nowrap">
+        <a href="{APP_URL}/admin/account-health/{r['user_id']}" style="display:inline-block;background:#C9A962;color:#000;font-size:12px;font-weight:800;padding:8px 14px;border-radius:999px;text-decoration:none">Open</a>
+      </td>
+    </tr>"""
+
+
+def _alert_section(title: str, hint: str, rows: list, color: str, limit: int = 25) -> str:
+    if not rows:
+        return ""
+    body = "".join(_alert_row_html(r, color) for r in rows[:limit])
+    more = f'<p style="margin:8px 0 0;font-size:12px;color:#888">+ {len(rows) - limit} more in the dashboard</p>' if len(rows) > limit else ""
+    return f"""
+    <div style="background:#FFF;border-radius:12px;border:1px solid #E5E5EA;padding:16px 18px;margin-bottom:18px">
+      <h3 style="margin:0;font-size:15px;color:{color}">{title} <span style="color:#999;font-weight:500">&middot; {len(rows)}</span></h3>
+      <p style="margin:4px 0 6px;font-size:12px;color:#888">{hint}</p>
+      <table style="width:100%;border-collapse:collapse">{body}</table>{more}
+    </div>"""
+
+
+def _build_alert_html(diff: dict, baseline: dict | None, now: datetime) -> str:
+    since = _utc((baseline or {}).get("taken_at"))
+    since_text = f"since {since.strftime('%b %d')}" if isinstance(since, datetime) else "first snapshot, nothing to compare yet"
+    tiles = [
+        ("Slipped to Critical", len(diff["slipped_critical"]), "#FF3B30"),
+        ("Slipped to At Risk", len(diff["slipped_risk"]), "#FF9500"),
+        ("Recovered", len(diff["recovered"]), "#34C759"),
+        ("Still Critical", len(diff["still_critical"]), "#8E8E93"),
+    ]
+    tile_html = "".join(
+        f'<td style="text-align:center;padding:12px 6px"><div style="font-size:28px;font-weight:800;color:{c}">{n}</div><div style="font-size:11px;color:#888;margin-top:2px">{t}</div></td>'
+        for t, n, c in tiles)
+    nothing = "" if (diff["slipped_critical"] or diff["slipped_risk"] or diff["recovered"]) else f"""
+    <div style="background:#E8FAE8;border:1px solid #34C75940;border-radius:12px;padding:16px;text-align:center;margin-bottom:18px">
+      <p style="margin:0;font-size:14px;color:#1D1D1F;font-weight:600">No account changed grade {since_text}.</p>
+    </div>"""
+    return f"""<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+    <body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#F5F5F7">
+    <div style="max-width:640px;margin:0 auto;padding:20px">
+      <div style="text-align:center;padding:24px 0 12px">
+        <div style="font-size:11px;font-weight:800;letter-spacing:2px;color:#C9A962">WEEKLY ACCOUNT HEALTH</div>
+        <h1 style="margin:6px 0 0;font-size:22px;color:#1D1D1F">Who slipped this week</h1>
+        <p style="margin:4px 0 0;font-size:13px;color:#888">Week of {now.strftime('%b %d, %Y')} &middot; compared with the snapshot {since_text}</p>
+      </div>
+      <div style="background:#FFF;border-radius:12px;border:1px solid #E5E5EA;margin-bottom:18px"><table style="width:100%;border-collapse:collapse"><tr>{tile_html}</tr></table></div>
+      {nothing}
+      {_alert_section("Slipped to Critical", "Were At Risk or Healthy last week. Reach out this week.", diff["slipped_critical"], "#FF3B30")}
+      {_alert_section("Slipped to At Risk", "Were Healthy last week. Worth a check-in before they go quiet.", diff["slipped_risk"], "#FF9500")}
+      {_alert_section("Recovered", "Were Critical last week and climbed back out.", diff["recovered"], "#34C759")}
+      {_alert_section("Still Critical", "No change since last week.", diff["still_critical"], "#8E8E93", limit=15)}
+      <div style="text-align:center;padding:20px 0;border-top:1px solid #E5E5EA;margin-top:10px">
+        <a href="{APP_URL}/admin/account-health" style="display:inline-block;background:#1D1D1F;color:#FFF;font-size:13px;font-weight:700;padding:12px 22px;border-radius:999px;text-decoration:none">Open Account Health</a>
+        <p style="font-size:12px;color:#999;margin:14px 0 0">Sent every Monday morning to super admins. Turn it off from the Account Health screen.</p>
+      </div>
+    </div></body></html>"""
+
+
+async def _alert_recipients(db) -> list:
+    admins = await db.users.find({"role": "super_admin", "is_active": {"$ne": False}, "email": {"$nin": [None, ""]}},
+                                 {"email": 1, "notification_settings": 1}).to_list(50)
+    return [a["email"] for a in admins if (a.get("notification_settings") or {}).get("account_health_alerts") is not False]
+
+
+async def run_weekly_account_health_alert(force_to: str | None = None) -> dict:
+    """Monday job (force_to=None) or an on-demand preview to one address."""
+    db = get_db()
+    now = datetime.now(timezone.utc)
+    week_key = _week_key(now)
+    rows = await _health_rows(db, 30)
+    baseline = await _alert_baseline(db, now)
+    diff = _alert_diff(rows, baseline)
+    counts = {k: len(v) for k, v in diff.items()}
+    grades = {r["user_id"]: {"score": r["health"]["score"], "grade": r["health"]["grade"]} for r in rows}
+    changed = bool(diff["slipped_critical"] or diff["slipped_risk"] or diff["recovered"])
+
+    if force_to is None:
+        await db.account_health_snapshots.update_one(
+            {"week_key": week_key}, {"$set": {"taken_at": now, "grades": grades, "counts": counts}}, upsert=True)
+        if not changed:
+            logger.info(f"[HealthAlert] {week_key}: no grade changes, no email")
+            return {"sent": 0, "skipped": "no_changes", "counts": counts}
+        if await db.account_health_alert_log.find_one({"week_key": week_key}):
+            return {"sent": 0, "skipped": "already_sent", "counts": counts}
+        recipients = await _alert_recipients(db)
+    else:
+        if baseline is None:
+            await db.account_health_snapshots.update_one(
+                {"week_key": week_key}, {"$set": {"taken_at": now, "grades": grades, "counts": counts}}, upsert=True)
+        recipients = [force_to]
+
+    if not RESEND_API_KEY:
+        raise HTTPException(500, "Email service not configured")
+    resend.api_key = RESEND_API_KEY
+    n_crit = counts["slipped_critical"]
+    subject = (f"Account Health: {n_crit} account{'s' if n_crit != 1 else ''} slipped to Critical" if n_crit
+               else "Account Health: no new Critical accounts this week")
+    if force_to:
+        subject = "[Preview] " + subject
+    html = _build_alert_html(diff, baseline, now)
+
+    sent = 0
+    for email in recipients:
+        try:
+            await asyncio.to_thread(resend.Emails.send, {
+                "from": f"I'm On Social <{SENDER_EMAIL}>", "to": [email],
+                "reply_to": "support@imonsocial.com", "subject": subject, "html": html})
+            sent += 1
+        except Exception as e:
+            logger.error(f"[HealthAlert] send to {email} failed: {e}")
+
+    if force_to is None:
+        await db.account_health_alert_log.insert_one({"week_key": week_key, "sent_at": now, "recipients": recipients, "sent": sent, "counts": counts})
+        logger.info(f"[HealthAlert] {week_key}: emailed {sent}/{len(recipients)} super admins {counts}")
+    return {"sent": sent, "recipients": recipients, "counts": counts, "subject": subject}
+
+
+@router.get("/alerts/status")
+async def alert_status(user: dict = Depends(require_role("super_admin"))):
+    db = get_db()
+    log = await db.account_health_alert_log.find_one({}, sort=[("sent_at", -1)])
+    snap = await db.account_health_snapshots.find_one({}, sort=[("taken_at", -1)])
+    me = await db.users.find_one({"_id": ObjectId(user["_id"])}, {"notification_settings": 1, "email": 1})
+    return {
+        "enabled": (me.get("notification_settings") or {}).get("account_health_alerts") is not False,
+        "email": me.get("email", ""),
+        "schedule": ALERT_SCHEDULE_LABEL,
+        "recipients": await _alert_recipients(db),
+        "last_sent_at": _utc(log["sent_at"]).isoformat() if log else None,
+        "last_counts": log.get("counts") if log else None,
+        "baseline_taken_at": _utc(snap["taken_at"]).isoformat() if snap else None,
+    }
+
+
+@router.put("/alerts/settings")
+async def alert_settings(data: dict = Body(...), user: dict = Depends(require_role("super_admin"))):
+    enabled = bool(data.get("enabled", True))
+    await get_db().users.update_one({"_id": ObjectId(user["_id"])}, {"$set": {"notification_settings.account_health_alerts": enabled}})
+    return {"enabled": enabled}
+
+
+@router.post("/alerts/preview")
+async def alert_preview(user: dict = Depends(require_role("super_admin"))):
+    """Email the caller exactly what Monday's alert would look like right now."""
+    if not user.get("email"):
+        raise HTTPException(400, "Your account has no email address")
+    return await run_weekly_account_health_alert(force_to=user["email"])
+

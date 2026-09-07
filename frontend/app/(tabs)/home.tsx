@@ -34,6 +34,7 @@ import { BookOfBusinessCard } from '../../components/home/BookOfBusinessCard';
 import { QuickActionsFab } from '../../components/home/QuickActionsFab';
 import { NeedsReplyCard } from '../../components/home/NeedsReplyCard';
 import { WelcomeTour, shouldShowWelcomeTour, markWelcomeTourSeen } from '../../components/home/WelcomeTour';
+import { WelcomeVideo, markWelcomeVideoSeen } from '../../components/home/WelcomeVideo';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -848,14 +849,18 @@ function HomeScreen() {
   const simpleHome = user?.role === 'user' && !(user as any)?.partner_id;
 
   const [showTour, setShowTour] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
   useEffect(() => {
     if (!simpleHome || !initialLoaded || !user?._id) return;
-    shouldShowWelcomeTour(user._id).then(show => { if (show) setShowTour(true); });
+    shouldShowWelcomeTour(user._id).then(show => { if (show) setShowVideo(true); });
   }, [simpleHome, initialLoaded, user?._id]);
   const closeTour = () => { setShowTour(false); if (user?._id) markWelcomeTourSeen(user._id); };
+  const closeVideo = () => { setShowVideo(false); if (user?._id) { markWelcomeVideoSeen(user._id); markWelcomeTourSeen(user._id); } };
+  const videoToCards = () => { setShowVideo(false); if (user?._id) markWelcomeVideoSeen(user._id); setShowTour(true); };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']} data-testid={simpleHome ? 'home-simple' : 'home-full'}>
+      <WelcomeVideo visible={showVideo} onClose={closeVideo} onShowCards={videoToCards} />
       <WelcomeTour visible={showTour} onClose={closeTour} />
       <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <View style={{ flex: 1 }}>

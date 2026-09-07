@@ -20,11 +20,13 @@ async def promo_index():
 
 @router.get("/{filename}")
 async def promo_video(filename: str, request: Request):
-    if not re.fullmatch(r"[a-z0-9\-]+\.(mp4|mp3)", filename):
+    if not re.fullmatch(r"[a-z0-9\-]+\.(mp4|mp3|jpg)", filename):
         raise HTTPException(404)
     path = VIDEO_DIR / filename
     if not path.exists():
         raise HTTPException(404)
+    if filename.endswith(".jpg"):
+        return FileResponse(path, media_type="image/jpeg", headers={"Cache-Control": "public, max-age=86400"})
     size = path.stat().st_size
     rng = request.headers.get("range")
     if not rng:

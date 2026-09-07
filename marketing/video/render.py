@@ -98,7 +98,7 @@ async def main():
     async with async_playwright() as p:
         browser = await p.chromium.launch(args=["--force-device-scale-factor=1", "--disable-lcd-text"])
         page = await browser.new_page(viewport={"width": W, "height": H}, device_scale_factor=1)
-        await page.goto(f"file://{ROOT}/promo.html?ratio={ratio}")
+        await page.goto(f"file://{ROOT}/{spec.get('page', 'promo.html')}?ratio={ratio}")
         await page.evaluate("window.ready")
         await page.wait_for_timeout(600)
         n = 0

@@ -19,6 +19,7 @@ const getBackendUrl = () => {
 };
 
 const BACKEND_URL = getBackendUrl();
+export const API_BASE_URL = BACKEND_URL;
 
 const api = axios.create({
   baseURL: BACKEND_URL,

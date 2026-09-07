@@ -1746,6 +1746,12 @@ async def run_source_health_alerts_job():
     await run_source_health_alerts()
 
 
+async def run_weekly_account_health_alert_job():
+    from routers.account_health import run_weekly_account_health_alert
+    result = await run_weekly_account_health_alert()
+    _scheduler_state["last_account_health_alert"] = {"ran_at": datetime.now(timezone.utc).isoformat(), **result}
+
+
 async def deliver_held_push_summaries():
     """Every 10 min: when a rep's quiet hours end, send ONE summary of the pushes held overnight."""
     from routers.database import get_db
@@ -1937,6 +1943,15 @@ def start_scheduler():
         id="source_health_alerts",
         replace_existing=True,
         misfire_grace_time=3600,
+    )
+
+    # Monday 15:10 UTC (~9 AM Mountain) - super admins get the accounts that slipped to Critical since last Monday
+    scheduler.add_job(
+        safe_job(run_weekly_account_health_alert_job),
+        CronTrigger(day_of_week='mon', hour=15, minute=10),
+        id="weekly_account_health_alert",
+        replace_existing=True,
+        misfire_grace_time=7200,
     )
 
 

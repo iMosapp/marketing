@@ -1,0 +1,325 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  /* Designed in app pixels (390 wide iPhone) and zoomed to 1080x1920. */
+  :root { --bg:#0B0B0B; --card:#161616; --card2:#1E1E1E; --line:#2A2A2A; --line2:#2E2E2E; --gold:#C9A962; --gold2:#E3C98A;
+    --text:#FFFFFF; --muted:#8E8E93; --green:#34C759; --red:#FF453A; --orange:#FF9500; --blue:#32ADE6; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html, body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; overflow:hidden; width:1080px; height:1920px; }
+  #app { position:relative; width:390px; height:693px; zoom:2.7692; overflow:hidden; background:var(--bg); }
+  .grain { position:absolute; inset:0; pointer-events:none; opacity:.05; mix-blend-mode:overlay; z-index:50;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='300' height='300' filter='url(%23n)' opacity='.9'/></svg>"); }
+
+  .scene { position:absolute; inset:0; animation:sceneOut 320ms ease both; animation-delay:calc(var(--dur) - 320ms); }
+  .inner { position:absolute; inset:0; animation:sceneIn 380ms ease both; }
+  .in   { animation:rise 560ms cubic-bezier(.2,.8,.2,1) both; animation-delay:var(--d,0ms); }
+  .pop  { animation:pop 460ms cubic-bezier(.2,.9,.3,1.15) both; animation-delay:var(--d,0ms); }
+  .fade { animation:fadeIn 420ms ease both; animation-delay:var(--d,0ms); }
+  .out  { animation:fadeOut 380ms ease both; animation-delay:var(--d,0ms); }
+  .dim  { animation:dimIn 500ms ease both; animation-delay:var(--d,0ms); }
+  .undim{ animation:dimOut 500ms ease both; animation-delay:var(--d,0ms); }
+  .focus{ animation:focusIn 600ms ease both; animation-delay:var(--d,0ms); position:relative; z-index:3; }
+  .press{ animation:press 380ms ease both; animation-delay:var(--d,0ms); }
+  .swap-out { animation:fadeOut 300ms ease both; animation-delay:var(--d,0ms); }
+  .inout { animation-name:rise, fadeOut; animation-duration:560ms, 380ms; animation-timing-function:cubic-bezier(.2,.8,.2,1), ease; animation-fill-mode:both, forwards; animation-delay:var(--d,0ms), var(--d2,99999ms); }
+
+  @keyframes sceneIn { from{opacity:0} to{opacity:1} }
+  @keyframes sceneOut { from{opacity:1} to{opacity:0} }
+  @keyframes rise { from{opacity:0; transform:translateY(18px)} to{opacity:1; transform:none} }
+  @keyframes pop { from{opacity:0; transform:scale(.85)} to{opacity:1; transform:none} }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+  @keyframes fadeOut { from{opacity:1} to{opacity:0; visibility:hidden} }
+  @keyframes dimIn { to{opacity:.22; filter:saturate(.4)} }
+  @keyframes dimOut { from{opacity:.22} to{opacity:1} }
+  @keyframes focusIn { to{ box-shadow:0 0 0 3px var(--gold), 0 0 40px rgba(201,169,98,.55); transform:scale(1.025); } }
+  @keyframes press { 0%,100%{transform:scale(1)} 50%{transform:scale(.88)} }
+  @keyframes tapRing { 0%{opacity:0; transform:scale(.45)} 25%{opacity:1; transform:scale(.7)} 100%{opacity:0; transform:scale(1.9)} }
+  @keyframes tapDot { 0%{opacity:0} 20%{opacity:.9} 60%{opacity:.9} 100%{opacity:0} }
+  @keyframes sheetUp { from{transform:translateY(110%)} to{transform:none} }
+  @keyframes sheetDown { from{transform:none} to{transform:translateY(110%); visibility:hidden} }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.18)} }
+  @keyframes burst { 0%{opacity:0; transform:scale(.4)} 35%{opacity:1; transform:scale(1.08)} 100%{opacity:1; transform:scale(1)} }
+  @keyframes slideRow { from{opacity:0; transform:translateX(40px)} to{opacity:1; transform:none} }
+  @keyframes wiggle { 0%,100%{transform:rotate(0)} 25%{transform:rotate(-10deg)} 75%{transform:rotate(10deg)} }
+
+  .tap { position:absolute; left:50%; top:50%; width:34px; height:34px; margin:-17px; border-radius:50%; border:2.5px solid var(--gold2); opacity:0;
+    animation:tapRing 900ms ease-out both; animation-delay:var(--d); pointer-events:none; z-index:20; }
+  .tap::after { content:''; position:absolute; inset:8px; border-radius:50%; background:var(--gold2); opacity:0; animation:tapDot 900ms ease both; animation-delay:var(--d); }
+  .tap.white { border-color:#fff; } .tap.white::after { background:#fff; }
+
+  /* status + header */
+  .status { height:44px; display:flex; justify-content:space-between; align-items:flex-end; padding:0 26px 6px; font-size:14px; font-weight:600; }
+  .status .r { display:flex; gap:5px; align-items:center; }
+  .status i { display:inline-block; width:16px; height:9px; border:1.5px solid #fff; border-radius:3px; position:relative; }
+  .status i::after { content:''; position:absolute; left:1px; top:1px; bottom:1px; width:10px; background:#fff; border-radius:1px; }
+  .hdr { display:flex; justify-content:space-between; align-items:center; padding:6px 16px 12px; border-bottom:1px solid var(--line); }
+  .hdr .hi { font-size:12px; font-weight:600; color:var(--muted); }
+  .hdr .name { font-size:28px; font-weight:800; letter-spacing:-.3px; }
+  .hdr .right { display:flex; gap:8px; align-items:center; }
+  .aipill { display:flex; gap:4px; align-items:center; padding:5px 10px; border-radius:14px; background:rgba(201,169,98,.15); border:1px solid rgba(201,169,98,.5); color:var(--gold); font-size:11px; font-weight:800; letter-spacing:.5px; }
+  .ico { display:inline-block; vertical-align:middle; flex:none; }
+  .bell { position:relative; }
+  .bell b { position:absolute; top:-4px; right:-5px; width:15px; height:15px; border-radius:50%; background:var(--red); color:#fff; font-size:9px; font-weight:800; display:grid; place-items:center; }
+
+  .content { padding:14px 16px 0; display:flex; flex-direction:column; gap:14px; }
+
+  /* Do This Next */
+  .dtn { border-radius:20px; padding:16px 18px; background:rgba(201,169,98,.07); border:2px solid rgba(201,169,98,.33); position:relative; overflow:hidden; }
+  .dtn .lbl { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:var(--gold); letter-spacing:.8px; margin-bottom:10px; }
+  .dtn .lbl .skip { margin-left:auto; color:var(--muted); letter-spacing:0; display:flex; align-items:center; gap:3px; position:relative; padding:2px 4px; }
+  .row { display:flex; align-items:center; gap:12px; }
+  .icobox { width:48px; height:48px; border-radius:14px; display:grid; place-items:center; flex:none; background:rgba(201,169,98,.13); }
+  .row .t { font-size:16px; font-weight:800; line-height:21px; }
+  .row .s { font-size:12px; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .who { flex:1; min-width:0; }
+  .pill { position:relative; border-radius:20px; padding:9px 14px; font-size:13px; font-weight:800; color:#fff; background:var(--gold); flex:none; }
+  .pill.red { background:var(--red); } .pill.orange { background:var(--orange); } .pill.dark { background:#000; color:var(--gold); }
+  .layer { position:absolute; inset:0; padding:16px 18px; display:flex; flex-direction:column; justify-content:center; background:rgba(22,22,22,.96); border-radius:18px; }
+
+  /* My 3 */
+  .sec { display:flex; align-items:center; justify-content:space-between; }
+  .sec .t { font-size:17px; font-weight:700; }
+  .cnt { background:rgba(201,169,98,.13); border-radius:20px; padding:3px 10px; font-size:12px; font-weight:700; color:var(--gold); position:relative; }
+  .cnt span { position:absolute; inset:0; display:grid; place-items:center; }
+  .m3 { border-radius:14px; background:var(--card2); border:1px solid var(--line2); overflow:hidden; position:relative; display:flex; }
+  .m3 .bar { width:4px; flex:none; }
+  .m3 .body { flex:1; min-width:0; padding:10px 10px 10px 10px; display:flex; align-items:center; gap:8px; }
+  .av { width:34px; height:34px; border-radius:50%; display:grid; place-items:center; flex:none; font-size:13px; font-weight:800; }
+  .m3 .n { font-size:15px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .m3 .why { font-size:11.5px; margin-top:1px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .m3 .pill { padding:7px 11px; font-size:12px; }
+  .circ { width:28px; height:28px; border-radius:50%; border:1px solid; display:grid; place-items:center; position:relative; flex:none; }
+  .circ.done { background:var(--green); border-color:var(--green); }
+
+  /* Needs a reply */
+  .nr { border-radius:18px; background:var(--card); border:1px solid var(--line); padding:14px 14px 12px; position:relative; }
+  .badge { border-radius:6px; padding:2px 6px; font-size:10px; font-weight:800; background:rgba(255,69,58,.15); color:var(--red); position:relative; }
+  .badge.ok { background:#0F2A17; color:var(--green); }
+  .jessi { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); margin-top:8px; }
+
+  /* tab bar + fab */
+  .tabbar { position:absolute; left:0; right:0; bottom:0; height:82px; background:#0E0E0E; border-top:1px solid var(--line); display:flex; justify-content:space-around; align-items:flex-start; padding:10px 6px 0; z-index:4; }
+  .tab { display:flex; flex-direction:column; align-items:center; gap:4px; width:64px; color:#6E6E73; font-size:10px; font-weight:600; position:relative; }
+  .tab.on { color:var(--gold); }
+  .tab .bd { position:absolute; top:-5px; right:14px; background:var(--red); color:#fff; border-radius:9px; min-width:17px; height:17px; font-size:10px; font-weight:800; display:grid; place-items:center; padding:0 4px; }
+  .cwrap { position:absolute; bottom:64px; left:50%; transform:translateX(-50%); }
+  .cwrap.last { left:auto; right:0; transform:none; }
+  .callout { display:block; position:relative; background:var(--gold); color:#000; font-size:11px; font-weight:800; padding:7px 10px; border-radius:10px; white-space:nowrap;
+    animation-name:pop, fadeOut; animation-duration:460ms, 300ms; animation-timing-function:cubic-bezier(.2,.9,.3,1.15), ease; animation-fill-mode:both, forwards; animation-delay:var(--d,0ms), var(--d2,99999ms); }
+  .callout::after { content:''; position:absolute; left:50%; bottom:-6px; margin-left:-6px; border:6px solid transparent; border-top-color:var(--gold); border-bottom:0; }
+  .cwrap.last .callout::after { left:auto; right:20px; margin-left:0; }
+  .fab { position:absolute; right:16px; bottom:88px; width:56px; height:56px; border-radius:50%; background:var(--gold); display:grid; place-items:center; box-shadow:0 8px 24px rgba(201,169,98,.35); z-index:6; }
+  .dial { position:absolute; right:16px; bottom:154px; display:flex; flex-direction:column; gap:10px; align-items:flex-end; z-index:6; }
+  .dial .it { display:flex; align-items:center; gap:10px; }
+  .dial .lb { background:#1C1C1E; border:1px solid var(--line2); border-radius:12px; padding:7px 12px; font-size:13px; font-weight:700; }
+  .dial .ci { width:44px; height:44px; border-radius:50%; background:#1C1C1E; border:1px solid var(--line2); display:grid; place-items:center; position:relative; }
+  .dial .it.hero .lb { background:var(--gold); color:#000; } .dial .it.hero .ci { background:var(--gold); border-color:var(--gold); }
+
+  /* caption card */
+  .cap { position:absolute; left:16px; right:16px; z-index:30; background:rgba(14,14,14,.94); border:1px solid rgba(201,169,98,.35); border-radius:18px; padding:16px 18px; backdrop-filter:blur(14px); box-shadow:0 20px 50px rgba(0,0,0,.6); }
+  .cap.top { top:60px; } .cap.bottom { bottom:104px; } .cap.mid { top:300px; }
+  .cap .e { font-size:11px; font-weight:800; letter-spacing:1.4px; color:var(--gold); }
+  .cap .h { font-size:24px; font-weight:800; letter-spacing:-.4px; margin-top:4px; line-height:1.15; }
+  .cap .h .g { color:var(--gold); }
+  .cap .b { font-size:14px; color:#B0B0B0; margin-top:6px; line-height:1.35; }
+
+  /* sheets & overlays */
+  .sheet { position:absolute; left:0; right:0; bottom:0; z-index:25; background:#141414; border:1px solid var(--line2); border-bottom:0; border-radius:24px 24px 0 0; padding:16px 16px 26px; box-shadow:0 -20px 60px rgba(0,0,0,.7);
+    animation-name:sheetUp, sheetDown; animation-duration:480ms, 420ms; animation-timing-function:cubic-bezier(.2,.8,.2,1), ease; animation-fill-mode:both, forwards; animation-delay:var(--d,0ms), var(--d2,99999ms); }
+  .sheet .grab { width:36px; height:4px; border-radius:2px; background:#3A3A3C; margin:0 auto 14px; }
+  .sheet .why { font-size:12px; color:var(--gold); font-weight:700; letter-spacing:.6px; }
+  .sheet .msg { margin-top:10px; background:#1E1E1E; border:1px solid var(--line2); border-radius:16px; padding:14px; font-size:15px; line-height:1.4; }
+  .sheet .send { margin-top:14px; background:var(--gold); color:#000; border-radius:28px; padding:14px; text-align:center; font-size:16px; font-weight:800; position:relative; }
+  .toast { position:absolute; left:16px; right:16px; top:54px; z-index:28; background:#1C1C1E; border:1px solid rgba(201,169,98,.5); border-radius:16px; padding:12px 14px; display:flex; gap:10px; align-items:center; font-size:14px; font-weight:700; box-shadow:0 12px 40px rgba(0,0,0,.6); }
+  .full { position:absolute; inset:0; z-index:40; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:40px 28px; gap:14px; background:var(--bg); }
+  .full .glow { position:absolute; width:520px; height:520px; border-radius:50%; left:50%; top:52%; transform:translate(-50%,-50%); background:radial-gradient(circle, rgba(201,169,98,.22) 0%, rgba(201,169,98,.05) 40%, transparent 65%); }
+  .full .e { font-size:12px; font-weight:800; letter-spacing:2px; color:var(--gold); position:relative; }
+  .full h1 { font-size:40px; font-weight:900; letter-spacing:-1px; line-height:1.05; position:relative; }
+  .full h1 .g { color:var(--gold); }
+  .full .sub { font-size:17px; color:var(--muted); line-height:1.4; position:relative; max-width:300px; }
+  .full .sub b { color:var(--text); font-weight:600; }
+  .full img { width:130px; height:130px; object-fit:contain; position:relative; }
+  .full .small { font-size:12px; color:#666; position:relative; margin-top:10px; }
+  .burst { position:absolute; inset:0; z-index:35; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px; background:rgba(11,11,11,.82); animation:fadeIn 300ms ease both; animation-delay:var(--d); }
+  .burst .big { font-size:64px; font-weight:900; color:var(--gold); letter-spacing:-2px; animation:burst 700ms cubic-bezier(.2,.9,.3,1.2) both; animation-delay:calc(var(--d) + 80ms); }
+  .burst .line { font-size:15px; color:#D1D1D6; display:flex; gap:8px; align-items:center; }
+  .conf { position:absolute; width:8px; height:14px; border-radius:2px; background:var(--gold); opacity:0; animation:confetti 1400ms ease-out both; animation-delay:var(--d); }
+  @keyframes confetti { 0%{opacity:0; transform:translateY(0) rotate(0)} 15%{opacity:1} 100%{opacity:0; transform:translateY(260px) rotate(var(--r))} }
+</style>
+</head>
+<body>
+<div id="app"><div id="stage"></div><div class="grain"></div></div>
+<script>
+const G = '#C9A962', GOLD2 = '#E3C98A', MUTED = '#8E8E93', RED = '#FF453A', ORANGE = '#FF9500', GREEN = '#34C759';
+const P = {
+  chat:   c => `<path fill="${c}" d="M4 4h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4v-4H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/>`,
+  chats:  c => `<path fill="${c}" d="M2 4h12a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H7l-4 3v-3H2a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"/><path fill="${c}" opacity=".7" d="M16 8h6a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1h-1v3l-4-3h-6a1 1 0 0 1-1-1v-1h7a1 1 0 0 0 1-1z"/>`,
+  gift:   c => `<rect x="3" y="9" width="18" height="12" rx="2" fill="${c}"/><path d="M3 13h18M12 9v12" stroke="#000" stroke-width="1.6" fill="none"/><path d="M12 9c-2.5-4.5-7.5-3-5 0M12 9c2.5-4.5 7.5-3 5 0" stroke="${c}" stroke-width="2" fill="none"/>`,
+  star:   c => `<path fill="${c}" d="M12 2.5l2.9 6.2 6.6.8-4.9 4.6 1.3 6.6L12 17.4l-5.9 3.3 1.3-6.6L2.5 9.5l6.6-.8z"/>`,
+  plane:  c => `<path fill="${c}" d="M21 4L3 11l7 2 2 7z"/>`,
+  check:  c => `<path d="M5 12.5l4.5 4.5L19 7.5" stroke="${c}" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+  x:      c => `<path d="M6 6l12 12M18 6L6 18" stroke="${c}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`,
+  arrow:  c => `<circle cx="12" cy="12" r="9.5" fill="${c}"/><path d="M8 12h8m-3.5-3.5L16 12l-3.5 3.5" stroke="#000" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+  home:   c => `<path fill="${c}" d="M3 11l9-8 9 8v10h-6v-6H9v6H3z"/>`,
+  people: c => `<circle cx="9" cy="8" r="4" fill="${c}"/><circle cx="17" cy="9" r="3" fill="${c}"/><path fill="${c}" d="M1 20c0-4 3.6-7 8-7s8 3 8 7z"/><path fill="${c}" d="M18 20c0-2.6-1-4.7-2.6-6.1.5-.1 1.1-.2 1.6-.2 3.4 0 6 2.3 6 5.3V20z"/>`,
+  pulse:  c => `<path d="M2 12h4l3-8 4 16 3-8h6" stroke="${c}" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+  grid:   c => `<rect x="3" y="3" width="8" height="8" rx="2" fill="${c}"/><rect x="13" y="3" width="8" height="8" rx="2" fill="${c}"/><rect x="3" y="13" width="8" height="8" rx="2" fill="${c}"/><rect x="13" y="13" width="8" height="8" rx="2" fill="${c}"/>`,
+  plus:   c => `<path d="M12 5v14M5 12h14" stroke="${c}" stroke-width="3" fill="none" stroke-linecap="round"/>`,
+  trophy: c => `<path fill="${c}" d="M7 3h10v5a5 5 0 0 1-10 0z"/><path d="M7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3" stroke="${c}" stroke-width="2" fill="none"/><path fill="${c}" d="M10.5 12.5h3V16h3v3H7.5v-3h3z"/>`,
+  cal:    c => `<rect x="3" y="5" width="18" height="16" rx="2.5" fill="${c}"/><path d="M3 10h18" stroke="#000" stroke-width="1.6"/><path d="M8 3v4M16 3v4" stroke="${c}" stroke-width="2.4" stroke-linecap="round"/>`,
+  cam:    c => `<path fill="${c}" d="M4 8h3.2l1.8-3h6l1.8 3H20a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.2" fill="#000"/>`,
+  mic:    c => `<rect x="9" y="3" width="6" height="11" rx="3" fill="${c}"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4M9 21h6" stroke="${c}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
+  phone:  c => `<path fill="${c}" d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 5a2 2 0 0 1 2-2z"/>`,
+  spark:  c => `<path fill="${c}" d="M12 2l2.2 6 6 2.2-6 2.2L12 18.6l-2.2-6.2-6-2.2 6-2.2z"/><path fill="${c}" d="M19 15l1 2.6 2.6 1-2.6 1L19 22.2l-1-2.6-2.6-1 2.6-1z"/>`,
+  qr:     c => `<path fill="${c}" d="M3 3h8v8H3zm2 2v4h4V5zM13 3h8v8h-8zm2 2v4h4V5zM3 13h8v8H3zm2 2v4h4v-4zM13 13h3v3h-3zm5 0h3v3h-3zm-5 5h3v3h-3zm5 0h3v3h-3z"/>`,
+  bell:   c => `<path fill="${c}" d="M12 2a6 6 0 0 0-6 6v4l-2 3v1h16v-1l-2-3V8a6 6 0 0 0-6-6zm-2 16a2 2 0 0 0 4 0z"/>`,
+  key:    c => `<circle cx="8" cy="12" r="4.5" fill="${c}"/><path d="M12 12h10m-3-3v6m-3-6v6" stroke="${c}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
+};
+const ic = (n, c, s = 18, extra = '') => `<svg class="ico" width="${s}" height="${s}" viewBox="0 0 24 24" ${extra}>${P[n](c)}</svg>`;
+const tap = (d, cls = '') => `<span class="tap ${cls}" style="--d:${d}ms"></span>`;
+
+const status = `<div class="status"><span>9:41</span><span class="r">●●● <i></i></span></div>`;
+const header = `<div class="hdr"><div><div class="hi">Good morning, Sarah</div><div class="name">Home</div></div>
+  <div class="right">${ic('qr', MUTED, 19)}<span class="aipill">${ic('spark', G, 12)} AI ON</span><span class="bell">${ic('bell', MUTED, 20)}<b>3</b></span></div></div>`;
+
+const dtn = (o = {}) => `
+  <div class="dtn ${o.cls || ''}" style="--d:${o.d || 0}ms">
+    <div class="lbl">${ic('arrow', G, 14)} DO THIS NEXT <span class="skip">Skip ${ic('x', MUTED, 12)}${o.tapSkip ? tap(o.tapSkip) : ''}</span></div>
+    <div class="row ${o.swapAt ? 'swap-out' : ''}" style="--d:${o.swapAt || 0}ms">
+      <div class="icobox">${ic('chat', G, 24)}</div>
+      <div class="who"><div class="t">Text Sarah Miller</div><div class="s">Opened the Tacoma link 20 min ago</div></div>
+      <div class="pill ${o.tapText ? 'press' : ''}" style="--d:${(o.tapText || 0) + 500}ms">Text${o.tapText ? tap(o.tapText, 'white') : ''}</div>
+    </div>
+    ${o.swapAt ? `<div class="layer fade" style="--d:${o.swapAt + 250}ms; top:38px"><div class="row"><div class="icobox" style="background:rgba(52,199,89,.15)">${ic('check', GREEN, 26)}</div><div class="who"><div class="t" style="color:${GREEN}">Handled</div><div class="s">Sarah got your text. Nice work.</div></div></div></div>` : ''}
+    ${o.nextAt ? `<div class="layer fade" style="--d:${o.nextAt}ms; top:38px"><div class="row"><div class="icobox" style="background:rgba(255,149,0,.15)">${ic('phone', ORANGE, 24)}</div><div class="who"><div class="t">Call Bud Larsen</div><div class="s">Overdue follow-up · 2023 Tahoe</div></div><div class="pill orange">Call</div></div></div>` : ''}
+  </div>`;
+
+const M3 = [
+  { n: 'Mike Torres', why: 'Birthday tomorrow', c: ORANGE, i: 'gift', ini: 'MT' },
+  { n: 'Jenna Rowe', why: 'Left a 5 star review yesterday', c: G, i: 'star', ini: 'JR' },
+  { n: 'Steve Miller', why: 'Back from Lake Powell this week', c: '#32ADE6', i: 'plane', ini: 'SM' },
+];
+const my3 = (o = {}) => `
+  <div class="${o.cls || ''}" style="--d:${o.d || 0}ms; border-radius:16px">
+    <div class="sec" style="margin-bottom:10px"><span class="t">Your 3 for Today</span>
+      <span class="cnt">0/3${o.doneAt ? `<span class="fade" style="--d:${o.doneAt}ms; background:rgba(201,169,98,.13); border-radius:20px">1/3</span>` : ''}</span></div>
+    <div style="display:flex; flex-direction:column; gap:8px">
+    ${M3.map((m, i) => `
+      <div class="m3 in" style="--d:${(o.rowD || 0) + i * 140}ms">
+        <div class="bar" style="background:${m.c}"></div>
+        <div class="body">
+          <div class="av" style="background:${m.c}22">${ic(m.i, m.c, 17)}</div>
+          <div class="who"><div class="n">${m.n}</div><div class="why" style="color:${m.c}">${m.why}</div></div>
+          <span class="pill ${i === 0 && o.tapText ? 'press' : ''}" style="background:${m.c}; --d:${(o.tapText || 0) + 500}ms">Text${i === 0 && o.tapText ? tap(o.tapText, 'white') : ''}</span>
+          <span class="circ ${i === 0 && o.doneAt ? 'pop done' : ''}" style="border-color:${GREEN}77; --d:${o.doneAt || 0}ms">${ic('check', i === 0 && o.doneAt ? '#000' : GREEN, 15)}</span>
+          <span class="circ" style="border-color:#8E8E9377">${ic('x', MUTED, 14)}</span>
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+
+const needsReply = (o = {}) => `
+  <div class="nr ${o.cls || ''}" style="--d:${o.d || 0}ms">
+    <div class="sec" style="margin-bottom:8px"><span class="t" style="font-size:15px">Needs a Reply</span><span style="font-size:12px; font-weight:700; color:${G}">Open Inbox &rarr;</span></div>
+    <div class="row" style="gap:10px">
+      <div class="av" style="background:#2A2A2A; color:#fff">DW</div>
+      <div class="who"><div style="display:flex; align-items:center; gap:6px"><span class="n" style="font-size:15px; font-weight:700">Dan Whitaker</span>
+        <span class="badge">WAITING 4m${o.okAt ? `<span class="badge ok fade" style="--d:${o.okAt}ms; position:absolute; inset:0; display:grid; place-items:center">REPLIED</span>` : ''}</span></div>
+        <div class="s" style="font-size:12px; color:${MUTED}; margin-top:2px">"What's your best price on the truck?"</div></div>
+      <span class="pill red ${o.tapReply ? 'press' : ''}" style="--d:${(o.tapReply || 0) + 500}ms">Reply${o.tapReply ? tap(o.tapReply, 'white') : ''}</span>
+    </div>
+    ${o.jessi ? `<div class="jessi">${ic('spark', G, 12)} Jessi answered 3 other texts overnight</div>` : ''}
+  </div>`;
+
+const TABS = [['home', 'Home'], ['people', 'Contacts'], ['chats', 'Inbox'], ['pulse', 'Activity'], ['grid', 'Tools']];
+const tabbar = (o = {}) => `
+  <div class="tabbar ${o.cls || ''}" style="--d:${o.d || 0}ms">
+    ${TABS.map(([i, l], k) => {
+      const lit = o.lit && o.lit[k] != null;
+      return `<div class="tab ${k === 0 && !o.lit ? 'on' : ''}" style="--d:${lit ? o.lit[k] : 0}ms">
+        ${lit ? `<span class="tab on pop" style="position:absolute; inset:0; background:#0E0E0E; --d:${o.lit[k]}ms">${ic(i, G, 24)}<span>${l}</span></span>` : ''}
+        ${ic(i, k === 0 && !o.lit ? G : '#6E6E73', 24)}<span>${l}</span>${k === 2 ? '<span class="bd">2</span>' : ''}
+        ${lit && o.call && o.call[k] ? `<span class="cwrap ${k === TABS.length - 1 ? 'last' : ''}"><span class="callout" style="--d:${o.lit[k] + 150}ms; --d2:${o.lit[k + 1] != null ? o.lit[k + 1] : 99999}ms">${o.call[k]}</span></span>` : ''}
+      </div>`; }).join('')}
+  </div>`;
+
+const fab = (o = {}) => `<div class="fab ${o.cls || ''} ${o.tapAt ? 'press' : ''}" style="--d:${o.tapAt ? o.tapAt + 500 : o.d || 0}ms">${ic('plus', '#000', 26)}${o.tapAt ? tap(o.tapAt) : ''}</div>`;
+const dial = (o) => `
+  <div class="dial">
+    ${[['trophy', 'SOLD!', true], ['cal', 'Calendar'], ['cam', 'Send Photo'], ['mic', 'Voice Note'], ['phone', 'Make a Call']].map(([i, l, hero], k) => `
+      <div class="it ${hero ? 'hero' : ''} pop" style="--d:${o.d + (4 - k) * 110}ms"><span class="lb">${l}</span><span class="ci">${ic(i, hero ? '#000' : G, 20)}${hero && o.tapSold ? tap(o.tapSold) : ''}</span></div>`).join('')}
+  </div>`;
+
+const cap = (pos, e, h, b, d = 300) => `<div class="cap ${pos} in" style="--d:${d}ms"><div class="e">${e}</div><div class="h">${h}</div>${b ? `<div class="b">${b}</div>` : ''}</div>`;
+
+const home = (parts) => `${status}${header}<div class="content">${parts.dtn}${parts.my3}${parts.nr}</div>${parts.fab}${parts.tabs}`;
+
+const SCENES = {
+  intro: () => `
+    ${home({ dtn: dtn({ cls: 'in', d: 2700 }), my3: my3({ cls: 'in', d: 2900, rowD: 3000 }), nr: needsReply({ cls: 'in', d: 3500 }), fab: fab({ cls: 'pop', d: 3800 }), tabs: tabbar({ cls: 'in', d: 3600 }) })}
+    <div class="full out" style="--d:2300ms"><div class="glow"></div>
+      <img class="pop" style="--d:100ms" src="assets/logo.png" alt="" />
+      <div class="e in" style="--d:400ms">WELCOME TO I'M ON SOCIAL</div>
+      <h1 class="in" style="--d:600ms">Your Home.<br/><span class="g">One screen.</span></h1>
+      <div class="sub in" style="--d:1000ms">Everything you need today is right here. This takes about a minute.</div>
+    </div>`,
+
+  next: () => `
+    ${home({ dtn: dtn({ cls: 'focus', d: 300, tapText: 4000, swapAt: 4600, tapSkip: 6100, nextAt: 6900 }), my3: my3({ cls: 'dim', d: 300 }), nr: needsReply({ cls: 'dim', d: 300 }), fab: fab({ cls: 'dim', d: 300 }), tabs: tabbar({ cls: 'dim', d: 300 }) })}
+    ${cap('bottom', 'CARD 1', 'Do This Next', 'One action, already picked for you. Tap the gold button. Not today? Tap Skip.')}`,
+
+  my3: () => `
+    ${home({ dtn: dtn({ cls: 'dim', d: 300 }), my3: my3({ cls: 'focus', d: 300, tapText: 5900, doneAt: 10000 }), nr: needsReply({ cls: 'dim', d: 300 }), fab: fab({ cls: 'dim', d: 300 }), tabs: tabbar({ cls: 'dim', d: 300 }) })}
+    <div class="cap bottom inout" style="--d:300ms; --d2:5900ms"><div class="e">CARD 2</div><div class="h">Your 3 for Today</div><div class="b">Three people worth a 30 second text, with the reason. Text sends a message already written for you.</div></div>
+    <div class="sheet" style="--d:6300ms; --d2:9300ms">
+      <div class="grab"></div>
+      <div class="why">WHY NOW · BIRTHDAY TOMORROW</div>
+      <div class="msg">Hey Mike, happy early birthday! Hope the year ahead is a great one. Enjoy the day tomorrow.</div>
+      <div class="send press" style="--d:9200ms">Use This Message${tap(8700)}</div>
+    </div>
+    <div class="toast in" style="--d:12000ms">${ic('trophy', G, 18)} 1 of 3 done. Streak: 12 days.</div>`,
+
+  reply: () => `
+    ${home({ dtn: dtn({ cls: 'dim', d: 300 }), my3: my3({ cls: 'dim', d: 300 }), nr: needsReply({ cls: 'focus', d: 300, tapReply: 8500, okAt: 9100, jessi: true }), fab: '', tabs: tabbar({ cls: 'dim', d: 300 }) })}
+    ${cap('top', 'CARD 3', 'Needs a Reply', 'Jessi, your AI assistant, answers texts 24/7. A red WAITING badge means a customer needs you. Tap it, reply, done.')}`,
+
+  sold: () => `
+    ${home({ dtn: dtn({ cls: 'dim', d: 300 }), my3: my3({ cls: 'dim', d: 300 }), nr: needsReply({ cls: 'dim', d: 300 }), fab: fab({ tapAt: 1900 }), tabs: tabbar({ cls: 'dim', d: 300 }) })}
+    ${dial({ d: 2300, tapSold: 3300 })}
+    ${cap('top', 'SOLD ONE?', 'Tap the gold <span class="g">+</span>, then SOLD!', 'Your customer gets a congrats card and their follow-ups set themselves.')}
+    <div class="burst" style="--d:3700ms">
+      ${Array.from({ length: 18 }, (_, i) => `<span class="conf" style="left:${(i * 53) % 100}%; top:${10 + (i * 29) % 30}%; --r:${(i % 2 ? 1 : -1) * (180 + i * 40)}deg; --d:${3800 + (i * 37) % 400}ms; background:${i % 3 ? G : '#fff'}"></span>`).join('')}
+      <div class="big">SOLD!</div>
+      <div class="line fade" style="--d:4900ms">${ic('check', GREEN, 18)} Congrats card sent to Dan</div>
+      <div class="line fade" style="--d:5900ms">${ic('check', GREEN, 18)} Follow-ups scheduled for the year</div>
+    </div>`,
+
+  tabs: () => `
+    ${home({ dtn: dtn({ cls: 'dim', d: 300 }), my3: my3({ cls: 'dim', d: 300 }), nr: needsReply({ cls: 'dim', d: 300 }), fab: fab({ cls: 'dim', d: 300 }),
+      tabs: tabbar({ lit: { 0: 0, 1: 1400, 2: 2200, 3: 2800, 4: 3400 }, call: { 1: 'Everyone you know', 2: 'Every text, one place', 3: 'What happened today', 4: 'Card, training, help' } }) })}
+    ${cap('mid', 'EVERYTHING ELSE', 'Lives along the <span class="g">bottom.</span>', 'Contacts, your Inbox, Activity, and Tools.')}`,
+
+  end: () => `
+    <div class="full"><div class="glow"></div>
+      <img class="pop" style="--d:100ms" src="assets/logo.png" alt="" />
+      <h1 class="in" style="--d:500ms">Clear your three.<br/><span class="g">Every morning.</span></h1>
+      <div class="sub in" style="--d:1100ms"><b>Jessi</b> handles the rest.</div>
+      <div class="small in" style="--d:1800ms">Replay anytime: Tools &rsaquo; Help Center</div>
+    </div>`,
+};
+
+window.showScene = (id, durMs) => {
+  document.getElementById('stage').innerHTML = `<div class="scene" style="--dur:${durMs}ms"><div class="inner">${SCENES[id]()}</div></div>`;
+  document.getAnimations().forEach(a => a.pause());
+  return true;
+};
+window.seek = (t) => { document.getAnimations().forEach(a => { a.pause(); a.currentTime = t; }); return true; };
+window.SCENE_IDS = Object.keys(SCENES);
+window.ready = document.fonts.ready.then(() => true);
+</script>
+</body>
+</html>

@@ -9,6 +9,7 @@ import { useThemeStore } from '../store/themeStore';
 import { ScreenHeader, HeaderIconButton } from '../components/common/ScreenHeader';
 import { useAuthStore } from '../store/authStore';
 import { WelcomeTour } from '../components/home/WelcomeTour';
+import { WelcomeVideo } from '../components/home/WelcomeVideo';
 
 const API = Platform.OS === 'web'
   ? ''
@@ -150,6 +151,7 @@ export default function HelpPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showAI, setShowAI] = useState(false);
   const [showTour, setShowTour] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
   const chatRef = useRef<ScrollView>(null);
 
   const isManager = MANAGER_ROLES.includes(user?.role || '') || !!(user as any)?.partner_id;
@@ -224,6 +226,7 @@ export default function HelpPage() {
       </View>
 
       <WelcomeTour visible={showTour} onClose={() => setShowTour(false)} />
+      <WelcomeVideo visible={showVideo} onClose={() => setShowVideo(false)} />
 
       {/* AI Chat or Articles */}
       {showAI ? (
@@ -250,12 +253,23 @@ export default function HelpPage() {
       ) : (
         <ScrollView style={s.list} contentContainerStyle={s.listContent}>
           {!query.trim() && (
+            <TouchableOpacity onPress={() => setShowVideo(true)} activeOpacity={0.8}
+              style={[s.tourRow, { backgroundColor: colors.card }]} testID="help-welcome-video" dataSet={{ testid: 'help-welcome-video' } as any}>
+              <View style={s.tourIcon}><Ionicons name="videocam" size={16} color="#000" /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={[s.articleTitle, { color: colors.text }]}>Watch the welcome video</Text>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>Your Home in 60 seconds, with a voice walkthrough</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+            </TouchableOpacity>
+          )}
+          {!query.trim() && (
             <TouchableOpacity onPress={() => setShowTour(true)} activeOpacity={0.8}
               style={[s.tourRow, { backgroundColor: colors.card }]} testID="help-replay-tour" dataSet={{ testid: 'help-replay-tour' } as any}>
               <View style={s.tourIcon}><Ionicons name="play" size={16} color="#000" /></View>
               <View style={{ flex: 1 }}>
                 <Text style={[s.articleTitle, { color: colors.text }]}>Show me around Home</Text>
-                <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>The three cards, in 60 seconds</Text>
+                <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>The three cards, as quick slides</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
             </TouchableOpacity>

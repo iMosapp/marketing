@@ -10,6 +10,7 @@ import { useThemeStore } from '../../store/themeStore';
 import { useToast } from '../../components/common/Toast';
 import api from '../../services/api';
 import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+import { HealthAlertCard } from '../../components/admin/HealthAlertCard';
 
 const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 
@@ -202,6 +203,7 @@ export default function AccountHealthDashboard() {
 
         {tab === 'overview' && (
         <>
+        <HealthAlertCard colors={colors} />
         {/* Summary Cards */}
         <View style={styles.summaryRow}>
           {[

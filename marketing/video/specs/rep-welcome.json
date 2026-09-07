@@ -1,0 +1,17 @@
+{
+  "id": "rep-welcome",
+  "title": "Your Home in 60 seconds",
+  "page": "welcome.html",
+  "voice": "nova",
+  "model": "tts-1-hd",
+  "speed": 1.04,
+  "scenes": [
+    {"id": "intro", "min_ms": 6500,  "vo": "Welcome to I'm On Social. This is Home, and everything you need today is right here."},
+    {"id": "next",  "min_ms": 9500,  "vo": "At the top: Do This Next. One action, already picked for you. Tap the gold button and it's handled. Not today? Tap Skip, and it moves on."},
+    {"id": "my3",   "min_ms": 12500, "vo": "Then, Your 3 for Today. Three people worth a thirty second text, with the reason right there. Tap Text, and the message is already written. Send it, and the check turns green. Clear all three to keep your streak alive."},
+    {"id": "reply", "min_ms": 9000,  "vo": "Needs a Reply. Jessi, your AI assistant, answers customer texts around the clock. When someone needs a real person, you'll see a red Waiting badge. Tap it, reply, done."},
+    {"id": "sold",  "min_ms": 7500,  "vo": "Sold one? Hit the gold plus and tap SOLD. Your customer gets a congrats card, and the follow-ups set themselves."},
+    {"id": "tabs",  "min_ms": 8000,  "vo": "Along the bottom: Contacts, your Inbox, Activity, and Tools, where your digital card, training, and help live."},
+    {"id": "end",   "min_ms": 5500,  "vo": "That's it. Open the app each morning, clear your three, and let Jessi handle the rest. Welcome aboard."}
+  ]
+}

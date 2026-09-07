@@ -22,3 +22,7 @@
 
 ## SMS SAFETY RULE
 - Twilio credentials in preview are LIVE. Only ever use 500-555-XXXX phone numbers (Twilio test range) for any code / invite / broadcast test. Never trigger flows against real numbers (e.g. forest's 8016349122).
+
+## Preview URL note (June 2026)
+- REACT_APP_BACKEND_URL in frontend/.env is the ONLY valid preview host (currently https://user-routing-issue.preview.emergentagent.com). imos-deploy-prep.preview.emergentagent.com is a stale preview that shows the Emergent "wake up servers" page.
+- Web-only: /help and /inbox URLs are shadowed by static marketing pages; navigate in-app (history.pushState + popstate) when scripting.
