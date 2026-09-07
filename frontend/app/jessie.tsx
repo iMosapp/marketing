@@ -20,8 +20,10 @@ import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
+import { ScreenHeader, HeaderIconButton } from '../components/common/ScreenHeader';
 import api from '../services/api';
 
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -405,7 +407,7 @@ export default function JessiScreen() {
       const chatRes = await api.post('/jessie/chat', {
         user_id: user?._id,
         message: message,
-        include_voice: false,  // Skip TTS for text input — instant response
+        include_voice: false,  // Skip TTS for text input for instant response
       }, {
         timeout: 30000,
       });
@@ -563,21 +565,12 @@ export default function JessiScreen() {
         style={styles.keyboardView}
       >
         {/* Header */}
-        <View style={[styles.header, { borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={handleBack} style={styles.backButton} data-testid="jessi-back-btn">
-            <Ionicons name="chevron-back" size={28} color={colors.text} />
-          </TouchableOpacity>
-          
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Jessi</Text>
-          
-          {state === 'listening' ? (
-            <TouchableOpacity onPress={cancelListening} style={styles.cancelButton}>
-              <Ionicons name="close-circle" size={28} color="#FF3B30" />
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.placeholder} />
-          )}
-        </View>
+        <ScreenHeader
+          title="Ask Jessi"
+          testID="jessi-header"
+          onBack={handleBack}
+          right={state === 'listening' ? <HeaderIconButton icon="close-circle" color="#FF3B30" onPress={cancelListening} testID="jessi-cancel-btn" /> : undefined}
+        />
         
         {/* Main Content */}
         <View style={styles.content}>
@@ -658,9 +651,9 @@ export default function JessiScreen() {
                   }}
                 >
                   {state === 'processing' ? (
-                    <ActivityIndicator size="large" color={colors.text} />
+                    <ActivityIndicator size="large" color="#000" />
                   ) : (
-                    <Ionicons name={getStateIcon()} size={50} color={colors.text} />
+                    <Ionicons name={getStateIcon()} size={50} color={state === 'idle' ? '#000' : '#FFF'} />
                   )}
                 </button>
               ) : (
@@ -672,12 +665,12 @@ export default function JessiScreen() {
                   onPress={handleButtonPress}
                   disabled={state === 'processing' || state === 'speaking'}
                   activeOpacity={0.8}
-                  data-testid="jessi-voice-btn"
+                  {...tid('jessi-voice-btn')}
                 >
                   {state === 'processing' ? (
-                    <ActivityIndicator size="large" color={colors.text} />
+                    <ActivityIndicator size="large" color="#000" />
                   ) : (
-                    <Ionicons name={getStateIcon()} size={50} color={colors.text} />
+                    <Ionicons name={getStateIcon()} size={50} color={state === 'idle' ? '#000' : '#FFF'} />
                   )}
                 </TouchableOpacity>
               )}
@@ -693,12 +686,13 @@ export default function JessiScreen() {
             <TextInput
               style={[styles.textInput, { backgroundColor: colors.card, color: colors.text }]}
               placeholder="Or type your question..."
-              placeholderTextColor="#6E6E73"
+              placeholderTextColor={colors.textTertiary}
               value={textInput}
               onChangeText={setTextInput}
               editable={state === 'idle'}
               returnKeyType="send"
               onSubmitEditing={sendTextMessage}
+              {...tid('jessi-text-input')}
             />
             <TouchableOpacity
               style={[
@@ -707,6 +701,7 @@ export default function JessiScreen() {
               ]}
               onPress={sendTextMessage}
               disabled={!textInput.trim() || state !== 'idle'}
+              {...tid('jessi-send-btn')}
             >
               <Ionicons name="send" size={20} color={textInput.trim() && state === 'idle' ? '#C9A962' : colors.borderLight} />
             </TouchableOpacity>
@@ -720,35 +715,6 @@ export default function JessiScreen() {
 const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    padding: 4,
-    width: 60,
-  },
-  headerTitle: {
-    fontSize: 19,
-    fontWeight: '600',
-  },
-  placeholder: {
-    width: 60,
-  },
-  cancelButton: {
-    padding: 4,
-    width: 60,
-    alignItems: 'flex-end',
-  },
-  cancelText: {
-    color: '#FF3B30',
-    fontSize: 18,
-    fontWeight: '500',
   },
   content: {
     flex: 1,
@@ -833,7 +799,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   hintText: {
     fontSize: 16,
-    color: '#6E6E73',
+    color: colors.textTertiary,
     marginTop: 8,
   },
   audioBarsContainer: {

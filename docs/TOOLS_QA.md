@@ -38,8 +38,8 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 5. Leads  DONE (tested iteration_299) (Internet Leads, Call Retries, Lead Source Queue, Lead Source Config, Connect Zapier / Make, Team Availability)
 6. Manage  DONE (tested iteration_300) (Tags, Keyword Auto-Tags, Keyword Search, Campaigns, Review Center, Showcase approvals, Inventory Feed, Review Links)
 7. My Performance  DONE (tested iteration_301) (Team Sales, Team Tasks, Customer Engagement, Leaderboard, Activity Reports, Email Analytics, SEO/GEO Health, VA Library)
-8. Campaigns + My Tools  <- next (Campaign Dashboard, Date Triggers, Ask Jessi, Team Chat)
-9. Set Up (Store Profile, Brand Kit, Messaging Channels, Phone Numbers, Team Members, Invite Team, Integrations)
+8. Campaigns + My Tools  DONE (tested iteration_302) (Campaign Dashboard, Date Triggers, Ask Jessi, Team Chat)
+9. Set Up  <- next (Store Profile, Brand Kit, Messaging Channels, Phone Numbers, Team Members, Invite Team, Integrations)
 10. Admin / Internal Operations (super admin only, `later`)
 
 ## Inventory
@@ -86,10 +86,10 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 | 38 | Manage | Review Center | /settings/review-approvals | | x | fixed | shared header with subtitle |
 | 39 | Manage | Showcase approvals | /settings/showcase-approvals | | x | fixed | shared header |
 | 40 | Manage | Inventory Feed | /admin/inventory-feed | | x | fixed | shared header |
-| 41 | My Tools | Ask Jessi | /jessie | | x | todo | |
-| 42 | My Tools | Team Chat | /(tabs)/team | | x | todo | |
-| 43 | Campaigns | Campaign Dashboard | /campaigns/dashboard | | x | todo | |
-| 44 | Campaigns | Date Triggers | /settings/date-triggers | | x | todo | |
+| 41 | My Tools | Ask Jessi | /jessie | | x | fixed | shared header (titled Ask Jessi, red cancel in header while listening), black mic on gold idle button, placeholder/hint -> theme, em dash removed |
+| 42 | My Tools | Team Chat | /(tabs)/team | | x | fixed | file-local COLORS palette (blue accent, hardcoded #000/#1C1C1E) deleted -> theme colors; list + chat views on shared header (chat header = channel name + member subtitle, ellipsis in header); own bubbles gold with black text; core Image -> expo-image; type scale |
+| 43 | Campaigns | Campaign Dashboard | /campaigns/dashboard | | x | fixed | shared header with gear; Ready-to-send card gold with black text; status/progress/create button blue -> gold; radius 16 + borders; eyebrow |
+| 44 | Campaigns | Date Triggers | /settings/date-triggers | | x | fixed | shared header (also on loading state); tabs/delivery/save gold with black text; green toggles -> gold; radius 16 + borders; em dash removed |
 | 45 | My Performance | Team Sales | /reports/team-performance | | x | fixed | shared header (titled Team Sales), month chevrons gold, rows radius 16 + border, empty state with Manage team CTA. Referrals blue / Repeats purple kept as category colors (match Home tiles) |
 | 46 | My Performance | Team Tasks | /team-tasks | | x | fixed | shared header with open/overdue subtitle + refresh, managers-only state has Open Touchpoints CTA, filtered-empty has Show all |
 | 47 | My Performance | Customer Engagement | /touchpoints/customer-performance | | x | fixed | shared header (titled Customer Engagement) + refresh, scope pills green -> gold outline, hardcoded grays -> theme, empty state Share my card CTA |
@@ -130,3 +130,4 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 - June 2026: Batch 5 (Manage) done: 7 screens, testing agent 99%, the one nit (indigo Create Rule button) fixed same turn.
 - Still using stale JESSI_BAR_HEIGHT padding (bar is disabled): app/settings/persona.tsx, app/admin/users.tsx. Remove in their batches.
 - June 2026: Batch 6 (My Performance) done: 9 screens, SEO/GEO collapsed into one shared HealthScoreScreen, 3 real bugs fixed (GEO guide route, VA delete window.confirm on native, Email Analytics dead range filter). Testing agent pass (iteration_301); GEO tip em dashes fixed same turn. yarn.lock regenerated: the committed one failed --frozen-lockfile.
+- June 2026: Batch 7 (Campaigns + My Tools) done: 4 screens, testing agent pass (iteration_302). Tester flagged Team Sales Referrals column blue as a regression: NOT one, it is the intentional category color matching the Home Sold/Referrals/Repeats tiles. LESSON: never run `yarn install` while Metro is running; it rewrites node_modules and Metro's file map goes stale (web 500 'native-only module' error). Fix = rm -rf .metro-cache && supervisorctl restart frontend.

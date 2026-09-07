@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,12 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { campaignsAPI } from '../../services/api';
 import { showAlert, showSimpleAlert } from '../../services/alert';
-
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton } from '../../components/common/ScreenHeader';
+import { FS, EYEBROW } from '../../constants/typography';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
+
 interface Enrollment {
   _id: string;
   campaign_id: string;
@@ -43,7 +47,6 @@ export default function CampaignDashboardScreen() {
   const [pendingCount, setPendingCount] = useState(0);
   const [upcomingCount, setUpcomingCount] = useState(0);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
-  const [campaigns, setCampaigns] = useState<any[]>([]);
   
   useFocusEffect(
     useCallback(() => {
@@ -57,16 +60,12 @@ export default function CampaignDashboardScreen() {
     try {
       setLoading(true);
       
-      // Load pending count
       const pendingData = await campaignsAPI.getPendingCount();
       setPendingCount(pendingData.pending);
       setUpcomingCount(pendingData.upcoming);
       
-      // Load all campaigns and their enrollments
       const campaignsData = await campaignsAPI.getAll(user._id);
-      setCampaigns(campaignsData);
       
-      // Gather all enrollments
       const allEnrollments: Enrollment[] = [];
       for (const campaign of campaignsData) {
         const campEnrollments = await campaignsAPI.getEnrollments(user._id, campaign._id);
@@ -79,7 +78,6 @@ export default function CampaignDashboardScreen() {
         });
       }
       
-      // Sort by next_send_at (closest first), then by status
       allEnrollments.sort((a, b) => {
         if (a.status === 'active' && b.status !== 'active') return -1;
         if (a.status !== 'active' && b.status === 'active') return 1;
@@ -110,12 +108,12 @@ export default function CampaignDashboardScreen() {
       
       if (result.sent > 0) {
         showAlert(
-          'Messages Sent!',
+          'Messages sent',
           `Sent ${result.sent} message${result.sent !== 1 ? 's' : ''}${result.completed > 0 ? `\n${result.completed} campaign${result.completed !== 1 ? 's' : ''} completed` : ''}`,
           [{ text: 'OK', onPress: () => loadData() }]
         );
       } else {
-        showSimpleAlert('No Messages', 'No pending messages to send right now.');
+        showSimpleAlert('No messages', 'No pending messages to send right now.');
       }
     } catch (error) {
       console.error('Failed to process scheduler:', error);
@@ -143,7 +141,7 @@ export default function CampaignDashboardScreen() {
   
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return '#007AFF';
+      case 'active': return colors.accent;
       case 'completed': return '#34C759';
       case 'cancelled': return '#FF3B30';
       case 'paused': return '#FF9500';
@@ -155,17 +153,18 @@ export default function CampaignDashboardScreen() {
     <TouchableOpacity 
       style={styles.enrollmentCard}
       onPress={() => router.push(`/contact/${item.contact_id}`)}
+      {...tid(`enrollment-${item._id}`)}
     >
       <View style={styles.enrollmentHeader}>
         <View style={styles.contactInfo}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
-              {item.contact_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+              {(item.contact_name || '?').split(' ').map(n => n[0]).join('').slice(0, 2)}
             </Text>
           </View>
-          <View>
-            <Text style={styles.contactName}>{item.contact_name}</Text>
-            <Text style={styles.contactPhone}>{item.contact_phone}</Text>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.contactName} numberOfLines={1}>{item.contact_name}</Text>
+            <Text style={styles.contactPhone} numberOfLines={1}>{item.contact_phone}</Text>
           </View>
         </View>
         <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(item.status)}20` }]}>
@@ -177,7 +176,7 @@ export default function CampaignDashboardScreen() {
       
       <View style={styles.campaignInfo}>
         <Ionicons name="calendar" size={16} color={colors.textSecondary} />
-        <Text style={styles.campaignName}>{item.campaign_name}</Text>
+        <Text style={styles.campaignName} numberOfLines={1}>{item.campaign_name}</Text>
       </View>
       
       <View style={styles.progressSection}>
@@ -186,8 +185,8 @@ export default function CampaignDashboardScreen() {
             style={[
               styles.progressFill, 
               { 
-                width: `${((item.current_step - 1) / item.total_steps) * 100}%`,
-                backgroundColor: item.status === 'completed' ? '#34C759' : '#007AFF'
+                width: `${item.total_steps ? Math.min(100, ((item.current_step - 1) / item.total_steps) * 100) : 0}%`,
+                backgroundColor: item.status === 'completed' ? '#34C759' : colors.accent
               }
             ]} 
           />
@@ -216,74 +215,64 @@ export default function CampaignDashboardScreen() {
   
   const activeEnrollments = enrollments.filter(e => e.status === 'active');
   const completedEnrollments = enrollments.filter(e => e.status === 'completed');
+  const hasPending = pendingCount > 0;
   
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        
-        <Text style={styles.title}>Campaign Dashboard</Text>
-        
-        <TouchableOpacity
-          onPress={() => router.push('/campaigns')}
-          style={styles.settingsButton}
-        >
-          <Ionicons name="settings-outline" size={24} color="#007AFF" />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title="Campaign Dashboard"
+        testID="campaign-dashboard-header"
+        right={<HeaderIconButton icon="settings-outline" onPress={() => router.push('/campaigns')} testID="campaign-dashboard-settings" />}
+      />
       
-      {/* Stats Banner */}
       <View style={styles.statsBanner}>
         <TouchableOpacity 
-          style={[styles.pendingCard, pendingCount > 0 && styles.pendingCardActive]}
+          style={[styles.pendingCard, hasPending && styles.pendingCardActive]}
           onPress={processScheduler}
-          disabled={processing || pendingCount === 0}
+          disabled={processing || !hasPending}
+          {...tid('pending-send-card')}
         >
           {processing ? (
-            <ActivityIndicator color={colors.text} />
+            <ActivityIndicator color={hasPending ? '#000' : colors.text} />
           ) : (
             <>
               <Ionicons 
                 name="send" 
                 size={24} 
-                color={pendingCount > 0 ? '#FFF' : colors.textSecondary} 
+                color={hasPending ? '#000' : colors.textSecondary} 
               />
-              <Text style={[styles.pendingCount, pendingCount > 0 && styles.pendingCountActive]}>
+              <Text style={[styles.pendingCount, hasPending && styles.pendingCountActive]}>
                 {pendingCount}
               </Text>
-              <Text style={[styles.pendingLabel, pendingCount > 0 && styles.pendingLabelActive]}>
-                Ready to Send
+              <Text style={[styles.pendingLabel, hasPending && styles.pendingLabelActive]}>
+                Ready to send
               </Text>
-              {pendingCount > 0 && (
-                <Text style={styles.tapToSend}>Tap to send</Text>
+              {hasPending && (
+                <Text style={styles.tapToSend}>Tap to send now</Text>
               )}
             </>
           )}
         </TouchableOpacity>
         
         <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
+          <View style={styles.statCard} {...tid('stat-active')}>
             <Text style={styles.statCardValue}>{activeEnrollments.length}</Text>
             <Text style={styles.statCardLabel}>Active</Text>
           </View>
-          <View style={styles.statCard}>
+          <View style={styles.statCard} {...tid('stat-upcoming')}>
             <Text style={styles.statCardValue}>{upcomingCount}</Text>
             <Text style={styles.statCardLabel}>Upcoming</Text>
           </View>
-          <View style={styles.statCard}>
+          <View style={styles.statCard} {...tid('stat-completed')}>
             <Text style={styles.statCardValue}>{completedEnrollments.length}</Text>
             <Text style={styles.statCardLabel}>Completed</Text>
           </View>
         </View>
       </View>
       
-      {/* Enrollments List */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={colors.accent} />
         </View>
       ) : (
         <FlatList
@@ -295,26 +284,27 @@ export default function CampaignDashboardScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#007AFF"
+              tintColor={colors.accent}
             />
           }
           ListHeaderComponent={() => (
             enrollments.length > 0 ? (
-              <Text style={styles.sectionHeader}>All Enrollments</Text>
+              <Text style={styles.sectionHeader}>All enrollments</Text>
             ) : null
           )}
           ListEmptyComponent={() => (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="people-outline" size={64} color={colors.surface} />
+            <View style={styles.emptyContainer} {...tid('dashboard-empty')}>
+              <Ionicons name="people-outline" size={52} color={colors.textTertiary} />
               <Text style={styles.emptyText}>No enrollments yet</Text>
               <Text style={styles.emptySubtext}>
-                Enroll contacts in campaigns from their profile page
+                Enroll contacts in a campaign from their profile page.
               </Text>
               <TouchableOpacity 
                 style={styles.createButton}
                 onPress={() => router.push('/campaigns/new')}
+                {...tid('create-campaign-btn')}
               >
-                <Text style={styles.createButtonText}>Create Campaign</Text>
+                <Text style={styles.createButtonText}>Create campaign</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -329,25 +319,6 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-  },
-  backButton: {
-    padding: 4,
-  },
-  title: {
-    fontSize: 21,
-    fontWeight: 'bold',
-    color: colors.text,
-  },
-  settingsButton: {
-    padding: 4,
-  },
   statsBanner: {
     padding: 16,
     gap: 12,
@@ -358,34 +329,35 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 20,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.surface,
+    borderColor: colors.border,
   },
   pendingCardActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   pendingCount: {
     fontSize: 36,
-    fontWeight: 'bold',
+    fontWeight: '800',
     color: colors.textSecondary,
     marginTop: 8,
   },
   pendingCountActive: {
-    color: colors.text,
+    color: '#000',
   },
   pendingLabel: {
-    fontSize: 16,
+    fontSize: FS.heading,
+    fontWeight: '600',
     color: colors.textSecondary,
     marginTop: 4,
   },
   pendingLabelActive: {
-    color: colors.text,
+    color: '#000',
   },
   tapToSend: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.7)',
+    fontSize: FS.secondary,
+    color: 'rgba(0,0,0,0.65)',
     marginTop: 8,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   statsGrid: {
     flexDirection: 'row',
@@ -394,17 +366,19 @@ const getStyles = (colors: any) => StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: colors.card,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   statCardValue: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '800',
     color: colors.text,
   },
   statCardLabel: {
-    fontSize: 14,
+    fontSize: FS.secondary,
     color: colors.textSecondary,
     marginTop: 4,
   },
@@ -415,30 +389,31 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   listContent: {
     padding: 16,
+    paddingBottom: 40,
   },
   sectionHeader: {
-    fontSize: 15,
-    fontWeight: '700',
+    ...EYEBROW,
     color: colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   enrollmentCard: {
     backgroundColor: colors.card,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: colors.surface,
+    borderColor: colors.border,
   },
   enrollmentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
+    gap: 8,
   },
   contactInfo: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -452,27 +427,29 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   avatarText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
+    fontSize: FS.heading,
+    fontWeight: '700',
+    color: colors.accent,
   },
   contactName: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: FS.heading,
+    fontWeight: '700',
     color: colors.text,
+    flexShrink: 1,
   },
   contactPhone: {
-    fontSize: 15,
+    fontSize: FS.secondary,
     color: colors.textSecondary,
   },
   statusBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
+    flexShrink: 0,
   },
   statusText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: FS.micro,
+    fontWeight: '800',
     textTransform: 'capitalize',
   },
   campaignInfo: {
@@ -482,8 +459,9 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   campaignName: {
-    fontSize: 16,
+    fontSize: FS.body,
     color: colors.textSecondary,
+    flexShrink: 1,
   },
   progressSection: {
     marginBottom: 12,
@@ -493,13 +471,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 2,
     marginBottom: 6,
+    overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
     borderRadius: 2,
   },
   progressText: {
-    fontSize: 14,
+    fontSize: FS.secondary,
     color: colors.textSecondary,
   },
   statsRow: {
@@ -512,35 +491,36 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   statText: {
-    fontSize: 15,
+    fontSize: FS.secondary,
     color: colors.textSecondary,
   },
   emptyContainer: {
     alignItems: 'center',
     paddingVertical: 48,
+    paddingHorizontal: 24,
   },
   emptyText: {
-    fontSize: 21,
-    fontWeight: '600',
+    fontSize: FS.heading,
+    fontWeight: '700',
     color: colors.text,
     marginTop: 16,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   emptySubtext: {
-    fontSize: 17,
+    fontSize: FS.body,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 20,
   },
   createButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.accent,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 14,
   },
   createButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
+    fontSize: FS.heading,
+    fontWeight: '700',
+    color: '#000',
   },
 });

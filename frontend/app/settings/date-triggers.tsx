@@ -18,6 +18,10 @@ import { showSimpleAlert } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
 import { PersonalizeButton } from '../../components/PersonalizeButton';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
+import { FS } from '../../constants/typography';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 type TriggerType = 'birthday' | 'anniversary' | 'sold_date';
 
 const DATE_TRIGGERS: { type: TriggerType; label: string; icon: string; defaultMsg: string }[] = [
@@ -191,15 +195,9 @@ export default function DateTriggersScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={28} color="#007AFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Date Triggers</Text>
-          <View style={{ width: 40 }} />
-        </View>
+        <ScreenHeader title="Date Triggers" testID="date-triggers-header" />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#C9A962" />
+          <ActivityIndicator size="large" color={colors.accent} />
         </View>
       </SafeAreaView>
     );
@@ -207,25 +205,21 @@ export default function DateTriggersScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Date Triggers</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <ScreenHeader title="Date Triggers" testID="date-triggers-header" />
 
       {/* Tabs */}
       <View style={styles.tabs}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'dates' && styles.tabActive]}
           onPress={() => setActiveTab('dates')}
+          {...tid('date-triggers-tab-dates')}
         >
           <Text style={[styles.tabText, activeTab === 'dates' && styles.tabTextActive]}>Dates</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'holidays' && styles.tabActive]}
           onPress={() => setActiveTab('holidays')}
+          {...tid('date-triggers-tab-holidays')}
         >
           <Text style={[styles.tabText, activeTab === 'holidays' && styles.tabTextActive]}>Holidays</Text>
         </TouchableOpacity>
@@ -235,20 +229,20 @@ export default function DateTriggersScreen() {
         {activeTab === 'dates' ? (
           <>
             <Text style={styles.sectionDescription}>
-              Messages send only on the contact's actual date, and ONLY to contacts you've opted in below — nothing fires just because a date is on file.
+              Messages send only on the contact's actual date, and only to contacts you opt in below. Nothing fires just because a date is on file.
             </Text>
 
             <TouchableOpacity
               style={styles.manageBtn}
               onPress={() => router.push('/settings/date-recipients')}
-              data-testid="manage-recipients-btn"
+              {...tid('manage-recipients-btn')}
             >
-              <Ionicons name="people" size={20} color="#C9A962" />
+              <Ionicons name="people" size={20} color={colors.accent} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.manageTitle}>Manage Recipients</Text>
-                <Text style={styles.manageHint}>Search & bulk-choose exactly who gets birthday and anniversary messages</Text>
+                <Text style={styles.manageTitle}>Manage recipients</Text>
+                <Text style={styles.manageHint}>Search and bulk-choose exactly who gets birthday and anniversary messages</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+              <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
             </TouchableOpacity>
 
             {DATE_TRIGGERS.map((trigger) => {
@@ -256,17 +250,18 @@ export default function DateTriggersScreen() {
               const isEnabled = config.enabled ?? false;
 
               return (
-                <View key={trigger.type} style={styles.triggerCard}>
+                <View key={trigger.type} style={styles.triggerCard} {...tid(`trigger-card-${trigger.type}`)}>
                   <View style={styles.triggerHeader}>
                     <View style={styles.triggerTitleRow}>
-                      <Ionicons name={trigger.icon as any} size={22} color="#C9A962" />
+                      <Ionicons name={trigger.icon as any} size={22} color={colors.accent} />
                       <Text style={styles.triggerTitle}>{trigger.label}</Text>
                     </View>
                     <Switch
                       value={isEnabled}
                       onValueChange={(val) => toggleTrigger(trigger.type, val)}
-                      trackColor={{ false: colors.borderLight, true: '#34C75966' }}
-                      thumbColor={isEnabled ? '#34C759' : colors.textSecondary}
+                      trackColor={{ false: colors.borderLight, true: `${colors.accent}66` }}
+                      thumbColor={isEnabled ? colors.accent : colors.textSecondary}
+                      {...tid(`trigger-switch-${trigger.type}`)}
                     />
                   </View>
 
@@ -293,7 +288,7 @@ export default function DateTriggersScreen() {
                         </View>
                       )}
 
-                      <Text style={styles.fieldLabel}>Delivery Method</Text>
+                      <Text style={styles.fieldLabel}>Delivery method</Text>
                       <View style={styles.deliveryRow}>
                         {DELIVERY_OPTIONS.map((opt) => (
                           <TouchableOpacity
@@ -303,6 +298,7 @@ export default function DateTriggersScreen() {
                               (config.delivery_method || 'sms') === opt.value && styles.deliveryActive,
                             ]}
                             onPress={() => updateTriggerField(trigger.type, 'delivery_method', opt.value)}
+                            {...tid(`delivery-${trigger.type}-${opt.value}`)}
                           >
                             <Text style={[
                               styles.deliveryText,
@@ -313,7 +309,7 @@ export default function DateTriggersScreen() {
                       </View>
 
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Text style={styles.fieldLabel}>Message Template</Text>
+                        <Text style={styles.fieldLabel}>Message template</Text>
                         <PersonalizeButton
                           colors={colors}
                           onInsert={(tag) => updateTriggerField(trigger.type, 'message_template', (config.message_template || trigger.defaultMsg) + tag)}
@@ -324,15 +320,17 @@ export default function DateTriggersScreen() {
                         value={config.message_template || trigger.defaultMsg}
                         onChangeText={(text) => updateTriggerField(trigger.type, 'message_template', text)}
                         multiline
-                        placeholderTextColor="#6E6E73"
+                        placeholderTextColor={colors.textTertiary}
+                        {...tid(`template-${trigger.type}`)}
                       />
 
                       <TouchableOpacity
                         style={[styles.saveBtn, saving && { opacity: 0.6 }]}
                         onPress={() => saveTriggerConfig(trigger.type)}
                         disabled={saving}
+                        {...tid(`save-trigger-${trigger.type}`)}
                       >
-                        <Text style={styles.saveBtnText}>Save {trigger.label} Trigger</Text>
+                        <Text style={styles.saveBtnText}>Save {trigger.label} trigger</Text>
                       </TouchableOpacity>
                     </View>
                   )}
@@ -348,22 +346,24 @@ export default function DateTriggersScreen() {
 
             {/* Holiday message template */}
             <View style={styles.triggerCard}>
-              <Text style={styles.fieldLabel}>Holiday Message Template</Text>
+              <Text style={styles.fieldLabel}>Holiday message template</Text>
               <Text style={styles.fieldHint}>Use {'{first_name}'}, {'{holiday_name}'}</Text>
               <TextInput
                 style={styles.templateInput}
                 value={holidayTemplate}
                 onChangeText={setHolidayTemplate}
                 multiline
-                placeholderTextColor="#6E6E73"
+                placeholderTextColor={colors.textTertiary}
+                {...tid('holiday-template-input')}
               />
-              <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Delivery Method</Text>
+              <Text style={[styles.fieldLabel, { marginTop: 12 }]}>Delivery method</Text>
               <View style={styles.deliveryRow}>
                 {DELIVERY_OPTIONS.map((opt) => (
                   <TouchableOpacity
                     key={opt.value}
                     style={[styles.deliveryOption, holidayDelivery === opt.value && styles.deliveryActive]}
                     onPress={() => setHolidayDelivery(opt.value)}
+                    {...tid(`holiday-delivery-${opt.value}`)}
                   >
                     <Text style={[styles.deliveryText, holidayDelivery === opt.value && styles.deliveryTextActive]}>
                       {opt.label}
@@ -375,7 +375,7 @@ export default function DateTriggersScreen() {
 
             {/* Holiday list */}
             <View style={styles.triggerCard}>
-              <Text style={styles.triggerTitle}>Select Holidays</Text>
+              <Text style={styles.triggerTitle}>Select holidays</Text>
               {holidays.map((holiday) => {
                 const isSelected = !!holidayConfigs[holiday.id];
                 return (
@@ -383,11 +383,12 @@ export default function DateTriggersScreen() {
                     key={holiday.id}
                     style={styles.holidayRow}
                     onPress={() => toggleHoliday(holiday.id)}
+                    {...tid(`holiday-${holiday.id}`)}
                   >
                     <Ionicons
                       name={isSelected ? 'checkmark-circle' : 'ellipse-outline'}
                       size={24}
-                      color={isSelected ? '#34C759' : '#6E6E73'}
+                      color={isSelected ? colors.accent : colors.textTertiary}
                     />
                     <Text style={styles.holidayName}>{holiday.name}</Text>
                     <Text style={styles.holidayDate}>
@@ -402,11 +403,12 @@ export default function DateTriggersScreen() {
               style={[styles.saveBtn, { marginTop: 8 }, saving && { opacity: 0.6 }]}
               onPress={saveHolidays}
               disabled={saving}
+              {...tid('save-holidays-btn')}
             >
               {saving ? (
-                <ActivityIndicator size="small" color={colors.text} />
+                <ActivityIndicator size="small" color="#000" />
               ) : (
-                <Text style={styles.saveBtnText}>Save Holiday Settings</Text>
+                <Text style={styles.saveBtnText}>Save holiday settings</Text>
               )}
             </TouchableOpacity>
           </>
@@ -420,70 +422,63 @@ export default function DateTriggersScreen() {
 
 const getStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: colors.card,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
   tabs: {
     flexDirection: 'row', paddingHorizontal: 16, paddingTop: 12, gap: 8,
   },
   tab: {
     flex: 1, paddingVertical: 10, alignItems: 'center',
-    borderRadius: 10, backgroundColor: colors.card,
+    borderRadius: 14, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border,
   },
-  tabActive: { backgroundColor: '#C9A962' },
-  tabText: { fontSize: 16, fontWeight: '600', color: colors.textSecondary },
-  tabTextActive: { color: colors.text },
-  content: { padding: 16 },
+  tabActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  tabText: { fontSize: FS.body, fontWeight: '700', color: colors.textSecondary },
+  tabTextActive: { color: '#000' },
+  content: { padding: 16, paddingBottom: 40 },
   sectionDescription: {
-    fontSize: 16, color: colors.textSecondary, marginBottom: 16, lineHeight: 20,
+    fontSize: FS.body, color: colors.textSecondary, marginBottom: 16, lineHeight: 20,
   },
   triggerCard: {
-    backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 12,
+    backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border,
   },
   manageBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: colors.card, borderRadius: 12, padding: 16, marginBottom: 16,
-    borderWidth: 1, borderColor: '#C9A96244',
+    backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 16,
+    borderWidth: 1, borderColor: `${colors.accent}55`,
   },
-  manageTitle: { fontSize: 16, fontWeight: '600', color: colors.text },
-  manageHint: { fontSize: 13, color: colors.textSecondary, marginTop: 2, lineHeight: 17 },
+  manageTitle: { fontSize: FS.heading, fontWeight: '700', color: colors.text },
+  manageHint: { fontSize: FS.secondary, color: colors.textSecondary, marginTop: 2, lineHeight: 17 },
   triggerHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
   },
   triggerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  triggerTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
+  triggerTitle: { fontSize: FS.heading, fontWeight: '700', color: colors.text },
   triggerBody: { marginTop: 16 },
   birthdayCardToggle: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: colors.surface, borderRadius: 10, padding: 14, marginBottom: 16, gap: 12,
+    backgroundColor: colors.surface, borderRadius: 12, padding: 14, marginBottom: 16, gap: 12,
   },
-  fieldLabel: { fontSize: 16, fontWeight: '500', color: colors.text, marginBottom: 8 },
-  fieldHint: { fontSize: 13, color: '#6E6E73', marginBottom: 8 },
+  fieldLabel: { fontSize: FS.body, fontWeight: '600', color: colors.text, marginBottom: 8 },
+  fieldHint: { fontSize: FS.secondary, color: colors.textTertiary, marginBottom: 8 },
   deliveryRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   deliveryOption: {
     flex: 1, paddingVertical: 10, alignItems: 'center',
-    borderRadius: 8, backgroundColor: colors.surface,
+    borderRadius: 10, backgroundColor: colors.surface,
   },
-  deliveryActive: { backgroundColor: '#C9A962' },
-  deliveryText: { fontSize: 16, fontWeight: '500', color: colors.textSecondary },
-  deliveryTextActive: { color: colors.text },
+  deliveryActive: { backgroundColor: colors.accent },
+  deliveryText: { fontSize: FS.body, fontWeight: '600', color: colors.textSecondary },
+  deliveryTextActive: { color: '#000' },
   templateInput: {
-    backgroundColor: colors.surface, borderRadius: 10, padding: 14,
-    color: colors.text, fontSize: 16, minHeight: 80, textAlignVertical: 'top',
+    backgroundColor: colors.surface, borderRadius: 12, padding: 14,
+    color: colors.text, fontSize: FS.body, minHeight: 80, textAlignVertical: 'top',
   },
   saveBtn: {
-    backgroundColor: '#C9A962', paddingVertical: 14, borderRadius: 20,
+    backgroundColor: colors.accent, paddingVertical: 14, borderRadius: 28,
     alignItems: 'center', marginTop: 16,
   },
-  saveBtnText: { color: colors.text, fontSize: 16, fontWeight: '600' },
+  saveBtnText: { color: '#000', fontSize: FS.heading, fontWeight: '700' },
   holidayRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.surface,
+    paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border,
   },
-  holidayName: { flex: 1, fontSize: 16, color: colors.text },
-  holidayDate: { fontSize: 15, color: colors.textSecondary },
+  holidayName: { flex: 1, fontSize: FS.body, color: colors.text },
+  holidayDate: { fontSize: FS.secondary, color: colors.textSecondary },
 });

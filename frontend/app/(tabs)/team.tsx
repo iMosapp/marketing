@@ -12,8 +12,8 @@ import {
   Alert,
   Platform,
   KeyboardAvoidingView,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -23,20 +23,10 @@ import api from '../../services/api';
 import VoiceInput from '../../components/VoiceInput';
 import { useToast } from '../../components/common/Toast';
 import { showAlert } from '../../services/alert';
+import { ScreenHeader, HeaderIconButton } from '../../components/common/ScreenHeader';
+import { FS } from '../../constants/typography';
 
-// Colors matching the app theme
-const COLORS = {
-  background: '#000',
-  card: '#1C1C1E',
-  cardHover: '#2C2C2E',
-  accent: '#007AFF',
-  success: '#34C759',
-  warning: '#FF9500',
-  error: '#FF3B30',
-  textPrimary: '#FFF',
-  textSecondary: '#8E8E93',
-  border: '#2C2C2E',
-};
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 
 interface Channel {
   id: string;
@@ -371,7 +361,7 @@ export default function TeamChatScreen() {
     return (
       <View
         style={[styles.channelItem, { backgroundColor: colors.card, borderBottomColor: colors.border }, item.unread_count > 0 && styles.channelUnread]}
-        data-testid={`channel-${item.id}`}
+        {...tid(`channel-${item.id}`)}
       >
         <TouchableOpacity
           style={styles.channelTapArea}
@@ -386,7 +376,7 @@ export default function TeamChatScreen() {
           {item.avatar ? (
             <Image source={{ uri: item.avatar }} style={styles.channelAvatar} />
           ) : (
-            <Ionicons name={getChannelIcon()} size={24} color={COLORS.accent} />
+            <Ionicons name={getChannelIcon()} size={24} color={colors.accent} />
           )}
         </View>
         
@@ -433,7 +423,7 @@ export default function TeamChatScreen() {
           accessibilityRole="button"
           accessibilityLabel="Channel menu"
         >
-          <Ionicons name="ellipsis-vertical" size={18} color={COLORS.textSecondary} />
+          <Ionicons name="ellipsis-vertical" size={18} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
     );
@@ -470,12 +460,12 @@ export default function TeamChatScreen() {
         ]}>
           {item.is_broadcast && (
             <View style={styles.broadcastBadge}>
-              <Ionicons name="megaphone" size={12} color={colors.text} />
-              <Text style={styles.broadcastLabel}>Broadcast</Text>
+              <Ionicons name="megaphone" size={12} color="#000" />
+              <Text style={[styles.broadcastLabel, { color: '#000' }]}>Broadcast</Text>
             </View>
           )}
-          <Text style={styles.messageText}>{item.content}</Text>
-          <Text style={styles.messageTime}>{formatTime(item.created_at)}</Text>
+          <Text style={[styles.messageText, (isOwnMessage || item.is_broadcast) && { color: '#000' }]}>{item.content}</Text>
+          <Text style={[styles.messageTime, (isOwnMessage || item.is_broadcast) ? { color: 'rgba(0,0,0,0.6)' } : { color: colors.textTertiary }]}>{formatTime(item.created_at)}</Text>
         </View>
       </View>
     );
@@ -497,20 +487,11 @@ export default function TeamChatScreen() {
   if (!selectedChannel) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
-        {/* Header */}
-        <View style={[styles.header, { backgroundColor: colors.bg }]}>
-          <Text style={[styles.title, { color: colors.text }]}>Team Chat</Text>
-          <TouchableOpacity
-            style={styles.createButton}
-            onPress={() => {
-              loadMembers();
-              setShowCreateModal(true);
-            }}
-            data-testid="create-channel-btn"
-          >
-            <Ionicons name="add-circle" size={28} color={COLORS.accent} />
-          </TouchableOpacity>
-        </View>
+        <ScreenHeader
+          title="Team Chat"
+          testID="team-chat-header"
+          right={<HeaderIconButton icon="add-circle" onPress={() => { loadMembers(); setShowCreateModal(true); }} testID="create-channel-btn" />}
+        />
 
         {/* Channel Search Bar */}
         <View style={[styles.channelSearchBar, { backgroundColor: colors.inputBg, borderColor: colors.border }]}>
@@ -521,10 +502,11 @@ export default function TeamChatScreen() {
             onChangeText={setChannelSearch}
             placeholder="Search channels..."
             placeholderTextColor={colors.textSecondary}
+            {...tid('channel-search-input')}
           />
           {channelSearch.length > 0 && (
             <TouchableOpacity onPress={() => setChannelSearch('')}>
-              <Ionicons name="close-circle" size={18} color={COLORS.textSecondary} />
+              <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
@@ -532,7 +514,7 @@ export default function TeamChatScreen() {
         {/* Channel List */}
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={COLORS.accent} />
+            <ActivityIndicator size="large" color={colors.accent} />
           </View>
         ) : (
           <FlatList
@@ -546,12 +528,12 @@ export default function TeamChatScreen() {
                   setRefreshing(true);
                   loadChannels();
                 }}
-                tintColor={COLORS.accent}
+                tintColor={colors.accent}
               />
             }
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
-                <Ionicons name="chatbox-ellipses-outline" size={64} color={COLORS.textSecondary} />
+                <Ionicons name="chatbox-ellipses-outline" size={64} color={colors.textSecondary} />
                 <Text style={styles.emptyText}>No channels yet</Text>
                 <Text style={styles.emptySubtext}>Create a channel to start messaging your team</Text>
                 <TouchableOpacity
@@ -637,11 +619,11 @@ export default function TeamChatScreen() {
         {showCreateModal && (
           <View style={styles.createPanel}>
             <View style={styles.createPanelHeader}>
-              <TouchableOpacity onPress={() => setShowCreateModal(false)}>
+              <TouchableOpacity onPress={() => setShowCreateModal(false)} hitSlop={8} {...tid('create-channel-cancel')}>
                 <Text style={styles.modalCancel}>Cancel</Text>
               </TouchableOpacity>
               <Text style={styles.modalTitle}>New Channel</Text>
-              <TouchableOpacity onPress={createChannel}>
+              <TouchableOpacity onPress={createChannel} hitSlop={8} {...tid('create-channel-submit')}>
                 <Text style={[styles.modalCreate, !newChannelName.trim() && styles.modalCreateDisabled]}>
                   Create
                 </Text>
@@ -657,7 +639,8 @@ export default function TeamChatScreen() {
                   value={newChannelName}
                   onChangeText={setNewChannelName}
                   placeholder="e.g., Sales Floor, All Managers"
-                  placeholderTextColor={COLORS.textSecondary}
+                  placeholderTextColor={colors.textSecondary}
+                  {...tid('channel-name-input')}
                 />
               </View>
 
@@ -681,7 +664,7 @@ export default function TeamChatScreen() {
                       <Ionicons
                         name={option.icon as any}
                         size={20}
-                        color={newChannelType === option.type ? '#FFF' : COLORS.textSecondary}
+                        color={newChannelType === option.type ? '#000' : colors.textSecondary}
                       />
                       <Text style={[
                         styles.typeButtonText,
@@ -706,7 +689,7 @@ export default function TeamChatScreen() {
                       loadMembers(text);
                     }}
                     placeholder="Search members..."
-                    placeholderTextColor={COLORS.textSecondary}
+                    placeholderTextColor={colors.textSecondary}
                   />
                   
                   {/* Selected members */}
@@ -721,7 +704,7 @@ export default function TeamChatScreen() {
                             onPress={() => setSelectedMembers(prev => prev.filter(id => id !== memberId))}
                           >
                             <Text style={styles.selectedMemberName}>{member.name}</Text>
-                            <Ionicons name="close" size={14} color={colors.text} />
+                            <Ionicons name="close" size={14} color="#000" />
                           </TouchableOpacity>
                         ) : null;
                       })}
@@ -750,7 +733,7 @@ export default function TeamChatScreen() {
                           <Text style={styles.memberName}>{item.name}</Text>
                           <Text style={styles.memberRole}>{item.role}</Text>
                         </View>
-                        <Ionicons name="add-circle-outline" size={24} color={COLORS.accent} />
+                        <Ionicons name="add-circle-outline" size={24} color={colors.accent} />
                       </TouchableOpacity>
                     )}
                     style={styles.memberList}
@@ -767,47 +750,36 @@ export default function TeamChatScreen() {
   // Chat view (when channel is selected)
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Chat Header */}
-      <View style={styles.chatHeader}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => {
-            setSelectedChannel(null);
-            loadChannels();
-          }}
-        >
-          <Ionicons name="chevron-back" size={28} color={COLORS.accent} />
-        </TouchableOpacity>
-        
-        <View style={styles.chatHeaderInfo}>
-          <Text style={styles.chatHeaderName}>{selectedChannel.name}</Text>
-          <Text style={styles.chatHeaderMembers}>
-            {selectedChannel.member_count} member{selectedChannel.member_count !== 1 ? 's' : ''}
-          </Text>
-        </View>
-        
-        <TouchableOpacity 
-          style={styles.chatHeaderAction}
-          onPress={() => {
-            if (Platform.OS === 'web') {
-              setShowChatMenu(!showChatMenu);
-            } else {
-              showAlert(
-                selectedChannel.name,
-                `${selectedChannel.member_count} member${selectedChannel.member_count !== 1 ? 's' : ''}`,
-                [
-                  { text: 'Clear History', style: 'destructive', onPress: () => clearHistory(selectedChannel) },
-                  { text: 'Delete Channel', style: 'destructive', onPress: () => deleteChannel(selectedChannel) },
-                  { text: 'Cancel', style: 'cancel' },
-                ]
-              );
-            }
-          }}
-          data-testid="chat-options-btn"
-        >
-          <Ionicons name="ellipsis-vertical" size={22} color={COLORS.accent} />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title={selectedChannel.name}
+        subtitle={`${selectedChannel.member_count} member${selectedChannel.member_count !== 1 ? 's' : ''}`}
+        testID="chat-header"
+        onBack={() => {
+          setSelectedChannel(null);
+          loadChannels();
+        }}
+        right={(
+          <HeaderIconButton
+            icon="ellipsis-vertical"
+            testID="chat-options-btn"
+            onPress={() => {
+              if (Platform.OS === 'web') {
+                setShowChatMenu(!showChatMenu);
+              } else {
+                showAlert(
+                  selectedChannel.name,
+                  `${selectedChannel.member_count} member${selectedChannel.member_count !== 1 ? 's' : ''}`,
+                  [
+                    { text: 'Clear History', style: 'destructive', onPress: () => clearHistory(selectedChannel) },
+                    { text: 'Delete Channel', style: 'destructive', onPress: () => deleteChannel(selectedChannel) },
+                    { text: 'Cancel', style: 'cancel' },
+                  ]
+                );
+              }
+            }}
+          />
+        )}
+      />
 
       {/* Chat header dropdown: backdrop + menu as siblings (web) */}
       {Platform.OS === 'web' && showChatMenu && selectedChannel && (
@@ -862,7 +834,7 @@ export default function TeamChatScreen() {
       >
         {messagesLoading && messages.length === 0 ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={COLORS.accent} />
+            <ActivityIndicator size="large" color={colors.accent} />
           </View>
         ) : (
           <FlatList
@@ -873,9 +845,9 @@ export default function TeamChatScreen() {
             contentContainerStyle={styles.messagesList}
             ListEmptyComponent={
               <View style={styles.emptyMessages}>
-                <Ionicons name="chatbubble-outline" size={48} color={COLORS.textSecondary} />
+                <Ionicons name="chatbubble-outline" size={48} color={colors.textSecondary} />
                 <Text style={styles.emptyMessagesText}>No messages yet</Text>
-                <Text style={styles.emptyMessagesSubtext}>Start the conversation!</Text>
+                <Text style={styles.emptyMessagesSubtext}>Say hello to get the conversation going.</Text>
               </View>
             }
             onContentSizeChange={() => {
@@ -891,7 +863,7 @@ export default function TeamChatScreen() {
               setMessageText(prev => prev ? `${prev} ${text}` : text);
             }}
             size={24}
-            color={COLORS.accent}
+            color={colors.accent}
           />
           
           <TextInput
@@ -900,20 +872,22 @@ export default function TeamChatScreen() {
             value={messageText}
             onChangeText={setMessageText}
             placeholder="Type a message... (use @ to mention)"
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             multiline
             maxLength={2000}
+            {...tid('chat-message-input')}
           />
           
           <TouchableOpacity
             style={[styles.sendButton, (!messageText.trim() || sending) && styles.sendButtonDisabled]}
             onPress={sendMessage}
             disabled={!messageText.trim() || sending}
+            {...tid('chat-send-btn')}
           >
             {sending ? (
-              <ActivityIndicator size="small" color={colors.text} />
+              <ActivityIndicator size="small" color="#000" />
             ) : (
-              <Ionicons name="send" size={20} color={colors.text} />
+              <Ionicons name="send" size={20} color="#000" />
             )}
           </TouchableOpacity>
         </View>
@@ -925,25 +899,7 @@ export default function TeamChatScreen() {
 const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-  },
-  createButton: {
-    padding: 4,
+    backgroundColor: colors.bg,
   },
   
   // Loading
@@ -959,7 +915,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: colors.border,
     position: 'relative' as any,
   },
   channelTapArea: {
@@ -968,13 +924,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   channelUnread: {
-    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    backgroundColor: 'rgba(201, 169, 98, 0.10)',
   },
   channelIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -994,25 +950,26 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 4,
   },
   channelName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
+    fontSize: FS.heading,
+    fontWeight: '700',
+    color: colors.text,
     flex: 1,
+    flexShrink: 1,
   },
   channelTime: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
+    fontSize: FS.caption,
+    color: colors.textSecondary,
     marginLeft: 8,
   },
   channelPreview: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
+    fontSize: FS.secondary,
+    color: colors.textSecondary,
   },
   senderName: {
     fontWeight: '500',
   },
   unreadBadge: {
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
     borderRadius: 10,
     minWidth: 20,
     height: 20,
@@ -1022,9 +979,9 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginLeft: 8,
   },
   unreadText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
+    fontSize: FS.caption,
+    fontWeight: '800',
+    color: '#000',
   },
   
   // Empty State
@@ -1039,7 +996,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   channelSearchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 10,
     marginHorizontal: 16,
     marginBottom: 8,
@@ -1050,50 +1007,51 @@ const getStyles = (colors: any) => StyleSheet.create({
   channelSearchInput: {
     flex: 1,
     fontSize: 17,
-    color: COLORS.textPrimary,
+    color: colors.text,
     padding: 0,
   },
   emptyList: {
     flex: 1,
   },
   emptyText: {
-    fontSize: 19,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
+    fontSize: FS.heading,
+    fontWeight: '700',
+    color: colors.text,
     marginTop: 16,
   },
   emptySubtext: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
+    fontSize: FS.body,
+    color: colors.textSecondary,
     textAlign: 'center',
     marginTop: 8,
   },
   emptyButton: {
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 20,
+    borderRadius: 14,
     marginTop: 24,
   },
   emptyButtonText: {
-    color: colors.text,
-    fontWeight: '600',
+    color: '#000',
+    fontWeight: '700',
+    fontSize: FS.heading,
   },
   
   // Create Modal
   modalCancel: {
-    fontSize: 18,
-    color: COLORS.accent,
+    fontSize: FS.heading,
+    color: colors.textSecondary,
   },
   modalTitle: {
-    fontSize: 19,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
+    fontSize: FS.nav,
+    fontWeight: '700',
+    color: colors.text,
   },
   modalCreate: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.accent,
+    fontSize: FS.heading,
+    fontWeight: '700',
+    color: colors.accent,
   },
   modalCreateDisabled: {
     opacity: 0.5,
@@ -1107,15 +1065,17 @@ const getStyles = (colors: any) => StyleSheet.create({
   inputLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     marginBottom: 8,
   },
   textInput: {
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 12,
-    padding: 16,
-    color: COLORS.textPrimary,
-    fontSize: 18,
+    padding: 14,
+    color: colors.text,
+    fontSize: FS.body,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   typeButtons: {
     flexDirection: 'row',
@@ -1126,19 +1086,19 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 12,
     gap: 4,
   },
   typeButtonActive: {
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
   },
   typeButtonText: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   typeButtonTextActive: {
-    color: colors.text,
+    color: '#000',
   },
   
   // Member Selection
@@ -1151,15 +1111,16 @@ const getStyles = (colors: any) => StyleSheet.create({
   selectedMemberChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
     gap: 4,
   },
   selectedMemberName: {
-    color: colors.text,
-    fontSize: 16,
+    color: '#000',
+    fontSize: FS.secondary,
+    fontWeight: '600',
   },
   memberList: {
     maxHeight: 200,
@@ -1169,7 +1130,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 8,
     marginBottom: 8,
   },
@@ -1183,7 +1144,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 10,
-    backgroundColor: COLORS.cardHover,
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -1191,48 +1152,22 @@ const getStyles = (colors: any) => StyleSheet.create({
   memberInitials: {
     fontSize: 16,
     fontWeight: '600',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   memberInfo: {
     flex: 1,
   },
   memberName: {
-    fontSize: 18,
-    fontWeight: '500',
-    color: COLORS.textPrimary,
+    fontSize: FS.body,
+    fontWeight: '600',
+    color: colors.text,
   },
   memberRole: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   
   // Chat View
-  chatHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  backButton: {
-    padding: 4,
-  },
-  chatHeaderInfo: {
-    flex: 1,
-    marginLeft: 8,
-  },
-  chatHeaderName: {
-    fontSize: 19,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
-  },
-  chatHeaderMembers: {
-    fontSize: 14,
-    color: COLORS.textSecondary,
-  },
-  chatHeaderAction: {
-    padding: 4,
-  },
   chatContent: {
     flex: 1,
   },
@@ -1267,7 +1202,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 7,
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 6,
@@ -1275,26 +1210,26 @@ const getStyles = (colors: any) => StyleSheet.create({
   senderInitials: {
     fontSize: 12,
     fontWeight: '600',
-    color: COLORS.textPrimary,
+    color: colors.text,
   },
   senderNameText: {
     fontSize: 14,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
   messageBubble: {
     padding: 12,
     borderRadius: 16,
   },
   ownBubble: {
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
     borderBottomRightRadius: 4,
   },
   otherBubble: {
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderBottomLeftRadius: 4,
   },
   broadcastBubble: {
-    backgroundColor: COLORS.warning,
+    backgroundColor: colors.warning,
   },
   broadcastBadge: {
     flexDirection: 'row',
@@ -1308,13 +1243,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   messageText: {
-    fontSize: 18,
+    fontSize: FS.body,
     color: colors.text,
-    lineHeight: 22,
+    lineHeight: 21,
   },
   messageTime: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.6)',
+    fontSize: FS.micro,
     marginTop: 4,
     alignSelf: 'flex-end',
   },
@@ -1327,14 +1261,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 32,
   },
   emptyMessagesText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: COLORS.textPrimary,
+    fontSize: FS.heading,
+    fontWeight: '700',
+    color: colors.text,
     marginTop: 12,
   },
   emptyMessagesSubtext: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
+    fontSize: FS.body,
+    color: colors.textSecondary,
     marginTop: 4,
   },
   
@@ -1344,8 +1278,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'flex-end',
     padding: 12,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    backgroundColor: COLORS.background,
+    borderTopColor: colors.border,
+    backgroundColor: colors.bg,
   },
   voiceButton: {
     padding: 8,
@@ -1353,16 +1287,16 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   messageInput: {
     flex: 1,
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    color: COLORS.textPrimary,
-    fontSize: 18,
+    color: colors.text,
+    fontSize: FS.body,
     maxHeight: 100,
   },
   sendButton: {
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -1399,7 +1333,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.bg,
     zIndex: 9999,
   },
   createPanelHeader: {
@@ -1408,6 +1342,6 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    borderBottomColor: colors.border,
   },
 });
