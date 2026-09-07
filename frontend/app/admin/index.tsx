@@ -19,6 +19,9 @@ import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -111,7 +114,7 @@ const ActivityTicker = ({ activities }: { activities: any[] }) => {
             <Ionicons 
               name={activity.icon as any} 
               size={14} 
-              color={activity.color || '#007AFF'} 
+              color={activity.color || '#C9A962'} 
             />
             <Text style={tickerStyles.tickerText} numberOfLines={1}>
               {activity.text}
@@ -609,7 +612,7 @@ export default function AdminDashboard() {
       key={`${item.title}-${index}`}
       style={[styles.menuItem, isLast && { borderBottomWidth: 0 }]}
       onPress={item.onPress}
-      data-testid={`menu-item-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
+      {...tid(`menu-item-${item.title.toLowerCase().replace(/\s+/g, '-')}`)}
     >
       <View style={[styles.menuIcon, { backgroundColor: `${item.color}20` }]}>
         <Ionicons name={item.icon as any} size={22} color={item.color} />
@@ -635,12 +638,12 @@ export default function AdminDashboard() {
     const itemCount = section.items.length;
 
     return (
-      <View key={section.id} style={styles.collapsibleSection} data-testid={`section-${section.id}`}>
+      <View key={section.id} style={styles.collapsibleSection} {...tid(`section-${section.id}`)}>
         <TouchableOpacity
           style={styles.sectionHeader}
           onPress={() => toggleSection(section.id)}
           activeOpacity={0.7}
-          data-testid={`section-header-${section.id}`}
+          {...tid(`section-header-${section.id}`)}
         >
           <View style={[styles.sectionIcon, { backgroundColor: `${section.color}20` }]}>
             <Ionicons name={section.icon as any} size={20} color={section.color} />
@@ -702,7 +705,7 @@ export default function AdminDashboard() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color="#C9A962" />
           <Text style={styles.loadingText}>Loading dashboard...</Text>
         </View>
       </SafeAreaView>
@@ -713,25 +716,12 @@ export default function AdminDashboard() {
   
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={styles.title}>Admin Dashboard</Text>
-          <View style={styles.roleBadge}>
-            <Ionicons name="shield-checkmark" size={12} color="#34C759" />
-            <Text style={styles.roleText}>{getRoleDisplay()}</Text>
-          </View>
-        </View>
-        <View style={{ width: 28 }} />
-      </View>
+      <ScreenHeader title="Admin Dashboard" subtitle={getRoleDisplay()} onBack={handleBack} testID="admin-dashboard-header" />
       
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#007AFF" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#C9A962" />
         }
       >
         {/* Activity Ticker - for admins only */}
@@ -747,10 +737,10 @@ export default function AdminDashboard() {
               <TouchableOpacity 
                 style={styles.quickStatCard}
                 onPress={() => router.push('/admin/organizations')}
-                data-testid="stat-organizations"
+                {...tid('stat-organizations')}
               >
-                <View style={[styles.quickStatIcon, { backgroundColor: '#007AFF20' }]}>
-                  <Ionicons name="business" size={24} color="#007AFF" />
+                <View style={[styles.quickStatIcon, { backgroundColor: '#C9A96220' }]}>
+                  <Ionicons name="business" size={24} color="#C9A962" />
                 </View>
                 <Text style={styles.quickStatValue}>
                   {(stats?.orgs_active || 0) + (stats?.orgs_inactive || 0)}
@@ -764,7 +754,7 @@ export default function AdminDashboard() {
               <TouchableOpacity 
                 style={styles.quickStatCard}
                 onPress={() => router.push('/admin/stores')}
-                data-testid="stat-accounts"
+                {...tid('stat-accounts')}
               >
                 <View style={[styles.quickStatIcon, { backgroundColor: '#34C75920' }]}>
                   <Ionicons name="storefront" size={24} color="#34C759" />
@@ -781,7 +771,7 @@ export default function AdminDashboard() {
               <TouchableOpacity 
                 style={styles.quickStatCard}
                 onPress={() => router.push('/admin/users')}
-                data-testid="stat-users"
+                {...tid('stat-users')}
               >
                 <View style={[styles.quickStatIcon, { backgroundColor: '#FF950020' }]}>
                   <Ionicons name="people" size={24} color="#FF9500" />
@@ -798,7 +788,7 @@ export default function AdminDashboard() {
               <TouchableOpacity 
                 style={styles.quickStatCard}
                 onPress={() => router.push('/admin/users')}
-                data-testid="stat-employees"
+                {...tid('stat-employees')}
               >
                 <View style={[styles.quickStatIcon, { backgroundColor: '#AF52DE20' }]}>
                   <Ionicons name="person" size={24} color="#AF52DE" />
@@ -815,7 +805,7 @@ export default function AdminDashboard() {
               <TouchableOpacity 
                 style={styles.quickStatCard}
                 onPress={() => router.push('/admin/partner-agreements')}
-                data-testid="stat-agreements"
+                {...tid('stat-agreements')}
               >
                 <View style={[styles.quickStatIcon, { backgroundColor: '#FF2D5520' }]}>
                   <Ionicons name="document-text" size={24} color="#FF2D55" />
@@ -832,7 +822,7 @@ export default function AdminDashboard() {
               <TouchableOpacity 
                 style={styles.quickStatCard}
                 onPress={() => router.push('/admin/individuals')}
-                data-testid="stat-individuals"
+                {...tid('stat-individuals')}
               >
                 <View style={[styles.quickStatIcon, { backgroundColor: '#5856D620' }]}>
                   <Ionicons name="person-circle" size={24} color="#5856D6" />
@@ -952,7 +942,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
   },
   timeFilterPillActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#C9A962',
   },
   timeFilterText: {
     fontSize: 14,

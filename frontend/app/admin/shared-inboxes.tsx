@@ -24,6 +24,9 @@ import { useToast } from '../../components/common/Toast';
 import { WebModal } from '../../components/WebModal';
 
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 const IS_WEB = Platform.OS === 'web';
 
 interface SharedInbox {
@@ -236,10 +239,10 @@ export default function SharedInboxesPage() {
   };
 
   const renderInboxCard = (inbox: SharedInbox) => (
-    <View key={inbox.id} style={styles.inboxCard} data-testid={`inbox-${inbox.id}`}>
+    <View key={inbox.id} style={styles.inboxCard} {...tid(`inbox-${inbox.id}`)}>
       <View style={styles.inboxHeader}>
         <View style={styles.inboxIcon}>
-          <Ionicons name="mail" size={24} color="#007AFF" />
+          <Ionicons name="mail" size={24} color="#C9A962" />
         </View>
         <View style={styles.inboxInfo}>
           <Text style={styles.inboxName}>{inbox.name}</Text>
@@ -258,22 +261,22 @@ export default function SharedInboxesPage() {
         <View style={{ flexDirection: 'row', gap: 6, flexShrink: 0 }}>
           <TouchableOpacity
             onPress={() => openEdit(inbox)}
-            style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: '#007AFF15', alignItems: 'center', justifyContent: 'center' }}
-            data-testid={`edit-inbox-${inbox.id}`}
+            style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: '#C9A96215', alignItems: 'center', justifyContent: 'center' }}
+            {...tid(`edit-inbox-${inbox.id}`)}
           >
-            <Ionicons name="create-outline" size={17} color="#007AFF" />
+            <Ionicons name="create-outline" size={17} color="#C9A962" />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => loadWebhookInfo(inbox.id)}
             style={{ width: 34, height: 34, borderRadius: 8, backgroundColor: '#C9A96215', alignItems: 'center', justifyContent: 'center' }}
-            data-testid={`webhook-inbox-${inbox.id}`}
+            {...tid(`webhook-inbox-${inbox.id}`)}
           >
             <Ionicons name="link-outline" size={17} color="#C9A962" />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.deleteButton}
             onPress={() => handleDeleteInbox(inbox)}
-            data-testid={`delete-inbox-${inbox.id}`}
+            {...tid(`delete-inbox-${inbox.id}`)}
           >
             <Ionicons name="trash-outline" size={20} color="#FF3B30" />
           </TouchableOpacity>
@@ -309,9 +312,9 @@ export default function SharedInboxesPage() {
           <TouchableOpacity
             style={styles.addUserButton}
             onPress={() => openAssignModal(inbox)}
-            data-testid={`add-user-${inbox.id}`}
+            {...tid(`add-user-${inbox.id}`)}
           >
-            <Ionicons name="person-add" size={16} color="#007AFF" />
+            <Ionicons name="person-add" size={16} color="#C9A962" />
             <Text style={styles.addUserText}>Add</Text>
           </TouchableOpacity>
         </View>
@@ -325,7 +328,7 @@ export default function SharedInboxesPage() {
                 <Text style={styles.userChipText}>{assignedUser.name}</Text>
                 <TouchableOpacity
                   onPress={() => handleUnassignUser(inbox.id, assignedUser.id)}
-                  data-testid={`remove-user-${assignedUser.id}`}
+                  {...tid(`remove-user-${assignedUser.id}`)}
                 >
                   <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
                 </TouchableOpacity>
@@ -338,24 +341,12 @@ export default function SharedInboxesPage() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Shared Inboxes</Text>
-        <TouchableOpacity
-          onPress={() => setShowCreateModal(true)}
-          data-testid="create-inbox-btn"
-        >
-          <Ionicons name="add-circle" size={28} color="#007AFF" />
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenHeader title="Shared Inboxes" testID="shared-inboxes-header" right={<HeaderIconButton icon="add-circle" onPress={() => setShowCreateModal(true)} testID="create-inbox-btn" />} />
 
       {/* Info Banner */}
       <View style={styles.infoBanner}>
-        <Ionicons name="information-circle" size={20} color="#007AFF" />
+        <Ionicons name="information-circle" size={20} color="#C9A962" />
         <Text style={styles.infoText}>
           Shared inboxes allow multiple team members to manage the same phone number
         </Text>
@@ -364,11 +355,11 @@ export default function SharedInboxesPage() {
       <ScrollView
         style={styles.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#007AFF" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#C9A962" />
         }
       >
         {loading ? (
-          <ActivityIndicator color="#007AFF" style={{ marginTop: 40 }} />
+          <ActivityIndicator color="#C9A962" style={{ marginTop: 40 }} />
         ) : inboxes.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="mail-outline" size={64} color={colors.surface} />
@@ -378,7 +369,7 @@ export default function SharedInboxesPage() {
               style={styles.createButton}
               onPress={() => setShowCreateModal(true)}
             >
-              <Ionicons name="add" size={20} color={colors.text} />
+              <Ionicons name="add" size={20} color="#000" />
               <Text style={styles.createButtonText}>Create Shared Inbox</Text>
             </TouchableOpacity>
           </View>
@@ -408,7 +399,7 @@ export default function SharedInboxesPage() {
                     type="button"
                     onClick={() => setShowCreateModal(false)}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
-                    data-testid="close-create-modal"
+                    {...tid('close-create-modal')}
                   >
                     <Ionicons name="close" size={24} color={colors.textSecondary} />
                   </button>
@@ -427,7 +418,7 @@ export default function SharedInboxesPage() {
                   onChangeText={(text) => setNewInbox({...newInbox, name: text})}
                   placeholder="e.g., Sales Team"
                   placeholderTextColor={colors.textSecondary}
-                  data-testid="inbox-name-input"
+                  {...tid('inbox-name-input')}
                 />
                 
                 <Text style={styles.inputLabel}>Phone Number *</Text>
@@ -435,7 +426,7 @@ export default function SharedInboxesPage() {
                 <TouchableOpacity
                   style={[styles.input, { justifyContent: 'space-between', flexDirection: 'row', alignItems: 'center' }]}
                   onPress={() => setShowNumberPicker(v => !v)}
-                  data-testid="inbox-phone-picker"
+                  {...tid('inbox-phone-picker')}
                 >
                   <Text style={{ color: newInbox.phone_number ? colors.text : colors.textSecondary, fontSize: 16 }}>
                     {newInbox.phone_number || 'Select a Twilio number...'}
@@ -465,7 +456,7 @@ export default function SharedInboxesPage() {
                             <View>
                               <Text style={{ color: colors.text, fontSize: 15, fontWeight: '600' }}>{num.phone_number}</Text>
                               <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>
-                                {alreadyAssigned ? `Assigned to ${num.assigned_to?.name || 'rep'}` : (num.status === 'pool' ? 'In pool — available' : 'Available')}
+                                {alreadyAssigned ? `Assigned to ${num.assigned_to?.name || 'rep'}` : (num.status === 'pool' ? 'In pool: available' : 'Available')}
                               </Text>
                             </View>
                             {newInbox.phone_number === num.phone_number && (
@@ -496,7 +487,7 @@ export default function SharedInboxesPage() {
                   placeholderTextColor={colors.textSecondary}
                   multiline
                   numberOfLines={3}
-                  data-testid="inbox-description-input"
+                  {...tid('inbox-description-input')}
                 />
               </ScrollView>
               
@@ -509,7 +500,7 @@ export default function SharedInboxesPage() {
                     flexDirection: 'row',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    backgroundColor: '#007AFF',
+                    backgroundColor: '#C9A962',
                     borderRadius: 12,
                     padding: 16,
                     margin: 16,
@@ -517,14 +508,14 @@ export default function SharedInboxesPage() {
                     border: 'none',
                     cursor: 'pointer',
                   }}
-                  data-testid="create-inbox-submit"
+                  {...tid('create-inbox-submit')}
                 >
                   <Ionicons name="checkmark-circle" size={20} color={colors.text} />
                   <Text style={styles.submitButtonText}>Create Inbox</Text>
                 </button>
               ) : (
                 <TouchableOpacity style={styles.submitButton} onPress={handleCreateInbox}>
-                  <Ionicons name="checkmark-circle" size={20} color={colors.text} />
+                  <Ionicons name="checkmark-circle" size={20} color="#000" />
                   <Text style={styles.submitButtonText}>Create Inbox</Text>
                 </TouchableOpacity>
               )}
@@ -547,7 +538,7 @@ export default function SharedInboxesPage() {
                   type="button"
                   onClick={() => setShowAssignModal(false)}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
-                  data-testid="close-assign-modal"
+                  {...tid('close-assign-modal')}
                 >
                   <Ionicons name="close" size={24} color={colors.textSecondary} />
                 </button>
@@ -584,7 +575,7 @@ export default function SharedInboxesPage() {
                         width: '100%',
                         cursor: 'pointer',
                       }}
-                      data-testid={`select-user-${u.id}`}
+                      {...tid(`select-user-${u.id}`)}
                     >
                       <View style={styles.userAvatar}>
                         <Text style={styles.userAvatarText}>
@@ -605,7 +596,7 @@ export default function SharedInboxesPage() {
                         handleAssignUser(u.id);
                         setShowAssignModal(false);
                       }}
-                      data-testid={`select-user-${u.id}`}
+                      {...tid(`select-user-${u.id}`)}
                     >
                       <View style={styles.userAvatar}>
                         <Text style={styles.userAvatarText}>
@@ -634,8 +625,8 @@ export default function SharedInboxesPage() {
               <Text style={{ color: '#FF3B30', fontSize: 16, fontWeight: '600' }}>Cancel</Text>
             </TouchableOpacity>
             <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>Edit Inbox</Text>
-            <TouchableOpacity onPress={saveEdit} disabled={savingEdit} data-testid="save-edit-inbox-btn">
-              {savingEdit ? <ActivityIndicator size="small" color="#007AFF" /> : <Text style={{ color: '#007AFF', fontSize: 16, fontWeight: '700' }}>Save</Text>}
+            <TouchableOpacity onPress={saveEdit} disabled={savingEdit} {...tid('save-edit-inbox-btn')}>
+              {savingEdit ? <ActivityIndicator size="small" color="#C9A962" /> : <Text style={{ color: '#C9A962', fontSize: 16, fontWeight: '700' }}>Save</Text>}
             </TouchableOpacity>
           </View>
 
@@ -668,7 +659,7 @@ export default function SharedInboxesPage() {
                   value={editForm.receives_demo_requests}
                   onValueChange={v => setEditForm(p => ({ ...p, receives_demo_requests: v }))}
                   trackColor={{ true: '#34C759' }}
-                  data-testid="receives-demo-toggle"
+                  {...tid('receives-demo-toggle')}
                 />
               </View>
               {editForm.receives_demo_requests && (
@@ -788,7 +779,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#007AFF20',
+    backgroundColor: '#C9A96220',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -803,7 +794,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   inboxPhone: {
     fontSize: 16,
-    color: '#007AFF',
+    color: '#C9A962',
     marginTop: 2,
   },
   inboxDescription: {
@@ -837,7 +828,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   addUserText: {
     fontSize: 16,
-    color: '#007AFF',
+    color: '#C9A962',
   },
   noUsers: {
     fontSize: 16,
@@ -882,7 +873,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   createButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#C9A962',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 12,
@@ -892,7 +883,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   createButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text,
+    color: '#000',
   },
   modalOverlay: {
     flex: 1,
@@ -942,7 +933,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#C9A962',
     borderRadius: 12,
     padding: 16,
     margin: 16,
@@ -951,7 +942,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   submitButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text,
+    color: '#000',
   },
   userSelectItem: {
     flexDirection: 'row',
@@ -964,7 +955,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#007AFF30',
+    backgroundColor: '#C9A96230',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -972,7 +963,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   userAvatarText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#C9A962',
   },
   userSelectInfo: {
     flex: 1,

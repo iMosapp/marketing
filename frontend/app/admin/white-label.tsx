@@ -7,6 +7,9 @@ import api from '../../services/api';
 import { showSimpleAlert, showConfirm } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 export default function WhiteLabelPartnersScreen() {
   const { colors } = useThemeStore();
   const s = getS(colors);
@@ -93,19 +96,11 @@ export default function WhiteLabelPartnersScreen() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.headerBtn}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>White Label Partners</Text>
-        <TouchableOpacity onPress={() => { setEditing(null); setShowForm(!showForm); }} style={s.headerBtn}>
-          <Ionicons name={showForm ? 'close' : 'add'} size={24} color="#C9A962" />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader title="White Label Partners" testID="white-label-header" right={<HeaderIconButton icon={showForm ? 'close' : 'add'} onPress={() => { setEditing(null); setShowForm(!showForm); }} testID="white-label-add-btn" />} />
 
       <ScrollView contentContainerStyle={s.scroll}>
         {showForm && (
-          <View style={s.formCard} data-testid="partner-form">
+          <View style={s.formCard} {...tid('partner-form')}>
             <Text style={s.formTitle}>{editing ? 'Edit Partner' : 'New White Label Partner'}</Text>
             {[
               { key: 'name', label: 'Partner Name', placeholder: 'Calendar Systems' },
@@ -131,7 +126,7 @@ export default function WhiteLabelPartnersScreen() {
                 value={form.commission_notes}
                 onChangeText={t => setForm({ ...form, commission_notes: t })}
                 multiline
-                data-testid="commission-notes-input"
+                {...tid('commission-notes-input')}
               />
             </View>
 
@@ -144,7 +139,7 @@ export default function WhiteLabelPartnersScreen() {
               <TouchableOpacity
                 onPress={() => setForm({ ...form, sold_workflow_enabled: !form.sold_workflow_enabled } as any)}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12, padding: 10, backgroundColor: (form as any).sold_workflow_enabled ? '#34C75915' : colors.surface, borderRadius: 8 }}
-                data-testid="sold-workflow-toggle"
+                {...tid('sold-workflow-toggle')}
               >
                 <Ionicons name={(form as any).sold_workflow_enabled ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={(form as any).sold_workflow_enabled ? '#34C759' : colors.textSecondary} />
                 <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>Enable Sold Workflow</Text>
@@ -183,7 +178,7 @@ export default function WhiteLabelPartnersScreen() {
 
                   <View style={{ borderTopWidth: 1, borderTopColor: colors.surface, paddingTop: 12, marginBottom: 8 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                      <Ionicons name="send" size={16} color="#007AFF" />
+                      <Ionicons name="send" size={16} color="#C9A962" />
                       <Text style={[s.inputLabel, { marginBottom: 0, fontSize: 15, fontWeight: '600' }]}>External Endpoint</Text>
                     </View>
                     <TouchableOpacity
@@ -233,7 +228,7 @@ export default function WhiteLabelPartnersScreen() {
             {Platform.OS === 'web' ? (
               <button
                 type="button"
-                data-testid="save-partner-btn"
+                {...tid('save-partner-btn')}
                 disabled={saving}
                 onClick={() => { handleSave(); }}
                 style={{
@@ -257,7 +252,7 @@ export default function WhiteLabelPartnersScreen() {
                 )}
               </button>
             ) : (
-              <TouchableOpacity style={s.saveBtn} onPress={handleSave} disabled={saving} data-testid="save-partner-btn">
+              <TouchableOpacity style={s.saveBtn} onPress={handleSave} disabled={saving} {...tid('save-partner-btn')}>
                 {saving ? <ActivityIndicator color={colors.text} /> : <Text style={s.saveBtnText}>{editing ? 'Update Partner' : 'Create Partner'}</Text>}
               </TouchableOpacity>
             )}
@@ -274,7 +269,7 @@ export default function WhiteLabelPartnersScreen() {
           </View>
         ) : (
           partners.map(p => (
-            <View key={p._id} style={s.partnerCard} data-testid={`partner-card-${p.slug}`}>
+            <View key={p._id} style={s.partnerCard} {...tid(`partner-card-${p.slug}`)}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
                 <View style={[s.partnerIcon, { backgroundColor: (p.primary_color || '#C9A962') + '20' }]}>
                   <Text style={[s.partnerIconText, { color: p.primary_color || '#C9A962' }]}>
@@ -293,8 +288,8 @@ export default function WhiteLabelPartnersScreen() {
                       <Text style={{ fontSize: 13, color: '#34C759', fontWeight: '600' }}>Sold Workflow Active</Text>
                       {p.event_delivery?.enabled && (
                         <>
-                          <Ionicons name="send" size={10} color="#007AFF" style={{ marginLeft: 6 }} />
-                          <Text style={{ fontSize: 13, color: '#007AFF' }}>Endpoint On</Text>
+                          <Ionicons name="send" size={10} color="#C9A962" style={{ marginLeft: 6 }} />
+                          <Text style={{ fontSize: 13, color: '#C9A962' }}>Endpoint On</Text>
                         </>
                       )}
                     </View>
@@ -306,8 +301,8 @@ export default function WhiteLabelPartnersScreen() {
               </View>
               <View style={s.partnerActions}>
                 <TouchableOpacity style={s.actionBtn} onPress={() => handleEdit(p._id)}>
-                  <Ionicons name="create-outline" size={18} color="#007AFF" />
-                  <Text style={[s.actionText, { color: '#007AFF' }]}>Edit</Text>
+                  <Ionicons name="create-outline" size={18} color="#C9A962" />
+                  <Text style={[s.actionText, { color: '#C9A962' }]}>Edit</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={s.actionBtn} onPress={() => router.push(`/admin/partner-orgs?id=${p._id}&name=${p.name}`)}>
                   <Ionicons name="business-outline" size={18} color="#C9A962" />
@@ -342,7 +337,7 @@ const getS = (colors: any) => StyleSheet.create({
   inputLabel: { fontSize: 14, fontWeight: '500', color: '#8E8E93', marginBottom: 4, marginLeft: 2 },
   input: { backgroundColor: colors.surface, borderRadius: 10, padding: 14, fontSize: 18, color: colors.text, borderWidth: 1, borderColor: colors.borderLight },
   saveBtn: { backgroundColor: '#C9A962', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 8 },
-  saveBtnText: { fontSize: 18, fontWeight: '700', color: colors.text },
+  saveBtnText: { fontSize: 18, fontWeight: '700', color: '#000' },
   empty: { alignItems: 'center', paddingVertical: 60 },
   emptyText: { fontSize: 19, color: '#8E8E93', marginTop: 12 },
   emptySub: { fontSize: 16, color: colors.textSecondary, marginTop: 4 },

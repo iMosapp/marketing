@@ -22,6 +22,9 @@ import { WebSafeButton } from '../../components/WebSafeButton';
 
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 export default function OrganizationsScreen() {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
@@ -241,21 +244,7 @@ export default function OrganizationsScreen() {
   
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Organizations</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity onPress={() => setShowSearch(!showSearch)} style={styles.searchButton}>
-            <Ionicons name="search" size={24} color="#007AFF" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowCreateModal(true)} style={styles.addButton}>
-            <Ionicons name="add-circle" size={32} color="#007AFF" />
-          </TouchableOpacity>
-        </View>
-      </View>
+      <ScreenHeader title="Organizations" testID="organizations-header" right={<View style={{ flexDirection: 'row' }}><HeaderIconButton icon="search" onPress={() => setShowSearch(!showSearch)} testID="organizations-search-btn" /><HeaderIconButton icon="add-circle" onPress={() => setShowCreateModal(true)} testID="organizations-add-btn" /></View>} />
       
       {/* Search Bar */}
       {showSearch && (
@@ -289,7 +278,7 @@ export default function OrganizationsScreen() {
       {/* List */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color="#C9A962" />
         </View>
       ) : (
         <FlatList
@@ -298,7 +287,7 @@ export default function OrganizationsScreen() {
           keyExtractor={(item) => item._id}
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#007AFF" />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#C9A962" />
           }
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
@@ -487,7 +476,7 @@ export default function OrganizationsScreen() {
                   <TouchableOpacity
                     style={styles.input}
                     onPress={() => setShowPartnerPicker(!showPartnerPicker)}
-                    data-testid="partner-dropdown-toggle"
+                    {...tid('partner-dropdown-toggle')}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                       <Text style={{ fontSize: 18, color: newOrg.partner_id ? colors.text : colors.textSecondary }}>
@@ -503,9 +492,9 @@ export default function OrganizationsScreen() {
                       <TouchableOpacity
                         style={[styles.partnerPickerItem, !newOrg.partner_id && styles.partnerPickerItemActive]}
                         onPress={() => { setNewOrg({ ...newOrg, partner_id: '' }); setShowPartnerPicker(false); }}
-                        data-testid="partner-option-none"
+                        {...tid('partner-option-none')}
                       >
-                        <Text style={[styles.partnerPickerText, !newOrg.partner_id && { color: '#007AFF', fontWeight: '600' }]}>
+                        <Text style={[styles.partnerPickerText, !newOrg.partner_id && { color: '#C9A962', fontWeight: '600' }]}>
                           None (No Partner)
                         </Text>
                       </TouchableOpacity>
@@ -514,9 +503,9 @@ export default function OrganizationsScreen() {
                           key={p._id}
                           style={[styles.partnerPickerItem, newOrg.partner_id === p._id && styles.partnerPickerItemActive]}
                           onPress={() => { setNewOrg({ ...newOrg, partner_id: p._id }); setShowPartnerPicker(false); }}
-                          data-testid={`partner-option-${p._id}`}
+                          {...tid(`partner-option-${p._id}`)}
                         >
-                          <Text style={[styles.partnerPickerText, newOrg.partner_id === p._id && { color: '#007AFF', fontWeight: '600' }]}>
+                          <Text style={[styles.partnerPickerText, newOrg.partner_id === p._id && { color: '#C9A962', fontWeight: '600' }]}>
                             {p.name}
                           </Text>
                         </TouchableOpacity>
@@ -681,7 +670,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 24,
   },
   createButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#C9A962',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
@@ -689,7 +678,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   createButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text,
+    color: '#000',
   },
   // Modal styles
   modalContainer: {
@@ -706,7 +695,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   modalCancel: {
     fontSize: 18,
-    color: '#007AFF',
+    color: '#C9A962',
   },
   modalTitle: {
     fontSize: 18,
@@ -716,7 +705,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   modalSave: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#C9A962',
   },
   modalContent: {
     padding: 16,
@@ -754,8 +743,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: colors.surface,
   },
   typeButtonActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: '#C9A962',
+    borderColor: '#C9A962',
   },
   typeText: {
     fontSize: 16,
@@ -763,7 +752,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.textSecondary,
   },
   typeTextActive: {
-    color: colors.text,
+    color: '#000',
   },
   row: {
     flexDirection: 'row',
@@ -787,7 +776,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   partnerPickerItemActive: {
-    backgroundColor: '#007AFF10',
+    backgroundColor: '#C9A96210',
   },
   partnerPickerText: {
     fontSize: 18,

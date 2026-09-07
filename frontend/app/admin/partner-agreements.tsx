@@ -18,6 +18,9 @@ import { showSimpleAlert } from '../../services/alert';
 import { WebModal } from '../../components/WebModal';
 
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 interface Template {
   id: string;
   name: string;
@@ -163,7 +166,7 @@ export default function PartnerAgreementsScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color="#C9A962" />
       </View>
     );
   }
@@ -172,13 +175,7 @@ export default function PartnerAgreementsScreen() {
   if (user?.role !== 'super_admin') {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={24} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Partner Agreements</Text>
-          <View style={{ width: 40 }} />
-        </View>
+        <ScreenHeader title="Partner Agreements" testID="partner-agreements-header" />
         <View style={styles.accessDenied}>
           <Ionicons name="lock-closed" size={64} color={colors.textSecondary} />
           <Text style={styles.accessDeniedText}>Super Admin Access Required</Text>
@@ -190,18 +187,7 @@ export default function PartnerAgreementsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Partner Agreements</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setShowCreateModal(true)}
-        >
-          <Ionicons name="add" size={24} color="#007AFF" />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader title="Partner Agreements" testID="partner-agreements-header" right={<HeaderIconButton icon="add" onPress={() => setShowCreateModal(true)} testID="partner-agreements-add-btn" />} />
 
       <ScrollView style={styles.content}>
         {/* Stats */}
@@ -284,7 +270,7 @@ export default function PartnerAgreementsScreen() {
               key={agreement.id}
               style={styles.agreementCard}
               onPress={() => router.push(`/admin/partner-agreement/${agreement.id}`)}
-              data-testid={`agreement-${agreement.id}`}
+              {...tid(`agreement-${agreement.id}`)}
             >
               <View style={styles.agreementHeader}>
                 <View style={{ flex: 1 }}>
@@ -334,7 +320,7 @@ export default function PartnerAgreementsScreen() {
                   {agreement.signed_at && ` · Signed ${new Date(agreement.signed_at).toLocaleDateString()}`}
                 </Text>
                 <TouchableOpacity onPress={() => copyLink(agreement.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Ionicons name="link" size={20} color="#007AFF" />
+                  <Ionicons name="link" size={20} color="#C9A962" />
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
@@ -369,7 +355,7 @@ export default function PartnerAgreementsScreen() {
                       showSimpleAlert('Copied!', 'Link copied to clipboard');
                     }}
                   >
-                    <Ionicons name="copy" size={24} color="#007AFF" />
+                    <Ionicons name="copy" size={24} color="#C9A962" />
                   </TouchableOpacity>
                 </View>
                 
@@ -397,7 +383,7 @@ export default function PartnerAgreementsScreen() {
                       <Ionicons 
                         name={template.type === 'reseller' ? 'storefront' : 'people'} 
                         size={24} 
-                        color={selectedTemplate?.id === template.id ? '#007AFF' : colors.textSecondary} 
+                        color={selectedTemplate?.id === template.id ? '#C9A962' : colors.textSecondary} 
                       />
                       <Text style={[
                         styles.templateOptionText,
@@ -455,7 +441,7 @@ export default function PartnerAgreementsScreen() {
                       placeholder="e.g., 15% of MRR for first 12 months, then 10% ongoing. $50 flat per account + 5% of add-ons."
                       placeholderTextColor={colors.textSecondary}
                       multiline
-                      data-testid="custom-commission-notes"
+                      {...tid('custom-commission-notes')}
                     />
                     <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: -8, marginBottom: 4 }}>
                       Describe the full commission deal. This overrides or supplements the tier above.
@@ -466,7 +452,7 @@ export default function PartnerAgreementsScreen() {
                 {/* Custom Exhibit A Terms */}
                 {selectedTemplate && (
                   <>
-                    <Text style={styles.formLabel}>Exhibit A — Custom Terms (Optional)</Text>
+                    <Text style={styles.formLabel}>Exhibit A: Custom Terms (Optional)</Text>
                     <TextInput
                       style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]}
                       value={customTerms}
@@ -474,10 +460,10 @@ export default function PartnerAgreementsScreen() {
                       placeholder="e.g., Special deal: 18-month commission guarantee. Exclusive territory: Utah."
                       placeholderTextColor={colors.textSecondary}
                       multiline
-                      data-testid="custom-terms"
+                      {...tid('custom-terms')}
                     />
                     <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: -8, marginBottom: 4 }}>
-                      Appears in Exhibit A as "Special Terms" — visible to partner when signing.
+                      Appears in Exhibit A as "Special Terms", visible to the partner when signing.
                     </Text>
 
                     <Text style={styles.formLabel}>Commission Duration</Text>
@@ -544,7 +530,7 @@ export default function PartnerAgreementsScreen() {
                 <TouchableOpacity
                   style={styles.paymentToggle}
                   onPress={() => setIsWhiteLabel(!isWhiteLabel)}
-                  data-testid="white-label-toggle"
+                  {...tid('white-label-toggle')}
                 >
                   <View style={[styles.checkbox, isWhiteLabel && { backgroundColor: '#C9A962', borderColor: '#C9A962' }]}>
                     {isWhiteLabel && <Ionicons name="checkmark" size={16} color="#000" />}
@@ -562,7 +548,7 @@ export default function PartnerAgreementsScreen() {
                   disabled={!selectedTemplate || !selectedTier || creating}
                 >
                   {creating ? (
-                    <ActivityIndicator color={colors.text} />
+                    <ActivityIndicator color="#000" />
                   ) : (
                     <>
                       <Ionicons name="document-text" size={20} color={colors.text} />
@@ -707,7 +693,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   agreementTier: {
     fontSize: 15,
-    color: '#007AFF',
+    color: '#C9A962',
     marginTop: 12,
   },
   agreementCustomCommission: {
@@ -778,8 +764,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: 'transparent',
   },
   templateOptionSelected: {
-    borderColor: '#007AFF',
-    backgroundColor: '#007AFF20',
+    borderColor: '#C9A962',
+    backgroundColor: '#C9A96220',
   },
   templateOptionText: {
     fontSize: 16,
@@ -788,7 +774,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     textAlign: 'center',
   },
   templateOptionTextSelected: {
-    color: '#007AFF',
+    color: '#C9A962',
     fontWeight: '600',
   },
   tierScroll: {
@@ -853,8 +839,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 12,
   },
   checkboxChecked: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: '#C9A962',
+    borderColor: '#C9A962',
   },
   paymentToggleText: {
     fontSize: 18,
@@ -878,7 +864,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#C9A962',
     borderRadius: 12,
     padding: 16,
     marginTop: 24,
@@ -891,7 +877,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   createButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text,
+    color: '#000',
   },
   successContent: {
     alignItems: 'center',
@@ -924,7 +910,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 12,
   },
   doneButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#C9A962',
     borderRadius: 12,
     padding: 16,
     width: '100%',
@@ -934,6 +920,6 @@ const getStyles = (colors: any) => StyleSheet.create({
   doneButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text,
+    color: '#000',
   },
 });

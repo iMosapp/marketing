@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import api from '../../services/api';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
 
 type Action = {
   id: string;
@@ -80,7 +81,7 @@ const ACTIONS: Action[] = [
     icon: 'shield',
     title: 'Internal i\'M On Social Employee',
     desc: 'Add an internal team member with admin privileges',
-    color: '#007AFF',
+    color: '#C9A962',
     route: '/admin/setup-wizard',
     roles: ['super_admin'],
   },
@@ -128,18 +129,9 @@ export default function OnboardingHub() {
   };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+      <ScreenHeader title="Onboarding Hub" subtitle="All account creation in one place" testID="onboarding-hub-header" />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={22} color={colors.text} />
-          </TouchableOpacity>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.title, { color: colors.text }]}>Onboarding Hub</Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>All account creation in one place</Text>
-          </View>
-        </View>
 
         {/* Quick Actions */}
         <Text style={[styles.sectionTitle, { color: colors.text }]}>What do you need to do?</Text>
@@ -208,8 +200,8 @@ export default function OnboardingHub() {
             <Text style={[styles.sectionTitle, { color: colors.text, marginTop: 24 }]}>Recently Added Users</Text>
             {recentAccounts.map((u: any, i: number) => (
               <View key={i} style={[styles.recentRow, { backgroundColor: colors.card, borderColor: colors.surface }]}>
-                <View style={[styles.recentAvatar, { backgroundColor: '#007AFF20' }]}>
-                  <Text style={{ color: '#007AFF', fontWeight: '700', fontSize: 15 }}>
+                <View style={[styles.recentAvatar, { backgroundColor: '#C9A96220' }]}>
+                  <Text style={{ color: '#C9A962', fontWeight: '700', fontSize: 15 }}>
                     {(u.name || u.email || '?')[0].toUpperCase()}
                   </Text>
                 </View>

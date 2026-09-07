@@ -4,9 +4,13 @@ import {
   ActivityIndicator, Platform, useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useThemeStore } from '../../store/themeStore';
 import api from '../../services/api';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 
 const PERIODS = [
   { label: '7d', days: 7 },
@@ -88,20 +92,8 @@ export default function LeadTrackingDashboard() {
   const maxBarVal = data?.by_page?.length ? Math.max(...data.by_page.map(p => p.count)) : 1;
 
   return (
-    <View style={[s.container, { backgroundColor: colors.bg }]}>
-      {/* Header */}
-      <View style={[s.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={[s.backBtn, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }]} data-testid="lead-tracking-back">
-          <Ionicons name="arrow-back" size={22} color={colors.text} />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={[s.title, { color: colors.text }]}>Lead Tracking</Text>
-          <Text style={[s.subtitle, { color: colors.textSecondary }]}>Demo requests & attribution</Text>
-        </View>
-        <TouchableOpacity onPress={fetchData} style={s.refreshBtn} data-testid="lead-tracking-refresh">
-          <Ionicons name="refresh" size={18} color="#007AFF" />
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={[s.container, { backgroundColor: colors.bg }]} edges={['top']}>
+      <ScreenHeader title="Lead Tracking" subtitle="Demo requests and attribution" testID="lead-tracking-header" right={<HeaderIconButton icon="refresh" onPress={fetchData} testID="lead-tracking-refresh" />} />
 
       {/* Period Tabs */}
       <View style={s.periodRow}>
@@ -110,7 +102,7 @@ export default function LeadTrackingDashboard() {
             key={p.days}
             style={[s.periodTab, { backgroundColor: colors.card }, period === p.days && s.periodTabActive]}
             onPress={() => setPeriod(p.days)}
-            data-testid={`period-${p.label}`}
+            {...tid(`period-${p.label}`)}
           >
             <Text style={[s.periodText, { color: colors.textSecondary }, period === p.days && s.periodTextActive]}>{p.label}</Text>
           </TouchableOpacity>
@@ -118,7 +110,7 @@ export default function LeadTrackingDashboard() {
       </View>
 
       {loading ? (
-        <View style={s.loadingWrap}><ActivityIndicator size="large" color="#007AFF" /></View>
+        <View style={s.loadingWrap}><ActivityIndicator size="large" color="#C9A962" /></View>
       ) : !data ? (
         <View style={s.loadingWrap}><Text style={{ color: colors.textSecondary }}>No data available</Text></View>
       ) : (
@@ -143,14 +135,14 @@ export default function LeadTrackingDashboard() {
             <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Text style={[s.cardLabel, { color: colors.textSecondary }]}>Top Page</Text>
               <Text style={[s.cardValue, { color: colors.text, fontSize: 19 }]}>{topPage ? formatPage(topPage.page) : '-'}</Text>
-              <Text style={{ fontSize: 14, color: '#007AFF', fontWeight: '600', marginTop: 4 }}>{topPage?.count || 0} requests</Text>
+              <Text style={{ fontSize: 14, color: '#C9A962', fontWeight: '600', marginTop: 4 }}>{topPage?.count || 0} requests</Text>
             </View>
             <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Text style={[s.cardLabel, { color: colors.textSecondary }]}>Top Channel</Text>
               <Text style={[s.cardValue, { color: colors.text, fontSize: 19 }]}>
                 {topChannel ? (CHANNEL_LABELS[topChannel.channel]?.label || topChannel.channel) : '-'}
               </Text>
-              <Text style={{ fontSize: 14, color: '#007AFF', fontWeight: '600', marginTop: 4 }}>{topChannel?.count || 0} requests</Text>
+              <Text style={{ fontSize: 14, color: '#C9A962', fontWeight: '600', marginTop: 4 }}>{topChannel?.count || 0} requests</Text>
             </View>
           </View>
 
@@ -209,7 +201,7 @@ export default function LeadTrackingDashboard() {
               <View style={[s.posGrid, isWide && { flexDirection: 'row' }]}>
                 {data.by_position.map((pos, i) => {
                   const icons: Record<string, string> = { nav: 'menu', hero: 'flag', cta: 'megaphone', footer: 'reorder-four', direct: 'link' };
-                  const posColors: Record<string, string> = { nav: '#007AFF', hero: '#FF9500', cta: '#34C759', footer: '#AF52DE', direct: '#8E8E93' };
+                  const posColors: Record<string, string> = { nav: '#C9A962', hero: '#FF9500', cta: '#34C759', footer: '#AF52DE', direct: '#8E8E93' };
                   return (
                     <View key={i} style={[s.posCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                       <Ionicons name={(icons[pos.position] || 'ellipse') as any} size={20} color={posColors[pos.position] || '#8E8E93'} />
@@ -241,7 +233,7 @@ export default function LeadTrackingDashboard() {
               <View style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginTop: 12, borderWidth: 1, borderColor: colors.border }}>
                 <Text style={{ fontSize: 15, color: colors.textSecondary, lineHeight: 20 }}>
                   Example ad link:{'\n'}
-                  <Text style={{ fontFamily: Platform.OS === 'web' ? 'monospace' : undefined, color: '#007AFF', fontSize: 14 }}>
+                  <Text style={{ fontFamily: Platform.OS === 'web' ? 'monospace' : undefined, color: '#C9A962', fontSize: 14 }}>
                     imonsocial.com/demo/?utm_source=facebook&utm_medium=paid_social&utm_campaign=spring_launch
                   </Text>
                 </Text>
@@ -252,7 +244,7 @@ export default function LeadTrackingDashboard() {
                   <Text style={[s.campaignName, { color: colors.text }]}>{c.campaign}</Text>
                   <Text style={{ fontSize: 14, color: colors.textSecondary }}>{c.utm_source} / {c.utm_medium}</Text>
                 </View>
-                <Text style={[s.campaignCount, { color: '#007AFF' }]}>{c.count}</Text>
+                <Text style={[s.campaignCount, { color: '#C9A962' }]}>{c.count}</Text>
               </View>
             ))}
           </View>
@@ -273,7 +265,7 @@ export default function LeadTrackingDashboard() {
                 : 'Leads attributed to specific people and partners'}
             </Text>
             {data.by_referrer && data.by_referrer.length > 0 ? data.by_referrer.map((ref: any, i: number) => {
-              const typeColors: Record<string, string> = { user: '#007AFF', partner: '#AF52DE', reseller: '#FF9500', internal: '#34C759', referral: '#FF2D55' };
+              const typeColors: Record<string, string> = { user: '#C9A962', partner: '#AF52DE', reseller: '#FF9500', internal: '#34C759', referral: '#FF2D55' };
               return (
                 <View key={i} style={[s.requestRow, { borderBottomColor: colors.border }]}>
                   <View style={{ flex: 1 }}>
@@ -284,7 +276,7 @@ export default function LeadTrackingDashboard() {
                     <View style={[s.statusBadge, { backgroundColor: (typeColors[ref.type] || '#8E8E93') + '18' }]}>
                       <Text style={{ fontSize: 12, fontWeight: '700', color: typeColors[ref.type] || '#8E8E93' }}>{(ref.type || 'user').toUpperCase()}</Text>
                     </View>
-                    <Text style={[s.campaignCount, { color: '#007AFF' }]}>{ref.count}</Text>
+                    <Text style={[s.campaignCount, { color: '#C9A962' }]}>{ref.count}</Text>
                   </View>
                 </View>
               );
@@ -326,7 +318,7 @@ export default function LeadTrackingDashboard() {
           <View style={{ height: 40 }} />
         </ScrollView>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -336,10 +328,10 @@ const s = StyleSheet.create({
   backBtn: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 22, fontWeight: '800' },
   subtitle: { fontSize: 15, marginTop: 2 },
-  refreshBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#007AFF12', alignItems: 'center', justifyContent: 'center' },
+  refreshBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#C9A96212', alignItems: 'center', justifyContent: 'center' },
   periodRow: { flexDirection: 'row', paddingHorizontal: 16, gap: 8, marginBottom: 16 },
   periodTab: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
-  periodTabActive: { backgroundColor: '#007AFF' },
+  periodTabActive: { backgroundColor: '#C9A962' },
   periodText: { fontSize: 15, fontWeight: '600' },
   periodTextActive: { color: '#FFF' },
   loadingWrap: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -361,7 +353,7 @@ const s = StyleSheet.create({
   pageRank: { fontSize: 16, fontWeight: '700', width: 20, textAlign: 'center' },
   pageLabel: { fontSize: 16, fontWeight: '500', marginBottom: 4 },
   pageBarTrack: { height: 4, borderRadius: 2, backgroundColor: '#F0F0F5', overflow: 'hidden' },
-  pageBarFill: { height: '100%', borderRadius: 2, backgroundColor: '#007AFF' },
+  pageBarFill: { height: '100%', borderRadius: 2, backgroundColor: '#C9A962' },
   pageCount: { fontSize: 17, fontWeight: '700', width: 36, textAlign: 'right' },
   posGrid: { gap: 10, flexWrap: 'wrap' },
   posCard: { flex: 1, minWidth: 100, alignItems: 'center', padding: 16, borderRadius: 14, borderWidth: 1, gap: 6 },

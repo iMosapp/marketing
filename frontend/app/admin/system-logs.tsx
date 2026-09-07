@@ -9,6 +9,9 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 
 const LEVEL_COLOR: Record<string, string> = {
   error:   '#FF3B30',
@@ -82,7 +85,7 @@ export default function SystemLogsScreen() {
         onPress={() => setExpanded(isExpanded ? null : item._id)}
         style={[s.logCard, { backgroundColor: colors.card, borderLeftColor: color }]}
         activeOpacity={0.8}
-        data-testid={`log-${item._id}`}
+        {...tid(`log-${item._id}`)}
       >
         {/* Header row */}
         <View style={s.logHeader}>
@@ -90,7 +93,7 @@ export default function SystemLogsScreen() {
             <Text style={[s.levelText, { color }]}>{(item.level || '').toUpperCase()}</Text>
           </View>
           <View style={[s.catBadge, { backgroundColor: colors.surface }]}>
-            <Text style={[s.catText, { color: colors.textSecondary }]}>{item.category || '—'}</Text>
+            <Text style={[s.catText, { color: colors.textSecondary }]}>{item.category || '-'}</Text>
           </View>
           <Text style={[s.timeText, { color: colors.textTertiary }]}>{timeAgo(item.timestamp)}</Text>
           <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={colors.textSecondary} />
@@ -123,16 +126,7 @@ export default function SystemLogsScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: colors.bg }]} edges={['top']}>
-      {/* Header */}
-      <View style={[s.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[s.title, { color: colors.text }]}>System Logs</Text>
-        <TouchableOpacity onPress={clearLogs} style={s.clearBtn}>
-          <Text style={{ fontSize: 13, color: '#FF3B30', fontWeight: '600' }}>Clear</Text>
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader title="System Logs" testID="system-logs-header" right={<HeaderTextButton label="Clear" onPress={clearLogs} color="#FF3B30" testID="system-logs-clear" />} />
 
       {/* Count pills */}
       <View style={s.statsRow}>
@@ -145,7 +139,7 @@ export default function SystemLogsScreen() {
               key={lvl}
               onPress={() => { setLevelFilter(lvl); setTimeout(() => load(), 50); }}
               style={[s.pill, { backgroundColor: active ? col : colors.card, borderColor: col + '60' }]}
-              data-testid={`log-filter-${lvl}`}
+              {...tid(`log-filter-${lvl}`)}
             >
               <Text style={{ fontSize: 12, fontWeight: '700', color: active ? '#fff' : col }}>
                 {lvl === 'all' ? 'All' : lvl.charAt(0).toUpperCase() + lvl.slice(1)} {cnt > 0 ? `(${cnt})` : ''}
@@ -177,7 +171,7 @@ export default function SystemLogsScreen() {
       ) : logs.length === 0 ? (
         <View style={s.center}>
           <Ionicons name="checkmark-circle" size={48} color="#34C759" />
-          <Text style={[s.emptyText, { color: colors.text }]}>No logs — everything is clean</Text>
+          <Text style={[s.emptyText, { color: colors.text }]}>No logs. Everything is clean</Text>
         </View>
       ) : (
         <FlatList

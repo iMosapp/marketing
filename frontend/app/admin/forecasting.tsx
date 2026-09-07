@@ -14,6 +14,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 interface MonthlyData {
   month: number;
   year: number;
@@ -277,14 +280,7 @@ export default function ForecastingScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Revenue Forecast</Text>
-        <View style={{ width: 28 }} />
-      </View>
+      <ScreenHeader title="Revenue Forecast" testID="forecasting-header" />
 
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -309,7 +305,7 @@ export default function ForecastingScreen() {
                     forecastPeriod === period.months && styles.periodButtonActive
                   ]}
                   onPress={() => setForecastPeriod(period.months)}
-                  data-testid={`period-${period.months}`}
+                  {...tid(`period-${period.months}`)}
                 >
                   <Text style={[
                     styles.periodButtonText,
@@ -388,7 +384,7 @@ export default function ForecastingScreen() {
             <StatCard
               label="Company Retained"
               value={formatCurrency(grandTotals.totalRetained)}
-              color="#007AFF"
+              color="#C9A962"
             />
           </View>
           
@@ -431,7 +427,7 @@ export default function ForecastingScreen() {
                   </View>
                   <View style={styles.yearStatItem}>
                     <Text style={styles.yearStatLabel}>Retained</Text>
-                    <Text style={[styles.yearStatValue, { color: '#007AFF' }]}>
+                    <Text style={[styles.yearStatValue, { color: '#C9A962' }]}>
                       {formatCurrency(yearData.totalRetained)}
                     </Text>
                   </View>
@@ -749,7 +745,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: '#FF9500',
   },
   blueText: {
-    color: '#007AFF',
+    color: '#C9A962',
   },
   purpleText: {
     color: '#AF52DE',
@@ -829,7 +825,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.textSecondary,
   },
   periodButtonTextActive: {
-    color: colors.text,
+    color: '#000',
   },
   // Year breakdown card styles
   yearBreakdownCard: {

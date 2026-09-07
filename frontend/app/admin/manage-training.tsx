@@ -9,6 +9,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import api from '../../services/api';
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 
 interface Track {
   id: string; slug: string; title: string; description: string;
@@ -58,7 +61,7 @@ export default function ManageTrainingPage() {
   const [showNewTrack, setShowNewTrack] = useState(false);
   const [newTrackTitle, setNewTrackTitle] = useState('');
   const [newTrackDesc, setNewTrackDesc] = useState('');
-  const [newTrackColor, setNewTrackColor] = useState('#007AFF');
+  const [newTrackColor, setNewTrackColor] = useState('#C9A962');
   const [newTrackRoles, setNewTrackRoles] = useState<string[]>([]);
 
   // New lesson form
@@ -96,7 +99,7 @@ export default function ManageTrainingPage() {
     setEditingTrack(t);
     setEditTitle(t.title);
     setEditDesc(t.description);
-    setEditColor(t.color || '#007AFF');
+    setEditColor(t.color || '#C9A962');
     setEditRoles(t.roles || []);
   };
 
@@ -197,36 +200,28 @@ export default function ManageTrainingPage() {
   if (editingLesson) {
     return (
       <SafeAreaView style={s.container} edges={['top']}>
-        <View style={s.header}>
-          <TouchableOpacity onPress={() => setEditingLesson(null)} style={s.backBtn}>
-            <Ionicons name="close" size={22} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={s.headerTitle}>Edit Lesson</Text>
-          <TouchableOpacity onPress={saveLesson} disabled={saving} style={s.saveBtn} data-testid="save-lesson-btn">
-            <Text style={s.saveBtnText}>{saving ? 'Saving...' : 'Save'}</Text>
-          </TouchableOpacity>
-        </View>
+        <ScreenHeader title="Edit Lesson" onBack={() => setEditingLesson(null)} testID="edit-lesson-header" right={<HeaderTextButton label={saving ? 'Saving...' : 'Save'} onPress={saveLesson} disabled={saving} testID="save-lesson-btn" />} />
         <ScrollView contentContainerStyle={s.formContent} keyboardShouldPersistTaps="handled">
           <Text style={s.label}>Title</Text>
-          <TextInput style={s.input} value={lessonForm.title} onChangeText={v => setLessonForm(p => ({ ...p, title: v }))} placeholder="Lesson title" placeholderTextColor={colors.textTertiary} data-testid="lesson-title-input" />
+          <TextInput style={s.input} value={lessonForm.title} onChangeText={v => setLessonForm(p => ({ ...p, title: v }))} placeholder="Lesson title" placeholderTextColor={colors.textTertiary} {...tid('lesson-title-input')} />
 
           <Text style={s.label}>Description</Text>
-          <TextInput style={s.input} value={lessonForm.description} onChangeText={v => setLessonForm(p => ({ ...p, description: v }))} placeholder="Short description" placeholderTextColor={colors.textTertiary} data-testid="lesson-desc-input" />
+          <TextInput style={s.input} value={lessonForm.description} onChangeText={v => setLessonForm(p => ({ ...p, description: v }))} placeholder="Short description" placeholderTextColor={colors.textTertiary} {...tid('lesson-desc-input')} />
 
           <Text style={s.label}>Duration</Text>
-          <TextInput style={s.input} value={lessonForm.duration} onChangeText={v => setLessonForm(p => ({ ...p, duration: v }))} placeholder="e.g. 5 min" placeholderTextColor={colors.textTertiary} data-testid="lesson-duration-input" />
+          <TextInput style={s.input} value={lessonForm.duration} onChangeText={v => setLessonForm(p => ({ ...p, duration: v }))} placeholder="e.g. 5 min" placeholderTextColor={colors.textTertiary} {...tid('lesson-duration-input')} />
 
           <Text style={s.label}>Video URL (optional)</Text>
           <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 6 }}>
             Paste any YouTube, Vimeo, or Loom URL. YouTube videos play embedded inside the lesson (no app switching). Other URLs open in browser.
           </Text>
-          <TextInput style={s.input} value={lessonForm.video_url} onChangeText={v => setLessonForm(p => ({ ...p, video_url: v }))} placeholder="https://www.youtube.com/watch?v=..." placeholderTextColor={colors.textTertiary} data-testid="lesson-video-input" autoCapitalize="none" autoCorrect={false} />
+          <TextInput style={s.input} value={lessonForm.video_url} onChangeText={v => setLessonForm(p => ({ ...p, video_url: v }))} placeholder="https://www.youtube.com/watch?v=..." placeholderTextColor={colors.textTertiary} {...tid('lesson-video-input')} autoCapitalize="none" autoCorrect={false} />
 
           <Text style={s.label}>Content (Markdown)</Text>
-          <TextInput style={[s.input, s.textArea]} value={lessonForm.content} onChangeText={v => setLessonForm(p => ({ ...p, content: v }))} placeholder="Lesson content in Markdown..." placeholderTextColor={colors.textTertiary} multiline numberOfLines={12} textAlignVertical="top" data-testid="lesson-content-input" />
+          <TextInput style={[s.input, s.textArea]} value={lessonForm.content} onChangeText={v => setLessonForm(p => ({ ...p, content: v }))} placeholder="Lesson content in Markdown..." placeholderTextColor={colors.textTertiary} multiline numberOfLines={12} textAlignVertical="top" {...tid('lesson-content-input')} />
 
           <Text style={s.label}>Action Steps (one per line)</Text>
-          <TextInput style={[s.input, s.textArea, { minHeight: 100 }]} value={lessonForm.steps} onChangeText={v => setLessonForm(p => ({ ...p, steps: v }))} placeholder="Step 1&#10;Step 2&#10;Step 3" placeholderTextColor={colors.textTertiary} multiline numberOfLines={5} textAlignVertical="top" data-testid="lesson-steps-input" />
+          <TextInput style={[s.input, s.textArea, { minHeight: 100 }]} value={lessonForm.steps} onChangeText={v => setLessonForm(p => ({ ...p, steps: v }))} placeholder="Step 1&#10;Step 2&#10;Step 3" placeholderTextColor={colors.textTertiary} multiline numberOfLines={5} textAlignVertical="top" {...tid('lesson-steps-input')} />
         </ScrollView>
       </SafeAreaView>
     );
@@ -236,25 +231,17 @@ export default function ManageTrainingPage() {
   if (editingTrack) {
     return (
       <SafeAreaView style={s.container} edges={['top']}>
-        <View style={s.header}>
-          <TouchableOpacity onPress={() => setEditingTrack(null)} style={s.backBtn}>
-            <Ionicons name="close" size={22} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={s.headerTitle}>Edit Track</Text>
-          <TouchableOpacity onPress={saveTrack} disabled={saving} style={s.saveBtn} data-testid="save-track-btn">
-            <Text style={s.saveBtnText}>{saving ? 'Saving...' : 'Save'}</Text>
-          </TouchableOpacity>
-        </View>
+        <ScreenHeader title="Edit Track" onBack={() => setEditingTrack(null)} testID="edit-track-header" right={<HeaderTextButton label={saving ? 'Saving...' : 'Save'} onPress={saveTrack} disabled={saving} testID="save-track-btn" />} />
         <ScrollView contentContainerStyle={s.formContent} keyboardShouldPersistTaps="handled">
           <Text style={s.label}>Title</Text>
-          <TextInput style={s.input} value={editTitle} onChangeText={setEditTitle} placeholderTextColor={colors.textTertiary} data-testid="track-title-input" />
+          <TextInput style={s.input} value={editTitle} onChangeText={setEditTitle} placeholderTextColor={colors.textTertiary} {...tid('track-title-input')} />
 
           <Text style={s.label}>Description</Text>
-          <TextInput style={[s.input, { minHeight: 80 }]} value={editDesc} onChangeText={setEditDesc} multiline placeholderTextColor={colors.textTertiary} data-testid="track-desc-input" />
+          <TextInput style={[s.input, { minHeight: 80 }]} value={editDesc} onChangeText={setEditDesc} multiline placeholderTextColor={colors.textTertiary} {...tid('track-desc-input')} />
 
           <Text style={s.label}>Color</Text>
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-            {['#007AFF', '#C9A962', '#34C759', '#AF52DE', '#FF3B30', '#FF9500', '#5AC8FA', '#FF2D55'].map(c => (
+            {['#C9A962', '#007AFF', '#34C759', '#AF52DE', '#FF3B30', '#FF9500', '#5AC8FA', '#FF2D55'].map(c => (
               <TouchableOpacity key={c} onPress={() => setEditColor(c)}
                 style={[s.colorDot, { backgroundColor: c, borderWidth: editColor === c ? 3 : 0, borderColor: '#FFF' }]} />
             ))}
@@ -278,25 +265,17 @@ export default function ManageTrainingPage() {
   if (showNewTrack) {
     return (
       <SafeAreaView style={s.container} edges={['top']}>
-        <View style={s.header}>
-          <TouchableOpacity onPress={() => setShowNewTrack(false)} style={s.backBtn}>
-            <Ionicons name="close" size={22} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={s.headerTitle}>New Track</Text>
-          <TouchableOpacity onPress={createTrack} disabled={saving || !newTrackTitle.trim()} style={s.saveBtn} data-testid="create-track-btn">
-            <Text style={s.saveBtnText}>{saving ? 'Creating...' : 'Create'}</Text>
-          </TouchableOpacity>
-        </View>
+        <ScreenHeader title="New Track" onBack={() => setShowNewTrack(false)} testID="new-track-header" right={<HeaderTextButton label={saving ? 'Creating...' : 'Create'} onPress={createTrack} disabled={saving || !newTrackTitle.trim()} testID="create-track-btn" />} />
         <ScrollView contentContainerStyle={s.formContent} keyboardShouldPersistTaps="handled">
           <Text style={s.label}>Track Title</Text>
-          <TextInput style={s.input} value={newTrackTitle} onChangeText={setNewTrackTitle} placeholder="e.g. Service Advisor Training" placeholderTextColor={colors.textTertiary} data-testid="new-track-title-input" />
+          <TextInput style={s.input} value={newTrackTitle} onChangeText={setNewTrackTitle} placeholder="e.g. Service Advisor Training" placeholderTextColor={colors.textTertiary} {...tid('new-track-title-input')} />
 
           <Text style={s.label}>Description</Text>
-          <TextInput style={[s.input, { minHeight: 80 }]} value={newTrackDesc} onChangeText={setNewTrackDesc} placeholder="What this track covers..." multiline placeholderTextColor={colors.textTertiary} data-testid="new-track-desc-input" />
+          <TextInput style={[s.input, { minHeight: 80 }]} value={newTrackDesc} onChangeText={setNewTrackDesc} placeholder="What this track covers..." multiline placeholderTextColor={colors.textTertiary} {...tid('new-track-desc-input')} />
 
           <Text style={s.label}>Color</Text>
           <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-            {['#007AFF', '#C9A962', '#34C759', '#AF52DE', '#FF3B30', '#FF9500', '#5AC8FA', '#FF2D55'].map(c => (
+            {['#C9A962', '#007AFF', '#34C759', '#AF52DE', '#FF3B30', '#FF9500', '#5AC8FA', '#FF2D55'].map(c => (
               <TouchableOpacity key={c} onPress={() => setNewTrackColor(c)}
                 style={[s.colorDot, { backgroundColor: c, borderWidth: newTrackColor === c ? 3 : 0, borderColor: '#FFF' }]} />
             ))}
@@ -325,15 +304,7 @@ export default function ManageTrainingPage() {
   // ---- MAIN TRACK LIST ----
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Manage Training</Text>
-        <TouchableOpacity onPress={() => setShowNewTrack(true)} style={s.addBtn} data-testid="add-track-btn">
-          <Ionicons name="add" size={22} color="#C9A962" />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader title="Manage Training" testID="manage-training-header" right={<HeaderIconButton icon="add" onPress={() => setShowNewTrack(true)} testID="add-track-btn" />} />
 
       <ScrollView contentContainerStyle={s.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadTracks(); }} tintColor="#C9A962" />}>
@@ -347,17 +318,17 @@ export default function ManageTrainingPage() {
           const isExpanded = expandedTrack === track.id;
           const lessons = trackLessons[track.id] || [];
           return (
-            <View key={track.id} style={s.trackCard} data-testid={`admin-track-${track.slug}`}>
+            <View key={track.id} style={s.trackCard} {...tid(`admin-track-${track.slug}`)}>
               <TouchableOpacity onPress={() => toggleExpand(track.id)} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <View style={[s.trackDot, { backgroundColor: track.color || '#007AFF' }]} />
+                <View style={[s.trackDot, { backgroundColor: track.color || '#C9A962' }]} />
                 <View style={{ flex: 1 }}>
                   <Text style={s.trackTitle}>{track.title}</Text>
                   <Text style={s.trackMeta}>{track.lesson_count} lessons · {(track.roles || []).length} roles</Text>
                 </View>
-                <TouchableOpacity onPress={() => startEditTrack(track)} style={s.iconBtn} data-testid={`edit-track-${track.slug}`}>
+                <TouchableOpacity onPress={() => startEditTrack(track)} style={s.iconBtn} {...tid(`edit-track-${track.slug}`)}>
                   <Ionicons name="pencil" size={16} color={colors.textSecondary} />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => deleteTrack(track.id, track.title)} style={s.iconBtn} data-testid={`delete-track-${track.slug}`}>
+                <TouchableOpacity onPress={() => deleteTrack(track.id, track.title)} style={s.iconBtn} {...tid(`delete-track-${track.slug}`)}>
                   <Ionicons name="trash" size={16} color="#FF3B30" />
                 </TouchableOpacity>
                 <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textTertiary} />
@@ -366,8 +337,8 @@ export default function ManageTrainingPage() {
               {/* Role pills */}
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
                 {(track.roles || []).map(r => (
-                  <View key={r} style={[s.rolePill, { backgroundColor: (track.color || '#007AFF') + '20' }]}>
-                    <Text style={[s.rolePillText, { color: track.color || '#007AFF' }]}>{ALL_ROLES.find(ar => ar.key === r)?.label || r}</Text>
+                  <View key={r} style={[s.rolePill, { backgroundColor: (track.color || '#C9A962') + '20' }]}>
+                    <Text style={[s.rolePillText, { color: track.color || '#C9A962' }]}>{ALL_ROLES.find(ar => ar.key === r)?.label || r}</Text>
                   </View>
                 ))}
               </View>
@@ -386,10 +357,10 @@ export default function ManageTrainingPage() {
                         <Text style={s.lessonDesc}>{lesson.description || 'No description'}</Text>
                       </View>
                       <Text style={{ fontSize: 13, color: colors.textTertiary, marginRight: 8 }}>{lesson.duration}</Text>
-                      <TouchableOpacity onPress={() => startEditLesson(lesson)} style={s.iconBtn} data-testid={`edit-lesson-${lesson.slug}`}>
+                      <TouchableOpacity onPress={() => startEditLesson(lesson)} style={s.iconBtn} {...tid(`edit-lesson-${lesson.slug}`)}>
                         <Ionicons name="pencil" size={14} color={colors.textSecondary} />
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => deleteLesson(lesson.id, lesson.title, track.id)} style={s.iconBtn} data-testid={`delete-lesson-${lesson.slug}`}>
+                      <TouchableOpacity onPress={() => deleteLesson(lesson.id, lesson.title, track.id)} style={s.iconBtn} {...tid(`delete-lesson-${lesson.slug}`)}>
                         <Ionicons name="trash" size={14} color="#FF3B30" />
                       </TouchableOpacity>
                     </View>
@@ -398,19 +369,19 @@ export default function ManageTrainingPage() {
                   {/* Add Lesson */}
                   {addingLessonTo === track.id ? (
                     <View style={s.addLessonForm}>
-                      <TextInput style={s.input} value={newLessonTitle} onChangeText={setNewLessonTitle} placeholder="Lesson title" placeholderTextColor={colors.textTertiary} data-testid="new-lesson-title-input" />
-                      <TextInput style={s.input} value={newLessonDesc} onChangeText={setNewLessonDesc} placeholder="Short description" placeholderTextColor={colors.textTertiary} data-testid="new-lesson-desc-input" />
+                      <TextInput style={s.input} value={newLessonTitle} onChangeText={setNewLessonTitle} placeholder="Lesson title" placeholderTextColor={colors.textTertiary} {...tid('new-lesson-title-input')} />
+                      <TextInput style={s.input} value={newLessonDesc} onChangeText={setNewLessonDesc} placeholder="Short description" placeholderTextColor={colors.textTertiary} {...tid('new-lesson-desc-input')} />
                       <View style={{ flexDirection: 'row', gap: 8 }}>
                         <TouchableOpacity onPress={() => { setAddingLessonTo(null); setNewLessonTitle(''); setNewLessonDesc(''); }} style={[s.actionBtn, { backgroundColor: colors.card }]}>
                           <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>Cancel</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => createLesson(track.id)} disabled={saving || !newLessonTitle.trim()} style={[s.actionBtn, { backgroundColor: track.color || '#C9A962' }]} data-testid="confirm-add-lesson-btn">
+                        <TouchableOpacity onPress={() => createLesson(track.id)} disabled={saving || !newLessonTitle.trim()} style={[s.actionBtn, { backgroundColor: track.color || '#C9A962' }]} {...tid('confirm-add-lesson-btn')}>
                           <Text style={{ color: '#FFF', fontWeight: '600' }}>{saving ? 'Adding...' : 'Add Lesson'}</Text>
                         </TouchableOpacity>
                       </View>
                     </View>
                   ) : (
-                    <TouchableOpacity onPress={() => setAddingLessonTo(track.id)} style={s.addLessonBtn} data-testid={`add-lesson-to-${track.slug}`}>
+                    <TouchableOpacity onPress={() => setAddingLessonTo(track.id)} style={s.addLessonBtn} {...tid(`add-lesson-to-${track.slug}`)}>
                       <Ionicons name="add-circle" size={18} color={track.color || '#C9A962'} />
                       <Text style={{ color: track.color || '#C9A962', fontWeight: '600', fontSize: 16 }}>Add Lesson</Text>
                     </TouchableOpacity>

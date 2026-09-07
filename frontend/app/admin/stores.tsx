@@ -21,6 +21,7 @@ import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
 import { WebSafeButton } from '../../components/WebSafeButton';
 
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
 export default function StoresScreen() {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
@@ -173,7 +174,7 @@ export default function StoresScreen() {
           <Text style={styles.storeLocation}>
             {item.city || 'N/A'}, {item.state || 'N/A'}
           </Text>
-          {item.organization_name && (
+          {!!item.organization_name && (
             <Text style={styles.orgNameLabel}>{item.organization_name}</Text>
           )}
         </View>
@@ -210,24 +211,7 @@ export default function StoresScreen() {
   
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Accounts</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity onPress={() => setShowSearch(!showSearch)} style={styles.searchButton}>
-            <Ionicons name="search" size={24} color="#007AFF" />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={() => setShowCreateModal(true)} 
-            style={styles.addButton}
-          >
-            <Ionicons name="add-circle" size={32} color="#007AFF" />
-          </TouchableOpacity>
-        </View>
-      </View>
+      <ScreenHeader title="Accounts" testID="accounts-header" right={<View style={{ flexDirection: 'row' }}><HeaderIconButton icon="search" onPress={() => setShowSearch(!showSearch)} testID="accounts-search-btn" /><HeaderIconButton icon="add-circle" onPress={() => setShowCreateModal(true)} testID="accounts-add-btn" /></View>} />
       
       {/* Search Bar */}
       {showSearch && (
@@ -261,7 +245,7 @@ export default function StoresScreen() {
       {/* List */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color="#C9A962" />
         </View>
       ) : (
         <FlatList
@@ -286,7 +270,7 @@ export default function StoresScreen() {
           keyExtractor={(item, index) => item._id || `section-${index}`}
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#007AFF" />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#C9A962" />
           }
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
@@ -483,7 +467,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 8,
   },
   orgChipActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#C9A962',
   },
   orgText: {
     fontSize: 16,
@@ -544,7 +528,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   orgNameLabel: {
     fontSize: 14,
-    color: '#007AFF',
+    color: '#C9A962',
     marginTop: 2,
   },
   storeActions: {
@@ -583,7 +567,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 24,
   },
   createButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#C9A962',
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
@@ -591,7 +575,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   createButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text,
+    color: '#000',
   },
   // Modal styles
   modalContainer: {
@@ -608,7 +592,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   modalCancel: {
     fontSize: 18,
-    color: '#007AFF',
+    color: '#C9A962',
   },
   modalTitle: {
     fontSize: 18,
@@ -618,7 +602,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   modalSave: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#C9A962',
   },
   modalContent: {
     padding: 16,

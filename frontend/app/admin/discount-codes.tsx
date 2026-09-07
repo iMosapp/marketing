@@ -17,6 +17,7 @@ import api from '../../services/api';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
 const DISCOUNT_TIERS = [5, 10, 15, 20, 25];
 
 interface DiscountCode {
@@ -136,17 +137,8 @@ export default function DiscountCodesPage() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Discount Codes</Text>
-        <TouchableOpacity onPress={() => setShowCreateForm(!showCreateForm)}>
-          <Ionicons name={showCreateForm ? "close" : "add"} size={28} color="#007AFF" />
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenHeader title="Discount Codes" testID="discount-codes-header" right={<HeaderIconButton icon={showCreateForm ? 'close' : 'add'} onPress={() => setShowCreateForm(!showCreateForm)} testID="discount-codes-add-btn" />} />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Create Form */}
@@ -218,7 +210,7 @@ export default function DiscountCodesPage() {
               <Switch
                 value={forIndividual}
                 onValueChange={setForIndividual}
-                trackColor={{ false: colors.surface, true: '#007AFF' }}
+                trackColor={{ false: colors.surface, true: '#C9A962' }}
               />
             </View>
             <View style={styles.switchRow}>
@@ -226,7 +218,7 @@ export default function DiscountCodesPage() {
               <Switch
                 value={forStore}
                 onValueChange={setForStore}
-                trackColor={{ false: colors.surface, true: '#007AFF' }}
+                trackColor={{ false: colors.surface, true: '#C9A962' }}
               />
             </View>
             
@@ -252,7 +244,7 @@ export default function DiscountCodesPage() {
           <Text style={styles.sectionTitle}>Active Codes ({codes.filter(c => c.status === 'active').length})</Text>
           
           {loading ? (
-            <ActivityIndicator color="#007AFF" style={{ marginTop: 20 }} />
+            <ActivityIndicator color="#C9A962" style={{ marginTop: 20 }} />
           ) : codes.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="ticket-outline" size={48} color={colors.surface} />
@@ -330,8 +322,8 @@ export default function DiscountCodesPage() {
 function getDiscountColor(percent: number): string {
   if (percent >= 20) return '#34C759';
   if (percent >= 15) return '#30B0C7';
-  if (percent >= 10) return '#007AFF';
-  return colors.textSecondary;
+  if (percent >= 10) return '#C9A962';
+  return '#8E8E93';
 }
 
 const getStyles = (colors: any) => StyleSheet.create({
@@ -405,7 +397,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   discountOptionActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#C9A962',
   },
   discountOptionText: {
     fontSize: 17,
@@ -413,7 +405,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontWeight: '600',
   },
   discountOptionTextActive: {
-    color: colors.text,
+    color: '#000',
   },
   switchRow: {
     flexDirection: 'row',

@@ -45,11 +45,11 @@ export function HeaderIconButton({ icon, onPress, testID, color, disabled }: { i
   );
 }
 
-export function HeaderTextButton({ label, onPress, testID, disabled }: { label: string; onPress: () => void; testID: string; disabled?: boolean }) {
+export function HeaderTextButton({ label, onPress, testID, disabled, color }: { label: string; onPress: () => void; testID: string; disabled?: boolean; color?: string }) {
   const { colors } = useThemeStore();
   return (
     <TouchableOpacity onPress={onPress} disabled={disabled} style={[styles.textBtn, disabled && { opacity: 0.4 }]} hitSlop={8} {...tid(testID)}>
-      <Text style={{ fontSize: FS.heading, fontWeight: '700', color: colors.accent }} maxFontSizeMultiplier={1.2}>{label}</Text>
+      <Text style={{ fontSize: FS.heading, fontWeight: '700', color: color || colors.accent }} maxFontSizeMultiplier={1.2}>{label}</Text>
     </TouchableOpacity>
   );
 }

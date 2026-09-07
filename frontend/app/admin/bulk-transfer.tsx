@@ -17,6 +17,9 @@ import { showSimpleAlert, showConfirm } from '../../services/alert';
 import { WebModal } from '../../components/WebModal';
 
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 interface User {
   id: string;
   name: string;
@@ -77,11 +80,13 @@ export default function BulkTransferPage() {
   const [transferTasks, setTransferTasks] = useState(true);
   const [transferCampaigns, setTransferCampaigns] = useState(true);
 
+  // Wait for the auth store to hydrate; calling with user_id=undefined returned a 403.
   useEffect(() => {
-    loadData();
-  }, []);
+    if (user?._id) loadData();
+  }, [user?._id]);
 
   const loadData = async () => {
+    if (!user?._id) return;
     try {
       const [usersRes, historyRes] = await Promise.all([
         api.get(`/admin/team/users?user_id=${user?._id}`),
@@ -214,7 +219,7 @@ export default function BulkTransferPage() {
               key={u.id}
               style={styles.userOption}
               onPress={() => onSelect(u)}
-              data-testid={`select-${label.toLowerCase().replace(' ', '-')}-${u.id}`}
+              {...tid(`select-${label.toLowerCase().replace(' ', '-')}-${u.id}`)}
             >
               <View style={styles.userAvatar}>
                 <Text style={styles.userAvatarText}>
@@ -290,24 +295,17 @@ export default function BulkTransferPage() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Bulk Transfer</Text>
-        <View style={{ width: 40 }} />
-      </View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenHeader title="Bulk Transfer" testID="bulk-transfer-header" />
 
       <ScrollView
         style={styles.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#007AFF" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#C9A962" />
         }
       >
         {loading ? (
-          <ActivityIndicator color="#007AFF" style={{ marginTop: 40 }} />
+          <ActivityIndicator color="#C9A962" style={{ marginTop: 40 }} />
         ) : (
           <>
             {/* Info Banner */}
@@ -326,7 +324,7 @@ export default function BulkTransferPage() {
             <TouchableOpacity
               style={styles.startButton}
               onPress={() => setShowTransferModal(true)}
-              data-testid="start-transfer-btn"
+              {...tid('start-transfer-btn')}
             >
               <Ionicons name="swap-horizontal-outline" size={24} color={colors.text} />
               <Text style={styles.startButtonText}>Start New Transfer</Text>
@@ -378,7 +376,7 @@ export default function BulkTransferPage() {
               {selectedFromUser && (
                 <>
                   {loadingPreview ? (
-                    <ActivityIndicator color="#007AFF" style={{ marginVertical: 20 }} />
+                    <ActivityIndicator color="#C9A962" style={{ marginVertical: 20 }} />
                   ) : transferPreview && (
                     <>
                       {/* Preview Summary */}
@@ -433,7 +431,7 @@ export default function BulkTransferPage() {
                 style={[styles.executeButton, transferring && styles.executeButtonDisabled]}
                 onPress={handleExecuteTransfer}
                 disabled={transferring}
-                data-testid="execute-transfer-btn"
+                {...tid('execute-transfer-btn')}
               >
                 {transferring ? (
                   <ActivityIndicator color={colors.text} />
@@ -638,11 +636,11 @@ const getStyles = (colors: any) => StyleSheet.create({
   selectedUser: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#007AFF20',
+    backgroundColor: '#C9A96220',
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: '#C9A962',
   },
   userList: {
     maxHeight: 200,
@@ -659,7 +657,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#007AFF30',
+    backgroundColor: '#C9A96230',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -667,7 +665,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   userAvatarText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#C9A962',
   },
   userInfo: {
     flex: 1,
@@ -722,8 +720,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   checkboxEnabled: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: '#C9A962',
+    borderColor: '#C9A962',
   },
   totalRow: {
     flexDirection: 'row',

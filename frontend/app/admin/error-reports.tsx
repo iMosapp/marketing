@@ -10,6 +10,9 @@ import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { showConfirm, showSimpleAlert } from '../../services/alert';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 
 const FILTERS = [
   { key: 'all', label: 'All' },
@@ -135,24 +138,10 @@ export default function ErrorReportsPage() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
-      {/* Header */}
-      <View style={[styles.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} data-testid="error-reports-back">
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.title, { color: colors.text }]}>Error Reports</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-            {count} report{count !== 1 ? 's' : ''} captured
-          </Text>
-        </View>
-        <TouchableOpacity onPress={handleClear} style={styles.clearBtn} data-testid="error-reports-clear">
-          <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
+      <ScreenHeader title="Error Reports" subtitle={`${count} report${count !== 1 ? 's' : ''} captured`} testID="error-reports-header" right={<HeaderIconButton icon="trash-outline" color="#FF3B30" onPress={handleClear} testID="error-reports-clear" />} />
 
-      {/* Copy Button — big and prominent */}
+      {/* Copy button */}
       <TouchableOpacity
         style={[styles.copyButton, copied && styles.copyButtonCopied]}
         onPress={handleCopy}
@@ -160,7 +149,7 @@ export default function ErrorReportsPage() {
         testID="error-reports-copy"
         {...({ dataSet: { testid: 'error-reports-copy' } } as any)}
       >
-        <Ionicons name={copied ? 'checkmark-circle' : 'copy-outline'} size={22} color="#FFF" />
+        <Ionicons name={copied ? 'checkmark-circle' : 'copy-outline'} size={22} color="#000" />
         <Text style={styles.copyText}>{copied ? 'Copied!' : 'Copy All Reports'}</Text>
       </TouchableOpacity>
 
@@ -171,7 +160,7 @@ export default function ErrorReportsPage() {
             key={f.key}
             style={[styles.filterChip, filter === f.key && { backgroundColor: '#C9A962' }]}
             onPress={() => { setFilter(f.key); setLoading(true); }}
-            data-testid={`error-filter-${f.key}`}
+            {...tid(`error-filter-${f.key}`)}
           >
             <Text style={[styles.filterText, filter === f.key && { color: '#000' }]}>{f.label}</Text>
           </TouchableOpacity>
@@ -233,10 +222,10 @@ const styles = StyleSheet.create({
   copyButton: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     marginHorizontal: 16, marginTop: 12, paddingVertical: 14,
-    backgroundColor: '#007AFF', borderRadius: 12,
+    backgroundColor: '#C9A962', borderRadius: 12,
   },
   copyButtonCopied: { backgroundColor: '#34C759' },
-  copyText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+  copyText: { color: '#000', fontSize: 16, fontWeight: '700' },
   filterRow: { maxHeight: 44, marginTop: 12 },
   filterContent: { paddingHorizontal: 16, gap: 8 },
   filterChip: {

@@ -9,6 +9,9 @@ import { useRouter } from 'expo-router';
 import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 
 export default function PartnerDashboard() {
   const { colors } = useThemeStore();
@@ -59,13 +62,7 @@ export default function PartnerDashboard() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Partner Portal</Text>
-        <View style={{ width: 36 }} />
-      </View>
+      <ScreenHeader title="Partner Portal" testID="partner-portal-header" />
 
       <ScrollView
         contentContainerStyle={s.content}
@@ -76,7 +73,7 @@ export default function PartnerDashboard() {
           style={s.onboardBtn}
           onPress={() => router.push('/partner/onboard' as any)}
           activeOpacity={0.8}
-          data-testid="partner-onboard-btn"
+          {...tid('partner-onboard-btn')}
         >
           <View style={s.onboardIcon}>
             <Ionicons name="rocket" size={24} color="#000" />
@@ -93,7 +90,7 @@ export default function PartnerDashboard() {
           style={[s.onboardBtn, { backgroundColor: '#AF52DE' }]}
           onPress={() => router.push('/training-hub' as any)}
           activeOpacity={0.8}
-          data-testid="partner-training-btn"
+          {...tid('partner-training-btn')}
         >
           <View style={[s.onboardIcon, { backgroundColor: '#FFF' }]}>
             <Ionicons name="school" size={24} color="#AF52DE" />
@@ -135,7 +132,7 @@ export default function PartnerDashboard() {
             const stores = orgStores[org._id] || [];
             const users = orgUsers[org._id] || [];
             return (
-              <View key={org._id} style={s.orgCard} data-testid={`org-card-${org._id}`}>
+              <View key={org._id} style={s.orgCard} {...tid(`org-card-${org._id}`)}>
                 <TouchableOpacity style={s.orgHeader} onPress={() => toggleOrg(org._id)} activeOpacity={0.7}>
                   <View style={s.orgIconBox}>
                     <Ionicons name="business" size={20} color="#C9A962" />
@@ -197,7 +194,7 @@ export default function PartnerDashboard() {
                     <TouchableOpacity
                       style={s.quickAddBtn}
                       onPress={() => router.push(`/partner/onboard?org_id=${org._id}&org_name=${encodeURIComponent(org.name)}` as any)}
-                      data-testid={`add-to-org-${org._id}`}
+                      {...tid(`add-to-org-${org._id}`)}
                     >
                       <Ionicons name="add-circle-outline" size={18} color="#C9A962" />
                       <Text style={{ fontSize: 16, fontWeight: '600', color: '#C9A962' }}>Add Location & Team</Text>

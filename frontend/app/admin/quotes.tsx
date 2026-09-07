@@ -15,6 +15,9 @@ import api from '../../services/api';
 import { showSimpleAlert, showConfirm } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 interface Quote {
   _id: string;
   quote_number: string;
@@ -138,17 +141,8 @@ export default function QuotesListPage() {
   const filters = ['all', 'draft', 'sent', 'accepted', 'expired', 'archived'];
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Quotes</Text>
-        <TouchableOpacity onPress={() => router.push('/admin/create-quote')}>
-          <Ionicons name="add" size={28} color="#007AFF" />
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenHeader title="Quotes" testID="quotes-header" right={<HeaderIconButton icon="add" onPress={() => router.push('/admin/create-quote')} testID="quotes-add-btn" />} />
 
       {/* Filter Pills */}
       <ScrollView
@@ -173,11 +167,11 @@ export default function QuotesListPage() {
       <ScrollView
         style={styles.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#007AFF" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#C9A962" />
         }
       >
         {loading ? (
-          <ActivityIndicator color="#007AFF" style={{ marginTop: 40 }} />
+          <ActivityIndicator color="#C9A962" style={{ marginTop: 40 }} />
         ) : quotes.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="document-text-outline" size={64} color={colors.surface} />
@@ -187,7 +181,7 @@ export default function QuotesListPage() {
               style={styles.createButton}
               onPress={() => router.push('/admin/create-quote')}
             >
-              <Ionicons name="add" size={20} color={colors.text} />
+              <Ionicons name="add" size={20} color="#000" />
               <Text style={styles.createButtonText}>Create Quote</Text>
             </TouchableOpacity>
           </View>
@@ -197,7 +191,7 @@ export default function QuotesListPage() {
               key={quote._id}
               style={styles.quoteCard}
               onPress={() => router.push(`/admin/quote/${quote._id}`)}
-              data-testid={`quote-${quote.quote_number}`}
+              {...tid(`quote-${quote.quote_number}`)}
             >
               <View style={styles.quoteHeader}>
                 <View>
@@ -237,7 +231,7 @@ export default function QuotesListPage() {
 
               {quote.plan_type === 'store' && (
                 <View style={styles.userCountBadge}>
-                  <Ionicons name="people" size={14} color="#007AFF" />
+                  <Ionicons name="people" size={14} color="#C9A962" />
                   <Text style={styles.userCountText}>{quote.pricing.num_users} users</Text>
                 </View>
               )}
@@ -257,7 +251,7 @@ export default function QuotesListPage() {
                         e.stopPropagation();
                         handleDeleteQuote(quote._id, quote.status);
                       }}
-                      data-testid={`delete-quote-${quote.quote_number}`}
+                      {...tid(`delete-quote-${quote.quote_number}`)}
                     >
                       <Ionicons name="trash-outline" size={18} color="#FF3B30" />
                     </TouchableOpacity>
@@ -269,7 +263,7 @@ export default function QuotesListPage() {
                         e.stopPropagation();
                         handleArchiveQuote(quote._id);
                       }}
-                      data-testid={`archive-quote-${quote.quote_number}`}
+                      {...tid(`archive-quote-${quote.quote_number}`)}
                     >
                       <Ionicons name="archive-outline" size={18} color={colors.textSecondary} />
                     </TouchableOpacity>
@@ -328,7 +322,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 8,
   },
   filterPillActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#C9A962',
   },
   filterText: {
     fontSize: 16,
@@ -361,7 +355,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   createButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#C9A962',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 12,
@@ -371,7 +365,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   createButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text,
+    color: '#000',
   },
   quoteCard: {
     backgroundColor: colors.card,
@@ -440,7 +434,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#007AFF20',
+    backgroundColor: '#C9A96220',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
@@ -449,7 +443,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   userCountText: {
     fontSize: 15,
-    color: '#007AFF',
+    color: '#C9A962',
     fontWeight: '500',
   },
   quoteFooter: {

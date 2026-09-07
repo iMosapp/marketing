@@ -8,6 +8,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import api from '../../services/api';
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 
 interface SOP {
   id: string;
@@ -69,13 +72,7 @@ export default function SOPsPage() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: colors.bg }]} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} data-testid="sops-back-btn">
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[s.headerTitle, { color: colors.text }]}>SOPs & Guides</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <ScreenHeader title="SOPs & Guides" testID="sops-header" />
 
       {/* Search */}
       <View style={[s.searchBar, { backgroundColor: colors.surface }]}>
@@ -87,7 +84,7 @@ export default function SOPsPage() {
           value={search}
           onChangeText={setSearch}
           onSubmitEditing={fetchSOPs}
-          data-testid="sops-search-input"
+          {...tid('sops-search-input')}
         />
         {search ? (
           <TouchableOpacity onPress={() => { setSearch(''); }}>
@@ -101,18 +98,18 @@ export default function SOPsPage() {
         {DEPARTMENTS.map(d => (
           <TouchableOpacity
             key={d.key}
-            style={[s.filterChip, { backgroundColor: department === d.key ? (colors.primary || '#007AFF') : colors.surface }]}
+            style={[s.filterChip, { backgroundColor: department === d.key ? (colors.accent) : colors.surface }]}
             onPress={() => setDepartment(d.key)}
-            data-testid={`dept-filter-${d.key}`}
+            {...tid(`dept-filter-${d.key}`)}
           >
-            <Ionicons name={d.icon as any} size={14} color={department === d.key ? '#fff' : colors.textSecondary} />
-            <Text style={[s.filterText, { color: department === d.key ? '#fff' : colors.textSecondary }]}>{d.label}</Text>
+            <Ionicons name={d.icon as any} size={14} color={department === d.key ? '#000' : colors.textSecondary} />
+            <Text style={[s.filterText, { color: department === d.key ? '#000' : colors.textSecondary }]}>{d.label}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
       {loading ? (
-        <View style={s.center}><ActivityIndicator size="large" color={colors.primary || '#007AFF'} /></View>
+        <View style={s.center}><ActivityIndicator size="large" color={colors.accent} /></View>
       ) : (
         <ScrollView
           style={s.list}
@@ -135,7 +132,7 @@ export default function SOPsPage() {
                   style={[s.sopCard, { backgroundColor: colors.card }]}
                   onPress={() => setExpandedId(isExpanded ? null : sop.id)}
                   activeOpacity={0.7}
-                  data-testid={`sop-card-${sop.id}`}
+                  {...tid(`sop-card-${sop.id}`)}
                 >
                   <View style={s.sopHeader}>
                     <View style={s.sopMeta}>
@@ -166,8 +163,8 @@ export default function SOPsPage() {
                       <Text style={[s.stepsTitle, { color: colors.text }]}>Steps</Text>
                       {sop.steps.map((step: any, i: number) => (
                         <View key={i} style={s.stepRow}>
-                          <View style={[s.stepNumber, { backgroundColor: `${colors.primary || '#007AFF'}20` }]}>
-                            <Text style={[s.stepNumText, { color: colors.primary || '#007AFF' }]}>{i + 1}</Text>
+                          <View style={[s.stepNumber, { backgroundColor: `${colors.accent}20` }]}>
+                            <Text style={[s.stepNumText, { color: colors.accent }]}>{i + 1}</Text>
                           </View>
                           <View style={s.stepContent}>
                             <Text style={[s.stepTitle, { color: colors.text }]}>{step.title}</Text>

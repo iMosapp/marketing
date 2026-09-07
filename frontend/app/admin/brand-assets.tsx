@@ -19,6 +19,9 @@ import { useAuthStore } from '../../store/authStore';
 import { showSimpleAlert } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 const IS_WEB = Platform.OS === 'web';
 const API_BASE = Platform.OS === 'web'
   ? ''
@@ -30,7 +33,7 @@ const COLORS = {
   border: '#2C2C2E',
   text: '#FFFFFF',
   sub: '#8E8E93',
-  accent: '#007AFF',
+  accent: '#C9A962',
   success: '#34C759',
   gold: '#C9A962',
 };
@@ -57,17 +60,17 @@ export default function BrandAssetsPage() {
 
   // Built-in logo assets from the app
   const builtInAssets: BrandAsset[] = [
-    { id: 'logo-512', label: 'App Logo (512px)', description: 'White tile logo — PWA home screen & app icon', url: '/logo512.png', size: '512x512', category: 'logo' },
-    { id: 'logo-192', label: 'App Logo (192px)', description: 'White tile logo — Android Chrome', url: '/logo192.png', size: '192x192', category: 'logo' },
+    { id: 'logo-512', label: 'App Logo (512px)', description: 'White tile logo: PWA home screen & app icon', url: '/logo512.png', size: '512x512', category: 'logo' },
+    { id: 'logo-192', label: 'App Logo (192px)', description: 'White tile logo: Android Chrome', url: '/logo192.png', size: '192x192', category: 'logo' },
     { id: 'logo-dark', label: 'Logo (Dark Background)', description: 'Logo on dark background for dark themes', url: '/new-logo-512-dark.png', size: '512x512', category: 'logo' },
     { id: 'logo-light', label: 'Logo (White Background)', description: 'Logo on white background for light themes', url: '/new-logo-512-light.png', size: '512x512', category: 'logo' },
-    { id: 'logo-transparent', label: 'Transparent Logo (512px)', description: 'Logo with no background — headers, overlays', url: '/imos-logo-transparent.png', size: '512x512', category: 'logo' },
+    { id: 'logo-transparent', label: 'Transparent Logo (512px)', description: 'Logo with no background: headers, overlays', url: '/imos-logo-transparent.png', size: '512x512', category: 'logo' },
     { id: 'logo-transparent-hd', label: 'Transparent Logo (1024px)', description: 'High-res transparent logo for print & large displays', url: '/imos-logo-transparent-1024.png', size: '1024x1024', category: 'logo' },
     { id: 'logo-original', label: 'Original Full Logo (1024px)', description: 'Highest resolution transparent logo', url: '/new-logo-original.png', size: '1024x1024', category: 'logo' },
     { id: 'favicon-256', label: 'Favicon (256px)', description: 'High-res browser icon', url: '/favicon-256.png', size: '256x256', category: 'icon' },
     { id: 'favicon-32', label: 'Favicon (32px)', description: 'Standard browser tab icon', url: '/favicon-32x32.png', size: '32x32', category: 'icon' },
     { id: 'favicon-16', label: 'Favicon (16px)', description: 'Small favicon', url: '/favicon-16x16.png', size: '16x16', category: 'icon' },
-    { id: 'apple-touch', label: 'Apple Touch Icon', description: 'iOS home screen icon — 180px white tile', url: '/apple-touch-icon.png', size: '180x180', category: 'icon' },
+    { id: 'apple-touch', label: 'Apple Touch Icon', description: 'iOS home screen icon: 180px white tile', url: '/apple-touch-icon.png', size: '180x180', category: 'icon' },
   ];
 
   useEffect(() => {
@@ -179,7 +182,7 @@ export default function BrandAssetsPage() {
   };
 
   const renderAssetCard = (asset: BrandAsset, isCustom: boolean = false) => (
-    <View key={asset.id} style={styles.assetCard} data-testid={`asset-${asset.id}`}>
+    <View key={asset.id} style={styles.assetCard} {...tid(`asset-${asset.id}`)}>
       <View style={styles.assetPreview}>
         <Image
           source={{ uri: asset.url.startsWith('http') ? asset.url : `${API_BASE}${asset.url}` }}
@@ -193,14 +196,14 @@ export default function BrandAssetsPage() {
         <Text style={styles.assetSize}>{asset.size}</Text>
       </View>
       <View style={styles.assetActions}>
-        <TouchableOpacity style={styles.assetBtn} onPress={() => handleDownload(asset)} data-testid={`download-${asset.id}`}>
+        <TouchableOpacity style={styles.assetBtn} onPress={() => handleDownload(asset)} {...tid(`download-${asset.id}`)}>
           <Ionicons name="download-outline" size={18} color={COLORS.accent} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.assetBtn} onPress={() => handleCopyUrl(asset)} data-testid={`copy-${asset.id}`}>
+        <TouchableOpacity style={styles.assetBtn} onPress={() => handleCopyUrl(asset)} {...tid(`copy-${asset.id}`)}>
           <Ionicons name={copiedId === asset.id ? 'checkmark' : 'copy-outline'} size={18} color={copiedId === asset.id ? COLORS.success : COLORS.sub} />
         </TouchableOpacity>
         {isCustom && (
-          <TouchableOpacity style={styles.assetBtn} onPress={() => handleDeleteAsset(asset.id)} data-testid={`delete-${asset.id}`}>
+          <TouchableOpacity style={styles.assetBtn} onPress={() => handleDeleteAsset(asset.id)} {...tid(`delete-${asset.id}`)}>
             <Ionicons name="trash-outline" size={18} color="#FF3B30" />
           </TouchableOpacity>
         )}
@@ -223,15 +226,7 @@ export default function BrandAssetsPage() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} data-testid="brand-assets-back">
-          <Ionicons name="chevron-back" size={28} color={COLORS.accent} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Brand Assets</Text>
-        <TouchableOpacity onPress={() => router.push('/settings/brand-kit' as any)} data-testid="brand-kit-link">
-          <Ionicons name="color-palette-outline" size={24} color={COLORS.gold} />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader title="Brand Assets" testID="brand-assets-header" right={<HeaderIconButton icon="color-palette-outline" onPress={() => router.push('/settings/brand-kit' as any)} testID="brand-kit-link" />} />
 
       <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 40 }}>
         {/* Upload Section */}
@@ -239,7 +234,7 @@ export default function BrandAssetsPage() {
           style={styles.uploadCard}
           onPress={handleUploadAsset}
           disabled={uploading}
-          data-testid="upload-brand-asset"
+          {...tid('upload-brand-asset')}
         >
           {uploading ? (
             <ActivityIndicator size="small" color={COLORS.accent} />
@@ -317,8 +312,8 @@ export default function BrandAssetsPage() {
             style={styles.quickLink}
             onPress={() => router.push('/settings/store-profile' as any)}
           >
-            <View style={[styles.quickLinkIcon, { backgroundColor: '#007AFF20' }]}>
-              <Ionicons name="storefront" size={18} color="#007AFF" />
+            <View style={[styles.quickLinkIcon, { backgroundColor: '#C9A96220' }]}>
+              <Ionicons name="storefront" size={18} color="#C9A962" />
             </View>
             <View style={styles.quickLinkContent}>
               <Text style={styles.quickLinkLabel}>Store Profile</Text>

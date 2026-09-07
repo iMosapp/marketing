@@ -1,0 +1,35 @@
+{
+  "summary": "Batch 9 Tools UI QA of 27 admin screens + /partner/dashboard at 1920x1080 as forest@imosapp.com. RESULT: All 27 target screens pass the shared-ScreenHeader conversion: header testid present, `<headerTestID>-back` chevron present and works, correct centered title text visible, no #007AFF/rgb(0,122,255) on header icons/active pills/primary buttons, no blank screens. All requested action testids exist (organizations-search-btn/-add-btn, accounts-search-btn/-add-btn, add-individual-btn, lead-tracking-refresh, tab-hot-leads/tab-activity-feed/filter-24h/48h/168h, partner-agreements-add-btn, white-label-add-btn, quotes-add-btn, discount-codes-add-btn, create-inbox-btn, brand-kit-link, error-reports-clear, system-logs-clear, log-filter-all, add-track-btn -> new-track-header/-back/create-track-btn). Gold-active-state spot check: on /admin/account-health tapping period-90 flips its background to rgb(201,169,98) with rgb(0,0,0) text (correct gold+black). manage-training add-track opens the New Track view with create-track-btn disabled until title typed (verified aria-disabled=true), back returns to list. Organizations search + add modal toggle+close OK (no create). Only visible em dashes are inside user/system-generated report content on /admin/error-reports (error-log descriptions like 'GET /messages/... — {...}') and /admin/bug-reports (user-typed titles 'TEST-QA push check — please ignore', 'Digest test — dial pad search demo entry') - NOT static Batch 9 UI copy, so does not violate the batch spec.",
+  "backend_issues": {"critical": [], "minor": [
+    {"endpoint": "/admin/bulk-transfer page load", "issue": "Two backend calls fail while forest (super_admin) loads /admin/bulk-transfer: 404 'User not found' and 403 'Admin access required'. Page still renders header + empty state, but the 403 for a super_admin is unexpected."}
+  ]},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "/admin/stores (accounts list)", "issue": "Page renders correctly but console shows ~150 'Unexpected text node: A text node cannot be a child of a <View>' errors (whitespace/string child of a RN <View>). Pre-existing render bug in the accounts list rows, unrelated to Batch 9 header conversion but should be cleaned up.", "selector": "accounts list rows", "priority": "LOW"},
+      {"component": "/admin/sops", "issue": "React warning 'Each child in a list should have a unique key prop' from SOPsPage (admin/sops.tsx). List items missing `key` prop.", "selector": "sops list", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "In /app/frontend/app/admin/stores.tsx clean up the render tree so no bare string / whitespace is a direct child of <View> (wrap in <Text> or trim) - eliminates ~150 console errors.",
+    "In /app/frontend/app/admin/sops.tsx add a stable `key` prop when mapping the SOPs list.",
+    "Investigate why forest (super_admin) sees a 403 'Admin access required' on /admin/bulk-transfer; check the auth guard in the bulk-transfer route and the initial User GET (404) - could be querying with the wrong user id."
+  ],
+  "critical_code_review_comments": [
+    "All 27 admin screens + /partner/dashboard cleanly adopted the shared ScreenHeader: correct testids, back-chevron pattern <headerTestID>-back, subtitles rendered where required, and right-action icons wired without leaking blue.",
+    "Gold-active pill/tab state (bg #C9A962 + black text) verified programmatically on account-health period-90 - the token conversion looks consistent across pill/tab components.",
+    "Em dashes now only appear inside dynamic content (user-submitted bug titles, backend error-log descriptions) - not in any static UI copy on Batch 9 screens.",
+    "New Track view enforces disabled-until-valid on create-track-btn (aria-disabled=true) - good.",
+    "Consider a CI grep for '\\u2014' scoped to /app/frontend/app/**/*.tsx AND backend static string constants to prevent regressions like the messaging-channels em dash surfaced in iteration_303."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend-only)", "frontend": "100% (27/27 Batch 9 screens pass header + testid + gold + no-blue + no static em-dash checks)"},
+  "test_credentials": "forest@imosapp.com / Admin123! (super_admin) - works.",
+  "seed_data_creation": "None. No orgs/stores/individuals/inboxes/quotes/codes/tracks/agreements/white-label saves. No reports sent, no logs cleared, no error reports cleared. All create modals were opened only to verify and closed (Escape or back).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Batch 9 (27 admin screens) all clean at 1920x1080. Per-screen: /admin (admin-dashboard-header, sections render, len=1622), /admin/onboarding-hub (subtitle 'All account creation in one place'), /admin/account-health (period-30/period-90 pills gold+black when active, tabs Overview/Scheduled Reports, filter pills All/Critical/At Risk/Healthy), /admin/organizations (search-btn toggles bar, add-btn opens create modal - closed with Esc), /admin/stores (accounts-header 'Accounts', search+add btns present, but ~150 whitespace-child-of-View console errors - pre-existing), /admin/individuals (add-individual-btn ok), /admin/pending-users (subtitle 'waiting'), /admin/lead-tracking (refresh icon), /admin/hot-leads (tabs tab-hot-leads/tab-activity-feed, filters 24h/48h/168h), /partner/dashboard (partner-portal-header), /admin/partner-agreements + /admin/white-label + /admin/quotes + /admin/discount-codes + /admin/shared-inboxes (all *-add-btn / create-inbox-btn present, no creations made), /admin/billing + /admin/forecasting (period pills), /admin/create-quote (plan tabs present), /admin/bulk-transfer (renders, but has backend 404+403 for super_admin - report only), /admin/app-directory (search), /admin/brand-assets (brand-kit-link -> /settings/brand-kit), /admin/error-reports (error-reports-clear present, NOT tapped; em dashes inside dynamic log rows only), /admin/bug-reports (em dashes in user-submitted titles only), /admin/sops (React key warning), /admin/system-logs (system-logs-clear + log-filter-all), /admin/manage-training (add-track-btn -> new-track-header + new-track-header-back + create-track-btn disabled-until-title - verified; back returns), /admin/training-reports (tabs Who Watched/Overview/By Sender/By Video). Nothing destructive tapped.",
+  "rca of the issue": "N/A - no functional regression. Notes: (1) /admin/stores whitespace-in-View errors likely a stray string like ' ' between JSX tags inside the accounts list map. (2) /admin/bulk-transfer 403 for super_admin: initial parallel Promise.all does GET user + admin-scope endpoint; user id resolution appears to fail first (404), then a follow-up admin check returns 403 - check the guard route accepts super_admin token and that the current-user id is loaded from the auth context (not from URL params)."
+}

@@ -18,6 +18,9 @@ import { showSimpleAlert, showConfirm } from '../../services/alert';
 import { WebModal } from '../../components/WebModal';
 
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 interface PendingUser {
   _id: string;
   name: string;
@@ -41,7 +44,7 @@ interface Store {
 }
 
 const ROLES = [
-  { id: 'user', label: 'Sales Rep', color: '#007AFF' },
+  { id: 'user', label: 'Sales Rep', color: '#C9A962' },
   { id: 'store_manager', label: 'Account Manager', color: '#34C759' },
   { id: 'org_admin', label: 'Org Admin', color: '#FF9500' },
 ];
@@ -166,7 +169,7 @@ export default function PendingUsersScreen() {
   };
   
   const renderUser = ({ item }: { item: PendingUser }) => (
-    <View style={styles.userCard} data-testid={`pending-user-${item._id}`}>
+    <View style={styles.userCard} {...tid(`pending-user-${item._id}`)}>
       <View style={styles.userHeader}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
@@ -207,7 +210,7 @@ export default function PendingUsersScreen() {
         <TouchableOpacity
           style={styles.rejectButton}
           onPress={() => handleReject(item)}
-          data-testid={`reject-btn-${item._id}`}
+          {...tid(`reject-btn-${item._id}`)}
         >
           <Ionicons name="close-circle" size={20} color="#FF3B30" />
           <Text style={styles.rejectButtonText}>Reject</Text>
@@ -216,7 +219,7 @@ export default function PendingUsersScreen() {
         <TouchableOpacity
           style={styles.approveButton}
           onPress={() => openApprovalModal(item)}
-          data-testid={`approve-btn-${item._id}`}
+          {...tid(`approve-btn-${item._id}`)}
         >
           <Ionicons name="checkmark-circle" size={20} color={colors.text} />
           <Text style={styles.approveButtonText}>Configure & Approve</Text>
@@ -227,21 +230,12 @@ export default function PendingUsersScreen() {
   
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Pending Users</Text>
-        <View style={styles.countBadge}>
-          <Text style={styles.countText}>{pendingUsers.length}</Text>
-        </View>
-      </View>
+      <ScreenHeader title="Pending Users" subtitle={`${pendingUsers.length} waiting`} testID="pending-users-header" />
       
       {/* Content */}
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color="#C9A962" />
         </View>
       ) : (
         <FlatList
@@ -250,7 +244,7 @@ export default function PendingUsersScreen() {
           keyExtractor={item => item._id}
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#007AFF" />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#C9A962" />
           }
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
@@ -329,7 +323,7 @@ export default function PendingUsersScreen() {
                           {org.name}
                         </Text>
                         {approvalData.organization_id === org._id && (
-                          <Ionicons name="checkmark" size={18} color="#007AFF" />
+                          <Ionicons name="checkmark" size={18} color="#C9A962" />
                         )}
                       </TouchableOpacity>
                     ))}
@@ -370,7 +364,7 @@ export default function PendingUsersScreen() {
                               {store.name}
                             </Text>
                             {approvalData.store_id === store._id && (
-                              <Ionicons name="checkmark" size={18} color="#007AFF" />
+                              <Ionicons name="checkmark" size={18} color="#C9A962" />
                             )}
                           </TouchableOpacity>
                         ))}
@@ -667,7 +661,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   roleOptionSelected: {
-    backgroundColor: '#007AFF20',
+    backgroundColor: '#C9A96220',
   },
   roleOptionText: {
     color: colors.textSecondary,
@@ -686,16 +680,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
   },
   orgOptionSelected: {
-    backgroundColor: '#007AFF20',
+    backgroundColor: '#C9A96220',
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: '#C9A962',
   },
   orgOptionText: {
     color: colors.text,
     fontSize: 17,
   },
   orgOptionTextSelected: {
-    color: '#007AFF',
+    color: '#C9A962',
     fontWeight: '600',
   },
   input: {

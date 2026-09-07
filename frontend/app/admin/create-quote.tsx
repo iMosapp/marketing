@@ -19,6 +19,9 @@ import { Picker } from '@react-native-picker/picker';
 import { showAlert, showSimpleAlert, showConfirm } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 const DISCOUNT_OPTIONS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50];
 const BUSINESS_TYPES = ['LLC', 'Corporation', 'Partnership', 'Sole Proprietor', 'Non-Profit', 'Other'];
 const INDUSTRY_VERTICALS = [
@@ -236,15 +239,8 @@ export default function CreateQuotePage() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Create Quote</Text>
-        <View style={{ width: 40 }} />
-      </View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenHeader title="Create Quote" testID="create-quote-header" />
       
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Plan Type Selection */}
@@ -255,14 +251,14 @@ export default function CreateQuotePage() {
               style={[styles.tab, planType === 'individual' && styles.tabActive]}
               onPress={() => setPlanType('individual')}
             >
-              <Ionicons name="person" size={20} color={planType === 'individual' ? '#FFF' : colors.textSecondary} />
+              <Ionicons name="person" size={20} color={planType === 'individual' ? '#000' : colors.textSecondary} />
               <Text style={[styles.tabText, planType === 'individual' && styles.tabTextActive]}>Individual</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.tab, planType === 'store' && styles.tabActive]}
               onPress={() => setPlanType('store')}
             >
-              <Ionicons name="storefront" size={20} color={planType === 'store' ? '#FFF' : colors.textSecondary} />
+              <Ionicons name="storefront" size={20} color={planType === 'store' ? '#000' : colors.textSecondary} />
               <Text style={[styles.tabText, planType === 'store' && styles.tabTextActive]}>Account / Team</Text>
             </TouchableOpacity>
           </View>
@@ -393,7 +389,7 @@ export default function CreateQuotePage() {
             Override the calculated price with any amount
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: customPrice ? '#007AFF' : colors.surface, paddingHorizontal: 14 }}>
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: customPrice ? '#C9A962' : colors.surface, paddingHorizontal: 14 }}>
               <Text style={{ fontSize: 18, color: colors.textSecondary, marginRight: 4 }}>$</Text>
               <TextInput
                 style={[styles.input, { flex: 1, marginBottom: 0, backgroundColor: 'transparent', borderWidth: 0, paddingHorizontal: 0 }]}
@@ -405,7 +401,7 @@ export default function CreateQuotePage() {
                   setCustomPrice(cleaned);
                 }}
                 keyboardType="decimal-pad"
-                data-testid="custom-price-input"
+                {...tid('custom-price-input')}
               />
             </View>
             {customPrice ? (
@@ -418,9 +414,9 @@ export default function CreateQuotePage() {
             ) : null}
           </View>
           {customPrice ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, backgroundColor: '#007AFF15', borderRadius: 8, padding: 10 }}>
-              <Ionicons name="checkmark-circle" size={16} color="#007AFF" />
-              <Text style={{ fontSize: 13, color: '#007AFF', fontWeight: '500' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, backgroundColor: '#C9A96215', borderRadius: 8, padding: 10 }}>
+              <Ionicons name="checkmark-circle" size={16} color="#C9A962" />
+              <Text style={{ fontSize: 13, color: '#C9A962', fontWeight: '500' }}>
                 Custom price ${parseFloat(customPrice).toFixed(2)}/mo overrides calculated total
               </Text>
             </View>
@@ -563,7 +559,7 @@ export default function CreateQuotePage() {
                 <Switch
                   value={w9Required}
                   onValueChange={setW9Required}
-                  trackColor={{ false: colors.surface, true: '#007AFF' }}
+                  trackColor={{ false: colors.surface, true: '#C9A962' }}
                 />
               </View>
             </View>
@@ -634,10 +630,10 @@ export default function CreateQuotePage() {
           style={[styles.createButton, loading && styles.createButtonDisabled]}
           onPress={handleCreateQuote}
           disabled={loading}
-          data-testid="create-quote-button"
+          {...tid('create-quote-button')}
         >
           {loading ? (
-            <ActivityIndicator color={colors.text} />
+            <ActivityIndicator color="#000" />
           ) : (
             <>
               <Ionicons name="document-text" size={24} color={colors.text} />
@@ -673,7 +669,7 @@ export default function CreateQuotePage() {
                   resetForm();
                 }}
               >
-                <Ionicons name="add" size={20} color="#007AFF" />
+                <Ionicons name="add" size={20} color="#C9A962" />
                 <Text style={styles.successButtonSecondaryText}>Create Another</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -751,7 +747,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 6,
   },
   tabActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#C9A962',
   },
   tabText: {
     fontSize: 17,
@@ -759,7 +755,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.textSecondary,
   },
   tabTextActive: {
-    color: colors.text,
+    color: '#000',
   },
   planOptions: {
     gap: 8,
@@ -775,8 +771,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: colors.surface,
   },
   planOptionActive: {
-    borderColor: '#007AFF',
-    backgroundColor: '#007AFF20',
+    borderColor: '#C9A962',
+    backgroundColor: '#C9A96220',
   },
   planOptionName: {
     fontSize: 18,
@@ -784,14 +780,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   planOptionNameActive: {
-    color: '#007AFF',
+    color: '#C9A962',
   },
   planOptionPrice: {
     fontSize: 17,
     color: colors.textSecondary,
   },
   planOptionPriceActive: {
-    color: '#007AFF',
+    color: '#C9A962',
   },
   userCountRow: {
     flexDirection: 'row',
@@ -803,7 +799,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#C9A962',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -851,8 +847,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: colors.surface,
   },
   discountTileActive: {
-    borderColor: '#007AFF',
-    backgroundColor: '#007AFF15',
+    borderColor: '#C9A962',
+    backgroundColor: '#C9A96215',
   },
   discountTileText: {
     fontSize: 22,
@@ -860,7 +856,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     fontWeight: '700',
   },
   discountTileTextActive: {
-    color: '#007AFF',
+    color: '#C9A962',
   },
   discountTileLabel: {
     fontSize: 13,
@@ -869,7 +865,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 2,
   },
   discountTileLabelActive: {
-    color: '#007AFF',
+    color: '#C9A962',
   },
   discountCodeRow: {
     flexDirection: 'row',
@@ -886,13 +882,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: colors.surface,
   },
   applyButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#C9A962',
     borderRadius: 12,
     paddingHorizontal: 20,
     justifyContent: 'center',
   },
   applyButtonText: {
-    color: colors.text,
+    color: '#000',
     fontSize: 17,
     fontWeight: '600',
   },
@@ -992,7 +988,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: '#C9A962',
     borderRadius: 12,
     padding: 16,
     marginTop: 24,
@@ -1004,7 +1000,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   createButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text,
+    color: '#000',
   },
   // Success Modal Styles
   modalOverlay: {
@@ -1038,7 +1034,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 24,
   },
   quoteNumber: {
-    color: '#007AFF',
+    color: '#C9A962',
     fontWeight: '600',
     fontFamily: 'monospace',
   },
@@ -1053,14 +1049,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#C9A962',
     borderRadius: 12,
     paddingVertical: 14,
   },
   successButtonPrimaryText: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text,
+    color: '#000',
   },
   successButtonSecondary: {
     flex: 1,
@@ -1075,6 +1071,6 @@ const getStyles = (colors: any) => StyleSheet.create({
   successButtonSecondaryText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#007AFF',
+    color: '#C9A962',
   },
 });

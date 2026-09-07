@@ -2,20 +2,24 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, RefreshControl, StyleSheet, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 
 const SIGNAL_ICONS: Record<string, { icon: string; color: string }> = {
-  card_viewed: { icon: 'eye', color: '#007AFF' },
+  card_viewed: { icon: 'eye', color: '#C9A962' },
   card_downloaded: { icon: 'download', color: '#34C759' },
   card_shared: { icon: 'share-social', color: '#AF52DE' },
-  digital_card_viewed: { icon: 'person-circle', color: '#007AFF' },
+  digital_card_viewed: { icon: 'person-circle', color: '#C9A962' },
   review_link_clicked: { icon: 'star', color: '#FFD60A' },
   showcase_viewed: { icon: 'images', color: '#C9A962' },
   link_page_viewed: { icon: 'link', color: '#AF52DE' },
   contact_saved: { icon: 'person-add', color: '#34C759' },
-  link_clicked: { icon: 'open', color: '#007AFF' },
+  link_clicked: { icon: 'open', color: '#C9A962' },
 };
 
 function timeAgo(minutes: number): string {
@@ -33,7 +37,7 @@ function HeatBadge({ score }: { score: number }) {
   else if (score >= 3) { emoji = 'flame'; bg = '#FF9500'; }
   else { emoji = 'thermometer'; bg = '#555'; }
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, backgroundColor: bg }} data-testid="heat-badge">
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10, backgroundColor: bg }} {...tid('heat-badge')}>
       <Ionicons name={emoji as any} size={12} color="#FFF" />
       <Text style={{ color: '#FFF', fontSize: 13, fontWeight: '700' }}>{score.toFixed(0)}</Text>
     </View>
@@ -77,27 +81,19 @@ export default function HotLeadsPage() {
   }, [load]);
 
   return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+    <ScreenHeader title="Engagement Intelligence" subtitle="Know when customers are thinking about you" testID="hot-leads-header" />
     <ScrollView
-      style={styles.container}
+      style={{ flex: 1 }}
       refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor="#C9A962" />}
     >
-      {/* Header */}
-      <View style={styles.header} data-testid="hot-leads-header">
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} data-testid="back-button">
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <View>
-          <Text style={styles.title}>Engagement Intelligence</Text>
-          <Text style={styles.subtitle}>Know when customers are thinking about you</Text>
-        </View>
-      </View>
 
       {/* Tabs */}
-      <View style={styles.tabRow} data-testid="tab-row">
+      <View style={styles.tabRow} {...tid('tab-row')}>
         <TouchableOpacity
           style={[styles.tab, tab === 'leads' && styles.tabActive]}
           onPress={() => setTab('leads')}
-          data-testid="tab-hot-leads"
+          {...tid('tab-hot-leads')}
         >
           <Ionicons name="flame" size={16} color={tab === 'leads' ? '#FF3B30' : colors.textSecondary} />
           <Text style={[styles.tabText, tab === 'leads' && styles.tabTextActive]}>Hot Leads</Text>
@@ -108,21 +104,21 @@ export default function HotLeadsPage() {
         <TouchableOpacity
           style={[styles.tab, tab === 'feed' && styles.tabActive]}
           onPress={() => setTab('feed')}
-          data-testid="tab-activity-feed"
+          {...tid('tab-activity-feed')}
         >
-          <Ionicons name="pulse" size={16} color={tab === 'feed' ? '#007AFF' : colors.textSecondary} />
+          <Ionicons name="pulse" size={16} color={tab === 'feed' ? '#C9A962' : colors.textSecondary} />
           <Text style={[styles.tabText, tab === 'feed' && styles.tabTextActive]}>Activity Feed</Text>
         </TouchableOpacity>
       </View>
 
       {/* Period filter */}
-      <View style={styles.filterRow} data-testid="period-filter">
+      <View style={styles.filterRow} {...tid('period-filter')}>
         {[24, 48, 168].map(h => (
           <TouchableOpacity
             key={h}
             style={[styles.filterChip, period === h && styles.filterActive]}
             onPress={() => setPeriod(h)}
-            data-testid={`filter-${h}h`}
+            {...tid(`filter-${h}h`)}
           >
             <Text style={[styles.filterText, period === h && styles.filterTextActive]}>
               {h === 24 ? 'Today' : h === 48 ? '48 Hours' : '7 Days'}
@@ -135,7 +131,7 @@ export default function HotLeadsPage() {
       {tab === 'leads' ? (
         <View style={styles.section}>
           {hotLeads.length === 0 ? (
-            <View style={styles.emptyState} data-testid="empty-state">
+            <View style={styles.emptyState} {...tid('empty-state')}>
               <Ionicons name="flame-outline" size={48} color={colors.textTertiary} />
               <Text style={styles.emptyTitle}>No hot leads yet</Text>
               <Text style={styles.emptyText}>
@@ -144,13 +140,13 @@ export default function HotLeadsPage() {
             </View>
           ) : (
             hotLeads.map((lead, i) => {
-              const iconInfo = SIGNAL_ICONS[lead.last_signal] || { icon: 'eye', color: '#007AFF' };
+              const iconInfo = SIGNAL_ICONS[lead.last_signal] || { icon: 'eye', color: '#C9A962' };
               return (
                 <TouchableOpacity
                   key={`${lead.contact_id || lead.contact_name}-${i}`}
                   style={[styles.leadCard, i === 0 && styles.leadCardHot]}
                   onPress={() => lead.contact_id ? router.push(`/contact/${lead.contact_id}`) : null}
-                  data-testid={`hot-lead-${i}`}
+                  {...tid(`hot-lead-${i}`)}
                 >
                   <View style={[styles.leadIcon, { backgroundColor: iconInfo.color + '20' }]}>
                     <Ionicons name={iconInfo.icon as any} size={20} color={iconInfo.color} />
@@ -159,7 +155,7 @@ export default function HotLeadsPage() {
                     <View style={styles.leadNameRow}>
                       <Text style={styles.leadName}>{lead.contact_name}</Text>
                       {lead.is_return_visit && (
-                        <View style={styles.returnBadge} data-testid="return-visit-badge">
+                        <View style={styles.returnBadge} {...tid('return-visit-badge')}>
                           <Text style={styles.returnText}>RETURN VISIT</Text>
                         </View>
                       )}
@@ -183,13 +179,13 @@ export default function HotLeadsPage() {
                               await api.post(`/contacts/${user._id}/${lead.contact_id}/events`, {
                                 event_type: 'sms_sent', title: 'SMS Sent',
                                 description: `Texted ${lead.name || lead.phone} from Hot Leads`,
-                                channel: 'sms_personal', category: 'message', icon: 'chatbubble', color: '#007AFF',
+                                channel: 'sms_personal', category: 'message', icon: 'chatbubble', color: '#C9A962',
                               });
                             } catch {}
                           }
                           Linking.openURL(`sms:${lead.phone}`);
                         }}
-                        data-testid={`quick-text-${i}`}
+                        {...tid(`quick-text-${i}`)}
                       >
                         <Ionicons name="chatbubble" size={14} color="#34C759" />
                       </TouchableOpacity>
@@ -203,16 +199,16 @@ export default function HotLeadsPage() {
       ) : (
         <View style={styles.section}>
           {signals.length === 0 ? (
-            <View style={styles.emptyState} data-testid="empty-feed">
+            <View style={styles.emptyState} {...tid('empty-feed')}>
               <Ionicons name="pulse-outline" size={48} color={colors.textTertiary} />
               <Text style={styles.emptyTitle}>No activity yet</Text>
               <Text style={styles.emptyText}>Real-time engagement signals will appear here.</Text>
             </View>
           ) : (
             signals.map((sig, i) => {
-              const iconInfo = SIGNAL_ICONS[sig.signal_type] || { icon: 'eye', color: '#007AFF' };
+              const iconInfo = SIGNAL_ICONS[sig.signal_type] || { icon: 'eye', color: '#C9A962' };
               return (
-                <View key={`sig-${i}`} style={styles.signalRow} data-testid={`signal-${i}`}>
+                <View key={`sig-${i}`} style={styles.signalRow} {...tid(`signal-${i}`)}>
                   <View style={[styles.signalDot, { backgroundColor: iconInfo.color }]} />
                   <View style={styles.signalIcon}>
                     <Ionicons name={iconInfo.icon as any} size={16} color={iconInfo.color} />
@@ -238,6 +234,7 @@ export default function HotLeadsPage() {
 
       <View style={{ height: 80 }} />
     </ScrollView>
+    </SafeAreaView>
   );
 }
 

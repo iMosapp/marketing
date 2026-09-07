@@ -9,6 +9,9 @@ import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 
 const FILTERS = [
   { key: 'all', label: 'All' },
@@ -82,7 +85,7 @@ export default function AdminBugReportsPage() {
   if (!isSuperAdmin) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }} data-testid="bug-reports-access-denied">
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }} {...tid('bug-reports-access-denied')}>
           <Ionicons name="lock-closed" size={44} color="#FF9500" />
           <Text style={{ fontSize: 20, fontWeight: '700', color: colors.text, marginTop: 16 }}>Access Denied</Text>
           <Text style={{ fontSize: 15, color: colors.textSecondary, textAlign: 'center', marginTop: 8 }}>
@@ -101,13 +104,7 @@ export default function AdminBugReportsPage() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
-      {/* Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12 }}>
-        <TouchableOpacity onPress={() => router.back()} data-testid="bug-reports-back-btn">
-          <Ionicons name="chevron-back" size={26} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, flex: 1 }} numberOfLines={1}>Bug Reports</Text>
-      </View>
+      <ScreenHeader title="Bug Reports" testID="bug-reports-header" />
 
       {/* Filters */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 44 }} contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
@@ -121,12 +118,12 @@ export default function AdminBugReportsPage() {
               key={f.key}
               style={{
                 paddingHorizontal: 14, height: 34, borderRadius: 17, justifyContent: 'center',
-                backgroundColor: active ? '#007AFF' : colors.card,
+                backgroundColor: active ? '#C9A962' : colors.card,
               }}
               onPress={() => setFilter(f.key)}
-              data-testid={`bug-filter-${f.key}`}
+              {...tid(`bug-filter-${f.key}`)}
             >
-              <Text style={{ fontSize: 14, fontWeight: '600', color: active ? '#FFF' : colors.textSecondary }} numberOfLines={1}>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: active ? '#000' : colors.textSecondary }} numberOfLines={1}>
                 {f.label}{count > 0 ? ` (${count})` : ''}
               </Text>
             </TouchableOpacity>
@@ -136,7 +133,7 @@ export default function AdminBugReportsPage() {
 
       {loading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color="#C9A962" />
         </View>
       ) : (
         <ScrollView
@@ -145,15 +142,15 @@ export default function AdminBugReportsPage() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchReports(); }} tintColor={colors.textSecondary} />}
         >
           {loadError ? (
-            <View style={{ alignItems: 'center', paddingTop: 60 }} data-testid="bug-reports-error">
+            <View style={{ alignItems: 'center', paddingTop: 60 }} {...tid('bug-reports-error')}>
               <Ionicons name="cloud-offline-outline" size={44} color={colors.textSecondary} />
               <Text style={{ fontSize: 16, color: colors.textSecondary, marginTop: 10 }}>Could not load reports</Text>
               <TouchableOpacity
-                style={{ backgroundColor: '#007AFF20', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 24, marginTop: 16 }}
+                style={{ backgroundColor: '#C9A96220', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 24, marginTop: 16 }}
                 onPress={() => { setLoading(true); fetchReports(); }}
-                data-testid="bug-reports-retry-btn"
+                {...tid('bug-reports-retry-btn')}
               >
-                <Text style={{ fontSize: 15, fontWeight: '600', color: '#007AFF' }}>Retry</Text>
+                <Text style={{ fontSize: 15, fontWeight: '600', color: '#C9A962' }}>Retry</Text>
               </TouchableOpacity>
             </View>
           ) : reports.length === 0 ? (
@@ -166,7 +163,7 @@ export default function AdminBugReportsPage() {
               const st = STATUS_META[r.status] || STATUS_META.open;
               const cat = CATEGORY_META[r.category] || CATEGORY_META.other;
               return (
-                <View key={r._id} style={{ backgroundColor: colors.card, borderRadius: 14, padding: 16 }} data-testid={`bug-report-${r._id}`}>
+                <View key={r._id} style={{ backgroundColor: colors.card, borderRadius: 14, padding: 16 }} {...tid(`bug-report-${r._id}`)}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${cat.color}18`, paddingVertical: 3, paddingHorizontal: 8, borderRadius: 6 }}>
                       <Ionicons name={cat.icon as any} size={12} color={cat.color} />
@@ -186,7 +183,7 @@ export default function AdminBugReportsPage() {
                       <TouchableOpacity
                         style={{ backgroundColor: '#FF950020', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8 }}
                         onPress={() => setStatus(r._id, 'in_progress')}
-                        data-testid={`bug-start-${r._id}`}
+                        {...tid(`bug-start-${r._id}`)}
                       >
                         <Text style={{ fontSize: 13, fontWeight: '700', color: '#FF9500' }}>Start Working</Text>
                       </TouchableOpacity>
@@ -195,7 +192,7 @@ export default function AdminBugReportsPage() {
                       <TouchableOpacity
                         style={{ backgroundColor: '#34C75920', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8 }}
                         onPress={() => setStatus(r._id, 'resolved')}
-                        data-testid={`bug-resolve-${r._id}`}
+                        {...tid(`bug-resolve-${r._id}`)}
                       >
                         <Text style={{ fontSize: 13, fontWeight: '700', color: '#34C759' }}>Resolve</Text>
                       </TouchableOpacity>
@@ -204,7 +201,7 @@ export default function AdminBugReportsPage() {
                       <TouchableOpacity
                         style={{ backgroundColor: '#FF3B3020', paddingVertical: 8, paddingHorizontal: 16, borderRadius: 8 }}
                         onPress={() => setStatus(r._id, 'open')}
-                        data-testid={`bug-reopen-${r._id}`}
+                        {...tid(`bug-reopen-${r._id}`)}
                       >
                         <Text style={{ fontSize: 13, fontWeight: '700', color: '#FF3B30' }}>Reopen</Text>
                       </TouchableOpacity>

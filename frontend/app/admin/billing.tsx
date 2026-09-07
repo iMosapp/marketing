@@ -16,6 +16,7 @@ import { format } from 'date-fns';
 import api from '../../services/api';
 
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
 const TIME_FILTERS = [
   { label: '7D', value: '7d' },
   { label: '30D', value: '30d' },
@@ -114,14 +115,7 @@ export default function BillingScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Billing & Revenue</Text>
-        <View style={{ width: 28 }} />
-      </View>
+      <ScreenHeader title="Billing & Revenue" testID="billing-header" />
 
       {/* Time Filter */}
       <View style={styles.filterContainer}>
@@ -206,7 +200,7 @@ export default function BillingScreen() {
               <StatCard
                 label="Net Revenue"
                 value={formatCurrency(summary?.net_revenue)}
-                color="#007AFF"
+                color="#C9A962"
                 icon="trending-up"
               />
               <StatCard
@@ -220,7 +214,7 @@ export default function BillingScreen() {
 
             {/* Company Retained */}
             <View style={styles.retainedBox}>
-              <Ionicons name="business" size={24} color="#007AFF" />
+              <Ionicons name="business" size={24} color="#C9A962" />
               <View style={styles.retainedInfo}>
                 <Text style={styles.retainedLabel}>Company Retained</Text>
                 <Text style={styles.retainedSubtext}>After commissions & bonus pool</Text>
@@ -471,7 +465,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   retainedValue: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#007AFF',
+    color: '#C9A962',
   },
   planList: {
     backgroundColor: colors.card,

@@ -22,6 +22,9 @@ import api from '../../services/api';
 import { WebModal } from '../../components/WebModal';
 
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
@@ -364,17 +367,7 @@ export default function AppDirectoryScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} data-testid="back-button">
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={styles.title}>App Directory</Text>
-          <Text style={styles.subtitle}>{totalPages} pages</Text>
-        </View>
-        <View style={{ width: 36 }} />
-      </View>
+      <ScreenHeader title="App Directory" subtitle={`${totalPages} pages`} testID="app-directory-header" />
 
       {/* Search */}
       <View style={styles.searchWrap}>
@@ -386,7 +379,7 @@ export default function AppDirectoryScreen() {
             placeholderTextColor="#6E6E73"
             value={searchQuery}
             onChangeText={setSearchQuery}
-            data-testid="directory-search"
+            {...tid('directory-search')}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
@@ -400,13 +393,13 @@ export default function AppDirectoryScreen() {
         {filteredCatalog.map(cat => {
           const isExpanded = expandedCategories.has(cat.id);
           return (
-            <View key={cat.id} style={styles.catWrapper} data-testid={`category-${cat.id}`}>
+            <View key={cat.id} style={styles.catWrapper} {...tid(`category-${cat.id}`)}>
               {/* Category Header */}
               <TouchableOpacity
                 style={styles.catHeader}
                 onPress={() => toggleCategory(cat.id)}
                 activeOpacity={0.7}
-                data-testid={`category-header-${cat.id}`}
+                {...tid(`category-header-${cat.id}`)}
               >
                 <View style={[styles.catIcon, { backgroundColor: `${cat.color}20` }]}>
                   <Ionicons name={cat.icon as any} size={20} color={cat.color} />
@@ -420,7 +413,7 @@ export default function AppDirectoryScreen() {
 
               {/* Page Cards */}
               {isExpanded && cat.pages.map((page, idx) => (
-                <View key={page.path} style={styles.pageCard} data-testid={`page-${page.name.toLowerCase().replace(/\s+/g, '-')}`}>
+                <View key={page.path} style={styles.pageCard} {...tid(`page-${page.name.toLowerCase().replace(/\s+/g, '-')}`)}>
                   <View style={styles.pageTop}>
                     <View style={[styles.pageIcon, { backgroundColor: `${page.color}18` }]}>
                       <Ionicons name={page.icon as any} size={18} color={page.color} />
@@ -444,15 +437,15 @@ export default function AppDirectoryScreen() {
                     <TouchableOpacity
                       style={styles.actionBtn}
                       onPress={() => handlePreview(page)}
-                      data-testid={`preview-${page.name.toLowerCase().replace(/\s+/g, '-')}`}
+                      {...tid(`preview-${page.name.toLowerCase().replace(/\s+/g, '-')}`)}
                     >
-                      <Ionicons name="eye-outline" size={16} color="#007AFF" />
+                      <Ionicons name="eye-outline" size={16} color="#C9A962" />
                       <Text style={styles.actionText}>Preview</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.actionBtn}
                       onPress={() => handleCopyLink(page)}
-                      data-testid={`copy-${page.name.toLowerCase().replace(/\s+/g, '-')}`}
+                      {...tid(`copy-${page.name.toLowerCase().replace(/\s+/g, '-')}`)}
                     >
                       <Ionicons
                         name={copiedPath === page.path ? 'checkmark-outline' : 'copy-outline'}
@@ -466,7 +459,7 @@ export default function AppDirectoryScreen() {
                     <TouchableOpacity
                       style={[styles.actionBtn, styles.shareBtn]}
                       onPress={() => setShareModal(page)}
-                      data-testid={`share-${page.name.toLowerCase().replace(/\s+/g, '-')}`}
+                      {...tid(`share-${page.name.toLowerCase().replace(/\s+/g, '-')}`)}
                     >
                       <Ionicons name="share-outline" size={16} color="#C9A962" />
                       <Text style={[styles.actionText, { color: '#C9A962' }]}>Share</Text>
@@ -524,7 +517,7 @@ export default function AppDirectoryScreen() {
               <TouchableOpacity
                 style={[styles.channelBtn, shareChannel === 'email' && styles.channelBtnActive]}
                 onPress={() => setShareChannel('email')}
-                data-testid="channel-email"
+                {...tid('channel-email')}
               >
                 <Ionicons name="mail-outline" size={18} color={shareChannel === 'email' ? '#C9A962' : colors.textSecondary} />
                 <Text style={[styles.channelText, shareChannel === 'email' && styles.channelTextActive]}>Email</Text>
@@ -532,7 +525,7 @@ export default function AppDirectoryScreen() {
               <TouchableOpacity
                 style={[styles.channelBtn, shareChannel === 'sms' && styles.channelBtnActive]}
                 onPress={() => setShareChannel('sms')}
-                data-testid="channel-sms"
+                {...tid('channel-sms')}
               >
                 <Ionicons name="chatbubble-outline" size={18} color={shareChannel === 'sms' ? '#C9A962' : colors.textSecondary} />
                 <Text style={[styles.channelText, shareChannel === 'sms' && styles.channelTextActive]}>SMS</Text>
@@ -548,7 +541,7 @@ export default function AppDirectoryScreen() {
               value={recipientName}
               onChangeText={setRecipientName}
               autoCapitalize="words"
-              data-testid="recipient-name-input"
+              {...tid('recipient-name-input')}
             />
 
             {shareChannel === 'email' ? (
@@ -562,7 +555,7 @@ export default function AppDirectoryScreen() {
                   onChangeText={setRecipientEmail}
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  data-testid="recipient-email-input"
+                  {...tid('recipient-email-input')}
                 />
               </>
             ) : (
@@ -575,7 +568,7 @@ export default function AppDirectoryScreen() {
                   value={recipientPhone}
                   onChangeText={setRecipientPhone}
                   keyboardType="phone-pad"
-                  data-testid="recipient-phone-input"
+                  {...tid('recipient-phone-input')}
                 />
               </>
             )}
@@ -588,7 +581,7 @@ export default function AppDirectoryScreen() {
               value={customMessage}
               onChangeText={setCustomMessage}
               multiline
-              data-testid="custom-message-input"
+              {...tid('custom-message-input')}
             />
 
             {shareModal && !shareModal.requiresAuth && (
@@ -710,7 +703,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.surface,
   },
-  modalCancel: { fontSize: 18, color: '#007AFF' },
+  modalCancel: { fontSize: 18, color: '#C9A962' },
   modalTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
   modalSend: { fontSize: 18, fontWeight: '600', color: '#C9A962' },
   modalBody: { padding: 16 },

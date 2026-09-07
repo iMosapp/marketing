@@ -16,6 +16,9 @@ import { format } from 'date-fns';
 import api from '../../services/api';
 
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 interface Individual {
   _id: string;
   name: string;
@@ -102,7 +105,7 @@ export default function IndividualsScreen() {
     <TouchableOpacity
       style={styles.individualCard}
       onPress={() => router.push(`/admin/users/${item._id}`)}
-      data-testid={`individual-${item._id}`}
+      {...tid(`individual-${item._id}`)}
     >
       <View style={styles.individualAvatar}>
         <Text style={styles.avatarText}>
@@ -153,16 +156,7 @@ export default function IndividualsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Individuals</Text>
-        <TouchableOpacity onPress={() => setShowAddModal(true)} data-testid="add-individual-btn">
-          <Ionicons name="add-circle" size={28} color="#AF52DE" />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader title="Individuals" testID="individuals-header" right={<HeaderIconButton icon="add-circle" onPress={() => setShowAddModal(true)} testID="add-individual-btn" />} />
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
@@ -225,7 +219,7 @@ export default function IndividualsScreen() {
           <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 20 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <Text style={{ fontSize: 19, fontWeight: '700', color: colors.text }}>Add Individual</Text>
-              <TouchableOpacity onPress={() => setShowAddModal(false)} data-testid="close-add-modal">
+              <TouchableOpacity onPress={() => setShowAddModal(false)} {...tid('close-add-modal')}>
                 <Ionicons name="close-circle" size={28} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
@@ -248,7 +242,7 @@ export default function IndividualsScreen() {
                   onChangeText={(v) => setNewIndividual(prev => ({ ...prev, [key]: v }))}
                   keyboardType={(keyboardType as any) || 'default'}
                   autoCapitalize={key === 'email' ? 'none' : 'words'}
-                  data-testid={`add-individual-${key}`}
+                  {...tid(`add-individual-${key}`)}
                 />
               </View>
             ))}
@@ -259,7 +253,7 @@ export default function IndividualsScreen() {
               style={{ backgroundColor: '#AF52DE', borderRadius: 12, height: 48, alignItems: 'center', justifyContent: 'center', opacity: (!newIndividual.name.trim() || !newIndividual.email.trim() || creating) ? 0.5 : 1 }}
               onPress={handleCreate}
               disabled={!newIndividual.name.trim() || !newIndividual.email.trim() || creating}
-              data-testid="create-individual-submit"
+              {...tid('create-individual-submit')}
             >
               <Text style={{ color: '#fff', fontSize: 18, fontWeight: '600' }}>
                 {creating ? 'Creating...' : 'Create Individual'}

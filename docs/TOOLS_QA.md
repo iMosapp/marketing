@@ -40,7 +40,7 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 7. My Performance  DONE (tested iteration_301) (Team Sales, Team Tasks, Customer Engagement, Leaderboard, Activity Reports, Email Analytics, SEO/GEO Health, VA Library)
 8. Campaigns + My Tools  DONE (tested iteration_302) (Campaign Dashboard, Date Triggers, Ask Jessi, Team Chat)
 9. Set Up  DONE (tested iteration_303) (Store Profile, Brand Kit, Messaging Channels, Phone Numbers, Team Members, Invite Team, Integrations)
-10. Admin / Internal Operations (super admin only, `later`)  <- next if wanted
+10. Admin / Internal Operations  DONE (tested iteration_304): 27 screens converted by codemod (/app/memory/admin_codemod_batch9.py)
 
 ## Inventory
 
@@ -99,7 +99,7 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 | 51 | My Performance | SEO Health | /seo-health | | x | fixed | rebuilt on shared components/health/HealthScoreScreen.tsx: theme colors (was hardcoded #000/#FFF), shared header + share icon, gold tabs/retry/guide/fix buttons; backend Good tier color blue -> gold |
 | 52 | My Performance | GEO Health | /geo-health | | x | fixed | same shared screen. BUG: guide link went to /seo-guide -> /geo-guide. Backend tip strings em dashes removed, Building tier color -> gold |
 | 53 | My Performance | VA Library | /admin/va-library | | admin | fixed | shared header with add icon, BUG: window.confirm on delete (crashes native) -> showAlert, Edit blue -> gold, default avatar color gold, em dashes removed |
-| 54 | My Performance | System Logs | /admin/system-logs | | admin | later | |
+| 54 | My Performance | System Logs | /admin/system-logs | | admin | fixed | shared header with red Clear text button; level colors kept |
 | 55 | Set Up | Store Profile | /settings/store-profile | | x | fixed | already on shared header from #4; grays -> theme, default primary color gold, testids |
 | 56 | Set Up | Brand Kit | /settings/brand-kit | | x | fixed | shared header with Save; BUG: logo upload was web-only (did nothing on the phone) -> expo-image-picker; 28px hardcoded top padding removed; blue -> gold; eyebrows |
 | 57 | Set Up | Messaging Channels | /settings/messaging-channels | | x | fixed | shared header with enabled-count subtitle, loading/error state with Retry, radius 16, backend WhatsApp description em dash removed |
@@ -107,19 +107,19 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 | 59 | Set Up | Team Members | /admin/users, /admin/users/[id] | | x | fixed | list: shared header (titled Team Members, N active) with add icon; BUG: Add User modal rendered nothing on native -> real Modal; stale JESSI_BAR padding removed; expo-image; gold pickers/checkbox; empty CTA. Detail: shared header with name subtitle, all blue -> gold, purple impersonate bg -> neutral outline, Cancel labels gray, pool number current state green |
 | 60 | Set Up | Invite Team | /settings/invite-team | | x | fixed | shared header, 28px hardcoded top removed, org_admin color unified to orange, blue -> gold, SMS toggle gold, Create button black text, empty state |
 | 61 | Set Up | Integrations | /settings/integrations | | x | fixed | shared header (also while loading), tabs/add/modal buttons/doc pills blue -> gold; HTTP method + event dot category colors kept |
-| 62 | Admin | Onboarding Hub | /admin/onboarding-hub | | super/partner | later | |
-| 63 | Admin | Account Health | /admin/account-health | | super/partner | later | |
-| 64 | Admin | Admin Dashboard | /admin | | super | later | |
-| 65 | Admin | Organizations | /admin/organizations | | super/partner | later | |
-| 66 | Admin | Accounts | /admin/stores | | super/partner | later | |
-| 67 | Admin | Individuals / Pending Users | /admin/individuals, /admin/pending-users | | super | later | |
-| 68 | Admin | iMOS Website Leads / Hot Leads | /admin/lead-tracking, /admin/hot-leads | | super | later | |
-| 69 | Admin | Partner Portal / Agreements / White Label | /partner/dashboard, /admin/partner-agreements, /admin/white-label | | super | later | |
-| 70 | Admin | Billing / Forecast / Quotes / Discount Codes | /admin/billing, /admin/forecasting, /admin/quotes, /admin/create-quote, /admin/discount-codes | | super | later | |
-| 71 | Admin | Shared Inboxes / Bulk Transfer / App Directory | /admin/shared-inboxes, /admin/bulk-transfer, /admin/app-directory | | super | later | |
-| 72 | Admin | Company Docs / Brand Assets | /admin/docs, /admin/brand-assets | | super | later | |
-| 73 | Admin | Error Reports / Bug Reports | /admin/error-reports, /admin/bug-reports | | super | later | |
-| 74 | Admin | SOPs / Manage Training / Training Report | /admin/sops, /admin/manage-training, /admin/training-reports | | super | later | |
+| 62 | Admin | Onboarding Hub | /admin/onboarding-hub | | super/partner | fixed | header hoisted out of the ScrollView onto shared header with subtitle |
+| 63 | Admin | Account Health | /admin/account-health | | super/partner | fixed | header hoisted; BUG: period 30d/90d active style was overridden (never showed) -> fixed; pills gold + black text |
+| 64 | Admin | Admin Dashboard | /admin | | super | fixed | shared header with role subtitle; menu item icon palette kept |
+| 65 | Admin | Organizations | /admin/organizations | | super/partner | fixed | search + add in header; create button black text; type toggle black text |
+| 66 | Admin | Accounts | /admin/stores | | super/partner | fixed | search + add in header; empty-string org name no longer renders a bare text node (150 console errors) |
+| 67 | Admin | Individuals / Pending Users | /admin/individuals, /admin/pending-users | | super | fixed | add icon in header; pending count subtitle; role user blue -> gold |
+| 68 | Admin | iMOS Website Leads / Hot Leads | /admin/lead-tracking, /admin/hot-leads | | super | fixed | both were plain View/ScrollView roots (no safe area) -> SafeAreaView + shared header; refresh in header |
+| 69 | Admin | Partner Portal / Agreements / White Label | /partner/dashboard, /admin/partner-agreements, /admin/white-label | | super | fixed | shared headers (agreements: both access-denied and main), add/toggle icons in header, em dashes removed |
+| 70 | Admin | Billing / Forecast / Quotes / Discount Codes | /admin/billing, /admin/forecasting, /admin/quotes, /admin/create-quote, /admin/discount-codes | | super | fixed | shared headers; edges top added where missing; gold fills get black text; BUG: discount-codes getDiscountColor referenced undefined `colors` (would crash <10%) -> fixed |
+| 71 | Admin | Shared Inboxes / Bulk Transfer / App Directory | /admin/shared-inboxes, /admin/bulk-transfer, /admin/app-directory | | super | fixed | shared headers; BUG: bulk-transfer fetched with user_id=undefined before auth hydrated (403) -> waits for user; page palette kept |
+| 72 | Admin | Company Docs / Brand Assets | /admin/docs, /admin/brand-assets | | super | fixed | brand-assets: COLORS.accent blue -> gold, palette icon in header, em dashes removed. /admin/docs is a folder route, untouched |
+| 73 | Admin | Error Reports / Bug Reports | /admin/error-reports, /admin/bug-reports | | super | fixed | shared headers with count subtitle + red trash; filter pills gold/black; copy button black text |
+| 74 | Admin | SOPs / Manage Training / Training Report | /admin/sops, /admin/manage-training, /admin/training-reports | | super | fixed | sops: colors.primary fallback -> accent; manage-training: all 4 views (list, new track, edit track, edit lesson) on shared header with text actions; training default color gold |
 
 ## Log
 
@@ -132,3 +132,4 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 - June 2026: Batch 6 (My Performance) done: 9 screens, SEO/GEO collapsed into one shared HealthScoreScreen, 3 real bugs fixed (GEO guide route, VA delete window.confirm on native, Email Analytics dead range filter). Testing agent pass (iteration_301); GEO tip em dashes fixed same turn. yarn.lock regenerated: the committed one failed --frozen-lockfile.
 - June 2026: Batch 7 (Campaigns + My Tools) done: 4 screens, testing agent pass (iteration_302). Tester flagged Team Sales Referrals column blue as a regression: NOT one, it is the intentional category color matching the Home Sold/Referrals/Repeats tiles. LESSON: never run `yarn install` while Metro is running; it rewrites node_modules and Metro's file map goes stale (web 500 'native-only module' error). Fix = rm -rf .metro-cache && supervisorctl restart frontend.
 - June 2026: Batch 8 (Set Up) done: 7 screens, testing agent pass (iteration_303); the one nit (backend WhatsApp description em dash) fixed same turn. Real bugs fixed: Brand Kit logo upload did nothing on native; Team Members Add User modal never rendered on native. Only the super-admin `later` screens remain.
+- June 2026: Batch 9 (Admin) done via codemod: 27 super-admin screens. Testing agent pass (iteration_304). LESSON from the codemod: converting `data-testid={`...${x}`}` with a `[^}]+` regex breaks on template literals; and keep-line numbers must be computed AFTER header replacement shifts lines. Fixed both same turn. Every screen in TOOLS_QA is now `fixed`.

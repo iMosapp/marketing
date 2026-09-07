@@ -8,6 +8,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import api from '../../services/api';
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 
 export default function TrainingReportsScreen() {
   const { colors } = useThemeStore();
@@ -56,16 +59,7 @@ export default function TrainingReportsScreen() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn} data-testid="back-button">
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text style={s.headerTitle}>Training Report</Text>
-          <Text style={s.headerSub}>Video engagement analytics</Text>
-        </View>
-        <View style={{ width: 44 }} />
-      </View>
+      <ScreenHeader title="Training Report" subtitle="Video engagement analytics" testID="training-reports-header" />
 
       <View style={s.tabBar}>
         {TABS.map(t => (
@@ -73,7 +67,7 @@ export default function TrainingReportsScreen() {
             key={t.key}
             style={[s.tab, tab === t.key && s.tabActive]}
             onPress={() => setTab(t.key)}
-            data-testid={`tab-${t.key}`}
+            {...tid(`tab-${t.key}`)}
           >
             <Ionicons name={t.icon} size={16} color={tab === t.key ? '#C9A962' : colors.textSecondary} />
             <Text style={[s.tabText, tab === t.key && s.tabTextActive]}>{t.label}</Text>
@@ -93,7 +87,7 @@ export default function TrainingReportsScreen() {
             {tab === 'overview' && (
               <>
                 {/* Stats cards */}
-                <View style={s.statsRow} data-testid="overview-stats">
+                <View style={s.statsRow} {...tid('overview-stats')}>
                   <View style={s.statCard}>
                     <Ionicons name="play-circle" size={28} color="#AF52DE" />
                     <Text style={s.statNum}>{ov.total_videos_tracked || 0}</Text>
@@ -107,7 +101,7 @@ export default function TrainingReportsScreen() {
                 </View>
 
                 {/* Top Videos */}
-                <View style={s.section} data-testid="top-videos-section">
+                <View style={s.section} {...tid('top-videos-section')}>
                   <View style={s.sectionHeader}>
                     <Ionicons name="trending-up" size={18} color="#FF9500" />
                     <Text style={s.sectionTitle}>Top Videos</Text>
@@ -124,7 +118,7 @@ export default function TrainingReportsScreen() {
                         key={v.youtube_url || i}
                         style={s.videoRow}
                         onPress={() => openYT(v.youtube_url)}
-                        data-testid={`video-${i}`}
+                        {...tid(`video-${i}`)}
                       >
                         <View style={s.rankBadge}>
                           <Text style={s.rankText}>#{i + 1}</Text>
@@ -148,9 +142,9 @@ export default function TrainingReportsScreen() {
 
                 {/* Recent Activity */}
                 {(ov.recent_activity || []).length > 0 && (
-                  <View style={s.section} data-testid="recent-activity-section">
+                  <View style={s.section} {...tid('recent-activity-section')}>
                     <View style={s.sectionHeader}>
-                      <Ionicons name="time-outline" size={18} color="#007AFF" />
+                      <Ionicons name="time-outline" size={18} color="#C9A962" />
                       <Text style={s.sectionTitle}>Recent Activity</Text>
                     </View>
                     {(ov.recent_activity || []).slice(0, 15).map((a, i) => (
@@ -171,9 +165,9 @@ export default function TrainingReportsScreen() {
 
             {/* ===== BY SENDER ===== */}
             {tab === 'senders' && (
-              <View style={s.section} data-testid="senders-section">
+              <View style={s.section} {...tid('senders-section')}>
                 <View style={s.sectionHeader}>
-                  <Ionicons name="people" size={18} color="#007AFF" />
+                  <Ionicons name="people" size={18} color="#C9A962" />
                   <Text style={s.sectionTitle}>Senders Ranked by Engagement</Text>
                 </View>
                 {senders.length === 0 ? (
@@ -183,7 +177,7 @@ export default function TrainingReportsScreen() {
                   </View>
                 ) : (
                   senders.map((sender, i) => (
-                    <View key={sender.user_id || i} style={s.senderRow} data-testid={`sender-${i}`}>
+                    <View key={sender.user_id || i} style={s.senderRow} {...tid(`sender-${i}`)}>
                       <View style={s.rankBadge}>
                         <Text style={s.rankText}>#{i + 1}</Text>
                       </View>
@@ -207,7 +201,7 @@ export default function TrainingReportsScreen() {
 
             {/* ===== BY VIDEO ===== */}
             {tab === 'videos' && (
-              <View style={s.section} data-testid="videos-section">
+              <View style={s.section} {...tid('videos-section')}>
                 <View style={s.sectionHeader}>
                   <Ionicons name="play-circle" size={18} color="#AF52DE" />
                   <Text style={s.sectionTitle}>All Videos</Text>
@@ -223,7 +217,7 @@ export default function TrainingReportsScreen() {
                       key={v.youtube_url || i}
                       style={s.videoDetailRow}
                       onPress={() => openYT(v.youtube_url)}
-                      data-testid={`video-detail-${i}`}
+                      {...tid(`video-detail-${i}`)}
                     >
                       {v.thumbnail ? (
                         <Image source={{ uri: v.thumbnail }} style={s.thumbLg} />
@@ -240,7 +234,7 @@ export default function TrainingReportsScreen() {
                             <Text style={s.videoStatText}>{v.total_clicks} clicks</Text>
                           </View>
                           <View style={s.videoStatItem}>
-                            <Ionicons name="send-outline" size={14} color="#007AFF" />
+                            <Ionicons name="send-outline" size={14} color="#C9A962" />
                             <Text style={s.videoStatText}>{v.times_sent}x sent</Text>
                           </View>
                           <View style={s.videoStatItem}>
@@ -258,7 +252,7 @@ export default function TrainingReportsScreen() {
 
             {/* ===== WHO WATCHED ===== */}
             {tab === 'viewers' && (
-              <View style={s.section} data-testid="viewers-section">
+              <View style={s.section} {...tid('viewers-section')}>
                 {/* Summary stats */}
                 <View style={s.statsRow}>
                   <View style={s.statCard}>
@@ -267,7 +261,7 @@ export default function TrainingReportsScreen() {
                     <Text style={s.statLabel}>Total Views</Text>
                   </View>
                   <View style={s.statCard}>
-                    <Ionicons name="people" size={28} color="#007AFF" />
+                    <Ionicons name="people" size={28} color="#C9A962" />
                     <Text style={s.statNum}>{viewers?.by_user?.length || 0}</Text>
                     <Text style={s.statLabel}>Unique Viewers</Text>
                   </View>
@@ -280,7 +274,7 @@ export default function TrainingReportsScreen() {
 
                 {/* Per-user table */}
                 <View style={s.sectionHeader}>
-                  <Ionicons name="people-outline" size={18} color="#007AFF" />
+                  <Ionicons name="people-outline" size={18} color="#C9A962" />
                   <Text style={s.sectionTitle}>By Team Member</Text>
                 </View>
                 {(viewers?.by_user?.length || 0) === 0 ? (
@@ -291,9 +285,9 @@ export default function TrainingReportsScreen() {
                   </View>
                 ) : (
                   (viewers?.by_user || []).map((u: any, i: number) => (
-                    <View key={u.user_id || i} style={s.senderRow} data-testid={`viewer-row-${i}`}>
-                      <View style={[s.senderAvatar, { backgroundColor: '#007AFF20' }]}>
-                        <Text style={[s.senderInitials, { color: '#007AFF' }]}>
+                    <View key={u.user_id || i} style={s.senderRow} {...tid(`viewer-row-${i}`)}>
+                      <View style={[s.senderAvatar, { backgroundColor: '#C9A96220' }]}>
+                        <Text style={[s.senderInitials, { color: '#C9A962' }]}>
                           {(u.name || '?').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                         </Text>
                       </View>
@@ -317,7 +311,7 @@ export default function TrainingReportsScreen() {
                       <Text style={s.sectionTitle}>By Lesson</Text>
                     </View>
                     {(viewers?.by_lesson || []).map((l: any, i: number) => (
-                      <View key={l.lesson_id || i} style={[s.senderRow, { alignItems: 'flex-start' }]} data-testid={`lesson-row-${i}`}>
+                      <View key={l.lesson_id || i} style={[s.senderRow, { alignItems: 'flex-start' }]} {...tid(`lesson-row-${i}`)}>
                         <View style={[s.senderAvatar, { backgroundColor: '#AF52DE20' }]}>
                           <Ionicons name="play" size={16} color="#AF52DE" />
                         </View>

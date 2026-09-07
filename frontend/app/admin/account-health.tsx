@@ -9,6 +9,9 @@ import { useRouter } from 'expo-router';
 import { useThemeStore } from '../../store/themeStore';
 import { useToast } from '../../components/common/Toast';
 import api from '../../services/api';
+import { ScreenHeader, HeaderIconButton, HeaderTextButton } from '../../components/common/ScreenHeader';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 
 type HealthGrade = { score: number; grade: string; color: string };
 type Account = {
@@ -168,35 +171,25 @@ export default function AccountHealthDashboard() {
   };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]} edges={['top']}>
+      <ScreenHeader title="Account Health" subtitle={`${stats.total} accounts tracked`} testID="account-health-header" />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={22} color={colors.text} />
-          </TouchableOpacity>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.title, { color: colors.text }]}>Account Health</Text>
-            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>{stats.total} accounts tracked</Text>
-          </View>
-          {/* Period Toggle */}
-          <View style={styles.periodRow}>
-            {[30, 90].map(p => (
-              <TouchableOpacity key={p} onPress={() => setPeriod(p)}
-                style={[styles.periodBtn, period === p && { backgroundColor: '#007AFF', borderColor: '#007AFF' }, { borderColor: colors.surface, backgroundColor: colors.card }]}>
-                <Text style={{ fontSize: 13, fontWeight: '600', color: period === p ? '#FFF' : colors.textSecondary }}>{p}d</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+        <View style={[styles.periodRow, { alignSelf: 'flex-end', marginBottom: 12 }]}>
+          {[30, 90].map(p => (
+            <TouchableOpacity key={p} onPress={() => setPeriod(p)}
+              style={[styles.periodBtn, { borderColor: colors.border, backgroundColor: colors.card }, period === p && { backgroundColor: '#C9A962', borderColor: '#C9A962' }]} {...tid(`period-${p}`)}>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: period === p ? '#000' : colors.textSecondary }}>{p}d</Text>
+            </TouchableOpacity>
+          ))}
         </View>
 
         {/* Tab Bar */}
         <View style={[styles.tabBar, { borderColor: colors.surface }]}>
-          <TouchableOpacity onPress={() => setTab('overview')} style={[styles.tabItem, tab === 'overview' && styles.tabItemActive]} data-testid="tab-overview">
-            <Ionicons name="pulse" size={14} color={tab === 'overview' ? '#007AFF' : colors.textSecondary} />
-            <Text style={{ fontSize: 15, fontWeight: '600', color: tab === 'overview' ? '#007AFF' : colors.textSecondary }}>Overview</Text>
+          <TouchableOpacity onPress={() => setTab('overview')} style={[styles.tabItem, tab === 'overview' && styles.tabItemActive]} {...tid('tab-overview')}>
+            <Ionicons name="pulse" size={14} color={tab === 'overview' ? '#C9A962' : colors.textSecondary} />
+            <Text style={{ fontSize: 15, fontWeight: '600', color: tab === 'overview' ? '#C9A962' : colors.textSecondary }}>Overview</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setTab('scheduled')} style={[styles.tabItem, tab === 'scheduled' && styles.tabItemActive]} data-testid="tab-scheduled">
+          <TouchableOpacity onPress={() => setTab('scheduled')} style={[styles.tabItem, tab === 'scheduled' && styles.tabItemActive]} {...tid('tab-scheduled')}>
             <Ionicons name="calendar" size={14} color={tab === 'scheduled' ? '#C9A962' : colors.textSecondary} />
             <Text style={{ fontSize: 15, fontWeight: '600', color: tab === 'scheduled' ? '#C9A962' : colors.textSecondary }}>Scheduled Reports</Text>
             {schedules.filter(s => s.active).length > 0 && (
@@ -246,15 +239,15 @@ export default function AccountHealthDashboard() {
         <View style={styles.filterRow}>
           {FILTERS.map(f => (
             <TouchableOpacity key={f} onPress={() => setFilter(f)}
-              style={[styles.filterPill, { backgroundColor: filter === f ? '#007AFF' : colors.card, borderColor: filter === f ? '#007AFF' : colors.surface }]}>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: filter === f ? '#FFF' : colors.textSecondary }}>{f}</Text>
+              style={[styles.filterPill, { backgroundColor: filter === f ? '#C9A962' : colors.card, borderColor: filter === f ? '#C9A962' : colors.surface }]}>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: filter === f ? '#000' : colors.textSecondary }}>{f}</Text>
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Account List */}
         {loading ? (
-          <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 40 }} />
+          <ActivityIndicator size="large" color="#C9A962" style={{ marginTop: 40 }} />
         ) : filtered.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="pulse" size={40} color={colors.textSecondary} />
@@ -309,16 +302,16 @@ export default function AccountHealthDashboard() {
                   <TouchableOpacity
                     onPress={(e) => { e.stopPropagation(); openSendModal(a); }}
                     style={styles.quickSendBtn}
-                    data-testid={`send-report-${a.user_id}`}
+                    {...tid(`send-report-${a.user_id}`)}
                   >
                     <Ionicons name="paper-plane-outline" size={14} color="#C9A962" />
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={(e) => { e.stopPropagation(); handleScheduleFromAccount(a); }}
                     style={styles.quickSendBtn}
-                    data-testid={`schedule-${a.user_id}`}
+                    {...tid(`schedule-${a.user_id}`)}
                   >
-                    <Ionicons name="calendar-outline" size={14} color="#007AFF" />
+                    <Ionicons name="calendar-outline" size={14} color="#C9A962" />
                   </TouchableOpacity>
                   <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
                 </View>
@@ -337,7 +330,7 @@ export default function AccountHealthDashboard() {
             <TouchableOpacity
               onPress={() => setShowNewSched(true)}
               style={[styles.newSchedBtn, { borderColor: '#C9A962' }]}
-              data-testid="new-schedule-btn"
+              {...tid('new-schedule-btn')}
             >
               <Ionicons name="add-circle" size={18} color="#C9A962" />
               <Text style={{ color: '#C9A962', fontSize: 16, fontWeight: '600' }}>New Monthly Schedule</Text>
@@ -355,11 +348,11 @@ export default function AccountHealthDashboard() {
                 <View style={styles.scopeRow}>
                   {(['user', 'org'] as const).map(s => (
                     <TouchableOpacity key={s} onPress={() => setSchedScope(s)}
-                      style={[styles.scopeBtn, { backgroundColor: schedScope === s ? (s === 'user' ? '#007AFF' : '#AF52DE') : colors.surface, borderColor: schedScope === s ? (s === 'user' ? '#007AFF' : '#AF52DE') : colors.surface }]}
-                      data-testid={`scope-${s}-btn`}
+                      style={[styles.scopeBtn, { backgroundColor: schedScope === s ? (s === 'user' ? '#C9A962' : '#AF52DE') : colors.surface, borderColor: schedScope === s ? (s === 'user' ? '#C9A962' : '#AF52DE') : colors.surface }]}
+                      {...tid(`scope-${s}-btn`)}
                     >
-                      <Ionicons name={s === 'user' ? 'person' : 'business'} size={14} color={schedScope === s ? '#FFF' : colors.textSecondary} />
-                      <Text style={{ color: schedScope === s ? '#FFF' : colors.textSecondary, fontSize: 14, fontWeight: '600' }}>{s === 'user' ? 'Individual' : 'Organization'}</Text>
+                      <Ionicons name={s === 'user' ? 'person' : 'business'} size={14} color={schedScope === s ? '#000' : colors.textSecondary} />
+                      <Text style={{ color: schedScope === s ? '#000' : colors.textSecondary, fontSize: 14, fontWeight: '600' }}>{s === 'user' ? 'Individual' : 'Organization'}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -371,7 +364,7 @@ export default function AccountHealthDashboard() {
                   placeholder={schedScope === 'user' ? 'Select from accounts above, or paste user ID' : 'Paste organization ID'}
                   placeholderTextColor="#666"
                   style={[styles.modalInput, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.surface }]}
-                  data-testid="sched-target-input"
+                  {...tid('sched-target-input')}
                 />
 
                 {/* Quick-pick from loaded accounts */}
@@ -380,7 +373,7 @@ export default function AccountHealthDashboard() {
                     {accounts.slice(0, 10).map(a => (
                       <TouchableOpacity key={a.user_id} onPress={() => { setSchedTarget(a.user_id); setSchedEmail(a.email); setSchedName(a.name); }}
                         style={[styles.quickPick, { backgroundColor: colors.surface }]}
-                        data-testid={`quick-pick-${a.user_id}`}
+                        {...tid(`quick-pick-${a.user_id}`)}
                       >
                         <View style={[styles.miniDot, { backgroundColor: a.health.color }]}>
                           <Text style={{ color: '#FFF', fontSize: 8, fontWeight: '800' }}>{a.health.score}</Text>
@@ -400,7 +393,7 @@ export default function AccountHealthDashboard() {
                   keyboardType="email-address"
                   autoCapitalize="none"
                   style={[styles.modalInput, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.surface }]}
-                  data-testid="sched-email-input"
+                  {...tid('sched-email-input')}
                 />
 
                 <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Note (included in email)</Text>
@@ -410,14 +403,14 @@ export default function AccountHealthDashboard() {
                   placeholder="Optional message..."
                   placeholderTextColor="#666"
                   style={[styles.modalInput, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.surface }]}
-                  data-testid="sched-note-input"
+                  {...tid('sched-note-input')}
                 />
 
                 <View style={{ flexDirection: 'row', gap: 10, marginTop: 14 }}>
-                  <TouchableOpacity onPress={() => setShowNewSched(false)} style={[styles.cancelBtn, { borderColor: colors.surface }]} data-testid="cancel-new-sched-btn">
+                  <TouchableOpacity onPress={() => setShowNewSched(false)} style={[styles.cancelBtn, { borderColor: colors.surface }]} {...tid('cancel-new-sched-btn')}>
                     <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 16 }}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={createSchedule} disabled={creatingSched} style={[styles.sendReportBtn, creatingSched && { opacity: 0.6 }]} data-testid="create-schedule-btn">
+                  <TouchableOpacity onPress={createSchedule} disabled={creatingSched} style={[styles.sendReportBtn, creatingSched && { opacity: 0.6 }]} {...tid('create-schedule-btn')}>
                     {creatingSched ? <ActivityIndicator size="small" color="#FFF" /> : <Ionicons name="calendar-outline" size={14} color="#FFF" />}
                     <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 16 }}>{creatingSched ? 'Creating...' : 'Schedule'}</Text>
                   </TouchableOpacity>
@@ -438,23 +431,23 @@ export default function AccountHealthDashboard() {
               </View>
             ) : (
               schedules.map((s) => (
-                <View key={s.id} style={[styles.schedRow, { backgroundColor: colors.card, borderColor: colors.surface, opacity: s.active ? 1 : 0.5 }]} data-testid={`schedule-${s.id}`}>
-                  <View style={[styles.schedIcon, { backgroundColor: s.scope === 'user' ? '#007AFF20' : '#AF52DE20' }]}>
-                    <Ionicons name={s.scope === 'user' ? 'person' : 'business'} size={16} color={s.scope === 'user' ? '#007AFF' : '#AF52DE'} />
+                <View key={s.id} style={[styles.schedRow, { backgroundColor: colors.card, borderColor: colors.surface, opacity: s.active ? 1 : 0.5 }]} {...tid(`schedule-${s.id}`)}>
+                  <View style={[styles.schedIcon, { backgroundColor: s.scope === 'user' ? '#C9A96220' : '#AF52DE20' }]}>
+                    <Ionicons name={s.scope === 'user' ? 'person' : 'business'} size={16} color={s.scope === 'user' ? '#C9A962' : '#AF52DE'} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.accountName, { color: colors.text }]}>{s.target_name || s.target_id}</Text>
                     <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
-                      {s.recipient_email} {s.note ? `— "${s.note}"` : ''}
+                      {s.recipient_email} {s.note ? `("${s.note}")` : ''}
                     </Text>
                     <Text style={{ fontSize: 12, color: '#888', marginTop: 2 }}>
                       Monthly &bull; {s.last_sent_at ? `Last sent: ${new Date(s.last_sent_at).toLocaleDateString()}` : 'Not yet sent'}
                     </Text>
                   </View>
-                  <TouchableOpacity onPress={() => toggleSchedule(s.id, s.active)} style={{ padding: 8 }} data-testid={`toggle-schedule-${s.id}`}>
+                  <TouchableOpacity onPress={() => toggleSchedule(s.id, s.active)} style={{ padding: 8 }} {...tid(`toggle-schedule-${s.id}`)}>
                     <Ionicons name={s.active ? 'toggle' : 'toggle-outline'} size={28} color={s.active ? '#34C759' : '#888'} />
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => deleteSchedule(s.id)} style={{ padding: 8 }} data-testid={`delete-schedule-${s.id}`}>
+                  <TouchableOpacity onPress={() => deleteSchedule(s.id)} style={{ padding: 8 }} {...tid(`delete-schedule-${s.id}`)}>
                     <Ionicons name="trash-outline" size={18} color="#FF3B30" />
                   </TouchableOpacity>
                 </View>
@@ -474,7 +467,7 @@ export default function AccountHealthDashboard() {
               <View style={styles.modalHeader}>
                 <Ionicons name="paper-plane" size={20} color="#C9A962" />
                 <Text style={[styles.modalTitle, { color: colors.text }]}>Send Health Report</Text>
-                <TouchableOpacity onPress={() => setSendModal(null)} data-testid="close-send-modal-btn">
+                <TouchableOpacity onPress={() => setSendModal(null)} {...tid('close-send-modal-btn')}>
                   <Ionicons name="close" size={22} color={colors.textSecondary} />
                 </TouchableOpacity>
               </View>
@@ -492,7 +485,7 @@ export default function AccountHealthDashboard() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 style={[styles.modalInput, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.surface }]}
-                data-testid="send-report-email-input"
+                {...tid('send-report-email-input')}
               />
 
               <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Personal Note</Text>
@@ -504,14 +497,14 @@ export default function AccountHealthDashboard() {
                 multiline
                 numberOfLines={3}
                 style={[styles.modalInput, styles.textarea, { backgroundColor: colors.bg, color: colors.text, borderColor: colors.surface }]}
-                data-testid="send-report-note-input"
+                {...tid('send-report-note-input')}
               />
 
               <View style={styles.modalActions}>
-                <TouchableOpacity onPress={() => setSendModal(null)} style={[styles.cancelBtn, { borderColor: colors.surface }]} data-testid="cancel-send-report-btn">
+                <TouchableOpacity onPress={() => setSendModal(null)} style={[styles.cancelBtn, { borderColor: colors.surface }]} {...tid('cancel-send-report-btn')}>
                   <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 16 }}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={handleSendReport} disabled={sending} style={[styles.sendReportBtn, sending && { opacity: 0.6 }]} data-testid="confirm-send-report-btn">
+                <TouchableOpacity onPress={handleSendReport} disabled={sending} style={[styles.sendReportBtn, sending && { opacity: 0.6 }]} {...tid('confirm-send-report-btn')}>
                   {sending ? <ActivityIndicator size="small" color="#FFF" /> : <Ionicons name="paper-plane" size={14} color="#FFF" />}
                   <Text style={{ color: '#FFF', fontWeight: '700', fontSize: 16 }}>{sending ? 'Sending...' : 'Send Report'}</Text>
                 </TouchableOpacity>
@@ -574,7 +567,7 @@ const styles = StyleSheet.create({
   // Tab bar
   tabBar: { flexDirection: 'row', borderBottomWidth: 1, marginBottom: 14, gap: 4 },
   tabItem: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  tabItemActive: { borderBottomColor: '#007AFF' },
+  tabItemActive: { borderBottomColor: '#C9A962' },
   // Scheduled reports
   newSchedBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 10, borderWidth: 1, borderStyle: 'dashed', marginBottom: 10 },
   schedInfo: { fontSize: 14, marginBottom: 14, lineHeight: 17 },
