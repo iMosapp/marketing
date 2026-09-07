@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton } from '../../components/common/ScreenHeader';
 import api from '../../services/api';
 import { resolveUserPhotoUrl } from '../../utils/photoUrl';
 
@@ -70,10 +71,10 @@ function getCompleteness(persona: any): { score: number; filled: typeof PERSONA_
 }
 
 function scoreLabel(score: number) {
-  if (score >= 90) return { text: 'Expert clone — sounds exactly like you', color: '#34C759' };
-  if (score >= 70) return { text: 'Strong — a few more details will make it perfect', color: '#C9A962' };
-  if (score >= 40) return { text: 'Getting there — your VA needs more context', color: '#FF9500' };
-  return { text: 'Just started — your VA is speaking generically', color: '#FF3B30' };
+  if (score >= 90) return { text: 'Expert clone. Sounds exactly like you', color: '#34C759' };
+  if (score >= 70) return { text: 'Strong. A few more details will make it perfect', color: '#C9A962' };
+  if (score >= 40) return { text: 'Getting there. Your VA needs more context', color: '#FF9500' };
+  return { text: 'Just started. Your VA is speaking generically', color: '#FF3B30' };
 }
 
 // ── Tone / style display helpers ──────────────────────────────────────────────
@@ -150,20 +151,8 @@ export default function VirtualAssistantScreen() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>My VA</Text>
-        <TouchableOpacity
-          onPress={() => router.push('/settings/persona')}
-          style={s.editBtn}
-          data-testid="edit-va-btn"
-        >
-          <Ionicons name="create-outline" size={22} color="#C9A962" />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader title="My VA" testID="my-va-header"
+        right={<HeaderIconButton icon="create-outline" onPress={() => router.push('/settings/persona')} testID="edit-va-btn" />} />
 
       <ScrollView contentContainerStyle={s.content} showsVerticalScrollIndicator={false}>
 
@@ -265,7 +254,7 @@ export default function VirtualAssistantScreen() {
           {/* Empty fields nudge */}
           {empty.length > 0 && (
             <View style={s.emptySection}>
-              <Text style={s.emptySectionTitle}>Your VA is missing these — add them to improve:</Text>
+              <Text style={s.emptySectionTitle}>Your VA is missing these. Add them to improve:</Text>
               {emptyToShow.map((f, i) => (
                 <View key={i} style={s.emptyRow}>
                   <Ionicons name="ellipse-outline" size={14} color={colors.textSecondary} />
@@ -343,7 +332,7 @@ export default function VirtualAssistantScreen() {
               <View style={s.replyBubble}>
                 <Text style={s.replyText}>{sampleReply}</Text>
               </View>
-              <Text style={s.replyDisclaimer}>This is how your VA would reply — you review and send.</Text>
+              <Text style={s.replyDisclaimer}>This is how your VA would reply. You review and send.</Text>
             </View>
           )}
         </View>
@@ -353,7 +342,7 @@ export default function VirtualAssistantScreen() {
           <Ionicons name="information-circle" size={20} color="#C9A962" style={{ marginBottom: 8 }} />
           <Text style={s.infoTitle}>How Your VA Works</Text>
           <Text style={s.infoText}>
-            When a customer texts, your VA drafts a reply in your voice. You see it pre-loaded in the composer, read it, and tap Send. The customer hears you — even when you're busy.
+            When a customer texts, your VA drafts a reply in your voice. You see it pre-loaded in the composer, read it, and tap Send. The customer hears you, even when you're busy.
           </Text>
           <Text style={[s.infoText, { marginTop: 10, color: '#C9A962' }]}>
             The more info you add, the more it sounds like you.
@@ -378,10 +367,6 @@ export default function VirtualAssistantScreen() {
 
 const getStyles = (colors: any) => StyleSheet.create({
   container:          { flex: 1, backgroundColor: colors.bg },
-  header:             { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
-  backBtn:            { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
-  editBtn:            { width: 36, height: 36, borderRadius: 18, backgroundColor: '#C9A96220', alignItems: 'center', justifyContent: 'center' },
-  headerTitle:        { fontSize: 17, fontWeight: '700', color: colors.text },
   content:            { padding: 20, paddingBottom: 60 },
 
   // Identity

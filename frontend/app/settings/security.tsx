@@ -19,6 +19,7 @@ import { useAuthStore } from '../../store/authStore';
 import { authAPI } from '../../services/api';
 import { useToast } from '../../components/common/Toast';
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { showAlert } from '../../services/alert';
 import {
   checkBiometricSupport,
@@ -215,7 +216,7 @@ const { showToast } = useToast();
             disabled={changingPassword}
           >
             {changingPassword ? (
-              <ActivityIndicator size="small" color="#007AFF" />
+              <ActivityIndicator size="small" color={colors.accent} />
             ) : (
               <Text style={styles.modalSave}>Save</Text>
             )}
@@ -290,15 +291,9 @@ const { showToast } = useToast();
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={28} color="#007AFF" />
-          </TouchableOpacity>
-          <Text style={styles.title}>Security</Text>
-          <View style={{ width: 28 }} />
-        </View>
+        <ScreenHeader title="Security" testID="security-header" />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={colors.accent} />
         </View>
       </SafeAreaView>
     );
@@ -306,13 +301,7 @@ const { showToast } = useToast();
   
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Security</Text>
-        <View style={{ width: 28 }} />
-      </View>
+      <ScreenHeader title="Security" testID="security-header" />
       
       <ScrollView contentContainerStyle={styles.content}>
         {/* Biometric Section */}
@@ -325,7 +314,7 @@ const { showToast } = useToast();
                 <Ionicons 
                   name={getBiometricIcon(biometricStatus.biometricType) as any} 
                   size={24} 
-                  color="#007AFF" 
+                  color={colors.accent} 
                 />
               </View>
               <View style={styles.settingContent}>
@@ -385,7 +374,7 @@ const { showToast } = useToast();
             onPress={() => router.push('/auth/forgot-password')}
           >
             <View style={styles.settingIcon}>
-              <Ionicons name="refresh-outline" size={24} color="#007AFF" />
+              <Ionicons name="refresh-outline" size={24} color={colors.accent} />
             </View>
             <View style={styles.settingContent}>
               <Text style={styles.settingTitle}>Reset Password</Text>
@@ -411,24 +400,6 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 28,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-  },
-  backButton: {
-    padding: 4,
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: colors.text,
-  },
   content: {
     padding: 16,
   },
@@ -436,8 +407,9 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 32,
   },
   sectionTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.8,
     color: colors.textSecondary,
     marginBottom: 12,
     marginLeft: 4,
@@ -513,7 +485,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   modalCancel: {
     fontSize: 16,
-    color: '#007AFF',
+    color: colors.textSecondary,
   },
   modalTitle: {
     fontSize: 17,
@@ -522,8 +494,8 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   modalSave: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#007AFF',
+    fontWeight: '700',
+    color: colors.accent,
   },
   modalContent: {
     padding: 16,

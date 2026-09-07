@@ -1,0 +1,29 @@
+{
+  "summary": "Frontend QA Batch 3 (Settings folder ScreenHeader migration + gold theming) - verified at 390x844 with forest@imosapp.com and rep mjeast1985@gmail.com. Header titles + back testids present on all 5 Settings screens. /settings/virtual-assistant: title 'My VA', my-va-header-back OK, edit-va-btn navigates to /settings/persona, page has no U+2014, score line 'Getting there. Your VA needs more context' present. /settings/notifications: title 'Notifications', notif-prefs-back OK, notif-prefs-save-btn NOT present initially, appears after tapping 'Push only', tapping Save persists without error (returned to normal state). /settings/schedule: title 'My Schedule', schedule-header-back + save-schedule-btn present, tap Save yields 'Schedule saved' toast, section 'OVERRIDE: AVAILABLE RIGHT NOW' present, no em-dash. /settings/security: title 'Security', security-header-back OK, Change Password opens modal, modal 'Save' color = rgb(201,169,98) GOLD (not blue), Cancel closes. Security back falls back to /more when no history. /settings/calendar: title 'Calendar Sync', calendar-settings-header-back OK, Connect button = gold bg rgb(201,169,98) + black text (not #007AFF). /my-profile: cover hero renders, 'HOW CUSTOMERS SEE ME' section present, hint 'These are your public pages. Share them anywhere.' present, no em-dash. Rep regression: mjeast1985 -> /more -> Settings folder -> app-tile-my-va lands on /settings/virtual-assistant with 'My VA' header; back -> app-tile-notifications lands on /settings/notifications with 'Notifications' header.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "/my-profile cover header", "issue": "White back chevron in cover hero is missing data-testid='my-profile-back-btn' (button is visually present at top-left but has no testid attribute; page has only 4 share-* testids)", "selector": "[data-testid=my-profile-back-btn]", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/my-profile 'My Link Page' card", "issues": ["Share pill uses iOS blue rgb(0,122,255) background - flagged per QA note about remaining #007AFF primary buttons/pills. Other Share pills on the same page use semantic colors (green/purple/green) which are fine, but the Link Page Share button remains iOS blue."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Add data-testid='my-profile-back-btn' to the white back chevron in the /my-profile cover hero header.",
+    "Replace iOS blue (#007AFF / rgb(0,122,255)) background on the 'My Link Page' Share pill in /my-profile with the appropriate theme color (gold accent or semantic color consistent with other Share pills)."
+  ],
+  "critical_code_review_comments": [
+    "Notifications page has no elements with data-testid starting with 'throttle-' for this user/state - only 8 testids total (notif-prefs*, push-diag*, weekly-proof-push-toggle, source-health-alerts-toggle). Throttle-chip gold verification requested by review could not be executed. Confirm whether Throttle section is conditionally rendered or has been removed; if intentional, drop that verification from QA checklist."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a", "frontend": "90%"},
+  "test_credentials": "forest@imosapp.com / Admin123! and mjeast1985@gmail.com / NavyBean1! - both working.",
+  "seed_data_creation": "None",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Batch 3 mostly passes. Two follow-ups: (1) add data-testid=my-profile-back-btn to /my-profile cover back chevron - the chevron renders (icon glyph \\uf229 top-left) but exposes no testid; (2) /my-profile 'My Link Page' Share pill still uses rgb(0,122,255). Also note: Throttle chips (data-testid=throttle-*) are not rendered on /settings/notifications for forest user - only Delivery (SMS+Push/Push only/SMS only) and Quiet Hours sections exist; main agent should clarify if Throttle chips were removed.",
+  "rca of the issue": "my-profile cover hero back button was not migrated to include a data-testid attribute during ScreenHeader/theme refactor (as noted in the request, /my-profile keeps its own cover-photo hero header). The 'My Link Page' Share pill retained a hardcoded iOS blue color when other Share pills received semantic color updates."
+}

@@ -33,8 +33,8 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 
 1. My Brand (rep + manager)  DONE (13 screens, tested iteration_295)
 2. Today + loose tiles  DONE (6 screens, tested iteration_296/297) (Touchpoints, Calendar, My Numbers, AI Follow-ups, Inventory)
-3. Settings  <- next (My Profile, My VA, Notifications, Schedule, Templates, Security, Calendar Sync)
-4. Learning (Training Hub, Help Center, Report a Bug)
+3. Settings  DONE (6 screens, tested iteration_298) (My Profile, My VA, Notifications, Schedule, Templates, Security, Calendar Sync)
+4. Learning  <- next (Training Hub, Help Center, Report a Bug)
 5. Leads (Internet Leads, Call Retries, Lead Source Queue, Lead Source Config, Connect Zapier / Make, Team Availability)
 6. Manage (Tags, Keyword Auto-Tags, Keyword Search, Campaigns, Review Center, Showcase approvals, Inventory Feed, Review Links)
 7. My Performance (My Stats, Team Sales, Team Tasks, Customer Engagement, Leaderboard, Activity Reports, Email Analytics, SEO/GEO Health, VA Library)
@@ -65,12 +65,12 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 | 17 | Today | AI Follow-ups | /(tabs)/ai-outreach | x | x | fixed | shared header, gold count badge, empty-message fallback, purple -> gold |
 | 18 | Loose | Inventory | /inventory | x | x | fixed | shared header; feed/CSV moved to a manager-only toolbar; light blue -> gold |
 | 19 | Loose | Internet Leads | /leads | | x | fixed | shared header; purple -> gold pills |
-| 20 | Settings | My Profile | /my-profile | x | | todo | |
-| 21 | Settings | My VA | /settings/virtual-assistant | x | x | todo | |
-| 22 | Settings | Notifications | /settings/notifications | x | x | todo | |
-| 23 | Settings | My Schedule | /settings/schedule | x | x | todo | |
-| 24 | Settings | Security | /settings/security | x | x | todo | |
-| 25 | Settings | Calendar Sync | /settings/calendar | | x | todo | |
+| 20 | Settings | My Profile | /my-profile | x | x | fixed | cover hero kept by design; back testid + fallback, em dashes removed, link page pill off iOS blue |
+| 21 | Settings | My VA | /settings/virtual-assistant | x | x | fixed | shared header, edit pencil in header, em dashes removed |
+| 22 | Settings | Notifications | /settings/notifications | x | x | fixed | shared header, Save appears in header on change, blue -> gold |
+| 23 | Settings | My Schedule | /settings/schedule | x | x | fixed | shared header, Save in header, em dashes removed |
+| 24 | Settings | Security | /settings/security | x | x | fixed | shared header, blue -> gold, eyebrow sizing |
+| 25 | Settings | Calendar Sync | /settings/calendar | | x | fixed | shared header (titled Calendar Sync), Connect gold, blue -> gold |
 | 26 | Learning | Training Hub | /training-hub | x | x | ok | rebuilt June 2026 |
 | 27 | Learning | Help Center | /help | x | x | ok | rebuilt June 2026 |
 | 28 | Learning | Report a Bug | /report-bug | x | x | todo | |
@@ -125,4 +125,5 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 
 - June 2026: inventory + standard written. Batch 1 (My Brand) done: shared `components/common/ScreenHeader.tsx` (gold chevron, centered 17/700 title, right action, canGoBack fallback to Tools), 13 screens converted, 2 real bugs fixed (Review Links infinite loading, Email Signature raw <img>), all #007AFF primary accents -> theme gold. Testing agent pass 95% (iteration_295), remaining LOW items fixed same turn except the create-card text-node console warning.
 - June 2026: Batch 2 (Today + loose) done: 6 screens on ScreenHeader, template renderer fixes (vehicle fallback, phone-as-name), tasks API sanitizes em dashes and phone greetings. Testing agent 100% (iteration_297).
+- June 2026: Batch 3 (Settings) done: 6 screens, testing agent 90% -> 2 minor items fixed same turn (my-profile back testid/fallback, link page pill color).
 - Still using stale JESSI_BAR_HEIGHT padding (bar is disabled): app/settings/tags.tsx, app/settings/persona.tsx, app/admin/users.tsx. Remove in their batches.

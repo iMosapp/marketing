@@ -5,8 +5,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/common/Toast';
 import api from '../../services/api';
@@ -42,7 +42,6 @@ const QUIET_END_OPTIONS = [
 ];
 
 export default function NotificationSettings() {
-  const router    = useRouter();
   const colors    = useThemeStore(s => s.colors);
   const { user, updateUser } = useAuthStore();
   const { showToast } = useToast();
@@ -114,21 +113,15 @@ export default function NotificationSettings() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={s.title}>Notification Preferences</Text>
-        {hasChanges ? (
-          <TouchableOpacity style={s.saveBtn} onPress={save} disabled={saving}>
+      <ScreenHeader title="Notifications" testID="notif-prefs"
+        right={hasChanges ? (
+          <TouchableOpacity style={s.saveBtn} onPress={save} disabled={saving} testID="notif-prefs-save-btn" dataSet={{ testid: 'notif-prefs-save-btn' } as any}>
             {saving
               ? <ActivityIndicator size="small" color="#000" />
               : <Text style={s.saveBtnText}>Save</Text>
             }
           </TouchableOpacity>
-        ) : <View style={{ width: 64 }} />}
-      </View>
+        ) : null} />
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 60 }}>
         {/* Info card */}
@@ -167,7 +160,7 @@ export default function NotificationSettings() {
         <Text style={[s.sectionLabel, { color: colors.textSecondary }]}>ALERT DELIVERY</Text>
         <View style={[s.card, { backgroundColor: colors.card, padding: 0, overflow: 'hidden' }]}>
           {([
-            { value: 'both' as const,  label: 'SMS + Push',  sub: 'Text to personal phone + in-app badge',  icon: 'notifications',   color: '#007AFF' },
+            { value: 'both' as const,  label: 'SMS + Push',  sub: 'Text to personal phone + in-app badge',  icon: 'notifications',   color: GOLD },
             { value: 'push' as const,  label: 'Push only',   sub: 'In-app badge only, no SMS texts',        icon: 'phone-portrait',  color: '#34C759' },
             { value: 'sms'  as const,  label: 'SMS only',    sub: 'Text to personal phone only',            icon: 'chatbubble',      color: '#FF9500' },
           ] as const).map((opt, i, arr) => (
@@ -266,8 +259,8 @@ export default function NotificationSettings() {
 
         <View style={[s.card, { backgroundColor: colors.card }]}>
           <View style={s.row}>
-            <View style={[s.iconWrap, { backgroundColor: '#007AFF20' }]}>
-              <Ionicons name="chatbubble" size={18} color="#007AFF" />
+            <View style={[s.iconWrap, { backgroundColor: GOLD + '20' }]}>
+              <Ionicons name="chatbubble" size={18} color={GOLD} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[s.rowTitle, { color: colors.text }]}>Customer replied</Text>
@@ -278,8 +271,8 @@ export default function NotificationSettings() {
             <Switch
               value={smsActive}
               onValueChange={v => { setSmsActive(v); mark(); }}
-              trackColor={{ false: colors.border, true: '#007AFF80' }}
-              thumbColor={smsActive ? '#007AFF' : colors.textSecondary}
+              trackColor={{ false: colors.border, true: GOLD + '80' }}
+              thumbColor={smsActive ? GOLD : colors.textSecondary}
             />
           </View>
 
@@ -301,7 +294,7 @@ export default function NotificationSettings() {
                     ]}
                     data-testid={`throttle-${opt.value}`}
                   >
-                    <Text style={[s.chipText, { color: throttleMin === opt.value ? '#fff' : colors.textSecondary }]}>
+                    <Text style={[s.chipText, { color: throttleMin === opt.value ? '#000' : colors.textSecondary }]}>
                       {opt.label}
                     </Text>
                   </TouchableOpacity>
@@ -453,10 +446,7 @@ export default function NotificationSettings() {
 
 const getStyles = (colors: any) => StyleSheet.create({
   container:   { flex: 1, backgroundColor: colors.bg },
-  header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
-  backBtn:     { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
-  title:       { fontSize: 17, fontWeight: '700', color: colors.text },
-  saveBtn:     { backgroundColor: colors.accent, borderRadius: 18, paddingHorizontal: 16, paddingVertical: 7, minWidth: 64, alignItems: 'center' },
+  saveBtn:     { backgroundColor: colors.accent, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 7, minWidth: 60, alignItems: 'center', marginRight: 8 },
   saveBtnText: { fontSize: 15, fontWeight: '700', color: '#000' },
   infoCard:    { flexDirection: 'row', gap: 12, backgroundColor: colors.card, borderRadius: 14, padding: 14, marginBottom: 16, borderWidth: 1, alignItems: 'flex-start' },
   infoTitle:   { fontSize: 15, fontWeight: '700', marginBottom: 4 },
@@ -472,7 +462,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   subLabel:    { fontSize: 13, fontWeight: '600', marginBottom: 10 },
   chipRow:     { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 10 },
   chip:        { borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7, borderWidth: 1 },
-  chipActive:  { backgroundColor: '#007AFF', borderColor: '#007AFF' },
+  chipActive:  { backgroundColor: GOLD, borderColor: GOLD },
   chipUrgent:  { backgroundColor: '#FF3B30', borderColor: '#FF3B30' },
   chipGold:    { backgroundColor: GOLD, borderColor: GOLD },
   chipText:    { fontSize: 13, fontWeight: '600' },

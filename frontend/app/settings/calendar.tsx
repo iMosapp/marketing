@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import * as Calendar from 'expo-calendar';
@@ -22,10 +22,10 @@ import { useToast } from '../../components/common/Toast';
 import { showAlert } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
 export default function CalendarSettingsScreen() {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
-  const router = useRouter();
   const params = useLocalSearchParams();
   const { user } = useAuthStore();
   
@@ -189,22 +189,16 @@ const { showToast } = useToast();
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <ScreenHeader title="Calendar Sync" testID="calendar-settings-header" />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator size="large" color={colors.accent} /></View>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Calendar Settings</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <ScreenHeader title="Calendar Sync" testID="calendar-settings-header" />
 
       <View style={styles.content}>
         {/* Google Calendar Section */}
@@ -243,9 +237,9 @@ const { showToast } = useToast();
               disabled={connectingGoogle}
             >
               {connectingGoogle ? (
-                <ActivityIndicator size="small" color={colors.text} />
+                <ActivityIndicator size="small" color={googleConnected ? colors.text : '#000'} />
               ) : (
-                <Text style={styles.actionButtonText}>
+                <Text style={[styles.actionButtonText, !googleConnected && { color: '#000' }]}>
                   {googleConnected ? 'Disconnect' : 'Connect'}
                 </Text>
               )}
@@ -300,7 +294,7 @@ const { showToast } = useToast();
                 onPress={() => setShowCalendarPicker(!showCalendarPicker)}
               >
                 <View style={styles.cardIcon}>
-                  <Ionicons name="albums-outline" size={24} color="#007AFF" />
+                  <Ionicons name="albums-outline" size={24} color={colors.accent} />
                 </View>
                 
                 <View style={styles.cardContent}>
@@ -333,7 +327,7 @@ const { showToast } = useToast();
                     <View 
                       style={[
                         styles.calendarColor, 
-                        { backgroundColor: calendar.color || '#007AFF' }
+                        { backgroundColor: calendar.color || colors.accent }
                       ]} 
                     />
                     <Text style={styles.calendarName}>{calendar.title}</Text>
@@ -341,7 +335,7 @@ const { showToast } = useToast();
                       <Text style={styles.primaryBadge}>Primary</Text>
                     )}
                     {selectedCalendar === calendar.id && (
-                      <Ionicons name="checkmark" size={20} color="#007AFF" />
+                      <Ionicons name="checkmark" size={20} color={colors.accent} />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -352,7 +346,7 @@ const { showToast } = useToast();
 
         {/* Info Section */}
         <View style={styles.infoCard}>
-          <Ionicons name="information-circle" size={20} color="#007AFF" />
+          <Ionicons name="information-circle" size={20} color={colors.accent} />
           <Text style={styles.infoText}>
             When your AI sets an appointment with a contact, it will automatically be added to your connected calendars with the contact's details and a 15-minute reminder.
           </Text>
@@ -367,27 +361,6 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 28,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.card,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.text,
-  },
   content: {
     flex: 1,
     padding: 16,
@@ -396,8 +369,9 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.8,
     color: colors.textSecondary,
     marginBottom: 8,
     paddingLeft: 4,
@@ -443,14 +417,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginLeft: 12,
   },
   connectButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.accent,
   },
   disconnectButton: {
     backgroundColor: '#FF3B30',
   },
   actionButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.text,
   },
   infoCard: {

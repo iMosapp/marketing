@@ -5,8 +5,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/common/Toast';
 import api from '../../services/api';
@@ -57,7 +57,6 @@ function isValidTime(t: string) { return /^\d{2}:\d{2}$/.test(t); }
 export default function SchedulePage() {
   const { colors } = useThemeStore();
   const s = getStyles(colors);
-  const router = useRouter();
   const { user } = useAuthStore();
   const { showToast } = useToast();
 
@@ -148,7 +147,7 @@ export default function SchedulePage() {
       );
       setOverrideUntil(res.data.available_override_until);
       setIsAvailable(res.data.available);
-      showToast(opt.clear ? 'Override cleared' : 'Override set — you\'re available', 'success');
+      showToast(opt.clear ? 'Override cleared' : 'Override set. You\'re available', 'success');
     } catch {
       showToast('Failed to set override', 'error');
     }
@@ -182,16 +181,10 @@ export default function SchedulePage() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.back}>
-          <Ionicons name="chevron-back" size={28} color={colors.accent} />
-        </TouchableOpacity>
-        <Text style={s.title}>My Schedule</Text>
-        <TouchableOpacity onPress={save} disabled={saving} style={s.saveBtn} data-testid="save-schedule-btn">
+      <ScreenHeader title="My Schedule" testID="schedule-header"
+        right={<TouchableOpacity onPress={save} disabled={saving} style={s.saveBtn} testID="save-schedule-btn" dataSet={{ testid: 'save-schedule-btn' } as any}>
           {saving ? <ActivityIndicator size="small" color="#000" /> : <Text style={s.saveBtnText}>Save</Text>}
-        </TouchableOpacity>
-      </View>
+        </TouchableOpacity>} />
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 60 }}>
 
@@ -292,7 +285,7 @@ export default function SchedulePage() {
 
         {/* Quick presets */}
         <View style={{ marginBottom: 8 }}>
-          <Text style={s.sectionLabel}>{rotationEnabled ? `Week ${activeWeek} — Quick Presets` : 'Quick Presets'}</Text>
+          <Text style={s.sectionLabel}>{rotationEnabled ? `Week ${activeWeek} Quick Presets` : 'Quick Presets'}</Text>
           <View style={s.presetRow}>
             {QUICK_PRESETS.map(p => (
               <TouchableOpacity key={p.label} onPress={() => applyPreset(p)} style={s.presetChip}>
@@ -328,7 +321,7 @@ export default function SchedulePage() {
         </View>
 
         {/* Override section */}
-        <Text style={[s.sectionLabel, { marginTop: 24 }]}>Override — Available Right Now</Text>
+        <Text style={[s.sectionLabel, { marginTop: 24 }]}>Override: Available Right Now</Text>
         <View style={s.card}>
           <Text style={s.cardSub}>Force yourself available even if outside scheduled hours.</Text>
           <View style={s.overrideRow}>
@@ -427,10 +420,7 @@ export default function SchedulePage() {
 const getStyles = (colors: any) => StyleSheet.create({
   container:    { flex: 1, backgroundColor: colors.bg },
   center:       { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
-  back:         { width: 40 },
-  title:        { fontSize: 17, fontWeight: '700', color: colors.text },
-  saveBtn:      { backgroundColor: colors.accent, borderRadius: 10, paddingHorizontal: 18, paddingVertical: 8 },
+  saveBtn:      { backgroundColor: colors.accent, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 7, marginRight: 8 },
   saveBtnText:  { color: '#000', fontWeight: '700', fontSize: 15 },
   statusPill:   { flexDirection: 'row', alignItems: 'center', borderRadius: 20, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 8, marginBottom: 16 },
   card:         { backgroundColor: colors.card, borderRadius: 14, padding: 16, marginBottom: 12 },

@@ -134,7 +134,7 @@ export default function MyProfileScreen() {
 
   const publicPages = [
     { icon: 'id-card', title: 'My Digital Card', subtitle: 'How customers see you', color: '#C9A962', url: user?._id ? `${PROD_BASE}/card/${user._id}` : null, editRoute: '/settings/store-profile', quickSend: 'digitalcard' },
-    { icon: 'link', title: 'My Link Page', subtitle: 'All your links in one spot', color: '#007AFF', url: user?._id ? `${PROD_BASE}/l/${user._id}` : null, editRoute: '/settings/link-page', quickSend: 'linkpage' },
+    { icon: 'link', title: 'My Link Page', subtitle: 'All your links in one spot', color: '#5AC8FA', url: user?._id ? `${PROD_BASE}/l/${user._id}` : null, editRoute: '/settings/link-page', quickSend: 'linkpage' },
     { icon: 'planet-outline', title: 'My Landing Page', subtitle: 'Your full personal page', color: '#AF52DE', url: user?._id ? `${PROD_BASE}/p/${user._id}` : null, editRoute: '/settings/store-profile', quickSend: 'landingpage' },
     { icon: 'images', title: 'My Showcase', subtitle: 'Your customer gallery', color: '#34C759', url: user?._id ? `${PROD_BASE}/showcase/${user._id}` : null, editRoute: '/showroom-manage', quickSend: 'showcase' },
     { icon: 'star', title: 'Review Link', subtitle: 'Share to get reviews', color: '#FFD60A', url: reviewUrl, editRoute: '/settings/review-links', quickSend: 'review' },
@@ -159,7 +159,7 @@ export default function MyProfileScreen() {
             <LinearGradient colors={['#1a1200', '#2c1f00', '#3d2c00', '#C9A96225']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
           )}
           <LinearGradient colors={['rgba(0,0,0,0.35)', 'rgba(0,0,0,0.8)']} style={StyleSheet.absoluteFill} />
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} data-testid="my-profile-back-btn">
+          <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/more' as any))} style={styles.backBtn} testID="my-profile-back-btn" dataSet={{ testid: 'my-profile-back-btn' } as any}>
             <Ionicons name="chevron-back" size={24} color="#fff" />
           </TouchableOpacity>
           <View style={styles.coverBottom}>
@@ -203,14 +203,14 @@ export default function MyProfileScreen() {
         {!profileComplete && (
           <TouchableOpacity style={styles.nudge} onPress={() => router.push('/profile-setup' as any)} data-testid="finish-profile-nudge">
             <Ionicons name="sparkles" size={16} color="#C9A962" />
-            <Text style={styles.nudgeText}>Finish your profile — add {!hasPhoto ? 'a photo' : ''}{!hasPhoto && !hasBio ? ' & ' : ''}{!hasBio ? 'a bio' : ''} so your pages look their best</Text>
+            <Text style={styles.nudgeText}>Finish your profile: add {!hasPhoto ? 'a photo' : ''}{!hasPhoto && !hasBio ? ' & ' : ''}{!hasBio ? 'a bio' : ''} so your pages look their best</Text>
             <Ionicons name="chevron-forward" size={16} color="#C9A962" />
           </TouchableOpacity>
         )}
 
         {/* Public pages */}
         <Text style={styles.sectionLabel}>HOW CUSTOMERS SEE ME</Text>
-        <Text style={styles.sectionHint}>These are your public pages — share them anywhere.</Text>
+        <Text style={styles.sectionHint}>These are your public pages. Share them anywhere.</Text>
         {publicPages.map((p) => (
           <View key={p.title} style={styles.pageCard} data-testid={`profile-page-${p.quickSend}`}>
             <View style={[styles.pageIcon, { backgroundColor: `${p.color}20` }]}>
@@ -244,7 +244,7 @@ export default function MyProfileScreen() {
                 </TouchableOpacity>
               </View>
               {p.title === 'Review Link' && !p.url && (
-                <Text style={{ fontSize: 11, color: '#FF9500', marginTop: 6 }}>Store slug not set — tap Edit to configure</Text>
+                <Text style={{ fontSize: 11, color: '#FF9500', marginTop: 6 }}>Store slug not set. Tap Edit to configure</Text>
               )}
             </View>
           </View>
