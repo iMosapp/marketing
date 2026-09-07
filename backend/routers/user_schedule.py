@@ -406,7 +406,7 @@ async def get_team_availability(x_user_id: str = Header(None, alias="X-User-ID")
             "$or": [{"account_id": acct}, {"store_id": user.get("store_id")}],
             "status": {"$ne": "deactivated"},
         },
-        {"_id": 1, "name": 1, "timezone": 1, "role": 1, "photo_url": 1}
+        {"_id": 1, "name": 1, "first_name": 1, "last_name": 1, "email": 1, "timezone": 1, "role": 1, "photo_url": 1}
     ).to_list(100)
 
     # Load all schedules in one batch
@@ -479,7 +479,7 @@ async def get_team_availability(x_user_id: str = Header(None, alias="X-User-ID")
 
         result.append({
             "user_id":        uid,
-            "name":           t.get("name", "Unknown"),
+            "name":           t.get("name") or f"{t.get('first_name', '')} {t.get('last_name', '')}".strip() or t.get("email") or "Unnamed user",
             "role":           t.get("role", "user"),
             "available":      avail,
             "today_blocks":   today_blocks,

@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton } from '../../components/common/ScreenHeader';
 import { useAuthStore } from '../../store/authStore';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
@@ -83,16 +84,8 @@ export default function LeadIntakeDashboard() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Internet Leads</Text>
-        <TouchableOpacity onPress={() => router.push('/admin/lead-sources' as any)} style={s.configBtn}>
-          <Ionicons name="settings-outline" size={22} color={colors.textSecondary} />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader title="Lead Source Queue" testID="lead-queue-header"
+        right={<HeaderIconButton icon="settings-outline" onPress={() => router.push('/admin/lead-sources' as any)} testID="lead-queue-config-btn" />} />
 
       {/* Stats bar */}
       <View style={s.statsRow}>
@@ -143,7 +136,7 @@ export default function LeadIntakeDashboard() {
                 {/* Row 1: name + status */}
                 <View style={s.cardRow}>
                   <View style={{ flex: 1 }}>
-                    <Text style={s.cardName}>{lead.full_name || 'Unknown'}</Text>
+                    <Text style={s.cardName}>{lead.full_name || lead.phone || 'New lead'}</Text>
                     <Text style={s.cardSource}>{lead.source_name} · {formatTime(lead.received_at)}</Text>
                   </View>
                   <View style={[s.statusBadge, { backgroundColor: sc.color + '20' }]}>
@@ -170,7 +163,7 @@ export default function LeadIntakeDashboard() {
                   <View style={s.afterHoursBadge}>
                     <Ionicons name="moon" size={13} color="#AF52DE" />
                     <Text style={s.afterHoursText}>
-                      After-hours — sends in {timeUntil(lead.scheduled_send_at)} ({formatTime(lead.scheduled_send_at)})
+                      After-hours: sends in {timeUntil(lead.scheduled_send_at)} ({formatTime(lead.scheduled_send_at)})
                     </Text>
                   </View>
                 ) : null}
@@ -188,8 +181,8 @@ export default function LeadIntakeDashboard() {
                   {lead.contact_id ? (
                     <TouchableOpacity style={s.actionBtn}
                       onPress={() => router.push(`/contact/${lead.contact_id}` as any)}>
-                      <Ionicons name="person" size={14} color="#007AFF" />
-                      <Text style={[s.actionBtnText, { color: '#007AFF' }]}>View Contact</Text>
+                      <Ionicons name="person" size={14} color={colors.accent} />
+                      <Text style={[s.actionBtnText, { color: colors.accent }]}>View Contact</Text>
                     </TouchableOpacity>
                   ) : null}
                   {lead.conversation_id ? (
@@ -239,10 +232,6 @@ function InfoChip({ icon, text, colors }: { icon: string; text: string; colors: 
 
 const getS = (colors: any) => StyleSheet.create({
   container:      { flex: 1, backgroundColor: colors.bg },
-  header:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
-  backBtn:        { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
-  configBtn:      { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center' },
-  headerTitle:    { fontSize: 18, fontWeight: '700', color: colors.text },
   statsRow:       { flexDirection: 'row', paddingVertical: 14, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.card },
   filterBar:      { maxHeight: 50, borderBottomWidth: 1, borderBottomColor: colors.border },
   pill:           { paddingHorizontal: 16, paddingVertical: 7, borderRadius: 20, backgroundColor: colors.card },

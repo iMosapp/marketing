@@ -34,9 +34,9 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 1. My Brand (rep + manager)  DONE (13 screens, tested iteration_295)
 2. Today + loose tiles  DONE (6 screens, tested iteration_296/297) (Touchpoints, Calendar, My Numbers, AI Follow-ups, Inventory)
 3. Settings  DONE (6 screens, tested iteration_298) (My Profile, My VA, Notifications, Schedule, Templates, Security, Calendar Sync)
-4. Learning  <- next (Training Hub, Help Center, Report a Bug)
-5. Leads (Internet Leads, Call Retries, Lead Source Queue, Lead Source Config, Connect Zapier / Make, Team Availability)
-6. Manage (Tags, Keyword Auto-Tags, Keyword Search, Campaigns, Review Center, Showcase approvals, Inventory Feed, Review Links)
+4. Learning  DONE (Training Hub, Help Center, Report a Bug)
+5. Leads  DONE (tested iteration_299) (Internet Leads, Call Retries, Lead Source Queue, Lead Source Config, Connect Zapier / Make, Team Availability)
+6. Manage  <- next (Tags, Keyword Auto-Tags, Keyword Search, Campaigns, Review Center, Showcase approvals, Inventory Feed, Review Links)
 7. My Performance (My Stats, Team Sales, Team Tasks, Customer Engagement, Leaderboard, Activity Reports, Email Analytics, SEO/GEO Health, VA Library)
 8. Campaigns + My Tools (Campaign Dashboard, Date Triggers, Ask Jessi, Team Chat)
 9. Set Up (Store Profile, Brand Kit, Messaging Channels, Phone Numbers, Team Members, Invite Team, Integrations)
@@ -73,12 +73,12 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 | 25 | Settings | Calendar Sync | /settings/calendar | | x | fixed | shared header (titled Calendar Sync), Connect gold, blue -> gold |
 | 26 | Learning | Training Hub | /training-hub | x | x | ok | rebuilt June 2026 |
 | 27 | Learning | Help Center | /help | x | x | ok | rebuilt June 2026 |
-| 28 | Learning | Report a Bug | /report-bug | x | x | todo | |
-| 29 | Leads | Call Retries | /settings/call-retries | | x | todo | |
-| 30 | Leads | Lead Source Queue | /admin/internet-leads | | x | todo | |
-| 31 | Leads | Lead Source Config | /admin/lead-sources | | x | todo | |
-| 32 | Leads | Connect Zapier / Make | /admin/lead-connect | | x | todo | |
-| 33 | Leads | Team Availability | /admin/team-availability | | x | todo | |
+| 28 | Learning | Report a Bug | /report-bug | x | x | fixed | shared header (chevron instead of X), em dash removed, Done has fallback |
+| 29 | Leads | Call Retries | /settings/call-retries | | x | fixed | shared header with Save pill |
+| 30 | Leads | Lead Source Queue | /admin/internet-leads | | x | fixed | shared header (titled Lead Source Queue), gear in header, blue -> gold, Unknown -> phone/New lead, AI draft em dashes stripped server-side |
+| 31 | Leads | Lead Source Config | /admin/lead-sources, /new, /[id] | | x | fixed | all three screens: shared header, every #007AFF -> gold, selection highlight gold |
+| 32 | Leads | Connect Zapier / Make | /admin/lead-connect | | x | fixed | shared header |
+| 33 | Leads | Team Availability | /admin/team-availability | | x | fixed | shared header with Updated subtitle + refresh; backend /schedule/team no longer returns Unknown names |
 | 34 | Manage | Tags | /settings/tags | | x | todo | |
 | 35 | Manage | Keyword Auto-Tags | /settings/keyword-rules | | x | todo | |
 | 36 | Manage | Keyword Search | /keyword-search | | x | todo | |
@@ -126,4 +126,5 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 - June 2026: inventory + standard written. Batch 1 (My Brand) done: shared `components/common/ScreenHeader.tsx` (gold chevron, centered 17/700 title, right action, canGoBack fallback to Tools), 13 screens converted, 2 real bugs fixed (Review Links infinite loading, Email Signature raw <img>), all #007AFF primary accents -> theme gold. Testing agent pass 95% (iteration_295), remaining LOW items fixed same turn except the create-card text-node console warning.
 - June 2026: Batch 2 (Today + loose) done: 6 screens on ScreenHeader, template renderer fixes (vehicle fallback, phone-as-name), tasks API sanitizes em dashes and phone greetings. Testing agent 100% (iteration_297).
 - June 2026: Batch 3 (Settings) done: 6 screens, testing agent 90% -> 2 minor items fixed same turn (my-profile back testid/fallback, link page pill color).
+- June 2026: Batch 4 (Leads + Report a Bug) done: 8 screens, backend name fallback for team availability, lead draft em dashes stripped. Testing agent 93% -> 2 minor items fixed and verified.
 - Still using stale JESSI_BAR_HEIGHT padding (bar is disabled): app/settings/tags.tsx, app/settings/persona.tsx, app/admin/users.tsx. Remove in their batches.

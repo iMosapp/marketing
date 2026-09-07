@@ -18,6 +18,9 @@ import { useAuthStore } from '../../../store/authStore';
 import api from '../../../services/api';
 import { useToast } from '../../../components/common/Toast';
 import { showAlert } from '../../../services/alert';
+import { ScreenHeader, HeaderIconButton } from '../../../components/common/ScreenHeader';
+
+const GOLD = '#C9A962';
 
 import { useThemeStore } from '../../../store/themeStore';
 interface LeadSource {
@@ -86,7 +89,7 @@ const { showToast } = useToast();
   const getAssignmentColor = (method: string) => {
     switch (method) {
       case 'jump_ball': return '#FF9500';
-      case 'round_robin': return '#007AFF';
+      case 'round_robin': return GOLD;
       case 'weighted_round_robin': return '#34C759';
       default: return colors.textSecondary;
     }
@@ -142,7 +145,7 @@ const { showToast } = useToast();
           onPress={() => copyToClipboard(item.webhook_url, 'Webhook URL')}
         >
           <Text style={styles.webhookText} numberOfLines={1}>{item.webhook_url}</Text>
-          <Ionicons name="copy-outline" size={16} color="#007AFF" />
+          <Ionicons name="copy-outline" size={16} color={GOLD} />
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
@@ -150,9 +153,10 @@ const { showToast } = useToast();
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <ScreenHeader title="Lead Source Config" testID="lead-sources-header" />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={GOLD} />
         </View>
       </SafeAreaView>
     );
@@ -160,18 +164,8 @@ const { showToast } = useToast();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Lead Sources</Text>
-        <TouchableOpacity
-          onPress={() => router.push('/admin/lead-sources/new')}
-          style={styles.addButton}
-        >
-          <Ionicons name="add-circle" size={32} color="#007AFF" />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader title="Lead Source Config" testID="lead-sources-header"
+        right={<HeaderIconButton icon="add-circle" onPress={() => router.push('/admin/lead-sources/new')} testID="lead-sources-add-btn" />} />
 
       <FlatList
         data={sources}
@@ -179,7 +173,7 @@ const { showToast } = useToast();
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#007AFF" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={GOLD} />
         }
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
@@ -190,7 +184,7 @@ const { showToast } = useToast();
               style={styles.createButton}
               onPress={() => router.push('/admin/lead-sources/new')}
             >
-              <Ionicons name="add" size={20} color={colors.text} />
+              <Ionicons name="add" size={20} color="#000" />
               <Text style={styles.createButtonText}>Create Lead Source</Text>
             </TouchableOpacity>
           </View>
@@ -209,25 +203,6 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-  },
-  backButton: {
-    padding: 4,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text,
-  },
-  addButton: {
-    padding: 4,
   },
   listContent: {
     padding: 16,
@@ -322,7 +297,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   webhookText: {
     fontSize: 14,
-    color: '#007AFF',
+    color: GOLD,
     flex: 1,
     marginRight: 8,
   },
@@ -349,15 +324,15 @@ const getStyles = (colors: any) => StyleSheet.create({
   createButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#007AFF',
+    backgroundColor: GOLD,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 24,
     gap: 8,
   },
   createButtonText: {
-    color: colors.text,
-    fontSize: 18,
-    fontWeight: '600',
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

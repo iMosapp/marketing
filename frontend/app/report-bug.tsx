@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useThemeStore } from '../store/themeStore';
+import { ScreenHeader } from '../components/common/ScreenHeader';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
 import { showSimpleAlert } from '../services/alert';
@@ -13,7 +14,7 @@ import { showSimpleAlert } from '../services/alert';
 const CATEGORIES = [
   { key: 'bug', label: 'Bug', icon: 'bug-outline', color: '#FF3B30' },
   { key: 'suggestion', label: 'Suggestion', icon: 'bulb-outline', color: '#FF9500' },
-  { key: 'other', label: 'Other', icon: 'chatbox-ellipses-outline', color: '#007AFF' },
+  { key: 'other', label: 'Other', icon: 'chatbox-ellipses-outline', color: '#5AC8FA' },
 ];
 
 export default function ReportBugScreen() {
@@ -45,6 +46,7 @@ export default function ReportBugScreen() {
   if (done) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'bottom']}>
+        <ScreenHeader title="Report a Bug" testID="report-bug-header" />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
           <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: '#34C75920', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
             <Ionicons name="checkmark" size={52} color="#34C759" />
@@ -55,8 +57,8 @@ export default function ReportBugScreen() {
           </Text>
           <TouchableOpacity
             style={{ backgroundColor: '#C9A962', borderRadius: 14, paddingVertical: 16, paddingHorizontal: 48, marginTop: 32 }}
-            onPress={() => router.back()}
-            data-testid="report-bug-done-btn"
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/more' as any))}
+            testID="report-bug-done-btn" dataSet={{ testid: 'report-bug-done-btn' } as any}
           >
             <Text style={{ fontSize: 17, fontWeight: '700', color: '#000' }}>Done</Text>
           </TouchableOpacity>
@@ -67,16 +69,10 @@ export default function ReportBugScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'bottom']}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.surface }}>
-        <TouchableOpacity onPress={() => router.back()} data-testid="report-bug-back-btn">
-          <Ionicons name="close" size={28} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }} numberOfLines={1}>Report a Bug</Text>
-        <View style={{ width: 28 }} />
-      </View>
+      <ScreenHeader title="Report a Bug" testID="report-bug-header" />
 
       <ScrollView contentContainerStyle={{ padding: 24, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
-        <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textSecondary, letterSpacing: 1, marginBottom: 10 }}>WHAT KIND OF FEEDBACK?</Text>
+        <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.8, marginBottom: 10 }}>WHAT KIND OF FEEDBACK?</Text>
         <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24 }}>
           {CATEGORIES.map(c => {
             const active = category === c.key;
@@ -104,7 +100,7 @@ export default function ReportBugScreen() {
             backgroundColor: colors.card, borderRadius: 12, padding: 14, fontSize: 16, color: colors.text,
             borderWidth: 1.5, borderColor: colors.surface, height: 160, textAlignVertical: 'top',
           }}
-          placeholder="Describe the issue — what were you doing, what did you expect, and what happened instead?"
+          placeholder="Describe the issue: what were you doing, what did you expect, and what happened instead?"
           placeholderTextColor={colors.textSecondary}
           value={description}
           onChangeText={setDescription}

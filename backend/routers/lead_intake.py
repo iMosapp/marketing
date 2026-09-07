@@ -26,6 +26,8 @@ from pydantic import BaseModel
 
 from routers.database import get_db
 
+from utils.text_sanitize import no_em_dash as _no_em_dash
+
 router = APIRouter(prefix="/leads", tags=["Lead Intake"])
 logger = logging.getLogger(__name__)
 
@@ -1320,7 +1322,7 @@ async def list_leads(
             "is_after_hours": l.get("is_after_hours", False),
             "scheduled_send_at": l.get("scheduled_send_at").isoformat() if isinstance(l.get("scheduled_send_at"), datetime) else l.get("scheduled_send_at"),
             "sent_at":        l.get("sent_at").isoformat() if isinstance(l.get("sent_at"), datetime) else None,
-            "draft_message":  l.get("draft_message"),
+            "draft_message":  _no_em_dash(l.get("draft_message")),
             "contact_id":     l.get("contact_id"),
             "conversation_id": l.get("conversation_id"),
             "assigned_to":    l.get("assigned_to"),

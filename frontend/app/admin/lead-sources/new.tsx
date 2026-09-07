@@ -19,6 +19,9 @@ import api from '../../../services/api';
 import { useToast } from '../../../components/common/Toast';
 
 import { useThemeStore } from '../../../store/themeStore';
+import { ScreenHeader, HeaderTextButton } from '../../../components/common/ScreenHeader';
+
+const GOLD = '#C9A962';
 const IS_WEB = Platform.OS === 'web';
 
 interface Team {
@@ -140,7 +143,7 @@ export default function NewLeadSourceScreen() {
       name: 'Round Robin',
       description: 'Auto-assign to next team member in rotation',
       icon: 'sync',
-      color: '#007AFF',
+      color: GOLD,
     },
     {
       id: 'weighted_round_robin',
@@ -153,56 +156,8 @@ export default function NewLeadSourceScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        {IS_WEB ? (
-          <button
-            type="button"
-            onClick={() => router.back()}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 8 }}
-            data-testid="back-btn"
-          >
-            <Ionicons name="chevron-back" size={28} color="#007AFF" />
-          </button>
-        ) : (
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={28} color="#007AFF" />
-          </TouchableOpacity>
-        )}
-        <Text style={styles.title}>New Lead Source</Text>
-        {IS_WEB ? (
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: saving ? 'not-allowed' : 'pointer',
-              padding: 8,
-              opacity: saving ? 0.5 : 1,
-            }}
-            data-testid="create-btn"
-          >
-            {saving ? (
-              <ActivityIndicator size="small" color="#007AFF" />
-            ) : (
-              <Text style={styles.saveButtonText}>Create</Text>
-            )}
-          </button>
-        ) : (
-          <TouchableOpacity
-            onPress={handleSave}
-            disabled={saving}
-            style={styles.saveButton}
-          >
-            {saving ? (
-              <ActivityIndicator size="small" color="#007AFF" />
-            ) : (
-              <Text style={styles.saveButtonText}>Create</Text>
-            )}
-          </TouchableOpacity>
-        )}
-      </View>
+      <ScreenHeader title="New Lead Source" testID="new-lead-source-header"
+        right={saving ? <ActivityIndicator size="small" color={GOLD} /> : <HeaderTextButton label="Create" onPress={handleSave} testID="create-btn" />} />
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         {/* Name */}
@@ -235,7 +190,7 @@ export default function NewLeadSourceScreen() {
         <View style={styles.section}>
           <Text style={styles.label}>ASSIGN TO TEAM</Text>
           {loadingTeams ? (
-            <ActivityIndicator size="small" color="#007AFF" />
+            <ActivityIndicator size="small" color={GOLD} />
           ) : teams.length === 0 ? (
             <View style={styles.noTeamsContainer}>
               <Text style={styles.noTeamsText}>No teams found</Text>
@@ -266,10 +221,10 @@ export default function NewLeadSourceScreen() {
                       flexDirection: 'row',
                       alignItems: 'center',
                       gap: 12,
-                      backgroundColor: formData.team_id === team.id ? '#007AFF10' : colors.card,
+                      backgroundColor: formData.team_id === team.id ? GOLD + '10' : colors.card,
                       borderRadius: 10,
                       padding: 14,
-                      border: formData.team_id === team.id ? '1px solid #007AFF' : '1px solid #2C2C2E',
+                      border: formData.team_id === team.id ? `1px solid ${GOLD}` : '1px solid #2C2C2E',
                       cursor: 'pointer',
                       marginBottom: 8,
                       width: '100%',
@@ -279,7 +234,7 @@ export default function NewLeadSourceScreen() {
                     <Ionicons
                       name={formData.team_id === team.id ? 'radio-button-on' : 'radio-button-off'}
                       size={20}
-                      color={formData.team_id === team.id ? '#007AFF' : colors.textSecondary}
+                      color={formData.team_id === team.id ? GOLD : colors.textSecondary}
                     />
                     <Text style={[
                       styles.teamOptionText,
@@ -300,7 +255,7 @@ export default function NewLeadSourceScreen() {
                     <Ionicons
                       name={formData.team_id === team.id ? 'radio-button-on' : 'radio-button-off'}
                       size={20}
-                      color={formData.team_id === team.id ? '#007AFF' : colors.textSecondary}
+                      color={formData.team_id === team.id ? GOLD : colors.textSecondary}
                     />
                     <Text style={[
                       styles.teamOptionText,
@@ -334,7 +289,7 @@ export default function NewLeadSourceScreen() {
                     borderRadius: 12,
                     padding: 16,
                     border: formData.assignment_method === method.id 
-                      ? `2px solid ${method.color}` 
+                      ? `2px solid ${GOLD}` 
                       : '2px solid #2C2C2E',
                     cursor: 'pointer',
                     marginBottom: 10,
@@ -353,7 +308,7 @@ export default function NewLeadSourceScreen() {
                   <Ionicons
                     name={formData.assignment_method === method.id ? 'checkmark-circle' : 'ellipse-outline'}
                     size={24}
-                    color={formData.assignment_method === method.id ? method.color : colors.borderLight}
+                    color={formData.assignment_method === method.id ? GOLD : colors.borderLight}
                   />
                 </button>
               ) : (
@@ -362,7 +317,7 @@ export default function NewLeadSourceScreen() {
                   style={[
                     styles.methodCard,
                     formData.assignment_method === method.id && styles.methodCardSelected,
-                    formData.assignment_method === method.id && { borderColor: method.color },
+                    formData.assignment_method === method.id && { borderColor: GOLD },
                   ]}
                   onPress={() => setFormData({ ...formData, assignment_method: method.id as any })}
                 >
@@ -376,7 +331,7 @@ export default function NewLeadSourceScreen() {
                   <Ionicons
                     name={formData.assignment_method === method.id ? 'checkmark-circle' : 'ellipse-outline'}
                     size={24}
-                    color={formData.assignment_method === method.id ? method.color : colors.borderLight}
+                    color={formData.assignment_method === method.id ? GOLD : colors.borderLight}
                   />
                 </TouchableOpacity>
               )
@@ -386,7 +341,7 @@ export default function NewLeadSourceScreen() {
 
         {/* Info Box */}
         <View style={styles.infoBox}>
-          <Ionicons name="information-circle" size={20} color="#007AFF" />
+          <Ionicons name="information-circle" size={20} color={GOLD} />
           <Text style={styles.infoText}>
             {"After creating this lead source, you'll receive a webhook URL and API key."} 
             Use these to send leads from external systems (RMS platforms, ad platforms, landing pages, etc.)
@@ -401,30 +356,6 @@ const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.bg,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-  },
-  backButton: {
-    padding: 4,
-  },
-  title: {
-    fontSize: 19,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  saveButton: {
-    padding: 4,
-  },
-  saveButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#007AFF',
   },
   content: {
     flex: 1,
@@ -474,15 +405,15 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: colors.surface,
   },
   teamOptionSelected: {
-    borderColor: '#007AFF',
-    backgroundColor: '#007AFF10',
+    borderColor: GOLD,
+    backgroundColor: GOLD + '10',
   },
   teamOptionText: {
     fontSize: 18,
     color: colors.text,
   },
   teamOptionTextSelected: {
-    color: '#007AFF',
+    color: GOLD,
   },
   noTeamsContainer: {
     backgroundColor: colors.card,
@@ -497,7 +428,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   createTeamLink: {
     fontSize: 17,
-    color: '#007AFF',
+    color: GOLD,
     fontWeight: '600',
   },
   methodsContainer: {
@@ -538,7 +469,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   infoBox: {
     flexDirection: 'row',
-    backgroundColor: '#007AFF15',
+    backgroundColor: GOLD + '15',
     borderRadius: 10,
     padding: 14,
     gap: 10,
@@ -547,7 +478,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 15,
-    color: '#007AFF',
+    color: GOLD,
     lineHeight: 18,
   },
 });

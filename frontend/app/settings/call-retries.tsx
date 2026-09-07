@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/common/Toast';
 import api from '../../services/api';
@@ -129,15 +130,10 @@ export default function CallRetriesPage() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.back} {...tid('call-retries-back')}>
-          <Ionicons name="chevron-back" size={28} color={colors.accent} />
-        </TouchableOpacity>
-        <Text style={s.title}>{storeMode ? 'Team Call Retries' : 'Call Retries'}</Text>
-        <TouchableOpacity onPress={save} disabled={saving || !dirty} style={[s.saveBtn, !dirty && { opacity: 0.4 }]} {...tid('call-retries-save')}>
+      <ScreenHeader title={storeMode ? 'Team Call Retries' : 'Call Retries'} testID="call-retries"
+        right={<TouchableOpacity onPress={save} disabled={saving || !dirty} style={[s.saveBtn, !dirty && { opacity: 0.4 }]} {...tid('call-retries-save')}>
           {saving ? <ActivityIndicator size="small" color="#000" /> : <Text style={s.saveBtnText}>Save</Text>}
-        </TouchableOpacity>
-      </View>
+        </TouchableOpacity>} />
 
       {loading ? <ActivityIndicator color={GOLD} style={{ marginTop: 40 }} /> : (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 60 }}>
@@ -295,10 +291,7 @@ export default function CallRetriesPage() {
 
 const getStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
-  back: { width: 40 },
-  title: { fontSize: 17, fontWeight: '700', color: colors.text },
-  saveBtn: { backgroundColor: colors.accent, borderRadius: 10, paddingHorizontal: 18, paddingVertical: 8 },
+  saveBtn: { backgroundColor: colors.accent, borderRadius: 18, paddingHorizontal: 14, paddingVertical: 7, marginRight: 8 },
   saveBtnText: { color: '#000', fontWeight: '700', fontSize: 15 },
   card: { backgroundColor: colors.card, borderRadius: 14, padding: 16, marginBottom: 12 },
   cardTitle: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 2 },

@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton } from '../../components/common/ScreenHeader';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 
@@ -17,7 +18,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 const ROLE_COLORS: Record<string, string> = {
   super_admin: '#FF3B30', org_admin: '#FF9500', admin: '#FF9500',
-  store_manager: '#34C759', manager: '#34C759', user: '#007AFF',
+  store_manager: '#34C759', manager: '#34C759', user: '#5AC8FA',
 };
 
 function fmtTime(t: string | null | undefined) {
@@ -100,7 +101,7 @@ export default function TeamAvailabilityPage() {
 
         <View style={{ flex: 1, marginLeft: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-            <Text style={s.repName}>{rep.name || 'Unknown'}</Text>
+            <Text style={s.repName} numberOfLines={1}>{rep.name || 'Unnamed user'}</Text>
             <View style={{ backgroundColor: roleColor + '20', borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 }}>
               <Text style={{ color: roleColor, fontSize: 11, fontWeight: '700' }}>{roleLabel}</Text>
             </View>
@@ -148,21 +149,9 @@ export default function TeamAvailabilityPage() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={{ width: 40 }}>
-          <Ionicons name="chevron-back" size={28} color={colors.accent} />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={s.title}>Team Availability</Text>
-          {lastUpdated && (
-            <Text style={s.updatedText}>Updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
-          )}
-        </View>
-        <TouchableOpacity onPress={() => load(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Ionicons name="refresh" size={22} color={colors.accent} />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader title="Team Availability" testID="team-availability-header"
+        subtitle={lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : undefined}
+        right={<HeaderIconButton icon="refresh" onPress={() => load(true)} testID="team-availability-refresh-btn" />} />
 
       {loading ? (
         <View style={s.center}><ActivityIndicator color={colors.accent} size="large" /></View>
@@ -225,9 +214,6 @@ export default function TeamAvailabilityPage() {
 const getStyles = (colors: any) => StyleSheet.create({
   container:    { flex: 1, backgroundColor: colors.bg },
   center:       { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
-  title:        { fontSize: 18, fontWeight: '700', color: colors.text },
-  updatedText:  { fontSize: 11, color: colors.textSecondary, marginTop: 1 },
   summaryRow:   { flexDirection: 'row', gap: 10, marginBottom: 20 },
   summaryCard:  { flex: 1, backgroundColor: colors.card, borderRadius: 14, padding: 14, alignItems: 'center', borderWidth: 1.5 },
   summaryNum:   { fontSize: 28, fontWeight: '800', marginBottom: 2 },

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/common/Toast';
 import { copyToClipboard } from '../../utils/clipboard';
@@ -114,11 +115,7 @@ export default function LeadConnectScreen() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.back} {...tid('lead-connect-back')}><Ionicons name="chevron-back" size={28} color={colors.accent} /></TouchableOpacity>
-        <Text style={s.title}>Connect Zapier / Make</Text>
-        <View style={s.back} />
-      </View>
+      <ScreenHeader title="Connect Zapier / Make" testID="lead-connect" />
       {loading ? <ActivityIndicator color={GOLD} style={{ marginTop: 40 }} /> : (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 60, gap: 12 }} {...tid('lead-connect-scroll')}>
           <SourceHealthCard colors={colors} onPick={setSelected} />
@@ -248,9 +245,6 @@ export default function LeadConnectScreen() {
 
 const getStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
-  back: { width: 40 },
-  title: { fontSize: 17, fontWeight: '700', color: colors.text },
   card: { backgroundColor: colors.card, borderRadius: 14, padding: 16 },
   cardSub: { fontSize: 13, color: colors.textSecondary, lineHeight: 18 },
   chip: { paddingHorizontal: 14, height: 34, borderRadius: 17, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.bg, justifyContent: 'center' },

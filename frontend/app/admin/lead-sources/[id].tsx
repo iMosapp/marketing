@@ -22,6 +22,9 @@ import api from '../../../services/api';
 import { useToast } from '../../../components/common/Toast';
 
 import { useThemeStore } from '../../../store/themeStore';
+import { ScreenHeader, HeaderTextButton } from '../../../components/common/ScreenHeader';
+
+const GOLD = '#C9A962';
 import { ContactModeToggle, LeadCallLadder, WebsiteFormRouting, type CallAttempt } from '../../../components/admin/LeadWorkflowControls';
 import { AfterHoursRule, TestLeadCard, QueueTimers, type StoreHours } from '../../../components/admin/LeadTimingControls';
 const IS_WEB = Platform.OS === 'web';
@@ -338,7 +341,7 @@ export default function LeadSourceDetailScreen() {
   const getAssignmentColor = (method: string) => {
     switch (method) {
       case 'jump_ball': return '#FF9500';
-      case 'round_robin': return '#007AFF';
+      case 'round_robin': return GOLD;
       case 'weighted_round_robin': return '#34C759';
       default: return colors.textSecondary;
     }
@@ -346,15 +349,16 @@ export default function LeadSourceDetailScreen() {
 
   const assignmentMethods = [
     { id: 'jump_ball', name: 'Jump Ball', icon: 'flash', color: '#FF9500' },
-    { id: 'round_robin', name: 'Round Robin', icon: 'sync', color: '#007AFF' },
+    { id: 'round_robin', name: 'Round Robin', icon: 'sync', color: GOLD },
     { id: 'weighted_round_robin', name: 'Weighted', icon: 'scale', color: '#34C759' },
   ];
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <ScreenHeader title="Lead Source" testID="lead-source-header" />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={GOLD} />
         </View>
       </SafeAreaView>
     );
@@ -362,7 +366,8 @@ export default function LeadSourceDetailScreen() {
 
   if (!source) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <ScreenHeader title="Lead Source" testID="lead-source-header" />
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle" size={48} color="#FF3B30" />
           <Text style={styles.errorText}>Lead source not found</Text>
@@ -376,31 +381,10 @@ export default function LeadSourceDetailScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <WebButton onPress={() => router.back()} style={styles.backButton} testID="back-btn">
-          <View style={styles.backButtonInner}>
-            <Ionicons name="chevron-back" size={28} color="#007AFF" />
-          </View>
-        </WebButton>
-        <Text style={styles.title} numberOfLines={1}>{editing ? 'Edit Source' : source.name}</Text>
-        {editing ? (
-          <WebButton onPress={handleSave} disabled={saving} testID="save-btn">
-            <View style={styles.saveButtonInner}>
-              {saving ? (
-                <ActivityIndicator size="small" color="#007AFF" />
-              ) : (
-                <Text style={styles.saveButtonText}>Save</Text>
-              )}
-            </View>
-          </WebButton>
-        ) : (
-          <WebButton onPress={() => setEditing(true)} testID="edit-btn">
-            <View style={styles.editButtonInner}>
-              <Text style={styles.editButtonText}>Edit</Text>
-            </View>
-          </WebButton>
-        )}
-      </View>
+      <ScreenHeader title={editing ? 'Edit Source' : source.name} testID="lead-source-header"
+        right={editing
+          ? (saving ? <ActivityIndicator size="small" color={GOLD} /> : <HeaderTextButton label="Save" onPress={handleSave} testID="save-btn" />)
+          : <HeaderTextButton label="Edit" onPress={() => setEditing(true)} testID="edit-btn" />} />
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         {/* Status Badge */}
@@ -451,7 +435,7 @@ export default function LeadSourceDetailScreen() {
                 style={styles.input}
                 value={formData.monthly_cost}
                 onChangeText={(text) => setFormData({ ...formData, monthly_cost: text.replace(/[^0-9.]/g, '') })}
-                placeholder="e.g. 1200 — powers cost-per-sale in Source ROI"
+                placeholder="e.g. 1200 (powers cost-per-sale in Source ROI)"
                 placeholderTextColor="#6E6E73"
                 keyboardType="decimal-pad"
                 testID="monthly-cost-input" dataSet={{ testid: 'monthly-cost-input' } as any}
@@ -470,7 +454,7 @@ export default function LeadSourceDetailScreen() {
                     <Ionicons
                       name={formData.team_id === team.id ? 'radio-button-on' : 'radio-button-off'}
                       size={20}
-                      color={formData.team_id === team.id ? '#007AFF' : colors.textSecondary}
+                      color={formData.team_id === team.id ? GOLD : colors.textSecondary}
                     />
                     <Text style={[styles.teamOptionText, formData.team_id === team.id && styles.teamOptionTextSelected]}>
                       {team.name}
@@ -524,7 +508,7 @@ export default function LeadSourceDetailScreen() {
             {/* Stats */}
             <View style={styles.statsGrid}>
               <View style={styles.statCard}>
-                <Ionicons name="people" size={24} color="#007AFF" />
+                <Ionicons name="people" size={24} color={GOLD} />
                 <Text style={styles.statValue}>{stats?.total_leads || source.lead_count}</Text>
                 <Text style={styles.statLabel}>Total Leads</Text>
               </View>
@@ -543,7 +527,7 @@ export default function LeadSourceDetailScreen() {
             {/* Webhook URL */}
             <View style={styles.credentialSection}>
               <View style={styles.credentialHeader}>
-                <Ionicons name="link" size={20} color="#007AFF" />
+                <Ionicons name="link" size={20} color={GOLD} />
                 <Text style={styles.credentialTitle}>Webhook URL</Text>
               </View>
               <TouchableOpacity
@@ -551,7 +535,7 @@ export default function LeadSourceDetailScreen() {
                 onPress={() => copyToClipboard(source.webhook_url, 'Webhook URL')}
               >
                 <Text style={styles.credentialValue} numberOfLines={2}>{source.webhook_url}</Text>
-                <Ionicons name="copy-outline" size={18} color="#007AFF" />
+                <Ionicons name="copy-outline" size={18} color={GOLD} />
               </TouchableOpacity>
               <Text style={styles.credentialHint}>POST leads to this URL</Text>
             </View>
@@ -569,7 +553,7 @@ export default function LeadSourceDetailScreen() {
                   testID="adf-url-copy" dataSet={{ testid: 'adf-url-copy' } as any}
                 >
                   <Text style={styles.credentialValue} numberOfLines={2}>{source.adf_url}</Text>
-                  <Ionicons name="copy-outline" size={18} color="#007AFF" />
+                  <Ionicons name="copy-outline" size={18} color={GOLD} />
                 </TouchableOpacity>
                 <Text style={styles.credentialHint}>
                   For Cars.com, AutoTrader, CarGurus & OEM portals that POST ADF XML directly
@@ -590,7 +574,7 @@ export default function LeadSourceDetailScreen() {
                   testID="email-intake-url-copy" dataSet={{ testid: 'email-intake-url-copy' } as any}
                 >
                   <Text style={styles.credentialValue} numberOfLines={2}>{source.email_inbound_url}</Text>
-                  <Ionicons name="copy-outline" size={18} color="#007AFF" />
+                  <Ionicons name="copy-outline" size={18} color={GOLD} />
                 </TouchableOpacity>
                 <Text style={styles.credentialHint}>
                   For providers that deliver leads by EMAIL: create a free inbound address on
@@ -615,7 +599,7 @@ export default function LeadSourceDetailScreen() {
                   <Text style={styles.credentialValue} numberOfLines={1}>
                     {showApiKey ? source.api_key : '••••••••••••••••••••••••••••••••'}
                   </Text>
-                  <Ionicons name="copy-outline" size={18} color="#007AFF" />
+                  <Ionicons name="copy-outline" size={18} color={GOLD} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.eyeButton}
@@ -650,7 +634,7 @@ export default function LeadSourceDetailScreen() {
                   'Example'
                 )}
               >
-                <Ionicons name="clipboard-outline" size={16} color="#007AFF" />
+                <Ionicons name="clipboard-outline" size={16} color={GOLD} />
                 <Text style={styles.copyExampleText}>Copy Example</Text>
               </TouchableOpacity>
             </View>
@@ -855,7 +839,7 @@ export default function LeadSourceDetailScreen() {
                 </View>
                 <TouchableOpacity
                   onPress={() => setWorkflow(prev => ({ ...prev, va_enabled: !prev.va_enabled }))}
-                  style={{ width: 50, height: 28, borderRadius: 14, backgroundColor: workflow.va_enabled ? '#007AFF' : colors.surface, borderWidth: 1, borderColor: workflow.va_enabled ? '#007AFF' : colors.border, justifyContent: 'center', paddingHorizontal: 3 }}
+                  style={{ width: 50, height: 28, borderRadius: 14, backgroundColor: workflow.va_enabled ? GOLD : colors.surface, borderWidth: 1, borderColor: workflow.va_enabled ? GOLD : colors.border, justifyContent: 'center', paddingHorizontal: 3 }}
                   testID="va-enabled-toggle" dataSet={{ testid: 'va-enabled-toggle' } as any}
                 >
                   <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff', transform: [{ translateX: workflow.va_enabled ? 22 : 0 }] }} />
@@ -1074,47 +1058,9 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 12,
   },
   backLinkText: {
-    color: '#007AFF',
+    color: GOLD,
     fontSize: 18,
     fontWeight: '600',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-  },
-  backButton: {
-    padding: 4,
-  },
-  backButtonInner: {
-    padding: 4,
-  },
-  title: {
-    flex: 1,
-    fontSize: 19,
-    fontWeight: '600',
-    color: colors.text,
-    textAlign: 'center',
-    marginHorizontal: 8,
-  },
-  saveButtonInner: {
-    padding: 4,
-  },
-  saveButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#007AFF',
-  },
-  editButtonInner: {
-    padding: 4,
-  },
-  editButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#007AFF',
   },
   content: {
     flex: 1,
@@ -1252,7 +1198,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   copyExampleText: {
     fontSize: 16,
-    color: '#007AFF',
+    color: GOLD,
     fontWeight: '500',
   },
   descriptionSection: {
@@ -1316,15 +1262,15 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: colors.surface,
   },
   teamOptionSelected: {
-    borderColor: '#007AFF',
-    backgroundColor: '#007AFF10',
+    borderColor: GOLD,
+    backgroundColor: GOLD + '10',
   },
   teamOptionText: {
     fontSize: 18,
     color: colors.text,
   },
   teamOptionTextSelected: {
-    color: '#007AFF',
+    color: GOLD,
   },
   methodsRow: {
     flexDirection: 'row',

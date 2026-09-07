@@ -1,0 +1,29 @@
+{
+  "summary": "Batch 4 QA (Leads folder + Report a Bug ScreenHeader migration + gold theming) at 390x844 as forest@imosapp.com. Backend: /api/schedule/team returns real names (no 'Unknown', 65 items), /api/leads/?limit=100 draft_message contains no em-dash (U+2014) - both pytest cases PASS. Frontend: all 7 screens show the expected header title and back testid; specific findings below. /report-bug: title 'Report a Bug' + report-bug-header-back OK, placeholder has no em-dash, Suggestion + textarea + Send Report -> 'Report Sent!' screen renders (Thanks + Done text present). /settings/call-retries: title 'Call Retries' + call-retries-back OK, call-retries-save opacity 0.4 (dimmed) initially, tapping a cad-*-plus stepper enables it (opacity 1.0), Save does not crash. /admin/internet-leads: title 'Lead Source Queue', lead-queue-header-back + lead-queue-config-btn present, gear navigates to /admin/lead-sources, filter pills All/Queued/Sent/Failed render, page has no literal 'Unknown' and no em-dash, View Contact text color rgb(201,169,98) GOLD (not blue). /admin/lead-sources: title 'Lead Source Config', lead-sources-header-back + lead-sources-add-btn OK, empty state 'Create Lead Source' button has bg rgb(201,169,98) gold and color rgb(0,0,0) black. /admin/lead-sources/new: title 'New Lead Source', new-lead-source-header-back + create-btn (text color gold rgb(201,169,98)) OK, Assignment Method cards render (method-jump_ball / method-round_robin / method-weighted_round_robin) - selecting Round Robin gives border rgb(201,169,98) gold. /admin/lead-connect: title 'Connect Zapier / Make', lead-connect-back OK, Facebook Lead Ads card + 'Open the Zapier template' button render. Back-nav fallback: opening /admin/lead-connect directly then tapping lead-connect-back navigates to /more (no history) - VERIFIED. /admin/team-availability: title 'Team Availability' with 'Updated 06:08 PM' subtitle, team-availability-header-back + team-availability-refresh-btn OK, refresh works without error, page has no literal 'Unknown' (63 On Shift / 1 Off Shift / 64 Total).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "/report-bug success screen", "issue": "Done button lacks data-testid='report-bug-done-btn'. The Done text is present and clickable but the QA-required testid is missing. Only testids on success screen: ['report-bug-header','report-bug-header-back'].", "selector": "[data-testid=report-bug-done-btn]", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/admin/lead-sources/new Assignment Method", "issues": ["Default-selected 'Jump Ball' card renders border color rgb(255,149,0) (iOS system orange) instead of gold rgb(201,169,98). Once the user taps a different card (Round Robin / Weighted Round Robin) the highlight is correctly gold. Only the pre-selected default retains the orange accent - inconsistent with the 'highlight in gold, not blue' theming spec."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_batch4_schedule_leads.py", "/app/test_reports/pytest/batch4.xml"],
+  "action_items": [
+    "Add data-testid='report-bug-done-btn' to the Done button on the /report-bug 'Report Sent!' success screen.",
+    "Change the initial/default-selected Assignment Method card highlight color on /admin/lead-sources/new from iOS orange rgb(255,149,0) to gold rgb(201,169,98) to match the color used after a user tap."
+  ],
+  "critical_code_review_comments": [
+    "Selection-highlight color for Assignment Method appears to have two code paths (default vs user-selected). Consolidate to a single 'active' style so the default pre-selection uses the same gold as any subsequent selection."
+  ],
+  "updated_files": ["/app/backend/tests/test_batch4_schedule_leads.py"],
+  "success_rate": {"backend": "100% (2/2)", "frontend": "~93% (2 minor findings out of ~28 checks)"},
+  "test_credentials": "forest@imosapp.com / Admin123! - working.",
+  "seed_data_creation": "None",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Batch 4 essentially passes. Two follow-ups: (1) missing data-testid='report-bug-done-btn' on /report-bug success screen Done button; (2) /admin/lead-sources/new default-selected 'Jump Ball' card highlight uses iOS orange rgb(255,149,0) instead of gold - manual selection uses gold correctly. Everything else including headers, back testids, gold theming (View Contact, Create Lead Source, Create text btn), backend schedule/team name fallback and leads em-dash strip - verified.",
+  "rca of the issue": "The /report-bug success view was likely not updated to include the required testid during the ScreenHeader migration. The Assignment Method card component appears to use a hard-coded iOS-orange for the default variant while dynamic user selection reads from the gold accent constant."
+}
