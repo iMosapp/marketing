@@ -37,8 +37,8 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 4. Learning  DONE (Training Hub, Help Center, Report a Bug)
 5. Leads  DONE (tested iteration_299) (Internet Leads, Call Retries, Lead Source Queue, Lead Source Config, Connect Zapier / Make, Team Availability)
 6. Manage  DONE (tested iteration_300) (Tags, Keyword Auto-Tags, Keyword Search, Campaigns, Review Center, Showcase approvals, Inventory Feed, Review Links)
-7. My Performance  <- next (My Stats, Team Sales, Team Tasks, Customer Engagement, Leaderboard, Activity Reports, Email Analytics, SEO/GEO Health, VA Library)
-8. Campaigns + My Tools (Campaign Dashboard, Date Triggers, Ask Jessi, Team Chat)
+7. My Performance  DONE (tested iteration_301) (Team Sales, Team Tasks, Customer Engagement, Leaderboard, Activity Reports, Email Analytics, SEO/GEO Health, VA Library)
+8. Campaigns + My Tools  <- next (Campaign Dashboard, Date Triggers, Ask Jessi, Team Chat)
 9. Set Up (Store Profile, Brand Kit, Messaging Channels, Phone Numbers, Team Members, Invite Team, Integrations)
 10. Admin / Internal Operations (super admin only, `later`)
 
@@ -90,15 +90,15 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 | 42 | My Tools | Team Chat | /(tabs)/team | | x | todo | |
 | 43 | Campaigns | Campaign Dashboard | /campaigns/dashboard | | x | todo | |
 | 44 | Campaigns | Date Triggers | /settings/date-triggers | | x | todo | |
-| 45 | My Performance | Team Sales | /reports/team-performance | | x | todo | |
-| 46 | My Performance | Team Tasks | /team-tasks | | x | todo | |
-| 47 | My Performance | Customer Engagement | /touchpoints/customer-performance | | x | todo | |
-| 48 | My Performance | Leaderboard | /admin/leaderboard | | x | todo | |
-| 49 | My Performance | Activity Reports | /reports/activity | | x | todo | |
-| 50 | My Performance | Email Analytics | /settings/email-analytics | | x | todo | |
-| 51 | My Performance | SEO Health | /seo-health | | x | todo | |
-| 52 | My Performance | GEO Health | /geo-health | | x | todo | |
-| 53 | My Performance | VA Library | /admin/va-library | | admin | todo | |
+| 45 | My Performance | Team Sales | /reports/team-performance | | x | fixed | shared header (titled Team Sales), month chevrons gold, rows radius 16 + border, empty state with Manage team CTA. Referrals blue / Repeats purple kept as category colors (match Home tiles) |
+| 46 | My Performance | Team Tasks | /team-tasks | | x | fixed | shared header with open/overdue subtitle + refresh, managers-only state has Open Touchpoints CTA, filtered-empty has Show all |
+| 47 | My Performance | Customer Engagement | /touchpoints/customer-performance | | x | fixed | shared header (titled Customer Engagement) + refresh, scope pills green -> gold outline, hardcoded grays -> theme, empty state Share my card CTA |
+| 48 | My Performance | Leaderboard | /admin/leaderboard | | x | fixed | shared header, Send Rankings -> header mail icon, alert() -> showAlert, core Image -> expo-image (iOS avatars), radius 16, empty state CTA |
+| 49 | My Performance | Activity Reports | /reports/activity | | x | fixed | shared header (titled Activity Reports) with schedule icon, yellow/blue/green pills + buttons -> gold, chart bars gold, eyebrow sections, empty state Show last 30 days |
+| 50 | My Performance | Email Analytics | /settings/email-analytics | | x | fixed | shared header + refresh, removed 28px hardcoded top padding, BUG: range pills did nothing -> now filter client-side, Sent gold, eyebrows, empty CTA |
+| 51 | My Performance | SEO Health | /seo-health | | x | fixed | rebuilt on shared components/health/HealthScoreScreen.tsx: theme colors (was hardcoded #000/#FFF), shared header + share icon, gold tabs/retry/guide/fix buttons; backend Good tier color blue -> gold |
+| 52 | My Performance | GEO Health | /geo-health | | x | fixed | same shared screen. BUG: guide link went to /seo-guide -> /geo-guide. Backend tip strings em dashes removed, Building tier color -> gold |
+| 53 | My Performance | VA Library | /admin/va-library | | admin | fixed | shared header with add icon, BUG: window.confirm on delete (crashes native) -> showAlert, Edit blue -> gold, default avatar color gold, em dashes removed |
 | 54 | My Performance | System Logs | /admin/system-logs | | admin | later | |
 | 55 | Set Up | Store Profile | /settings/store-profile | | x | todo | shared with #4 |
 | 56 | Set Up | Brand Kit | /settings/brand-kit | | x | todo | |
@@ -129,3 +129,4 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 - June 2026: Batch 4 (Leads + Report a Bug) done: 8 screens, backend name fallback for team availability, lead draft em dashes stripped. Testing agent 93% -> 2 minor items fixed and verified.
 - June 2026: Batch 5 (Manage) done: 7 screens, testing agent 99%, the one nit (indigo Create Rule button) fixed same turn.
 - Still using stale JESSI_BAR_HEIGHT padding (bar is disabled): app/settings/persona.tsx, app/admin/users.tsx. Remove in their batches.
+- June 2026: Batch 6 (My Performance) done: 9 screens, SEO/GEO collapsed into one shared HealthScoreScreen, 3 real bugs fixed (GEO guide route, VA delete window.confirm on native, Email Analytics dead range filter). Testing agent pass (iteration_301); GEO tip em dashes fixed same turn. yarn.lock regenerated: the committed one failed --frozen-lockfile.

@@ -907,7 +907,7 @@ async def _compute_health_score(user_id: str) -> dict:
     if total_score >= 80:
         grade, grade_color = "Excellent", "#34C759"
     elif total_score >= 60:
-        grade, grade_color = "Good", "#007AFF"
+        grade, grade_color = "Good", "#C9A962"
     elif total_score >= 40:
         grade, grade_color = "Fair", "#FF9500"
     elif total_score >= 20:

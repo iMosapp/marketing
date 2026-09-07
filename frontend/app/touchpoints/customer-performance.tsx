@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Modal, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton } from '../../components/common/ScreenHeader';
+import { FS } from '../../constants/typography';
 import api from '../../services/api';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 
 const PERIODS = [
   { key: 'today', label: 'Today' },
@@ -85,12 +89,12 @@ export default function CustomerPerformanceScreen() {
   useEffect(() => { loadRankings(); }, [loadRankings]);
 
   const getHeatColor = (score: number, maxScore: number) => {
-    if (maxScore === 0) return '#48484A';
+    if (maxScore === 0) return colors.textTertiary;
     const ratio = score / maxScore;
     if (ratio >= 0.7) return '#FF3B30';
     if (ratio >= 0.4) return '#FF9500';
     if (ratio >= 0.15) return '#FBBC04';
-    return '#48484A';
+    return colors.textTertiary;
   };
 
   const getHeatLabel = (score: number, maxScore: number) => {
@@ -117,69 +121,68 @@ export default function CustomerPerformanceScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
-      {/* Header — matches My Performance */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }}>
-        <TouchableOpacity onPress={() => router.back()} style={{ padding: 4, marginRight: 8 }} data-testid="back-btn">
-          <Ionicons name="chevron-back" size={24} color={colors.accent} />
-        </TouchableOpacity>
-        <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text, flex: 1 }}>Customer Performance</Text>
-      </View>
+      <ScreenHeader
+        title="Customer Engagement"
+        testID="customer-engagement-header"
+        right={<HeaderIconButton icon="refresh" onPress={loadRankings} testID="customer-engagement-refresh" />}
+      />
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
-        {/* Period Filters — horizontal scroll, compact pills */}
+        {/* Period filter: filled gold pills */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 }}>
           {PERIODS.map(p => (
             <TouchableOpacity
               key={p.key}
               onPress={() => setPeriod(p.key)}
               style={{
-                paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10, alignItems: 'center', borderWidth: 1,
+                paddingHorizontal: 16, paddingVertical: 8, borderRadius: 18, alignItems: 'center', borderWidth: 1,
                 backgroundColor: period === p.key ? colors.accent : colors.card,
                 borderColor: period === p.key ? colors.accent : colors.border,
               }}
-              data-testid={`period-${p.key}`}
+              {...tid(`period-${p.key}`)}
             >
-              <Text style={{ fontSize: 15, fontWeight: '600', color: period === p.key ? '#000' : colors.textSecondary }}>{p.label}</Text>
+              <Text style={{ fontSize: FS.secondary, fontWeight: '700', color: period === p.key ? '#000' : colors.textSecondary }}>{p.label}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        {/* Scope Filters — horizontal scroll, compact pills, green accent */}
+        {/* Scope filter: outlined gold pills so it reads as a second axis */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingBottom: 14 }}>
           {SCOPES.map(s => (
             <TouchableOpacity
               key={s.key}
               onPress={() => setScope(s.key)}
               style={{
-                paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10, alignItems: 'center', borderWidth: 1,
-                backgroundColor: scope === s.key ? '#34C759' : colors.card,
-                borderColor: scope === s.key ? '#34C759' : colors.border,
+                paddingHorizontal: 16, paddingVertical: 8, borderRadius: 18, alignItems: 'center', borderWidth: 1,
+                backgroundColor: scope === s.key ? 'rgba(201,169,98,0.12)' : colors.card,
+                borderColor: scope === s.key ? colors.accent : colors.border,
               }}
-              data-testid={`scope-${s.key}`}
+              {...tid(`scope-${s.key}`)}
             >
-              <Text style={{ fontSize: 15, fontWeight: '600', color: scope === s.key ? '#000' : colors.textSecondary }}>{s.label}</Text>
+              <Text style={{ fontSize: FS.secondary, fontWeight: '700', color: scope === s.key ? colors.accent : colors.textSecondary }}>{s.label}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        {/* Summary Stats */}
         {!loading && rankings.length > 0 && (
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginHorizontal: 16, marginBottom: 12, paddingHorizontal: 4 }}>
-            <Text style={{ fontSize: 13, color: colors.textSecondary }}>{rankings.length} active customers</Text>
-            <Text style={{ fontSize: 13, color: colors.textSecondary }}>Top score: {maxScore}</Text>
+            <Text style={{ fontSize: FS.secondary, color: colors.textSecondary }} {...tid('customer-engagement-count')}>{rankings.length} active customers</Text>
+            <Text style={{ fontSize: FS.secondary, color: colors.textSecondary }}>Top score: {maxScore}</Text>
           </View>
         )}
 
-        {/* Rankings List */}
         {loading ? (
           <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 40 }} />
         ) : rankings.length === 0 ? (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40, paddingTop: 60 }}>
-            <Ionicons name="people-outline" size={48} color="#48484A" />
-            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginTop: 12, textAlign: 'center' }}>No Customer Activity</Text>
-            <Text style={{ fontSize: 15, color: colors.textSecondary, marginTop: 6, textAlign: 'center' }}>
-              When customers interact with your shared cards and links, their engagement will show up here.
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40, paddingTop: 60 }} {...tid('customer-engagement-empty')}>
+            <Ionicons name="people-outline" size={48} color={colors.textTertiary} />
+            <Text style={{ fontSize: FS.heading, fontWeight: '700', color: colors.text, marginTop: 12, textAlign: 'center' }}>No customer activity yet</Text>
+            <Text style={{ fontSize: FS.body, color: colors.textSecondary, marginTop: 6, textAlign: 'center' }}>
+              When customers open your card or tap your links, their engagement shows up here.
             </Text>
+            <TouchableOpacity onPress={() => router.push('/quick-send/digitalcard' as any)} style={{ marginTop: 18, backgroundColor: colors.accent, borderRadius: 14, paddingHorizontal: 22, paddingVertical: 12 }} {...tid('customer-engagement-share-card')}>
+              <Text style={{ fontSize: FS.heading, fontWeight: '700', color: '#000' }}>Share my card</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <View style={{ paddingHorizontal: 16 }}>
@@ -195,44 +198,40 @@ export default function CustomerPerformanceScreen() {
                   activeOpacity={0.7}
                   style={{
                     flexDirection: 'row', alignItems: 'center', gap: 12,
-                    backgroundColor: colors.card, borderRadius: 12, padding: 14,
+                    backgroundColor: colors.card, borderRadius: 16, padding: 14,
                     borderWidth: 1, borderColor: colors.border, marginBottom: 8,
                   }}
-                  data-testid={`customer-rank-${idx}`}
+                  {...tid(`customer-rank-${idx}`)}
                 >
-                  {/* Rank Badge */}
                   <View style={{
                     width: 32, height: 32, borderRadius: 16,
-                    backgroundColor: idx < 3 ? heatColor : '#2C2C2E',
+                    backgroundColor: idx < 3 ? heatColor : colors.surface,
                     alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <Text style={{ fontSize: 15, fontWeight: '700', color: idx < 3 ? '#FFF' : colors.textSecondary }}>
+                    <Text style={{ fontSize: FS.body, fontWeight: '700', color: idx < 3 ? '#FFF' : colors.textSecondary }}>
                       {idx + 1}
                     </Text>
                   </View>
 
-                  {/* Contact Info */}
-                  <View style={{ flex: 1 }}>
+                  <View style={{ flex: 1, minWidth: 0 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, gap: 6 }}>
-                      <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, flex: 1 }} numberOfLines={1}>{contact.name}</Text>
-                      <Text style={{ fontSize: 11, fontWeight: '700', color: heatColor, backgroundColor: `${heatColor}18`, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>
+                      <Text style={{ fontSize: FS.heading, fontWeight: '700', color: colors.text, flex: 1, flexShrink: 1 }} numberOfLines={1}>{contact.name}</Text>
+                      <Text style={{ fontSize: FS.micro, fontWeight: '800', color: heatColor, backgroundColor: `${heatColor}18`, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8, overflow: 'hidden', flexShrink: 0 }}>
                         {heatLabel}
                       </Text>
                     </View>
-                    {/* Score bar */}
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                       <View style={{ flex: 1, height: 4, backgroundColor: colors.border, borderRadius: 2, overflow: 'hidden' }}>
                         <View style={{ height: '100%', width: `${barWidth}%`, backgroundColor: heatColor, borderRadius: 2 }} />
                       </View>
                     </View>
-                    <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4 }}>
-                      {contact.event_count} interactions{contact.last_activity ? `  -  ${formatTimeAgo(contact.last_activity)}` : ''}
+                    <Text style={{ fontSize: FS.secondary, color: colors.textSecondary, marginTop: 4 }}>
+                      {contact.event_count} interactions{contact.last_activity ? ` · ${formatTimeAgo(contact.last_activity)}` : ''}
                     </Text>
                   </View>
 
-                  {/* Score */}
-                  <Text style={{ fontSize: 20, fontWeight: '700', color: heatColor, minWidth: 36, textAlign: 'right' }}>{contact.score}</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#48484A" />
+                  <Text style={{ fontSize: FS.title, fontWeight: '700', color: heatColor, minWidth: 36, textAlign: 'right' }}>{contact.score}</Text>
+                  <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
                 </TouchableOpacity>
               );
             })}
@@ -240,60 +239,55 @@ export default function CustomerPerformanceScreen() {
         )}
       </ScrollView>
 
-      {/* Detail Modal */}
       <Modal visible={!!selectedContact} animationType="slide" transparent>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '75%', paddingBottom: 30 }}>
-            {/* Handle */}
+          <View style={{ backgroundColor: colors.bg, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '75%', paddingBottom: 30 }} {...tid('customer-detail-modal')}>
             <View style={{ alignItems: 'center', paddingVertical: 10 }}>
               <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border }} />
             </View>
 
             {selectedContact && (
               <>
-                {/* Header */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-                  <View>
-                    <Text style={{ fontSize: 20, fontWeight: '700', color: colors.text }}>{selectedContact.name}</Text>
-                    <Text style={{ fontSize: 15, color: colors.textSecondary, marginTop: 2 }}>
-                      Score: {selectedContact.score} - {selectedContact.event_count} interactions
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 12 }}>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={{ fontSize: FS.title, fontWeight: '700', color: colors.text }} numberOfLines={1}>{selectedContact.name}</Text>
+                    <Text style={{ fontSize: FS.body, color: colors.textSecondary, marginTop: 2 }}>
+                      Score {selectedContact.score} · {selectedContact.event_count} interactions
                     </Text>
                   </View>
-                  <TouchableOpacity onPress={() => setSelectedContact(null)} data-testid="close-detail-modal">
-                    <Ionicons name="close-circle" size={28} color="#48484A" />
+                  <TouchableOpacity onPress={() => setSelectedContact(null)} hitSlop={8} {...tid('close-detail-modal')}>
+                    <Ionicons name="close-circle" size={28} color={colors.textTertiary} />
                   </TouchableOpacity>
                 </View>
 
-                {/* Breakdown */}
                 <ScrollView contentContainerStyle={{ padding: 20 }}>
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginBottom: 12 }}>Activity Breakdown</Text>
+                  <Text style={{ fontSize: FS.heading, fontWeight: '700', color: colors.text, marginBottom: 12 }}>Activity breakdown</Text>
                   {Object.entries(selectedContact.breakdown)
                     .sort((a, b) => b[1] - a[1])
                     .map(([eventType, count]) => (
                       <View key={eventType} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-                        <Text style={{ fontSize: 15, color: colors.text, flex: 1 }}>
+                        <Text style={{ fontSize: FS.body, color: colors.text, flex: 1 }}>
                           {EVENT_LABELS[eventType] || eventType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
                         </Text>
                         <View style={{ backgroundColor: 'rgba(201,169,98,0.12)', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10 }}>
-                          <Text style={{ fontSize: 15, fontWeight: '700', color: colors.accent }}>{count}</Text>
+                          <Text style={{ fontSize: FS.body, fontWeight: '700', color: colors.accent }}>{count}</Text>
                         </View>
                       </View>
                     ))
                   }
                   
-                  {/* View Contact Button */}
                   <TouchableOpacity
                     onPress={() => {
                       setSelectedContact(null);
                       router.push(`/contact/${selectedContact.contact_id}` as any);
                     }}
                     style={{
-                      marginTop: 20, backgroundColor: colors.accent, borderRadius: 12,
+                      marginTop: 20, backgroundColor: colors.accent, borderRadius: 14,
                       padding: 14, alignItems: 'center',
                     }}
-                    data-testid="view-contact-btn"
+                    {...tid('view-contact-btn')}
                   >
-                    <Text style={{ fontSize: 16, fontWeight: '600', color: '#000' }}>View Contact</Text>
+                    <Text style={{ fontSize: FS.heading, fontWeight: '700', color: '#000' }}>View contact</Text>
                   </TouchableOpacity>
                 </ScrollView>
               </>

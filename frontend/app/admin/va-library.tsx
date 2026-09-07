@@ -9,7 +9,12 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/common/Toast';
+import { ScreenHeader, HeaderIconButton } from '../../components/common/ScreenHeader';
+import { FS } from '../../constants/typography';
+import { showAlert } from '../../services/alert';
 import api from '../../services/api';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 
 const TONE_OPTIONS = [
   { value: 'friendly',     label: 'Friendly' },
@@ -18,11 +23,11 @@ const TONE_OPTIONS = [
   { value: 'energetic',    label: 'Energetic' },
 ];
 
-const AVATAR_COLORS = ['#007AFF','#34C759','#FF9500','#AF52DE','#FF3B30','#C9A962','#5856D6','#FF2D55'];
+const AVATAR_COLORS = ['#C9A962','#34C759','#FF9500','#AF52DE','#FF3B30','#007AFF','#5856D6','#FF2D55'];
 
 const EMPTY_PROFILE = {
   name: '', tagline: '', bio: '', specialties: '',
-  tone: 'friendly', never_say: '', custom_prompt: '', avatar_color: '#007AFF',
+  tone: 'friendly', never_say: '', custom_prompt: '', avatar_color: '#C9A962',
 };
 
 export default function VALibraryScreen() {
@@ -75,13 +80,17 @@ export default function VALibraryScreen() {
     setSaving(false);
   };
 
-  const remove = async (id: string, name: string) => {
-    if (!window.confirm(`Delete "${name}"?`)) return;
-    try {
-      await api.delete(`/va-profiles/${id}`, headers);
-      setProfiles(prev => prev.filter(p => p._id !== id));
-      showToast('Deleted', 'success');
-    } catch { showToast('Delete failed', 'error'); }
+  const remove = (id: string, name: string) => {
+    showAlert('Delete VA', `Delete "${name}"? Lead sources using it fall back to the default VA.`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: async () => {
+        try {
+          await api.delete(`/va-profiles/${id}`, headers);
+          setProfiles(prev => prev.filter(p => p._id !== id));
+          showToast('Deleted', 'success');
+        } catch { showToast('Delete failed', 'error'); }
+      } },
+    ]);
   };
 
   const generatePreview = async (profileId: string) => {
@@ -96,49 +105,43 @@ export default function VALibraryScreen() {
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: colors.bg }]} edges={['top']}>
-      {/* Header */}
-      <View style={[s.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[s.title, { color: colors.text }]}>VA Library</Text>
-        <TouchableOpacity onPress={openCreate} style={[s.addBtn, { backgroundColor: colors.accent }]} data-testid="create-va-btn">
-          <Ionicons name="add" size={18} color="#000" />
-          <Text style={{ fontSize: 14, fontWeight: '700', color: '#000' }}>New VA</Text>
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title="VA Library"
+        testID="va-library-header"
+        right={<HeaderIconButton icon="add-circle" onPress={openCreate} testID="create-va-btn" />}
+      />
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 60 }}>
         <Text style={[s.hint, { color: colors.textSecondary }]}>
-          Create named VA personas (e.g., "Ford Truck Specialist") and assign them to Lead Sources so each channel has its own personality.
+          Create named VA personas (for example "Ford Truck Specialist") and assign them to Lead Sources so each channel has its own personality.
         </Text>
 
         {loading ? (
           <View style={s.center}><ActivityIndicator size="large" color={colors.accent} /></View>
         ) : profiles.length === 0 ? (
-          <View style={s.center}>
-            <Ionicons name="person-circle-outline" size={52} color={colors.textSecondary} />
+          <View style={s.center} {...tid('va-library-empty')}>
+            <Ionicons name="person-circle-outline" size={52} color={colors.textTertiary} />
             <Text style={[s.emptyTitle, { color: colors.text }]}>No VAs yet</Text>
             <Text style={[s.emptySub, { color: colors.textSecondary }]}>Create your first VA persona to assign to lead sources.</Text>
-            <TouchableOpacity style={[s.addBtn, { marginTop: 20, backgroundColor: colors.accent, paddingHorizontal: 24 }]} onPress={openCreate}>
+            <TouchableOpacity style={[s.addBtn, { marginTop: 20, backgroundColor: colors.accent, paddingHorizontal: 24 }]} onPress={openCreate} {...tid('create-first-va-btn')}>
               <Ionicons name="add" size={16} color="#000" />
-              <Text style={{ fontWeight: '700', color: '#000' }}>Create First VA</Text>
+              <Text style={{ fontWeight: '700', color: '#000', fontSize: FS.heading }}>Create first VA</Text>
             </TouchableOpacity>
           </View>
         ) : (
           profiles.map(p => (
-            <View key={p._id} style={[s.card, { backgroundColor: colors.card }]}>
+            <View key={p._id} style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]} {...tid(`va-card-${p._id}`)}>
               {/* Card header */}
               <View style={s.cardHeader}>
                 <View style={[s.avatar, { backgroundColor: p.avatar_color + '30', borderColor: p.avatar_color }]}>
                   <Text style={[s.avatarText, { color: p.avatar_color }]}>{p.name.charAt(0).toUpperCase()}</Text>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.cardName, { color: colors.text }]}>{p.name}</Text>
-                  {p.tagline ? <Text style={[s.cardTag, { color: colors.textSecondary }]}>{p.tagline}</Text> : null}
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={[s.cardName, { color: colors.text }]} numberOfLines={1}>{p.name}</Text>
+                  {p.tagline ? <Text style={[s.cardTag, { color: colors.textSecondary }]} numberOfLines={2}>{p.tagline}</Text> : null}
                 </View>
                 <View style={[s.tonePill, { backgroundColor: colors.surface }]}>
-                  <Text style={{ fontSize: 11, color: colors.textSecondary, fontWeight: '600' }}>{p.tone}</Text>
+                  <Text style={{ fontSize: FS.micro, color: colors.textSecondary, fontWeight: '800' }}>{p.tone}</Text>
                 </View>
               </View>
 
@@ -154,7 +157,7 @@ export default function VALibraryScreen() {
               ) : null}
 
               {/* AI preview */}
-              {preview?.id === p._id && (
+              {preview && preview.id === p._id && (
                 <View style={[s.previewBox, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                   <Text style={[s.previewLabel, { color: colors.textSecondary }]}>SAMPLE REPLY</Text>
                   {preview.loading
@@ -166,17 +169,17 @@ export default function VALibraryScreen() {
 
               {/* Actions */}
               <View style={s.cardActions}>
-                <TouchableOpacity onPress={() => generatePreview(p._id)} style={s.actionBtn} activeOpacity={0.7}>
-                  <Ionicons name="play-circle-outline" size={16} color="#C9A962" />
-                  <Text style={{ fontSize: 12, color: '#C9A962', fontWeight: '600' }}>Preview</Text>
+                <TouchableOpacity onPress={() => generatePreview(p._id)} style={s.actionBtn} activeOpacity={0.7} {...tid(`va-preview-${p._id}`)}>
+                  <Ionicons name="play-circle-outline" size={16} color={colors.accent} />
+                  <Text style={{ fontSize: FS.secondary, color: colors.accent, fontWeight: '700' }}>Preview</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => openEdit(p)} style={s.actionBtn} activeOpacity={0.7}>
-                  <Ionicons name="create-outline" size={16} color="#007AFF" />
-                  <Text style={{ fontSize: 12, color: '#007AFF', fontWeight: '600' }}>Edit</Text>
+                <TouchableOpacity onPress={() => openEdit(p)} style={s.actionBtn} activeOpacity={0.7} {...tid(`va-edit-${p._id}`)}>
+                  <Ionicons name="create-outline" size={16} color={colors.accent} />
+                  <Text style={{ fontSize: FS.secondary, color: colors.accent, fontWeight: '700' }}>Edit</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => remove(p._id, p.name)} style={s.actionBtn} activeOpacity={0.7}>
+                <TouchableOpacity onPress={() => remove(p._id, p.name)} style={s.actionBtn} activeOpacity={0.7} {...tid(`va-delete-${p._id}`)}>
                   <Ionicons name="trash-outline" size={16} color="#FF3B30" />
-                  <Text style={{ fontSize: 12, color: '#FF3B30', fontWeight: '600' }}>Delete</Text>
+                  <Text style={{ fontSize: FS.secondary, color: '#FF3B30', fontWeight: '700' }}>Delete</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -189,12 +192,12 @@ export default function VALibraryScreen() {
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
           {/* Modal header */}
           <View style={[s.modalHeader, { borderBottomColor: colors.border }]}>
-            <TouchableOpacity onPress={() => setShowModal(false)}>
-              <Text style={{ color: '#FF3B30', fontSize: 16, fontWeight: '600' }}>Cancel</Text>
+            <TouchableOpacity onPress={() => setShowModal(false)} hitSlop={8} {...tid('va-modal-cancel')}>
+              <Text style={{ color: colors.textSecondary, fontSize: FS.heading, fontWeight: '600' }}>Cancel</Text>
             </TouchableOpacity>
             <Text style={[s.modalTitle, { color: colors.text }]}>{editing ? 'Edit VA' : 'New VA'}</Text>
-            <TouchableOpacity onPress={save} disabled={saving} data-testid="save-va-btn">
-              {saving ? <ActivityIndicator size="small" color={colors.accent} /> : <Text style={{ color: colors.accent, fontSize: 16, fontWeight: '700' }}>Save</Text>}
+            <TouchableOpacity onPress={save} disabled={saving} hitSlop={8} {...tid('save-va-btn')}>
+              {saving ? <ActivityIndicator size="small" color={colors.accent} /> : <Text style={{ color: colors.accent, fontSize: FS.heading, fontWeight: '700' }}>Save</Text>}
             </TouchableOpacity>
           </View>
 
@@ -202,7 +205,7 @@ export default function VALibraryScreen() {
             {/* Name */}
             <View>
               <Text style={[s.label, { color: colors.textSecondary }]}>VA Name *</Text>
-              <TextInput style={[s.input, { color: colors.text, backgroundColor: colors.card, borderColor: colors.border }]} value={form.name} onChangeText={v => setForm((p: any) => ({ ...p, name: v }))} placeholder="e.g. Ford Truck Specialist" placeholderTextColor={colors.textSecondary} />
+              <TextInput style={[s.input, { color: colors.text, backgroundColor: colors.card, borderColor: colors.border }]} value={form.name} onChangeText={v => setForm((p: any) => ({ ...p, name: v }))} placeholder="e.g. Ford Truck Specialist" placeholderTextColor={colors.textSecondary} {...tid('va-name-input')} />
             </View>
 
             {/* Tagline */}
@@ -216,7 +219,7 @@ export default function VALibraryScreen() {
               <Text style={[s.label, { color: colors.textSecondary }]}>Avatar Color</Text>
               <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap', marginTop: 6 }}>
                 {AVATAR_COLORS.map(c => (
-                  <TouchableOpacity key={c} onPress={() => setForm((p: any) => ({ ...p, avatar_color: c }))} style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: c, borderWidth: form.avatar_color === c ? 3 : 0, borderColor: '#fff' }} />
+                  <TouchableOpacity key={c} onPress={() => setForm((p: any) => ({ ...p, avatar_color: c }))} style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: c, borderWidth: form.avatar_color === c ? 3 : 0, borderColor: colors.text }} {...tid(`va-color-${c.replace('#', '')}`)} />
                 ))}
               </View>
             </View>
@@ -236,7 +239,7 @@ export default function VALibraryScreen() {
             {/* Bio */}
             <View>
               <Text style={[s.label, { color: colors.textSecondary }]}>Bio / Background</Text>
-              <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 6 }}>Who this VA is — their experience, personality, why customers love them.</Text>
+              <Text style={{ fontSize: FS.caption, color: colors.textSecondary, marginBottom: 6 }}>Who this VA is: their experience, personality, why customers love them.</Text>
               <TextInput style={[s.input, { height: 90, textAlignVertical: 'top', color: colors.text, backgroundColor: colors.card, borderColor: colors.border }]} value={form.bio} onChangeText={v => setForm((p: any) => ({ ...p, bio: v }))} multiline placeholder="e.g. 10 years selling trucks in Utah. Knows every tow rating and lift kit. Loves off-roading on weekends." placeholderTextColor={colors.textSecondary} />
             </View>
 
@@ -254,7 +257,7 @@ export default function VALibraryScreen() {
 
             {/* Custom prompt (advanced) */}
             <View>
-              <Text style={[s.label, { color: colors.textSecondary }]}>Custom Prompt (Advanced — overrides everything above)</Text>
+              <Text style={[s.label, { color: colors.textSecondary }]}>Custom Prompt (Advanced, overrides everything above)</Text>
               <TextInput style={[s.input, { height: 120, textAlignVertical: 'top', color: colors.text, backgroundColor: colors.card, borderColor: colors.border }]} value={form.custom_prompt} onChangeText={v => setForm((p: any) => ({ ...p, custom_prompt: v }))} multiline placeholder="Paste a full system prompt here if you want complete control. Leave blank to use the fields above." placeholderTextColor={colors.textSecondary} />
             </View>
           </ScrollView>
@@ -266,29 +269,26 @@ export default function VALibraryScreen() {
 
 const getS = (c: any) => StyleSheet.create({
   container:   { flex: 1 },
-  header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
-  backBtn:     { width: 36, height: 36, borderRadius: 18, backgroundColor: c.card, alignItems: 'center', justifyContent: 'center' },
-  title:       { fontSize: 18, fontWeight: '700' },
-  addBtn:      { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8 },
-  hint:        { fontSize: 13, lineHeight: 19, marginBottom: 16 },
+  addBtn:      { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 },
+  hint:        { fontSize: FS.secondary, lineHeight: 19, marginBottom: 16 },
   center:      { alignItems: 'center', paddingTop: 60, paddingBottom: 20 },
-  emptyTitle:  { fontSize: 18, fontWeight: '700', marginTop: 12 },
-  emptySub:    { fontSize: 13, marginTop: 6, textAlign: 'center', paddingHorizontal: 20 },
-  card:        { borderRadius: 16, padding: 14, marginBottom: 12 },
+  emptyTitle:  { fontSize: FS.heading, fontWeight: '700', marginTop: 12 },
+  emptySub:    { fontSize: FS.body, marginTop: 6, textAlign: 'center', paddingHorizontal: 20 },
+  card:        { borderRadius: 16, borderWidth: 1, padding: 14, marginBottom: 12 },
   cardHeader:  { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 8 },
   avatar:      { width: 44, height: 44, borderRadius: 22, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   avatarText:  { fontSize: 18, fontWeight: '800' },
-  cardName:    { fontSize: 16, fontWeight: '700' },
-  cardTag:     { fontSize: 12, marginTop: 2 },
+  cardName:    { fontSize: FS.heading, fontWeight: '700' },
+  cardTag:     { fontSize: FS.secondary, marginTop: 2 },
   tonePill:    { borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4 },
-  bio:         { fontSize: 13, lineHeight: 18, marginBottom: 6 },
+  bio:         { fontSize: FS.secondary, lineHeight: 18, marginBottom: 6 },
   specChip:    { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, alignSelf: 'flex-start', marginBottom: 8 },
   previewBox:  { borderRadius: 10, padding: 12, marginTop: 8, borderWidth: 1, marginBottom: 4 },
-  previewLabel:{ fontSize: 10, fontWeight: '800', letterSpacing: 0.5, marginBottom: 6 },
+  previewLabel:{ fontSize: FS.micro, fontWeight: '800', letterSpacing: 0.5, marginBottom: 6 },
   cardActions: { flexDirection: 'row', gap: 0, marginTop: 10, borderTopWidth: 1, borderTopColor: c.border, paddingTop: 10 },
-  actionBtn:   { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
+  actionBtn:   { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, minHeight: 32 },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1 },
-  modalTitle:  { fontSize: 17, fontWeight: '700' },
-  label:       { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 },
-  input:       { borderRadius: 12, borderWidth: 1, padding: 12, fontSize: 15, marginTop: 2 },
+  modalTitle:  { fontSize: FS.nav, fontWeight: '700' },
+  label:       { fontSize: FS.caption, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6 },
+  input:       { borderRadius: 12, borderWidth: 1, padding: 12, fontSize: FS.body, marginTop: 2 },
 });

@@ -7,17 +7,18 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Platform,
   TextInput,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
-
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton } from '../../components/common/ScreenHeader';
+import { FS, EYEBROW } from '../../constants/typography';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 type DatePreset = 'today' | 'this_week' | 'this_month' | 'last_month' | 'last_7' | 'last_30' | 'custom';
 
 function getDateRange(preset: DatePreset): { start: string; end: string } {
@@ -59,11 +60,11 @@ function getDateRange(preset: DatePreset): { start: string; end: string } {
 
 const PRESETS: { key: DatePreset; label: string }[] = [
   { key: 'today', label: 'Today' },
-  { key: 'this_week', label: 'This Week' },
-  { key: 'this_month', label: 'This Month' },
-  { key: 'last_month', label: 'Last Month' },
-  { key: 'last_7', label: 'Last 7 Days' },
-  { key: 'last_30', label: 'Last 30 Days' },
+  { key: 'this_week', label: 'This week' },
+  { key: 'this_month', label: 'This month' },
+  { key: 'last_month', label: 'Last month' },
+  { key: 'last_7', label: 'Last 7 days' },
+  { key: 'last_30', label: 'Last 30 days' },
 ];
 
 interface Totals {
@@ -114,7 +115,6 @@ export default function ActivityReportScreen() {
       setPerUser(res.data.per_user || []);
       setIsTeamReport(res.data.is_team_report);
 
-      // Load daily breakdown for chart
       const dailyRes = await api.get(`/reports/activity-daily/${user._id}?start_date=${start}&end_date=${end}&team=${team}`);
       setDailyData(dailyRes.data.days || []);
     } catch (err) {
@@ -140,7 +140,7 @@ export default function ActivityReportScreen() {
     try {
       const { start, end } = getDateRange(preset);
       await api.post(`/reports/send-email/${user._id}?start_date=${start}&end_date=${end}&team=${team}`);
-      showAlert('Sent!', 'Report emailed successfully.');
+      showAlert('Sent', 'Report emailed successfully.');
     } catch (err) {
       showAlert('Error', 'Failed to send report email.');
     } finally {
@@ -168,7 +168,7 @@ export default function ActivityReportScreen() {
   const maxDaily = Math.max(...dailyData.map(d => d.total || 0), 1);
 
   const StatCard = ({ value, label, color, icon }: { value: number; label: string; color: string; icon: string }) => (
-    <View style={styles.statCard} data-testid={`stat-${label.toLowerCase().replace(/\s/g, '-')}`}>
+    <View style={styles.statCard} {...tid(`stat-${label.toLowerCase().replace(/\s/g, '-')}`)}>
       <View style={[styles.statIcon, { backgroundColor: `${color}15` }]}>
         <Ionicons name={icon as any} size={18} color={color} />
       </View>
@@ -179,61 +179,55 @@ export default function ActivityReportScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} data-testid="report-back-btn">
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Activity Report</Text>
-        <TouchableOpacity onPress={() => setShowSchedule(!showSchedule)} data-testid="report-schedule-btn">
-          <Ionicons name="timer-outline" size={24} color={schedFreq !== 'none' ? '#34C759' : colors.textSecondary} />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title="Activity Reports"
+        testID="activity-reports-header"
+        right={<HeaderIconButton icon={schedFreq !== 'none' ? 'timer' : 'timer-outline'} onPress={() => setShowSchedule(!showSchedule)} testID="report-schedule-btn" color={schedFreq !== 'none' ? colors.success : colors.accent} />}
+      />
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-        {/* Date Presets */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.presetRow} contentContainerStyle={styles.presetRowContent}>
           {PRESETS.map(p => (
             <TouchableOpacity
               key={p.key}
               style={[styles.presetBtn, preset === p.key && styles.presetBtnActive]}
               onPress={() => setPreset(p.key)}
-              data-testid={`preset-${p.key}`}
+              {...tid(`preset-${p.key}`)}
             >
               <Text style={[styles.presetText, preset === p.key && styles.presetTextActive]}>{p.label}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        {/* Team Toggle */}
         {isManager && (
           <View style={styles.teamToggle}>
             <TouchableOpacity
               style={[styles.toggleBtn, !team && styles.toggleBtnActive]}
               onPress={() => setTeam(false)}
-              data-testid="toggle-my-stats"
+              {...tid('toggle-my-stats')}
             >
-              <Text style={[styles.toggleText, !team && styles.toggleTextActive]}>My Stats</Text>
+              <Text style={[styles.toggleText, !team && styles.toggleTextActive]}>My stats</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.toggleBtn, team && styles.toggleBtnActive]}
               onPress={() => setTeam(true)}
-              data-testid="toggle-team-stats"
+              {...tid('toggle-team-stats')}
             >
               <Text style={[styles.toggleText, team && styles.toggleTextActive]}>Team</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* Schedule Panel */}
         {showSchedule && (
-          <View style={styles.schedulePanel} data-testid="schedule-panel">
-            <Text style={styles.schedulePanelTitle}>Scheduled Reports</Text>
+          <View style={styles.schedulePanel} {...tid('schedule-panel')}>
+            <Text style={styles.schedulePanelTitle}>Scheduled reports</Text>
             <View style={styles.schedFreqRow}>
               {['none', 'daily', 'weekly', 'monthly'].map(f => (
                 <TouchableOpacity
                   key={f}
                   style={[styles.schedFreqBtn, schedFreq === f && styles.schedFreqBtnActive]}
                   onPress={() => setSchedFreq(f)}
+                  {...tid(`sched-freq-${f}`)}
                 >
                   <Text style={[styles.schedFreqText, schedFreq === f && styles.schedFreqTextActive]}>
                     {f === 'none' ? 'Off' : f.charAt(0).toUpperCase() + f.slice(1)}
@@ -247,11 +241,13 @@ export default function ActivityReportScreen() {
                 value={schedEmail}
                 onChangeText={setSchedEmail}
                 placeholder="Email address"
-                placeholderTextColor="#6E6E73"
+                placeholderTextColor={colors.textTertiary}
                 keyboardType="email-address"
+                autoCapitalize="none"
+                {...tid('sched-email-input')}
               />
             )}
-            <TouchableOpacity style={styles.schedSaveBtn} onPress={saveSchedule}>
+            <TouchableOpacity style={styles.schedSaveBtn} onPress={saveSchedule} {...tid('sched-save-btn')}>
               <Text style={styles.schedSaveBtnText}>Save</Text>
             </TouchableOpacity>
           </View>
@@ -259,19 +255,17 @@ export default function ActivityReportScreen() {
 
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#FFD60A" />
+            <ActivityIndicator size="large" color={colors.accent} />
           </View>
         ) : totals ? (
           <>
-            {/* Top Stats */}
             <View style={styles.topStats}>
               <View style={styles.heroStat}>
-                <Text style={styles.heroValue}>{totals.total_touchpoints}</Text>
-                <Text style={styles.heroLabel}>Total Touchpoints</Text>
+                <Text style={styles.heroValue} {...tid('total-touchpoints')}>{totals.total_touchpoints}</Text>
+                <Text style={styles.heroLabel}>Total touchpoints</Text>
               </View>
             </View>
 
-            {/* Stat Grid */}
             <View style={styles.statGrid}>
               <StatCard value={totals.sms_sent + totals.sms_personal} label="SMS Sent" color="#007AFF" icon="chatbubble" />
               <StatCard value={totals.emails_sent} label="Emails" color="#AF52DE" icon="mail" />
@@ -283,39 +277,39 @@ export default function ActivityReportScreen() {
               <StatCard value={totals.link_clicks} label="Link Clicks" color="#FF375F" icon="analytics" />
             </View>
 
-            {/* Activity Chart */}
             {dailyData.length > 0 && (
               <View style={styles.chartSection}>
-                <Text style={styles.sectionTitle}>Daily Activity</Text>
-                <View style={styles.chart}>
-                  {dailyData.slice(-14).map((day, i) => {
-                    const height = Math.max((day.total / maxDaily) * 80, 3);
-                    const label = new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' });
-                    return (
-                      <View key={i} style={styles.chartBar}>
-                        <Text style={styles.chartBarValue}>{day.total || ''}</Text>
-                        <View style={[styles.chartBarFill, { height, backgroundColor: '#007AFF' }]} />
-                        <Text style={styles.chartBarLabel}>{label}</Text>
-                      </View>
-                    );
-                  })}
+                <Text style={styles.sectionTitle}>Daily activity</Text>
+                <View style={styles.chartCard}>
+                  <View style={styles.chart}>
+                    {dailyData.slice(-14).map((day, i) => {
+                      const height = Math.max((day.total / maxDaily) * 80, 3);
+                      const label = new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' });
+                      return (
+                        <View key={i} style={styles.chartBar}>
+                          <Text style={styles.chartBarValue}>{day.total || ''}</Text>
+                          <View style={[styles.chartBarFill, { height, backgroundColor: colors.accent }]} />
+                          <Text style={styles.chartBarLabel}>{label}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
                 </View>
               </View>
             )}
 
-            {/* Team Breakdown */}
             {isTeamReport && perUser.length > 1 && (
               <View style={styles.teamSection}>
-                <Text style={styles.sectionTitle}>Team Breakdown</Text>
+                <Text style={styles.sectionTitle}>Team breakdown</Text>
                 {perUser.sort((a, b) => b.total_touchpoints - a.total_touchpoints).map((u, i) => (
-                  <View key={u.user_id} style={styles.teamRow} data-testid={`team-row-${i}`}>
+                  <View key={u.user_id} style={styles.teamRow} {...tid(`team-row-${i}`)}>
                     <View style={styles.teamRank}>
                       <Text style={styles.teamRankText}>{i + 1}</Text>
                     </View>
                     <View style={styles.teamInfo}>
-                      <Text style={styles.teamName}>{u.name}</Text>
+                      <Text style={styles.teamName} numberOfLines={1}>{u.name}</Text>
                       <Text style={styles.teamDetails}>
-                        {u.sms_sent + u.sms_personal} SMS  {u.emails_sent} Email  {u.digital_cards_sent} Cards  {u.review_invites_sent} Reviews
+                        {u.sms_sent + u.sms_personal} SMS · {u.emails_sent} Email · {u.digital_cards_sent} Cards · {u.review_invites_sent} Reviews
                       </Text>
                     </View>
                     <View style={styles.teamScore}>
@@ -327,27 +321,29 @@ export default function ActivityReportScreen() {
               </View>
             )}
 
-            {/* Email Report Button */}
             <TouchableOpacity
               style={styles.emailBtn}
               onPress={handleEmailReport}
               disabled={sendingEmail}
-              data-testid="email-report-btn"
+              {...tid('email-report-btn')}
             >
               {sendingEmail ? (
-                <ActivityIndicator size="small" color={colors.text} />
+                <ActivityIndicator size="small" color="#000" />
               ) : (
                 <>
-                  <Ionicons name="mail-outline" size={18} color={colors.text} />
-                  <Text style={styles.emailBtnText}>Email This Report</Text>
+                  <Ionicons name="mail-outline" size={18} color="#000" />
+                  <Text style={styles.emailBtnText}>Email this report</Text>
                 </>
               )}
             </TouchableOpacity>
           </>
         ) : (
-          <View style={styles.emptyState}>
-            <Ionicons name="bar-chart-outline" size={48} color={colors.textSecondary} />
-            <Text style={styles.emptyText}>No data for this period</Text>
+          <View style={styles.emptyState} {...tid('report-empty')}>
+            <Ionicons name="bar-chart-outline" size={48} color={colors.textTertiary} />
+            <Text style={styles.emptyText}>No activity for this period</Text>
+            <TouchableOpacity onPress={() => setPreset('last_30')} style={styles.emptyBtn} {...tid('report-empty-last-30')}>
+              <Text style={styles.emptyBtnText}>Show last 30 days</Text>
+            </TouchableOpacity>
           </View>
         )}
       </ScrollView>
@@ -357,96 +353,94 @@ export default function ActivityReportScreen() {
 
 const getStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.card,
-  },
-  headerTitle: { fontSize: 19, fontWeight: '700', color: colors.text },
   scroll: { flex: 1 },
   scrollContent: { paddingBottom: 40 },
   presetRow: { marginTop: 12 },
   presetRowContent: { paddingHorizontal: 16, gap: 8 },
   presetBtn: {
-    paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-    backgroundColor: colors.card, marginRight: 8,
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 18,
+    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border,
   },
-  presetBtnActive: { backgroundColor: '#FFD60A' },
-  presetText: { fontSize: 15, fontWeight: '600', color: colors.textSecondary },
-  presetTextActive: { color: colors.text },
+  presetBtnActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  presetText: { fontSize: FS.secondary, fontWeight: '700', color: colors.textSecondary },
+  presetTextActive: { color: '#000' },
   teamToggle: {
     flexDirection: 'row', marginHorizontal: 16, marginTop: 12,
-    backgroundColor: colors.card, borderRadius: 10, padding: 3,
+    backgroundColor: colors.card, borderRadius: 14, padding: 3, borderWidth: 1, borderColor: colors.border,
   },
-  toggleBtn: { flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center' },
-  toggleBtnActive: { backgroundColor: colors.surface },
-  toggleText: { fontSize: 16, fontWeight: '600', color: '#6E6E73' },
-  toggleTextActive: { color: colors.text },
+  toggleBtn: { flex: 1, paddingVertical: 8, borderRadius: 11, alignItems: 'center' },
+  toggleBtnActive: { backgroundColor: colors.accent },
+  toggleText: { fontSize: FS.body, fontWeight: '700', color: colors.textSecondary },
+  toggleTextActive: { color: '#000' },
   schedulePanel: {
     marginHorizontal: 16, marginTop: 12, backgroundColor: colors.card,
-    borderRadius: 12, padding: 16,
+    borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border,
   },
-  schedulePanelTitle: { fontSize: 17, fontWeight: '700', color: colors.text, marginBottom: 12 },
+  schedulePanelTitle: { fontSize: FS.heading, fontWeight: '700', color: colors.text, marginBottom: 12 },
   schedFreqRow: { flexDirection: 'row', gap: 8 },
   schedFreqBtn: {
-    flex: 1, paddingVertical: 8, borderRadius: 8, backgroundColor: colors.surface, alignItems: 'center',
+    flex: 1, paddingVertical: 8, borderRadius: 10, backgroundColor: colors.surface, alignItems: 'center',
   },
-  schedFreqBtnActive: { backgroundColor: '#34C759' },
-  schedFreqText: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
-  schedFreqTextActive: { color: colors.text },
+  schedFreqBtnActive: { backgroundColor: colors.accent },
+  schedFreqText: { fontSize: FS.secondary, fontWeight: '700', color: colors.textSecondary },
+  schedFreqTextActive: { color: '#000' },
   schedEmailInput: {
-    marginTop: 12, backgroundColor: colors.surface, borderRadius: 8,
-    paddingHorizontal: 12, paddingVertical: 10, color: colors.text, fontSize: 16,
+    marginTop: 12, backgroundColor: colors.surface, borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 10, color: colors.text, fontSize: FS.body,
   },
   schedSaveBtn: {
-    marginTop: 12, backgroundColor: '#34C759', borderRadius: 8,
-    paddingVertical: 10, alignItems: 'center',
+    marginTop: 12, backgroundColor: colors.accent, borderRadius: 14,
+    paddingVertical: 12, alignItems: 'center',
   },
-  schedSaveBtnText: { fontSize: 16, fontWeight: '700', color: colors.text },
+  schedSaveBtnText: { fontSize: FS.heading, fontWeight: '700', color: '#000' },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 80 },
   topStats: { alignItems: 'center', marginTop: 24 },
   heroStat: { alignItems: 'center' },
-  heroValue: { fontSize: 48, fontWeight: '800', color: '#34C759' },
-  heroLabel: { fontSize: 16, fontWeight: '600', color: colors.textSecondary, marginTop: 4 },
+  heroValue: { fontSize: 48, fontWeight: '800', color: colors.accent },
+  heroLabel: { fontSize: FS.heading, fontWeight: '600', color: colors.textSecondary, marginTop: 4 },
   statGrid: {
     flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center',
     gap: 10, marginTop: 20, paddingHorizontal: 16,
   },
   statCard: {
-    width: '22%', minWidth: 80, backgroundColor: colors.card, borderRadius: 12,
-    padding: 12, alignItems: 'center',
+    width: '22%', minWidth: 80, backgroundColor: colors.card, borderRadius: 16,
+    padding: 12, alignItems: 'center', borderWidth: 1, borderColor: colors.border,
   },
   statIcon: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
-  statValue: { fontSize: 21, fontWeight: '800' },
-  statLabel: { fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginTop: 2, textAlign: 'center' },
-  chartSection: { marginTop: 28, paddingHorizontal: 16 },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 12 },
+  statValue: { fontSize: FS.title, fontWeight: '800' },
+  statLabel: { fontSize: FS.caption, fontWeight: '600', color: colors.textSecondary, marginTop: 2, textAlign: 'center' },
+  chartSection: { marginTop: 24, paddingHorizontal: 16 },
+  sectionTitle: { ...EYEBROW, color: colors.textSecondary, marginBottom: 10 },
+  chartCard: { backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 12 },
   chart: { flexDirection: 'row', alignItems: 'flex-end', height: 120, gap: 2, justifyContent: 'space-between' },
   chartBar: { flex: 1, alignItems: 'center', justifyContent: 'flex-end' },
   chartBarFill: { width: '80%', borderRadius: 3, minHeight: 3 },
   chartBarValue: { fontSize: 9, color: colors.textSecondary, marginBottom: 2 },
-  chartBarLabel: { fontSize: 9, color: '#6E6E73', marginTop: 4 },
-  teamSection: { marginTop: 28, paddingHorizontal: 16 },
+  chartBarLabel: { fontSize: 9, color: colors.textTertiary, marginTop: 4 },
+  teamSection: { marginTop: 24, paddingHorizontal: 16 },
   teamRow: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
-    borderRadius: 12, padding: 14, marginBottom: 8,
+    borderRadius: 16, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: colors.border,
   },
   teamRank: {
     width: 28, height: 28, borderRadius: 14, backgroundColor: colors.surface,
     alignItems: 'center', justifyContent: 'center', marginRight: 12,
   },
-  teamRankText: { fontSize: 15, fontWeight: '700', color: '#FFD60A' },
-  teamInfo: { flex: 1 },
-  teamName: { fontSize: 17, fontWeight: '600', color: colors.text },
-  teamDetails: { fontSize: 13, color: colors.textSecondary, marginTop: 3 },
+  teamRankText: { fontSize: FS.body, fontWeight: '700', color: colors.accent },
+  teamInfo: { flex: 1, minWidth: 0 },
+  teamName: { fontSize: FS.heading, fontWeight: '700', color: colors.text, flexShrink: 1 },
+  teamDetails: { fontSize: FS.secondary, color: colors.textSecondary, marginTop: 3 },
   teamScore: { alignItems: 'center' },
-  teamScoreValue: { fontSize: 21, fontWeight: '800', color: '#34C759' },
-  teamScoreLabel: { fontSize: 12, color: colors.textSecondary },
+  teamScoreValue: { fontSize: FS.title, fontWeight: '800', color: colors.accent },
+  teamScoreLabel: { fontSize: FS.caption, color: colors.textSecondary },
   emailBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    marginHorizontal: 16, marginTop: 28, backgroundColor: '#007AFF',
-    borderRadius: 12, paddingVertical: 14,
+    marginHorizontal: 16, marginTop: 28, backgroundColor: colors.accent,
+    borderRadius: 28, paddingVertical: 14,
   },
-  emailBtnText: { fontSize: 17, fontWeight: '600', color: colors.text },
-  emptyState: { alignItems: 'center', paddingTop: 80 },
-  emptyText: { fontSize: 18, color: colors.textSecondary, marginTop: 12 },
+  emailBtnText: { fontSize: FS.heading, fontWeight: '700', color: '#000' },
+  emptyState: { alignItems: 'center', paddingTop: 80, paddingHorizontal: 32 },
+  emptyText: { fontSize: FS.heading, fontWeight: '700', color: colors.text, marginTop: 12, textAlign: 'center' },
+  emptyBtn: { marginTop: 16, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 14, borderWidth: 1, borderColor: colors.accent },
+  emptyBtnText: { fontSize: FS.body, fontWeight: '700', color: colors.accent },
 });

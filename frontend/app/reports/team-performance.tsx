@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
+import { FS } from '../../constants/typography';
 import api from '../../services/api';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
+// Sold is the brand gold; Referrals and Repeats keep the same category colors as the Home sales tiles.
+const STAT_COLORS = { sold: '#C9A962', referrals: '#007AFF', repeats: '#AF52DE' };
 
 export default function TeamPerformanceScreen() {
   const { colors } = useThemeStore();
@@ -35,104 +41,96 @@ export default function TeamPerformanceScreen() {
     setMonth(m); setYear(y);
   };
 
+  const monthLabel = data?.month_label || new Date(year, month - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
-      {/* Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border, gap: 12 }}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="chevron-back" size={26} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={{ flex: 1, fontSize: 19, fontWeight: '700', color: colors.text }}>Team Performance</Text>
-      </View>
+      <ScreenHeader title="Team Sales" testID="team-sales-header" />
 
-      {/* Month picker */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, gap: 20 }}>
-        <TouchableOpacity onPress={() => changeMonth(-1)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="chevron-back" size={22} color={colors.text} />
+        <TouchableOpacity onPress={() => changeMonth(-1)} hitSlop={10} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }} {...tid('team-sales-prev-month')}>
+          <Ionicons name="chevron-back" size={22} color={colors.accent} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text, minWidth: 140, textAlign: 'center' }}>
-          {data?.month_label || `${new Date(year, month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}`}
+        <Text style={{ fontSize: FS.nav, fontWeight: '700', color: colors.text, minWidth: 150, textAlign: 'center' }} maxFontSizeMultiplier={1.2} {...tid('team-sales-month-label')}>
+          {monthLabel}
         </Text>
-        <TouchableOpacity onPress={() => changeMonth(1)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="chevron-forward" size={22} color={colors.text} />
+        <TouchableOpacity onPress={() => changeMonth(1)} hitSlop={10} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }} {...tid('team-sales-next-month')}>
+          <Ionicons name="chevron-forward" size={22} color={colors.accent} />
         </TouchableOpacity>
       </View>
 
       {loading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator size="large" color="#C9A962" />
+          <ActivityIndicator size="large" color={colors.accent} />
         </View>
       ) : !data?.stores?.length ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
-          <Text style={{ fontSize: 16, color: colors.textSecondary, textAlign: 'center' }}>No team data available. Reps need a store assigned.</Text>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }} {...tid('team-sales-empty')}>
+          <Ionicons name="people-outline" size={44} color={colors.textTertiary} />
+          <Text style={{ fontSize: FS.heading, fontWeight: '700', color: colors.text, marginTop: 12, textAlign: 'center' }}>No team sales yet</Text>
+          <Text style={{ fontSize: FS.body, color: colors.textSecondary, textAlign: 'center', marginTop: 6 }}>Reps need a store assigned before their sold units roll up here.</Text>
+          <TouchableOpacity onPress={() => router.push('/admin/users' as any)} style={{ marginTop: 18, backgroundColor: colors.accent, borderRadius: 14, paddingHorizontal: 22, paddingVertical: 12 }} {...tid('team-sales-manage-team')}>
+            <Text style={{ fontSize: FS.heading, fontWeight: '700', color: '#000' }}>Manage team</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
           {data.stores.map((store: any) => (
-            <View key={store.store_id} style={{ marginBottom: 24 }}>
-              {/* Store header */}
+            <View key={store.store_id} style={{ marginBottom: 20 }} {...tid(`team-sales-store-${store.store_id}`)}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8 }}>
-                <Ionicons name="business" size={18} color="#C9A962" />
-                <Text style={{ fontSize: 17, fontWeight: '800', color: colors.text }}>{store.store_name}</Text>
-                <View style={{ flex: 1 }} />
-                {/* Store totals */}
+                <Ionicons name="business" size={18} color={colors.accent} />
+                <Text style={{ flex: 1, fontSize: FS.heading, fontWeight: '800', color: colors.text }} numberOfLines={1}>{store.store_name}</Text>
                 <View style={{ flexDirection: 'row', gap: 12 }}>
                   {[
-                    { label: 'Sold', value: store.totals.sold, color: '#C9A962' },
-                    { label: 'Refs', value: store.totals.referrals, color: '#007AFF' },
-                    { label: 'Rpts', value: store.totals.repeats, color: '#AF52DE' },
+                    { label: 'Sold', value: store.totals.sold, color: STAT_COLORS.sold },
+                    { label: 'Refs', value: store.totals.referrals, color: STAT_COLORS.referrals },
+                    { label: 'Rpts', value: store.totals.repeats, color: STAT_COLORS.repeats },
                   ].map(s => (
                     <View key={s.label} style={{ alignItems: 'center' }}>
-                      <Text style={{ fontSize: 16, fontWeight: '800', color: s.color }}>{s.value}</Text>
-                      <Text style={{ fontSize: 10, color: colors.textSecondary }}>{s.label}</Text>
+                      <Text style={{ fontSize: FS.heading, fontWeight: '800', color: s.color }}>{s.value}</Text>
+                      <Text style={{ fontSize: FS.micro, color: colors.textSecondary }}>{s.label}</Text>
                     </View>
                   ))}
                 </View>
               </View>
 
-              {/* Rep rows */}
               {store.reps.map((rep: any, idx: number) => (
                 <TouchableOpacity
                   key={rep.user_id}
                   onPress={() => router.push(`/sales-list?type=sold&month=${month}&year=${year}&rep_id=${rep.user_id}` as any)}
                   style={{
                     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card,
-                    borderRadius: 12, padding: 12, marginBottom: 6, borderWidth: 1,
-                    borderColor: colors.surface, gap: 10,
+                    borderRadius: 16, padding: 12, marginBottom: 8, borderWidth: 1,
+                    borderColor: colors.border, gap: 10,
                   }}
-                  data-testid={`rep-row-${rep.user_id}`}
+                  {...tid(`rep-row-${rep.user_id}`)}
                 >
-                  {/* Rank */}
-                  <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: idx === 0 ? '#C9A96225' : colors.surface, alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ fontSize: 13, fontWeight: '700', color: idx === 0 ? '#C9A962' : colors.textSecondary }}>{idx + 1}</Text>
+                  <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: idx === 0 ? `${colors.accent}25` : colors.surface, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: FS.secondary, fontWeight: '700', color: idx === 0 ? colors.accent : colors.textSecondary }}>{idx + 1}</Text>
                   </View>
 
-                  {/* Name */}
-                  <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: colors.text }} numberOfLines={1}>{rep.name}</Text>
+                  <Text style={{ flex: 1, flexShrink: 1, fontSize: FS.heading, fontWeight: '700', color: colors.text }} numberOfLines={1}>{rep.name}</Text>
 
-                  {/* Stats */}
                   {[
-                    { value: rep.sold, color: '#C9A962', bg: '#C9A96215' },
-                    { value: rep.referrals, color: '#007AFF', bg: '#007AFF15' },
-                    { value: rep.repeats, color: '#AF52DE', bg: '#AF52DE15' },
+                    { value: rep.sold, color: STAT_COLORS.sold },
+                    { value: rep.referrals, color: STAT_COLORS.referrals },
+                    { value: rep.repeats, color: STAT_COLORS.repeats },
                   ].map((s, i) => (
-                    <View key={i} style={{ backgroundColor: s.bg, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, minWidth: 36, alignItems: 'center' }}>
-                      <Text style={{ fontSize: 15, fontWeight: '800', color: s.color }}>{s.value}</Text>
+                    <View key={i} style={{ backgroundColor: `${s.color}15`, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, minWidth: 36, alignItems: 'center' }}>
+                      <Text style={{ fontSize: FS.body, fontWeight: '800', color: s.color }}>{s.value}</Text>
                     </View>
                   ))}
 
-                  <Ionicons name="chevron-forward" size={14} color={colors.borderLight} />
+                  <Ionicons name="chevron-forward" size={16} color={colors.textTertiary} />
                 </TouchableOpacity>
               ))}
             </View>
           ))}
 
-          {/* Legend */}
-          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 20, marginTop: 8 }}>
-            {[['#C9A962', 'Sold'], ['#007AFF', 'Referrals'], ['#AF52DE', 'Repeats']].map(([c, l]) => (
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 20, marginTop: 4 }}>
+            {[[STAT_COLORS.sold, 'Sold'], [STAT_COLORS.referrals, 'Referrals'], [STAT_COLORS.repeats, 'Repeats']].map(([c, l]) => (
               <View key={l} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                 <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: c }} />
-                <Text style={{ fontSize: 12, color: colors.textSecondary }}>{l}</Text>
+                <Text style={{ fontSize: FS.caption, color: colors.textSecondary }}>{l}</Text>
               </View>
             ))}
           </View>

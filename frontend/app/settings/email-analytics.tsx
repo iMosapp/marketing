@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -15,10 +15,14 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { emailAPI } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
+import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton } from '../../components/common/ScreenHeader';
+import { FS, EYEBROW } from '../../constants/typography';
 import { format } from 'date-fns';
 
-import { useThemeStore } from '../../store/themeStore';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
+const GOLD = '#C9A962';
 
 interface EmailLog {
   _id: string;
@@ -43,14 +47,25 @@ interface AnalyticsData {
   logs: EmailLog[];
 }
 
+// Sent is the brand gold; the rest are status category colors.
 const STATUS_CONFIG: Record<string, { color: string; icon: string; label: string }> = {
-  sent: { color: '#007AFF', icon: 'paper-plane', label: 'Sent' },
+  sent: { color: GOLD, icon: 'paper-plane', label: 'Sent' },
   delivered: { color: '#34C759', icon: 'checkmark-circle', label: 'Delivered' },
   opened: { color: '#5856D6', icon: 'eye', label: 'Opened' },
   clicked: { color: '#FF9500', icon: 'finger-print', label: 'Clicked' },
   bounced: { color: '#FF3B30', icon: 'close-circle', label: 'Bounced' },
   failed: { color: '#FF3B30', icon: 'alert-circle', label: 'Failed' },
 };
+
+type Range = '7d' | '30d' | '90d' | 'all';
+const RANGES: { id: Range; label: string; days?: number }[] = [
+  { id: '7d', label: '7 days', days: 7 },
+  { id: '30d', label: '30 days', days: 30 },
+  { id: '90d', label: '90 days', days: 90 },
+  { id: 'all', label: 'All time' },
+];
+
+const EMPTY: AnalyticsData = { total_sent: 0, total_delivered: 0, total_opened: 0, total_clicked: 0, total_bounced: 0, open_rate: 0, click_rate: 0, logs: [] };
 
 export default function EmailAnalyticsPage() {
   const { colors } = useThemeStore();
@@ -59,79 +74,51 @@ export default function EmailAnalyticsPage() {
   const { user } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [analytics, setAnalytics] = useState<AnalyticsData>({
-    total_sent: 0,
-    total_delivered: 0,
-    total_opened: 0,
-    total_clicked: 0,
-    total_bounced: 0,
-    open_rate: 0,
-    click_rate: 0,
-    logs: [],
-  });
-  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d');
+  const [allLogs, setAllLogs] = useState<EmailLog[]>([]);
+  const [analytics, setAnalytics] = useState<AnalyticsData>(EMPTY);
+  const [timeRange, setTimeRange] = useState<Range>('30d');
 
-  useEffect(() => {
-    if (user?._id) {
-      loadAnalytics();
-    } else {
-      setLoading(false);
-    }
-  }, [user?._id, timeRange]);
-
-  const loadAnalytics = async () => {
-    if (!user?._id) return;
+  const loadLogs = useCallback(async () => {
+    if (!user?._id) { setLoading(false); return; }
     try {
       const logs = await emailAPI.getLogs(user._id, 100);
-      
-      // Calculate analytics from logs
-      const total_sent = logs.length;
-      const total_delivered = logs.filter((l: EmailLog) => l.status !== 'failed' && l.status !== 'bounced').length;
-      const total_opened = logs.filter((l: EmailLog) => l.status === 'opened' || l.status === 'clicked').length;
-      const total_clicked = logs.filter((l: EmailLog) => l.status === 'clicked').length;
-      const total_bounced = logs.filter((l: EmailLog) => l.status === 'bounced').length;
-      
-      const open_rate = total_delivered > 0 ? Math.round((total_opened / total_delivered) * 100) : 0;
-      const click_rate = total_opened > 0 ? Math.round((total_clicked / total_opened) * 100) : 0;
-      
-      setAnalytics({
-        total_sent,
-        total_delivered,
-        total_opened,
-        total_clicked,
-        total_bounced,
-        open_rate,
-        click_rate,
-        logs,
-      });
+      setAllLogs(Array.isArray(logs) ? logs : []);
     } catch (error) {
       console.error('Error loading analytics:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [user?._id]);
+
+  useEffect(() => { loadLogs(); }, [loadLogs]);
+
+  // The range filter is applied client-side so switching ranges is instant.
+  useEffect(() => {
+    const days = RANGES.find(r => r.id === timeRange)?.days;
+    const cutoff = days ? Date.now() - days * 86400000 : 0;
+    const logs = cutoff ? allLogs.filter(l => !l.sent_at || new Date(l.sent_at).getTime() >= cutoff) : allLogs;
+    const total_sent = logs.length;
+    const total_delivered = logs.filter(l => l.status !== 'failed' && l.status !== 'bounced').length;
+    const total_opened = logs.filter(l => l.status === 'opened' || l.status === 'clicked').length;
+    const total_clicked = logs.filter(l => l.status === 'clicked').length;
+    const total_bounced = logs.filter(l => l.status === 'bounced').length;
+    setAnalytics({
+      total_sent, total_delivered, total_opened, total_clicked, total_bounced,
+      open_rate: total_delivered > 0 ? Math.round((total_opened / total_delivered) * 100) : 0,
+      click_rate: total_opened > 0 ? Math.round((total_clicked / total_opened) * 100) : 0,
+      logs,
+    });
+  }, [allLogs, timeRange]);
 
   const onRefresh = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
-    await loadAnalytics();
+    await loadLogs();
   };
 
-  const StatCard = ({ 
-    icon, 
-    value, 
-    label, 
-    color, 
-    percentage 
-  }: { 
-    icon: string; 
-    value: number; 
-    label: string; 
-    color: string;
-    percentage?: number;
-  }) => (
-    <View style={[styles.statCard, { borderLeftColor: color }]}>
+  const StatCard = ({ icon, value, label, color, testID }: { icon: string; value: number; label: string; color: string; testID: string }) => (
+    <View style={[styles.statCard, { borderLeftColor: color }]} {...tid(testID)}>
       <View style={[styles.statIconContainer, { backgroundColor: `${color}20` }]}>
         <Ionicons name={icon as any} size={20} color={color} />
       </View>
@@ -139,23 +126,10 @@ export default function EmailAnalyticsPage() {
         <Text style={styles.statValue}>{value.toLocaleString()}</Text>
         <Text style={styles.statLabel}>{label}</Text>
       </View>
-      {percentage !== undefined && (
-        <View style={[styles.percentageBadge, { backgroundColor: `${color}20` }]}>
-          <Text style={[styles.percentageText, { color }]}>{percentage}%</Text>
-        </View>
-      )}
     </View>
   );
 
-  const RateCard = ({ 
-    title, 
-    rate, 
-    color 
-  }: { 
-    title: string; 
-    rate: number; 
-    color: string; 
-  }) => (
+  const RateCard = ({ title, rate, color }: { title: string; rate: number; color: string }) => (
     <View style={styles.rateCard}>
       <Text style={styles.rateTitle}>{title}</Text>
       <View style={styles.rateBarContainer}>
@@ -165,43 +139,28 @@ export default function EmailAnalyticsPage() {
     </View>
   );
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Email Analytics</Text>
-        <TouchableOpacity onPress={onRefresh} style={styles.refreshButton}>
-          <Ionicons name="refresh" size={24} color="#007AFF" />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title="Email Analytics"
+        testID="email-analytics-header"
+        right={<HeaderIconButton icon="refresh" onPress={onRefresh} testID="email-analytics-refresh" />}
+      />
 
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.accent} />
+        </View>
+      ) : (
       <ScrollView 
         contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#007AFF" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
         }
       >
-        {/* Time Range Selector */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.timeRangeScroll}>
           <View style={styles.timeRangeContainer}>
-            {[
-              { id: '7d', label: '7 Days' },
-              { id: '30d', label: '30 Days' },
-              { id: '90d', label: '90 Days' },
-              { id: 'all', label: 'All Time' },
-            ].map((range) => (
+            {RANGES.map((range) => (
               <TouchableOpacity
                 key={range.id}
                 style={[
@@ -210,8 +169,9 @@ export default function EmailAnalyticsPage() {
                 ]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setTimeRange(range.id as any);
+                  setTimeRange(range.id);
                 }}
+                {...tid(`email-range-${range.id}`)}
               >
                 <Text style={[
                   styles.timeRangeText,
@@ -224,38 +184,42 @@ export default function EmailAnalyticsPage() {
           </View>
         </ScrollView>
 
-        {/* Stats Grid */}
         <View style={styles.statsGrid}>
-          <StatCard icon="paper-plane" value={analytics.total_sent} label="Emails Sent" color="#007AFF" />
-          <StatCard icon="checkmark-circle" value={analytics.total_delivered} label="Delivered" color="#34C759" />
-          <StatCard icon="eye" value={analytics.total_opened} label="Opened" color="#5856D6" />
-          <StatCard icon="finger-print" value={analytics.total_clicked} label="Clicked" color="#FF9500" />
+          <StatCard icon="paper-plane" value={analytics.total_sent} label="Emails sent" color={STATUS_CONFIG.sent.color} testID="email-stat-sent" />
+          <StatCard icon="checkmark-circle" value={analytics.total_delivered} label="Delivered" color={STATUS_CONFIG.delivered.color} testID="email-stat-delivered" />
+          <StatCard icon="eye" value={analytics.total_opened} label="Opened" color={STATUS_CONFIG.opened.color} testID="email-stat-opened" />
+          <StatCard icon="finger-print" value={analytics.total_clicked} label="Clicked" color={STATUS_CONFIG.clicked.color} testID="email-stat-clicked" />
         </View>
 
-        {/* Rate Cards */}
-        <View style={styles.ratesSection}>
-          <Text style={styles.sectionTitle}>Engagement Rates</Text>
-          <RateCard title="Open Rate" rate={analytics.open_rate} color="#5856D6" />
-          <RateCard title="Click Rate" rate={analytics.click_rate} color="#FF9500" />
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Engagement rates</Text>
+          <RateCard title="Open rate" rate={analytics.open_rate} color={STATUS_CONFIG.opened.color} />
+          <RateCard title="Click rate" rate={analytics.click_rate} color={STATUS_CONFIG.clicked.color} />
         </View>
 
-        {/* Recent Activity */}
-        <View style={styles.activitySection}>
-          <Text style={styles.sectionTitle}>Recent Activity</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Recent activity</Text>
           
           {analytics.logs.length === 0 ? (
-            <View style={styles.emptyActivity}>
-              <Ionicons name="mail-outline" size={48} color={colors.surface} />
-              <Text style={styles.emptyActivityText}>No emails sent yet</Text>
+            <View style={styles.emptyActivity} {...tid('email-analytics-empty')}>
+              <Ionicons name="mail-outline" size={44} color={colors.textTertiary} />
+              <Text style={styles.emptyActivityText}>{allLogs.length ? 'No emails in this range' : 'No emails sent yet'}</Text>
               <Text style={styles.emptyActivitySubtext}>
-                Start sending emails to see analytics here
+                {allLogs.length ? 'Try a longer time range.' : 'Emails you send from a contact show up here with opens and clicks.'}
               </Text>
+              <TouchableOpacity
+                onPress={() => allLogs.length ? setTimeRange('all') : router.push('/(tabs)/contacts' as any)}
+                style={styles.emptyBtn}
+                {...tid('email-analytics-empty-cta')}
+              >
+                <Text style={styles.emptyBtnText}>{allLogs.length ? 'Show all time' : 'Open contacts'}</Text>
+              </TouchableOpacity>
             </View>
           ) : (
             analytics.logs.slice(0, 20).map((log) => {
               const statusConfig = STATUS_CONFIG[log.status] || STATUS_CONFIG.sent;
               return (
-                <View key={log._id} style={styles.activityItem}>
+                <View key={log._id} style={styles.activityItem} {...tid(`email-log-${log._id}`)}>
                   <View style={[styles.activityIcon, { backgroundColor: `${statusConfig.color}20` }]}>
                     <Ionicons name={statusConfig.icon as any} size={16} color={statusConfig.color} />
                   </View>
@@ -281,16 +245,15 @@ export default function EmailAnalyticsPage() {
           )}
         </View>
 
-        {/* Tips Section */}
-        <View style={styles.tipsSection}>
-          <Text style={styles.sectionTitle}>Tips to Improve</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Tips to improve</Text>
           
           <View style={styles.tipCard}>
             <View style={styles.tipIcon}>
-              <Ionicons name="bulb" size={20} color="#FFD60A" />
+              <Ionicons name="bulb" size={20} color={GOLD} />
             </View>
             <View style={styles.tipContent}>
-              <Text style={styles.tipTitle}>Improve Open Rates</Text>
+              <Text style={styles.tipTitle}>Improve open rates</Text>
               <Text style={styles.tipText}>
                 Use personalized subject lines with the recipient's name. 
                 Keep subjects under 50 characters and create urgency.
@@ -303,7 +266,7 @@ export default function EmailAnalyticsPage() {
               <Ionicons name="finger-print" size={20} color="#FF9500" />
             </View>
             <View style={styles.tipContent}>
-              <Text style={styles.tipTitle}>Boost Click Rates</Text>
+              <Text style={styles.tipTitle}>Boost click rates</Text>
               <Text style={styles.tipText}>
                 Use clear call-to-action buttons. Place important links 
                 above the fold and make buttons large and colorful.
@@ -312,259 +275,65 @@ export default function EmailAnalyticsPage() {
           </View>
         </View>
       </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
 
 const getStyles = (colors: any) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 28,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-  },
-  backButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  refreshButton: {
-    padding: 4,
-  },
-  content: {
-    padding: 16,
-    paddingBottom: 40,
-  },
+  container: { flex: 1, backgroundColor: colors.bg },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  content: { padding: 16, paddingBottom: 40 },
 
-  // Time Range
-  timeRangeScroll: {
-    marginBottom: 20,
-    marginHorizontal: -16,
-    paddingHorizontal: 16,
-  },
-  timeRangeContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
+  timeRangeScroll: { marginBottom: 20, marginHorizontal: -16, paddingHorizontal: 16 },
+  timeRangeContainer: { flexDirection: 'row', gap: 8, paddingRight: 16 },
   timeRangeButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: colors.card,
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 18,
+    backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border,
   },
-  timeRangeButtonActive: {
-    backgroundColor: '#007AFF',
-  },
-  timeRangeText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: colors.textSecondary,
-  },
-  timeRangeTextActive: {
-    color: colors.text,
-  },
+  timeRangeButtonActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  timeRangeText: { fontSize: FS.secondary, fontWeight: '700', color: colors.textSecondary },
+  timeRangeTextActive: { color: '#000' },
 
-  // Stats Grid
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    marginBottom: 24,
-  },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 },
   statCard: {
-    flex: 1,
-    minWidth: (SCREEN_WIDTH - 44) / 2,
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 16,
-    borderLeftWidth: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    flex: 1, minWidth: (SCREEN_WIDTH - 44) / 2, backgroundColor: colors.card, borderRadius: 16,
+    padding: 16, borderWidth: 1, borderColor: colors.border, borderLeftWidth: 4,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
   },
-  statIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statContent: {
-    flex: 1,
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  statLabel: {
-    fontSize: 15,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  percentageBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  percentageText: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
+  statIconContainer: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  statContent: { flex: 1, minWidth: 0 },
+  statValue: { fontSize: FS.title, fontWeight: '700', color: colors.text },
+  statLabel: { fontSize: FS.secondary, color: colors.textSecondary, marginTop: 2 },
 
-  // Rates Section
-  ratesSection: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 12,
-  },
-  rateCard: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-  },
-  rateTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 12,
-  },
-  rateBarContainer: {
-    height: 8,
-    backgroundColor: colors.surface,
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: 8,
-  },
-  rateBar: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  rateValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    textAlign: 'right',
-  },
+  section: { marginBottom: 24 },
+  sectionTitle: { ...EYEBROW, color: colors.textSecondary, marginBottom: 10 },
+  rateCard: { backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: colors.border },
+  rateTitle: { fontSize: FS.heading, fontWeight: '700', color: colors.text, marginBottom: 12 },
+  rateBarContainer: { height: 8, backgroundColor: colors.surface, borderRadius: 4, overflow: 'hidden', marginBottom: 8 },
+  rateBar: { height: '100%', borderRadius: 4 },
+  rateValue: { fontSize: 24, fontWeight: '700', textAlign: 'right' },
 
-  // Activity Section
-  activitySection: {
-    marginBottom: 24,
-  },
-  emptyActivity: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 40,
-    alignItems: 'center',
-  },
-  emptyActivityText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginTop: 16,
-  },
-  emptyActivitySubtext: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginTop: 8,
-    textAlign: 'center',
-  },
+  emptyActivity: { backgroundColor: colors.card, borderRadius: 16, padding: 32, alignItems: 'center', borderWidth: 1, borderColor: colors.border },
+  emptyActivityText: { fontSize: FS.heading, fontWeight: '700', color: colors.text, marginTop: 14, textAlign: 'center' },
+  emptyActivitySubtext: { fontSize: FS.body, color: colors.textSecondary, marginTop: 6, textAlign: 'center' },
+  emptyBtn: { marginTop: 16, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 14, borderWidth: 1, borderColor: colors.accent },
+  emptyBtnText: { fontSize: FS.body, fontWeight: '700', color: colors.accent },
   activityItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-    gap: 12,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 16,
+    padding: 12, marginBottom: 8, gap: 12, borderWidth: 1, borderColor: colors.border,
   },
-  activityIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activityContent: {
-    flex: 1,
-  },
-  activityRecipient: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  activitySubject: {
-    fontSize: 15,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  activityMeta: {
-    alignItems: 'flex-end',
-  },
-  activityStatus: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  activityTime: {
-    fontSize: 13,
-    color: '#6E6E73',
-    marginTop: 2,
-  },
+  activityIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  activityContent: { flex: 1, minWidth: 0 },
+  activityRecipient: { fontSize: FS.heading, fontWeight: '700', color: colors.text, flexShrink: 1 },
+  activitySubject: { fontSize: FS.secondary, color: colors.textSecondary, marginTop: 2, flexShrink: 1 },
+  activityMeta: { alignItems: 'flex-end', flexShrink: 0 },
+  activityStatus: { fontSize: FS.secondary, fontWeight: '700' },
+  activityTime: { fontSize: FS.caption, color: colors.textTertiary, marginTop: 2 },
 
-  // Tips Section
-  tipsSection: {
-    marginBottom: 24,
-  },
-  tipCard: {
-    flexDirection: 'row',
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    gap: 12,
-  },
-  tipIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tipContent: {
-    flex: 1,
-  },
-  tipTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  tipText: {
-    fontSize: 15,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
+  tipCard: { flexDirection: 'row', backgroundColor: colors.card, borderRadius: 16, padding: 16, marginBottom: 12, gap: 12, borderWidth: 1, borderColor: colors.border },
+  tipIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  tipContent: { flex: 1 },
+  tipTitle: { fontSize: FS.heading, fontWeight: '700', color: colors.text, marginBottom: 4 },
+  tipText: { fontSize: FS.body, color: colors.textSecondary, lineHeight: 20 },
 });

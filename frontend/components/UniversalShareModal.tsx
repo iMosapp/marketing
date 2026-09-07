@@ -463,7 +463,7 @@ export function UniversalShareModal({
               )}
             </View>
 
-            <TouchableOpacity style={[styles.shareModalCancel, { backgroundColor: colors.bg }]} onPress={close}>
+            <TouchableOpacity style={[styles.shareModalCancel, { backgroundColor: colors.bg }]} onPress={close} testID="close-share-modal" dataSet={{ testid: 'close-share-modal' } as any}>
               <Text style={styles.shareModalCancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>

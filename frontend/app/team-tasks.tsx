@@ -1,6 +1,4 @@
-/**
- * Team Tasks — managers see every open customer task per rep so nothing promised slips.
- */
+// Team Tasks: managers see every open customer task per rep so nothing promised slips.
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,6 +10,8 @@ import { Avatar } from '../components/Avatar';
 import { HomeSmartBar } from '../components/home/HomeSmartBar';
 import { whenLabel, taskKind } from '../components/contact/ContactTasksCard';
 import { useToast } from '../components/common/Toast';
+import { ScreenHeader, HeaderIconButton } from '../components/common/ScreenHeader';
+import { FS } from '../constants/typography';
 import api from '../services/api';
 
 const agoLabel = (iso: string) => {
@@ -79,19 +79,23 @@ export default function TeamTasksScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 }}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={10} {...tid('team-tasks-back')}>
-          <Ionicons name="chevron-back" size={26} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={{ flex: 1, fontSize: 22, fontWeight: '800', color: colors.text }}>Team Tasks</Text>
-      </View>
+      <ScreenHeader
+        title="Team Tasks"
+        subtitle={data?.is_manager && totals.open ? `${totals.open} open · ${totals.overdue} overdue` : undefined}
+        testID="team-tasks-header"
+        right={<HeaderIconButton icon="refresh" onPress={() => { setRefreshing(true); load(); }} testID="team-tasks-refresh" />}
+      />
 
       {loading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator size="large" color={GOLD} /></View>
       ) : !data?.is_manager ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 }} {...tid('team-tasks-managers-only')}>
-          <Ionicons name="lock-closed" size={30} color={colors.textTertiary} />
-          <Text style={{ fontSize: 16, color: colors.textSecondary, textAlign: 'center', marginTop: 10 }}>Team Tasks is for managers. Your own tasks live in Touchpoints.</Text>
+          <Ionicons name="lock-closed" size={36} color={colors.textTertiary} />
+          <Text style={{ fontSize: FS.heading, fontWeight: '700', color: colors.text, textAlign: 'center', marginTop: 12 }}>Team Tasks is for managers</Text>
+          <Text style={{ fontSize: FS.body, color: colors.textSecondary, textAlign: 'center', marginTop: 6 }}>Your own tasks live in Touchpoints.</Text>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/touchpoints' as any)} style={{ marginTop: 18, backgroundColor: GOLD, borderRadius: 14, paddingHorizontal: 22, paddingVertical: 12 }} {...tid('team-tasks-open-touchpoints')}>
+            <Text style={{ fontSize: FS.heading, fontWeight: '700', color: '#000' }}>Open Touchpoints</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <ScrollView
@@ -104,7 +108,7 @@ export default function TeamTasksScreen() {
             { key: 'today', label: 'Due today', icon: 'today', color: '#34C759', value: totals.today, onPress: () => setFilter('today') },
           ]} />
 
-          <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 12 }}>
+          <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: 12, marginTop: 4 }}>
             {(['all', 'overdue', 'today'] as Filter[]).map(f => (
               <TouchableOpacity
                 key={f}
@@ -112,7 +116,7 @@ export default function TeamTasksScreen() {
                 style={{ paddingHorizontal: 14, paddingVertical: 7, borderRadius: 18, backgroundColor: filter === f ? GOLD : colors.card, borderWidth: 1, borderColor: filter === f ? GOLD : colors.border }}
                 {...tid(`team-tasks-filter-${f}`)}
               >
-                <Text style={{ fontSize: 13, fontWeight: '700', color: filter === f ? '#000' : colors.textSecondary }}>
+                <Text style={{ fontSize: FS.secondary, fontWeight: '700', color: filter === f ? '#000' : colors.textSecondary }}>
                   {f === 'all' ? 'All' : f === 'overdue' ? 'Overdue' : 'Due today'}
                 </Text>
               </TouchableOpacity>
@@ -121,10 +125,15 @@ export default function TeamTasksScreen() {
 
           {reps.length === 0 ? (
             <View style={{ alignItems: 'center', padding: 40 }} {...tid('team-tasks-empty')}>
-              <Ionicons name="checkmark-done-circle" size={38} color="#34C759" />
-              <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 10 }}>
+              <Ionicons name="checkmark-done-circle" size={44} color="#34C759" />
+              <Text style={{ fontSize: FS.heading, fontWeight: '700', color: colors.text, marginTop: 12, textAlign: 'center' }}>
                 {filter === 'all' ? 'No open tasks across the team' : filter === 'overdue' ? 'Nothing overdue' : 'Nothing due today'}
               </Text>
+              {filter !== 'all' ? (
+                <TouchableOpacity onPress={() => setFilter('all')} style={{ marginTop: 14, paddingHorizontal: 18, paddingVertical: 10, borderRadius: 14, borderWidth: 1, borderColor: GOLD }} {...tid('team-tasks-show-all')}>
+                  <Text style={{ fontSize: FS.body, fontWeight: '700', color: GOLD }}>Show all open tasks</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           ) : reps.map((rep: any) => {
             const isCollapsed = collapsed[rep.user_id] ?? false;
@@ -174,9 +183,9 @@ export default function TeamTasksScreen() {
                       <View style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: w.overdue ? `${RED}20` : `${GOLD}20`, alignItems: 'center', justifyContent: 'center' }}>
                         <Ionicons name={(TYPE_ICON[taskKind(t)] || 'checkbox') as any} size={14} color={w.overdue ? RED : GOLD} />
                       </View>
-                      <View style={{ flex: 1 }}>
-                        <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>{t.title}</Text>
-                        <Text numberOfLines={1} style={{ fontSize: 12, color: w.overdue ? RED : colors.textSecondary, marginTop: 1, fontWeight: w.overdue ? '700' : '500' }}>
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text numberOfLines={1} style={{ fontSize: FS.body, fontWeight: '600', color: colors.text, flexShrink: 1 }}>{t.title}</Text>
+                        <Text numberOfLines={1} style={{ fontSize: FS.caption, color: w.overdue ? RED : colors.textSecondary, marginTop: 1, fontWeight: w.overdue ? '700' : '500', flexShrink: 1 }}>
                           {w.text}{t.contact_name ? ` · ${t.contact_name}` : ''}
                         </Text>
                       </View>

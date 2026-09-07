@@ -1,5 +1,5 @@
 """
-GEO Router — Generative Engine Optimization
+GEO Router: Generative Engine Optimization
 Scores how well a rep will appear when AI tools (ChatGPT, Gemini, Perplexity,
 Google AI Overviews) answer questions like "who is the best car salesperson near me?"
 
@@ -125,15 +125,15 @@ async def _compute_geo_score(user_id: str) -> dict:
     id_tips = []
     id_tip_map = {
         "full_name":    {"tip": "Use your full name exactly as customers search for you", "points": 2, "route": "/my-account"},
-        "job_title":    {"tip": "Add your exact job title — AI uses this to categorize your expertise", "points": 2, "route": "/my-account"},
-        "phone":        {"tip": "Add a contact number — part of NAP consistency AI uses to verify you", "points": 2, "route": "/my-account"},
-        "profile_photo":{"tip": "Add a professional photo — visual identity anchors your digital presence", "points": 2, "route": "/my-account"},
-        "bio":          {"tip": "Write a 50+ word bio with your name, city, and specialty — AI reads this for context", "points": 2, "route": "/settings/persona"},
+        "job_title":    {"tip": "Add your exact job title: AI uses this to categorize your expertise", "points": 2, "route": "/my-account"},
+        "phone":        {"tip": "Add a contact number: part of NAP consistency AI uses to verify you", "points": 2, "route": "/my-account"},
+        "profile_photo":{"tip": "Add a professional photo: visual identity anchors your digital presence", "points": 2, "route": "/my-account"},
+        "bio":          {"tip": "Write a 50+ word bio with your name, city, and specialty: AI reads this for context", "points": 2, "route": "/settings/persona"},
         "seo_slug":     {"tip": "Generate your public profile URL to make your page crawlable", "points": 2, "route": "/my-account"},
-        "employer":     {"tip": "Link your store profile — employer association is a major AI trust signal", "points": 2, "route": ""},
-        "location":     {"tip": "Add your store city/address — local context drives geo-relevant AI answers", "points": 2, "route": ""},
-        "linkedin":     {"tip": "Connect LinkedIn — AI engines heavily weight LinkedIn as an authority source", "points": 2, "route": "/settings/brand-kit"},
-        "social_graph": {"tip": "Connect social profiles (Facebook, Instagram) — cross-platform presence = stronger entity", "points": 2, "route": "/settings/brand-kit"},
+        "employer":     {"tip": "Link your store profile: employer association is a major AI trust signal", "points": 2, "route": ""},
+        "location":     {"tip": "Add your store city/address: local context drives geo-relevant AI answers", "points": 2, "route": ""},
+        "linkedin":     {"tip": "Connect LinkedIn: AI engines heavily weight LinkedIn as an authority source", "points": 2, "route": "/settings/brand-kit"},
+        "social_graph": {"tip": "Connect social profiles (Facebook, Instagram): cross-platform presence = stronger entity", "points": 2, "route": "/settings/brand-kit"},
     }
     for key, passed in identity_checks.items():
         if not passed:
@@ -161,13 +161,13 @@ async def _compute_geo_score(user_id: str) -> dict:
     conv_score    = round(min(review_pts + rating_pts + bio_pts, 20))
     conv_tips = []
     if review_count < 5:
-        conv_tips.append({"tip": f"Get {5 - review_count} more customer reviews — reviews are the #1 AI citation signal", "points": round((5 - review_count) / 5 * 10), "route": "/settings/review-links"})
+        conv_tips.append({"tip": f"Get {5 - review_count} more customer reviews: reviews are the #1 AI citation signal", "points": round((5 - review_count) / 5 * 10), "route": "/settings/review-links"})
     if avg_rating < 4.5 and review_count > 0:
-        conv_tips.append({"tip": "Aim for 4.5+ star average — AI tools prioritize top-rated professionals", "points": 3, "route": ""})
+        conv_tips.append({"tip": "Aim for 4.5+ star average: AI tools prioritize top-rated professionals", "points": 3, "route": ""})
     if not has_qa_bio:
-        conv_tips.append({"tip": f"Expand your bio to 50+ words (currently {bio_word_count}) — longer, natural language bios get cited by AI", "points": 2, "route": "/settings/persona"})
+        conv_tips.append({"tip": f"Expand your bio to 50+ words (currently {bio_word_count}): longer, natural language bios get cited by AI", "points": 2, "route": "/settings/persona"})
     if not has_specialty:
-        conv_tips.append({"tip": "Add your specialties to your AI Persona — AI uses this for recommendation matching", "points": 1, "route": "/settings/persona"})
+        conv_tips.append({"tip": "Add your specialties to your AI Persona: AI uses this for recommendation matching", "points": 1, "route": "/settings/persona"})
 
     # ── Factor 3: AI Content Distribution (20 pts) ───────────────────────────
     # Every link you share that contains structured JSON-LD is a citation seed.
@@ -191,11 +191,11 @@ async def _compute_geo_score(user_id: str) -> dict:
     dist_score   = round(min(visit_pts + click_pts + campaign_pts, 20))
     dist_tips = []
     if card_visits < 20:
-        dist_tips.append({"tip": "Share your digital card more — each share creates a crawlable, AI-readable page", "points": round((1 - min(card_visits/20,1)) * 7), "route": "/quick-send/digitalcard"})
+        dist_tips.append({"tip": "Share your digital card more: each share creates a crawlable, AI-readable page", "points": round((1 - min(card_visits/20,1)) * 7), "route": "/quick-send/digitalcard"})
     if active_links < 5:
-        dist_tips.append({"tip": "Create tracking links with your content — AI indexes pages linked from your profiles", "points": round((1 - min(active_links/5,1)) * 5), "route": "/settings/link-page"})
+        dist_tips.append({"tip": "Create tracking links with your content: AI indexes pages linked from your profiles", "points": round((1 - min(active_links/5,1)) * 5), "route": "/settings/link-page"})
     if campaign_count < 3:
-        dist_tips.append({"tip": "Run active SMS campaigns — consistent outreach builds a real-world engagement signal AI detects", "points": 4, "route": "/campaigns"})
+        dist_tips.append({"tip": "Run active SMS campaigns: consistent outreach builds a real-world engagement signal AI detects", "points": 4, "route": "/campaigns"})
 
     # ── Factor 4: Citation Authority (20 pts) ─────────────────────────────────
     # AI models heavily weight cross-platform corroboration. The more places
@@ -224,12 +224,12 @@ async def _compute_geo_score(user_id: str) -> dict:
     auth_score   = round((auth_filled / len(auth_checks)) * 20)
     auth_tips = []
     auth_tip_map = {
-        "store_website":    {"tip": "Add your dealership's website — a verified employer domain is a top AI trust signal", "points": 3, "route": ""},
-        "review_profile":   {"tip": "Add your Google/DealerRater review link — external review platforms validate your existence", "points": 3, "route": "/settings/review-links"},
-        "linkedin":         {"tip": "Connect LinkedIn — it is the highest-authority professional network AI cites", "points": 3, "route": "/settings/brand-kit"},
-        "digital_card":     {"tip": "Activate your digital business card — it becomes a Schema.org/Person page AI can index", "points": 2, "route": "/quick-send/digitalcard"},
+        "store_website":    {"tip": "Add your dealership's website: a verified employer domain is a top AI trust signal", "points": 3, "route": ""},
+        "review_profile":   {"tip": "Add your Google/DealerRater review link: external review platforms validate your existence", "points": 3, "route": "/settings/review-links"},
+        "linkedin":         {"tip": "Connect LinkedIn: it is the highest-authority professional network AI cites", "points": 3, "route": "/settings/brand-kit"},
+        "digital_card":     {"tip": "Activate your digital business card: it becomes a Schema.org/Person page AI can index", "points": 2, "route": "/quick-send/digitalcard"},
         "link_page":        {"tip": "Set up your public link page to create another AI-readable citation surface", "points": 2, "route": "/settings/link-page"},
-        "vcf_downloads":    {"tip": "Get customers to download your vCard — each save is a real-world entity confirmation", "points": 2, "route": ""},
+        "vcf_downloads":    {"tip": "Get customers to download your vCard: each save is a real-world entity confirmation", "points": 2, "route": ""},
         "store_brand":      {"tip": "Add your store's logo and branding to create visual entity consistency", "points": 2, "route": ""},
         "congrats_sent":    {"tip": "Send congrats cards to create relationship signals that appear in customer testimonials", "points": 1, "route": ""},
     }
@@ -260,15 +260,15 @@ async def _compute_geo_score(user_id: str) -> dict:
     fresh_score = round(min(contact_pts + message_pts + event_pts + login_pts, 20))
     fresh_tips = []
     if recent_contacts < 5:
-        fresh_tips.append({"tip": f"Add {5 - recent_contacts} more contacts this month — new relationships signal an active practitioner", "points": round((1 - min(recent_contacts/10,1)) * 6), "route": ""})
+        fresh_tips.append({"tip": f"Add {5 - recent_contacts} more contacts this month: new relationships signal an active practitioner", "points": round((1 - min(recent_contacts/10,1)) * 6), "route": ""})
     if recent_messages < 10:
-        fresh_tips.append({"tip": "Send more messages — AI engines detect active, engaged professionals", "points": round((1 - min(recent_messages/20,1)) * 6), "route": ""})
+        fresh_tips.append({"tip": "Send more messages: AI engines detect active, engaged professionals", "points": round((1 - min(recent_messages/20,1)) * 6), "route": ""})
 
     # ── Total ────────────────────────────────────────────────────────────────
     total = min(id_score + conv_score + dist_score + auth_score + fresh_score, 100)
 
     if total >= 80:   grade, gc = "AI-Ready",      "#34C759"
-    elif total >= 60: grade, gc = "Building",       "#007AFF"
+    elif total >= 60: grade, gc = "Building",       "#C9A962"
     elif total >= 40: grade, gc = "Developing",     "#FF9500"
     elif total >= 20: grade, gc = "Needs Work",     "#FF3B30"
     else:             grade, gc = "Just Starting",  "#8E8E93"
