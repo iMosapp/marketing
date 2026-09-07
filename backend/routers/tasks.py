@@ -312,7 +312,26 @@ async def get_tasks(user_id: str, filter: str = "today", limit: int = 50, skip: 
                 continue
         result.append(_serialize(t))
 
+    await _fill_missing_contact_names(db, result)
     return result
+
+
+async def _fill_missing_contact_names(db, tasks: list) -> None:
+    """Tasks created by automations may carry only a contact_id; resolve the name/phone so the UI never shows Unknown."""
+    missing = [t for t in tasks if not t.get("contact_name") and t.get("contact_id") and ObjectId.is_valid(str(t["contact_id"]))]
+    if not missing:
+        return
+    ids = list({ObjectId(str(t["contact_id"])) for t in missing})
+    docs = await db.contacts.find({"_id": {"$in": ids}}, {"first_name": 1, "last_name": 1, "phone": 1}).to_list(len(ids))
+    by_id = {str(c["_id"]): c for c in docs}
+    for t in missing:
+        c = by_id.get(str(t["contact_id"]))
+        if not c:
+            continue
+        t["contact_name"] = f"{c.get('first_name', '')} {c.get('last_name', '')}".strip()
+        if not t.get("contact_phone"):
+            t["contact_phone"] = c.get("phone", "")
+        await db.tasks.update_one({"_id": ObjectId(t["_id"])}, {"$set": {"contact_name": t["contact_name"], "contact_phone": t["contact_phone"]}})
 
 
 # Cache task summary for 30s to prevent thundering herd on rapid page navigation

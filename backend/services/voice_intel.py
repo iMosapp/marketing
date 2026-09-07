@@ -327,8 +327,9 @@ async def _ensure_followup_from_voice(db, user_id: str, contact_id: str, details
     if existing:
         return
 
-    contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"first_name": 1})
+    contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"first_name": 1, "last_name": 1, "phone": 1})
     first = (contact or {}).get("first_name") or "your customer"
+    contact_name = f"{(contact or {}).get('first_name', '')} {(contact or {}).get('last_name', '')}".strip()
     interests = details.get("interests") or []
     if interests:
         title = f"Check in with {first} about {interests[0]}"
@@ -343,6 +344,8 @@ async def _ensure_followup_from_voice(db, user_id: str, contact_id: str, details
     await db.tasks.insert_one({
         "user_id": user_id,
         "contact_id": contact_id,
+        "contact_name": contact_name,
+        "contact_phone": (contact or {}).get("phone", ""),
         "type": "follow_up",
         "title": title,
         "due_date": now + timedelta(days=3),
