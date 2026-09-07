@@ -1,0 +1,32 @@
+{
+  "summary": "Batch 8 Tools UI QA (7 target admin/manager screens + 2 regression loads) at 1920x1080 as forest@imosapp.com. RESULT: All 7 target screens pass ScreenHeader + gold accent + testID standards. 0 iOS-blue elements on any target screen (nav/pills/tabs/buttons). All requested testids exist. Only issue: 1 em dash still visible on /settings/messaging-channels in a channel description ('Send via WhatsApp — most popular messaging app worldwide'). Source is backend static data (backend/routers/messaging_channels.py line 22), not frontend, but it renders in the UI and violates the 'no em dashes in visible text' rule. Batch 7 regression loads (/team, /campaigns/dashboard) still render their headers cleanly.",
+  "backend_issues": {"critical": [], "minor": [
+    {"endpoint": "GET messaging channels list (data source: /app/backend/routers/messaging_channels.py:22)", "issue": "Channel description for whatsapp contains an em dash '—' which renders on /settings/messaging-channels and violates the no-em-dash UI rule. Replace with hyphen or comma."}
+  ]},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "/settings/messaging-channels", "issue": "1 em dash '—' visible in the WhatsApp channel description card ('Send via WhatsApp — most popular messaging app worldwide'). Data comes from backend list endpoint (backend/routers/messaging_channels.py line 22), but per Batch 8 spec no em dashes should render.", "selector": "channel-card-whatsapp description text", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "In /app/backend/routers/messaging_channels.py line 22 change 'Send via WhatsApp — most popular messaging app worldwide' to use a hyphen/comma (e.g. 'Send via WhatsApp - most popular messaging app worldwide') to remove the last em dash on the Batch 8 messaging-channels screen."
+  ],
+  "critical_code_review_comments": [
+    "All 7 target Batch 8 screens correctly use the shared ScreenHeader with proper testids, back chevrons, centered 17/700 titles and gold right actions - no leaks of iOS blue (#007AFF).",
+    "Store Profile correctly falls back to a REAL empty state (store-profile-empty + store-profile-go-my-profile) for accounts with no store, matching the spec's 'real empty states' requirement.",
+    "Team Members list + Add Team Member modal + Team Member detail page + all 4 detail modals (change-role, dedicated-number, change-org, assign-store) render every expected testid; cancel labels are gray (not red/blue). No danger buttons were tapped.",
+    "Integrations tab switching (api-keys/webhooks/crm/dms/docs) works; crm-dashboard-link, crm-pin-toggle and swagger-link all present.",
+    "The remaining em-dash is backend-owned static data - consider a lint/CI rule to grep for '—' across both backend static strings and frontend source to prevent future regressions."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend only)", "frontend": "100% on structure/testids/gold-theming/no-blue for all 7 Batch 8 targets. 1 minor content issue (em dash from backend data)."},
+  "test_credentials": "forest@imosapp.com / Admin123! - working (super_admin, no store_id in preview).",
+  "seed_data_creation": "None. No users created; no channels toggled; no brand kit / store profile / invites saved; no danger buttons tapped.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Batch 8 per-screen results (1920 viewport, forest@imosapp.com): (1) /settings/store-profile - header 'Store Profile' + back OK. Forest has no store so page renders empty state with testids store-profile-empty + store-profile-go-my-profile (real empty state - per spec). Save/logo/slug inputs correctly hidden. 0 blue, 0 em dash. (2) /settings/brand-kit - all 14 requested testids present (brand-kit-save-btn, upload-logo-btn, brand-logo-url-input, brand-company-input, brand-tagline-input, brand-footer-input, theme-toggle-dark/light, color-swatch-primary/secondary/accent-color, color-hex-primary/secondary/accent-color). 0 blue, 0 em dash. Preview card at top. NOT saved. (3) /settings/messaging-channels - header + subtitle + channel-card-sms + toggle-sms + messaging-channels-preview present. 0 blue. 1 EM DASH in whatsapp channel description ('Send via WhatsApp — most popular ...') - source: backend/routers/messaging_channels.py:22. NOT toggled. (4) /admin/users - team-members-header + 88 active subtitle + add-user-btn + user-search-input + all 4 role sections (super_admin/org_admin/store_manager/user) present. Search 'forest' filters and user-search-clear works. Add-user modal (modal-cancel, modal-create, contact-search-input, new-user-name/email/phone, new-user-role-user, new-user-send-invite) all present; cancelled cleanly. NOT created. (5) /admin/users/<id> (super admin Forest row) - user-detail-header + back + all 16 detail testids present (change-role-btn, toggle-active-btn, impersonate-btn, manage-permissions-btn, reset-password-btn, edit-email-btn, edit-phone-btn, assign-number-btn, change-org-btn, add-store-btn, view-card-btn, view-conversations-btn, merge-user-btn, deactivate-user-btn, hard-delete-user-btn). Modals opened + cancelled: role-modal (role-option-user + role-modal-cancel), number-modal (number-modal-cancel + number-buy-new), org-modal (org-modal-cancel), store-modal (store-modal-cancel). 0 blue, 0 em dash. No danger button tapped. (6) /settings/invite-team - header + all 8 requested testids (invite-first-name/last-name/email/phone/show-extras/role-user/sms-toggle/send-btn). 0 blue, 0 em dash. NOT submitted. (7) /settings/integrations - header + all 5 tab testids; tab switching works; crm-dashboard-link, crm-pin-toggle, swagger-link (docs tab) all present. 0 blue, 0 em dash. NOT saved. Regression: /team (team-chat-header 'Team Chat') and /campaigns/dashboard (campaign-dashboard-header 'Campaign Dashboard') both render cleanly. Console warnings limited to non-critical expo-av deprecation / shadow* deprecation / Route missing default export - pre-existing, not Batch 8.",
+  "rca of the issue": "Em dash on messaging-channels: WhatsApp channel definition in /app/backend/routers/messaging_channels.py line 22 has 'Send via WhatsApp — most popular messaging app worldwide' with a U+2014 EM DASH. Frontend renders {ch.description} verbatim in messaging-channels.tsx line 132. Fix at the source string (backend). Optional: add a frontend safety net that replaces '—' with '-' in channel descriptions."
+}

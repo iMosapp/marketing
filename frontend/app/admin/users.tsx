@@ -10,10 +10,9 @@ import {
   SectionList,
   Modal,
   ScrollView,
-  Alert,
   Platform,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -22,17 +21,19 @@ import * as Clipboard from 'expo-clipboard';
 import api from '../../services/api';
 import { showSimpleAlert, showAlert } from '../../services/alert';
 import { WebSafeButton } from '../../components/WebSafeButton';
-import { JESSI_BAR_HEIGHT } from '../../components/JessieFloatingChat';
-
+import { ScreenHeader, HeaderIconButton } from '../../components/common/ScreenHeader';
+import { FS } from '../../constants/typography';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 const ROLE_COLORS: Record<string, string> = {
   super_admin: '#FF3B30',
   org_admin: '#FF9500',
   admin: '#FF9500',
   store_manager: '#34C759',
   manager: '#34C759',
-  user: '#007AFF',
+  user: '#C9A962',
 };
 
 const ROLE_LABELS: Record<string, string> = {
@@ -327,9 +328,10 @@ export default function UsersScreen() {
     <TouchableOpacity 
       style={[styles.userCard, item.is_active === false && styles.inactiveCard]}
       onPress={() => router.push(`/admin/users/${item._id}`)}
+      {...tid(`user-row-${item._id}`)}
     >
       {item.photo_url ? (
-        <Image source={{ uri: item.photo_url }} style={styles.userAvatarPhoto} />
+        <Image source={{ uri: item.photo_url }} style={styles.userAvatarPhoto} contentFit="cover" cachePolicy="memory-disk" />
       ) : (
         <View style={[styles.userAvatar, { backgroundColor: (ROLE_COLORS[item.role] || colors.textSecondary) + '30' }]}>
           <Text style={[styles.userAvatarText, { color: ROLE_COLORS[item.role] || colors.textSecondary }]}>
@@ -338,8 +340,8 @@ export default function UsersScreen() {
         </View>
       )}
       <View style={styles.userInfo}>
-        <Text style={[styles.userName, item.is_active === false && styles.inactiveText]}>{item.name}</Text>
-        <Text style={styles.userEmail}>{item.email}</Text>
+        <Text style={[styles.userName, item.is_active === false && styles.inactiveText]} numberOfLines={1}>{item.name}</Text>
+        <Text style={styles.userEmail} numberOfLines={1}>{item.email}</Text>
         {item.is_active === false && item.deletion_source && (
           <Text style={styles.deletionSource}>Deleted by: {item.deletion_source}</Text>
         )}
@@ -354,6 +356,7 @@ export default function UsersScreen() {
       style={[styles.sectionHeader, section.isInactive && styles.inactiveSectionHeader]}
       onPress={() => toggleSection(section.role)}
       activeOpacity={0.7}
+      {...tid(`user-section-${section.role}`)}
     >
       <View style={[styles.sectionIcon, { backgroundColor: section.color + '20' }]}>
         <Ionicons 
@@ -381,36 +384,13 @@ export default function UsersScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Users</Text>
-        {Platform.OS === 'web' ? (
-          <div
-            onClick={() => setShowAddModal(true)}
-            style={{
-              padding: 12,
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative' as any,
-              zIndex: 100,
-            }}
-            data-testid="add-user-btn"
-          >
-            <Ionicons name="person-add" size={24} color="#007AFF" />
-          </div>
-        ) : (
-          <TouchableOpacity onPress={() => setShowAddModal(true)} style={styles.addButton}>
-            <Ionicons name="person-add" size={24} color="#007AFF" />
-          </TouchableOpacity>
-        )}
-      </View>
-      
+      <ScreenHeader
+        title="Team Members"
+        subtitle={loading ? undefined : `${users.filter(u => u.is_active !== false).length} active`}
+        testID="team-members-header"
+        right={<HeaderIconButton icon="person-add" onPress={() => setShowAddModal(true)} testID="add-user-btn" />}
+      />
+
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
@@ -423,9 +403,10 @@ export default function UsersScreen() {
             onChangeText={setSearchQuery}
             autoCapitalize="none"
             autoCorrect={false}
+            {...tid('user-search-input')}
           />
           {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <TouchableOpacity onPress={() => setSearchQuery('')} {...tid('user-search-clear')}>
               <Ionicons name="close-circle" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
@@ -434,7 +415,7 @@ export default function UsersScreen() {
       
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={colors.accent} />
         </View>
       ) : (
         <SectionList
@@ -445,25 +426,30 @@ export default function UsersScreen() {
           contentContainerStyle={styles.listContent}
           stickySectionHeadersEnabled={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#007AFF" />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
           }
           ListEmptyComponent={() => (
-            <View style={styles.emptyContainer}>
-              <Ionicons name="people-outline" size={64} color={colors.surface} />
+            <View style={styles.emptyContainer} {...tid('users-empty')}>
+              <Ionicons name="people-outline" size={52} color={colors.textTertiary} />
               <Text style={styles.emptyText}>
-                {searchQuery ? 'No users found' : 'No users yet'}
+                {searchQuery ? 'No one matches that search' : 'No team members yet'}
               </Text>
-              {searchQuery && (
-                <Text style={styles.emptySubtext}>Try a different search term</Text>
-              )}
+              <Text style={styles.emptySubtext}>{searchQuery ? 'Try a name or email.' : 'Add your first rep to get them a login.'}</Text>
+              <TouchableOpacity
+                onPress={() => searchQuery ? setSearchQuery('') : setShowAddModal(true)}
+                style={styles.emptyBtn}
+                {...tid('users-empty-cta')}
+              >
+                <Text style={styles.emptyBtnText}>{searchQuery ? 'Clear search' : 'Add team member'}</Text>
+              </TouchableOpacity>
             </View>
           )}
         />
       )}
 
-      {/* Add User Modal - web-compatible */}
+      {/* Add team member: fixed overlay on web, native Modal on the phone (the native branch used to render nothing) */}
       {(showAddModal && !createdUser) && (Platform.OS === 'web' ? (
-        <View style={[styles.successOverlay, { position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 99998, paddingTop: JESSI_BAR_HEIGHT + 16 }]}>
+        <View style={[styles.successOverlay, { position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 99998, paddingTop: 16 }]}>
           <View style={[styles.modalContainer, { maxWidth: 500, maxHeight: '85vh', borderRadius: 16, overflow: 'hidden' }]}>
           <View style={styles.modalHeader}>
             <WebSafeButton
@@ -473,7 +459,7 @@ export default function UsersScreen() {
             >
               <Text style={styles.modalCancel}>Cancel</Text>
             </WebSafeButton>
-            <Text style={styles.modalTitle}>Add User</Text>
+            <Text style={styles.modalTitle}>Add team member</Text>
             <WebSafeButton
               onPress={handleCreateUser}
               disabled={creating}
@@ -500,22 +486,22 @@ export default function UsersScreen() {
                     value={contactSearch}
                     onChangeText={searchContacts}
                     autoCapitalize="none"
-                    data-testid="contact-search-input"
+                    {...tid('contact-search-input')}
                   />
-                  {searchingContacts && <ActivityIndicator size="small" color="#007AFF" style={{ marginTop: 4 }} />}
+                  {searchingContacts && <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 4 }} />}
                   {contactResults.map((c) => (
                     <TouchableOpacity
                       key={c._id}
                       style={{ flexDirection: 'row', alignItems: 'center', padding: 10, borderRadius: 8, backgroundColor: colors.bg, marginTop: 6 }}
                       onPress={() => importFromContact(c)}
-                      data-testid={`contact-result-${c._id}`}
+                      {...tid(`contact-result-${c._id}`)}
                     >
                       <Ionicons name="person-circle" size={32} color={colors.textSecondary} />
                       <View style={{ marginLeft: 10, flex: 1 }}>
                         <Text style={{ color: colors.text, fontWeight: '600', fontSize: 15 }}>{c.first_name} {c.last_name}</Text>
                         <Text style={{ color: colors.textSecondary, fontSize: 13 }}>{c.email || c.phone || ''}</Text>
                       </View>
-                      <Ionicons name="arrow-forward-circle" size={22} color="#007AFF" />
+                      <Ionicons name="arrow-forward-circle" size={22} color={colors.accent} />
                     </TouchableOpacity>
                   ))}
                 </>
@@ -525,7 +511,7 @@ export default function UsersScreen() {
                   onPress={() => { setSelectedContactId(null); setContactSearch(''); }}
                 >
                   <Ionicons name="checkmark-circle" size={20} color="#34C759" />
-                  <Text style={{ color: '#34C759', marginLeft: 6, fontSize: 14 }}>Contact linked — tap to clear</Text>
+                  <Text style={{ color: '#34C759', marginLeft: 6, fontSize: 14 }}>Contact linked. Tap to clear</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -538,6 +524,7 @@ export default function UsersScreen() {
               value={newUserName}
               onChangeText={setNewUserName}
               autoCapitalize="words"
+              {...tid('new-user-name')}
             />
 
             <Text style={styles.inputLabel}>Email *</Text>
@@ -549,6 +536,7 @@ export default function UsersScreen() {
               onChangeText={setNewUserEmail}
               keyboardType="email-address"
               autoCapitalize="none"
+              {...tid('new-user-email')}
             />
 
             <Text style={styles.inputLabel}>Phone (optional)</Text>
@@ -559,6 +547,7 @@ export default function UsersScreen() {
               value={newUserPhone}
               onChangeText={setNewUserPhone}
               keyboardType="phone-pad"
+              {...tid('new-user-phone')}
             />
 
             <Text style={styles.inputLabel}>Organization (optional)</Text>
@@ -629,6 +618,7 @@ export default function UsersScreen() {
                     newUserRole === role && { backgroundColor: ROLE_COLORS[role] + '30', borderColor: ROLE_COLORS[role] }
                   ]}
                   onPress={() => setNewUserRole(role)}
+                  {...tid(`new-user-role-${role}`)}
                 >
                   <Text style={[
                     styles.roleOptionText,
@@ -643,9 +633,10 @@ export default function UsersScreen() {
             <TouchableOpacity 
               style={styles.inviteToggle}
               onPress={() => setSendInvite(!sendInvite)}
+              {...tid('new-user-send-invite')}
             >
               <View style={[styles.checkbox, sendInvite && styles.checkboxChecked]}>
-                {sendInvite && <Ionicons name="checkmark" size={16} color={colors.text} />}
+                {sendInvite && <Ionicons name="checkmark" size={16} color="#000" />}
               </View>
               <View style={styles.inviteToggleText}>
                 <Text style={styles.inviteToggleTitle}>Send login invitation email</Text>
@@ -666,17 +657,226 @@ export default function UsersScreen() {
           </ScrollView>
           </View>
         </View>
-      ) : null)}
+      ) : (
+        <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { setShowAddModal(false); resetAddForm(); }}>
+          <SafeAreaView style={styles.modalContainer} edges={['top']}>
+          <View style={styles.modalHeader}>
+            <WebSafeButton
+              onPress={() => { setShowAddModal(false); resetAddForm(); }}
+              variant="ghost"
+              testID="modal-cancel"
+            >
+              <Text style={styles.modalCancel}>Cancel</Text>
+            </WebSafeButton>
+            <Text style={styles.modalTitle}>Add team member</Text>
+            <WebSafeButton
+              onPress={handleCreateUser}
+              disabled={creating}
+              loading={creating}
+              variant="ghost"
+              testID="modal-create"
+            >
+              <Text style={styles.modalSave}>Create</Text>
+            </WebSafeButton>
+          </View>
 
-      {/* Success Modal with Credentials - web-compatible */}
+          <ScrollView style={styles.modalContent}>
+            {/* Import from Contact */}
+            <View style={{ backgroundColor: colors.card, borderRadius: 12, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: selectedContactId ? '#34C759' : colors.bg }}>
+              <Text style={[styles.inputLabel, { marginBottom: 6, color: selectedContactId ? '#34C759' : colors.textSecondary }]}>
+                {selectedContactId ? 'Imported from Contact' : 'Import from Contact'}
+              </Text>
+              {!selectedContactId ? (
+                <>
+                  <TextInput
+                    style={styles.modalInput}
+                    placeholder="Search contacts by name, email, phone..."
+                    placeholderTextColor={colors.textSecondary}
+                    value={contactSearch}
+                    onChangeText={searchContacts}
+                    autoCapitalize="none"
+                    {...tid('contact-search-input')}
+                  />
+                  {searchingContacts && <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 4 }} />}
+                  {contactResults.map((c) => (
+                    <TouchableOpacity
+                      key={c._id}
+                      style={{ flexDirection: 'row', alignItems: 'center', padding: 10, borderRadius: 8, backgroundColor: colors.bg, marginTop: 6 }}
+                      onPress={() => importFromContact(c)}
+                      {...tid(`contact-result-${c._id}`)}
+                    >
+                      <Ionicons name="person-circle" size={32} color={colors.textSecondary} />
+                      <View style={{ marginLeft: 10, flex: 1 }}>
+                        <Text style={{ color: colors.text, fontWeight: '600', fontSize: 15 }}>{c.first_name} {c.last_name}</Text>
+                        <Text style={{ color: colors.textSecondary, fontSize: 13 }}>{c.email || c.phone || ''}</Text>
+                      </View>
+                      <Ionicons name="arrow-forward-circle" size={22} color={colors.accent} />
+                    </TouchableOpacity>
+                  ))}
+                </>
+              ) : (
+                <TouchableOpacity
+                  style={{ flexDirection: 'row', alignItems: 'center' }}
+                  onPress={() => { setSelectedContactId(null); setContactSearch(''); }}
+                >
+                  <Ionicons name="checkmark-circle" size={20} color="#34C759" />
+                  <Text style={{ color: '#34C759', marginLeft: 6, fontSize: 14 }}>Contact linked. Tap to clear</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <Text style={styles.inputLabel}>Name *</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Full name"
+              placeholderTextColor={colors.textSecondary}
+              value={newUserName}
+              onChangeText={setNewUserName}
+              autoCapitalize="words"
+              {...tid('new-user-name')}
+            />
+
+            <Text style={styles.inputLabel}>Email *</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="email@example.com"
+              placeholderTextColor={colors.textSecondary}
+              value={newUserEmail}
+              onChangeText={setNewUserEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              {...tid('new-user-email')}
+            />
+
+            <Text style={styles.inputLabel}>Phone (optional)</Text>
+            <TextInput
+              style={styles.modalInput}
+              placeholder="+1 555 123 4567"
+              placeholderTextColor={colors.textSecondary}
+              value={newUserPhone}
+              onChangeText={setNewUserPhone}
+              keyboardType="phone-pad"
+              {...tid('new-user-phone')}
+            />
+
+            <Text style={styles.inputLabel}>Organization (optional)</Text>
+            <View style={styles.pickerContainer}>
+              <TouchableOpacity
+                style={[styles.pickerOption, !newUserOrgId && styles.pickerOptionSelected]}
+                onPress={() => {
+                  setNewUserOrgId(null);
+                  setNewUserStoreId(null);
+                  loadStores();
+                }}
+              >
+                <Text style={[styles.pickerOptionText, !newUserOrgId && styles.pickerOptionTextSelected]}>
+                  Individual (No Org)
+                </Text>
+              </TouchableOpacity>
+              {organizations.map((org) => (
+                <TouchableOpacity
+                  key={org._id}
+                  style={[styles.pickerOption, newUserOrgId === org._id && styles.pickerOptionSelected]}
+                  onPress={() => {
+                    setNewUserOrgId(org._id);
+                    setNewUserStoreId(null);
+                    loadStores(org._id);
+                  }}
+                >
+                  <Text style={[styles.pickerOptionText, newUserOrgId === org._id && styles.pickerOptionTextSelected]}>
+                    {org.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {stores.length > 0 && (
+              <>
+                <Text style={styles.inputLabel}>Account (optional)</Text>
+                <View style={styles.pickerContainer}>
+                  <TouchableOpacity
+                    style={[styles.pickerOption, !newUserStoreId && styles.pickerOptionSelected]}
+                    onPress={() => setNewUserStoreId(null)}
+                  >
+                    <Text style={[styles.pickerOptionText, !newUserStoreId && styles.pickerOptionTextSelected]}>
+                      No Store
+                    </Text>
+                  </TouchableOpacity>
+                  {stores.map((store) => (
+                    <TouchableOpacity
+                      key={store._id}
+                      style={[styles.pickerOption, newUserStoreId === store._id && styles.pickerOptionSelected]}
+                      onPress={() => setNewUserStoreId(store._id)}
+                    >
+                      <Text style={[styles.pickerOptionText, newUserStoreId === store._id && styles.pickerOptionTextSelected]}>
+                        {store.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+
+            <Text style={styles.inputLabel}>Role</Text>
+            <View style={styles.roleSelector}>
+              {ROLE_ORDER.map((role) => (
+                <TouchableOpacity
+                  key={role}
+                  style={[
+                    styles.roleOption,
+                    newUserRole === role && { backgroundColor: ROLE_COLORS[role] + '30', borderColor: ROLE_COLORS[role] }
+                  ]}
+                  onPress={() => setNewUserRole(role)}
+                  {...tid(`new-user-role-${role}`)}
+                >
+                  <Text style={[
+                    styles.roleOptionText,
+                    newUserRole === role && { color: ROLE_COLORS[role] }
+                  ]}>
+                    {ROLE_LABELS[role]}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity 
+              style={styles.inviteToggle}
+              onPress={() => setSendInvite(!sendInvite)}
+              {...tid('new-user-send-invite')}
+            >
+              <View style={[styles.checkbox, sendInvite && styles.checkboxChecked]}>
+                {sendInvite && <Ionicons name="checkmark" size={16} color="#000" />}
+              </View>
+              <View style={styles.inviteToggleText}>
+                <Text style={styles.inviteToggleTitle}>Send login invitation email</Text>
+                <Text style={styles.inviteToggleSubtitle}>
+                  User will receive an email with login instructions
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            {!sendInvite && (
+              <View style={styles.warningBox}>
+                <Ionicons name="warning" size={20} color="#FF9500" />
+                <Text style={styles.warningText}>
+                  A temporary password will be generated. Make sure to share it with the user securely.
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+          </SafeAreaView>
+        </Modal>
+      ))}
+
+      {/* Success: credentials */}
       {!!createdUser && (Platform.OS === 'web' ? (
-        <View style={[styles.successOverlay, { position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, paddingTop: JESSI_BAR_HEIGHT + 16 }]}>
+        <View style={[styles.successOverlay, { position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999, paddingTop: 16 }]}>
           <View style={styles.successModal}>
             <View style={styles.successIcon}>
               <Ionicons name="checkmark-circle" size={48} color="#34C759" />
             </View>
             
-            <Text style={styles.successTitle}>User Created!</Text>
+            <Text style={styles.successTitle}>Team member created</Text>
             <Text style={styles.successSubtitle}>
               {createdUser?.name} will get a text and email with activation steps: open the app, tap "Activate my account", verify with a 6-digit code, then choose a password.
             </Text>
@@ -728,77 +928,73 @@ export default function UsersScreen() {
               testID="close-success"
               style={{ marginTop: 16 }}
             >
-              <Text style={{ color: '#007AFF', fontSize: 18, fontWeight: '600' }}>Done</Text>
+              <Text style={{ color: colors.accent, fontSize: FS.heading, fontWeight: '700' }}>Done</Text>
             </WebSafeButton>
           </View>
         </View>
       ) : (
-        <Modal
-          visible={true}
-          animationType="fade"
-          transparent
-        >
+        <Modal visible animationType="fade" transparent>
           <View style={styles.successOverlay}>
-            <View style={styles.successModal}>
-              <View style={styles.successIcon}>
-                <Ionicons name="checkmark-circle" size={48} color="#34C759" />
+          <View style={styles.successModal}>
+            <View style={styles.successIcon}>
+              <Ionicons name="checkmark-circle" size={48} color="#34C759" />
+            </View>
+            
+            <Text style={styles.successTitle}>Team member created</Text>
+            <Text style={styles.successSubtitle}>
+              {createdUser?.name} will get a text and email with activation steps: open the app, tap "Activate my account", verify with a 6-digit code, then choose a password.
+            </Text>
+            
+            <View style={styles.credentialsBox}>
+              <View style={styles.credentialRow}>
+                <Text style={styles.credentialLabel}>Email:</Text>
+                <Text style={styles.credentialValue}>{createdUser?.email}</Text>
               </View>
-              
-              <Text style={styles.successTitle}>User Created!</Text>
-              <Text style={styles.successSubtitle}>
-                {createdUser?.name} will get a text and email with activation steps: open the app, tap "Activate my account", verify with a 6-digit code, then choose a password.
-              </Text>
-              
-              <View style={styles.credentialsBox}>
-                <View style={styles.credentialRow}>
-                  <Text style={styles.credentialLabel}>Email:</Text>
-                  <Text style={styles.credentialValue}>{createdUser?.email}</Text>
-                </View>
-                {createdUser?.temp_password && (
-                  <View style={styles.credentialRow}>
-                    <Text style={styles.credentialLabel}>Backup password:</Text>
-                    <Text style={styles.credentialValue}>{createdUser?.temp_password}</Text>
-                  </View>
-                )}
-              </View>
-              
               {createdUser?.temp_password && (
-                <View style={styles.successActions}>
-                  <WebSafeButton
-                    onPress={handleCopyPassword}
-                    variant="secondary"
-                    testID="copy-password"
-                    style={{ flex: 1 }}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Ionicons name="copy-outline" size={18} color="#FFFFFF" />
-                      <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>Copy Backup</Text>
-                    </View>
-                  </WebSafeButton>
-                  
-                  <WebSafeButton
-                    onPress={handleCopyCredentials}
-                    variant="primary"
-                    testID="copy-all"
-                    style={{ flex: 1 }}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Ionicons name="clipboard-outline" size={18} color="#FFFFFF" />
-                      <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>Copy All</Text>
-                    </View>
-                  </WebSafeButton>
+                <View style={styles.credentialRow}>
+                  <Text style={styles.credentialLabel}>Backup password:</Text>
+                  <Text style={styles.credentialValue}>{createdUser?.temp_password}</Text>
                 </View>
               )}
-              
-              <WebSafeButton
-                onPress={handleCloseSuccessModal}
-                variant="ghost"
-                testID="close-success"
-                style={{ marginTop: 16 }}
-              >
-                <Text style={{ color: '#007AFF', fontSize: 18, fontWeight: '600' }}>Done</Text>
-              </WebSafeButton>
             </View>
+            
+            {createdUser?.temp_password && (
+              <View style={styles.successActions}>
+                <WebSafeButton
+                  onPress={handleCopyPassword}
+                  variant="secondary"
+                  testID="copy-password"
+                  style={{ flex: 1 }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Ionicons name="copy-outline" size={18} color="#FFFFFF" />
+                    <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>Copy Backup</Text>
+                  </View>
+                </WebSafeButton>
+                
+                <WebSafeButton
+                  onPress={handleCopyCredentials}
+                  variant="primary"
+                  testID="copy-all"
+                  style={{ flex: 1 }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Ionicons name="clipboard-outline" size={18} color="#FFFFFF" />
+                    <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>Copy All</Text>
+                  </View>
+                </WebSafeButton>
+              </View>
+            )}
+            
+            <WebSafeButton
+              onPress={handleCloseSuccessModal}
+              variant="ghost"
+              testID="close-success"
+              style={{ marginTop: 16 }}
+            >
+              <Text style={{ color: colors.accent, fontSize: FS.heading, fontWeight: '700' }}>Done</Text>
+            </WebSafeButton>
+          </View>
           </View>
         </Modal>
       ))}
@@ -811,41 +1007,24 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.card,
-  },
-  backButton: {
-    padding: 4,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-  },
   searchContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.card,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.card,
-    borderRadius: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
     paddingHorizontal: 12,
     paddingVertical: 10,
     gap: 8,
   },
   searchInput: {
     flex: 1,
-    fontSize: 18,
+    fontSize: FS.body,
     color: colors.text,
   },
   loadingContainer: {
@@ -855,12 +1034,16 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   listContent: {
     padding: 16,
+    paddingTop: 4,
+    paddingBottom: 40,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.card,
-    borderRadius: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: 14,
     marginBottom: 8,
     marginTop: 8,
@@ -874,8 +1057,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 12,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: FS.heading,
+    fontWeight: '700',
     color: colors.text,
     flex: 1,
   },
@@ -886,16 +1069,18 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 8,
   },
   countText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: FS.secondary,
+    fontWeight: '800',
   },
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 10,
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: 12,
-    marginBottom: 6,
+    marginBottom: 8,
     marginLeft: 16,
   },
   userAvatar: {
@@ -911,22 +1096,25 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 20,
   },
   userAvatarText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: FS.body,
+    fontWeight: '700',
   },
   userInfo: {
     flex: 1,
+    minWidth: 0,
     marginLeft: 12,
   },
   userName: {
-    fontSize: 17,
-    fontWeight: '500',
+    fontSize: FS.heading,
+    fontWeight: '700',
     color: colors.text,
+    flexShrink: 1,
   },
   userEmail: {
-    fontSize: 15,
+    fontSize: FS.secondary,
     color: colors.textSecondary,
     marginTop: 2,
+    flexShrink: 1,
   },
   statusDot: {
     width: 8,
@@ -937,20 +1125,35 @@ const getStyles = (colors: any) => StyleSheet.create({
   emptyContainer: {
     alignItems: 'center',
     paddingVertical: 60,
+    paddingHorizontal: 32,
   },
   emptyText: {
-    color: colors.textSecondary,
-    fontSize: 18,
+    color: colors.text,
+    fontSize: FS.heading,
+    fontWeight: '700',
     marginTop: 16,
+    textAlign: 'center',
   },
   emptySubtext: {
-    color: '#6E6E73',
-    fontSize: 16,
-    marginTop: 4,
+    color: colors.textSecondary,
+    fontSize: FS.body,
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  emptyBtn: {
+    marginTop: 18,
+    backgroundColor: colors.accent,
+    borderRadius: 14,
+    paddingHorizontal: 22,
+    paddingVertical: 12,
+  },
+  emptyBtnText: {
+    fontSize: FS.heading,
+    fontWeight: '700',
+    color: '#000',
   },
   inactiveCard: {
     opacity: 0.6,
-    backgroundColor: '#1A1A1A',
   },
   inactiveText: {
     color: colors.textSecondary,
@@ -967,9 +1170,6 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderTopColor: colors.surface,
     paddingTop: 24,
   },
-  addButton: {
-    padding: 4,
-  },
   // Modal Styles
   modalContainer: {
     flex: 1,
@@ -984,24 +1184,24 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   modalCancel: {
-    fontSize: 18,
-    color: '#007AFF',
+    fontSize: FS.heading,
+    color: colors.textSecondary,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: FS.nav,
+    fontWeight: '700',
     color: colors.text,
   },
   modalSave: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#007AFF',
+    fontSize: FS.heading,
+    fontWeight: '700',
+    color: colors.accent,
   },
   modalContent: {
     padding: 16,
   },
   inputLabel: {
-    fontSize: 15,
+    fontSize: FS.secondary,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 8,
@@ -1010,12 +1210,12 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   modalInput: {
     backgroundColor: colors.card,
-    borderRadius: 10,
+    borderRadius: 12,
     padding: 14,
-    fontSize: 18,
+    fontSize: FS.body,
     color: colors.text,
     borderWidth: 1,
-    borderColor: colors.surface,
+    borderColor: colors.border,
   },
   roleSelector: {
     flexDirection: 'row',
@@ -1028,11 +1228,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 20,
     backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: colors.surface,
+    borderColor: colors.border,
   },
   roleOptionText: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: FS.body,
+    fontWeight: '600',
     color: colors.textSecondary,
   },
   inviteToggle: {
@@ -1054,19 +1254,19 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   inviteToggleText: {
     flex: 1,
   },
   inviteToggleTitle: {
-    fontSize: 17,
-    fontWeight: '500',
+    fontSize: FS.heading,
+    fontWeight: '700',
     color: colors.text,
   },
   inviteToggleSubtitle: {
-    fontSize: 15,
+    fontSize: FS.secondary,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -1100,16 +1300,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: colors.borderLight,
   },
   pickerOptionSelected: {
-    backgroundColor: '#007AFF20',
-    borderColor: '#007AFF',
+    backgroundColor: 'rgba(201,169,98,0.12)',
+    borderColor: colors.accent,
   },
   pickerOptionText: {
-    fontSize: 16,
+    fontSize: FS.body,
     color: colors.textSecondary,
   },
   pickerOptionTextSelected: {
-    color: '#007AFF',
-    fontWeight: '600',
+    color: colors.accent,
+    fontWeight: '700',
   },
   // Success Modal Styles
   successOverlay: {
@@ -1121,7 +1321,9 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   successModal: {
     backgroundColor: colors.card,
-    borderRadius: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: 24,
     width: '100%',
     maxWidth: 400,
@@ -1131,13 +1333,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 16,
   },
   successTitle: {
-    fontSize: 22,
+    fontSize: FS.title,
     fontWeight: '700',
     color: colors.text,
     marginBottom: 8,
   },
   successSubtitle: {
-    fontSize: 17,
+    fontSize: FS.body,
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 20,
@@ -1154,12 +1356,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   credentialLabel: {
-    fontSize: 16,
+    fontSize: FS.body,
     color: colors.textSecondary,
     width: 80,
   },
   credentialValue: {
-    fontSize: 16,
+    fontSize: FS.body,
     color: colors.text,
     fontWeight: '600',
     flex: 1,

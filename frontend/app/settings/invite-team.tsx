@@ -18,6 +18,10 @@ import api from '../../services/api';
 import { showSimpleAlert, showConfirm } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
+import { FS } from '../../constants/typography';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 export default function InviteTeamScreen() {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
@@ -51,7 +55,7 @@ export default function InviteTeamScreen() {
   const getRoleOptions = () => {
     if (user?.role === 'super_admin') {
       return [
-        { value: 'org_admin', label: 'Org Admin', icon: 'shield-checkmark', desc: 'Full org access', color: '#007AFF' },
+        { value: 'org_admin', label: 'Org Admin', icon: 'shield-checkmark', desc: 'Full org access', color: '#FF9500' },
         { value: 'store_manager', label: 'Store Manager', icon: 'storefront', desc: 'Manages a store', color: '#34C759' },
         { value: 'user', label: 'Team Member', icon: 'person', desc: 'Standard access', color: '#C9A962' },
         { value: 'individual', label: 'Individual', icon: 'person-circle', desc: 'Solo account', color: '#AF52DE' },
@@ -229,10 +233,10 @@ export default function InviteTeamScreen() {
   const getRoleBadgeColor = (r: string) => {
     switch (r) {
       case 'super_admin': return '#FF3B30';
-      case 'org_admin': return '#007AFF';
+      case 'org_admin': return '#FF9500';
       case 'store_manager': return '#34C759';
       case 'individual': return '#AF52DE';
-      default: return colors.textSecondary;
+      default: return colors.accent;
     }
   };
 
@@ -248,21 +252,14 @@ export default function InviteTeamScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Invite Team</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <ScreenHeader title="Invite Team" testID="invite-team-header" />
       
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Invite Form */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="person-add" size={22} color="#C9A962" />
-            <Text style={styles.sectionTitle}>Send Invitation</Text>
+            <Ionicons name="person-add" size={22} color={colors.accent} />
+            <Text style={styles.sectionTitle}>Send invitation</Text>
           </View>
           <Text style={styles.sectionDescription}>
             Create a new team member and send them login credentials
@@ -283,9 +280,9 @@ export default function InviteTeamScreen() {
                 </View>
               )}
               {inviteResult.contact_created && (
-                <View style={[styles.successBanner, { marginBottom: 0, backgroundColor: 'rgba(0,122,255,0.1)' }]}>
-                  <Ionicons name="person-add" size={16} color="#007AFF" />
-                  <Text style={[styles.successText, { color: '#007AFF' }]}>Added to your contacts with "new-user" tag</Text>
+                <View style={[styles.successBanner, { marginBottom: 0, backgroundColor: 'rgba(201,169,98,0.12)' }]}>
+                  <Ionicons name="person-add" size={16} color={colors.accent} />
+                  <Text style={[styles.successText, { color: colors.accent }]}>Added to your contacts with "new-user" tag</Text>
                 </View>
               )}
               
@@ -309,8 +306,8 @@ export default function InviteTeamScreen() {
                 }}>
                   <Text style={styles.credLabel}>Backup password</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={[styles.credValue, { color: '#007AFF' }]} selectable>{inviteResult.password}</Text>
-                    <Ionicons name="copy-outline" size={14} color="#007AFF" />
+                    <Text style={[styles.credValue, { color: colors.accent }]} selectable>{inviteResult.password}</Text>
+                    <Ionicons name="copy-outline" size={14} color={colors.accent} />
                   </View>
                 </TouchableOpacity>
                 <View style={styles.credDivider} />
@@ -323,21 +320,21 @@ export default function InviteTeamScreen() {
               <TouchableOpacity
                 style={[styles.copyButton, copied && styles.copyButtonCopied]}
                 onPress={handleCopyInvite}
-                data-testid="copy-invite-btn"
+                {...tid('copy-invite-btn')}
               >
-                <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={20} color={copied ? '#34C759' : '#FFF'} />
+                <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={20} color={copied ? '#34C759' : '#000'} />
                 <Text style={[styles.copyButtonText, copied && { color: '#34C759' }]}>
-                  {copied ? 'Copied! Paste in your text app' : 'Copy Invite Message'}
+                  {copied ? 'Copied. Paste it in your text app' : 'Copy invite message'}
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.newInviteButton}
                 onPress={handleNewInvite}
-                data-testid="new-invite-btn"
+                {...tid('new-invite-btn')}
               >
-                <Ionicons name="add-circle-outline" size={18} color="#007AFF" />
-                <Text style={styles.newInviteButtonText}>Send Another Invite</Text>
+                <Ionicons name="add-circle-outline" size={18} color={colors.accent} />
+                <Text style={styles.newInviteButtonText}>Send another invite</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -350,7 +347,7 @@ export default function InviteTeamScreen() {
             </View>
           ) : null}
 
-          {/* First + Last Name — side by side */}
+          {/* First + Last Name side by side */}
           <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
             <View style={{ flex: 1 }}>
               <Text style={styles.inputLabel}>First Name *</Text>
@@ -361,9 +358,9 @@ export default function InviteTeamScreen() {
                   value={firstName}
                   onChangeText={setFirstName}
                   placeholder="John"
-                  placeholderTextColor="#6E6E73"
+                  placeholderTextColor={colors.textTertiary}
                   autoCapitalize="words"
-                  data-testid="invite-first-name"
+                  {...tid('invite-first-name')}
                 />
               </View>
             </View>
@@ -375,9 +372,9 @@ export default function InviteTeamScreen() {
                   value={lastName}
                   onChangeText={setLastName}
                   placeholder="Smith"
-                  placeholderTextColor="#6E6E73"
+                  placeholderTextColor={colors.textTertiary}
                   autoCapitalize="words"
-                  data-testid="invite-last-name"
+                  {...tid('invite-last-name')}
                 />
               </View>
             </View>
@@ -392,10 +389,10 @@ export default function InviteTeamScreen() {
                 value={email}
                 onChangeText={setEmail}
                 placeholder="john@company.com"
-                placeholderTextColor="#6E6E73"
+                placeholderTextColor={colors.textTertiary}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                data-testid="invite-email"
+                {...tid('invite-email')}
               />
             </View>
           </View>
@@ -409,22 +406,22 @@ export default function InviteTeamScreen() {
                 value={phone}
                 onChangeText={setPhone}
                 placeholder="(555) 123-4567"
-                placeholderTextColor="#6E6E73"
+                placeholderTextColor={colors.textTertiary}
                 keyboardType="phone-pad"
-                data-testid="invite-phone"
+                {...tid('invite-phone')}
               />
             </View>
           </View>
 
-          {/* Optional enrichment — collapsible */}
+          {/* Optional enrichment, collapsible */}
           <TouchableOpacity
             style={styles.extrasToggle}
             onPress={() => setShowExtras(!showExtras)}
-            data-testid="invite-show-extras"
+            {...tid('invite-show-extras')}
           >
-            <Ionicons name={showExtras ? 'chevron-up' : 'chevron-down'} size={18} color="#007AFF" />
+            <Ionicons name={showExtras ? 'chevron-up' : 'chevron-down'} size={18} color={colors.accent} />
             <Text style={styles.extrasToggleText}>
-              {showExtras ? 'Hide' : 'Add'} title, company & social links
+              {showExtras ? 'Hide' : 'Add'} title, company and social links
             </Text>
           </TouchableOpacity>
 
@@ -435,14 +432,14 @@ export default function InviteTeamScreen() {
                   <Text style={styles.inputLabel}>Title</Text>
                   <View style={styles.inputRow}>
                     <Ionicons name="briefcase-outline" size={16} color={colors.textSecondary} />
-                    <TextInput style={styles.textInput} value={title} onChangeText={setTitle} placeholder="Sales Manager" placeholderTextColor="#6E6E73" autoCapitalize="words" data-testid="invite-title" />
+                    <TextInput style={styles.textInput} value={title} onChangeText={setTitle} placeholder="Sales Manager" placeholderTextColor={colors.textTertiary} autoCapitalize="words" {...tid('invite-title')} />
                   </View>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.inputLabel}>Company</Text>
                   <View style={styles.inputRow}>
                     <Ionicons name="business-outline" size={16} color={colors.textSecondary} />
-                    <TextInput style={styles.textInput} value={company} onChangeText={setCompany} placeholder="ABC Motors" placeholderTextColor="#6E6E73" autoCapitalize="words" data-testid="invite-company" />
+                    <TextInput style={styles.textInput} value={company} onChangeText={setCompany} placeholder="ABC Motors" placeholderTextColor={colors.textTertiary} autoCapitalize="words" {...tid('invite-company')} />
                   </View>
                 </View>
               </View>
@@ -450,7 +447,7 @@ export default function InviteTeamScreen() {
                 <Text style={styles.inputLabel}>Website</Text>
                 <View style={styles.inputRow}>
                   <Ionicons name="globe-outline" size={16} color={colors.textSecondary} />
-                  <TextInput style={styles.textInput} value={website} onChangeText={setWebsite} placeholder="www.company.com" placeholderTextColor="#6E6E73" autoCapitalize="none" keyboardType="url" data-testid="invite-website" />
+                  <TextInput style={styles.textInput} value={website} onChangeText={setWebsite} placeholder="www.company.com" placeholderTextColor={colors.textTertiary} autoCapitalize="none" keyboardType="url" {...tid('invite-website')} />
                 </View>
               </View>
               <View style={styles.formGroup}>
@@ -458,19 +455,19 @@ export default function InviteTeamScreen() {
                 <View style={{ gap: 8 }}>
                   <View style={styles.inputRow}>
                     <Ionicons name="logo-instagram" size={16} color="#E4405F" />
-                    <TextInput style={styles.textInput} value={socialInstagram} onChangeText={setSocialInstagram} placeholder="Instagram URL" placeholderTextColor="#6E6E73" autoCapitalize="none" />
+                    <TextInput style={styles.textInput} value={socialInstagram} onChangeText={setSocialInstagram} placeholder="Instagram URL" placeholderTextColor={colors.textTertiary} autoCapitalize="none" />
                   </View>
                   <View style={styles.inputRow}>
                     <Ionicons name="logo-facebook" size={16} color="#1877F2" />
-                    <TextInput style={styles.textInput} value={socialFacebook} onChangeText={setSocialFacebook} placeholder="Facebook URL" placeholderTextColor="#6E6E73" autoCapitalize="none" />
+                    <TextInput style={styles.textInput} value={socialFacebook} onChangeText={setSocialFacebook} placeholder="Facebook URL" placeholderTextColor={colors.textTertiary} autoCapitalize="none" />
                   </View>
                   <View style={styles.inputRow}>
                     <Ionicons name="logo-linkedin" size={16} color="#0A66C2" />
-                    <TextInput style={styles.textInput} value={socialLinkedin} onChangeText={setSocialLinkedin} placeholder="LinkedIn URL" placeholderTextColor="#6E6E73" autoCapitalize="none" />
+                    <TextInput style={styles.textInput} value={socialLinkedin} onChangeText={setSocialLinkedin} placeholder="LinkedIn URL" placeholderTextColor={colors.textTertiary} autoCapitalize="none" />
                   </View>
                   <View style={styles.inputRow}>
                     <Ionicons name="logo-twitter" size={16} color="#1DA1F2" />
-                    <TextInput style={styles.textInput} value={socialTwitter} onChangeText={setSocialTwitter} placeholder="Twitter/X URL" placeholderTextColor="#6E6E73" autoCapitalize="none" />
+                    <TextInput style={styles.textInput} value={socialTwitter} onChangeText={setSocialTwitter} placeholder="Twitter/X URL" placeholderTextColor={colors.textTertiary} autoCapitalize="none" />
                   </View>
                 </View>
               </View>
@@ -491,6 +488,7 @@ export default function InviteTeamScreen() {
                       isActive && { borderColor: opt.color },
                     ]}
                     onPress={() => setRole(opt.value)}
+                    {...tid(`invite-role-${opt.value}`)}
                   >
                     <View style={[styles.roleIconWrap, { backgroundColor: (isActive ? opt.color : colors.borderLight) + '25' }]}>
                       <Ionicons name={opt.icon as any} size={18} color={isActive ? opt.color : colors.textSecondary} />
@@ -512,7 +510,7 @@ export default function InviteTeamScreen() {
           <TouchableOpacity
             style={styles.smsToggle}
             onPress={() => setSendSms(!sendSms)}
-            data-testid="invite-sms-toggle"
+            {...tid('invite-sms-toggle')}
           >
             <View style={styles.smsToggleLeft}>
               <Ionicons name="chatbubble-outline" size={18} color={sendSms ? '#34C759' : colors.textSecondary} />
@@ -530,14 +528,14 @@ export default function InviteTeamScreen() {
             style={[styles.sendButton, sending && { opacity: 0.6 }]}
             onPress={handleSendInvite}
             disabled={sending}
-            data-testid="invite-send-btn"
+            {...tid('invite-send-btn')}
           >
             {sending ? (
-              <ActivityIndicator size="small" color={colors.text} />
+              <ActivityIndicator size="small" color="#000" />
             ) : (
               <>
-                <Ionicons name="person-add" size={18} color={colors.text} />
-                <Text style={styles.sendButtonText}>Create User</Text>
+                <Ionicons name="person-add" size={18} color="#000" />
+                <Text style={styles.sendButtonText}>Create team member</Text>
               </>
             )}
           </TouchableOpacity>
@@ -548,25 +546,28 @@ export default function InviteTeamScreen() {
         {/* Recent Team Members */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="people" size={22} color="#007AFF" />
-            <Text style={styles.sectionTitle}>Recent Team Members</Text>
+            <Ionicons name="people" size={22} color={colors.accent} />
+            <Text style={styles.sectionTitle}>Recent team members</Text>
           </View>
 
           {loadingRecent ? (
-            <ActivityIndicator size="small" color="#C9A962" style={{ marginVertical: 20 }} />
+            <ActivityIndicator size="small" color={colors.accent} style={{ marginVertical: 20 }} />
           ) : recentInvites.length === 0 ? (
-            <Text style={styles.emptyText}>No team members yet. Send your first invite above!</Text>
+            <View style={{ alignItems: 'center', paddingVertical: 16 }} {...tid('recent-members-empty')}>
+              <Ionicons name="people-outline" size={36} color={colors.textTertiary} />
+              <Text style={styles.emptyText}>No team members yet. Your first invite shows up here.</Text>
+            </View>
           ) : (
             recentInvites.map((member: any) => (
-              <View key={member._id} style={styles.memberRow}>
+              <View key={member._id} style={styles.memberRow} {...tid(`recent-member-${member._id}`)}>
                 <View style={styles.memberAvatar}>
                   <Text style={styles.memberAvatarText}>
                     {(member.name || '?').split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)}
                   </Text>
                 </View>
                 <View style={styles.memberInfo}>
-                  <Text style={styles.memberName}>{member.name}</Text>
-                  <Text style={styles.memberEmail}>{member.email}</Text>
+                  <Text style={styles.memberName} numberOfLines={1}>{member.name}</Text>
+                  <Text style={styles.memberEmail} numberOfLines={1}>{member.email}</Text>
                 </View>
                 <View style={[styles.roleBadge, { backgroundColor: getRoleBadgeColor(member.role) + '20' }]}>
                   <Text style={[styles.roleBadgeText, { color: getRoleBadgeColor(member.role) }]}>
@@ -576,7 +577,7 @@ export default function InviteTeamScreen() {
                 <TouchableOpacity
                   style={styles.deleteButton}
                   onPress={() => handleDeleteMember(member._id, member.name)}
-                  data-testid={`delete-member-${member._id}`}
+                  {...tid(`delete-member-${member._id}`)}
                 >
                   <Ionicons name="trash-outline" size={18} color="#FF3B30" />
                 </TouchableOpacity>
@@ -596,30 +597,15 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 28,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.card,
-  },
-  backButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.text,
-  },
   content: {
     padding: 16,
+    paddingBottom: 40,
   },
   section: {
     backgroundColor: colors.card,
-    borderRadius: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: 16,
     marginBottom: 16,
   },
@@ -630,12 +616,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: FS.heading,
+    fontWeight: '700',
     color: colors.text,
   },
   sectionDescription: {
-    fontSize: 16,
+    fontSize: FS.body,
     color: colors.textSecondary,
     marginBottom: 16,
   },
@@ -651,15 +637,15 @@ const getStyles = (colors: any) => StyleSheet.create({
   successText: {
     flex: 1,
     color: '#34C759',
-    fontSize: 16,
+    fontSize: FS.body,
     lineHeight: 20,
   },
   formGroup: {
     marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: FS.body,
+    fontWeight: '600',
     color: colors.text,
     marginBottom: 8,
   },
@@ -667,13 +653,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.surface,
-    borderRadius: 10,
+    borderRadius: 12,
     paddingHorizontal: 14,
     gap: 10,
   },
   textInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: FS.body,
     color: colors.text,
     paddingVertical: 14,
   },
@@ -693,7 +679,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 12,
   },
   roleOptionActive: {
-    backgroundColor: '#1A1A1A',
+    backgroundColor: colors.card,
   },
   roleIconWrap: {
     width: 36,
@@ -706,16 +692,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
   },
   roleOptionText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: FS.heading,
+    fontWeight: '700',
     color: colors.textSecondary,
   },
   roleOptionTextActive: {
     color: colors.text,
   },
   roleDesc: {
-    fontSize: 13,
-    color: '#6E6E73',
+    fontSize: FS.secondary,
+    color: colors.textTertiary,
     marginTop: 1,
   },
   roleRadio: {
@@ -739,29 +725,29 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#C9A962',
+    backgroundColor: colors.accent,
     paddingVertical: 16,
-    borderRadius: 25,
+    borderRadius: 28,
     gap: 8,
     marginTop: 4,
   },
   sendButtonText: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#000',
+    fontSize: FS.heading,
+    fontWeight: '700',
   },
   emptyText: {
-    color: '#6E6E73',
-    fontSize: 16,
+    color: colors.textSecondary,
+    fontSize: FS.body,
     textAlign: 'center',
-    paddingVertical: 20,
+    paddingTop: 10,
   },
   memberRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
+    borderBottomColor: colors.border,
     gap: 12,
   },
   memberAvatar: {
@@ -773,31 +759,33 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   memberAvatarText: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '600',
+    color: colors.accent,
+    fontSize: FS.body,
+    fontWeight: '700',
   },
   memberInfo: {
     flex: 1,
+    minWidth: 0,
   },
   memberName: {
     color: colors.text,
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: FS.heading,
+    fontWeight: '700',
   },
   memberEmail: {
     color: colors.textSecondary,
-    fontSize: 15,
+    fontSize: FS.secondary,
     marginTop: 2,
   },
   roleBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: 8,
+    flexShrink: 0,
   },
   roleBadgeText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: FS.micro,
+    fontWeight: '800',
   },
   deleteButton: {
     padding: 8,
@@ -814,8 +802,8 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   inviteResultTitle: {
     flex: 1,
-    fontSize: 17,
-    fontWeight: '600',
+    fontSize: FS.heading,
+    fontWeight: '700',
     color: '#34C759',
   },
   inviteCredentials: {
@@ -831,11 +819,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 14,
   },
   credLabel: {
-    fontSize: 16,
+    fontSize: FS.body,
     color: colors.textSecondary,
   },
   credValue: {
-    fontSize: 16,
+    fontSize: FS.body,
     fontWeight: '600',
     color: colors.text,
   },
@@ -848,9 +836,9 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#C9A962',
+    backgroundColor: colors.accent,
     paddingVertical: 16,
-    borderRadius: 25,
+    borderRadius: 28,
     gap: 8,
   },
   copyButtonCopied: {
@@ -859,9 +847,9 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#34C759',
   },
   copyButtonText: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#000',
+    fontSize: FS.heading,
+    fontWeight: '700',
   },
   newInviteButton: {
     flexDirection: 'row',
@@ -871,9 +859,9 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 8,
   },
   newInviteButtonText: {
-    color: '#007AFF',
-    fontSize: 16,
-    fontWeight: '500',
+    color: colors.accent,
+    fontSize: FS.body,
+    fontWeight: '700',
   },
   extrasToggle: {
     flexDirection: 'row',
@@ -883,9 +871,9 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   extrasToggleText: {
-    fontSize: 16,
-    color: '#007AFF',
-    fontWeight: '500',
+    fontSize: FS.body,
+    color: colors.accent,
+    fontWeight: '700',
   },
   extrasSection: {
     marginBottom: 8,
@@ -909,12 +897,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 44,
     height: 26,
     borderRadius: 13,
-    backgroundColor: '#C7C7CC',
+    backgroundColor: colors.borderLight,
     padding: 2,
     justifyContent: 'center',
   },
   toggleActive: {
-    backgroundColor: '#34C759',
+    backgroundColor: colors.accent,
   },
   toggleDot: {
     width: 22,

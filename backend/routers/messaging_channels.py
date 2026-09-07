@@ -1,5 +1,5 @@
 """
-Messaging Channels API — Configures which share channels are available per organization.
+Messaging Channels API: Configures which share channels are available per organization.
 """
 from fastapi import APIRouter, HTTPException, Body
 from datetime import datetime, timezone
@@ -19,7 +19,7 @@ AVAILABLE_CHANNELS = [
      "description": "Native text messaging via phone's SMS app",
      "url_scheme": "sms:{phone}?body={message}", "requires_phone": True},
     {"id": "whatsapp", "name": "WhatsApp", "icon": "logo-whatsapp", "color": "#25D366",
-     "description": "Send via WhatsApp — most popular messaging app worldwide",
+     "description": "Send via WhatsApp: most popular messaging app worldwide",
      "url_scheme": "https://wa.me/{phone_clean}?text={message}", "requires_phone": True},
     {"id": "messenger", "name": "Messenger", "icon": "chatbubbles", "color": "#0084FF",
      "description": "Send via Facebook Messenger",

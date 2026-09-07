@@ -39,8 +39,8 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 6. Manage  DONE (tested iteration_300) (Tags, Keyword Auto-Tags, Keyword Search, Campaigns, Review Center, Showcase approvals, Inventory Feed, Review Links)
 7. My Performance  DONE (tested iteration_301) (Team Sales, Team Tasks, Customer Engagement, Leaderboard, Activity Reports, Email Analytics, SEO/GEO Health, VA Library)
 8. Campaigns + My Tools  DONE (tested iteration_302) (Campaign Dashboard, Date Triggers, Ask Jessi, Team Chat)
-9. Set Up  <- next (Store Profile, Brand Kit, Messaging Channels, Phone Numbers, Team Members, Invite Team, Integrations)
-10. Admin / Internal Operations (super admin only, `later`)
+9. Set Up  DONE (tested iteration_303) (Store Profile, Brand Kit, Messaging Channels, Phone Numbers, Team Members, Invite Team, Integrations)
+10. Admin / Internal Operations (super admin only, `later`)  <- next if wanted
 
 ## Inventory
 
@@ -100,13 +100,13 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 | 52 | My Performance | GEO Health | /geo-health | | x | fixed | same shared screen. BUG: guide link went to /seo-guide -> /geo-guide. Backend tip strings em dashes removed, Building tier color -> gold |
 | 53 | My Performance | VA Library | /admin/va-library | | admin | fixed | shared header with add icon, BUG: window.confirm on delete (crashes native) -> showAlert, Edit blue -> gold, default avatar color gold, em dashes removed |
 | 54 | My Performance | System Logs | /admin/system-logs | | admin | later | |
-| 55 | Set Up | Store Profile | /settings/store-profile | | x | todo | shared with #4 |
-| 56 | Set Up | Brand Kit | /settings/brand-kit | | x | todo | |
-| 57 | Set Up | Messaging Channels | /settings/messaging-channels | | x | todo | |
+| 55 | Set Up | Store Profile | /settings/store-profile | | x | fixed | already on shared header from #4; grays -> theme, default primary color gold, testids |
+| 56 | Set Up | Brand Kit | /settings/brand-kit | | x | fixed | shared header with Save; BUG: logo upload was web-only (did nothing on the phone) -> expo-image-picker; 28px hardcoded top padding removed; blue -> gold; eyebrows |
+| 57 | Set Up | Messaging Channels | /settings/messaging-channels | | x | fixed | shared header with enabled-count subtitle, loading/error state with Retry, radius 16, backend WhatsApp description em dash removed |
 | 58 | Set Up | Phone Numbers | /admin/twilio-numbers | | x | ok | rebuilt June 2026 |
-| 59 | Set Up | Team Members | /admin/users, /admin/users/[id] | | x | todo | |
-| 60 | Set Up | Invite Team | /settings/invite-team | | x | todo | |
-| 61 | Set Up | Integrations | /settings/integrations | | x | todo | |
+| 59 | Set Up | Team Members | /admin/users, /admin/users/[id] | | x | fixed | list: shared header (titled Team Members, N active) with add icon; BUG: Add User modal rendered nothing on native -> real Modal; stale JESSI_BAR padding removed; expo-image; gold pickers/checkbox; empty CTA. Detail: shared header with name subtitle, all blue -> gold, purple impersonate bg -> neutral outline, Cancel labels gray, pool number current state green |
+| 60 | Set Up | Invite Team | /settings/invite-team | | x | fixed | shared header, 28px hardcoded top removed, org_admin color unified to orange, blue -> gold, SMS toggle gold, Create button black text, empty state |
+| 61 | Set Up | Integrations | /settings/integrations | | x | fixed | shared header (also while loading), tabs/add/modal buttons/doc pills blue -> gold; HTTP method + event dot category colors kept |
 | 62 | Admin | Onboarding Hub | /admin/onboarding-hub | | super/partner | later | |
 | 63 | Admin | Account Health | /admin/account-health | | super/partner | later | |
 | 64 | Admin | Admin Dashboard | /admin | | super | later | |
@@ -128,6 +128,7 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 - June 2026: Batch 3 (Settings) done: 6 screens, testing agent 90% -> 2 minor items fixed same turn (my-profile back testid/fallback, link page pill color).
 - June 2026: Batch 4 (Leads + Report a Bug) done: 8 screens, backend name fallback for team availability, lead draft em dashes stripped. Testing agent 93% -> 2 minor items fixed and verified.
 - June 2026: Batch 5 (Manage) done: 7 screens, testing agent 99%, the one nit (indigo Create Rule button) fixed same turn.
-- Still using stale JESSI_BAR_HEIGHT padding (bar is disabled): app/settings/persona.tsx, app/admin/users.tsx. Remove in their batches.
+- Still using stale JESSI_BAR_HEIGHT padding (bar is disabled): app/settings/persona.tsx. admin/users.tsx cleaned in Batch 8.
 - June 2026: Batch 6 (My Performance) done: 9 screens, SEO/GEO collapsed into one shared HealthScoreScreen, 3 real bugs fixed (GEO guide route, VA delete window.confirm on native, Email Analytics dead range filter). Testing agent pass (iteration_301); GEO tip em dashes fixed same turn. yarn.lock regenerated: the committed one failed --frozen-lockfile.
 - June 2026: Batch 7 (Campaigns + My Tools) done: 4 screens, testing agent pass (iteration_302). Tester flagged Team Sales Referrals column blue as a regression: NOT one, it is the intentional category color matching the Home Sold/Referrals/Repeats tiles. LESSON: never run `yarn install` while Metro is running; it rewrites node_modules and Metro's file map goes stale (web 500 'native-only module' error). Fix = rm -rf .metro-cache && supervisorctl restart frontend.
+- June 2026: Batch 8 (Set Up) done: 7 screens, testing agent pass (iteration_303); the one nit (backend WhatsApp description em dash) fixed same turn. Real bugs fixed: Brand Kit logo upload did nothing on native; Team Members Add User modal never rendered on native. Only the super-admin `later` screens remain.

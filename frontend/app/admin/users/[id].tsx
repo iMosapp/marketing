@@ -8,10 +8,10 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
-  Image,
   Modal,
   FlatList,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
@@ -19,8 +19,13 @@ import api, { adminAPI } from '../../../services/api';
 import { showSimpleAlert, showConfirm } from '../../../services/alert';
 import { useToast } from '../../../components/common/Toast';
 import { useAuthStore } from '../../../store/authStore';
-
 import { useThemeStore } from '../../../store/themeStore';
+import { ScreenHeader } from '../../../components/common/ScreenHeader';
+import { FS } from '../../../constants/typography';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
+const GOLD = '#C9A962';
+
 interface UserDetail {
   _id: string;
   name: string;
@@ -74,7 +79,7 @@ const ROLE_COLORS: Record<string, string> = {
   super_admin: '#FF3B30',
   org_admin: '#FF9500',
   store_manager: '#34C759',
-  user: '#007AFF',
+  user: GOLD,
 };
 
 const ROLE_LABELS: Record<string, string> = {
@@ -89,7 +94,7 @@ const getRoleColor = (role: string) => ROLE_COLORS[role] || '#8E8E93';
 const getRoleLabel = (role: string) => ROLE_LABELS[role] || role;
 
 const AVAILABLE_ROLES = [
-  { value: 'user', label: 'Sales Rep', color: '#007AFF' },
+  { value: 'user', label: 'Sales Rep', color: GOLD },
   { value: 'store_manager', label: 'Account Manager', color: '#34C759' },
   { value: 'org_admin', label: 'Org Admin', color: '#FF9500' },
 ];
@@ -230,7 +235,7 @@ export default function UserDetailScreen() {
       setStores(data.stores || []);
       setAvailableStores(data.available_stores || []);
       
-      // Calculate profile completeness — read the actual field names the API returns
+      // Calculate profile completeness from the actual field names the API returns
       const u = data.user;
       const hasSocialLinks = 
         (u.social_links && Object.values(u.social_links).some((v: any) => !!v)) ||
@@ -310,7 +315,7 @@ export default function UserDetailScreen() {
           const res = await api.put(`/admin/users/${id}/reactivate`);
           loadUserData();
           const poolNote = res.data?.pooled_number_available
-            ? ` Their old number (${res.data.pooled_number_available}) is still in the pool — assign it from Phone Numbers.`
+            ? ` Their old number (${res.data.pooled_number_available}) is still in the pool. Assign it from Phone Numbers.`
             : '';
           showToast(`${user.name} has been reactivated.${poolNote}`);
         } catch (error: any) {
@@ -492,8 +497,9 @@ export default function UserDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
+        <ScreenHeader title="Team Member" testID="user-detail-header" />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={colors.accent} />
         </View>
       </SafeAreaView>
     );
@@ -502,16 +508,13 @@ export default function UserDetailScreen() {
   if (!user) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={28} color="#007AFF" />
+        <ScreenHeader title="Team Member" testID="user-detail-header" />
+        <View style={styles.errorContainer} {...tid('user-not-found')}>
+          <Ionicons name="alert-circle" size={48} color={colors.textTertiary} />
+          <Text style={styles.errorText}>Team member not found</Text>
+          <TouchableOpacity onPress={() => router.replace('/admin/users' as any)} style={styles.assignButton} {...tid('user-not-found-back')}>
+            <Text style={styles.assignButtonText}>Back to team</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>User</Text>
-          <View style={{ width: 40 }} />
-        </View>
-        <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle" size={48} color="#FF3B30" />
-          <Text style={styles.errorText}>User not found</Text>
         </View>
       </SafeAreaView>
     );
@@ -519,26 +522,20 @@ export default function UserDetailScreen() {
   
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.title} numberOfLines={1}>User Details</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <ScreenHeader title="Team Member" subtitle={user.name} testID="user-detail-header" />
       
       <ScrollView 
         style={styles.content}
+        contentContainerStyle={{ paddingBottom: 40 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#007AFF" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
         }
       >
         {/* User Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.profileHeader}>
             {user.photo_url ? (
-              <Image source={{ uri: user.photo_url }} style={styles.avatar} />
+              <Image source={{ uri: user.photo_url }} style={styles.avatar} contentFit="cover" cachePolicy="memory-disk" />
             ) : (
               <View style={[styles.avatarPlaceholder, { backgroundColor: ROLE_COLORS[user.role] + '30' }]}>
                 <Text style={[styles.avatarInitials, { color: ROLE_COLORS[user.role] }]}>
@@ -547,11 +544,11 @@ export default function UserDetailScreen() {
               </View>
             )}
             <View style={styles.profileInfo}>
-              <Text style={styles.userName}>{user.name}</Text>
+              <Text style={styles.userName} numberOfLines={2}>{user.name}</Text>
               {/* Inline-editable title */}
               {editingContactField === 'title' ? (
                 <TextInput
-                  style={[styles.userTitle, { borderBottomWidth: 1, borderBottomColor: '#007AFF', minWidth: 160, paddingVertical: 2 }]}
+                  style={[styles.userTitle, { borderBottomWidth: 1, borderBottomColor: colors.accent, minWidth: 160, paddingVertical: 2 }]}
                   value={contactEditValue}
                   onChangeText={setContactEditValue}
                   autoFocus
@@ -561,9 +558,9 @@ export default function UserDetailScreen() {
                   returnKeyType="done"
                 />
               ) : (
-                <TouchableOpacity onPress={() => { setEditingContactField('title' as any); setContactEditValue(user.title || ''); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <TouchableOpacity onPress={() => { setEditingContactField('title' as any); setContactEditValue(user.title || ''); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }} {...tid('edit-title-btn')}>
                   <Text style={[styles.userTitle, !user.title && { color: '#FF9500' }]}>{user.title || 'Tap to set title'}</Text>
-                  <Ionicons name="pencil" size={12} color="#007AFF" />
+                  <Ionicons name="pencil" size={12} color={colors.accent} />
                 </TouchableOpacity>
               )}
               <View style={styles.roleBadgeContainer}>
@@ -572,14 +569,13 @@ export default function UserDetailScreen() {
                     {getRoleLabel(user.role)}
                   </Text>
                 </View>
-                {/* Show edit pencil for any user — super_admin can also be changed by another super_admin */}
                 {(user.role !== 'super_admin' || currentUser?.role === 'super_admin') && (
                 <TouchableOpacity 
                   style={styles.changeRoleButton}
                   onPress={() => setShowRoleModal(true)}
-                  data-testid="change-role-btn"
+                  {...tid('change-role-btn')}
                 >
-                  <Ionicons name="pencil" size={14} color="#007AFF" />
+                  <Ionicons name="pencil" size={14} color={colors.accent} />
                 </TouchableOpacity>
                 )}
               </View>
@@ -592,6 +588,7 @@ export default function UserDetailScreen() {
             <TouchableOpacity 
               style={[styles.statusBadge, { backgroundColor: user.is_active !== false ? '#34C75920' : '#FF3B3020' }]}
               onPress={handleToggleActive}
+              {...tid('toggle-active-btn')}
             >
               <View style={[styles.statusDot, { backgroundColor: user.is_active !== false ? '#34C759' : '#FF3B30' }]} />
               <Text style={[styles.statusText, { color: user.is_active !== false ? '#34C759' : '#FF3B30' }]}>
@@ -623,13 +620,13 @@ export default function UserDetailScreen() {
                 style={styles.reactivateButton}
                 onPress={handleReactivateUser}
                 disabled={actionLoading}
-                data-testid="reactivate-user-btn"
+                {...tid('reactivate-user-btn')}
               >
                 {actionLoading ? (
-                  <ActivityIndicator size="small" color={colors.text} />
+                  <ActivityIndicator size="small" color="#000" />
                 ) : (
                   <>
-                    <Ionicons name="refresh" size={18} color={colors.text} />
+                    <Ionicons name="refresh" size={18} color="#000" />
                     <Text style={styles.reactivateButtonText}>Reactivate User</Text>
                   </>
                 )}
@@ -650,6 +647,7 @@ export default function UserDetailScreen() {
             style={styles.impersonateButton}
             onPress={handleImpersonate}
             disabled={impersonating}
+            {...tid('impersonate-btn')}
           >
             {impersonating ? (
               <ActivityIndicator size="small" color={colors.text} />
@@ -665,7 +663,7 @@ export default function UserDetailScreen() {
           <TouchableOpacity 
             style={[styles.impersonateButton, { marginTop: 8, borderColor: '#FF950040' }]}
             onPress={() => router.push(`/admin/users/permissions/${id}` as any)}
-            data-testid="manage-permissions-btn"
+            {...tid('manage-permissions-btn')}
           >
             <Ionicons name="toggle-outline" size={20} color="#FF9500" />
             <Text style={[styles.impersonateButtonText, { color: '#FF9500' }]}>Manage Permissions</Text>
@@ -689,7 +687,7 @@ export default function UserDetailScreen() {
                 }
               );
             }}
-            data-testid="reset-password-btn"
+            {...tid('reset-password-btn')}
           >
             <Ionicons name="key-outline" size={20} color="#FF3B30" />
             <Text style={[styles.impersonateButtonText, { color: '#FF3B30' }]}>Reset Password</Text>
@@ -699,8 +697,8 @@ export default function UserDetailScreen() {
         {/* Profile Completeness */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="clipboard-outline" size={20} color="#007AFF" />
-            <Text style={styles.sectionTitle}>Profile Completeness</Text>
+            <Ionicons name="clipboard-outline" size={20} color={colors.accent} />
+            <Text style={styles.sectionTitle}>Profile completeness</Text>
             <View style={[styles.percentBadge, { 
               backgroundColor: completeness && completeness.percentage >= 80 ? '#34C75920' : '#FF950020' 
             }]}>
@@ -736,12 +734,12 @@ export default function UserDetailScreen() {
         {/* Contact Info */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="person-outline" size={20} color="#007AFF" />
-            <Text style={styles.sectionTitle}>Contact Information</Text>
+            <Ionicons name="person-outline" size={20} color={colors.accent} />
+            <Text style={styles.sectionTitle}>Contact information</Text>
           </View>
           
           <View style={styles.infoCard}>
-            {/* Email row — tap pencil to edit */}
+            {/* Email row */}
             {editingContactField === 'email' ? (
               <View style={[styles.infoRow, { gap: 8 }]}>
                 <Ionicons name="mail-outline" size={18} color={colors.textSecondary} />
@@ -759,14 +757,14 @@ export default function UserDetailScreen() {
                 <TouchableOpacity onPress={() => setEditingContactField(null)}><Ionicons name="close-circle" size={20} color={colors.textSecondary} /></TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity style={styles.infoRow} onPress={() => { setEditingContactField('email'); setContactEditValue(user.email); }}>
+              <TouchableOpacity style={styles.infoRow} onPress={() => { setEditingContactField('email'); setContactEditValue(user.email); }} {...tid('edit-email-btn')}>
                 <Ionicons name="mail-outline" size={18} color={colors.textSecondary} />
                 <Text style={[styles.infoText, { flex: 1 }]}>{user.email}</Text>
                 <Ionicons name="pencil-outline" size={14} color={colors.textTertiary} />
               </TouchableOpacity>
             )}
 
-            {/* Phone row — tap pencil to edit */}
+            {/* Phone row */}
             {editingContactField === 'phone' ? (
               <View style={[styles.infoRow, { gap: 8 }]}>
                 <Ionicons name="call-outline" size={18} color={colors.textSecondary} />
@@ -783,7 +781,7 @@ export default function UserDetailScreen() {
                 <TouchableOpacity onPress={() => setEditingContactField(null)}><Ionicons name="close-circle" size={20} color={colors.textSecondary} /></TouchableOpacity>
               </View>
             ) : (
-              <TouchableOpacity style={styles.infoRow} onPress={() => { setEditingContactField('phone'); setContactEditValue(user.phone || user.twilio_phone_number || ''); }}>
+              <TouchableOpacity style={styles.infoRow} onPress={() => { setEditingContactField('phone'); setContactEditValue(user.phone || user.twilio_phone_number || ''); }} {...tid('edit-phone-btn')}>
                 <Ionicons name="call-outline" size={18} color={colors.textSecondary} />
                 <Text style={[styles.infoText, { flex: 1 }]}>{user.phone || user.twilio_phone_number || 'Tap to add phone'}</Text>
                 {user.twilio_phone_number && (<View style={styles.twilioTag}><Text style={styles.twilioTagText}>I'm On Social</Text></View>)}
@@ -795,15 +793,15 @@ export default function UserDetailScreen() {
             <TouchableOpacity
               style={[styles.infoRow, { marginTop: 6 }]}
               onPress={() => { loadPoolNumbers(); setShowNumberPicker(true); }}
-              data-testid="assign-number-btn"
+              {...tid('assign-number-btn')}
             >
-              <Ionicons name="call" size={18} color={user.twilio_phone_number || user.mvpline_number || user.twilio_number ? '#34C759' : '#C9A962'} />
+              <Ionicons name="call" size={18} color={user.twilio_phone_number || user.mvpline_number || user.twilio_number ? '#34C759' : colors.accent} />
               <View style={{ flex: 1 }}>
-                <Text style={[styles.infoText, { color: user.twilio_phone_number || user.mvpline_number || user.twilio_number ? '#34C759' : '#C9A962', fontWeight: '600' }]}>
-                  {user.twilio_phone_number || user.mvpline_number || user.twilio_number || 'Assign Dedicated Number'}
+                <Text style={[styles.infoText, { color: user.twilio_phone_number || user.mvpline_number || user.twilio_number ? '#34C759' : colors.accent, fontWeight: '600' }]}>
+                  {user.twilio_phone_number || user.mvpline_number || user.twilio_number || 'Assign dedicated number'}
                 </Text>
                 {(user.twilio_phone_number || user.mvpline_number || user.twilio_number) ? (
-                  <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }}>Dedicated line — tap to reassign</Text>
+                  <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }}>Dedicated line. Tap to reassign</Text>
                 ) : (
                   <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }}>Pick from pool or buy a new number</Text>
                 )}
@@ -829,9 +827,9 @@ export default function UserDetailScreen() {
             <TouchableOpacity 
               style={styles.changeOrgButton}
               onPress={() => setShowOrgModal(true)}
-              data-testid="change-org-btn"
+              {...tid('change-org-btn')}
             >
-              <Ionicons name="swap-horizontal" size={18} color="#007AFF" />
+              <Ionicons name="swap-horizontal" size={18} color={colors.accent} />
               <Text style={styles.changeOrgText}>Change</Text>
             </TouchableOpacity>
           </View>
@@ -840,11 +838,12 @@ export default function UserDetailScreen() {
             <TouchableOpacity 
               style={styles.orgCard}
               onPress={() => router.push(`/admin/organizations/${organization._id}`)}
+              {...tid('org-card')}
             >
               <View style={styles.orgIcon}>
                 <Ionicons name="business" size={24} color="#FF9500" />
               </View>
-              <Text style={styles.orgName}>{organization.name}</Text>
+              <Text style={styles.orgName} numberOfLines={1}>{organization.name}</Text>
               <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           ) : (
@@ -854,8 +853,9 @@ export default function UserDetailScreen() {
               <TouchableOpacity 
                 style={styles.assignButton}
                 onPress={() => setShowOrgModal(true)}
+                {...tid('assign-org-btn')}
               >
-                <Text style={styles.assignButtonText}>Assign to Organization</Text>
+                <Text style={styles.assignButtonText}>Assign to organization</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -865,12 +865,13 @@ export default function UserDetailScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="storefront-outline" size={20} color="#34C759" />
-            <Text style={styles.sectionTitle}>Assigned Stores ({stores.length})</Text>
+            <Text style={styles.sectionTitle}>Assigned stores ({stores.length})</Text>
             <TouchableOpacity 
               style={styles.addButton}
               onPress={() => setShowStoreModal(true)}
+              {...tid('add-store-btn')}
             >
-              <Ionicons name="add-circle" size={24} color="#007AFF" />
+              <Ionicons name="add-circle" size={24} color={colors.accent} />
             </TouchableOpacity>
           </View>
           
@@ -881,8 +882,9 @@ export default function UserDetailScreen() {
               <TouchableOpacity 
                 style={styles.assignButton}
                 onPress={() => setShowStoreModal(true)}
+                {...tid('assign-store-btn')}
               >
-                <Text style={styles.assignButtonText}>Assign to Store</Text>
+                <Text style={styles.assignButtonText}>Assign to store</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -896,7 +898,7 @@ export default function UserDetailScreen() {
                   <Ionicons name="storefront" size={20} color="#34C759" />
                 </View>
                 <View style={styles.storeInfo}>
-                  <Text style={styles.storeName}>{store.name}</Text>
+                  <Text style={styles.storeName} numberOfLines={1}>{store.name}</Text>
                   <Text style={styles.storeLocation}>
                     {[store.city, store.state].filter(Boolean).join(', ') || 'No location'}
                   </Text>
@@ -914,23 +916,25 @@ export default function UserDetailScreen() {
         
         {/* Quick Actions */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <Text style={styles.sectionTitle}>Quick actions</Text>
           
           <TouchableOpacity 
             style={styles.actionButton}
             onPress={() => router.push(`/card/${user._id}`)}
+            {...tid('view-card-btn')}
           >
-            <Ionicons name="card-outline" size={20} color="#007AFF" />
-            <Text style={styles.actionText}>View Digital Business Card</Text>
+            <Ionicons name="card-outline" size={20} color={colors.accent} />
+            <Text style={styles.actionText}>View digital business card</Text>
             <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
           
           <TouchableOpacity 
             style={[styles.actionButton, { borderBottomWidth: 0 }]}
             onPress={() => router.push(`/thread/${user._id}`)}
+            {...tid('view-conversations-btn')}
           >
-            <Ionicons name="chatbubbles-outline" size={20} color="#007AFF" />
-            <Text style={styles.actionText}>View Conversations</Text>
+            <Ionicons name="chatbubbles-outline" size={20} color={colors.accent} />
+            <Text style={styles.actionText}>View conversations</Text>
             <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
@@ -939,13 +943,13 @@ export default function UserDetailScreen() {
         <View style={[styles.section, styles.dangerSection]}>
           <View style={styles.sectionHeader}>
             <Ionicons name="warning-outline" size={20} color="#FF3B30" />
-            <Text style={[styles.sectionTitle, { color: '#FF3B30' }]}>Danger Zone</Text>
+            <Text style={[styles.sectionTitle, { color: '#FF3B30' }]}>Danger zone</Text>
           </View>
           
           <TouchableOpacity
             style={[styles.deleteButton, { borderColor: '#AF52DE40', marginBottom: 10 }]}
             onPress={() => { setMergeEmail(''); setShowMergeModal(true); }}
-            data-testid="merge-user-btn"
+            {...tid('merge-user-btn')}
           >
             <Ionicons name="git-merge-outline" size={20} color="#AF52DE" />
             <Text style={[styles.deleteButtonText, { color: '#AF52DE' }]}>Merge with Another Account</Text>
@@ -955,7 +959,7 @@ export default function UserDetailScreen() {
             style={styles.deleteButton}
             onPress={handleDeleteUser}
             disabled={actionLoading}
-            data-testid="deactivate-user-btn"
+            {...tid('deactivate-user-btn')}
           >
             <Ionicons name="close-circle-outline" size={20} color="#FF9500" />
             <Text style={[styles.deleteButtonText, { color: '#FF9500' }]}>Deactivate User</Text>
@@ -965,14 +969,14 @@ export default function UserDetailScreen() {
             style={[styles.deleteButton, { marginTop: 10 }]}
             onPress={handleHardDelete}
             disabled={actionLoading}
-            data-testid="hard-delete-user-btn"
+            {...tid('hard-delete-user-btn')}
           >
             <Ionicons name="trash-outline" size={20} color="#FF3B30" />
             <Text style={styles.deleteButtonText}>Permanently Delete</Text>
           </TouchableOpacity>
           
           <Text style={styles.dangerWarning}>
-            Deactivate keeps the user in the system (recoverable). Permanently Delete removes them entirely — contacts are kept but unassigned.
+            Deactivate keeps the user in the system (recoverable). Permanently Delete removes them entirely. Contacts are kept but unassigned.
           </Text>
         </View>
         
@@ -988,10 +992,10 @@ export default function UserDetailScreen() {
       >
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setShowStoreModal(false)}>
+            <TouchableOpacity onPress={() => setShowStoreModal(false)} hitSlop={8} {...tid('store-modal-cancel')}>
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Assign to Store</Text>
+            <Text style={styles.modalTitle}>Assign to store</Text>
             <View style={{ width: 60 }} />
           </View>
           
@@ -1012,6 +1016,7 @@ export default function UserDetailScreen() {
                   style={styles.storeOption}
                   onPress={() => handleAssignStore(item._id)}
                   disabled={actionLoading}
+                  {...tid(`store-option-${item._id}`)}
                 >
                   <View style={styles.storeIcon}>
                     <Ionicons name="storefront" size={20} color="#34C759" />
@@ -1023,9 +1028,9 @@ export default function UserDetailScreen() {
                     </Text>
                   </View>
                   {actionLoading ? (
-                    <ActivityIndicator size="small" color="#007AFF" />
+                    <ActivityIndicator size="small" color={colors.accent} />
                   ) : (
-                    <Ionicons name="add-circle" size={24} color="#007AFF" />
+                    <Ionicons name="add-circle" size={24} color={colors.accent} />
                   )}
                 </TouchableOpacity>
               )}
@@ -1044,26 +1049,26 @@ export default function UserDetailScreen() {
       >
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setShowRoleModal(false)}>
+            <TouchableOpacity onPress={() => setShowRoleModal(false)} hitSlop={8} {...tid('role-modal-cancel')}>
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Change Role</Text>
+            <Text style={styles.modalTitle}>Change role</Text>
             <View style={{ width: 60 }} />
           </View>
 
-          {/* Current role banner — shown when role isn't in the selectable list */}
+          {/* Current role banner, shown when the role is not in the selectable list */}
           {!AVAILABLE_ROLES.find(r => r.value === user?.role) && user?.role && (
             <View style={{ flexDirection: 'row', alignItems: 'center', margin: 16, padding: 12, borderRadius: 10, backgroundColor: getRoleColor(user.role) + '20', borderWidth: 1, borderColor: getRoleColor(user.role) + '40' }}>
               <Ionicons name="information-circle" size={18} color={getRoleColor(user.role)} style={{ marginRight: 8 }} />
               <Text style={{ fontSize: 15, color: getRoleColor(user.role), fontWeight: '600' }}>
-                Current role: {getRoleLabel(user.role)} — select a new role below
+                Current role: {getRoleLabel(user.role)}. Select a new role below
               </Text>
             </View>
           )}
           
           <FlatList
             data={[
-              { value: 'user', label: 'Sales Rep', color: '#007AFF' },
+              { value: 'user', label: 'Sales Rep', color: GOLD },
               { value: 'store_manager', label: 'Account Manager', color: '#34C759' },
               { value: 'org_admin', label: 'Org Admin', color: '#FF9500' },
               ...(currentUser?.role === 'super_admin'
@@ -1079,6 +1084,7 @@ export default function UserDetailScreen() {
                 ]}
                 onPress={() => handleChangeRole(item.value)}
                 disabled={actionLoading || user?.role === item.value}
+                {...tid(`role-option-${item.value}`)}
               >
                 <View style={[styles.roleIcon, { backgroundColor: item.color + '20' }]}>
                   <Ionicons 
@@ -1094,7 +1100,7 @@ export default function UserDetailScreen() {
                 <View style={styles.roleInfo}>
                   <Text style={styles.roleLabel}>{item.label}</Text>
                   <Text style={styles.roleDescription}>
-                    {item.value === 'super_admin' && 'Full platform access — same as you'}
+                    {item.value === 'super_admin' && 'Full platform access, same as you'}
                     {item.value === 'org_admin' && 'Full access to manage organization'}
                     {item.value === 'store_manager' && 'Manage assigned stores and users'}
                     {item.value === 'user' && 'Basic access to assigned stores'}
@@ -1103,7 +1109,7 @@ export default function UserDetailScreen() {
                 {user?.role === item.value ? (
                   <Ionicons name="checkmark-circle" size={24} color="#34C759" />
                 ) : actionLoading ? (
-                  <ActivityIndicator size="small" color="#007AFF" />
+                  <ActivityIndicator size="small" color={colors.accent} />
                 ) : (
                   <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                 )}
@@ -1123,10 +1129,10 @@ export default function UserDetailScreen() {
       >
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setShowOrgModal(false)}>
+            <TouchableOpacity onPress={() => setShowOrgModal(false)} hitSlop={8} {...tid('org-modal-cancel')}>
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Change Organization</Text>
+            <Text style={styles.modalTitle}>Change organization</Text>
             <View style={{ width: 60 }} />
           </View>
           
@@ -1149,6 +1155,7 @@ export default function UserDetailScreen() {
                     ]}
                     onPress={() => handleChangeOrganization(item._id)}
                     disabled={actionLoading || isCurrentOrg}
+                    {...tid(`org-option-${item._id}`)}
                   >
                     <View style={[styles.orgIcon, { backgroundColor: isCurrentOrg ? '#34C75920' : '#FF950020' }]}>
                       <Ionicons name="business" size={24} color={isCurrentOrg ? '#34C759' : '#FF9500'} />
@@ -1162,7 +1169,7 @@ export default function UserDetailScreen() {
                     {isCurrentOrg ? (
                       <Ionicons name="checkmark-circle" size={24} color="#34C759" />
                     ) : actionLoading ? (
-                      <ActivityIndicator size="small" color="#007AFF" />
+                      <ActivityIndicator size="small" color={colors.accent} />
                     ) : (
                       <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
                     )}
@@ -1179,8 +1186,8 @@ export default function UserDetailScreen() {
       <Modal visible={showMergeModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowMergeModal(false)}>
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-            <TouchableOpacity onPress={() => setShowMergeModal(false)}><Text style={{ fontSize: 17, color: '#FF3B30' }}>Cancel</Text></TouchableOpacity>
-            <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>Merge Accounts</Text>
+            <TouchableOpacity onPress={() => setShowMergeModal(false)} hitSlop={8} {...tid('merge-modal-cancel')}><Text style={{ fontSize: FS.heading, color: colors.textSecondary }}>Cancel</Text></TouchableOpacity>
+            <Text style={{ fontSize: FS.nav, fontWeight: '700', color: colors.text }}>Merge accounts</Text>
             <View style={{ width: 60 }} />
           </View>
           <ScrollView contentContainerStyle={{ padding: 20 }}>
@@ -1202,11 +1209,13 @@ export default function UserDetailScreen() {
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
+              {...tid('merge-email-input')}
             />
             <TouchableOpacity
               style={{ backgroundColor: '#AF52DE', borderRadius: 14, padding: 16, alignItems: 'center', opacity: mergingUser ? 0.6 : 1 }}
               onPress={handleMergeAccount}
               disabled={mergingUser}
+              {...tid('merge-submit-btn')}
             >
               {mergingUser ? <ActivityIndicator color="#fff" /> : (
                 <Text style={{ fontSize: 17, fontWeight: '800', color: '#fff' }}>Find and Merge</Text>
@@ -1220,17 +1229,17 @@ export default function UserDetailScreen() {
       <Modal visible={showNumberPicker} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowNumberPicker(false)}>
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-            <TouchableOpacity onPress={() => setShowNumberPicker(false)}>
-              <Text style={{ fontSize: 17, color: '#FF3B30' }}>Cancel</Text>
+            <TouchableOpacity onPress={() => setShowNumberPicker(false)} hitSlop={8} {...tid('number-modal-cancel')}>
+              <Text style={{ fontSize: FS.heading, color: colors.textSecondary }}>Cancel</Text>
             </TouchableOpacity>
-            <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text }}>Assign Dedicated Number</Text>
-            <TouchableOpacity onPress={() => { setShowNumberPicker(false); router.push('/admin/twilio-numbers' as any); }}>
-              <Text style={{ fontSize: 15, color: '#007AFF' }}>Buy New</Text>
+            <Text style={{ fontSize: FS.nav, fontWeight: '700', color: colors.text }}>Dedicated number</Text>
+            <TouchableOpacity onPress={() => { setShowNumberPicker(false); router.push('/admin/twilio-numbers' as any); }} hitSlop={8} {...tid('number-buy-new')}>
+              <Text style={{ fontSize: FS.body, fontWeight: '700', color: colors.accent }}>Buy new</Text>
             </TouchableOpacity>
           </View>
 
           {loadingPool ? (
-            <ActivityIndicator color="#C9A962" style={{ marginTop: 40 }} />
+            <ActivityIndicator color={colors.accent} style={{ marginTop: 40 }} />
           ) : (
             <ScrollView contentContainerStyle={{ padding: 16 }}>
               {/* Current assignment */}
@@ -1247,7 +1256,7 @@ export default function UserDetailScreen() {
               )}
 
               <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
-                Available Numbers
+                Available numbers
               </Text>
 
               {poolNumbers.map(num => {
@@ -1258,16 +1267,17 @@ export default function UserDetailScreen() {
                     key={num.sid}
                     onPress={() => !assigningNumber && assignNumberToUser(num.sid, num.phone_number)}
                     style={{
-                      backgroundColor: isCurrentUser ? '#007AFF15' : colors.card,
-                      borderRadius: 14, padding: 14, marginBottom: 8,
-                      borderWidth: 1.5,
-                      borderColor: isCurrentUser ? '#007AFF' : colors.border,
+                      backgroundColor: isCurrentUser ? '#34C75915' : colors.card,
+                      borderRadius: 16, padding: 14, marginBottom: 8,
+                      borderWidth: 1,
+                      borderColor: isCurrentUser ? '#34C759' : colors.border,
                       flexDirection: 'row', alignItems: 'center', gap: 12,
                       opacity: 1,
                     }}
+                    {...tid(`pool-number-${num.sid}`)}
                   >
-                    <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: (isCurrentUser ? '#007AFF' : '#C9A962') + '20', alignItems: 'center', justifyContent: 'center' }}>
-                      <Ionicons name="call" size={18} color={isCurrentUser ? '#007AFF' : '#C9A962'} />
+                    <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: (isCurrentUser ? '#34C759' : colors.accent) + '20', alignItems: 'center', justifyContent: 'center' }}>
+                      <Ionicons name="call" size={18} color={isCurrentUser ? '#34C759' : colors.accent} />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text, fontFamily: 'monospace' }}>
@@ -1278,19 +1288,19 @@ export default function UserDetailScreen() {
                           : num.status === 'pool'
                             ? num.previous_owner?.name
                               ? `From pool (prev: ${num.previous_owner.name})`
-                              : 'Available in pool — tap to assign'
-                            : `Currently: ${num.assigned_to?.name || 'Unassigned'} — tap to reassign`}
+                              : 'Available in pool. Tap to assign'
+                            : `Currently: ${num.assigned_to?.name || 'Unassigned'}. Tap to reassign`}
                       </Text>
                     </View>
                     {assigningNumber ? (
-                      <ActivityIndicator size="small" color="#007AFF" />
+                      <ActivityIndicator size="small" color={colors.accent} />
                     ) : isCurrentUser ? (
-                      <Ionicons name="checkmark-circle" size={22} color="#007AFF" />
-                    ) : !isCurrentUser ? (
-                      <View style={{ backgroundColor: '#007AFF', borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 }}>
-                        <Text style={{ fontSize: 13, fontWeight: '700', color: '#fff' }}>Assign</Text>
+                      <Ionicons name="checkmark-circle" size={22} color="#34C759" />
+                    ) : (
+                      <View style={{ backgroundColor: colors.accent, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 }}>
+                        <Text style={{ fontSize: 13, fontWeight: '700', color: '#000' }}>Assign</Text>
                       </View>
-                    ) : null}
+                    )}
                   </TouchableOpacity>
                 );
               })}
@@ -1300,7 +1310,7 @@ export default function UserDetailScreen() {
                   <Ionicons name="phone-portrait-outline" size={48} color={colors.textSecondary} />
                   <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text, marginTop: 12 }}>No numbers available</Text>
                   <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 6, textAlign: 'center' }}>
-                    Tap "Buy New" to purchase a number for this user.
+                    Tap "Buy new" to purchase a number for this user.
                   </Text>
                 </View>
               )}
@@ -1330,27 +1340,9 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   errorText: {
     color: colors.text,
-    fontSize: 18,
+    fontSize: FS.heading,
+    fontWeight: '700',
     marginTop: 12,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.card,
-  },
-  backButton: {
-    padding: 4,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    flex: 1,
-    textAlign: 'center',
   },
   content: {
     flex: 1,
@@ -1360,6 +1352,8 @@ const getStyles = (colors: any) => StyleSheet.create({
   profileCard: {
     backgroundColor: colors.card,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: 20,
     marginBottom: 16,
   },
@@ -1386,15 +1380,16 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   profileInfo: {
     flex: 1,
+    minWidth: 0,
     marginLeft: 16,
   },
   userName: {
-    fontSize: 22,
+    fontSize: FS.title,
     fontWeight: '700',
     color: colors.text,
   },
   userTitle: {
-    fontSize: 16,
+    fontSize: FS.body,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -1409,8 +1404,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderRadius: 12,
   },
   roleBadgeText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: FS.micro,
+    fontWeight: '800',
   },
   changeRoleButton: {
     marginLeft: 8,
@@ -1422,10 +1417,10 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: colors.surface,
+    borderTopColor: colors.border,
   },
   statusLabel: {
-    fontSize: 16,
+    fontSize: FS.body,
     color: colors.textSecondary,
   },
   statusBadge: {
@@ -1506,15 +1501,17 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 8,
   },
   reactivateButtonText: {
-    color: colors.text,
-    fontSize: 17,
-    fontWeight: '600',
+    color: '#000',
+    fontSize: FS.heading,
+    fontWeight: '700',
   },
   impersonateButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#5856D6',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: 12,
     paddingVertical: 14,
     marginTop: 16,
@@ -1522,13 +1519,15 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   impersonateButtonText: {
     color: colors.text,
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: FS.heading,
+    fontWeight: '700',
   },
   // Sections
   section: {
     backgroundColor: colors.card,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: 16,
     marginBottom: 16,
   },
@@ -1538,8 +1537,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: FS.heading,
+    fontWeight: '700',
     color: colors.text,
     marginLeft: 8,
     flex: 1,
@@ -1579,7 +1578,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderBottomColor: colors.surface,
   },
   completenessLabel: {
-    fontSize: 16,
+    fontSize: FS.body,
     color: colors.text,
     marginLeft: 10,
     flex: 1,
@@ -1607,21 +1606,21 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
   },
   infoText: {
-    fontSize: 16,
+    fontSize: FS.body,
     color: colors.text,
     marginLeft: 10,
     flex: 1,
   },
   twilioTag: {
-    backgroundColor: '#007AFF20',
+    backgroundColor: 'rgba(201,169,98,0.15)',
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
   },
   twilioTagText: {
-    fontSize: 12,
-    color: '#007AFF',
-    fontWeight: '600',
+    fontSize: FS.micro,
+    color: colors.accent,
+    fontWeight: '700',
   },
   // Organization
   orgCard: {
@@ -1641,8 +1640,8 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   orgName: {
     flex: 1,
-    fontSize: 18,
-    fontWeight: '500',
+    fontSize: FS.heading,
+    fontWeight: '700',
     color: colors.text,
     marginLeft: 12,
   },
@@ -1653,20 +1652,20 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   emptyText: {
     color: colors.textSecondary,
-    fontSize: 16,
+    fontSize: FS.body,
     marginTop: 8,
   },
   assignButton: {
     marginTop: 12,
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.accent,
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: 14,
   },
   assignButtonText: {
-    color: colors.text,
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#000',
+    fontSize: FS.heading,
+    fontWeight: '700',
   },
   storeCard: {
     flexDirection: 'row',
@@ -1689,12 +1688,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginLeft: 12,
   },
   storeName: {
-    fontSize: 17,
-    fontWeight: '500',
+    fontSize: FS.heading,
+    fontWeight: '700',
     color: colors.text,
   },
   storeLocation: {
-    fontSize: 15,
+    fontSize: FS.secondary,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -1711,7 +1710,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   actionText: {
     flex: 1,
-    fontSize: 17,
+    fontSize: FS.body,
     color: colors.text,
     marginLeft: 12,
   },
@@ -1727,15 +1726,15 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: colors.card,
+    borderBottomColor: colors.border,
   },
   cancelText: {
-    fontSize: 18,
-    color: '#007AFF',
+    fontSize: FS.heading,
+    color: colors.textSecondary,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: FS.nav,
+    fontWeight: '700',
     color: colors.text,
   },
   storeList: {
@@ -1757,13 +1756,13 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   emptyModalText: {
     color: colors.text,
-    fontSize: 19,
-    fontWeight: '600',
+    fontSize: FS.heading,
+    fontWeight: '700',
     marginTop: 16,
   },
   emptyModalSubtext: {
     color: colors.textSecondary,
-    fontSize: 16,
+    fontSize: FS.body,
     textAlign: 'center',
     marginTop: 8,
   },
@@ -1796,8 +1795,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginLeft: 12,
   },
   roleLabel: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: FS.heading,
+    fontWeight: '700',
     color: colors.text,
   },
   roleDescription: {
@@ -1809,16 +1808,16 @@ const getStyles = (colors: any) => StyleSheet.create({
   changeOrgButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#007AFF20',
+    backgroundColor: 'rgba(201,169,98,0.12)',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 12,
     gap: 4,
   },
   changeOrgText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#007AFF',
+    fontSize: FS.secondary,
+    fontWeight: '700',
+    color: colors.accent,
   },
   // Org Modal
   orgList: {
@@ -1842,8 +1841,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginLeft: 12,
   },
   orgOptionName: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: FS.heading,
+    fontWeight: '700',
     color: colors.text,
   },
   currentOrgLabel: {
@@ -1868,8 +1867,8 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   deleteButtonText: {
     color: '#FF3B30',
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: FS.heading,
+    fontWeight: '700',
   },
   dangerWarning: {
     color: colors.textSecondary,

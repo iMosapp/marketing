@@ -213,15 +213,15 @@ const { showToast } = useToast();
                 style={styles.logoUploadBox}
                 onPress={isAdmin ? handleUploadLogo : undefined}
                 disabled={uploading}
-                data-testid="logo-upload-btn"
+                testID="logo-upload-btn" dataSet={{ testid: 'logo-upload-btn' } as any}
               >
                 {uploading ? (
-                  <ActivityIndicator size="small" color="#C9A962" />
+                  <ActivityIndicator size="small" color={colors.accent} />
                 ) : store.logo_url ? (
                   <Image source={{ uri: store.logo_url }} style={styles.logoPreview} resizeMode="contain" />
                 ) : (
                   <View style={styles.logoPlaceholder}>
-                    <Ionicons name="camera" size={28} color="#6E6E73" />
+                    <Ionicons name="camera" size={28} color={colors.textTertiary} />
                   </View>
                 )}
               </TouchableOpacity>
@@ -336,10 +336,10 @@ const { showToast } = useToast();
             <Text style={styles.label}>Primary Color</Text>
             <TextInput
               style={styles.input}
-              value={store.primary_color || '#007AFF'}
+              value={store.primary_color || '#C9A962'}
               onChangeText={(text) => updateField('primary_color', text)}
               editable={isAdmin}
-              placeholder="#007AFF"
+              placeholder="#C9A962"
               placeholderTextColor={colors.textSecondary}
             />
           </View>
@@ -438,9 +438,9 @@ const { showToast } = useToast();
                   setStore({ ...store, slug: cleaned });
                 }}
                 placeholder="your-store-name"
-                placeholderTextColor="#6E6E73"
+                placeholderTextColor={colors.textTertiary}
                 autoCapitalize="none"
-                data-testid="store-slug-input"
+                testID="store-slug-input" dataSet={{ testid: 'store-slug-input' } as any}
               />
             </View>
             <Text style={styles.slugHint}>Lowercase letters, numbers, and dashes only</Text>
@@ -570,7 +570,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   logoUploadHint: {
     fontSize: 13,
-    color: '#6E6E73',
+    color: colors.textTertiary,
     lineHeight: 17,
     marginBottom: 10,
   },
@@ -605,7 +605,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   avatarPreviewLabel: {
     fontSize: 15,
-    color: '#6E6E73',
+    color: colors.textTertiary,
   },
   label: {
     fontSize: 15,
@@ -713,7 +713,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   slugPrefix: {
     fontSize: 15,
-    color: '#6E6E73',
+    color: colors.textTertiary,
   },
   slugInput: {
     flex: 1,
@@ -725,7 +725,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   slugHint: {
     fontSize: 13,
-    color: '#6E6E73',
+    color: colors.textTertiary,
     marginTop: 6,
     marginBottom: 4,
   },

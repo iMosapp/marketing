@@ -22,6 +22,10 @@ import { useToast } from '../../components/common/Toast';
 import { showAlert } from '../../services/alert';
 
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
+import { FS } from '../../constants/typography';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
 type TabType = 'api-keys' | 'webhooks' | 'crm' | 'dms' | 'docs';
 
 interface Provider {
@@ -406,7 +410,7 @@ const { showToast } = useToast();
         <TouchableOpacity
           style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#C9A96220', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}
           onPress={() => router.push('/admin/crm-dashboard' as any)}
-          data-testid="crm-dashboard-link"
+          {...tid('crm-dashboard-link')}
         >
           <Ionicons name="stats-chart" size={14} color="#C9A962" />
           <Text style={{ color: '#C9A962', fontSize: 15, fontWeight: '700' }}>Dashboard</Text>
@@ -448,7 +452,7 @@ const { showToast } = useToast();
                 setCrmPinEnabled(!newVal);
               }
             }}
-            data-testid="crm-pin-toggle"
+            {...tid('crm-pin-toggle')}
           >
             <View style={{
               width: 26, height: 26, borderRadius: 13, backgroundColor: '#FFF',
@@ -467,7 +471,7 @@ const { showToast } = useToast();
               placeholderTextColor="#666"
               keyboardType="number-pad"
               maxLength={8}
-              data-testid="crm-pin-input-settings"
+              {...tid('crm-pin-input-settings')}
             />
             <TouchableOpacity
               style={{
@@ -490,7 +494,7 @@ const { showToast } = useToast();
                 }
               }}
               disabled={savingPin}
-              data-testid="crm-pin-save"
+              {...tid('crm-pin-save')}
             >
               <Text style={{ color: '#000', fontWeight: '700', fontSize: 16 }}>
                 {savingPin ? 'Saving...' : 'Save'}
@@ -879,9 +883,9 @@ const { showToast } = useToast();
       <TouchableOpacity
         style={styles.fullDocsButton}
         onPress={() => Linking.openURL(`${APP_URL}/api/docs`)}
-        data-testid="swagger-link"
+        {...tid('swagger-link')}
       >
-        <Ionicons name="document-text-outline" size={20} color="#007AFF" />
+        <Ionicons name="document-text-outline" size={20} color={colors.accent} />
         <Text style={styles.fullDocsText}>Interactive API Docs (Swagger)</Text>
       </TouchableOpacity>
     </View>
@@ -889,21 +893,18 @@ const { showToast } = useToast();
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <ScreenHeader title="Integrations" testID="integrations-header" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.accent} />
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Integrations</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <ScreenHeader title="Integrations" testID="integrations-header" />
 
       {/* Tabs */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabBar}>
@@ -918,11 +919,12 @@ const { showToast } = useToast();
             key={tab.key}
             style={[styles.tab, activeTab === tab.key && styles.activeTab]}
             onPress={() => setActiveTab(tab.key as TabType)}
+            {...tid(`integrations-tab-${tab.key}`)}
           >
             <Ionicons 
               name={tab.icon as any} 
               size={18} 
-              color={activeTab === tab.key ? '#007AFF' : colors.textSecondary} 
+              color={activeTab === tab.key ? colors.accent : colors.textSecondary} 
             />
             <Text style={[styles.tabText, activeTab === tab.key && styles.activeTabText]}>
               {tab.label}
@@ -960,8 +962,8 @@ const { showToast } = useToast();
                   </Text>
                   <View style={styles.keyDisplay}>
                     <Text style={styles.keyText} selectable>{newlyCreatedKey}</Text>
-                    <TouchableOpacity onPress={() => copyToClipboard(newlyCreatedKey)}>
-                      <Ionicons name="copy" size={24} color="#007AFF" />
+                    <TouchableOpacity onPress={() => copyToClipboard(newlyCreatedKey)} {...tid('copy-new-key')}>
+                      <Ionicons name="copy" size={24} color={colors.accent} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1057,7 +1059,7 @@ const { showToast } = useToast();
                 >
                   <View style={styles.eventCheckbox}>
                     {newWebhook.events.includes(event) && (
-                      <Ionicons name="checkmark" size={16} color="#007AFF" />
+                      <Ionicons name="checkmark" size={16} color="#000" />
                     )}
                   </View>
                   <View style={styles.eventInfo}>
@@ -1101,27 +1103,10 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.card,
-  },
-  backButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.text,
-  },
   tabBar: {
     flexGrow: 0,
     borderBottomWidth: 1,
-    borderBottomColor: colors.card,
+    borderBottomColor: colors.border,
   },
   tab: {
     flexDirection: 'row',
@@ -1132,15 +1117,16 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: '#007AFF',
+    borderBottomColor: colors.accent,
   },
   tabText: {
-    fontSize: 16,
+    fontSize: FS.body,
+    fontWeight: '600',
     color: colors.textSecondary,
   },
   activeTabText: {
-    color: '#007AFF',
-    fontWeight: '600',
+    color: colors.accent,
+    fontWeight: '700',
   },
   content: {
     flex: 1,
@@ -1155,12 +1141,12 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: FS.heading,
+    fontWeight: '700',
     color: colors.text,
   },
   sectionSubtitle: {
-    fontSize: 16,
+    fontSize: FS.secondary,
     color: colors.textSecondary,
     marginTop: 4,
   },
@@ -1168,7 +1154,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1227,7 +1213,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   keyMeta: {
     fontSize: 13,
-    color: '#6E6E73',
+    color: colors.textTertiary,
     marginTop: 4,
   },
   keyActions: {
@@ -1296,11 +1282,11 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   webhookStats: {
     fontSize: 15,
-    color: '#6E6E73',
+    color: colors.textTertiary,
   },
   testButton: {
     fontSize: 16,
-    color: '#007AFF',
+    color: colors.accent,
     fontWeight: '600',
   },
   connectedSection: {
@@ -1352,7 +1338,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   lastSync: {
     fontSize: 15,
-    color: '#6E6E73',
+    color: colors.textTertiary,
     marginTop: 8,
   },
   providerCard: {
@@ -1469,7 +1455,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   endpointDesc: {
     fontSize: 15,
-    color: '#6E6E73',
+    color: colors.textTertiary,
     marginTop: 4,
   },
   fullDocsButton: {
@@ -1485,7 +1471,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   fullDocsText: {
     fontSize: 16,
-    color: '#007AFF',
+    color: colors.accent,
     fontWeight: '500',
   },
   docNavPill: {
@@ -1497,16 +1483,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: '#2A2A2A',
   },
   docNavPillActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   docNavText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: FS.secondary,
+    fontWeight: '700',
     color: colors.textSecondary,
   },
   docNavTextActive: {
-    color: colors.text,
+    color: '#000',
   },
   docSectionTitle: {
     fontSize: 20,
@@ -1572,7 +1558,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   endpointParams: {
     fontSize: 13,
-    color: '#6E6E73',
+    color: colors.textTertiary,
     fontStyle: 'italic',
     marginTop: 4,
   },
@@ -1608,7 +1594,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   webhookEventPayload: {
     fontSize: 13,
     fontFamily: 'monospace',
-    color: '#6E6E73',
+    color: colors.textTertiary,
     marginTop: 4,
     marginLeft: 16,
   },
@@ -1673,17 +1659,17 @@ const getStyles = (colors: any) => StyleSheet.create({
   modalButton: {
     flex: 1,
     padding: 16,
-    borderRadius: 12,
-    backgroundColor: '#007AFF',
+    borderRadius: 14,
+    backgroundColor: colors.accent,
     alignItems: 'center',
   },
   modalButtonDisabled: {
-    backgroundColor: '#3C3C3E',
+    backgroundColor: colors.surface,
   },
   modalButtonText: {
-    fontSize: 16,
-    color: colors.text,
-    fontWeight: '600',
+    fontSize: FS.heading,
+    color: '#000',
+    fontWeight: '700',
   },
   keyCreatedBox: {
     alignItems: 'center',
@@ -1730,7 +1716,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   eventOptionSelected: {
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: colors.accent,
   },
   eventCheckbox: {
     width: 24,

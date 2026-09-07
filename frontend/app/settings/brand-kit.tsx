@@ -20,12 +20,13 @@ import api, { emailAPI } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/common/Toast';
 import { showAlert } from '../../services/alert';
-
+import * as ImagePicker from 'expo-image-picker';
 import { useThemeStore } from '../../store/themeStore';
-const DEFAULT_COLORS = [
-  '#007AFF', '#34C759', '#FF9500', '#FF3B30', '#5856D6', 
-  '#AF52DE', '#FF2D55', '#00C7BE', '#FFD60A', '#1C1C1E'
-];
+import { ScreenHeader, HeaderTextButton } from '../../components/common/ScreenHeader';
+import { FS, EYEBROW } from '../../constants/typography';
+
+const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
+const DEFAULT_PRIMARY = '#C9A962';
 
 export default function BrandKitSettings() {
   const { colors } = useThemeStore();
@@ -39,7 +40,7 @@ const { showToast } = useToast();
   
   // Brand kit fields
   const [logoUrl, setLogoUrl] = useState('');
-  const [primaryColor, setPrimaryColor] = useState('#007AFF');
+  const [primaryColor, setPrimaryColor] = useState(DEFAULT_PRIMARY);
   const [secondaryColor, setSecondaryColor] = useState('#34C759');
   const [accentColor, setAccentColor] = useState('#FFD60A');
   const [companyName, setCompanyName] = useState('');
@@ -73,7 +74,7 @@ const { showToast } = useToast();
       const brandKit = await emailAPI.getBrandKit('user', user._id);
       if (brandKit) {
         setLogoUrl(brandKit.logo_url || '');
-        setPrimaryColor(brandKit.primary_color || '#007AFF');
+        setPrimaryColor(brandKit.primary_color || DEFAULT_PRIMARY);
         setSecondaryColor(brandKit.secondary_color || '#34C759');
         setAccentColor(brandKit.accent_color || '#FFD60A');
         setCompanyName(brandKit.company_name || '');
@@ -126,39 +127,30 @@ const { showToast } = useToast();
     }
   };
 
+  // Works on web and native (the old version was web-only and silently did nothing on the phone).
   const handleUploadLogo = async () => {
-    if (Platform.OS !== 'web') return;
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = async (e: any) => {
-      const file = e.target.files[0];
-      if (!file) return;
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, quality: 0.85 });
+      if (result.canceled || !result.assets?.[0]) return;
       setLogoUploading(true);
-      try {
-        const fd = new FormData();
-        fd.append('file', file);
-        const storeId = user?.store_id;
-        const endpoint = storeId
-          ? `/admin/stores/${storeId}/upload-logo`
-          : `/admin/organizations/${user?.organization_id}/upload-logo`;
-        const res = await api.post(endpoint, fd, );
-        const url = res.data.logo_url || '';
-        setLogoUrl(url);
-        showToast('Logo uploaded!');
-      } catch {
-        showAlert('Error', 'Failed to upload logo');
-      } finally {
-        setLogoUploading(false);
-      }
-    };
-    input.click();
+      const blob = await (await fetch(result.assets[0].uri)).blob();
+      const fd = new FormData();
+      fd.append('file', blob as any, 'logo.png');
+      const storeId = user?.store_id;
+      const endpoint = storeId
+        ? `/admin/stores/${storeId}/upload-logo`
+        : `/admin/organizations/${user?.organization_id}/upload-logo`;
+      const res = await api.post(endpoint, fd);
+      setLogoUrl(res.data.logo_url || '');
+      showToast('Logo uploaded');
+    } catch {
+      showAlert('Error', 'Failed to upload logo');
+    } finally {
+      setLogoUploading(false);
+    }
   };
 
-  /**
-   * ColorPickerField — Uses native <input type="color"> on web (full wheel + dropper)
-   * and a hex text field for manual entry. Works on iOS Safari, Chrome, and desktop.
-   */
+  // ColorPickerField: native <input type="color"> on desktop web, hex field + swatches everywhere.
   const ColorPickerField = ({
     label,
     value,
@@ -180,8 +172,7 @@ const { showToast } = useToast();
       }
     };
 
-    // input[type=color] only works on desktop Chrome/Firefox — NOT on iOS Safari.
-    // Detect iOS and skip the native picker there; hex input + swatches are the mobile UX.
+    // input[type=color] only works on desktop Chrome/Firefox, not iOS Safari or native.
     const isIOS = Platform.OS === 'web' && typeof navigator !== 'undefined' &&
       /iPhone|iPad|iPod/.test(navigator.userAgent);
     const supportsColorPicker = Platform.OS === 'web' && !isIOS;
@@ -190,7 +181,7 @@ const { showToast } = useToast();
       if (!supportsColorPicker) return;
       const input = document.createElement('input');
       input.type = 'color';
-      input.value = /^#[0-9A-Fa-f]{6}$/.test(value) ? value : '#007AFF';
+      input.value = /^#[0-9A-Fa-f]{6}$/.test(value) ? value : DEFAULT_PRIMARY;
       input.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
       document.body.appendChild(input);
       input.addEventListener('input', (e: any) => {
@@ -203,8 +194,8 @@ const { showToast } = useToast();
     };
 
     const QUICK_PICKS = [
-      '#007AFF','#34C759','#FF9500','#FF3B30','#5856D6',
-      '#AF52DE','#FF2D55','#00C7BE','#FFD60A','#C9A962',
+      '#C9A962','#007AFF','#34C759','#FF9500','#FF3B30',
+      '#5856D6','#AF52DE','#FF2D55','#00C7BE','#FFD60A',
       '#1877F2','#E1306C','#000000','#FFFFFF',
     ];
 
@@ -214,14 +205,13 @@ const { showToast } = useToast();
 
         {/* Main swatch + hex row */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-          {/* Large tappable swatch — opens native color wheel on desktop, or tap to show hint on mobile */}
           <TouchableOpacity
             onPress={supportsColorPicker ? openNativePicker : undefined}
             activeOpacity={supportsColorPicker ? 0.8 : 1}
-            data-testid={`color-swatch-${label}`}
+            {...tid(`color-swatch-${label.toLowerCase().replace(/\s/g, '-')}`)}
             style={{
               width: 52, height: 52, borderRadius: 14,
-              backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(value) ? value : '#007AFF',
+              backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(value) ? value : DEFAULT_PRIMARY,
               borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)',
               alignItems: 'center', justifyContent: 'center',
             }}
@@ -233,8 +223,8 @@ const { showToast } = useToast();
 
           {/* Hex input */}
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 4, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-              Hex Code
+            <Text style={{ ...EYEBROW, color: colors.textSecondary, marginBottom: 4 }}>
+              Hex code
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 10, borderWidth: 1, borderColor: /^#[0-9A-Fa-f]{6}$/.test(hexInput) ? hexInput + '60' : colors.border, overflow: 'hidden' }}>
               <View style={{ width: 28, height: 28, marginLeft: 8, borderRadius: 6, backgroundColor: /^#[0-9A-Fa-f]{6}$/.test(hexInput) ? hexInput : colors.border }} />
@@ -247,7 +237,7 @@ const { showToast } = useToast();
                 maxLength={7}
                 autoCapitalize="characters"
                 autoCorrect={false}
-                data-testid={`color-hex-${label}`}
+                {...tid(`color-hex-${label.toLowerCase().replace(/\s/g, '-')}`)}
               />
             </View>
           </View>
@@ -261,7 +251,7 @@ const { showToast } = useToast();
           )}
         </View>
 
-        {/* Quick-pick swatches — wrap grid (no horizontal scroll that overflows on mobile) */}
+        {/* Quick-pick swatches, wrapping grid */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingBottom: 4 }}>
           {QUICK_PICKS.map((c) => (
             <TouchableOpacity
@@ -275,7 +265,7 @@ const { showToast } = useToast();
                 width: 32, height: 32, borderRadius: 8,
                 backgroundColor: c,
                 borderWidth: value === c ? 2.5 : 1,
-                borderColor: value === c ? '#FFF' : 'rgba(255,255,255,0.15)',
+                borderColor: value === c ? colors.text : colors.border,
                 alignItems: 'center', justifyContent: 'center',
               }}
             >
@@ -290,8 +280,9 @@ const { showToast } = useToast();
   if (loading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
+        <ScreenHeader title="Brand Kit" testID="brand-kit-header" />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={colors.accent} />
         </View>
       </SafeAreaView>
     );
@@ -299,19 +290,11 @@ const { showToast } = useToast();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Brand Kit</Text>
-        <TouchableOpacity onPress={handleSave} disabled={saving} style={styles.saveButton}>
-          {saving ? (
-            <ActivityIndicator size="small" color="#007AFF" />
-          ) : (
-            <Text style={styles.saveText}>Save</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title="Brand Kit"
+        testID="brand-kit-header"
+        right={<HeaderTextButton label={saving ? 'Saving...' : 'Save'} onPress={handleSave} disabled={saving} testID="brand-kit-save-btn" />}
+      />
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Preview Card */}
@@ -324,11 +307,11 @@ const { showToast } = useToast();
                 <Ionicons name="business" size={24} color={colors.text} />
               </View>
             )}
-            <Text style={styles.previewCompany}>{companyName || 'Your Company'}</Text>
+            <Text style={styles.previewCompany} numberOfLines={2}>{companyName || 'Your company'}</Text>
             {tagline ? <Text style={styles.previewTagline}>{tagline}</Text> : null}
           </View>
           <View style={styles.previewBody}>
-            <Text style={styles.previewBodyText}>Your email content will appear here...</Text>
+            <Text style={styles.previewBodyText}>Your email content appears here</Text>
           </View>
           <View style={styles.previewFooter}>
             <Text style={styles.previewFooterText}>{footerText}</Text>
@@ -347,15 +330,15 @@ const { showToast } = useToast();
             style={[styles.uploadButton, { borderColor: colors.border }]}
             onPress={handleUploadLogo}
             disabled={logoUploading}
-            data-testid="upload-logo-btn"
+            {...tid('upload-logo-btn')}
           >
             {logoUploading ? (
-              <ActivityIndicator size="small" color={colors.text} />
+              <ActivityIndicator size="small" color={colors.accent} />
             ) : (
               <>
-                <Ionicons name="cloud-upload-outline" size={20} color={colors.text} />
-                <Text style={[styles.uploadButtonText, { color: colors.text }]}>
-                  {logoUrl ? 'Change Logo' : 'Upload Logo'}
+                <Ionicons name="cloud-upload-outline" size={20} color={colors.accent} />
+                <Text style={[styles.uploadButtonText, { color: colors.accent }]}>
+                  {logoUrl ? 'Change logo' : 'Upload logo'}
                 </Text>
               </>
             )}
@@ -369,18 +352,20 @@ const { showToast } = useToast();
             onChangeText={setLogoUrl}
             autoCapitalize="none"
             keyboardType="url"
+            {...tid('brand-logo-url-input')}
           />
         </View>
 
         {/* Company Name */}
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Company Name</Text>
+          <Text style={styles.inputLabel}>Company name</Text>
           <TextInput
             style={styles.input}
-            placeholder="Your Company Name"
+            placeholder="Your company name"
             placeholderTextColor={colors.textSecondary}
             value={companyName}
             onChangeText={setCompanyName}
+            {...tid('brand-company-input')}
           />
         </View>
 
@@ -393,12 +378,13 @@ const { showToast } = useToast();
             placeholderTextColor={colors.textSecondary}
             value={tagline}
             onChangeText={setTagline}
+            {...tid('brand-tagline-input')}
           />
         </View>
 
         {/* Page Theme Toggle */}
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Public Page Theme</Text>
+          <Text style={styles.inputLabel}>Public page theme</Text>
           <Text style={[styles.inputHelper, { color: colors.textSecondary, marginBottom: 12 }]}>
             Controls the look of your Digital Card, Link Page, and other public pages
           </Text>
@@ -413,7 +399,7 @@ const { showToast } = useToast();
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setPageTheme('dark');
               }}
-              data-testid="theme-toggle-dark"
+              {...tid('theme-toggle-dark')}
             >
               <View style={[styles.themePreviewDark]}>
                 <View style={[styles.themePreviewAccent, { backgroundColor: primaryColor }]} />
@@ -430,7 +416,7 @@ const { showToast } = useToast();
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setPageTheme('light');
               }}
-              data-testid="theme-toggle-light"
+              {...tid('theme-toggle-light')}
             >
               <View style={[styles.themePreviewLight]}>
                 <View style={[styles.themePreviewAccent, { backgroundColor: primaryColor }]} />
@@ -441,28 +427,29 @@ const { showToast } = useToast();
         </View>
 
         {/* Colors */}
-        <ColorPickerField label="Primary Color" value={primaryColor} onSelect={setPrimaryColor} />
-        <ColorPickerField label="Secondary Color" value={secondaryColor} onSelect={setSecondaryColor} />
-        <ColorPickerField label="Accent Color" value={accentColor} onSelect={setAccentColor} />
+        <ColorPickerField label="Primary color" value={primaryColor} onSelect={setPrimaryColor} />
+        <ColorPickerField label="Secondary color" value={secondaryColor} onSelect={setSecondaryColor} />
+        <ColorPickerField label="Accent color" value={accentColor} onSelect={setAccentColor} />
 
         {/* Footer Text */}
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Footer Text</Text>
+          <Text style={styles.inputLabel}>Footer text</Text>
           <TextInput
             style={styles.input}
             placeholder="I'm On Social"
             placeholderTextColor={colors.textSecondary}
             value={footerText}
             onChangeText={setFooterText}
+            {...tid('brand-footer-input')}
           />
         </View>
 
         {/* Social Links */}
-        <Text style={styles.sectionTitle}>Social Links</Text>
+        <Text style={styles.sectionTitle}>Social links</Text>
         
         <View style={styles.socialInputGroup}>
           <View style={styles.socialIcon}>
-            <Ionicons name="globe" size={20} color="#007AFF" />
+            <Ionicons name="globe" size={20} color={colors.accent} />
           </View>
           <TextInput
             style={styles.socialInput}
@@ -558,32 +545,6 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 28,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-  },
-  backButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  saveButton: {
-    padding: 4,
-  },
-  saveText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#007AFF',
-  },
   content: {
     padding: 16,
     paddingBottom: 40,
@@ -616,9 +577,10 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   previewCompany: {
-    fontSize: 22,
+    fontSize: FS.title,
     fontWeight: '700',
-    color: colors.text,
+    color: '#FFF',
+    textAlign: 'center',
   },
   previewTagline: {
     fontSize: 16,
@@ -649,7 +611,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 20,
   },
   inputLabel: {
-    fontSize: 16,
+    fontSize: FS.body,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 8,
@@ -657,11 +619,11 @@ const getStyles = (colors: any) => StyleSheet.create({
   input: {
     backgroundColor: colors.card,
     borderRadius: 12,
-    padding: 16,
-    fontSize: 16,
+    padding: 14,
+    fontSize: FS.body,
     color: colors.text,
     borderWidth: 1,
-    borderColor: colors.surface,
+    borderColor: colors.border,
   },
   uploadButton: {
     flexDirection: 'row',
@@ -675,11 +637,11 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   uploadButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: FS.heading,
+    fontWeight: '700',
   },
   inputHelper: {
-    fontSize: 15,
+    fontSize: FS.secondary,
     marginBottom: 6,
   },
   
@@ -688,7 +650,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 20,
   },
   colorPickerLabel: {
-    fontSize: 16,
+    fontSize: FS.body,
     fontWeight: '600',
     color: colors.textSecondary,
     marginBottom: 12,
@@ -726,11 +688,8 @@ const getStyles = (colors: any) => StyleSheet.create({
 
   // Section
   sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700',
+    ...EYEBROW,
     color: colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
     marginBottom: 16,
     marginTop: 8,
   },
@@ -755,17 +714,19 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
-    fontSize: 16,
+    fontSize: FS.body,
     color: colors.text,
     borderWidth: 1,
-    borderColor: colors.surface,
+    borderColor: colors.border,
   },
 
   // Info Card
   infoCard: {
     flexDirection: 'row',
     backgroundColor: colors.card,
-    borderRadius: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: 16,
     gap: 12,
     marginTop: 24,
@@ -773,7 +734,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   infoText: {
     flex: 1,
-    fontSize: 16,
+    fontSize: FS.body,
     color: colors.textSecondary,
     lineHeight: 20,
   },
@@ -786,9 +747,9 @@ const getStyles = (colors: any) => StyleSheet.create({
   themeToggleOption: {
     flex: 1,
     alignItems: 'center',
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 2,
-    borderColor: colors.surface,
+    borderColor: colors.border,
     padding: 12,
     backgroundColor: colors.card,
   },
@@ -796,8 +757,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderWidth: 2,
   },
   themeToggleLabel: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: FS.body,
+    fontWeight: '600',
     color: colors.textSecondary,
     marginTop: 8,
   },
