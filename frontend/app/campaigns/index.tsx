@@ -12,6 +12,9 @@ import { useAuthStore } from '../../store/authStore';
 import { campaignsAPI } from '../../services/api';
 import Toggle from '../../components/Toggle';
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton } from '../../components/common/ScreenHeader';
+
+const GOLD = '#C9A962';
 import api from '../../services/api';
 
 function CampaignsScreen() {
@@ -74,7 +77,7 @@ function CampaignsScreen() {
     switch (type) {
       case 'birthday': return { icon: 'gift', color: '#FF9500' };
       case 'anniversary': return { icon: 'heart', color: '#FF3B30' };
-      case 'check_in': return { icon: 'chatbubble', color: '#007AFF' };
+      case 'check_in': return { icon: 'chatbubble', color: '#5AC8FA' };
       default: return { icon: 'megaphone', color: '#34C759' };
     }
   };
@@ -112,7 +115,7 @@ function CampaignsScreen() {
         activeOpacity={reorderMode ? 1 : 0.85}
         data-testid={`campaign-card-${item._id}`}
       >
-        {/* Reorder controls — only visible in reorder mode */}
+        {/* Reorder controls, only visible in reorder mode */}
         {reorderMode && groupCampaigns ? (
           <View style={s.reorderBtns}>
             <TouchableOpacity onPress={() => {
@@ -142,7 +145,7 @@ function CampaignsScreen() {
               <Text style={s.name} numberOfLines={1}>{item.name}</Text>
               {sl && <View style={s.badge}><Text style={s.badgeTxt}>{sl}</Text></View>}
             </View>
-            <Toggle value={item.active} onValueChange={() => toggleCampaign(item._id || item.id)} activeColor="#007AFF" />
+            <Toggle value={item.active} onValueChange={() => toggleCampaign(item._id || item.id)} activeColor={GOLD} />
           </View>
           <View style={s.stats}>
             <View style={s.stat}><Ionicons name="paper-plane" size={13} color={colors.textSecondary} />
@@ -172,33 +175,20 @@ function CampaignsScreen() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.hBtn}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={s.title}>Campaigns</Text>
-        <View style={{ flexDirection: 'row', gap: 4 }}>
+      <ScreenHeader title="Campaigns" testID="campaigns-header"
+        right={<View style={{ flexDirection: 'row' }}>
           {campaigns.length > 1 && (
-            <TouchableOpacity onPress={() => setReorderMode(r => !r)} style={[s.hBtn,
-              reorderMode && { backgroundColor: '#C9A96220', borderRadius: 8 }]}>
-              <Ionicons name={reorderMode ? 'checkmark' : 'reorder-three'} size={22}
-                color={reorderMode ? '#C9A962' : '#007AFF'} />
-            </TouchableOpacity>
+            <HeaderIconButton icon={reorderMode ? 'checkmark' : 'reorder-three'} onPress={() => setReorderMode(r => !r)} testID="campaigns-reorder-btn"
+              color={reorderMode ? GOLD : colors.textSecondary} />
           )}
-          <TouchableOpacity onPress={() => router.push('/campaigns/dashboard')} style={s.hBtn}>
-            <Ionicons name="speedometer-outline" size={24} color="#007AFF" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push('/campaigns/new')} style={s.hBtn}>
-            <Ionicons name="add-circle" size={32} color="#007AFF" />
-          </TouchableOpacity>
-        </View>
-      </View>
+          <HeaderIconButton icon="speedometer-outline" onPress={() => router.push('/campaigns/dashboard')} testID="campaigns-dashboard-btn" color={colors.textSecondary} />
+          <HeaderIconButton icon="add-circle" onPress={() => router.push('/campaigns/new')} testID="campaigns-new-btn" />
+        </View>} />
 
       {/* Stats */}
-      <View style={s.statsBanner}>
+      <View style={[s.statsBanner, { marginTop: 12 }]}>
         {[
-          { label: 'Active', value: campaigns.filter(c => c.active).length, color: '#007AFF' },
+          { label: 'Active', value: campaigns.filter(c => c.active).length, color: GOLD },
           { label: 'Total Sent', value: campaigns.reduce((n, c) => n + (c.messages_sent_count || 0), 0), color: '#34C759' },
           { label: 'Campaigns', value: campaigns.length, color: '#C9A962' },
         ].map((st, i) => (
@@ -220,7 +210,7 @@ function CampaignsScreen() {
       )}
 
       {loading ? (
-        <View style={s.center}><ActivityIndicator size="large" color="#007AFF" /></View>
+        <View style={s.center}><ActivityIndicator size="large" color={GOLD} /></View>
       ) : campaigns.length === 0 ? (
         <View style={s.center}>
           <Ionicons name="calendar-outline" size={64} color={colors.surface} />
@@ -250,9 +240,6 @@ function CampaignsScreen() {
 
 const getStyles = (colors: any) => StyleSheet.create({
   container:     { flex: 1, backgroundColor: colors.bg },
-  header:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  hBtn:          { padding: 4 },
-  title:         { fontSize: 20, fontWeight: '700', color: colors.text },
   statsBanner:   { flexDirection: 'row', backgroundColor: colors.card, margin: 16, borderRadius: 16, padding: 20 },
   statItem:      { flex: 1, alignItems: 'center' },
   statVal:       { fontSize: 28, fontWeight: '800' },

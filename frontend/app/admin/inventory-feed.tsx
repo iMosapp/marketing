@@ -2,8 +2,9 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, TextInput, Switch, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { useAuthStore } from '../../store/authStore';
 import { useToast } from '../../components/common/Toast';
 import { showConfirm } from '../../services/alert';
@@ -59,7 +60,6 @@ const Guide = ({ title, icon, color, steps, colors, id }: { title: string; icon:
 };
 
 export default function InventoryFeedScreen() {
-  const router = useRouter();
   const { colors } = useThemeStore();
   const { user } = useAuthStore();
   const { showToast } = useToast();
@@ -314,11 +314,7 @@ export default function InventoryFeedScreen() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.back} {...tid('inventory-feed-back')}><Ionicons name="chevron-back" size={28} color={GOLD} /></TouchableOpacity>
-        <Text style={s.title}>Inventory Feed</Text>
-        <View style={s.back} />
-      </View>
+      <ScreenHeader title="Inventory Feed" testID="inventory-feed" />
       {loading ? <ActivityIndicator style={{ marginTop: 60 }} color={GOLD} /> : (
         <ScrollView contentContainerStyle={{ padding: 16, gap: 14, paddingBottom: 60 }}>
           <View style={[s.card, { flexDirection: 'row', gap: 12, alignItems: 'center' }]}>
@@ -380,9 +376,6 @@ export default function InventoryFeedScreen() {
 
 const getStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
-  back: { width: 40 },
-  title: { fontSize: 17, fontWeight: '700', color: colors.text },
   card: { backgroundColor: colors.card, borderRadius: 14, padding: 16, gap: 12 },
   cardTitle: { fontSize: 17, fontWeight: '800', color: colors.text },
   label: { fontSize: 11, fontWeight: '700', color: colors.textSecondary, letterSpacing: 0.8 },

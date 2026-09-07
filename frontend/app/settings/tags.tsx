@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { showAlert } from '../../services/alert';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenHeader, HeaderIconButton } from '../../components/common/ScreenHeader';
+
+const GOLD = '#C9A962';
 import {
   View,
   Text,
@@ -20,7 +23,6 @@ import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 
 import { useThemeStore } from '../../store/themeStore';
-import { JESSI_BAR_HEIGHT } from '../../components/JessieFloatingChat';
 interface Tag {
   _id: string;
   name: string;
@@ -30,7 +32,7 @@ interface Tag {
 }
 
 const TAG_COLORS = [
-  "#FF3B30", "#FF9500", "#FFCC00", "#34C759", "#007AFF",
+  "#FF3B30", "#FF9500", "#FFCC00", "#34C759", "#0A84FF",
   "#5856D6", "#AF52DE", "#FF2D55", "#00C7BE", '#8E8E93',
 ];
 
@@ -269,9 +271,12 @@ export default function TagsSettings() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <ScreenHeader title="Tags" testID="tags-header" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={GOLD} />
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -321,21 +326,13 @@ export default function TagsSettings() {
 
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Contact Tags</Text>
-        <TouchableOpacity style={styles.addButton} onPress={openCreateModal}>
-          <Ionicons name="add" size={28} color="#007AFF" />
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenHeader title="Tags" testID="tags-header"
+        right={<HeaderIconButton icon="add-circle" onPress={openCreateModal} testID="tags-add-btn" />} />
 
       {/* Info Banner */}
       <View style={styles.infoBanner}>
-        <Ionicons name="information-circle" size={20} color="#007AFF" />
+        <Ionicons name="information-circle" size={20} color={GOLD} />
         <Text style={styles.infoText}>
           {isInOrg 
             ? 'Tags are shared across your organization. New tags require admin approval.'
@@ -378,7 +375,7 @@ export default function TagsSettings() {
         </View>
       )}
 
-      {/* Tags List — grouped by scope */}
+      {/* Tags List, grouped by scope */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Org-level tags */}
         {tags.filter(t => (t as any).scope === 'org').length > 0 && (
@@ -415,7 +412,7 @@ export default function TagsSettings() {
 
         {/* Create New Tag Card */}
         <TouchableOpacity style={styles.createCard} onPress={openCreateModal}>
-          <Ionicons name="add-circle-outline" size={32} color="#007AFF" />
+          <Ionicons name="add-circle-outline" size={32} color={GOLD} />
           <Text style={styles.createText}>Create New Tag</Text>
         </TouchableOpacity>
 
@@ -461,7 +458,7 @@ export default function TagsSettings() {
             {/* Contact list */}
             {tagContactsLoading ? (
               <View style={{ padding: 40, alignItems: 'center' }}>
-                <ActivityIndicator size="large" color={contactListTag?.color || '#007AFF'} />
+                <ActivityIndicator size="large" color={contactListTag?.color || GOLD} />
               </View>
             ) : tagContacts.length === 0 ? (
               <View style={{ padding: 40, alignItems: 'center' }}>
@@ -473,8 +470,8 @@ export default function TagsSettings() {
                 {tagContacts.map(contact => (
                   <View key={contact._id} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.surface }}>
                     {/* Avatar */}
-                    <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: (contactListTag?.color || '#007AFF') + '20', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
-                      <Text style={{ fontSize: 16, fontWeight: '700', color: contactListTag?.color || '#007AFF' }}>
+                    <View style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: (contactListTag?.color || GOLD) + '20', alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                      <Text style={{ fontSize: 16, fontWeight: '700', color: contactListTag?.color || GOLD }}>
                         {(contact.name || '?')[0].toUpperCase()}
                       </Text>
                     </View>
@@ -516,7 +513,7 @@ export default function TagsSettings() {
             </Text>
             <TouchableOpacity onPress={handleSave} disabled={saving}>
               {saving ? (
-                <ActivityIndicator size="small" color="#007AFF" />
+                <ActivityIndicator size="small" color={GOLD} />
               ) : (
                 <Text style={styles.saveButton}>Save</Text>
               )}
@@ -545,7 +542,7 @@ export default function TagsSettings() {
               maxLength={30}
             />
 
-            {/* Scope Picker — RIGHT AFTER NAME, before color/icon so it's always visible */}
+            {/* Scope Picker: right after name, before color/icon so it's always visible */}
             {isAdmin && (
               <View style={{ marginBottom: 20 }}>
                 <Text style={styles.inputLabel}>Visibility</Text>
@@ -608,7 +605,7 @@ export default function TagsSettings() {
                   <Ionicons
                     name={icon.id as any}
                     size={24}
-                    color={formIcon === icon.id ? '#007AFF' : colors.textSecondary}
+                    color={formIcon === icon.id ? GOLD : colors.textSecondary}
                   />
                   <Text
                     style={[
@@ -642,7 +639,7 @@ export default function TagsSettings() {
           </ScrollView>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -656,29 +653,6 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.bg,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'ios' ? 82 + JESSI_BAR_HEIGHT : 40 + JESSI_BAR_HEIGHT,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    backgroundColor: colors.bg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.card,
-  },
-  backButton: {
-    width: 40,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  addButton: {
-    width: 40,
-    alignItems: 'flex-end',
   },
   infoBanner: {
     flexDirection: 'row',
@@ -805,9 +779,9 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   createText: {
     fontSize: 16,
-    color: '#007AFF',
+    color: GOLD,
     marginTop: 8,
-    fontWeight: '500',
+    fontWeight: '700',
   },
   modalContainer: {
     flex: 1,
@@ -830,12 +804,12 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   cancelButton: {
     fontSize: 16,
-    color: '#007AFF',
+    color: colors.textSecondary,
   },
   saveButton: {
     fontSize: 16,
-    color: '#007AFF',
-    fontWeight: '600',
+    color: GOLD,
+    fontWeight: '700',
   },
   modalContent: {
     flex: 1,
@@ -905,8 +879,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     borderColor: 'transparent',
   },
   iconOptionSelected: {
-    borderColor: '#007AFF',
-    backgroundColor: '#007AFF20',
+    borderColor: GOLD,
+    backgroundColor: GOLD + '20',
   },
   iconLabel: {
     fontSize: 12,
@@ -914,7 +888,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 4,
   },
   iconLabelSelected: {
-    color: '#007AFF',
+    color: GOLD,
   },
   modalActions: {
     marginTop: 24,
@@ -922,13 +896,13 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingHorizontal: 4,
   },
   modalSaveBtn: {
-    backgroundColor: '#007AFF',
+    backgroundColor: GOLD,
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
   },
   modalSaveBtnText: {
-    color: '#fff',
+    color: '#000',
     fontSize: 16,
     fontWeight: '700',
   },

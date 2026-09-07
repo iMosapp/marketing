@@ -12,9 +12,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
 import api from '../../services/api';
 import { showAlert } from '../../services/alert';
 
@@ -41,7 +42,6 @@ function Stars({ rating, size = 14 }: { rating: number; size?: number }) {
 export default function ReviewManagementScreen() {
   const { colors } = useThemeStore();
   const s = styles(colors);
-  const router = useRouter();
   const { user } = useAuthStore();
   const [tab, setTab] = useState<Tab>('pending');
   const [loading, setLoading] = useState(true);
@@ -258,18 +258,8 @@ export default function ReviewManagementScreen() {
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      {/* Header */}
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.back}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={s.title}>Review Center</Text>
-          <Text style={s.subtitle}>
-            {summary.total_internal || 0} reviews · {summary.total_clicks || 0} link clicks
-          </Text>
-        </View>
-      </View>
+      <ScreenHeader title="Review Center" testID="review-center-header" noBorder
+        subtitle={`${summary.total_internal || 0} reviews · ${summary.total_clicks || 0} link clicks`} />
 
       {/* Tabs */}
       <View style={s.tabBar}>
@@ -319,11 +309,7 @@ function platformColor(p: string): string {
 // ── Styles ────────────────────────────────────────────────────────────────────
 const styles = (colors: any) => StyleSheet.create({
   container:   { flex: 1, backgroundColor: colors.bg },
-  header:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12 },
-  back:        { marginRight: 8 },
-  title:       { fontSize: 20, fontWeight: '800', color: colors.text },
-  subtitle:    { fontSize: 13, color: colors.textSecondary, marginTop: 1 },
-  tabBar:      { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.border, paddingHorizontal: 16, gap: 6 },
+  tabBar:      { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.border, paddingHorizontal: 16, paddingTop: 8, gap: 6 },
   tabBtn:      { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 4, gap: 6, borderBottomWidth: 2, borderBottomColor: 'transparent', marginBottom: -1 },
   tabBtnActive:{ borderBottomColor: '#C9A962' },
   tabTxt:      { fontSize: 15, fontWeight: '600', color: colors.textSecondary },

@@ -1,0 +1,26 @@
+{
+  "summary": "Batch 5 QA (Manage folder - 7 screens ScreenHeader migration + gold theming) at 390x844 as forest@imosapp.com. All 7 screens display expected header title + back testid; gold accents verified.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/settings/keyword-rules rule editor modal", "issues": ["Primary 'Create Rule' submit button retains indigo/blue background (appears to be iOS system indigo #5856D6) instead of gold. Scope pills ('Just me' / 'Whole team') correctly render gold rgb(201,169,98) with black text when selected, but the main action button was not migrated. Not explicitly in batch-5 scope but worth flagging since spec direction is 'gold accents replacing iOS blue / indigo'."]}
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Optional: migrate /settings/keyword-rules rule-editor 'Create Rule' primary button from indigo to gold to match global theme direction."
+  ],
+  "critical_code_review_comments": [
+    "Rule editor CTA button appears to still use legacy primary indigo color; consider consolidating to the gold accent constant used elsewhere (e.g., scope pill selected state)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (frontend only)", "frontend": "~99% (all batch-5 acceptance criteria pass; 1 out-of-scope design nit)"},
+  "test_credentials": "forest@imosapp.com / Admin123! - working.",
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Batch 5 verified. Per-screen results: (1) /settings/tags - title 'Tags', tags-header-back OK, tags-add-btn opens New Tag modal with Save color rgb(201,169,98) gold and Cancel color rgb(142,142,147) gray, info banner icon gold rgb(201,169,98), no em dash. (2) /settings/keyword-rules - title 'Keyword Auto-Tags', keyword-rules-back + keyword-rules-add-btn OK, editor scope pill 'Just me' selected = bg rgb(201,169,98) with black text rgb(0,0,0), 'Whole team' unselected gray; empty-state 'No rules yet' string not observed because RULES list is populated on this admin (not a failure). No em dash in app text. (3) /keyword-search - title 'Keyword Search', keyword-search-back + keyword-search-rules-link OK, search input under header with normal spacing. (4) /campaigns - title 'Campaigns', campaigns-header-back + campaigns-dashboard-btn + campaigns-new-btn + campaigns-reorder-btn present, ACTIVE stat number gold rgb(201,169,98); after tapping reorder-btn its icon element still colored gold (checkmark unicode); 19 gold-bg elements on page, 0 iOS-blue/indigo bg elements = active toggles gold. Em dash appears only inside a user-created campaign name 'New Inbound Lead \u2014 Auto Reply' (data, not chrome). (5) /settings/review-approvals - title 'Review Center' with subtitle '5 reviews \u00b7 0 link clicks', review-center-header-back OK, tabs Pending/Published/Clicks render. (6) /settings/showcase-approvals - title 'Showcase Approvals', showcase-approvals-back OK, Reject/Approve visible (not tapped). (7) /admin/inventory-feed - title 'Inventory Feed', inventory-feed-back OK, 'Connect a feed' + dealer checklists render. Back-fallback: direct /admin/inventory-feed -> inventory-feed-back navigates to /more (verified). Regression: /more renders and folder-tile-Manage opens Manage folder with app tiles (Tags, Calendar, Keyword Auto-Tags, Keyword Search, Campaigns, Review Center, Showcase, Review Links). No remaining iOS #007AFF or #5856D6 primary buttons/pills/toggles on the batch-5 headers/actions themselves; only exception noted is the rule-editor 'Create Rule' CTA which is outside the batch-5 header-migration scope but still indigo.",
+  "rca of the issue": "N/A - batch 5 passes acceptance criteria."
+}

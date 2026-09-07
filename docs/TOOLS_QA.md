@@ -36,8 +36,8 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 3. Settings  DONE (6 screens, tested iteration_298) (My Profile, My VA, Notifications, Schedule, Templates, Security, Calendar Sync)
 4. Learning  DONE (Training Hub, Help Center, Report a Bug)
 5. Leads  DONE (tested iteration_299) (Internet Leads, Call Retries, Lead Source Queue, Lead Source Config, Connect Zapier / Make, Team Availability)
-6. Manage  <- next (Tags, Keyword Auto-Tags, Keyword Search, Campaigns, Review Center, Showcase approvals, Inventory Feed, Review Links)
-7. My Performance (My Stats, Team Sales, Team Tasks, Customer Engagement, Leaderboard, Activity Reports, Email Analytics, SEO/GEO Health, VA Library)
+6. Manage  DONE (tested iteration_300) (Tags, Keyword Auto-Tags, Keyword Search, Campaigns, Review Center, Showcase approvals, Inventory Feed, Review Links)
+7. My Performance  <- next (My Stats, Team Sales, Team Tasks, Customer Engagement, Leaderboard, Activity Reports, Email Analytics, SEO/GEO Health, VA Library)
 8. Campaigns + My Tools (Campaign Dashboard, Date Triggers, Ask Jessi, Team Chat)
 9. Set Up (Store Profile, Brand Kit, Messaging Channels, Phone Numbers, Team Members, Invite Team, Integrations)
 10. Admin / Internal Operations (super admin only, `later`)
@@ -79,13 +79,13 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 | 31 | Leads | Lead Source Config | /admin/lead-sources, /new, /[id] | | x | fixed | all three screens: shared header, every #007AFF -> gold, selection highlight gold |
 | 32 | Leads | Connect Zapier / Make | /admin/lead-connect | | x | fixed | shared header |
 | 33 | Leads | Team Availability | /admin/team-availability | | x | fixed | shared header with Updated subtitle + refresh; backend /schedule/team no longer returns Unknown names |
-| 34 | Manage | Tags | /settings/tags | | x | todo | |
-| 35 | Manage | Keyword Auto-Tags | /settings/keyword-rules | | x | todo | |
-| 36 | Manage | Keyword Search | /keyword-search | | x | todo | |
-| 37 | Manage | Campaigns | /campaigns | | org_admin+ | todo | |
-| 38 | Manage | Review Center | /settings/review-approvals | | x | todo | |
-| 39 | Manage | Showcase approvals | /settings/showcase-approvals | | x | todo | |
-| 40 | Manage | Inventory Feed | /admin/inventory-feed | | x | todo | |
+| 34 | Manage | Tags | /settings/tags | | x | fixed | shared header, stale Jessi/82px top padding removed, all #007AFF -> gold |
+| 35 | Manage | Keyword Auto-Tags | /settings/keyword-rules | | x | fixed | shared header, indigo -> gold (add, scope pills, submit), em dashes removed |
+| 36 | Manage | Keyword Search | /keyword-search | | x | fixed | shared header with rules link |
+| 37 | Manage | Campaigns | /campaigns | | org_admin+ | fixed | shared header with reorder/dashboard/new, toggles + stats gold |
+| 38 | Manage | Review Center | /settings/review-approvals | | x | fixed | shared header with subtitle |
+| 39 | Manage | Showcase approvals | /settings/showcase-approvals | | x | fixed | shared header |
+| 40 | Manage | Inventory Feed | /admin/inventory-feed | | x | fixed | shared header |
 | 41 | My Tools | Ask Jessi | /jessie | | x | todo | |
 | 42 | My Tools | Team Chat | /(tabs)/team | | x | todo | |
 | 43 | Campaigns | Campaign Dashboard | /campaigns/dashboard | | x | todo | |
@@ -127,4 +127,5 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 - June 2026: Batch 2 (Today + loose) done: 6 screens on ScreenHeader, template renderer fixes (vehicle fallback, phone-as-name), tasks API sanitizes em dashes and phone greetings. Testing agent 100% (iteration_297).
 - June 2026: Batch 3 (Settings) done: 6 screens, testing agent 90% -> 2 minor items fixed same turn (my-profile back testid/fallback, link page pill color).
 - June 2026: Batch 4 (Leads + Report a Bug) done: 8 screens, backend name fallback for team availability, lead draft em dashes stripped. Testing agent 93% -> 2 minor items fixed and verified.
-- Still using stale JESSI_BAR_HEIGHT padding (bar is disabled): app/settings/tags.tsx, app/settings/persona.tsx, app/admin/users.tsx. Remove in their batches.
+- June 2026: Batch 5 (Manage) done: 7 screens, testing agent 99%, the one nit (indigo Create Rule button) fixed same turn.
+- Still using stale JESSI_BAR_HEIGHT padding (bar is disabled): app/settings/persona.tsx, app/admin/users.tsx. Remove in their batches.

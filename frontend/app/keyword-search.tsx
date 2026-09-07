@@ -14,6 +14,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
 import { useThemeStore } from '../store/themeStore';
+import { ScreenHeader, HeaderIconButton } from '../components/common/ScreenHeader';
 
 const timeLabel = (iso: string) => {
   if (!iso) return '';
@@ -93,16 +94,8 @@ export default function KeywordSearchScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={{ padding: 4 }} data-testid="keyword-search-back-btn">
-          <Ionicons name="chevron-back" size={26} color={colors.accent} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Keyword Search</Text>
-        <TouchableOpacity onPress={() => router.push('/settings/keyword-rules' as any)} style={{ padding: 6 }} data-testid="keyword-search-rules-link">
-          <Ionicons name="pricetags-outline" size={20} color="#5856D6" />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader title="Keyword Search" testID="keyword-search"
+        right={<HeaderIconButton icon="pricetags-outline" onPress={() => router.push('/settings/keyword-rules' as any)} testID="keyword-search-rules-link" />} />
 
       {/* Search input */}
       <View style={styles.searchWrap}>
@@ -132,7 +125,7 @@ export default function KeywordSearchScreen() {
         <View style={styles.centerWrap}>
           <Ionicons name="chatbubbles-outline" size={44} color={colors.textTertiary} />
           <Text style={styles.hintTitle}>Find anything ever said</Text>
-          <Text style={styles.hintText}>Type a keyword like "trade" or "gladiator" to search every text and call transcript — then jump straight to it.</Text>
+          <Text style={styles.hintText}>Type a keyword like "trade" or "gladiator" to search every text and call transcript, then jump straight to it.</Text>
         </View>
       ) : results.length === 0 ? (
         <View style={styles.centerWrap}>
@@ -183,9 +176,7 @@ export default function KeywordSearchScreen() {
 
 const getStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10 },
-  headerTitle: { flex: 1, fontSize: 18, fontWeight: '700', color: colors.text, marginLeft: 6 },
-  searchWrap: { paddingHorizontal: 16, paddingBottom: 10 },
+  searchWrap: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 10 },
   searchBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.card, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderColor: colors.border },
   searchInput: { flex: 1, fontSize: 15, color: colors.text, padding: 0 },
   centerWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 40, gap: 8 },

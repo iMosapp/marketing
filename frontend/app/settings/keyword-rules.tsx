@@ -18,6 +18,7 @@ import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton } from '../../components/common/ScreenHeader';
 
 const RULE_COLORS = ['#007AFF', '#FF9500', '#34C759', '#AF52DE', '#FF2D55', '#5856D6', '#00C7BE', '#FFD60A'];
 
@@ -141,7 +142,7 @@ export default function KeywordRulesScreen() {
         const d = res.data || {};
         showSimpleAlert(
           'Scan Complete',
-          `${d.messages_matched || 0} message(s) + ${d.calls_matched || 0} call(s) matched — ${d.contacts_tagged || 0} contact(s) tagged "${rule.tag}".`
+          `${d.messages_matched || 0} message(s) + ${d.calls_matched || 0} call(s) matched. ${d.contacts_tagged || 0} contact(s) tagged "${rule.tag}".`
         );
         load();
       } catch {
@@ -191,16 +192,8 @@ export default function KeywordRulesScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} data-testid="keyword-rules-back-btn">
-          <Ionicons name="chevron-back" size={26} color={colors.accent} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Keyword Auto-Tags</Text>
-        <TouchableOpacity onPress={openAdd} style={styles.addBtn} data-testid="keyword-rules-add-btn">
-          <Ionicons name="add" size={22} color="#fff" />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader title="Keyword Auto-Tags" testID="keyword-rules"
+        right={<HeaderIconButton icon="add-circle" onPress={openAdd} testID="keyword-rules-add-btn" />} />
 
       {loading ? (
         <View style={styles.loadingWrap}><ActivityIndicator size="large" color={colors.accent} /></View>
@@ -208,9 +201,9 @@ export default function KeywordRulesScreen() {
         <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
           {/* Explainer */}
           <View style={styles.explainer}>
-            <Ionicons name="pricetags" size={16} color="#5856D6" />
+            <Ionicons name="pricetags" size={16} color={colors.accent} />
             <Text style={styles.explainerText}>
-              When a keyword shows up in a text or a call transcript, the tag is applied to the contact automatically — and you can see exactly which message triggered it.{'\n\n'}
+              When a keyword shows up in a text or a call transcript, the tag is applied to the contact automatically, and you can see exactly which message triggered it.{'\n\n'}
               <Ionicons name="notifications" size={11} color="#FF9500" /> bell = instant push alert when a customer says it · <Ionicons name="time-outline" size={11} color="#32ADE6" /> clock = scan past conversations
             </Text>
           </View>
@@ -273,7 +266,7 @@ export default function KeywordRulesScreen() {
                     const isCurrent = i === (insights.weekly.length - 1);
                     return (
                       <View key={i} style={{ flex: 1, alignItems: 'center', justifyContent: 'flex-end', height: '100%' }}>
-                        <View style={{ width: '100%', height: `${Math.max(6, (w.count / maxW) * 100)}%`, borderRadius: 3, backgroundColor: isCurrent ? '#5856D6' : colors.surface, borderWidth: isCurrent ? 0 : 1, borderColor: colors.border }} />
+                        <View style={{ width: '100%', height: `${Math.max(6, (w.count / maxW) * 100)}%`, borderRadius: 3, backgroundColor: isCurrent ? colors.accent : colors.surface, borderWidth: isCurrent ? 0 : 1, borderColor: colors.border }} />
                       </View>
                     );
                   })}
@@ -286,7 +279,7 @@ export default function KeywordRulesScreen() {
           {/* Rules */}
           <Text style={styles.sectionTitle}>RULES</Text>
           {rules.length === 0 && (
-            <Text style={styles.emptyText}>No rules yet — tap + to create one.</Text>
+            <Text style={styles.emptyText}>No rules yet. Tap + to create one.</Text>
           )}
           {rules.map(rule => (
             <View key={rule._id} style={styles.ruleCard} data-testid={`keyword-rule-${rule.tag.toLowerCase().replace(/\s+/g, '-')}`}>
@@ -345,7 +338,7 @@ export default function KeywordRulesScreen() {
           {/* Recent activity */}
           <Text style={[styles.sectionTitle, { marginTop: 24 }]}>RECENT AUTO-TAGS</Text>
           {events.length === 0 && (
-            <Text style={styles.emptyText}>Nothing tagged yet — new texts and calls are scanned automatically.</Text>
+            <Text style={styles.emptyText}>Nothing tagged yet. New texts and calls are scanned automatically.</Text>
           )}
           {events.map(ev => (
             <TouchableOpacity key={ev._id} style={styles.eventRow} onPress={() => openEvent(ev)} activeOpacity={0.7} data-testid={`keyword-event-${ev._id}`}>
@@ -395,19 +388,19 @@ export default function KeywordRulesScreen() {
                 <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
                   <TouchableOpacity
                     onPress={() => setFormScope('personal')}
-                    style={[styles.scopePill, formScope === 'personal' && { backgroundColor: '#5856D6', borderColor: '#5856D6' }]}
+                    style={[styles.scopePill, formScope === 'personal' && { backgroundColor: colors.accent, borderColor: colors.accent }]}
                     data-testid="keyword-rule-scope-personal"
                   >
                     <Ionicons name="person" size={13} color={formScope === 'personal' ? '#fff' : colors.textSecondary} />
-                    <Text style={[styles.scopePillText, { color: formScope === 'personal' ? '#fff' : colors.textSecondary }]}>Just me</Text>
+                    <Text style={[styles.scopePillText, { color: formScope === 'personal' ? '#000' : colors.textSecondary }]}>Just me</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => setFormScope('team')}
-                    style={[styles.scopePill, formScope === 'team' && { backgroundColor: '#32ADE6', borderColor: '#32ADE6' }]}
+                    style={[styles.scopePill, formScope === 'team' && { backgroundColor: colors.accent, borderColor: colors.accent }]}
                     data-testid="keyword-rule-scope-team"
                   >
                     <Ionicons name="people" size={13} color={formScope === 'team' ? '#fff' : colors.textSecondary} />
-                    <Text style={[styles.scopePillText, { color: formScope === 'team' ? '#fff' : colors.textSecondary }]}>Whole team</Text>
+                    <Text style={[styles.scopePillText, { color: formScope === 'team' ? '#000' : colors.textSecondary }]}>Whole team</Text>
                   </TouchableOpacity>
                 </View>
               </>
@@ -415,7 +408,7 @@ export default function KeywordRulesScreen() {
             {editRule?.scope === 'team' && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 }}>
                 <Ionicons name="people" size={13} color="#32ADE6" />
-                <Text style={{ fontSize: 12, color: '#32ADE6', fontWeight: '600' }}>Team rule — applies to every rep's conversations</Text>
+                <Text style={{ fontSize: 12, color: '#32ADE6', fontWeight: '600' }}>Team rule: applies to every rep's conversations</Text>
               </View>
             )}
 
@@ -462,7 +455,7 @@ export default function KeywordRulesScreen() {
               disabled={saving}
               data-testid="keyword-rule-save-btn"
             >
-              {saving ? <ActivityIndicator size="small" color="#fff" /> : (
+              {saving ? <ActivityIndicator size="small" color="#000" /> : (
                 <Text style={styles.saveBtnText}>{editRule ? 'Save Changes' : 'Create Rule'}</Text>
               )}
             </TouchableOpacity>
@@ -475,10 +468,6 @@ export default function KeywordRulesScreen() {
 
 const getStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
-  backBtn: { padding: 4 },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.text, marginLeft: 6 },
-  addBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#5856D6', alignItems: 'center', justifyContent: 'center' },
   loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   explainer: { flexDirection: 'row', gap: 10, backgroundColor: '#5856D615', borderRadius: 12, padding: 12, margin: 16, alignItems: 'flex-start' },
   explainerText: { flex: 1, fontSize: 13, color: colors.textSecondary, lineHeight: 18 },
@@ -505,6 +494,6 @@ const getStyles = (colors: any) => StyleSheet.create({
   colorDotSelected: { borderWidth: 3, borderColor: colors.text },
   scopePill: { flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 9, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   scopePillText: { fontSize: 13, fontWeight: '700' },
-  saveBtn: { backgroundColor: '#5856D6', borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  saveBtn: { backgroundColor: colors.accent, borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  saveBtnText: { color: '#000', fontSize: 16, fontWeight: '700' },
 });

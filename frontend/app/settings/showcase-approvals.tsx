@@ -6,9 +6,10 @@ import {
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
 import api from '../../services/api';
 import { showAlert, showSimpleAlert } from '../../services/alert';
 
@@ -33,7 +34,6 @@ interface PendingEntry {
 export default function ShowcaseApprovalsScreen() {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
-  const router = useRouter();
   const { user } = useAuthStore();
   const [entries, setEntries] = useState<PendingEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,13 +122,7 @@ export default function ShowcaseApprovalsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton} data-testid="showcase-approvals-back">
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Showcase Approvals</Text>
-        <View style={{ width: 32 }} />
-      </View>
+      <ScreenHeader title="Showcase Approvals" testID="showcase-approvals" />
 
       <ScrollView
         style={styles.content}
@@ -213,12 +207,6 @@ export default function ShowcaseApprovalsScreen() {
 const getStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   loadingContainer: { flex: 1, backgroundColor: colors.bg, justifyContent: 'center', alignItems: 'center' },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingTop: 28, paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: colors.card,
-  },
-  backButton: { padding: 4 },
-  headerTitle: { fontSize: 17, fontWeight: '600', color: colors.text },
   content: { flex: 1, padding: 16 },
   sectionTitle: { fontSize: 15, fontWeight: '600', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 16 },
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
