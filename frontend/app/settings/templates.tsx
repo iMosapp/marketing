@@ -14,14 +14,13 @@ import {
   KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { templatesAPI } from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
 import VoiceInput from '../../components/VoiceInput';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenHeader, HeaderIconButton } from '../../components/common/ScreenHeader';
 
 import { useThemeStore } from '../../store/themeStore';
-import { JESSI_BAR_HEIGHT } from '../../components/JessieFloatingChat';
 interface Template {
   _id: string;
   name: string;
@@ -47,7 +46,6 @@ const CATEGORIES = [
 export default function TemplatesSettings() {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
-  const router = useRouter();
   const { user } = useAuthStore();
   const insets = useSafeAreaInsets();
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -165,34 +163,23 @@ export default function TemplatesSettings() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <ScreenHeader title="My Templates" testID="templates-header" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.accent} />
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Message Templates</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={openCreateModal}
-        >
-          <Ionicons name="add" size={28} color="#007AFF" />
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScreenHeader title="My Templates" testID="templates-header"
+        right={<HeaderIconButton icon="add-circle" onPress={openCreateModal} testID="templates-add-btn" />} />
 
       {/* Info Banner */}
       <View style={styles.infoBanner}>
-        <Ionicons name="information-circle" size={20} color="#007AFF" />
+        <Ionicons name="information-circle" size={20} color={colors.accent} />
         <Text style={styles.infoText}>
           Use {'{name}'} in your templates to auto-fill the contact's name
         </Text>
@@ -253,7 +240,7 @@ export default function TemplatesSettings() {
           style={styles.createCard}
           onPress={openCreateModal}
         >
-          <Ionicons name="add-circle-outline" size={32} color="#007AFF" />
+          <Ionicons name="add-circle-outline" size={32} color={colors.accent} />
           <Text style={styles.createText}>Create New Template</Text>
         </TouchableOpacity>
 
@@ -287,7 +274,7 @@ export default function TemplatesSettings() {
               </Text>
               <TouchableOpacity onPress={handleSave} disabled={saving}>
                 {saving ? (
-                  <ActivityIndicator size="small" color="#007AFF" />
+                  <ActivityIndicator size="small" color={colors.accent} />
                 ) : (
                   <Text style={styles.saveButton}>Save</Text>
                 )}
@@ -372,7 +359,7 @@ export default function TemplatesSettings() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -387,29 +374,6 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.bg,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: Platform.OS === 'ios' ? 82 + JESSI_BAR_HEIGHT : 40 + JESSI_BAR_HEIGHT,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    backgroundColor: colors.bg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.card,
-  },
-  backButton: {
-    width: 40,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  addButton: {
-    width: 40,
-    alignItems: 'flex-end',
-  },
   infoBanner: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -417,12 +381,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 16,
     padding: 12,
-    borderRadius: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
     gap: 8,
   },
   infoText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 13,
     color: colors.textSecondary,
   },
   content: {
@@ -432,7 +398,9 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   templateCard: {
     backgroundColor: colors.card,
-    borderRadius: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: 16,
     marginBottom: 12,
   },
@@ -455,11 +423,11 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   templateName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.text,
   },
   templateCategory: {
-    fontSize: 15,
+    fontSize: 13,
     color: colors.textSecondary,
     marginTop: 2,
   },
@@ -504,9 +472,9 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   createText: {
     fontSize: 16,
-    color: '#007AFF',
+    color: colors.accent,
     marginTop: 8,
-    fontWeight: '500',
+    fontWeight: '700',
   },
   modalContainer: {
     flex: 1,
@@ -536,12 +504,12 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   cancelButton: {
     fontSize: 16,
-    color: '#007AFF',
+    color: colors.textSecondary,
   },
   saveButton: {
     fontSize: 16,
-    color: '#007AFF',
-    fontWeight: '600',
+    color: colors.accent,
+    fontWeight: '700',
   },
   modalContent: {
     flex: 1,
@@ -587,15 +555,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 6,
   },
   categoryChipActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   categoryChipText: {
     fontSize: 15,
     color: colors.textSecondary,
   },
   categoryChipTextActive: {
-    color: colors.text,
+    color: '#000',
+    fontWeight: '700',
   },
   variableHelper: {
     flexDirection: 'row',
@@ -615,7 +584,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   variableChipText: {
     fontSize: 15,
-    color: '#007AFF',
+    color: colors.accent,
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
 });

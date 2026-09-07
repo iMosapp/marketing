@@ -8,6 +8,7 @@ import { useThemeStore } from '../store/themeStore';
 import { useAuthStore } from '../store/authStore';
 import { copyToClipboard } from '../utils/clipboard';
 import { useToast } from '../components/common/Toast';
+import { ScreenHeader } from '../components/common/ScreenHeader';
 import api from '../services/api';
 
 const ACCENT = '#34C759';
@@ -78,12 +79,7 @@ export default function ShareAppScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12 }}>
-        <TouchableOpacity onPress={() => router.back()} data-testid="share-app-back-btn">
-          <Ionicons name="chevron-back" size={26} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, flex: 1 }}>Share the App</Text>
-      </View>
+      <ScreenHeader title="Share the App" testID="share-app" />
 
       {loading ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator size="large" color={ACCENT} /></View>
@@ -91,7 +87,7 @@ export default function ShareAppScreen() {
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 14 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} tintColor={colors.textSecondary} />}>
 
-          <View style={{ backgroundColor: colors.card, borderRadius: 16, padding: 18, alignItems: 'center', gap: 14 }} data-testid="share-app-link-card">
+          <View style={{ backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 18, alignItems: 'center', gap: 14 }} data-testid="share-app-link-card">
             <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center' }}>
               Your install link. iPhones go straight to the App Store; you get a ping when someone installs and their name when they sign up.
             </Text>
@@ -123,7 +119,7 @@ export default function ShareAppScreen() {
             ))}
           </View>
 
-          <Text style={{ fontSize: 12, fontWeight: '700', letterSpacing: 1, color: colors.textSecondary, marginTop: 6 }}>RECENT ACTIVITY</Text>
+          <Text style={{ fontSize: 12, fontWeight: '700', letterSpacing: 0.8, color: colors.textSecondary, marginTop: 6 }}>RECENT ACTIVITY</Text>
           {(data?.recent || []).length === 0 ? (
             <View style={{ backgroundColor: colors.card, borderRadius: 14, padding: 18, alignItems: 'center', gap: 6 }} data-testid="share-app-empty">
               <Ionicons name="paper-plane-outline" size={26} color={colors.textSecondary} />

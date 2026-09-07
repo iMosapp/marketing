@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, Image, StyleSheet,
-  SafeAreaView, ActivityIndicator, Switch,
+  View, Text, ScrollView, Image, StyleSheet,
+  ActivityIndicator, Switch,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import api from '../services/api';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
+import { ScreenHeader } from '../components/common/ScreenHeader';
 interface ShowroomEntry {
   card_id: string;
   customer_name: string;
@@ -59,16 +61,10 @@ export default function ManageShowroom() {
   const hiddenCount = entries.filter(e => e.hidden).length;
 
   return (
-    <SafeAreaView style={s.safe}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn} data-testid="manage-showroom-back">
-          <Ionicons name="chevron-back" size={24} color={colors.accent} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Edit Showcase</Text>
-        <View style={{ width: 32 }} />
-      </View>
+    <SafeAreaView style={s.safe} edges={['top']}>
+      <ScreenHeader title="My Showcase" testID="manage-showroom" />
 
-      <View style={s.statsRow}>
+      <View style={[s.statsRow, { marginTop: 16 }]}>
         <View style={s.stat}>
           <Text style={s.statNum}>{visibleCount}</Text>
           <Text style={s.statLabel}>Visible</Text>
@@ -134,25 +130,22 @@ export default function ManageShowroom() {
 
 const getS = (colors: any) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.bg },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
-  backBtn: { padding: 4 },
-  headerTitle: { fontSize: 19, fontWeight: '800', color: colors.text, letterSpacing: 0.5 },
-  statsRow: { flexDirection: 'row', marginHorizontal: 16, backgroundColor: colors.card, borderRadius: 14, marginBottom: 12, overflow: 'hidden' },
+  statsRow: { flexDirection: 'row', marginHorizontal: 16, backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: colors.border, marginBottom: 12, overflow: 'hidden' },
   stat: { flex: 1, alignItems: 'center', paddingVertical: 14 },
   statNum: { fontSize: 22, fontWeight: '800', color: '#C9A962' },
-  statLabel: { fontSize: 13, color: '#8E8E93', marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.5 },
+  statLabel: { fontSize: 12, fontWeight: '700', color: colors.textSecondary, marginTop: 2, textTransform: 'uppercase', letterSpacing: 0.8 },
   hint: { fontSize: 15, color: colors.textSecondary, paddingHorizontal: 16, marginBottom: 12 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8 },
-  emptyText: { fontSize: 18, fontWeight: '600', color: '#8E8E93' },
+  emptyText: { fontSize: 16, fontWeight: '700', color: colors.text },
   emptySubtext: { fontSize: 15, color: colors.textSecondary },
   list: { flex: 1 },
   listContent: { paddingHorizontal: 16, paddingBottom: 40, gap: 8 },
-  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 14, padding: 12, gap: 12 },
+  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 12, gap: 12 },
   cardHidden: { opacity: 0.5 },
   thumb: { width: 56, height: 56, borderRadius: 10, backgroundColor: colors.surface },
   info: { flex: 1 },
-  name: { fontSize: 17, fontWeight: '600', color: colors.text },
+  name: { fontSize: 16, fontWeight: '700', color: colors.text },
   nameHidden: { color: colors.textSecondary },
-  meta: { fontSize: 14, color: '#8E8E93', marginTop: 2 },
+  meta: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
   toggleWrap: { width: 52, alignItems: 'center' },
 });

@@ -15,6 +15,7 @@ import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton } from '../../components/common/ScreenHeader';
 interface Broadcast {
   id: string;
   name: string;
@@ -92,7 +93,7 @@ export default function BroadcastListScreen() {
     switch (status) {
       case 'draft': return colors.textSecondary;
       case 'scheduled': return '#FF9500';
-      case 'sending': return '#007AFF';
+      case 'sending': return colors.accent;
       case 'sent': return '#34C759';
       case 'failed': return '#FF3B30';
       default: return colors.textSecondary;
@@ -171,9 +172,10 @@ export default function BroadcastListScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <ScreenHeader title="Broadcasts" testID="broadcasts-header" />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={colors.accent} />
         </View>
       </SafeAreaView>
     );
@@ -181,21 +183,8 @@ export default function BroadcastListScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header - matching Campaigns style */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="#007AFF" />
-        </TouchableOpacity>
-        
-        <Text style={styles.title}>Broadcasts</Text>
-        
-        <TouchableOpacity
-          onPress={() => router.push('/broadcast/new')}
-          style={styles.addButton}
-        >
-          <Ionicons name="add-circle" size={32} color="#007AFF" />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader title="Broadcasts" testID="broadcasts-header"
+        right={<HeaderIconButton icon="add-circle" onPress={() => router.push('/broadcast/new')} testID="broadcasts-new-btn" />} />
 
       {/* Stats Banner - matching Campaigns style */}
       <View style={styles.statsBanner}>
@@ -221,13 +210,16 @@ export default function BroadcastListScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#007AFF" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />
         }
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
-            <Ionicons name="megaphone-outline" size={64} color={colors.surface} />
+            <Ionicons name="megaphone-outline" size={56} color={colors.textTertiary} />
             <Text style={styles.emptyText}>No broadcasts yet</Text>
-            <Text style={styles.emptySubtext}>Create your first broadcast message</Text>
+            <Text style={styles.emptySubtext}>Send one message to a group of customers at once.</Text>
+            <TouchableOpacity onPress={() => router.push('/broadcast/new')} style={styles.emptyBtn} testID="broadcasts-empty-new-btn" {...({ dataSet: { testid: 'broadcasts-empty-new-btn' } } as any)}>
+              <Text style={styles.emptyBtnText}>New Broadcast</Text>
+            </TouchableOpacity>
           </View>
         )}
       />
@@ -245,48 +237,32 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-  },
-  backButton: {
-    padding: 4,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text,
-  },
-  addButton: {
-    padding: 4,
-  },
   statsBanner: {
     flexDirection: 'row',
     backgroundColor: colors.card,
     marginHorizontal: 16,
     marginVertical: 16,
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 18,
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
   },
   statValue: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#007AFF',
-    marginBottom: 4,
+    fontSize: 26,
+    fontWeight: '800',
+    color: colors.accent,
+    marginBottom: 2,
   },
   statLabel: {
-    fontSize: 14,
+    fontSize: 12,
+    fontWeight: '700',
     color: colors.textSecondary,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
   },
   statDivider: {
     width: 1,
@@ -299,7 +275,9 @@ const getStyles = (colors: any) => StyleSheet.create({
   broadcastCard: {
     flexDirection: 'row',
     backgroundColor: colors.card,
-    borderRadius: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: 16,
     alignItems: 'flex-start',
   },
@@ -321,8 +299,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginBottom: 8,
   },
   broadcastName: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: colors.text,
     flex: 1,
   },
@@ -335,14 +313,14 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   statusText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '800',
     textTransform: 'uppercase',
   },
   broadcastMessage: {
     fontSize: 15,
     color: colors.textSecondary,
-    lineHeight: 18,
+    lineHeight: 20,
     marginBottom: 12,
   },
   statsRow: {
@@ -356,7 +334,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     gap: 4,
   },
   statText: {
-    fontSize: 15,
+    fontSize: 13,
     color: colors.textSecondary,
   },
   emptyContainer: {
@@ -366,15 +344,28 @@ const getStyles = (colors: any) => StyleSheet.create({
     paddingVertical: 64,
   },
   emptyText: {
-    fontSize: 21,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: colors.text,
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: 14,
+    marginBottom: 4,
   },
   emptySubtext: {
-    fontSize: 17,
+    fontSize: 15,
     color: colors.textSecondary,
     textAlign: 'center',
+    paddingHorizontal: 24,
+  },
+  emptyBtn: {
+    marginTop: 16,
+    backgroundColor: colors.accent,
+    borderRadius: 14,
+    paddingHorizontal: 22,
+    paddingVertical: 12,
+  },
+  emptyBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#000',
   },
 });

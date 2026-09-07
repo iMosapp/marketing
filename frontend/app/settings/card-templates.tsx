@@ -4,7 +4,7 @@ import {
   ActivityIndicator, Platform, KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { ScreenHeader, HeaderIconButton } from '../../components/common/ScreenHeader';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { useAuthStore } from '../../store/authStore';
@@ -53,7 +53,6 @@ const PROTECTED_TYPES = new Set(['congrats', 'birthday', 'anniversary', 'thankyo
 export default function ManageCardTemplatesPage() {
   const { colors } = useThemeStore();
   const s = getS(colors);
-  const router = useRouter();
   const { user } = useAuthStore();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
@@ -160,7 +159,7 @@ export default function ManageCardTemplatesPage() {
               <Text style={[s.previewHL, { color: editing.accent_color }]}>{editing.headline}</Text>
               <Text style={s.previewMsg}>{previewMsg}</Text>
               {editing.footer_text ? <Text style={s.previewFooter}>{editing.footer_text}</Text> : null}
-              <Text style={s.previewNote}>Preview — "Alex" replaces customer name</Text>
+              <Text style={s.previewNote}>Preview: "Alex" stands in for the customer name</Text>
             </View>
 
             <Text style={s.label}>HEADLINE</Text>
@@ -254,13 +253,8 @@ export default function ManageCardTemplatesPage() {
   // ── Template list ──────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.hBtn} data-testid="template-list-back">
-          <Ionicons name="chevron-back" size={26} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Card Templates</Text>
-        <TouchableOpacity
-          onPress={() => setEditing({
+      <ScreenHeader title="Card Templates" testID="card-templates-header"
+        right={<HeaderIconButton icon="add-circle" testID="create-card-template-btn" onPress={() => setEditing({
             card_type: 'custom_' + Date.now().toString(36),
             customized: false,
             headline: 'New Card',
@@ -269,13 +263,7 @@ export default function ManageCardTemplatesPage() {
             background_color: '#1A1A1A',
             text_color: '#FFFFFF',
             footer_text: '',
-          })}
-          style={s.hBtn}
-          data-testid="create-card-template-btn"
-        >
-          <Ionicons name="add-circle" size={28} color="#007AFF" />
-        </TouchableOpacity>
-      </View>
+          })} />} />
 
       {loading ? (
         <View style={s.center}><ActivityIndicator size="large" color="#C9A962" /></View>
@@ -284,9 +272,11 @@ export default function ManageCardTemplatesPage() {
           <Text style={s.note}>Tap any card to edit its message, headline, or color. Changes apply to all users in your store.</Text>
 
           {templates.length === 0 && (
-            <Text style={{ color: colors.textSecondary, textAlign: 'center', marginTop: 40 }}>
-              No templates yet. Your store may need to be set up — contact support.
-            </Text>
+            <View style={{ alignItems: 'center', marginTop: 40, paddingHorizontal: 24, gap: 8 }}>
+              <Ionicons name="color-palette-outline" size={44} color={colors.textTertiary} />
+              <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>No card templates yet</Text>
+              <Text style={{ fontSize: 15, color: colors.textSecondary, textAlign: 'center' }}>Your store has not been set up with card designs. Tap + to create one, or ask your iMOS admin.</Text>
+            </View>
           )}
 
           {templates.map(t => {
@@ -357,7 +347,7 @@ const getS = (colors: any) => StyleSheet.create({
   content:         { flex: 1, padding: 16 },
   note:            { fontSize: 13, color: colors.textSecondary, marginBottom: 16, lineHeight: 20 },
   // Card list
-  card:            { backgroundColor: colors.card, borderRadius: 14, marginBottom: 10, overflow: 'hidden' },
+  card:            { backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: colors.border, marginBottom: 10, overflow: 'hidden' },
   cardMain:        { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
   cardIcon:        { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   cardTitle:       { fontSize: 16, fontWeight: '700', color: colors.text },

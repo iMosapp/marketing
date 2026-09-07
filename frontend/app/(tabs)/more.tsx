@@ -329,9 +329,9 @@ export default function MoreScreen() {
     const brandItems = [
       { icon: 'megaphone-outline', title: 'Broadcast', subtitle: 'Mass text from your tracking number', color: '#C9A962', publicUrl: null, editRoute: '/broadcast' },
       { icon: 'gift',             title: 'Create a Card to Share', subtitle: 'Pick a template, get a trackable link — no recipient needed', color: '#FF9500', publicUrl: null, editRoute: '/settings/create-card?generic=true' },
-      { icon: 'id-card',        title: 'My Digital Card',  subtitle: 'How customers see you', color: '#C9A962', publicUrl: user?._id ? `${PROD_BASE}/card/${user._id}` : null,         editRoute: '/settings/store-profile' },
+      { icon: 'id-card',        title: 'My Digital Card',  subtitle: 'How customers see you', color: '#C9A962', publicUrl: user?._id ? `${PROD_BASE}/card/${user._id}` : null,         editRoute: '/my-profile' },
       { icon: 'link',           title: 'My Link Page',     subtitle: 'All your links in one spot', color: '#007AFF', publicUrl: user?._id ? `${PROD_BASE}/l/${user._id}` : null,          editRoute: '/settings/link-page' },
-      { icon: 'planet-outline', title: 'My Landing Page',  subtitle: 'Your full personal page', color: '#AF52DE', publicUrl: user?._id ? `${PROD_BASE}/p/${user._id}` : null,            editRoute: '/settings/store-profile' },
+      { icon: 'planet-outline', title: 'My Landing Page',  subtitle: 'Your full personal page', color: '#AF52DE', publicUrl: user?._id ? `${PROD_BASE}/p/${user._id}` : null,            editRoute: '/my-profile' },
       { icon: 'images',         title: 'My Showcase',      subtitle: 'Your customer gallery', color: '#34C759', publicUrl: user?._id ? `${PROD_BASE}/showcase/${user._id}` : null,       editRoute: '/showroom-manage' },
       { icon: 'star',           title: 'Review Link',      subtitle: 'Share to get reviews', color: '#FFD60A', publicUrl: reviewShareUrl || null,                                        editRoute: '/settings/review-links' },
     ];
@@ -711,7 +711,7 @@ export default function MoreScreen() {
       mk('today', 'Calendar', 'Appointments, birthdays and sold dates', 'calendar', '#AF52DE', '/dates-calendar'),
       mk('today', 'My Numbers', 'Streak, month sales, how am I doing', 'stats-chart', '#34C759', '/touchpoints/performance'),
       mk('today', 'AI Follow-ups', 'Smart outreach suggestions', 'sparkles', '#FF9F0A', '/(tabs)/ai-outreach'),
-      mk('my_brand', 'My Digital Card', 'How customers see you', 'id-card', '#C9A962', '/settings/store-profile'),
+      mk('my_brand', 'My Digital Card', 'How customers see you', 'id-card', '#C9A962', '/my-profile'),
       mk('my_brand', 'Share My Card', 'Text your card to a customer', 'paper-plane', '#C9A962', '/quick-send/digitalcard'),
       mk('my_brand', 'Get Reviews', 'Send your review link', 'star', '#FFD60A', '/quick-send/review'),
       mk('my_brand', 'My Showcase', 'Your customer gallery', 'images', '#34C759', '/showroom-manage'),

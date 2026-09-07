@@ -9,14 +9,16 @@ import {
   ScrollView,
   Alert,
   Linking,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import api from '../../services/api';
 import { useToast } from '../../components/common/Toast';
 import { showAlert } from '../../services/alert';
+import { copyToClipboard } from '../../utils/clipboard';
+import { ScreenHeader, HeaderTextButton } from '../../components/common/ScreenHeader';
 
 import { useThemeStore } from '../../store/themeStore';
 interface ReviewLinks {
@@ -39,7 +41,6 @@ const REVIEW_PLATFORMS = [
 export default function ReviewLinksScreen() {
   const { colors } = useThemeStore();
   const styles = getStyles(colors);
-  const router = useRouter();
   const { user } = useAuthStore();
 const { showToast } = useToast();
     const [loading, setLoading] = useState(true);
@@ -57,8 +58,8 @@ const { showToast } = useToast();
   const [isStoreAdmin, setIsStoreAdmin] = useState(false);
 
   useEffect(() => {
-    loadReviewLinks();
-  }, []);
+    if (user?._id) loadReviewLinks();
+  }, [user?._id]);
 
   const loadReviewLinks = async () => {
     if (!user) return;
@@ -79,7 +80,7 @@ const { showToast } = useToast();
 
   const handleSave = async () => {
     if (!user?.store_id) {
-      showAlert('Error', 'No store associated with your account');
+      showToast('No store on this account yet. Review links are saved per store.');
       return;
     }
 
@@ -124,41 +125,35 @@ const { showToast } = useToast();
     }
   };
 
-  const copyLink = (url: string | null) => {
-    if (url) {
-      // In a real app, use Clipboard API
-      showAlert('Link Copied!', url);
-    }
+  const copyLink = async (url: string | null) => {
+    if (!url) return;
+    await copyToClipboard(url);
+    showToast('Link copied');
   };
+
+  const header = (
+    <ScreenHeader title="Review Links" testID="review-links-header"
+      right={isStoreAdmin ? <HeaderTextButton label={saving ? 'Saving...' : 'Save'} onPress={handleSave} disabled={saving} testID="review-links-save-btn" /> : null} />
+  );
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
+      <SafeAreaView edges={['top']} style={styles.container}>
+        {header}
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator size="large" color={colors.accent} /></View>
+      </SafeAreaView>
     );
   }
 
   return (
     <View style={styles.container}>
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={24} color="#007AFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Account Review Links</Text>
-          {isStoreAdmin && (
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
-              <Text style={styles.saveButtonText}>{saving ? 'Saving...' : 'Save'}</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        {header}
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Info Banner */}
           <View style={styles.infoBanner}>
-            <Ionicons name="information-circle" size={20} color="#007AFF" />
+            <Ionicons name="information-circle" size={20} color={colors.accent} />
             <Text style={styles.infoText}>
               {isStoreAdmin 
                 ? 'These review links are shared with all users at your store. Edit the URLs below.'
@@ -188,7 +183,7 @@ const { showToast } = useToast();
                   />
                 ) : (
                   <Text style={styles.linkUrl} numberOfLines={1}>
-                    {links[platform.key as keyof ReviewLinks] || 'Not set'}
+                    {(links[platform.key as keyof ReviewLinks] as string) || 'Not set'}
                   </Text>
                 )}
               </View>
@@ -198,13 +193,13 @@ const { showToast } = useToast();
                     style={styles.actionButton}
                     onPress={() => openLink(links[platform.key as keyof ReviewLinks] as string)}
                   >
-                    <Ionicons name="open-outline" size={20} color="#007AFF" />
+                    <Ionicons name="open-outline" size={20} color={colors.accent} />
                   </TouchableOpacity>
                   <TouchableOpacity 
                     style={styles.actionButton}
                     onPress={() => copyLink(links[platform.key as keyof ReviewLinks] as string)}
                   >
-                    <Ionicons name="copy-outline" size={20} color="#007AFF" />
+                    <Ionicons name="copy-outline" size={20} color={colors.accent} />
                   </TouchableOpacity>
                 </View>
               )}
@@ -228,7 +223,7 @@ const { showToast } = useToast();
                   style={styles.actionButton}
                   onPress={() => openLink(custom.url)}
                 >
-                  <Ionicons name="open-outline" size={20} color="#007AFF" />
+                  <Ionicons name="open-outline" size={20} color={colors.accent} />
                 </TouchableOpacity>
                 {isStoreAdmin && (
                   <TouchableOpacity 
@@ -262,8 +257,8 @@ const { showToast } = useToast();
                 autoCapitalize="none"
                 autoCorrect={false}
               />
-              <TouchableOpacity style={styles.addButton} onPress={addCustomLink}>
-                <Ionicons name="add" size={20} color={colors.text} />
+              <TouchableOpacity style={styles.addButton} onPress={addCustomLink} testID="review-links-add-custom-btn" {...({ dataSet: { testid: 'review-links-add-custom-btn' } } as any)}>
+                <Ionicons name="add" size={20} color="#000" />
                 <Text style={styles.addButtonText}>Add Review Site</Text>
               </TouchableOpacity>
             </View>
@@ -281,69 +276,43 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
-  loadingText: {
-    color: colors.text,
-    textAlign: 'center',
-    marginTop: 100,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 28,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.card,
-  },
-  backButton: {
-    width: 60,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  saveButton: {
-    width: 60,
-    alignItems: 'flex-end',
-  },
-  saveButtonText: {
-    fontSize: 16,
-    color: '#007AFF',
-    fontWeight: '600',
-  },
   content: {
     flex: 1,
     padding: 16,
   },
   infoBanner: {
     flexDirection: 'row',
-    backgroundColor: '#007AFF15',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
-    gap: 12,
+    padding: 12,
+    marginBottom: 20,
+    gap: 10,
   },
   infoText: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 13,
     color: colors.textSecondary,
-    lineHeight: 20,
+    lineHeight: 18,
   },
   sectionTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     color: colors.textSecondary,
-    marginBottom: 12,
-    letterSpacing: 0.5,
+    marginBottom: 10,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   linkCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 14,
     marginBottom: 8,
     gap: 12,
   },
@@ -359,12 +328,12 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   platformName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.text,
     marginBottom: 4,
   },
   linkInput: {
-    fontSize: 16,
+    fontSize: 15,
     color: colors.text,
     backgroundColor: colors.surface,
     borderRadius: 8,
@@ -372,7 +341,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginTop: 4,
   },
   linkUrl: {
-    fontSize: 15,
+    fontSize: 13,
     color: colors.textSecondary,
   },
   linkActions: {
@@ -389,13 +358,15 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   addCustomSection: {
     backgroundColor: colors.card,
-    borderRadius: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: 16,
     marginTop: 8,
   },
   addCustomLabel: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.text,
     marginBottom: 12,
   },
@@ -409,8 +380,8 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   addButton: {
     flexDirection: 'row',
-    backgroundColor: '#007AFF',
-    borderRadius: 10,
+    backgroundColor: colors.accent,
+    borderRadius: 14,
     padding: 14,
     alignItems: 'center',
     justifyContent: 'center',
@@ -418,7 +389,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   addButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
+    fontWeight: '700',
+    color: '#000',
   },
 });

@@ -23,6 +23,7 @@ import api from '../../services/api';
 import VoiceInput from '../../components/VoiceInput';
 import { useToast } from '../../components/common/Toast';
 import { showAlert } from '../../services/alert';
+import { ScreenHeader, HeaderTextButton } from '../../components/common/ScreenHeader';
 
 import { useThemeStore } from '../../store/themeStore';
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -174,43 +175,34 @@ const { showToast } = useToast();
   // Show loading while auth is loading OR store is loading
   if (authLoading || loading) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
+      <SafeAreaView edges={['top']} style={styles.container}>
+        <ScreenHeader title="Store Profile" testID="store-profile-header" />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator size="large" color={colors.accent} /></View>
+      </SafeAreaView>
     );
   }
 
   if (!store) {
     return (
-      <View style={styles.container}>
-        <SafeAreaView edges={['top']}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()}>
-              <Ionicons name="chevron-back" size={24} color="#007AFF" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Account Profile</Text>
-            <View style={{ width: 60 }} />
-          </View>
-          <Text style={styles.noStoreText}>No account associated with your profile</Text>
-        </SafeAreaView>
-      </View>
+      <SafeAreaView edges={['top']} style={styles.container}>
+        <ScreenHeader title="Store Profile" testID="store-profile-header" />
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 10 }} testID="store-profile-empty" {...({ dataSet: { testid: 'store-profile-empty' } } as any)}>
+          <Ionicons name="storefront-outline" size={44} color={colors.textTertiary} />
+          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, textAlign: 'center' }}>No store on this account yet</Text>
+          <Text style={{ fontSize: 15, color: colors.textSecondary, textAlign: 'center', lineHeight: 21 }}>Your personal card, link page and landing page live under My Profile. Store logo, hours and address appear here once your account is attached to a store.</Text>
+          <TouchableOpacity onPress={() => router.push('/my-profile' as any)} style={{ marginTop: 8, backgroundColor: colors.accent, borderRadius: 14, paddingHorizontal: 22, paddingVertical: 12 }} testID="store-profile-go-my-profile" {...({ dataSet: { testid: 'store-profile-go-my-profile' } } as any)}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: '#000' }}>Open My Profile</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
     <View style={styles.container}>
       <SafeAreaView edges={['top']} style={{ flex: 1 }}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Ionicons name="chevron-back" size={24} color="#007AFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Account Profile</Text>
-          {isAdmin && (
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
-              <Text style={styles.saveButtonText}>{saving ? 'Saving...' : 'Save'}</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+        <ScreenHeader title="Store Profile" testID="store-profile-header"
+          right={isAdmin ? <HeaderTextButton label={saving ? 'Saving...' : 'Save'} onPress={handleSave} disabled={saving} testID="store-profile-save-btn" /> : null} />
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Logo Upload */}
@@ -240,7 +232,7 @@ const { showToast } = useToast();
                 <Text style={styles.logoUploadHint}>Square image, max 5MB{'\n'}Used on cards, review pages & emails</Text>
                 {isAdmin && (
                   <TouchableOpacity style={styles.logoUploadBtn} onPress={handleUploadLogo} disabled={uploading}>
-                    <Ionicons name="cloud-upload" size={16} color="#007AFF" />
+                    <Ionicons name="cloud-upload" size={16} color={colors.accent} />
                     <Text style={styles.logoUploadBtnText}>{uploading ? 'Uploading...' : 'Choose Image'}</Text>
                   </TouchableOpacity>
                 )}
@@ -466,7 +458,7 @@ const { showToast } = useToast();
                   showToast('Review page link copied to clipboard');
                 }}
               >
-                <Ionicons name="copy-outline" size={20} color="#007AFF" />
+                <Ionicons name="copy-outline" size={20} color={colors.accent} />
               </TouchableOpacity>
             </View>
             <TouchableOpacity 
@@ -475,7 +467,7 @@ const { showToast } = useToast();
                 router.push(`/review/${store.slug || store._id}`);
               }}
             >
-              <Ionicons name="eye-outline" size={18} color={colors.text} />
+              <Ionicons name="eye-outline" size={18} color="#000" />
               <Text style={styles.previewButtonText}>Preview Review Page</Text>
             </TouchableOpacity>
           </View>
@@ -516,55 +508,18 @@ const getStyles = (colors: any) => StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
-  loadingText: {
-    color: colors.text,
-    textAlign: 'center',
-    marginTop: 100,
-  },
-  noStoreText: {
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 100,
-    fontSize: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 28,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.card,
-  },
-  backButton: {
-    width: 60,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  saveButton: {
-    width: 60,
-    alignItems: 'flex-end',
-  },
-  saveButtonText: {
-    fontSize: 16,
-    color: '#007AFF',
-    fontWeight: '600',
-  },
   content: {
     flex: 1,
     padding: 16,
   },
   sectionTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     color: colors.textSecondary,
     marginBottom: 8,
     marginTop: 16,
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   sectionDesc: {
     fontSize: 13,
@@ -573,7 +528,9 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   card: {
     backgroundColor: colors.card,
-    borderRadius: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
     padding: 16,
   },
   logoUploadRow: {
@@ -621,16 +578,16 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#007AFF15',
+    backgroundColor: colors.accent + '22',
     paddingVertical: 8,
     paddingHorizontal: 14,
-    borderRadius: 8,
+    borderRadius: 10,
     alignSelf: 'flex-start',
   },
   logoUploadBtnText: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#007AFF',
+    fontWeight: '700',
+    color: colors.accent,
   },
   avatarPreviewRow: {
     flexDirection: 'row',
@@ -781,8 +738,8 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   reviewLinkUrl: {
     flex: 1,
-    fontSize: 16,
-    color: '#007AFF',
+    fontSize: 15,
+    color: colors.accent,
   },
   copyButton: {
     padding: 8,
@@ -791,15 +748,15 @@ const getStyles = (colors: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#007AFF',
-    borderRadius: 10,
+    backgroundColor: colors.accent,
+    borderRadius: 14,
     padding: 14,
     marginTop: 12,
   },
   previewButtonText: {
-    color: colors.text,
+    color: '#000',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     marginLeft: 8,
   },
   gmbPlaceholder: {

@@ -5,8 +5,8 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView,
   ActivityIndicator, Alert, Switch, Platform, Linking,
 } from 'react-native';
-import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenHeader, HeaderTextButton } from '../../components/common/ScreenHeader';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
@@ -37,7 +37,6 @@ interface SocialEntry { username: string; visible: boolean; }
 
 export default function EditLinkPage() {
   const { colors } = useThemeStore();
-  const router = useRouter();
   const user = useAuthStore(s => s.user);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -130,22 +129,16 @@ export default function EditLinkPage() {
   };
 
   if (loading) return (
-    <SafeAreaView style={[s.container, { backgroundColor: colors.bg }]}>
+    <SafeAreaView style={[s.container, { backgroundColor: colors.bg }]} edges={['top']}>
+      <ScreenHeader title="My Link Page" testID="linkpage" />
       <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 40 }} />
     </SafeAreaView>
   );
 
   return (
     <SafeAreaView style={[s.container, { backgroundColor: colors.bg }]} edges={['top']}>
-      <View style={[s.header, { borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn} data-testid="linkpage-back">
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={[s.headerTitle, { color: colors.text }]}>My Link Page</Text>
-        <TouchableOpacity onPress={handleSave} disabled={saving} data-testid="linkpage-save">
-          {saving ? <ActivityIndicator size="small" color={colors.accent} /> : <Text style={{ color: colors.accent, fontSize: 17, fontWeight: '700' }}>Save</Text>}
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader title="My Link Page" testID="linkpage"
+        right={saving ? <ActivityIndicator size="small" color={colors.accent} /> : <HeaderTextButton label="Save" onPress={handleSave} testID="linkpage-save" />} />
 
       <ScrollView style={s.content} showsVerticalScrollIndicator={false}>
         {/* URL Preview + Copy */}
@@ -320,14 +313,11 @@ export default function EditLinkPage() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 28, paddingBottom: 12, borderBottomWidth: 0.5 },
-  backBtn: { padding: 4 },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: '700', textAlign: 'center' },
   content: { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
   urlCard: { flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: 14, borderWidth: 1, gap: 12 },
   copyBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
-  statsText: { fontSize: 15, textAlign: 'center', marginTop: 8, marginBottom: 16 },
-  sectionTitle: { fontSize: 13, fontWeight: '700', letterSpacing: 1.5, marginTop: 20, marginBottom: 8 },
+  statsText: { fontSize: 13, textAlign: 'center', marginTop: 8, marginBottom: 16 },
+  sectionTitle: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginTop: 20, marginBottom: 8 },
   input: { padding: 12, borderRadius: 10, fontSize: 17, borderWidth: 1, marginBottom: 8 },
   multiline: { minHeight: 70, textAlignVertical: 'top' },
   themeRow: { flexDirection: 'row', gap: 12 },

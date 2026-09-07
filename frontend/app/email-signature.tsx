@@ -1,6 +1,8 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Alert } from 'react-native';
-import { useRouter, Stack } from 'expo-router';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Alert, Image, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenHeader } from '../components/common/ScreenHeader';
+import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
@@ -11,7 +13,6 @@ const APP_URL = process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com';
 type LinkOption = 'card' | 'showcase' | 'linkpage' | 'landing';
 
 export default function EmailSignaturePage() {
-  const router = useRouter();
   const { user } = useAuthStore();
   const { colors } = useThemeStore();
   const s = getStyles(colors);
@@ -43,6 +44,7 @@ export default function EmailSignaturePage() {
   const photoUrl = profile?.photo_url
     ? (profile.photo_url.startsWith('http') ? profile.photo_url : `${APP_URL}${profile.photo_url}`)
     : null;
+  const [photoFailed, setPhotoFailed] = useState(false);
 
   const buildHtml = useCallback(() => {
     if (!profile) return '';
@@ -124,30 +126,20 @@ export default function EmailSignaturePage() {
 
   if (!profile) {
     return (
-      <View style={s.container}>
+      <SafeAreaView style={s.container} edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
-        <View style={s.header}>
-          <TouchableOpacity onPress={() => router.back()} style={s.backBtn} data-testid="sig-back-btn">
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-          </TouchableOpacity>
-          <Text style={s.headerTitle}>Email Signature</Text>
-          <View style={{ width: 40 }} />
-        </View>
-        <View style={s.loadingWrap}><Text style={s.loadingText}>Loading your profile...</Text></View>
-      </View>
+        <ScreenHeader title="Email Signature" testID="sig" />
+        <View style={s.loadingWrap}><ActivityIndicator size="large" color={colors.accent} /></View>
+      </SafeAreaView>
     );
   }
 
+  const initials = (profile.name || '').split(' ').filter(Boolean).map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
+
   return (
-    <View style={s.container}>
+    <SafeAreaView style={s.container} edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn} data-testid="sig-back-btn">
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={s.headerTitle}>Email Signature</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <ScreenHeader title="Email Signature" testID="sig" />
 
       <ScrollView style={s.scroll} contentContainerStyle={s.scrollContent} showsVerticalScrollIndicator={false}>
 
@@ -173,11 +165,15 @@ export default function EmailSignaturePage() {
         <Text style={[s.sectionLabel, { marginTop: 28 }]}>Preview</Text>
         <View style={s.previewCard} data-testid="sig-preview">
           <View style={s.previewInner}>
-            {photoUrl && (
-              <View style={s.previewPhoto}>
-                <img src={photoUrl} alt={profile.name} style={{ width: 72, height: 72, borderRadius: 36, objectFit: 'cover' } as any} />
-              </View>
-            )}
+            <View style={s.previewPhoto}>
+              {photoUrl && !photoFailed ? (
+                <Image source={{ uri: photoUrl }} style={{ width: 72, height: 72, borderRadius: 36 }} resizeMode="cover" onError={() => setPhotoFailed(true)} />
+              ) : (
+                <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#C9A962', alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ fontSize: 24, fontWeight: '800', color: '#000' }}>{initials || '?'}</Text>
+                </View>
+              )}
+            </View>
             <View style={s.previewInfo}>
               <Text style={s.previewName}>{profile.name}</Text>
               {profile.title && (
@@ -269,28 +265,25 @@ export default function EmailSignaturePage() {
           <Text style={s.instrStep}>1. Open Gmail app &gt; tap the menu &gt; Settings</Text>
           <Text style={s.instrStep}>2. Select your account &gt; "Mobile Signature"</Text>
           <Text style={s.instrStep}>3. Paste the plain text version</Text>
-          <Text style={s.instrNote}>Tip: For the best-looking signature, set it up on desktop Gmail — it will apply to mobile too.</Text>
+          <Text style={s.instrNote}>Tip: set it up on desktop Gmail for the best-looking signature. It applies to mobile too.</Text>
         </View>
 
         <View style={{ height: 40 }} />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
 const getStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: Platform.OS === 'ios' ? 82 : 40, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: colors.header, borderBottomWidth: 1, borderBottomColor: colors.border },
-  backBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
   loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   loadingText: { fontSize: 17, color: colors.textSecondary },
   scroll: { flex: 1 },
-  scrollContent: { padding: 20 },
-  sectionLabel: { fontSize: 18, fontWeight: '700', color: colors.text, marginBottom: 4 },
-  sectionHint: { fontSize: 15, color: colors.textSecondary, marginBottom: 14 },
+  scrollContent: { padding: 16, paddingBottom: 40 },
+  sectionLabel: { fontSize: 16, fontWeight: '700', color: colors.text, marginBottom: 4 },
+  sectionHint: { fontSize: 13, color: colors.textSecondary, marginBottom: 14 },
   linkGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  linkCard: { width: '48%' as any, backgroundColor: colors.card, borderRadius: 14, padding: 14, borderWidth: 2, borderColor: colors.border },
+  linkCard: { width: '48%' as any, backgroundColor: colors.card, borderRadius: 16, padding: 14, borderWidth: 2, borderColor: colors.border },
   linkCardActive: { borderColor: colors.accent, backgroundColor: colors.accent + '14' },
   linkLabel: { fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 8 },
   linkLabelActive: { color: colors.accent },

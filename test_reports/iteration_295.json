@@ -1,0 +1,55 @@
+{
+  "summary": "Frontend-only QA of Tools 'My Brand' batch. Logged in as super admin (forest@imosapp.com) at 390x844 and visited all 12 routes; each renders the shared ScreenHeader with the correct centered title and expected testids. Both bug fixes confirmed: /settings/review-links loads Google/Yelp/Facebook/DealerRater/Cars.com rows (no 'Loading...' stuck state) and exposes review-links-save-btn; /settings/store-profile shows the proper empty state (store-profile-empty + store-profile-go-my-profile). Email Signature preview renders with name 'Forest' and gold initials circle (no broken img). Rep flow (mjeast1985@gmail.com): folder-tile-My Brand -> app-tile-my-digital-card lands on /my-profile (as required), and app-tile-share-my-card lands on /quick-send/digitalcard.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "settings/templates ScreenHeader back", "issue": "Tapping templates-header-back after direct navigation logs 'GO_BACK was not handled by any navigator' and URL does not change. Only reproducible when opening the screen directly (no history). Not a regression of this batch; router.back() has no fallback when history stack is empty.", "selector": "[data-testid=templates-header-back]", "priority": "LOW"},
+      {"component": "settings/review-links Save", "issue": "After filling a Google Reviews URL and tapping review-links-save-btn, neither a success toast ('Review links updated successfully') nor an error alert ('No store associated...') appeared within 3.5s. No crash. Consider verifying the save path emits UI feedback for the no-store case.", "selector": "[data-testid=review-links-save-btn]", "priority": "MEDIUM"},
+      {"component": "email-signature preview", "issue": "Two elements still use iOS-blue rgb(0,122,255): the 'View My Digital Card' button and a small icon glyph inside the signature preview card. Likely intentional HTML email preview styling (mail-client link blue), but flagged per request.", "selector": "email-signature preview 'View My Digital Card'", "priority": "LOW"},
+      {"component": "settings/create-card (generic)", "issue": "Console errors: 'Unexpected text node: . A text node cannot be a child of a <View>.' (3x) while rendering the Congrats Card screen. Header renders correctly; likely a stray whitespace/text between View children.", "selector": "route /settings/create-card?generic=true", "priority": "LOW"},
+      {"component": "Expo Router Layout", "issue": "Layout children warnings on multiple settings screens: 'No route named \"my-profile\" / \"congrats-template\" / \"showroom-approvals\" exists in nested children'. Not blocking but suggests settings/_layout.tsx is missing these Stack.Screen declarations while other code links to them.", "selector": "settings layout", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "route_header_check": {
+    "/broadcast": "Broadcasts OK (broadcasts-header, broadcasts-new-btn, broadcasts-header-back, broadcasts-empty-new-btn all present)",
+    "/broadcast/new": "New Broadcast OK (new-broadcast-back present)",
+    "/settings/templates": "My Templates OK (templates-add-btn, templates-header-back present)",
+    "/settings/card-templates": "Card Templates OK (create-card-template-btn present)",
+    "/settings/review-links": "Review Links OK - fully loaded, save button present, 7 text inputs",
+    "/settings/store-profile": "Store Profile OK - empty state renders with go-my-profile button",
+    "/email-signature": "Email Signature OK - preview shows 'Forest' + gold F initials circle",
+    "/settings/link-page": "My Link Page OK (linkpage-save present)",
+    "/showroom-manage": "My Showcase OK - stats 71 VISIBLE / 1 HIDDEN / 72 TOTAL",
+    "/share-app": "Share the App OK - install link + Copy/Share card + Taps/Installs/Signed up stats",
+    "/settings/create-card?generic=true": "Congrats Card OK (minor console text-node warnings)",
+    "/quick-send/digitalcard": "Share My Card OK"
+  },
+  "rep_flow_check": {
+    "login": "Rep landed on /my-account after login (home-simple not on that route). Home screen rendering not directly re-tested on /home for the rep.",
+    "folder-tile-My Brand": "present (count 1)",
+    "app-tile-my-digital-card -> /my-profile": "PASS (URL confirmed https://.../my-profile)",
+    "app-tile-share-my-card -> /quick-send/digitalcard": "PASS"
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Verify review-links Save handler surfaces the expected toast/alert (no-store case appears silent).",
+    "Optional: add fallback in templates-header-back (router.canGoBack() ? back : replace('/more')) so direct-URL entry still navigates away.",
+    "Clean up stray text nodes in settings/create-card (Congrats Card) causing 'Unexpected text node' console errors.",
+    "Add missing Stack.Screen entries in settings/_layout.tsx for my-profile / congrats-template / showroom-approvals or update the linking targets.",
+    "Confirm the blue color inside the email-signature preview is intentional (email client link default) and, if not, replace with gold theme accent."
+  ],
+  "critical_code_review_comments": [
+    "settings/review-links save UX should always provide immediate feedback (toast or inline error) even when no store is associated, otherwise users think Save did nothing.",
+    "ScreenHeader back buttons should degrade gracefully when history stack is empty (deep link / refresh)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (skipped)", "frontend": "95%"},
+  "test_credentials": "super admin forest@imosapp.com / Admin123!, rep mjeast1985@gmail.com / NavyBean1! (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "none",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Both reported bugs (/settings/review-links stuck loading; /settings/store-profile bare text) are fixed and confirmed. Rep My Digital Card now routes to /my-profile as required. Remaining items are minor polish: silent Save on review-links for no-store users, text-node warning on Congrats Card, missing Stack.Screen entries, and one blue accent inside the email preview card.",
+  "rca of the issue": "n/a - bug fixes verified."
+}

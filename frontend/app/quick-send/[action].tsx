@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { copyToClipboard } from '../../utils/clipboard';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView, SafeAreaView,
+  View, Text, TextInput, TouchableOpacity, ScrollView,
   ActivityIndicator, Platform, KeyboardAvoidingView, Linking,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
@@ -19,7 +21,7 @@ const ACTION_CONFIG: Record<string, {
   eventType: string;
 }> = {
   digitalcard: {
-    title: 'Share My Card', icon: 'card-outline', color: '#007AFF',
+    title: 'Share My Card', icon: 'card-outline', color: '#C9A962',
     previewTitle: 'Digital Business Card',
     getUrl: (uid) => `${process.env.EXPO_PUBLIC_APP_URL || 'https://app.imonsocial.com'}/card/${uid}`,
     getMessage: (name, url) => `Hey ${name}! Here's my digital business card. Save my info and reach out anytime! ${url}`,
@@ -767,21 +769,12 @@ export default function QuickSendPage() {
   );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      {/* Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-        <TouchableOpacity onPress={() => {
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
+      <ScreenHeader title={config.title} testID="qs" onBack={() => {
           if (step === 'preview') setStep('info');
           else if (step === 'info' && actionKey === 'congrats') setStep('cardtype');
           else router.back();
-        }} style={{ padding: 4 }} data-testid="qs-back">
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={{ flex: 1, textAlign: 'center', fontSize: 19, fontWeight: '700', color: colors.text }}>
-          {config.title}
-        </Text>
-        <View style={{ width: 32 }} />
-      </View>
+        }} />
 
       {step === 'cardtype' && renderCardTypePicker()}
       {step === 'info' && renderInfoStep()}

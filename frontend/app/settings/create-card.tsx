@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { copyToClipboard } from '../../utils/clipboard';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
@@ -470,7 +471,7 @@ export default function CreateCardPage() {
               Sequence started for {recipientName}
             </Text>
             <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center', marginBottom: 28 }}>
-              3 texts will go out automatically — no action needed
+              3 texts will go out automatically, no action needed
             </Text>
             {/* Sequence timeline */}
             <View style={{ width: '100%', backgroundColor: colors.card, borderRadius: 16, padding: 18, borderWidth: 1, borderColor: '#C9A96230' }}>
@@ -510,7 +511,7 @@ export default function CreateCardPage() {
               data-testid="sold-success-done"
             >
               <Text style={{ fontSize: 16, fontWeight: '700', color: '#000' }}>
-                {for_contact ? 'Done — Back to Contact' : 'Done — Back to Home'}
+                {for_contact ? 'Done, back to contact' : 'Done, back to Home'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -648,11 +649,7 @@ export default function CreateCardPage() {
     const previewMsg = message.replace('{customer_name}', customerName).replace('{name}', customerName);
     return (
       <SafeAreaView style={s.container} edges={['top']}>
-        <View style={s.header}>
-          <TouchableOpacity onPress={() => setShowPreview(false)} data-testid="card-preview-back"><Ionicons name="chevron-back" size={28} color={accent} /></TouchableOpacity>
-          <Text style={s.headerTitle}>Preview</Text>
-          <View style={{ width: 28 }} />
-        </View>
+        <ScreenHeader title="Preview" onBack={() => setShowPreview(false)} testID="card-preview" />
         <ScrollView style={s.scroll} contentContainerStyle={{ alignItems: 'center', paddingBottom: 40 }}>
           <View style={s.previewCard} data-testid="card-preview">
             <Text style={[s.previewHeadline, { color: accent }]}>{headline}</Text>
@@ -705,11 +702,7 @@ export default function CreateCardPage() {
   // ---- Form ----
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} data-testid="card-form-back"><Ionicons name="chevron-back" size={28} color={accent} /></TouchableOpacity>
-        <Text style={s.headerTitle}>{meta.label}</Text>
-        <View style={{ width: 28 }} />
-      </View>
+      <ScreenHeader title={meta.label} testID="card-form" />
       <ScrollView style={s.scroll} contentContainerStyle={{ paddingBottom: 40 }}>
 
         {/* Template picker — tap to change card type */}
@@ -839,14 +832,14 @@ export default function CreateCardPage() {
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>Generic Card (no specific person)</Text>
                 <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>
-                  Share with anyone — post to social, send in a group text, or copy the link
+                  Share with anyone: post to social, send in a group text, or copy the link
                 </Text>
               </View>
             </TouchableOpacity>
 
             {!isGeneric && (
               <>
-                <Text style={s.fieldLabel}>RECIPIENT NAME <Text style={{ color: colors.textTertiary, fontWeight: '400' }}>(optional — leave blank to share with anyone)</Text></Text>
+                <Text style={s.fieldLabel}>RECIPIENT NAME <Text style={{ color: colors.textTertiary, fontWeight: '400' }}>(optional, leave blank to share with anyone)</Text></Text>
                 <TextInput style={s.input} value={customerName} onChangeText={setCustomerName} placeholder="Recipient Name" placeholderTextColor={colors.textSecondary} data-testid="card-recipient-name" />
                 <Text style={[s.fieldLabel, { marginTop: 16 }]}>SEND TO (OPTIONAL)</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

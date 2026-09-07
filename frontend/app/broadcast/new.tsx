@@ -14,6 +14,7 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -174,7 +175,7 @@ const { showToast } = useToast();
       setAvailableTags(tagList.map((t: any) => ({
         id: t._id || t.id,
         name: t.name,
-        color: t.color || '#007AFF',
+        color: t.color || colors.accent,
       })));
     } catch (error) {
       console.error('Error fetching tags:', error);
@@ -299,7 +300,7 @@ const { showToast } = useToast();
           if (!up.data?.original_url) throw new Error('no url returned');
           uploadedUrls.push(up.data.original_url);
         } catch {
-          showAlert('Photo Upload Failed', 'Your photo could not be uploaded. Remove it or try again — the blast was NOT sent.');
+          showAlert('Photo Upload Failed', 'Your photo could not be uploaded. Remove it or try again. The blast was NOT sent.');
           setSubmitting(false);
           return;
         }
@@ -349,7 +350,7 @@ const { showToast } = useToast();
       testID={`section-${section}`}
     >
       <View style={styles.sectionHeaderLeft}>
-        <Ionicons name={icon as any} size={20} color="#007AFF" />
+        <Ionicons name={icon as any} size={20} color={colors.accent} />
         <Text style={styles.sectionTitle}>{title}</Text>
       </View>
       <Ionicons
@@ -362,13 +363,7 @@ const { showToast } = useToast();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backButton} testID="back-btn">
-          <Ionicons name="chevron-back" size={24} color={colors.text} />
-        </Pressable>
-        <Text style={styles.headerTitle}>New Broadcast</Text>
-        <View style={{ width: 40 }} />
-      </View>
+      <ScreenHeader title="New Broadcast" testID="new-broadcast" />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Name */}
@@ -425,7 +420,7 @@ const { showToast } = useToast();
               onPress={pickImage}
               testID="add-photo-btn"
             >
-              <Ionicons name="add-circle-outline" size={32} color="#007AFF" />
+              <Ionicons name="add-circle-outline" size={32} color={colors.accent} />
               <Text style={styles.addMediaText}>Add Photo</Text>
             </Pressable>
           </View>
@@ -439,7 +434,7 @@ const { showToast } = useToast();
               onPress={() => toggleSection('tags')}
               testID="section-tags"
             >
-              <Ionicons name="pricetags-outline" size={20} color="#007AFF" />
+              <Ionicons name="pricetags-outline" size={20} color={colors.accent} />
               <Text style={styles.sectionTitle}>Filter by Tags (Lists)</Text>
               <Ionicons name={expandedSections.tags ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textSecondary} />
             </Pressable>
@@ -537,7 +532,7 @@ const { showToast } = useToast();
           </Pressable>
           {expandedSections.pickContacts && (
             <View style={styles.sectionContent}>
-              <Text style={styles.filterLabel}>Hand-pick who gets this blast — added on top of any tag filters:</Text>
+              <Text style={styles.filterLabel}>Hand-pick who gets this blast (added on top of any tag filters):</Text>
               {selectedContacts.length > 0 && (
                 <View style={[styles.tagsContainer, { marginBottom: 10 }]}>
                   {selectedContacts.map(c => (
@@ -710,7 +705,7 @@ const { showToast } = useToast();
             testID="section-purchases"
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <Ionicons name="bag-handle-outline" size={20} color="#007AFF" />
+              <Ionicons name="bag-handle-outline" size={20} color={colors.accent} />
               <Text style={styles.sectionTitle}>Filter by Purchase</Text>
             </View>
             <Ionicons name={expandedSections.purchases ? 'chevron-up' : 'chevron-down'} size={20} color={colors.textSecondary} />
@@ -786,7 +781,7 @@ const { showToast } = useToast();
                   <Ionicons
                     name={scheduleType === 'now' ? 'radio-button-on' : 'radio-button-off'}
                     size={20}
-                    color={scheduleType === 'now' ? '#007AFF' : colors.textSecondary}
+                    color={scheduleType === 'now' ? colors.accent : colors.textSecondary}
                   />
                   <View>
                     <Text style={[styles.scheduleOptionText, scheduleType === 'now' && styles.scheduleOptionTextActive]}>
@@ -891,11 +886,11 @@ const { showToast } = useToast();
         {/* Recipients Preview */}
         <View style={styles.previewCard}>
           <View style={styles.previewHeader}>
-            <Ionicons name="people" size={24} color="#007AFF" />
+            <Ionicons name="people" size={24} color={colors.accent} />
             <Text style={styles.previewTitle}>Recipients Preview</Text>
           </View>
           {previewLoading ? (
-            <ActivityIndicator size="small" color="#007AFF" style={{ marginTop: 8 }} />
+            <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 8 }} />
           ) : (
             <Text style={styles.previewCount}>
               {previewCount !== null ? `${previewCount} contacts will receive this broadcast` : 'Configure filters to see recipient count'}
@@ -912,10 +907,10 @@ const { showToast } = useToast();
             testID="save-draft-btn"
           >
             {submitting ? (
-              <ActivityIndicator size="small" color="#007AFF" />
+              <ActivityIndicator size="small" color={colors.accent} />
             ) : (
               <>
-                <Ionicons name="save-outline" size={20} color="#007AFF" />
+                <Ionicons name="save-outline" size={20} color={colors.accent} />
                 <Text style={styles.saveButtonText}>Save Draft</Text>
               </>
             )}
@@ -932,10 +927,10 @@ const { showToast } = useToast();
             testID="send-now-btn"
           >
             {submitting ? (
-              <ActivityIndicator size="small" color={colors.text} />
+              <ActivityIndicator size="small" color="#000" />
             ) : (
               <>
-                <Ionicons name={scheduleType === 'later' ? 'calendar' : 'send'} size={20} color={colors.text} />
+                <Ionicons name={scheduleType === 'later' ? 'calendar' : 'send'} size={20} color="#000" />
                 <Text style={styles.sendButtonText}>
                   {scheduleType === 'later'
                     ? `Schedule (${previewCount ?? '?'} contacts)`
@@ -956,23 +951,6 @@ const getStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.bg,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-  },
-  backButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 19,
-    fontWeight: '600',
-    color: colors.text,
   },
   content: {
     flex: 1,
@@ -1040,7 +1018,7 @@ const getStyles = (colors: any) => StyleSheet.create({
   },
   addMediaText: {
     fontSize: 12,
-    color: '#007AFF',
+    color: colors.accent,
     marginTop: 4,
   },
   section: {
@@ -1086,7 +1064,7 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
   },
   tagChipSelected: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.accent,
   },
   tagChipExcluded: {
     backgroundColor: '#FF3B30',
@@ -1096,7 +1074,8 @@ const getStyles = (colors: any) => StyleSheet.create({
     color: colors.text,
   },
   tagChipTextSelected: {
-    fontWeight: '600',
+    fontWeight: '700',
+    color: '#000',
   },
   noTagsText: {
     fontSize: 16,
@@ -1115,15 +1094,15 @@ const getStyles = (colors: any) => StyleSheet.create({
     backgroundColor: colors.surface,
   },
   presetButtonActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.accent,
   },
   presetText: {
     fontSize: 15,
     color: colors.textSecondary,
   },
   presetTextActive: {
-    color: colors.text,
-    fontWeight: '600',
+    color: '#000',
+    fontWeight: '700',
   },
   monthYearContainer: {
     marginTop: 8,
@@ -1136,15 +1115,15 @@ const getStyles = (colors: any) => StyleSheet.create({
     marginRight: 8,
   },
   monthButtonActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.accent,
   },
   monthText: {
     fontSize: 16,
     color: colors.textSecondary,
   },
   monthTextActive: {
-    color: colors.text,
-    fontWeight: '600',
+    color: '#000',
+    fontWeight: '700',
   },
   yearInputContainer: {
     flexDirection: 'row',
@@ -1234,15 +1213,15 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     padding: 16,
-    backgroundColor: 'rgba(0, 122, 255, 0.15)',
+    backgroundColor: colors.accent + '22',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#007AFF',
+    borderColor: colors.accent,
   },
   saveButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.accent,
   },
   sendButton: {
     flex: 1,
@@ -1251,15 +1230,15 @@ const getStyles = (colors: any) => StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
     padding: 16,
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.accent,
     borderRadius: 14,
   },
   sendButtonDisabled: {
     backgroundColor: colors.borderLight,
   },
   sendButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#000',
   },
 });
