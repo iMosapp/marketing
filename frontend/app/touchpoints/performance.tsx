@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader } from '../../components/common/ScreenHeader';
 import api, { tasksAPI } from '../../services/api';
 
 const PERIODS = [
@@ -119,12 +120,7 @@ export default function PerformanceScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }} data-testid="performance-header">
-        <TouchableOpacity onPress={() => router.back()} style={{ padding: 4, marginRight: 8 }} data-testid="performance-back-btn">
-          <Ionicons name="chevron-back" size={24} color={colors.accent} />
-        </TouchableOpacity>
-        <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text, flex: 1 }}>My Performance</Text>
-      </View>
+      <ScreenHeader title="My Numbers" testID="performance-header" />
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingVertical: 14 }}>
@@ -178,7 +174,7 @@ export default function PerformanceScreen() {
                   </Text>
                 </View>
                 <Text style={{ fontSize: 15, color: scUp ? '#34C759' : '#FF9500', fontWeight: '500', marginTop: 8 }}>
-                  {sc.today === 0 ? "No touchpoints yet today — let's get started!" : scDiff > 0 ? "Great work! You're ahead of yesterday. Keep it up!" : scDiff === 0 ? "On pace with yesterday. Push for more!" : "Behind yesterday's pace. Time to make some moves!"}
+                  {sc.today === 0 ? "No touchpoints yet today. Let's get started!" : scDiff > 0 ? "Great work! You're ahead of yesterday. Keep it up!" : scDiff === 0 ? "On pace with yesterday. Push for more!" : "Behind yesterday's pace. Time to make some moves!"}
                 </Text>
               </View>
             )}

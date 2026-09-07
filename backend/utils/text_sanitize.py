@@ -79,3 +79,10 @@ async def clean_ai_text(text, user_id=None):
         except Exception:
             pass
     return text
+
+
+def no_phone_greeting(text):
+    """'Hi 5550001234,' -> 'Hi there,' for messages rendered before the contact had a name."""
+    if not text or not isinstance(text, str):
+        return text
+    return re.sub(r"(?i)\b(hi|hey|hello|dear)\s+\+?\d[\d\s().-]{6,}\d\b", r"\1 there", text)

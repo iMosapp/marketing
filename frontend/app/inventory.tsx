@@ -10,13 +10,14 @@ import * as DocumentPicker from 'expo-document-picker';
 import { Image } from 'expo-image';
 import { PhotoGallerySheet, pickPhotoBase64 } from '../components/inventory/PhotoGallerySheet';
 import { useThemeStore } from '../store/themeStore';
+import { ScreenHeader, HeaderIconButton } from '../components/common/ScreenHeader';
 import { useAuthStore } from '../store/authStore';
 import { resolvePhotoUrl } from '../utils/photoUrl';
 import { HotVehiclesCard } from '../components/home/HotVehiclesCard';
 import api from '../services/api';
 import { showSimpleAlert, showConfirm } from '../services/alert';
 
-const ACCENT = '#32ADE6';
+const ACCENT = '#C9A962';
 
 const EMPTY_FORM = { year: '', make: '', model: '', trim: '', body_type: '', color: '', mileage: '', price: '', stock_number: '', vin: '', listing_url: '', description: '' };
 const BODY_TYPES = ['Truck', 'SUV', 'Sedan', 'Van', 'Coupe', 'Convertible', 'Hatchback', 'Wagon'];
@@ -167,45 +168,37 @@ export default function InventoryScreen() {
     { key: 'all', label: 'All' },
   ];
 
+  const isManager = ['store_manager', 'org_admin', 'super_admin', 'admin'].includes(user?.role || '');
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
-      {/* Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12 }}>
-        <TouchableOpacity onPress={() => router.back()} data-testid="inventory-back-btn">
-          <Ionicons name="chevron-back" size={26} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, flex: 1 }} numberOfLines={1}>Inventory</Text>
-        {['store_manager', 'org_admin', 'super_admin', 'admin'].includes(user?.role || '') && (
+      <ScreenHeader title="Inventory" testID="inventory-header"
+        right={<HeaderIconButton icon="add-circle" onPress={() => setShowAdd(true)} testID="inventory-add-btn" />} />
+
+      {isManager && (
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8, paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4 }}>
           <TouchableOpacity
-            style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.card, borderRadius: 10 }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingVertical: 7, paddingHorizontal: 12 }}
             onPress={() => router.push('/admin/inventory-feed' as any)}
-            data-testid="inventory-feed-btn"
-            accessibilityLabel="Inventory feed"
+            testID="inventory-feed-btn" dataSet={{ testid: 'inventory-feed-btn' } as any}
           >
-            <Ionicons name="cloud-download-outline" size={18} color={ACCENT} />
+            <Ionicons name="cloud-download-outline" size={15} color={ACCENT} />
+            <Text style={{ fontSize: 13, fontWeight: '700', color: ACCENT }}>Inventory feed</Text>
           </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.card, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12 }}
-          onPress={handleCSVUpload}
-          disabled={uploading}
-          data-testid="inventory-csv-btn"
-        >
-          {uploading ? <ActivityIndicator size="small" color={ACCENT} /> : <Ionicons name="cloud-upload-outline" size={16} color={ACCENT} />}
-          <Text style={{ fontSize: 13, fontWeight: '600', color: ACCENT }}>CSV</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: ACCENT, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12 }}
-          onPress={() => setShowAdd(true)}
-          data-testid="inventory-add-btn"
-        >
-          <Ionicons name="add" size={16} color="#FFF" />
-          <Text style={{ fontSize: 13, fontWeight: '700', color: '#FFF' }}>Add</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 10, paddingVertical: 7, paddingHorizontal: 12 }}
+            onPress={handleCSVUpload}
+            disabled={uploading}
+            testID="inventory-csv-btn" dataSet={{ testid: 'inventory-csv-btn' } as any}
+          >
+            {uploading ? <ActivityIndicator size="small" color={ACCENT} /> : <Ionicons name="cloud-upload-outline" size={15} color={ACCENT} />}
+            <Text style={{ fontSize: 13, fontWeight: '700', color: ACCENT }}>Import CSV</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Jessi note */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, marginBottom: 10, backgroundColor: `${ACCENT}12`, borderRadius: 10, padding: 10 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, marginTop: 10, marginBottom: 10, backgroundColor: `${ACCENT}12`, borderRadius: 10, padding: 10 }}>
         <Ionicons name="sparkles" size={15} color={ACCENT} />
         <Text style={{ fontSize: 13, color: colors.textSecondary, flex: 1 }}>
           Jessi uses this list to answer customer availability & pricing questions live.
@@ -217,7 +210,7 @@ export default function InventoryScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 16, marginBottom: 10, backgroundColor: '#FF950014', borderRadius: 10, padding: 10 }} data-testid="inventory-photo-reminder-banner">
           <Ionicons name="camera" size={15} color="#FF9500" />
           <Text style={{ fontSize: 13, color: colors.textSecondary, flex: 1 }}>
-            <Text style={{ fontWeight: '700', color: '#FF9500' }}>{counts.missing_photos} in-stock vehicle{counts.missing_photos !== 1 ? 's' : ''} missing photos</Text> - leads get the car&apos;s picture texted automatically once one is added.
+            <Text style={{ fontWeight: '700', color: '#FF9500' }}>{counts.missing_photos} in-stock vehicle{counts.missing_photos !== 1 ? 's' : ''} missing photos</Text>. Leads get the car&apos;s picture texted automatically once one is added.
           </Text>
         </View>
       )}
@@ -253,7 +246,7 @@ export default function InventoryScreen() {
               onPress={() => setStatusFilter(f.key)}
               data-testid={`inventory-filter-${f.key}`}
             >
-              <Text style={{ fontSize: 13, fontWeight: '600', color: active ? '#FFF' : colors.textSecondary }} numberOfLines={1}>{f.label}</Text>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#000' : colors.textSecondary }} numberOfLines={1}>{f.label}</Text>
             </TouchableOpacity>
           );
         })}
@@ -413,7 +406,7 @@ export default function InventoryScreen() {
                       testID={`inventory-body-${bt.toLowerCase()}`}
                       {...({ dataSet: { testid: `inventory-body-${bt.toLowerCase()}` } } as any)}
                     >
-                      <Text style={{ fontSize: 13, fontWeight: '600', color: on ? '#fff' : colors.text }}>{bt}</Text>
+                      <Text style={{ fontSize: 13, fontWeight: '700', color: on ? '#000' : colors.text }}>{bt}</Text>
                     </TouchableOpacity>
                   );
                 })}

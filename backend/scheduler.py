@@ -146,10 +146,16 @@ async def resolve_template_variables(db, message: str, contact: dict, user_id: s
     """
     if not message:
         return message
+    import re as _re
+    message = _re.sub(r"\{\{\s*(\w+)\s*\}\}", r"{\1}", message)  # {{vehicle}} -> {vehicle}
     
     # Contact info
     contact_first = contact.get("first_name") or (contact.get("contact_name", "").split()[0] if contact.get("contact_name") else "there")
     contact_last = (contact.get("last_name") or (" ".join(contact.get("contact_name", "").split()[1:]) if contact.get("contact_name") else ""))
+    # A phone number is not a name: never greet someone with "Hi 5550001234"
+    _raw_name = str(contact.get("first_name") or contact.get("contact_name") or "")
+    if len(_re.sub(r"\D", "", _raw_name)) >= 7 and not _re.search(r"[A-Za-z]{2}", _raw_name):
+        contact_first, contact_last = "there", ""
     contact_full = f"{contact_first} {contact_last}".strip() or "there"
     
     message = message.replace("{first_name}", contact_first)
@@ -197,8 +203,14 @@ async def resolve_template_variables(db, message: str, contact: dict, user_id: s
             vehicle_val = sorted_ph[0].get("title", "")
         else:
             vehicle_val = contact.get("vehicle") or contact.get("vehicle_purchased") or contact.get("product") or ""
-        message = message.replace("{vehicle}", vehicle_val)
-        message = message.replace("{purchase}", vehicle_val)
+        if vehicle_val:
+            message = message.replace("{vehicle}", vehicle_val).replace("{purchase}", vehicle_val)
+        else:
+            # No vehicle on file: keep the sentence natural instead of leaving "your new ."
+            for tok in ("{vehicle}", "{purchase}"):
+                message = _re.sub(r"\b(your|the) new " + _re.escape(tok), r"\1 new ride", message)
+                message = _re.sub(r"\bthe " + _re.escape(tok), "the new ride", message)
+                message = message.replace(tok, "new ride")
     
     return message
 

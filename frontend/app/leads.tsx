@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import { useThemeStore } from '../store/themeStore';
+import { ScreenHeader } from '../components/common/ScreenHeader';
 import { useAuthStore } from '../store/authStore';
 import { resolvePhotoUrl } from '../utils/photoUrl';
 import api from '../services/api';
@@ -14,7 +15,7 @@ import { CallRetriesCard } from '../components/leads/CallRetriesCard';
 import { StopTheClockCard } from '../components/leads/StopTheClockCard';
 import { ProofPanel } from '../components/leads/ProofPanel';
 
-const ACCENT = '#AF52DE';
+const ACCENT = '#C9A962';
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
   queued: { label: 'QUEUED', color: '#FF9500' },
@@ -101,16 +102,10 @@ export default function LeadsDashboard() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
-      {/* Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12 }}>
-        <TouchableOpacity onPress={() => router.back()} testID="leads-back-btn" dataSet={{ testid: 'leads-back-btn' } as any}>
-          <Ionicons name="chevron-back" size={26} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, flex: 1 }} numberOfLines={1}>Internet Leads</Text>
-      </View>
+      <ScreenHeader title="Internet Leads" testID="leads" noBorder />
 
       {/* Tabs */}
-      <View style={{ flexDirection: 'row', alignSelf: 'center', backgroundColor: colors.card, borderRadius: 10, padding: 3, marginBottom: 10 }}>
+      <View style={{ flexDirection: 'row', alignSelf: 'center', backgroundColor: colors.card, borderRadius: 10, padding: 3, marginTop: 4, marginBottom: 10 }}>
         {([['leads', 'Leads', 'people-outline'], ['roi', 'ROI', 'trending-up-outline'], ['speed', 'Speed', 'stopwatch-outline'], ['proof', 'Proof', 'ribbon-outline']] as const).map(([k, label, icon]) => (
           <TouchableOpacity
             key={k}
@@ -144,7 +139,7 @@ export default function LeadsDashboard() {
                 testID={`leads-filter-${f.key}`}
                 dataSet={{ testid: `leads-filter-${f.key}` } as any}
               >
-                <Text style={{ fontSize: 13, fontWeight: '600', color: active ? '#FFF' : colors.textSecondary }} numberOfLines={1}>{f.label}</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#000' : colors.textSecondary }} numberOfLines={1}>{f.label}</Text>
               </TouchableOpacity>
             );
           })}
@@ -162,7 +157,7 @@ export default function LeadsDashboard() {
                 testID={`roi-days-${d}`}
                 dataSet={{ testid: `roi-days-${d}` } as any}
               >
-                <Text style={{ fontSize: 13, fontWeight: '600', color: active ? '#FFF' : colors.textSecondary }}>{d === 365 ? '1 Year' : d === 7 ? 'This Week' : `${d} Days`}</Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: active ? '#000' : colors.textSecondary }}>{d === 365 ? '1 Year' : d === 7 ? 'This Week' : `${d} Days`}</Text>
               </TouchableOpacity>
             );
           })}

@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
+import { ScreenHeader, HeaderIconButton } from '../components/common/ScreenHeader';
 import api, { contactsAPI } from '../services/api';
 import { showSimpleAlert } from '../services/alert';
 import { Avatar } from '../components/Avatar';
@@ -210,16 +211,8 @@ export default function CalendarScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton} {...tid('dates-cal-back-btn')}>
-          <Ionicons name="chevron-back" size={28} color={GOLD} />
-        </TouchableOpacity>
-        <Text maxFontSizeMultiplier={1.0} style={styles.headerTitle}>Calendar</Text>
-        <TouchableOpacity onPress={() => setShowAddTask(true)} style={styles.addButton} {...tid('cal-add-task-btn')}>
-          <Ionicons name="add" size={24} color="#000" />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader title="Calendar" testID="dates-cal" noBorder
+        right={<HeaderIconButton icon="add-circle" onPress={() => setShowAddTask(true)} testID="cal-add-task-btn" />} />
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
         {/* Month nav */}
@@ -312,7 +305,7 @@ export default function CalendarScreen() {
         {selectedDay ? (
           <TouchableOpacity onPress={() => setSelectedDay(null)} style={styles.dayBanner} {...tid('dates-cal-clear-day')}>
             <Text maxFontSizeMultiplier={1.0} style={styles.dayBannerText}>
-              Showing {format(new Date(year, month - 1, selectedDay), 'EEE, MMM d')} — tap to show whole month
+              Showing {format(new Date(year, month - 1, selectedDay), 'EEE, MMM d')}. Tap to show the whole month
             </Text>
             <Ionicons name="close-circle" size={16} color={GOLD} />
           </TouchableOpacity>
@@ -434,16 +427,6 @@ export default function CalendarScreen() {
 
 const getStyles = (colors: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 8, paddingVertical: 8,
-  },
-  backButton: { padding: 8 },
-  headerTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
-  addButton: {
-    width: 34, height: 34, borderRadius: 17, backgroundColor: GOLD,
-    alignItems: 'center', justifyContent: 'center', marginRight: 8,
-  },
   monthNav: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 20, marginBottom: 8,

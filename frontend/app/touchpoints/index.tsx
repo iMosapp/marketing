@@ -10,6 +10,7 @@ import { Swipeable, RectButton } from 'react-native-gesture-handler';
 import WebSwipeableItem from '../../components/WebSwipeableItem';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
+import { ScreenHeader, HeaderIconButton } from '../../components/common/ScreenHeader';
 import { tasksAPI, contactsAPI } from '../../services/api';
 import api from '../../services/api';
 import { showSimpleAlert } from '../../services/alert';
@@ -32,6 +33,16 @@ const SCORE_ITEMS_ENGAGE = [
 ];
 
 const FILTERS = ['All', 'Overdue', 'Campaigns', 'Birthdays', 'Follow-ups'];
+
+function displayName(task: any) {
+  const n = (task.contact_name || '').trim();
+  const digits = n.replace(/\D/g, '');
+  if (n && digits.length >= 10 && digits.length === n.replace(/[\s().+-]/g, '').length) {
+    const d = digits.slice(-10);
+    return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+  }
+  return n || task.contact_phone || 'No name yet';
+}
 
 function getInitials(name: string) {
   const parts = (name || '?').split(' ').filter(Boolean);
@@ -141,7 +152,7 @@ function TouchpointsScreen() {
       if (action === 'complete') {
         setSummary((s: any) => s ? { ...s, completed_today: Math.max(0, s.completed_today - 1), pending_today: s.pending_today + 1, progress_pct: Math.round((Math.max(0, s.completed_today - 1) / Math.max(s.total_today, 1)) * 100) } : s);
       }
-    } catch { showSimpleAlert('Error', 'Could not undo — pull to refresh'); }
+    } catch { showSimpleAlert('Error', 'Could not undo. Pull to refresh.'); }
   };
 
   // ── "Write it for me" draft sheet ──
@@ -296,16 +307,8 @@ function TouchpointsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
-      {/* Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: colors.border }} data-testid="touchpoints-header">
-        <TouchableOpacity onPress={() => router.back()} style={{ padding: 4, marginRight: 8 }} data-testid="touchpoints-back-btn">
-          <Ionicons name="chevron-back" size={24} color={colors.accent} />
-        </TouchableOpacity>
-        <Text style={{ fontSize: 17, fontWeight: '700', color: colors.text, flex: 1 }}>Today's Touchpoints</Text>
-        <TouchableOpacity onPress={() => router.push('/touchpoints/add-task' as any)} style={{ padding: 4 }} data-testid="touchpoints-add-btn">
-          <Ionicons name="add-circle-outline" size={24} color={colors.accent} />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader title="Today's Touchpoints" testID="touchpoints-header"
+        right={<HeaderIconButton icon="add-circle" onPress={() => router.push('/touchpoints/add-task' as any)} testID="touchpoints-add-btn" />} />
 
       {loading ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -479,7 +482,7 @@ function TouchpointsScreen() {
         >
           <Ionicons name={undo.action === 'complete' ? 'checkmark-circle' : 'time'} size={20} color={undo.action === 'complete' ? '#C9A962' : '#8E8E93'} />
           <Text style={{ flex: 1, marginLeft: 10, color: '#FFF', fontSize: 15, fontWeight: '600' }} numberOfLines={1}>
-            {undo.action === 'complete' ? 'Done' : 'Snoozed 24h'} — {undo.task.contact_name || undo.task.title}
+            {undo.action === 'complete' ? 'Done' : 'Snoozed 24h'}: {undo.task.contact_name || undo.task.title}
           </Text>
           <TouchableOpacity onPress={handleUndo} style={{ paddingHorizontal: 14, paddingVertical: 7, borderRadius: 9, backgroundColor: 'rgba(201,169,98,0.18)' }} data-testid="undo-btn">
             <Text style={{ color: '#C9A962', fontSize: 15, fontWeight: '800', letterSpacing: 0.5 }}>UNDO</Text>
@@ -518,7 +521,7 @@ function TaskCard({ task, colors, onComplete, onSnooze, onCall, onText, onDraft,
           <Text style={{ fontWeight: '700', fontSize: 16, color: avatar.text }}>{initials}</Text>
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }}>{task.contact_name || 'Unknown'}</Text>
+          <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text }} numberOfLines={1}>{displayName(task)}</Text>
           <Text style={{ fontSize: 15, color: '#AEAEB2', marginTop: 2 }} numberOfLines={2}>{task.description || task.title}</Text>
           <View style={{ flexDirection: 'row', gap: 6, marginTop: 6, alignItems: 'center', flexWrap: 'wrap' }}>
             {badges.map((b, i) => (

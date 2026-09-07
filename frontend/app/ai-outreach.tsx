@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { copyToClipboard } from '../utils/clipboard';
 import { View, Text, TouchableOpacity, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScreenHeader } from '../components/common/ScreenHeader';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
 import { useAuthStore } from '../store/authStore';
@@ -115,7 +116,6 @@ function RelBriefCard({ brief, contactId, colors }: { brief: RelBrief; contactId
 export default function AIOutreachPage() {
   const user = useAuthStore((s: any) => s.user);
   const { colors } = useThemeStore();
-  const router = useRouter();
   const [records, setRecords] = useState<OutreachRecord[]>([]);
   const [pendingSends, setPendingSends] = useState<PendingSend[]>([]);
   const [loading, setLoading] = useState(true);
@@ -203,27 +203,18 @@ export default function AIOutreachPage() {
   ];
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.bg }]} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor="#C9A962" />}>
-      {/* Header */}
-      <View style={styles.header} data-testid="ai-outreach-header">
-        <TouchableOpacity onPress={() => router.back()} style={[styles.backBtn, { backgroundColor: colors.surface }]} data-testid="ai-outreach-back-btn">
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.title, { color: colors.text }]}>AI Outreach</Text>
-          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Relationship-powered follow-ups</Text>
-        </View>
-        <View style={styles.statsBadge} data-testid="ai-outreach-pending-badge">
-          <Ionicons name="sparkles" size={16} color="#AF52DE" />
-          <Text style={styles.statsText}>{stats.pending + pendingSends.length} active</Text>
-        </View>
-      </View>
-
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top']}>
+    <ScreenHeader title="AI Follow-ups" testID="ai-outreach-header"
+      right={<View style={styles.statsBadge} testID="ai-outreach-pending-badge" dataSet={{ testid: 'ai-outreach-pending-badge' } as any}>
+          <Ionicons name="sparkles" size={13} color="#C9A962" />
+          <Text style={styles.statsText}>{stats.pending + pendingSends.length}</Text>
+        </View>} />
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: 16, paddingBottom: 40 }} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor="#C9A962" />}>
       {/* How it works */}
-      <View style={[styles.infoCard, { backgroundColor: `rgba(201,169,98,0.08)`, borderColor: `rgba(201,169,98,0.2)` }]} data-testid="ai-outreach-info-card">
+      <View style={[styles.infoCard, { backgroundColor: `rgba(201,169,98,0.08)`, borderColor: `rgba(201,169,98,0.2)` }]} testID="ai-outreach-info-card" dataSet={{ testid: 'ai-outreach-info-card' } as any}>
         <Ionicons name="flash" size={18} color="#C9A962" />
         <Text style={[styles.infoText, { color: colors.textSecondary }]}>
-          Every message is crafted using real relationship data — engagement signals, conversation history, and milestone context. Tag a customer "Sold" and the AI builds a personalized follow-up journey.
+          Every message is written from real relationship data: engagement signals, conversation history and milestone context. Tag a customer Sold and the AI builds a personalized follow-up journey.
         </Text>
       </View>
 
@@ -267,7 +258,7 @@ export default function AIOutreachPage() {
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.contactName, { color: colors.text }]}>{ps.contact_name}</Text>
                     <Text style={[styles.cardTime, { color: colors.textSecondary }]}>
-                      {ps.campaign_name} — Step {ps.step}
+                      {ps.campaign_name} · Step {ps.step}
                     </Text>
                   </View>
                   {ps.ai_generated && (
@@ -313,7 +304,11 @@ export default function AIOutreachPage() {
               {/* Message */}
               <View style={[styles.messageBox, { backgroundColor: colors.cardAlt, borderColor: colors.border }]}>
                 <Text style={[styles.messageLabel, { color: colors.textTertiary }]}>Message to send:</Text>
-                <Text style={[styles.messageContent, { color: colors.text }]}>"{ps.message}"</Text>
+                {ps.message ? (
+                  <Text style={[styles.messageContent, { color: colors.text }]}>"{ps.message}"</Text>
+                ) : (
+                  <Text style={[styles.messageContent, { color: colors.textTertiary, fontStyle: 'italic' }]}>No message written for this step yet. Open the campaign to add one.</Text>
+                )}
               </View>
 
               {/* Actions */}
@@ -435,6 +430,7 @@ export default function AIOutreachPage() {
       )}
       <View style={{ height: 100 }} />
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -442,21 +438,17 @@ import { StyleSheet } from 'react-native';
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', padding: 20, paddingTop: 60, gap: 12 },
-  backBtn: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 22, fontWeight: '700' },
-  subtitle: { fontSize: 15, marginTop: 2 },
-  statsBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(175,82,222,0.15)', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12 },
-  statsText: { color: '#AF52DE', fontSize: 14, fontWeight: '600' },
+  statsBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(201,169,98,0.15)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, marginRight: 8 },
+  statsText: { color: '#C9A962', fontSize: 13, fontWeight: '800' },
   infoCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginHorizontal: 16, marginBottom: 16, padding: 14, borderRadius: 12, borderWidth: 1 },
-  infoText: { fontSize: 15, lineHeight: 18, flex: 1 },
+  infoText: { fontSize: 13, lineHeight: 18, flex: 1 },
   tabScroll: { marginBottom: 16, paddingHorizontal: 16 },
   tabRow: { flexDirection: 'row', borderRadius: 10, padding: 3, gap: 2 },
   tab: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8 },
   tabActive: {},
   tabText: { fontSize: 14, fontWeight: '600' },
   emptyState: { alignItems: 'center', paddingVertical: 60, gap: 12 },
-  emptyTitle: { fontSize: 18, fontWeight: '600' },
+  emptyTitle: { fontSize: 16, fontWeight: '700' },
   emptySubtitle: { fontSize: 15, textAlign: 'center', paddingHorizontal: 40 },
   card: { marginHorizontal: 16, marginBottom: 16, borderRadius: 14, borderWidth: 1, overflow: 'hidden' },
   cardHeader: { padding: 16, borderBottomWidth: 1 },

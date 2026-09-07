@@ -1,0 +1,42 @@
+{
+  "summary": "Batch 2 QA pass for Tools tab (Today folder + loose tiles). Backend template rendering fix verified (no U+2014, no 'your new .' in /api/tasks response; direct call to scheduler.resolve_template_variables returns 'new ride' fallback and vehicle name when provided). Frontend headers/routes render correctly with correct titles and back navigation. Several regressions/misses found: (a) AI Follow-ups: pending badge and info-card exist visually but are missing the ai-outreach-pending-badge / ai-outreach-info-card data-testid attributes; (b) Inventory as super admin (forest): inventory-feed-btn and inventory-csv-btn are NOT rendered though the spec requires them for admin - the isManager gate is likely excluding super_admin-without-store; (c) Touchpoints: em-dashes still appear inside suggested_message copy on rendered task cards (e.g. 'if anything comes up \u2014 I\\'m here for you.') even though GET /api/tasks strips them - suggests those messages come from a different endpoint / are cached in the payload the UI actually loads; (d) Touchpoints: while the contact NAME header now shows the formatted number (e.g. '(555) 000-1234'), the raw digits '5550001234' still leak inside the suggested_message body itself ('Hi 5550001234, how\\'s everything...') because the template renderer substitutes {first_name} with the raw phone when first_name is missing.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/tasks/{user_id}", "issue": "Suggested messages substitute raw 10-digit phone into greetings when contact has no first_name (e.g. 'Hi 5550001234, ...'). Backend _fill_missing_contact_names formats the contact display name but does not sanitize {first_name} inside the template body."},
+      {"endpoint": "n/a (scheduler)", "issue": "Some existing tasks in preview DB still contain em-dashes in suggested_message (visible in UI). Route strips em-dash on serialize which is now working (test PASS), so likely cached in a separate endpoint or the UI pulls from /api/ai-outreach/campaign data where em-dash is NOT stripped."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "ai-outreach.tsx", "issue": "Gold '105' pending count badge is visible but the data-testid ai-outreach-pending-badge is missing (query returned null). Same for the info card - visible but ai-outreach-info-card testid not present.", "selector": "[data-testid='ai-outreach-pending-badge'], [data-testid='ai-outreach-info-card']", "priority": "MEDIUM"},
+      {"component": "inventory.tsx", "issue": "For super admin (forest@imosapp.com) the toolbar buttons inventory-feed-btn ('Inventory feed') and inventory-csv-btn ('Import CSV') are NOT rendered. Spec: they should show for this admin user. isManager check likely excludes super_admin who has no store_id.", "selector": "[data-testid='inventory-feed-btn'], [data-testid='inventory-csv-btn']", "priority": "HIGH"},
+      {"component": "touchpoints (suggested message body)", "issue": "Suggested messages contain em-dashes on visible cards (e.g. Post-Purchase Follow-Up: '... comes up \u2014 I\\'m here for you.' and 'No pressure \u2014 just thought I\\'d ask!'). Also campaign step titles like 'Step 2 \u2014 Review link'. Backend strip on _serialize is not covering these payloads reaching the UI.", "selector": "task suggested_message text", "priority": "HIGH"},
+      {"component": "touchpoints (contact substitution)", "issue": "When contact has only a phone, the suggested_message greeting renders 'Hi 5550001234, ...' - raw digits leak inside the message body because template subs {first_name} with the phone string. Header contact chip IS correctly formatted as (555) 000-1234.", "selector": "task suggested_message text", "priority": "HIGH"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "All Batch-2 screens", "issues": ["Off-brand blue rgb(0,122,255) and purple rgb(175,82,222) still present in numerous inline styles across /touchpoints (stat tile counts CALLS/EMAILS/TEXTS etc), /touchpoints/performance (metric tiles), /leads (segmented stats), /dates-calendar (calendar dots/chevrons), /ai-outreach (Tap to load link). These appear to be the intentional semantic per-metric colors and Call=blue action buttons the spec whitelists, so they are FINE for stat tiles - but should be double-checked for /leads segmented tab pills (11px 700 blue counters) and /dates-calendar calendar highlight/chevron which are not per-metric stat tiles.", "Header titles observed - /touchpoints: 'Today\\'s Touchpoints' ✓ | /touchpoints/performance: 'My Numbers' ✓ | /ai-outreach: 'AI Follow-ups' ✓ | /inventory: 'Inventory' ✓ | /leads: 'Internet Leads' ✓ | /dates-calendar: 'Calendar' ✓. All six shared ScreenHeader routes render, no blank screens."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_batch2_touchpoints.py", "/app/test_reports/pytest/batch2_backend.xml"],
+  "action_items": [
+    "Add missing data-testid ai-outreach-pending-badge on the gold '105' count pill and ai-outreach-info-card on the info card in frontend/app/ai-outreach.tsx.",
+    "Fix isManager gate in frontend/app/inventory.tsx so super_admin (role super_admin, possibly without store_id) sees inventory-feed-btn and inventory-csv-btn as required by spec.",
+    "Sanitize em-dash on the payload used by touchpoints list (likely a different endpoint than /api/tasks/{user_id}, or ensure em-dash strip runs on all suggested_message-producing endpoints, incl. campaign step content).",
+    "Template renderer should not substitute raw phone digits into {first_name}. If contact has no first_name, fall back to 'there' or the formatted phone (555) 000-1234, never raw 5550001234."
+  ],
+  "critical_code_review_comments": [
+    "backend/scheduler.py resolve_template_variables: verify {first_name} fallback path - when contact.first_name missing but phone is present, do not silently use raw phone as name; use 'there' or formatted phone.",
+    "backend/routers/tasks.py _serialize em-dash strip should also apply to campaign step title/name fields, not just suggested_message.",
+    "frontend/app/inventory.tsx isManager check should include role in ['admin','super_admin','store_manager'] regardless of store_id."
+  ],
+  "updated_files": ["/app/backend/tests/test_batch2_touchpoints.py"],
+  "success_rate": {"backend": "100%", "frontend": "70%"},
+  "test_credentials": "forest@imosapp.com / Admin123! (super_admin), mjeast1985@gmail.com / NavyBean1! (rep) - both verified working.",
+  "seed_data_creation": "None",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend test file /app/backend/tests/test_batch2_touchpoints.py passes (scheduler direct call + tasks GET filter). Regressions to re-verify after fixes: (1) inventory-feed-btn / inventory-csv-btn visibility for forest at 390x844, (2) ai-outreach-pending-badge / ai-outreach-info-card testids present, (3) no em-dash in visible touchpoint suggested messages, (4) no raw 10-digit phone inside suggested_message body. Rep view (mjeast) confirmed feed/csv correctly hidden.",
+  "rca of the issue": "Inventory admin toolbar: isManager guard likely gated on store_id or specific manager role, excluding forest (super_admin, no store_id in preview per credentials file). AI-outreach testids: components rendered but the testID/dataSet.testid props were probably not wired in the recent Batch-2 rewrite that centralized to ScreenHeader. Em-dash leak: /api/tasks/{user_id} is clean (backend test confirms), so the touchpoints list must be pulling suggested_message from a different endpoint (likely campaign template resolve path or /api/tasks with a different query) where the em-dash strip is not applied. Phone-in-body: template resolver treats contact.first_name || contact.phone as name substitute; needs an explicit guard."
+}

@@ -238,6 +238,10 @@ def _serialize(task: dict) -> dict:
         task["status"] = "completed"
     if not task.get("status"):
         task["status"] = "pending"
+    from utils.text_sanitize import no_em_dash, no_phone_greeting
+    for key in ("suggested_message", "description", "title", "campaign_name"):
+        if isinstance(task.get(key), str) and task[key]:
+            task[key] = no_phone_greeting(no_em_dash(task[key]))
     return task
 
 

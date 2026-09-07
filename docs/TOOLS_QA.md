@@ -32,8 +32,8 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 ## Batch order
 
 1. My Brand (rep + manager)  DONE (13 screens, tested iteration_295)
-2. Today + loose tiles  <- next (Touchpoints, Calendar, My Numbers, AI Follow-ups, Inventory)
-3. Settings (My Profile, My VA, Notifications, Schedule, Templates, Security, Calendar Sync)
+2. Today + loose tiles  DONE (6 screens, tested iteration_296/297) (Touchpoints, Calendar, My Numbers, AI Follow-ups, Inventory)
+3. Settings  <- next (My Profile, My VA, Notifications, Schedule, Templates, Security, Calendar Sync)
 4. Learning (Training Hub, Help Center, Report a Bug)
 5. Leads (Internet Leads, Call Retries, Lead Source Queue, Lead Source Config, Connect Zapier / Make, Team Availability)
 6. Manage (Tags, Keyword Auto-Tags, Keyword Search, Campaigns, Review Center, Showcase approvals, Inventory Feed, Review Links)
@@ -59,12 +59,12 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 | 11 | My Brand | Card Templates | /settings/card-templates | | x | fixed | shared header, real empty state |
 | 12 | My Brand | Email Signature | /email-signature | | x | fixed | BUG: raw <img> tag (crashes native), now RN Image with initials fallback. Shared header. Blue button inside the preview is the email itself, intentional |
 | 13 | My Brand | Share the App | /share-app | x | x | fixed | shared header |
-| 14 | Today | Touchpoints | /(tabs)/touchpoints | x | x | todo | Sold template shows "your new ." when contact has no vehicle |
-| 15 | Today | Calendar | /dates-calendar | x | x | todo | |
-| 16 | Today | My Numbers / My Stats | /touchpoints/performance | x | x | todo | |
-| 17 | Today | AI Follow-ups | /(tabs)/ai-outreach | x | x | todo | |
-| 18 | Loose | Inventory | /inventory | x | x | todo | |
-| 19 | Loose | Internet Leads | /leads | | x | todo | |
+| 14 | Today | Touchpoints | /(tabs)/touchpoints | x | x | fixed | shared header; phone-as-name now formatted; backend: "your new ." -> "your new ride", {{vehicle}} normalized, em dashes + "Hi 5550001234" stripped on the tasks API |
+| 15 | Today | Calendar | /dates-calendar | x | x | fixed | shared header |
+| 16 | Today | My Numbers / My Stats | /touchpoints/performance | x | x | fixed | shared header, titled My Numbers |
+| 17 | Today | AI Follow-ups | /(tabs)/ai-outreach | x | x | fixed | shared header, gold count badge, empty-message fallback, purple -> gold |
+| 18 | Loose | Inventory | /inventory | x | x | fixed | shared header; feed/CSV moved to a manager-only toolbar; light blue -> gold |
+| 19 | Loose | Internet Leads | /leads | | x | fixed | shared header; purple -> gold pills |
 | 20 | Settings | My Profile | /my-profile | x | | todo | |
 | 21 | Settings | My VA | /settings/virtual-assistant | x | x | todo | |
 | 22 | Settings | Notifications | /settings/notifications | x | x | todo | |
@@ -124,4 +124,5 @@ Type scale lives in `frontend/constants/typography.ts` (`FS`). Pick from it, nev
 ## Log
 
 - June 2026: inventory + standard written. Batch 1 (My Brand) done: shared `components/common/ScreenHeader.tsx` (gold chevron, centered 17/700 title, right action, canGoBack fallback to Tools), 13 screens converted, 2 real bugs fixed (Review Links infinite loading, Email Signature raw <img>), all #007AFF primary accents -> theme gold. Testing agent pass 95% (iteration_295), remaining LOW items fixed same turn except the create-card text-node console warning.
+- June 2026: Batch 2 (Today + loose) done: 6 screens on ScreenHeader, template renderer fixes (vehicle fallback, phone-as-name), tasks API sanitizes em dashes and phone greetings. Testing agent 100% (iteration_297).
 - Still using stale JESSI_BAR_HEIGHT padding (bar is disabled): app/settings/tags.tsx, app/settings/persona.tsx, app/admin/users.tsx. Remove in their batches.
