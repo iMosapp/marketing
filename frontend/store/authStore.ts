@@ -257,8 +257,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signup: async (data) => {
     set({ isLoading: true });
     try {
-      const user = await authAPI.signup(data);
-      const token = `token_${user._id}`;
+      const res = await authAPI.signup(data);
+      const user = res?.user || res;
+      // Real JWT from the server (older builds got a fake `token_<id>` that every protected call rejected)
+      let token: string | null = res?.token || null;
+      if (!token) {
+        try { token = (await authAPI.login(data.email, data.password))?.token || null; } catch {}
+      }
+      if (!token) throw new Error('Account created, but sign-in failed. Please log in.');
       
       try { await _idbSet('imonsocial_token', token); } catch {}
       try { await _idbSet('imonsocial_user', JSON.stringify(user)); } catch {}

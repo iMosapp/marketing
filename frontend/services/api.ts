@@ -106,6 +106,7 @@ api.interceptors.request.use(
 
 // Response interceptor: auto-restore session from cookie on 401
 let isRestoringSession = false;
+const _authHealth = { deadSessionStrikes: 0 };
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -139,6 +140,26 @@ api.interceptors.response.use(
         // Cookie restore failed — user truly needs to log in
       }
       isRestoringSession = false;
+      // Dead session (fake pre-fix `token_<id>`, or an expired JWT the cookie couldn't revive):
+      // sign out cleanly so the next screen is Login, instead of "Authentication required" forever.
+      if (error.response?.data?.detail === 'Authentication required') {
+        try {
+          const { useAuthStore } = await import('../store/authStore');
+          const tok = useAuthStore.getState().token;
+          if (!tok || tok.split('.').length !== 3 || tok.startsWith('token_')) {
+            console.warn('[Auth] Dead session detected, signing out');
+            await useAuthStore.getState().logout();
+          } else {
+            const { deadSessionStrikes } = _authHealth;
+            _authHealth.deadSessionStrikes = deadSessionStrikes + 1;
+            if (_authHealth.deadSessionStrikes >= 2) {
+              console.warn('[Auth] Token rejected repeatedly, signing out');
+              _authHealth.deadSessionStrikes = 0;
+              await useAuthStore.getState().logout();
+            }
+          }
+        } catch {}
+      }
     }
     if (error.response) {
       console.error('API Error:', error.response.data);

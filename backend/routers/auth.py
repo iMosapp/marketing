@@ -379,8 +379,26 @@ async def signup(user_data: UserCreate):
     
     # Remove password from response
     del user_dict['password']
-    
-    return user_dict
+
+    # Real session, same as /login: JWT + cookies so the new account works immediately
+    from permissions import merge_permissions
+    user_dict['feature_permissions'] = merge_permissions(user_dict.get('feature_permissions'), user_dict.get('role', 'user'))
+    from fastapi.responses import JSONResponse
+    import json as json_mod
+
+    def _ser(obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        if isinstance(obj, ObjectId):
+            return str(obj)
+        raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
+    body = {**user_dict, "user": user_dict, "token": create_jwt_token(user_dict['_id'], user_dict.get('role', 'user'))}
+    resp = JSONResponse(content=json_mod.loads(json_mod.dumps(body, default=_ser)))
+    for key, httponly in (("imonsocial_session", True), ("imonsocial_uid", False)):
+        resp.set_cookie(key=key, value=user_dict['_id'], max_age=60 * 60 * 24 * 365 * 10,
+                        httponly=httponly, samesite="lax", secure=True, path="/")
+    return resp
 
 
 @router.post("/test-login")
