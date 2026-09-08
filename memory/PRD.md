@@ -447,3 +447,8 @@ DELIVERY: backend deploy + eas update --branch production.
 - Test: backend/tests/test_calendar_invite_live.py (Twilio 500-555 test number + delivered@resend.dev; all data cleaned).
 - SHIP: backend Deploy + `cd frontend && eas update --branch production --message "Customer calendar invites + morning-of reminders"`.
 - LESSON (recurrence): ContactTasksCard has an early `return null` before the JSX; any new useState MUST sit above it (hit "Rendered more hooks" once).
+
+## Phone Numbers Tile Hidden Fix (June 2026) - DONE, verified on preview
+- USER: "im looking in admin and don't see phone numbers?" ROOT CAUSE: app/(tabs)/more.tsx Set Up items used permKey 'admin' (Phone Numbers) and 'notifications' (SMS Notifications); neither key exists in any role template in backend/permissions.py, so `perm('admin', key)` was false for EVERY role incl. super_admin -> tiles never rendered. FIX: Phone Numbers -> permKey 'accounts' (org_admin + super_admin), SMS Notifications -> no permKey. Both now show inside Tools -> **Set Up** folder (not the Admin folder). /admin/twilio-numbers screen verified: 5 numbers, 1 assigned / 4 pool, $5.75/mo, webhook health, Assign/Release/Buy.
+- RULE: any new hub item permKey MUST exist in permissions.py templates or it silently disappears for everyone.
+- SHIP: `cd frontend && eas update --branch production --message "Show Phone Numbers + SMS Notifications tiles in Set Up"`.
