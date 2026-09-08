@@ -661,19 +661,35 @@ async def get_dates_calendar(user_id: str, year: int, month: int):
     return {"year": year, "month": month, "events": events}
 
 
+async def _dup_owners(db, user_id: str):
+    """A rep's duplicate universe: their own contacts plus store-owned ones (internet leads land there),
+    including stores whose lead sources route to this rep."""
+    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"store_id": 1, "role": 1}) if ObjectId.is_valid(user_id) else None
+    sid = str((user or {}).get("store_id") or "")
+    owners = [user_id] + ([sid] if sid else [])
+    async for src in db.lead_sources.find({"$or": [{"workflow_user_ids": user_id}, {"call_attempts.user_ids": user_id}]}, {"store_id": 1}):
+        if src.get("store_id") and str(src["store_id"]) not in owners:
+            owners.append(str(src["store_id"]))
+    return owners, sid, (user or {}).get("role")
+
+
+def _dup_fields():
+    return {"_id": 1, "first_name": 1, "last_name": 1, "phone": 1, "email": 1, "user_id": 1,
+            "tags": 1, "notes": 1, "source": 1, "created_at": 1, "photo_thumbnail": 1, "photo_url": 1, "possible_duplicate_of": 1}
+
+
 @router.get("/{user_id}/duplicates")
 async def find_duplicate_contacts(user_id: str):
     """
-    Find contacts that share the same normalized phone number.
-    Handles ALL phone formats: 8013901047 == +1 (801) 390-1047 == +18013901047
+    Find contacts that share the same normalized phone number (any format), plus same-name
+    lead contacts flagged as possible duplicates. Includes store-owned lead contacts.
     """
-    from services.twilio_service import normalize_phone
     db = get_db()
+    owners, _sid, _role = await _dup_owners(db, user_id)
 
     contacts = await db.contacts.find(
-        {"user_id": user_id, "status": {"$nin": ["hidden", "merged", "deleted"]}, "phone": {"$exists": True, "$ne": ""}},
-        {"_id": 1, "first_name": 1, "last_name": 1, "phone": 1, "email": 1,
-         "tags": 1, "notes": 1, "source": 1, "created_at": 1}
+        {"user_id": {"$in": owners}, "status": {"$nin": ["hidden", "merged", "deleted"]}, "phone": {"$exists": True, "$ne": ""}},
+        _dup_fields()
     ).to_list(5000)
 
     # Group by last-10 digits — matches ALL format variations
@@ -688,10 +704,23 @@ async def find_duplicate_contacts(user_id: str):
             continue
         phone_groups.setdefault(key, []).append(c)
 
-    duplicate_sets = []
-    for _key, group in phone_groups.items():
-        if len(group) < 2:
+    # Same-name lead contacts with a different number (flagged at intake) - one group per link
+    flagged = await db.contacts.find(
+        {"user_id": {"$in": owners}, "status": {"$nin": ["hidden", "merged", "deleted"]},
+         "possible_duplicate_of": {"$exists": True, "$ne": None}}, _dup_fields()).to_list(200)
+    name_groups = []
+    seen_ids = set()
+    for c in flagged:
+        oid = c.get("possible_duplicate_of")
+        if not ObjectId.is_valid(str(oid)):
             continue
+        orig = await db.contacts.find_one({"_id": ObjectId(oid), "status": {"$nin": ["hidden", "merged", "deleted"]}}, _dup_fields())
+        if orig and str(c["_id"]) not in seen_ids:
+            seen_ids.add(str(c["_id"]))
+            name_groups.append([orig, c])
+
+    duplicate_sets = []
+    for group, reason in [(g, "phone") for _k, g in phone_groups.items() if len(g) >= 2] + [(g, "name") for g in name_groups]:
         enriched = []
         for c in group:
             cid = str(c["_id"])
@@ -708,7 +737,8 @@ async def find_duplicate_contacts(user_id: str):
                 "last_name": c.get("last_name", ""),
                 "phone": c.get("phone", ""),
                 "email": c.get("email", ""),
-                "photo": None,
+                "photo": c.get("photo_thumbnail") or c.get("photo_url"),
+                "store_owned": str(c.get("user_id") or "") != user_id,
                 "tags": c.get("tags", []),
                 "notes": c.get("notes", ""),
                 "source": c.get("source", ""),
@@ -718,8 +748,9 @@ async def find_duplicate_contacts(user_id: str):
                 "card_count": card_count,
                 "last_activity": last_event["timestamp"].isoformat() if last_event and last_event.get("timestamp") else None,
             })
-        enriched.sort(key=lambda x: -(x["event_count"] + x["conversation_count"] + x["card_count"]))
-        duplicate_sets.append({"phone": enriched[0]["phone"], "contacts": enriched})
+        enriched.sort(key=lambda x: (-(x["event_count"] + x["conversation_count"] + x["card_count"]), x["store_owned"]))
+        duplicate_sets.append({"phone": enriched[0]["phone"], "contacts": enriched, "reason": reason,
+                               "reason_label": "Same phone number" if reason == "phone" else "Same name, different number"})
 
     return {"duplicates": duplicate_sets, "total_groups": len(duplicate_sets)}
 
@@ -728,8 +759,9 @@ async def find_duplicate_contacts(user_id: str):
 async def get_merged_history(user_id: str):
     """Return contacts previously merged (status=merged) grouped by primary."""
     db = get_db()
+    owners, _sid, _role = await _dup_owners(db, user_id)
     merged = await db.contacts.find(
-        {"user_id": user_id, "status": "merged", "merged_into": {"$exists": True}},
+        {"user_id": {"$in": owners}, "status": "merged", "merged_into": {"$exists": True}},
         {"_id": 1, "first_name": 1, "last_name": 1, "merged_into": 1, "updated_at": 1}
     ).sort("updated_at", -1).to_list(100)
 
@@ -2269,14 +2301,19 @@ async def normalize_all_phones(user_id: str):
     db = get_db()
     updated = 0
     merged = 0
+    owners, sid, role = await _dup_owners(db, user_id)
+    # Super admins repair the whole book; everyone else their own + store-owned contacts.
+    scope = {} if role == "super_admin" else {"user_id": {"$in": owners}}
 
     contacts = await db.contacts.find(
-        {"user_id": user_id, "phone": {"$exists": True, "$ne": ""}},
-        {"_id": 1, "phone": 1, "first_name": 1, "last_name": 1, "tags": 1, "created_at": 1}
-    ).to_list(5000)
+        {**scope, "status": {"$nin": ["hidden", "merged", "deleted"]}, "phone": {"$exists": True, "$ne": ""}},
+        {"_id": 1, "phone": 1, "first_name": 1, "last_name": 1, "tags": 1, "created_at": 1, "user_id": 1}
+    ).to_list(20000)
 
-    # Normalize phones
-    phone_map: dict = {}  # normalized_phone → [contact_ids]
+    # Normalize phones. Auto-merge groups are keyed by OWNER + phone: the same customer legitimately
+    # exists in several reps' books and must stay isolated. Store-owned lead contacts fold into the
+    # requesting rep's namespace so a lead duplicate of their own contact gets merged.
+    phone_map: dict = {}  # (owner, normalized_phone) -> [contacts]
     for c in contacts:
         raw = c.get("phone", "")
         if not raw:
@@ -2288,14 +2325,18 @@ async def normalize_all_phones(user_id: str):
                 {"$set": {"phone": normalized, "updated_at": datetime.utcnow()}}
             )
             updated += 1
-        phone_map.setdefault(normalized, []).append(c)
+        owner = str(c.get("user_id") or "")
+        if sid and owner == sid:
+            owner = user_id
+        phone_map.setdefault((owner, normalized), []).append(c)
 
-    # Auto-merge contacts with the same normalized phone (keep the older/richer one)
-    for phone, dupes in phone_map.items():
+    # Auto-merge contacts with the same normalized phone within one owner (keep the older/richer one)
+    for (owner, phone), dupes in phone_map.items():
         if len(dupes) < 2:
             continue
-        # Sort: keep the one with more data (tags, vehicle) and older created_at
+        # Sort: keep the rep-owned one, then the one with more data (tags) and older created_at
         dupes.sort(key=lambda x: (
+            0 if str(x.get("user_id") or "") == owner else 1,
             -len(x.get("tags", [])),
             x.get("created_at", datetime.utcnow())
         ))
@@ -2304,18 +2345,18 @@ async def normalize_all_phones(user_id: str):
         for dup in dupes[1:]:
             dup_id = str(dup["_id"])
             # Move all messages, events, enrollments from dup → keep
-            await db.messages.update_many({"contact_id": dup_id}, {"$set": {"contact_id": keep_id}})
-            await db.contact_events.update_many({"contact_id": dup_id}, {"$set": {"contact_id": keep_id}})
-            await db.campaign_enrollments.update_many({"contact_id": dup_id}, {"$set": {"contact_id": keep_id}})
-            await db.conversations.update_many({"contact_id": dup_id}, {"$set": {"contact_id": keep_id}})
-            await db.tasks.update_many({"contact_id": dup_id}, {"$set": {"contact_id": keep_id}})
+            for col in ("messages", "contact_events", "campaign_enrollments", "conversations", "tasks",
+                        "inbound_leads", "voice_notes", "ai_reply_queue", "congrats_cards", "short_urls"):
+                await db[col].update_many({"contact_id": dup_id}, {"$set": {"contact_id": keep_id}})
             # Merge tags
-            dup_tags = dup.get("tags", [])
+            dup_tags = [t for t in dup.get("tags", []) if t != "Possible Duplicate"]
             if dup_tags:
                 await db.contacts.update_one(
                     {"_id": keep["_id"]},
                     {"$addToSet": {"tags": {"$each": dup_tags}}}
                 )
+            await db.contacts.update_one({"_id": keep["_id"]}, {"$set": {"user_id": owner}, "$pull": {"tags": "Possible Duplicate"},
+                                                                 "$unset": {"possible_duplicate_of": ""}})
             # Hide the duplicate
             await db.contacts.update_one(
                 {"_id": dup["_id"]},
@@ -2334,15 +2375,18 @@ async def normalize_all_phones(user_id: str):
 
 @router.post("/{user_id}/merge")
 async def merge_contacts(user_id: str, data: dict):
-    """Merge duplicate_id into primary_id — moves all records, merges tags, hides duplicate."""
+    """Merge duplicate_id into primary_id — moves all records, merges tags, hides duplicate.
+    Either record may be store-owned (internet leads); the merged record ends up owned by this rep."""
     db = get_db()
     primary_id   = data.get("primary_id")
     duplicate_id = data.get("duplicate_id")
     if not primary_id or not duplicate_id:
         raise HTTPException(status_code=400, detail="primary_id and duplicate_id required")
+    owners, _sid, role = await _dup_owners(db, user_id)
+    own = {} if role == "super_admin" else {"user_id": {"$in": owners}}
 
-    primary   = await db.contacts.find_one({"_id": ObjectId(primary_id),   "user_id": user_id})
-    duplicate = await db.contacts.find_one({"_id": ObjectId(duplicate_id), "user_id": user_id})
+    primary   = await db.contacts.find_one({"_id": ObjectId(primary_id),   **own})
+    duplicate = await db.contacts.find_one({"_id": ObjectId(duplicate_id), **own})
     if not primary:   raise HTTPException(status_code=404, detail="Primary contact not found")
     if not duplicate: raise HTTPException(status_code=404, detail="Duplicate contact not found")
 
@@ -2350,25 +2394,28 @@ async def merge_contacts(user_id: str, data: dict):
     migrated = 0
     for col in ["messages", "contact_events", "conversations", "tasks",
                 "campaign_enrollments", "campaign_pending_sends", "congrats_cards",
-                "short_urls", "broadcast_messages"]:
+                "short_urls", "broadcast_messages", "inbound_leads", "voice_notes", "ai_reply_queue", "inventory_interest"]:
         try:
             r = await db[col].update_many({"contact_id": duplicate_id}, {"$set": {"contact_id": primary_id}})
             migrated += r.modified_count
         except Exception:
             pass
 
-    # Merge tags
-    dup_tags = duplicate.get("tags", [])
+    # Merge tags (drop the duplicate flag - it is resolved now)
+    dup_tags = [t for t in duplicate.get("tags", []) if t != "Possible Duplicate"]
     if dup_tags:
         await db.contacts.update_one({"_id": ObjectId(primary_id)}, {"$addToSet": {"tags": {"$each": dup_tags}}})
 
     # Copy missing fields
     updates = {}
-    for field in ["vehicle", "email", "notes", "birthday", "anniversary", "photo_url", "photo_thumbnail"]:
+    for field in ["vehicle", "email", "phone", "notes", "birthday", "anniversary", "photo_url", "photo_thumbnail"]:
         if not primary.get(field) and duplicate.get(field):
             updates[field] = duplicate[field]
-    if updates:
-        await db.contacts.update_one({"_id": ObjectId(primary_id)}, {"$set": updates})
+    if str(primary.get("user_id") or "") != user_id:
+        updates["user_id"] = user_id
+    await db.contacts.update_one({"_id": ObjectId(primary_id)},
+                                 {"$set": {**updates, "updated_at": now}, "$pull": {"tags": "Possible Duplicate"},
+                                  "$unset": {"possible_duplicate_of": ""}})
 
     await db.contacts.update_one(
         {"_id": ObjectId(duplicate_id)},

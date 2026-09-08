@@ -227,15 +227,12 @@ async def incoming_message(
         # CRITICAL: Only look in the rep's namespace (user_id = rep_user_id).
         # Never look at other reps' contacts — the same customer phone number
         # exists in multiple reps' contact books and MUST stay isolated.
+        # Any stored format matches: "(801) 634-9122" == "+18016349122". Merged/deleted records are skipped.
+        from services.contact_match import phone_clause, NOT_MERGED
         alt_phone = from_phone.replace("+1", "") if from_phone.startswith("+1") else "+1" + from_phone.lstrip("+")
-        contact = await db.contacts.find_one({
-            "user_id": rep_user_id,
-            "$or": [
-                {"phone": from_phone},
-                {"phone": alt_phone},
-                {"phone": from_phone.lstrip("+")},
-            ]
-        })
+        _pc = phone_clause(from_phone) or {"phone": from_phone}
+        contact = await db.contacts.find_one({"user_id": rep_user_id, "status": NOT_MERGED, **_pc},
+                                             sort=[("photo_url", -1), ("created_at", 1)])
 
         is_new_contact = False
         if not contact:
@@ -260,7 +257,7 @@ async def incoming_message(
             try:
                 any_contact = await db.contacts.find_one(
                     {
-                        "$or": [{"phone": from_phone}, {"phone": alt_phone}, {"phone": from_phone.lstrip("+")}],
+                        **_pc, "status": NOT_MERGED,
                         "name": {"$nin": ["Contact", "Unknown", "New Lead", "", None], "$not": {"$regex": "^Lead \\("}}
                     },
                     {"name": 1, "first_name": 1, "last_name": 1, "photo_url": 1, "photo_thumbnail": 1}
@@ -1260,8 +1257,9 @@ async def call_whisper(
     display = "a customer"
     if caller_phone:
         try:
+            from services.contact_match import phone_clause as _pcl, NOT_MERGED as _nm
             contact = await db.contacts.find_one({
-                "$or": [{"phone": caller_phone}, {"phone": caller_phone.lstrip("+")}]
+                **(_pcl(caller_phone) or {"phone": caller_phone}), "status": _nm
             }, {"first_name": 1, "last_name": 1, "name": 1})
             if contact:
                 full = f"{contact.get('first_name','')} {contact.get('last_name','')}".strip()
@@ -1380,9 +1378,9 @@ async def handle_recording_complete(
 
     # Resolve contact if we have a phone but no contact_id yet
     if not contact_id and from_phone:
-        contact = await db.contacts.find_one({
-            "$or": [{"phone": from_phone}, {"phone": from_phone.lstrip("+")}]
-        })
+        from services.contact_match import phone_clause as _pcl, NOT_MERGED as _nm
+        contact = await db.contacts.find_one({**(_pcl(from_phone) or {"phone": from_phone}), "status": _nm},
+                                             sort=[("photo_url", -1), ("created_at", 1)])
         if contact:
             contact_id = str(contact["_id"])
             if not user_id:
@@ -1403,9 +1401,9 @@ async def handle_recording_complete(
 
     # Resolve contact from phone if not found yet
     if not contact_id and from_phone:
-        contact = await db.contacts.find_one({
-            "$or": [{"phone": from_phone}, {"phone": from_phone.lstrip("+")}]
-        })
+        from services.contact_match import phone_clause as _pcl, NOT_MERGED as _nm
+        contact = await db.contacts.find_one({**(_pcl(from_phone) or {"phone": from_phone}), "status": _nm},
+                                             sort=[("photo_url", -1), ("created_at", 1)])
         if contact:
             contact_id = str(contact["_id"])
             if not user_id:
@@ -1985,10 +1983,10 @@ async def handle_inbound_voice(
         try:
             rep_user_id = str(rep_user["_id"])
             # Strict namespace: only look for contact in THIS rep's contacts
+            from services.contact_match import phone_clause as _pcl, NOT_MERGED as _nm
             contact = await db.contacts.find_one({
-                "user_id": rep_user_id,
-                "$or": [{"phone": from_phone}, {"phone": from_phone.lstrip("+")}]
-            })
+                "user_id": rep_user_id, "status": _nm, **(_pcl(from_phone) or {"phone": from_phone})
+            }, sort=[("photo_url", -1), ("created_at", 1)])
             if not contact:
                 contact = None
             contact_id   = str(contact["_id"]) if contact else None
@@ -2110,9 +2108,9 @@ async def handle_voicemail_transcription(
     if not rep_user:
         rep_user = await db.users.find_one({"role": "super_admin"})
 
-    contact = await db.contacts.find_one({
-        "$or": [{"phone": from_phone}, {"phone": from_phone.lstrip("+")}]
-    })
+    from services.contact_match import phone_clause as _pcl, NOT_MERGED as _nm
+    contact = await db.contacts.find_one({**(_pcl(from_phone) or {"phone": from_phone}), "status": _nm},
+                                         sort=[("photo_url", -1), ("created_at", 1)])
     contact_name = (contact or {}).get("name") or f"Unknown ({from_phone[-4:]})"
     user_id      = str(rep_user["_id"]) if rep_user else None
 

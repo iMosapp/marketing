@@ -32,7 +32,7 @@ load_dotenv(ROOT_DIR / '.env', override=False)
 
 # Import routers (after env is loaded)
 from routers import public_proof
-from routers import auth, contacts, tasks, messages, calls, campaigns, admin, admin_hierarchy, admin_users, leaderboard, calendar, templates, tags, search, public_review, digital_card, profile, integrations, partners, legal, subscriptions, directory, shared_inboxes, voice, twilio_webhooks, twilio_admin, public_landing, congrats_cards, short_urls, onboarding_settings, team_invite, jessie, sop, invoices, email, reports, broadcast, lead_sources, lead_intake, notifications, webhooks, inventory_webhooks, demo_requests, team_chat, date_triggers, app_directory, scheduler_admin, contact_events, white_label, image_router, webhook_subscriptions, public_api, user_lifecycle, docs, nda, voice_notes, contact_intel, leaderboard_v2, notifications_center, ai_campaigns, ai_reply, home_intelligence, showcase, brand_assets, linkpage, setup_wizard, help_center, review_templates, social_templates, training, engagement_signals, ai_outreach, campaign_config, permission_templates, opt_in, push_notifications, crm_timeline, tracking, contact_merge, account_health, messaging_channels, csv_import, sold_workflow, partner_billing, seo, geo, chat_widget, partner_invoices, training_reports, media_tracking, va_profiles, user_schedule, keyword_rules, wallet_pass, relationship_health
+from routers import auth, contacts, tasks, messages, calls, campaigns, admin, admin_hierarchy, admin_users, leaderboard, calendar, templates, tags, search, public_review, digital_card, profile, integrations, partners, legal, subscriptions, directory, shared_inboxes, voice, twilio_webhooks, twilio_admin, public_landing, congrats_cards, short_urls, onboarding_settings, team_invite, jessie, sop, invoices, email, reports, broadcast, lead_sources, lead_intake, notifications, webhooks, inventory_webhooks, demo_requests, team_chat, date_triggers, app_directory, scheduler_admin, contact_events, white_label, image_router, webhook_subscriptions, public_api, user_lifecycle, docs, nda, voice_notes, contact_intel, leaderboard_v2, notifications_center, ai_campaigns, ai_reply, home_intelligence, showcase, brand_assets, linkpage, setup_wizard, help_center, review_templates, social_templates, training, engagement_signals, ai_outreach, campaign_config, permission_templates, opt_in, push_notifications, crm_timeline, tracking, account_health, messaging_channels, csv_import, sold_workflow, partner_billing, seo, geo, chat_widget, partner_invoices, training_reports, media_tracking, va_profiles, user_schedule, keyword_rules, wallet_pass, relationship_health
 from routers.database import get_db
 from websocket_manager import manager as ws_manager
 
@@ -587,7 +587,6 @@ async def get_branding_logo():
 # ============= INCLUDE ROUTERS =============
 api_router.include_router(auth.router)
 api_router.include_router(contact_events.router)
-api_router.include_router(contact_merge.router)
 from routers import crm_push
 api_router.include_router(crm_push.router)
 api_router.include_router(contacts.router)

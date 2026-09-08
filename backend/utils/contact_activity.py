@@ -27,10 +27,11 @@ async def find_contact_by_phone_or_name(user_id: str, phone: str = None, name: s
     if phone:
         norm = normalize_phone(phone)
         if norm:
+            from services.contact_match import phone_clause, NOT_MERGED
             contact = await db.contacts.find_one({
                 "user_id": user_id,
-                "phone": {"$regex": norm},
-                "status": {"$ne": "deleted"},
+                **(phone_clause(phone) or {"phone": {"$regex": norm}}),
+                "status": NOT_MERGED,
             })
 
     if not contact and name:

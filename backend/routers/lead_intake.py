@@ -526,16 +526,21 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         except Exception:
             pass
 
-    # ── Dedup: check existing contact
-    contact_query: dict = {"$or": []}
-    if phone_e164:
-        contact_query["$or"].append({"phone": {"$regex": re.escape(digits[-10:])}})
-    if email:
-        contact_query["$or"].append({"email": email.lower().strip()})
-
-    existing_contact = None
-    if contact_query["$or"]:
-        existing_contact = await db.contacts.find_one(contact_query)
+    # ── Dedup: existing contact in THIS store, any phone format, richest record first.
+    # Falls back to a unique first+last name match (fills in the missing phone/email); a same-name
+    # contact with a different phone is not auto-attached but both get flagged as possible duplicates.
+    from services.contact_match import find_existing_contact, source_owner_ids
+    existing_contact, match_how, name_conflict = await find_existing_contact(
+        db, phone_e164, email, first, last, store_id, extra_owner_ids=source_owner_ids(source))
+    if existing_contact and match_how == "name":
+        fill = {}
+        if phone_e164 and not existing_contact.get("phone"):
+            fill["phone"] = phone_e164
+        if email and not existing_contact.get("email"):
+            fill["email"] = email.lower().strip()
+        if fill:
+            await db.contacts.update_one({"_id": existing_contact["_id"]}, {"$set": {**fill, "updated_at": now}})
+        logger.info(f"[LeadIntake] Matched existing contact {existing_contact['_id']} by unique name ({full_name})")
 
     # Returning customer: an existing contact owned by an ACTIVE rep in this store goes straight to
     # that rep (skips the shared queue + ladder). Store-owned / orphaned contacts are treated as new.
@@ -603,6 +608,13 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         result = await db.contacts.insert_one(contact_doc)
         contact_id = str(result.inserted_id)
         is_new_contact = True
+        if name_conflict:
+            # Same name, different number: keep both, flag both so the rep can merge in one tap.
+            await db.contacts.update_one({"_id": result.inserted_id}, {
+                "$addToSet": {"tags": "Possible Duplicate"},
+                "$set": {"possible_duplicate_of": str(name_conflict["_id"])}})
+            await db.contacts.update_one({"_id": name_conflict["_id"]}, {"$addToSet": {"tags": "Possible Duplicate"}})
+            logger.info(f"[LeadIntake] {full_name}: new contact {contact_id} flagged possible duplicate of {name_conflict['_id']}")
 
     # ── Resolve assigned user (for AI message)
     assigned_user_id = owner_id or await _resolve_assignment(db, source)

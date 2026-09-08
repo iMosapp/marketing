@@ -31,11 +31,14 @@ interface DuplicateContact {
   conversation_count: number;
   card_count: number;
   last_activity: string | null;
+  store_owned?: boolean;
 }
 
 interface DuplicateSet {
   phone: string;
   contacts: DuplicateContact[];
+  reason?: 'phone' | 'name';
+  reason_label?: string;
 }
 
 export default function DuplicatesScreen() {
@@ -149,8 +152,9 @@ export default function DuplicatesScreen() {
   };
 
   const formatPhone = (phone: string) => {
-    if (phone.length === 10) {
-      return `(${phone.slice(0,3)}) ${phone.slice(3,6)}-${phone.slice(6)}`;
+    const d = (phone || '').replace(/\D/g, '').slice(-10);
+    if (d.length === 10) {
+      return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
     }
     return phone;
   };
@@ -168,7 +172,11 @@ export default function DuplicatesScreen() {
       )}
       <Text style={styles.contactName} numberOfLines={1}>
         {contact.first_name} {contact.last_name}
+        {contact.store_owned ? <Text style={{ fontSize: 11, fontWeight: '600', color: '#C9A962' }}>  · Lead (store)</Text> : null}
       </Text>
+      {contact.phone ? (
+        <Text style={styles.contactDetail} numberOfLines={1}>{formatPhone(contact.phone)}</Text>
+      ) : null}
       {contact.email ? (
         <Text style={styles.contactDetail} numberOfLines={1}>{contact.email}</Text>
       ) : null}
@@ -214,8 +222,8 @@ export default function DuplicatesScreen() {
     return (
       <View style={styles.setCard} data-testid={`duplicate-set-${item.phone}`}>
         <View style={styles.setHeader}>
-          <Ionicons name="call-outline" size={16} color={colors.textSecondary} />
-          <Text style={styles.setPhone}>{formatPhone(item.phone)}</Text>
+          <Ionicons name={item.reason === 'name' ? 'person-outline' : 'call-outline'} size={16} color={colors.textSecondary} />
+          <Text style={styles.setPhone}>{item.reason === 'name' ? (item.reason_label || 'Same name, different number') : formatPhone(item.phone)}</Text>
           <View style={styles.countBadge}>
             <Text style={styles.countText}>{contacts.length} records</Text>
           </View>
@@ -262,7 +270,7 @@ export default function DuplicatesScreen() {
         </TouchableOpacity>
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text style={styles.title}>Duplicate Contacts</Text>
-          <Text style={styles.subtitle}>Same phone number, same salesperson</Text>
+          <Text style={styles.subtitle}>Same number in any format, or same name from a lead form</Text>
         </View>
         <TouchableOpacity
           onPress={handleNormalizeAll}
