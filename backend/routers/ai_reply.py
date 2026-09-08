@@ -71,12 +71,66 @@ def get_human_delay(incoming_message: str = "") -> int:
 
 # ── Live inventory lookup for Jessi ──────────────────────────────────────────
 
+NARROW_TAG = "NARROW FIRST"
+NARROW_TTL_HOURS = 24
+NARROW_MIN_MATCHES = 4   # a broad ask with this many fits gets a qualifying question instead of a list
 
-async def _search_inventory_context(db, user_id: str, message: str, contact_id: str = None):
+
+def _narrowing_pending(conv: Optional[dict]) -> Optional[dict]:
+    """The open 'which truck?' question Jessi asked earlier in this thread, if still fresh."""
+    n = (conv or {}).get("inventory_narrowing") or {}
+    asked = n.get("asked_at")
+    if not asked:
+        return None
+    if isinstance(asked, str):
+        try:
+            asked = datetime.fromisoformat(asked.replace("Z", "+00:00"))
+        except Exception:
+            return None
+    if asked.tzinfo is None:
+        asked = asked.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) - asked > timedelta(hours=NARROW_TTL_HOURS):
+        return None
+    return n
+
+
+def _inventory_shape(matches: list, vs) -> str:
+    """One-line summary of a broad match set so Jessi can ask a smart narrowing question."""
+    from collections import Counter
+    models = Counter()
+    conds = Counter()
+    prices, years = [], []
+    for it in matches:
+        a = it.get("attributes") or {}
+        label = " ".join(str(x) for x in [a.get("make", ""), a.get("model", "")] if x).strip() or (it.get("name") or "").strip()
+        if label:
+            models[label] += 1
+        c = str(a.get("condition") or "").lower()
+        if c:
+            conds["new" if c == "new" else "used"] += 1
+        p = vs._price(it)
+        if p:
+            prices.append(p)
+        y = vs._year(it)
+        if y:
+            years.append(y)
+    bits = [", ".join(f"{m} ({n})" for m, n in models.most_common(6))]
+    if prices:
+        bits.append(f"prices ${min(prices):,.0f} to ${max(prices):,.0f}")
+    if years:
+        bits.append(f"years {min(years)}-{max(years)}")
+    if conds:
+        bits.append(" / ".join(f"{n} {k}" for k, n in conds.items()))
+    return "; ".join(b for b in bits if b)
+
+
+async def _search_inventory_context(db, user_id: str, message: str, contact_id: str = None, conversation_id: str = None):
     """Search the store's live inventory for vehicles matching the customer's message
     (model words, body type, fuel, price / year / mileage bounds).
     Returns (context_str, media_urls, listing_link) - ('', [], None) if nothing fits.
-    listing_link is a tracked short link to the vehicle's web page when ONE vehicle is clearly meant."""
+    listing_link is a tracked short link to the vehicle's web page when ONE vehicle is clearly meant.
+    A broad ask ("what trucks do you have?") with many fits returns a NARROW FIRST brief instead of a list,
+    and remembers the ask so the customer's answer (budget, use, size) is combined with it next turn."""
     import os as _os
     from services import vehicle_search as vs
     try:
@@ -87,7 +141,22 @@ async def _search_inventory_context(db, user_id: str, message: str, contact_id: 
         scope = {"store_id": str(sid)} if sid else {"$or": [
             {"created_by_user_id": user_id}, {"assigned_to_user_id": user_id}]}
 
+        conv = None
+        if conversation_id and ObjectId.is_valid(str(conversation_id)):
+            conv = await db.conversations.find_one({"_id": ObjectId(conversation_id)}, {"inventory_narrowing": 1})
+        pending = _narrowing_pending(conv)
+
         q = vs.parse_query(message)
+        merged = followup = False
+        if pending:
+            pb, pf = set(pending.get("bodies") or []), set(pending.get("features") or [])
+            if not q["bodies"] or q["bodies"] == pb:
+                # Same subject as their last ask ("trucks") - keep it so "under 40k" means trucks under 40k.
+                q["bodies"] |= pb
+                q["features"] |= pf
+                q["has_filters"] = True
+                merged = True
+                followup = bool(pending.get("asked"))   # they are answering Jessi's budget/use question
         if not q["tokens"] and not q["has_filters"]:
             return "", [], None
 
@@ -97,6 +166,22 @@ async def _search_inventory_context(db, user_id: str, message: str, contact_id: 
         matches, exact = vs.select_matches(items, q)
         if not matches:
             return "", [], None
+
+        asked = vs.describe_filters(q)
+        conv_oid = ObjectId(conversation_id) if conversation_id and ObjectId.is_valid(str(conversation_id)) else None
+        broad = (not followup and exact and q["has_filters"] and not q["numeric"] and not q["tokens"]
+                 and not q.get("sort") and len(matches) >= NARROW_MIN_MATCHES)
+        if conv_oid and (q["bodies"] or q["features"]):
+            # Remember the subject; asked=True means Jessi's reply is a narrowing question the customer will answer next.
+            await db.conversations.update_one(
+                {"_id": conv_oid},
+                {"$set": {"inventory_narrowing": {
+                    "bodies": sorted(q["bodies"]), "features": sorted(q["features"]), "asked": broad,
+                    "asked_at": datetime.now(timezone.utc), "message": (message or "")[:200]}}})
+        if broad:
+            shape = _inventory_shape(matches, vs)
+            return (f"{NARROW_TAG}: the customer asked broadly for {asked}. We have {len(matches)} in stock: {shape}.",
+                    [], None)
 
         public_url = _os.environ.get("PUBLIC_FACING_URL", _os.environ.get("APP_URL", "https://app.imonsocial.com")).rstrip("/")
 
@@ -113,7 +198,8 @@ async def _search_inventory_context(db, user_id: str, message: str, contact_id: 
                     urls.append(u)
             return urls
 
-        top = matches[:3]
+        # A narrowed follow-up gets up to 5 candidates so Jessi can pick the best 2-3 for what they said.
+        top = matches[:5] if followup else matches[:3]
         tokens = q["tokens"]
         # "Specific" = exactly one of the candidates is named in the message (model / trim / stock #).
         # A comparison ("Tacoma or the F-150?") or a filter ask ("any trucks?") gets one cover photo each.
@@ -144,11 +230,10 @@ async def _search_inventory_context(db, user_id: str, message: str, contact_id: 
                 link = {"url": short["short_url"], "vehicle": focus.get("name", "")}
             except Exception as e:
                 logger.debug(f"[AIReply] vehicle short link failed: {e}")
-        if not media:
+        if not media and not (followup and len(matches) > 3):
             media = [u for it in top for u in _photos(it)[:1]][:3]
 
         lines = [f"• {vs.describe_vehicle(it)}" for it in top]
-        asked = vs.describe_filters(q)
         if q["has_filters"]:
             if exact:
                 header = f"Customer is asking for: {asked}. MATCHES ({len(matches)} in stock"
@@ -156,6 +241,12 @@ async def _search_inventory_context(db, user_id: str, message: str, contact_id: 
             else:
                 header = (f"NO EXACT MATCH in stock for: {asked}. Closest options (be upfront about how they differ, "
                           f"e.g. over budget or older):")
+            if followup:
+                earlier = ", ".join([vs.BODY_LABEL[b].lower() + "s" for b in sorted(q["bodies"])]
+                                    + [vs.FEATURE_LABEL[f] for f in sorted(q["features"])]) or "vehicles"
+                header = (f"The customer asked about {earlier} earlier and just narrowed it down with: \"{(message or '')[:120]}\". "
+                          f"SHORTLIST TIME: pick the 2-3 that fit what they said best, present them as simple options "
+                          f"(name, price, one standout detail each), and ask which one they want photos or details on.\n") + header
             return header + "\n" + "\n".join(lines), media, link
         return "\n".join(lines), media, link
     except Exception as e:
@@ -233,11 +324,12 @@ async def queue_ai_reply(
     # models) she STOPS replying entirely until a human gets involved. Cleared when
     # the rep sends a manual reply, taps All Good, or turns AI off/on.
     lead_inquiry = None
+    _conv_pause = None
     try:
         _conv_pause = await db.conversations.find_one(
             {"_id": ObjectId(conversation_id)},
             {"ai_paused_for_human": 1, "needs_assistance": 1, "is_internet_lead": 1, "inquiry": 1,
-             "inbound_lead_id": 1, "lead_source_id": 1, "lead_source_name": 1, "attribution": 1}
+             "inbound_lead_id": 1, "lead_source_id": 1, "lead_source_name": 1, "attribution": 1, "inventory_narrowing": 1}
         )
         if _conv_pause and _conv_pause.get("ai_paused_for_human"):
             logger.info(f"[AIReply] Conversation {conversation_id} paused for human — skipping AI reply")
@@ -255,6 +347,8 @@ async def queue_ai_reply(
         pass
     from services.lead_context import is_vehicle_inquiry, inquiry_prompt_block
     vehicle_ok = is_vehicle_inquiry(lead_inquiry)
+    # Jessi asked "what budget / what kind?" last turn - the answer is an inventory turn, whatever words they use.
+    narrow_pending = vehicle_ok and bool((_narrowing_pending(_conv_pause) or {}).get("asked"))
 
     # ── Content-based routing ───────────────────────────────────────────────
     # Three buckets decide what Jessi does with this message:
@@ -328,6 +422,12 @@ async def queue_ai_reply(
         "are you available", "you available", "are you free", "you free", "are you open",
         "still open", "i'm available", "im available", "i am available", "we're available",
     ]
+    # The answer to Jessi's narrowing question ("under 40k", "something for towing") is an inventory
+    # turn, unless the customer clearly changed the subject to setting a time or suspects a bot.
+    if narrow_pending and not is_ai_suspect and not _has_phrase(msg_lower, STRONG_SCHEDULING):
+        is_fact_topic = True
+        is_finance_topic = _has_phrase(_fact_probe, FINANCE_SIGNALS)
+        is_hot_topic = True
     # Weak signals (bare day/time words) only count as scheduling when the recent
     # thread was already about setting a time — otherwise "how's it going today?"
     # would wrongly trip a hold.
@@ -418,7 +518,9 @@ async def queue_ai_reply(
     # trade values are never answered from inventory data - a human handles those.
     inventory_context, inventory_media, inventory_link = "", [], None
     if is_fact_topic and not is_finance_topic and vehicle_ok:
-        inventory_context, inventory_media, inventory_link = await _search_inventory_context(db, assigned_user_id, incoming_message, contact_id)
+        inventory_context, inventory_media, inventory_link = await _search_inventory_context(
+            db, assigned_user_id, incoming_message, contact_id, conversation_id)
+    is_narrowing = inventory_context.startswith(NARROW_TAG)
 
     if is_hot_topic and not inventory_context and not is_scheduling:
         logger.info(f"[AIReply] Hot topic detected in message — sending brief reply + escalating for {contact_id}")
@@ -513,7 +615,7 @@ async def queue_ai_reply(
                 asyncio.create_task(send_push_to_user(
                     assigned_user_id,
                     f"Inventory Question - {cname_inv}",
-                    f"Asked: \"{(incoming_message or '')[:70]}\" - Jessi replied with live inventory.",
+                    f"Asked: \"{(incoming_message or '')[:70]}\" - " + ("Jessi asked their budget and needs to narrow it down." if is_narrowing else "Jessi replied with live inventory."),
                     f"/thread/{conversation_id}",
                     "car-sport",
                 ))
@@ -549,11 +651,21 @@ async def queue_ai_reply(
 
         nl = "\n\n"
         inv_block = ""
-        if inventory_context:
+        if is_narrowing:
+            inv_block = (
+                f"LIVE INVENTORY - {inventory_context}\n"
+                "Do NOT list, describe or link any vehicles yet. Think like a sharp salesperson doing deductive reasoning: "
+                "state the exact count as a fact (\"we've got 10 trucks on the lot right now\", never \"usually\" or \"around\"), "
+                "then ask ONE question that gets BOTH their budget range and what they need it for (work/towing vs daily "
+                "driving, full-size vs midsize, new vs used) so you can narrow it to 2-3 picks. Two sentences max. "
+                "You may name at most two models as examples. Never write a web address.\n\n"
+            )
+        elif inventory_context:
             inv_block = (
                 "LIVE INVENTORY (current and accurate - quote these facts, never invent other vehicles):\n"
                 f"{inventory_context}\n"
-                "Answer using ONLY these vehicles. Mention price/color/mileage when relevant. "
+                "Answer using ONLY these vehicles. Never present more than 3 options; if there are more, say so and offer to "
+                "narrow further. Mention price/color/mileage when relevant. "
                 "If it says NO EXACT MATCH, be honest that nothing fits exactly, offer the closest option and why it "
                 "is close, and offer to keep an eye out. If it lists a count higher than shown, say there are more. "
                 "Never write a web address; if a link is available it is added after your reply automatically.\n\n"

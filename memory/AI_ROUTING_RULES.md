@@ -47,3 +47,15 @@ Never simulate the Twilio webhook with forest's real numbers in preview - it fir
   and reads only THIS conversation's messages (include_vehicle=False, conversation_id=...). Regular customer threads (inquiry None) behave exactly as before.
 - Lead Source workflow field `inquiry_context` (max 300 chars) overrides the topic. Website form leads (attribution.kind == website_form) default to the software demo.
 - Probe: python tests/manual_lead_inquiry_probe.py (real LLM, draft_only, cancels + cleans up; shows BEFORE vs AFTER).
+
+## Inventory narrowing (June 2026)
+- Broad body/feature ask with no price/year/miles/model/sort and >= NARROW_MIN_MATCHES (4) fits -> _search_inventory_context returns a
+  "NARROW FIRST" brief (count + models + price/year range + new/used) and Jessi asks budget + use instead of listing. No photos, no links.
+- conversations.inventory_narrowing {bodies, features, asked, asked_at, message} is written on EVERY body/feature ask (24h TTL).
+  asked=True only when Jessi asked the narrowing question -> the customer's next message is forced into an inventory turn
+  (unless AI-suspect or STRONG_SCHEDULING). asked=False just carries the subject so "under 30k" after a truck list means trucks.
+- Follow-up answer: merged filters, up to 5 candidates in context, LLM told to present 2-3 ("SHORTLIST TIME"), photos only if <= 3 matches.
+- Presentation rule everywhere: never more than 3 options in a reply.
+- Matrix cases 15 cover: broad -> narrow, answer -> shortlist (trucks only, no longer forcing), chit-chat after shortlist not forced,
+  3 fits list directly, price follow-up keeps truck context, scheduling beats narrowing, model ask / 1 fit list directly.
+- Real-LLM probe: python tests/manual_inventory_narrowing_probe.py (seeds 8 trucks under forest's created_by scope, draft_only, cleans up).

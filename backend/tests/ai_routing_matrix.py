@@ -172,6 +172,48 @@ async def main():
     await reset(); check("sedan question = live answer", await fire("What sedans do you have?"), outcome="auto", waiting=True)
     await db.inventory.delete_many({"_id": {"$in": inv.inserted_ids}})
 
+    # 15 Broad ask with many fits -> Jessi asks budget/use first (no list), then the answer builds the shortlist
+    inv2 = await db.inventory.insert_many([
+        {"name": f"{y} {mk} {md}", "status": "available", "price": p, "created_by_user_id": uid,
+         "attributes": {"year": str(y), "make": mk, "model": md, "condition": c}, "created_at": datetime.utcnow()}
+        for y, mk, md, p, c in [(2024, "Ford", "F-150", 52000.0, "new"), (2021, "Ford", "F-150", 36500.0, "used"),
+                                (2023, "Chevrolet", "Silverado 1500", 47900.0, "new"), (2019, "Toyota", "Tacoma", 29900.0, "used"),
+                                (2022, "Ford", "Ranger", 33400.0, "used"), (2024, "Honda", "Civic", 27500.0, "new")]
+    ])
+    captured = {}
+    _orig_search = ar._search_inventory_context
+    async def _spy(*a, **k):
+        r = await _orig_search(*a, **k); captured["ctx"] = r[0]; captured["media"] = r[1]; return r
+    ar._search_inventory_context = _spy
+    await reset(); got = await fire("What trucks do you have in stock?")
+    c = await db.conversations.find_one({"_id": conv_id})
+    check("broad truck ask = narrowing question", {**got, "narrow": captured.get("ctx", "").startswith(ar.NARROW_TAG),
+          "no_photos": not captured.get("media"), "remembered": sorted((c.get("inventory_narrowing") or {}).get("bodies", [])) == ["truck"]},
+          outcome="auto", paused=False, narrow=True, no_photos=True, remembered=True)
+    got = await fire("Probably under 40k, mostly for work and towing")   # keep_state: narrowing must carry over
+    c = await db.conversations.find_one({"_id": conv_id})
+    ctx = captured.get("ctx", "")
+    check("narrowing answer = shortlist of trucks", {**got, "shortlist": "SHORTLIST" in ctx and not ctx.startswith(ar.NARROW_TAG),
+          "trucks_only": "Civic" not in ctx, "cleared": not (c.get("inventory_narrowing") or {}).get("asked")},
+          outcome="auto", paused=False, shortlist=True, trucks_only=True, cleared=True)
+    captured.clear(); got = await fire("Cool, let me think about it")
+    check("after shortlist, chit-chat is not forced into inventory", {**got, "searched": "ctx" in captured}, outcome="auto", searched=False)
+    await db.inventory.delete_one({"_id": inv2.inserted_ids[0]}); await db.inventory.delete_one({"_id": inv2.inserted_ids[2]})
+    await reset(); got = await fire("What trucks do you have?")          # only 3 trucks left -> listed directly
+    check("3 trucks list directly", {**got, "narrow": captured.get("ctx", "").startswith(ar.NARROW_TAG)}, outcome="auto", narrow=False)
+    got = await fire("Anything under 30k?")
+    check("direct list keeps truck context on price follow-up", {**got, "trucks_only": "Civic" not in captured.get("ctx", ""),
+          "saw_trucks": "Tacoma" in captured.get("ctx", "")}, outcome="auto", trucks_only=True, saw_trucks=True)
+    await reset(); got = await fire("What trucks do you have in stock?")
+    check("scheduling beats narrowing follow-up", await fire("Can I come in tomorrow at 6?"), outcome="approval", paused=False)
+    await reset(); got = await fire("Any Fords in stock?")
+    check("model ask lists directly (3 fits)", {**got, "narrow": captured.get("ctx", "").startswith(ar.NARROW_TAG)}, outcome="auto", narrow=False)
+    await reset(); got = await fire("What sedans do you have?")
+    check("1 fit lists directly", {**got, "narrow": captured.get("ctx", "").startswith(ar.NARROW_TAG)}, outcome="auto", narrow=False)
+    ar._search_inventory_context = _orig_search
+    await db.inventory.delete_many({"_id": {"$in": inv2.inserted_ids}})
+    await db.conversations.update_one({"_id": conv_id}, {"$unset": {"inventory_narrowing": ""}})
+
     # cleanup
     await db.ai_reply_queue.delete_many({"conversation_id": conv})
     await db.messages.delete_many({"conversation_id": conv})
