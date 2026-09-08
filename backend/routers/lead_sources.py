@@ -767,6 +767,35 @@ async def claim_lead(conversation_id: str, user_id: str, request: Request):
 
 
 
+@router.get("/{source_id}/reps")
+async def list_source_reps(source_id: str, me: dict = Depends(require_manager)):
+    """Everyone who can be put on this source's workflow: the store's members (store_id or store_ids),
+    the store's org admins, and the caller. Scoped to the SOURCE's store, not the caller's account."""
+    db = get_db()
+    source = await db.lead_sources.find_one({"_id": ObjectId(source_id)}, {"store_id": 1}) if ObjectId.is_valid(source_id) else None
+    if not source:
+        raise HTTPException(status_code=404, detail="Lead source not found")
+    sid = str(source.get("store_id") or "")
+    ors: list = [{"_id": ObjectId(str(me["_id"]))}]
+    store = None
+    if sid:
+        sid_values = [sid] + ([ObjectId(sid)] if ObjectId.is_valid(sid) else [])
+        ors += [{"store_id": {"$in": sid_values}}, {"store_ids": {"$in": sid_values}}]
+        store = await db.stores.find_one({"_id": ObjectId(sid)}, {"organization_id": 1, "name": 1}) if ObjectId.is_valid(sid) else None
+        if (store or {}).get("organization_id"):
+            ors.append({"organization_id": {"$in": [store["organization_id"], str(store["organization_id"])]},
+                        "role": {"$in": ["org_admin", "admin"]}})
+    users = await db.users.find({"$or": ors, "status": {"$ne": "deactivated"}, "active": {"$ne": False}},
+                                {"name": 1, "first_name": 1, "last_name": 1, "email": 1, "role": 1, "phone": 1,
+                                 "twilio_number": 1, "mvpline_number": 1, "photo_url": 1}).to_list(500)
+    rank = {"user": 0, "salesperson": 0, "store_manager": 1, "manager": 1, "org_admin": 2, "admin": 2, "super_admin": 3}
+    out = [{"id": str(u["_id"]), "name": u.get("name") or f"{u.get('first_name', '')} {u.get('last_name', '')}".strip() or u.get("email", "Rep"),
+            "email": u.get("email", ""), "role": u.get("role", "user"), "phone": u.get("phone", ""),
+            "has_number": bool(u.get("twilio_number") or u.get("mvpline_number")), "photo_url": u.get("photo_url")} for u in users]
+    out.sort(key=lambda r: (rank.get(r["role"], 1), r["name"].lower()))
+    return {"reps": out, "store_id": sid, "store_name": (store or {}).get("name")}
+
+
 @router.get("/{source_id}/workflow")
 async def get_workflow_config(source_id: str):
     """Get the workflow automation config for a lead source (plus the store's hours for the after-hours rule)."""

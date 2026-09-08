@@ -140,6 +140,7 @@ export default function LeadSourceDetailScreen() {
   const [storeHours, setStoreHours] = useState<StoreHours | null>(null);
   const [websitePages, setWebsitePages] = useState<{ pages: string[]; routed: Record<string, { id: string; name: string }> }>({ pages: [], routed: {} });
   const [workflowUsers, setWorkflowUsers] = useState<any[]>([]);  // All reps to choose from
+  const [repStoreName, setRepStoreName] = useState('');
   const [vaProfiles, setVaProfiles] = useState<any[]>([]);
   const [savingWorkflow, setSavingWorkflow] = useState(false);
   const [showWorkflow, setShowWorkflow] = useState(false);
@@ -189,7 +190,7 @@ export default function LeadSourceDetailScreen() {
         api.get(`/lead-sources/stats/${id}`),
         api.get(`/admin/team/shared-inboxes?user_id=${user?._id}`),
         api.get(`/lead-sources/${id}/workflow`).catch(() => ({ data: {} })),
-        api.get(`/admin/team/users?user_id=${user?._id}`, { headers: { 'X-User-ID': user?._id } }).catch(() => ({ data: [] })),
+        api.get(`/lead-sources/${id}/reps`).catch(() => ({ data: { reps: [] } })),
         api.get('/va-profiles', { headers: { 'X-User-ID': user?._id } }).catch(() => ({ data: { profiles: [] } })),
         api.get('/lead-sources/website-pages').catch(() => ({ data: { pages: [], routed: {} } })),
       ]);
@@ -219,10 +220,10 @@ export default function LeadSourceDetailScreen() {
         if (store_hours) setStoreHours(store_hours);
       }
 
-      // Load all reps for workflow assignment (scoped to same account)
-      const usersArr = Array.isArray(usersRes.data) ? usersRes.data : (usersRes.data?.users || []);
-      // Normalize id field — /admin/team/users returns {id} not {_id}
+      // Load reps for workflow assignment (scoped to THIS source's store, not the caller's account)
+      const usersArr = usersRes.data?.reps || [];
       setWorkflowUsers(usersArr.map((u: any) => ({ ...u, _id: u._id || u.id })));
+      setRepStoreName(usersRes.data?.store_name || '');
       
       // Load VA profiles
       setVaProfiles(vaRes.data?.profiles || []);
@@ -777,10 +778,16 @@ export default function LeadSourceDetailScreen() {
                         {isSelected && <Ionicons name="checkmark" size={14} color="#fff" />}
                       </View>
                       <Text style={{ color: colors.text, fontSize: 15, flex: 1 }}>{u.name || u.email}</Text>
+                      {u.has_number === false && (
+                        <Text style={{ color: '#FF9500', fontSize: 11, fontWeight: '700', marginRight: 6 }} testID={`rep-no-number-${uid}`} dataSet={{ testid: `rep-no-number-${uid}` } as any}>no texting #</Text>
+                      )}
                       <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{u.role}</Text>
                     </TouchableOpacity>
                   );
                 })}
+                <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 17, marginTop: 10 }} testID="workflow-reps-hint" dataSet={{ testid: 'workflow-reps-hint' } as any}>
+                  {`Showing everyone on ${repStoreName || 'this store'}. Don't see someone? Open Team Members, tap their name, and use Assign to Store.`}
+                </Text>
               </View>
 
               {/* ── Customer contact mode + call ladder ───────────── */}
