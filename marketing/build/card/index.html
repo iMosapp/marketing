@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>i'M On Social - See it in action</title>
+<meta name="description" content="Your CRM remembers the sale. We remember the person. Watch the 46-second story and book a demo."/>
+<meta name="robots" content="noindex"/>
+<meta name="theme-color" content="#0A0A0F"/>
+<link rel="icon" href="/favicon.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<script src="/lead-retry.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--gold:#C9A962;--gold-2:#D8B975;--bg:#0A0A0F;--card:#141419;--line:rgba(255,255,255,.08);--t2:rgba(255,255,255,.62);--t3:rgba(255,255,255,.4);--red:#FF3B30;--blue:#0A84FF;--green:#34C759;--yellow:#FFD60A}
+html{background:var(--bg)}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:#fff;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100dvh;padding-bottom:calc(92px + env(safe-area-inset-bottom))}
+.wrap{max-width:480px;margin:0 auto;padding:0 18px}
+/* top */
+.top{display:flex;align-items:center;justify-content:space-between;padding:14px 0 6px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:#fff}
+.brand img{height:40px;width:40px}
+.brand b{font-size:15px;font-weight:900;letter-spacing:-.01em}
+.brand b i{font-style:normal;color:var(--blue)}
+.brand small{display:block;font-size:9.5px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--t3);margin-top:1px}
+.rep{display:none;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 12px 5px 5px}
+.rep.on{display:flex}
+.rep .av{width:30px;height:30px;border-radius:50%;background:#2a2a30 center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--gold)}
+.rep span{font-size:12px;font-weight:700}
+.rep span em{display:block;font-style:normal;font-size:10px;color:var(--t3);font-weight:600}
+/* stage */
+.stage{padding-top:10px}
+.vid{position:relative;height:min(70dvh,660px);aspect-ratio:9/16;margin:0 auto;border-radius:26px;overflow:hidden;background:#000;box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 1px #222}
+.vid video{width:100%;height:100%;object-fit:cover;display:block;background:#000}
+.pill{position:absolute;left:50%;bottom:64px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:var(--gold);color:#111;border:none;border-radius:999px;padding:12px 20px;font:inherit;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 12px 30px rgba(0,0,0,.45);white-space:nowrap;transition:transform .2s,opacity .25s}
+.pill::after{content:'';position:absolute;inset:-6px;border-radius:999px;border:2px solid rgba(201,169,98,.5);animation:pulse 2s ease-out infinite}
+.pill.hide{opacity:0;pointer-events:none;transform:translateX(-50%) translateY(10px)}
+@keyframes pulse{0%{transform:scale(.96);opacity:.9}100%{transform:scale(1.18);opacity:0}}
+.mute{position:absolute;right:12px;top:12px;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);color:#fff;font-size:14px;display:none;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(8px)}
+.mute.on{display:flex}
+.cover{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:linear-gradient(180deg,rgba(0,0,0,.1),rgba(0,0,0,.55))}
+.cover.on{display:flex}
+.cover .play{width:80px;height:80px;border-radius:50%;background:var(--gold);color:#111;border:none;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;box-shadow:0 14px 40px rgba(0,0,0,.5)}
+.cover .play i{margin-left:4px}
+.cover .play.replay i{margin-left:0}
+.cover span{font-size:12px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--gold)}
+.prog{position:absolute;left:14px;right:14px;bottom:12px;height:3px;border-radius:2px;background:rgba(255,255,255,.22);overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:var(--gold);transition:width .25s linear}
+.tag{position:absolute;left:14px;top:14px;font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#fff;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.15);padding:6px 10px;border-radius:999px;backdrop-filter:blur(8px)}
+/* copy */
+.copy{padding:26px 0 10px;text-align:center}
+.eyebrow{display:inline-block;font-size:11px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;color:var(--gold);background:rgba(201,169,98,.12);padding:7px 14px;border-radius:999px;margin-bottom:14px}
+h1{font-size:30px;font-weight:900;line-height:1.1;letter-spacing:-.03em}
+h1 .g{color:var(--gold)}
+.copy p{font-size:15px;color:var(--t2);margin:14px auto 0;max-width:380px}
+.props{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:22px 0 0;text-align:left}
+.props li{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 14px 12px}
+.props li i{font-size:18px;margin-bottom:8px;display:block}
+.props li b{display:block;font-size:14px;font-weight:800;letter-spacing:-.01em}
+.props li span{font-size:12px;color:var(--t3)}
+.c-red{color:var(--red)}.c-blue{color:var(--blue)}.c-green{color:var(--green)}.c-yellow{color:var(--yellow)}
+.cta{display:flex;flex-direction:column;gap:10px;margin-top:22px}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;height:54px;border-radius:999px;font:inherit;font-size:16px;font-weight:800;text-decoration:none;border:none;cursor:pointer;transition:transform .2s,background-color .2s}
+.btn.gold{background:var(--gold);color:#111}
+.btn.gold:hover{background:var(--gold-2);transform:translateY(-1px)}
+.btn.ghost{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.18)}
+.btn.ghost:hover{border-color:var(--gold);color:var(--gold)}
+.btn[hidden]{display:none}
+.quote{margin:30px 0 8px;padding:20px;border-left:3px solid var(--gold);background:var(--card);border-radius:0 18px 18px 0;text-align:left}
+.quote p{margin:0;font-size:15px;color:#fff;font-weight:600;font-style:italic;line-height:1.5}
+.quote small{display:block;margin-top:8px;font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--gold)}
+.foot{text-align:center;padding:22px 0 10px;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--t3)}
+.foot a{color:var(--t3);text-decoration:none}
+/* sticky bar */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:50;padding:12px 18px calc(12px + env(safe-area-inset-bottom));background:rgba(10,10,15,.82);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid var(--line)}
+.bar .in{max-width:480px;margin:0 auto;display:flex;gap:10px}
+.bar .btn{flex:1;height:52px;font-size:15px}
+.bar .btn.ghost{flex:.85;background:var(--card)}
+/* sheet */
+.veil{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:opacity .3s}
+.veil.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:100;max-height:92dvh;overflow-y:auto;background:#fff;color:#111;border-radius:26px 26px 0 0;padding:10px 20px calc(24px + env(safe-area-inset-bottom));transform:translateY(105%);transition:transform .42s cubic-bezier(.2,.9,.25,1)}
+.sheet.on{transform:translateY(0)}
+.sheet .in{max-width:480px;margin:0 auto}
+.handle{width:40px;height:5px;border-radius:3px;background:#DDD;margin:2px auto 14px}
+.sh-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.sh-head .av{width:46px;height:46px;border-radius:50%;background:#EEE center/cover no-repeat;flex-shrink:0;display:none}
+.sh-head .av.on{display:block}
+.sh-head h2{font-size:22px;font-weight:900;letter-spacing:-.02em;line-height:1.15}
+.sh-head p{font-size:13px;color:#666;margin-top:2px}
+.x{position:absolute;right:16px;top:14px;width:32px;height:32px;border-radius:50%;background:#F2F2F7;border:none;font-size:18px;cursor:pointer;color:#111;display:flex;align-items:center;justify-content:center}
+.f{margin-top:12px}
+.f label{display:block;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#888;margin-bottom:5px}
+.f input{width:100%;height:50px;padding:0 14px;border:1px solid #E2E2E7;border-radius:12px;font:inherit;font-size:16px;color:#111;background:#FAFAFC;outline:none}
+.f input:focus{border-color:var(--gold);background:#fff}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.consent{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:12px;color:#555;line-height:1.45}
+.consent input{width:18px;height:18px;margin-top:1px;accent-color:var(--gold);flex-shrink:0}
+.consent a{color:#111}
+.submit{width:100%;height:54px;border-radius:999px;background:#0A0A0F;color:#fff;font:inherit;font-size:16px;font-weight:800;border:none;margin-top:16px;cursor:pointer}
+.submit:disabled{opacity:.55}
+.fine{font-size:11px;color:#999;text-align:center;margin-top:10px;line-height:1.5}
+.fine a{color:#666}
+.ok{display:none;text-align:center;padding:26px 0 10px}
+.ok.on{display:block}
+.ok .chk{width:66px;height:66px;border-radius:50%;background:rgba(52,199,89,.14);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 14px}
+.ok h3{font-size:22px;font-weight:900}
+.ok p{font-size:14px;color:#666;margin:6px 0 18px}
+.ok .btn{background:var(--gold);color:#111}
+.err{display:none;margin-top:12px;font-size:13px;color:#B42318;background:#FEF3F2;border:1px solid #FECDCA;border-radius:10px;padding:10px 12px}
+.err.on{display:block}
+@media(min-width:700px){body{padding-bottom:40px}.bar{display:none}.vid{height:min(76vh,720px)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="/"><img src="/imos-logo.png" alt=""><span><b>I'M ON <i>SOCIAL</i></b><small>The Relationship OS</small></span></a>
+    <div class="rep" id="repChip"><div class="av" id="repAv"></div><span id="repName">Rep<em>shared this with you</em></span></div>
+  </header>
+
+  <section class="stage">
+    <div class="vid" id="vid">
+      <video id="ad" muted playsinline webkit-playsinline autoplay preload="auto" poster="/video/social-ad-poster.jpg" aria-label="i'M On Social: Your CRM remembers the sale. We remember the person.">
+        <source src="/video/social-ad.mp4" type="video/mp4">
+        <source src="/video/social-ad.webm" type="video/webm">
+      </video>
+      <span class="tag">46-sec story</span>
+      <button class="mute" id="muteBtn" aria-label="Mute"><i class="fa-solid fa-volume-high"></i></button>
+      <button class="pill" id="soundBtn"><i class="fa-solid fa-volume-high"></i> Tap for sound</button>
+      <div class="cover" id="cover"><button class="play" id="playBtn" aria-label="Play"><i class="fa-solid fa-play"></i></button><span id="coverLabel">Watch the story</span></div>
+      <div class="prog"><i id="bar"></i></div>
+    </div>
+  </section>
+
+  <section class="copy">
+    <span class="eyebrow">See it in action</span>
+    <h1>Your CRM remembers the sale.<br/><span class="g">We remember the person.</span></h1>
+    <p>i'M On Social turns the customers you already have into a living book of business, then tells you who to talk to, why, and what to say.</p>
+    <ul class="props">
+      <li><i class="fa-solid fa-user-group c-red"></i><b>Remember</b><span>every contact</span></li>
+      <li><i class="fa-solid fa-paper-plane c-blue"></i><b>Engage</b><span>every relationship</span></li>
+      <li><i class="fa-solid fa-gear c-green"></i><b>Automate</b><span>every touchpoint</span></li>
+      <li><i class="fa-solid fa-chart-simple c-yellow"></i><b>Grow</b><span>every opportunity</span></li>
+    </ul>
+    <div class="cta">
+      <button class="btn gold" onclick="openSheet('page_cta')"><i class="fa-solid fa-calendar-check"></i> Book a Demo</button>
+      <a class="btn ghost" id="textBtn" hidden><i class="fa-solid fa-comment-dots"></i> <span id="textLabel">Text me</span></a>
+    </div>
+    <div class="quote"><p>"You don't need more contacts. You need to remember the ones you already have."</p><small>Stay connected. Be the one they remember.</small></div>
+  </section>
+  <p class="foot"><a href="/">imonsocial.com</a> &nbsp;|&nbsp; People &middot; Conversations &middot; Relationships &middot; For life</p>
+</div>
+
+<div class="bar"><div class="in">
+  <a class="btn ghost" id="textBar" hidden><i class="fa-solid fa-comment-dots"></i> <span id="textBarLabel">Text me</span></a>
+  <button class="btn gold" onclick="openSheet('sticky_bar')"><i class="fa-solid fa-calendar-check"></i> Book a Demo</button>
+</div></div>
+
+<div class="veil" id="veil" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true">
+  <div class="in">
+    <div class="handle"></div>
+    <button class="x" onclick="closeSheet()" aria-label="Close">&times;</button>
+    <div id="formWrap">
+      <div class="sh-head"><div class="av" id="shAv"></div><div><h2 id="shTitle">Book a Demo</h2><p id="shSub">15 minutes. See your own customers inside i'M On Social.</p></div></div>
+      <form id="demoForm" onsubmit="submitDemo(event)">
+        <div class="f"><label>Your name</label><input id="f-name" type="text" autocomplete="name" placeholder="Jordan Smith" required></div>
+        <div class="row">
+          <div class="f"><label>Mobile</label><input id="f-phone" type="tel" autocomplete="tel" placeholder="(555) 123-4567" required></div>
+          <div class="f"><label>Email</label><input id="f-email" type="email" autocomplete="email" placeholder="you@dealer.com" required></div>
+        </div>
+        <div class="f"><label>Dealership / company</label><input id="f-company" type="text" autocomplete="organization" placeholder="Where you sell"></div>
+        <label class="consent"><input id="f-sms" type="checkbox" checked><span>Text me about my demo. Msg &amp; data rates may apply. Reply STOP to opt out. <a href="/sms-terms">SMS policy</a></span></label>
+        <div class="err" id="err">We couldn't reach our server just now. Please try again in a moment, or text us instead.</div>
+        <button class="submit" id="submitBtn" type="submit">Book My Demo</button>
+        <p class="fine">By submitting you agree to our <a href="/terms">Terms</a> &amp; <a href="/privacy">Privacy Policy</a>.</p>
+      </form>
+    </div>
+    <div class="ok" id="okWrap">
+      <div class="chk"><i class="fa-solid fa-check"></i></div>
+      <h3>You're in.</h3>
+      <p id="okSub">We'll reach out shortly to set up your demo.</p>
+      <a class="btn" id="okText" hidden><i class="fa-solid fa-comment-dots"></i> <span id="okTextLabel">Text me now</span></a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var qs=new URLSearchParams(location.search);
+  var API=qs.get('api')||'https://app.imonsocial.com';
+  var slug=(qs.get('rep')||qs.get('c')||'card').toLowerCase().replace(/[^a-z0-9-]/g,'')||'card';
+  var cfg={slug:slug,kind:'campaign',rep:null,sms_number:'',sms_body:"Hi, I just scanned your card. Show me i'M On Social in action.",ref_code:'',demo_source:'qr_card_'+slug};
+  var utm={};['utm_source','utm_medium','utm_campaign','utm_content','utm_term'].forEach(function(k){if(qs.get(k))utm[k]=qs.get(k)});
+
+  function smsHref(){return 'sms:'+cfg.sms_number+(/iPhone|iPad|Mac/.test(navigator.userAgent)?'&':'?')+'body='+encodeURIComponent(cfg.sms_body)}
+  function setAvatar(el,url,first){
+    el.textContent=(first||'R')[0];
+    if(!url)return;
+    var img=new Image();img.onload=function(){el.textContent='';el.style.backgroundImage='url("'+url+'")'};img.src=url;
+  }
+  function applyCfg(){
+    var first=cfg.rep&&cfg.rep.first_name;
+    if(cfg.rep){
+      var chip=document.getElementById('repChip');chip.classList.add('on');
+      document.getElementById('repName').innerHTML=(cfg.rep.name||first)+'<em>'+(cfg.rep.title||cfg.rep.store_name||'shared this with you')+'</em>';
+      var av=document.getElementById('repAv');
+      setAvatar(av,cfg.rep.photo_url,first);
+      var sh=document.getElementById('shAv');if(cfg.rep.photo_url){setAvatar(sh,cfg.rep.photo_url,first);sh.classList.add('on')}
+      document.getElementById('shSub').textContent=first+' will show you your own customers inside i\'M On Social. 15 minutes.';
+      document.getElementById('okSub').textContent=first+' will reach out shortly to set up your demo.';
+    }
+    if(cfg.sms_number){
+      var label=first?'Text '+first:'Text me';
+      [['textBtn','textLabel'],['textBar','textBarLabel'],['okText','okTextLabel']].forEach(function(p){
+        var a=document.getElementById(p[0]);a.href=smsHref();a.hidden=false;document.getElementById(p[1]).textContent=p[0]==='okText'?label+' now':label;
+        a.addEventListener('click',function(){track('text_tap')});
+      });
+    }
+  }
+  fetch(API+'/api/public/go-card/'+encodeURIComponent(slug),{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(d){if(d){cfg=Object.assign(cfg,d)}applyCfg()}).catch(applyCfg);
+
+  function track(ev){if(window.gtag){try{gtag('event',ev,{slug:cfg.slug})}catch(e){}}}
+
+  /* video */
+  var v=document.getElementById('ad'),pill=document.getElementById('soundBtn'),mute=document.getElementById('muteBtn'),cover=document.getElementById('cover'),playBtn=document.getElementById('playBtn'),bar=document.getElementById('bar'),coverLabel=document.getElementById('coverLabel');
+  var sheetOpened=false;
+  function withSound(){
+    v.muted=false;
+    if(v.currentTime>2){v.currentTime=0}
+    pill.classList.add('hide');mute.classList.add('on');mute.innerHTML='<i class="fa-solid fa-volume-high"></i>';
+    cover.classList.remove('on');
+    var p=v.play();if(p&&p.catch){p.catch(function(){})}
+    track('video_sound_on');
+  }
+  pill.addEventListener('click',withSound);
+  playBtn.addEventListener('click',function(){if(v.ended||cover.classList.contains('on')&&playBtn.classList.contains('replay')){v.currentTime=0}withSound()});
+  mute.addEventListener('click',function(){v.muted=!v.muted;mute.innerHTML=v.muted?'<i class="fa-solid fa-volume-xmark"></i>':'<i class="fa-solid fa-volume-high"></i>'});
+  v.addEventListener('timeupdate',function(){if(v.duration){bar.style.width=(v.currentTime/v.duration*100)+'%'}});
+  v.addEventListener('ended',function(){
+    playBtn.classList.add('replay');playBtn.innerHTML='<i class="fa-solid fa-rotate-right"></i>';coverLabel.textContent='Watch again';
+    cover.classList.add('on');pill.classList.add('hide');mute.classList.remove('on');
+    track('video_complete');
+    if(!sheetOpened){setTimeout(function(){openSheet('video_end')},650)}
+  });
+  var started=v.play();
+  if(started&&started.catch){started.catch(function(){cover.classList.add('on');pill.classList.add('hide')})}
+  v.addEventListener('playing',function(){if(!v.ended){cover.classList.remove('on')}});
+  document.getElementById('vid').addEventListener('click',function(e){if(e.target===v&&!v.paused&&v.muted){withSound()}});
+
+  /* sheet */
+  var sheet=document.getElementById('sheet'),veil=document.getElementById('veil'),origin='';
+  window.openSheet=function(src){origin=src||'';sheetOpened=true;sheet.classList.add('on');veil.classList.add('on');document.body.style.overflow='hidden';if(!v.paused&&!v.muted){v.pause()}track('demo_open')};
+  window.closeSheet=function(){sheet.classList.remove('on');veil.classList.remove('on');document.body.style.overflow=''};
+  window.submitDemo=async function(e){
+    e.preventDefault();
+    var btn=document.getElementById('submitBtn'),err=document.getElementById('err');
+    btn.disabled=true;btn.textContent='Sending...';err.classList.remove('on');
+    var body=Object.assign({
+      name:document.getElementById('f-name').value,email:document.getElementById('f-email').value,phone:document.getElementById('f-phone').value,
+      company:document.getElementById('f-company').value,business_type:'',sms_opt_in:document.getElementById('f-sms').checked,
+      lead_source:cfg.demo_source+(origin?'_'+origin:''),ref:cfg.ref_code||'',referrer:'qr_card',
+      utm_source:utm.utm_source||'qr',utm_medium:utm.utm_medium||'print',utm_campaign:utm.utm_campaign||cfg.slug
+    },utm);
+    try{
+      var res=await fetch(API+'/api/demo-requests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      var data=null;try{data=await res.json()}catch(x){}
+      if(!res.ok||(data&&data.status==='error'))throw new Error((data&&data.message)||'failed');
+      document.getElementById('formWrap').style.display='none';document.getElementById('okWrap').classList.add('on');track('demo_submit');
+    }catch(ex){err.textContent=(ex&&ex.message&&ex.message!=='failed'&&!/fetch/i.test(ex.message))?ex.message:"We couldn't reach our server just now. Please try again in a moment"+(cfg.sms_number?', or text us instead.':'.');err.classList.add('on');btn.disabled=false;btn.textContent='Book My Demo'}
+  };
+})();
+</script>
+</body>
+</html>

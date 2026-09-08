@@ -31,7 +31,8 @@ const timeAgo = (iso: string | null) => {
   return d === 1 ? 'yesterday' : `${d}d ago`;
 };
 
-type GoLink = { slug: string; label: string; destination: string; short_url: string; qr_png_path: string; qr_svg_path: string; scans: { total: number; week: number; today: number; last_scan_at: string | null } };
+type GoLink = { slug: string; label: string; destination: string; kind?: string; rep_name?: string; sms_number?: string; short_url: string; qr_png_path: string; qr_svg_path: string; scans: { total: number; week: number; today: number; last_scan_at: string | null } };
+type Editing = { slug: string; label: string; destination: string; sms_number: string; isNew: boolean };
 
 export default function PrintQrScreen() {
   const { colors } = useThemeStore();
@@ -41,7 +42,7 @@ export default function PrintQrScreen() {
   const [links, setLinks] = useState<GoLink[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [editing, setEditing] = useState<{ slug: string; label: string; destination: string; isNew: boolean } | null>(null);
+  const [editing, setEditing] = useState<Editing | null>(null);
   const [saving, setSaving] = useState(false);
   const base = api.defaults.baseURL;
 
@@ -67,7 +68,7 @@ export default function PrintQrScreen() {
     if (!editing || saving) return;
     setSaving(true);
     try {
-      await api.post('/go-links', { slug: editing.slug.trim().toLowerCase(), label: editing.label, destination: editing.destination.trim() });
+      await api.post('/go-links', { slug: editing.slug.trim().toLowerCase(), label: editing.label, destination: editing.destination.trim(), sms_number: editing.sms_number.trim() });
       showToast(editing.isNew ? 'QR link created' : 'Destination updated');
       setEditing(null);
       load();
@@ -99,11 +100,21 @@ export default function PrintQrScreen() {
                   <Image source={{ uri: `${base}${link.qr_png_path}?size=512` }} style={{ width: 96, height: 96 }} contentFit="contain" {...tid(`print-qr-image-${link.slug}`)} />
                 </View>
                 <View style={{ flex: 1, gap: 3 }}>
-                  <Text style={{ fontSize: 17, fontWeight: '800', color: colors.text }}>{link.label || link.slug}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <Text style={{ fontSize: 17, fontWeight: '800', color: colors.text }}>{link.label || link.slug}</Text>
+                    {link.kind === 'rep' ? (
+                      <View style={{ backgroundColor: `${GOLD}22`, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 }} {...tid(`print-qr-rep-badge-${link.slug}`)}>
+                        <Text style={{ fontSize: 10, fontWeight: '800', color: GOLD, letterSpacing: 0.6 }}>REP{link.rep_name ? ` · ${link.rep_name}` : ''}</Text>
+                      </View>
+                    ) : null}
+                  </View>
                   <TouchableOpacity onPress={() => copy(link.short_url)} {...tid(`print-qr-short-${link.slug}`)}>
                     <Text style={{ fontSize: 14, fontWeight: '700', color: GOLD }}>{link.short_url.replace(/^https?:\/\//, '')} <Ionicons name="copy-outline" size={13} color={GOLD} /></Text>
                   </TouchableOpacity>
                   <Text style={{ fontSize: 12, color: colors.textSecondary }} numberOfLines={2}>Lands on: {link.destination}</Text>
+                  <Text style={{ fontSize: 12, color: link.sms_number ? colors.textSecondary : '#FF9500' }} {...tid(`print-qr-sms-${link.slug}`)}>
+                    {link.sms_number ? `Text me → ${link.sms_number}` : 'No text-me number yet (button hidden on page)'}
+                  </Text>
                 </View>
               </View>
 
@@ -126,14 +137,14 @@ export default function PrintQrScreen() {
                   <Ionicons name="shapes-outline" size={17} color={colors.text} />
                   <Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>SVG (vector)</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => setEditing({ slug: link.slug, label: link.label, destination: link.destination, isNew: false })} style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' }} {...tid(`print-qr-edit-${link.slug}`)}>
+                <TouchableOpacity onPress={() => setEditing({ slug: link.slug, label: link.label, destination: link.destination, sms_number: link.sms_number || '', isNew: false })} style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' }} {...tid(`print-qr-edit-${link.slug}`)}>
                   <Ionicons name="create-outline" size={18} color={colors.text} />
                 </TouchableOpacity>
               </View>
             </View>
           ))}
 
-          <TouchableOpacity onPress={() => setEditing({ slug: '', label: '', destination: 'https://www.imonsocial.com/', isNew: true })} style={{ height: 50, borderRadius: 14, borderWidth: 1.5, borderColor: GOLD, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }} {...tid('print-qr-add-btn')}>
+          <TouchableOpacity onPress={() => setEditing({ slug: '', label: '', destination: 'https://www.imonsocial.com/card', sms_number: '', isNew: true })} style={{ height: 50, borderRadius: 14, borderWidth: 1.5, borderColor: GOLD, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }} {...tid('print-qr-add-btn')}>
             <Ionicons name="add" size={20} color={GOLD} />
             <Text style={{ fontSize: 15, fontWeight: '700', color: GOLD }}>New QR link (flyer, banner, sign...)</Text>
           </TouchableOpacity>
@@ -147,7 +158,7 @@ export default function PrintQrScreen() {
       <Modal visible={!!editing} transparent animationType="fade" onRequestClose={() => setEditing(null)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', padding: 24 }}>
           <View style={{ backgroundColor: colors.card, borderRadius: 20, padding: 20, gap: 12 }} {...tid('print-qr-edit-modal')}>
-            <Text style={{ fontSize: 19, fontWeight: '800', color: colors.text }}>{editing?.isNew ? 'New QR link' : 'Edit destination'}</Text>
+            <Text style={{ fontSize: 19, fontWeight: '800', color: colors.text }}>{editing?.isNew ? 'New QR link' : 'Edit QR link'}</Text>
             {editing?.isNew ? (
               <View style={{ gap: 4 }}>
                 <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textSecondary }}>SHORT CODE  (imonsocial.com/go/…)</Text>
@@ -164,6 +175,11 @@ export default function PrintQrScreen() {
               <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textSecondary }}>WHERE IT LANDS</Text>
               <TextInput value={editing?.destination || ''} onChangeText={t => setEditing(e => e && { ...e, destination: t })} placeholder="https://www.imonsocial.com/" placeholderTextColor={colors.textTertiary} autoCapitalize="none" autoCorrect={false} keyboardType="url"
                 style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 12, fontSize: 16, color: colors.text }} {...tid('print-qr-destination-input')} />
+            </View>
+            <View style={{ gap: 4 }}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textSecondary }}>TEXT-ME NUMBER  (the page's "Text me" button)</Text>
+              <TextInput value={editing?.sms_number || ''} onChangeText={t => setEditing(e => e && { ...e, sms_number: t })} placeholder="(435) 555-0100" placeholderTextColor={colors.textTertiary} keyboardType="phone-pad"
+                style={{ backgroundColor: colors.surface, borderRadius: 12, padding: 12, fontSize: 16, color: colors.text }} {...tid('print-qr-sms-input')} />
             </View>
             <View style={{ flexDirection: 'row', gap: 10, marginTop: 4 }}>
               <TouchableOpacity onPress={() => setEditing(null)} style={{ flex: 1, height: 46, borderRadius: 12, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' }} {...tid('print-qr-cancel-btn')}>

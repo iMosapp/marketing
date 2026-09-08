@@ -341,6 +341,7 @@ export default function MoreScreen() {
       { icon: 'color-palette-outline', title: 'Card Templates', subtitle: 'Thank-you & congrats card designs', onPress: () => router.push('/settings/card-templates'), color: '#FF9500' },
       { icon: 'mail-outline', title: 'Email Signature', subtitle: 'Copy & paste into your email', onPress: () => router.push('/email-signature' as any), color: '#5856D6' },
       { icon: 'phone-portrait-outline', title: 'Share the App', subtitle: 'Your install link + QR, see who installed', onPress: () => router.push('/share-app' as any), color: '#34C759' },
+      { icon: 'qr-code-outline', title: 'My Print QR', subtitle: 'Your QR for cards & flyers, see who scanned', onPress: () => router.push('/my-print-qr' as any), color: '#C9A962' },
     ];
     const filteredMenu = menuItems.filter(i => !i.permKey || perm('content', i.permKey));
     sections.push({
@@ -718,6 +719,7 @@ export default function MoreScreen() {
       mk('my_brand', 'My Showcase', 'Your customer gallery', 'images', '#34C759', '/showroom-manage'),
       mk('my_brand', 'My Link Page', 'All your links in one spot', 'link', '#007AFF', '/settings/link-page'),
       mk('my_brand', 'Share the App', 'Your install link + QR, see who installed', 'phone-portrait-outline', '#34C759', '/share-app'),
+      mk('my_brand', 'My Print QR', 'Your QR for cards & flyers, see who scanned', 'qr-code-outline', '#C9A962', '/my-print-qr'),
       mk('learning', 'Training Hub', 'Learn the app in short lessons', 'school', '#FF9500', '/training-hub'),
       mk('learning', 'Help Center', 'How-to guides and FAQs', 'help-circle', '#32ADE6', '/help'),
       mk('learning', 'Report a Bug', 'Flag an issue or share feedback', 'bug', '#FF453A', '/report-bug'),

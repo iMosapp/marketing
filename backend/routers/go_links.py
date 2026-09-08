@@ -19,8 +19,9 @@ ADMIN_ROLES = {"super_admin", "admin"}
 SITE_URL = os.environ.get("MARKETING_SITE_URL", "https://www.imonsocial.com").rstrip("/")
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]{1,39}$")
 DEFAULT_LINKS = {
-    "card": {"label": "4x6 leave-behind card", "destination": f"{SITE_URL}/"},
+    "card": {"label": "4x6 leave-behind card", "destination": f"{SITE_URL}/card", "kind": "campaign"},
 }
+DEFAULT_SMS_BODY = "Hi{rep}, I just scanned your card. Show me i'M On Social in action."
 
 
 def _now():
@@ -29,6 +30,24 @@ def _now():
 
 def _short_url(slug: str) -> str:
     return f"{SITE_URL}/go/{slug}"
+
+
+def _slugify(text: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "", (text or "").lower())[:24]
+
+
+def _abs_url(u):
+    if not u or not isinstance(u, str) or u.startswith("http"):
+        return u
+    base = os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com"))
+    return f"{base}{u}"
+
+
+def _clean_phone(raw: str) -> str:
+    digits = re.sub(r"\D", "", raw or "")
+    if len(digits) == 10:
+        digits = "1" + digits
+    return f"+{digits}" if digits else ""
 
 
 def _platform(ua: str) -> str:
@@ -71,6 +90,35 @@ async def _get_or_seed(db, slug: str):
     return link
 
 
+async def _ensure_rep_link(db, user: dict) -> dict:
+    """Personal print QR for a rep: imonsocial.com/go/<firstname> -> /card?rep=<slug>."""
+    uid = str(user["_id"])
+    link = await db.go_links.find_one({"user_id": uid, "kind": "rep"})
+    if link:
+        return link
+    base = _slugify(user.get("first_name")) or _slugify((user.get("name") or "").split(" ")[0]) or "rep"
+    slug, n = base, 2
+    while await db.go_links.find_one({"slug": slug}) or slug in DEFAULT_LINKS:
+        slug, n = f"{base}{n}", n + 1
+    first = user.get("first_name") or (user.get("name") or "").split(" ")[0] or "Rep"
+    link = {
+        "slug": slug, "kind": "rep", "user_id": uid, "label": f"{first}'s card",
+        "destination": f"{SITE_URL}/card?rep={slug}",
+        "sms_number": _clean_phone(user.get("twilio_number") or user.get("mvpline_number") or ""),
+        "active": True, "created_at": _now(), "updated_at": _now(),
+    }
+    await db.go_links.insert_one(link)
+    return link
+
+
+async def _ensure_ref_code(db, user: dict) -> str:
+    if user.get("ref_code"):
+        return user["ref_code"]
+    code = hashlib.sha256(f"{user.get('email','')}{_now().isoformat()}".encode()).hexdigest()[:8].upper()
+    await db.users.update_one({"_id": user["_id"]}, {"$set": {"ref_code": code}})
+    return code
+
+
 # ---------------------------------------------------------------- public: scan + redirect
 @router.get("/go/{slug}")
 async def go_redirect(slug: str, request: Request):
@@ -84,6 +132,34 @@ async def go_redirect(slug: str, request: Request):
     })
     destination = (link or {}).get("destination") or f"{SITE_URL}/"
     return RedirectResponse(_with_utm(destination, slug), status_code=302)
+
+
+# ---------------------------------------------------------------- public: landing page config (imonsocial.com/card)
+@router.get("/public/go-card/{slug}")
+async def go_card_config(slug: str):
+    db = get_db()
+    slug = slug.lower().strip()
+    link = await _get_or_seed(db, slug) or await _get_or_seed(db, "card")
+    rep = None
+    ref_code = ""
+    sms_number = (link or {}).get("sms_number") or ""
+    if link and link.get("kind") == "rep" and link.get("user_id"):
+        from bson import ObjectId
+        from utils.image_urls import resolve_user_photo
+        user = await db.users.find_one({"_id": ObjectId(link["user_id"])})
+        if user:
+            first = user.get("first_name") or (user.get("name") or "").split(" ")[0]
+            store = await db.stores.find_one({"_id": user.get("store_id")}, {"name": 1}) if isinstance(user.get("store_id"), ObjectId) else None
+            rep = {"first_name": first, "name": user.get("name", ""),
+                   "title": user.get("title") or (user.get("persona") or {}).get("title") or "",
+                   "photo_url": _abs_url(resolve_user_photo(user)), "store_name": (store or {}).get("name", "")}
+            ref_code = await _ensure_ref_code(db, user)
+            sms_number = sms_number or _clean_phone(user.get("twilio_number") or user.get("mvpline_number") or "")
+    return {
+        "slug": (link or {}).get("slug", "card"), "kind": (link or {}).get("kind", "campaign"), "rep": rep,
+        "sms_number": sms_number, "sms_body": DEFAULT_SMS_BODY.format(rep=f" {rep['first_name']}" if rep else ""),
+        "ref_code": ref_code, "demo_source": f"qr_card_{(link or {}).get('slug', 'card')}",
+    }
 
 
 # ---------------------------------------------------------------- public: print-ready QR
@@ -136,10 +212,23 @@ async def _counts(db, slug: str) -> dict:
 def _serialize(link: dict) -> dict:
     return {
         "slug": link["slug"], "label": link.get("label", ""), "destination": link.get("destination", ""),
+        "kind": link.get("kind", "campaign"), "user_id": link.get("user_id"), "sms_number": link.get("sms_number", ""),
         "active": link.get("active", True), "short_url": _short_url(link["slug"]),
         "qr_svg_path": f"/go-links/{link['slug']}/qr.svg", "qr_png_path": f"/go-links/{link['slug']}/qr.png",
         "created_at": link.get("created_at").isoformat() if link.get("created_at") else None,
     }
+
+
+@router.get("/go-links/mine")
+async def my_go_link(request: Request):
+    """A rep's personal print QR (created on first visit) with scan counts."""
+    from routers.admin_helpers import get_requesting_user
+    user = await get_requesting_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    db = get_db()
+    link = await _ensure_rep_link(db, user)
+    return {**_serialize(link), "scans": await _counts(db, link["slug"]), "landing_url": link["destination"]}
 
 
 @router.get("/go-links", dependencies=[Depends(require_admin)])
@@ -147,10 +236,13 @@ async def list_go_links():
     db = get_db()
     for slug in DEFAULT_LINKS:
         await _get_or_seed(db, slug)
-    links = await db.go_links.find({}).sort("created_at", 1).to_list(200)
+    links = await db.go_links.find({}).sort("created_at", 1).to_list(500)
+    from bson import ObjectId
+    rep_ids = [ObjectId(l["user_id"]) for l in links if l.get("user_id") and ObjectId.is_valid(l["user_id"])]
+    names = {str(u["_id"]): u.get("name", "") async for u in db.users.find({"_id": {"$in": rep_ids}}, {"name": 1})} if rep_ids else {}
     out = []
     for link in links:
-        out.append({**_serialize(link), "scans": await _counts(db, link["slug"])})
+        out.append({**_serialize(link), "rep_name": names.get(link.get("user_id") or "", ""), "scans": await _counts(db, link["slug"])})
     return {"links": out, "site_url": SITE_URL}
 
 
@@ -160,15 +252,18 @@ async def upsert_go_link(data: dict = Body(...)):
     slug = str(data.get("slug", "")).lower().strip()
     destination = str(data.get("destination", "")).strip()
     label = str(data.get("label", "")).strip()[:80]
+    sms_number = _clean_phone(str(data.get("sms_number", "")))
     if not SLUG_RE.match(slug):
         raise HTTPException(status_code=400, detail="Slug must be 2-40 chars: lowercase letters, numbers, hyphens")
     if not re.match(r"^https?://[^\s]+$", destination):
         raise HTTPException(status_code=400, detail="Destination must be a full http(s) URL")
+    if data.get("sms_number") and len(sms_number) < 12:
+        raise HTTPException(status_code=400, detail="Text-me number needs 10 digits (US) or full international format")
     now = _now()
     await db.go_links.update_one(
         {"slug": slug},
-        {"$set": {"destination": destination, "label": label, "active": True, "updated_at": now},
-         "$setOnInsert": {"slug": slug, "created_at": now}},
+        {"$set": {"destination": destination, "label": label, "sms_number": sms_number, "active": True, "updated_at": now},
+         "$setOnInsert": {"slug": slug, "kind": "campaign", "created_at": now}},
         upsert=True,
     )
     link = await db.go_links.find_one({"slug": slug})

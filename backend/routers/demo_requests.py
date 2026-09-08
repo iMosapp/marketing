@@ -52,6 +52,8 @@ def classify_channel(source: str, utm_source: str, utm_medium: str) -> str:
 
     if utm_src in CHANNEL_MAP:
         return CHANNEL_MAP[utm_src]
+    if utm_src == "qr" or "print" in utm_med or src.startswith("qr_card"):
+        return "print_qr"
     if "cpc" in utm_med or "ppc" in utm_med or "paid" in utm_med:
         return "paid_search"
     if "social" in utm_med:

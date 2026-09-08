@@ -21,6 +21,7 @@ const PERIODS = [
 
 const CHANNEL_LABELS: Record<string, { label: string; icon: string; color: string }> = {
   organic: { label: 'Organic (Website)', icon: 'globe', color: '#007AFF' },
+  print_qr: { label: 'Print QR (cards & flyers)', icon: 'qr-code', color: '#C9A962' },
   paid_social: { label: 'Paid Social', icon: 'logo-instagram', color: '#FF2D55' },
   paid_search: { label: 'Paid Search', icon: 'search', color: '#FF9500' },
   sales_presentation: { label: 'Sales Presentation', icon: 'easel', color: '#5856D6' },

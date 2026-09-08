@@ -288,7 +288,7 @@ logger.info(f"[CORS] Allowed origins: {_allowed_origins}")
 
 # Lead-intake endpoints are called from the marketing site (imonsocial.com, Vercel previews,
 # partner pages). Those must accept any origin even when the app API is locked down.
-PUBLIC_CORS_PREFIXES = ("/api/demo-requests",)
+PUBLIC_CORS_PREFIXES = ("/api/demo-requests", "/api/public/go-card")
 
 
 class PathAwareCORS:
