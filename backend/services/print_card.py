@@ -262,15 +262,20 @@ def render_front(qr, rep_first: str, sms_number: str) -> Image.Image:
     return im
 
 
-# ---------------------------------------------------------------- BACK
+# ---------------------------------------------------------------- BACK (white stock: cheaper to print, same message, colors reversed)
+INK = (16, 16, 20, 255)
+INK_SOFT = (58, 58, 66, 255)
+YELLOW_INK = (232, 176, 0, 255)
+
+
 def render_back() -> Image.Image:
-    im = Image.new("RGBA", (P(W), P(H)), BG)
-    radial_glow(im, 1420, 900, 620, 640, BLUE, 0.36)
+    im = Image.new("RGBA", (P(W), P(H)), WHITE)
+    radial_glow(im, 1420, 900, 620, 640, BLUE, 0.14)
     d = ImageDraw.Draw(im)
 
     f_h = font("mont9", 78)
-    lines = [[("YOU DON'T NEED", WHITE)], [("MORE CONTACTS.", WHITE)], [("YOU NEED TO", BLUE)],
-             [("REMEMBER", GREEN), (" THE ONES", ORANGE)], [("YOU ALREADY", YELLOW), (" HAVE.", RED)]]
+    lines = [[("YOU DON'T NEED", INK)], [("MORE CONTACTS.", INK)], [("YOU NEED TO", BLUE)],
+             [("REMEMBER", GREEN), (" THE ONES", ORANGE)], [("YOU ALREADY", YELLOW_INK), (" HAVE.", RED)]]
     y = 96
     for parts in lines:
         x = 100
@@ -287,35 +292,35 @@ def render_back() -> Image.Image:
             "that matter, then helps you stay engaged automatically.")
     y = 556
     for line in wrap(body, f_body, 720):
-        text(d, 100, y, line, f_body, (243, 243, 245, 255))
+        text(d, 100, y, line, f_body, INK_SOFT)
         y += 46
 
     script = Image.new("RGBA", (P(900), P(260)), (0, 0, 0, 0))
     sd = ImageDraw.Draw(script)
     f_sc = font("caveat", 86)
-    text(sd, 10, 10, "Stay connected.", f_sc, WHITE)
+    text(sd, 10, 10, "Stay connected.", f_sc, INK)
     end = text(sd, 40, 100, "Be the one they remember.", f_sc, BLUE)
     sd.rounded_rectangle((P(70), P(206), P(end + 10), P(212)), radius=P(3), fill=BLUE)
     rotated(im, script, 90, 745, -5)
 
     f_b = font("mont9", 58)
-    end = text(d, 100, 1035, "I'M ON ", f_b, WHITE)
+    end = text(d, 100, 1035, "I'M ON ", f_b, INK)
     end = text(d, end, 1035, "SOCIAL", f_b, BLUE)
-    text(d, end + 6, 1041, "TM", font("mont8", 18), WHITE)
-    text(d, 100, 1106, "IMONSOCIAL.COM", font("inter6", 28), WHITE, spacing=8)
+    text(d, end + 6, 1041, "TM", font("mont8", 18), INK)
+    text(d, 100, 1106, "IMONSOCIAL.COM", font("inter6", 28), INK, spacing=8)
     f_t = font("inter6", 22)
-    x = text(d, 100, 1156, "CONNECT", f_t, WHITE, spacing=5)
+    x = text(d, 100, 1156, "CONNECT", f_t, INK, spacing=5)
     for sep_color, word in [(RED, "AUTOMATE"), (GREEN, "STAY IN TOUCH")]:
         x = text(d, x + 22, 1156, "|", font("inter5", 22), sep_color)
-        x = text(d, x + 22, 1156, word, f_t, WHITE, spacing=5)
+        x = text(d, x + 22, 1156, word, f_t, INK, spacing=5)
 
     f_m = font("inter5", 29)
     y = 100
     for line in ["STRONGER", "RELATIONSHIPS", "DRIVE A", "BRIGHTER", "TOMORROW."]:
         wdt = text_w(line, f_m, 10)
-        text(d, 1775 - wdt, y, line, f_m, WHITE, spacing=10)
+        text(d, 1775 - wdt, y, line, f_m, INK, spacing=10)
         if line.startswith("TOMORROW"):
-            text(d, 1775 + 4, y - 4, "TM", font("inter6", 15), WHITE)
+            text(d, 1775 + 4, y - 4, "TM", font("inter6", 15), INK)
         y += 45
 
     back_phone, pad = phone(ASSETS / "inbox.jpg", 470)
