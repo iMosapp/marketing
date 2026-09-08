@@ -1580,7 +1580,7 @@ function ThreadScreen() {
         if (congratsPhoto?.uri) {
           try {
             if (!IS_WEB) {
-              const { status } = await MediaLibrary.requestPermissionsAsync();
+              const { status } = await MediaLibrary.requestPermissionsAsync(Platform.OS === 'android');
               if (status === 'granted') {
                 await MediaLibrary.saveToLibraryAsync(congratsPhoto.uri);
               }

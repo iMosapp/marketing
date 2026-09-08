@@ -121,7 +121,7 @@ export default function SoldQuickScreen() {
         // Save to camera roll immediately
         if (!IS_WEB) {
           try {
-            const { status } = await MediaLibrary.requestPermissionsAsync();
+            const { status } = await MediaLibrary.requestPermissionsAsync(Platform.OS === 'android');
             if (status === 'granted') await MediaLibrary.saveToLibraryAsync(a.uri);
           } catch {}
         }

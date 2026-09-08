@@ -64,6 +64,13 @@
       "permissions": [
         "CAMERA",
         "READ_CONTACTS"
+      ],
+      "blockedPermissions": [
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.WRITE_CONTACTS"
       ]
     },
     "androidStatusBar": {
@@ -81,7 +88,11 @@
       [
         "expo-notifications",
         {
-          "sounds": ["./assets/sounds/lead_chime.wav"]
+          "sounds": [
+            "./assets/sounds/lead_chime.wav"
+          ],
+          "icon": "./assets/images/notification-icon.png",
+          "color": "#C9A962"
         }
       ],
       [
