@@ -1831,6 +1831,7 @@ async def startup_event():
                     db.contacts.create_index([("user_id", 1), ("email", 1)]),  # For email dedup
                     # Login brute-force tracking — TTL auto-cleans stale records after 1 day
                     db.login_attempts.create_index("updated_at", expireAfterSeconds=86400),
+                    db.photo_upload_chunks.create_index("created_at", expireAfterSeconds=3600),
                     # last_activity_at — powers "recent" sort without in-memory aggregation
                     db.contacts.create_index([("user_id", 1), ("last_activity_at", -1)]),
                     db.contacts.create_index([("user_id", 1), ("last_activity_at", -1), ("status", 1)]),

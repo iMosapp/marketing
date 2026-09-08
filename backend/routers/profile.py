@@ -6,6 +6,7 @@ from fastapi.responses import Response
 from bson import ObjectId
 from datetime import datetime
 from typing import Optional
+from pydantic import BaseModel
 import os
 import re
 import asyncio
@@ -275,58 +276,96 @@ async def update_profile(user_id: str, data: dict):
     return {"success": True, "message": "Profile updated"}
 
 
+async def _save_profile_photo(db, user_id: str, contents: bytes, content_type: str = "") -> dict:
+    """Compress → object storage → user doc. Falls back to an inline WebP so the photo ALWAYS saves."""
+    from utils.image_storage import upload_image, ImageDecodeError, inline_fallback
+    if content_type and not content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+    if len(contents) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image must be less than 10MB")
+    if len(contents) < 100:
+        raise HTTPException(status_code=400, detail="That photo came through empty. Please pick it again.")
+
+    update = {"updated_at": datetime.utcnow(), "og_image_path": None}
+    try:
+        result = await upload_image(contents, prefix="profiles", entity_id=user_id)
+        if not result:
+            raise HTTPException(status_code=400, detail="That photo couldn't be read. Try a different photo or take a new one.")
+        update.update({
+            "photo_url": f"/api/images/{result['original_path']}",
+            "photo_path": result["original_path"],
+            "photo_thumb_path": result["thumbnail_path"],
+            "photo_avatar_path": result["avatar_path"],
+        })
+    except ImageDecodeError as e:
+        logger.warning(f"[ProfilePhoto] undecodable image for {user_id}: {e}")
+        raise HTTPException(status_code=400, detail="That photo couldn't be read. Try a different photo or take a new one.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[ProfilePhoto] object storage failed for {user_id}, saving inline: {type(e).__name__}: {e}")
+        try:
+            update.update({"photo_url": await asyncio.to_thread(inline_fallback, contents),
+                           "photo_path": None, "photo_thumb_path": None, "photo_avatar_path": None,
+                           "photo_storage_fallback": True})
+        except Exception as e2:
+            raise HTTPException(status_code=400, detail="That photo couldn't be read. Try a different photo or take a new one.")
+
+    user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"persona": 1, "bio": 1, "onboarding_complete": 1})
+    if not user_doc:
+        raise HTTPException(status_code=404, detail="User not found")
+    has_bio = bool(user_doc.get("persona", {}).get("bio") or user_doc.get("bio"))
+    if has_bio and not user_doc.get("onboarding_complete"):
+        update["onboarding_complete"] = True
+    await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": update})
+    photo_url = update["photo_url"]
+    return {"success": True, "photo_url": photo_url,
+            "thumbnail_url": f"/api/images/{update['photo_thumb_path']}" if update.get("photo_thumb_path") else photo_url,
+            "avatar_url": f"/api/images/{update['photo_avatar_path']}" if update.get("photo_avatar_path") else photo_url,
+            "storage_fallback": bool(update.get("photo_storage_fallback"))}
+
+
 @router.post("/{user_id}/photo")
 async def upload_photo(user_id: str, file: UploadFile = File(...)):
     """Upload profile photo - compresses to WebP, generates thumbnails, serves from CDN cache."""
-    db = get_db()
-    
-    if not file.content_type.startswith('image/'):
-        raise HTTPException(status_code=400, detail="File must be an image")
-    
     contents = await file.read()
-    
-    if len(contents) > 10 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="Image must be less than 10MB")
-    
-    # Use the optimized image pipeline — compress → WebP → thumbnail → avatar → cache
-    from utils.image_storage import upload_image
+    return await _save_profile_photo(get_db(), user_id, contents, file.content_type or "")
+
+
+class PhotoChunk(BaseModel):
+    upload_id: str
+    index: int
+    total: int
+    data: str
+    content_type: str = "image/jpeg"
+
+
+@router.post("/{user_id}/photo/chunk")
+async def upload_photo_chunk(user_id: str, chunk: PhotoChunk):
+    """Fallback path for phones behind proxies that reject big requests: base64 pieces (<= ~400KB each),
+    assembled on the last one. Chunks live in Mongo for an hour at most."""
+    db = get_db()
+    if chunk.total < 1 or chunk.total > 64 or not (0 <= chunk.index < chunk.total) or len(chunk.data) > 700_000:
+        raise HTTPException(status_code=400, detail="Bad chunk")
+    upload_id = re.sub(r"[^A-Za-z0-9_-]", "", chunk.upload_id)[:64]
+    if not upload_id:
+        raise HTTPException(status_code=400, detail="Bad upload id")
+    await db.photo_upload_chunks.update_one(
+        {"user_id": user_id, "upload_id": upload_id, "index": chunk.index},
+        {"$set": {"data": chunk.data, "created_at": datetime.utcnow()}}, upsert=True)
+    have = await db.photo_upload_chunks.count_documents({"user_id": user_id, "upload_id": upload_id})
+    if have < chunk.total:
+        return {"success": True, "received": have, "total": chunk.total}
+    parts = await db.photo_upload_chunks.find({"user_id": user_id, "upload_id": upload_id}).sort("index", 1).to_list(chunk.total)
+    await db.photo_upload_chunks.delete_many({"user_id": user_id, "upload_id": upload_id})
     try:
-        result = await upload_image(contents, prefix="profiles", entity_id=user_id)
-    except (OSError, Exception) as e:
-        raise HTTPException(status_code=400, detail=f"Image processing failed: invalid or corrupted image file")
-    if not result:
-        raise HTTPException(status_code=500, detail="Image processing failed")
-    
-    original_url = f"/api/images/{result['original_path']}"
-    thumb_url = f"/api/images/{result['thumbnail_path']}"
-    avatar_url = f"/api/images/{result['avatar_path']}"
-    
-    # Store optimized paths (NOT base64)
-    update = {
-        "photo_url": original_url,
-        "photo_path": result["original_path"],
-        "photo_thumb_path": result["thumbnail_path"],
-        "photo_avatar_path": result["avatar_path"],
-        "updated_at": datetime.utcnow(),
-        "og_image_path": None,
-    }
-    
-    # Check if uploading the photo now completes onboarding (photo + bio = done)
-    user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"persona": 1, "bio": 1, "onboarding_complete": 1})
-    has_bio = bool((user_doc or {}).get("persona", {}).get("bio") or (user_doc or {}).get("bio"))
-    if has_bio and not (user_doc or {}).get("onboarding_complete"):
-        update["onboarding_complete"] = True
-    
-    r = await db.users.update_one({"_id": ObjectId(user_id)}, {"$set": update})
-    if r.modified_count == 0:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    return {
-        "success": True,
-        "photo_url": original_url,
-        "thumbnail_url": thumb_url,
-        "avatar_url": avatar_url,
-    }
+        contents = base64.b64decode("".join(p["data"] for p in parts))
+    except Exception:
+        raise HTTPException(status_code=400, detail="That photo came through damaged. Please try again.")
+    result = await _save_profile_photo(db, user_id, contents, chunk.content_type)
+    result["received"] = chunk.total
+    result["total"] = chunk.total
+    return result
 
 
 @router.get("/{user_id}/gallery")

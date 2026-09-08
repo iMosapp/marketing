@@ -53,14 +53,42 @@ export function ProfilePhotoUpload({ user, colors, onPhotoUpdated }: Props) {
     const formData = new FormData();
     formData.append('file', file as any);
     // Do NOT set Content-Type manually — let axios auto-set multipart/form-data; boundary=...
-    const res = await api.post(`/profile/${user._id}/photo`, formData, {
-      onUploadProgress: (evt: any) => {
-        const pct = evt.progress != null ? Math.round(evt.progress * 100) : (evt.total ? Math.round((evt.loaded / evt.total) * 100) : 0);
-        setUploadProgress(pct);
-        animateProgress(pct);
-      },
-    });
-    return res.data?.photo_url as string | null;
+    try {
+      const res = await api.post(`/profile/${user._id}/photo`, formData, {
+        timeout: 90000,
+        onUploadProgress: (evt: any) => {
+          const pct = evt.progress != null ? Math.round(evt.progress * 100) : (evt.total ? Math.round((evt.loaded / evt.total) * 100) : 0);
+          setUploadProgress(pct);
+          animateProgress(pct);
+        },
+      });
+      return res.data?.photo_url as string | null;
+    } catch (err: any) {
+      // Proxy refused the big request (413), dropped it (no response), or timed out → send it in small pieces
+      const status = err?.response?.status;
+      const retryable = status === 413 || status === 502 || status === 504 || !err?.response || err?.code === 'ECONNABORTED';
+      if (!retryable || Platform.OS === 'web' || !('uri' in file)) throw err;
+      return uploadInChunks(file.uri, file.type);
+    }
+  }
+
+  async function uploadInChunks(uri: string, type: string) {
+    const { File: ExpoFile } = await import('expo-file-system');
+    const b64 = await new ExpoFile(uri).base64();
+    const PIECE = 400_000;
+    const total = Math.max(1, Math.ceil(b64.length / PIECE));
+    const uploadId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+    let last: any = null;
+    for (let i = 0; i < total; i++) {
+      const res = await api.post(`/profile/${user._id}/photo/chunk`, {
+        upload_id: uploadId, index: i, total, data: b64.slice(i * PIECE, (i + 1) * PIECE), content_type: type || 'image/jpeg',
+      }, { timeout: 60000 });
+      last = res.data;
+      const pct = Math.round(((i + 1) / total) * 100);
+      setUploadProgress(pct);
+      animateProgress(pct);
+    }
+    return (last?.photo_url as string | null) ?? null;
   }
 
   function handleSuccess(url: string) {

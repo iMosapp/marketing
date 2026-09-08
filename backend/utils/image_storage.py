@@ -114,6 +114,7 @@ def init_storage():
 
 
 def put_object(path: str, data: bytes, content_type: str) -> dict:
+    global storage_key
     key = init_storage()
     resp = requests.put(
         f"{STORAGE_URL}/objects/{path}",
@@ -121,6 +122,17 @@ def put_object(path: str, data: bytes, content_type: str) -> dict:
         data=data,
         timeout=120,
     )
+    if resp.status_code in (401, 403):
+        # cached storage key went stale — re-init once and retry
+        logger.warning(f"Object storage rejected key ({resp.status_code}); re-initializing")
+        storage_key = None
+        key = init_storage()
+        resp = requests.put(
+            f"{STORAGE_URL}/objects/{path}",
+            headers={"X-Storage-Key": key, "Content-Type": content_type},
+            data=data,
+            timeout=120,
+        )
     resp.raise_for_status()
     # Also warm the cache on upload
     _cache.put(path, data, content_type)
@@ -212,6 +224,12 @@ def decode_base64_image(data_uri: str) -> tuple:
     return base64.b64decode(b64_data), content_type
 
 
+def inline_fallback(image_bytes: bytes) -> str:
+    """Object storage unreachable: return a small WebP data URI so the photo still saves (~30-60KB)."""
+    data, ct = _compress_image(image_bytes, 512, 75)
+    return f"data:{ct};base64," + base64.b64encode(data).decode()
+
+
 async def upload_image(image_data, prefix: str = "uploads", entity_id: str = "general", preserve_raw: bool = False):
     """
     Upload an image to object storage with automatic compression.
@@ -221,6 +239,10 @@ async def upload_image(image_data, prefix: str = "uploads", entity_id: str = "ge
     return await asyncio.to_thread(
         _sync_upload_image, image_data, prefix, entity_id, preserve_raw
     )
+
+
+class ImageDecodeError(Exception):
+    """The bytes are not a readable image (HEIC without conversion, truncated file, not an image)."""
 
 
 def _sync_upload_image(image_data, prefix: str = "uploads", entity_id: str = "general", preserve_raw: bool = False):
@@ -243,8 +265,13 @@ def _sync_upload_image(image_data, prefix: str = "uploads", entity_id: str = "ge
     file_id = str(uuid.uuid4())
     base_path = f"{APP_NAME}/{prefix}/{entity_id}"
 
-    # 1. Compress original → WebP
-    compressed_data, compressed_ct = _compress_image(image_bytes, ORIGINAL_MAX_WIDTH, WEBP_QUALITY)
+    # 1. Compress original → WebP (decode problems surface here, before any network I/O)
+    try:
+        compressed_data, compressed_ct = _compress_image(image_bytes, ORIGINAL_MAX_WIDTH, WEBP_QUALITY)
+        thumb_data, thumb_ct, thumb_ext = generate_thumbnail(image_bytes, THUMBNAIL_SIZE)
+        avatar_data, avatar_ct, avatar_ext = generate_thumbnail(image_bytes, AVATAR_SIZE)
+    except Exception as e:
+        raise ImageDecodeError(str(e)) from e
     original_path = f"{base_path}/{file_id}.webp"
     put_object(original_path, compressed_data, compressed_ct)
     logger.info(
@@ -253,12 +280,10 @@ def _sync_upload_image(image_data, prefix: str = "uploads", entity_id: str = "ge
     )
 
     # 2. WebP thumbnail
-    thumb_data, thumb_ct, thumb_ext = generate_thumbnail(image_bytes, THUMBNAIL_SIZE)
     thumb_path = f"{base_path}/{file_id}_thumb.{thumb_ext}"
     put_object(thumb_path, thumb_data, thumb_ct)
 
     # 3. WebP avatar
-    avatar_data, avatar_ct, avatar_ext = generate_thumbnail(image_bytes, AVATAR_SIZE)
     avatar_path = f"{base_path}/{file_id}_avatar.{avatar_ext}"
     put_object(avatar_path, avatar_data, avatar_ct)
 
