@@ -11,3 +11,15 @@
   to = "https://app.imonsocial.com/api/get/:splat"
   status = 302
   force = true
+
+[[redirects]]
+  from = "/relationship-os"
+  to = "/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/relationship-os/"
+  to = "/"
+  status = 301
+  force = true

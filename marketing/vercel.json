@@ -8,6 +8,11 @@
       "source": "/get/:code",
       "destination": "https://app.imonsocial.com/api/get/:code",
       "permanent": false
+    },
+    {
+      "source": "/relationship-os",
+      "destination": "/",
+      "permanent": true
     }
   ]
 }
