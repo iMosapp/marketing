@@ -5,10 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>i'M On Social</title>
 <script>
-  // /get/<code> install links must work even when host-level redirects are not configured.
+  // /get/<code> install links and /go/<slug> print QR links must work even when host-level redirects are not configured.
   (function () {
     var m = /^\/get\/([A-Za-z0-9\-]+)\/?$/.exec(location.pathname);
     if (m) location.replace('https://app.imonsocial.com/api/get/' + m[1].toLowerCase());
+    var g = /^\/go\/([A-Za-z0-9\-]+)\/?$/.exec(location.pathname);
+    if (g) location.replace('https://app.imonsocial.com/api/go/' + g[1].toLowerCase());
   })();
 </script>
 <style>

@@ -536,6 +536,7 @@ export default function MoreScreen() {
       ...(isSuperAdmin ? [
         { icon: 'analytics', title: 'iMOS Website Leads', subtitle: 'Demo requests and referrals for iMOS itself, not dealership leads', onPress: () => router.push('/admin/lead-tracking'), color: '#C9A962' },
         { icon: 'flame', title: 'iMOS Hot Leads', subtitle: 'New demo requests from the iMOS website', onPress: () => router.push('/admin/hot-leads'), color: '#FF3B30' },
+        { icon: 'qr-code', title: 'Print QR Codes', subtitle: 'Tracked QR links for cards, flyers & signs', onPress: () => router.push('/admin/print-qr' as any), color: '#C9A962' },
       ] : []),
     ];
     sections.push({ id: 'account_mgmt', title: 'Account Management', icon: 'briefcase', color: '#007AFF', items });

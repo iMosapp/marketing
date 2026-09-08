@@ -7,6 +7,12 @@
   NODE_VERSION = "18"
 
 [[redirects]]
+  from = "/go/*"
+  to = "https://app.imonsocial.com/api/go/:splat"
+  status = 302
+  force = true
+
+[[redirects]]
   from = "/get/*"
   to = "https://app.imonsocial.com/api/get/:splat"
   status = 302

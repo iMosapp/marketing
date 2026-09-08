@@ -699,6 +699,8 @@ from routers import promo_videos
 api_router.include_router(promo_videos.router)
 from routers import app_links
 api_router.include_router(app_links.router)
+from routers import go_links
+api_router.include_router(go_links.router)
 api_router.include_router(wallet_pass.router)
 
 # ============= WEBSOCKET ENDPOINT =============
