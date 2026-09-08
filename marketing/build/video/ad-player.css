@@ -1,0 +1,19 @@
+/* i'M On Social - social ad phone player (shared by /, /dealers/, /automotive/) */
+.ad-phone{position:relative;z-index:2;width:300px;max-width:100%;border-radius:44px;background:#000;padding:11px;box-shadow:0 40px 90px rgba(0,0,0,.32),0 0 0 1px #222;flex-shrink:0;margin:0 auto}
+.ad-phone .ad-screen{position:relative;border-radius:34px;overflow:hidden;background:#000;aspect-ratio:9/16;cursor:pointer}
+.ad-phone video{display:block;width:100%;height:100%;object-fit:cover;background:#000}
+.ad-phone .ad-cover{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:linear-gradient(180deg,rgba(0,0,0,.05) 0%,rgba(0,0,0,.15) 55%,rgba(0,0,0,.65) 100%);transition:opacity .35s ease,visibility .35s}
+.ad-phone.playing .ad-cover{opacity:0;visibility:hidden;pointer-events:none}
+.ad-phone .ad-play{width:76px;height:76px;border-radius:50%;background:#C9A962;color:#111;border:none;display:flex;align-items:center;justify-content:center;font-size:26px;cursor:pointer;box-shadow:0 14px 40px rgba(0,0,0,.45);transition:transform .25s ease,background-color .25s ease;position:relative}
+.ad-phone .ad-play i{margin-left:4px}
+.ad-phone .ad-play::before{content:'';position:absolute;inset:-10px;border-radius:50%;border:2px solid rgba(201,169,98,.55);animation:adPulse 2.2s ease-out infinite}
+.ad-phone .ad-screen:hover .ad-play{transform:scale(1.06);background:#D8B975}
+.ad-phone .ad-meta{position:absolute;left:0;right:0;bottom:22px;display:flex;flex-direction:column;align-items:center;gap:4px;color:#fff;text-align:center;padding:0 18px}
+.ad-phone .ad-meta strong{font-size:15px;font-weight:800;letter-spacing:-.01em}
+.ad-phone .ad-meta span{font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#C9A962}
+.ad-phone .ad-meta span i{margin-right:5px}
+.ad-phone.ended .ad-play i{margin-left:0}
+@keyframes adPulse{0%{transform:scale(.9);opacity:.9}100%{transform:scale(1.35);opacity:0}}
+.ad-caption{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:16px;font-size:11px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:#C9A962}
+.ad-caption i{font-size:10px}
+@media(max-width:768px){.ad-phone{width:260px}}

@@ -84,17 +84,19 @@ html{scroll-behavior:smooth}
     @media(max-width:768px){.getapp{padding:72px 24px}.getapp-inner{grid-template-columns:1fr;gap:36px;text-align:center}.getapp h2{font-size:32px}.getapp p{margin-left:auto;margin-right:auto;font-size:16px}.getapp-btns{justify-content:center}.getapp-qr{display:none}}
     .sec-tag{font-size:12px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px}
 /* HERO */
-.page-hero{padding:150px 24px 40px;text-align:center;max-width:860px;margin:0 auto}
+.page-hero{padding:140px 24px 56px;max-width:1140px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:48px;align-items:center;text-align:left}
 .eyebrow{display:inline-block;font-size:12px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold);background:rgba(201,169,98,.1);padding:8px 16px;border-radius:980px;margin-bottom:22px}
-.page-hero h1{font-size:56px;font-weight:900;line-height:1.08;letter-spacing:-.035em;margin-bottom:20px}
+.page-hero h1{font-size:52px;font-weight:900;line-height:1.08;letter-spacing:-.035em;margin-bottom:20px}
 .page-hero h1 .g{color:var(--gold)}
-.page-hero-sub{font-size:20px;color:var(--text-2);line-height:1.6;max-width:620px;margin:0 auto 34px}
-.hero-btns{display:flex;flex-wrap:wrap;justify-content:center;gap:14px}
+.page-hero-sub{font-size:20px;color:var(--text-2);line-height:1.6;max-width:620px;margin:0 0 34px}
+.hero-btns{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:14px}
+.hero-video{display:flex;flex-direction:column;align-items:center;justify-self:center}
 .btn-lg{padding:16px 34px;border-radius:980px;font-size:16px;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:10px;transition:all .25s;border:none;cursor:pointer}
 .btn-lg.primary{background:#0A0A0F;color:#FFF}
 .btn-lg.primary:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(0,0,0,.2)}
 .btn-lg.ghost{color:var(--text);border:2px solid var(--border-2);background:transparent}
 .btn-lg.ghost:hover{border-color:var(--text);background:var(--bg-2)}
+@media(max-width:900px){.page-hero{grid-template-columns:1fr;gap:40px;text-align:center;padding:130px 24px 40px}.page-hero-sub{margin:0 auto 34px}.hero-btns{justify-content:center}}
 @media(max-width:768px){.page-hero{padding:120px 20px 32px}.page-hero h1{font-size:34px}.page-hero-sub{font-size:16px}.hero-btns{flex-direction:column;align-items:center}}
 
 /* PROBLEM STRIP */
@@ -288,6 +290,8 @@ html{scroll-behavior:smooth}
     .rv-1{transition-delay:.1s}.rv-2{transition-delay:.2s}.rv-3{transition-delay:.3s}
   </style>
 <script src="/lead-retry.js"></script>
+<link rel="stylesheet" href="/video/ad-player.css">
+<script src="/video/ad-player.js" defer></script>
 </head>
 <body>
 
@@ -418,14 +422,28 @@ html{scroll-behavior:smooth}
 
 <!-- HERO -->
 <section class="page-hero">
-  <span class="eyebrow">The Relationship OS</span>
-  <h1>Your CRM remembers the deal.<br/><span class="g">i'M On Social remembers the person.</span></h1>
-  <p class="page-hero-sub">Every salesperson sits on hundreds of past customers they've simply forgotten. i'M On Social turns that dusty contact list into a living book of business - and tells you exactly who to talk to, why, and what to say.</p>
-  <div class="hero-btns">
-    <a href="#tour" class="btn-lg primary"><i class="fa-solid fa-play"></i> Take the 2-minute tour</a>
-    <a href="#" class="btn-lg ghost" onclick="openDemoModal(event,'hero')">Book a Demo</a>
+  <div class="hero-copy">
+    <span class="eyebrow">The Relationship OS</span>
+    <h1>Your CRM remembers the deal.<br/><span class="g">i'M On Social remembers the person.</span></h1>
+    <p class="page-hero-sub">Every salesperson sits on hundreds of past customers they've simply forgotten. i'M On Social turns that dusty contact list into a living book of business - and tells you exactly who to talk to, why, and what to say.</p>
+    <div class="hero-btns">
+      <a href="#tour" class="btn-lg primary"><i class="fa-solid fa-play"></i> Take the 2-minute tour</a>
+      <a href="#" class="btn-lg ghost" onclick="openDemoModal(event,'hero')">Book a Demo</a>
+    </div>
+    <p class="hero-more">Looking for the full feature list? <a href="/platform/">See everything the platform does <i class="fa-solid fa-arrow-right"></i></a></p>
   </div>
-  <p class="hero-more">Looking for the full feature list? <a href="/platform/">See everything the platform does <i class="fa-solid fa-arrow-right"></i></a></p>
+  <div class="hero-video">
+    <div class="ad-phone" data-testid="social-ad-player">
+      <div class="ad-screen">
+        <video poster="/video/social-ad-poster.jpg" preload="metadata" playsinline webkit-playsinline aria-label="i'M On Social: Your CRM remembers the sale. I remember the person."><source src="/video/social-ad.mp4" type="video/mp4"><source src="/video/social-ad.webm" type="video/webm"></video>
+        <div class="ad-cover">
+          <button class="ad-play" type="button" aria-label="Play video" data-testid="social-ad-play"><i class="fa-solid fa-play"></i></button>
+          <div class="ad-meta"><strong>"Your CRM remembers the sale.<br/>I remember the person."</strong><span><i class="fa-solid fa-volume-high"></i>Watch &middot; 46 sec &middot; sound on</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="ad-caption"><i class="fa-solid fa-circle-play"></i> The 46-second story</div>
+  </div>
 </section>
 
 <!-- PROBLEM -->

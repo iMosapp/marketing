@@ -46,6 +46,8 @@
 
 </style>
 <script src="/lead-retry.js"></script>
+<link rel="stylesheet" href="/video/ad-player.css">
+<script src="/video/ad-player.js" defer></script>
 </head>
 <body>
 <nav>
@@ -176,6 +178,18 @@
   <h1 class="rv">Most salespeople forget their customers <em>the second the deal is done</em>.</h1>
   <p class="sub rv">I'm On Social turns one moment - like taking a photo with a customer - into years of automated follow-up, relationship building, and repeat business.</p>
   <p class="sub-2 rv">The dealerships that dominate don't just sell more cars. They build relationships that drive service, referrals, and repeat buyers.</p>
+  <div class="hero-video rv" style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center">
+    <div class="ad-phone" data-testid="social-ad-player">
+      <div class="ad-screen">
+        <video poster="/video/social-ad-poster.jpg" preload="metadata" playsinline webkit-playsinline aria-label="i'M On Social: Your CRM remembers the sale. I remember the person."><source src="/video/social-ad.mp4" type="video/mp4"><source src="/video/social-ad.webm" type="video/webm"></video>
+        <div class="ad-cover">
+          <button class="ad-play" type="button" aria-label="Play video" data-testid="social-ad-play"><i class="fa-solid fa-play"></i></button>
+          <div class="ad-meta"><strong>"Your CRM remembers the sale.<br/>I remember the person."</strong><span><i class="fa-solid fa-volume-high"></i>Watch &middot; 46 sec &middot; sound on</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="ad-caption"><i class="fa-solid fa-circle-play"></i> The 46-second story</div>
+  </div>
 </section>
 
 <section class="problem rv">
