@@ -196,6 +196,44 @@ async def go_qr_png(slug: str, size: int = 2000):
                     headers={"Content-Disposition": f'inline; filename="imos-qr-{slug}-{size}px.png"', "Cache-Control": "public, max-age=3600"})
 
 
+# ---------------------------------------------------------------- public: print-ready 4x6 leave-behind card
+async def _card_params(slug: str):
+    """(qr, rep_first, sms_number) for a slug; 404 when the slug is unknown (keeps the renderer from being spammed)."""
+    db = get_db()
+    slug = slug.lower().strip()
+    link = await _get_or_seed(db, slug)
+    if not link:
+        raise HTTPException(status_code=404, detail="Unknown QR link")
+    rep_first, sms_number = "", link.get("sms_number") or ""
+    if link.get("kind") == "rep" and link.get("user_id"):
+        from bson import ObjectId
+        user = await db.users.find_one({"_id": ObjectId(link["user_id"])}, {"first_name": 1, "name": 1, "twilio_number": 1, "mvpline_number": 1})
+        if user:
+            rep_first = user.get("first_name") or (user.get("name") or "").split(" ")[0] or ""
+            sms_number = sms_number or _clean_phone(user.get("twilio_number") or user.get("mvpline_number") or "")
+    return _qr(slug), rep_first, sms_number
+
+
+@router.get("/go-links/{slug}/print-card.pdf")
+async def go_print_card_pdf(slug: str):
+    from services.print_card import render_card
+    qr, rep_first, sms_number = await _card_params(slug)
+    pdf = await render_card(qr, rep_first, sms_number, kind="pdf")
+    return Response(content=pdf, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="imos-4x6-card-{slug.lower()}.pdf"', "Cache-Control": "public, max-age=600"})
+
+
+@router.get("/go-links/{slug}/print-card.png")
+async def go_print_card_png(slug: str, side: str = "front", width: int = 900):
+    from services.print_card import render_card
+    if side not in ("front", "back"):
+        raise HTTPException(status_code=400, detail="side must be front or back")
+    qr, rep_first, sms_number = await _card_params(slug)
+    png = await render_card(qr, rep_first, sms_number, kind="png", side=side, width=max(300, min(width, 3750)))
+    return Response(content=png, media_type="image/png",
+                    headers={"Content-Disposition": f'inline; filename="imos-4x6-card-{slug.lower()}-{side}.png"', "Cache-Control": "public, max-age=600"})
+
+
 # ---------------------------------------------------------------- admin: manage + stats
 async def _counts(db, slug: str) -> dict:
     now = _now()
@@ -215,6 +253,7 @@ def _serialize(link: dict) -> dict:
         "kind": link.get("kind", "campaign"), "user_id": link.get("user_id"), "sms_number": link.get("sms_number", ""),
         "active": link.get("active", True), "short_url": _short_url(link["slug"]),
         "qr_svg_path": f"/go-links/{link['slug']}/qr.svg", "qr_png_path": f"/go-links/{link['slug']}/qr.png",
+        "print_pdf_path": f"/go-links/{link['slug']}/print-card.pdf", "print_png_path": f"/go-links/{link['slug']}/print-card.png",
         "created_at": link.get("created_at").isoformat() if link.get("created_at") else None,
     }
 

@@ -27,6 +27,7 @@ export default function MyPrintQrScreen() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [side, setSide] = useState<'front' | 'back'>('front');
   const base = api.defaults.baseURL;
 
   const load = useCallback(async () => {
@@ -105,6 +106,31 @@ export default function MyPrintQrScreen() {
               </View>
             ))}
           </View>
+
+          {data?.print_pdf_path ? (
+            <View style={{ backgroundColor: colors.card, borderRadius: 18, borderWidth: 1, borderColor: colors.border, padding: 16, gap: 12 }} {...tid('my-print-card')}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={{ fontSize: 16, fontWeight: '800', color: colors.text }}>Your 4x6 leave-behind card</Text>
+                <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 10, padding: 2 }}>
+                  {(['front', 'back'] as const).map(s => (
+                    <TouchableOpacity key={s} onPress={() => setSide(s)} style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: side === s ? GOLD : 'transparent' }} {...tid(`my-print-card-side-${s}`)}>
+                      <Text style={{ fontSize: 12, fontWeight: '800', color: side === s ? '#111' : colors.textSecondary }}>{s === 'front' ? 'Front' : 'Back'}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+              <View style={{ width: '100%', aspectRatio: 1875 / 1275, borderRadius: 12, overflow: 'hidden', backgroundColor: '#0A0A0F' }}>
+                <Image source={{ uri: `${base}${data.print_png_path}?side=${side}&width=1200` }} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={200} {...tid('my-print-card-preview')} />
+              </View>
+              <TouchableOpacity onPress={() => openUrl(`${base}${data.print_pdf_path}`)} style={{ height: 50, borderRadius: 12, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }} {...tid('my-print-card-download')}>
+                <Ionicons name="print-outline" size={19} color="#111" />
+                <Text style={{ fontSize: 15, fontWeight: '800', color: '#111' }}>Download Print Card (PDF)</Text>
+              </TouchableOpacity>
+              <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>
+                Print-ready 4x6 in, front and back, 600 dpi with 1/8 in bleed. Send the PDF straight to any print shop or Vistaprint-style service and pick "4x6 postcard, full bleed". Your QR and "Text {(user as any)?.first_name || 'me'}" number are already on it.
+              </Text>
+            </View>
+          ) : null}
 
           <TouchableOpacity onPress={() => openUrl(data?.landing_url)} style={{ backgroundColor: colors.card, borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }} {...tid('my-print-qr-preview')}>
             <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: `${GOLD}22`, alignItems: 'center', justifyContent: 'center' }}>

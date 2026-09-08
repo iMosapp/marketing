@@ -31,7 +31,7 @@ const timeAgo = (iso: string | null) => {
   return d === 1 ? 'yesterday' : `${d}d ago`;
 };
 
-type GoLink = { slug: string; label: string; destination: string; kind?: string; rep_name?: string; sms_number?: string; short_url: string; qr_png_path: string; qr_svg_path: string; scans: { total: number; week: number; today: number; last_scan_at: string | null } };
+type GoLink = { slug: string; label: string; destination: string; kind?: string; rep_name?: string; sms_number?: string; short_url: string; qr_png_path: string; qr_svg_path: string; print_pdf_path?: string; scans: { total: number; week: number; today: number; last_scan_at: string | null } };
 type Editing = { slug: string; label: string; destination: string; sms_number: string; isNew: boolean };
 
 export default function PrintQrScreen() {
@@ -141,6 +141,12 @@ export default function PrintQrScreen() {
                   <Ionicons name="create-outline" size={18} color={colors.text} />
                 </TouchableOpacity>
               </View>
+              {link.print_pdf_path ? (
+                <TouchableOpacity onPress={() => openUrl(`${base}${link.print_pdf_path}`)} style={{ height: 44, borderRadius: 12, borderWidth: 1.5, borderColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }} {...tid(`print-qr-card-pdf-${link.slug}`)}>
+                  <Ionicons name="print-outline" size={18} color={GOLD} />
+                  <Text style={{ fontSize: 14, fontWeight: '800', color: GOLD }}>4x6 Leave-Behind Card (PDF){link.kind === 'rep' && link.rep_name ? ` · ${link.rep_name.split(' ')[0]}` : ''}</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           ))}
 

@@ -14,7 +14,7 @@
       box.classList.add('playing');
       var p=video.play();
       if(p&&p.catch){p.catch(function(){box.classList.remove('playing');video.controls=false})}
-      if(window.gtag&&!box.dataset.tracked){box.dataset.tracked='1';try{gtag('event','video_play',{video_title:'social_ad_sept_8',page_path:location.pathname})}catch(e){}}
+      if(window.gtag&&!box.dataset.tracked){box.dataset.tracked='1';try{window.gtag('event','video_play',{video_title:'social_ad_sept_8',page_path:location.pathname})}catch(e){}}
     }
     playBtn.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();start()});
     screen.addEventListener('click',function(e){if(!box.classList.contains('playing')){start()}});
