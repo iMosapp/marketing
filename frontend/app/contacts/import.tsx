@@ -66,6 +66,7 @@ export default function ImportContactsScreen() {
   const [csvStats, setCsvStats] = useState({ total_parsed: 0, new_contacts: 0, duplicates: 0, skipped_no_info: 0 });
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState('');
   const [selectAll, setSelectAll] = useState(false);
 
   // Phone contacts flow (unchanged)
@@ -104,7 +105,7 @@ export default function ImportContactsScreen() {
         .map(c => {
           const bd: any = (c as any).birthday;
           const birthday = bd && bd.day != null && bd.month != null
-            ? `${bd.year || 1900}-${String(bd.month + 1).padStart(2, '0')}-${String(bd.day).padStart(2, '0')}`
+            ? `${bd.year || 1904}-${String(bd.month + 1).padStart(2, '0')}-${String(bd.day).padStart(2, '0')}`
             : undefined;
           return {
             id: c.id || String(Math.random()),
@@ -193,30 +194,45 @@ export default function ImportContactsScreen() {
     }
   };
 
-  // Phone import handler
+  // Phone import handler — sends in batches so 600+ contacts never hit one giant request/timeout
   const handlePhoneImport = async () => {
     if (!user) return;
     const selected = phoneContacts.filter(c => c.selected);
     if (selected.length === 0) { showSimpleAlert('No Selection', 'Please select contacts to import'); return; }
     setImporting(true);
+    const payload = selected.map(c => ({
+      first_name: c.firstName || c.name.split(' ')[0] || 'Unknown',
+      last_name: c.lastName || c.name.split(' ').slice(1).join(' ') || '',
+      phone: c.phone || '',
+      email: c.email || '',
+      birthday: c.birthday || null,
+      tags: [],
+      notes: '',
+    }));
+    const BATCH = 150;
+    let imported = 0, skipped = 0, failed = 0, sent = 0;
     try {
-      const payload = selected.map(c => ({
-        first_name: c.firstName || c.name.split(' ')[0] || 'Unknown',
-        last_name: c.lastName || c.name.split(' ').slice(1).join(' ') || '',
-        phone: c.phone || '',
-        email: c.email || '',
-        birthday: c.birthday || null,
-        tags: [],
-        notes: '',
-      }));
-      const result = await contactsAPI.importContacts(user._id, payload);
-      let msg = `Imported ${result.imported} contact${result.imported !== 1 ? 's' : ''}`;
-      if (result.skipped > 0) msg += `\n${result.skipped} duplicate${result.skipped !== 1 ? 's' : ''} skipped`;
+      for (let i = 0; i < payload.length; i += BATCH) {
+        const chunk = payload.slice(i, i + BATCH);
+        setImportProgress(`${Math.min(i + BATCH, payload.length)} of ${payload.length}`);
+        const result = await contactsAPI.importContacts(user._id, chunk, 'phone_import');
+        imported += result.imported || 0; skipped += result.skipped || 0; failed += result.failed || 0;
+        sent += chunk.length;
+      }
+      let msg = `Imported ${imported} contact${imported !== 1 ? 's' : ''}`;
+      if (skipped > 0) msg += `\n${skipped} already in your contacts`;
+      if (failed > 0) msg += `\n${failed} couldn't be read and were skipped`;
       showAlert('Import Complete', msg, [{ text: 'OK', onPress: () => router.back() }]);
-    } catch (error) {
-      showSimpleAlert('Error', 'Failed to import contacts');
+    } catch (error: any) {
+      const detail = error?.response?.data?.detail;
+      const why = typeof detail === 'string' ? detail
+        : error?.response?.status ? `Server error ${error.response.status}`
+        : error?.code === 'ECONNABORTED' ? 'The connection timed out' : (error?.message || 'Unknown error');
+      const saved = imported ? `\n${imported} contact${imported !== 1 ? 's' : ''} were saved before it stopped (${sent} of ${payload.length} sent). Tap Import again to finish; duplicates are skipped automatically.` : '';
+      showSimpleAlert('Import Stopped', `${why}.${saved}`);
     } finally {
       setImporting(false);
+      setImportProgress('');
     }
   };
 
@@ -237,8 +253,9 @@ export default function ImportContactsScreen() {
       if (data.skipped > 0) msg += `\n${data.skipped} duplicate${data.skipped !== 1 ? 's' : ''} skipped`;
       if (listTag.trim()) msg += `\nTagged as "${listTag.trim()}" — target this tag in Broadcast`;
       showAlert('Import Complete', msg, [{ text: 'OK', onPress: () => router.back() }]);
-    } catch (error) {
-      showSimpleAlert('Error', 'Failed to import contacts');
+    } catch (error: any) {
+      const detail = error?.response?.data?.detail;
+      showSimpleAlert('Import Stopped', typeof detail === 'string' ? detail : (error?.response?.status ? `Server error ${error.response.status}` : 'Failed to import contacts'));
     } finally {
       setImporting(false);
     }
@@ -392,8 +409,13 @@ export default function ImportContactsScreen() {
         />
         {selectedPhoneCount > 0 && (
           <View style={styles.bottomBar}>
-            <TouchableOpacity style={styles.importActionButton} onPress={handlePhoneImport} disabled={importing}>
-              {importing ? <ActivityIndicator size="small" color="#fff" /> : (
+            <TouchableOpacity style={styles.importActionButton} onPress={handlePhoneImport} disabled={importing} testID="phone-import-btn" dataSet={{ testid: 'phone-import-btn' } as any}>
+              {importing ? (
+                <>
+                  <ActivityIndicator size="small" color="#fff" />
+                  {!!importProgress && <Text style={styles.importActionText} testID="phone-import-progress" dataSet={{ testid: 'phone-import-progress' } as any}>Importing {importProgress}</Text>}
+                </>
+              ) : (
                 <>
                   <Ionicons name="download" size={20} color="#fff" />
                   <Text style={styles.importActionText}>Import {selectedPhoneCount} Contact{selectedPhoneCount !== 1 ? 's' : ''}</Text>

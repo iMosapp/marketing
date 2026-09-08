@@ -1493,37 +1493,71 @@ async def get_contact_referrals(user_id: str, contact_id: str):
     } for r in referrals]
 
 @router.post("/{user_id}/import")
-async def import_contacts(user_id: str, contacts: List[ContactCreate], source: str = "csv"):
-    """Bulk import contacts from CSV or phone"""
-    imported = []
-    for contact_data in contacts:
-        # Check for duplicates by phone (only check for this user's contacts)
-        existing = await get_db().contacts.find_one({
-            "user_id": user_id,
-            "phone": contact_data.phone
-        })
-        
-        if existing:
+async def import_contacts(user_id: str, contacts: list = Body(...), source: str = "csv"):
+    """Bulk import from CSV or phone. One bad row (e.g. a Feb 29 birthday with no year) never fails the batch:
+    each row is validated on its own, unparseable dates are dropped, phones are normalized to E.164."""
+    from services.twilio_service import normalize_phone
+    from pydantic import ValidationError
+    db = get_db()
+    now = datetime.utcnow()
+
+    def _norm(p) -> str:
+        digits = "".join(ch for ch in str(p or "") if ch.isdigit())
+        return normalize_phone(str(p)) if len(digits) >= 10 else (str(p or "").strip())
+
+    existing = set()
+    async for c in db.contacts.find({"user_id": user_id, "phone": {"$exists": True, "$ne": ""}}, {"phone": 1}):
+        d = "".join(ch for ch in str(c.get("phone") or "") if ch.isdigit())
+        if d:
+            existing.add(d[-10:])
+
+    docs, skipped, failed, dates_dropped = [], 0, 0, 0
+    for raw in contacts:
+        if not isinstance(raw, dict):
+            failed += 1
             continue
-        
-        contact_dict = contact_data.dict()
-        contact_dict['user_id'] = user_id
-        contact_dict['original_user_id'] = user_id
-        contact_dict['source'] = source
-        # Phone imports are personal; CSV/other imports are org
-        contact_dict['ownership_type'] = 'personal' if source == 'phone_import' else 'org'
-        contact_dict['status'] = 'active'
-        contact_dict['created_at'] = datetime.utcnow()
-        contact_dict['updated_at'] = datetime.utcnow()
-        
-        result = await get_db().contacts.insert_one(contact_dict)
-        contact_dict['_id'] = result.inserted_id
-        imported.append(contact_dict)
-    
-    return {
-        "imported": len(imported),
-        "skipped": len(contacts) - len(imported)
-    }
+        row = {k: v for k, v in raw.items() if v not in (None, "")}
+        row["first_name"] = (str(row.get("first_name") or "").strip() or str(row.get("name") or "").split(" ")[0] or "Unknown")[:80]
+        row["phone"] = _norm(row.get("phone"))
+        row.pop("source", None)
+        parsed = None
+        for attempt in range(3):
+            try:
+                parsed = ContactCreate(**row)
+                break
+            except ValidationError as ve:
+                bad = {str(e["loc"][0]) for e in ve.errors() if e.get("loc")}
+                if attempt == 0 and bad & {"birthday", "anniversary", "date_sold", "purchase_date"}:
+                    for k in ("birthday", "anniversary", "date_sold", "purchase_date"):
+                        if k in bad:
+                            row.pop(k, None)
+                    dates_dropped += 1
+                elif attempt == 1 and bad:
+                    for k in bad:
+                        if k != "first_name":
+                            row.pop(k, None)
+                else:
+                    break
+        if parsed is None:
+            failed += 1
+            continue
+        digits = "".join(ch for ch in parsed.phone if ch.isdigit())
+        key = digits[-10:] if digits else ""
+        if key and key in existing:
+            skipped += 1
+            continue
+        if key:
+            existing.add(key)
+        doc = parsed.dict()
+        doc.update({"user_id": user_id, "original_user_id": user_id, "source": source,
+                    "ownership_type": "personal" if source == "phone_import" else "org",
+                    "status": "active", "created_at": now, "updated_at": now})
+        docs.append(doc)
+
+    if docs:
+        await db.contacts.insert_many(docs, ordered=False)
+    logger.info(f"[Import] user={user_id} source={source} imported={len(docs)} skipped={skipped} failed={failed} dates_dropped={dates_dropped}")
+    return {"imported": len(docs), "skipped": skipped, "failed": failed, "dates_dropped": dates_dropped}
 
 @router.post("/{user_id}/{contact_id}/photo")
 async def upload_contact_photo(user_id: str, contact_id: str, photo_data: dict):

@@ -378,8 +378,8 @@ export const contactsAPI = {
     return response.data;
   },
 
-  importContacts: async (userId: string, contacts: any[]) => {
-    const response = await api.post(`/contacts/${userId}/import`, contacts);
+  importContacts: async (userId: string, contacts: any[], source: string = 'csv') => {
+    const response = await api.post(`/contacts/${userId}/import?source=${encodeURIComponent(source)}`, contacts, { timeout: 120000 });
     return response.data;
   },
 
