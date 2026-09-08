@@ -1492,13 +1492,10 @@ async def get_contact_referrals(user_id: str, contact_id: str):
         "created_at": r.get("created_at")
     } for r in referrals]
 
-@router.post("/{user_id}/import")
-async def import_contacts(user_id: str, contacts: list = Body(...), source: str = "csv"):
-    """Bulk import from CSV or phone. One bad row (e.g. a Feb 29 birthday with no year) never fails the batch:
-    each row is validated on its own, unparseable dates are dropped, phones are normalized to E.164."""
+async def _prepare_import_rows(db, user_id: str, contacts: list, source: str) -> tuple[list, dict]:
+    """Shared by preview + import: validate each row alone, normalize phones, dedupe vs existing. No writes."""
     from services.twilio_service import normalize_phone
     from pydantic import ValidationError
-    db = get_db()
     now = datetime.utcnow()
 
     def _norm(p) -> str:
@@ -1511,10 +1508,12 @@ async def import_contacts(user_id: str, contacts: list = Body(...), source: str 
         if d:
             existing.add(d[-10:])
 
-    docs, skipped, failed, dates_dropped = [], 0, 0, 0
+    docs = []
+    stats = {"total": len(contacts), "new": 0, "already_have": 0, "failed": 0, "dates_dropped": 0,
+             "with_birthday": 0, "with_email": 0, "no_phone": 0}
     for raw in contacts:
         if not isinstance(raw, dict):
-            failed += 1
+            stats["failed"] += 1
             continue
         row = {k: v for k, v in raw.items() if v not in (None, "")}
         row["first_name"] = (str(row.get("first_name") or "").strip() or str(row.get("name") or "").split(" ")[0] or "Unknown")[:80]
@@ -1531,7 +1530,7 @@ async def import_contacts(user_id: str, contacts: list = Body(...), source: str 
                     for k in ("birthday", "anniversary", "date_sold", "purchase_date"):
                         if k in bad:
                             row.pop(k, None)
-                    dates_dropped += 1
+                    stats["dates_dropped"] += 1
                 elif attempt == 1 and bad:
                     for k in bad:
                         if k != "first_name":
@@ -1539,25 +1538,47 @@ async def import_contacts(user_id: str, contacts: list = Body(...), source: str 
                 else:
                     break
         if parsed is None:
-            failed += 1
+            stats["failed"] += 1
             continue
         digits = "".join(ch for ch in parsed.phone if ch.isdigit())
         key = digits[-10:] if digits else ""
         if key and key in existing:
-            skipped += 1
+            stats["already_have"] += 1
             continue
         if key:
             existing.add(key)
+        else:
+            stats["no_phone"] += 1
+        if parsed.birthday:
+            stats["with_birthday"] += 1
+        if parsed.email:
+            stats["with_email"] += 1
         doc = parsed.dict()
         doc.update({"user_id": user_id, "original_user_id": user_id, "source": source,
                     "ownership_type": "personal" if source == "phone_import" else "org",
                     "status": "active", "created_at": now, "updated_at": now})
         docs.append(doc)
+    stats["new"] = len(docs)
+    return docs, stats
 
+
+@router.post("/{user_id}/import/preview")
+async def preview_import(user_id: str, contacts: list = Body(...), source: str = "csv"):
+    """Counts only: what an import WOULD do (new / already have / birthdays / unreadable)."""
+    _, stats = await _prepare_import_rows(get_db(), user_id, contacts, source)
+    return stats
+
+
+@router.post("/{user_id}/import")
+async def import_contacts(user_id: str, contacts: list = Body(...), source: str = "csv"):
+    """Bulk import from CSV or phone. One bad row (e.g. a Feb 29 birthday with no year) never fails the batch:
+    each row is validated on its own, unparseable dates are dropped, phones are normalized to E.164."""
+    db = get_db()
+    docs, stats = await _prepare_import_rows(db, user_id, contacts, source)
     if docs:
         await db.contacts.insert_many(docs, ordered=False)
-    logger.info(f"[Import] user={user_id} source={source} imported={len(docs)} skipped={skipped} failed={failed} dates_dropped={dates_dropped}")
-    return {"imported": len(docs), "skipped": skipped, "failed": failed, "dates_dropped": dates_dropped}
+    logger.info(f"[Import] user={user_id} source={source} {stats}")
+    return {"imported": len(docs), "skipped": stats["already_have"], "failed": stats["failed"], "dates_dropped": stats["dates_dropped"]}
 
 @router.post("/{user_id}/{contact_id}/photo")
 async def upload_contact_photo(user_id: str, contact_id: str, photo_data: dict):

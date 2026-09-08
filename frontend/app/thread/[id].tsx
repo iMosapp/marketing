@@ -236,6 +236,8 @@ function ThreadScreen() {
   const [draftEditing, setDraftEditing] = useState(false);
   const [draftEditText, setDraftEditText] = useState('');
   const [draftBusy, setDraftBusy] = useState(false);
+  const [pendingChange, setPendingChange] = useState<any | null>(null);
+  const [changeBusy, setChangeBusy] = useState(false);
   const [conversationStatus, setConversationStatus] = useState<'active' | 'closed'>('active');
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
@@ -1189,6 +1191,37 @@ function ThreadScreen() {
       if (match) { setShowAISuggestion(false); }
       if (!match) { setDraftEditing(false); }
     } catch { /* non-fatal */ }
+    try {
+      const ch = await api.get(`/tasks/${user._id}/changes`, { params: { conversation_id: convId, status: 'pending' } });
+      setPendingChange((ch.data?.changes || [])[0] || null);
+    } catch { /* non-fatal */ }
+  };
+
+  // Customer asked to move / cancel their appointment: one tap moves it + sends the calendar update text
+  const resolvePendingChange = async (approve: boolean) => {
+    if (!pendingChange || !user?._id) return;
+    setChangeBusy(true);
+    try {
+      const res = await api.post(`/tasks/${user._id}/changes/${pendingChange.id}/${approve ? 'approve' : 'decline'}`);
+      if (approve) {
+        setPendingDraft(null);
+        setNeedsAssistance(false);
+        const convId = actualConversationId || conversationId;
+        if (convId) { try { const msgs = await messagesAPI.getThread(convId); setMessages(msgs); } catch {} }
+        const first = pendingChange.contact_first || 'them';
+        showSimpleAlert(
+          pendingChange.action === 'cancel' ? 'Taken off the books' : 'Appointment moved',
+          pendingChange.action === 'cancel'
+            ? `${first} has been told it's cancelled. Text them when you're ready to set a new time.`
+            : `${first} got the update for ${res.data?.when || pendingChange.new_label}${(res.data?.channels || []).includes('email') ? ' by text and email' : ''}.`,
+        );
+      }
+      setPendingChange(null);
+    } catch (e: any) {
+      showSimpleAlert('Could not do that', e?.response?.data?.detail || 'Please try again.');
+    } finally {
+      setChangeBusy(false);
+    }
   };
 
   const approvePendingDraft = async () => {
@@ -2321,7 +2354,7 @@ function ThreadScreen() {
         >
           {/* Relationship summary card — shows at top of thread when intel is cached */}
           {intelData?.summary && !loading ? (
-            <View style={{ margin: 12, padding: 12, backgroundColor: colors.card, borderRadius: 14, borderWidth: 1, borderColor: colors.border }}>
+            <View style={{ margin: 12, padding: 12, backgroundColor: colors.surface, borderRadius: 14, borderWidth: 1, borderColor: colors.border }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                 <Ionicons name="sparkles" size={13} color="#C9A962" />
                 <Text style={{ fontSize: 11, fontWeight: '700', color: '#C9A962', textTransform: 'uppercase', letterSpacing: 0.5 }}>
@@ -2393,7 +2426,60 @@ function ThreadScreen() {
       )}
 
       {/* Appointment draft — waiting for rep approval before it sends */}
-      {pendingDraft && aiMode !== 'off' && (
+      {pendingChange && (
+        <View
+          style={{ backgroundColor: '#FF950014', borderTopWidth: 1, borderTopColor: '#FF950040', paddingHorizontal: 16, paddingVertical: 12, gap: 8 }}
+          testID="appointment-change-card"
+          dataSet={{ testid: 'appointment-change-card' } as any}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Ionicons name={pendingChange.action === 'cancel' ? 'calendar-clear' : 'swap-horizontal'} size={14} color="#FF9500" />
+            <Text style={{ fontSize: 12, fontWeight: '800', color: '#FF9500', letterSpacing: 0.3 }}>
+              {pendingChange.action === 'cancel' ? `${(pendingChange.contact_first || 'CUSTOMER').toUpperCase()} CAN'T MAKE IT` : `${(pendingChange.contact_first || 'CUSTOMER').toUpperCase()} ASKED TO MOVE THE APPOINTMENT`}
+            </Text>
+          </View>
+          <Text style={{ fontSize: 15, color: colors.text, lineHeight: 21 }} testID="appointment-change-summary" dataSet={{ testid: 'appointment-change-summary' } as any}>
+            {pendingChange.action === 'cancel'
+              ? `${pendingChange.old_label} would come off the books.`
+              : pendingChange.new_label
+                ? `${pendingChange.old_label}  →  ${pendingChange.new_label}`
+                : `${pendingChange.old_label} — no new time given yet. Reply with a couple of options.`}
+          </Text>
+          {!!pendingChange.customer_text && (
+            <Text style={{ fontSize: 13, color: colors.textSecondary, fontStyle: 'italic' }} numberOfLines={2}>"{pendingChange.customer_text}"</Text>
+          )}
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            {(pendingChange.action === 'cancel' || pendingChange.new_label) && (
+              <TouchableOpacity
+                onPress={() => resolvePendingChange(true)}
+                disabled={changeBusy}
+                style={{ flex: 1, backgroundColor: '#34C759', borderRadius: 10, paddingVertical: 11, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, opacity: changeBusy ? 0.6 : 1 }}
+                activeOpacity={0.8}
+                testID="approve-change-btn"
+                dataSet={{ testid: 'approve-change-btn' } as any}
+              >
+                <Ionicons name="checkmark-circle" size={16} color="#000" />
+                <Text style={{ fontSize: 13, fontWeight: '800', color: '#000' }}>
+                  {changeBusy ? 'Sending...' : pendingChange.action === 'cancel' ? 'Take it off the books' : 'Approve & send update'}
+                </Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              onPress={() => resolvePendingChange(false)}
+              disabled={changeBusy}
+              style={{ backgroundColor: colors.surface, borderRadius: 10, paddingVertical: 11, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, borderWidth: 1, borderColor: '#FF950055' }}
+              activeOpacity={0.8}
+              testID="decline-change-btn"
+              dataSet={{ testid: 'decline-change-btn' } as any}
+            >
+              <Ionicons name="chatbubble-ellipses-outline" size={15} color="#FF9500" />
+              <Text style={{ fontSize: 13, fontWeight: '800', color: '#FF9500' }}>{pendingChange.action === 'cancel' ? 'Reply myself' : 'Suggest another time'}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {pendingDraft && !pendingChange && aiMode !== 'off' && (
         <View
           style={{ backgroundColor: '#C9A96214', borderTopWidth: 1, borderTopColor: '#C9A96240', paddingHorizontal: 16, paddingVertical: 12, gap: 10 }}
           testID="pending-draft-approval-card"
@@ -2410,7 +2496,7 @@ function ThreadScreen() {
               value={draftEditText}
               onChangeText={setDraftEditText}
               multiline
-              style={{ backgroundColor: colors.card, color: colors.text, borderRadius: 10, padding: 12, fontSize: 15, minHeight: 70, borderWidth: 1, borderColor: '#C9A96240' }}
+              style={{ backgroundColor: colors.surface, color: colors.text, borderRadius: 10, padding: 12, fontSize: 15, minHeight: 70, borderWidth: 1, borderColor: '#C9A96240' }}
               testID="pending-draft-edit-input"
               dataSet={{ testid: 'pending-draft-edit-input' } as any}
             />
@@ -2438,7 +2524,7 @@ function ThreadScreen() {
                 setDraftEditing(true);
               }}
               disabled={draftBusy}
-              style={{ backgroundColor: colors.card, borderRadius: 10, paddingVertical: 11, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, borderWidth: 1, borderColor: '#C9A96255' }}
+              style={{ backgroundColor: colors.surface, borderRadius: 10, paddingVertical: 11, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, borderWidth: 1, borderColor: '#C9A96255' }}
               activeOpacity={0.8}
               testID="edit-draft-btn"
               dataSet={{ testid: 'edit-draft-btn' } as any}
@@ -2449,7 +2535,7 @@ function ThreadScreen() {
             <TouchableOpacity
               onPress={takeOverPendingDraft}
               disabled={draftBusy}
-              style={{ backgroundColor: colors.card, borderRadius: 10, paddingVertical: 11, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, borderWidth: 1, borderColor: '#C9A96255' }}
+              style={{ backgroundColor: colors.surface, borderRadius: 10, paddingVertical: 11, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, borderWidth: 1, borderColor: '#C9A96255' }}
               activeOpacity={0.8}
               testID="takeover-draft-btn"
               dataSet={{ testid: 'takeover-draft-btn' } as any}

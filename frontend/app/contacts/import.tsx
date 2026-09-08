@@ -9,6 +9,7 @@ import {
   Platform,
   Linking,
   TextInput,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -194,21 +195,48 @@ export default function ImportContactsScreen() {
     }
   };
 
-  // Phone import handler — sends in batches so 600+ contacts never hit one giant request/timeout
-  const handlePhoneImport = async () => {
+  // ── Import preview: show what the import WOULD do before anything is written ──
+  const [preview, setPreview] = useState<{ kind: 'phone' | 'csv'; payload: any[]; stats: any } | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+
+  const phonePayload = () => phoneContacts.filter(c => c.selected).map(c => ({
+    first_name: c.firstName || c.name.split(' ')[0] || 'Unknown',
+    last_name: c.lastName || c.name.split(' ').slice(1).join(' ') || '',
+    phone: c.phone || '',
+    email: c.email || '',
+    birthday: c.birthday || null,
+    tags: [],
+    notes: '',
+  }));
+
+  const openPreview = async (kind: 'phone' | 'csv') => {
     if (!user) return;
-    const selected = phoneContacts.filter(c => c.selected);
-    if (selected.length === 0) { showSimpleAlert('No Selection', 'Please select contacts to import'); return; }
+    const payload = kind === 'phone' ? phonePayload() : csvContacts.filter(c => c.selected);
+    if (payload.length === 0) { showSimpleAlert('No Selection', 'Please select contacts to import'); return; }
+    setPreviewing(true);
+    try {
+      const res = await api.post(`/contacts/${user._id}/import/preview?source=${kind === 'phone' ? 'phone_import' : 'csv'}`, payload, { timeout: 120000 });
+      setPreview({ kind, payload, stats: res.data });
+    } catch (error: any) {
+      const detail = error?.response?.data?.detail;
+      showSimpleAlert('Could not preview', typeof detail === 'string' ? detail : 'Check your connection and try again.');
+    } finally {
+      setPreviewing(false);
+    }
+  };
+
+  const confirmPreview = async () => {
+    if (!preview) return;
+    const { kind, payload } = preview;
+    setPreview(null);
+    if (kind === 'phone') await handlePhoneImport(payload);
+    else await handleCsvImport(payload);
+  };
+
+  // Phone import handler — sends in batches so 600+ contacts never hit one giant request/timeout
+  const handlePhoneImport = async (payload: any[]) => {
+    if (!user) return;
     setImporting(true);
-    const payload = selected.map(c => ({
-      first_name: c.firstName || c.name.split(' ')[0] || 'Unknown',
-      last_name: c.lastName || c.name.split(' ').slice(1).join(' ') || '',
-      phone: c.phone || '',
-      email: c.email || '',
-      birthday: c.birthday || null,
-      tags: [],
-      notes: '',
-    }));
     const BATCH = 150;
     let imported = 0, skipped = 0, failed = 0, sent = 0;
     try {
@@ -237,10 +265,8 @@ export default function ImportContactsScreen() {
   };
 
   // CSV import handler — uses backend confirm endpoint
-  const handleCsvImport = async () => {
+  const handleCsvImport = async (selected: any[]) => {
     if (!user) return;
-    const selected = csvContacts.filter(c => c.selected);
-    if (selected.length === 0) { showSimpleAlert('No Selection', 'Please select contacts to import'); return; }
     setImporting(true);
     try {
       const tagParam = listTag.trim() ? `?list_tag=${encodeURIComponent(listTag.trim())}` : '';
@@ -281,6 +307,47 @@ export default function ImportContactsScreen() {
 
   const selectedCsvCount = csvContacts.filter(c => c.selected).length;
   const selectedPhoneCount = phoneContacts.filter(c => c.selected).length;
+
+  const previewSheet = (
+    <Modal visible={!!preview} transparent animationType="slide" onRequestClose={() => setPreview(null)}>
+      <View style={styles.sheetBackdrop}>
+        <View style={styles.sheet} testID="import-preview-sheet" dataSet={{ testid: 'import-preview-sheet' } as any}>
+          <Text style={styles.sheetEyebrow}>BEFORE YOU IMPORT</Text>
+          <Text style={styles.sheetTitle} testID="import-preview-title" dataSet={{ testid: 'import-preview-title' } as any}>
+            {preview?.stats?.new || 0} new contact{preview?.stats?.new === 1 ? '' : 's'}
+          </Text>
+          <Text style={styles.sheetSub}>out of {preview?.stats?.total || 0} selected</Text>
+          {[
+            { n: preview?.stats?.already_have, icon: 'people', color: '#8E8E93', label: 'already in your contacts (skipped)' },
+            { n: preview?.stats?.with_birthday, icon: 'gift', color: '#C9A962', label: 'have birthdays, ready for automatic birthday texts' },
+            { n: preview?.stats?.with_email, icon: 'mail', color: '#007AFF', label: 'have an email address' },
+            { n: preview?.stats?.no_phone, icon: 'call-outline', color: '#8E8E93', label: 'have no phone number (saved, but no texting)' },
+            { n: preview?.stats?.dates_dropped, icon: 'calendar-outline', color: '#FF9500', label: 'had a date we could not read (contact still imports)' },
+            { n: preview?.stats?.failed, icon: 'alert-circle', color: '#FF3B30', label: "couldn't be read and will be skipped" },
+          ].filter(r => (r.n || 0) > 0).map(r => (
+            <View key={r.label} style={styles.sheetRow} testID={`import-preview-row-${r.icon}`} dataSet={{ testid: `import-preview-row-${r.icon}` } as any}>
+              <Ionicons name={r.icon as any} size={18} color={r.color} />
+              <Text style={styles.sheetRowText}><Text style={{ fontWeight: '800', color: colors.text }}>{r.n}</Text> {r.label}</Text>
+            </View>
+          ))}
+          <TouchableOpacity
+            style={[styles.importActionButton, { marginTop: 18, opacity: (preview?.stats?.new || 0) === 0 ? 0.5 : 1 }]}
+            onPress={confirmPreview}
+            disabled={(preview?.stats?.new || 0) === 0}
+            testID="import-preview-confirm-btn" dataSet={{ testid: 'import-preview-confirm-btn' } as any}
+          >
+            <Ionicons name="download" size={20} color="#fff" />
+            <Text style={styles.importActionText}>
+              {(preview?.stats?.new || 0) === 0 ? 'Nothing new to import' : `Import ${preview?.stats?.new} contact${preview?.stats?.new === 1 ? '' : 's'}`}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setPreview(null)} style={styles.sheetCancel} testID="import-preview-cancel-btn" dataSet={{ testid: 'import-preview-cancel-btn' } as any}>
+            <Text style={styles.sheetCancelText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
 
   // ---- RENDER: Source selection ----
   if (importMode === 'select') {
@@ -358,8 +425,8 @@ export default function ImportContactsScreen() {
             <Ionicons name="chevron-back" size={28} color="#007AFF" />
           </TouchableOpacity>
           <Text style={styles.title}>Phone Contacts</Text>
-          <TouchableOpacity onPress={handlePhoneImport} style={styles.importButton} disabled={importing || selectedPhoneCount === 0}>
-            {importing ? <ActivityIndicator size="small" color="#007AFF" /> : (
+          <TouchableOpacity onPress={() => openPreview('phone')} style={styles.importButton} disabled={importing || previewing || selectedPhoneCount === 0}>
+            {(importing || previewing) ? <ActivityIndicator size="small" color="#007AFF" /> : (
               <Text style={[styles.importButtonText, selectedPhoneCount === 0 && styles.importButtonDisabled]}>Import</Text>
             )}
           </TouchableOpacity>
@@ -409,8 +476,8 @@ export default function ImportContactsScreen() {
         />
         {selectedPhoneCount > 0 && (
           <View style={styles.bottomBar}>
-            <TouchableOpacity style={styles.importActionButton} onPress={handlePhoneImport} disabled={importing} testID="phone-import-btn" dataSet={{ testid: 'phone-import-btn' } as any}>
-              {importing ? (
+            <TouchableOpacity style={styles.importActionButton} onPress={() => openPreview('phone')} disabled={importing || previewing} testID="phone-import-btn" dataSet={{ testid: 'phone-import-btn' } as any}>
+              {(importing || previewing) ? (
                 <>
                   <ActivityIndicator size="small" color="#fff" />
                   {!!importProgress && <Text style={styles.importActionText} testID="phone-import-progress" dataSet={{ testid: 'phone-import-progress' } as any}>Importing {importProgress}</Text>}
@@ -424,6 +491,7 @@ export default function ImportContactsScreen() {
             </TouchableOpacity>
           </View>
         )}
+        {previewSheet}
       </SafeAreaView>
     );
   }
@@ -436,8 +504,8 @@ export default function ImportContactsScreen() {
           <Ionicons name="chevron-back" size={28} color="#007AFF" />
         </TouchableOpacity>
         <Text style={styles.title}>CSV Preview</Text>
-        <TouchableOpacity onPress={handleCsvImport} style={styles.importButton} disabled={importing || selectedCsvCount === 0}>
-          {importing ? <ActivityIndicator size="small" color="#007AFF" /> : (
+        <TouchableOpacity onPress={() => openPreview('csv')} style={styles.importButton} disabled={importing || previewing || selectedCsvCount === 0}>
+          {(importing || previewing) ? <ActivityIndicator size="small" color="#007AFF" /> : (
             <Text style={[styles.importButtonText, selectedCsvCount === 0 && styles.importButtonDisabled]}>Import</Text>
           )}
         </TouchableOpacity>
@@ -542,8 +610,8 @@ export default function ImportContactsScreen() {
 
       {selectedCsvCount > 0 && (
         <View style={styles.bottomBar}>
-          <TouchableOpacity style={styles.importActionButton} onPress={handleCsvImport} disabled={importing}>
-            {importing ? <ActivityIndicator size="small" color="#fff" /> : (
+          <TouchableOpacity style={styles.importActionButton} onPress={() => openPreview('csv')} disabled={importing || previewing} testID="csv-import-btn" dataSet={{ testid: 'csv-import-btn' } as any}>
+            {(importing || previewing) ? <ActivityIndicator size="small" color="#fff" /> : (
               <>
                 <Ionicons name="download" size={20} color="#fff" />
                 <Text style={styles.importActionText}>Import {selectedCsvCount} Contact{selectedCsvCount !== 1 ? 's' : ''}</Text>
@@ -552,11 +620,21 @@ export default function ImportContactsScreen() {
           </TouchableOpacity>
         </View>
       )}
+      {previewSheet}
     </SafeAreaView>
   );
 }
 
 const getStyles = (colors: any) => StyleSheet.create({
+  sheetBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: colors.card, borderTopLeftRadius: 22, borderTopRightRadius: 22, paddingHorizontal: 22, paddingTop: 20, paddingBottom: 34 },
+  sheetEyebrow: { fontSize: 11, fontWeight: '800', letterSpacing: 1.2, color: '#C9A962', marginBottom: 6 },
+  sheetTitle: { fontSize: 26, fontWeight: '800', color: colors.text },
+  sheetSub: { fontSize: 14, color: colors.textSecondary, marginBottom: 14 },
+  sheetRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderTopWidth: 1, borderTopColor: colors.border },
+  sheetRowText: { flex: 1, fontSize: 14, color: colors.textSecondary, lineHeight: 19 },
+  sheetCancel: { alignItems: 'center', paddingVertical: 14 },
+  sheetCancelText: { fontSize: 15, fontWeight: '600', color: colors.textSecondary },
   container: { flex: 1, backgroundColor: colors.bg },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: colors.surface },
   backButton: { padding: 4 },

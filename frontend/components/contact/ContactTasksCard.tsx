@@ -219,6 +219,23 @@ export default function ContactTasksCard({ colors, userId, contactId, contact, f
               )}
               <ActionBtn green icon="checkmark" label="Done" onPress={() => complete(featured)} testid="contact-task-done-btn" colors={colors} />
             </View>
+            {featured.pending_change && (
+              <TouchableOpacity
+                onPress={() => router.push(`/thread/${featured.pending_change.conversation_id}` as any)}
+                activeOpacity={0.7}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 12, backgroundColor: '#FF950018', borderWidth: 1, borderColor: '#FF950066' }}
+                testID="contact-task-change-chip"
+                dataSet={{ testid: 'contact-task-change-chip' } as any}
+              >
+                <Ionicons name={featured.pending_change.action === 'cancel' ? 'calendar-clear' : 'swap-horizontal'} size={13} color="#FF9500" />
+                <Text style={{ flex: 1, fontSize: 12, fontWeight: '700', color: '#FF9500' }} numberOfLines={2}>
+                  {featured.pending_change.action === 'cancel'
+                    ? `${featured.pending_change.contact_first || 'They'} can't make it · tap to respond`
+                    : `${featured.pending_change.contact_first || 'They'} asked to move it${featured.pending_change.new_label ? ` to ${featured.pending_change.new_label}` : ''} · tap to approve`}
+                </Text>
+                <Ionicons name="chevron-forward" size={14} color="#FF9500" />
+              </TouchableOpacity>
+            )}
             {canInvite(featured) && (
               <TouchableOpacity
                 onPress={() => sendInvite(featured)}

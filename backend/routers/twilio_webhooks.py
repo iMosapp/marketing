@@ -412,12 +412,24 @@ async def incoming_message(
         except Exception as kt_err:
             logger.warning(f"[KeywordTag] schedule failed: {kt_err}")
 
-        # ── "call me Thursday" -> task on the contact (fire-and-forget, never touches routing) ──
+        # ── "call me Thursday" -> task on the contact; "can we do 3 instead" -> reschedule request (fire-and-forget) ──
         try:
             from routers.tasks import extract_task_from_text, text_has_schedule_hint
-            if text_has_schedule_hint(Body or ""):
+            from services.appointment_changes import detect_appointment_change, CHANGE_HINT
+            _body = Body or ""
+            if text_has_schedule_hint(_body) or CHANGE_HINT.search(_body):
                 _cn = (contact.get("name") or f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip() or f"({from_phone[-4:]})")
-                asyncio.create_task(extract_task_from_text(user_id, contact_id, _cn, Body or "", str(msg_insert.inserted_id)))
+
+                async def _sched_hooks(mid=str(msg_insert.inserted_id), body=_body, cn=_cn):
+                    change = None
+                    try:
+                        change = await detect_appointment_change(user_id, contact_id, conversation_id, body, mid)
+                    except Exception as rs_err:
+                        logger.warning(f"[Reschedule] detect failed: {rs_err}")
+                    if not change and text_has_schedule_hint(body):
+                        await extract_task_from_text(user_id, contact_id, cn, body, mid)
+
+                asyncio.create_task(_sched_hooks())
         except Exception as tx_err:
             logger.warning(f"[TaskExtract] schedule failed: {tx_err}")
 

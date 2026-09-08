@@ -8,7 +8,7 @@ Tasks come from 3 sources:
 3. Manual (user creates follow-up reminders on a contact)
 Plus system-generated tasks for dormant contacts.
 """
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Body
 from bson import ObjectId
 from datetime import datetime, timezone, timedelta
 from typing import Optional
@@ -19,6 +19,7 @@ from cachetools import TTLCache
 
 from routers.database import get_db, get_user_by_id
 from services.calendar_invite import should_auto_invite, schedule_invite, send_calendar_invite, invite_eligible
+from services.appointment_changes import serialize_change, list_changes, approve_change, decline_change
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 logger = logging.getLogger(__name__)
@@ -524,9 +525,39 @@ async def get_contact_tasks(user_id: str, contact_id: str, limit: int = 20):
             overdue = due < now if t.get("has_time") else due < today_start
         d = _serialize(t)
         d["is_overdue"] = overdue
+        if t.get("pending_change_id") and ObjectId.is_valid(t["pending_change_id"]):
+            ch = await db.appointment_changes.find_one({"_id": ObjectId(t["pending_change_id"]), "status": "pending"})
+            d["pending_change"] = serialize_change(ch) if ch else None
         out.append(d)
     out.sort(key=lambda d: (not d["is_overdue"], d.get("due_date") or "9999"))
     return {"tasks": out, "count": len(out)}
+
+
+@router.get("/{user_id}/changes")
+async def get_appointment_changes(user_id: str, conversation_id: str = None, contact_id: str = None, status: str = "pending"):
+    """Customer-requested reschedules/cancellations waiting on the rep."""
+    return {"changes": await list_changes(user_id, conversation_id=conversation_id, contact_id=contact_id, status=status)}
+
+
+@router.post("/{user_id}/changes/{change_id}/approve")
+async def approve_appointment_change(user_id: str, change_id: str, body: dict = Body(default={})):
+    """Moves (or cancels) the appointment and texts the customer; drops Jessi's held draft."""
+    if not ObjectId.is_valid(change_id):
+        raise HTTPException(status_code=404, detail="Change request not found")
+    try:
+        return await approve_change(change_id, user_id, (body or {}).get("new_due"))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/{user_id}/changes/{change_id}/decline")
+async def decline_appointment_change(user_id: str, change_id: str):
+    if not ObjectId.is_valid(change_id):
+        raise HTTPException(status_code=404, detail="Change request not found")
+    try:
+        return await decline_change(change_id, user_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 _TEAM_ROLES = ("super_admin", "admin", "manager", "store_manager", "org_admin")
