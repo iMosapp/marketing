@@ -8,6 +8,27 @@ import { Platform } from 'react-native';
 
 const BIOMETRIC_CREDENTIALS_KEY = 'mvpline_biometric_credentials';
 const BIOMETRIC_ENABLED_KEY = 'mvpline_biometric_enabled';
+const BIOMETRIC_OFFER_SNOOZE_KEY = 'imos_biometric_offer_snoozed_until';
+const OFFER_SNOOZE_DAYS = 7;
+
+/** Post-login "Turn on Face ID?" offer: shown unless the user said "Not Now" within the last 7 days. */
+export async function shouldOfferBiometricSetup(): Promise<boolean> {
+  try {
+    const until = await SecureStore.getItemAsync(BIOMETRIC_OFFER_SNOOZE_KEY);
+    return !until || Date.now() > Number(until);
+  } catch {
+    return false;
+  }
+}
+
+export async function snoozeBiometricOffer(): Promise<void> {
+  try {
+    const until = Date.now() + OFFER_SNOOZE_DAYS * 24 * 60 * 60 * 1000;
+    await SecureStore.setItemAsync(BIOMETRIC_OFFER_SNOOZE_KEY, String(until));
+  } catch (error) {
+    console.error('Error snoozing biometric offer:', error);
+  }
+}
 
 export interface BiometricCredentials {
   email: string;

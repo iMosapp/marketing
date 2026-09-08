@@ -30,8 +30,12 @@ import {
   authenticateWithBiometric,
   enableBiometricLogin,
   getBiometricIcon,
+  shouldOfferBiometricSetup,
+  snoozeBiometricOffer,
   BiometricStatus,
 } from '../../utils/biometrics';
+
+const GOLD = '#C9A962';
 
 // Helper to get the right landing page based on user role
 const getDefaultRoute = (role?: string): string => {
@@ -156,7 +160,8 @@ export default function LoginScreen() {
   // Biometric state
   const [biometricStatus, setBiometricStatus] = useState<BiometricStatus | null>(null);
   const [showBiometricPrompt, setShowBiometricPrompt] = useState(false);
-  const [pendingCredentials, setPendingCredentials] = useState<{email: string; password: string} | null>(null);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [enablingBiometric, setEnablingBiometric] = useState(false);
   
   useEffect(() => {
     // Check biometric support on mount
@@ -282,6 +287,20 @@ export default function LoginScreen() {
         const hasBio = !!((loggedInUser as any)?.persona?.bio || (loggedInUser as any)?.bio);
         const profileComplete = loggedInUser?.onboarding_complete === true || (hasPhoto && hasBio);
         const landingRoute = getProfileGatedRoute(loggedInUser);
+
+        // First password login on a Face ID / Touch ID device: offer to turn it on.
+        // Shown INSTEAD of navigating (never during it) to avoid the old iOS crash.
+        if (
+          Platform.OS !== 'web' &&
+          biometricStatus?.isAvailable &&
+          !biometricStatus.isEnabled &&
+          (await shouldOfferBiometricSetup())
+        ) {
+          setLoading(false);
+          setPendingEmail(email.trim().toLowerCase());
+          setShowBiometricPrompt(true);
+          return;
+        }
         
         // Navigate — small delay lets iOS settle before mounting the full tabs
         try {
@@ -291,9 +310,6 @@ export default function LoginScreen() {
           console.error('[Login] Navigation error:', navErr);
           router.replace('/(tabs)/home' as any);
         }
-
-        // Biometric setup is available via My Presence → Settings
-        // Do NOT show modal here — triggers during navigation causing EXC_BAD_ACCESS crash
 
         return; // Success — exit the retry loop
       } catch (error: any) {
@@ -403,34 +419,33 @@ export default function LoginScreen() {
     }
   };
   
+  const finishToApp = () => {
+    setShowBiometricPrompt(false);
+    setPendingEmail(null);
+    const loggedInUser = useAuthStore.getState().user;
+    // Let the modal fully dismiss before mounting tabs (iOS)
+    setTimeout(() => router.replace(getProfileGatedRoute(loggedInUser) as any), 150);
+  };
+
   const handleEnableBiometric = async () => {
-    if (!pendingCredentials) return;
-    
+    if (!pendingEmail || enablingBiometric) return;
+    setEnablingBiometric(true);
     // Store the session token, never the password
     const tok = useAuthStore.getState().token;
-    const success = await enableBiometricLogin({ email: pendingCredentials.email, token: tok || undefined });
-    const loggedInUser = useAuthStore.getState().user;
-    const defaultRoute = getDefaultRoute(loggedInUser?.role);
-    
+    const success = await enableBiometricLogin({ email: pendingEmail, token: tok || undefined });
+    setEnablingBiometric(false);
     if (success) {
-      showAlert(
-        'Success',
-        `${biometricStatus?.biometricLabel} login enabled! You can now login faster.`,
-        [{ text: 'OK', onPress: () => router.replace(getProfileGatedRoute(loggedInUser) as any) }]
-      );
+      try { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); } catch {}
+      setBiometricStatus(prev => prev ? { ...prev, isEnabled: true } : prev);
     } else {
-      router.replace(getProfileGatedRoute(loggedInUser) as any);
+      await snoozeBiometricOffer();
     }
-    
-    setShowBiometricPrompt(false);
-    setPendingCredentials(null);
+    finishToApp();
   };
   
-  const handleSkipBiometric = () => {
-    setShowBiometricPrompt(false);
-    setPendingCredentials(null);
-    const loggedInUser = useAuthStore.getState().user;
-    router.replace(getProfileGatedRoute(loggedInUser) as any);
+  const handleSkipBiometric = async () => {
+    await snoozeBiometricOffer();
+    finishToApp();
   };
   
   return (
@@ -687,39 +702,45 @@ export default function LoginScreen() {
         onRequestClose={handleSkipBiometric}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={styles.modalContent} testID="biometric-offer-card" dataSet={{ testid: 'biometric-offer-card' } as any}>
             <View style={styles.modalIcon}>
               <Ionicons
                 name={getBiometricIcon(biometricStatus?.biometricType || 'none') as any}
-                size={48}
-                color="#34C759"
+                size={44}
+                color={GOLD}
               />
             </View>
             
             <Text style={styles.modalTitle}>
-              Enable {biometricStatus?.biometricLabel}?
+              Turn on {biometricStatus?.biometricLabel}?
             </Text>
             
             <Text style={styles.modalDescription}>
-              Login faster next time using {biometricStatus?.biometricLabel}. 
-              Your credentials will be stored securely on this device.
+              Skip the password next time. Nothing but a secure session key is kept on this phone, and you can change this anytime in Settings.
             </Text>
             
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.modalButtonSecondary}
-                onPress={handleSkipBiometric}
-              >
-                <Text style={styles.modalButtonSecondaryText}>Not Now</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.modalButtonPrimary}
-                onPress={handleEnableBiometric}
-              >
-                <Text style={styles.modalButtonPrimaryText}>Enable</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={[styles.modalButtonPrimary, enablingBiometric && styles.buttonDisabled]}
+              onPress={handleEnableBiometric}
+              disabled={enablingBiometric}
+              activeOpacity={0.85}
+              testID="biometric-offer-enable" dataSet={{ testid: 'biometric-offer-enable' } as any}
+            >
+              <Ionicons name={getBiometricIcon(biometricStatus?.biometricType || 'none') as any} size={20} color="#111111" />
+              <Text style={styles.modalButtonPrimaryText}>
+                {enablingBiometric ? 'Confirming...' : `Enable ${biometricStatus?.biometricLabel}`}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalButtonSecondary}
+              onPress={handleSkipBiometric}
+              disabled={enablingBiometric}
+              activeOpacity={0.7}
+              testID="biometric-offer-skip" dataSet={{ testid: 'biometric-offer-skip' } as any}
+            >
+              <Text style={styles.modalButtonSecondaryText}>Not Now</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -913,63 +934,64 @@ const getStyles = (colors: any) => StyleSheet.create({
     padding: 24,
   },
   modalContent: {
-    backgroundColor: colors.card,
-    borderRadius: 20,
-    padding: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 28,
     width: '100%',
     maxWidth: 340,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(201,169,98,0.45)',
   },
   modalIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#007AFF20',
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: 'rgba(201,169,98,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(201,169,98,0.5)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
   },
   modalTitle: {
     fontSize: 22,
-    fontWeight: 'bold',
-    color: colors.text,
+    fontWeight: '800',
+    color: '#111111',
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   modalDescription: {
-    fontSize: 17,
-    color: colors.textSecondary,
+    fontSize: 15,
+    color: '#6E6E73',
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 21,
     marginBottom: 24,
   },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-  },
   modalButtonSecondary: {
-    flex: 1,
-    backgroundColor: colors.surface,
-    borderRadius: 12,
-    padding: 14,
+    width: '100%',
+    paddingVertical: 14,
     alignItems: 'center',
+    marginTop: 6,
   },
   modalButtonSecondaryText: {
-    color: colors.text,
-    fontSize: 18,
+    color: '#6E6E73',
+    fontSize: 16,
     fontWeight: '600',
   },
   modalButtonPrimary: {
-    flex: 1,
-    backgroundColor: '#007AFF',
-    borderRadius: 12,
-    padding: 14,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
+    gap: 8,
+    backgroundColor: GOLD,
+    borderRadius: 999,
+    paddingVertical: 15,
   },
   modalButtonPrimaryText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
+    color: '#111111',
+    fontSize: 17,
+    fontWeight: '700',
   },
 });
