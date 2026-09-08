@@ -514,7 +514,8 @@ function ThreadScreen() {
   const contactName = displayContactName
     || ((contact_name as string)?.trim() && (contact_name as string).trim() !== 'Contact' ? (contact_name as string).trim() : null)
     || (contact_phone ? `(${(contact_phone as string).slice(-4)})` : 'Contact');
-  const contactPhone = (contact_phone as string) || '';
+  const [loadedContactPhone, setLoadedContactPhone] = useState('');
+  const contactPhone = (contact_phone as string) || loadedContactPhone;
   const [actualConversationId, setActualConversationId] = useState<string | null>(null);
   // Initialize with param photo if available, will be overwritten by API if different
   const [contactPhoto, setContactPhoto] = useState<string | null>(
@@ -556,6 +557,9 @@ function ThreadScreen() {
       if (response.data?.contact_photo) {
         setContactPhoto(resolvePhotoUrl(response.data.contact_photo));
       }
+      if (response.data?.contact_phone) {
+        setLoadedContactPhone(response.data.contact_phone);
+      }
       // Check if contact email exists in conversation info
       const loadedEmail = response.data?.contact_email || response.data?.contact_email_work;
       if (loadedEmail && !savedContactEmail) {
@@ -574,6 +578,8 @@ function ThreadScreen() {
         if (contactEmail && !savedContactEmail) {
           setSavedContactEmail(contactEmail);
         }
+        const contactPh = contactResponse.data?.phone || contactResponse.data?.phone_mobile;
+        if (contactPh) setLoadedContactPhone(contactPh);
         // Since we loaded from contact directly, id IS the contact_id
         if (!contactIdForNav) {
           setContactIdForNav(id as string);

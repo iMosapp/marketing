@@ -413,3 +413,10 @@ DELIVERY: backend deploy + eas update --branch production.
 - One-off transform script: marketing/swap_home.py (already run; do not re-run). generate_pages.py remains OUT OF SYNC with built pages - never regenerate blindly.
 - Verified locally (python http.server on build/): / 200, /platform/ 200, /features /pricing /help /demo 200, no em dashes, screenshot of new hero + nav OK.
 - SHIP: static site only. User saves to GitHub; Vercel/Netlify redeploys the marketing site. No backend or eas update needed.
+
+## Thread "No Phone" on Call Fix (June 2026) - DONE, verified in preview (USER-REPORTED from prod screenshot)
+- Bug: opening a lead thread from the Home lead alert / push / inbox queue / anywhere that pushes plain `/thread/{id}` and tapping Call showed "No phone number for this contact." even though the intake text had just been sent.
+- Root cause: thread/[id].tsx derived `contactPhone` ONLY from the `contact_phone` URL param; ~20 entry points open `/thread/{id}` without it.
+- Fix: new `loadedContactPhone` state filled from GET /messages/conversation/{id}/info (contact_phone) or the contact record fallback (phone/phone_mobile); `contactPhone = param || loaded`. Header phone line, Call pill, composer call icon, share links all use it.
+- Verified on preview: /thread/6a9bac3b62b000abb6c965ee opened with no params -> header shows (500) 555-0377, Call -> /call-screen?phone=+15005550377 (no alert).
+- SHIP: frontend only -> `cd frontend && eas update --branch production --message "Fix Call button No Phone on lead threads"`
