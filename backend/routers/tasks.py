@@ -18,6 +18,7 @@ import re
 from cachetools import TTLCache
 
 from routers.database import get_db, get_user_by_id
+from services.calendar_invite import should_auto_invite, schedule_invite, send_calendar_invite, invite_eligible
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 logger = logging.getLogger(__name__)
@@ -226,7 +227,7 @@ def count_texts(activity: dict) -> int:
 def _serialize(task: dict) -> dict:
     """Serialize a task for JSON response."""
     task["_id"] = str(task["_id"])
-    for key in ("due_date", "created_at", "completed_at", "snoozed_until"):
+    for key in ("due_date", "created_at", "completed_at", "snoozed_until", "invite_sent_at", "customer_reminder_sent_at"):
         val = task.get(key)
         if isinstance(val, datetime):
             task[key] = val.isoformat()
@@ -863,6 +864,8 @@ async def _extract_commitment(user_id: str, contact_id: str, contact_name: str, 
     }
     result = await db.tasks.insert_one(task)
     task_id = str(result.inserted_id)
+    if should_auto_invite({**task, "_id": result.inserted_id}):
+        await schedule_invite(task_id, delay_s=5)
 
     label = local_dt.strftime("%a %b %-d · %-I:%M %p") if has_time else local_dt.strftime("%a %b %-d")
     head = "Task added" if is_text else "Appointment added"
@@ -958,6 +961,8 @@ async def create_task(user_id: str, task_data: dict):
     result = await db.tasks.insert_one(task)
     task["_id"] = str(result.inserted_id)
     logger.info(f"Manual task created: '{title}' for user {user_id}")
+    if should_auto_invite({**task, "_id": result.inserted_id}):
+        await schedule_invite(task["_id"])
 
     # Log as contact_event so it appears in the contact's activity timeline
     if contact_id:
@@ -1130,9 +1135,34 @@ async def update_task(user_id: str, task_id: str, update_data: dict):
 
     if updates:
         await db.tasks.update_one({"_id": ObjectId(task_id)}, {"$set": updates})
+        if action == "edit" and "due_date" in updates and task.get("invite_sent_at") and updates["due_date"] != _as_utc(task.get("due_date")):
+            await db.tasks.update_one({"_id": ObjectId(task_id)}, {"$unset": {"customer_reminder_sent_at": "", "customer_reminder_skipped": ""}})
+            await schedule_invite(task_id, reason="updated")
 
     updated = await db.tasks.find_one({"_id": ObjectId(task_id)})
     return _serialize(updated)
+
+
+@router.post("/{user_id}/{task_id}/send-invite")
+async def send_task_invite(user_id: str, task_id: str):
+    """Rep taps 'Text calendar invite' on an appointment (or resends it)."""
+    db = get_db()
+    task = await db.tasks.find_one({"_id": ObjectId(task_id), "user_id": user_id}) if ObjectId.is_valid(task_id) else None
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if not invite_eligible(task):
+        raise HTTPException(status_code=400, detail="Only appointments with a time and a contact can send a calendar invite")
+    res = await send_calendar_invite(task_id, reason="manual" if not task.get("invite_sent_at") else "updated", force=True)
+    if not res.get("sent"):
+        reason = res.get("skipped") or "send failed"
+        msg = {"past": "That appointment time has already passed", "no_phone_or_email": "This contact has no phone or email",
+               "closed": "This appointment is already done"}.get(reason)
+        if not msg:
+            sms_err = res.get("sms") is False and not res.get("email")
+            msg = "Add your texting number first (Twilio) to send invites" if sms_err and not await get_db().users.find_one(
+                {"_id": ObjectId(user_id), "$or": [{"twilio_number": {"$nin": [None, ""]}}, {"mvpline_number": {"$nin": [None, ""]}}]}, {"_id": 1}) else "Could not send the invite"
+        raise HTTPException(status_code=400, detail=msg)
+    return {"success": True, **res}
 
 
 # Keep legacy PUT for backward compat

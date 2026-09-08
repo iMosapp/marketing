@@ -2223,6 +2223,19 @@ def start_scheduler():
         misfire_grace_time=300,
     )
 
+    # Every 15 minutes — morning-of appointment reminder texts to customers (8 AM local, booked before today)
+    async def _run_customer_appt_reminders():
+        from services.calendar_invite import send_customer_appointment_reminders
+        await send_customer_appointment_reminders()
+
+    scheduler.add_job(
+        safe_job(_run_customer_appt_reminders),
+        IntervalTrigger(minutes=15),
+        id="customer_appointment_reminders",
+        replace_existing=True,
+        misfire_grace_time=600,
+    )
+
     scheduler.start()
 
     # ── Watchdog: verify jobs registered correctly ────────────────────────────

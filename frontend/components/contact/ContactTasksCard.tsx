@@ -92,6 +92,7 @@ export default function ContactTasksCard({ colors, userId, contactId, contact, f
 
   const featured = useMemo(() => tasks.find(t => t._id === featuredId) || tasks[0] || null, [tasks, featuredId]);
   const [sendingJT, setSendingJT] = useState(false);
+  const [sendingInvite, setSendingInvite] = useState(false);
   const others = tasks.filter(t => t !== featured);
   const visibleOthers = showAll ? others : others.slice(0, 2);
   const hiddenCount = others.length - visibleOthers.length;
@@ -163,6 +164,19 @@ export default function ContactTasksCard({ colors, userId, contactId, contact, f
     });
   };
 
+  const sendInvite = async (t: any) => {
+    if (sendingInvite) return;
+    setSendingInvite(true);
+    try {
+      const r = await api.post(`/tasks/${userId}/${t._id}/send-invite`);
+      const via = (r.data.channels || []).map((c: string) => c === 'sms' ? 'texted' : 'emailed').join(' + ') || 'sent';
+      showToast?.(`Calendar invite ${via} to ${r.data.first || 'them'}`, 'success');
+      setTasks(prev => prev.map(x => x._id === t._id ? { ...x, invite_sent_at: new Date().toISOString(), invite_channels: r.data.channels } : x));
+    } catch (e: any) { showToast?.(e?.response?.data?.detail || 'Could not send the invite', 'error'); }
+    finally { setSendingInvite(false); }
+  };
+  const canInvite = (t: any) => taskKind(t) === 'appointment' && t.has_time && !!(contact?.phone || contact?.email);
+
   const fw = featured ? whenLabel(featured) : null;
   const fKind = featured ? taskKind(featured) : 'task';
   const accent = fw?.overdue ? RED : GOLD;
@@ -205,6 +219,23 @@ export default function ContactTasksCard({ colors, userId, contactId, contact, f
               )}
               <ActionBtn green icon="checkmark" label="Done" onPress={() => complete(featured)} testid="contact-task-done-btn" colors={colors} />
             </View>
+            {canInvite(featured) && (
+              <TouchableOpacity
+                onPress={() => sendInvite(featured)}
+                disabled={sendingInvite}
+                activeOpacity={0.7}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, backgroundColor: featured.invite_sent_at ? `${GREEN}15` : `${GOLD}18`, borderWidth: 1, borderColor: featured.invite_sent_at ? `${GREEN}55` : `${GOLD}66` }}
+                testID="contact-task-invite-btn"
+                dataSet={{ testid: 'contact-task-invite-btn' } as any}
+              >
+                <Ionicons name={featured.invite_sent_at ? 'calendar' : 'calendar-outline'} size={13} color={featured.invite_sent_at ? GREEN : GOLD} />
+                <Text style={{ fontSize: 12, fontWeight: '700', color: featured.invite_sent_at ? GREEN : GOLD }} testID="contact-task-invite-status" dataSet={{ testid: 'contact-task-invite-status' } as any}>
+                  {sendingInvite ? 'Sending...' : featured.invite_sent_at
+                    ? `Calendar invite ${(featured.invite_channels || []).includes('email') ? 'texted + emailed' : 'texted'} · Resend`
+                    : 'Text calendar invite'}
+                </Text>
+              </TouchableOpacity>
+            )}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 10 }}>
               <Ionicons name="alarm-outline" size={13} color={colors.textTertiary} />
               <Text style={{ fontSize: 12, color: colors.textTertiary, fontWeight: '600' }}>Snooze</Text>

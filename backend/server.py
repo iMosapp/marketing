@@ -587,8 +587,9 @@ async def get_branding_logo():
 # ============= INCLUDE ROUTERS =============
 api_router.include_router(auth.router)
 api_router.include_router(contact_events.router)
-from routers import crm_push
+from routers import crm_push, public_appt
 api_router.include_router(crm_push.router)
+api_router.include_router(public_appt.router)
 api_router.include_router(contacts.router)
 api_router.include_router(white_label.router)
 api_router.include_router(image_router.router)

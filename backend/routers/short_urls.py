@@ -142,6 +142,8 @@ def _detect_event_type(doc: dict) -> tuple:
         return "review_link_clicked", "Clicked Review Link", "star", "#FFD60A"
     if link_type == "vehicle_listing":
         return "vehicle_link_clicked", "Viewed Vehicle Online", "car-sport", "#32ADE6"
+    if link_type == "calendar_invite":
+        return "link_clicked", "Opened Calendar Invite", "calendar", "#C9A962"
     if link_type == "business_card" or "/p/" in original_url or "/card/" in original_url:
         return "digital_card_viewed", "Viewed Digital Card", "eye", "#007AFF"
     if "/showcase/" in original_url or link_type == "showcase":
@@ -941,6 +943,13 @@ async def redirect_short_url(short_code: str, request: Request):
             og_image = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
         else:
             og_image = f"{base_url}/og-image.png"
+
+    elif link_type == "calendar_invite" and user_id:
+        inv_user = await db.users.find_one({"_id": ObjectId(user_id)}, {"name": 1})
+        inv_first = ((inv_user or {}).get("name") or "your rep").split()[0]
+        og_title = f"Your appointment with {inv_first}"
+        og_description = "Tap to add it to your calendar"
+        og_image = f"{base_url}/api/s/og-image/{user_id}?v=2"
 
     elif user_id:
         # === NON-CARD LINK: Use store branding ===

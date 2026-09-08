@@ -55,6 +55,8 @@ export default function NotificationSettings() {
   const [urnThreshold, setUrnThreshold] = useState<number>(saved.you_are_needed_threshold    ?? 2);
   const [weeklyProof,  setWeeklyProof]  = useState<boolean>(saved.weekly_proof_push          ?? true);
   const [sourceHealth, setSourceHealth] = useState<boolean>(saved.source_health_alerts       ?? true);
+  const [calInvites,   setCalInvites]   = useState<boolean>(saved.calendar_invites           ?? true);
+  const [calReminder,  setCalReminder]  = useState<boolean>(saved.calendar_invite_reminder   ?? true);
   const isManager = ['super_admin', 'admin', 'manager', 'store_manager', 'org_admin'].includes((user as any)?.role);
   const [alertMode,    setAlertMode]    = useState<'both'|'push'|'sms'>((user as any)?.notification_mode || 'both');
   const [quietOn,      setQuietOn]      = useState(false);
@@ -84,6 +86,8 @@ export default function NotificationSettings() {
         you_are_needed_threshold:      urnThreshold,
         weekly_proof_push:             weeklyProof,
         source_health_alerts:          sourceHealth,
+        calendar_invites:              calInvites,
+        calendar_invite_reminder:      calReminder,
       };
       await api.patch(`/users/${user._id}`, { notification_settings: prefs });
       // Save alert delivery mode separately
@@ -358,6 +362,46 @@ export default function NotificationSettings() {
               </Text>
             </>
           )}
+        </View>
+
+        <Text style={[s.sectionLabel, { color: colors.textSecondary, marginTop: 24 }]}>TEXTS TO YOUR CUSTOMERS</Text>
+        <View style={[s.card, { backgroundColor: colors.card }]} testID="calendar-invite-card" dataSet={{ testid: 'calendar-invite-card' } as any}>
+          <View style={s.row}>
+            <View style={[s.iconWrap, { backgroundColor: '#C9A96220' }]}>
+              <Ionicons name="calendar" size={18} color="#C9A962" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[s.rowTitle, { color: colors.text }]}>Calendar invite when you book</Text>
+              <Text style={[s.rowSub, { color: colors.textSecondary }]}>
+                Book a timed appointment and the customer gets a text from your number with a one-tap Add to Calendar link (Apple, Google, Outlook). Emailed too when you have their email.
+              </Text>
+            </View>
+            <Switch
+              value={calInvites}
+              onValueChange={v => { setCalInvites(v); mark(); }}
+              trackColor={{ false: colors.border, true: '#C9A96280' }}
+              thumbColor={calInvites ? '#C9A962' : colors.textSecondary}
+              testID="calendar-invites-toggle"
+            />
+          </View>
+          <View style={[s.row, { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12, marginTop: 12 }]}>
+            <View style={[s.iconWrap, { backgroundColor: '#34C75920' }]}>
+              <Ionicons name="sunny" size={18} color="#34C759" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[s.rowTitle, { color: colors.text }]}>Morning-of reminder</Text>
+              <Text style={[s.rowSub, { color: colors.textSecondary }]}>
+                Around 8 AM on appointment day: "Quick reminder, you're set for 2:00 PM today. Reply if anything has changed." Skipped when booked that same day.
+              </Text>
+            </View>
+            <Switch
+              value={calReminder}
+              onValueChange={v => { setCalReminder(v); mark(); }}
+              trackColor={{ false: colors.border, true: '#C9A96280' }}
+              thumbColor={calReminder ? '#C9A962' : colors.textSecondary}
+              testID="calendar-reminder-toggle"
+            />
+          </View>
         </View>
 
         {isManager && (
