@@ -180,14 +180,12 @@ def render_front(qr, rep_first: str, sms_number: str) -> Image.Image:
     im = Image.new("RGBA", (P(W), P(H)), BG)
     d = ImageDraw.Draw(im)
 
-    logo = Image.open(ASSETS / "logo.png").convert("RGBA")
-    lw = 540
-    logo = logo.resize((P(lw), P(lw * logo.height / logo.width)), Image.LANCZOS)
+    tile = 540
     lx, ly = 95, 130
-    shadow(im, lw, logo.height / S, 0, lx, ly, blur=26, alpha=0.55, dy=22, mask=logo.split()[3])
-    composite(im, logo, P(lx), P(ly))
-
-    d.rectangle((P(670), P(140), P(672), P(660)), fill=(255, 255, 255, 90))
+    shadow(im, tile, tile, tile * 0.2237, lx, ly, blur=26, alpha=0.6, dy=22)
+    icon = Image.open(ASSETS / "icon.png").convert("RGBA").resize((P(tile), P(tile)), Image.LANCZOS)
+    icon.putalpha(rounded_mask(tile, tile, tile * 0.2237))
+    composite(im, icon, P(lx), P(ly))
 
     tx = 710
     end = text(d, tx, 130, "I'M ON ", font("mont9", 136), WHITE)
