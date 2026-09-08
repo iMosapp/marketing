@@ -72,6 +72,7 @@ export default function SchedulePage() {
   const [scheduleB, setScheduleB] = useState<WeekSchedule>({ ...EMPTY_WEEK });
   const [overrideUntil, setOverrideUntil] = useState<string|null>(null);
   const [isAvailable, setIsAvailable]     = useState(false);
+  const [status, setStatus]               = useState<any>(null);  // server-computed, in the rep's timezone
 
   // Day editor modal
   const [editDay, setEditDay]       = useState<Day|null>(null);
@@ -96,8 +97,9 @@ export default function SchedulePage() {
       setRotationAnchor(d.rotation_anchor || '');
       setScheduleA(d.weekly_schedule || { ...EMPTY_WEEK });
       setScheduleB(d.schedule_b || { ...EMPTY_WEEK });
-      setOverrideUntil(d.available_override_until || null);
+      setOverrideUntil(statusRes.data.override_until || null);
       setIsAvailable(statusRes.data.available);
+      setStatus(statusRes.data);
     } catch (e) {
       showToast('Failed to load schedule', 'error');
     } finally {
@@ -124,6 +126,8 @@ export default function SchedulePage() {
       // Refresh availability
       const r = await api.get(`/schedule/status/${user?._id}`);
       setIsAvailable(r.data.available);
+      setStatus(r.data);
+      setOverrideUntil(r.data.override_until || null);
     } catch (e: any) {
       showToast(e?.response?.data?.detail || 'Save failed', 'error');
     } finally {
@@ -145,8 +149,9 @@ export default function SchedulePage() {
         opt.clear ? { clear: true } : opt.eod ? { until_end_of_day: true } : { hours: opt.hours },
         { headers: { 'X-User-ID': user?._id } }
       );
-      setOverrideUntil(res.data.available_override_until);
+      setOverrideUntil(res.data.override_until || null);
       setIsAvailable(res.data.available);
+      setStatus(res.data);
       showToast(opt.clear ? 'Override cleared' : 'Override set. You\'re available', 'success');
     } catch {
       showToast('Failed to set override', 'error');
@@ -171,9 +176,16 @@ export default function SchedulePage() {
     return blocks.map(b => `${fmtTime(b.start)}–${fmtTime(b.end)}`).join(', ');
   };
 
-  const overrideLabel = overrideUntil
-    ? `Active until ${new Date(overrideUntil).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-    : null;
+  // Second line of the status pill. Times come from the server in the rep's timezone, never the device's.
+  const statusDetail = (() => {
+    if (!status) return null;
+    if (!status.enforced) return 'Respect My Schedule is off, so you are always reachable';
+    if (status.available) {
+      const until = status.available_until ? `Available until ${status.available_until}` : 'Available';
+      return status.override_until_label ? `${until} (manual override on)` : until;
+    }
+    return status.next_window ? `Back ${status.next_window.includes(' ') ? status.next_window : 'at ' + status.next_window}` : 'No hours set for today';
+  })();
 
   if (loading) {
     return <View style={s.center}><ActivityIndicator color={colors.accent} /></View>;
@@ -189,13 +201,29 @@ export default function SchedulePage() {
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 60 }}>
 
         {/* Live status pill */}
-        <View style={[s.statusPill, { backgroundColor: isAvailable ? '#34C75920' : '#FF3B3020', borderColor: isAvailable ? '#34C759' : '#FF3B30' }]}>
+        <View style={[s.statusPill, { backgroundColor: isAvailable ? '#34C75920' : '#FF3B3020', borderColor: isAvailable ? '#34C759' : '#FF3B30', flexWrap: 'wrap' }]} testID="schedule-status-pill" dataSet={{ testid: 'schedule-status-pill' } as any}>
           <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: isAvailable ? '#34C759' : '#FF3B30', marginRight: 8 }} />
           <Text style={{ color: isAvailable ? '#34C759' : '#FF3B30', fontWeight: '700', fontSize: 15 }}>
             {isAvailable ? 'Available now' : 'Off shift'}
           </Text>
-          {overrideLabel && <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 8 }}>({overrideLabel})</Text>}
+          {!!status?.today_hours && <Text style={{ color: colors.textSecondary, fontSize: 12, marginLeft: 8 }}>Today {status.today_hours}</Text>}
+          {!!statusDetail && (
+            <Text style={{ color: colors.textSecondary, fontSize: 12, width: '100%', marginTop: 4 }} testID="schedule-status-detail" dataSet={{ testid: 'schedule-status-detail' } as any}>
+              {statusDetail}{status?.local_time ? ` · ${status.local_time} ${(status.timezone || '').split('/').pop()?.replace('_', ' ')}` : ''}
+            </Text>
+          )}
         </View>
+        {!!overrideUntil && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: '#FF950014', borderWidth: 1, borderColor: '#FF950055' }} testID="schedule-override-banner" dataSet={{ testid: 'schedule-override-banner' } as any}>
+            <Ionicons name="flash" size={14} color="#FF9500" />
+            <Text style={{ flex: 1, color: colors.text, fontSize: 12 }}>
+              Manual override keeps you available until {status?.override_until_label || 'later'}, then your weekly hours take over.
+            </Text>
+            <TouchableOpacity onPress={() => setOverride(OVERRIDE_OPTIONS[3])} testID="schedule-override-clear" dataSet={{ testid: 'schedule-override-clear' } as any}>
+              <Text style={{ color: '#FF9500', fontWeight: '700', fontSize: 12 }}>Turn off</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Quiet mode toggle */}
         <View style={s.card}>

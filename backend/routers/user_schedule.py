@@ -228,7 +228,7 @@ async def next_available_window(user_id: str) -> Optional[str]:
 
     try:
         import pytz
-        tz = pytz.timezone(sched.get("timezone", "America/Denver"))
+        tz = pytz.timezone(await resolve_user_tz(user_id, sched))
         local_now = datetime.now(timezone.utc).astimezone(tz)
     except Exception:
         return None
@@ -359,8 +359,7 @@ async def set_availability_override(
         try:
             import pytz
             sched = await db.user_schedules.find_one({"user_id": x_user_id})
-            tz_str = (sched or {}).get("timezone", "America/Denver")
-            tz = pytz.timezone(tz_str)
+            tz = pytz.timezone(await resolve_user_tz(x_user_id, sched or {}))
             local = now.astimezone(tz)
             end_of_day = local.replace(hour=23, minute=59, second=59, microsecond=0)
             override_until = end_of_day.astimezone(timezone.utc).isoformat()
@@ -376,20 +375,74 @@ async def set_availability_override(
          "$setOnInsert": {"user_id": x_user_id, "created_at": now}},
         upsert=True,
     )
-    available = await is_user_available(x_user_id)
-    return {"available": available, "available_override_until": override_until}
+    return await availability_detail(x_user_id)
+
+
+def _fmt_local(hhmm: str) -> str:
+    try:
+        h, m = int(hhmm[:2]), int(hhmm[3:5])
+        return f"{(h % 12) or 12}:{m:02d} {'AM' if h < 12 else 'PM'}"
+    except Exception:
+        return hhmm
+
+
+async def availability_detail(user_id: str) -> dict:
+    """Everything the status pill needs, computed in the REP's timezone (never the device's):
+    available, whether the schedule is enforced, when the current availability ends, active override, next window."""
+    db = get_db()
+    sched = await db.user_schedules.find_one({"user_id": user_id}) or {}
+    tz_name = await resolve_user_tz(user_id, sched)
+    import pytz
+    tz = pytz.timezone(tz_name)
+    now = datetime.now(timezone.utc)
+    local_now = now.astimezone(tz)
+    enforced = bool(sched.get("notification_quiet"))
+
+    override_until, override_label = None, None
+    raw = sched.get("available_override_until")
+    if raw:
+        try:
+            odt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            if odt > now:
+                override_until = odt.isoformat()
+                ol = odt.astimezone(tz)
+                override_label = ol.strftime("%-I:%M %p") + ("" if ol.date() == local_now.date() else ol.strftime(" %a"))
+        except Exception:
+            pass
+
+    weekly = sched.get("schedule_b") if (sched.get("rotation_enabled") and _is_week_b(sched, local_now)) else sched.get("weekly_schedule", {})
+    weekly = weekly or {}
+    today_blocks = sorted(weekly.get(DAYS[local_now.weekday()], []), key=lambda b: b.get("start", ""))
+    today_label = ", ".join(f"{_fmt_local(b['start'])}–{_fmt_local(b['end'])}" for b in today_blocks) or None
+    cur = local_now.strftime("%H:%M")
+    in_block = next((b for b in today_blocks if b.get("start", "00:00") <= cur < b.get("end", "23:59")), None)
+
+    available = await is_user_available(user_id) if sched else True
+    until_label = None
+    if enforced and available:
+        if in_block:
+            until_label = _fmt_local(in_block["end"])
+        if override_label and (not in_block or (override_until and datetime.fromisoformat(override_until) > tz.localize(
+                datetime.combine(local_now.date(), datetime.strptime(in_block["end"], "%H:%M").time())).astimezone(timezone.utc))):
+            until_label = override_label
+    next_window = await next_available_window(user_id) if (enforced and not available) else None
+    if next_window and len(next_window) == 5 and next_window[2] == ":":
+        next_window = _fmt_local(next_window)
+    elif next_window and " " in next_window:
+        d, t = next_window.split(" ", 1)
+        next_window = f"{d} {_fmt_local(t)}"
+    return {
+        "user_id": user_id, "available": available, "enforced": enforced, "timezone": tz_name,
+        "local_time": local_now.strftime("%-I:%M %p"), "today_hours": today_label,
+        "available_until": until_label, "override_until": override_until, "override_until_label": override_label,
+        "next_window": next_window,
+    }
 
 
 @router.get("/status/{user_id}")
 async def get_user_availability(user_id: str):
-    """Check if a specific user is currently on shift."""
-    available = await is_user_available(user_id)
-    next_window = await next_available_window(user_id) if not available else None
-    return {
-        "user_id":     user_id,
-        "available":   available,
-        "next_window": next_window,
-    }
+    """Check if a specific user is currently on shift (with the human-readable details for the status pill)."""
+    return await availability_detail(user_id)
 
 
 @router.get("/team")
