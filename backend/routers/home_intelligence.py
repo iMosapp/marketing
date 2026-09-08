@@ -814,7 +814,14 @@ async def draft_message(user_id: str, contact_id: str, reason: str = "", context
         return {"message": fallback}
 
     parts = [f"Customer first name: {first}"]
-    if contact.get("vehicle"):
+    # Open internet lead? Anchor the draft on what they actually asked for, not their vehicle history.
+    from services.lead_context import get_conversation_inquiry, is_vehicle_inquiry, inquiry_prompt_block
+    lead_conv = await db.conversations.find_one(
+        {"contact_id": contact_id, "is_internet_lead": True, "status": {"$ne": "closed"}},
+        {"is_internet_lead": 1, "inquiry": 1, "inbound_lead_id": 1, "lead_source_id": 1, "lead_source_name": 1, "attribution": 1},
+        sort=[("created_at", -1)])
+    lead_inquiry = await get_conversation_inquiry(db, lead_conv)
+    if contact.get("vehicle") and is_vehicle_inquiry(lead_inquiry):
         parts.append(f"Their purchase/vehicle: {contact['vehicle']}")
     if contact.get("spouse_name"):
         parts.append(f"Spouse: {contact['spouse_name']}")
@@ -835,7 +842,7 @@ async def draft_message(user_id: str, contact_id: str, reason: str = "", context
         parts.append(f"The task/occasion: {context[:200]}")
     if banned:
         parts.append(f"NEVER use these words or phrases: {banned}")
-    prompt = f"Situation: {brief}\n\n" + "\n".join(parts)
+    prompt = f"Situation: {brief}\n\n" + "\n".join(parts) + inquiry_prompt_block(lead_inquiry)
 
     try:
         from emergentintegrations.llm.chat import LlmChat, UserMessage

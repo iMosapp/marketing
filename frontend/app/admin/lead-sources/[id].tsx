@@ -135,6 +135,7 @@ export default function LeadSourceDetailScreen() {
     returning_release_minutes: 30,
     digest_hour: 18,
     just_tried_text: '',
+    inquiry_context: '',
   });
   const [storeHours, setStoreHours] = useState<StoreHours | null>(null);
   const [websitePages, setWebsitePages] = useState<{ pages: string[]; routed: Record<string, { id: string; name: string }> }>({ pages: [], routed: {} });
@@ -704,9 +705,29 @@ export default function LeadSourceDetailScreen() {
                   value={workflow.intake_text}
                   onChangeText={v => setWorkflow(prev => ({ ...prev, intake_text: v }))}
                   multiline
-                  placeholder={`Hey {{first_name}}! I saw you were interested in the {{vehicle}}. This is {{rep_name}} from the dealership — what questions do you have?`}
+                  placeholder={`Hey {{first_name}}! I saw you were interested in the {{vehicle}}. This is {{rep_name}} from our team - what questions do you have?`}
                   placeholderTextColor={colors.textSecondary}
                   testID="intake-text-input" dataSet={{ testid: 'intake-text-input' } as any}
+                />
+              </View>
+
+              {/* ── What leads from this source are asking about (keeps Jessi on topic) ── */}
+              <View>
+                <Text style={styles.label}>What Are These Leads Asking About?</Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 8 }}>
+                  Jessi reads this before every reply so she stays on topic. Blank = automatic
+                  {workflow.website_default || workflow.website_pages.length
+                    ? ' (website forms: "a demo of i\'M On Social, the software we sell")'
+                    : ' (the vehicle or product on the lead)'}.
+                </Text>
+                <TextInput
+                  style={[styles.input, { height: 64, textAlignVertical: 'top' }]}
+                  value={workflow.inquiry_context}
+                  onChangeText={v => setWorkflow(prev => ({ ...prev, inquiry_context: v.slice(0, 300) }))}
+                  multiline
+                  placeholder="e.g. a demo of i'M On Social for their sales team"
+                  placeholderTextColor={colors.textSecondary}
+                  testID="inquiry-context-input" dataSet={{ testid: 'inquiry-context-input' } as any}
                 />
               </View>
 

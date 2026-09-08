@@ -102,6 +102,7 @@ class WorkflowConfig(BaseModel):
     returning_release_minutes: int = 30         # ...then release back to the shared queue
     digest_hour: int = 18                       # managers' daily red-leads report (store local hour)
     just_tried_text: str = ""                   # one-tap "just tried you" SMS after voicemail ({first_name}, {sender_name}, {company}); blank = team default
+    inquiry_context: str = ""                   # what leads from this source are asking about; keeps Jessi on topic (blank = auto)
 
 
 _HHMM = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
@@ -189,6 +190,7 @@ def serialize_lead_source(source: dict) -> dict:
             "returning_release_minutes": source.get("returning_release_minutes", 30),
             "digest_hour":             source.get("digest_hour", 18),
             "just_tried_text":         source.get("just_tried_text", ""),
+            "inquiry_context":         source.get("inquiry_context", ""),
         },
     }
 
@@ -817,6 +819,8 @@ async def save_workflow_config(source_id: str, config: WorkflowConfig, _m: dict 
             raise HTTPException(status_code=400, detail="Amber must be later than green")
     if "just_tried_text" in updates:
         updates["just_tried_text"] = (updates["just_tried_text"] or "").strip()[:320]
+    if "inquiry_context" in updates:
+        updates["inquiry_context"] = (updates["inquiry_context"] or "").strip()[:300]
     updates["updated_at"] = datetime.now(timezone.utc)
     await db.lead_sources.update_one({"_id": ObjectId(source_id)}, {"$set": updates})
     if config.website_default:

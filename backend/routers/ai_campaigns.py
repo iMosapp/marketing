@@ -231,12 +231,12 @@ async def build_clone_system_prompt(user_id: str) -> str:
     # Get store info
     store_id = user.get("store_id")
     store_info = ""
-    store_name = "the dealership"
+    store_name = "our team"
     if store_id:
         try:
             store = await db.stores.find_one({"_id": ObjectId(store_id)})
             if store:
-                store_name = store.get("name", "the dealership")
+                store_name = store.get("name", "our team")
                 store_info = f"Store: {store_name}"
                 if store.get("address"):
                     store_info += f", located at {store['address']}"
@@ -268,11 +268,13 @@ async def build_clone_system_prompt(user_id: str) -> str:
     return prompt
 
 
-async def get_contact_context(user_id: str, contact_id: str) -> str:
+async def get_contact_context(user_id: str, contact_id: str, include_vehicle: bool = True,
+                              conversation_id: Optional[str] = None) -> str:
     """Build a rich context summary using the Relationship Intelligence engine."""
     try:
         from services.relationship_intel import build_relationship_brief
-        brief = await build_relationship_brief(user_id, contact_id)
+        brief = await build_relationship_brief(user_id, contact_id, include_vehicle=include_vehicle,
+                                               conversation_id=conversation_id)
         return brief.get("ai_context", "No contact information available.")
     except Exception as e:
         logger.warning(f"Relationship intel failed, falling back to basic context: {e}")

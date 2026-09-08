@@ -405,21 +405,25 @@ async def _match_lead_inventory(db, normalized: dict, store_id: str) -> Optional
 
 
 async def generate_first_message(lead: dict, assigned_user: Optional[dict],
-                                  store: dict, matched_vehicle: Optional[dict] = None) -> str:
+                                  store: dict, matched_vehicle: Optional[dict] = None,
+                                  inquiry: Optional[dict] = None) -> str:
     """
     Generate an AI-drafted first message in the assigned rep's voice.
     Falls back to a store-branded template if no persona is set.
     """
+    from services.lead_context import inquiry_prompt_block
     first  = lead.get("first_name", "there")
     veh    = " ".join(filter(None, [
         lead.get("vehicle_year"), lead.get("vehicle_make"),
         lead.get("vehicle_model")
     ])) or "the vehicle"
     source = lead.get("source_name", "your inquiry")
-    store_name = store.get("name", "our dealership")
+    store_name = store.get("name", "our team")
+    topic = (inquiry or {}).get("topic") or (f"the {veh}" if veh != "the vehicle" else "what you were looking at")
+    is_vehicle_lead = inquiry is None or inquiry.get("kind") == "vehicle"
 
     stock_line = ""
-    if matched_vehicle:
+    if matched_vehicle and is_vehicle_lead:
         bits = [matched_vehicle.get("name", "")]
         if matched_vehicle.get("color"):
             bits.append(str(matched_vehicle["color"]))
@@ -427,7 +431,7 @@ async def generate_first_message(lead: dict, assigned_user: Optional[dict],
             bits.append(f"${matched_vehicle['price']:,.0f}")
         if matched_vehicle.get("stock_number"):
             bits.append(f"Stock #{matched_vehicle['stock_number']}")
-        stock_line = " — ".join(str(b) for b in bits if b)
+        stock_line = " - ".join(str(b) for b in bits if b)
 
     # Try personal AI clone if user has a persona
     if assigned_user:
@@ -441,13 +445,14 @@ async def generate_first_message(lead: dict, assigned_user: Optional[dict],
             system_prompt += (
                 "\n\nYou are drafting the FIRST outbound text message to a new internet lead. "
                 "Keep it under 2 sentences. Warm, personal, NOT generic. "
-                "Mention their vehicle interest if given. Never use em dashes. "
+                "Mention what they asked about. Never use em dashes. "
                 "End with a simple question that invites a reply."
             )
+            system_prompt += inquiry_prompt_block(inquiry)
 
             user_msg = (
-                f"New lead: {first} inquired about {veh} via {source}. "
-                + (f"GOOD NEWS — we have it in stock right now: {stock_line}. Confirm availability naturally (no need to list every detail). " if stock_line else "")
+                f"New lead: {first} asked about {topic} via {source}. "
+                + (f"GOOD NEWS - we have it in stock right now: {stock_line}. Confirm availability naturally (no need to list every detail). " if stock_line else "")
                 + f"Write a first outreach text from {user_name.split()[0]}."
             )
 
@@ -469,14 +474,20 @@ async def generate_first_message(lead: dict, assigned_user: Optional[dict],
     # Fallback template
     rep_first = (assigned_user.get("name", "").split()[0] if assigned_user else "")
     intro = f"I'm {rep_first} at {store_name}. " if rep_first else f"This is {store_name}. "
-    vehicle_str = f"the {veh}" if veh != "the vehicle" else "what you were looking at"
     if stock_line:
         return (
-            f"Hey {first}! {intro}Good news, we've still got {vehicle_str} on the lot "
+            f"Hey {first}! {intro}Good news, we've still got {topic} on the lot "
             f"({stock_line}). Want me to hold it for a quick look?"
         )
+    if not is_vehicle_lead:
+        from services.lead_context import SOFTWARE_DEMO_CUSTOMER
+        asked = SOFTWARE_DEMO_CUSTOMER if inquiry.get("kind") == "software_demo" else topic
+        return (
+            f"Hey {first}! {intro}Saw you asked about {asked}. "
+            f"What day works best to walk through it together?"
+        )
     return (
-        f"Hey {first}! {intro}Saw your inquiry about {vehicle_str} — "
+        f"Hey {first}! {intro}Saw your inquiry about {topic} - "
         f"are you still in the market or just browsing? Happy to help either way."
     )
 
@@ -629,8 +640,12 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
     if is_test:
         await db.contacts.update_one({"_id": ObjectId(contact_id)}, {"$addToSet": {"tags": "Test Lead"}, "$set": {"is_test": True}})
 
-    # ── Match vehicle of interest against live inventory
-    matched_vehicle = await _match_lead_inventory(db, normalized, store_id)
+    # ── What this lead is actually asking about (software demo / vehicle / general)
+    from services.lead_context import build_lead_inquiry
+    inquiry = build_lead_inquiry(normalized, source)
+
+    # ── Match vehicle of interest against live inventory (vehicle inquiries only)
+    matched_vehicle = await _match_lead_inventory(db, normalized, store_id) if inquiry["kind"] == "vehicle" else None
 
     # Photo of the matched vehicle rides along with the first text (MMS)
     lead_media = []
@@ -643,7 +658,7 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
             lead_media = [_pu if _pu.startswith("http") else f"{_pub}{_pu}"]
 
     # ── Generate AI first message
-    first_message = await generate_first_message(normalized, assigned_user, store, matched_vehicle)
+    first_message = await generate_first_message(normalized, assigned_user, store, matched_vehicle, inquiry)
 
     # ── Save inbound_lead record
     lead_doc = {
@@ -655,6 +670,7 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         "phone":             phone_e164,
         "email":             email,
         "full_name":         full_name,
+        "inquiry":           inquiry,
         "vehicle_interest":  " ".join(filter(None, [
             normalized.get("vehicle_year"), normalized.get("vehicle_make"),
             normalized.get("vehicle_model"),
@@ -710,6 +726,7 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         "ai_enabled":       True if plan["jessi_on"] else None,
         "draft_message":    first_message,
         "is_internet_lead": True,
+        "inquiry":          inquiry,
         "is_test":          is_test,
         "after_hours_lead": bool(plan["after_hours"]),
         "routing_plan":     plan,

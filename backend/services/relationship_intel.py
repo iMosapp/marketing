@@ -14,7 +14,8 @@ from routers.database import get_db
 logger = logging.getLogger(__name__)
 
 
-async def build_relationship_brief(user_id: str, contact_id: str, campaign_context: Optional[dict] = None) -> dict:
+async def build_relationship_brief(user_id: str, contact_id: str, campaign_context: Optional[dict] = None,
+                                   include_vehicle: bool = True, conversation_id: Optional[str] = None) -> dict:
     """
     Build a comprehensive relationship intelligence brief.
     Returns both machine-readable data (for AI) and a human-readable summary (for the salesperson).
@@ -202,8 +203,10 @@ async def build_relationship_brief(user_id: str, contact_id: str, campaign_conte
         })
 
     # === MESSAGES (actual conversation) ===
+    # A lead thread only reads its own messages so older chats about other topics never bleed in.
+    _msg_filter = {"conversation_id": conversation_id} if conversation_id else {"contact_id": contact_id}
     messages = await db.messages.find(
-        {"contact_id": contact_id}
+        _msg_filter
     ).sort("timestamp", -1).limit(10).to_list(10)
 
     msg_summary = []
@@ -281,12 +284,12 @@ async def build_relationship_brief(user_id: str, contact_id: str, campaign_conte
     if brief["milestones"]:
         ai_parts.append(f"\nMILESTONES: {' | '.join(brief['milestones'])}")
 
-    vehicle = brief.get("contact", {}).get("vehicle", "")
+    vehicle = brief.get("contact", {}).get("vehicle", "") if include_vehicle else ""
     if vehicle:
         ai_parts.append(f"Most recent purchase: {vehicle}")
 
     # Full purchase history for AI context
-    purchase_history = brief.get("contact", {}).get("purchase_history") or []
+    purchase_history = (brief.get("contact", {}).get("purchase_history") or []) if include_vehicle else []
     has_purchase_history = len(purchase_history) > 0
     if len(purchase_history) > 1:
         ai_parts.append(f"\nPURCHASE HISTORY ({len(purchase_history)} total):")
@@ -318,7 +321,9 @@ async def build_relationship_brief(user_id: str, contact_id: str, campaign_conte
         # Only show voice-memo vehicle data if there's no purchase_history overriding it.
         # If purchase_history exists, the most recent purchase is already shown above —
         # showing a stale voice-memo vehicle would confuse the AI into referencing the old one.
-        if not has_purchase_history:
+        if not include_vehicle:
+            pass
+        elif not has_purchase_history:
             if personal.get("vehicle_details"):
                 ai_parts.append(f"  Vehicle details: {personal['vehicle_details']}")
             if personal.get("vehicle_color"):
@@ -332,7 +337,7 @@ async def build_relationship_brief(user_id: str, contact_id: str, campaign_conte
                     ai_parts.append(f"  Vehicle details: {personal['vehicle_details']}")
                 if personal.get("vehicle_color"):
                     ai_parts.append(f"  Vehicle color: {personal['vehicle_color']}")
-        if personal.get("trade_in"):
+        if personal.get("trade_in") and include_vehicle:
             ai_parts.append(f"  Trade-in: {personal['trade_in']}")
         if personal.get("purchase_context"):
             ai_parts.append(f"  Hot buttons (what matters to them): {personal['purchase_context']}")

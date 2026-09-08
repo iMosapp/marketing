@@ -232,9 +232,12 @@ async def queue_ai_reply(
     # Jessi can't answer safely (inventory availability, pricing, financing, colors,
     # models) she STOPS replying entirely until a human gets involved. Cleared when
     # the rep sends a manual reply, taps All Good, or turns AI off/on.
+    lead_inquiry = None
     try:
         _conv_pause = await db.conversations.find_one(
-            {"_id": ObjectId(conversation_id)}, {"ai_paused_for_human": 1, "needs_assistance": 1}
+            {"_id": ObjectId(conversation_id)},
+            {"ai_paused_for_human": 1, "needs_assistance": 1, "is_internet_lead": 1, "inquiry": 1,
+             "inbound_lead_id": 1, "lead_source_id": 1, "lead_source_name": 1, "attribution": 1}
         )
         if _conv_pause and _conv_pause.get("ai_paused_for_human"):
             logger.info(f"[AIReply] Conversation {conversation_id} paused for human — skipping AI reply")
@@ -245,8 +248,13 @@ async def queue_ai_reply(
                     {"$set": {"needs_assistance": True, "you_are_needed_at": datetime.utcnow()}}
                 )
             return None
+        # What this lead actually asked for (software demo / vehicle / general). Keeps Jessi on topic.
+        from services.lead_context import get_conversation_inquiry
+        lead_inquiry = await get_conversation_inquiry(db, _conv_pause)
     except Exception:
         pass
+    from services.lead_context import is_vehicle_inquiry, inquiry_prompt_block
+    vehicle_ok = is_vehicle_inquiry(lead_inquiry)
 
     # ── Content-based routing ───────────────────────────────────────────────
     # Three buckets decide what Jessi does with this message:
@@ -296,7 +304,8 @@ async def queue_ai_reply(
     is_fact_topic = (not is_ai_suspect) and _has_phrase(_fact_probe, FACT_SIGNALS)
     # Shopping asks ("any trucks under $30k?", "hybrid SUVs?") are fact questions too:
     # answered from live inventory when it matches, otherwise "let me check" + rep.
-    if not is_fact_topic and not is_ai_suspect:
+    # Only meaningful when the thread is about a vehicle (never for a software demo lead).
+    if not is_fact_topic and not is_ai_suspect and vehicle_ok:
         try:
             from services.vehicle_search import is_shopping_message
             is_fact_topic = is_shopping_message(incoming_message)
@@ -408,7 +417,7 @@ async def queue_ai_reply(
     # Jessi can answer with real availability and pricing. Financing, payments and
     # trade values are never answered from inventory data - a human handles those.
     inventory_context, inventory_media, inventory_link = "", [], None
-    if is_fact_topic and not is_finance_topic:
+    if is_fact_topic and not is_finance_topic and vehicle_ok:
         inventory_context, inventory_media, inventory_link = await _search_inventory_context(db, assigned_user_id, incoming_message, contact_id)
 
     if is_hot_topic and not inventory_context and not is_scheduling:
@@ -522,8 +531,11 @@ async def queue_ai_reply(
             "Keep it natural, short, and conversational — 1-3 sentences max. "
             "Act exactly like the salesperson would respond. Never sound like a bot."
         )
+        system_prompt += inquiry_prompt_block(lead_inquiry)
 
-        contact_context = await get_contact_context(assigned_user_id, contact_id)
+        contact_context = await get_contact_context(
+            assigned_user_id, contact_id, include_vehicle=vehicle_ok,
+            conversation_id=conversation_id if lead_inquiry else None)
 
         # Pull recent conversation for context
         recent = await db.messages.find(
@@ -1379,6 +1391,8 @@ async def send_silence_followups():
                 "Something like 'Hey, just checking in!' or 'Hope things are going well!' "
                 "Never ask a sales question. Make it feel human, not automated."
             )
+            from services.lead_context import get_inquiry_for_conversation_id, inquiry_prompt_block
+            system_prompt += inquiry_prompt_block(await get_inquiry_for_conversation_id(db, conv_id))
 
             recent = await db.messages.find({"conversation_id": conv_id}).sort("timestamp",-1).limit(4).to_list(4)
             recent.reverse()
@@ -1498,6 +1512,8 @@ async def send_silence_followups():
                 "Something like 'Hey, just checking in!' or 'Hope things are going well!' "
                 "1 sentence max. Make it feel human, not automated."
             )
+            from services.lead_context import get_inquiry_for_conversation_id, inquiry_prompt_block
+            system_prompt += inquiry_prompt_block(await get_inquiry_for_conversation_id(db, conv_id))
 
             # Get last few messages for context
             recent = await db.messages.find({"conversation_id": conv_id}).sort("timestamp",-1).limit(4).to_list(4)

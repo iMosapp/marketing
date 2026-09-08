@@ -1847,12 +1847,17 @@ async def get_ai_suggestion_smart(conversation_id: str):
             "1-2 sentences max. Read the conversation and write a natural, on-brand response. "
             "Reply with ONLY the message text, nothing else."
         )
+        from services.lead_context import get_conversation_inquiry, is_vehicle_inquiry, inquiry_prompt_block
+        lead_inquiry = await get_conversation_inquiry(db, conv)
+        system_prompt += inquiry_prompt_block(lead_inquiry)
 
         # Get contact context
         contact_ctx = ""
         if contact_id:
             try:
-                contact_ctx = await get_contact_context(user_id, contact_id)
+                contact_ctx = await get_contact_context(
+                    user_id, contact_id, include_vehicle=is_vehicle_inquiry(lead_inquiry),
+                    conversation_id=conversation_id if lead_inquiry else None)
             except Exception:
                 pass
 

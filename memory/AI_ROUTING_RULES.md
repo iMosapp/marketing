@@ -37,3 +37,13 @@ item, and deletes its data. Add a case for every new rule. If it cannot express 
 
 Never simulate the Twilio webhook with forest's real numbers in preview - it fires REAL SMS
 (the You're Needed urgent SMS goes to his personal cell, the AI reply to the "customer").
+
+## Lead inquiry context (June 2026)
+- services/lead_context.py: every internet-lead conversation carries `inquiry` {kind software_demo|vehicle|general, topic, company, industry, page_label, message, source_name}
+  built at intake (lead_intake.process_inbound_lead) or derived on the fly + cached for legacy lead threads (get_conversation_inquiry).
+- inquiry_prompt_block() is appended to the system prompt in: ai_reply.queue_ai_reply, both silence follow-up writers,
+  messages.get_ai_suggestion_smart (Jessi suggests), lead_intake.generate_first_message, home_intelligence.draft_message, intent_detection.
+- When the inquiry is NOT a vehicle: no inventory search, no is_shopping_message, relationship intel drops purchase/vehicle/trade-in lines
+  and reads only THIS conversation's messages (include_vehicle=False, conversation_id=...). Regular customer threads (inquiry None) behave exactly as before.
+- Lead Source workflow field `inquiry_context` (max 300 chars) overrides the topic. Website form leads (attribution.kind == website_form) default to the software demo.
+- Probe: python tests/manual_lead_inquiry_probe.py (real LLM, draft_only, cancels + cleans up; shows BEFORE vs AFTER).

@@ -26,7 +26,7 @@ from datetime import datetime, timezone
 logger = logging.getLogger(__name__)
 
 
-INTENT_PROMPT = """You are a sales intelligence assistant for an automotive dealership CRM.
+INTENT_PROMPT = """You are a sales intelligence assistant for a sales team's CRM. The team may sell vehicles, software, services or anything else; never assume the industry.
 
 Analyze this customer message and recent conversation for buying intent signals.
 
@@ -41,18 +41,20 @@ Return ONLY valid JSON, no explanation:
 Score guide:
 - 0-3: No buying signals / just chatting
 - 4-6: Mild interest (asking general questions)
-- 7-8: Strong intent (payment talk, wants to visit, specific vehicle ask)
+- 7-8: Strong intent (payment talk, wants to meet or schedule, specific product ask)
 - 9-10: Ready to buy NOW ("let's do it", "can I come in today to sign")
 
 Buying signal keywords to watch for:
 - Payments: "monthly payment", "per month", "down payment", "finance", "interest rate", "out the door"
-- Visit: "come in", "stop by", "today", "this week", "your hours", "still open"
-- Urgency: "need it by", "this weekend", "wife is pregnant", "just got approved", "have to decide"
+- Meet/visit: "come in", "stop by", "today", "this week", "your hours", "still open", "set up a time"
+- Urgency: "need it by", "this weekend", "just got approved", "have to decide"
 - Availability: "do you have", "in stock", "available", "still have the"
 - Negotiation: "best price", "can you do", "meet me at", "what's your best"
 - Strong: "ready to buy", "want to purchase", "let's do this", "where do I sign"
 - Trade: "trade in", "worth for my", "what would you give me"
 
+The hot_summary must describe what they actually asked for. If the lead context below says this is a software demo request, "demo" means a software walkthrough: never call it a visit, test drive or vehicle demo.
+{lead_context}
 Customer name: {contact_name}
 Recent conversation (last 3 messages):
 {conversation_context}
@@ -68,6 +70,7 @@ async def detect_buying_intent(
     user_id: str,
     contact_id: str,
     conversation_id: str,
+    lead_context: str = "",
 ) -> dict:
     """
     Classify buying intent in a customer message.
@@ -104,6 +107,7 @@ async def detect_buying_intent(
             contact_name=contact_name,
             conversation_context=conversation_context,
             message=message[:500],
+            lead_context=(f"\nLead context:{lead_context}\n" if lead_context else ""),
         )
 
         chat = LlmChat(
@@ -171,6 +175,9 @@ async def process_inbound_intent(
         ).sort("timestamp", -1).limit(4).to_list(4)
         recent_messages.reverse()  # oldest first
 
+        from services.lead_context import get_inquiry_for_conversation_id, inquiry_prompt_block
+        lead_context = inquiry_prompt_block(await get_inquiry_for_conversation_id(db, conversation_id))
+
         result = await detect_buying_intent(
             message=message,
             contact_name=contact_name,
@@ -178,6 +185,7 @@ async def process_inbound_intent(
             user_id=user_id,
             contact_id=contact_id,
             conversation_id=conversation_id,
+            lead_context=lead_context,
         )
 
         score = result.get("score", 0)
@@ -211,7 +219,7 @@ async def process_inbound_intent(
                 from routers.push_notifications import send_push_to_user
                 await send_push_to_user(
                     user_id=user_id,
-                    title=f"🔥 Hot Opportunity — {contact_name}",
+                    title=f"Hot Opportunity - {contact_name}",
                     body=summary,
                     url=f"/thread/{conversation_id}",
                     icon="flame",
