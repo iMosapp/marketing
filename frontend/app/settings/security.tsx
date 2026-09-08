@@ -68,37 +68,21 @@ const { showToast } = useToast();
     setToggling(true);
     
     if (value) {
-      // Enable biometric - need to get current password
-      Alert.prompt(
-        'Enable ' + biometricStatus.biometricLabel,
-        'Enter your password to enable biometric login',
-        [
-          { text: 'Cancel', style: 'cancel', onPress: () => setToggling(false) },
-          {
-            text: 'Enable',
-            onPress: async (password) => {
-              if (!password || !user?.email) {
-                setToggling(false);
-                return;
-              }
-              
-              const success = await enableBiometricLogin({
-                email: user.email,
-                password: password,
-              });
-              
-              if (success) {
-                setBiometricStatus(prev => prev ? { ...prev, isEnabled: true } : null);
-                showToast('${biometricStatus.biometricLabel} login enabled!');
-              } else {
-                showAlert('Error', 'Failed to enable biometric login. Please try again.');
-              }
-              setToggling(false);
-            },
-          },
-        ],
-        'secure-text'
-      );
+      // Already signed in: keep the session token behind Face ID / Touch ID. No password needed.
+      const token = useAuthStore.getState().token;
+      if (!token || !user?.email) {
+        showAlert('Please log in again', 'Sign out and back in once, then turn this on.');
+        setToggling(false);
+        return;
+      }
+      const success = await enableBiometricLogin({ email: user.email, token });
+      if (success) {
+        setBiometricStatus(prev => prev ? { ...prev, isEnabled: true } : null);
+        showToast(`${biometricStatus.biometricLabel} login enabled!`);
+      } else {
+        showAlert('Not enabled', `${biometricStatus.biometricLabel} didn't confirm. Try again.`);
+      }
+      setToggling(false);
     } else {
       // Disable biometric
       showAlert(
@@ -132,14 +116,14 @@ const { showToast } = useToast();
       // For Android, we'll use the biometric prompt itself to verify identity
       const success = await enableBiometricLogin({
         email: user?.email || '',
-        password: '', // We'll need to handle this differently for Android
+        token: useAuthStore.getState().token || undefined,
       });
       
       if (success) {
         setBiometricStatus(prev => prev ? { ...prev, isEnabled: true } : null);
-        showToast('${biometricStatus.biometricLabel} login enabled!');
+        showToast(`${biometricStatus.biometricLabel} login enabled!`);
       } else {
-        showAlert('Note', 'To enable biometric login, please log out and log back in with your password.');
+        showAlert('Not enabled', `${biometricStatus.biometricLabel} didn't confirm. Try again.`);
       }
       setToggling(false);
     } else {
@@ -347,7 +331,7 @@ const { showToast } = useToast();
         <View style={styles.infoSection}>
           <Ionicons name="shield-checkmark" size={20} color="#34C759" />
           <Text style={styles.infoText}>
-            Your biometric data never leaves your device. Credentials are stored securely using encrypted storage.
+            Your biometric data never leaves your device. Your password is never stored; only a session key kept in your phone's secure keychain.
           </Text>
         </View>
         

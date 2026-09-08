@@ -91,6 +91,7 @@ interface AuthState {
   setToken: (token: string | null) => void;
   updateUser: (updates: Partial<User>) => void;
   login: (email: string, password: string) => Promise<void>;
+  loginWithToken: (token: string) => Promise<void>;
   signup: (data: any) => Promise<void>;
   logout: () => Promise<void>;
   loadAuth: () => Promise<void>;
@@ -211,6 +212,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
       
       set({ user: normalizeUser(user), token, partnerBranding: partner_branding || null, isAuthenticated: true, isLoading: false });
+      // Keep the Face ID / Touch ID token current (no-op unless biometrics are enabled)
+      try {
+        const { refreshBiometricToken } = await import('../utils/biometrics');
+        await refreshBiometricToken(token, user?.email || email);
+      } catch {}
       
       // Register service worker AFTER successful login (never on login page)
       if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
@@ -254,6 +260,34 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
   
+  // Face ID / Touch ID: exchange the keychain token for a fresh session (no password involved)
+  loginWithToken: async (storedToken) => {
+    set({ isLoading: true });
+    try {
+      const response = await authAPI.refresh(storedToken);
+      const { user, token, partner_branding } = response;
+      try {
+        await _idbSet('imonsocial_token', token);
+        await _idbSet('imonsocial_user', JSON.stringify(user));
+        if (partner_branding) await _idbSet('imonsocial_branding', JSON.stringify(partner_branding));
+      } catch {}
+      try {
+        await AsyncStorage.setItem('auth_token', token);
+        await AsyncStorage.setItem('user', JSON.stringify(user));
+        if (partner_branding) await AsyncStorage.setItem('partner_branding', JSON.stringify(partner_branding));
+        else await AsyncStorage.removeItem('partner_branding');
+      } catch {}
+      set({ user: normalizeUser(user), token, partnerBranding: partner_branding || null, isAuthenticated: true, isLoading: false });
+      try {
+        const { refreshBiometricToken } = await import('../utils/biometrics');
+        await refreshBiometricToken(token, user?.email || '');
+      } catch {}
+    } catch (error) {
+      set({ isLoading: false });
+      throw error;
+    }
+  },
+
   signup: async (data) => {
     set({ isLoading: true });
     try {

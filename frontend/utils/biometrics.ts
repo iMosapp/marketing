@@ -11,7 +11,10 @@ const BIOMETRIC_ENABLED_KEY = 'mvpline_biometric_enabled';
 
 export interface BiometricCredentials {
   email: string;
-  password: string;
+  /** Session token kept behind Face ID / Touch ID. Exchanged for a fresh one via POST /auth/refresh. */
+  token?: string;
+  /** Legacy (pre token-based unlock): older installs stored the password. Still honored on login. */
+  password?: string;
 }
 
 export interface BiometricStatus {
@@ -123,6 +126,19 @@ export async function enableBiometricLogin(credentials: BiometricCredentials): P
   } catch (error) {
     console.error('Error enabling biometric login:', error);
     return false;
+  }
+}
+
+/**
+ * Keep the stored session token fresh after any successful login/refresh (no prompt).
+ * Also upgrades legacy password-based entries to token-based ones.
+ */
+export async function refreshBiometricToken(token: string, email: string): Promise<void> {
+  try {
+    if (!token || !(await isBiometricEnabled())) return;
+    await SecureStore.setItemAsync(BIOMETRIC_CREDENTIALS_KEY, JSON.stringify({ email, token }));
+  } catch (error) {
+    console.error('Error refreshing biometric token:', error);
   }
 }
 

@@ -237,6 +237,12 @@ export const authAPI = {
     return response.data;
   },
 
+  // Face ID / Touch ID unlock: swap the token kept in the device keychain for a fresh 30-day session
+  refresh: async (token: string) => {
+    const response = await api.post('/auth/refresh', { token }, { headers: { Authorization: `Bearer ${token}` } });
+    return response.data;
+  },
+
   login: async (email: string, password: string) => {
     // Auto-detect user timezone for scheduling features
     let timezone: string | undefined;

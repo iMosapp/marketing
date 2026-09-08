@@ -643,7 +643,43 @@ async def get_current_user(request: Request):
         raise HTTPException(status_code=401, detail="Invalid session")
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
+    return await _session_response(user)
 
+
+_REFRESH_GRACE_DAYS = 90
+
+
+@router.post("/refresh")
+async def refresh_session(request: Request):
+    """Face ID / Touch ID unlock: trade the JWT stored behind device biometrics for a fresh 30-day one.
+    No password needed. Tokens expired up to 90 days ago are accepted (the biometric unlock is the second factor)."""
+    auth = request.headers.get("Authorization", "")
+    token = auth[7:] if auth.startswith("Bearer ") else ""
+    if not token:
+        try:
+            token = ((await request.json()) or {}).get("token") or ""
+        except Exception:
+            token = ""
+    if not token or token.startswith("token_") or token.startswith("mock_token_"):
+        raise HTTPException(status_code=401, detail="Please log in with your password")
+    try:
+        payload = pyjwt.decode(token, _get_jwt_secret(), algorithms=[_JWT_ALGORITHM], options={"verify_exp": False})
+    except Exception:
+        raise HTTPException(status_code=401, detail="Please log in with your password")
+    exp = payload.get("exp") or 0
+    if datetime.now(timezone.utc).timestamp() - exp > _REFRESH_GRACE_DAYS * 86400:
+        raise HTTPException(status_code=401, detail="It's been a while. Please log in with your password once.")
+    try:
+        user = await get_db().users.find_one({"_id": ObjectId(payload.get("sub"))})
+    except Exception:
+        user = None
+    if not user or user.get("status") in ("deactivated", "inactive") or user.get("is_active") is False:
+        raise HTTPException(status_code=401, detail="This account is no longer active")
+    return await _session_response(user)
+
+
+async def _session_response(user: dict):
+    """user doc -> {token, user, partner_branding?} + fresh session cookies (shared by /me and /refresh)."""
     user["_id"] = str(user["_id"])
     if "password" in user:
         del user["password"]

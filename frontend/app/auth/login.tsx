@@ -366,8 +366,20 @@ export default function LoginScreen() {
       );
       
       if (result.success && result.credentials) {
-        // Login with stored credentials
-        await login(result.credentials.email, result.credentials.password);
+        // Token-based unlock (no password stored); legacy installs may still hold a password
+        if (result.credentials.token) {
+          try {
+            await useAuthStore.getState().loginWithToken(result.credentials.token);
+          } catch (e: any) {
+            showAlert(`${biometricStatus.biometricLabel} needs a refresh`, e?.response?.data?.detail || 'Please log in with your password once; Face ID will work again after that.');
+            return;
+          }
+        } else if (result.credentials.password) {
+          await login(result.credentials.email, result.credentials.password);
+        } else {
+          showAlert('Please log in', 'Log in with your password once to finish setting up biometric login.');
+          return;
+        }
         const loggedInUser = useAuthStore.getState().user;
         
         // Check if user needs to change password
@@ -394,7 +406,9 @@ export default function LoginScreen() {
   const handleEnableBiometric = async () => {
     if (!pendingCredentials) return;
     
-    const success = await enableBiometricLogin(pendingCredentials);
+    // Store the session token, never the password
+    const tok = useAuthStore.getState().token;
+    const success = await enableBiometricLogin({ email: pendingCredentials.email, token: tok || undefined });
     const loggedInUser = useAuthStore.getState().user;
     const defaultRoute = getDefaultRoute(loggedInUser?.role);
     

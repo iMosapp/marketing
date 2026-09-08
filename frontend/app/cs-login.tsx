@@ -126,7 +126,9 @@ export default function CSLoginScreen() {
     try {
       const result = await authenticateWithBiometric(`Login with ${biometricStatus.biometricLabel}`);
       if (result.success && result.credentials) {
-        await login(result.credentials.email, result.credentials.password);
+        if (result.credentials.token) await useAuthStore.getState().loginWithToken(result.credentials.token);
+        else if (result.credentials.password) await login(result.credentials.email, result.credentials.password);
+        else { showAlert('Please log in', 'Log in with your password once to finish setting up biometric login.'); return; }
         const loggedInUser = useAuthStore.getState().user;
         if (loggedInUser?.needs_password_change) { router.replace('/auth/change-password'); return; }
         if (loggedInUser?.onboarding_complete === false && loggedInUser?.role !== 'super_admin') { router.replace('/auth/complete-profile' as any); return; }
