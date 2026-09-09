@@ -142,10 +142,15 @@ export default function PrintQrScreen() {
                 </TouchableOpacity>
               </View>
               {link.print_pdf_path ? (
-                <TouchableOpacity onPress={() => openUrl(`${base}${link.print_pdf_path}`)} style={{ height: 44, borderRadius: 12, borderWidth: 1.5, borderColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }} {...tid(`print-qr-card-pdf-${link.slug}`)}>
-                  <Ionicons name="print-outline" size={18} color={GOLD} />
-                  <Text style={{ fontSize: 14, fontWeight: '800', color: GOLD }}>4x6 Leave-Behind Card (PDF){link.kind === 'rep' && link.rep_name ? ` · ${link.rep_name.split(' ')[0]}` : ''}</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TouchableOpacity onPress={() => openUrl(`${base}${link.print_pdf_path}?layout=exact`)} style={{ flex: 1.4, height: 44, borderRadius: 12, borderWidth: 1.5, borderColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 6 }} {...tid(`print-qr-card-pdf-${link.slug}`)}>
+                    <Ionicons name="print-outline" size={17} color={GOLD} />
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: GOLD }} numberOfLines={1}>4x6 Card PDF{link.kind === 'rep' && link.rep_name ? ` · ${link.rep_name.split(' ')[0]}` : ''}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => openUrl(`${base}${link.print_pdf_path}?layout=bleed`)} style={{ flex: 1, height: 44, borderRadius: 12, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }} {...tid(`print-qr-card-pdf-bleed-${link.slug}`)}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: colors.text }}>Print shop (bleed)</Text>
+                  </TouchableOpacity>
+                </View>
               ) : null}
             </View>
           ))}

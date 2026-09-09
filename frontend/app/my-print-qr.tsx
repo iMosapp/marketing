@@ -122,12 +122,20 @@ export default function MyPrintQrScreen() {
               <View style={{ width: '100%', aspectRatio: 1875 / 1275, borderRadius: 12, overflow: 'hidden', backgroundColor: '#0A0A0F' }}>
                 <Image source={{ uri: `${base}${data.print_png_path}?side=${side}&width=1200` }} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={200} {...tid('my-print-card-preview')} />
               </View>
-              <TouchableOpacity onPress={() => openUrl(`${base}${data.print_pdf_path}`)} style={{ height: 50, borderRadius: 12, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }} {...tid('my-print-card-download')}>
+              <TouchableOpacity onPress={() => openUrl(`${base}${data.print_pdf_path}?layout=exact`)} style={{ height: 50, borderRadius: 12, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }} {...tid('my-print-card-download')}>
                 <Ionicons name="print-outline" size={19} color="#111" />
-                <Text style={{ fontSize: 15, fontWeight: '800', color: '#111' }}>Download Print Card (PDF)</Text>
+                <Text style={{ fontSize: 15, fontWeight: '800', color: '#111' }}>Download 4x6 Card (PDF)</Text>
               </TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <TouchableOpacity onPress={() => openUrl(`${base}${data.print_pdf_path}?layout=letter`)} style={{ flex: 1, height: 42, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }} {...tid('my-print-card-download-letter')}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: colors.text }}>Letter sheet + cut marks</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => openUrl(`${base}${data.print_pdf_path}?layout=bleed`)} style={{ flex: 1, height: 42, borderRadius: 10, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' }} {...tid('my-print-card-download-bleed')}>
+                  <Text style={{ fontSize: 12, fontWeight: '700', color: colors.text }}>Print shop (with bleed)</Text>
+                </TouchableOpacity>
+              </View>
               <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 17 }}>
-                Print-ready 4x6 in, front and back, 600 dpi with 1/8 in bleed. Send the PDF straight to any print shop or Vistaprint-style service and pick "4x6 postcard, full bleed". Your QR and "Text {(user as any)?.first_name || 'me'}" number are already on it.
+                4x6 Card = exact 6 x 4 in, front and back, for 4x6 photo paper or any printer set to Actual Size (100%), never "Fit to page". Letter sheet centers the card on 8.5 x 11 with cut marks. Print shop adds the 1/8 in bleed they trim off. Your QR and "Text {(user as any)?.first_name || 'me'}" number are on every version.
               </Text>
             </View>
           ) : null}

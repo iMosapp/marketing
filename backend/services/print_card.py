@@ -335,15 +335,46 @@ def _jpeg(img: Image.Image, quality=92) -> bytes:
     return buf.getvalue()
 
 
-def _build_pdf(front: Image.Image, back: Image.Image) -> bytes:
+BLEED_IN = 0.125
+LAYOUTS = ("bleed", "exact", "letter")
+
+
+def _trim(img: Image.Image) -> Image.Image:
+    b = P(BLEED_IN * 300)
+    return img.crop((b, b, img.width - b, img.height - b))
+
+
+def _build_pdf(front: Image.Image, back: Image.Image, layout: str = "bleed") -> bytes:
+    """bleed: 6.25x4.25 for print shops. exact: true 4x6 (6x4) for photo paper. letter: 4x6 centered on 8.5x11 with cut marks."""
     from fpdf import FPDF
-    pdf = FPDF(unit="in", format=PAGE_IN)
+    card_w, card_h = PAGE_IN[0] - 2 * BLEED_IN, PAGE_IN[1] - 2 * BLEED_IN
+    if layout == "letter":
+        pdf = FPDF(unit="in", format="Letter")
+    else:
+        pdf = FPDF(unit="in", format=PAGE_IN if layout == "bleed" else (card_w, card_h))
     pdf.set_margins(0, 0, 0)
     pdf.set_auto_page_break(False)
     pdf.set_title("i'M On Social 4x6 leave-behind card")
     for page in (front, back):
         pdf.add_page()
-        pdf.image(BytesIO(_jpeg(page)), x=0, y=0, w=PAGE_IN[0], h=PAGE_IN[1])
+        if layout == "bleed":
+            pdf.image(BytesIO(_jpeg(page)), x=0, y=0, w=PAGE_IN[0], h=PAGE_IN[1])
+            continue
+        x, y = ((pdf.w - card_w) / 2, (pdf.h - card_h) / 2) if layout == "letter" else (0, 0)
+        pdf.image(BytesIO(_jpeg(_trim(page))), x=x, y=y, w=card_w, h=card_h)
+        if layout == "letter":
+            pdf.set_draw_color(140, 140, 140)
+            pdf.set_line_width(0.004)
+            gap, ln = 0.06, 0.25
+            for cx in (x, x + card_w):
+                for cy in (y, y + card_h):
+                    sx, sy = (1 if cx == x else -1), (1 if cy == y else -1)
+                    pdf.line(cx, cy - sy * gap, cx, cy - sy * (gap + ln))
+                    pdf.line(cx - sx * gap, cy, cx - sx * (gap + ln), cy)
+            pdf.set_font("Helvetica", size=8)
+            pdf.set_text_color(120, 120, 120)
+            pdf.set_xy(0, y + card_h + 0.45)
+            pdf.cell(pdf.w, 0.2, "Print at Actual Size (100%). Cut along the marks for a true 4x6 in card.", align="C")
     return bytes(pdf.output())
 
 
@@ -352,9 +383,9 @@ def _cache_key(*parts) -> str:
     return hashlib.sha1("|".join([stamp, *map(str, parts)]).encode()).hexdigest()[:20]
 
 
-def _render_sync(qr, rep_first, sms_number, kind, side, width) -> bytes:
+def _render_sync(qr, rep_first, sms_number, kind, side, width, layout) -> bytes:
     if kind == "pdf":
-        return _build_pdf(render_front(qr, rep_first, sms_number), render_back())
+        return _build_pdf(render_front(qr, rep_first, sms_number), render_back(), layout)
     img = render_front(qr, rep_first, sms_number) if side == "front" else render_back()
     width = max(300, min(int(width or 900), W * S))
     img = img.convert("RGB").resize((width, int(width * H / W)), Image.LANCZOS)
@@ -363,17 +394,17 @@ def _render_sync(qr, rep_first, sms_number, kind, side, width) -> bytes:
     return buf.getvalue()
 
 
-async def render_card(qr, rep_first: str, sms_number: str, kind: str = "pdf", side: str = "front", width: int = 900) -> bytes:
-    """kind='pdf' -> 2-page print PDF; kind='png' -> preview of one side at `width` px. Disk-cached."""
+async def render_card(qr, rep_first: str, sms_number: str, kind: str = "pdf", side: str = "front", width: int = 900, layout: str = "bleed") -> bytes:
+    """kind='pdf' -> 2-page print PDF (layout: bleed | exact | letter); kind='png' -> preview of one side at `width` px. Disk-cached."""
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
-    key = _cache_key(qr.data_list[0].data if qr.data_list else "", rep_first, sms_number, kind, side, width)
+    key = _cache_key(qr.data_list[0].data if qr.data_list else "", rep_first, sms_number, kind, side, width, layout)
     path = CACHE_DIR / f"{key}.{kind}"
     if path.exists():
         return path.read_bytes()
     async with _render_lock:
         if path.exists():
             return path.read_bytes()
-        data = await asyncio.to_thread(_render_sync, qr, rep_first, sms_number, kind, side, width)
+        data = await asyncio.to_thread(_render_sync, qr, rep_first, sms_number, kind, side, width, layout)
         tmp = path.with_suffix(".tmp")
         tmp.write_bytes(data)
         tmp.replace(path)

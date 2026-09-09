@@ -215,12 +215,15 @@ async def _card_params(slug: str):
 
 
 @router.get("/go-links/{slug}/print-card.pdf")
-async def go_print_card_pdf(slug: str):
-    from services.print_card import render_card
+async def go_print_card_pdf(slug: str, layout: str = "exact"):
+    from services.print_card import render_card, LAYOUTS
+    if layout not in LAYOUTS:
+        raise HTTPException(status_code=400, detail="layout must be exact, bleed or letter")
     qr, rep_first, sms_number = await _card_params(slug)
-    pdf = await render_card(qr, rep_first, sms_number, kind="pdf")
+    pdf = await render_card(qr, rep_first, sms_number, kind="pdf", layout=layout)
+    suffix = {"exact": "4x6", "bleed": "4x6-bleed", "letter": "letter"}[layout]
     return Response(content=pdf, media_type="application/pdf",
-                    headers={"Content-Disposition": f'attachment; filename="imos-4x6-card-{slug.lower()}.pdf"', "Cache-Control": "public, max-age=600"})
+                    headers={"Content-Disposition": f'attachment; filename="imos-card-{slug.lower()}-{suffix}.pdf"', "Cache-Control": "public, max-age=600"})
 
 
 @router.get("/go-links/{slug}/print-card.png")
