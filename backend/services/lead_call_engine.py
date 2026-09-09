@@ -97,9 +97,15 @@ async def start_call_workflow(source: dict, conversation_id: str, contact_id: st
         "created_at": now,
         "updated_at": now,
     }
+    if not deferred:
+        # Attempt 1 fires right now (below); the 30s guard keeps the scheduler tick from double-ringing.
+        doc["next_attempt_at"] = now + timedelta(seconds=30)
     res = await db[COLL].insert_one(doc)
+    doc["_id"] = res.inserted_id
     logger.info(f"[LeadCall] Job {res.inserted_id} created for conv {conversation_id} with {len(attempts)} attempt(s)"
                 + (f", deferred until {not_before.isoformat()} ({deferred_reasons})" if deferred else ""))
+    if not deferred:
+        asyncio.create_task(_run_attempt(db, doc))
     return str(res.inserted_id)
 
 
@@ -120,47 +126,51 @@ async def _from_number_for(db, source: dict, rep: dict) -> str:
     )
 
 
+async def _dial_rep(db, client, job: dict, source: dict, uid: str, attempt_no: int, kind: str = "ladder") -> dict:
+    """Ring one rep's cell. Returns the call entry to store on the job."""
+    job_id, token = str(job["_id"]), job["token"]
+    try:
+        rep = await db.users.find_one({"_id": ObjectId(uid)}, {"phone": 1, "twilio_number": 1, "mvpline_number": 1, "name": 1})
+    except Exception:
+        rep = None
+    rep_phone = _e164((rep or {}).get("phone", ""))
+    entry = {"attempt": attempt_no, "user_id": uid, "rep_name": (rep or {}).get("name", ""), "status": "queued",
+             "kind": kind, "at": datetime.now(timezone.utc)}
+    if not rep or not rep_phone:
+        entry["status"] = "no_phone"
+        return entry
+    if client is None:
+        entry["status"] = "twilio_disabled"
+        return entry
+    try:
+        base = f"{_app_url()}/api/webhooks/twilio/lead-call"
+        qs = f"job={job_id}&u={uid}&t={token}"
+        call = await asyncio.to_thread(
+            client.calls.create,
+            to=rep_phone,
+            from_=await _from_number_for(db, source, rep),
+            url=f"{base}/answer?{qs}",
+            status_callback=f"{base}/status?{qs}",
+            status_callback_event=["completed"],
+            timeout=RING_SECONDS,
+        )
+        entry["call_sid"] = call.sid
+        entry["status"] = "ringing"
+    except Exception as e:
+        entry["status"] = "failed"
+        entry["error"] = str(e)[:200]
+        logger.warning(f"[LeadCall] Call to rep {uid} failed: {e}")
+    return entry
+
+
 async def _run_attempt(db, job: dict):
     idx = job["attempt_index"]
     attempt = job["attempts"][idx]
     client = _twilio_client()
     source = await db.lead_sources.find_one({"_id": ObjectId(job["lead_source_id"])}) if job.get("lead_source_id") else {}
     source = source or {}
-    job_id, token = str(job["_id"]), job["token"]
-    placed = []
-    for uid in attempt["user_ids"]:
-        try:
-            rep = await db.users.find_one({"_id": ObjectId(uid)}, {"phone": 1, "twilio_number": 1, "mvpline_number": 1, "name": 1})
-        except Exception:
-            rep = None
-        rep_phone = _e164((rep or {}).get("phone", ""))
-        if not rep or not rep_phone:
-            placed.append({"attempt": idx + 1, "user_id": uid, "status": "no_phone", "at": datetime.now(timezone.utc)})
-            continue
-        entry = {"attempt": idx + 1, "user_id": uid, "rep_name": rep.get("name", ""), "status": "queued", "at": datetime.now(timezone.utc)}
-        if client is None:
-            entry["status"] = "twilio_disabled"
-            placed.append(entry)
-            continue
-        try:
-            base = f"{_app_url()}/api/webhooks/twilio/lead-call"
-            qs = f"job={job_id}&u={uid}&t={token}"
-            call = await asyncio.to_thread(
-                client.calls.create,
-                to=rep_phone,
-                from_=await _from_number_for(db, source, rep),
-                url=f"{base}/answer?{qs}",
-                status_callback=f"{base}/status?{qs}",
-                status_callback_event=["completed"],
-                timeout=RING_SECONDS,
-            )
-            entry["call_sid"] = call.sid
-            entry["status"] = "ringing"
-        except Exception as e:
-            entry["status"] = "failed"
-            entry["error"] = str(e)[:200]
-            logger.warning(f"[LeadCall] Call to rep {uid} failed: {e}")
-        placed.append(entry)
+    job_id = str(job["_id"])
+    placed = [await _dial_rep(db, client, job, source, uid, idx + 1) for uid in attempt["user_ids"]]
 
     is_last = idx + 1 >= len(job["attempts"])
     next_delay = job["attempts"][idx + 1]["delay_seconds"] if not is_last else 0
@@ -243,6 +253,49 @@ async def try_claim_by_phone(job_id: str, user_id: str) -> tuple[bool, dict]:
     asyncio.create_task(_hangup_other_calls(job, keep_user_id=user_id))
     asyncio.create_task(_notify_claimed(job, user_id))
     return True, job
+
+
+async def call_rep_now(conversation_id: str, user_id: str) -> dict:
+    """Rep claimed in the app (or tapped "Ring me"): ring THEIR cell now; press 1 bridges to the customer.
+    Works even when no ladder job exists (text-only source): a claimed job is created on the fly."""
+    db = get_db()
+    now = datetime.now(timezone.utc)
+    job = await db[COLL].find_one({"conversation_id": conversation_id}, sort=[("created_at", -1)])
+    if job and job.get("claimed_by") and job["claimed_by"] != user_id:
+        return {"ok": False, "reason": "claimed_by_other", "claimed_by": job["claimed_by"]}
+    conv = await db.conversations.find_one({"_id": ObjectId(conversation_id)}) or {}
+    customer_phone = _e164((job or {}).get("customer_phone") or conv.get("contact_phone") or "")
+    if not customer_phone:
+        return {"ok": False, "reason": "no_customer_phone"}
+    if not job:
+        contact = await db.contacts.find_one({"_id": ObjectId(conv["contact_id"])}) if conv.get("contact_id") and ObjectId.is_valid(str(conv["contact_id"])) else {}
+        contact = contact or {}
+        source = await db.lead_sources.find_one({"_id": ObjectId(str(conv["lead_source_id"]))}) if conv.get("lead_source_id") and ObjectId.is_valid(str(conv["lead_source_id"])) else {}
+        source = source or {}
+        job = {
+            "token": secrets.token_urlsafe(16), "conversation_id": conversation_id, "contact_id": conv.get("contact_id"),
+            "lead_source_id": str(source.get("_id", "")), "source_name": source.get("name") or conv.get("lead_source_name") or "Lead",
+            "customer_phone": customer_phone,
+            "lead": {"name": contact.get("name") or f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip() or conv.get("contact_name") or "",
+                     "source_label": source.get("name") or "", "interest": contact.get("vehicle_interest") or contact.get("vehicle") or "", "comments": ""},
+            "attempts": [], "attempt_index": 0, "next_attempt_at": None, "status": "claimed", "deferred": False,
+            "claimed_by": user_id, "claimed_via": "app", "claimed_at": now, "calls": [], "created_at": now, "updated_at": now,
+        }
+        job["_id"] = (await db[COLL].insert_one(job)).inserted_id
+    elif not job.get("claimed_by"):
+        await db[COLL].update_one({"_id": job["_id"]}, {"$set": {"status": "claimed", "claimed_by": user_id, "claimed_via": "app", "claimed_at": now, "updated_at": now}})
+        job.update({"status": "claimed", "claimed_by": user_id, "claimed_via": "app", "claimed_at": now})
+        asyncio.create_task(_hangup_other_calls(job, keep_user_id=user_id))
+    source = await db.lead_sources.find_one({"_id": ObjectId(job["lead_source_id"])}) if job.get("lead_source_id") and ObjectId.is_valid(str(job.get("lead_source_id"))) else {}
+    entry = await _dial_rep(db, _twilio_client(), job, source or {}, user_id, (job.get("attempt_index") or 0) + 1, kind="callback")
+    await db[COLL].update_one({"_id": job["_id"]}, {"$push": {"calls": entry}, "$set": {"updated_at": now}})
+    if job.get("contact_id") and entry.get("status") == "ringing":
+        from utils.activity_log import log_activity
+        await log_activity(db, user_id=user_id, contact_id=job["contact_id"], event_type="lead_call_attempt",
+                           description=f"Claimed in the app · ringing {entry.get('rep_name') or 'rep'} to connect · {job.get('source_name', 'Lead')}",
+                           ref=entry.get("call_sid"), metadata={"job_id": str(job["_id"]), "kind": "callback"})
+    logger.info(f"[LeadCall] Callback ring for {user_id} on conv {conversation_id}: {entry.get('status')}")
+    return {"ok": entry.get("status") == "ringing", "status": entry.get("status"), "error": entry.get("error")}
 
 
 async def mark_claimed(conversation_id: str, user_id: str, via: str = "app"):
@@ -431,7 +484,7 @@ async def timeline_for_conversation(conversation_id: str) -> dict:
                 for i, a in enumerate(job.get("attempts", []))
             ],
             "calls": [
-                {"attempt": c.get("attempt"), "user_id": c.get("user_id"), "name": names.get(c.get("user_id") or "", c.get("rep_name") or "Rep"),
+                {"attempt": c.get("attempt"), "kind": c.get("kind") or "ladder", "user_id": c.get("user_id"), "name": names.get(c.get("user_id") or "", c.get("rep_name") or "Rep"),
                  "outcome": _outcome(c, job), "at": iso(c.get("at")), "answered_at": iso(c.get("answered_at")),
                  "ended_at": iso(c.get("ended_at")), "error": c.get("error")}
                 for c in job.get("calls", [])
@@ -465,6 +518,14 @@ def twiml_answer(job: dict, action_url: str) -> str:
     src = (job.get("lead") or {}).get("source_label") or job.get("source_name") or "your website"
     kind = "Overnight lead" if job.get("deferred") else "New lead"
     prompt = _say(f"{kind} from {src}. Press 1 to claim this lead.")
+    gather = f'<Gather numDigits="1" timeout="6" action="{escape(action_url)}" method="POST">{prompt}</Gather>'
+    return twiml(gather, gather, _say("No response received. Goodbye."), "<Hangup/>")
+
+
+def twiml_connect(job: dict, action_url: str) -> str:
+    """Rep already owns this lead (claimed in the app): confirm with 1, then bridge."""
+    name = (job.get("lead") or {}).get("name") or "your new lead"
+    prompt = _say(f"You claimed {name}. Press 1 to connect now.")
     gather = f'<Gather numDigits="1" timeout="6" action="{escape(action_url)}" method="POST">{prompt}</Gather>'
     return twiml(gather, gather, _say("No response received. Goodbye."), "<Hangup/>")
 

@@ -2653,9 +2653,12 @@ async def _fire_intake_workflow(source, lead_doc, conv_id, contact_id, phone_e16
             vehicle   = normalized.get("vehicle_interest", "") or " ".join(filter(None, [normalized.get("vehicle_year"), normalized.get("vehicle_make"), normalized.get("vehicle_model")]))
             notif_title = f"New Lead: {full_name}"
             notif_body  = f"{source_name} | {vehicle}" if vehicle else source_name
+            ringing_now = source.get("contact_mode") == "text_and_call" and not plan.get("ladder_deferred")
             if plan.get("ladder_deferred") and source.get("contact_mode") == "text_and_call":
                 when = _local_clock(plan.get("ladder_at"), store_tz)
-                notif_body += f" | After hours: {'Jessi is replying, ' if plan.get('jessi_on') else ''}calls ring at {when}"
+                notif_body += f" | Store closed: {'Jessi is replying, ' if plan.get('jessi_on') else ''}your phone rings at {when}. Tap to text now"
+            elif ringing_now:
+                notif_body += " | Ringing your phone now: answer and press 1"
             elif plan.get("after_hours") and plan.get("jessi_on"):
                 notif_body += " | After hours: Jessi is replying"
             if plan.get("intake_deferred"):
@@ -2686,7 +2689,7 @@ async def _fire_intake_workflow(source, lead_doc, conv_id, contact_id, phone_e16
                         from routers.push_notifications import send_push_to_user, LEAD_SOUND, LEAD_CHANNEL
                         import asyncio as _aio2
                         _aio2.create_task(send_push_to_user(
-                            uid, notif_title, f"{notif_body} — tap to claim",
+                            uid, notif_title, notif_body if ringing_now or plan.get("ladder_deferred") else f"{notif_body} — tap to claim",
                             conv_link, "flash", sound=LEAD_SOUND, channel_id=LEAD_CHANNEL
                         ))
                     except Exception:

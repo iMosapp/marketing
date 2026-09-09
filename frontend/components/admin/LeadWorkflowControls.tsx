@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 export type CallAttempt = { user_ids: string[]; delay_seconds: number };
-type Rep = { _id: string; name?: string; email?: string; role?: string };
+type Rep = { _id: string; name?: string; email?: string; role?: string; phone?: string };
 
 const MAX = 4;
 const DELAYS = [30, 60, 90, 120, 180];
@@ -110,6 +110,14 @@ export const LeadCallLadder = ({ attempts, reps, onChange, colors }: { attempts:
             })}
           </View>
           {a.user_ids.length === 0 && <Text style={{ fontSize: 12, color: '#FF9500', marginTop: 6 }}>Pick at least one rep or this attempt is skipped.</Text>}
+          {(() => {
+            const missing = reps.filter(r => a.user_ids.includes(r._id) && !(r.phone || '').replace(/\D/g, ''));
+            return missing.length ? (
+              <Text style={{ fontSize: 12, color: '#FF3B30', marginTop: 6 }} testID={`ladder-${i}-no-phone`} dataSet={{ testid: `ladder-${i}-no-phone` } as any}>
+                No cell number on profile, will be skipped: {missing.map(r => r.name || r.email).join(', ')}. Add it under their Profile.
+              </Text>
+            ) : null;
+          })()}
         </View>
       ))}
 

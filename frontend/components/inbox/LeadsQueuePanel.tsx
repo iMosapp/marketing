@@ -151,9 +151,10 @@ export default function LeadsQueuePanel({ userId, colors, showToast, onCounts }:
     if (busy.current) return;
     busy.current = true;
     try {
-      await api.post(`/lead-sources/claim/${it.id}?user_id=${userId}`);
-      showToast?.(`${it.contact_name.split(' ')[0]} is yours`, 'success');
-      if (thenCall) {
+      const res = await api.post(`/lead-sources/claim/${it.id}?user_id=${userId}`);
+      const callingRep = !!res.data?.calling_rep;
+      showToast?.(callingRep ? `${it.contact_name.split(' ')[0]} is yours. Ringing your phone now, answer and press 1` : `${it.contact_name.split(' ')[0]} is yours`, 'success');
+      if (thenCall && !callingRep) {
         router.push({ pathname: '/call-screen', params: { phone: it.phone, contact_name: it.contact_name, contact_id: it.contact_id, conversation_id: it.id } } as any);
       } else {
         router.push(`/thread/${it.id}` as any);

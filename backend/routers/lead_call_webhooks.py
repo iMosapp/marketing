@@ -34,11 +34,13 @@ async def lead_call_answer(request: Request, CallSid: str = Form(default="")):
     if not job:
         return _xml(eng.twiml(eng._say("Sorry, this lead is no longer available. Goodbye."), "<Hangup/>"))
     await eng.record_call_event(str(job["_id"]), CallSid, answered_at=datetime.now(timezone.utc), status="answered")
+    action = f"{eng._app_url()}/api/webhooks/twilio/lead-call/claim?job={job['_id']}&u={user_id}&t={job['token']}"
+    if job.get("claimed_by") == user_id:
+        return _xml(eng.twiml_connect(job, action))
     if job.get("claimed_by"):
         await eng.record_call_event(str(job["_id"]), CallSid, late=True)
         name = await _rep_name(job["claimed_by"])
         return _xml(eng.twiml_already_claimed(name))
-    action = f"{eng._app_url()}/api/webhooks/twilio/lead-call/claim?job={job['_id']}&u={user_id}&t={job['token']}"
     return _xml(eng.twiml_answer(job, action))
 
 
@@ -50,7 +52,10 @@ async def lead_call_claim(request: Request, Digits: str = Form(default=""), Call
     if Digits.strip() != "1":
         await eng.record_call_event(str(job["_id"]), CallSid, passed=True, status="passed")
         return _xml(eng.twiml_passed())
-    won, job = await eng.try_claim_by_phone(str(job["_id"]), user_id)
+    if job.get("claimed_by") == user_id:
+        won = True  # already theirs (claimed in the app) - just connect
+    else:
+        won, job = await eng.try_claim_by_phone(str(job["_id"]), user_id)
     if not won:
         await eng.record_call_event(str(job["_id"]), CallSid, late=True, status="late")
         return _xml(eng.twiml_already_claimed(await _rep_name(job.get("claimed_by"))))

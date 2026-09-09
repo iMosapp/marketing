@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
 import { whenLabel } from './admin/LeadTimingControls';
+import { useAuthStore } from '../store/authStore';
 
 const GOLD = '#C9A962';
 
@@ -27,9 +28,26 @@ const fmtClock = (s?: number | null) => {
 const reasons = (r: string[] = []) => r.map(x => x === 'store_closed' ? 'store closed' : 'texting window').join(' + ');
 
 export const LeadCallTimeline = ({ conversationId, colors }: { conversationId: string; colors: any }) => {
+  const { user } = useAuthStore();
   const [data, setData] = useState<any>(null);
   const [open, setOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const [ringing, setRinging] = useState<'idle' | 'busy' | 'sent' | 'error'>('idle');
+  const [ringMsg, setRingMsg] = useState('');
+
+  const ringMe = async () => {
+    if (!user?._id || ringing === 'busy') return;
+    setRinging('busy');
+    try {
+      await api.post(`/lead-sources/ring-me/${conversationId}?user_id=${user._id}`);
+      setRinging('sent');
+      setRingMsg('Ringing your phone now. Answer and press 1 to connect.');
+      setTimeout(load, 2500);
+    } catch (e: any) {
+      setRinging('error');
+      setRingMsg(e?.response?.data?.detail || 'Could not place the call.');
+    }
+  };
 
   const load = useCallback(async () => {
     try {
@@ -41,6 +59,10 @@ export const LeadCallTimeline = ({ conversationId, colors }: { conversationId: s
   }, [conversationId]);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const st = data?.job?.status;
+    if (st && ['active', 'exhausted'].includes(st)) setOpen(true);
+  }, [data?.job?.status]);
   useEffect(() => {
     if (!data?.job || data.job.status !== 'active') return;
     const t = setInterval(load, 30000);
@@ -85,7 +107,8 @@ export const LeadCallTimeline = ({ conversationId, colors }: { conversationId: s
   if (job?.was_deferred && job.deferred_until) rows.push({ at: job.deferred_until, icon: 'moon-outline', color: '#FF9500', text: `Ladder ${job.deferred ? 'held' : 'was held'} until opening (${reasons(job.deferred_reasons)})` });
   (job?.calls || []).forEach((c: any) => {
     const o = OUTCOME[c.outcome] || OUTCOME.ringing;
-    rows.push({ at: c.at, icon: o.icon, color: o.color, text: `Attempt ${c.attempt} · ${c.name} · ${o.label}${c.error ? ` (${c.error})` : ''}` });
+    const label = c.kind === 'callback' ? `Rang ${c.name} to connect (claimed in app)` : `Attempt ${c.attempt} · ${c.name}`;
+    rows.push({ at: c.at, icon: o.icon, color: o.color, text: `${label} · ${o.label}${c.error ? ` (${c.error})` : ''}` });
   });
   if (job?.claimed_at) rows.push({ at: job.claimed_at, icon: 'trophy-outline', color: '#34C759', text: `${job.claimed_by_name || 'Rep'} claimed the lead (${job.claimed_via === 'phone' ? 'phone' : 'app'})` });
   if (job?.exhausted_at && job.status === 'exhausted') rows.push({ at: job.exhausted_at, icon: 'alert-circle-outline', color: '#FF3B30', text: 'Ladder exhausted, team alerted' });
@@ -131,6 +154,16 @@ export const LeadCallTimeline = ({ conversationId, colors }: { conversationId: s
           {data.sms_consent?.opted_in ? (
             <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>Texting consent: opted in via {data.sms_consent.source === 'website_form' ? 'website form' : data.sms_consent.source} {whenLabel(data.sms_consent.at)}</Text>
           ) : null}
+          {(!data.claimed_by || data.claimed_by === user?._id) && (
+            <View style={{ marginTop: 6, gap: 6 }}>
+              <TouchableOpacity onPress={ringMe} disabled={ringing === 'busy'} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 42, borderRadius: 10, backgroundColor: GOLD, opacity: ringing === 'busy' ? 0.6 : 1 }} testID="lead-ring-me" dataSet={{ testid: 'lead-ring-me' } as any}>
+                <Ionicons name="call" size={16} color="#111" />
+                <Text style={{ fontSize: 14, fontWeight: '800', color: '#111' }}>{ringing === 'busy' ? 'Calling you…' : 'Ring me & connect to this lead'}</Text>
+              </TouchableOpacity>
+              {ringMsg ? <Text style={{ fontSize: 12, color: ringing === 'error' ? '#FF3B30' : '#34C759', textAlign: 'center' }} testID="lead-ring-me-msg" dataSet={{ testid: 'lead-ring-me-msg' } as any}>{ringMsg}</Text> : null}
+              <Text style={{ fontSize: 11, color: colors.textSecondary, textAlign: 'center' }}>Rings your cell from the store line, then bridges you to the customer when you press 1.</Text>
+            </View>
+          )}
         </View>
       )}
     </View>

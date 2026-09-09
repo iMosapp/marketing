@@ -715,8 +715,13 @@ async def claim_lead(conversation_id: str, user_id: str, request: Request):
         raise HTTPException(status_code=400, detail="Could not claim lead - may already be claimed")
 
     # Stop the phone dialing ladder, if one is running for this lead
-    from services.lead_call_engine import mark_claimed
+    from services.lead_call_engine import mark_claimed, call_rep_now
     await mark_claimed(conversation_id, user_id, via="app")
+    # Text + Call source: claiming means "call me now" - ring the rep's cell and bridge on press 1
+    calling_rep = bool(source and (source.get("contact_mode") == "text_and_call" or source.get("auto_call_on_claim")))
+    if calling_rep:
+        import asyncio as _aio
+        _aio.create_task(call_rep_now(conversation_id, user_id))
     
     # Also update the contact to be owned by this user so it appears in their contacts
     if conversation.get("contact_id"):
@@ -762,8 +767,37 @@ async def claim_lead(conversation_id: str, user_id: str, request: Request):
     return {
         "success": True,
         "message": "Lead claimed successfully",
-        "claimed_by": user_id
+        "claimed_by": user_id,
+        "calling_rep": calling_rep,
     }
+
+
+@router.post("/ring-me/{conversation_id}")
+async def ring_me(conversation_id: str, user_id: str, request: Request):
+    """Ring the rep's own cell for this lead and bridge to the customer on press 1. Claims the lead if unclaimed."""
+    _assert_self_or_manager(request.state.user, user_id)
+    db = get_db()
+    conv = await db.conversations.find_one({"_id": ObjectId(conversation_id)}) if ObjectId.is_valid(conversation_id) else None
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    if conv.get("claimed_by") and conv["claimed_by"] != user_id:
+        raise HTTPException(status_code=409, detail="Another rep already owns this lead")
+    if not conv.get("claimed_by"):
+        await db.conversations.update_one({"_id": conv["_id"]}, {"$set": {
+            "claimed": True, "claimed_by": user_id, "assigned_to": user_id, "user_id": user_id, "claim_source": "app",
+            "routing_kind": "claimed", "claimed_at": datetime.now(timezone.utc).isoformat(), "updated_at": datetime.now(timezone.utc).isoformat()}})
+        if conv.get("contact_id") and ObjectId.is_valid(str(conv["contact_id"])):
+            await db.contacts.update_one({"_id": ObjectId(conv["contact_id"])}, {"$set": {"user_id": user_id, "claimed_by": user_id, "updated_at": datetime.now(timezone.utc).isoformat()}})
+    from services.lead_call_engine import call_rep_now
+    result = await call_rep_now(conversation_id, user_id)
+    if not result.get("ok"):
+        reason = result.get("reason") or result.get("status") or "failed"
+        msg = {"no_phone": "Add your cell number under Profile so the system can ring you.",
+               "no_customer_phone": "This lead has no phone number.",
+               "twilio_disabled": "Calling is not configured on this server.",
+               "claimed_by_other": "Another rep already owns this lead."}.get(reason, result.get("error") or "Could not place the call.")
+        raise HTTPException(status_code=400, detail=msg)
+    return {"success": True, "status": result.get("status")}
 
 
 
