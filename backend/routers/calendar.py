@@ -135,6 +135,11 @@ async def disconnect_calendar(user_id: str):
     return {"message": "Calendar disconnected"}
 
 
+async def _user_tz(user_id: str) -> str:
+    from routers.user_schedule import resolve_user_tz
+    return await resolve_user_tz(user_id)
+
+
 async def get_google_credentials(user_id: str):
     """Get valid Google credentials for a user, refreshing if needed"""
     user = await get_db().users.find_one({"_id": ObjectId(user_id)})
@@ -188,11 +193,11 @@ async def create_calendar_event(user_id: str, event_data: dict):
             'description': event_data.get('description', ''),
             'start': {
                 'dateTime': event_data['start_time'],
-                'timeZone': event_data.get('timezone', 'America/New_York'),
+                'timeZone': event_data.get('timezone') or await _user_tz(user_id),
             },
             'end': {
                 'dateTime': event_data['end_time'],
-                'timeZone': event_data.get('timezone', 'America/New_York'),
+                'timeZone': event_data.get('timezone') or await _user_tz(user_id),
             },
             'reminders': {
                 'useDefault': False,
@@ -278,11 +283,11 @@ async def create_appointment_from_ai(user_id: str, appointment_data: dict):
                 'description': event_data['description'] + f"\n\nContact: {event_data.get('contact_name', 'Unknown')}\nPhone: {event_data.get('contact_phone', 'N/A')}",
                 'start': {
                     'dateTime': event_data['start_time'],
-                    'timeZone': 'America/New_York',
+                    'timeZone': await _user_tz(user_id),
                 },
                 'end': {
                     'dateTime': event_data['end_time'],
-                    'timeZone': 'America/New_York',
+                    'timeZone': await _user_tz(user_id),
                 },
                 'reminders': {
                     'useDefault': False,

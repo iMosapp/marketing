@@ -69,26 +69,47 @@ class ScheduleUpdate(BaseModel):
 _UNKNOWN_TZ = {"", "UTC", "Etc/UTC", "GMT", "Etc/GMT"}
 
 
-async def resolve_user_tz(user_id: str, sched: Optional[dict] = None) -> str:
-    """Best real timezone for quiet-hour math. 'UTC' is treated as unknown (no US rep lives in UTC)."""
-    db = get_db()
-    if sched is None:
-        sched = await db.user_schedules.find_one({"user_id": user_id}) or {}
-    tz = (sched or {}).get("timezone") or ""
-    if tz in _UNKNOWN_TZ:
-        try:
-            u = await db.users.find_one({"_id": ObjectId(user_id)}, {"timezone": 1}) or {}
-            tz = u.get("timezone") or ""
-        except Exception:
-            tz = ""
-    if tz in _UNKNOWN_TZ:
-        tz = "America/Denver"
+def _valid_tz(name) -> str:
+    """Return the IANA name if it is a real, non-UTC timezone, else ''."""
+    if not name or name in _UNKNOWN_TZ:
+        return ""
     try:
         import pytz
-        pytz.timezone(tz)
+        pytz.timezone(name)
+        return name
     except Exception:
-        tz = "America/Denver"
-    return tz
+        return ""
+
+
+async def resolve_user_tz(user_id: str, sched: Optional[dict] = None) -> str:
+    """The ONE timezone resolver for a rep. Order: the phone's timezone (users.timezone, refreshed on every
+    login / app open / Face ID unlock) -> schedule timezone -> store timezone -> America/Denver.
+    'UTC' is treated as unknown (no US rep lives in UTC). The device wins so every 9:00 AM the app promises is
+    9:00 AM on the rep's phone."""
+    db = get_db()
+    u = {}
+    try:
+        u = await db.users.find_one({"_id": ObjectId(user_id)}, {"timezone": 1, "store_id": 1}) or {}
+    except Exception:
+        pass
+    tz = _valid_tz(u.get("timezone"))
+    if not tz:
+        if sched is None:
+            sched = await db.user_schedules.find_one({"user_id": user_id}, {"timezone": 1}) or {}
+        tz = _valid_tz((sched or {}).get("timezone"))
+    if not tz and ObjectId.is_valid(str(u.get("store_id") or "")):
+        st = await db.stores.find_one({"_id": ObjectId(str(u["store_id"]))}, {"timezone": 1}) or {}
+        tz = _valid_tz(st.get("timezone"))
+    return tz or "America/Denver"
+
+
+async def set_device_timezone(user_id: str, tz_name) -> bool:
+    """Called from login / Face ID refresh / push registration with the phone's IANA timezone."""
+    tz = _valid_tz(tz_name)
+    if not tz or not ObjectId.is_valid(str(user_id)):
+        return False
+    await get_db().users.update_one({"_id": ObjectId(user_id)}, {"$set": {"timezone": tz, "timezone_updated_at": datetime.now(timezone.utc)}})
+    return True
 
 
 async def is_user_available(user_id: str) -> bool:
@@ -287,11 +308,13 @@ async def get_my_schedule(x_user_id: str = Header(None, alias="X-User-ID")):
         raise HTTPException(status_code=401, detail="User ID required")
     db = get_db()
     doc = await db.user_schedules.find_one({"user_id": x_user_id})
+    effective_tz = await resolve_user_tz(x_user_id, doc or {})
     if not doc:
         # Return defaults
         return {
             "user_id":               x_user_id,
-            "timezone":              "America/Denver",
+            "timezone":              effective_tz,
+            "timezone_source":       "device",
             "notification_quiet":    False,
             "weekly_schedule":       DEFAULT_SCHEDULE,
             "rotation_enabled":      False,
@@ -303,7 +326,7 @@ async def get_my_schedule(x_user_id: str = Header(None, alias="X-User-ID")):
             "overnight_end":         "07:00",
             "updated_at":            None,
         }
-    return _serialize_schedule(doc)
+    return {**_serialize_schedule(doc), "timezone": effective_tz, "timezone_source": "device"}
 
 
 @router.put("/me")

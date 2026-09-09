@@ -301,12 +301,12 @@ def calculate_send_time(store: dict) -> datetime:
     - No hours set  → now + 90 s (safe default)
     """
     hours = store.get("business_hours") or {}
-    tz_str = store.get("timezone") or "America/Chicago"
+    tz_str = store.get("timezone") or "America/Denver"
 
     try:
         tz = ZoneInfo(tz_str)
     except ZoneInfoNotFoundError:
-        tz = ZoneInfo("America/Chicago")
+        tz = ZoneInfo("America/Denver")
 
     now_local = datetime.now(tz)
     now_utc   = datetime.now(timezone.utc)

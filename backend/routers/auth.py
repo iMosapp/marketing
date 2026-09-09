@@ -614,7 +614,8 @@ async def login(credentials: dict, request: Request = None):
     async def _post_login_tasks(uid: str, tz: str | None):
         try:
             if tz:
-                await get_db().users.update_one({"_id": ObjectId(uid)}, {"$set": {"timezone": tz}})
+                from .user_schedule import set_device_timezone
+                await set_device_timezone(uid, tz)
         except Exception:
             pass
         try:
@@ -655,11 +656,13 @@ async def refresh_session(request: Request):
     No password needed. Tokens expired up to 90 days ago are accepted (the biometric unlock is the second factor)."""
     auth = request.headers.get("Authorization", "")
     token = auth[7:] if auth.startswith("Bearer ") else ""
+    body = {}
+    try:
+        body = (await request.json()) or {}
+    except Exception:
+        body = {}
     if not token:
-        try:
-            token = ((await request.json()) or {}).get("token") or ""
-        except Exception:
-            token = ""
+        token = body.get("token") or ""
     if not token or token.startswith("token_") or token.startswith("mock_token_"):
         raise HTTPException(status_code=401, detail="Please log in with your password")
     try:
@@ -675,6 +678,10 @@ async def refresh_session(request: Request):
         user = None
     if not user or user.get("status") in ("deactivated", "inactive") or user.get("is_active") is False:
         raise HTTPException(status_code=401, detail="This account is no longer active")
+    if body.get("timezone"):
+        from .user_schedule import set_device_timezone
+        if await set_device_timezone(str(user["_id"]), body.get("timezone")):
+            user["timezone"] = body.get("timezone")
     return await _session_response(user)
 
 

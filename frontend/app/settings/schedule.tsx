@@ -259,9 +259,10 @@ export default function SchedulePage() {
 
         {/* Timezone */}
         <View style={[s.card, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={s.cardTitle}>Timezone</Text>
-            <Text style={s.cardSub}>{timezone}</Text>
+            <Text style={s.cardSub} data-testid="schedule-timezone">{timezone.replace('_', ' ')}</Text>
+            <Text style={[s.cardSub, { fontSize: 11, marginTop: 2 }]}>Taken from your phone each time the app opens. Every reminder, call retry and campaign time uses it.</Text>
           </View>
           <Ionicons name="globe-outline" size={20} color={colors.textSecondary} />
         </View>

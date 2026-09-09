@@ -239,7 +239,9 @@ export const authAPI = {
 
   // Face ID / Touch ID unlock: swap the token kept in the device keychain for a fresh 30-day session
   refresh: async (token: string) => {
-    const response = await api.post('/auth/refresh', { token }, { headers: { Authorization: `Bearer ${token}` } });
+    let timezone: string | undefined;
+    try { timezone = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch {}
+    const response = await api.post('/auth/refresh', { token, timezone }, { headers: { Authorization: `Bearer ${token}` } });
     return response.data;
   },
 

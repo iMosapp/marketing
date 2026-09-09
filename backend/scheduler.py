@@ -1610,8 +1610,8 @@ async def send_task_reminders():
         if not user_id:
             return
         try:
-            u = await db.users.find_one({"_id": ObjectId(user_id)}, {"timezone": 1})
-            tz = pytz.timezone((u or {}).get("timezone") or "America/Denver")
+            from routers.user_schedule import resolve_user_tz
+            tz = pytz.timezone(await resolve_user_tz(user_id))
         except Exception:
             tz = pytz.timezone("America/Denver")
         due = task.get("due_date")

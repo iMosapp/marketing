@@ -256,9 +256,12 @@ export default function RootLayout() {
         });
         if (tokenData?.data) {
           const { default: apiInstance } = await import('../services/api');
+          let timezone: string | undefined;
+          try { timezone = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch {}
           await apiInstance.post(`/push/subscribe-native/${user._id}`, {
             expo_push_token: tokenData.data,
             platform: Platform.OS,
+            timezone,
           });
           console.log('[Push] ✅ Token registered:', tokenData.data.slice(0, 25) + '...');
         }

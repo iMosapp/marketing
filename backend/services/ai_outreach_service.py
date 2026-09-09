@@ -286,8 +286,8 @@ async def create_outreach_record(user_id: str, contact_id: str, contact_name: st
         ]
 
     # Get user timezone for scheduling
-    user = await db.users.find_one({"_id": ObjectId(user_id)}, {"timezone": 1})
-    user_tz = (user or {}).get("timezone", "America/New_York")
+    from routers.user_schedule import resolve_user_tz
+    user_tz = await resolve_user_tz(user_id)
     task_due = get_next_morning(user_tz)
 
     record = {

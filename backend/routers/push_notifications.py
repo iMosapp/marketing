@@ -393,6 +393,12 @@ async def subscribe_native_push(user_id: str, request: Request):
         }, "$setOnInsert": {"created_at": datetime.now(timezone.utc)}},
         upsert=True,
     )
+    if data.get("timezone"):
+        try:
+            from routers.user_schedule import set_device_timezone
+            await set_device_timezone(user_id, data.get("timezone"))
+        except Exception as e:
+            logger.debug(f"[Push] timezone refresh skipped: {e}")
     logger.info(f"[Push] ✅ Native Expo token registered for user {user_id} ({platform}): {expo_token[:20]}...")
     return {"success": True, "registered": True}
 
