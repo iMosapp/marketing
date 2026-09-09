@@ -299,9 +299,11 @@ export default function SoldQuickScreen() {
           await api.post(`/campaigns/${user._id}/${selectedCampaignId}/enroll/${contactId}`)
             .catch(() => {});
         } else {
-          await api.patch(`/contacts/${user._id}/${contactId}/tags`, {
-            tags: ['Sold'],
-          }).catch(() => {});
+          // Add the Sold tag without wiping the contact's existing tags
+          const cur = await api.get(`/contacts/${user._id}/${contactId}`).then(r => r.data?.tags || []).catch(() => []);
+          if (!cur.some((t: string) => t.toLowerCase() === 'sold')) {
+            await api.patch(`/contacts/${user._id}/${contactId}/tags`, { tags: [...cur, 'Sold'] }).catch(() => {});
+          }
         }
       }
 

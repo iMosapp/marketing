@@ -692,19 +692,10 @@ async def create_congrats_card(
                     {"$push": {"tags": tag_name}},
                 )
                 applied_tags.append(tag_name)
-            # Set date_sold and sold_count when Sold tag is applied
+            # Sold tag applied with the card: record the first sale if none exists (repeats only via the Sold wizard)
             if any(t.lower() == "sold" for t in applied_tags):
-                existing = await db.contacts.find_one({"_id": tag_contact["_id"]}, {"date_sold": 1, "sold_count": 1})
-                if not (existing or {}).get("date_sold"):
-                    await db.contacts.update_one(
-                        {"_id": tag_contact["_id"]},
-                        {"$set": {"date_sold": datetime.now(timezone.utc), "sold_count": 1}}
-                    )
-                else:
-                    await db.contacts.update_one(
-                        {"_id": tag_contact["_id"]},
-                        {"$set": {"date_sold": datetime.now(timezone.utc)}, "$inc": {"sold_count": 1}}
-                    )
+                from services.sales import record_sale
+                await record_sale(db, str(tag_contact["_id"]), None, only_if_unsold=True)
 
             # Trigger campaign enrollment for applied tags (unless skipped)
             should_skip = skip_campaign and skip_campaign.lower() in ("true", "1", "yes")

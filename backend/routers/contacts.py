@@ -1208,13 +1208,11 @@ async def set_date_sold(user_id: str, contact_id: str, data: dict = Body(...)):
         dt = datetime.fromisoformat(date_str.replace("Z", "+00:00")).replace(tzinfo=None)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid date format")
-    result = await db.contacts.update_one(
-        {"_id": ObjectId(contact_id), "user_id": user_id},
-        {"$set": {"date_sold": dt, "updated_at": datetime.utcnow()}}
-    )
-    if result.matched_count == 0:
+    if not await db.contacts.find_one({"_id": ObjectId(contact_id), "user_id": user_id}, {"_id": 1}):
         raise HTTPException(status_code=404, detail="Contact not found")
-    return {"success": True, "date_sold": dt.isoformat()}
+    from services.sales import record_sale
+    outcome = await record_sale(db, contact_id, dt)
+    return {"success": True, "date_sold": dt.isoformat(), "sale": outcome.get("kind"), "sold_count": outcome.get("sold_count")}
 
 
 @router.patch("/{user_id}/{contact_id}/toggle-automation")
@@ -1359,34 +1357,12 @@ async def update_contact_tags(user_id: str, contact_id: str, data: dict = Body(.
                 user_id, contact_id, {**contact, "tags": newly_added}
             )
 
-    # Handle repeat buyer — if contact already has date_sold and we're adding Sold tag again,
-    # push to purchase_history instead of starting fresh
-    newly_sold = 'Sold' in tags and 'Sold' not in old_tags
+    # Sold tag newly applied: make sure a first sale is recorded. Repeat purchases are recorded ONLY by the
+    # date-sold endpoint (Sold wizard) - inferring "repeat" from an existing date_sold double-counted single sales.
+    newly_sold = any(t.lower() == 'sold' for t in tags) and not any(t.lower() == 'sold' for t in old_tags)
     if newly_sold:
-        contact_doc = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"date_sold": 1, "vehicle": 1, "purchase_history": 1, "sold_count": 1})
-        if contact_doc and contact_doc.get("date_sold"):
-            # Repeat buyer — archive previous sale to purchase_history
-            prev_entry = {
-                "date": contact_doc["date_sold"].isoformat() if hasattr(contact_doc["date_sold"], "isoformat") else str(contact_doc["date_sold"]),
-                "vehicle": contact_doc.get("vehicle", ""),
-                "notes": f"Previous purchase",
-                "is_repeat": True,
-            }
-            await db.contacts.update_one(
-                {"_id": ObjectId(contact_id)},
-                {
-                    "$push": {"purchase_history": prev_entry},
-                    "$set": {"date_sold": datetime.utcnow()},
-                    "$inc": {"sold_count": 1},
-                }
-            )
-            logger.info(f"[Contacts] Repeat buyer detected for {contact_id} — purchase_history updated")
-        elif newly_sold:
-            # First sale — initialize sold_count to 1
-            await db.contacts.update_one(
-                {"_id": ObjectId(contact_id)},
-                {"$set": {"date_sold": datetime.utcnow(), "sold_count": 1}}
-            )
+        from services.sales import record_sale
+        await record_sale(db, contact_id, None, only_if_unsold=True)
 
     # Sold workflow hook — runs AFTER tag save, never blocks it
     sold_result = None
@@ -2778,9 +2754,13 @@ async def update_contact_vehicle(user_id: str, contact_id: str, data: dict = Bod
     if not vehicle:
         raise HTTPException(status_code=400, detail="vehicle is required")
     try:
+        _cur = await db.contacts.find_one({"_id": ObjectId(contact_id), "user_id": user_id}, {"vehicle": 1, "date_sold": 1, "prev_vehicle": 1})
+        _upd: dict = {"$set": {"vehicle": vehicle, "updated_at": datetime.now(timezone.utc)}}
+        if _cur and _cur.get("date_sold") and _cur.get("vehicle") and _cur["vehicle"] != vehicle and not _cur.get("prev_vehicle"):
+            _upd["$set"]["prev_vehicle"] = _cur["vehicle"]
         result = await db.contacts.update_one(
             {"_id": ObjectId(contact_id), "user_id": user_id},
-            {"$set": {"vehicle": vehicle, "updated_at": datetime.now(timezone.utc)}}
+            _upd
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

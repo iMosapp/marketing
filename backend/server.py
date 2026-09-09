@@ -1734,6 +1734,20 @@ async def startup_event():
             logger.warning(f"[Startup] Date opt-in reset failed: {e}")
     _aio2.create_task(_date_optin_migration())
 
+    # One-time: undo sold_count double-counting caused by the old "date_sold exists => repeat" inference.
+    async def _sold_count_repair():
+        try:
+            db = get_db()
+            if await db.migrations.find_one({"_id": "sold_count_repair_2026_09"}):
+                return
+            from services.sales import repair_false_repeats
+            r = await repair_false_repeats(db)
+            await db.migrations.insert_one({"_id": "sold_count_repair_2026_09", **r, "ran_at": datetime.utcnow()})
+            logger.info(f"[Startup] Sold-count repair fixed {r.get('fixed', 0)} contacts")
+        except Exception as e:
+            logger.warning(f"[Startup] Sold-count repair failed: {e}")
+    _aio2.create_task(_sold_count_repair())
+
     # Sync internal docs (PRD / Ops Manual / App Scope) from repo files into Admin → Docs
     async def _doc_sync():
         try:
