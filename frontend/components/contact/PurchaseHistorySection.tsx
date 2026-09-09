@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format, parseISO } from 'date-fns';
 import api from '../../services/api';
+import { useThemeStore } from '../../store/themeStore';
 
 const CATEGORIES = [
   { value: 'vehicle',      label: 'Vehicle',      icon: 'car-outline' },
@@ -45,6 +46,7 @@ export default function PurchaseHistorySection({ contactId, userId, colors }: Pr
   const [editing, setEditing] = useState<Purchase | null>(null);
   const [saving, setSaving] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const { mode } = useThemeStore();
 
   // Form state
   const [title, setTitle] = useState('');
@@ -251,6 +253,8 @@ export default function PurchaseHistorySection({ contactId, userId, colors }: Pr
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                 maximumDate={new Date()}
                 onChange={(_, d) => { setShowDatePicker(false); if (d) setDate(d); }}
+                textColor={colors.text}
+                themeVariant={mode}
               />
             )}
 

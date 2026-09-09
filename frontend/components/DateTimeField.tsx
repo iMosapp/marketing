@@ -6,6 +6,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Platform, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useThemeStore } from '../store/themeStore';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 export const fmtDateLocal = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -18,6 +19,7 @@ export const fmtTimeLabel = (time: string) => {
 export function DateTimeField({ colors, date, setDate, time, setTime, accent = '#C9A962' }: any) {
   const [showDate, setShowDate] = useState(false);
   const [showTime, setShowTime] = useState(false);
+  const { mode } = useThemeStore();
 
   if (Platform.OS === 'web') {
     const inputStyle: any = {
@@ -83,7 +85,8 @@ export function DateTimeField({ colors, date, setDate, time, setTime, accent = '
           mode="date"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           onChange={(_: any, d?: Date) => { if (Platform.OS !== 'ios') setShowDate(false); if (d) setDate(d); }}
-          themeVariant="dark"
+          themeVariant={mode}
+          textColor={colors?.text}
           style={{ height: 130, alignSelf: 'center' }}
         />
       )}
@@ -96,7 +99,8 @@ export function DateTimeField({ colors, date, setDate, time, setTime, accent = '
             if (Platform.OS !== 'ios') setShowTime(false);
             if (d) setTime(`${pad(d.getHours())}:${pad(d.getMinutes())}`);
           }}
-          themeVariant="dark"
+          themeVariant={mode}
+          textColor={colors?.text}
           style={{ height: 130, alignSelf: 'center' }}
         />
       )}

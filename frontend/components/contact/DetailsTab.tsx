@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import { formatEventTime } from '../../utils/contactHelpers';
 import { contactsAPI } from '../../services/api';
+import { useThemeStore } from '../../store/themeStore';
 import PersonalIntelSection from '../PersonalIntelSection';
 import PurchaseHistorySection from './PurchaseHistorySection';
 import CrmPushSection from './CrmPushSection';
@@ -18,6 +19,7 @@ const toYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padSta
 
 function BirthdayModal({ visible, onClose, onSave, current, s, colors, saving }: any) {
   const [dateStr, setDateStr] = useState('');
+  const { mode } = useThemeStore();
   useEffect(() => {
     if (visible) setDateStr(current ? toYMD(new Date(current)) : '');
   }, [visible, current]);
@@ -47,6 +49,8 @@ function BirthdayModal({ visible, onClose, onSave, current, s, colors, saving }:
               mode="date"
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               onChange={(_: any, d?: Date) => { if (d) setDateStr(toYMD(d)); }}
+              textColor={colors.text}
+              themeVariant={mode}
               style={{ height: 150, marginVertical: 8 }}
             />
           )}

@@ -64,7 +64,7 @@ const PRESET_FILTERS = [
 ];
 
 export default function NewBroadcastScreen() {
-  const { colors } = useThemeStore();
+  const { colors, mode } = useThemeStore();
   const styles = getStyles(colors);
   const router = useRouter();
   const { user } = useAuthStore();
@@ -865,6 +865,7 @@ const { showToast } = useToast();
                     setShowDatePicker(false);
                     if (date) setScheduledDate(date);
                   }}
+                  themeVariant={mode}
                 />
               )}
               
@@ -877,6 +878,7 @@ const { showToast } = useToast();
                     setShowTimePicker(false);
                     if (date) setScheduledDate(date);
                   }}
+                  themeVariant={mode}
                 />
               )}
             </View>

@@ -397,6 +397,7 @@ export default function AppointmentModal({
             display="default"
             onChange={handleDateChange}
             minimumDate={new Date()}
+            themeVariant={mode}
           />
         )}
 
@@ -431,6 +432,7 @@ export default function AppointmentModal({
             mode="time"
             display="default"
             onChange={handleTimeChange}
+            themeVariant={mode}
           />
         )}
 

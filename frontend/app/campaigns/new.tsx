@@ -970,6 +970,7 @@ const { showToast } = useToast();
               mode="time"
               display="default"
               onChange={handleTimeChange}
+              themeVariant={mode}
             />
           )
         )}
