@@ -249,6 +249,16 @@ async def cache_stats():
     return get_cache_stats()
 
 
+@router.get("/_health")
+async def image_storage_health():
+    """Diagnostics: is object storage reachable with this deployment's key, and can it read a real stored photo?"""
+    import asyncio
+    from utils.image_storage import storage_health
+    db = get_db()
+    sample = await db.users.find_one({"photo_path": {"$exists": True, "$nin": [None, ""]}}, {"photo_path": 1})
+    return await asyncio.to_thread(storage_health, (sample or {}).get("photo_path"))
+
+
 @router.get("/migrate-status")
 async def get_migration_status():
     """Get the status of the most recent migration job."""
@@ -382,7 +392,10 @@ async def serve_image(path: str, request: Request):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to serve image {path}: {e}")
+        status = getattr(e, "status", None)
+        logger.error(f"Failed to serve image {path}: storage_status={status} err={e}")
+        if status in (401, 403) or (status is None and "init" in str(e).lower()):
+            raise HTTPException(status_code=503, detail="Image storage unavailable")
         raise HTTPException(status_code=404, detail="Image not found")
 
 

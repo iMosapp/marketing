@@ -141,15 +141,22 @@ def put_object(path: str, data: bytes, content_type: str) -> dict:
 
 def list_objects(prefix: str) -> list:
     """List objects in storage under a prefix. Returns [{path, size, last_modified}, ...]."""
-    key = init_storage()
-    resp = requests.get(
-        f"{STORAGE_URL}/objects",
-        params={"prefix": prefix},
-        headers={"X-Storage-Key": key},
-        timeout=60,
-    )
+    resp = _storage_request("GET", f"{STORAGE_URL}/objects", params={"prefix": prefix}, timeout=60)
     resp.raise_for_status()
     return resp.json().get("objects", [])
+
+
+def _storage_request(method: str, url: str, **kw):
+    """Signed request to object storage; a stale cached key (401/403) is re-initialised once and retried."""
+    global storage_key
+    key = init_storage()
+    resp = requests.request(method, url, headers={**kw.pop("headers", {}), "X-Storage-Key": key}, **kw)
+    if resp.status_code in (401, 403):
+        logger.warning(f"Object storage rejected key ({resp.status_code}) on {method} {url[-60:]}; re-initializing")
+        storage_key = None
+        key = init_storage()
+        resp = requests.request(method, url, headers={**kw.get("headers", {}), "X-Storage-Key": key}, **kw)
+    return resp
 
 
 def get_object(path: str):
@@ -158,17 +165,41 @@ def get_object(path: str):
     if cached:
         return cached  # (data, content_type)
 
-    key = init_storage()
-    resp = requests.get(
-        f"{STORAGE_URL}/objects/{path}",
-        headers={"X-Storage-Key": key},
-        timeout=60,
-    )
-    resp.raise_for_status()
+    resp = _storage_request("GET", f"{STORAGE_URL}/objects/{path}", timeout=60)
+    if resp.status_code != 200:
+        raise StorageFetchError(resp.status_code, path)
     data = resp.content
     ct = resp.headers.get("Content-Type", "application/octet-stream")
     _cache.put(path, data, ct)
     return data, ct
+
+
+class StorageFetchError(Exception):
+    def __init__(self, status: int, path: str):
+        self.status = status
+        self.path = path
+        super().__init__(f"object storage returned {status} for {path}")
+
+
+def storage_health(sample_path: str | None = None) -> dict:
+    """Diagnostics for /api/images/_health: is the key configured, can we init, can we read a known object."""
+    global storage_key
+    out = {"key_configured": bool(EMERGENT_KEY), "key_hint": (EMERGENT_KEY or "")[:14] + "…" if EMERGENT_KEY else None,
+           "init_ok": False, "init_error": None, "sample_path": sample_path, "sample_status": None, "cache": _cache.stats}
+    try:
+        storage_key = None
+        init_storage()
+        out["init_ok"] = True
+    except Exception as e:
+        out["init_error"] = str(e)[:200]
+        return out
+    if sample_path:
+        try:
+            resp = _storage_request("GET", f"{STORAGE_URL}/objects/{sample_path}", timeout=30)
+            out["sample_status"] = resp.status_code
+        except Exception as e:
+            out["sample_status"] = f"error: {str(e)[:120]}"
+    return out
 
 
 # ---------------------------------------------------------------------------
