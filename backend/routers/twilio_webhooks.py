@@ -298,10 +298,12 @@ async def incoming_message(
         # ── Step 3: Find or create conversation — PRIMARY KEY: (rep_phone, contact_phone) ──
         # This is the ONLY correct key. The same customer can have conversations
         # with 100 different reps — each is completely isolated by rep_phone.
+        # A returning customer can have two threads on this key (their old thread + the new internet-lead
+        # thread whose intake text just went out): the reply belongs to the most recently active one.
         conversation = await db.conversations.find_one({
             "rep_phone":     to_phone,     # Jessi's +13854443045 — the number the customer texted
             "contact_phone": from_phone,   # The customer's phone
-        })
+        }, sort=[("last_message_at", -1)])
 
         if not conversation:
             # Backfill: check old-model conversations for this rep+contact pair

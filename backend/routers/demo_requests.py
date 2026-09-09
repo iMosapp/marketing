@@ -431,6 +431,9 @@ async def create_demo_request(data: dict):
                     {"$set": {"lead_source_id": str(routed_source["_id"]), "lead_source_name": routed_source.get("name"),
                               "conversation_id": conv_id}},
                 )
+                # The admins' "New Lead" alert opens the real lead thread (claim lives there), not the legacy contact-copy path
+                if conv_id:
+                    await db.notifications.update_many({"demo_request_id": demo_id}, {"$set": {"conversation_id": conv_id}})
                 logger.info(f"[DemoRequest] Routed '{lead_name}' ({demo.get('source_page')}) -> lead source {routed_source.get('name')} conv={conv_id}")
         except Exception as route_err:
             logger.warning(f"[DemoRequest] Lead source routing failed, falling back: {route_err}")
@@ -762,6 +765,12 @@ async def claim_lead(request_id: str, data: dict):
     demo = await db.demo_requests.find_one({"_id": ObjectId(request_id)})
     if not demo:
         return {"status": "error", "message": "Lead not found"}
+
+    # Routed through a Lead Source: the lead thread already owns the contact; claiming happens there.
+    # Never mint a duplicate contact for it.
+    if demo.get("conversation_id"):
+        conv = await db.conversations.find_one({"_id": ObjectId(demo["conversation_id"])}, {"contact_id": 1}) if ObjectId.is_valid(str(demo["conversation_id"])) else None
+        return {"status": "routed", "conversation_id": demo["conversation_id"], "contact_id": (conv or {}).get("contact_id")}
 
     # Check if already claimed
     if demo.get("claimed_by"):

@@ -86,10 +86,15 @@ export default function AlertsPage() {
       setItems(prev => prev.map(i => i.id === n.id ? { ...i, read: true } : i));
       api.post(`/notification-center/${user._id}/read`, { ids: [n.id] }).catch(() => {});
     }
-    // Website demo-form leads: claim on tap, then land on the contact with the intro prefilled
+    // Website demo-form leads: routed ones open the lead thread (claim lives there); legacy ones claim on tap
     if (n.type === 'new_lead' && n.demo_request_id && user?._id) {
+      if (n.conversation_id) { router.push(`/thread/${n.conversation_id}` as any); return; }
       try {
         const res = await api.post(`/demo-requests/${n.demo_request_id}/claim`, { user_id: user._id });
+        if (res.data?.status === 'routed' && res.data?.conversation_id) {
+          router.push(`/thread/${res.data.conversation_id}` as any);
+          return;
+        }
         if (res.data?.contact_id) {
           router.push({ pathname: `/contact/${res.data.contact_id}`, params: { prefill: res.data.prefill_message || '' } } as any);
           return;

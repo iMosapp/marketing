@@ -72,28 +72,53 @@ def source_member_ids(source: dict) -> set:
 async def _me(db, user_id: str) -> dict:
     if not ObjectId.is_valid(user_id):
         raise HTTPException(status_code=404, detail="User not found")
-    me = await db.users.find_one({"_id": ObjectId(user_id)}, {"role": 1, "store_id": 1, "name": 1})
+    me = await db.users.find_one({"_id": ObjectId(user_id)}, {"role": 1, "store_id": 1, "store_ids": 1, "organization_id": 1, "name": 1})
     if not me:
         raise HTTPException(status_code=404, detail="User not found")
     me["_id"] = str(me["_id"])
     me["store_id"] = str(me.get("store_id") or "")
     me["is_manager"] = me.get("role") in MANAGER_ROLES
+    # Every store this person manages: own store + multi-store list (+ the org's stores for org admins).
+    scope = {me["store_id"]} | {str(s) for s in (me.get("store_ids") or []) if s}
+    if me.get("role") == "org_admin" and me.get("organization_id"):
+        oid = str(me["organization_id"])
+        async for s in db.stores.find({"organization_id": {"$in": [oid] + ([ObjectId(oid)] if ObjectId.is_valid(oid) else [])}}, {"_id": 1}):
+            scope.add(str(s["_id"]))
+    me["scope_store_ids"] = [s for s in scope if s]
+    me["sees_everything"] = me.get("role") == "super_admin"
     return me
 
 
 async def _store_sources(db, store_id: str, me: Optional[dict] = None) -> list:
-    """Active sources for the store. Super/org admins without a store see every store's sources."""
-    if not store_id:
+    """Active sources for the caller's store(s). Super admins see every store's sources."""
+    scope = (me or {}).get("scope_store_ids") or ([store_id] if store_id else [])
+    if (me or {}).get("sees_everything") or not scope:
         if not (me and me.get("role") in ("super_admin", "org_admin")):
             return []
         q = {"active": {"$ne": False}, "$or": [{"lead_count": {"$gt": 0}}, {"website_default": True}, {"workflow_user_ids.0": {"$exists": True}}]}
     else:
-        q = {"store_id": store_id, "active": {"$ne": False}}
+        q = {"store_id": {"$in": scope}, "active": {"$ne": False}}
     out = []
     async for s in db.lead_sources.find(q):
         s["_id"] = str(s["_id"])
         out.append(s)
     return out
+
+
+def _lead_scope_or(me: dict, vis_ids: list, user_id: str) -> list:
+    """Which internet leads this person sees: theirs, ones they were on (released back), their sources' queue,
+    and for managers every lead in their store(s) regardless of which source doc it came through."""
+    q_or: list = [{"claimed_by": user_id}, {"prev_owner_id": user_id, "claimed": {"$ne": True}}]
+    if vis_ids:
+        q_or.append({"lead_source_id": {"$in": vis_ids}, "claimed": {"$ne": True}})
+    if me["is_manager"]:
+        if vis_ids:
+            q_or.append({"lead_source_id": {"$in": vis_ids}})
+        if me.get("sees_everything"):
+            q_or.append({"is_internet_lead": True})
+        elif me.get("scope_store_ids"):
+            q_or.append({"store_id": {"$in": me["scope_store_ids"]}})
+    return q_or
 
 
 def _visible_sources(me: dict, sources: list) -> list:
@@ -227,9 +252,7 @@ async def queue_summary(user_id: str):
     src_ids = [s["_id"] for s in _visible_sources(me, all_sources)]
     now = datetime.now(timezone.utc)
     since = now - timedelta(days=QUEUE_WINDOW_DAYS)
-    q_or: list = [{"claimed_by": user_id}]
-    if src_ids:
-        q_or.append({"lead_source_id": {"$in": src_ids}, "claimed": {"$ne": True}})
+    q_or = _lead_scope_or(me, src_ids, user_id)
     convs = await db.conversations.find(
         {"is_internet_lead": True, "status": {"$ne": "closed"}, "created_at": {"$gte": since}, "$or": q_or}
     ).to_list(300)
@@ -267,11 +290,7 @@ async def get_queue(user_id: str):
     now = datetime.now(timezone.utc)
     since = now - timedelta(days=QUEUE_WINDOW_DAYS)
     vis_ids = [s["_id"] for s in visible]
-    q_or = [{"claimed_by": user_id}]
-    if vis_ids:
-        q_or.append({"lead_source_id": {"$in": vis_ids}, "claimed": {"$ne": True}})
-        if me["is_manager"]:
-            q_or.append({"lead_source_id": {"$in": vis_ids}})
+    q_or = _lead_scope_or(me, vis_ids, user_id)
     convs = await db.conversations.find(
         {"is_internet_lead": True, "status": {"$ne": "closed"}, "created_at": {"$gte": since}, "$or": q_or}
     ).sort("created_at", -1).to_list(400)
@@ -281,7 +300,7 @@ async def get_queue(user_id: str):
     others = sorted([i for i in items if i["claimed"] and i["claimed_by"] != user_id], key=_sort_key) if me["is_manager"] else []
     return {
         "is_manager": me["is_manager"],
-        "visible": bool(vis_ids) or bool(mine),
+        "visible": bool(vis_ids) or bool(mine) or bool(unclaimed),
         "can_claim_source_ids": vis_ids,
         "sources": [{"id": s["_id"], "name": s.get("name"), "color": s.get("color") or "#007AFF", **source_thresholds(s)} for s in visible],
         "unclaimed": unclaimed,
@@ -420,6 +439,7 @@ async def release_to_queue(db, conv: dict, actor_id: Optional[str], reason: str,
     sets = {
         "claimed": False, "claimed_by": None, "assigned_to": None, "user_id": store_id or conv.get("user_id"),
         "routing_kind": "queue", "released_at": now, "released_by": actor_id, "release_reason": reason,
+        "prev_owner_id": prev_id or None,
         "owner_alert_at": None, "release_at": None, "updated_at": now.isoformat(),
     }
     if note:
@@ -473,6 +493,23 @@ async def release_lead(user_id: str, conv_id: str, body: Optional[ReleaseBody] =
 
 # ── Scheduler jobs ────────────────────────────────────────────────────────────
 
+async def _owner_replied_elsewhere(db, conv: dict) -> bool:
+    """The owner texted this customer since the lead landed, but in another thread with the same contact
+    (returning customers usually already have one). That counts as handled; don't yank the lead away."""
+    owner = str(conv.get("claimed_by") or "")
+    contact_id = str(conv.get("contact_id") or "")
+    created = _utc(conv.get("created_at"))
+    if not owner or not contact_id or not created:
+        return False
+    sibling_ids = [str(s["_id"]) async for s in db.conversations.find(
+        {"_id": {"$ne": conv["_id"]}, "contact_id": contact_id, "user_id": owner}, {"_id": 1}).limit(20)]
+    if not sibling_ids:
+        return False
+    msg = await db.messages.find_one({"conversation_id": {"$in": sibling_ids}, "sender": "user", "auto_sent": {"$ne": True},
+                                      "$or": [{"timestamp": {"$gte": created}}, {"created_at": {"$gte": created}}]}, {"_id": 1})
+    return msg is not None
+
+
 async def process_returning_lead_escalations() -> dict:
     """Every minute: returning-customer leads whose owner hasn't replied -> manager alert, then auto-release."""
     db = get_db()
@@ -488,6 +525,8 @@ async def process_returning_lead_escalations() -> dict:
     alerted = released = 0
     for c in convs:
         cid = str(c["_id"])
+        if cid not in replied and await _owner_replied_elsewhere(db, c):
+            replied[cid] = True
         if cid in replied:
             await db.conversations.update_one({"_id": c["_id"]}, {"$set": {"owner_alert_at": None, "release_at": None, "routing_resolved": True}})
             continue

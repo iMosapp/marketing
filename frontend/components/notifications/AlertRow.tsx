@@ -21,6 +21,7 @@ export interface AlertItem {
   action?: { label: string; icon: string; link?: string | null } | null;
   contact_name?: string | null;
   contact_id?: string;
+  conversation_id?: string;
   demo_request_id?: string;
   timestamp: string;
   read: boolean;
