@@ -3025,6 +3025,7 @@ function ContactDetailScreen() {
         setContact={setContact}
         showPhotoViewer={showPhotoViewer}
         setShowPhotoViewer={setShowPhotoViewer}
+        fallbackPhoto={resolvePhotoUrl(contact.photo_thumbnail || contact.photo)}
         fullPhotoLoading={fullPhotoLoading}
         allPhotos={allPhotos}
         setAllPhotos={setAllPhotos}

@@ -2,7 +2,7 @@
  * GalleryModal — full-screen photo gallery (grid, reel viewer, upload & manage).
  * Extracted from contact/[id].tsx (render-only; all state lives in the parent).
  */
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Modal, ScrollView, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
@@ -17,8 +17,19 @@ export default function GalleryModal(props: any) {
     allPhotos, setAllPhotos, selectedPhotoIndex, setSelectedPhotoIndex, setFullPhoto,
     galleryWidth, setGalleryWidth, photoReelRef,
     runPendingPick, requestAddPhotoFromGallery, preloadGalleryPhotos, usePhotoForCard,
-    showToast,
+    showToast, fallbackPhoto,
   } = props;
+  // Full-size load failures fall back to the thumbnail, then to whatever renders the avatar.
+  const [failedSrc, setFailedSrc] = useState<Record<number, string>>({});
+  const srcFor = (item: any, i: number) => failedSrc[i] || item.url;
+  const onFullError = (item: any, i: number) => {
+    setFailedSrc(prev => {
+      const cur = prev[i] || item.url;
+      const chain = [item.url, item.thumbnail_url, fallbackPhoto].filter((u, idx, arr) => u && arr.indexOf(u) === idx);
+      const next = chain[chain.indexOf(cur) + 1];
+      return next ? { ...prev, [i]: next } : prev;
+    });
+  };
 
   return (
     <Modal visible={showPhotoViewer} animationType="slide" transparent={false} onDismiss={runPendingPick} onRequestClose={() => { setShowPhotoViewer(false); setFullPhoto(null); setAllPhotos([]); setSelectedPhotoIndex(-1); }}>
@@ -98,11 +109,13 @@ export default function GalleryModal(props: any) {
                 return (
                   <View key={`reel-${i}`} style={{ width: screenWidth, height: imgH, justifyContent: 'center', alignItems: 'center' }}>
                     <Image
-                      source={{ uri: item.url }}
+                      source={{ uri: srcFor(item, i) }}
                       style={{ width: screenWidth, height: imgH }}
                       contentFit="contain"
                       transition={200}
                       cachePolicy="memory-disk"
+                      onError={() => onFullError(item, i)}
+                      data-testid={`photo-reel-image-${i}`}
                     />
                   </View>
                 );

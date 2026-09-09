@@ -1742,25 +1742,46 @@ async def get_all_contact_photos(user_id: str, contact_id: str):
             {"_id": ObjectId(contact_id)},
             {"photo_path": 1, "photo_thumb_path": 1, "photo_url": 1,
              "photo_thumbnail": 1, "first_name": 1, "phone": 1, "photo_history": 1,
-             "hidden_gallery_urls": 1}
+             "hidden_gallery_urls": 1, "photo": 1}
         )
     except Exception:
         contact = None
 
     # 1. Current profile photo — only fast paths
     if contact:
-        if contact.get("photo_path"):
+        pp = contact.get("photo_path") or ""
+        if pp and "/" in pp and not pp.startswith("error:"):
             photos.append({
                 "type": "profile", "label": "Profile Photo",
-                "url": f"/api/images/{contact['photo_path']}",
-                "thumbnail_url": f"/api/images/{contact.get('photo_thumb_path', contact['photo_path'])}",
+                "url": f"/api/images/{pp}",
+                "thumbnail_url": f"/api/images/{contact.get('photo_thumb_path') or pp}",
             })
-        elif contact.get("photo_url") and contact["photo_url"].startswith(("/api/images/", "http")):
-            photos.append({
-                "type": "profile", "label": "Profile Photo",
-                "url": contact["photo_url"],
-                "thumbnail_url": contact.get("photo_thumbnail") or contact["photo_url"],
-            })
+        else:
+            # photo_path missing or a migration sentinel ("skipped_too_large" / "error:..."):
+            # self-heal a legacy base64 photo into object storage now, else fall back to whatever URL renders the avatar.
+            healed = False
+            if (contact.get("photo") or "").startswith("data:"):
+                try:
+                    from utils.image_storage import upload_image
+                    up = await upload_image(contact["photo"], prefix="contacts", entity_id=contact_id)
+                    if up:
+                        await db.contacts.update_one({"_id": contact["_id"]}, {"$set": {
+                            "photo_path": up["original_path"], "photo_thumb_path": up["thumbnail_path"],
+                            "photo_avatar_path": up["avatar_path"],
+                            "photo_url": f"/api/images/{up['original_path']}",
+                            "photo_thumbnail": f"/api/images/{up['thumbnail_path']}",
+                        }})
+                        photos.append({"type": "profile", "label": "Profile Photo",
+                                       "url": f"/api/images/{up['original_path']}", "thumbnail_url": f"/api/images/{up['thumbnail_path']}"})
+                        healed = True
+                except Exception as e:
+                    logger.warning(f"[photos/all] self-heal upload failed for {contact_id}: {e}")
+            if not healed:
+                fallback = next((v for v in (contact.get("photo_url"), contact.get("photo_thumbnail"), contact.get("photo"))
+                                 if v and str(v).startswith(("/api/images/", "http", "data:"))), None)
+                if fallback:
+                    photos.append({"type": "profile", "label": "Profile Photo", "url": fallback,
+                                   "thumbnail_url": contact.get("photo_thumbnail") or fallback})
 
     # 2. Photo history — previous profile photos (only fast URLs)
     if contact and contact.get("photo_history"):
