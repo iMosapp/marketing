@@ -3,6 +3,7 @@ Add-to-Calendar link from the rep's number, then a morning-of reminder text. Pub
 import os
 import base64
 import logging
+from services.tag_workflows import initial_ai_state as _ai_state
 import secrets
 import asyncio
 from datetime import datetime, timezone, timedelta
@@ -173,7 +174,7 @@ async def _conversation(db, ctx: dict) -> dict | None:
     now = datetime.now(timezone.utc)
     doc = {"user_id": task["user_id"], "rep_phone": rep_phone, "contact_id": str(task["contact_id"]),
            "contact_phone": contact_phone, "contact_name": f"{ctx['contact'].get('first_name', '')} {ctx['contact'].get('last_name', '')}".strip(),
-           "status": "active", "ai_enabled": False, "ai_mode": "suggest", "unread": False, "unread_count": 0,
+           "status": "active", **(await _ai_state(db, task["contact_id"])), "unread": False, "unread_count": 0,
            "needs_assistance": False, "created_at": now, "last_message_at": now}
     doc["_id"] = (await db.conversations.insert_one(doc)).inserted_id
     return doc

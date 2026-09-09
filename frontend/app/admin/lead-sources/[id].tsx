@@ -27,6 +27,8 @@ import { ScreenHeader, HeaderTextButton } from '../../../components/common/Scree
 const GOLD = '#C9A962';
 import { ContactModeToggle, LeadCallLadder, WebsiteFormRouting, type CallAttempt } from '../../../components/admin/LeadWorkflowControls';
 import { AfterHoursRule, TestLeadCard, QueueTimers, type StoreHours } from '../../../components/admin/LeadTimingControls';
+import { LeadFlowPicker } from '../../../components/admin/LeadFlowPicker';
+import type { LeadFlow } from '../../../components/admin/LeadFlowSummary';
 const IS_WEB = Platform.OS === 'web';
 
 interface LeadSource {
@@ -144,6 +146,7 @@ export default function LeadSourceDetailScreen() {
   const [vaProfiles, setVaProfiles] = useState<any[]>([]);
   const [savingWorkflow, setSavingWorkflow] = useState(false);
   const [showWorkflow, setShowWorkflow] = useState(false);
+  const [leadFlow, setLeadFlow] = useState<LeadFlow | null>(null);
 
   const MERGE_FIELDS = [
     { label: '{{first_name}}', desc: "Customer's first name" },
@@ -215,9 +218,10 @@ export default function LeadSourceDetailScreen() {
 
       // Load workflow config
       if (workflowRes.data && Object.keys(workflowRes.data).length > 0) {
-        const { store_hours, ...cfg } = workflowRes.data;
+        const { store_hours, flow, flow_id: _fid, ...cfg } = workflowRes.data;
         setWorkflow(prev => ({ ...prev, ...cfg }));
         if (store_hours) setStoreHours(store_hours);
+        setLeadFlow(flow || null);
       }
 
       // Load reps for workflow assignment (scoped to THIS source's store, not the caller's account)
@@ -673,7 +677,7 @@ export default function LeadSourceDetailScreen() {
               <View>
                 <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Response Workflow</Text>
                 <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
-                  {workflow.intake_text ? '✓ Intake text set' : 'No intake text'} · {workflow.workflow_user_ids.length} reps · {workflow.contact_mode === 'text_and_call' ? `Text + Call (${workflow.call_attempts.length} attempts)` : 'Text only'}{workflow.website_default ? ' · Website catch-all' : workflow.website_pages.length ? ` · ${workflow.website_pages.length} web pages` : ''}{workflow.after_hours_mode === 'text_and_ai' ? ' · After hours: Jessi' : ''}
+                  {leadFlow ? `Flow: ${leadFlow.name} · ` : ''}{workflow.intake_text ? '✓ Intake text set' : 'No intake text'} · {workflow.workflow_user_ids.length} reps · {workflow.contact_mode === 'text_and_call' ? `Text + Call (${workflow.call_attempts.length} attempts)` : 'Text only'}{workflow.website_default ? ' · Website catch-all' : workflow.website_pages.length ? ` · ${workflow.website_pages.length} web pages` : ''}{workflow.after_hours_mode === 'text_and_ai' ? ' · After hours: Jessi' : ''}
                 </Text>
               </View>
             </View>
@@ -683,6 +687,15 @@ export default function LeadSourceDetailScreen() {
           {showWorkflow && (
             <View style={{ marginTop: 16, gap: 20 }}>
 
+              {/* ── Reusable Lead Flow (owns intake / ladder / after-hours when attached) ── */}
+              <LeadFlowPicker
+                sourceId={String(id)}
+                flow={leadFlow}
+                colors={colors}
+                onChanged={(flow, cfg) => { setLeadFlow(flow); if (cfg && Object.keys(cfg).length) setWorkflow(prev => ({ ...prev, ...cfg })); }}
+              />
+
+              {!leadFlow && (<>
               {/* ── Instant Intake Text ───────────────────────────── */}
               <View>
                 <Text style={styles.label}>Instant Intake Text</Text>
@@ -731,6 +744,7 @@ export default function LeadSourceDetailScreen() {
                   testID="inquiry-context-input" dataSet={{ testid: 'inquiry-context-input' } as any}
                 />
               </View>
+              </>)}
 
               {/* ── "Just tried you" text (voicemail follow-up, one tap from the retry task) ── */}
               <View>
@@ -757,6 +771,7 @@ export default function LeadSourceDetailScreen() {
                 />
               </View>
 
+              {!leadFlow && (<>
               {/* ── Workflow Reps ─────────────────────────────────── */}
               <View>
                 <Text style={styles.label}>Notify These Reps (first to reply claims the lead)</Text>
@@ -821,6 +836,7 @@ export default function LeadSourceDetailScreen() {
                 onEditHours={() => router.push('/settings/store-profile' as any)}
                 colors={colors}
               />
+              </>)}
 
               {/* ── Shared queue timers + returning-customer safety net + digest ── */}
               <QueueTimers
@@ -840,6 +856,7 @@ export default function LeadSourceDetailScreen() {
                 colors={colors}
               />
 
+              {!leadFlow && (<>
               {/* ── Auto-Call Toggle ──────────────────────────────── */}
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 }}>
                 <View style={{ flex: 1 }}>
@@ -873,9 +890,10 @@ export default function LeadSourceDetailScreen() {
                   <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff', transform: [{ translateX: workflow.va_enabled ? 22 : 0 }] }} />
                 </TouchableOpacity>
               </View>
+              </>)}
 
               {/* ── Custom VA Prompt for this Source ──────────────── */}
-              {workflow.va_enabled && (
+              {(leadFlow ? leadFlow.va_enabled : workflow.va_enabled) && (
                 <View>
                   <Text style={styles.label}>VA Profile for this Source</Text>
                   <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 8 }}>

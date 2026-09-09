@@ -1,0 +1,47 @@
+{
+  "summary": "Tested Lead Flows Library end-to-end. Backend API regression (10/10 pass) + frontend UI: library, editor (tabs, save, validation, summary), duplicate/delete, picker attach/detach, flow-wins hidden fields on lead source. Ladder/exhaustion e2e was intentionally skipped (already 22/22 by main agent). One functional bug found: 'Start from a blank flow' returns 400 from backend.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "POST /api/lead-flows (blank)",
+        "issue": "Frontend 'Start from a blank flow' posts {name:'New flow'} which the backend rejects with 400 'Text + Call needs at least one attempt with a rep on it' because clean_flow defaults contact_mode='text_and_call' with no attempts. Blank template path is unusable.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "LeadFlowLibrary template sheet",
+        "issue": "Tapping 'Start from a blank flow' surfaces backend 400 error toast instead of creating an empty flow. Same underlying cause as backend bug above; frontend should either send contact_mode='text_only' when creating blank, or backend clean_flow should default to text_only for blank body.",
+        "selector": "[data-testid=lead-flow-template-blank]",
+        "priority": "HIGH"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_lead_flows_api_regression.py",
+    "/app/test_reports/pytest/lead_flows_api_regression.xml"
+  ],
+  "action_items": [
+    "Fix blank-flow creation: either send template_key/contact_mode='text_only' from /app/frontend/app/lead-flows/index.tsx createFromTemplate(null), or make backend services/lead_flows.clean_flow default to contact_mode='text_only' when no attempts and no template are provided."
+  ],
+  "critical_code_review_comments": [
+    "services/lead_flows.clean_flow forces contact_mode='text_and_call' when unset, so any create without a template_key and without call_attempts fails validation - this makes the frontend 'blank flow' button impossible to use.",
+    "routers/lead_flows.require_manager uses request.state.user which is fine, but consider caching to avoid re-fetching user on every request in same call chain.",
+    "Frontend index.tsx line 43: api.post('/lead-flows', {name:'New flow'}) doesn't set a contact_mode; should be {name:'New flow', contact_mode:'text_only'} to avoid backend validation error."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_lead_flows_api_regression.py (new file, 10 pytest cases)"
+  ],
+  "success_rate": {"backend": "100% (10/10)", "frontend": "~90% (blank-flow entry point broken; all other flows verified)"},
+  "test_credentials": "QA Store Manager qa-manager@invalid.imonsocial.test / Manager123! ; Plain rep activation-tester@invalid.imonsocial.test / NewPass123! (both from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Created 1 temp flow (TEST_QA_UI_Flow) via API to drive UI test, plus 1 duplicate via UI. Attached/detached to source 6a165970ac830a1c833af189. Both deleted via force=true after test. Verified /api/lead-sources/6a165970ac830a1c833af189/workflow returns flow_id=None post-cleanup. Website source (69a787...) never touched.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend regression file test_lead_flows_api_regression.py already checks CRUD, RBAC 403, template create, duplicate, attach mirroring, flow-wins on source workflow save, delete-blocked-while-attached, detach, and force delete. UI verified: hub link exists in code at more.tsx:372 (route not hit in Playwright because /more is the Tools tab route, needed to be reached via tab bar click; code is present). Editor tabs, contact-mode toggles, ladder visibility gated by contact_mode, validation toast, summary re-render, duplicate '(copy)', delete-with-confirm, picker attach/detach and all FLOW_FIELDS hidden on source page when attached (intake-text-input, inquiry-context-input, contact-mode, lead-call-ladder, after-hours-rule, auto-call-toggle, va-enabled-toggle) - all verified. Non-flow fields (just-tried-text-input, save-workflow-btn) remain visible. Note for tester scripts: RN-web TextInputs don't honor Ctrl+A select-all reliably in Playwright keyboard.type; use page.fill() or clear via triple-click + Backspace for name/tags inputs.",
+  "rca of the issue": "Blank-flow 400: /app/frontend/app/lead-flows/index.tsx line 43 sends `{name:'New flow'}` when no template_key. In /app/backend/services/lead_flows.py clean_flow() sets `base['contact_mode']='text_and_call'` if not one of the two valid values. Then routers/lead_flows._validate raises 400 because contact_mode=='text_and_call' and normalize_flow_attempts([]) is empty. Fix: either send `contact_mode:'text_only'` from the blank path in the frontend, OR in clean_flow default to 'text_only' when the incoming body has no call_attempts and existing has none. The latter also protects any other blank creation path."
+}

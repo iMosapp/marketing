@@ -502,6 +502,10 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
     """
     now = datetime.now(timezone.utc)
 
+    # A Lead Flow attached to the source owns intake / ladder / after-hours settings
+    from services.lead_flows import apply_flow
+    source = await apply_flow(db, source)
+
     phone = normalized.get("phone", "")
     email = normalized.get("email", "")
     first = normalized.get("first_name", "Unknown")
@@ -884,7 +888,7 @@ async def process_queued_leads():
             rep_uid, result = None, {}
 
             if phone and message:
-                from services.twilio_service import send_sms, TWILIO_ENABLED
+                from services.twilio_service import send_sms
                 # Use the rep's dedicated number for this lead if available
                 rep_twilio_num = None
                 rep_uid = lead.get("assigned_to") or lead.get("user_id")
@@ -2589,7 +2593,9 @@ async def _fire_intake_workflow(source, lead_doc, conv_id, contact_id, phone_e16
     try:
         plan = plan or {}
         source_name         = source.get("name", "Lead Source")
-        intake_text         = source.get("intake_text", "").strip()
+        intake_text         = (source.get("intake_text") or "").strip()
+        if plan.get("after_hours") and (source.get("after_hours_text") or "").strip():
+            intake_text = source["after_hours_text"].strip()
         workflow_user_ids   = source.get("workflow_user_ids", [])
         notify_all          = source.get("notify_all_on_intake", True)
         store_tz            = plan.get("store_tz") or "America/Denver"

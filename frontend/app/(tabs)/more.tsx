@@ -369,6 +369,7 @@ export default function MoreScreen() {
         leadItems.push(
           { icon: 'flash', title: 'Lead Source Queue', subtitle: 'Inbound lead log and queued auto-text status', onPress: () => router.push('/admin/internet-leads'), color: '#C9A962' },
           { icon: 'megaphone', title: 'Lead Source Config', subtitle: 'ADF webhooks, texting windows and call ladder', onPress: () => router.push('/admin/lead-sources'), color: '#5856D6' },
+          { icon: 'git-network', title: 'Lead Flows', subtitle: 'Reusable playbooks: who rings, in what order, what Jessi does', onPress: () => router.push('/lead-flows' as any), color: '#C9A962' },
           { icon: 'link', title: 'Connect Zapier / Make', subtitle: 'Send leads from any app to a source', onPress: () => router.push('/admin/lead-connect' as any), color: '#FF4A00' },
         );
       }
@@ -393,6 +394,7 @@ export default function MoreScreen() {
       { icon: 'search-circle', title: 'Keyword Search', subtitle: 'Find any word in texts and call transcripts', onPress: () => router.push('/keyword-search' as any), color: '#32ADE6' },
       { icon: 'car-sport',  title: 'Inventory',  subtitle: 'Vehicles Jessi can quote and check',   onPress: () => router.push('/inventory' as any),          color: '#32ADE6' },
       ...(canManageCampaigns ? [{ icon: 'megaphone' as any,  title: 'Campaigns',  subtitle: 'Build and manage automated campaigns', onPress: () => router.push('/campaigns' as any), color: '#FF2D55' }] : []),
+      { icon: 'git-branch' as any, title: 'Workflows', subtitle: 'What happens when a contact is tagged Sold, Working, Met…', onPress: () => router.push('/workflows' as any), color: '#34C759' },
       { icon: 'star',       title: 'Review Center', subtitle: 'Approve, publish and track reviews', onPress: () => router.push('/settings/review-approvals'), color: '#FFD60A' },
       { icon: 'images',     title: 'Showcase',      subtitle: 'Approve showcase entries',          onPress: () => router.push('/settings/showcase-approvals'), color: '#34C759' },
     ];

@@ -20,9 +20,17 @@ from routers.database import get_db
 
 logger = logging.getLogger(__name__)
 
-MAX_ATTEMPTS = 4
+MAX_ATTEMPTS = 6
 RING_SECONDS = 25
 COLL = "lead_call_jobs"
+
+
+async def _job_source(db, source_id) -> dict:
+    """The lead source for a job with its Lead Flow (if any) merged over it."""
+    if not source_id or not ObjectId.is_valid(str(source_id)):
+        return {}
+    from services.lead_flows import apply_flow
+    return await apply_flow(db, await db.lead_sources.find_one({"_id": ObjectId(str(source_id))})) or {}
 
 
 def _app_url() -> str:
@@ -50,9 +58,10 @@ def normalize_attempts(raw: list, fallback_user_ids: list) -> list:
         if not user_ids:
             continue
         delay = a.get("delay_seconds")
-        attempts.append({"user_ids": user_ids, "delay_seconds": max(0, int(60 if delay is None else delay))})
+        attempts.append({"user_ids": user_ids, "delay_seconds": max(0, int(60 if delay is None else delay)),
+                         "delivery": "push" if a.get("delivery") == "push" else "call"})
     if not attempts and fallback_user_ids:
-        attempts = [{"user_ids": list(fallback_user_ids), "delay_seconds": 60}]
+        attempts = [{"user_ids": list(fallback_user_ids), "delay_seconds": 60, "delivery": "call"}]
     return attempts
 
 
@@ -119,11 +128,34 @@ async def _rep_already_engaged(db, conversation_id: str) -> bool:
 
 
 async def _from_number_for(db, source: dict, rep: dict) -> str:
+    rep_line = rep.get("twilio_number") or rep.get("mvpline_number")
+    if source.get("caller_id_mode") == "rep" and rep_line:
+        return rep_line
     return (
         source.get("phone_number")
-        or rep.get("twilio_number") or rep.get("mvpline_number")
+        or rep_line
         or os.environ.get("TWILIO_PHONE_NUMBER", "")
     )
+
+
+async def _push_rep(db, job: dict, uid: str, attempt_no: int) -> dict:
+    """Push-only rung: notify one rep (no phone call). Returns the call entry to store on the job."""
+    try:
+        rep = await db.users.find_one({"_id": ObjectId(uid)}, {"name": 1})
+    except Exception:
+        rep = None
+    entry = {"attempt": attempt_no, "user_id": uid, "rep_name": (rep or {}).get("name", ""), "status": "pushed",
+             "kind": "push", "at": datetime.now(timezone.utc)}
+    try:
+        from routers.push_notifications import send_push_to_user, LEAD_SOUND, LEAD_CHANNEL
+        name = (job.get("lead") or {}).get("name") or "New lead"
+        await send_push_to_user(uid, f"Lead still waiting: {name}",
+                                f"Attempt {attempt_no} · {job.get('source_name', 'Lead')} · tap to claim",
+                                f"/thread/{job['conversation_id']}", "flash", sound=LEAD_SOUND, channel_id=LEAD_CHANNEL)
+    except Exception as e:
+        entry["status"] = "failed"
+        entry["error"] = str(e)[:200]
+    return entry
 
 
 async def _dial_rep(db, client, job: dict, source: dict, uid: str, attempt_no: int, kind: str = "ladder") -> dict:
@@ -167,10 +199,12 @@ async def _run_attempt(db, job: dict):
     idx = job["attempt_index"]
     attempt = job["attempts"][idx]
     client = _twilio_client()
-    source = await db.lead_sources.find_one({"_id": ObjectId(job["lead_source_id"])}) if job.get("lead_source_id") else {}
-    source = source or {}
+    source = await _job_source(db, job.get("lead_source_id"))
     job_id = str(job["_id"])
-    placed = [await _dial_rep(db, client, job, source, uid, idx + 1) for uid in attempt["user_ids"]]
+    if attempt.get("delivery") == "push":
+        placed = [await _push_rep(db, job, uid, idx + 1) for uid in attempt["user_ids"]]
+    else:
+        placed = [await _dial_rep(db, client, job, source, uid, idx + 1) for uid in attempt["user_ids"]]
 
     is_last = idx + 1 >= len(job["attempts"])
     next_delay = job["attempts"][idx + 1]["delay_seconds"] if not is_last else 0
@@ -190,12 +224,29 @@ async def _run_attempt(db, job: dict):
     from utils.activity_log import log_activity
     lead_name = (job.get("lead") or {}).get("name") or "New lead"
     for p in placed:
-        if p.get("status") == "ringing" and job.get("contact_id"):
+        if p.get("status") in ("ringing", "pushed") and job.get("contact_id"):
             await log_activity(db, user_id=p["user_id"], contact_id=job["contact_id"], event_type="lead_call_attempt",
-                               description=f"Attempt {idx + 1} of {len(job['attempts'])} · {job.get('source_name', 'Lead')} · {lead_name}",
-                               ref=p.get("call_sid"), metadata={"job_id": job_id, "attempt": idx + 1})
+                               description=f"Attempt {idx + 1} of {len(job['attempts'])} · {job.get('source_name', 'Lead')} · {lead_name}" + (" · push" if p.get("kind") == "push" else ""),
+                               ref=p.get("call_sid"), metadata={"job_id": job_id, "attempt": idx + 1, "kind": p.get("kind")})
     if is_last:
-        asyncio.create_task(_notify_exhausted(job))
+        asyncio.create_task(_after_last_attempt(job_id, source))
+
+
+async def _after_last_attempt(job_id: str, source: dict):
+    """Give the final rung time to ring; if still nobody claimed, tell the reps and run the flow's no-answer automations."""
+    try:
+        await asyncio.sleep(RING_SECONDS + 10)
+        db = get_db()
+        job = await db[COLL].find_one({"_id": ObjectId(job_id)})
+        if not job or job.get("claimed_by") or job.get("status") not in ("exhausted", "active"):
+            return
+        await _notify_exhausted(job)
+        if source.get("flow_id"):
+            from services.lead_flows import on_ladder_exhausted
+            actions = await on_ladder_exhausted(db, job, source)
+            await db[COLL].update_one({"_id": job["_id"]}, {"$set": {"exhausted_actions": actions, "updated_at": datetime.now(timezone.utc)}})
+    except Exception as e:
+        logger.warning(f"[LeadCall] after-last-attempt failed for {job_id}: {e}")
 
 
 async def _notify_exhausted(job: dict):
@@ -270,8 +321,7 @@ async def call_rep_now(conversation_id: str, user_id: str) -> dict:
     if not job:
         contact = await db.contacts.find_one({"_id": ObjectId(conv["contact_id"])}) if conv.get("contact_id") and ObjectId.is_valid(str(conv["contact_id"])) else {}
         contact = contact or {}
-        source = await db.lead_sources.find_one({"_id": ObjectId(str(conv["lead_source_id"]))}) if conv.get("lead_source_id") and ObjectId.is_valid(str(conv["lead_source_id"])) else {}
-        source = source or {}
+        source = await _job_source(db, conv.get("lead_source_id"))
         job = {
             "token": secrets.token_urlsafe(16), "conversation_id": conversation_id, "contact_id": conv.get("contact_id"),
             "lead_source_id": str(source.get("_id", "")), "source_name": source.get("name") or conv.get("lead_source_name") or "Lead",
@@ -286,8 +336,8 @@ async def call_rep_now(conversation_id: str, user_id: str) -> dict:
         await db[COLL].update_one({"_id": job["_id"]}, {"$set": {"status": "claimed", "claimed_by": user_id, "claimed_via": "app", "claimed_at": now, "updated_at": now}})
         job.update({"status": "claimed", "claimed_by": user_id, "claimed_via": "app", "claimed_at": now})
         asyncio.create_task(_hangup_other_calls(job, keep_user_id=user_id))
-    source = await db.lead_sources.find_one({"_id": ObjectId(job["lead_source_id"])}) if job.get("lead_source_id") and ObjectId.is_valid(str(job.get("lead_source_id"))) else {}
-    entry = await _dial_rep(db, _twilio_client(), job, source or {}, user_id, (job.get("attempt_index") or 0) + 1, kind="callback")
+    source = await _job_source(db, job.get("lead_source_id"))
+    entry = await _dial_rep(db, _twilio_client(), job, source, user_id, (job.get("attempt_index") or 0) + 1, kind="callback")
     await db[COLL].update_one({"_id": job["_id"]}, {"$push": {"calls": entry}, "$set": {"updated_at": now}})
     if job.get("contact_id") and entry.get("status") == "ringing":
         from utils.activity_log import log_activity
@@ -327,6 +377,8 @@ async def _apply_claim_to_conversation(db, job: dict, user_id: str, via: str):
         from utils.activity_log import on_lead_claimed
         await on_lead_claimed(db, contact_id=job["contact_id"], user_id=user_id, via=via,
                               previous_owner=str((prev or {}).get("user_id") or ""))
+        from services.lead_flows import on_lead_claimed as flow_on_claimed
+        await flow_on_claimed(db, job["conversation_id"], user_id)
 
 
 async def _hangup_other_calls(job: dict, keep_user_id: str):
@@ -383,6 +435,8 @@ async def record_call_event(job_id: str, call_sid: str, **fields):
 def _outcome(c: dict, job: dict) -> str:
     if c.get("status") == "no_phone":
         return "no_phone"
+    if c.get("status") == "pushed":
+        return "pushed"
     if c.get("status") in ("twilio_disabled", "failed"):
         return "failed"
     if c.get("passed"):
@@ -479,7 +533,7 @@ async def timeline_for_conversation(conversation_id: str) -> dict:
             "handled_reason": job.get("handled_reason"),
             "attempt_index": job.get("attempt_index", 0),
             "attempts": [
-                {"n": i + 1, "delay_seconds": a.get("delay_seconds", 0),
+                {"n": i + 1, "delay_seconds": a.get("delay_seconds", 0), "delivery": a.get("delivery", "call"),
                  "reps": [{"user_id": u, "name": names.get(u, "Rep")} for u in a.get("user_ids", [])]}
                 for i, a in enumerate(job.get("attempts", []))
             ],
@@ -495,6 +549,7 @@ async def timeline_for_conversation(conversation_id: str) -> dict:
             "claimed_at": iso(claimed_at),
             "time_to_claim_seconds": tts,
             "exhausted_at": iso(job.get("exhausted_at")),
+            "exhausted_actions": job.get("exhausted_actions") or [],
             "next_attempt_at": iso(job.get("next_attempt_at")) if job.get("status") == "active" else None,
         }
     try:

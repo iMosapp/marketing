@@ -14,6 +14,7 @@ import httpx
 import base64
 
 from routers.database import get_db
+from services.tag_workflows import initial_ai_state as _initial_ai_state
 
 # ── Satisfied-reply detection (auto-clears the Waiting flag) ─────────────────
 _SAT_WORDS = {
@@ -340,8 +341,7 @@ async def incoming_message(
                 "contact_phone": from_phone,
                 "contact_name":  contact_name,
                 "status":        "active",
-                "ai_enabled":    False,
-                "ai_mode":       "suggest",
+                **(await _initial_ai_state(db, contact_id)),
                 "unread":        True,
                 "unread_count":  1,
                 "needs_assistance": False,

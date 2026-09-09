@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-export type CallAttempt = { user_ids: string[]; delay_seconds: number };
+export type CallAttempt = { user_ids: string[]; delay_seconds: number; delivery?: 'call' | 'push' };
 type Rep = { _id: string; name?: string; email?: string; role?: string; phone?: string };
 
 const MAX = 4;
@@ -36,22 +36,22 @@ export const ContactModeToggle = ({ value, onChange, colors }: { value: 'text_on
   </View>
 );
 
-export const LeadCallLadder = ({ attempts, reps, onChange, colors }: { attempts: CallAttempt[]; reps: Rep[]; onChange: (a: CallAttempt[]) => void; colors: any }) => {
+export const LeadCallLadder = ({ attempts, reps, onChange, colors, max = MAX, allowPush = false }: { attempts: CallAttempt[]; reps: Rep[]; onChange: (a: CallAttempt[]) => void; colors: any; max?: number; allowPush?: boolean }) => {
   const update = (i: number, patch: Partial<CallAttempt>) => onChange(attempts.map((a, idx) => (idx === i ? { ...a, ...patch } : a)));
   const toggleRep = (i: number, uid: string) => {
     const cur = attempts[i].user_ids;
     update(i, { user_ids: cur.includes(uid) ? cur.filter(u => u !== uid) : [...cur, uid] });
   };
   const addAttempt = () => {
-    if (attempts.length >= MAX) return;
+    if (attempts.length >= max) return;
     const prev = attempts[attempts.length - 1];
-    onChange([...attempts, { user_ids: prev ? [...prev.user_ids] : [], delay_seconds: 60 }]);
+    onChange([...attempts, { user_ids: prev ? [...prev.user_ids] : [], delay_seconds: 60, delivery: 'call' }]);
   };
   const remove = (i: number) => onChange(attempts.filter((_, idx) => idx !== i));
 
   return (
     <View testID="lead-call-ladder" dataSet={{ testid: 'lead-call-ladder' } as any}>
-      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 4 }}>Call Ladder (up to {MAX} attempts)</Text>
+      <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 4 }}>Call Ladder (up to {max} attempts)</Text>
       <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 10, lineHeight: 17 }}>
         Each attempt rings everyone on it at once for about 25 seconds. Add a manager or another team on later attempts to escalate. Minimum delay between attempts is 30s. Dialing stops the moment someone claims.
       </Text>
@@ -63,7 +63,7 @@ export const LeadCallLadder = ({ attempts, reps, onChange, colors }: { attempts:
               <Text style={{ fontWeight: '800', color: '#000', fontSize: 13 }}>{i + 1}</Text>
             </View>
             <Text style={{ flex: 1, fontWeight: '700', color: colors.text }}>
-              {i === 0 ? 'Rings immediately' : `Rings ${a.delay_seconds}s after attempt ${i}`}
+              {a.delivery === 'push' ? 'Pushes' : 'Rings'} {i === 0 ? 'immediately' : `${a.delay_seconds}s after attempt ${i}`}
             </Text>
             {attempts.length > 1 && (
               <TouchableOpacity onPress={() => remove(i)} hitSlop={8} testID={`ladder-remove-${i}`} dataSet={{ testid: `ladder-remove-${i}` } as any}>
@@ -72,6 +72,19 @@ export const LeadCallLadder = ({ attempts, reps, onChange, colors }: { attempts:
             )}
           </View>
 
+          {allowPush && (
+            <View style={{ flexDirection: 'row', gap: 6, marginBottom: 10 }}>
+              {([['call', 'call-outline', 'Ring phones'], ['push', 'notifications-outline', 'Push only']] as const).map(([v, icon, label]) => {
+                const on = (a.delivery || 'call') === v;
+                return (
+                  <TouchableOpacity key={v} onPress={() => update(i, { delivery: v })} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 14, backgroundColor: on ? '#C9A962' : colors.card, borderWidth: 1, borderColor: on ? '#C9A962' : colors.border }} testID={`ladder-${i}-delivery-${v}`} dataSet={{ testid: `ladder-${i}-delivery-${v}` } as any}>
+                    <Ionicons name={icon as any} size={13} color={on ? '#000' : colors.textSecondary} />
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: on ? '#000' : colors.text }}>{label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
           {i > 0 && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
               <Text style={{ fontSize: 12, color: colors.textSecondary, marginRight: 4 }}>Delay</Text>
@@ -121,7 +134,7 @@ export const LeadCallLadder = ({ attempts, reps, onChange, colors }: { attempts:
         </View>
       ))}
 
-      {attempts.length < MAX && (
+      {attempts.length < max && (
         <TouchableOpacity onPress={addAttempt} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 10, borderWidth: 1, borderStyle: 'dashed', borderColor: '#C9A962' }} testID="ladder-add-attempt" dataSet={{ testid: 'ladder-add-attempt' } as any}>
           <Ionicons name="add-circle-outline" size={18} color="#C9A962" />
           <Text style={{ color: '#C9A962', fontWeight: '700' }}>Add attempt {attempts.length + 1}</Text>

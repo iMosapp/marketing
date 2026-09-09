@@ -16,6 +16,7 @@ import asyncio
 
 from models import Message, MessageCreate
 from routers.database import get_db, get_data_filter, increment_user_stat
+from services.tag_workflows import initial_ai_state
 from utils.text_sanitize import no_em_dash, clean_ai_text
 from services.twilio_service import send_sms, get_twilio_status, normalize_phone, TWILIO_PHONE_NUMBER
 
@@ -351,8 +352,7 @@ async def create_conversation(user_id: str, data: dict):
         "contact_phone": contact_phone,
         "contact_name":  contact_name,
         "status":        "active",
-        "ai_enabled":    False,
-        "ai_mode":       "suggest",
+        **(await initial_ai_state(db, contact_id)),
         "ai_handled":    False,
         "ai_outcome":    None,
         "ai_outcome_priority": 999,
@@ -826,8 +826,7 @@ async def send_mms_message(
                     "contact_phone": contact.get('phone'),
                     "contact_name":  cname,
                     "status":        "active",
-                    "ai_enabled":    False,
-                    "ai_mode":       "suggest",
+                    **(await initial_ai_state(db, conversation_id)),
                     "created_at":    datetime.now(timezone.utc),
                     "last_message_at": datetime.now(timezone.utc)
                 }
@@ -1934,8 +1933,7 @@ async def send_message_simple(user_id: str, message_data: dict):
                 "contact_phone": contact.get("phone"),
                 "contact_name": f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip(),
                 "status": "active",
-                "ai_enabled": False,
-                "ai_mode": "suggest",
+                **(await initial_ai_state(db, contact_id)),
                 "created_at": datetime.now(timezone.utc),
                 "last_message_at": datetime.now(timezone.utc)
             }
@@ -2485,8 +2483,7 @@ async def twilio_inbound_webhook(request: Request):
                 "contact_phone": from_phone,
                 "contact_name": f"{contact.get('first_name', '')} {contact.get('last_name', '')}".strip(),
                 "status": "active",
-                "ai_enabled": False,
-                "ai_mode": "suggest",
+                **(await initial_ai_state(db, contact_id)),
                 "unread": True,
                 "unread_count": 1,
                 "inbox_type": inbox_type,  # Track which inbox this belongs to

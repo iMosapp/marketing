@@ -701,6 +701,10 @@ from routers import app_links
 api_router.include_router(app_links.router)
 from routers import go_links
 api_router.include_router(go_links.router)
+from routers import workflows as tag_workflows_router
+api_router.include_router(tag_workflows_router.router)
+from routers import lead_flows as lead_flows_router
+api_router.include_router(lead_flows_router.router)
 api_router.include_router(wallet_pass.router)
 
 # ============= WEBSOCKET ENDPOINT =============

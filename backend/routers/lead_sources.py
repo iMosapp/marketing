@@ -166,9 +166,13 @@ def serialize_lead_source(source: dict) -> dict:
         "lead_count": source.get("lead_count", 0),
         "created_at": source.get("created_at"),
         "updated_at": source.get("updated_at"),
+        "flow_id": source.get("flow_id"),
+        "flow_name": source.get("flow_name"),
         # Workflow config
         "workflow": {
             "intake_text":             source.get("intake_text", ""),
+            "after_hours_text":        source.get("after_hours_text", ""),
+            "no_answer_text":          source.get("no_answer_text", ""),
             "intake_delay_seconds":    source.get("intake_delay_seconds", 0),
             "va_enabled":              source.get("va_enabled", True),
             "va_profile_id":           source.get("va_profile_id"),
@@ -191,6 +195,11 @@ def serialize_lead_source(source: dict) -> dict:
             "digest_hour":             source.get("digest_hour", 18),
             "just_tried_text":         source.get("just_tried_text", ""),
             "inquiry_context":         source.get("inquiry_context", ""),
+            "caller_id_mode":          source.get("caller_id_mode", "rep"),
+            "tags_on_claim":           source.get("tags_on_claim", []),
+            "tags_on_no_answer":       source.get("tags_on_no_answer", []),
+            "exhausted_text_lead":     source.get("exhausted_text_lead", False),
+            "exhausted_push_manager":  source.get("exhausted_push_manager", False),
         },
     }
 
@@ -687,6 +696,8 @@ async def claim_lead(conversation_id: str, user_id: str, request: Request):
     source = None
     if conversation.get("lead_source_id") and ObjectId.is_valid(str(conversation["lead_source_id"])):
         source = await db.lead_sources.find_one({"_id": ObjectId(conversation["lead_source_id"])})
+        from services.lead_flows import apply_flow
+        source = await apply_flow(db, source)
     requester = request.state.user or {}
     is_mgr = requester.get("role") in ("super_admin", "admin", "manager", "store_manager", "org_admin")
     if source and not is_mgr:
@@ -737,6 +748,8 @@ async def claim_lead(conversation_id: str, user_id: str, request: Request):
         from utils.activity_log import on_lead_claimed
         await on_lead_claimed(db, contact_id=str(conversation["contact_id"]), user_id=user_id, via="app",
                               previous_owner=str((prev_contact or {}).get("user_id") or ""))
+        from services.lead_flows import on_lead_claimed as flow_on_claimed
+        await flow_on_claimed(db, conversation_id, user_id)
     
     # Update lead source weighted counts if applicable
     if source and source.get("assignment_method") == "weighted_round_robin":
@@ -838,6 +851,20 @@ async def get_workflow_config(source_id: str):
     if not source:
         raise HTTPException(status_code=404, detail="Lead source not found")
     cfg = serialize_lead_source(source).get("workflow", {})
+    cfg["flow_id"] = source.get("flow_id")
+    cfg["flow"] = None
+    if source.get("flow_id") and ObjectId.is_valid(str(source["flow_id"])):
+        from services import lead_flows as lf
+        flow = await db[lf.COLL].find_one({"_id": ObjectId(str(source["flow_id"]))})
+        if flow:
+            names = {}
+            ids = [ObjectId(u) for a in flow.get("call_attempts") or [] for u in a.get("user_ids") or [] if ObjectId.is_valid(str(u))]
+            if ids:
+                async for u in db.users.find({"_id": {"$in": ids}}, {"name": 1, "first_name": 1}):
+                    names[str(u["_id"])] = (u.get("name") or u.get("first_name") or "Rep").split(" ")[0]
+            cfg["flow"] = lf.serialize(flow, [source], names)
+        else:
+            cfg["flow_id"] = None
     store = {}
     if source.get("store_id") and ObjectId.is_valid(str(source["store_id"])):
         store = await db.stores.find_one({"_id": ObjectId(source["store_id"])}, {"business_hours": 1, "timezone": 1, "name": 1}) or {}
@@ -863,6 +890,10 @@ async def save_workflow_config(source_id: str, config: WorkflowConfig, _m: dict 
         raise HTTPException(status_code=404, detail="Lead source not found")
     # Only touch fields the client actually sent (a partial save must not reset the VA or wipe the ladder)
     updates = config.dict(exclude_unset=True)
+    if source.get("flow_id"):
+        # The attached Lead Flow owns these keys; edit the flow instead
+        from services.lead_flows import FLOW_FIELDS
+        updates = {k: v for k, v in updates.items() if k not in FLOW_FIELDS}
     for k in ("text_window_start", "text_window_end"):
         if k in updates and not _HHMM.match(updates[k] or ""):
             raise HTTPException(status_code=400, detail=f"{k} must be HH:MM (24h)")
@@ -1000,6 +1031,8 @@ async def claim_and_call(conversation_id: str, user_id: str, request: Request):
         from utils.activity_log import on_lead_claimed
         await on_lead_claimed(db, contact_id=str(conv["contact_id"]), user_id=user_id, via="app",
                               previous_owner=str((prev_contact or {}).get("user_id") or ""), note="Claimed and called from the app")
+        from services.lead_flows import on_lead_claimed as flow_on_claimed
+        await flow_on_claimed(db, conversation_id, user_id)
     from services.lead_call_engine import mark_claimed
     await mark_claimed(conversation_id, user_id, via="app")
 

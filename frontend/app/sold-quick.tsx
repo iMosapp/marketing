@@ -46,28 +46,12 @@ export default function SoldQuickScreen() {
   const [referralSearch, setReferralSearch] = useState('');
   const [referralResults, setReferralResults] = useState<any[]>([]);
 
-  // Campaign selection
-  const [availableCampaigns, setAvailableCampaigns] = useState<any[]>([]);
-  const [selectedCampaignId, setSelectedCampaignId] = useState<string>('');
-  const [selectedCampaignName, setSelectedCampaignName] = useState<string>('');
+  // Sold workflow (store rulebook): what runs automatically after this sale
+  const [soldWorkflow, setSoldWorkflow] = useState<any>(null);
 
   useEffect(() => {
     if (!user?._id) return;
-    api.get(`/campaigns/${user._id}?active=true`).then(res => {
-      const camps = (res.data?.campaigns || res.data || []).filter((c: any) =>
-        c.active && (
-          c.trigger_tag?.toLowerCase() === 'sold' ||
-          c.type?.includes('sold') ||
-          c.name?.toLowerCase().includes('sold') ||
-          c.name?.toLowerCase().includes('follow')
-        )
-      );
-      setAvailableCampaigns(camps);
-      if (camps.length > 0 && !selectedCampaignId) {
-        setSelectedCampaignId(camps[0]._id || camps[0].id);
-        setSelectedCampaignName(camps[0].name);
-      }
-    }).catch(() => {});
+    api.get(`/workflows/${user._id}/sold`).then(res => setSoldWorkflow(res.data)).catch(() => {});
   }, [user?._id]);  const [showReferralSearch, setShowReferralSearch] = useState(false);
 
   // Referral contact search
@@ -293,19 +277,8 @@ export default function SoldQuickScreen() {
         }).catch(() => {});
       }
 
-      // Step 7: Enroll in long-term follow-up campaign
-      if (contactId) {
-        if (selectedCampaignId) {
-          await api.post(`/campaigns/${user._id}/${selectedCampaignId}/enroll/${contactId}`)
-            .catch(() => {});
-        } else {
-          // Add the Sold tag without wiping the contact's existing tags
-          const cur = await api.get(`/contacts/${user._id}/${contactId}`).then(r => r.data?.tags || []).catch(() => []);
-          if (!cur.some((t: string) => t.toLowerCase() === 'sold')) {
-            await api.patch(`/contacts/${user._id}/${contactId}/tags`, { tags: [...cur, 'Sold'] }).catch(() => {});
-          }
-        }
-      }
+      // Step 7: nothing to do - the date-sold call above ran the store's Sold workflow
+      // (Sold tag, competing nurtures stopped, campaign enrollment, Jessi on).
 
       // Step 8: Schedule 5-min voice capture reminder push notification
       // Rep is still with customer now — notification fires after customer leaves
@@ -340,7 +313,7 @@ export default function SoldQuickScreen() {
       { icon: 'star-outline',    color: '#FF9500', label: 'Review request',           time: '~7 min',   done: false },
     ];
 
-    const campaignName = selectedCampaignName || 'Sold Follow-Up';
+    const campaignName = (soldWorkflow?.campaigns || []).map((c: any) => c.name).join(', ') || 'Sold follow-up';
 
     return (
       <SafeAreaView style={s.container} edges={['top', 'bottom']}>
@@ -377,7 +350,7 @@ export default function SoldQuickScreen() {
               <Text style={[s.timelineTime, { color: '#AF52DE' }]}>Running</Text>
             </View>
             <Text style={{ fontSize: 12, color: '#ffffff50', paddingLeft: 44, marginTop: 2, marginBottom: 4 }}>
-              Enrolled in {campaignName}
+              Enrolled in {campaignName}{soldWorkflow?.jessi_mode === 'auto_reply' ? ' · Jessi answers replies' : ''}
             </Text>
           </View>
 
@@ -634,44 +607,45 @@ export default function SoldQuickScreen() {
           ))}
         </View>
 
-        {/* ── Long-term Campaign ── */}
-        <View style={{ marginTop: 24 }}>
-          <Text style={s.fieldLabel}>LONG-TERM FOLLOW-UP CAMPAIGN</Text>
-          {availableCampaigns.length === 0 ? (
-            <View style={{ backgroundColor: colors.card, borderRadius: 12, padding: 14, borderWidth: 1, borderColor: colors.surface, marginTop: 8 }}>
-              <Text style={{ fontSize: 14, color: colors.textSecondary }}>No Sold campaigns found. Create one in Hub → Campaigns.</Text>
-            </View>
-          ) : (
-            <View style={{ backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.surface, marginTop: 8, overflow: 'hidden' }}>
-              {availableCampaigns.map((c: any, i: number) => {
-                const cid = c._id || c.id;
-                const selected = selectedCampaignId === cid;
-                return (
-                  <TouchableOpacity
-                    key={cid}
-                    onPress={() => { setSelectedCampaignId(cid); setSelectedCampaignName(c.name); }}
-                    style={{ flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12, borderBottomWidth: i < availableCampaigns.length - 1 ? 1 : 0, borderBottomColor: colors.surface }}
-                    data-testid={`campaign-option-${cid}`}
-                  >
-                    <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: selected ? ACCENT : colors.border, backgroundColor: selected ? ACCENT : 'transparent', alignItems: 'center', justifyContent: 'center' }}>
-                      {selected && <Ionicons name="checkmark" size={12} color="#000" />}
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 15, fontWeight: '600', color: colors.text }}>{c.name}</Text>
-                      <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
-                        {(c.sequences || []).length} steps · starts day 7
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
-          {selectedCampaignId && (
-            <TouchableOpacity onPress={() => { setSelectedCampaignId(''); setSelectedCampaignName(''); }} style={{ marginTop: 6, alignSelf: 'flex-end' }}>
-              <Text style={{ fontSize: 12, color: colors.textSecondary }}>Skip campaign enrollment</Text>
+        {/* ── What happens next (store Sold workflow) ── */}
+        <View style={{ marginTop: 24 }} testID="sold-workflow-preview" {...({ "data-testid": "sold-workflow-preview" } as any)}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={s.fieldLabel}>WHAT HAPPENS NEXT · AUTOMATIC</Text>
+            <TouchableOpacity onPress={() => router.push('/workflows' as any)} testID="sold-workflow-open" {...({ "data-testid": "sold-workflow-open" } as any)}>
+              <Text style={{ fontSize: 12, color: '#C9A962', fontWeight: '700' }}>View workflow</Text>
             </TouchableOpacity>
-          )}
+          </View>
+          <View style={{ backgroundColor: colors.card, borderRadius: 14, padding: 14, gap: 10 }}>
+            {!soldWorkflow ? (
+              <Text style={{ fontSize: 13, color: colors.textSecondary }}>Loading your store's Sold workflow…</Text>
+            ) : (
+              <>
+                {(soldWorkflow.stop_tags?.length > 0 || soldWorkflow.clear_hot) && (
+                  <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
+                    <Ionicons name="stop-circle-outline" size={18} color="#FF9500" style={{ marginTop: 1 }} />
+                    <Text style={{ flex: 1, fontSize: 13, color: colors.text }}>Stops {soldWorkflow.stop_tags.join(', ')} follow-ups{soldWorkflow.clear_hot ? ' and clears the hot-lead flag' : ''}</Text>
+                  </View>
+                )}
+                {(soldWorkflow.campaigns || []).length === 0 ? (
+                  <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
+                    <Ionicons name="alert-circle-outline" size={18} color="#FF3B30" style={{ marginTop: 1 }} />
+                    <Text style={{ flex: 1, fontSize: 13, color: colors.text }}>No Sold campaign attached yet. A manager can attach one in Workflows.</Text>
+                  </View>
+                ) : soldWorkflow.campaigns.map((c: any) => (
+                  <View key={c.id} style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
+                    <Ionicons name="rocket-outline" size={18} color="#AF52DE" style={{ marginTop: 1 }} />
+                    <Text style={{ flex: 1, fontSize: 13, color: colors.text }}>Enrolls in <Text style={{ fontWeight: '700' }}>{c.name}</Text> · {c.steps} touches{c.scope === 'store' ? ' · store-wide' : ''}</Text>
+                  </View>
+                ))}
+                <View style={{ flexDirection: 'row', gap: 10, alignItems: 'flex-start' }}>
+                  <Ionicons name={soldWorkflow.jessi_mode === 'auto_reply' ? 'sparkles' : 'person-outline'} size={18} color={soldWorkflow.jessi_mode === 'auto_reply' ? '#C9A962' : colors.textSecondary} style={{ marginTop: 1 }} />
+                  <Text style={{ flex: 1, fontSize: 13, color: colors.text }}>
+                    {soldWorkflow.jessi_mode === 'auto_reply' ? 'Jessi answers their replies and escalates to you when needed. Inbox shows Auto.' : soldWorkflow.jessi_mode === 'draft_only' ? 'Jessi drafts replies for your approval.' : 'You handle replies yourself.'}
+                  </Text>
+                </View>
+              </>
+            )}
+          </View>
         </View>
 
         {/* Send button */}

@@ -16,6 +16,7 @@ const OUTCOME: Record<string, { label: string; color: string; icon: string }> = 
   ringing:   { label: 'Ringing', color: GOLD, icon: 'call' },
   no_phone:  { label: 'No phone on profile, skipped', color: '#FF3B30', icon: 'alert-circle-outline' },
   failed:    { label: 'Call failed', color: '#FF3B30', icon: 'close-circle-outline' },
+  pushed:    { label: 'Push sent, tap to claim', color: '#5856D6', icon: 'notifications-outline' },
 };
 
 const mmss = (s?: number | null) => s == null ? '' : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
@@ -111,7 +112,7 @@ export const LeadCallTimeline = ({ conversationId, colors }: { conversationId: s
     rows.push({ at: c.at, icon: o.icon, color: o.color, text: `${label} · ${o.label}${c.error ? ` (${c.error})` : ''}` });
   });
   if (job?.claimed_at) rows.push({ at: job.claimed_at, icon: 'trophy-outline', color: '#34C759', text: `${job.claimed_by_name || 'Rep'} claimed the lead (${job.claimed_via === 'phone' ? 'phone' : 'app'})` });
-  if (job?.exhausted_at && job.status === 'exhausted') rows.push({ at: job.exhausted_at, icon: 'alert-circle-outline', color: '#FF3B30', text: 'Ladder exhausted, team alerted' });
+  if (job?.exhausted_at && job.status === 'exhausted') rows.push({ at: job.exhausted_at, icon: 'alert-circle-outline', color: '#FF3B30', text: job.exhausted_actions?.length ? `Nobody answered: ${job.exhausted_actions.join(', ')}` : 'Ladder exhausted, team alerted' });
   if (data.first_human_reply_at) rows.push({ at: data.first_human_reply_at, icon: 'person-outline', color: '#34C759', text: 'First human reply' });
   rows.sort((a, b) => new Date(a.at || 0).getTime() - new Date(b.at || 0).getTime());
 

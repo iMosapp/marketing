@@ -16,114 +16,16 @@ logger = logging.getLogger(__name__)
 
 
 async def _check_tag_campaign_enrollment(user_id: str, contact_id: str, contact_data: dict):
-    """Auto-enroll contact in campaigns whose trigger_tag matches any of the contact's tags.
-    Pre-schedules ALL steps into campaign_pending_sends at enrollment time."""
-    db = get_db()
-    contact_tags = contact_data.get('tags', [])
-    if not contact_tags:
+    """Tag applied -> run the store's Tag Workflow (enroll in the tag's campaign(s) across personal/store/org scope,
+    stop competing nurtures, hand the conversation to Jessi). contact_data['tags'] = the tags being applied."""
+    tags = contact_data.get('tags') or []
+    if not tags:
         return
-    
     try:
-        # Find active campaigns with trigger_tags matching this contact's tags (case-insensitive)
-        # Birthday/Anniversary tags are OPT-IN markers for date-based sends — they must NEVER
-        # instant-fire a campaign on tag application. Date sends happen only day-of via scheduler.
-        DATE_OPTIN_TAG_NAMES = {"birthday", "anniversary"}
-        contact_tags_lower = [t.lower() for t in contact_tags]
-        all_campaigns = await db.campaigns.find({
-            "user_id": user_id,
-            "active": True,
-            "trigger_tag": {"$exists": True, "$ne": ""}
-        }).to_list(50)
-        campaigns = [
-            c for c in all_campaigns
-            if c.get('trigger_tag', '').lower() in contact_tags_lower
-            and c.get('trigger_tag', '').lower() not in DATE_OPTIN_TAG_NAMES
-        ]
-        
-        for campaign in campaigns:
-            campaign_id = str(campaign['_id'])
-            # Check if already enrolled (skip duplicates)
-            existing = await db.campaign_enrollments.find_one({
-                "campaign_id": campaign_id,
-                "contact_id": contact_id,
-                "status": {"$in": ["active", "completed"]}
-            })
-            if existing:
-                continue
-            
-            contact_name = f"{contact_data.get('first_name', '')} {contact_data.get('last_name', '')}".strip() or contact_data.get('name', '')
-            sequences = campaign.get('sequences', [])
-            if not sequences:
-                continue
-
-            delivery_mode = campaign.get('delivery_mode', 'auto')
-            now = datetime.utcnow()
-
-            enrollment = {
-                "user_id": user_id,
-                "campaign_id": campaign_id,
-                "campaign_name": campaign.get('name', ''),
-                "contact_id": contact_id,
-                "contact_name": contact_name,
-                "contact_phone": contact_data.get('phone', ''),
-                "current_step": 1,
-                "total_steps": len(sequences),
-                "status": "active",
-                "enrolled_at": now,
-                "next_send_at": now,
-                "messages_sent": [],
-                "trigger_type": "tag",
-                "trigger_tag": campaign.get('trigger_tag', '')
-            }
-            enroll_result = await db.campaign_enrollments.insert_one(enrollment)
-            enrollment_id = str(enroll_result.inserted_id)
-            logger.info(f"Auto-enrolled {contact_name} in campaign '{campaign.get('name')}' via tag '{campaign.get('trigger_tag')}'")
-
-            # ── Pre-schedule ALL steps upfront (base = enrollment time) ──
-            pending_docs = []
-            for i, step in enumerate(sequences):
-                step_num = i + 1
-                delay_offset = timedelta(
-                    minutes=int(step.get('delay_minutes', 0) or 0),
-                    hours=int(step.get('delay_hours', 0) or 0),
-                    days=int(step.get('delay_days', 0) or 0) + int(step.get('delay_months', 0) or 0) * 30
-                )
-                send_at = now + delay_offset
-                pending_docs.append({
-                    "user_id": user_id,
-                    "campaign_id": campaign_id,
-                    "campaign_name": campaign.get('name', ''),
-                    "contact_id": contact_id,
-                    "contact_name": contact_name,
-                    "contact_phone": contact_data.get('phone', ''),
-                    "enrollment_id": enrollment_id,
-                    "step": step_num,
-                    "message_template": step.get('message_template') or step.get('message', ''),
-                    "media_type": step.get('media_type', ''),
-                    "media_urls": step.get('media_urls', []),
-                    "channel": step.get('channel', 'sms'),
-                    "delivery_mode": delivery_mode,
-                    "ai_enabled": campaign.get('ai_enabled', False),
-                    "send_at": send_at,
-                    "status": "pending",
-                    "created_at": now,
-                })
-
-            # Pre-schedule steps — skip any that already exist (idempotency)
-            existing_steps = set()
-            async for ex in db.campaign_pending_sends.find(
-                {"enrollment_id": enrollment_id, "status": {"$nin": ["cancelled"]}},
-                {"step": 1}
-            ):
-                existing_steps.add(ex.get("step"))
-
-            pending_docs = [d for d in pending_docs if d["step"] not in existing_steps]
-            if pending_docs:
-                await db.campaign_pending_sends.insert_many(pending_docs)
-                logger.info(f"Pre-scheduled {len(pending_docs)} sends for '{campaign.get('name')}' → {contact_name} (mode={delivery_mode})")
-
+        from services.tag_workflows import apply_tag_workflows
+        await apply_tag_workflows(user_id, contact_id, tags, source="tags")
     except Exception as e:
-        logger.error(f"Tag campaign enrollment check failed: {e}", exc_info=True)
+        logger.error(f"Tag workflow failed: {e}", exc_info=True)
 
 
 async def _check_date_campaign_enrollment(user_id: str, contact_id: str, contact_data: dict):
@@ -568,8 +470,7 @@ def _smart_list_filter(smart_list: Optional[str]) -> Optional[dict]:
     """Mongo filter for a contacts smart list. Shared by counts + list endpoints."""
     if not smart_list:
         return None
-    from datetime import timedelta, timezone as _tz
-    now = datetime.now(_tz.utc)
+    now = datetime.now(timezone.utc)
     if smart_list == "needs_attention":
         return {"last_activity_at": {"$gte": now - timedelta(days=90), "$lte": now - timedelta(days=14)}}
     if smart_list == "hot":
@@ -1212,7 +1113,17 @@ async def set_date_sold(user_id: str, contact_id: str, data: dict = Body(...)):
         raise HTTPException(status_code=404, detail="Contact not found")
     from services.sales import record_sale
     outcome = await record_sale(db, contact_id, dt)
-    return {"success": True, "date_sold": dt.isoformat(), "sale": outcome.get("kind"), "sold_count": outcome.get("sold_count")}
+    # Marking sold IS the Sold workflow: add the tag if missing and run the store rulebook (idempotent)
+    workflow = []
+    try:
+        cur = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"tags": 1})
+        if not any((t or "").lower() == "sold" for t in (cur or {}).get("tags") or []):
+            await db.contacts.update_one({"_id": ObjectId(contact_id)}, {"$addToSet": {"tags": "Sold"}})
+        from services.tag_workflows import apply_tag_workflows
+        workflow = await apply_tag_workflows(user_id, contact_id, ["Sold"], source="date-sold")
+    except Exception as e:
+        logger.error(f"Sold workflow failed: {e}", exc_info=True)
+    return {"success": True, "date_sold": dt.isoformat(), "sale": outcome.get("kind"), "sold_count": outcome.get("sold_count"), "workflow": workflow}
 
 
 @router.patch("/{user_id}/{contact_id}/toggle-automation")
