@@ -459,7 +459,7 @@ async def timeline_for_conversation(conversation_id: str) -> dict:
     conv = await db.conversations.find_one({"_id": ObjectId(conversation_id)}) or {}
     job = await db[COLL].find_one({"conversation_id": conversation_id}, sort=[("created_at", -1)])
     plan = conv.get("routing_plan") or {}
-    received = conv.get("created_at")
+    received = conv.get("lead_created_at") or conv.get("created_at")
     if isinstance(received, str):
         try:
             received = datetime.fromisoformat(received)
@@ -483,13 +483,17 @@ async def timeline_for_conversation(conversation_id: str) -> dict:
             names[str(u["_id"])] = u.get("name") or u.get("first_name") or "Rep"
 
     def iso(v):
-        return v.isoformat() if isinstance(v, datetime) else v
+        if isinstance(v, datetime):
+            return (v if v.tzinfo else v.replace(tzinfo=timezone.utc)).isoformat()
+        return v
 
-    intake = await db.messages.find_one({"conversation_id": conversation_id, "is_intake_text": True}, {"timestamp": 1})
-    deferred_intake = await db.lead_deferred_actions.find_one({"conversation_id": conversation_id, "kind": "intake_text"}, {"run_at": 1, "status": 1})
+    floor = {"timestamp": {"$gte": received}} if (received and conv.get("lead_merged")) else {}
+    intake = await db.messages.find_one({"conversation_id": conversation_id, "is_intake_text": True, **floor}, {"timestamp": 1}, sort=[("timestamp", -1)])
+    deferred_intake = await db.lead_deferred_actions.find_one({"conversation_id": conversation_id, "kind": "intake_text"}, {"run_at": 1, "status": 1}, sort=[("created_at", -1)])
     first_human = await db.messages.find_one(
-        {"conversation_id": conversation_id, "sender": "user", "direction": {"$ne": "inbound"}}, {"timestamp": 1}, sort=[("timestamp", 1)]
+        {"conversation_id": conversation_id, "sender": "user", "direction": {"$ne": "inbound"}, **floor}, {"timestamp": 1}, sort=[("timestamp", 1)]
     )
+    release_at = conv.get("release_at") if not conv.get("routing_resolved") else None
 
     out = {
         "conversation_id": conversation_id,
@@ -498,6 +502,16 @@ async def timeline_for_conversation(conversation_id: str) -> dict:
         "plan": plan,
         "jessi_on": conv.get("ai_mode") == "auto_reply" and conv.get("ai_enabled") is not False,
         "sms_consent": conv.get("sms_consent"),
+        "returning": {
+            "is_returning": conv.get("routing_kind") == "returning_owner" or bool(conv.get("lead_merged")),
+            "merged_thread": bool(conv.get("lead_merged")),
+            "lead_count": conv.get("lead_count") or 1,
+            "release_at": iso(release_at),
+            "resolved": bool(conv.get("routing_resolved")),
+            "kept_at": iso(conv.get("kept_at")),
+            "released_at": iso(conv.get("released_at")),
+            "release_reason": conv.get("release_reason"),
+        },
         "intake": {
             "sent_at": iso((intake or {}).get("timestamp")),
             "scheduled_for": iso((deferred_intake or {}).get("run_at")) if deferred_intake and deferred_intake.get("status") == "pending" else None,

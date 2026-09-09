@@ -10,7 +10,7 @@ import { useToast } from '../../components/common/Toast';
 import { ScreenHeader, HeaderTextButton } from '../../components/common/ScreenHeader';
 import { ContactModeToggle, LeadCallLadder } from '../../components/admin/LeadWorkflowControls';
 import { AfterHoursRule, type StoreHours } from '../../components/admin/LeadTimingControls';
-import { LeadFlowSummary, type LeadFlow } from '../../components/admin/LeadFlowSummary';
+import { LeadFlowSummary, FlowStatsStrip, type LeadFlow } from '../../components/admin/LeadFlowSummary';
 
 const GOLD = '#C9A962';
 const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
@@ -201,7 +201,8 @@ export default function LeadFlowEditor() {
           )}
 
           <Section>
-            <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 1, marginBottom: 6 }}>WHAT THIS FLOW DOES {dirty ? '(saved version)' : ''}</Text>
+            <FlowStatsStrip stats={flow.stats} colors={colors} testID="lead-flow-stats" />
+            <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 1, marginBottom: 6, marginTop: 14 }}>WHAT THIS FLOW DOES {dirty ? '(saved version)' : ''}</Text>
             <LeadFlowSummary rows={flow.summary} colors={colors} testID="lead-flow-summary" />
             {flow.sources.length > 0 && (
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>

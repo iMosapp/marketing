@@ -9,7 +9,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
 import { useToast } from '../../components/common/Toast';
 import { ScreenHeader, HeaderIconButton } from '../../components/common/ScreenHeader';
-import { LeadFlowSummary, type LeadFlow } from '../../components/admin/LeadFlowSummary';
+import { LeadFlowSummary, FlowStatsStrip, type LeadFlow } from '../../components/admin/LeadFlowSummary';
 
 const GOLD = '#C9A962';
 const tid = (id: string) => ({ testID: id, dataSet: { testid: id } as any });
@@ -91,6 +91,7 @@ export default function LeadFlowsLibrary() {
                 </View>
               </View>
               {f.description ? <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>{f.description}</Text> : null}
+              <FlowStatsStrip stats={f.stats} colors={colors} testID={`lead-flow-stats-${f.id}`} />
               <LeadFlowSummary rows={f.summary} colors={colors} compact />
               {f.sources.length > 0 && (
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>

@@ -104,17 +104,19 @@ async def _store_hours(db, store_id: str | None) -> dict | None:
 
 
 @router.get("")
-async def list_flows(request: Request, store_id: Optional[str] = None):
+async def list_flows(request: Request, store_id: Optional[str] = None, days: int = 30):
     db = get_db()
     me = request.state.user
+    days = max(1, min(365, days))
     q = lf.scope_filter(me)
     if store_id and me.get("role") in ("super_admin", "org_admin"):
         q = {"store_id": store_id}
     flows = await db[lf.COLL].find(q).sort("name", 1).to_list(200)
     names = await _names(db, flows)
     by_flow = await _sources_by_flow(db, [str(f["_id"]) for f in flows])
+    stats = await lf.flow_stats(db, [str(f["_id"]) for f in flows], days)
     sid = store_id or lf.user_store_id(me)
-    return {"flows": [lf.serialize(f, by_flow.get(str(f["_id"])), names) for f in flows],
+    return {"flows": [{**lf.serialize(f, by_flow.get(str(f["_id"])), names), "stats": stats.get(str(f["_id"]))} for f in flows],
             "store_id": sid, "reps": await lf.store_reps(db, sid, me), "store_hours": await _store_hours(db, sid),
             "templates": [{"key": t["key"], "name": t["name"], "description": t["description"], "contact_mode": t["contact_mode"], "attempts": len(t.get("call_attempts") or [])} for t in lf.TEMPLATES]}
 
@@ -147,11 +149,21 @@ async def create_flow(body: FlowBody, request: Request):
 
 
 @router.get("/{flow_id}")
-async def get_flow(flow_id: str, request: Request):
+async def get_flow(flow_id: str, request: Request, days: int = 30):
     db = get_db()
     flow = await _flow(db, flow_id, request.state.user)
     by_flow = await _sources_by_flow(db, [str(flow["_id"])])
-    return lf.serialize(flow, by_flow.get(str(flow["_id"])), await _names(db, [flow]))
+    stats = await lf.flow_stats(db, [str(flow["_id"])], max(1, min(365, days)))
+    return {**lf.serialize(flow, by_flow.get(str(flow["_id"])), await _names(db, [flow])), "stats": stats.get(str(flow["_id"]))}
+
+
+@router.get("/{flow_id}/stats")
+async def get_flow_stats(flow_id: str, request: Request, days: int = 30):
+    """Speed-to-claim, reply rate and no-answer rate for one flow over the last N days."""
+    db = get_db()
+    flow = await _flow(db, flow_id, request.state.user)
+    days = max(1, min(365, days))
+    return (await lf.flow_stats(db, [str(flow["_id"])], days)).get(str(flow["_id"]))
 
 
 @router.put("/{flow_id}")

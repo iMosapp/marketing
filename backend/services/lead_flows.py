@@ -7,7 +7,7 @@ intake / ladder / queue code path keeps reading the same keys, and `apply_flow()
 """
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from bson import ObjectId
 
@@ -261,6 +261,93 @@ def serialize(flow: dict, sources: list | None = None, names: dict | None = None
         "summary": summarize(flow, names),
         "created_at": _iso(flow.get("created_at")), "updated_at": _iso(flow.get("updated_at")), "updated_by_name": flow.get("updated_by_name"),
     })
+    return out
+
+
+# ---------------------------------------------------------------- analytics
+def _median(vals: list):
+    vals = sorted(v for v in vals if v is not None)
+    if not vals:
+        return None
+    m = len(vals) // 2
+    return int(vals[m] if len(vals) % 2 else (vals[m - 1] + vals[m]) / 2)
+
+
+def _dt(v):
+    if isinstance(v, str):
+        try:
+            v = datetime.fromisoformat(v.replace("Z", "+00:00"))
+        except Exception:
+            return None
+    if isinstance(v, datetime):
+        return v if v.tzinfo else v.replace(tzinfo=timezone.utc)
+    return None
+
+
+async def flow_stats(db, flow_ids: list, days: int = 30) -> dict:
+    """Per flow, last N days: leads, claim rate + median speed-to-claim, customer reply rate, ladder no-answer rate.
+    Leads are matched by the flow_id stamped at intake, else by the sources currently attached to the flow."""
+    fids = [str(f) for f in flow_ids]
+    out = {fid: {"days": days, "leads": 0, "claimed": 0, "claimed_pct": None, "median_claim_s": None, "median_first_reply_s": None,
+                 "replied": 0, "reply_pct": None, "ladder_runs": 0, "no_answer": 0, "no_answer_pct": None} for fid in fids}
+    if not fids:
+        return out
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    src_to_flow = {}
+    async for s in db.lead_sources.find({"flow_id": {"$in": fids}}, {"flow_id": 1}):
+        src_to_flow[str(s["_id"])] = s["flow_id"]
+    q = {"is_internet_lead": True, "is_test": {"$ne": True},
+         "$and": [{"$or": [{"flow_id": {"$in": fids}}, {"flow_id": {"$in": [None, ""]}, "lead_source_id": {"$in": list(src_to_flow)}}]},
+                  {"$or": [{"lead_created_at": {"$gte": since}}, {"lead_created_at": {"$exists": False}, "created_at": {"$gte": since}}]}]}
+    convs = await db.conversations.find(q, {"flow_id": 1, "lead_source_id": 1, "lead_created_at": 1, "created_at": 1, "claimed_at": 1, "claimed": 1}).to_list(3000)
+    if not convs:
+        return out
+    conv_flow, floors, claim_s = {}, {}, {fid: [] for fid in fids}
+    for c in convs:
+        fid = c.get("flow_id") or src_to_flow.get(str(c.get("lead_source_id") or ""))
+        if fid not in out:
+            continue
+        cid = str(c["_id"])
+        conv_flow[cid] = fid
+        landed = _dt(c.get("lead_created_at") or c.get("created_at"))
+        floors[cid] = landed
+        out[fid]["leads"] += 1
+        claimed_at = _dt(c.get("claimed_at"))
+        if c.get("claimed") or claimed_at:
+            out[fid]["claimed"] += 1
+        if claimed_at and landed:
+            claim_s[fid].append(max(0, int((claimed_at - landed).total_seconds())))
+    conv_ids = list(conv_flow)
+    from routers.lead_intake import _first_human_replies
+    replies = await _first_human_replies(db, conv_ids)
+    first_reply_s = {fid: [] for fid in fids}
+    for cid, r in replies.items():
+        ts, landed = _dt(r.get("ts")), floors.get(cid)
+        if ts and landed and cid in conv_flow:
+            first_reply_s[conv_flow[cid]].append(max(0, int((ts - landed).total_seconds())))
+    pipeline = [{"$match": {"conversation_id": {"$in": conv_ids}, "$or": [{"sender": "contact"}, {"direction": "inbound"}]}},
+                {"$addFields": {"_ts": {"$ifNull": ["$timestamp", "$created_at"]}}},
+                {"$group": {"_id": "$conversation_id", "last_in": {"$max": "$_ts"}}}]
+    async for row in db.messages.aggregate(pipeline):
+        cid = row["_id"]
+        landed, last_in = floors.get(cid), _dt(row.get("last_in"))
+        if cid in conv_flow and last_in and (not landed or last_in >= landed):
+            out[conv_flow[cid]]["replied"] += 1
+    async for job in db.lead_call_jobs.find({"conversation_id": {"$in": conv_ids}}, {"conversation_id": 1, "status": 1, "claimed_by": 1}):
+        fid = conv_flow.get(job.get("conversation_id"))
+        if not fid:
+            continue
+        out[fid]["ladder_runs"] += 1
+        if job.get("status") == "exhausted" and not job.get("claimed_by"):
+            out[fid]["no_answer"] += 1
+    for fid, s in out.items():
+        if s["leads"]:
+            s["claimed_pct"] = int(round(100 * s["claimed"] / s["leads"]))
+            s["reply_pct"] = int(round(100 * s["replied"] / s["leads"]))
+        if s["ladder_runs"]:
+            s["no_answer_pct"] = int(round(100 * s["no_answer"] / s["ladder_runs"]))
+        s["median_claim_s"] = _median(claim_s[fid])
+        s["median_first_reply_s"] = _median(first_reply_s[fid])
     return out
 
 

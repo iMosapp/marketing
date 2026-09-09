@@ -38,6 +38,7 @@ async def require_queue_user(request: Request) -> dict:
 
 router = APIRouter(prefix="/leads/queue", tags=["lead-queue"], dependencies=[Depends(require_queue_user)])
 QUEUE_WINDOW_DAYS = 30
+RELEASE_WARNING_MINUTES = 5
 DEFAULTS = {"timer_green_minutes": 5, "timer_amber_minutes": 15,
             "returning_alert_minutes": 10, "returning_release_minutes": 30, "digest_hour": 18}
 
@@ -105,6 +106,15 @@ async def _store_sources(db, store_id: str, me: Optional[dict] = None) -> list:
     return out
 
 
+def _window(since: datetime) -> dict:
+    """Leads from the last N days. Merged threads are old conversations, so the lead's own timestamp wins."""
+    return {"$or": [{"lead_created_at": {"$gte": since}}, {"lead_created_at": {"$exists": False}, "created_at": {"$gte": since}}]}
+
+
+def _lead_query(me: dict, vis_ids: list, user_id: str, since: datetime) -> dict:
+    return {"is_internet_lead": True, "status": {"$ne": "closed"}, "$and": [_window(since), {"$or": _lead_scope_or(me, vis_ids, user_id)}]}
+
+
 def _lead_scope_or(me: dict, vis_ids: list, user_id: str) -> list:
     """Which internet leads this person sees: theirs, ones they were on (released back), their sources' queue,
     and for managers every lead in their store(s) regardless of which source doc it came through."""
@@ -137,14 +147,16 @@ async def _store_managers(db, store_id: str) -> list:
 
 
 async def _message_stats(db, conv_ids: list) -> dict:
-    """Per conversation: first/last human outbound ts, last inbound ts + text."""
+    """Per conversation: first/last human outbound ts, last inbound ts + text (merged threads: since the lead landed)."""
     if not conv_ids:
         return {}
+    from routers.lead_intake import lead_floors, lead_floor_stages
     pipeline = [
         {"$match": {"conversation_id": {"$in": conv_ids}}},
         {"$addFields": {"_ts": {"$ifNull": ["$timestamp", "$created_at"]},
                         "_human": {"$and": [{"$eq": ["$sender", "user"]}, {"$ne": ["$auto_sent", True]}]},
                         "_in": {"$or": [{"$eq": ["$sender", "contact"]}, {"$eq": ["$direction", "inbound"]}]}}},
+        *lead_floor_stages(await lead_floors(db, conv_ids)),
         {"$sort": {"_ts": 1}},
         {"$group": {"_id": "$conversation_id",
                     "first_human": {"$min": {"$cond": ["$_human", "$_ts", None]}},
@@ -171,8 +183,8 @@ async def _build_items(db, convs: list, sources_by_id: dict, now: datetime) -> l
     stats = await _message_stats(db, conv_ids)
     leads = {}
     async for l in db.inbound_leads.find({"conversation_id": {"$in": conv_ids}},
-                                         {"conversation_id": 1, "vehicle_interest": 1, "comments": 1, "matched_inventory": 1, "attribution": 1}):
-        leads[l["conversation_id"]] = l
+                                         {"conversation_id": 1, "vehicle_interest": 1, "comments": 1, "matched_inventory": 1, "attribution": 1}).sort("created_at", -1):
+        leads.setdefault(l["conversation_id"], l)   # newest lead per thread (returning customers stack up)
     rep_ids = {str(c.get("claimed_by")) for c in convs if c.get("claimed_by") and ObjectId.is_valid(str(c.get("claimed_by")))}
     reps = {}
     if rep_ids:
@@ -184,7 +196,7 @@ async def _build_items(db, convs: list, sources_by_id: dict, now: datetime) -> l
         src = sources_by_id.get(str(c.get("lead_source_id") or ""), {})
         th = source_thresholds(src)
         st = stats.get(cid, {})
-        created = _utc(c.get("created_at")) or now
+        created = _utc(c.get("lead_created_at") or c.get("created_at")) or now
         lead = leads.get(cid, {})
         first_human = st.get("first_human")
         last_in, last_human = st.get("last_in"), st.get("last_human")
@@ -233,7 +245,9 @@ async def _build_items(db, convs: list, sources_by_id: dict, now: datetime) -> l
             "green_m": th["timer_green_minutes"],
             "amber_m": th["timer_amber_minutes"],
             "owner_alert_at": _iso(c.get("owner_alert_at")),
-            "release_at": _iso(c.get("release_at")),
+            "release_at": _iso(c.get("release_at")) if not c.get("routing_resolved") else None,
+            "kept_at": _iso(c.get("kept_at")),
+            "lead_merged": bool(c.get("lead_merged")),
             "released_at": _iso(c.get("released_at")),
         })
     return items
@@ -252,10 +266,7 @@ async def queue_summary(user_id: str):
     src_ids = [s["_id"] for s in _visible_sources(me, all_sources)]
     now = datetime.now(timezone.utc)
     since = now - timedelta(days=QUEUE_WINDOW_DAYS)
-    q_or = _lead_scope_or(me, src_ids, user_id)
-    convs = await db.conversations.find(
-        {"is_internet_lead": True, "status": {"$ne": "closed"}, "created_at": {"$gte": since}, "$or": q_or}
-    ).to_list(300)
+    convs = await db.conversations.find(_lead_query(me, src_ids, user_id, since)).to_list(300)
     items = await _build_items(db, convs, {s["_id"]: s for s in all_sources}, now)
     unclaimed = sorted([i for i in items if not i["claimed"]], key=_sort_key)
     mine_waiting = sorted([i for i in items if i["claimed_by"] == user_id and i["waiting_seconds"] is not None], key=_sort_key)
@@ -290,10 +301,7 @@ async def get_queue(user_id: str):
     now = datetime.now(timezone.utc)
     since = now - timedelta(days=QUEUE_WINDOW_DAYS)
     vis_ids = [s["_id"] for s in visible]
-    q_or = _lead_scope_or(me, vis_ids, user_id)
-    convs = await db.conversations.find(
-        {"is_internet_lead": True, "status": {"$ne": "closed"}, "created_at": {"$gte": since}, "$or": q_or}
-    ).sort("created_at", -1).to_list(400)
+    convs = await db.conversations.find(_lead_query(me, vis_ids, user_id, since)).sort("lead_created_at", -1).to_list(400)
     items = await _build_items(db, convs, sources_by_id, now)
     unclaimed = sorted([i for i in items if not i["claimed"]], key=_sort_key)
     mine = sorted([i for i in items if i["claimed"] and i["claimed_by"] == user_id], key=_sort_key)
@@ -335,7 +343,7 @@ async def queue_reps(user_id: str):
     since = datetime.now(timezone.utc) - timedelta(days=QUEUE_WINDOW_DAYS)
     counts = {}
     async for row in db.conversations.aggregate([
-        {"$match": {"is_internet_lead": True, "status": {"$ne": "closed"}, "claimed_by": {"$in": ids}, "created_at": {"$gte": since}}},
+        {"$match": {"is_internet_lead": True, "status": {"$ne": "closed"}, "claimed_by": {"$in": ids}, **_window(since)}},
         {"$group": {"_id": "$claimed_by", "n": {"$sum": 1}}},
     ]):
         counts[row["_id"]] = row["n"]
@@ -491,6 +499,26 @@ async def release_lead(user_id: str, conv_id: str, body: Optional[ReleaseBody] =
                                   note=(body.note if body else ""))
 
 
+@router.post("/{user_id}/keep/{conv_id}")
+async def keep_lead(user_id: str, conv_id: str):
+    """"I've got this": the owner (or a manager) stops the returning-customer auto-release for this lead."""
+    db = get_db()
+    me = await _me(db, user_id)
+    conv = await _conv(db, conv_id)
+    if not me["is_manager"] and str(conv.get("claimed_by") or "") != user_id:
+        raise HTTPException(status_code=403, detail="Only the rep on this lead or a manager can keep it")
+    now = datetime.now(timezone.utc)
+    if not conv.get("release_at") or conv.get("routing_resolved"):
+        return {"success": True, "already": True}
+    await db.conversations.update_one({"_id": conv["_id"]}, {"$set": {
+        "owner_alert_at": None, "release_at": None, "routing_resolved": True, "kept_at": now, "kept_by": user_id, "updated_at": now.isoformat()}})
+    who = (me.get("name") or "Rep").split()[0]
+    await _system_message(db, conv_id, f"{who} kept this lead (I've got this). It stays with {'them' if user_id == str(conv.get('claimed_by')) else 'the rep'}.")
+    await db.notifications.update_many({"conversation_id": conv_id, "type": {"$in": ["lead_going_cold", "lead_releasing_soon"]}, "dismissed": {"$ne": True}},
+                                       {"$set": {"dismissed": True, "read": True}})
+    return {"success": True}
+
+
 # ── Scheduler jobs ────────────────────────────────────────────────────────────
 
 async def _owner_replied_elsewhere(db, conv: dict) -> bool:
@@ -498,7 +526,7 @@ async def _owner_replied_elsewhere(db, conv: dict) -> bool:
     (returning customers usually already have one). That counts as handled; don't yank the lead away."""
     owner = str(conv.get("claimed_by") or "")
     contact_id = str(conv.get("contact_id") or "")
-    created = _utc(conv.get("created_at"))
+    created = _utc(conv.get("lead_created_at") or conv.get("created_at"))
     if not owner or not contact_id or not created:
         return False
     sibling_ids = [str(s["_id"]) async for s in db.conversations.find(
@@ -511,18 +539,23 @@ async def _owner_replied_elsewhere(db, conv: dict) -> bool:
 
 
 async def process_returning_lead_escalations() -> dict:
-    """Every minute: returning-customer leads whose owner hasn't replied -> manager alert, then auto-release."""
+    """Every minute: returning-customer leads whose owner hasn't replied -> manager alert, owner warning 5 min
+    before release, then auto-release."""
     db = get_db()
     now = datetime.now(timezone.utc)
+    warn_at = now + timedelta(minutes=RELEASE_WARNING_MINUTES)
     convs = await db.conversations.find({
         "is_internet_lead": True, "routing_kind": "returning_owner", "claimed": True, "status": {"$ne": "closed"},
-        "$or": [{"owner_alerted": {"$ne": True}, "owner_alert_at": {"$lte": now}}, {"release_at": {"$lte": now}}],
+        "routing_resolved": {"$ne": True},
+        "$or": [{"owner_alerted": {"$ne": True}, "owner_alert_at": {"$lte": now}},
+                {"owner_warned": {"$ne": True}, "release_at": {"$lte": warn_at}},
+                {"release_at": {"$lte": now}}],
     }).to_list(200)
     if not convs:
-        return {"alerted": 0, "released": 0}
+        return {"alerted": 0, "warned": 0, "released": 0}
     from routers.lead_intake import _first_human_replies
     replied = await _first_human_replies(db, [str(c["_id"]) for c in convs])
-    alerted = released = 0
+    alerted = warned = released = 0
     for c in convs:
         cid = str(c["_id"])
         if cid not in replied and await _owner_replied_elsewhere(db, c):
@@ -532,12 +565,25 @@ async def process_returning_lead_escalations() -> dict:
             continue
         owner = await db.users.find_one({"_id": ObjectId(c["claimed_by"])}, {"name": 1}) if ObjectId.is_valid(str(c.get("claimed_by") or "")) else None
         owner_name = _display_name(owner) or "their rep"
-        mins = int((now - (_utc(c.get("created_at")) or now)).total_seconds() // 60)
+        mins = int((now - (_utc(c.get("lead_created_at") or c.get("created_at")) or now)).total_seconds() // 60)
         release_at = _utc(c.get("release_at"))
         if release_at and release_at <= now:
             await release_to_queue(db, c, None, f"{owner_name} did not reply within {mins} min")
             released += 1
             continue
+        if release_at and not c.get("owner_warned") and release_at <= warn_at and owner:
+            left = max(1, int((release_at - now).total_seconds() // 60))
+            title = f"Releasing in {left} min: {c.get('contact_name') or 'your returning customer'}"
+            body = "Your customer came back and hasn't heard from you. Reply now or tap \"I've got this\" to keep the lead."
+            try:
+                from routers.push_notifications import send_push_to_user
+                asyncio.create_task(send_push_to_user(str(owner["_id"]), title, body, f"/thread/{cid}", "hourglass"))
+            except Exception:
+                pass
+            await db.notifications.insert_one({"user_id": str(owner["_id"]), "type": "lead_releasing_soon", "priority": "urgent", "title": title, "message": body,
+                                               "conversation_id": cid, "contact_id": c.get("contact_id"), "read": False, "dismissed": False, "created_at": now})
+            await db.conversations.update_one({"_id": c["_id"]}, {"$set": {"owner_warned": True, "owner_warned_at": now}})
+            warned += 1
         alert_at = _utc(c.get("owner_alert_at"))
         if not c.get("owner_alerted") and alert_at and alert_at <= now:
             managers = await _store_managers(db, str(c.get("store_id") or ""))
@@ -555,9 +601,9 @@ async def process_returning_lead_escalations() -> dict:
                                                      "read": False, "dismissed": False, "created_at": now} for uid in managers])
             await db.conversations.update_one({"_id": c["_id"]}, {"$set": {"owner_alerted": True, "owner_alerted_at": now}})
             alerted += 1
-    if alerted or released:
-        logger.info(f"[LeadQueue] escalations: alerted={alerted} released={released}")
-    return {"alerted": alerted, "released": released}
+    if alerted or warned or released:
+        logger.info(f"[LeadQueue] escalations: alerted={alerted} warned={warned} released={released}")
+    return {"alerted": alerted, "warned": warned, "released": released}
 
 
 async def send_red_leads_digest() -> dict:

@@ -35,6 +35,18 @@ export const LeadCallTimeline = ({ conversationId, colors }: { conversationId: s
   const [hidden, setHidden] = useState(false);
   const [ringing, setRinging] = useState<'idle' | 'busy' | 'sent' | 'error'>('idle');
   const [ringMsg, setRingMsg] = useState('');
+  const [keeping, setKeeping] = useState<'idle' | 'busy' | 'done'>('idle');
+  const [tick, setTick] = useState(Date.now());
+
+  const keepIt = async () => {
+    if (!user?._id || keeping !== 'idle') return;
+    setKeeping('busy');
+    try {
+      await api.post(`/leads/queue/${user._id}/keep/${conversationId}`);
+      setKeeping('done');
+      load();
+    } catch { setKeeping('idle'); }
+  };
 
   const ringMe = async () => {
     if (!user?._id || ringing === 'busy') return;
@@ -69,15 +81,29 @@ export const LeadCallTimeline = ({ conversationId, colors }: { conversationId: s
     const t = setInterval(load, 30000);
     return () => clearInterval(t);
   }, [data?.job?.status, load]);
+  const releaseAt = data?.returning?.release_at ? new Date(data.returning.release_at).getTime() : null;
+  useEffect(() => {
+    if (!releaseAt || releaseAt < Date.now()) return;
+    const t = setInterval(() => setTick(Date.now()), 15000);
+    return () => clearInterval(t);
+  }, [releaseAt]);
 
   if (hidden || !data || (!data.job && !data.plan)) return null;
   const job = data.job;
   const plan = data.plan || {};
+  const ret = data.returning || {};
+  const minsLeft = releaseAt ? Math.max(0, Math.ceil((releaseAt - tick) / 60000)) : null;
+  const isOwner = !!data.claimed_by && data.claimed_by === user?._id;
+  const showKeep = !!releaseAt && !ret.resolved && !ret.released_at && (isOwner || ['super_admin', 'org_admin', 'store_manager', 'manager', 'admin'].includes(user?.role || ''));
 
   let title = 'Lead routing';
   let sub = '';
   let tone = GOLD;
-  if (!job) {
+  if (!job && ret.is_returning) {
+    title = ret.released_at && !data.claimed_by ? 'Returning customer · back in the shared queue' : ret.resolved ? 'Returning customer · yours' : minsLeft != null ? `Returning customer · releases to the queue in ${minsLeft} min` : 'Returning customer';
+    sub = ret.merged_thread ? `Lead #${ret.lead_count} landed in this thread${data.intake?.sent_at ? ` · intake text sent ${whenLabel(data.intake.sent_at)}` : ''}` : (ret.release_reason ? `Released: ${ret.release_reason}` : 'Routed straight to their rep, no jump ball');
+    tone = ret.released_at && !data.claimed_by ? '#FF3B30' : ret.resolved ? '#34C759' : minsLeft != null && minsLeft <= 5 ? '#FF3B30' : '#FF9500';
+  } else if (!job) {
     title = plan.jessi_on ? 'Text only · Jessi answering replies' : 'Text only · reps answer replies';
     sub = data.intake?.sent_at ? `Intake text sent ${whenLabel(data.intake.sent_at)}` : data.intake?.scheduled_for ? `Intake text goes out ${whenLabel(data.intake.scheduled_for)}` : 'No intake text';
   } else if (job.status === 'claimed') {
@@ -128,6 +154,23 @@ export const LeadCallTimeline = ({ conversationId, colors }: { conversationId: s
         </View>
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textSecondary} />
       </TouchableOpacity>
+      {showKeep && (
+        <View style={{ marginHorizontal: 12, marginBottom: 12, padding: 10, borderRadius: 10, backgroundColor: tone + '1A', borderWidth: 1, borderColor: tone + '66', gap: 8 }} testID="lead-release-warning" dataSet={{ testid: 'lead-release-warning' } as any}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Ionicons name="hourglass-outline" size={16} color={tone} />
+            <Text style={{ flex: 1, fontSize: 12, color: colors.text, lineHeight: 17 }} testID="lead-release-warning-text" dataSet={{ testid: 'lead-release-warning-text' } as any}>
+              {minsLeft != null && minsLeft <= 5 ? `Releasing to the shared queue in ${minsLeft} min unless you reply.` : `Returning customer, no reply yet. Auto-releases to the queue in ${minsLeft} min.`}
+            </Text>
+          </View>
+          <TouchableOpacity onPress={keepIt} disabled={keeping !== 'idle'} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 40, borderRadius: 10, backgroundColor: GOLD, opacity: keeping === 'busy' ? 0.6 : 1 }} testID="lead-keep-btn" dataSet={{ testid: 'lead-keep-btn' } as any}>
+            <Ionicons name="hand-left" size={15} color="#111" />
+            <Text style={{ fontSize: 14, fontWeight: '800', color: '#111' }}>{keeping === 'busy' ? 'Keeping…' : "I've got this"}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+      {ret.kept_at && ret.resolved && !job ? (
+        <Text style={{ marginHorizontal: 12, marginBottom: 10, fontSize: 11, color: '#34C759' }} testID="lead-kept-note" dataSet={{ testid: 'lead-kept-note' } as any}>Kept {whenLabel(ret.kept_at)} · no auto-release</Text>
+      ) : null}
       {open && (
         <View style={{ paddingHorizontal: 12, paddingBottom: 12, gap: 8 }} testID="lead-call-timeline-rows" dataSet={{ testid: 'lead-call-timeline-rows' } as any}>
           {data.clocks && (

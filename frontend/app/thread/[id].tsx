@@ -2079,6 +2079,19 @@ function ThreadScreen() {
     const isCallLog = (item as any).type === 'call_log' || (item as any).channel === 'voice';
     if (isCallLog) return <CallLogCard item={item} timestamp={timestamp} />;
 
+    // Routing / lead events (claimed, released, "new lead landed here") render as a centered chip, not a bubble
+    if ((item as any).sender === 'system') {
+      const isLead = !!(item as any).is_lead_marker;
+      return (
+        <View style={{ alignItems: 'center', marginVertical: 8, paddingHorizontal: 24 }} testID="system-event-row" dataSet={{ testid: 'system-event-row' } as any}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14, backgroundColor: isLead ? '#C9A96222' : colors.surface, borderWidth: 1, borderColor: isLead ? '#C9A96288' : colors.border }}>
+            <Ionicons name={isLead ? 'flash' : 'information-circle-outline'} size={13} color={isLead ? '#C9A962' : colors.textSecondary} />
+            <Text style={{ fontSize: 12, color: isLead ? colors.text : colors.textSecondary, fontWeight: isLead ? '700' : '500' }}>{item.content} · {format(timestamp, 'h:mm a')}</Text>
+          </View>
+        </View>
+      );
+    }
+
     const prevMsg = index > 0 ? messages[index - 1] : null;
     const prevTimestamp = prevMsg?.timestamp ? new Date(prevMsg.timestamp) : null;
     const showDateSep = !prevTimestamp || !isSameDay(timestamp, prevTimestamp);

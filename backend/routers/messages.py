@@ -248,7 +248,7 @@ async def get_conversations(user_id: str, personal_only: bool = True):
         for conv in conversations:
             if conv.get('is_internet_lead'):
                 conv['awaiting_first_reply'] = conv['_id'] not in replied
-                ca = conv.get('created_at')
+                ca = conv.get('lead_created_at') or conv.get('created_at')
                 conv['lead_received_at'] = ca.isoformat() if hasattr(ca, 'isoformat') else ca
 
     # Assemble results
@@ -1702,7 +1702,7 @@ async def get_conversation_info(conversation_id: str):
     if conv.get("is_internet_lead"):
         from routers.lead_intake import _first_human_replies
         replied = await _first_human_replies(db, [str(conv["_id"])])
-        ca = conv.get("created_at")
+        ca = conv.get("lead_created_at") or conv.get("created_at")
         result["is_internet_lead"] = True
         result["awaiting_first_reply"] = str(conv["_id"]) not in replied
         result["lead_received_at"] = ca.isoformat() if hasattr(ca, "isoformat") else ca
@@ -1812,6 +1812,7 @@ async def get_thread_messages(conversation_id: str):
         "transcript": m.get("transcript", ""),
         "direction": m.get("direction", ""),
         "auto_tags": m.get("auto_tags", []),
+        "is_lead_marker": bool(m.get("is_lead_marker")),
     } for m in unique]
 
 

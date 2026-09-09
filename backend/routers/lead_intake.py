@@ -699,6 +699,8 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         "attribution":       normalized.get("attribution") or None,
         "assigned_to":       assigned_user_id,
         "routing_kind":      routing_kind,
+        "flow_id":           source.get("flow_id"),
+        "flow_name":         source.get("flow_name"),
         "draft_message":     first_message,
         "scheduled_send_at": scheduled_send_at,
         "is_after_hours":    not is_immediate,
@@ -742,6 +744,8 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         "ai_enabled":       True if plan["jessi_on"] else None,
         "draft_message":    first_message,
         "is_internet_lead": True,
+        "lead_created_at":  now,
+        "flow_id":          source.get("flow_id"),
         "inquiry":          inquiry,
         "is_test":          is_test,
         "after_hours_lead": bool(plan["after_hours"]),
@@ -752,8 +756,33 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         "updated_at":       now,
         "last_message_at":  now,
     }
-    conv_result = await db.conversations.insert_one(conversation)
-    conv_id = str(conv_result.inserted_id)
+    # Returning customer: the lead lands INSIDE the owner's existing thread with this customer (one conversation
+    # per customer, no juggling). Only the lead bookkeeping is stamped on it; the thread's history stays.
+    reused = None
+    if owner_id:
+        owner_keys = [owner_id] + ([ObjectId(owner_id)] if ObjectId.is_valid(owner_id) else [])
+        reused = await db.conversations.find_one(
+            {"contact_id": contact_id, "status": {"$ne": "closed"}, "$or": [{"user_id": {"$in": owner_keys}}, {"claimed_by": owner_id}]},
+            sort=[("last_message_at", -1)])
+    if reused:
+        conv_id = str(reused["_id"])
+        keep = {"created_at", "status", "ai_mode", "ai_enabled", "rep_phone", "unread", "unread_count"}
+        if reused.get("contact_name"):
+            keep.add("contact_name")
+        sets = {k: v for k, v in conversation.items() if k not in keep}
+        sets.update({"status": "active", "lead_merged": True, "lead_count": int(reused.get("lead_count") or 1) + 1,
+                     "unread": True, "owner_alerted": False, "owner_warned": False, "routing_resolved": False})
+        if plan["jessi_on"] and plan["after_hours"]:
+            sets.update({"ai_mode": "auto_reply", "ai_enabled": True})   # nobody's on the floor; Jessi covers until the rep is back
+        await db.conversations.update_one({"_id": reused["_id"]}, {"$set": sets, "$inc": {"unread_count": 1}})
+        what = lead_doc["vehicle_interest"] or (normalized.get("comments") or "")[:120] or "New inquiry"
+        await db.messages.insert_one({"conversation_id": conv_id, "sender": "system", "direction": "system", "channel": "system", "type": "event",
+                                      "content": f"New {source.get('name', 'internet')} lead from this customer · {what}", "is_lead_marker": True,
+                                      "timestamp": now, "created_at": now})
+        logger.info(f"[LeadIntake] Returning customer {full_name}: lead merged into existing thread {conv_id}")
+    else:
+        conv_result = await db.conversations.insert_one(conversation)
+        conv_id = str(conv_result.inserted_id)
 
     # Update lead with conversation_id
     await db.inbound_leads.update_one(
@@ -1256,6 +1285,7 @@ async def _first_human_replies(db, conv_ids: list) -> dict:
         {"$match": {"conversation_id": {"$in": conv_ids}, "sender": "user", "auto_sent": {"$ne": True}}},
         {"$addFields": {"_ts": {"$ifNull": ["$timestamp", "$created_at"]}}},
         {"$match": {"_ts": {"$ne": None}}},
+        *lead_floor_stages(await lead_floors(db, conv_ids)),
         {"$sort": {"_ts": 1}},
         {"$group": {"_id": "$conversation_id",
                     "first_ts": {"$first": "$_ts"},
@@ -1265,6 +1295,24 @@ async def _first_human_replies(db, conv_ids: list) -> dict:
     async for row in db.messages.aggregate(pipeline):
         out[row["_id"]] = {"ts": row["first_ts"], "rep_id": row.get("rep_id")}
     return out
+
+
+async def lead_floors(db, conv_ids: list) -> dict:
+    """Threads that absorbed a returning customer's lead: only messages after the lead landed count."""
+    oids = [ObjectId(c) for c in conv_ids if ObjectId.is_valid(str(c))]
+    if not oids:
+        return {}
+    floors = {}
+    async for c in db.conversations.find({"_id": {"$in": oids}, "lead_merged": True, "lead_created_at": {"$ne": None}}, {"lead_created_at": 1}):
+        floors[str(c["_id"])] = c["lead_created_at"]
+    return floors
+
+
+def lead_floor_stages(floors: dict) -> list:
+    """Aggregation stage (after `_ts` exists) that drops pre-lead messages on merged threads."""
+    if not floors:
+        return []
+    return [{"$match": {"$or": [{"conversation_id": {"$nin": list(floors)}}] + [{"conversation_id": cid, "_ts": {"$gte": f}} for cid, f in floors.items()]}}]
 
 
 def _resp_seconds(received, ts) -> Optional[int]:
@@ -2156,19 +2204,21 @@ async def awaiting_leads(user_id: str):
     db = get_db()
     convs = await db.conversations.find(
         {"user_id": user_id, "is_internet_lead": True, "status": "active"},
-        {"contact_name": 1, "created_at": 1},
+        {"contact_name": 1, "created_at": 1, "lead_created_at": 1},
     ).sort("created_at", 1).limit(50).to_list(50)
+    from routers.lead_queue import _utc
     for c in convs:
         c["_id"] = str(c["_id"])
+        c["received"] = _utc(c.get("lead_created_at") or c.get("created_at"))
     replied = await _first_human_replies(db, [c["_id"] for c in convs])
-    waiting = [c for c in convs if c["_id"] not in replied]
+    waiting = sorted([c for c in convs if c["_id"] not in replied], key=lambda c: c["received"] or datetime.max.replace(tzinfo=timezone.utc))
     oldest = waiting[0] if waiting else None
     return {
         "count": len(waiting),
         "oldest": {
             "conversation_id": oldest["_id"],
             "contact_name": oldest.get("contact_name"),
-            "received_at": oldest["created_at"].isoformat() if isinstance(oldest.get("created_at"), datetime) else oldest.get("created_at"),
+            "received_at": oldest["received"].isoformat() if isinstance(oldest.get("received"), datetime) else oldest.get("received"),
         } if oldest else None,
     }
 
