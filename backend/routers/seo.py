@@ -137,7 +137,7 @@ async def sitemap_xml(request: Request):
             if hasattr(lastmod, "strftime"):
                 lastmod = lastmod.strftime("%Y-%m-%d")
             urls.append({
-                "loc": f"{base}/card/store/{slug}",
+                "loc": f"{base}/api/card/store/{slug}",
                 "lastmod": lastmod,
                 "changefreq": "weekly",
                 "priority": "0.7",

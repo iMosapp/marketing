@@ -40,6 +40,21 @@ def _list(v) -> list:
     return []
 
 
+async def _brand_kit(db, user: Optional[dict], store: Optional[dict]) -> dict:
+    """Brand kit chain: rep -> store -> organization. Only explicit kits change the look."""
+    kit = (user or {}).get("email_brand_kit") or {}
+    if not kit and store:
+        kit = store.get("email_brand_kit") or {}
+    org_id = (store or {}).get("organization_id") or (user or {}).get("organization_id")
+    if not kit and org_id:
+        try:
+            org = await db.organizations.find_one({"_id": ObjectId(str(org_id))}, {"email_brand_kit": 1})
+            kit = (org or {}).get("email_brand_kit") or {}
+        except Exception:
+            kit = {}
+    return kit
+
+
 async def _bundle(db, user_id: str, review_limit: int) -> Optional[dict]:
     try:
         user = await db.users.find_one({"_id": ObjectId(user_id)}, {"password": 0})
@@ -58,7 +73,8 @@ async def _bundle(db, user_id: str, review_limit: int) -> Optional[dict]:
         "salesperson_id": user_id, "approved": True, "rating": {"$gte": 4},
     }).sort("created_at", -1).limit(review_limit).to_list(review_limit)
     total_reviews = await db.customer_feedback.count_documents({"salesperson_id": user_id, "approved": True, "rating": {"$gte": 4}})
-    return {"user": user, "store": store, "persona": persona, "reviews": reviews, "total_reviews": total_reviews}
+    kit = await _brand_kit(db, user, store)
+    return {"user": user, "store": store, "persona": persona, "reviews": reviews, "total_reviews": total_reviews, "kit": kit}
 
 
 async def _track(db, page_type: str, user_id: str, request: Request):
@@ -103,35 +119,72 @@ async def _track(db, page_type: str, user_id: str, request: Request):
         pass
 
 
+DEFAULT_ACCENT = "#C9A962"
+DARK = {"bg": "#0B0B0C", "card": "#151517", "line": "#26262A", "text": "#F4F1EA", "muted": "#9A9A9F", "btn": "#1D1D20", "btn2": "#242428", "soft": "#D8D5CC", "input": "#0F0F11", "ph": "#222", "dash": "#3a3a40", "star0": "#3a3a40"}
+LIGHT = {"bg": "#F4F2EC", "card": "#FFFFFF", "line": "#E5E1D8", "text": "#171717", "muted": "#6E6E73", "btn": "#F1EFE9", "btn2": "#E9E6DE", "soft": "#3B3B3F", "input": "#FAF9F6", "ph": "#E8E5DE", "dash": "#C9C5BC", "star0": "#D9D5CC"}
+
+
+def _rgb(hex_color: str):
+    h = (hex_color or "").strip().lstrip("#")
+    if len(h) == 3:
+        h = "".join(c * 2 for c in h)
+    if len(h) != 6:
+        return None
+    try:
+        return tuple(int(h[i:i + 2], 16) for i in (0, 2, 4))
+    except ValueError:
+        return None
+
+
+def theme_css(kit: dict) -> str:
+    """CSS variables from the brand kit: accent color (primary_color) + light/dark page theme. Layout never changes."""
+    accent = kit.get("primary_color") or DEFAULT_ACCENT
+    rgb = _rgb(accent) or _rgb(DEFAULT_ACCENT)
+    if not _rgb(accent):
+        accent = DEFAULT_ACCENT
+    r, g, b = rgb
+    lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+    on_accent = "#111111" if lum > 0.55 else "#FFFFFF"
+    t = LIGHT if kit.get("page_theme") == "light" else DARK
+    return (
+        f":root{{--bg:{t['bg']};--card:{t['card']};--line:{t['line']};--text:{t['text']};--muted:{t['muted']};--btn:{t['btn']};--btn2:{t['btn2']};"
+        f"--soft:{t['soft']};--input:{t['input']};--ph:{t['ph']};--dash:{t['dash']};--star0:{t['star0']};--green:#34C759;"
+        f"--gold:{accent};--on-gold:{on_accent};--gold-soft:rgba({r},{g},{b},.14);--gold-line:rgba({r},{g},{b},.38);--gold-glow:rgba({r},{g},{b},.18)}}"
+    )
+
+
 CSS = """
-:root{--bg:#0B0B0C;--card:#151517;--line:#26262A;--text:#F4F1EA;--muted:#9A9A9F;--gold:#C9A962;--green:#34C759}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text",Segoe UI,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
 .wrap{max-width:560px;margin:0 auto;padding:28px 18px 48px}
 .hero{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:28px 18px 22px;background:var(--card);border:1px solid var(--line);border-radius:22px;position:relative;overflow:hidden}
-.hero:before{content:"";position:absolute;inset:0 0 auto 0;height:96px;background:linear-gradient(180deg,rgba(201,169,98,.18),rgba(201,169,98,0))}
-.avatar{width:124px;height:124px;border-radius:62px;object-fit:cover;border:3px solid var(--gold);background:#222;position:relative}
+.hero:before{content:"";position:absolute;inset:0 0 auto 0;height:96px;background:linear-gradient(180deg,var(--gold-glow),rgba(0,0,0,0))}
+.avatar{width:124px;height:124px;border-radius:62px;object-fit:cover;border:3px solid var(--gold);background:var(--ph);position:relative}.avatar.square{border-radius:28px;object-fit:contain;background:#fff;padding:6px}
 .initials{display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:800;color:var(--gold)}
 h1{margin:6px 0 0;font-size:26px;font-weight:800;letter-spacing:-.3px}
 .sub{color:var(--muted);font-size:15px;margin-top:-4px}.sub b{color:var(--text);font-weight:600}
-.storeline{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;margin-top:2px}.storeline img{width:22px;height:22px;border-radius:6px;object-fit:cover;background:#222}
+.storeline{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;margin-top:2px}.storeline img{width:22px;height:22px;border-radius:6px;object-fit:cover;background:var(--ph)}
+.open{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--green)}.open.closed{color:var(--muted)}.open:before{content:"";width:7px;height:7px;border-radius:4px;background:currentColor}
 .actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:10px}
-.btn{display:inline-block;padding:11px 16px;border-radius:999px;border:1px solid var(--line);color:var(--text);text-decoration:none;font-weight:700;font-size:14px;background:#1D1D20;transition:transform .12s,background-color .12s;cursor:pointer;font-family:inherit}
-.btn:hover{transform:translateY(-1px);background:#242428}.btn.gold{background:var(--gold);color:#111;border-color:var(--gold)}.btn.wide{display:block;text-align:center;width:100%}
+.btn{display:inline-block;padding:11px 16px;border-radius:999px;border:1px solid var(--line);color:var(--text);text-decoration:none;font-weight:700;font-size:14px;background:var(--btn);transition:transform .12s,background-color .12s;cursor:pointer;font-family:inherit}
+.btn:hover{transform:translateY(-1px);background:var(--btn2)}.btn.gold{background:var(--gold);color:var(--on-gold);border-color:var(--gold)}.btn.wide{display:block;text-align:center;width:100%}
 section{margin-top:14px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px}
 h3{margin:0 0 10px;font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:var(--gold);font-weight:800}h3 small{color:var(--muted);font-weight:600;letter-spacing:0;text-transform:none;margin-left:8px}
-.row{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-top:1px solid var(--line)}.row:first-of-type{border-top:0}
-.lbl{color:var(--muted);font-size:14px;flex:0 0 auto}.val{text-align:right;word-break:break-word}.val a{color:var(--text);text-decoration:none;border-bottom:1px dashed #3a3a40}
-.bio{margin:0;color:#D8D5CC;white-space:pre-wrap}.more{display:inline-block;margin-top:10px;color:var(--gold);font-weight:700;text-decoration:none}
-.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}.tag{padding:5px 10px;border-radius:999px;background:#1F1C14;border:1px solid #3C3320;color:var(--gold);font-size:12px;font-weight:700}
-.facts{margin:0;padding-left:18px;color:#D8D5CC}.facts li{margin:4px 0}
-blockquote{margin:12px 0 0;padding:12px 14px;border-left:3px solid var(--gold);background:#1A1813;border-radius:0 12px 12px 0;color:#E9E4D6;font-style:italic}
-.pills{display:flex;flex-wrap:wrap;gap:8px}.pill{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;border:1px solid var(--line);background:#1D1D20;color:var(--text);text-decoration:none;font-size:13px;font-weight:700}
-.review{padding:12px 0;border-top:1px solid var(--line)}.review:first-of-type{border-top:0}.review .who{display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:700}
-.stars{color:#FFD60A;letter-spacing:1px;font-size:13px}.review p{margin:6px 0 0;color:#D8D5CC}.review img{margin-top:10px;width:100%;max-height:260px;object-fit:cover;border-radius:12px}
+.row{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-top:1px solid var(--line)}.row:first-of-type{border-top:0}.row.today .lbl,.row.today .val{color:var(--gold);font-weight:700}
+.lbl{color:var(--muted);font-size:14px;flex:0 0 auto}.val{text-align:right;word-break:break-word}.val a{color:var(--text);text-decoration:none;border-bottom:1px dashed var(--dash)}
+.bio{margin:0;color:var(--soft);white-space:pre-wrap}.more{display:inline-block;margin-top:10px;color:var(--gold);font-weight:700;text-decoration:none}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}.tag{padding:5px 10px;border-radius:999px;background:var(--gold-soft);border:1px solid var(--gold-line);color:var(--gold);font-size:12px;font-weight:700}
+.facts{margin:0;padding-left:18px;color:var(--soft)}.facts li{margin:4px 0}
+blockquote{margin:12px 0 0;padding:12px 14px;border-left:3px solid var(--gold);background:var(--gold-soft);border-radius:0 12px 12px 0;color:var(--text);font-style:italic}
+.pills{display:flex;flex-wrap:wrap;gap:8px}.pill{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;border:1px solid var(--line);background:var(--btn);color:var(--text);text-decoration:none;font-size:13px;font-weight:700}
+.team{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.member{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding:12px 6px;border-radius:14px;background:var(--btn);text-decoration:none;color:var(--text);transition:transform .12s,background-color .12s}
+.member:hover{transform:translateY(-2px);background:var(--btn2)}.member img,.member .ini{width:64px;height:64px;border-radius:32px;object-fit:cover;border:2px solid var(--gold);background:var(--ph)}.member .ini{display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--gold);font-size:20px}
+.member b{font-size:13px;line-height:1.2}.member span{font-size:11px;color:var(--muted);line-height:1.2}
+.review{padding:12px 0;border-top:1px solid var(--line)}.review:first-of-type{border-top:0}.review .who{display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:700}.review .who small{display:block;font-size:11px;color:var(--muted);font-weight:600}
+.stars{color:#FFD60A;letter-spacing:1px;font-size:13px}.review p{margin:6px 0 0;color:var(--soft)}.review img{margin-top:10px;width:100%;max-height:260px;object-fit:cover;border-radius:12px}
 .links .row{align-items:center}.links .val{color:var(--gold);font-weight:700}.links .val a{color:var(--gold);border:0}
 form{display:flex;flex-direction:column;gap:10px}label{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.4px}
-input,textarea{width:100%;background:#0F0F11;border:1px solid var(--line);border-radius:12px;color:var(--text);padding:12px;font:inherit;font-size:15px}textarea{min-height:90px;resize:vertical}
-.rate{display:flex;gap:6px}.rate input{display:none}.rate label{font-size:28px;color:#3a3a40;cursor:pointer;transition:color .12s}
+input,textarea{width:100%;background:var(--input);border:1px solid var(--line);border-radius:12px;color:var(--text);padding:12px;font:inherit;font-size:15px}textarea{min-height:90px;resize:vertical}
+.rate{display:flex;gap:6px}.rate input{display:none}.rate label{font-size:28px;color:var(--star0);cursor:pointer;transition:color .12s}
 .ok{display:none;color:var(--green);font-weight:700;padding:8px 0}.err{display:none;color:#FF6B6B;font-weight:700}
 details summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;font-weight:700}details summary::-webkit-details-marker{display:none}details summary:after{content:"+";color:var(--gold);font-size:20px}details[open] summary:after{content:"–"}
 details form{margin-top:14px}
@@ -139,7 +192,7 @@ footer{margin-top:22px;text-align:center;color:var(--muted);font-size:13px}foote
 """
 
 JS = """
-function star(){var f=document.querySelector('.rate');if(!f)return;var paint=function(n){f.querySelectorAll('label').forEach(function(l,idx){l.style.color=idx<n?'#FFD60A':'#3a3a40'})};f.querySelectorAll('input').forEach(function(i){i.addEventListener('change',function(){paint(Number(i.value))});if(i.checked)paint(Number(i.value))})}
+function star(){var f=document.querySelector('.rate');if(!f)return;var off=getComputedStyle(document.documentElement).getPropertyValue('--star0')||'#3a3a40';var paint=function(n){f.querySelectorAll('label').forEach(function(l,idx){l.style.color=idx<n?'#FFD60A':off})};f.querySelectorAll('input').forEach(function(i){i.addEventListener('change',function(){paint(Number(i.value))});if(i.checked)paint(Number(i.value))})}
 function post(form,url,asJson){var btn=form.querySelector('button'),ok=form.querySelector('.ok'),er=form.querySelector('.err');btn.disabled=true;btn.textContent='Sending…';er.style.display='none';
 var fd=new FormData(form),opt={method:'POST'};if(asJson){var o={};fd.forEach(function(v,k){o[k]=v});opt.headers={'Content-Type':'application/json'};opt.body=JSON.stringify(o)}else{opt.body=fd}
 fetch(url,opt).then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(){form.querySelectorAll('input,textarea,button').forEach(function(x){x.style.display='none'});form.querySelectorAll('label').forEach(function(x){x.style.display='none'});ok.style.display='block'}).catch(function(){btn.disabled=false;btn.textContent='Try again';er.style.display='block'})}
@@ -360,27 +413,264 @@ def build_page(b: dict, mode: str) -> str:
         **({"sameAs": same_as} if same_as else {}), **({"description": bio} if bio else {}),
     }
     footer_store = f"{e(name)} · {e(store_name)}" if store_name else e(name)
+    return _shell(page_title, desc, canonical, photo_abs, ld, b.get("kit") or {}, hero + "".join(sections), footer_store)
 
+
+def _shell(title: str, desc: str, canonical: str, image: str, ld: dict, kit: dict, body: str, footer: str) -> str:
+    e = html.escape
+    theme = theme_css(kit)
+    bg = LIGHT["bg"] if kit.get("page_theme") == "light" else DARK["bg"]
+    og_image = f'<meta property="og:image" content="{e(image)}"><meta name="twitter:card" content="summary">' if image else ""
     return f"""<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>{e(page_title)}</title>
+<title>{e(title)}</title>
 <meta name="description" content="{e(desc)}"><link rel="canonical" href="{e(canonical)}">
-<meta property="og:type" content="profile"><meta property="og:title" content="{e(page_title)}"><meta property="og:description" content="{e(desc)}"><meta property="og:url" content="{e(canonical)}">
-{f'<meta property="og:image" content="{e(photo_abs)}"><meta name="twitter:card" content="summary">' if photo_abs else ''}
-<meta name="theme-color" content="#0B0B0C">
+<meta property="og:type" content="profile"><meta property="og:title" content="{e(title)}"><meta property="og:description" content="{e(desc)}"><meta property="og:url" content="{e(canonical)}">
+{og_image}
+<meta name="theme-color" content="{bg}">
 <script type="application/ld+json">{json.dumps(ld)}</script>
-<style>{CSS}</style></head>
+<style>{theme}{CSS}</style></head>
 <body><div class="wrap">
-{hero}
-{''.join(sections)}
-<footer>{footer_store}<br>via <a href="https://www.imonsocial.com">i'M On Social</a>, the Relationship OS</footer>
+{body}
+<footer>{footer}<br>via <a href="https://www.imonsocial.com">i'M On Social</a>, the Relationship OS</footer>
 </div><script>{JS}</script></body></html>"""
+
+
+DAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+
+
+def _fmt_time(t: str) -> str:
+    try:
+        h, m = (int(x) for x in t.split(":")[:2])
+    except Exception:
+        return t
+    suffix = "AM" if h < 12 else "PM"
+    h12 = h % 12 or 12
+    return f"{h12}:{m:02d} {suffix}" if m else f"{h12} {suffix}"
+
+
+def _hours_block(store: dict):
+    """Rows for each weekday + open/closed state in the store's timezone."""
+    hours = store.get("business_hours") or {}
+    if not isinstance(hours, dict) or not hours:
+        return "", None
+    try:
+        from zoneinfo import ZoneInfo
+        now = datetime.now(ZoneInfo(store.get("timezone") or "America/Denver"))
+    except Exception:
+        now = datetime.now()
+    today = DAYS[now.weekday()]
+    rows, open_now = "", False
+    for d in DAYS:
+        h = hours.get(d)
+        if isinstance(h, dict) and h.get("open") and h.get("close") and not h.get("closed"):
+            val = f"{_fmt_time(h['open'])} – {_fmt_time(h['close'])}"
+            if d == today:
+                try:
+                    oh, om = (int(x) for x in h["open"].split(":")[:2])
+                    ch, cm = (int(x) for x in h["close"].split(":")[:2])
+                    mins = now.hour * 60 + now.minute
+                    open_now = oh * 60 + om <= mins < ch * 60 + cm
+                except Exception:
+                    pass
+        else:
+            val = "Closed"
+        cls = ' class="row today"' if d == today else ' class="row"'
+        rows += f'<div{cls}><span class="lbl">{d.title()}</span><span class="val">{html.escape(val)}</span></div>'
+    return rows, open_now
+
+
+async def _store_bundle(db, slug: str, review_limit: int) -> Optional[dict]:
+    from routers.public_review import find_store_by_slug
+    store = await find_store_by_slug(db, slug)
+    if not store:
+        return None
+    store_id = str(store["_id"])
+    team = await db.users.find(
+        {"store_id": store_id, "status": {"$nin": ["deleted", "inactive", "suspended"]}, "is_active": {"$ne": False}},
+        {"_id": 1, "name": 1, "title": 1, "photo_url": 1, "photo_path": 1, "photo_avatar_path": 1, "persona.professional_identity": 1, "role": 1},
+    ).sort("name", 1).to_list(60)
+    reviews = await db.customer_feedback.find({
+        "store_id": store_id, "approved": True, "rating": {"$gte": 4},
+    }).sort("created_at", -1).limit(review_limit).to_list(review_limit)
+    total_reviews = await db.customer_feedback.count_documents({"store_id": store_id, "approved": True, "rating": {"$gte": 4}})
+    kit = await _brand_kit(db, None, store)
+    return {"store": store, "team": team, "reviews": reviews, "total_reviews": total_reviews, "kit": kit}
+
+
+def build_store_page(b: dict, mode: str) -> str:
+    e = html.escape
+    s, kit = b["store"], b.get("kit") or {}
+    base = _public_base()
+    slug = s.get("slug") or str(s["_id"])
+    name = kit.get("company_name") or s.get("name") or "Our store"
+    initials = "".join(x[0] for x in name.split()[:2]).upper() or "?"
+    tagline = (kit.get("tagline") or "").strip()
+    logo = resolve_store_logo(kit) or resolve_store_logo(s) or ""
+    logo_abs = _abs(logo)
+    phone = s.get("phone") or ""
+    email = s.get("email") or ""
+    addr = ", ".join(x for x in [s.get("address"), s.get("city"), s.get("state")] if x)
+    if addr and s.get("zip_code"):
+        addr += f" {s['zip_code']}"
+    maps = "https://maps.apple.com/?q=" + addr.replace(" ", "+") if addr else ""
+    website = s.get("website") or ""
+    desc_text = (s.get("description") or "").strip()
+    socials = {k: v for k, v in (s.get("social_links") or {}).items() if v}
+    review_links = s.get("review_links") or {}
+    is_card = mode == "card"
+    other = f"/api/p/store/{slug}" if is_card else f"/api/card/store/{slug}"
+    hours_rows, open_now = _hours_block(s)
+
+    def row(label, value, href=None, cls="row"):
+        v = f'<a href="{e(href)}">{e(value)}</a>' if href else e(value)
+        return f'<div class="{cls}"><span class="lbl">{e(label)}</span><span class="val">{v}</span></div>'
+
+    # hero
+    actions = []
+    if phone:
+        actions.append(f'<a class="btn" href="tel:{e(phone)}">Call</a>')
+    if maps:
+        actions.append(f'<a class="btn" href="{e(maps)}" target="_blank" rel="noopener">Directions</a>')
+    if website:
+        actions.append(f'<a class="btn" href="{e(website)}" target="_blank" rel="noopener">Website</a>')
+    if email:
+        actions.append(f'<a class="btn" href="mailto:{e(email)}">Email</a>')
+    review_target = review_links.get("google") or f"{base}/review/{slug}"
+    actions.append(f'<a class="btn gold" href="{e(review_target)}" target="_blank" rel="noopener">Leave a review</a>')
+    avatar = f'<img class="avatar square" src="{e(logo)}" alt="{e(name)}">' if logo else f'<div class="avatar initials">{e(initials)}</div>'
+    sub = tagline or ", ".join(x for x in [s.get("city"), s.get("state")] if x)
+    sub_html = f'<div class="sub">{e(sub)}</div>' if sub else ""
+    status = ""
+    if hours_rows and open_now is not None:
+        status = f'<div class="open{"" if open_now else " closed"}">{"Open now" if open_now else "Closed right now"}</div>'
+    hero = f'<div class="hero">{avatar}<h1>{e(name)}</h1>{sub_html}{status}<div class="actions">{"".join(actions)}</div></div>'
+
+    sections = []
+    rows = ""
+    if phone:
+        rows += row("Phone", _fmt_phone(phone), f"tel:{phone}")
+    if email:
+        rows += row("Email", email, f"mailto:{email}")
+    if addr:
+        rows += row("Address", addr, maps)
+    if website:
+        rows += row("Website", website.replace("https://", "").replace("http://", "").rstrip("/"), website)
+    if rows:
+        sections.append(f"<section>{rows}</section>")
+
+    if desc_text:
+        text, more = desc_text, ""
+        if is_card and len(desc_text) > 260:
+            text, more = desc_text[:260].rsplit(" ", 1)[0] + "…", f'<a class="more" href="{e(other)}">Read more →</a>'
+        sections.append(f'<section><h3>About us</h3><p class="bio">{e(text)}</p>{more}</section>')
+
+    if hours_rows:
+        sections.append(f'<section><h3>Hours</h3>{hours_rows}</section>')
+
+    team = b["team"]
+    shown = team[:6] if is_card else team
+    if shown:
+        cards = ""
+        for m in shown:
+            mid = str(m["_id"])
+            photo = resolve_user_photo(m) or ""
+            mname = m.get("name") or "Team member"
+            mtitle = m.get("title") or (m.get("persona") or {}).get("professional_identity") or "Sales Professional"
+            ini = "".join(x[0] for x in mname.split()[:2]).upper() or "?"
+            pic = f'<img src="{e(photo)}" alt="{e(mname)}" loading="lazy">' if photo else f'<div class="ini">{e(ini)}</div>'
+            cards += f'<a class="member" href="/api/card/{mid}">{pic}<b>{e(mname)}</b><span>{e(mtitle)}</span></a>'
+        more_team = f'<a class="more" href="{e(other)}">Meet the whole team ({len(team)}) →</a>' if is_card and len(team) > 6 else ""
+        sections.append(f'<section><h3>Meet the team<small>{len(team)} people</small></h3><div class="team">{cards}</div>{more_team}</section>')
+
+    revs = b["reviews"]
+    if revs:
+        items = ""
+        for r in revs:
+            who = e(r.get("customer_name") or "Happy customer")
+            sp = r.get("salesperson_name")
+            who_small = f"<small>worked with {e(sp)}</small>" if sp else ""
+            items += (
+                f'<div class="review"><div class="who"><span>{who}{who_small}</span><span class="stars">{_stars(r.get("rating"))}</span></div>'
+                + (f'<p>“{e((r.get("text_review") or "").strip())}”</p>' if (r.get("text_review") or "").strip() else "")
+                + "</div>"
+            )
+        count = b["total_reviews"]
+        plural = "s" if count != 1 else ""
+        more_rev = f'<a class="more" href="{e(other)}">See all {count} reviews →</a>' if is_card and count > len(revs) else ""
+        sections.append(f'<section><h3>What customers say<small>{count} review{plural}</small></h3>{items}{more_rev}</section>')
+
+    pills = ""
+    seen = set()
+    for key, label in SOCIALS:
+        url = socials.get(key)
+        if url and label not in seen:
+            seen.add(label)
+            href = url if url.startswith("http") else f"https://{url}"
+            pills += f'<a class="pill" href="{e(href)}" target="_blank" rel="noopener">{e(label)}</a>'
+    if pills:
+        sections.append(f'<section><h3>Find us online</h3><div class="pills">{pills}</div></section>')
+
+    links = row("Showcase", "Recent deliveries & happy customers", f"{base}/showcase/store/{slug}")
+    for k, label in (("google", "Google"), ("yelp", "Yelp"), ("facebook", "Facebook")):
+        if review_links.get(k):
+            links += row(f"Review us on {label}", "Takes 30 seconds", review_links[k])
+    links += row("Full page" if is_card else "Quick card", "Everything about the store" if is_card else "Contact & team at a glance", other)
+    sections.append(f'<section class="links"><h3>Links</h3>{links}</section>')
+
+    if not is_card:
+        rating_inputs = "".join(
+            f'<input type="radio" id="r{i}" name="rating" value="{i}"{" checked" if i == 5 else ""}><label for="r{i}">★</label>' for i in range(1, 6)
+        )
+        sections.append(
+            f'<section id="review"><details><summary>Had a great experience? Leave a review</summary>'
+            f'<form data-url="/api/review/submit/{e(slug)}" data-json="1">'
+            '<label>Your name</label><input name="customer_name" required placeholder="First and last name">'
+            '<label>Rating</label><div class="rate">' + rating_inputs
+            + '</div><label>What stood out?</label><textarea name="text_review" placeholder="Who helped you, and how did it go?"></textarea>'
+            '<label>Phone (optional)</label><input name="customer_phone" type="tel" placeholder="(555) 555-5555">'
+            '<input type="hidden" name="source" value="store_landing">'
+            '<button class="btn gold wide" type="submit">Submit review</button>'
+            '<div class="ok">Thank you! Your review means a lot to our team.</div><div class="err">Something went wrong. Please try again.</div>'
+            "</form></details></section>"
+        )
+
+    page_title = name + (f" · {tagline}" if tagline else (f" · {s.get('city')}, {s.get('state')}" if s.get("city") and s.get("state") else ""))
+    desc = desc_text[:150].rsplit(" ", 1)[0] + "…" if len(desc_text) > 150 else desc_text or " · ".join(x for x in [addr, _fmt_phone(phone)] if x)
+    canonical = f"{base}/api/{'card' if is_card else 'p'}/store/{slug}"
+    ld = {
+        "@context": "https://schema.org", "@type": "AutoDealer", "name": name, "url": canonical,
+        **({"image": logo_abs} if logo_abs else {}), **({"telephone": phone} if phone else {}), **({"email": email} if email else {}),
+        **({"address": {"@type": "PostalAddress", "streetAddress": s.get("address") or "", "addressLocality": s.get("city") or "", "addressRegion": s.get("state") or "", "postalCode": s.get("zip_code") or ""}} if addr else {}),
+        **({"sameAs": [v if v.startswith("http") else f"https://{v}" for v in socials.values()]} if socials else {}),
+        **({"description": desc_text} if desc_text else {}),
+        "employee": [{"@type": "Person", "name": m.get("name") or "", "url": f"{base}/api/card/{m['_id']}"} for m in team[:20]],
+    }
+    return _shell(page_title, desc, canonical, logo_abs, ld, kit, hero + "".join(sections), e(name))
 
 
 NOT_FOUND = """<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Page not found</title>
 <style>body{margin:0;background:#0B0B0C;color:#F4F1EA;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;padding:24px}h1{font-size:22px}p{color:#9A9A9F}</style></head>
 <body><div><h1>This page is no longer available</h1><p>The link may be old or the salesperson has moved on.</p></div></body></html>"""
+
+
+@router.get("/card/store/{slug}", response_class=HTMLResponse)
+async def store_card_page(slug: str, request: Request):
+    db = get_db()
+    b = await _store_bundle(db, slug, review_limit=3)
+    if not b:
+        return HTMLResponse(NOT_FOUND, status_code=404)
+    return HTMLResponse(build_store_page(b, "card"), headers={"Cache-Control": "no-cache"})
+
+
+@router.get("/p/store/{slug}", response_class=HTMLResponse)
+async def store_landing_page(slug: str, request: Request):
+    db = get_db()
+    b = await _store_bundle(db, slug, review_limit=20)
+    if not b:
+        return HTMLResponse(NOT_FOUND, status_code=404)
+    return HTMLResponse(build_store_page(b, "landing"), headers={"Cache-Control": "no-cache"})
 
 
 @router.get("/card/{user_id}", response_class=HTMLResponse)

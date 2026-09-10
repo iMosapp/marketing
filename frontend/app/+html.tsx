@@ -10,7 +10,7 @@ export default function Root({ children }: PropsWithChildren) {
         {/* Public rep pages are server-rendered; forward /card/{id} and /p/{id} before the app bundle downloads */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){var m=location.pathname.match(/^\\/(card|p)\\/([a-f0-9]{24})\\/?$/);if(m){location.replace('/api/'+m[1]+'/'+m[2]+location.search);}})();`,
+            __html: `(function(){var m=location.pathname.match(/^\\/(card|p)\\/(store\\/[A-Za-z0-9._-]+|[a-f0-9]{24})\\/?$/);if(m){location.replace('/api/'+m[1]+'/'+m[2]+location.search);}})();`,
           }}
         />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />

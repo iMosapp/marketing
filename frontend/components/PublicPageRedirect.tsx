@@ -5,8 +5,8 @@ import * as WebBrowser from 'expo-web-browser';
 
 const PROD_BASE = 'https://app.imonsocial.com';
 
-// /card/{id} and /p/{id} are server-rendered at /api/card and /api/p; this route only forwards there.
-export function PublicPageRedirect({ kind, id }: { kind: 'card' | 'p'; id?: string }) {
+// /card/{id}, /p/{id}, /card/store/{slug}, /p/store/{slug} are server-rendered under /api; this route only forwards there.
+export function PublicPageRedirect({ kind, id }: { kind: 'card' | 'p' | 'card/store' | 'p/store'; id?: string }) {
   const router = useRouter();
   useEffect(() => {
     if (!id) return;

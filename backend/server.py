@@ -83,7 +83,8 @@ async def sitemap():
     # All store pages
     async for store in db.stores.find({}, {"slug": 1}).limit(5000):
         if store.get("slug"):
-            urls.append(f"{base}/p/store/{store['slug']}")
+            urls.append(f"{base}/api/card/store/{store['slug']}")
+            urls.append(f"{base}/api/p/store/{store['slug']}")
             urls.append(f"{base}/showcase/store/{store['slug']}")
 
     url_entries = "\n".join(

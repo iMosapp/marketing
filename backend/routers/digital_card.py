@@ -497,10 +497,10 @@ async def get_card_short_url(user_id: str):
     }
 
 
-@router.get("/store/{store_slug}")
+@router.get("/store-data/{store_slug}")
 async def get_store_card_data(store_slug: str):
     """
-    Get account-level digital card data for public display.
+    Account-level digital card JSON (the public HTML page now lives at GET /api/card/store/{slug}).
     This is the dealership/store card that managers send out.
     """
     db = get_db()
