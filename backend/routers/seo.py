@@ -49,6 +49,9 @@ async def robots_txt(request: Request):
     base = _base_url(request)
     content = f"""User-agent: *
 Allow: /card/
+Allow: /p/
+Allow: /api/card/
+Allow: /api/p/
 Allow: /l/
 Allow: /showcase/
 Allow: /card/store/
@@ -89,9 +92,15 @@ async def sitemap_xml(request: Request):
         if hasattr(lastmod, "strftime"):
             lastmod = lastmod.strftime("%Y-%m-%d")
         
-        # Digital card page
+        # Digital card + landing page (server-rendered)
         urls.append({
-            "loc": f"{base}/card/{uid}",
+            "loc": f"{base}/api/card/{uid}",
+            "lastmod": lastmod,
+            "changefreq": "weekly",
+            "priority": "0.8",
+        })
+        urls.append({
+            "loc": f"{base}/api/p/{uid}",
             "lastmod": lastmod,
             "changefreq": "weekly",
             "priority": "0.8",

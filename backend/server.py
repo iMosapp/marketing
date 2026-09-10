@@ -78,8 +78,8 @@ async def sitemap():
         {"_id": 1, "seo_slug": 1}
     ).limit(10000):
         uid = str(user["_id"])
-        urls.append(f"{base}/card/{uid}")
-        urls.append(f"{base}/p/{uid}")
+        urls.append(f"{base}/api/card/{uid}")
+        urls.append(f"{base}/api/p/{uid}")
     # All store pages
     async for store in db.stores.find({}, {"slug": 1}).limit(5000):
         if store.get("slug"):
@@ -104,6 +104,8 @@ async def robots():
     return PlainTextResponse(content=f"""User-agent: *
 Allow: /card/
 Allow: /p/
+Allow: /api/card/
+Allow: /api/p/
 Allow: /showcase/
 Allow: /review/
 Allow: /l/
@@ -622,6 +624,8 @@ api_router.include_router(voice.router)
 api_router.include_router(twilio_webhooks.router)
 api_router.include_router(twilio_admin.router)
 api_router.include_router(public_landing.router)
+from routers import public_pages
+api_router.include_router(public_pages.router)
 api_router.include_router(congrats_cards.router)
 api_router.include_router(showcase.router)
 api_router.include_router(short_urls.router)

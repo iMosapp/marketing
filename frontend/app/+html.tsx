@@ -7,6 +7,12 @@ export default function Root({ children }: PropsWithChildren) {
     <html lang="en" style={{ height: "100%", backgroundColor: "#000000" }} suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
+        {/* Public rep pages are server-rendered; forward /card/{id} and /p/{id} before the app bundle downloads */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var m=location.pathname.match(/^\\/(card|p)\\/([a-f0-9]{24})\\/?$/);if(m){location.replace('/api/'+m[1]+'/'+m[2]+location.search);}})();`,
+          }}
+        />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta
           name="viewport"
