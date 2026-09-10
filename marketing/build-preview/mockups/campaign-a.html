@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup A · Campaign builder (Workflows twin)</title>
+<style>
+:root{--bg:#000;--card:#1C1C1E;--card2:#2C2C2E;--line:#2A2A2E;--text:#F2F2F7;--muted:#8E8E93;--gold:#C9A962;--green:#34C759;--amber:#FF9500;--purple:#AF52DE;--red:#FF3B30}
+*{box-sizing:border-box}body{margin:0;background:#111;font:15px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text",Segoe UI,Helvetica,Arial,sans-serif;color:var(--text);display:flex;justify-content:center;gap:28px;padding:24px;flex-wrap:wrap}
+.phone{width:393px;background:var(--bg);border-radius:44px;border:8px solid #222;overflow:hidden;box-shadow:0 30px 80px #0009}
+.screen{height:852px;overflow-y:auto;padding:0 16px 40px;scrollbar-width:none}.screen::-webkit-scrollbar{display:none}
+.status{display:flex;justify-content:space-between;padding:14px 10px 0;font-weight:700;font-size:15px}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 0 10px}
+.hdr .title{font-size:20px;font-weight:800}.hdr .sub{font-size:12px;color:var(--muted)}
+.hdr .save{color:var(--gold);font-weight:800;font-size:16px}
+.live{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid #34C75955;border-radius:16px;padding:12px 14px;margin-top:6px}
+.live b{color:var(--green);font-size:13px;letter-spacing:.6px}.live span{font-size:12px;color:var(--muted)}
+.toggle{width:44px;height:26px;border-radius:13px;background:var(--green);position:relative}.toggle:after{content:"";position:absolute;right:3px;top:3px;width:20px;height:20px;border-radius:10px;background:#fff}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-top:12px}
+.trig{display:flex;align-items:center;gap:12px}.ico{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex:0 0 40px}
+.trig h2{margin:0;font-size:17px;font-weight:800}.trig h2 em{color:var(--green);font-style:normal}.trig p{margin:2px 0 0;font-size:12px;color:var(--muted)}
+.change{color:var(--gold);font-weight:800;font-size:13px}
+.lbl{font-size:11px;font-weight:800;letter-spacing:1px;color:var(--muted);margin:18px 0 8px}
+.row{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line)}.row:first-child{border-top:0;padding-top:0}
+.row .i{width:20px;text-align:center;font-size:15px}.row .t{flex:1;font-size:13px}.row .t small{display:block;color:var(--muted);font-size:11px}.row .chev{color:var(--muted)}
+.tl{position:relative;margin-top:4px}
+.step{display:flex;gap:10px}.when{width:58px;flex:0 0 58px;font-size:12px;font-weight:800;color:var(--gold);padding-top:14px;text-align:right}
+.rail{width:14px;flex:0 0 14px;display:flex;flex-direction:column;align-items:center}.dot{width:10px;height:10px;border-radius:5px;background:var(--gold);margin-top:16px;box-shadow:0 0 0 4px #C9A96222}.rail .ln{flex:1;width:2px;background:var(--line);margin-top:4px}
+.sc{flex:1;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:10px}
+.sc .top{display:flex;align-items:center;gap:6px;margin-bottom:8px}.chip{font-size:10px;font-weight:800;letter-spacing:.4px;padding:3px 8px;border-radius:999px;background:#2C2C2E;color:var(--muted)}
+.chip.txt{background:#34C75922;color:var(--green)}.chip.ai{background:#C9A96222;color:var(--gold)}.chip.card{background:#AF52DE22;color:var(--purple)}
+.bubble{background:var(--gold);color:#111;border-radius:16px 16px 4px 16px;padding:9px 12px;font-size:13px;line-height:1.35}
+.bubble.cardp{background:#2C2C2E;color:var(--text);border:1px dashed #AF52DE88;border-radius:12px;display:flex;gap:10px;align-items:center}
+.sc .ft{display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--muted)}.sc .ft b{color:var(--text)}
+.wait{display:flex;gap:10px}.wait .when{visibility:hidden}.wait .rail .ln{margin:0}.wait .w{flex:1;font-size:11px;color:var(--muted);padding:2px 0 10px 4px}
+.add{flex:1;border:1.5px dashed #C9A96266;border-radius:14px;padding:12px;text-align:center;color:var(--gold);font-weight:800;font-size:14px;margin-bottom:10px}
+.end{flex:1;font-size:12px;color:var(--muted);padding-top:12px}
+.people{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}.people:first-child{border-top:0}
+.av{width:34px;height:34px;border-radius:17px;background:#C9A96222;color:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
+.people .n{flex:1}.people .n b{display:block;font-size:14px}.people .n small{font-size:11px;color:var(--muted)}
+.pill{font-size:10px;font-weight:800;padding:3px 8px;border-radius:999px}.pill.p{background:#FF950022;color:var(--amber)}.pill.g{background:#34C75922;color:var(--green)}
+.x{color:var(--muted);font-size:12px}
+.note{margin-top:10px;font-size:11px;color:var(--muted);text-align:center}
+.cap{width:393px;text-align:center;color:#aaa;font-size:13px;margin-top:-16px}
+.warn{display:flex;gap:10px;align-items:flex-start;background:#FF950014;border:1px solid #FF950044;border-radius:14px;padding:10px 12px;margin-top:12px;font-size:12px}.warn b{color:var(--amber)}
+</style></head><body>
+<div>
+<div class="phone"><div class="screen">
+  <div class="status"><span>9:14</span><span>▮▮▮ ᯤ 44</span></div>
+  <div class="hdr"><span style="color:var(--gold);font-size:22px">‹</span><div style="text-align:center"><div class="title">Sold Follow-Up</div><div class="sub">Campaign · store-wide</div></div><span class="save">Save</span></div>
+
+  <div class="live"><div><b>● LIVE</b><br><span>6 touches over 3 months · 8 people in it</span></div><div class="toggle"></div></div>
+
+  <div class="card">
+    <div class="trig"><div class="ico" style="background:#34C75922">🏷️</div><div style="flex:1"><h2>When a contact is tagged <em>Sold</em></h2><p>Applied by you, the Sold button, or any rep in the store</p></div><span class="change">Change</span></div>
+  </div>
+
+  <div class="warn"><span>⚠️</span><div><b>Heads up:</b> the Sold workflow says <b>Jessi answers</b>, but this campaign had AI set to Off. We matched it to Auto so replies never go unanswered. <span style="color:var(--gold);font-weight:800">Undo</span></div></div>
+
+  <div class="lbl">WHAT HAPPENS</div>
+  <div class="card" style="margin-top:0">
+    <div class="row"><span class="i">✨</span><div class="t">Jessi answers replies automatically<small>Books, answers questions, hands off to you when she needs a human. Inbox shows Auto.</small></div><span class="chev">›</span></div>
+    <div class="row"><span class="i">🕙</span><div class="t">Texts go out at 10:00 AM, the customer's local time<small>Never overnight. Quiet hours respected.</small></div><span class="chev">›</span></div>
+    <div class="row"><span class="i">⏸️</span><div class="t">When they reply, the plan pauses<small>Jessi or you take the conversation; the plan resumes when it goes quiet again.</small></div><span class="chev">›</span></div>
+    <div class="row"><span class="i">🛑</span><div class="t">Sold tag also stops Working &amp; Met follow-ups<small>From the store's Sold workflow.</small></div><span class="chev" style="color:var(--gold);font-size:12px;font-weight:800">Workflows</span></div>
+  </div>
+
+  <div class="lbl">TIMELINE · 6 TOUCHES</div>
+  <div class="tl">
+    <div class="step"><div class="when">Day 1</div><div class="rail"><div class="dot"></div><div class="ln"></div></div>
+      <div class="sc"><div class="top"><span class="chip txt">TEXT</span><span class="chip ai">✦ JESSI PERSONALIZES</span><span style="flex:1"></span><span class="x">Edit ›</span></div>
+      <div class="bubble">Hey Brent! Hope everything is going great with your new Tahoe. Any questions on it so far?</div>
+      <div class="ft"><span>Sends <b>Tue 10:00 AM</b> for Brent</span><span>110/320</span></div></div></div>
+    <div class="wait"><div class="when">.</div><div class="rail"><div class="ln"></div></div><div class="w">wait 6 days</div></div>
+    <div class="step"><div class="when">Day 7</div><div class="rail"><div class="dot"></div><div class="ln"></div></div>
+      <div class="sc"><div class="top"><span class="chip txt">TEXT</span><span style="flex:1"></span><span class="x">Edit ›</span></div>
+      <div class="bubble">Quick one: if I earned it, a Google review would mean a lot. Takes 30 seconds → g.page/r/imos</div>
+      <div class="ft"><span>Includes <b>Google Review</b> link</span><span>96/320</span></div></div></div>
+    <div class="wait"><div class="when">.</div><div class="rail"><div class="ln"></div></div><div class="w">wait 3 weeks</div></div>
+    <div class="step"><div class="when">1 mo</div><div class="rail"><div class="dot" style="background:var(--purple);box-shadow:0 0 0 4px #AF52DE22"></div><div class="ln"></div></div>
+      <div class="sc"><div class="top"><span class="chip card">CARD</span><span style="flex:1"></span><span class="x">Edit ›</span></div>
+      <div class="bubble cardp"><span style="font-size:22px">💌</span><div><b>Thank You card</b><br><small style="color:var(--muted)">Your photo + a personal note, sent as a link</small></div></div></div></div>
+    <div class="wait"><div class="when">.</div><div class="rail"><div class="ln"></div></div><div class="w">wait 2 months</div></div>
+    <div class="step"><div class="when">3 mo</div><div class="rail"><div class="dot"></div><div class="ln"></div></div>
+      <div class="sc"><div class="top"><span class="chip txt">TEXT</span><span class="chip ai">✦ JESSI PERSONALIZES</span><span style="flex:1"></span><span class="x">Edit ›</span></div>
+      <div class="bubble">Three months in! How's the Tahoe treating you? Know anyone else shopping? I take great care of referrals.</div></div></div>
+    <div class="step"><div class="when"></div><div class="rail"><div class="dot" style="background:#3A3A3C;box-shadow:none"></div></div><div class="add">+ Add a touch</div></div>
+    <div class="step"><div class="when"></div><div class="rail"></div><div class="end">Then the plan ends. Brent stays tagged Sold and moves to yearly anniversary texts.</div></div>
+  </div>
+
+  <div class="lbl">WHO'S IN IT · 8</div>
+  <div class="card" style="margin-top:0">
+    <div class="people"><div class="av">BB</div><div class="n"><b>Brent Beck</b><small>Touch 2 of 6 · next Tue 10:00 AM</small></div><span class="pill g">ON TRACK</span></div>
+    <div class="people"><div class="av">MW</div><div class="n"><b>Mike Wolthuis</b><small>Touch 1 of 6 · replied, Jessi is talking to him</small></div><span class="pill p">PAUSED</span></div>
+    <div class="people"><div class="av">SN</div><div class="n"><b>Steve Norris</b><small>Touch 4 of 6 · next Sep 22</small></div><span class="pill g">ON TRACK</span></div>
+    <div class="people" style="justify-content:center;color:var(--gold);font-weight:800;font-size:13px">Show all 8 ›</div>
+  </div>
+  <div class="note">Duplicate · Delete campaign</div>
+</div></div>
+<p class="cap"><b>A · "Plain-English Timeline"</b><br>Same feel as Workflows: what happens, then the timeline. Tap a touch to edit it in a sheet.</p>
+</div>
+
+<div>
+<div class="phone"><div class="screen">
+  <div class="status"><span>9:14</span><span>▮▮▮ ᯤ 44</span></div>
+  <div class="hdr"><span style="color:var(--gold);font-size:22px">‹</span><div style="text-align:center"><div class="title">Edit touch</div><div class="sub">Day 1 · Sold Follow-Up</div></div><span class="save">Done</span></div>
+
+  <div class="lbl">WHEN</div>
+  <div class="card" style="margin-top:0">
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <span class="chip" style="font-size:13px;padding:8px 12px">Right away</span><span class="chip" style="font-size:13px;padding:8px 12px;background:var(--gold);color:#111">1 day</span><span class="chip" style="font-size:13px;padding:8px 12px">3 days</span><span class="chip" style="font-size:13px;padding:8px 12px">1 week</span><span class="chip" style="font-size:13px;padding:8px 12px">2 weeks</span><span class="chip" style="font-size:13px;padding:8px 12px">1 month</span><span class="chip" style="font-size:13px;padding:8px 12px">Custom…</span>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-top:10px">1 day after the tag, at 10:00 AM their time. For Brent that's <b style="color:var(--text)">Tue, Sep 16</b>.</div>
+  </div>
+
+  <div class="lbl">WHAT TO SEND</div>
+  <div class="card" style="margin-top:0">
+    <div style="display:flex;gap:8px"><span class="chip txt" style="flex:1;text-align:center;font-size:13px;padding:10px">💬 Text</span><span class="chip" style="flex:1;text-align:center;font-size:13px;padding:10px">💌 Card</span><span class="chip" style="flex:1;text-align:center;font-size:13px;padding:10px">📷 Photo</span></div>
+    <div class="bubble" style="margin-top:12px;min-height:90px">Hey {first_name}! Hope everything is going great with your new {vehicle}. Any questions on it so far?</div>
+    <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap"><span class="chip ai" style="font-size:12px;padding:6px 10px">@ Personalize</span><span class="chip" style="font-size:12px;padding:6px 10px">🔗 Digital Card</span><span class="chip" style="font-size:12px;padding:6px 10px">⭐ Google Review</span><span class="chip" style="font-size:12px;padding:6px 10px">✦ Write it for me</span></div>
+    <div class="ft" style="display:flex;justify-content:space-between;margin-top:8px;font-size:11px;color:var(--muted)"><span>Reads as: "Hey Brent! Hope everything is going great with your new Tahoe…"</span><span>110/320</span></div>
+  </div>
+
+  <div class="card">
+    <div class="row"><span class="i">✦</span><div class="t">Let Jessi personalize each send<small>She rewrites this in your voice using what she knows about the customer. Nothing generic.</small></div><div class="toggle" style="background:var(--gold)"></div></div>
+  </div>
+
+  <div class="note" style="color:var(--red);margin-top:18px">Remove this touch</div>
+</div></div>
+<p class="cap"><b>A · Touch editor sheet</b><br>Plain "when" chips, live example for a real customer, one toggle for Jessi.</p>
+</div>
+</body></html>

@@ -1179,6 +1179,22 @@ async def process_pending_campaign_steps():
                         vcf_url = f"{app_url}/api/profile/{user_id}/vcard.vcf"
                         media_urls = [vcf_url]
 
+                    # Card touch: build the digital card now and text its link
+                    if send_doc.get("action_type") == "send_card":
+                        try:
+                            from routers.congrats_cards import auto_create_card
+                            card_type = send_doc.get("card_type") or "congrats"
+                            card_res = await auto_create_card(user_id, contact_id, card_type=card_type)
+                            card_url = (card_res or {}).get("short_url")
+                            if not card_url and (card_res or {}).get("card_id"):
+                                existing_card = await db.congrats_cards.find_one({"card_id": card_res["card_id"]}, {"short_url": 1})
+                                card_url = (existing_card or {}).get("short_url")
+                            first = (send_doc.get("contact_name") or "there").split()[0]
+                            base_msg = message_content.strip() if send_doc.get("message_template") else f"Made you a little something, {first}!"
+                            message_content = f"{base_msg}\n\nView your card: {card_url}" if card_url else base_msg
+                        except Exception as card_err:
+                            logger.error(f"[Scheduler] Card touch failed for {send_doc.get('contact_name')}: {card_err}")
+
                     # Send SMS/MMS via Twilio using rep's dedicated number
                     twilio_failed = False
                     twilio_error = ""

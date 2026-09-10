@@ -217,6 +217,7 @@ async def enroll_contact(db, user_id: str, campaign: dict, contact: dict, trigge
             "contact_id": contact_id, "contact_name": contact_name, "contact_phone": contact.get("phone", ""),
             "enrollment_id": enrollment_id, "step": i + 1,
             "message_template": step.get("message_template") or step.get("message", ""),
+            "action_type": step.get("action_type", "message"), "card_type": step.get("card_type", ""),
             "media_type": step.get("media_type", ""), "media_urls": step.get("media_urls", []), "channel": step.get("channel", "sms"),
             "delivery_mode": delivery_mode, "ai_enabled": campaign.get("ai_enabled", False),
             "send_at": send_at, "status": "pending", "created_at": now,

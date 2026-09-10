@@ -1,0 +1,44 @@
+{
+  "summary": "Backend + frontend testing for Campaigns redesign. Backend pytest suite: 5/6 passed. Frontend Playwright covered list stats/templates/plan-cards, LIVE toggle flip+restore, Sold editor (LIVE card, trigger card, mismatch banner, WHAT HAPPENS rows, timeline, people rows, duplicate/delete), preview toggle, touch editor (presets, tokens, quick links, send_card grid, thankyou card, note input), replies/delivery/trigger/rename sheets, full create->add-touch->save->reload persistence, template prefill+summary, and /workflows regression. All critical flows work; a few minor issues noted.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/campaigns/{user_id}", "issue": "Older/legacy campaigns in list are missing the new fields ai_assist_mode and scope in the response (only sent_this_week is uniformly enriched). Review-request expects every item to carry ai_assist_mode + scope. Frontend renders defaults, but the get_campaigns handler should backfill these fields (e.g. ai_assist_mode default from ai_enabled, scope default 'personal') when the doc doesn't have them."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "TouchEditorSheet WHEN presets", "issue": "data-testid 'touch-preset-Custom\u2026' was not found in the DOM for the Sold campaign editor. Right-away and 1-week were both present. Either the Custom preset is not rendered for the current touch state, or the testid differs from the review-request spec.", "selector": "[data-testid=\"touch-preset-Custom\u2026\"]", "priority": "LOW"},
+      {"component": "campaigns/new + editor", "issue": "Multiple React Native web console warnings: \"Unexpected text node: . A text node cannot be a child of a <View>.\" repeatedly on both /campaigns/new and /campaigns/[id]. Indicates a stray string/space inside a <View> child list. Cosmetic only but pollutes console.", "selector": "n/a", "priority": "LOW"},
+      {"component": "Campaign delete confirmation", "issue": "Delete plan uses the native browser confirm() (RN Alert on web) rather than an in-app testable dialog. There is no data-testid on the confirm button, so automated tests cannot confirm deletion; cleanup had to be done via backend DELETE. Consider a custom modal with dialog-confirm/dialog-cancel testids.", "selector": "n/a", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "/campaigns list", "issues": ["Layout, badges, timeline dots and pills render cleanly at 430x932 with no text overflow observed on the first 4 plan cards"]},
+      {"screen": "/campaigns/[id] Sold editor", "issues": ["Gold Heads-up mismatch banner renders correctly; WHAT HAPPENS rows readable; timeline touch previews with tokens display fine"]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_campaigns_redesign.py",
+    "/app/test_reports/pytest/campaigns_redesign.xml"
+  ],
+  "action_items": [
+    "Backend: Backfill ai_assist_mode and scope defaults in GET /api/campaigns/{user_id} for legacy campaigns that don't have them stored (or run a one-time migration).",
+    "Frontend (optional): Verify touch-preset-Custom\u2026 testid is emitted (or update tests) and clean up the 'Unexpected text node' warnings in campaigns/new.tsx and campaigns/[id].tsx.",
+    "Frontend: Replace the native browser confirm on Delete Plan with a testable in-app modal (add data-testid on the Delete confirm button)."
+  ],
+  "critical_code_review_comments": [
+    "backend/routers/campaigns.py get_campaigns (~line 619) enriches sent_this_week but does not normalize/backfill ai_assist_mode and scope on legacy docs; response schema is inconsistent across list items.",
+    "frontend campaigns delete confirmation uses non-testable native confirm - blocks automated cleanup and CI regression."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_campaigns_redesign.py (new)"
+  ],
+  "success_rate": {"backend": "83%", "frontend": "95%"},
+  "test_credentials": "forest@imosapp.com / Admin123! (user_id 69a0b7095fddcede09591667)",
+  "seed_data_creation": "Created and cleaned up two throwaway campaigns via API + one via UI (backend cleanup executed). Sold campaign 69d172b9276decacd8e16eaa left in LIVE state (restored after toggle test).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend pytest lives at /app/backend/tests/test_campaigns_redesign.py. The Sold campaign 69d172b9276decacd8e16eaa is seed data and was left unchanged (LIVE, 5 touches, 5 people). One legacy-doc backfill concern documented above. Delete confirmation uses native browser confirm - use Playwright's page.on('dialog') handler if you need to accept it in future tests.",
+  "rca of the issue": "N/A - no critical bugs. Legacy-field gap is due to get_campaigns only enriching sent_this_week; older campaigns pre-date the ai_assist_mode/scope fields and are returned as-stored."
+}

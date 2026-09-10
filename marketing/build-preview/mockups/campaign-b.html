@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup B · Campaign builder (Conversation canvas)</title>
+<style>
+:root{--bg:#000;--card:#1C1C1E;--card2:#2C2C2E;--line:#2A2A2E;--text:#F2F2F7;--muted:#8E8E93;--gold:#C9A962;--green:#34C759;--amber:#FF9500;--purple:#AF52DE;--red:#FF3B30}
+*{box-sizing:border-box}body{margin:0;background:#111;font:15px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text",Segoe UI,Helvetica,Arial,sans-serif;color:var(--text);display:flex;justify-content:center;gap:28px;padding:24px;flex-wrap:wrap}
+.phone{width:393px;background:var(--bg);border-radius:44px;border:8px solid #222;overflow:hidden;box-shadow:0 30px 80px #0009;position:relative}
+.screen{height:852px;overflow-y:auto;padding:0 16px 120px;scrollbar-width:none}.screen::-webkit-scrollbar{display:none}
+.status{display:flex;justify-content:space-between;padding:14px 10px 0;font-weight:700;font-size:15px}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 0 6px}.hdr .title{font-size:20px;font-weight:800}.hdr .sub{font-size:12px;color:var(--muted)}.hdr .save{color:var(--gold);font-weight:800;font-size:16px}
+.rules{display:flex;gap:8px;overflow-x:auto;padding:8px 0 4px;scrollbar-width:none}.rules::-webkit-scrollbar{display:none}
+.rule{flex:0 0 auto;display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:13px;font-weight:700}.rule small{color:var(--muted);font-weight:600}.rule.on{border-color:#34C75566}
+.rule .d{width:8px;height:8px;border-radius:4px}
+.lbl{font-size:11px;font-weight:800;letter-spacing:1px;color:var(--muted);margin:16px 0 8px}
+.canvas{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:14px 12px;position:relative}
+.canvas:before{content:"";position:absolute;inset:0;border-radius:22px;background:radial-gradient(#ffffff08 1px,transparent 1px);background-size:14px 14px;pointer-events:none}
+.tagline{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px}.tagline span{font-size:12px;font-weight:800;color:var(--green);background:#34C75922;border-radius:999px;padding:6px 12px}
+.gap{display:flex;align-items:center;justify-content:center;gap:8px;margin:10px 0}.gap .t{font-size:11px;color:var(--muted);background:#2C2C2E;border-radius:999px;padding:4px 10px;font-weight:700}.gap .plus{width:22px;height:22px;border-radius:11px;border:1.5px dashed #C9A96288;color:var(--gold);font-size:14px;display:flex;align-items:center;justify-content:center}
+.msg{display:flex;justify-content:flex-end;gap:8px;align-items:flex-end}
+.bubble{max-width:82%;background:var(--gold);color:#111;border-radius:18px 18px 4px 18px;padding:10px 13px;font-size:14px;line-height:1.35;position:relative}
+.meta{display:flex;justify-content:flex-end;gap:6px;margin-top:4px;font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.3px}.meta .ai{color:var(--gold)}
+.cardmsg{max-width:82%;background:#2C2C2E;border:1px dashed #AF52DE88;border-radius:14px;padding:10px 12px;display:flex;gap:10px;align-items:center;font-size:13px}
+.reply{display:flex;justify-content:flex-start;margin:10px 0 0}.reply .b{max-width:80%;background:#2C2C2E;border-radius:18px 18px 18px 4px;padding:9px 12px;font-size:13px;color:var(--text)}
+.jessi{display:flex;justify-content:center;margin:8px 0 2px}.jessi span{font-size:11px;color:var(--gold);background:#C9A96218;border:1px solid #C9A96244;border-radius:999px;padding:5px 10px;font-weight:700}
+.addbig{margin-top:12px;border:1.5px dashed #C9A96266;border-radius:16px;padding:14px;text-align:center;color:var(--gold);font-weight:800}
+.peoplebar{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-top:12px}
+.avs{display:flex}.avs div{width:30px;height:30px;border-radius:15px;background:#C9A96233;border:2px solid var(--bg);margin-left:-8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--gold)}.avs div:first-child{margin-left:0}
+.peoplebar .t{flex:1;font-size:13px}.peoplebar .t small{display:block;color:var(--muted);font-size:11px}
+.bar{position:absolute;left:0;right:0;bottom:0;padding:12px 16px 26px;background:linear-gradient(#0000,#000 40%);display:flex;gap:10px}
+.btn{flex:1;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px}.btn.g{background:var(--gold);color:#111}.btn.o{background:var(--card);border:1px solid var(--line);color:var(--text)}
+.cap{width:393px;text-align:center;color:#aaa;font-size:13px;margin-top:-16px}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#0B0B0C;border-radius:24px 24px 0 0;padding:14px 16px 30px;border-top:1px solid var(--line)}
+.opt{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;background:var(--card);margin-top:8px;border:1px solid transparent}.opt.sel{border-color:var(--gold);background:#C9A96218}.opt b{display:block;font-size:14px}.opt small{color:var(--muted);font-size:12px}.opt .r{width:18px;height:18px;border-radius:9px;border:2px solid var(--muted)}.opt.sel .r{border-color:var(--gold);background:var(--gold);box-shadow:inset 0 0 0 3px #0B0B0C}
+</style></head><body>
+<div>
+<div class="phone"><div class="screen">
+  <div class="status"><span>9:14</span><span>▮▮▮ ᯤ 44</span></div>
+  <div class="hdr"><span style="color:var(--gold);font-size:22px">‹</span><div style="text-align:center"><div class="title">Sold Follow-Up</div><div class="sub">● Live · 8 people · store-wide</div></div><span class="save">Save</span></div>
+
+  <div class="rules">
+    <div class="rule on"><span class="d" style="background:var(--green)"></span>Tagged <b>Sold</b></div>
+    <div class="rule"><span>✦</span>Jessi <small>Auto</small></div>
+    <div class="rule"><span>🕙</span>10:00 AM</div>
+    <div class="rule"><span>⏸</span>Pause on reply</div>
+    <div class="rule"><span>⋯</span></div>
+  </div>
+
+  <div class="lbl">WHAT BRENT WILL SEE</div>
+  <div class="canvas">
+    <div class="tagline"><span>🏷️ Brent gets tagged Sold · Tue Sep 15</span></div>
+
+    <div class="gap"><span class="t">next morning · 10:00 AM</span></div>
+    <div class="msg"><div class="bubble">Hey Brent! Hope everything is going great with your new Tahoe. Any questions on it so far?</div></div>
+    <div class="meta"><span class="ai">✦ JESSI PERSONALIZES</span><span>·</span><span>TOUCH 1</span></div>
+
+    <div class="reply"><div class="b">Loving it! Quick q, how do I pair a second phone?</div></div>
+    <div class="jessi"><span>✦ Jessi answers · plan pauses while they chat</span></div>
+
+    <div class="gap"><span class="t">6 days later</span><span class="plus">+</span></div>
+    <div class="msg"><div class="bubble">Quick one: if I earned it, a Google review would mean a lot. Takes 30 seconds → g.page/r/imos</div></div>
+    <div class="meta"><span>⭐ GOOGLE REVIEW LINK</span><span>·</span><span>TOUCH 2</span></div>
+
+    <div class="gap"><span class="t">3 weeks later</span><span class="plus">+</span></div>
+    <div class="msg"><div class="cardmsg"><span style="font-size:22px">💌</span><div><b>Thank You card</b><br><small style="color:var(--muted)">your photo + personal note</small></div></div></div>
+    <div class="meta"><span>CARD</span><span>·</span><span>TOUCH 3</span></div>
+
+    <div class="gap"><span class="t">2 months later</span><span class="plus">+</span></div>
+    <div class="msg"><div class="bubble">Three months in! How's the Tahoe treating you? Know anyone else shopping?</div></div>
+    <div class="meta"><span class="ai">✦ JESSI PERSONALIZES</span><span>·</span><span>TOUCH 4</span></div>
+
+    <div class="addbig">+ Add a touch</div>
+    <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:10px">Then the plan ends · Brent stays tagged Sold</div>
+  </div>
+
+  <div class="peoplebar"><div class="avs"><div>BB</div><div>MW</div><div>SN</div><div>+5</div></div><div class="t">8 people in this plan<small>6 on track · 2 paused (talking to Jessi)</small></div><span style="color:var(--muted)">›</span></div>
+</div>
+<div class="bar"><div class="btn o">Preview as Brent</div><div class="btn g">+ Add a touch</div></div>
+</div>
+<p class="cap"><b>B · "Conversation canvas"</b><br>You build the plan by seeing exactly what the customer sees. Rules live in the pills up top.</p>
+</div>
+
+<div>
+<div class="phone"><div class="screen" style="filter:brightness(.45)">
+  <div class="status"><span>9:14</span><span>▮▮▮ ᯤ 44</span></div>
+  <div class="hdr"><span style="color:var(--gold);font-size:22px">‹</span><div style="text-align:center"><div class="title">Sold Follow-Up</div><div class="sub">● Live · 8 people</div></div><span class="save">Save</span></div>
+  <div class="rules"><div class="rule on"><span class="d" style="background:var(--green)"></span>Tagged <b>Sold</b></div><div class="rule" style="border-color:var(--gold)"><span>✦</span>Jessi <small>Auto</small></div><div class="rule"><span>🕙</span>10:00 AM</div></div>
+  <div class="lbl">WHAT BRENT WILL SEE</div>
+  <div class="canvas" style="height:420px"></div>
+</div>
+<div class="sheet">
+  <div style="width:40px;height:4px;border-radius:2px;background:#333;margin:0 auto 12px"></div>
+  <div style="font-size:18px;font-weight:800">Who handles replies?</div>
+  <div style="font-size:12px;color:var(--muted);margin-top:2px">Applies to everyone in this plan. Matches your Sold workflow.</div>
+  <div class="opt sel"><div class="r"></div><div style="flex:1"><b>Jessi answers automatically</b><small>Texts back in your voice, books, escalates to you when a human is needed. Inbox shows Auto.</small></div></div>
+  <div class="opt"><div class="r"></div><div style="flex:1"><b>Jessi drafts, I approve</b><small>Nothing goes out until you tap send.</small></div></div>
+  <div class="opt"><div class="r"></div><div style="flex:1"><b>Auto, then hand to me after 2 replies</b><small>Jessi warms them up, you close.</small></div></div>
+  <div class="opt"><div class="r"></div><div style="flex:1"><b>I handle replies</b><small>Plan texts still go out; replies wait for you.</small></div></div>
+  <div class="btn g" style="margin-top:14px">Done</div>
+</div>
+</div>
+<p class="cap"><b>B · Rule sheet</b><br>Tapping any pill opens a one-question sheet. No settings pages.</p>
+</div>
+</body></html>

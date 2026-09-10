@@ -506,9 +506,14 @@ class CampaignCreate(BaseModel):
     send_time: str = "10:00"
     schedule: Dict[str, Any] = {}
     active: bool = True
-    delivery_mode: str = "manual"
+    delivery_mode: str = "auto"
     ai_enabled: bool = False
+    ai_assist_mode: str = "auto_reply"   # who handles replies: off | draft_only | auto_reply | auto_with_approval
+    escalation_threshold: int = 2
+    escalation_timeout_minutes: int = 15
     ownership_level: str = "user"
+    scope: str = "personal"   # personal | account | org (role-enforced in create_campaign)
+    description: str = ""
 
 # Campaign Enrollment - tracks contacts enrolled in campaigns
 class CampaignEnrollment(BaseModel):

@@ -616,6 +616,18 @@ async def create_campaign(user_id: str, campaign_data: CampaignCreate):
     
     return Campaign(**campaign_dict)
 
+def _normalize_campaign_fields(camp: dict) -> dict:
+    """Legacy docs pre-date ai_assist_mode / scope / delivery_mode; give the UI a consistent shape."""
+    if not camp.get("ai_assist_mode"):
+        camp["ai_assist_mode"] = "auto_reply" if camp.get("ai_enabled") else "off"
+    if not camp.get("scope"):
+        camp["scope"] = "account" if camp.get("ownership_level") == "store" else "personal"
+    if not camp.get("delivery_mode"):
+        camp["delivery_mode"] = "auto"
+    camp.setdefault("ai_enabled", False)
+    return camp
+
+
 @router.get("/{user_id}")
 async def get_campaigns(user_id: str):
     """Get campaigns for a user — additive: personal + account (store) + org."""
@@ -682,6 +694,15 @@ async def get_campaigns(user_id: str):
         ]
         async for stat in db.campaign_enrollments.aggregate(pipeline):
             stats_map[stat["_id"]] = stat
+    # Texts actually sent by these campaigns in the last 7 days (auto-sent campaign messages)
+    week_map = {}
+    if campaign_ids:
+        week_ago = datetime.utcnow() - timedelta(days=7)
+        async for w in db.messages.aggregate([
+            {"$match": {"campaign_id": {"$in": campaign_ids}, "auto_sent": True, "timestamp": {"$gte": week_ago}}},
+            {"$group": {"_id": "$campaign_id", "n": {"$sum": 1}}},
+        ]):
+            week_map[w["_id"]] = w["n"]
     
     result_dicts = []
     for camp in result:
@@ -700,6 +721,8 @@ async def get_campaigns(user_id: str):
         camp["enrollments_total"] = stats.get("enrollments_total", 0)
         camp["enrollments_active"] = stats.get("enrollments_active", 0)
         camp["enrollments_completed"] = stats.get("enrollments_completed", 0)
+        camp["sent_this_week"] = week_map.get(camp_id, 0)
+        _normalize_campaign_fields(camp)
         last_sent = stats.get("last_sent_at")
         camp["last_sent_at"] = last_sent.isoformat() if last_sent and hasattr(last_sent, "isoformat") else last_sent
         
@@ -821,7 +844,7 @@ async def get_campaign(user_id: str, campaign_id: str):
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
     campaign['_id'] = str(campaign['_id'])
-    return campaign
+    return _normalize_campaign_fields(campaign)
 
 @router.put("/{user_id}/{campaign_id}")
 async def update_campaign(user_id: str, campaign_id: str, update_data: dict):
@@ -1038,6 +1061,8 @@ async def enroll_contact_in_campaign(user_id: str, campaign_id: str, contact_id:
                 "enrollment_id": enrollment_id,
                 "step": i + 1,
                 "message_template": step.get('message_template') or step.get('message', ''),
+                "action_type": step.get('action_type', 'message'),
+                "card_type": step.get('card_type', ''),
                 "media_urls": step.get('media_urls', []),
                 "channel": step.get('channel', 'sms'),
                 "delivery_mode": campaign.get('delivery_mode', 'auto'),
@@ -1070,8 +1095,24 @@ async def get_campaign_enrollments(user_id: str, campaign_id: str, status: str =
     if status:
         query["$and"].append({"status": status})
     
-    enrollments = await get_db().campaign_enrollments.find(query).limit(500).to_list(500)
-    return [{**e, "_id": str(e["_id"])} for e in enrollments]
+    enrollments = await get_db().campaign_enrollments.find(query).sort("enrolled_at", -1).limit(500).to_list(500)
+    # Enrich: real contact names/photos (older enrollments stored none -> "Unknown"), total steps, plain status
+    cids = [ObjectId(e["contact_id"]) for e in enrollments if ObjectId.is_valid(str(e.get("contact_id")))]
+    contacts = {}
+    if cids:
+        async for c in get_db().contacts.find({"_id": {"$in": cids}}, {"first_name": 1, "last_name": 1, "phone": 1, "photo_thumbnail": 1, "photo_url": 1}):
+            contacts[str(c["_id"])] = c
+    total_steps = len(campaign.get("sequences") or [])
+    out = []
+    for e in enrollments:
+        c = contacts.get(str(e.get("contact_id")), {})
+        name = f"{c.get('first_name', '')} {c.get('last_name', '')}".strip() or e.get("contact_name") or ""
+        photo = c.get("photo_thumbnail") or c.get("photo_url") or None
+        if photo and not str(photo).startswith("http") and not str(photo).startswith("/"):
+            photo = None
+        out.append({**e, "_id": str(e["_id"]), "contact_name": name or "Unknown contact", "contact_phone": e.get("contact_phone") or c.get("phone", ""),
+                    "contact_photo": photo, "total_steps": total_steps, "contact_missing": not bool(c)})
+    return out
 
 @router.delete("/{user_id}/{campaign_id}/enrollments/{enrollment_id}")
 async def cancel_enrollment(user_id: str, campaign_id: str, enrollment_id: str):

@@ -100,7 +100,7 @@ export function SmartTagPicker({ tags, selectedTag, onSelect, onTagCreated, user
       </View>
 
       {/* Currently selected */}
-      {selectedTag && !search && (
+      {!!selectedTag && !search && (
         <View style={[s.selectedBanner, { backgroundColor: '#C9A96215', borderColor: '#C9A962' }]}>
           <Ionicons name="checkmark-circle" size={18} color="#C9A962" />
           <Text style={{ fontSize: 15, fontWeight: '700', color: '#C9A962', flex: 1 }}>

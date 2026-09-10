@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mockup · Campaigns list</title>
+<style>
+:root{--bg:#000;--card:#1C1C1E;--line:#2A2A2E;--text:#F2F2F7;--muted:#8E8E93;--gold:#C9A962;--green:#34C759;--amber:#FF9500;--purple:#AF52DE;--red:#FF3B30;--blue:#007AFF}
+*{box-sizing:border-box}body{margin:0;background:#111;font:15px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text",Segoe UI,Helvetica,Arial,sans-serif;color:var(--text);display:flex;justify-content:center;gap:28px;padding:24px;flex-wrap:wrap}
+.phone{width:393px;background:var(--bg);border-radius:44px;border:8px solid #222;overflow:hidden;box-shadow:0 30px 80px #0009}
+.screen{height:852px;overflow-y:auto;padding:0 16px 40px;scrollbar-width:none}.screen::-webkit-scrollbar{display:none}
+.status{display:flex;justify-content:space-between;padding:14px 10px 0;font-weight:700;font-size:15px}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 0 6px}.hdr .title{font-size:22px;font-weight:800}.hdr .sub{font-size:12px;color:var(--muted)}
+.plus{width:34px;height:34px;border-radius:17px;background:var(--gold);color:#111;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px}
+.smart{display:flex;gap:8px;margin:10px 0 4px}.sm{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px}.sm b{display:block;font-size:20px}.sm small{font-size:10px;color:var(--muted);letter-spacing:.6px;font-weight:800}
+.lbl{font-size:11px;font-weight:800;letter-spacing:1px;color:var(--muted);margin:16px 0 8px}
+.c{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:10px}
+.c .top{display:flex;align-items:center;gap:12px}.ico{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex:0 0 40px}
+.c h2{margin:0;font-size:16px;font-weight:800}.c h2 em{font-style:normal}.c p{margin:2px 0 0;font-size:12px;color:var(--muted)}
+.pill{font-size:10px;font-weight:800;padding:3px 8px;border-radius:999px;letter-spacing:.4px}.live{background:#34C75922;color:var(--green)}.paused{background:#3A3A3C;color:var(--muted)}.draft{background:#FF950022;color:var(--amber)}
+.mini{display:flex;align-items:center;gap:0;margin-top:12px}.mini .d{width:9px;height:9px;border-radius:5px;background:var(--gold)}.mini .l{height:2px;background:var(--line);flex:1}.mini .d.card{background:var(--purple)}
+.mini2{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px;font-weight:700}
+.facts{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}.f{font-size:11px;font-weight:700;color:var(--text);background:#2C2C2E;border-radius:999px;padding:4px 9px}.f.ai{color:var(--gold);background:#C9A96222}.f.warn{color:var(--amber);background:#FF950022}
+.tpl{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}.tpl::-webkit-scrollbar{display:none}.t{flex:0 0 150px;background:var(--card);border:1px dashed #C9A96255;border-radius:16px;padding:12px}.t b{display:block;font-size:13px;margin-top:6px}.t small{font-size:11px;color:var(--muted)}
+.cap{width:393px;text-align:center;color:#aaa;font-size:13px;margin-top:-16px}
+</style></head><body>
+<div>
+<div class="phone"><div class="screen">
+  <div class="status"><span>9:14</span><span>▮▮▮ ᯤ 44</span></div>
+  <div class="hdr"><div><div class="title">Campaigns</div><div class="sub">Follow-up that runs itself when you tag someone</div></div><div class="plus">+</div></div>
+
+  <div class="smart"><div class="sm"><b>4</b><small>LIVE PLANS</small></div><div class="sm"><b>31</b><small>PEOPLE IN PLANS</small></div><div class="sm"><b style="color:var(--gold)">12</b><small>TEXTS THIS WEEK</small></div><div class="sm"><b style="color:var(--amber)">1</b><small>NEEDS FIX</small></div></div>
+
+  <div class="lbl">START FROM A PROVEN PLAN</div>
+  <div class="tpl">
+    <div class="t"><span style="font-size:20px">🏁</span><b>Sold: 90-day love</b><small>4 touches · review ask · Jessi on</small></div>
+    <div class="t"><span style="font-size:20px">🔥</span><b>Working a lead</b><small>5 touches in 10 days · Jessi on</small></div>
+    <div class="t"><span style="font-size:20px">🤝</span><b>Met in person</b><small>3 touches · card + check-in</small></div>
+    <div class="t"><span style="font-size:20px">🛠️</span><b>Service due</b><small>2 touches · booking link</small></div>
+  </div>
+
+  <div class="lbl">YOUR PLANS</div>
+  <div class="c"><div class="top"><div class="ico" style="background:#34C75922">🏷️</div><div style="flex:1"><h2>Sold Follow-Up</h2><p>When tagged <em style="color:var(--green)">Sold</em> · store-wide</p></div><span class="pill live">● LIVE</span></div>
+    <div class="mini"><span class="d"></span><span class="l"></span><span class="d"></span><span class="l"></span><span class="d card"></span><span class="l"></span><span class="d"></span></div>
+    <div class="mini2"><span>Day 1</span><span>Day 7</span><span>1 mo</span><span>3 mo</span></div>
+    <div class="facts"><span class="f">4 touches · 3 months</span><span class="f ai">✦ Jessi answers</span><span class="f">8 in plan</span><span class="f">10:00 AM</span></div></div>
+
+  <div class="c"><div class="top"><div class="ico" style="background:#007AFF22">🏷️</div><div style="flex:1"><h2>Working a Lead</h2><p>When tagged <em style="color:var(--blue)">Working</em> · store-wide</p></div><span class="pill live">● LIVE</span></div>
+    <div class="mini"><span class="d"></span><span class="l"></span><span class="d"></span><span class="l"></span><span class="d"></span><span class="l"></span><span class="d"></span><span class="l"></span><span class="d"></span></div>
+    <div class="mini2"><span>Now</span><span>Day 1</span><span>Day 3</span><span>Day 6</span><span>Day 10</span></div>
+    <div class="facts"><span class="f">5 touches · 10 days</span><span class="f ai">✦ Jessi answers</span><span class="f">19 in plan</span></div></div>
+
+  <div class="c" style="border-color:#FF950055"><div class="top"><div class="ico" style="background:#FF950022">🎂</div><div style="flex:1"><h2>Birthday Text</h2><p>On their <em style="color:var(--amber)">birthday</em> · personal</p></div><span class="pill live">● LIVE</span></div>
+    <div class="facts"><span class="f">1 touch · day-of 9:00 AM</span><span class="f warn">⚠ 14 contacts have no birthday</span></div></div>
+
+  <div class="c"><div class="top"><div class="ico" style="background:#3A3A3C">🏷️</div><div style="flex:1"><h2>Service Reminder</h2><p>When tagged <em>Service Due</em> · personal</p></div><span class="pill paused">PAUSED</span></div>
+    <div class="facts"><span class="f">2 touches</span><span class="f">0 in plan</span><span class="f warn">⚠ Jessi off: replies wait for you</span></div></div>
+
+  <div class="c" style="opacity:.75"><div class="top"><div class="ico" style="background:#3A3A3C">✏️</div><div style="flex:1"><h2>Untitled plan</h2><p>No trigger yet</p></div><span class="pill draft">DRAFT</span></div></div>
+</div></div>
+<p class="cap"><b>Campaigns list</b> (goes with A or B)<br>Every card says what it does in one line, shows the touch rail, and flags anything broken.</p>
+</div>
+</body></html>
