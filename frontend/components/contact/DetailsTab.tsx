@@ -14,6 +14,7 @@ import { useThemeStore } from '../../store/themeStore';
 import PersonalIntelSection from '../PersonalIntelSection';
 import PurchaseHistorySection from './PurchaseHistorySection';
 import CrmPushSection from './CrmPushSection';
+import ShareProfileSection from './ShareProfileSection';
 
 const toYMD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
@@ -319,6 +320,17 @@ export default function DetailsTab(props: any) {
         colors={colors}
         saving={savingBday}
       />
+
+      {/* Share the contact's full profile (vcf / link / text) */}
+      {!isNewContact && (
+        <ShareProfileSection
+          userId={userId}
+          contactId={contactId}
+          contactName={`${contact?.first_name || ''} ${contact?.last_name || ''}`.trim()}
+          colors={colors}
+          s={s}
+        />
+      )}
 
       {/* Push to CRM as ADF/XML lead */}
       {!isNewContact && (

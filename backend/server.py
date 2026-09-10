@@ -591,6 +591,9 @@ from routers import crm_push, public_appt
 api_router.include_router(crm_push.router)
 api_router.include_router(public_appt.router)
 api_router.include_router(contacts.router)
+from routers import contact_share
+api_router.include_router(contact_share.router)
+api_router.include_router(contact_share.public_router)
 api_router.include_router(white_label.router)
 api_router.include_router(image_router.router)
 api_router.include_router(tasks.router)
