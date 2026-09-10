@@ -119,6 +119,9 @@ async def _track(db, page_type: str, user_id: str, request: Request):
         pass
 
 
+# Broken/missing image -> replace with an initials bubble built from the alt text (keeps the layout, no broken-image icon)
+IMG_FALLBACK = "var d=document.createElement('div');d.className=this.className.indexOf('avatar')>-1?'avatar initials':'ini';d.textContent=(this.alt||'?').split(' ').slice(0,2).map(function(w){return w[0]}).join('').toUpperCase();this.replaceWith(d)"
+
 DEFAULT_ACCENT = "#C9A962"
 DARK = {"bg": "#0B0B0C", "card": "#151517", "line": "#26262A", "text": "#F4F1EA", "muted": "#9A9A9F", "btn": "#1D1D20", "btn2": "#242428", "soft": "#D8D5CC", "input": "#0F0F11", "ph": "#222", "dash": "#3a3a40", "star0": "#3a3a40"}
 LIGHT = {"bg": "#F4F2EC", "card": "#FFFFFF", "line": "#E5E1D8", "text": "#171717", "muted": "#6E6E73", "btn": "#F1EFE9", "btn2": "#E9E6DE", "soft": "#3B3B3F", "input": "#FAF9F6", "ph": "#E8E5DE", "dash": "#C9C5BC", "star0": "#D9D5CC"}
@@ -250,10 +253,10 @@ def build_page(b: dict, mode: str) -> str:
     if email:
         actions.append(f'<a class="btn" href="mailto:{e(email)}">Email</a>')
     actions.append(f'<a class="btn gold" href="/api/profile/{uid}/vcard.vcf">Save to Contacts</a>')
-    avatar = f'<img class="avatar" src="{e(photo_rel)}" alt="{e(name)}">' if photo_rel else f'<div class="avatar initials">{e(initials)}</div>'
+    avatar = f'<img class="avatar" src="{e(photo_rel)}" alt="{e(name)}" onerror="{IMG_FALLBACK}">' if photo_rel else f'<div class="avatar initials">{e(initials)}</div>'
     storeline = ""
     if store_name:
-        logo_img = f'<img src="{e(logo)}" alt="">' if logo else ""
+        logo_img = f'<img src="{e(logo)}" alt="" onerror="this.remove()">' if logo else ""
         storeline = f'<div class="storeline">{logo_img}<span>{e(store_name)}</span></div>'
     hero = f'<div class="hero">{avatar}<h1>{e(name)}</h1><div class="sub">{e(title)}</div>{storeline}<div class="actions">{"".join(actions)}</div></div>'
 
@@ -539,7 +542,7 @@ def build_store_page(b: dict, mode: str) -> str:
         actions.append(f'<a class="btn" href="mailto:{e(email)}">Email</a>')
     review_target = review_links.get("google") or f"{base}/review/{slug}"
     actions.append(f'<a class="btn gold" href="{e(review_target)}" target="_blank" rel="noopener">Leave a review</a>')
-    avatar = f'<img class="avatar square" src="{e(logo)}" alt="{e(name)}">' if logo else f'<div class="avatar initials">{e(initials)}</div>'
+    avatar = f'<img class="avatar square" src="{e(logo)}" alt="{e(name)}" onerror="{IMG_FALLBACK}">' if logo else f'<div class="avatar initials">{e(initials)}</div>'
     sub = tagline or ", ".join(x for x in [s.get("city"), s.get("state")] if x)
     sub_html = f'<div class="sub">{e(sub)}</div>' if sub else ""
     status = ""
@@ -579,7 +582,7 @@ def build_store_page(b: dict, mode: str) -> str:
             mname = m.get("name") or "Team member"
             mtitle = m.get("title") or (m.get("persona") or {}).get("professional_identity") or "Sales Professional"
             ini = "".join(x[0] for x in mname.split()[:2]).upper() or "?"
-            pic = f'<img src="{e(photo)}" alt="{e(mname)}" loading="lazy">' if photo else f'<div class="ini">{e(ini)}</div>'
+            pic = f'<img src="{e(photo)}" alt="{e(mname)}" loading="lazy" onerror="{IMG_FALLBACK}">' if photo else f'<div class="ini">{e(ini)}</div>'
             cards += f'<a class="member" href="/api/card/{mid}">{pic}<b>{e(mname)}</b><span>{e(mtitle)}</span></a>'
         more_team = f'<a class="more" href="{e(other)}">Meet the whole team ({len(team)}) →</a>' if is_card and len(team) > 6 else ""
         sections.append(f'<section><h3>Meet the team<small>{len(team)} people</small></h3><div class="team">{cards}</div>{more_team}</section>')

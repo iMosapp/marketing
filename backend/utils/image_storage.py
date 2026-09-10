@@ -23,7 +23,10 @@ from PIL import Image, ImageOps
 logger = logging.getLogger(__name__)
 
 STORAGE_URL = "https://integrations.emergentagent.com/objstore/api/v1/storage"
-EMERGENT_KEY = os.environ.get("EMERGENT_LLM_KEY")
+# Object storage namespaces are tied to the key used at init. Pin it with OBJECT_STORAGE_KEY so rotating or
+# swapping the LLM key (e.g. a different key injected in production) never orphans previously uploaded images.
+EMERGENT_KEY = os.environ.get("OBJECT_STORAGE_KEY") or os.environ.get("EMERGENT_LLM_KEY")
+KEY_SOURCE = "OBJECT_STORAGE_KEY" if os.environ.get("OBJECT_STORAGE_KEY") else "EMERGENT_LLM_KEY"
 APP_NAME = "imos"
 
 storage_key = None
@@ -184,7 +187,7 @@ class StorageFetchError(Exception):
 def storage_health(sample_path: str | None = None) -> dict:
     """Diagnostics for /api/images/_health: is the key configured, can we init, can we read a known object."""
     global storage_key
-    out = {"key_configured": bool(EMERGENT_KEY), "key_hint": (EMERGENT_KEY or "")[:14] + "…" if EMERGENT_KEY else None,
+    out = {"key_configured": bool(EMERGENT_KEY), "key_source": KEY_SOURCE, "key_hint": (EMERGENT_KEY or "")[:14] + "…" if EMERGENT_KEY else None,
            "init_ok": False, "init_error": None, "sample_path": sample_path, "sample_status": None, "cache": _cache.stats}
     try:
         storage_key = None
