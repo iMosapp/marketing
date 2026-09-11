@@ -45,7 +45,7 @@ export default function InboxEditor() {
           first_reply: d.first_reply, ai_mode: d.ai_mode, va_name: d.va_name, va_training: d.va_training, va_rules: d.va_rules, va_handoff_rules: d.va_handoff_rules,
           close_tag: d.close_tag, after_close: d.after_close, bridge_text: d.bridge_text });
       }
-    }).catch((e: any) => showToast(errText(e, 'Could not load inbox'), 'error'));
+    }).catch((e: any) => { showToast(errText(e, 'Could not load inbox'), 'error'); if (e?.response?.status === 404) router.back(); });
   }, [id, user?._id]);
 
   const patch = (p: any) => { setForm((f: any) => ({ ...f, ...p })); setDirty(true); };
