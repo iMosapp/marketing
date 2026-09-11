@@ -50,7 +50,7 @@ export function LeadsWaitingStrip({ userId }: { userId: string }) {
   let cta: string;
   if (queue > 0) {
     title = `${queue + mine} lead${queue + mine === 1 ? '' : 's'} waiting · oldest ${fmtWait(oldestSecs)}`;
-    sub = mine > 0 ? `${queue} unclaimed · ${mine} yours need${mine === 1 ? 's' : ''} a reply` : names.join(', ');
+    sub = mine > 0 ? `${queue} unclaimed · ${mine} of yours need${mine === 1 ? 's' : ''} a reply` : names.join(', ');
     cta = 'Claim';
   } else {
     title = mine === 1

@@ -14,6 +14,9 @@ import api from '../services/api';
 import { CallRetriesCard } from '../components/leads/CallRetriesCard';
 import { StopTheClockCard } from '../components/leads/StopTheClockCard';
 import { ProofPanel } from '../components/leads/ProofPanel';
+import { LeadsWaitingStrip } from '../components/home/LeadsWaitingStrip';
+import { LeadsHowItWorks } from '../components/leads/LeadsHowItWorks';
+import { fmtWait } from '../components/inbox/LeadsQueuePanel';
 
 const ACCENT = '#C9A962';
 
@@ -47,6 +50,7 @@ const fmtDuration = (s: number | null | undefined) => {
 };
 
 const speedColor = (s: number) => (s < 300 ? '#34C759' : s < 3600 ? '#FF9500' : '#FF3B30');
+const HEAT: Record<string, string> = { green: '#34C759', amber: '#FF9F0A', red: '#FF3B30' };
 
 export default function LeadsDashboard() {
   const { colors } = useThemeStore();
@@ -57,6 +61,8 @@ export default function LeadsDashboard() {
 
   const [tab, setTab] = useState<'leads' | 'roi' | 'speed' | 'proof'>((['leads', 'roi', 'speed', 'proof'].includes(String(params.tab)) ? params.tab : 'leads') as any);
   const [leads, setLeads] = useState<any[]>([]);
+  const [queueByConv, setQueueByConv] = useState<Record<string, any>>({});
+  const [showHelp, setShowHelp] = useState(false);
   const [roi, setRoi] = useState<any>(null);
   const [speed, setSpeed] = useState<any>(null);
   const [retries, setRetries] = useState<any>(null);
@@ -71,14 +77,19 @@ export default function LeadsDashboard() {
     try {
       const storeParam = user.store_id ? `store_id=${user.store_id}&` : '';
       const statusParam = statusFilter !== 'all' ? `status=${statusFilter}&` : '';
-      const [leadsRes, roiRes, speedRes, retryRes, proofRes] = await Promise.all([
+      const [leadsRes, roiRes, speedRes, retryRes, proofRes, queueRes] = await Promise.all([
         api.get(`/leads/?${storeParam}${statusParam}limit=100`),
         api.get(`/leads/analytics/sources?${storeParam}days=${roiDays}`),
         api.get(`/leads/analytics/response-times?${storeParam}days=${roiDays}`),
         api.get(`/leads/analytics/call-retries?${storeParam}days=${roiDays}`).catch(() => ({ data: null })),
         api.get(`/leads/analytics/proof?${storeParam}days=${roiDays}`).catch(() => ({ data: null })),
+        api.get(`/leads/queue/${user._id}`).catch(() => ({ data: null })),
       ]);
       setLeads(leadsRes.data || []);
+      const q = queueRes.data;
+      const map: Record<string, any> = {};
+      [...(q?.unclaimed || []), ...(q?.mine || []), ...(q?.claimed || [])].forEach((it: any) => { map[it.id] = it; });
+      setQueueByConv(map);
       setRoi(roiRes.data || null);
       setSpeed(speedRes.data || null);
       setRetries(retryRes.data || null);
@@ -102,7 +113,13 @@ export default function LeadsDashboard() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
-      <ScreenHeader title="Internet Leads" testID="leads" noBorder />
+      <ScreenHeader title="Internet Leads" testID="leads" noBorder
+        right={(
+          <TouchableOpacity onPress={() => setShowHelp(true)} hitSlop={8} style={{ padding: 4 }} testID="leads-help-btn" dataSet={{ testid: 'leads-help-btn' } as any}>
+            <Ionicons name="help-circle-outline" size={26} color={ACCENT} />
+          </TouchableOpacity>
+        )} />
+      <LeadsHowItWorks visible={showHelp} onClose={() => setShowHelp(false)} colors={colors} />
 
       {/* Tabs */}
       <View style={{ flexDirection: 'row', alignSelf: 'center', backgroundColor: colors.card, borderRadius: 10, padding: 3, marginTop: 4, marginBottom: 10 }}>
@@ -174,6 +191,7 @@ export default function LeadsDashboard() {
           contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 10 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchData(); }} tintColor={colors.textSecondary} />}
         >
+          {tab === 'leads' && user?._id ? <View style={{ marginHorizontal: -16 }}><LeadsWaitingStrip userId={user._id} /></View> : null}
           {tab === 'leads' ? (
             leads.length === 0 ? (
               <View style={{ alignItems: 'center', paddingTop: 50 }}>
@@ -187,6 +205,10 @@ export default function LeadsDashboard() {
               leads.map((l: any) => {
                 const st = STATUS_META[l.status] || STATUS_META.queued;
                 const mi = l.matched_inventory;
+                const q = l.conversation_id ? queueByConv[l.conversation_id] : null;
+                const waiting = q && q.waiting_seconds != null;
+                const heat = waiting ? HEAT[q.heat] || HEAT.green : null;
+                const mineQ = q && q.claimed_by === user?._id;
                 return (
                   <TouchableOpacity
                     key={l.id}
@@ -208,6 +230,17 @@ export default function LeadsDashboard() {
                       <View style={{ backgroundColor: `${st.color}18`, paddingVertical: 3, paddingHorizontal: 8, borderRadius: 6 }}>
                         <Text style={{ fontSize: 11, fontWeight: '700', color: st.color }}>{st.label}</Text>
                       </View>
+                      {waiting && (
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: `${heat}22`, paddingVertical: 3, paddingHorizontal: 8, borderRadius: 6, borderWidth: 1, borderColor: `${heat}66` }} testID={`lead-waiting-badge-${l.id}`} dataSet={{ testid: `lead-waiting-badge-${l.id}` } as any}>
+                          <Ionicons name="hourglass" size={10} color={heat!} />
+                          <Text style={{ fontSize: 11, fontWeight: '800', color: heat! }}>WAITING {fmtWait(q.waiting_seconds)}{!q.claimed ? ' · unclaimed' : mineQ ? ' · on you' : q.claimed_by_name ? ` · ${String(q.claimed_by_name).split(' ')[0]}` : ''}</Text>
+                        </View>
+                      )}
+                      {q && !waiting && q.claimed && q.claimed_by_name && !mineQ && (
+                        <View style={{ backgroundColor: colors.surface, paddingVertical: 3, paddingHorizontal: 8, borderRadius: 6 }}>
+                          <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSecondary }}>{String(q.claimed_by_name).split(' ')[0]}'s</Text>
+                        </View>
+                      )}
                       {l.first_response_seconds != null && (
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: `${speedColor(l.first_response_seconds)}18`, paddingVertical: 3, paddingHorizontal: 8, borderRadius: 6 }} data-testid={`lead-speed-badge-${l.id}`} testID={`lead-speed-badge-${l.id}`} dataSet={{ testid: `lead-speed-badge-${l.id}` } as any}>
                           <Ionicons name="flash" size={10} color={speedColor(l.first_response_seconds)} />
