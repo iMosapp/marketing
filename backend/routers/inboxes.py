@@ -373,6 +373,8 @@ async def inbox_conversations(inbox_id: str, request: Request, view: str = "all"
         q["$or"] = [{"assigned_to": None}, {"assigned_to": {"$exists": False}}, {"assigned_to": ""}]
     elif view == "mine":
         q["$or"] = [{"assigned_to": me_id}, {"collaborators": me_id}]
+    elif view == "unread":
+        q["unread"] = True
     convs = await db.conversations.find(q).sort([("unread", -1), ("last_message_at", -1)]).limit(min(limit, 300)).to_list(300)
     cards = await _user_cards(db, [c.get("assigned_to") for c in convs if c.get("assigned_to")])
     return {"inbox": ib.serialize(inbox), "conversations": [_row(c, cards, me_id) for c in convs],

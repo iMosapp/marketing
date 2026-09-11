@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { GOLD, tid, ownershipAPI, errText, timeAgo, firstName } from './ownership';
 import { InboxBadge, ClaimButton } from './InboxBadge';
 
-type View_ = 'all' | 'unassigned' | 'mine';
+type View_ = 'all' | 'unassigned' | 'mine' | 'unread';
 type Props = { inboxes: any[]; meId?: string; colors: any; showToast: (m: string, t?: any, ms?: number) => void; onClaimed?: () => void; refreshInboxes: () => void };
 
 const Chip = ({ label, count, unread, active, color, onPress, testId, colors }: { label: string; count?: number; unread?: number; active: boolean; color?: string; onPress: () => void; testId: string; colors: any }) => {
@@ -49,7 +49,7 @@ export function SharedInboxPanel({ inboxes, meId, colors, showToast, onClaimed, 
 
   const totals = useMemo(() => {
     const src = inboxId === 'all' ? inboxes : inboxes.filter((i: any) => i.id === inboxId);
-    return src.reduce((acc: any, i: any) => ({ open: acc.open + (i.counts?.open || 0), unassigned: acc.unassigned + (i.counts?.unassigned || 0), mine: acc.mine + (i.counts?.mine || 0) }), { open: 0, unassigned: 0, mine: 0 });
+    return src.reduce((acc: any, i: any) => ({ open: acc.open + (i.counts?.open || 0), unassigned: acc.unassigned + (i.counts?.unassigned || 0), mine: acc.mine + (i.counts?.mine || 0), unread: acc.unread + (i.counts?.unread || 0) }), { open: 0, unassigned: 0, mine: 0, unread: 0 });
   }, [inboxes, inboxId]);
 
   const claim = async (row: any) => {
@@ -103,6 +103,7 @@ export function SharedInboxPanel({ inboxes, meId, colors, showToast, onClaimed, 
         <Chip label="Everything" count={totals.open} active={view === 'all'} onPress={() => setView('all')} testId="inbox-view-all" colors={colors} />
         <Chip label="Up for grabs" count={totals.unassigned} active={view === 'unassigned'} onPress={() => setView('unassigned')} testId="inbox-view-unassigned" colors={colors} />
         <Chip label="Mine" count={totals.mine} active={view === 'mine'} onPress={() => setView('mine')} testId="inbox-view-mine" colors={colors} />
+        <Chip label="Unread" count={totals.unread} active={view === 'unread'} color={view === 'unread' || totals.unread ? '#FF453A' : undefined} onPress={() => setView('unread')} testId="inbox-view-unread" colors={colors} />
       </View>
       {loading ? <ActivityIndicator color={GOLD} style={{ marginTop: 40 }} /> : (
         <FlatList
@@ -114,10 +115,10 @@ export function SharedInboxPanel({ inboxes, meId, colors, showToast, onClaimed, 
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); refreshInboxes(); await load(true); setRefreshing(false); }} tintColor={GOLD} />}
           ListEmptyComponent={() => (
             <View style={{ alignItems: 'center', paddingTop: 60, paddingHorizontal: 32, gap: 10 }} {...tid('shared-inbox-empty')}>
-              <Ionicons name={view === 'unassigned' ? 'checkmark-done-circle' : 'chatbubbles'} size={44} color={GOLD} />
-              <Text style={{ fontSize: 17, fontWeight: '800', color: colors.textPrimary }}>{view === 'unassigned' ? 'Nothing up for grabs' : view === 'mine' ? 'Nothing assigned to you here' : 'Quiet in here'}</Text>
+              <Ionicons name={view === 'unassigned' || view === 'unread' ? 'checkmark-done-circle' : 'chatbubbles'} size={44} color={GOLD} />
+              <Text style={{ fontSize: 17, fontWeight: '800', color: colors.textPrimary }}>{view === 'unassigned' ? 'Nothing up for grabs' : view === 'mine' ? 'Nothing assigned to you here' : view === 'unread' ? 'All caught up' : 'Quiet in here'}</Text>
               <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center' }}>
-                {view === 'unassigned' ? 'Every text to the shared number has an owner.' : 'Texts to the shared number land here for the whole team.'}
+                {view === 'unassigned' ? 'Every text to the shared number has an owner.' : view === 'unread' ? 'Every thread in these inboxes has been opened by someone.' : 'Texts to the shared number land here for the whole team.'}
               </Text>
             </View>
           )}
