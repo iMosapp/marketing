@@ -147,6 +147,24 @@ export default function LeadsQueuePanel({ userId, colors, showToast, onCounts }:
     return [...data.unclaimed, ...data.mine, ...data.claimed];
   }, [data, filter]);
 
+  // How many leads in each bucket still owe the customer a reply (this is what the badge counts)
+  const waitingIn = useMemo(() => ({
+    unclaimed: data?.unclaimed?.length || 0,
+    mine: (data?.mine || []).filter((it: any) => it.waiting_seconds != null).length,
+    claimed: (data?.claimed || []).filter((it: any) => it.waiting_seconds != null).length,
+  }), [data]);
+
+  // First load: land on the bucket that actually has the waiting lead instead of an empty "Unclaimed"
+  const autoPicked = useRef(false);
+  useEffect(() => {
+    if (!data || autoPicked.current) return;
+    autoPicked.current = true;
+    if (waitingIn.unclaimed === 0) {
+      if (waitingIn.mine > 0) setFilter('mine');
+      else if (data.is_manager && waitingIn.claimed > 0) setFilter('claimed');
+    }
+  }, [data, waitingIn]);
+
   const claim = async (it: any, thenCall = false) => {
     if (busy.current) return;
     busy.current = true;
@@ -227,11 +245,19 @@ export default function LeadsQueuePanel({ userId, colors, showToast, onCounts }:
   return (
     <View style={{ flex: 1 }} {...tid('leads-queue-panel')}>
       <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingVertical: 8 }}>
-        {chips.map(([k, label, n]) => (
-          <TouchableOpacity key={k} onPress={() => setFilter(k)} style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: filter === k ? GOLD : colors.card, borderWidth: 1, borderColor: filter === k ? GOLD : colors.border }} {...tid(`leads-filter-${k}`)}>
-            <Text style={{ fontSize: 12, fontWeight: '700', color: filter === k ? '#000' : colors.textSecondary }}>{label} {n}</Text>
-          </TouchableOpacity>
-        ))}
+        {chips.map(([k, label, n]) => {
+          const w = k === 'all' ? waitingIn.unclaimed + waitingIn.mine + waitingIn.claimed : (waitingIn as any)[k] || 0;
+          return (
+            <TouchableOpacity key={k} onPress={() => setFilter(k)} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: filter === k ? GOLD : colors.card, borderWidth: 1, borderColor: filter === k ? GOLD : colors.border }} {...tid(`leads-filter-${k}`)}>
+              <Text style={{ fontSize: 12, fontWeight: '700', color: filter === k ? '#000' : colors.textSecondary }}>{label} {n}</Text>
+              {w > 0 && k !== 'unclaimed' && (
+                <View style={{ minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 4, backgroundColor: RED, alignItems: 'center', justifyContent: 'center' }} {...tid(`leads-filter-${k}-waiting`)}>
+                  <Text style={{ fontSize: 10, fontWeight: '800', color: '#FFF' }}>{w}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
       </View>
       <FlatList
         data={items}
@@ -247,7 +273,19 @@ export default function LeadsQueuePanel({ userId, colors, showToast, onCounts }:
           <View style={{ padding: 40, alignItems: 'center' }} {...tid('leads-queue-empty')}>
             <Ionicons name="checkmark-done-circle" size={38} color={GREEN} />
             <Text style={{ fontSize: 16, fontWeight: '700', color: colors.text, marginTop: 10 }}>{filter === 'unclaimed' ? 'Queue is clear' : 'Nothing here'}</Text>
-            <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4, textAlign: 'center' }}>{filter === 'unclaimed' ? 'New internet leads land here the second they arrive.' : ''}</Text>
+            <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 4, textAlign: 'center' }}>{filter === 'unclaimed' ? 'Nobody is waiting to be claimed. New internet leads land here the second they arrive.' : ''}</Text>
+            {filter === 'unclaimed' && waitingIn.mine > 0 && (
+              <TouchableOpacity onPress={() => setFilter('mine')} style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: `${RED}18`, borderWidth: 1, borderColor: `${RED}66`, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 }} {...tid('leads-queue-empty-mine')}>
+                <Ionicons name="hourglass" size={16} color={RED} />
+                <Text style={{ fontSize: 13, fontWeight: '800', color: RED }}>{waitingIn.mine === 1 ? '1 of your leads needs a reply' : `${waitingIn.mine} of your leads need a reply`} · Show mine</Text>
+              </TouchableOpacity>
+            )}
+            {filter === 'unclaimed' && waitingIn.mine === 0 && data.is_manager && waitingIn.claimed > 0 && (
+              <TouchableOpacity onPress={() => setFilter('claimed')} style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: `${AMBER}18`, borderWidth: 1, borderColor: `${AMBER}66`, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10 }} {...tid('leads-queue-empty-claimed')}>
+                <Ionicons name="hourglass" size={16} color={AMBER} />
+                <Text style={{ fontSize: 13, fontWeight: '800', color: AMBER }}>{waitingIn.claimed} claimed lead{waitingIn.claimed === 1 ? ' is' : 's are'} waiting on a rep · Show claimed</Text>
+              </TouchableOpacity>
+            )}
           </View>
         }
       />

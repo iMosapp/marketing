@@ -1716,6 +1716,15 @@ export default function InboxScreen() {
             <Text style={[styles.inboxToggleText, { color: colors.textSecondary }, showLeadsSegment && styles.inboxToggleTextTight, inboxView === 'my' && styles.inboxToggleTextActive]}>
               My Inbox
             </Text>
+            {(() => {
+              const unread = conversations.filter(c => c && c.unread_count > 0).length;
+              return unread > 0 ? (
+                <View style={{ minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, backgroundColor: '#FF453A', alignItems: 'center', justifyContent: 'center' }}
+                  testID="my-inbox-unread-badge" dataSet={{ testid: 'my-inbox-unread-badge' } as any}>
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: '#FFF' }}>{unread > 99 ? '99+' : unread}</Text>
+                </View>
+              ) : null;
+            })()}
           </Pressable>
           {showLeadsSegment && (() => {
             const n = (leadsSummary?.waiting || 0) + (leadsSummary?.mine_waiting || 0);
