@@ -26,3 +26,8 @@
 ## Preview URL note (June 2026)
 - REACT_APP_BACKEND_URL in frontend/.env is the ONLY valid preview host (currently https://user-routing-issue.preview.emergentagent.com). imos-deploy-prep.preview.emergentagent.com is a stale preview that shows the Emergent "wake up servers" page.
 - Web-only: /help and /inbox URLs are shadowed by static marketing pages; navigate in-app (history.pushState + popstate) when scripting.
+
+## Shared Inbox demo data (preview only, `cd /app/backend && python tests/seed_inbox_demo.py` re-seeds idempotently, `--wipe` removes)
+- Sales inbox (+15005550200, jump ball, members QA Manager + Activation Tester + Forest) and Service inbox (+15005550210, round robin, members QA Manager + Activation Tester), store 69a0b7095fddcede09591668.
+- Demo customers are Twilio test numbers +15005550031 / 32 / 33 ("Lead (0031)" etc). SMS/push are stubbed during seeding only; live actions in the UI hit real Twilio (harmless: 500-555 numbers are rejected).
+- Manager UI: log in as qa-manager; rep UI: activation-tester. Hub > Manage > Inboxes = /inboxes (library) and /inboxes/{id} (editor).

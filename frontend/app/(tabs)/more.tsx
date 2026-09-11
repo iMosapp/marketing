@@ -395,6 +395,7 @@ export default function MoreScreen() {
       { icon: 'car-sport',  title: 'Inventory',  subtitle: 'Vehicles Jessi can quote and check',   onPress: () => router.push('/inventory' as any),          color: '#32ADE6' },
       ...(canManageCampaigns ? [{ icon: 'megaphone' as any,  title: 'Campaigns',  subtitle: 'Build and manage automated campaigns', onPress: () => router.push('/campaigns' as any), color: '#FF2D55' }] : []),
       { icon: 'git-branch' as any, title: 'Workflows', subtitle: 'What happens when a contact is tagged Sold, Working, Met…', onPress: () => router.push('/workflows' as any), color: '#34C759' },
+      ...(isAdmin || (!repPreview && ['manager', 'admin'].includes(user?.role || '')) ? [{ icon: 'chatbubbles' as any, title: 'Inboxes', subtitle: 'Shared department numbers: who works them, routing, Jessi', onPress: () => router.push('/inboxes' as any), color: '#C9A962' }] : []),
       { icon: 'star',       title: 'Review Center', subtitle: 'Approve, publish and track reviews', onPress: () => router.push('/settings/review-approvals'), color: '#FFD60A' },
       { icon: 'images',     title: 'Showcase',      subtitle: 'Approve showcase entries',          onPress: () => router.push('/settings/showcase-approvals'), color: '#34C759' },
     ];
@@ -561,7 +562,7 @@ export default function MoreScreen() {
       { icon: 'receipt', title: 'Create Quote', subtitle: 'Generate new quote', onPress: () => router.push('/admin/create-quote'), color: '#34C759' },
       { icon: 'ticket', title: 'Discount Codes', subtitle: 'Promo codes', onPress: () => router.push('/admin/discount-codes'), color: '#5856D6' },
       // System
-      { icon: 'mail', title: 'Shared Inboxes', subtitle: 'Phone number users', onPress: () => router.push('/admin/shared-inboxes'), color: '#007AFF' },
+      { icon: 'mail', title: 'Shared Inboxes', subtitle: 'Department numbers, members, routing', onPress: () => router.push('/inboxes' as any), color: '#007AFF' },
       { icon: 'swap-horizontal', title: 'Bulk Transfer', subtitle: 'Transfer contacts between users', onPress: () => router.push('/admin/bulk-transfer'), color: '#FF3B30' },
       { icon: 'map-outline', title: 'App Directory', subtitle: 'Browse & share pages', onPress: () => router.push('/admin/app-directory'), color: '#5AC8FA' },
       // Docs & Assets

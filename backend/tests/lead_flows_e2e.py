@@ -17,6 +17,7 @@ FLOW_KEYS = ["contact_mode", "call_attempts", "workflow_user_ids", "notify_all_o
 ok = 0; bad = 0
 def check(name, cond, extra=""):
     global ok, bad
+    cond = bool(cond)
     ok += cond; bad += (not cond)
     print(("PASS " if cond else "FAIL ") + name + (f"  [{extra}]" if extra else ""))
 
@@ -38,7 +39,7 @@ async def main():
             # 2. create test flow
             body = {"name": "E2E Test Flow", "contact_mode": "text_and_call", "after_hours_mode": "ring_anyway", "text_window_start": "00:00", "text_window_end": "23:59",
                     "call_attempts": [{"user_ids": [TESTER], "delay_seconds": 0, "delivery": "call"}, {"user_ids": [TESTER], "delay_seconds": 30, "delivery": "push"}],
-                    "intake_text": "E2E intake {{first_name}}", "no_answer_text": "E2E no answer {{first_name}}", "tags_on_claim": ["Working", "E2EClaim"],
+                    "intake_text": "E2E intake {{first_name}}", "after_hours_text": "E2E intake {{first_name}}", "no_answer_text": "E2E no answer {{first_name}}", "tags_on_claim": ["Working", "E2EClaim"],
                     "tags_on_no_answer": ["Lost Contact", "E2ENoAnswer"], "exhausted_text_lead": True, "exhausted_push_manager": False, "auto_call_on_claim": True}
             r = await c.post(f"{API}/lead-flows", json=body, headers=H)
             flow = r.json(); fid = flow["id"]

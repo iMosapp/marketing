@@ -505,6 +505,9 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
     # A Lead Flow attached to the source owns intake / ladder / after-hours settings
     from services.lead_flows import apply_flow
     source = await apply_flow(db, source)
+    # A source pointed at a shared inbox inherits its members, routing, first reply and number
+    from services.inboxes import apply_inbox
+    source = await apply_inbox(db, source)
 
     phone = normalized.get("phone", "")
     email = normalized.get("email", "")
@@ -560,6 +563,10 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
     if existing_contact:
         contact_id = str(existing_contact["_id"])
         is_new_contact = False
+        # Store-owned / orphaned existing contact: route it like a new lead (round robin picks the rep)
+        assigned_user_id = None if owner_id else await _resolve_assignment(db, source)
+        if assigned_user_id:
+            await db.contacts.update_one({"_id": existing_contact["_id"]}, {"$set": {"user_id": assigned_user_id, "updated_at": now}})
     else:
         vehicle_interest = " ".join(filter(None, [
             normalized.get("vehicle_year"), normalized.get("vehicle_make"),
@@ -620,8 +627,8 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
             await db.contacts.update_one({"_id": name_conflict["_id"]}, {"$addToSet": {"tags": "Possible Duplicate"}})
             logger.info(f"[LeadIntake] {full_name}: new contact {contact_id} flagged possible duplicate of {name_conflict['_id']}")
 
-    # ── Resolve assigned user (for AI message)
-    assigned_user_id = owner_id or await _resolve_assignment(db, source)
+    # ── Resolve assigned user (for AI message) — assignment was decided once above (round robin advances once)
+    assigned_user_id = owner_id or assigned_user_id
     routing_kind = "returning_owner" if owner_id else ("assigned" if assigned_user_id else "queue")
     assigned_user = None
     if assigned_user_id:
@@ -725,6 +732,9 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         "lead_source_name": source.get("name", ""),
         "inbound_lead_id":  lead_id,
         "team_id":          source.get("team_id"),
+        "inbox_id":         source.get("inbox_id"),
+        "inbox_name":       source.get("inbox_name"),
+        "rep_phone":        source.get("inbox_phone_number") or None,
         "assigned_to":      assigned_user_id,
         "store_id":         store_id,
         "user_id":          assigned_user_id or store_id or "",
@@ -766,7 +776,7 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
             sort=[("last_message_at", -1)])
     if reused:
         conv_id = str(reused["_id"])
-        keep = {"created_at", "status", "ai_mode", "ai_enabled", "rep_phone", "unread", "unread_count"}
+        keep = {"created_at", "status", "ai_mode", "ai_enabled", "rep_phone", "unread", "unread_count", "inbox_id", "inbox_name"}
         if reused.get("contact_name"):
             keep.add("contact_name")
         sets = {k: v for k, v in conversation.items() if k not in keep}
@@ -852,39 +862,11 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
 
 
 async def _resolve_assignment(db, source: dict) -> Optional[str]:
-    """Resolve assignment from source's method. Returns user_id or None.
-    Prefers on-shift reps for round-robin; falls back to all if none on shift."""
-    method  = source.get("assignment_method", "jump_ball")
-    team_id = source.get("team_id")
-    if not team_id or method == "jump_ball":
-        return None
+    """Resolve assignment from source's method. Returns user_id or None (jump ball).
+    Round robin / weighted round robin run over the source's reps (or its inbox's members), on-shift first."""
     try:
-        team = await db.teams.find_one({"_id": ObjectId(team_id)})
-        if not team or not team.get("members"):
-            return None
-        all_members = team["members"]
-        # Prefer on-shift members, fall back to all
-        members = await _get_on_shift_reps(all_members, fallback_all=True)
-        if method == "round_robin":
-            idx = source.get("round_robin_index", 0)
-            user_id = members[idx % len(members)]
-            await db.lead_sources.update_one(
-                {"_id": source["_id"]},
-                {"$set": {"round_robin_index": (idx + 1) % len(members)}}
-            )
-            return user_id
-        if method == "weighted_round_robin":
-            counts = source.get("member_lead_counts", {})
-            for m in members:
-                if m not in counts:
-                    counts[m] = 0
-            user_id = min(members, key=lambda m: counts.get(m, 0))
-            counts[user_id] = counts.get(user_id, 0) + 1
-            await db.lead_sources.update_one(
-                {"_id": source["_id"]},
-                {"$set": {"member_lead_counts": counts}}
-            )
-            return user_id
+        from services.inboxes import pick_assignee
+        return await pick_assignee(db, source)
     except Exception as e:
         logger.warning(f"[LeadIntake] Assignment error: {e}")
     return None
@@ -2669,11 +2651,13 @@ async def _fire_intake_workflow(source, lead_doc, conv_id, contact_id, phone_e16
             }
             message_body = hydrate_intake_text(intake_text, lead_data, source_name)
 
-            # Send from the assigned rep's business number so the customer's reply lands in
-            # this thread and that rep's inbox; otherwise the first on-shift workflow rep.
+            # Shared-inbox source: the text leaves from the department number so the reply lands back in the inbox.
+            # Otherwise the assigned rep's business number, else the first on-shift workflow rep.
             from_number = None
+            if source.get("inbox_phone_number") and lead_doc.get("routing_kind") != "returning_owner":
+                from_number = source["inbox_phone_number"]
             sender_ids = ([lead_doc.get("assigned_to")] if lead_doc.get("assigned_to") else []) + list(workflow_user_ids)
-            if sender_ids:
+            if not from_number and sender_ids:
                 pool = await _get_on_shift_reps(sender_ids, fallback_all=True) if not lead_doc.get("assigned_to") else sender_ids
                 for uid in pool:
                     try:
@@ -2684,6 +2668,8 @@ async def _fire_intake_workflow(source, lead_doc, conv_id, contact_id, phone_e16
                     if from_number:
                         break
 
+            if not from_number and source.get("inbox_phone_number"):
+                from_number = source["inbox_phone_number"]
             if not from_number:
                 from_number = os.environ.get("TWILIO_PHONE_NUMBER", "")
 

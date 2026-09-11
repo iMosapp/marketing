@@ -1195,13 +1195,14 @@ async def process_pending_campaign_steps():
                         except Exception as card_err:
                             logger.error(f"[Scheduler] Card touch failed for {send_doc.get('contact_name')}: {card_err}")
 
-                    # Send SMS/MMS via Twilio using rep's dedicated number
+                    # Send SMS/MMS via Twilio: the shared inbox number when the customer lives in a "stay" inbox, else the rep's number
                     twilio_failed = False
                     twilio_error = ""
+                    from services.inboxes import resolve_from_number as _resolve_from
+                    rep_number = await _resolve_from(db, user_id, contact_id=str(contact_id))
                     if contact_phone and channel in ("sms", "mms"):
                         try:
-                            from services.twilio_service import send_sms, get_rep_twilio_number
-                            rep_number = await get_rep_twilio_number(user_id)
+                            from services.twilio_service import send_sms
                             sms_result = await send_sms(
                                 contact_phone, message_content,
                                 media_urls=media_urls if media_urls else None,
@@ -1232,7 +1233,7 @@ async def process_pending_campaign_steps():
 
                     # Find the real conversation — try multiple strategies aggressively
                     real_conv = None
-                    rep_phone = send_doc.get("rep_phone") or await get_rep_twilio_number(user_id)
+                    rep_phone = send_doc.get("rep_phone") or rep_number
 
                     # Strategy 1: exact phone match (normalized)
                     if contact_phone and rep_phone:
@@ -2250,6 +2251,19 @@ def start_scheduler():
         id="customer_appointment_reminders",
         replace_existing=True,
         misfire_grace_time=600,
+    )
+
+    # Every minute — shared-inbox collaborators get nudged when the owner has been silent 15 min
+    async def _run_silent_owner_escalation():
+        from services.inboxes import escalate_silent_owners
+        await escalate_silent_owners()
+
+    scheduler.add_job(
+        safe_job(_run_silent_owner_escalation),
+        IntervalTrigger(minutes=1),
+        id="inbox_silent_owner_escalation",
+        replace_existing=True,
+        misfire_grace_time=120,
     )
 
     scheduler.start()

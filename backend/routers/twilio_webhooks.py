@@ -187,10 +187,28 @@ async def incoming_message(
         )
 
     try:
+        # ── Step 0: Shared inbox number? (Sales / Service / BDC line worked by a team) ──
+        # Unassigned thread -> handled entirely by the inbox (VA reply + "tap to claim" pushes).
+        # Assigned / graduated / known customer -> continue below as that rep, on the right number.
+        inbox_rep_user = None
+        try:
+            from services.inboxes import inbox_by_number, handle_inbound as _inbox_handle
+            shared_inbox = await inbox_by_number(db, to_phone)
+            if shared_inbox:
+                routed = await _inbox_handle(db, shared_inbox, from_phone, Body or "", media_urls, media_types, MessageSid)
+                if routed.get("handled"):
+                    logger.info(f"[Webhook] Inbound {to_phone} handled by shared inbox {shared_inbox.get('name')}")
+                    return Response(content='<?xml version="1.0" encoding="UTF-8"?><Response></Response>', media_type="application/xml")
+                inbox_rep_user = routed.get("rep_user")
+                to_phone = routed.get("to_phone") or to_phone
+                logger.info(f"[Webhook] Inbox {shared_inbox.get('name')} -> rep {inbox_rep_user.get('name')} on {to_phone}")
+        except Exception as inbox_err:
+            logger.error(f"[Webhook] Shared inbox routing failed, falling back to rep routing: {inbox_err}")
+
         # ── Step 1: Route by To: number → find the rep who owns this number ──
         # Important: do NOT filter by is_active here — a rep's dedicated number
         # should always route to them even if their account isn't fully active yet.
-        rep_user = await db.users.find_one({
+        rep_user = inbox_rep_user or await db.users.find_one({
             "$or": [{"twilio_number": to_phone}, {"mvpline_number": to_phone}],
             "status": {"$ne": "deactivated"},  # only exclude hard-deactivated accounts
         })
@@ -549,7 +567,7 @@ async def incoming_message(
                 sms_active_enabled = notif_prefs.get("sms_active_conversation", True)
                 throttle_minutes   = int(notif_prefs.get("sms_active_throttle_minutes", 30))
                 rep_personal_phone = normalize_phone((rep_user.get("phone") or "").strip())
-                rep_twilio_number  = (rep_user.get("twilio_number") or rep_user.get("mvpline_number") or "").strip()
+                rep_twilio_number  = (rep_user.get("twilio_number") or rep_user.get("mvpline_number") or conversation.get("rep_phone") or "").strip()
 
                 if not rep_personal_phone:
                     logger.warning(f"[Webhook] SMS skipped — rep {rep_user.get('name','?')} has no personal phone set in profile")
@@ -905,7 +923,7 @@ async def incoming_message(
                     sms_urn_enabled = (notif_prefs2.get("sms_you_are_needed", True)
                                        and notification_mode in ("sms", "both"))
                     rep_personal_phone = normalize_phone((rep_user.get("phone") or "").strip()) if rep_user else ""
-                    rep_twilio_number  = (rep_user.get("twilio_number") or rep_user.get("mvpline_number") or "").strip() if rep_user else ""
+                    rep_twilio_number  = (rep_user.get("twilio_number") or rep_user.get("mvpline_number") or conversation.get("rep_phone") or "").strip() if rep_user else ""
                     if sms_urn_enabled and rep_personal_phone and rep_twilio_number:
                         tw_sid2   = os.environ.get("TWILIO_ACCOUNT_SID", "")
                         tw_token2 = os.environ.get("TWILIO_AUTH_TOKEN", "")
@@ -968,6 +986,14 @@ async def incoming_message(
                         ))
                     except Exception:
                         pass
+            except Exception:
+                pass
+
+        # ── Collaborators on a shared thread: pushed now only if the owner is off shift (silent owners handled by the scheduler)
+        if conversation.get("collaborators") and not is_stop:
+            try:
+                from services.inboxes import on_customer_message_for_collaborators
+                asyncio.create_task(on_customer_message_for_collaborators(db, conversation_id))
             except Exception:
                 pass
 

@@ -34,8 +34,12 @@ import { MessageBubble } from '../../components/thread/MessageBubble';
 import { ThreadSearchBar } from '../../components/thread/ThreadSearchBar';
 import { LeadWaitBanner } from '../../components/LeadWaitTimer';
 import { LeadCallTimeline } from '../../components/LeadCallTimeline';
+import { InboxThreadBanner } from '../../components/inbox/InboxThreadBanner';
+import { OwnershipSheet } from '../../components/inbox/OwnershipSheet';
+import { ownershipAPI, errText as ownershipErr } from '../../components/inbox/ownership';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
+import { useToast } from '../../components/common/Toast';
 import { messagesAPI, templatesAPI, emailAPI } from '../../services/api';
 import api from '../../services/api';
 import { showSimpleAlert, showAlert, showConfirm } from '../../services/alert';
@@ -145,6 +149,7 @@ function ThreadScreen() {
   const channelPicker = useChannelPicker();
   const themeColors = useThemeStore(s => s.colors);
   const themeMode = useThemeStore(s => s.mode);
+  const { showToast } = useToast();
   const colors = themeMode === 'light' ? {
     background: themeColors.bg,
     surface: themeColors.card,
@@ -598,6 +603,39 @@ function ThreadScreen() {
   const [needsAssistance, setNeedsAssistance] = useState(false);
   const [aiPaused, setAiPaused] = useState(false);
 
+  // Shared inbox ownership (where the thread lives, who has it)
+  const [inboxInfo, setInboxInfo] = useState<any>(null);
+  const [showOwnership, setShowOwnership] = useState(false);
+  const [claimingThread, setClaimingThread] = useState(false);
+  const applyInboxInfo = (d: any) => {
+    if (!d) return;
+    setInboxInfo({ inbox_id: d.inbox_id, inbox_name: d.inbox_name, assigned_to: d.assigned_to, assigned_to_name: d.assigned_to_name,
+      is_unassigned: !!d.is_unassigned, collaborators: d.collaborators || [], graduated: !!d.graduated, handoff_note: d.handoff_note });
+  };
+  const refreshOwnership = async () => {
+    const convId = actualConversationId || (id as string);
+    if (!convId) return;
+    try {
+      const [info, msgs] = await Promise.all([api.get(`/messages/conversation/${convId}/info`), messagesAPI.getThread(convId)]);
+      applyInboxInfo(info?.data);
+      if (msgs) setMessages(msgs);
+    } catch {}
+  };
+  const claimThread = async () => {
+    const convId = actualConversationId || (id as string);
+    if (!convId) return;
+    setClaimingThread(true);
+    try {
+      await ownershipAPI.claim(convId);
+      showToast(`${contactName} is yours`, 'success', 2000);
+      await refreshOwnership();
+    } catch (e) {
+      showToast(ownershipErr(e, "Couldn't claim that one"), 'error', 3000);
+      await refreshOwnership();
+    } finally { setClaimingThread(false); }
+  };
+  const aiModeLabel = aiMode === 'auto_reply' ? 'Jessi answers automatically' : aiMode === 'assisted' ? 'Jessi suggests, you approve' : aiMode === 'draft_only' ? 'Jessi drafts only' : 'Jessi is off';
+
   // Ensure we have a conversation (create if needed)
   const ensureConversation = async () => {
     if (!id || !user?._id) return;
@@ -629,6 +667,7 @@ function ThreadScreen() {
       }
       setNeedsAssistance(!!convInfo?.data?.needs_assistance);
       setAiPaused(!!convInfo?.data?.ai_paused_for_human);
+      applyInboxInfo(convInfo?.data);
 
       // Auto-mark as read when opening a conversation
       try { await messagesAPI.markAsRead(id as string); } catch {}
@@ -654,6 +693,7 @@ function ThreadScreen() {
             setAiMode(savedMode as any);
           }
           setIsInternetLead(!!convInfo?.data?.is_internet_lead);
+          applyInboxInfo(convInfo?.data);
         }).catch(() => {});
         
         // id is confirmed as a contact_id — set it for intel loading
@@ -752,6 +792,7 @@ function ThreadScreen() {
       }
       setNeedsAssistance(!!convInfo?.data?.needs_assistance);
       setAiPaused(!!convInfo?.data?.ai_paused_for_human);
+      applyInboxInfo(convInfo?.data);
       
       // Auto-load AI suggestion when there are messages from contacts
       if (data && data.length > 0) {
@@ -2216,6 +2257,11 @@ function ThreadScreen() {
         />
       )}
       
+      {/* Shared inbox: where this thread lives + who has it */}
+      {conversationStatus !== 'closed' && (
+        <InboxThreadBanner info={inboxInfo} meId={user?._id} colors={colors} onOpen={() => setShowOwnership(true)} onClaim={claimThread} claiming={claimingThread} />
+      )}
+
       {/* Speed-to-lead: unanswered internet lead banner */}
       {leadWait && conversationStatus !== 'closed' && (
         <LeadWaitBanner receivedAt={leadWait.receivedAt} sourceName={leadWait.sourceName} />
@@ -3583,6 +3629,22 @@ function ThreadScreen() {
               </View>
             </TouchableOpacity>
 
+            {/* Who's on this: owner, collaborators, move between inboxes */}
+            <TouchableOpacity
+              style={styles.statusOption}
+              onPress={() => { setShowSettings(false); setTimeout(() => setShowOwnership(true), 150); }}
+              testID="ownership-settings-row"
+              dataSet={{ testid: 'ownership-settings-row' } as any}
+            >
+              <View style={[styles.modeIcon, { backgroundColor: '#C9A96220' }]}>
+                <Ionicons name="people" size={20} color="#C9A962" />
+              </View>
+              <View style={styles.modeInfo}>
+                <Text style={styles.modeName}>Who's on this</Text>
+                <Text style={styles.modeDesc}>{inboxInfo?.inbox_id ? `${inboxInfo.inbox_name} inbox · hand off, share, move` : 'Share with a teammate or move to a shared inbox'}</Text>
+              </View>
+            </TouchableOpacity>
+
             {/* Merge Conversations — surfaces when there might be a duplicate */}
             <TouchableOpacity
               style={styles.statusOption}
@@ -3690,6 +3752,17 @@ function ThreadScreen() {
         onSent={channelPicker.onSent}
         visible={channelPicker.visible}
         onClose={channelPicker.close}
+      />
+      <OwnershipSheet
+        visible={showOwnership}
+        conversationId={actualConversationId || (id as string) || null}
+        meId={user?._id}
+        colors={{ ...colors, text: colors.textPrimary, bg: colors.background, card: colors.surface }}
+        onClose={() => setShowOwnership(false)}
+        onChanged={refreshOwnership}
+        showToast={showToast}
+        aiModeLabel={aiModeLabel}
+        onChangeAi={() => { setShowOwnership(false); setTimeout(() => setShowSettings(true), 150); }}
       />
     </SafeAreaView>
   );

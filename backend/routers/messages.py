@@ -156,11 +156,15 @@ async def get_conversations(user_id: str, personal_only: bool = True):
     db = get_db()
     
     if personal_only:
-        # Show only this user's personal conversations
-        base_filter = {"user_id": user_id}
+        # This user's own threads + threads assigned/shared to them + unclaimed threads in their shared inboxes
+        from services.inboxes import access_filter
+        base_filter = await access_filter(db, user_id)
     else:
         # Show all conversations the user has access to (admin view)
         base_filter = await get_data_filter(user_id)
+        from services.inboxes import member_inbox_ids
+        _ids = await member_inbox_ids(db, user_id)
+        base_filter = {"$or": [base_filter, {"assigned_to": user_id}, {"collaborators": user_id}] + ([{"inbox_id": {"$in": _ids}}] if _ids else [])}
     
     # Sort by: AI outcomes first (by priority), then unread, then by recency
     conversations = await db.conversations.find(base_filter).sort([
@@ -251,6 +255,25 @@ async def get_conversations(user_id: str, personal_only: bool = True):
                 ca = conv.get('lead_created_at') or conv.get('created_at')
                 conv['lead_received_at'] = ca.isoformat() if hasattr(ca, 'isoformat') else ca
 
+    # Shared-inbox ownership (who has it, is it up for grabs, am I a collaborator)
+    owner_ids = {c.get("assigned_to") for c in conversations if c.get("assigned_to") and ObjectId.is_valid(str(c.get("assigned_to")))}
+    owner_names = {}
+    if owner_ids:
+        async for u in db.users.find({"_id": {"$in": [ObjectId(o) for o in owner_ids]}}, {"name": 1, "first_name": 1}):
+            owner_names[str(u["_id"])] = u.get("name") or u.get("first_name") or "Rep"
+    for conv in conversations:
+        owner = conv.get("assigned_to") or None
+        if owner == str(conv.get("store_id") or ""):
+            owner = None
+        conv["assigned_to"] = owner
+        conv["assigned_to_name"] = owner_names.get(owner) if owner else None
+        conv["is_unassigned"] = bool(conv.get("inbox_id")) and not conv.get("graduated_at") and not owner
+        conv["is_mine"] = (owner == user_id) if owner else (str(conv.get("user_id") or "") == user_id and not conv.get("inbox_id"))
+        conv["is_collaborator"] = user_id in (conv.get("collaborators") or [])
+        if conv.get("graduated_at"):
+            conv["inbox_id"] = None
+            conv["inbox_name"] = None
+
     # Assemble results
     result = []
     for conv in conversations:
@@ -270,6 +293,8 @@ async def get_conversations(user_id: str, personal_only: bool = True):
 async def get_conversation(user_id: str, conversation_id: str):
     """Get a specific conversation with messages"""
     base_filter = await get_data_filter(user_id)
+    from services.inboxes import access_filter as _inbox_access
+    base_filter = await _inbox_access(get_db(), user_id, base_filter)
     
     conv = await get_db().conversations.find_one({
         "$and": [{"_id": ObjectId(conversation_id)}, base_filter]
@@ -370,6 +395,8 @@ async def create_conversation(user_id: str, data: dict):
 async def send_message(user_id: str, conversation_id: str, message_data: MessageCreate):
     """Send a message in a conversation"""
     base_filter = await get_data_filter(user_id)
+    from services.inboxes import access_filter as _inbox_access
+    base_filter = await _inbox_access(get_db(), user_id, base_filter)
     
     # Verify conversation exists and user has access
     conv = await get_db().conversations.find_one({
@@ -378,6 +405,19 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
     
     if not conv:
         raise HTTPException(status_code=404, detail="Conversation not found")
+
+    # Shared inbox: first reply from a member claims the thread (contact + follow-up move to them)
+    if conv.get("inbox_id") and not conv.get("graduated_at") and not conv.get("assigned_to"):
+        try:
+            from services.inboxes import assign_conversation as _claim
+            actor = await get_db().users.find_one({"_id": ObjectId(user_id)})
+            if actor:
+                await _claim(get_db(), conv, actor, user_id)
+                conv = await get_db().conversations.find_one({"_id": conv["_id"]}) or conv
+        except PermissionError as pe:
+            raise HTTPException(status_code=403, detail=str(pe))
+        except Exception as ce:
+            logger.warning(f"[Inbox] auto-claim on reply failed: {ce}")
     
     # Get recipient phone number
     to_phone = conv.get('contact_phone')
@@ -604,16 +644,12 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
                 except Exception:
                     pass
     elif to_phone:
-        # Send via Twilio (SMS) — always use the rep's dedicated number
+        # Send via Twilio (SMS): the shared inbox number while the thread lives in an inbox, else the rep's dedicated number
         message['channel'] = 'sms'
-        # Look up the rep's dedicated Twilio number so we never send from a pooled number
         rep_twilio_number = None
         try:
-            rep_doc = await get_db().users.find_one(
-                {"_id": ObjectId(user_id)},
-                {"twilio_number": 1, "mvpline_number": 1}
-            )
-            rep_twilio_number = (rep_doc or {}).get("twilio_number") or (rep_doc or {}).get("mvpline_number")
+            from services.inboxes import resolve_from_number as _resolve_from
+            rep_twilio_number = await _resolve_from(get_db(), user_id, conversation=conv)
         except Exception:
             pass
         sms_result = await send_sms(to_phone, message_data.content, from_phone=rep_twilio_number)
@@ -798,6 +834,8 @@ async def send_mms_message(
     """Send an MMS message with media attachment"""
     base_filter = await get_data_filter(user_id)
     db = get_db()
+    from services.inboxes import access_filter as _inbox_access
+    base_filter = await _inbox_access(db, user_id, base_filter)
     
     # Try to find conversation - it might be a conversation_id or contact_id
     conv = await db.conversations.find_one({
@@ -910,15 +948,12 @@ async def send_mms_message(
     result = await db.messages.insert_one(message)
     message['_id'] = str(result.inserted_id)
     
-    # Send via Twilio with public URL — use rep's dedicated number
+    # Send via Twilio with public URL: inbox number for shared-inbox threads, else the rep's dedicated number
     media_urls = [media_image_url]
     rep_twilio_number = None
     try:
-        rep_doc = await db.users.find_one(
-            {"_id": ObjectId(user_id)},
-            {"twilio_number": 1, "mvpline_number": 1}
-        )
-        rep_twilio_number = (rep_doc or {}).get("twilio_number") or (rep_doc or {}).get("mvpline_number")
+        from services.inboxes import resolve_from_number as _resolve_from
+        rep_twilio_number = await _resolve_from(db, user_id, conversation=conv)
     except Exception:
         pass
     sms_result = await send_sms(to_phone, content or "", media_urls, from_phone=rep_twilio_number)
@@ -1696,7 +1731,18 @@ async def get_conversation_info(conversation_id: str):
         "needs_assistance": bool(conv.get("needs_assistance")),
         "ai_paused_for_human": bool(conv.get("ai_paused_for_human")),
         "unanswered_customer_replies": conv.get("unanswered_customer_replies", 0),
+        "rep_phone": conv.get("rep_phone"),
+        "inbox_id": conv.get("inbox_id") if not conv.get("graduated_at") else None,
+        "inbox_name": conv.get("inbox_name") if not conv.get("graduated_at") else None,
+        "assigned_to": conv.get("assigned_to") if conv.get("assigned_to") and conv.get("assigned_to") != str(conv.get("store_id") or "") else None,
+        "collaborators": conv.get("collaborators") or [],
+        "graduated": bool(conv.get("graduated_at")),
+        "handoff_note": conv.get("handoff_note"),
     }
+    result["is_unassigned"] = bool(result["inbox_id"]) and not result["assigned_to"]
+    if result["assigned_to"] and ObjectId.is_valid(result["assigned_to"]):
+        _owner = await db.users.find_one({"_id": ObjectId(result["assigned_to"])}, {"name": 1, "first_name": 1})
+        result["assigned_to_name"] = (_owner or {}).get("name") or (_owner or {}).get("first_name")
 
     # Speed-to-lead: waiting status for internet leads
     if conv.get("is_internet_lead"):

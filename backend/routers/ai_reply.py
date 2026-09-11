@@ -329,7 +329,8 @@ async def queue_ai_reply(
         _conv_pause = await db.conversations.find_one(
             {"_id": ObjectId(conversation_id)},
             {"ai_paused_for_human": 1, "needs_assistance": 1, "is_internet_lead": 1, "inquiry": 1,
-             "inbound_lead_id": 1, "lead_source_id": 1, "lead_source_name": 1, "attribution": 1, "inventory_narrowing": 1}
+             "inbound_lead_id": 1, "lead_source_id": 1, "lead_source_name": 1, "attribution": 1, "inventory_narrowing": 1,
+             "inbox_id": 1, "graduated_at": 1, "assigned_to": 1, "contact_name": 1}
         )
         if _conv_pause and _conv_pause.get("ai_paused_for_human"):
             logger.info(f"[AIReply] Conversation {conversation_id} paused for human — skipping AI reply")
@@ -347,6 +348,23 @@ async def queue_ai_reply(
         pass
     from services.lead_context import is_vehicle_inquiry, inquiry_prompt_block
     vehicle_ok = is_vehicle_inquiry(lead_inquiry)
+    # Unclaimed shared-inbox thread: "You're Needed" moments go to the whole inbox team instead of one rep
+    _inbox_team = None
+    if not assigned_user_id and _conv_pause and _conv_pause.get("inbox_id") and not _conv_pause.get("graduated_at") and not _conv_pause.get("assigned_to"):
+        try:
+            from services.inboxes import get_inbox as _get_inbox
+            _inbox_team = await _get_inbox(db, _conv_pause["inbox_id"])
+        except Exception:
+            _inbox_team = None
+
+    async def _alert_inbox_team(title: str, body: str):
+        if not _inbox_team:
+            return
+        try:
+            from services.inboxes import notify_members as _notify_members
+            await _notify_members(db, _inbox_team, conversation_id, contact_id, title, body, notif_type="you_are_needed")
+        except Exception as _ie:
+            logger.debug(f"[AIReply] inbox team alert failed: {_ie}")
     # Jessi asked "what budget / what kind?" last turn - the answer is an inventory turn, whatever words they use.
     narrow_pending = vehicle_ok and bool((_narrowing_pending(_conv_pause) or {}).get("asked"))
 
@@ -512,6 +530,9 @@ async def queue_ai_reply(
                 ))
             except Exception:
                 pass
+        elif _inbox_team and not _already_alerted:
+            await _alert_inbox_team(f"Approve Jessi's reply - {(_conv_pause or {}).get('contact_name') or 'a customer'}",
+                                    f"\"{(incoming_message or '')[:70]}\" - wants to set a time. Claim it to review and send.")
 
     # If the question is inventory/pricing-related, try LIVE inventory first so
     # Jessi can answer with real availability and pricing. Financing, payments and
@@ -556,6 +577,9 @@ async def queue_ai_reply(
                 ))
             except Exception:
                 pass
+        elif _inbox_team:
+            await _alert_inbox_team(f"You're Needed - {(_conv_pause or {}).get('contact_name') or 'a customer'}",
+                                    f"Asked: \"{(incoming_message or '')[:80]}\" - Jessi passed it to the team. Claim it to answer.")
         # Queue the brief reply — but only if no hot-topic reply is already pending
         # Also cancel any normal pending reply so we don't send TWO responses
         existing_hot = await db.ai_reply_queue.find_one({
@@ -621,22 +645,43 @@ async def queue_ai_reply(
                 ))
             except Exception:
                 pass
+        elif _inbox_team:
+            await _alert_inbox_team(f"Inventory Question - {(_conv_pause or {}).get('contact_name') or 'a customer'}",
+                                    f"Asked: \"{(incoming_message or '')[:70]}\" - Jessi replied with live inventory. Claim it to follow up.")
 
     # ── Generate AI draft ──────────────────────────────────────────────────
     try:
         from routers.ai_campaigns import build_clone_system_prompt, get_contact_context
         from emergentintegrations.llm.chat import LlmChat, UserMessage
 
-        system_prompt = await build_clone_system_prompt(assigned_user_id)
-        system_prompt += (
-            "\n\nIMPORTANT: You are responding to a customer who replied to your message. "
-            "Keep it natural, short, and conversational — 1-3 sentences max. "
-            "Act exactly like the salesperson would respond. Never sound like a bot."
-        )
+        # Shared-inbox thread: while nobody owns it, Jessi speaks as the department assistant
+        # (Inbox VA); once a rep owns it she speaks as that rep. Either way the text leaves from the inbox number.
+        from services.inboxes import inbox_context as _inbox_ctx, build_inbox_va_prompt
+        _conv_for_inbox = await db.conversations.find_one({"_id": ObjectId(conversation_id)},
+                                                          {"inbox_id": 1, "graduated_at": 1, "rep_phone": 1, "store_id": 1})
+        inbox_ctx = await _inbox_ctx(db, _conv_for_inbox)
+        voice_user_id = assigned_user_id
+        if inbox_ctx and not voice_user_id:
+            voice_user_id = next(iter(inbox_ctx["members"]), None)     # store-scoped lookups only (inventory, cleanup)
+
+        if inbox_ctx and not assigned_user_id:
+            _store = await db.stores.find_one({"_id": ObjectId(inbox_ctx["inbox"]["store_id"])}) if ObjectId.is_valid(str(inbox_ctx["inbox"].get("store_id") or "")) else None
+            system_prompt = build_inbox_va_prompt(inbox_ctx["inbox"], inbox_ctx.get("va_profile"), _store)
+            system_prompt += (
+                "\n\nIMPORTANT: You are responding to a customer who texted the shared line. "
+                "Keep it natural, short, and conversational — 1-3 sentences max. Never sound like a bot."
+            )
+        else:
+            system_prompt = await build_clone_system_prompt(assigned_user_id)
+            system_prompt += (
+                "\n\nIMPORTANT: You are responding to a customer who replied to your message. "
+                "Keep it natural, short, and conversational — 1-3 sentences max. "
+                "Act exactly like the salesperson would respond. Never sound like a bot."
+            )
         system_prompt += inquiry_prompt_block(lead_inquiry)
 
         contact_context = await get_contact_context(
-            assigned_user_id, contact_id, include_vehicle=vehicle_ok,
+            voice_user_id, contact_id, include_vehicle=vehicle_ok,
             conversation_id=conversation_id if lead_inquiry else None)
 
         # Pull recent conversation for context
@@ -697,7 +742,7 @@ async def queue_ai_reply(
                    else response.text.strip() if hasattr(response, "text")
                    else str(response)).strip('"\'')
         ai_body = no_em_dash(ai_body)
-        ai_body = await clean_ai_text(ai_body, assigned_user_id)
+        ai_body = await clean_ai_text(ai_body, voice_user_id)
         if inventory_link and inventory_link["url"] not in ai_body:
             ai_body = f"{ai_body.rstrip()}\n\nAll the photos and details: {inventory_link['url']}"
 
@@ -746,11 +791,16 @@ async def queue_ai_reply(
     # ── Build queue doc ───────────────────────────────────────────────────────
     now = datetime.now(timezone.utc)
 
-    # Determine the rep's Twilio number NOW (at queue time) so the reply always
-    # goes from the correct number — even if the conversation's user_id is stale.
-    # Priority: look up by assigned_user_id, then fall back to conversation's user_id.
+    # Determine the send-from number NOW (at queue time) so the reply always goes from the correct
+    # number: the shared inbox number while the thread lives in an inbox, else the rep's dedicated number.
     rep_send_from = None
-    for uid_to_check in [assigned_user_id]:
+    try:
+        from services.inboxes import resolve_from_number as _resolve_from
+        _conv_num = await db.conversations.find_one({"_id": ObjectId(conversation_id)}, {"inbox_id": 1, "graduated_at": 1, "rep_phone": 1})
+        rep_send_from = await _resolve_from(db, assigned_user_id, conversation=_conv_num)
+    except Exception:
+        pass
+    for uid_to_check in ([assigned_user_id] if not rep_send_from else []):
         if uid_to_check:
             try:
                 rep_doc = await db.users.find_one(
@@ -1299,15 +1349,13 @@ async def approve_ai_reply(queue_id: str, request: Request):
 
     from services.twilio_service import send_sms
     # Use the rep's dedicated number — look up via assigned_user_id or approving user
-    rep_twilio_number = None
+    rep_twilio_number = item.get("rep_twilio_number")
     try:
         rep_uid = item.get("assigned_user_id") or user_id
-        if rep_uid:
-            rep_doc = await db.users.find_one(
-                {"_id": ObjectId(rep_uid)},
-                {"twilio_number": 1, "mvpline_number": 1}
-            )
-            rep_twilio_number = (rep_doc or {}).get("twilio_number") or (rep_doc or {}).get("mvpline_number")
+        if not rep_twilio_number and rep_uid:
+            from services.inboxes import resolve_from_number as _resolve_from
+            _conv_num = await db.conversations.find_one({"_id": ObjectId(item["conversation_id"])}, {"inbox_id": 1, "graduated_at": 1, "rep_phone": 1}) if ObjectId.is_valid(str(item.get("conversation_id") or "")) else None
+            rep_twilio_number = await _resolve_from(db, rep_uid, conversation=_conv_num)
     except Exception:
         pass
     result = await send_sms(phone, body, from_phone=rep_twilio_number)

@@ -39,6 +39,9 @@ import WebSwipeableItem, { wasRecentSwipe } from '../../components/WebSwipeableI
 import AppointmentModal from '../../components/AppointmentModal';
 import { LeadWaitChip } from '../../components/LeadWaitTimer';
 import { useToast } from '../../components/common/Toast';
+import { SharedInboxPanel } from '../../components/inbox/SharedInboxPanel';
+import { InboxBadge, ClaimButton } from '../../components/inbox/InboxBadge';
+import { ownershipAPI, errText } from '../../components/inbox/ownership';
 
 const IS_WEB = Platform.OS === 'web';
 
@@ -181,6 +184,30 @@ export default function InboxScreen() {
   const showLeadsSegment = !!leadsSummary && (leadsSummary.visible || (leadsSummary.mine_waiting || 0) > 0);
   const [teamConversations, setTeamConversations] = useState<any[]>([]);
   const [loadingTeam, setLoadingTeam] = useState(false);
+
+  // Shared inboxes (department numbers) this user can see
+  const [sharedInboxes, setSharedInboxes] = useState<any[]>([]);
+  const [claimingId, setClaimingId] = useState<string | null>(null);
+  const loadSharedInboxes = useCallback(async () => {
+    if (!user?._id) return;
+    try { const r = await ownershipAPI.listInboxes(); setSharedInboxes(r?.inboxes || []); } catch {}
+  }, [user?._id]);
+  useEffect(() => { loadSharedInboxes(); }, [loadSharedInboxes]);
+  useFocusEffect(useCallback(() => { loadSharedInboxes(); }, [loadSharedInboxes]));
+  const inboxColor = (id?: string | null) => sharedInboxes.find(i => i.id === id)?.color;
+  const handleClaim = async (conv: any) => {
+    if (!user?._id) return;
+    setClaimingId(conv._id);
+    try {
+      const res = await ownershipAPI.claim(conv._id);
+      showToast(res?.already ? 'Already yours' : `${conv.contact?.name || 'Lead'} is yours`, 'success', 2000);
+      setConversations(prev => prev.map(c => c._id === conv._id ? { ...c, assigned_to: user._id, assigned_to_name: user.name, is_unassigned: false, is_mine: true, user_id: user._id } : c));
+      loadSharedInboxes();
+    } catch (e: any) {
+      showToast(errText(e, "Couldn't claim that one"), 'error', 3000);
+      loadConversations(); loadSharedInboxes();
+    } finally { setClaimingId(null); }
+  };
   
   // Message mode state (SMS vs Email)
   const [messageMode, setMessageMode] = useState<MessageModeType>('sms');
@@ -261,7 +288,8 @@ export default function InboxScreen() {
     triggerHaptic('medium');
     setInboxView(view);
     if (view === 'team') {
-      await loadTeamConversations();
+      loadSharedInboxes();
+      if (sharedInboxes.length === 0) await loadTeamConversations();
     } else if (view === 'leads') {
       loadLeadsSummary();
     }
@@ -584,7 +612,7 @@ export default function InboxScreen() {
 
       const isAiActive   = conv.ai_enabled && conv.ai_mode && conv.ai_mode !== 'off';
       const isWaiting    = (conv.needs_assistance || conv.status === 'paused') && conv.status !== 'closed';
-      const isUnassigned = !conv.user_id || conv.user_id === 'unassigned';
+      const isUnassigned = !!conv.is_unassigned;
       const isClosed     = conv.status === 'closed';
 
       if (activeTab === 'hot')        return matchesSearch && conv.hot_opportunity === true && !isClosed;
@@ -1094,6 +1122,14 @@ export default function InboxScreen() {
               {item.last_message?.timestamp ? formatTimestamp(item.last_message.timestamp) : ''}
             </Text>
           </View>
+
+          {/* Shared inbox: where it lives + who has it, with one-tap claim */}
+          {item.inbox_id && item.status !== 'closed' && !selectionMode && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+              <InboxBadge inboxName={item.inbox_name} color={inboxColor(item.inbox_id)} ownerName={item.assigned_to_name} isMine={item.is_mine} unassigned={item.is_unassigned} isCollaborator={item.is_collaborator} colors={colors} />
+              {item.is_unassigned && <ClaimButton small onPress={() => handleClaim(item)} busy={claimingId === item._id} testId={`claim-btn-${item._id}`} />}
+            </View>
+          )}
 
           {/* AI mode quick-toggle */}
           {item.status !== 'closed' && !selectionMode && (() => {
@@ -1737,9 +1773,11 @@ export default function InboxScreen() {
           assigned:   all.filter(c => c.status === 'active' && !(c.needs_assistance || c.status === 'paused') && !(!c.user_id || c.user_id === 'unassigned') && c.status !== 'closed').length,
           closed:     all.filter(c => c.status === 'closed').length,
           hot:        all.filter(c => c.hot_opportunity === true && c.status !== 'closed').length,
+          unassigned: all.filter(c => c.is_unassigned && c.status !== 'closed').length,
         };
         const tabs: { key: typeof activeTab; label: string; icon: string; activeColor: string }[] = [
           { key: 'hot',       label: 'Hot',     icon: 'flame',                     activeColor: '#FF453A' },
+          ...((sharedInboxes.length > 0 || counts.unassigned > 0) ? [{ key: 'unassigned' as typeof activeTab, label: 'Up for grabs', icon: 'hand-right', activeColor: '#C9A962' }] : []),
           { key: 'waiting',   label: 'Waiting', icon: 'time',                      activeColor: '#FF9500' },
           { key: 'unread',    label: 'Unread',  icon: 'mail-unread',               activeColor: '#32ADE6' },
           { key: 'all',       label: 'All',     icon: 'chatbubbles',               activeColor: '#C9A962' },
@@ -1806,6 +1844,8 @@ export default function InboxScreen() {
           showToast={showToast}
           onCounts={(c: any) => setLeadsSummary(prev => prev ? { ...prev, waiting: c.unclaimed, red: c.red } : prev)}
         />
+      ) : inboxView === 'team' && sharedInboxes.length > 0 ? (
+        <SharedInboxPanel inboxes={sharedInboxes} meId={user?._id} colors={colors} showToast={showToast} refreshInboxes={loadSharedInboxes} onClaimed={loadConversations} />
       ) : loading || (inboxView === 'team' && loadingTeam) ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.accent} />

@@ -260,9 +260,9 @@ async def get_team_inbox(team_id: str, include_claimed: bool = False):
     """Get all conversations for a team inbox"""
     db = get_db()
     
-    query = {"team_id": team_id}
+    query = {"$or": [{"team_id": team_id}, {"inbox_id": team_id}], "graduated_at": None}
     if not include_claimed:
-        query["$or"] = [{"claimed": False}, {"claimed": {"$exists": False}}]
+        query["$and"] = [{"$or": [{"claimed": False}, {"claimed": {"$exists": False}}]}]
     
     conversations = await db.conversations.find(query).sort("last_message_at", -1).to_list(200)
     

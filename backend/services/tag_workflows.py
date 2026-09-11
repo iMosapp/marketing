@@ -281,6 +281,11 @@ async def apply_tag_workflows(user_id: str, contact_id: str, tags_added: list, s
             tags.append(tl)
     if not tags:
         return []
+    try:
+        from services.inboxes import graduate_on_close_tag
+        await graduate_on_close_tag(db, user_id, contact_id, tags)
+    except Exception as e:
+        logger.warning(f"[Workflows] inbox graduation skipped: {e}")
     user = await _user(db, user_id)
     if not user:
         return []

@@ -155,6 +155,7 @@ export async function enableBiometricLogin(credentials: BiometricCredentials): P
  * Also upgrades legacy password-based entries to token-based ones.
  */
 export async function refreshBiometricToken(token: string, email: string): Promise<void> {
+  if (Platform.OS === 'web') return;
   try {
     if (!token || !(await isBiometricEnabled())) return;
     await SecureStore.setItemAsync(BIOMETRIC_CREDENTIALS_KEY, JSON.stringify({ email, token }));

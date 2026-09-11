@@ -621,6 +621,8 @@ api_router.include_router(legal.router)
 api_router.include_router(subscriptions.router)
 api_router.include_router(directory.router)
 api_router.include_router(shared_inboxes.router)
+from routers import inboxes as inboxes_router
+api_router.include_router(inboxes_router.router)
 api_router.include_router(voice.router)
 api_router.include_router(twilio_webhooks.router)
 api_router.include_router(twilio_admin.router)

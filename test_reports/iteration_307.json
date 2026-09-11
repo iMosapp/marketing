@@ -1,0 +1,37 @@
+{
+  "summary": "Shared Inboxes (Phase A-D) end-to-end verification. Backend: wrote /app/backend/tests/test_shared_inboxes_api.py (15 tests) covering listing, member/numbers RBAC, conversations views, ownership flow (assign/collaborators/release/claim/409-double-claim/409-graduate-no-personal-number/move-and-back + system events), rep RBAC (move 403, assign 403, claim allowed), CRUD (create/dup-409/update/bad-routing-400/delete-404), and messages enrichment. Result: 15/15 passing. Frontend (430x900 mobile viewport, logged in as qa-manager): /inbox loads, My Inbox filter chip 'Up for grabs' shows count 2, unassigned rows display inbox-badge ('Sales/Service · Up for grabs') with claim buttons; Team Inbox toggle opens SharedInboxPanel with chips inbox-chip-all, per-inbox with counts (Sales 2, Service 1), and view chips all/unassigned/mine; unassigned Service row shows italic handoff note 'Needs a loaner, I'm off tomorrow'; thread page shows inbox-thread-banner with 'Service inbox · Up for grabs' + Claim + note; clicking banner opens ownership-sheet with own-lives-in (with 'Texts go out from (500) 555-0210'), own-unassigned, own-share-btn, own-move-btn, and HISTORY section listing prior release/handoff events; /inboxes library shows 2 cards with formatted numbers, stats (Up for grabs / Mine / Open), member avatars, summary lines, and inboxes-new-btn header. No red errors from the new components; only pre-existing warnings (expo-av deprecation, ExpoSecureStore.getValueWithKeyAsync missing on web from biometric refresh -- non-blocking, login still succeeds).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/inboxes/conversations/{id}/ownership", "issue": "Response shape has inbox as nested object (inbox.id) and handoff_note as an object rather than string; not a bug per se but worth documenting so consumers don't assume flat inbox_id. Frontend does handle both."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "auth/login", "issues": ["Console error on every login: 'ExpoSecureStore.default.getValueWithKeyAsync is not a function' via refreshBiometricToken. Login still succeeds after ~1.5s redirect to /home, but the error is noisy and should be guarded on web (Platform.OS === 'web')."]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_shared_inboxes_api.py",
+    "/app/test_reports/pytest/shared_inboxes.xml"
+  ],
+  "action_items": [
+    "Guard biometric refresh (refreshBiometricToken) with Platform.OS !== 'web' or a try/catch that swallows the SecureStore error so the console is clean on web logins."
+  ],
+  "critical_code_review_comments": [
+    "Consider normalizing /api/inboxes/conversations/{id}/ownership response: expose flat inbox_id and a string handoff_note alongside the nested objects to reduce client-side branching.",
+    "seed_inbox_demo.py is idempotent but changes IDs on every run; document this in the seed output so downstream tests always re-query IDs rather than hard-code."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_shared_inboxes_api.py"
+  ],
+  "success_rate": {"backend": "100% (15/15)", "frontend": "100% smoke on all requested selectors (inbox tabs, badges, claim, team-inbox-toggle, shared-inbox-panel, chips, view chips, thread-row, banner, ownership-sheet sections, library cards, new-btn)"},
+  "test_credentials": "Manager qa-manager@invalid.imonsocial.test / Manager123! ; Rep activation-tester@invalid.imonsocial.test / NewPass123!",
+  "seed_data_creation": "Re-ran /app/backend/tests/seed_inbox_demo.py to reset Sales/Service demo inboxes and 3 demo conversations before each pass.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend regression file /app/backend/tests/test_shared_inboxes_api.py is safe to re-run after seed_inbox_demo.py; tests are order-tolerant (rebuild ID references per test). Web login sometimes takes 1.5-3s to redirect off /auth/login -- poll page.url before pushing history. /inbox is shadowed by static marketing page so use history.pushState + popstate after login. Ownership response has nested inbox object and dict-shaped handoff_note.",
+  "rca of the issue": "N/A - no bugs blocking. The only console error (biometric SecureStore on web) is a pre-existing web/native shim issue, not part of shared-inbox feature."
+}
