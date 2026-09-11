@@ -23,14 +23,16 @@ export default function TabLayout() {
   }, []);
 
   const [inboxUnreadCount, setInboxUnreadCount] = useState(0);
+  const [inboxUnreadIds, setInboxUnreadIds] = useState<string[]>([]);
 
   const fetchInboxUnreadCount = useCallback(async () => {
     if (!user?._id) return;
     try {
       const response = await api.get(`/messages/conversations/${user._id}`);
       if (Array.isArray(response.data)) {
-        const total = response.data.filter((c: any) => c.unread_count > 0).length;
-        setInboxUnreadCount(total);
+        const unread = response.data.filter((c: any) => c.unread_count > 0);
+        setInboxUnreadCount(unread.length);
+        setInboxUnreadIds(unread.map((c: any) => String(c._id || c.id)).filter(Boolean));
       }
     } catch { /* silent */ }
   }, [user?._id]);
@@ -142,8 +144,12 @@ export default function TabLayout() {
         }}
         listeners={{
           tabPress: (e) => {
-            if (isPending) e.preventDefault();
-            else setInboxUnreadCount(0);
+            if (isPending) { e.preventDefault(); return; }
+            // Badge shows real unread threads; with exactly one, tapping the tab lands you in it (back returns to Inbox)
+            if (inboxUnreadCount === 1 && inboxUnreadIds.length === 1) {
+              const id = inboxUnreadIds[0];
+              setTimeout(() => router.push(`/thread/${id}` as any), 60);
+            }
           },
         }}
       />

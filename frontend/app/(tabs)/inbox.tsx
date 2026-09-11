@@ -1767,6 +1767,15 @@ export default function InboxScreen() {
             <Text style={[styles.inboxToggleText, { color: colors.textSecondary }, showLeadsSegment && styles.inboxToggleTextTight, inboxView === 'team' && styles.inboxToggleTextActive]}>
               Team Inbox
             </Text>
+            {(() => {
+              const unread = sharedInboxes.reduce((n: number, i: any) => n + (i.counts?.unread || 0), 0);
+              return unread > 0 ? (
+                <View style={{ minWidth: 18, height: 18, borderRadius: 9, paddingHorizontal: 5, backgroundColor: '#FF453A', alignItems: 'center', justifyContent: 'center' }}
+                  testID="team-inbox-unread-badge" dataSet={{ testid: 'team-inbox-unread-badge' } as any}>
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: '#FFF' }}>{unread > 99 ? '99+' : unread}</Text>
+                </View>
+              ) : null;
+            })()}
           </Pressable>
         </View>
       </View>

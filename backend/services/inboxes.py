@@ -155,18 +155,19 @@ async def access_filter(db, user_id: str, base: Optional[dict] = None) -> dict:
 
 
 async def counts(db, inbox_ids: list, user_id: str) -> dict:
-    """{inbox_id: {unassigned, mine, open}} over live (not graduated) threads."""
-    out = {i: {"unassigned": 0, "mine": 0, "open": 0} for i in inbox_ids}
+    """{inbox_id: {unassigned, mine, open, unread}} over live (not graduated) threads."""
+    out = {i: {"unassigned": 0, "mine": 0, "open": 0, "unread": 0} for i in inbox_ids}
     if not inbox_ids:
         return out
     async for row in db.conversations.aggregate([
         {"$match": {"inbox_id": {"$in": inbox_ids}, "graduated_at": None, "status": {"$nin": ["closed", "archived"]}}},
         {"$group": {"_id": "$inbox_id", "open": {"$sum": 1},
                     "unassigned": {"$sum": {"$cond": [{"$in": [{"$ifNull": ["$assigned_to", None]}, [None, ""]]}, 1, 0]}},
-                    "mine": {"$sum": {"$cond": [{"$eq": ["$assigned_to", user_id]}, 1, 0]}}}},
+                    "mine": {"$sum": {"$cond": [{"$eq": ["$assigned_to", user_id]}, 1, 0]}},
+                    "unread": {"$sum": {"$cond": [{"$eq": ["$unread", True]}, 1, 0]}}}},
     ]):
         if row["_id"] in out:
-            out[row["_id"]] = {"open": row["open"], "unassigned": row["unassigned"], "mine": row["mine"]}
+            out[row["_id"]] = {"open": row["open"], "unassigned": row["unassigned"], "mine": row["mine"], "unread": row.get("unread", 0)}
     return out
 
 

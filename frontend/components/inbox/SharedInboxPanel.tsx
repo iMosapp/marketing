@@ -8,13 +8,18 @@ import { InboxBadge, ClaimButton } from './InboxBadge';
 type View_ = 'all' | 'unassigned' | 'mine';
 type Props = { inboxes: any[]; meId?: string; colors: any; showToast: (m: string, t?: any, ms?: number) => void; onClaimed?: () => void; refreshInboxes: () => void };
 
-const Chip = ({ label, count, active, color, onPress, testId, colors }: { label: string; count?: number; active: boolean; color?: string; onPress: () => void; testId: string; colors: any }) => {
+const Chip = ({ label, count, unread, active, color, onPress, testId, colors }: { label: string; count?: number; unread?: number; active: boolean; color?: string; onPress: () => void; testId: string; colors: any }) => {
   const c = color || GOLD;
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.75} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 11, paddingVertical: 7, borderRadius: 14, backgroundColor: active ? c + '22' : colors.surface, borderWidth: 1, borderColor: active ? c : 'transparent' }} {...tid(testId)}>
       {color ? <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: c }} /> : null}
       <Text style={{ fontSize: 13, fontWeight: active ? '800' : '600', color: active ? c : colors.textPrimary }}>{label}</Text>
       {typeof count === 'number' ? <Text style={{ fontSize: 12, fontWeight: '800', color: active ? c : colors.textSecondary }}>{count > 99 ? '99+' : count}</Text> : null}
+      {!!unread && (
+        <View style={{ minWidth: 16, height: 16, borderRadius: 8, paddingHorizontal: 4, backgroundColor: '#FF453A', alignItems: 'center', justifyContent: 'center' }} {...tid(`${testId}-unread`)}>
+          <Text style={{ fontSize: 10, fontWeight: '800', color: '#FFF' }}>{unread > 99 ? '99+' : unread}</Text>
+        </View>
+      )}
     </TouchableOpacity>
   );
 };
@@ -89,9 +94,9 @@ export function SharedInboxPanel({ inboxes, meId, colors, showToast, onClaimed, 
   return (
     <View style={{ flex: 1 }} {...tid('shared-inbox-panel')}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, flexShrink: 0 }} contentContainerStyle={{ paddingHorizontal: 12, paddingTop: 8, gap: 8 }}>
-        <Chip label="All inboxes" active={inboxId === 'all'} onPress={() => setInboxId('all')} testId="inbox-chip-all" colors={colors} />
+        <Chip label="All inboxes" unread={inboxes.reduce((n: number, i: any) => n + (i.counts?.unread || 0), 0)} active={inboxId === 'all'} onPress={() => setInboxId('all')} testId="inbox-chip-all" colors={colors} />
         {inboxes.map((i: any) => (
-          <Chip key={i.id} label={i.name} count={i.counts?.open} color={i.color || GOLD} active={inboxId === i.id} onPress={() => setInboxId(i.id)} testId={`inbox-chip-${i.id}`} colors={colors} />
+          <Chip key={i.id} label={i.name} count={i.counts?.open} unread={i.counts?.unread} color={i.color || GOLD} active={inboxId === i.id} onPress={() => setInboxId(i.id)} testId={`inbox-chip-${i.id}`} colors={colors} />
         ))}
       </ScrollView>
       <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingVertical: 8 }}>
