@@ -65,11 +65,17 @@ REPO_DOC_SOURCES = [
         "summary": "Tech stack, backend domains, API surfaces, data model, screen map, security model, and automation safety rails.",
         "category": "prd", "icon": "layers", "sort_order": 1,
     }),
+    ("/app/docs/TECH_STACK.md", {
+        "slug": "imos-tech-stack",
+        "title": "Tech Stack (What It's Written In)",
+        "summary": "The plain-English one-pager: languages, frameworks, database, Twilio/OpenAI/Resend/Stripe, hosting, and a cheat sheet for talking to developers.",
+        "category": "operations", "icon": "code-slash", "sort_order": 0,
+    }),
     ("/app/docs/OPERATIONS_MANUAL.md", {
         "slug": "imos-operations-manual",
         "title": "i'M On Social Platform - Complete Operations Manual",
         "summary": "Environments, release workflow, all scheduled automations, admin how-tos, and troubleshooting.",
-        "category": "operations", "icon": "book", "sort_order": 0,
+        "category": "operations", "icon": "book", "sort_order": 1,
     }),
     ("/app/memory/PRD.md", {
         "slug": "imos-prd-working-log",
@@ -99,6 +105,7 @@ async def sync_repo_docs() -> dict:
         if existing and existing.get("synced_hash") == h:
             existing_hash = hashlib.sha256((existing.get("content") or "").encode()).hexdigest()
             if existing_hash == h:
+                await db.company_docs.update_one({"slug": meta["slug"]}, {"$set": meta, "$unset": {"slides": ""}})
                 continue
         now = datetime.utcnow()
         await db.company_docs.update_one(
@@ -110,11 +117,13 @@ async def sync_repo_docs() -> dict:
                 "is_published": True,
                 "version": now.strftime("%Y.%m.%d"),
                 "updated_at": now,
-            }, "$setOnInsert": {"created_at": now}},
+            }, "$setOnInsert": {"created_at": now}, "$unset": {"slides": ""}},
             upsert=True,
         )
         synced += 1
         logger.info(f"[DocSync] Updated '{meta['title']}' from {path}")
+    # Repo-synced docs render their markdown; drop any legacy slide decks left over from the old in-app seed
+    await db.company_docs.update_many({"slug": {"$in": [m["slug"] for _, m in REPO_DOC_SOURCES]}, "slides": {"$exists": True}}, {"$unset": {"slides": ""}})
     return {"synced": synced}
 
 
@@ -514,7 +523,7 @@ async def seed_project_scope(x_user_id: str = Header(None, alias="X-User-ID")):
             {
                 "order": 1,
                 "title": "Executive Summary",
-                "description": "**I'm On Social** is an AI-powered Relationship Management System (RMS) built for automotive dealership sales teams.\n\n**What it does:** Gives every salesperson a personal CRM, digital business card, AI assistant, task queue, campaign automation, and full communication suite (SMS, email, calls) - all tracked in one place.\n\n**Why it exists:** Dealership salespeople lose customers because they don't follow up. I'm On Social makes follow-up automatic, trackable, and measurable. Every text, email, call, card share, review request, and campaign action is logged as a \"touchpoint\" - powering analytics, leaderboards, and manager oversight.\n\n**Core value proposition:**\n- Salespeople get tools that make them look professional and stay organized\n- Managers get visibility into team activity without micromanaging\n- Dealerships get data on which salespeople are actually working their leads\n- White-label partners can resell the platform with automated monthly billing\n\n**Tech stack:**\n- Frontend: React Native (Expo) - runs as web app and mobile app (iOS/Android)\n- Backend: FastAPI (Python)\n- Database: MongoDB Atlas\n- Email delivery: Resend\n- SMS: Twilio (currently in development mode, Personal SMS fallback active)\n- AI: OpenAI via Emergent Integrations (Jessi assistant)\n- Hosting: Emergent platform\n- File storage: Emergent object storage\n- PDF generation: fpdf2\n- Image generation: Pillow + qrcode\n- Background jobs: APScheduler (10 scheduled jobs)",
+                "description": "**I'm On Social** is an AI-powered Relationship Management System (RMS) built for automotive dealership sales teams.\n\n**What it does:** Gives every salesperson a personal CRM, digital business card, AI assistant, task queue, campaign automation, and full communication suite (SMS, email, calls) - all tracked in one place.\n\n**Why it exists:** Dealership salespeople lose customers because they don't follow up. I'm On Social makes follow-up automatic, trackable, and measurable. Every text, email, call, card share, review request, and campaign action is logged as a \"touchpoint\" - powering analytics, leaderboards, and manager oversight.\n\n**Core value proposition:**\n- Salespeople get tools that make them look professional and stay organized\n- Managers get visibility into team activity without micromanaging\n- Dealerships get data on which salespeople are actually working their leads\n- White-label partners can resell the platform with automated monthly billing\n\n**Tech stack:**\n- Frontend: React Native (Expo SDK 54) written in TypeScript - one codebase for the iOS app, Android app and web app; UI updates ship over the air with EAS Update\n- Backend: FastAPI (Python 3.11)\n- Database: MongoDB Atlas\n- Email delivery: Resend\n- SMS/Voice: Twilio (LIVE, A2P 10DLC registered; shared department numbers, call recording)\n- AI: OpenAI GPT-5.2 + Whisper via Emergent Integrations (Jessi assistant, summaries, call scorecards, transcription)\n- Payments: Stripe\n- Push: Expo Push (native) + Web Push/VAPID (PWA)\n- Hosting: Emergent platform\n- File storage: Emergent object storage\n- PDF generation: fpdf2\n- Image generation: Pillow + qrcode\n- Background jobs: APScheduler (see GET /api/health/deep for the live job count)\n\nSee the 'Tech Stack (What It's Written In)' doc for the plain-English one-pager.",
                 "tip": "This document is the single source of truth for how I'm On Social works. Forward it to anyone who needs to understand the system."
             },
             {

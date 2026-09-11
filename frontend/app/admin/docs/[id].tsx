@@ -15,6 +15,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuthStore } from '../../../store/authStore';
 import api from '../../../services/api';
+import { MarkdownRenderer } from '../../../components/docs/MarkdownRenderer';
 
 import { useThemeStore } from '../../../store/themeStore';
 
@@ -176,6 +177,55 @@ export default function DocViewerScreen() {
   const slide = doc.slides?.[currentSlide];
   const isLastSlide = currentSlide === (doc.slides?.length || 0) - 1;
   const accentColor = CATEGORY_COLORS[doc.category] || '#007AFF';
+  const isMarkdown = !doc.slides?.length && !!doc.content;
+
+  const actionsMenu = showActions && isSuperAdmin && (
+    <View style={{
+      position: 'absolute', top: 56, right: 16, zIndex: 100,
+      backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border || '#2A2A2A',
+      shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12,
+      overflow: 'hidden', minWidth: 200,
+    }}>
+      <TouchableOpacity onPress={handleDownloadPDF} disabled={pdfLoading}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14, paddingHorizontal: 16, borderBottomWidth: 0.5, borderBottomColor: colors.border || '#2A2A2A' }}
+        data-testid="doc-download-pdf-btn">
+        {pdfLoading ? <ActivityIndicator size="small" color="#007AFF" /> : <Ionicons name="download-outline" size={18} color="#007AFF" />}
+        <Text style={{ fontSize: 17, color: colors.text, fontWeight: '500' }}>Download PDF</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={handleEmailPDF} disabled={emailSending}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 14, paddingHorizontal: 16 }}
+        data-testid="doc-email-pdf-btn">
+        {emailSending ? <ActivityIndicator size="small" color="#34C759" /> : <Ionicons name="mail-outline" size={18} color="#34C759" />}
+        <Text style={{ fontSize: 17, color: colors.text, fontWeight: '500' }}>Send PDF via Email</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  if (isMarkdown) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton} data-testid="doc-back-btn">
+            <Ionicons name="chevron-back" size={28} color="#007AFF" />
+          </TouchableOpacity>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle} numberOfLines={1}>{doc.title}</Text>
+            <Text style={styles.headerSubtitle}>{doc.version ? `Updated ${doc.version}` : 'Company doc'}</Text>
+          </View>
+          {isSuperAdmin ? (
+            <TouchableOpacity onPress={() => setShowActions(!showActions)} style={{ padding: 4, width: 40, alignItems: 'flex-end' }} data-testid="doc-actions-btn">
+              <Ionicons name="ellipsis-vertical" size={22} color={colors.textSecondary} />
+            </TouchableOpacity>
+          ) : <View style={{ width: 40 }} />}
+        </View>
+        {actionsMenu}
+        <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false} testID="doc-markdown-body" dataSet={{ testid: 'doc-markdown-body' } as any}>
+          <MarkdownRenderer content={doc.content} colors={colors} />
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>

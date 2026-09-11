@@ -5,11 +5,12 @@
 ---
 
 ## 1. Tech Stack
-- **Frontend:** React Native (Expo SDK, expo-router file-based routing) — one codebase for iOS, Android, and Web/PWA. OTA updates via EAS Update (`production` branch/channel).
-- **Backend:** FastAPI (Python 3.11) on port 8001, all routes under `/api`. APScheduler for 21 background jobs.
+See **Tech Stack (What It's Written In)** in Company Docs for the plain-English one-pager. Engineering summary:
+- **Frontend:** React Native 0.81 / React 19 on Expo SDK 54, written in TypeScript (expo-router file-based routing, zustand, axios) — one codebase for iOS, Android, and Web/PWA. OTA updates via EAS Update (`production` branch/channel); native rebuilds via `eas build` only for new permissions/native packages.
+- **Backend:** FastAPI (Python 3.11, Pydantic v2) on port 8001, all routes under `/api`, JWT bearer auth + role-based access. APScheduler runs the background jobs (see `GET /api/health/deep` for the live count).
 - **Database:** MongoDB (Motor async driver). Separate preview & production databases.
 - **Storage:** Emergent Object Storage — all photos/audio/cards, served via `/api/images/{path}` proxy (content-type inference + HTTP Range/206 for audio).
-- **Integrations:** Twilio (SMS/MMS/Voice/recordings), OpenAI via Emergent LLM key (Jessi AI, Whisper transcription), Resend (email), Stripe (billing/partner invoices), Web Push (VAPID), imageio-ffmpeg (audio transcoding).
+- **Integrations:** Twilio (A2P 10DLC SMS/MMS, voice, recordings, shared department numbers), OpenAI via Emergent LLM key (GPT-5.2 for Jessi / summaries / call scorecards, Whisper for transcription), Resend (email), Stripe (subscriptions, partner invoices), Expo Push + Web Push (VAPID), Apple/Google Wallet passes, fpdf2 + Pillow + qrcode (PDF/image generation), imageio-ffmpeg (audio transcoding).
 
 ## 2. Repo Layout
 ```

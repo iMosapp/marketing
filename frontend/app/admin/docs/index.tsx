@@ -143,6 +143,7 @@ export default function DocsHubScreen() {
     loadData();
   };
 
+  const pinnedDoc = docs.find((d: any) => d.slug === 'imos-tech-stack');
   const groupedDocs = docs.reduce((acc: Record<string, any[]>, doc) => {
     const cat = doc.category || 'other';
     if (!acc[cat]) acc[cat] = [];
@@ -157,7 +158,7 @@ export default function DocsHubScreen() {
       <TouchableOpacity
         style={styles.docCard}
         onPress={() => {
-          if (item.category === 'prd' || item.slug === 'product-requirements-document') {
+          if (item.slug === 'product-requirements-document') {
             router.push('/admin/docs/prd');
           } else {
             router.push(`/admin/docs/${item._id}`);
@@ -206,11 +207,7 @@ export default function DocsHubScreen() {
         style={styles.categoryCard}
         data-testid={`category-header-${category}`}
         onPress={() => {
-          if (category === 'prd') {
-            router.push('/admin/docs/prd');
-          } else {
-            setSelectedCategory(category);
-          }
+          setSelectedCategory(category);
         }}
       >
         <View style={[styles.categoryCardIcon, { backgroundColor: color + '15' }]}>
@@ -355,13 +352,7 @@ export default function DocsHubScreen() {
                 styles.filterChip,
                 isActive && { backgroundColor: CATEGORY_COLORS[cat.id] || '#007AFF' },
               ]}
-              onPress={() => {
-                if (cat.id === 'prd') {
-                  router.push('/admin/docs/prd');
-                  return;
-                }
-                setSelectedCategory(isActive ? null : cat.id);
-              }}
+              onPress={() => setSelectedCategory(isActive ? null : cat.id)}
               data-testid={`docs-filter-${cat.id}`}
             >
               <Ionicons
@@ -418,6 +409,22 @@ export default function DocsHubScreen() {
       ) : (
         <FlatList
           data={Object.keys(groupedDocs)}
+          ListHeaderComponent={pinnedDoc && !search && !selectedCategory ? (
+            <TouchableOpacity
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#C9A962', borderRadius: 16, padding: 14, marginBottom: 14 }}
+              onPress={() => router.push(`/admin/docs/${pinnedDoc._id}`)}
+              testID="docs-pinned-tech-stack" dataSet={{ testid: 'docs-pinned-tech-stack' } as any}
+            >
+              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#11111122', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="code-slash" size={20} color="#111" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '800', color: '#111' }}>What is it written in?</Text>
+                <Text style={{ fontSize: 12, color: '#111', opacity: 0.75, marginTop: 2 }}>Tech stack one-pager: TypeScript + React Native (Expo), Python (FastAPI), MongoDB, Twilio, OpenAI</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#111" />
+            </TouchableOpacity>
+          ) : null}
           renderItem={({ item: category }) => (
             <View>
               {renderCategoryHeader(category)}
