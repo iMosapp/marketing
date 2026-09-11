@@ -31,3 +31,8 @@
 - Sales inbox (+15005550200, jump ball, members QA Manager + Activation Tester + Forest) and Service inbox (+15005550210, round robin, members QA Manager + Activation Tester), store 69a0b7095fddcede09591668.
 - Demo customers are Twilio test numbers +15005550031 / 32 / 33 ("Lead (0031)" etc). SMS/push are stubbed during seeding only; live actions in the UI hit real Twilio (harmless: 500-555 numbers are rejected).
 - Manager UI: log in as qa-manager; rep UI: activation-tester. Hub > Manage > Inboxes = /inboxes (library) and /inboxes/{id} (editor).
+
+## Call Scorecards demo data (preview only, `cd /app/backend && python tests/seed_scorecard_demo.py` re-seeds + AI-grades idempotently, `--wipe` removes, `--no-grade` skips the LLM)
+- Seeds 3 fake recorded calls (transcripts only, no audio) for Activation Tester: CA_scdemo_good_001 (Sarah Tester, ~100%), CA_scdemo_miss_002 (Mike Tester, low score, 2 critical misses), CA_scdemo_mid_003 (Dana Tester, mid). Also sets activation-tester.store_id to the QA store so the store's default scorecard applies.
+- Default scorecard "Internet Sales Call" exists on store 69a0b7095fddcede09591668 (created by qa-manager). Manager screens: Hub > Manage > Scorecards (/scorecards, /scorecards/{id}), My Performance > Team Call Scores (/scorecards/team), rep drilldown /scorecards/rep/{userId}. Rep screen: My Performance > My Call Scores (/scorecards/my).
+- Backend tests: `python -m pytest tests/test_scorecards_api.py` (24 cases, needs the seed).

@@ -2,12 +2,15 @@
  * CallsTab — call history list with AI summaries and synced transcript player.
  * Extracted from contact/[id].tsx (render-only; all state lives in the parent).
  */
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CallTranscript } from '../CallTranscript';
+import { ScorePill } from '../scorecards/ScoreRing';
+import { EvaluationSheet } from '../scorecards/EvaluationSheet';
 
 export default function CallsTab({ colors, callLogs, callLogsLoading, onRefresh }: any) {
+  const [openCall, setOpenCall] = useState<any | null>(null);
   return (
     <View style={{ padding: 16 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -45,6 +48,8 @@ export default function CallsTab({ colors, callLogs, callLogsLoading, onRefresh 
           const isInbound = (call.direction || '').includes('inbound');
           const hasData = !!(call.ai_summary || call.transcript);
           const isRecent = ts && (Date.now() - new Date(ts).getTime()) < 10 * 60 * 1000; // < 10 min
+          const ev = call.evaluation;
+          const scoringSoon = !ev && !!call.transcript && dur >= 30 && isRecent && call.outcome !== 'voicemail' && call.outcome !== 'no_answer';
 
           return (
             <View key={`call-${i}`} style={{ backgroundColor: colors.card, borderRadius: 14, padding: 14, marginBottom: 12 }}>
@@ -86,12 +91,20 @@ export default function CallsTab({ colors, callLogs, callLogsLoading, onRefresh 
                 </View>
               ) : null}
 
+              {/* Scorecard result */}
+              {(ev || scoringSoon) && (
+                <View style={{ marginBottom: 8 }}>
+                  <ScorePill pct={ev?.score_pct} misses={ev?.critical_misses?.length || 0} pending={scoringSoon} onPress={ev ? () => setOpenCall(call) : undefined} testID={`calls-tab-score-${call.call_sid || i}`} />
+                </View>
+              )}
+
               {/* Recording player + synced transcript (tap a line to jump) */}
               <CallTranscript call={call} colors={colors} isInbound={isInbound} />
             </View>
           );
         })
       )}
+      <EvaluationSheet visible={!!openCall} onClose={() => setOpenCall(null)} evaluationId={openCall?.evaluation?.id} callSid={openCall?.call_sid} hasRecording={!!openCall?.recording_url} onChanged={onRefresh} />
     </View>
   );
 }

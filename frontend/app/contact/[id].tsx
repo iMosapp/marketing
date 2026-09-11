@@ -2637,7 +2637,7 @@ function ContactDetailScreen() {
               <TouchableOpacity
                 style={[s.tabBtn, contactTab === 'details' && s.tabBtnActive]}
                 onPress={() => setContactTab('details')}
-                data-testid="tab-details"
+                testID="tab-details" dataSet={{ testid: 'tab-details' } as any}
               >
                 <Text style={[s.tabBtnText, contactTab === 'details' && s.tabBtnTextActive]}>Details</Text>
               </TouchableOpacity>
@@ -2656,14 +2656,14 @@ function ContactDetailScreen() {
                     setCallLogsLoading(false);
                   }
                 }}
-                data-testid="tab-calls"
+                testID="tab-calls" dataSet={{ testid: 'tab-calls' } as any}
               >
                 <Text style={[s.tabBtnText, contactTab === 'calls' && s.tabBtnTextActive]}>Calls</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[s.tabBtn, contactTab === 'feed' && s.tabBtnActive]}
                 onPress={() => setContactTab('feed')}
-                data-testid="tab-feed"
+                testID="tab-feed" dataSet={{ testid: 'tab-feed' } as any}
               >
                 <Text style={[s.tabBtnText, contactTab === 'feed' && s.tabBtnTextActive]}>Feed</Text>
               </TouchableOpacity>

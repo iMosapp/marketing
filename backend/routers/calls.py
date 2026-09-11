@@ -270,6 +270,14 @@ async def get_contact_calls(user_id: str, contact_id: str):
             if isinstance(item.get(k), datetime):
                 item[k] = item[k].isoformat()
 
+    # Scorecard evaluations for recorded calls
+    sids = [r.get("call_sid") for r in recorded if r.get("call_sid")]
+    if sids:
+        from services.scorecards import EVAL_COLL, serialize_eval
+        evs = {e["call_sid"]: serialize_eval(e) async for e in db[EVAL_COLL].find({"call_sid": {"$in": sids}})}
+        for r in recorded:
+            r["evaluation"] = evs.get(r.get("call_sid"))
+
     return {
         "calls":     call_logs,
         "recordings": recorded,
@@ -382,6 +390,11 @@ async def retry_transcription(call_sid: str, x_user_id: str = None):
                 log.get("user_id") or "", log.get("contact_id") or "",
                 log.get("contact_name") or "", transcript, call_sid
             ))
+        except Exception:
+            pass
+        try:
+            from services.scorecards import score_call_later
+            score_call_later(call_sid)
         except Exception:
             pass
         

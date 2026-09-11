@@ -1733,6 +1733,14 @@ async def handle_recording_complete(
 
         logger.info(f"[Voice] Call log + AI summary saved for {contact_name} (transcript={len(transcript)} chars, summary={len(ai_summary)} chars)")
 
+        # Scorecard grading (skips voicemails / short calls / no applicable card)
+        if transcript and user_id and CallSid:
+            try:
+                from services.scorecards import score_call_later
+                score_call_later(CallSid)
+            except Exception as sc_err:
+                logger.warning(f"[Scorecard] schedule failed: {sc_err}")
+
     _aio.create_task(_transcribe_and_save())
     return Response(content="OK", media_type="text/plain")
 

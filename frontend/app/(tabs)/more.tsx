@@ -396,6 +396,7 @@ export default function MoreScreen() {
       ...(canManageCampaigns ? [{ icon: 'megaphone' as any,  title: 'Campaigns',  subtitle: 'Build and manage automated campaigns', onPress: () => router.push('/campaigns' as any), color: '#FF2D55' }] : []),
       { icon: 'git-branch' as any, title: 'Workflows', subtitle: 'What happens when a contact is tagged Sold, Working, Met…', onPress: () => router.push('/workflows' as any), color: '#34C759' },
       ...(isAdmin || (!repPreview && ['manager', 'admin'].includes(user?.role || '')) ? [{ icon: 'chatbubbles' as any, title: 'Inboxes', subtitle: 'Shared department numbers: who works them, routing, Jessi', onPress: () => router.push('/inboxes' as any), color: '#C9A962' }] : []),
+      ...(isAdmin || (!repPreview && ['manager', 'admin'].includes(user?.role || '')) ? [{ icon: 'clipboard' as any, title: 'Scorecards', subtitle: 'What every recorded call gets graded on, per department', onPress: () => router.push('/scorecards' as any), color: '#C9A962' }] : []),
       { icon: 'star',       title: 'Review Center', subtitle: 'Approve, publish and track reviews', onPress: () => router.push('/settings/review-approvals'), color: '#FFD60A' },
       { icon: 'images',     title: 'Showcase',      subtitle: 'Approve showcase entries',          onPress: () => router.push('/settings/showcase-approvals'), color: '#34C759' },
     ];
@@ -442,6 +443,10 @@ export default function MoreScreen() {
   if (perm('insights')) {
     const items = filterItems('insights', [
       { permKey: 'my_performance', icon: 'stats-chart', title: 'My Stats', subtitle: 'Day / week / month performance', onPress: () => router.push('/touchpoints/performance' as any), color: '#34C759' },
+      { permKey: 'my_performance', icon: 'clipboard-outline', title: 'My Call Scores', subtitle: 'How your recorded calls grade out, with coaching', onPress: () => router.push('/scorecards/my' as any), color: '#C9A962' },
+      ...((!repPreview && ['super_admin', 'admin', 'manager', 'store_manager', 'org_admin'].includes(user?.role || '')) ? [
+        { permKey: 'my_performance', icon: 'podium-outline', title: 'Team Call Scores', subtitle: 'Leaderboard, who misses what, critical-miss alerts', onPress: () => router.push('/scorecards/team' as any), color: '#FF9500' },
+      ] : []),
       { permKey: 'my_performance', icon: 'trophy', title: 'Team Sales', subtitle: 'Monthly sold, referrals & repeats by rep', onPress: () => router.push('/reports/team-performance' as any), color: '#C9A962' },
       ...((!repPreview && ['super_admin', 'admin', 'manager', 'store_manager', 'org_admin'].includes(user?.role || '')) ? [
         { permKey: 'my_performance', icon: 'checkbox', title: 'Team Tasks', subtitle: 'Every open customer task per rep, overdue first', onPress: () => router.push('/team-tasks' as any), color: '#FF453A' },

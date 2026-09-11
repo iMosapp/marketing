@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { CallRecordingPlayer } from '../CallRecordingPlayer';
 import api from '../../services/api';
+import { ScorePill } from '../scorecards/ScoreRing';
+import { EvaluationSheet } from '../scorecards/EvaluationSheet';
 
 export const CallLogCard = ({ item, timestamp }: { item: any; timestamp: Date }) => {
+  const [showEval, setShowEval] = useState(false);
   const hasRecording = item.has_recording;
   const aiSummary    = item.ai_summary || '';
   const dur          = item.duration_s || 0;
@@ -13,6 +16,9 @@ export const CallLogCard = ({ item, timestamp }: { item: any; timestamp: Date })
   const isOutbound   = item.direction === 'outbound';
   const callStatus   = item.call_status || 'placed';
   const callColor    = '#30D158';
+  const scored       = item.score_pct != null || !!item.evaluation_id;
+  const recentMs     = Date.now() - timestamp.getTime();
+  const scoringSoon  = !scored && hasRecording && dur >= 30 && recentMs < 5 * 60 * 1000;
 
   return (
     <View style={{ marginVertical: 6, marginHorizontal: 16 }}>
@@ -48,6 +54,13 @@ export const CallLogCard = ({ item, timestamp }: { item: any; timestamp: Date })
           </View>
         )}
 
+        {/* Scorecard result */}
+        {(scored || scoringSoon) && (
+          <View style={{ marginTop: 10 }}>
+            <ScorePill pct={item.score_pct} pending={scoringSoon} onPress={scored ? () => setShowEval(true) : undefined} testID={`call-score-pill-${item.call_sid || item._id}`} />
+          </View>
+        )}
+
         {/* Inline recording player — 1x / 1.5x / 2x speeds */}
         {hasRecording && (item.call_sid || item.recording_url) && (
           <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#E5E5EA' }}>
@@ -60,6 +73,7 @@ export const CallLogCard = ({ item, timestamp }: { item: any; timestamp: Date })
           </View>
         )}
       </View>
+      {scored && <EvaluationSheet visible={showEval} onClose={() => setShowEval(false)} evaluationId={item.evaluation_id} callSid={item.call_sid} />}
     </View>
   );
 };
