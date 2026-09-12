@@ -2242,7 +2242,9 @@ function ContactDetailScreen() {
 
   const deleteVoiceNote = async (noteId: string) => {
     if (!user) return;
-    showConfirm('Delete Voice Note', 'Are you sure?', async () => {
+    const isConvo = voiceNotes.find((n: any) => n.id === noteId)?.kind === 'conversation';
+    showConfirm(isConvo ? 'Delete this recording?' : 'Delete Voice Note',
+      isConvo ? 'The audio, transcript and summary are removed from this customer. Follow-ups already on your task list stay.' : 'Are you sure?', async () => {
       try {
         await contactsAPI.deleteVoiceNote(user._id, id as string, noteId);
         if (playingNoteId === noteId && audioRef.current) {
@@ -2251,11 +2253,11 @@ function ContactDetailScreen() {
           setPlayingNoteId(null);
         }
         await loadVoiceNotes();
-        showToast('Voice note deleted');
+        showToast(isConvo ? 'Recording deleted' : 'Voice note deleted');
       } catch (e) {
         showSimpleAlert('Error', 'Failed to delete');
       }
-    });
+    }, undefined, 'Delete');
   };
 
   const formatRecordingTime = (seconds: number) => {
@@ -2880,6 +2882,7 @@ function ContactDetailScreen() {
               colors={colors}
               callLogs={callLogs}
               voiceNotes={voiceNotes}
+              onDeleteVoiceNote={deleteVoiceNote}
               callLogsLoading={callLogsLoading}
               onRefresh={async () => {
                 setCallLogsLoading(true);

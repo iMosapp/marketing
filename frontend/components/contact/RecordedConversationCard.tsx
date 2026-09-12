@@ -19,7 +19,7 @@ export const fmtDue = (iso?: string | null, hasTime?: boolean) => {
 const fmtDur = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${Math.round(s % 60)}s` : `${Math.round(s)}s`);
 
 // A recorded in-person conversation on the Calls tab: summary, the follow-ups it created, play button, transcript.
-export const RecordedConversationCard = ({ note, colors }: { note: any; colors: any }) => {
+export const RecordedConversationCard = ({ note, colors, onDelete }: { note: any; colors: any; onDelete?: (id: string) => void }) => {
   const [showTranscript, setShowTranscript] = useState(false);
   const [showPlayer, setShowPlayer] = useState(false);
   const url = resolvePhotoUrl(note.audio_url) || note.audio_url;
@@ -71,12 +71,20 @@ export const RecordedConversationCard = ({ note, colors }: { note: any; colors: 
         </View>
       )}
 
-      {!!note.transcript && (
-        <TouchableOpacity onPress={() => setShowTranscript(t => !t)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-start' }} {...tid(`recorded-convo-transcript-${note.id}`)}>
-          <Ionicons name={showTranscript ? 'chevron-up' : 'document-text-outline'} size={14} color={colors.accent || GOLD} />
-          <Text style={{ color: colors.accent || GOLD, fontSize: 13, fontWeight: '600' }}>{showTranscript ? 'Hide transcript' : 'Read transcript'}</Text>
-        </TouchableOpacity>
-      )}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        {note.transcript ? (
+          <TouchableOpacity onPress={() => setShowTranscript(t => !t)} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }} {...tid(`recorded-convo-transcript-${note.id}`)}>
+            <Ionicons name={showTranscript ? 'chevron-up' : 'document-text-outline'} size={14} color={colors.accent || GOLD} />
+            <Text style={{ color: colors.accent || GOLD, fontSize: 13, fontWeight: '600' }}>{showTranscript ? 'Hide transcript' : 'Read transcript'}</Text>
+          </TouchableOpacity>
+        ) : <View />}
+        {!!onDelete && (
+          <TouchableOpacity onPress={() => onDelete(note.id)} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }} {...tid(`recorded-convo-delete-${note.id}`)}>
+            <Ionicons name="trash-outline" size={14} color="#FF3B30" />
+            <Text style={{ color: '#FF3B30', fontSize: 13, fontWeight: '600' }}>Delete</Text>
+          </TouchableOpacity>
+        )}
+      </View>
       {showTranscript && (
         <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 19, marginTop: 8 }} selectable>{note.transcript}</Text>
       )}

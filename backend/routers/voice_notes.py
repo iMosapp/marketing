@@ -371,7 +371,7 @@ async def get_voice_notes(user_id: str, contact_id: str):
 
 @router.delete("/{user_id}/{contact_id}/{note_id}")
 async def delete_voice_note(user_id: str, contact_id: str, note_id: str):
-    """Delete a voice note."""
+    """Delete a voice note or recorded conversation (timeline entry goes too; tasks it created stay on the rep's list)."""
     db = get_db()
     try:
         result = await db.voice_notes.delete_one({"_id": ObjectId(note_id), "user_id": user_id})
@@ -381,6 +381,7 @@ async def delete_voice_note(user_id: str, contact_id: str, note_id: str):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Voice note not found")
 
+    await db.contact_events.delete_many({"contact_id": contact_id, "metadata.voice_note_id": note_id, "event_type": {"$in": ["voice_note", "conversation_recorded"]}})
     return {"message": "Voice note deleted"}
 
 
