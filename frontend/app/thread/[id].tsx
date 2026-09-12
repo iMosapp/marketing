@@ -2237,7 +2237,7 @@ function ThreadScreen() {
           testID="thread-search-btn" dataSet={{ testid: 'thread-search-btn' } as any}
         >
           <Ionicons name="search" size={15} color={threadSearchOpen ? '#000' : '#C9A962'} />
-          <Text style={[styles.headerActionLabel, { color: threadSearchOpen ? '#000' : colors.textPrimary }]}>Search</Text>
+          <Text style={[styles.headerActionLabel, { color: threadSearchOpen ? '#000' : colors.textPrimary }]} numberOfLines={1}>Search</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => {
@@ -2253,27 +2253,30 @@ function ThreadScreen() {
           testID="thread-call-btn" dataSet={{ testid: 'thread-call-btn' } as any}
         >
           <Ionicons name="call" size={15} color="#C9A962" />
-          <Text style={[styles.headerActionLabel, { color: colors.textPrimary }]}>Call</Text>
+          <Text style={[styles.headerActionLabel, { color: colors.textPrimary }]} numberOfLines={1}>Call</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={isThreadRecording ? stopThreadVoiceNote : startThreadVoiceNote}
-          style={[styles.headerActionPill, { backgroundColor: isThreadRecording ? '#FF3B30' : colors.surface }]}
-          testID="thread-mic-btn" dataSet={{ testid: 'thread-mic-btn' } as any}
-        >
-          <Ionicons name={isThreadRecording ? 'stop' : 'mic'} size={15} color={isThreadRecording ? '#fff' : '#C9A962'} />
-          <Text style={[styles.headerActionLabel, { color: isThreadRecording ? '#fff' : colors.textPrimary }]}>{isThreadRecording ? 'Stop' : 'Voice Memo'}</Text>
-        </TouchableOpacity>
-        {!!contactIdForNav && !!user?._id && (
-          <ConversationRecorder userId={user._id} contactId={String(contactIdForNav)} contactFirst={(contactName || 'the customer').split(' ')[0]} colors={colors} />
+        {!!contactIdForNav && !!user?._id ? (
+          <ConversationRecorder userId={user._id} contactId={String(contactIdForNav)} contactFirst={(contactName || 'the customer').split(' ')[0]} colors={colors}
+            memoRecording={isThreadRecording} onStartMemo={startThreadVoiceNote} onStopMemo={stopThreadVoiceNote}
+            pillStyle={styles.headerActionPill} labelStyle={styles.headerActionLabel} />
+        ) : (
+          <TouchableOpacity
+            onPress={isThreadRecording ? stopThreadVoiceNote : startThreadVoiceNote}
+            style={[styles.headerActionPill, { backgroundColor: isThreadRecording ? '#FF3B30' : colors.surface }]}
+            testID="thread-mic-btn" dataSet={{ testid: 'thread-mic-btn' } as any}
+          >
+            <Ionicons name={isThreadRecording ? 'stop' : 'mic'} size={15} color={isThreadRecording ? '#fff' : '#C9A962'} />
+            <Text style={[styles.headerActionLabel, { color: isThreadRecording ? '#fff' : colors.textPrimary }]} numberOfLines={1}>{isThreadRecording ? 'Stop' : 'Record'}</Text>
+          </TouchableOpacity>
         )}
         {!!contactIdForNav && (
           <TouchableOpacity
             onPress={() => setShowAsk(true)}
-            style={[styles.headerActionPill, { flex: 0, paddingHorizontal: 12, backgroundColor: '#C9A96222', borderWidth: 1, borderColor: '#C9A96266' }]}
+            style={[styles.headerActionPill, { backgroundColor: '#C9A96222', borderWidth: 1, borderColor: '#C9A96266' }]}
             testID="thread-ask-jessi-btn" dataSet={{ testid: 'thread-ask-jessi-btn' } as any}
           >
             <Ionicons name="sparkles" size={15} color="#C9A962" />
-            <Text style={[styles.headerActionLabel, { color: '#C9A962' }]}>Ask</Text>
+            <Text style={[styles.headerActionLabel, { color: '#C9A962' }]} numberOfLines={1}>Ask</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -3955,8 +3958,10 @@ const getStyles = (colors: any) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    height: 34,
-    borderRadius: 17,
+    height: 36,
+    borderRadius: 18,
+    paddingHorizontal: 8,
+    minWidth: 0,
   },
   headerActionLabel: {
     fontSize: 13,

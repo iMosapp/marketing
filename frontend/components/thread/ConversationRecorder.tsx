@@ -18,10 +18,13 @@ const convoOptions = (Audio: any) => ({
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
-type Props = { userId: string; contactId: string; contactFirst: string; colors: any; onSaved?: (note: any) => void; onRecordingChange?: (on: boolean) => void };
+type Props = {
+  userId: string; contactId: string; contactFirst: string; colors: any; onSaved?: (note: any) => void; onRecordingChange?: (on: boolean) => void;
+  memoRecording?: boolean; onStartMemo?: () => void; onStopMemo?: () => void; pillStyle?: any; labelStyle?: any;
+};
 
-// "Record this conversation": a walk-around or desk talk becomes a transcribed, summarized touchpoint Jessi can cite.
-export const ConversationRecorder = ({ userId, contactId, contactFirst, colors, onSaved, onRecordingChange }: Props) => {
+// One "Record" pill for both a quick voice memo (3 min, just you) and a full in-person conversation (45 min, transcribed + summarized, Jessi can cite it).
+export const ConversationRecorder = ({ userId, contactId, contactFirst, colors, onSaved, onRecordingChange, memoRecording, onStartMemo, onStopMemo, pillStyle, labelStyle }: Props) => {
   const [chooser, setChooser] = useState(false);
   const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
@@ -100,13 +103,16 @@ export const ConversationRecorder = ({ userId, contactId, contactFirst, colors, 
     }
   };
 
+  const live = recording || !!memoRecording;
+  const onPillPress = () => { if (recording) stop(); else if (memoRecording) onStopMemo?.(); else setChooser(true); };
+  const textColor = colors.textPrimary || colors.text;
   return (
     <>
-      <TouchableOpacity onPress={() => (recording ? stop() : setChooser(true))} activeOpacity={0.8}
-        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: 34, borderRadius: 17, backgroundColor: recording ? RED : colors.card, borderWidth: recording ? 0 : 1, borderColor: colors.border }}
+      <TouchableOpacity onPress={onPillPress} activeOpacity={0.8}
+        style={[pillStyle, { backgroundColor: live ? RED : colors.surface || colors.card }]}
         {...tid('record-conversation-btn')}>
-        <Ionicons name={recording ? 'stop-circle' : 'people'} size={15} color={recording ? '#fff' : colors.textPrimary || colors.text} />
-        <Text style={{ fontSize: 12, fontWeight: '700', color: recording ? '#fff' : colors.textPrimary || colors.text }}>{recording ? `Stop ${fmt(seconds)}` : 'Record'}</Text>
+        <Ionicons name={live ? 'stop' : 'mic'} size={15} color={live ? '#fff' : GOLD} />
+        <Text style={[labelStyle, { color: live ? '#fff' : textColor }]} numberOfLines={1}>{recording ? `Stop ${fmt(seconds)}` : memoRecording ? 'Stop' : 'Record'}</Text>
       </TouchableOpacity>
 
       {recording && (
@@ -126,16 +132,30 @@ export const ConversationRecorder = ({ userId, contactId, contactFirst, colors, 
       )}
 
       <Modal visible={chooser} transparent animationType="fade" onRequestClose={() => setChooser(false)}>
-        <TouchableOpacity style={{ flex: 1, backgroundColor: '#00000088', justifyContent: 'center', padding: 24 }} activeOpacity={1} onPress={() => setChooser(false)}>
-          <View style={{ backgroundColor: colors.background || colors.bg, borderRadius: 20, padding: 18, gap: 12 }} {...tid('record-chooser')}>
-            <Text style={{ fontSize: 17, fontWeight: '800', color: colors.textPrimary || colors.text }}>Record this conversation</Text>
-            <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>
-              Walk-arounds, desk talks, phone on speaker. Up to 45 minutes. Jessi transcribes it, writes a summary with commitments, pulls personal details into {contactFirst}'s profile, and can cite it later.
-            </Text>
-            <Text style={{ fontSize: 12, color: colors.textSecondary, fontStyle: 'italic' }}>Tell the customer you're recording. Keep the screen on until you tap Stop.</Text>
-            <TouchableOpacity onPress={start} style={{ height: 50, borderRadius: 14, backgroundColor: RED, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }} {...tid('record-start-btn')}>
-              <Ionicons name="radio-button-on" size={18} color="#fff" /><Text style={{ color: '#fff', fontWeight: '800', fontSize: 15 }}>Start recording</Text>
+        <TouchableOpacity style={{ flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' }} activeOpacity={1} onPress={() => setChooser(false)}>
+          <View style={{ backgroundColor: colors.background || colors.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 18, paddingBottom: Platform.OS === 'ios' ? 34 : 18, gap: 10 }} {...tid('record-chooser')}>
+            <Text style={{ fontSize: 17, fontWeight: '800', color: textColor }}>What are you recording?</Text>
+            {!!onStartMemo && (
+              <TouchableOpacity onPress={() => { setChooser(false); onStartMemo(); }} activeOpacity={0.85}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 16, backgroundColor: colors.surface || colors.card, borderWidth: 1, borderColor: colors.border }} {...tid('record-memo-btn')}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: GOLD + '22', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="mic" size={20} color={GOLD} /></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '800', color: textColor }}>Voice memo <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>· up to 3 min</Text></Text>
+                  <Text style={{ fontSize: 12.5, color: colors.textSecondary, lineHeight: 17, marginTop: 2 }}>A quick note to yourself about {contactFirst}. Transcribed into the profile.</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity onPress={start} activeOpacity={0.85}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 16, backgroundColor: RED + '14', borderWidth: 1, borderColor: RED + '66' }} {...tid('record-start-btn')}>
+              <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: RED, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="people" size={20} color="#fff" /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '800', color: textColor }}>Record conversation <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>· up to 45 min</Text></Text>
+                <Text style={{ fontSize: 12.5, color: colors.textSecondary, lineHeight: 17, marginTop: 2 }}>Walk-around, desk talk or speaker call with {contactFirst}. Jessi transcribes it, writes a summary with commitments and can cite it later.</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
             </TouchableOpacity>
+            <Text style={{ fontSize: 12, color: colors.textSecondary, fontStyle: 'italic', textAlign: 'center' }}>Tell the customer you're recording. Keep the screen on until you tap Stop.</Text>
             <TouchableOpacity onPress={() => setChooser(false)} style={{ alignItems: 'center', padding: 8 }} {...tid('record-cancel-btn')}><Text style={{ color: colors.textSecondary, fontWeight: '700' }}>Cancel</Text></TouchableOpacity>
           </View>
         </TouchableOpacity>
