@@ -21,7 +21,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/voice-notes", tags=["voice-notes"])
 
-MAX_DURATION_SECONDS = 180  # 3 minute cap
+MAX_DURATION_SECONDS = 180  # 3 minute cap for a memo
+MAX_CONVERSATION_SECONDS = 45 * 60  # recorded walk-around / desk conversation
 
 
 def _convert_webm_to_m4a(webm_bytes: bytes) -> bytes:
@@ -165,7 +166,7 @@ class VoiceNoteOut(BaseModel):
     created_at: str
 
 
-async def _transcribe_audio(audio_bytes: bytes, filename: str) -> str:
+async def _transcribe_audio(audio_bytes: bytes, filename: str, kind: str = "memo") -> str:
     """Transcribe audio using OpenAI Whisper via Emergent integrations."""
     try:
         from emergentintegrations.llm.openai import OpenAISpeechToText
@@ -186,7 +187,9 @@ async def _transcribe_audio(audio_bytes: bytes, filename: str) -> str:
             model="whisper-1",
             language="en",
             response_format="json",
-            prompt="Sales conversation notes about a customer. May include names, car models, family details, dates.",
+            prompt=("A recorded in-person conversation at a car dealership between a salesperson and a customer. Names, vehicle models, trade-in, payments, appointment times."
+                    if kind == "conversation" else
+                    "Sales conversation notes about a customer. May include names, car models, family details, dates."),
         )
         return response.text.strip() if response and response.text else ""
     except Exception as e:
@@ -194,37 +197,41 @@ async def _transcribe_audio(audio_bytes: bytes, filename: str) -> str:
         return ""
 
 
-@router.post("/{user_id}/{contact_id}")
-async def create_voice_note(
-    user_id: str,
-    contact_id: str,
-    audio: UploadFile = File(...),
-    duration: float = Form(0),
-):
-    """Upload a voice note for a contact. Stores audio, transcribes, logs event."""
-    db = get_db()
+async def _summarize_conversation(transcript: str, contact_name: str) -> str:
+    """3 or 4 plain sentences + commitments, for a recorded in-person conversation."""
+    api_key = os.environ.get("EMERGENT_LLM_KEY")
+    if not api_key or len(transcript) < 40:
+        return ""
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        from utils.text_sanitize import no_em_dash
+        chat = LlmChat(api_key=api_key, session_id=f"convo-sum-{uuid.uuid4().hex[:8]}",
+                       system_message=("You summarize recorded in-person dealership conversations for the salesperson's records. Write 3 or 4 plain sentences: "
+                                       "what the customer wants, objections or concerns, what was agreed, and any promises or next steps with dates. "
+                                       "Then one line starting with 'Follow up:' listing concrete commitments. Never use em dashes or en dashes.")).with_model("openai", "gpt-5.2")
+        resp = await asyncio.wait_for(chat.send_message(UserMessage(text=f"Customer: {contact_name}\n\nTRANSCRIPT:\n{transcript[:20000]}")), timeout=60)
+        text = resp if isinstance(resp, str) else getattr(resp, "text", "") or ""
+        return no_em_dash(text.strip())[:1500]
+    except Exception as e:
+        logger.warning(f"Conversation summary failed: {e}")
+        return ""
 
-    if duration > MAX_DURATION_SECONDS:
-        raise HTTPException(status_code=400, detail=f"Recording exceeds {MAX_DURATION_SECONDS}s limit")
 
-    # Read audio bytes
-    audio_bytes = await audio.read()
-    if len(audio_bytes) == 0:
-        raise HTTPException(status_code=400, detail="Empty audio file")
+def _ext_for(content_type: str) -> str:
+    ct = (content_type or "audio/webm").lower()
+    if "mp4" in ct or "m4a" in ct:
+        return "m4a"
+    if "wav" in ct:
+        return "wav"
+    if "mp3" in ct or "mpeg" in ct:
+        return "mp3"
+    return "webm"
 
-    # Determine content type and extension
-    content_type = audio.content_type or "audio/webm"
-    ext = "webm"
-    if "mp4" in content_type or "m4a" in content_type:
-        ext = "m4a"
-    elif "wav" in content_type:
-        ext = "wav"
-    elif "mp3" in content_type or "mpeg" in content_type:
-        ext = "mp3"
 
+async def _process_voice_note(db, user_id: str, contact_id: str, audio_bytes: bytes, content_type: str, duration: float, kind: str) -> dict:
+    """Store, transcribe, summarize (conversations), log the touchpoint, extract personal details."""
+    ext = _ext_for(content_type)
     filename = f"voice_note_{uuid.uuid4().hex[:8]}.{ext}"
-
-    # Web recordings arrive as webm — iPhones can't play webm, transcode to m4a (AAC)
     if ext == "webm":
         try:
             audio_bytes = await asyncio.to_thread(_convert_webm_to_m4a, audio_bytes)
@@ -233,7 +240,6 @@ async def create_voice_note(
         except Exception as e:
             logger.warning(f"webm→m4a conversion failed, storing original webm: {e}")
 
-    # 1. Upload to object storage
     storage_path = f"voice-notes/{contact_id}/{filename}"
     try:
         result = put_object(storage_path, audio_bytes, content_type)
@@ -243,50 +249,35 @@ async def create_voice_note(
         logger.error(f"Voice note upload failed: {e}")
         raise HTTPException(status_code=500, detail="Failed to store audio")
 
-    # 2. Transcribe with Whisper (async, non-blocking for the response)
-    transcript = await _transcribe_audio(audio_bytes, filename)
+    transcript = await _transcribe_audio(audio_bytes, filename, kind)
+    contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"name": 1, "first_name": 1}) if ObjectId.is_valid(contact_id) else None
+    contact_name = (contact or {}).get("name") or (contact or {}).get("first_name") or "the customer"
+    summary = await _summarize_conversation(transcript, contact_name) if kind == "conversation" else ""
 
-    # 3. Save to database
     now = datetime.now(timezone.utc)
     note_doc = {
-        "contact_id": contact_id,
-        "user_id": user_id,
-        "audio_url": audio_url,
-        "audio_path": stored_path,
-        "transcript": transcript,
-        "duration": round(duration, 1),
-        "created_at": now,
+        "contact_id": contact_id, "user_id": user_id, "audio_url": audio_url, "audio_path": stored_path,
+        "transcript": transcript, "summary": summary, "kind": kind, "duration": round(duration, 1), "created_at": now,
     }
     result = await db.voice_notes.insert_one(note_doc)
     note_id = str(result.inserted_id)
 
-    # 4. Log as contact_event for the activity feed
     try:
-        # Get user info for the event
         user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"_id": 0, "org_id": 1, "name": 1})
-        org_id = user_doc.get("org_id", "") if user_doc else ""
-
-        event_doc = {
-            "event_type": "voice_note",
-            "title": "Voice Note Recorded",
-            "description": transcript[:200] if transcript else "Audio memo recorded",
-            "contact_id": contact_id,
-            "user_id": user_id,
-            "org_id": org_id,
-            "channel": "voice_note",
-            "category": "voice_note",  # For frontend icon lookup
-            "icon": "mic",
-            "color": "#34C759",
-            "content": transcript or "",
-            "metadata": {"voice_note_id": note_id, "duration": round(duration, 1)},
-            "timestamp": now,
-            "created_at": now,
-        }
-        await db.contact_events.insert_one(event_doc)
+        is_convo = kind == "conversation"
+        await db.contact_events.insert_one({
+            "event_type": "conversation_recorded" if is_convo else "voice_note",
+            "title": "In-person conversation recorded" if is_convo else "Voice Note Recorded",
+            "description": (summary or transcript)[:200] if (summary or transcript) else ("Conversation recorded" if is_convo else "Audio memo recorded"),
+            "contact_id": contact_id, "user_id": user_id, "org_id": (user_doc or {}).get("org_id", ""),
+            "channel": "voice_note", "category": "voice_note", "icon": "people" if is_convo else "mic", "color": "#C9A962" if is_convo else "#34C759",
+            "content": summary or transcript or "",
+            "metadata": {"voice_note_id": note_id, "duration": round(duration, 1), "kind": kind},
+            "timestamp": now, "created_at": now,
+        })
     except Exception as e:
         logger.error(f"Failed to log voice note event: {e}")
 
-    # 5. Auto-extract personal details from transcript using AI (fire-and-forget)
     if transcript and len(transcript.strip()) >= 10:
         try:
             from services.voice_intel import process_voice_note_intelligence
@@ -294,13 +285,73 @@ async def create_voice_note(
         except Exception as e:
             logger.warning(f"Voice intelligence extraction trigger failed: {e}")
 
-    return {
-        "id": note_id,
-        "audio_url": audio_url,
-        "transcript": transcript,
-        "duration": round(duration, 1),
-        "created_at": now.isoformat(),
-    }
+    return {"id": note_id, "audio_url": audio_url, "transcript": transcript, "summary": summary, "kind": kind,
+            "duration": round(duration, 1), "created_at": now.isoformat()}
+
+
+def _check_duration(duration: float, kind: str):
+    cap = MAX_CONVERSATION_SECONDS if kind == "conversation" else MAX_DURATION_SECONDS
+    if duration > cap:
+        raise HTTPException(status_code=400, detail=f"Recording exceeds the {cap // 60} minute limit")
+
+
+@router.post("/{user_id}/{contact_id}")
+async def create_voice_note(
+    user_id: str,
+    contact_id: str,
+    audio: UploadFile = File(...),
+    duration: float = Form(0),
+    kind: str = Form("memo"),
+):
+    """Upload a voice memo (or a recorded in-person conversation) for a contact. Stores audio, transcribes, logs event."""
+    db = get_db()
+    kind = "conversation" if kind == "conversation" else "memo"
+    _check_duration(duration, kind)
+    audio_bytes = await audio.read()
+    if len(audio_bytes) == 0:
+        raise HTTPException(status_code=400, detail="Empty audio file")
+    return await _process_voice_note(db, user_id, contact_id, audio_bytes, audio.content_type or "audio/webm", duration, kind)
+
+
+class AudioChunk(BaseModel):
+    upload_id: str
+    index: int
+    total: int
+    data: str
+    content_type: str = "audio/mp4"
+    duration: float = 0
+    kind: str = "conversation"
+
+
+@router.post("/{user_id}/{contact_id}/chunk")
+async def upload_voice_chunk(user_id: str, contact_id: str, chunk: AudioChunk):
+    """Long recordings arrive as base64 pieces (<= ~600KB each) so proxies never see one huge request; assembled on the last piece."""
+    import re as _re
+    db = get_db()
+    if chunk.total < 1 or chunk.total > 200 or not (0 <= chunk.index < chunk.total) or len(chunk.data) > 900_000:
+        raise HTTPException(status_code=400, detail="Bad chunk")
+    upload_id = _re.sub(r"[^A-Za-z0-9_-]", "", chunk.upload_id)[:64]
+    if not upload_id:
+        raise HTTPException(status_code=400, detail="Bad upload id")
+    kind = "conversation" if chunk.kind == "conversation" else "memo"
+    _check_duration(chunk.duration, kind)
+    await db.voice_upload_chunks.update_one(
+        {"user_id": user_id, "upload_id": upload_id, "index": chunk.index},
+        {"$set": {"data": chunk.data, "created_at": datetime.utcnow()}}, upsert=True)
+    have = await db.voice_upload_chunks.count_documents({"user_id": user_id, "upload_id": upload_id})
+    if have < chunk.total:
+        return {"success": True, "received": have, "total": chunk.total}
+    parts = await db.voice_upload_chunks.find({"user_id": user_id, "upload_id": upload_id}).sort("index", 1).to_list(chunk.total)
+    await db.voice_upload_chunks.delete_many({"user_id": user_id, "upload_id": upload_id})
+    try:
+        audio_bytes = base64.b64decode("".join(p["data"] for p in parts))
+    except Exception:
+        raise HTTPException(status_code=400, detail="That recording came through damaged. Please try again.")
+    if not audio_bytes:
+        raise HTTPException(status_code=400, detail="Empty audio file")
+    out = await _process_voice_note(db, user_id, contact_id, audio_bytes, chunk.content_type, chunk.duration, kind)
+    out.update({"success": True, "received": chunk.total, "total": chunk.total})
+    return out
 
 
 @router.get("/{user_id}/{contact_id}")
@@ -309,7 +360,7 @@ async def get_voice_notes(user_id: str, contact_id: str):
     db = get_db()
     notes = await db.voice_notes.find(
         {"contact_id": contact_id, "user_id": user_id},
-        {"_id": 1, "audio_url": 1, "transcript": 1, "duration": 1, "created_at": 1, "contact_id": 1, "user_id": 1},
+        {"_id": 1, "audio_url": 1, "transcript": 1, "summary": 1, "kind": 1, "duration": 1, "created_at": 1, "contact_id": 1, "user_id": 1},
     ).sort("created_at", -1).to_list(100)
 
     return [
@@ -319,6 +370,8 @@ async def get_voice_notes(user_id: str, contact_id: str):
             "user_id": n["user_id"],
             "audio_url": n["audio_url"],
             "transcript": n.get("transcript", ""),
+            "summary": n.get("summary", ""),
+            "kind": n.get("kind", "memo"),
             "duration": n.get("duration", 0),
             "created_at": n["created_at"].isoformat() if n.get("created_at") else "",
         }

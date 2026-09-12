@@ -526,10 +526,12 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
                     email_html = build_branded_email(message_data.content, brand, contact_name)
                     store_name = brand.get('store_name', "I'm On Social")
                     
+                    from routers.resend_webhooks import reply_to_address
+                    thread_reply_to = reply_to_address(conversation_id)  # replies come back into this thread when inbound email is set up
                     email_result = await asyncio.to_thread(resend_mod.Emails.send, {
                         "from": f"{sender_name} at {store_name} <{SENDER}>",
                         "to": [contact_email],
-                        "reply_to": user_doc.get('email', SENDER) if user_doc else SENDER,
+                        "reply_to": thread_reply_to or (user_doc.get('email', SENDER) if user_doc else SENDER),
                         "subject": f"Message from {sender_name} at {store_name}",
                         "html": email_html,
                     })
@@ -1844,6 +1846,7 @@ async def get_thread_messages(conversation_id: str):
         "ai_generated": m.get("ai_generated", False),
         "intent_detected": m.get("intent_detected"),
         "channel": m.get("channel"),
+        "subject": m.get("subject"),
         "event_type": m.get("event_type", ""),
         "card_type": m.get("card_type", ""),
         "has_media": m.get("has_media", False),

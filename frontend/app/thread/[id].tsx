@@ -30,6 +30,7 @@ import { resolvePhotoUrl } from '../../utils/photoUrl';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AISuggestion from '../../components/AISuggestion';
 import { AskJessiSheet } from '../../components/ask/AskJessiSheet';
+import { ConversationRecorder } from '../../components/thread/ConversationRecorder';
 import ChannelPicker, { useChannelPicker } from '../../components/ChannelPicker';
 import { CallLogCard } from '../../components/thread/CallLogCard';
 import { MessageBubble } from '../../components/thread/MessageBubble';
@@ -2262,6 +2263,9 @@ function ThreadScreen() {
           <Ionicons name={isThreadRecording ? 'stop' : 'mic'} size={15} color={isThreadRecording ? '#fff' : '#C9A962'} />
           <Text style={[styles.headerActionLabel, { color: isThreadRecording ? '#fff' : colors.textPrimary }]}>{isThreadRecording ? 'Stop' : 'Voice Memo'}</Text>
         </TouchableOpacity>
+        {!!contactIdForNav && !!user?._id && (
+          <ConversationRecorder userId={user._id} contactId={String(contactIdForNav)} contactFirst={(contactName || 'the customer').split(' ')[0]} colors={colors} />
+        )}
         {!!contactIdForNav && (
           <TouchableOpacity
             onPress={() => setShowAsk(true)}

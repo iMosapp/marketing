@@ -237,6 +237,13 @@ export const MessageBubble = ({
             </View>
           )}
 
+          {item.channel === 'email' && !isUser && (
+            <View style={styles.personalSmsBadge} testID="message-email-reply-badge" dataSet={{ testid: 'message-email-reply-badge' } as any}>
+              <Ionicons name="mail-open-outline" size={10} color="#AF52DE" />
+              <Text style={[styles.personalSmsText, { color: '#AF52DE', flexShrink: 1 }]} numberOfLines={1}>Replied via email{(item as any).subject ? ` · ${(item as any).subject}` : ''}</Text>
+            </View>
+          )}
+
           {isUser && (item as any).status === 'delivered' && (
             <View style={styles.personalSmsBadge} data-testid="message-delivered-badge">
               <Ionicons name="checkmark-done" size={12} color="#34C759" />

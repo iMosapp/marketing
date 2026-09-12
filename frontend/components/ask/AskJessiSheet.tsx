@@ -27,6 +27,8 @@ export const AskJessiSheet = ({ visible, onClose, contactId }: { visible: boolea
   const [loading, setLoading] = useState(false);
   const [player, setPlayer] = useState<{ url: string; label: string; seek?: number | null } | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [drafting, setDrafting] = useState<string | null>(null);
+  const [draftPreview, setDraftPreview] = useState<{ text: string; conversation_id: string | null } | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const seekRef = useRef<((ms: number) => void) | null>(null);
 
@@ -60,6 +62,24 @@ export const AskJessiSheet = ({ visible, onClose, contactId }: { visible: boolea
       setQ(text);
       showToast(e?.response?.data?.detail || 'Jessi could not answer, try again', 'error');
     } finally { setBusy(false); }
+  };
+
+  const draft = async (m: Msg) => {
+    setDrafting(m.id);
+    try {
+      const prev = [...msgs].reverse().find(x => x.role === 'user' && x.created_at <= m.created_at);
+      const res = await api.post(`/contact-ask/${contactId}/draft`, { answer: m.content, question: prev?.content || '' });
+      setDraftPreview(res.data);
+    } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not write a text', 'error'); }
+    finally { setDrafting(null); }
+  };
+  const sendDraft = () => {
+    if (!draftPreview) return;
+    const { text, conversation_id } = draftPreview;
+    setDraftPreview(null);
+    if (!conversation_id) { showToast('No text thread with this customer yet. Start one from the contact and paste the draft.', 'info'); return; }
+    onClose();
+    router.push(`/thread/${conversation_id}?prefill=${encodeURIComponent(text)}` as any);
   };
 
   const openSession = async (id: string) => {
@@ -97,7 +117,7 @@ export const AskJessiSheet = ({ visible, onClose, contactId }: { visible: boolea
               <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: GOLD + '22', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="sparkles" size={18} color={GOLD} /></View>
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 17, fontWeight: '800', color: colors.text }} numberOfLines={1} {...tid('ask-title')}>Ask Jessi about {first}</Text>
-                {st && <Text style={{ fontSize: 12, color: colors.textSecondary }} {...tid('ask-stats')}>{st.texts} texts · {st.calls} call{st.calls === 1 ? '' : 's'} · {st.voice_notes} voice note{st.voice_notes === 1 ? '' : 's'}{st.events ? ` · ${st.events} events` : ''}</Text>}
+                {st && <Text style={{ fontSize: 12, color: colors.textSecondary }} {...tid('ask-stats')}>{st.texts} texts · {st.calls} call{st.calls === 1 ? '' : 's'} · {st.voice_notes} voice note{st.voice_notes === 1 ? '' : 's'}{st.conversations ? ` · ${st.conversations} recorded` : ''}{st.events ? ` · ${st.events} events` : ''}</Text>}
               </View>
               {(ov?.sessions?.length || 0) > 0 && (
                 <TouchableOpacity onPress={() => setShowHistory(h => !h)} hitSlop={8} style={{ padding: 6 }} {...tid('ask-history')}><Ionicons name="time-outline" size={22} color={colors.textSecondary} /></TouchableOpacity>
@@ -146,6 +166,12 @@ export const AskJessiSheet = ({ visible, onClose, contactId }: { visible: boolea
                   <View style={{ backgroundColor: colors.card, borderRadius: 18, borderBottomLeftRadius: 6, paddingHorizontal: 14, paddingVertical: 12, borderWidth: 1, borderColor: colors.border }}>
                     <AnswerText content={m.content} citations={m.citations || []} colors={colors} onCite={onCite} />
                   </View>
+                  <TouchableOpacity onPress={() => draft(m)} disabled={drafting === m.id} activeOpacity={0.8}
+                    style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 14, backgroundColor: GOLD }}
+                    {...tid('ask-draft-text')}>
+                    {drafting === m.id ? <ActivityIndicator size="small" color="#111" /> : <Ionicons name="chatbubble-ellipses" size={14} color="#111" />}
+                    <Text style={{ fontSize: 12.5, fontWeight: '800', color: '#111' }}>{drafting === m.id ? 'Writing your text…' : 'Turn this into a text'}</Text>
+                  </TouchableOpacity>
                   {!!m.follow_ups?.length && (
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
                       {m.follow_ups.map(raw => raw.replace(/\s*\[[TCVEK]\d+(?:@[\d:]+)?\]/g, '').trim()).filter(Boolean).map(f => (
@@ -164,6 +190,20 @@ export const AskJessiSheet = ({ visible, onClose, contactId }: { visible: boolea
               )}
             </ScrollView>
 
+            {draftPreview && (
+              <View style={{ marginHorizontal: 12, marginBottom: 6, backgroundColor: colors.card, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: GOLD, gap: 10 }} {...tid('ask-draft-preview')}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Ionicons name="chatbubble-ellipses" size={16} color={GOLD} />
+                  <Text style={{ flex: 1, fontSize: 12, fontWeight: '800', color: GOLD, letterSpacing: 0.5 }}>TEXT TO {first.toUpperCase()}</Text>
+                  <TouchableOpacity onPress={() => setDraftPreview(null)} hitSlop={8} {...tid('ask-draft-dismiss')}><Ionicons name="close" size={18} color={colors.textSecondary} /></TouchableOpacity>
+                </View>
+                <TextInput value={draftPreview.text} onChangeText={t => setDraftPreview(p => (p ? { ...p, text: t } : p))} multiline
+                  style={{ fontSize: 15, color: colors.text, lineHeight: 21, backgroundColor: colors.bg, borderRadius: 12, padding: 10, minHeight: 60, maxHeight: 140, borderWidth: 1, borderColor: colors.border }} {...tid('ask-draft-text-input')} />
+                <TouchableOpacity onPress={sendDraft} style={{ height: 44, borderRadius: 12, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }} {...tid('ask-draft-open-thread')}>
+                  <Ionicons name="send" size={16} color="#111" /><Text style={{ fontSize: 14, fontWeight: '800', color: '#111' }}>{draftPreview.conversation_id ? 'Open thread with this text' : 'Copy to a new thread'}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
             {player && (
               <View style={{ marginHorizontal: 12, marginBottom: 6, backgroundColor: colors.card, borderRadius: 14, padding: 10, borderWidth: 1, borderColor: GOLD + '66' }} {...tid('ask-player')}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>

@@ -3,18 +3,19 @@ import { Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const GOLD = '#C9A962';
-const CITE_RE = /\[([TCVEK])(\d+)(?:@(\d+(?::\d{2})?))?\]/g;
+const CITE_RE = /\[([TCVEKP])(\d+)(?:@(\d+(?::\d{2})?))?\]/g;
 
 export type Citation = {
-  id: string; token: string; kind: 'text' | 'call' | 'voice_note' | 'event' | 'task'; label: string; snippet?: string;
+  id: string; token: string; kind: 'text' | 'call' | 'voice_note' | 'event' | 'task' | 'thread'; label: string; snippet?: string;
   conversation_id?: string | null; message_id?: string; call_sid?: string | null; has_recording?: boolean; seek_seconds?: number | null;
-  duration_s?: number; audio_url?: string | null; event_type?: string; task_id?: string; completed?: boolean;
+  duration_s?: number; audio_url?: string | null; event_type?: string; task_id?: string; completed?: boolean; contact_id?: string | null; rep?: string;
 };
 
 const chipMeta = (c: Citation) => {
   switch (c.kind) {
     case 'call': return { icon: 'play' as const, label: c.seek_seconds != null ? `Call ${Math.floor(c.seek_seconds / 60)}:${String(c.seek_seconds % 60).padStart(2, '0')}` : 'Call' };
     case 'text': return { icon: 'chatbubble' as const, label: 'Text' };
+    case 'thread': return { icon: 'chatbubbles' as const, label: 'Open thread' };
     case 'voice_note': return { icon: 'mic' as const, label: 'Voice note' };
     case 'task': return { icon: 'checkbox' as const, label: 'Task' };
     default: return { icon: 'flash' as const, label: 'Event' };

@@ -1590,6 +1590,16 @@ export default function InboxScreen() {
         </View>
         <View style={styles.headerButtons}>
           <NotificationBell />
+          {inboxView === 'team' && ['super_admin', 'admin', 'manager', 'store_manager', 'org_admin'].includes(user?.role || '') && (
+            <WebIconButton
+              onPress={() => { triggerHaptic('light'); router.push('/ask-team' as any); }}
+              iconName="sparkles"
+              iconSize={22}
+              iconColor={colors.accent}
+              testID="inbox-ask-team-btn"
+              style={styles.headerIconButton}
+            />
+          )}
           <WebIconButton 
             onPress={() => { triggerHaptic('light'); router.push('/search'); }} 
             iconName="search"

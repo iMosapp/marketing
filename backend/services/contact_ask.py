@@ -91,6 +91,8 @@ async def build_record(db, contact: dict, tz: Optional[str] = None) -> dict:
         content = (m.get("content") or "").strip()
         if not content:
             continue
+        if m.get("channel") == "email" and m.get("subject"):
+            content = f"(subject: {m['subject']}) {content}"
         n += 1
         key = f"T{n}"
         sender = m.get("sender")
@@ -131,9 +133,18 @@ async def build_record(db, contact: dict, tz: Optional[str] = None) -> dict:
         t = (v.get("transcript") or "").strip()
         if not t:
             continue
-        line = f"[{key}] VOICE NOTE by Rep {reps.get(str(v.get('user_id')), '')} {_fmt(v.get('created_at'), tz)} ({_mmss(v.get('duration') or 0)}): {t[:2000]}"
+        convo = v.get("kind") == "conversation"
+        who = f"Rep {reps.get(str(v.get('user_id')), '')}".strip()
+        if convo:
+            line = f"[{key}] IN-PERSON CONVERSATION recorded by {who} {_fmt(v.get('created_at'), tz)} ({_mmss(v.get('duration') or 0)})"
+            if v.get("summary"):
+                line += f"\n  summary: {v['summary'][:900]}"
+            line += f"\n  transcript: {t[:8000]}"
+        else:
+            line = f"[{key}] VOICE NOTE by {who} {_fmt(v.get('created_at'), tz)} ({_mmss(v.get('duration') or 0)}): {t[:2000]}"
         items.append((_dt(v.get("created_at")) or _now(), line, "V"))
-        cites[key] = {"id": key, "kind": "voice_note", "label": f"Voice note · {_fmt(v.get('created_at'), tz)}", "voice_note_id": str(v["_id"]), "audio_url": v.get("audio_url"), "snippet": t[:140]}
+        cites[key] = {"id": key, "kind": "voice_note", "label": f"{'Recorded conversation' if convo else 'Voice note'} · {_fmt(v.get('created_at'), tz)}", "voice_note_id": str(v["_id"]),
+                      "audio_url": v.get("audio_url"), "snippet": (v.get("summary") or t)[:140], "recorded_conversation": convo}
 
     for i, e in enumerate(reversed(events), 1):
         key = f"E{i}"
@@ -180,7 +191,8 @@ async def build_record(db, contact: dict, tz: Optional[str] = None) -> dict:
         if dropped:
             lines.insert(0, f"(oldest {dropped} texts omitted for length)")
 
-    stats = {"texts": n, "calls": len(calls), "voice_notes": len([v for v in voice if v.get("transcript")]), "events": len(events), "tasks": len(tasks),
+    stats = {"texts": n, "calls": len(calls), "voice_notes": len([v for v in voice if v.get("transcript") and v.get("kind") != "conversation"]),
+             "conversations": len([v for v in voice if v.get("transcript") and v.get("kind") == "conversation"]), "events": len(events), "tasks": len(tasks),
              "first_touch": _fmt(items[0][0], tz) if items else None, "last_touch": _fmt(items[-1][0], tz) if items else None}
     return {"profile": "\n".join(profile), "timeline": "\n".join(lines), "cites": cites, "stats": stats, "first_name": first}
 
@@ -201,7 +213,7 @@ def _system_prompt(record: dict, rep_first: str) -> str:
         "- After the answer, propose 2 or 3 short follow-up questions the REP could ask you (Jessi) next about this customer, e.g. 'What did she say about financing?'. No citations inside follow-ups.\n\n"
         "Respond with ONLY valid JSON: {\"answer\": \"...\", \"follow_ups\": [\"...\", \"...\"]}\n\n"
         f"=== PROFILE ===\n{record['profile']}\n\n=== TIMELINE ({record['stats']['texts']} texts, {record['stats']['calls']} calls, "
-        f"{record['stats']['voice_notes']} voice notes) ===\n{record['timeline'] or '(no touchpoints yet)'}"
+        f"{record['stats']['voice_notes']} voice notes, {record['stats'].get('conversations', 0)} recorded in-person conversations) ===\n{record['timeline'] or '(no touchpoints yet)'}"
     )
 
 
@@ -270,6 +282,8 @@ def starters(stats: dict, first: str) -> list:
         out.append("Did " + first + " mention a trade, budget or timeline?")
     if stats.get("texts"):
         out.append("What has " + first + " asked that never got a clear answer?")
+    if stats.get("conversations"):
+        out.insert(0, "What did we agree on in the recorded conversation?")
     if stats.get("voice_notes"):
         out.append("What personal details have I captured?")
     out.append("Draft a text that picks up where we left off")
@@ -280,3 +294,22 @@ def serialize_session(s: dict) -> dict:
     return {"id": str(s["_id"]), "title": s.get("title") or "New chat", "created_at": s["created_at"].isoformat() if isinstance(s.get("created_at"), datetime) else s.get("created_at"),
             "updated_at": s["updated_at"].isoformat() if isinstance(s.get("updated_at"), datetime) else s.get("updated_at"), "message_count": len(s.get("messages") or []),
             "messages": [{**m, "created_at": m["created_at"].isoformat() if isinstance(m.get("created_at"), datetime) else m.get("created_at")} for m in (s.get("messages") or [])]}
+
+
+async def draft_text(user: dict, contact: dict, answer: str, question: str = "") -> str:
+    """Turn a Jessi answer into a short text the rep can send to the customer."""
+    api_key = os.environ.get("EMERGENT_LLM_KEY", "")
+    if not api_key:
+        raise RuntimeError("EMERGENT_LLM_KEY not set")
+    from emergentintegrations.llm.chat import LlmChat, UserMessage
+    rep_first = user.get("first_name") or (user.get("name") or "").split(" ")[0]
+    first = contact.get("first_name") or (contact.get("name") or "there").split(" ")[0]
+    clean = CITE_RE.sub("", answer)
+    chat = LlmChat(api_key=api_key, session_id=f"draft-{uuid.uuid4().hex[:8]}",
+                   system_message=(f"You write text messages a car salesperson named {rep_first} sends to a customer named {first}. "
+                                   "Given the salesperson's internal notes below, write ONE friendly, natural SMS to the customer that follows up on them: "
+                                   "warm, specific, one clear next step or question, 1 to 3 sentences, under 300 characters, first person, no sign-off block, no hashtags, "
+                                   "no internal jargon, never mention AI, transcripts, recordings or notes. Never use em dashes or en dashes. Return ONLY the text message.")).with_model(*MODEL)
+    resp = await asyncio.wait_for(chat.send_message(UserMessage(text=f"Rep's question: {question[:300]}\n\nInternal notes:\n{clean[:3000]}")), timeout=45.0)
+    text = resp if isinstance(resp, str) else getattr(resp, "text", "") or ""
+    return no_em_dash(text.strip().strip('"'))[:600]

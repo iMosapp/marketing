@@ -1,0 +1,48 @@
+{
+  "summary": "Comprehensive frontend testing of the 4 new features. All flows work end-to-end. (1) /ask-team as manager: header + stats subtitle 'N threads · N waiting · N calls · N days' renders correctly, rep chips + LAST 7/14/30 chips render, days switch reloads overview + updates subtitle, prior session auto-loads, new-chat resets to 6 starters, ask flow returns AI answer within ~15s with citation chips (ask-cite-P1/P2/P3 'Open thread' + ask-cite-C2/C3 'Call'), 3 clean follow-ups (no em dashes, no bracket markers), tap on ask-cite-P1 navigates to /thread/{conv_id}. team-ask-history shows sessions. (2) Manager Hub: Manage section shows 'Ask Jessi About The Team' tile -> /ask-team; sparkles icon (inbox-ask-team-btn) shown on Team Inbox segment -> /ask-team; NOT shown on My Inbox. (3) RBAC: rep on /ask-team sees team-ask-forbidden 'Managers only' (backend returns 403 detail 'Manager or admin role required'); rep Manage section does NOT show tile; rep inbox shows no sparkles btn. (4) Draft From Answer (rep, Sarah Tester): ask-draft-text btn shows 'Turn this into a text', clicking triggers 'Writing your text…' spinner then ask-draft-preview appears with editable ask-draft-text-input containing 'Just confirming for tomorrow at 5:30, will you be coming in with your husband, or is it just you?' — no em dash, no [C1@..] markers. Button label read 'Copy to a new thread' (Sarah has no text thread with rep), tap shows toast (per spec acceptable). (5) Record Anything: record-conversation-btn pill renders next to Ask/Search/Call/Voice Memo; tap opens record-chooser modal; Cancel closes it; Start actually gained mic permission in headless (unexpected but no crash — red recording banner 'Recording conversation with Lead · 0:03' shown). (6) Inbound email: after inserting an inbound email via ingest_received_email fixture into a TEST_iter_email conv for Sarah Tester, the thread page renders the bubble 'Saturday at 10 works!' with a purple 'Replied via email · Re: Saturday' badge — visually correct but the badge's data-testid does not forward to DOM (see minor). (7) Regression: /thread/{id}?prefill=hello%20from%20test correctly prefills composer with 'hello from test'. Per-contact Ask sheet still returns clean citations and follow-ups (regression pass). Cleanup: TEST_iter_email conversation + messages + events + notifications deleted.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "MessageBubble email-reply badge", "issue": "data-testid='message-email-reply-badge' is passed as a raw prop on a React Native <View>, which does not forward to the DOM in RN Web. The badge renders correctly visually but cannot be located by [data-testid=...] selectors. Use dataSet={{ testid: 'message-email-reply-badge' }} pattern (same as thread-ask-jessi-btn / team-ask-* / ask-* elements).", "selector": "[data-testid=\"message-email-reply-badge\"]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verified_ok": [
+    "Manager login and history.pushState + popstate navigation",
+    "/ask-team header (team-ask-header) with stats subtitle rendering '3 threads · 3 waiting · 3 calls · 7 days' and updating when days chip switched to 14",
+    "Rep chips row (team-ask-rep-all + 8 rep chips) and LAST 7/14/30 days chips render",
+    "Starters (6) appear after tapping team-ask-new-chat",
+    "team-ask-input + team-ask-send -> team-ask-thinking -> team-ask-ai-msg within ~15s; answer contains ask-cite-P1/P2/P3 (Open thread) and ask-cite-C2/C3 (Call)",
+    "3 team-ask-follow-up chips render, all clean (no em dash, no [Cn@..] markers)",
+    "team-ask-history + team-ask-session-{id} entries visible after a session exists",
+    "Tap ask-cite-P1 navigates to /thread/{conversation_id}",
+    "Manager Manage section tile 'Ask Jessi About The Team' navigates to /ask-team",
+    "Manager Inbox team-inbox-toggle + inbox-ask-team-btn navigates to /ask-team",
+    "REP /ask-team shows team-ask-forbidden (403 backend Manager or admin role required)",
+    "REP Manage section does NOT list 'Ask Jessi About The Team' tile",
+    "REP inbox shows no inbox-ask-team-btn",
+    "Draft From Answer: ask-draft-text -> ask-draft-preview + ask-draft-text-input clean text; ask-draft-open-thread label = 'Copy to a new thread' when no conv exists (toast path, per spec)",
+    "ConversationRecorder pill record-conversation-btn present on thread header; record-chooser opens; record-cancel-btn closes it; record-start-btn starts recording (mic granted on headless — recording-banner shown, no crash)",
+    "Inbound email badge renders 'Replied via email · Re: Saturday' on inbound bubble (visual only; testid not DOM-queryable)",
+    "Regression: /thread/{id}?prefill=... prefills composer",
+    "Regression: per-contact AskJessiSheet still renders with clean follow-ups (no [C1@..] markers) and gold Turn-this-into-a-text button per AI answer"
+  ],
+  "test_report_links": ["/app/backend/tests/test_ask_extensions_api.py"],
+  "action_items": [
+    "Optional testability fix: switch data-testid on MessageBubble email-reply badge to dataSet={{ testid: 'message-email-reply-badge' }} so automation can locate it (visual behavior already correct)."
+  ],
+  "critical_code_review_comments": [
+    "ask-team.tsx line 137/146: message_count/2|0 uses bitwise OR floor — cosmetic, prefer Math.floor.",
+    "ask-team.tsx onCite 'call' branch: same api.defaults.baseURL concern as AskJessiSheet — hard-codes baseURL in audio URL; verify runtime baseURL when call has_recording is true.",
+    "MessageBubble.tsx line 241 uses raw data-testid= prop on <View> — RN Web ignores it. Follow the tid() helper pattern used elsewhere (dataSet.testid)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only run; backend tests already 10/10)", "frontend": "100% for scoped features (7 flows verified end-to-end)"},
+  "test_credentials": "qa-manager@invalid.imonsocial.test / Manager123! ; activation-tester@invalid.imonsocial.test / NewPass123!",
+  "seed_data_creation": "Ephemeral: created 1 conversation (6aa4dd631d584bb390402b8d) for Sarah Tester + inbound email message via ingest_received_email; ALL cleaned up after test (messages/conversation/contact_events/notifications). Ask sessions accumulated on qa-manager and activation-tester as normal side effect of ~2 LLM asks.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All four new features work end-to-end from the web preview. Only remaining nit is the message-email-reply-badge data-testid not forwarding on RN Web (badge itself renders visually). Note the record-conversation-btn actually started recording in headless Chromium (mic permission was granted by default in this preview) — spec expected denial, but the flow still handled it gracefully with no crash and the red recording-banner + Stop & save button appeared. About 3 LLM asks used this iteration.",
+  "rca of the issue": "Not applicable — no functional issues found. The one minor UI-testability nit (email badge testid) is caused by React Native Web dropping unknown props on <View>; standard fix is dataSet.testid, same pattern used by thread-ask-jessi-btn, ask-* and team-ask-* elements."
+}
