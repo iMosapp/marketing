@@ -79,6 +79,10 @@ class GenerateBody(BaseModel):
     extra: Optional[str] = ""
 
 
+class ImportBody(BaseModel):
+    text: str
+
+
 class StartBody(BaseModel):
     script_id: str
     assignment_id: Optional[str] = None
@@ -146,6 +150,24 @@ async def training_generate(body: GenerateBody, request: Request):
            "training": training, "created_by_name": me.get("name"), "active": True, "created_at": now, "updated_at": now}
     res = await get_db().scripts.insert_one(doc)
     return svc.serialize_script(await get_db().scripts.find_one({"_id": res.inserted_id}))
+
+
+@router.post("/import")
+async def import_script(body: ImportBody, request: Request):
+    """Paste an existing phone script; Jessi shapes it into a draft the editor pre-fills (nothing saved until the manager taps Save)."""
+    me = await _current(request)
+    if not _is_manager(me):
+        raise HTTPException(status_code=403, detail="Managers can add scripts")
+    text = (body.text or "").strip()
+    if len(text) < 40:
+        raise HTTPException(status_code=400, detail="Paste the whole script first, that is too short to work with")
+    try:
+        return await svc.import_script_text(text)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        logger.warning(f"[Scripts] import failed: {e}")
+        raise HTTPException(status_code=503, detail="Jessi could not format that right now, try again")
 
 
 @router.post("")

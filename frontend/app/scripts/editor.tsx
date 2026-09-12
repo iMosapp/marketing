@@ -8,6 +8,7 @@ import { useThemeStore } from '../../store/themeStore';
 import { useToast } from '../../components/common/Toast';
 import { ScreenHeader } from '../../components/common/ScreenHeader';
 import { GOLD, RED, tid, VOICES, type Script, type Persona, type Training } from '../../components/scripts/shared';
+import { ImportScriptSheet, type ImportedScript } from '../../components/scripts/ImportScriptSheet';
 
 const CATS = ['Sales calls', 'Appointments', 'Follow-up', 'Objections', 'Service', 'Custom'];
 const emptyPersona: Persona = { name: '', voice: 'female', summary: '', goals: '', objections: [], opening_line: '' };
@@ -56,6 +57,14 @@ export default function ScriptEditor() {
   const [training, setTraining] = useState<Training | null>(null);
   const [cards, setCards] = useState<{ id: string; name: string }[]>([]);
   const [scorecardId, setScorecardId] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [imported, setImported] = useState(false);
+
+  const applyImport = (d: ImportedScript) => {
+    setTitle(d.title || ''); setCategory(d.category || 'Custom'); setRuntime(d.runtime || ''); setPurpose(d.purpose || ''); setBody(d.body || '');
+    setPoints(d.success_points || []); setPersona({ ...emptyPersona, ...(d.persona || {}) });
+    setImportOpen(false); setImported(true);
+  };
 
   const load = useCallback(async () => {
     try {
@@ -96,6 +105,16 @@ export default function ScriptEditor() {
       {loading ? <ActivityIndicator style={{ marginTop: 60 }} color={GOLD} /> : (
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 80, gap: 18 }} keyboardShouldPersistTaps="handled">
+            {!id && kind === 'phone' && (
+              <TouchableOpacity onPress={() => setImportOpen(true)} activeOpacity={0.85} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: imported ? colors.card : GOLD + '1A', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: imported ? colors.border : GOLD + '66' }} {...tid('script-editor-import')}>
+                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: GOLD + '22', alignItems: 'center', justifyContent: 'center' }}><Ionicons name={imported ? 'checkmark-circle' : 'clipboard-outline'} size={20} color={GOLD} /></View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>{imported ? 'Pasted script filled in below' : 'Already have this script written?'}</Text>
+                  <Text style={{ fontSize: 12.5, color: colors.textSecondary, lineHeight: 17 }}>{imported ? 'Check the wording, points and practice partner, then Save. Tap to paste a different one.' : 'Paste it and Jessi fills in everything below for you to review.'}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+              </TouchableOpacity>
+            )}
             <Field label="TITLE" value={title} onChange={setTitle} colors={colors} placeholder="Inbound sales call" testID="script-editor-title" />
             {kind === 'training' && training ? (
               <>
@@ -163,6 +182,7 @@ export default function ScriptEditor() {
           </ScrollView>
         </KeyboardAvoidingView>
       )}
+      <ImportScriptSheet visible={importOpen} colors={colors} onClose={() => setImportOpen(false)} onImported={applyImport} />
     </SafeAreaView>
   );
 }

@@ -53,7 +53,7 @@ export default function ScriptsLibrary() {
               {assignments.map(a => (
                 <TouchableOpacity key={a.id} onPress={() => router.push(`/scripts/${a.script_id}?assignment=${a.id}` as any)} activeOpacity={0.85}
                   style={{ backgroundColor: GOLD, borderRadius: 16, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }} {...tid(`scripts-assignment-${a.id}`)}>
-                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#11111122', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="mic" size={20} color="#111" /></View>
+                  <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#11111122', alignItems: 'center', justifyContent: 'center' }}><Ionicons name="call" size={20} color="#111" /></View>
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 15, fontWeight: '800', color: '#111' }} numberOfLines={1}>Practice: {a.script_title}</Text>
                     <Text style={{ fontSize: 12, color: '#111', opacity: 0.75 }} numberOfLines={1}>From {a.created_by_name || 'your manager'}{a.due_by ? ` · due ${fmtDate(a.due_by)}` : ''}{a.note ? ` · ${a.note}` : ''}</Text>

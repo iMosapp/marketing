@@ -102,7 +102,7 @@ export default function ScriptDetail() {
             {!isTraining && (
               <TouchableOpacity onPress={() => router.push(`/scripts/practice?script=${script.id}${assignmentId ? `&assignment=${assignmentId}` : ''}` as any)}
                 style={{ flex: 1, height: 52, borderRadius: 14, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }} {...tid('script-practice-btn')}>
-                <Ionicons name="mic" size={20} color="#111" />
+                <Ionicons name="call" size={20} color="#111" />
                 <Text style={{ fontSize: 16, fontWeight: '800', color: '#111' }}>Practice this call</Text>
               </TouchableOpacity>
             )}

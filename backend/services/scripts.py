@@ -186,6 +186,38 @@ def merge(body: str, values: dict) -> str:
     return out
 
 
+IMPORT_CATEGORIES = ["Sales calls", "Appointments", "Follow-up", "Objections", "Service", "Custom"]
+
+
+async def import_script_text(text: str) -> dict:
+    """Turn a pasted phone script (any format: notes, Word dump, bullets) into a structured draft for the editor. Nothing is saved here."""
+    system = ("You are Jessi, a dealership sales trainer. A manager pasted a phone script they already use. Re-shape it into our script format WITHOUT rewriting their words: "
+              "keep every line of dialogue they wrote (fix only obvious typos), keep their order, drop page numbers and headers. "
+              "Put stage directions in [brackets]. Replace the customer's name with {first_name}, the vehicle with {vehicle}, the store name with {store}, the rep's name with {rep_name}, "
+              "appointment times with {appointment_time} and trade-in mentions with {trade}, but only where the pasted text clearly refers to those things and ONLY inside body; write success_points and persona in plain words (no curly braces). "
+              f"Pick category from {IMPORT_CATEGORIES}. success_points = 4 to 8 short graded behaviours the script asks the rep to do (start with a verb). "
+              "persona = the customer this script is talking to, so a rep can practice against it: name (first and last), voice one of female/male/young/older, summary (age, situation, what they saw), goals as ONE sentence string, 2 to 4 objections they would raise, and an opening_line they would say to start the call. "
+              "runtime like '2 to 4 min'. purpose = one line on when to use it. Never use em dashes. "
+              "Return JSON: {title, category, runtime, purpose, body, success_points:[...], persona:{name, voice, summary, goals, objections:[...], opening_line}}.")
+    data = await _llm_json(system, f"PASTED SCRIPT:\n\n{text[:12000]}", timeout=90)
+    if not (data.get("body") or "").strip():
+        raise ValueError("Jessi could not read a script in that text")
+    persona = data.get("persona") if isinstance(data.get("persona"), dict) else {}
+    voice = persona.get("voice") if persona.get("voice") in ("female", "male", "young", "older") else "female"
+    plain = lambda v, n: no_em_dash("; ".join(str(x) for x in v) if isinstance(v, list) else str(v or "")).replace("{", "").replace("}", "")[:n]
+    return {
+        "title": no_em_dash(str(data.get("title") or "Imported script"))[:120],
+        "category": data.get("category") if data.get("category") in IMPORT_CATEGORIES else "Custom",
+        "runtime": no_em_dash(str(data.get("runtime") or ""))[:40],
+        "purpose": no_em_dash(str(data.get("purpose") or ""))[:400],
+        "body": no_em_dash(str(data.get("body")))[:8000],
+        "success_points": [plain(p, 160).strip() for p in (data.get("success_points") or []) if str(p).strip()][:12],
+        "persona": {"name": plain(persona.get("name"), 60), "voice": voice, "summary": plain(persona.get("summary"), 400),
+                    "goals": plain(persona.get("goals"), 200), "opening_line": plain(persona.get("opening_line"), 240),
+                    "objections": [plain(o, 160).strip() for o in (persona.get("objections") or []) if str(o).strip()][:6]},
+    }
+
+
 # ---------------------------------------------------------------- library
 def serialize_script(s: dict, store_id: Optional[str] = None) -> dict:
     return {
