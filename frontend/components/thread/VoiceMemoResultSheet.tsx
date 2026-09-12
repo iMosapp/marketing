@@ -26,10 +26,10 @@ const valueText = (k: string, v: any): string => {
 };
 
 export type MemoNote = { id: string; transcript?: string; duration?: number; kind?: string };
-type Props = { note: MemoNote | null; userId: string; contactId: string; contactFirst: string; colors: any; onClose: () => void };
+type Props = { note: MemoNote | null; userId: string; contactId: string; contactFirst: string; colors: any; onClose: () => void; onProfilePage?: boolean };
 
 // Shown right after a voice memo saves: the transcript, then (a few seconds later) what Jessi added to the profile and the follow-up it set.
-export const VoiceMemoResultSheet = ({ note, userId, contactId, contactFirst, colors, onClose }: Props) => {
+export const VoiceMemoResultSheet = ({ note, userId, contactId, contactFirst, colors, onClose, onProfilePage }: Props) => {
   const router = useRouter();
   const [details, setDetails] = useState<Record<string, any> | null>(null);
   const [followup, setFollowup] = useState<{ id: string; title: string; due_date: string } | null>(null);
@@ -109,8 +109,8 @@ export const VoiceMemoResultSheet = ({ note, userId, contactId, contactFirst, co
               </TouchableOpacity>
             )}
           </ScrollView>
-          <TouchableOpacity onPress={() => { onClose(); router.push(`/contact/${contactId}` as any); }} style={{ height: 46, borderRadius: 12, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }} {...tid('memo-result-profile')}>
-            <Ionicons name="person" size={16} color="#111" /><Text style={{ fontSize: 14, fontWeight: '800', color: '#111' }}>View {contactFirst}'s profile</Text>
+          <TouchableOpacity onPress={() => { onClose(); if (!onProfilePage) router.push(`/contact/${contactId}` as any); }} style={{ height: 46, borderRadius: 12, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }} {...tid('memo-result-profile')}>
+            <Ionicons name={onProfilePage ? 'checkmark' : 'person'} size={16} color="#111" /><Text style={{ fontSize: 14, fontWeight: '800', color: '#111' }}>{onProfilePage ? 'Done' : `View ${contactFirst}'s profile`}</Text>
           </TouchableOpacity>
         </View>
       </View>

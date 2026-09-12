@@ -68,6 +68,7 @@ import IntelTeaser from '../../components/contact/IntelTeaser';
 import { HealthBadge } from '../../components/contact/HealthBadge';
 import QuickActionsRow from '../../components/contact/QuickActionsRow';
 import { ConversationRecorder } from '../../components/thread/ConversationRecorder';
+import { VoiceMemoResultSheet, type MemoNote } from '../../components/thread/VoiceMemoResultSheet';
 import ContactTasksCard from '../../components/contact/ContactTasksCard';
 
 const IS_WEB = Platform.OS === 'web';
@@ -189,6 +190,7 @@ function ContactDetailScreen() {
   const [voiceNotes, setVoiceNotes] = useState<any[]>([]);
 
   const [isRecording, setIsRecording] = useState(false);
+  const [memoResult, setMemoResult] = useState<MemoNote | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [nativeRecording, setNativeRecording] = useState<any>(null);
@@ -2147,7 +2149,10 @@ function ContactDetailScreen() {
               fd,
               { headers: { 'Content-Type': 'multipart/form-data' } }
             );
-            if (res.data) await loadVoiceNotes();
+            if (res.data) {
+              setMemoResult({ id: res.data.id, transcript: res.data.transcript || '', duration: res.data.duration || recordingTime, kind: 'memo' });
+              await loadVoiceNotes();
+            }
           } catch (uploadErr: any) {
             console.error('[VoiceNote] Upload error:', uploadErr?.response?.data || uploadErr?.message);
             showSimpleAlert('Error', 'Failed to save voice note. Please try again.');
@@ -2173,8 +2178,9 @@ function ContactDetailScreen() {
     if (!user) return;
     try {
       setUploadingVoiceNote(true);
-      await contactsAPI.uploadVoiceNote(user._id, id as string, blob, recordingTime);
-      showToast('Voice note saved & transcribing...');
+      const saved = await contactsAPI.uploadVoiceNote(user._id, id as string, blob, recordingTime);
+      if (saved?.id) setMemoResult({ id: saved.id, transcript: saved.transcript || '', duration: saved.duration || recordingTime, kind: 'memo' });
+      else showToast('Voice note saved & transcribing...');
       await loadVoiceNotes();
       // Refresh events to show in activity feed
       loadEvents();
@@ -3116,6 +3122,11 @@ function ContactDetailScreen() {
         contactId={id as string}
         workflowResult={soldWorkflowResult}
       />
+      {!!user?._id && (
+        <VoiceMemoResultSheet note={memoResult} userId={user._id} contactId={id as string} contactFirst={(contact.first_name || 'the customer').split(' ')[0]}
+          colors={{ ...colors, textPrimary: colors.text, surface: colors.card, background: colors.bg }} onProfilePage
+          onClose={() => { setMemoResult(null); loadEvents(); refreshIntel(); }} />
+      )}
     </SafeAreaView>
     </ContactProvider>
   );
