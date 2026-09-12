@@ -1169,6 +1169,9 @@ async def update_task(user_id: str, task_id: str, update_data: dict):
         if action == "edit" and "due_date" in updates and task.get("invite_sent_at") and updates["due_date"] != _as_utc(task.get("due_date")):
             await db.tasks.update_one({"_id": ObjectId(task_id)}, {"$unset": {"customer_reminder_sent_at": "", "customer_reminder_skipped": ""}})
             await schedule_invite(task_id, reason="updated")
+        if action in ("complete", "dismiss", "snooze"):
+            from routers.notifications_center import invalidate_feed
+            invalidate_feed(user_id)  # Alerts drop the task's reminder / promise nudge right away
 
     updated = await db.tasks.find_one({"_id": ObjectId(task_id)})
     return _serialize(updated)

@@ -39,6 +39,7 @@ ACTION_TYPES = {
     "new_demo_request":           ("today", "Follow up with {name}",            "Open",     "person-add"),
     "appointment_extracted":      ("today", "Confirm {first}'s appointment",    "Review",   "calendar"),
     "task_reminder":              ("today", "{title}",                          "Open",     "alarm"),
+    "highlight_due":              ("now",   "{title}",                          "Send text", "paper-plane"),
     "manager_nudge":              ("today", "{title}",                          "Open",     "megaphone"),
     "inventory_feed_issue":       ("today", "{title}",                          "Fix",      "cloud-offline"),
     "app_install":                ("today", "{title}",                          "See",      "phone-portrait"),
@@ -49,7 +50,7 @@ BUCKETS = ("now", "today", "later")
 # legacy category (older app builds filter on it)
 _CATEGORY = {"you_are_needed": "urgent", "slow_lead": "urgent", "customer_reply": "replies", "call_retry_replied": "replies",
              "ai_draft_approval_required": "replies", "keyword_alert": "replies", "appointment_extracted": "appts",
-             "task_reminder": "appts", "manager_nudge": "appts", "push": "appts"}
+             "task_reminder": "appts", "manager_nudge": "appts", "push": "appts", "highlight_due": "replies"}
 FOR_YOU_CATEGORIES = ("urgent", "leads", "replies", "appts")
 VIRTUAL_PREFIXES = ("task_", "task_soon_", "msg_", "flag_", "evt_", "csend_")
 
@@ -240,9 +241,18 @@ async def _build_feed(user_id: str) -> dict:
     if queue_ids:
         qs = await _run_section(db.ai_reply_queue.find({"_id": {"$in": [ObjectId(q) for q in queue_ids]}, "status": "pending"}, {"_id": 1}).to_list(100), "pending_drafts")
         pending_queue = {str(q["_id"]) for q in qs}
+    nudge_task_ids = [n["task_id"] for n in notifs if n.get("type") == "highlight_due" and ObjectId.is_valid(str(n.get("task_id") or ""))]
+    done_tasks: set = set()
+    if nudge_task_ids:
+        ts_docs = await _run_section(db.tasks.find({"_id": {"$in": [ObjectId(x) for x in nudge_task_ids]},
+                                                    "$or": [{"completed": True}, {"status": {"$in": ["completed", "dismissed", "cancelled"]}}]}, {"_id": 1}).to_list(100), "nudge_tasks")
+        done_tasks = {str(d["_id"]) for d in ts_docs}
     keep = []
     for n in notifs:
         ntype = n.get("type", "")
+        if ntype == "highlight_due" and str(n.get("task_id")) in done_tasks:
+            stale_ids.append(n["_id"])
+            continue
         if ntype in reply_types and n.get("conversation_id"):
             t = replied_at.get(str(n["conversation_id"]))
             if t and t > _dt(n.get("created_at")):
@@ -301,6 +311,9 @@ async def _build_feed(user_id: str) -> dict:
     # 2. Tasks: overdue (today) + due in the next 24h (later); campaign chores excluded
     task_filter = {"user_id": user_id, "completed": {"$ne": True}, "status": {"$nin": ["completed", "cancelled"]},
                    "type": {"$nin": ["campaign_send", "campaign_step"]}}
+    nudged = [ObjectId(x) for x in nudge_task_ids if x not in done_tasks]
+    if nudged:
+        task_filter["_id"] = {"$nin": nudged}  # the promise already has its own "Send text" alert
     overdue = await _run_section(db.tasks.find({**task_filter, "due_date": {"$lt": now}}).sort("due_date", -1).limit(15).to_list(15), "overdue_tasks")
     upcoming = await _run_section(db.tasks.find({**task_filter, "due_date": {"$gte": now, "$lte": now + timedelta(hours=24)}}).sort("due_date", 1).limit(8).to_list(8), "upcoming_tasks")
     cids = [t["contact_id"] for t in overdue + upcoming if t.get("contact_id") and ObjectId.is_valid(str(t.get("contact_id")))]

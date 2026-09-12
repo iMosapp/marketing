@@ -3,7 +3,7 @@ Run: cd /app/backend && python -m pytest tests/test_recording_highlights.py -q""
 import asyncio
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import pytest
 import requests
@@ -132,6 +132,62 @@ def test_rename_recording(rep_login, sarah_id):
             assert requests.patch(f"{BASE_URL}/api/voice-notes/{rep_id}/{sarah_id}/nope", json={"title": "a"}, headers=hdr, timeout=20).status_code == 404
         finally:
             await db.voice_notes.delete_one({"_id": note.inserted_id})
+    _run(run())
+
+
+def test_highlight_nudge_flow(rep_login, sarah_id):
+    """A recorded promise comes due -> one highlight_due alert with a draft + thread link carrying prefill/taskId; no double nudge; resolves when the task completes."""
+    from services.recording_highlights import send_highlight_nudges, _fallback_draft
+    from urllib.parse import urlparse, parse_qs
+    hdr, rep_id = rep_login
+    assert _fallback_draft("Sarah", "Text firm trade number", "text").startswith("Hi Sarah,") and "—" not in _fallback_draft("Sarah", "x", "appointment")
+
+    async def run():
+        db = AsyncIOMotorClient(os.environ["MONGO_URL"])[os.environ["DB_NAME"]]
+        now = datetime.now(timezone.utc)
+        conv = await db.conversations.insert_one({"user_id": rep_id, "contact_id": sarah_id, "contact_name": "Sarah Tester", "status": "active", "created_at": now, "last_message_at": now, "is_test": True})
+        task = await db.tasks.insert_one({"user_id": rep_id, "contact_id": sarah_id, "contact_name": "Sarah Tester", "type": "follow_up", "source": "recorded_conversation", "auto_kind": "recording_highlight",
+                                          "voice_note_id": "vn_test", "title": "Text Sarah the firm trade number and OTD price on the Tahoe", "title_norm": "x",
+                                          "description": "Promised in your recorded conversation on Sep 12: I'll get you a firm trade number and the out-the-door price texted over by tomorrow morning.",
+                                          "action_type": "text", "priority": "high", "status": "pending", "completed": False, "due_date": now - timedelta(minutes=3), "has_time": False, "created_at": now})
+        tid = str(task.inserted_id)
+        try:
+            assert await send_highlight_nudges(db) >= 1
+            n = await db.notifications.find_one({"type": "highlight_due", "task_id": tid})
+            assert n and n["user_id"] == rep_id and n["title"].startswith("Promised to Sarah:") and 15 < len(n["draft"]) <= 320 and "—" not in n["draft"] and "[" not in n["draft"]
+            assert n["conversation_id"] == str(conv.inserted_id)
+            u = urlparse(n["link"]); qs = parse_qs(u.query)
+            assert u.path == f"/thread/{conv.inserted_id}" and qs["taskId"] == [tid] and qs["prefill"][0] == n["draft"]
+            t = await db.tasks.find_one({"_id": task.inserted_id})
+            assert t.get("nudged_at") and t.get("reminded_due") is True
+            # second sweep is a no-op
+            assert await db.notifications.count_documents({"type": "highlight_due", "task_id": tid}) == 1
+            await send_highlight_nudges(db)
+            assert await db.notifications.count_documents({"type": "highlight_due", "task_id": tid}) == 1
+            # alerts feed: the nudge shows once with a Send text action and the task is not duplicated as a virtual overdue row
+            def _items():
+                feed = requests.get(f"{BASE_URL}/api/notification-center/{rep_id}", headers=hdr, timeout=30).json()
+                items = feed.get("items") or feed.get("alerts") or feed
+                return items if isinstance(items, list) else sum((v for v in items.values() if isinstance(v, list)), [])
+            mine = []
+            for _ in range(8):  # the server feed cache is 30s; the nudge itself invalidates it in-process
+                items = _items()
+                mine = [i for i in items if i.get("type") == "highlight_due" and i.get("id") == str(n["_id"])]
+                if mine:
+                    break
+                await asyncio.sleep(5)
+            assert mine and mine[0]["action"]["label"] == "Send text" and mine[0]["link"] == n["link"] and mine[0]["bucket"] == "now"
+            assert not any(i.get("id") == f"task_{tid}" for i in items)
+            # completing the task (what the thread does after the draft sends) auto-resolves the alert
+            requests.patch(f"{BASE_URL}/api/tasks/{rep_id}/{tid}", json={"action": "complete"}, headers=hdr, timeout=20)
+            items2 = _items()
+            assert not any(i.get("id") == str(n["_id"]) for i in items2)
+            assert (await db.notifications.find_one({"_id": n["_id"]}))["dismissed"] is True
+        finally:
+            await db.notifications.delete_many({"task_id": tid})
+            await db.tasks.delete_one({"_id": task.inserted_id})
+            await db.contact_events.delete_many({"task_id": tid})
+            await db.conversations.delete_one({"_id": conv.inserted_id})
     _run(run())
 
 

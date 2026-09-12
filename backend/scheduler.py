@@ -2154,6 +2154,19 @@ def start_scheduler():
         misfire_grace_time=30,
     )
 
+    # Every 60 seconds — recorded-conversation promises that just came due -> push with a one-tap draft text
+    async def _highlight_nudges():
+        from routers.database import get_db
+        from services.recording_highlights import send_highlight_nudges
+        await send_highlight_nudges(get_db())
+    scheduler.add_job(
+        safe_job(_highlight_nudges),
+        IntervalTrigger(seconds=60),
+        id="highlight_nudge_processor",
+        replace_existing=True,
+        misfire_grace_time=30,
+    )
+
     # Every 5 minutes — force garbage collection to reclaim memory from large operations
     async def _force_gc():
         import gc
