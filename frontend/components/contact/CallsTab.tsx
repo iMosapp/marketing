@@ -8,14 +8,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { CallTranscript } from '../CallTranscript';
 import { ScorePill } from '../scorecards/ScoreRing';
 import { EvaluationSheet } from '../scorecards/EvaluationSheet';
+import { RecordedConversationCard } from './RecordedConversationCard';
 
-export default function CallsTab({ colors, callLogs, callLogsLoading, onRefresh }: any) {
+const when = (x: any) => { try { return new Date(x.timestamp || x.created_at || 0).getTime(); } catch { return 0; } };
+
+export default function CallsTab({ colors, callLogs, callLogsLoading, onRefresh, voiceNotes = [] }: any) {
   const [openCall, setOpenCall] = useState<any | null>(null);
+  const convos = (voiceNotes || []).filter((n: any) => n.kind === 'conversation');
+  const items = [...callLogs.map((c: any) => ({ kind: 'call', data: c })), ...convos.map((n: any) => ({ kind: 'convo', data: n }))].sort((a, b) => when(b.data) - when(a.data));
   return (
     <View style={{ padding: 16 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
-          {callLogs.length} call{callLogs.length !== 1 ? 's' : ''}
+        <Text style={{ color: colors.textSecondary, fontSize: 13 }} testID="calls-tab-count" dataSet={{ testid: 'calls-tab-count' } as any}>
+          {callLogs.length} call{callLogs.length !== 1 ? 's' : ''}{convos.length ? ` · ${convos.length} recorded conversation${convos.length !== 1 ? 's' : ''}` : ''}
         </Text>
         <TouchableOpacity
           onPress={onRefresh}
@@ -31,16 +36,18 @@ export default function CallsTab({ colors, callLogs, callLogsLoading, onRefresh 
           <ActivityIndicator size="large" color={colors.accent} />
           <Text style={{ color: colors.textSecondary, marginTop: 8 }}>Loading call history...</Text>
         </View>
-      ) : callLogs.length === 0 ? (
+      ) : items.length === 0 ? (
         <View style={{ alignItems: 'center', padding: 40 }}>
           <Ionicons name="call-outline" size={48} color={colors.textSecondary} />
           <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginTop: 12 }}>No calls yet</Text>
           <Text style={{ color: colors.textSecondary, fontSize: 13, marginTop: 4, textAlign: 'center' }}>
-            Call logs and AI summaries will appear here after calls are made or received.
+            Call logs, AI summaries and recorded in-person conversations will appear here.
           </Text>
         </View>
       ) : (
-        callLogs.map((call: any, i: number) => {
+        items.map((it, i: number) => {
+          if (it.kind === 'convo') return <RecordedConversationCard key={`convo-${it.data.id}`} note={it.data} colors={colors} />;
+          const call = it.data;
           const ts = call.timestamp || call.created_at;
           const date = ts ? new Date(ts).toLocaleString() : '';
           const dur = call.duration_s || call.duration || 0;

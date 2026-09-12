@@ -1,0 +1,46 @@
+{
+  "summary": "Frontend-only regression for Recording Highlights + Recording Playback on contact page passed end-to-end. Seed idempotent (already seeded). Logged in as activation-tester, opened /contact/6aa413008f0d53e3f2261853, verified UP NEXT contains highlight tasks with source=recorded_conversation via /api/tasks endpoint, opened Calls tab and confirmed all specced behaviours.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "verifications": {
+    "calls_tab_count_text": "1 call · 1 recorded conversation",
+    "recorded_convo_card_testid": "recorded-convo-6aa56565326375bec32d59bf",
+    "card_header": "Recorded conversation · 12s",
+    "date_line": "9/12/2026, 2:44:53 PM · in person",
+    "summary_mentions_tahoe_and_trade": true,
+    "follow_ups_count": 4,
+    "follow_up_due_labels_present": ["Sun, Sep 13", "Sat, Sep 19 · 4:00 PM", "Sat, Sep 12"],
+    "em_dashes_in_card": false,
+    "play_button_toggles_player": true,
+    "player_shows_time_0_0_0_0": "0:00 / --:--",
+    "close_hides_player": true,
+    "read_transcript_reveals": "Rep: Thanks for coming by, Sarah ...",
+    "hide_transcript_hides": true,
+    "phone_call_card_still_renders": "Outbound call — 5m 12s (CA_scdemo_good_001) with Scored 100% pill, listed BELOW newer recorded conversation (sort correct)",
+    "up_next_contains_highlight_tasks": true,
+    "tasks_api_returns_recording_highlights": "GET /api/tasks/6a978d68b8673c29063aa8b9/contact/6aa413008f0d53e3f2261853 returns tasks with source=recorded_conversation, auto_kind=recording_highlight, voice_note_id=6aa56565326375bec32d59bf",
+    "record_chooser_regression": "qa-note-btn opens record-chooser containing record-memo-btn + record-start-btn + record-cancel-btn; cancel closes it"
+  },
+  "not_tested": [
+    "Actual audio position advancement while playing (browser autoplay may vary; player renders without error)",
+    "Thread /thread/{id} 4-pill row Record chooser regression (contact-page chooser verified as equivalent implementation)",
+    "Optional live 8s mic recording -> Conversation saved sheet (headless mic not exercised)"
+  ],
+  "test_report_links": ["/app/backend/tests/test_recording_highlights.py", "/app/backend/tests/seed_recorded_convo_demo.py"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Card uses locale-formatted date string (toLocaleString) which will show browser timezone; acceptable per spec but note there is a stray '—' inside the older phone-call header 'Outbound call — 5m 12s' (older component, out of scope for this feature).",
+    "Player 'duration' shows '--:--' initially because <audio> metadata not loaded yet; expected but could be preloaded with preload='metadata' for smoother UX."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (not tested)", "frontend": "100%"},
+  "test_credentials": "activation-tester@invalid.imonsocial.test / NewPass123! (rep id 6a978d68b8673c29063aa8b9)",
+  "seed_data_creation": "Ran /app/backend/tests/seed_recorded_convo_demo.py (idempotent; already seeded voice note 6aa56565326375bec32d59bf with 4 highlights).",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Recorded conversation feature working. If future changes touch CallsTab merging or RecordedConversationCard, re-run this flow: login -> /contact/6aa413008f0d53e3f2261853 -> click [data-testid=tab-calls] -> verify calls-tab-count, recorded-convo-*, play/transcript toggles."
+}

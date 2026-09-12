@@ -2601,7 +2601,7 @@ function ContactDetailScreen() {
               memoRecording={isRecording}
               onStartMemo={startRecording}
               onStopMemo={stopRecording}
-              onSaved={async () => { await loadVoiceNotes(); refreshIntel(); }}
+              onSaved={async () => { await loadVoiceNotes(); setTasksRefreshKey(k => k + 1); refreshIntel(); }}
               renderTrigger={({ live, label, onPress }) => (
                 <QuickActionsRow
                   colors={colors}
@@ -2879,6 +2879,7 @@ function ContactDetailScreen() {
             <CallsTab
               colors={colors}
               callLogs={callLogs}
+              voiceNotes={voiceNotes}
               callLogsLoading={callLogsLoading}
               onRefresh={async () => {
                 setCallLogsLoading(true);

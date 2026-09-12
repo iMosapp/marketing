@@ -197,26 +197,6 @@ async def _transcribe_audio(audio_bytes: bytes, filename: str, kind: str = "memo
         return ""
 
 
-async def _summarize_conversation(transcript: str, contact_name: str) -> str:
-    """3 or 4 plain sentences + commitments, for a recorded in-person conversation."""
-    api_key = os.environ.get("EMERGENT_LLM_KEY")
-    if not api_key or len(transcript) < 40:
-        return ""
-    try:
-        from emergentintegrations.llm.chat import LlmChat, UserMessage
-        from utils.text_sanitize import no_em_dash
-        chat = LlmChat(api_key=api_key, session_id=f"convo-sum-{uuid.uuid4().hex[:8]}",
-                       system_message=("You summarize recorded in-person dealership conversations for the salesperson's records. Write 3 or 4 plain sentences: "
-                                       "what the customer wants, objections or concerns, what was agreed, and any promises or next steps with dates. "
-                                       "Then one line starting with 'Follow up:' listing concrete commitments. Never use em dashes or en dashes.")).with_model("openai", "gpt-5.2")
-        resp = await asyncio.wait_for(chat.send_message(UserMessage(text=f"Customer: {contact_name}\n\nTRANSCRIPT:\n{transcript[:20000]}")), timeout=60)
-        text = resp if isinstance(resp, str) else getattr(resp, "text", "") or ""
-        return no_em_dash(text.strip())[:1500]
-    except Exception as e:
-        logger.warning(f"Conversation summary failed: {e}")
-        return ""
-
-
 def _ext_for(content_type: str) -> str:
     ct = (content_type or "audio/webm").lower()
     if "mp4" in ct or "m4a" in ct:
@@ -250,21 +230,25 @@ async def _process_voice_note(db, user_id: str, contact_id: str, audio_bytes: by
         raise HTTPException(status_code=500, detail="Failed to store audio")
 
     transcript = await _transcribe_audio(audio_bytes, filename, kind)
-    contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"name": 1, "first_name": 1}) if ObjectId.is_valid(contact_id) else None
-    contact_name = (contact or {}).get("name") or (contact or {}).get("first_name") or "the customer"
-    summary = await _summarize_conversation(transcript, contact_name) if kind == "conversation" else ""
+    is_convo = kind == "conversation"
 
     now = datetime.now(timezone.utc)
     note_doc = {
         "contact_id": contact_id, "user_id": user_id, "audio_url": audio_url, "audio_path": stored_path,
-        "transcript": transcript, "summary": summary, "kind": kind, "duration": round(duration, 1), "created_at": now,
+        "transcript": transcript, "summary": "", "kind": kind, "duration": round(duration, 1), "created_at": now,
     }
     result = await db.voice_notes.insert_one(note_doc)
     note_id = str(result.inserted_id)
 
+    # Recorded conversations: summary + every commitment becomes a task on the rep's list
+    summary, highlights, new_tasks = "", [], []
+    if is_convo and transcript and len(transcript.strip()) >= 40:
+        from services.recording_highlights import process_recorded_conversation
+        hl = await process_recorded_conversation(db, user_id, contact_id, note_id, transcript)
+        summary, highlights, new_tasks = hl["summary"], hl["highlights"], hl["tasks"]
+
     try:
         user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"_id": 0, "org_id": 1, "name": 1})
-        is_convo = kind == "conversation"
         await db.contact_events.insert_one({
             "event_type": "conversation_recorded" if is_convo else "voice_note",
             "title": "In-person conversation recorded" if is_convo else "Voice Note Recorded",
@@ -286,6 +270,7 @@ async def _process_voice_note(db, user_id: str, contact_id: str, audio_bytes: by
             logger.warning(f"Voice intelligence extraction trigger failed: {e}")
 
     return {"id": note_id, "audio_url": audio_url, "transcript": transcript, "summary": summary, "kind": kind,
+            "highlights": highlights, "tasks": new_tasks,
             "duration": round(duration, 1), "created_at": now.isoformat()}
 
 
@@ -360,8 +345,12 @@ async def get_voice_notes(user_id: str, contact_id: str):
     db = get_db()
     notes = await db.voice_notes.find(
         {"contact_id": contact_id, "user_id": user_id},
-        {"_id": 1, "audio_url": 1, "transcript": 1, "summary": 1, "kind": 1, "duration": 1, "created_at": 1, "contact_id": 1, "user_id": 1},
+        {"_id": 1, "audio_url": 1, "transcript": 1, "summary": 1, "kind": 1, "duration": 1, "created_at": 1, "contact_id": 1, "user_id": 1, "highlights": 1},
     ).sort("created_at", -1).to_list(100)
+
+    def _hl(h: dict) -> dict:
+        d = h.get("due_date")
+        return {**h, "due_date": d.isoformat() if hasattr(d, "isoformat") else d}
 
     return [
         {
@@ -373,6 +362,7 @@ async def get_voice_notes(user_id: str, contact_id: str):
             "summary": n.get("summary", ""),
             "kind": n.get("kind", "memo"),
             "duration": n.get("duration", 0),
+            "highlights": [_hl(h) for h in (n.get("highlights") or [])],
             "created_at": n["created_at"].isoformat() if n.get("created_at") else "",
         }
         for n in notes
