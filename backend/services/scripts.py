@@ -18,7 +18,9 @@ logger = logging.getLogger(__name__)
 
 MODEL = ("openai", "gpt-5.2")
 MERGE_FIELDS = ["first_name", "vehicle", "store", "rep_name", "appointment_time", "trade"]
-MAX_TURNS = 14
+MAX_TURNS = 24
+PHONE_MAX_MINUTES = 15
+PHONE_MAX_TURNS = 60
 
 # ---------------------------------------------------------------- starter phone scripts (global library, stores override by copying)
 STARTER_SCRIPTS = [
@@ -378,7 +380,7 @@ def relay_twiml(session: dict) -> str:
 
 
 def hangup_twiml(text: str) -> str:
-    return f'<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Google.en-US-Journey-F">{_xml(text)}</Say><Hangup/></Response>'
+    return f'<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Polly.Joanna-Neural">{_xml(text)}</Say><Hangup/></Response>'
 
 
 async def start_phone_session(db, me: dict, script: dict, assignment: Optional[dict] = None) -> dict:
@@ -538,7 +540,9 @@ def _customer_system(script: dict, persona: dict, store_name: str, rep_first: st
             + "RULES: Speak like a real person on the phone: short, 1 to 3 sentences, contractions, occasional hesitation. Never narrate, never break character, never coach. "
               "Answer what the rep asks; volunteer a little, not everything. If the rep earns it (answers honestly, offers specific times), agree to an appointment and end warmly. "
               "If the rep is pushy, dodges, or quotes a payment blindly, push back. Say goodbye and end the call naturally after the appointment is set, after you decline for good, "
-              "or if the call drags past 12 exchanges. No em dashes. Return ONLY JSON: {\"say\": \"your spoken words\", \"ended\": true|false, \"mood\": \"warm|neutral|guarded|annoyed\"}. "
+            + ("or when the rep says goodbye. A real call runs as long as it needs to, often 5 to 10 minutes, so never rush to end it or count exchanges. "
+               if live else "or if the call drags past 12 exchanges. ")
+            + "No em dashes. Return ONLY JSON: {\"say\": \"your spoken words\", \"ended\": true|false, \"mood\": \"warm|neutral|guarded|annoyed\"}. "
               f"The salesperson's script (they may or may not follow it): {script.get('title', '')}: {script.get('purpose', '')}")
 
 
@@ -569,15 +573,18 @@ async def customer_turn(db, session: dict, rep_text: str) -> dict:
     rep_first = (session.get("rep_name") or "the salesperson").split(" ")[0]
     history = "\n".join(f"{'CUSTOMER' if t['role'] == 'customer' else 'REP'}: {t['text']}" for t in session.get("turns", []))
     exchanges = sum(1 for t in session.get("turns", []) if t["role"] == "rep") + 1
-    user = f"CALL SO FAR:\n{history}\nREP: {rep_text}\n\n(This is exchange {exchanges}. Reply as the customer.)"
     live = session.get("mode") == "phone"
+    started = session.get("started_at")
+    minutes = ((_now() - (started.replace(tzinfo=timezone.utc) if started and started.tzinfo is None else started)).total_seconds() / 60) if started else 0
+    out_of_time = live and (minutes >= PHONE_MAX_MINUTES or exchanges >= PHONE_MAX_TURNS)
+    user = f"CALL SO FAR:\n{history}\nREP: {rep_text}\n\n(This is exchange {exchanges}. Reply as the customer." + (" You are out of time: wrap up in one sentence, say goodbye and set ended to true.)" if out_of_time else ")")
     try:
         data = await _llm_json(_customer_system(script, persona, session.get("store_name") or "the dealership", rep_first, session.get("curveballs") or [], live), user, timeout=45)
     except Exception as e:
         logger.warning(f"[Roleplay] customer turn failed: {e}")
         data = {}
     say = no_em_dash(str(data.get("say") or "Sorry, could you say that again?")).strip()[:600]
-    ended = bool(data.get("ended")) or exchanges >= MAX_TURNS
+    ended = bool(data.get("ended")) or out_of_time or (not live and exchanges >= MAX_TURNS)
     now = _now()
     rep_turn = {"role": "rep", "text": rep_text, "at": now}
     cust_turn = {"role": "customer", "text": say, "audio_url": None, "at": now, "mood": data.get("mood") or "neutral"}
