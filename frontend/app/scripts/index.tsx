@@ -65,7 +65,7 @@ export default function ScriptsLibrary() {
           )}
 
           <Text style={{ fontSize: 13, color: colors.textSecondary, lineHeight: 18 }}>
-            Read it, print it, or tap Practice to run the call against Jessi playing a real customer. You get scored like a recorded call, plus coaching.
+            Read it, print it, or tap Practice: Jessi calls your phone as a real customer (or you type it out on the floor), then you get scored like a recorded call, plus coaching.
           </Text>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.card, borderRadius: 12, paddingHorizontal: 12, height: 42, borderWidth: 1, borderColor: colors.border }}>

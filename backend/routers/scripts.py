@@ -1,11 +1,13 @@
 """Scripts & Practice API: phone-script library, training-video script generator, voice roleplay (mystery shop) + assignments."""
+import asyncio
 import base64
+import json
 import logging
 from datetime import datetime, timezone
 from typing import Optional
 
 from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import Response
 from pydantic import BaseModel
 
@@ -247,6 +249,45 @@ async def roleplay_start(body: StartBody, request: Request):
     return await svc.start_session(db, me, script, assignment)
 
 
+@router.post("/roleplay/call")
+async def roleplay_call(body: StartBody, request: Request):
+    """Phone practice: we ring the rep's cell and Jessi's customer talks live (Twilio ConversationRelay)."""
+    me = await _current(request)
+    db = get_db()
+    script = await db.scripts.find_one({"_id": _oid(body.script_id), "kind": "phone", "active": {"$ne": False}})
+    if not script:
+        raise HTTPException(status_code=404, detail="Script not found")
+    assignment = None
+    if body.assignment_id:
+        assignment = await db.mystery_shops.find_one({"_id": _oid(body.assignment_id, "Assignment"), "rep_ids": str(me["_id"])})
+        if not assignment:
+            raise HTTPException(status_code=404, detail="Assignment not found")
+    await db.roleplay_sessions.update_many({"user_id": str(me["_id"]), "status": {"$in": ["active", "ending", "dialing", "live"]}}, {"$set": {"status": "abandoned", "updated_at": datetime.now(timezone.utc)}})
+    try:
+        return await svc.start_phone_session(db, me, script, assignment)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+
+
+@router.post("/roleplay/{sid}/hangup")
+async def roleplay_hangup(sid: str, request: Request):
+    me = await _current(request)
+    db = get_db()
+    s = await _session(db, sid, me, owner_only=True)
+    if s.get("mode") == "phone" and s.get("call_sid") and s.get("status") in ("dialing", "live", "ending"):
+        from services.lead_call_engine import _twilio_client
+        client = _twilio_client()
+        if client:
+            try:
+                await asyncio.to_thread(client.calls(s["call_sid"]).update, status="completed")
+            except Exception as e:
+                logger.debug(f"[Roleplay] hangup failed: {e}")
+        asyncio.create_task(svc.finalize_session(db, sid, "rep_hung_up_in_app"))
+    return {"ok": True}
+
+
 async def _session(db, sid: str, me: dict, owner_only: bool = False) -> dict:
     """Owner always; managers may read (coaching) but never speak or end someone else's call."""
     s = await db.roleplay_sessions.find_one({"_id": _oid(sid, "Session")})
@@ -306,9 +347,11 @@ def _result_out(ev: dict, s: dict) -> dict:
 async def roleplay_get(sid: str, request: Request):
     me = await _current(request)
     db = get_db()
-    s = await _session(db, sid, me)
+    s = await svc.reconcile_dialing(db, await _session(db, sid, me))
     ev = await db.call_evaluations.find_one({"_id": ObjectId(s["evaluation_id"])}) if s.get("evaluation_id") and ObjectId.is_valid(str(s["evaluation_id"])) else None
-    return {"session_id": sid, "status": s["status"], "script_title": s.get("script_title"), "script_id": s.get("script_id"), "persona": {k: (s.get("persona") or {}).get(k) for k in ("name", "summary", "voice")},
+    return {"session_id": sid, "status": s["status"], "mode": s.get("mode", "text"), "call_status": s.get("call_status"), "fail_reason": s.get("fail_reason"),
+            "recording_url": s.get("recording_url"), "rep_phone": s.get("rep_phone"),
+            "script_title": s.get("script_title"), "script_id": s.get("script_id"), "persona": {k: (s.get("persona") or {}).get(k) for k in ("name", "summary", "voice")},
             "rep_name": s.get("rep_name"), "turns": [svc._turn_out(t) for t in s.get("turns", [])], "started_at": s["started_at"].isoformat() if s.get("started_at") else None,
             "result": _result_out(ev, s) if ev else None}
 
@@ -382,3 +425,102 @@ async def shops_cancel(shop_id: str, request: Request):
     if not res.matched_count:
         raise HTTPException(status_code=404, detail="Assignment not found")
     return {"cancelled": True}
+
+
+# ---------------------------------------------------------------- Twilio side of a phone practice call (no user auth: per-session token)
+relay_router = APIRouter(prefix="/scripts/roleplay", tags=["Scripts & Practice"])
+
+
+async def _phone_session(sid: str, token: str) -> dict:
+    s = await get_db().roleplay_sessions.find_one({"_id": _oid(sid, "Session"), "token": token, "mode": "phone"}) if ObjectId.is_valid(sid) else None
+    if not s:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return s
+
+
+def _twiml(xml: str) -> Response:
+    return Response(content=xml, media_type="application/xml")
+
+
+@relay_router.post("/twiml/{sid}")
+async def relay_twiml(sid: str, t: str):
+    return _twiml(svc.relay_twiml(await _phone_session(sid, t)))
+
+
+@relay_router.post("/after/{sid}")
+async def relay_after(sid: str, t: str, request: Request):
+    s = await _phone_session(sid, t)
+    form = await request.form()
+    if form.get("SessionStatus") == "failed":
+        logger.warning(f"[Roleplay] ConversationRelay failed for {sid}: {form.get('ErrorCode')} {form.get('ErrorMessage')}")
+        if not any(x.get("role") == "rep" for x in s.get("turns", [])):
+            await get_db().roleplay_sessions.update_one({"_id": s["_id"], "status": {"$in": ["dialing", "live"]}},
+                                                        {"$set": {"status": "failed", "fail_reason": f"The practice line had a problem ({form.get('ErrorCode') or 'relay'})", "updated_at": datetime.now(timezone.utc)}})
+            return _twiml(svc.hangup_twiml("Sorry, the practice line had a problem. Please try again in a minute."))
+    asyncio.create_task(svc.finalize_session(get_db(), sid, f"relay_{form.get('SessionStatus') or 'ended'}"))
+    return _twiml(svc.hangup_twiml("Nice work. Your practice call is being graded, check the app in a moment."))
+
+
+@relay_router.post("/status/{sid}")
+async def relay_status(sid: str, t: str, request: Request):
+    s = await _phone_session(sid, t)
+    form = await request.form()
+    status = form.get("CallStatus") or ""
+    db = get_db()
+    sets = {"call_status": status, "updated_at": datetime.now(timezone.utc)}
+    if status in ("ringing", "initiated", "queued") and s.get("status") == "dialing":
+        await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": sets})
+    elif status == "in-progress":
+        await db.roleplay_sessions.update_one({"_id": s["_id"], "status": "dialing"}, {"$set": {**sets, "status": "live"}})
+    elif status in svc.FAIL_REASONS and s.get("status") in ("dialing",):
+        await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {**sets, "status": "failed", "fail_reason": svc.FAIL_REASONS[status]}})
+    elif status == "completed":
+        await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": sets})
+        asyncio.create_task(svc.finalize_session(db, sid, "call_completed"))
+    return Response(content="", status_code=204)
+
+
+@relay_router.post("/recording/{sid}")
+async def relay_recording(sid: str, t: str, request: Request):
+    await _phone_session(sid, t)
+    form = await request.form()
+    if form.get("RecordingUrl"):
+        asyncio.create_task(svc.save_recording(get_db(), sid, form["RecordingUrl"], form.get("RecordingDuration")))
+    return Response(content="", status_code=204)
+
+
+@relay_router.websocket("/relay/{sid}/{token}")
+async def relay_ws(ws: WebSocket, sid: str, token: str):
+    """ConversationRelay <-> Jessi: rep speech arrives as text prompts, the customer's reply goes back as text to be spoken."""
+    db = get_db()
+    s = await db.roleplay_sessions.find_one({"_id": ObjectId(sid), "token": token, "mode": "phone"}) if ObjectId.is_valid(sid) else None
+    if not s:
+        await ws.close(code=1008)
+        return
+    await ws.accept()
+    try:
+        while True:
+            msg = json.loads(await ws.receive_text())
+            kind = msg.get("type")
+            if kind == "setup":
+                await svc.relay_setup(db, sid, msg)
+            elif kind == "prompt":
+                heard = (msg.get("voicePrompt") or "").strip()
+                if not msg.get("last", True) or not heard:
+                    continue
+                out = await svc.relay_turn(db, sid, heard)
+                if out["say"]:
+                    await ws.send_text(json.dumps({"type": "text", "token": out["say"], "last": True}))
+                if out["ended"]:
+                    await asyncio.sleep(min(12.0, 1.5 + len(out["say"]) / 14))
+                    await ws.send_text(json.dumps({"type": "end", "handoffData": json.dumps({"reason": "customer_ended"})}))
+            elif kind == "interrupt":
+                await svc.relay_interrupt(db, sid, msg.get("utteranceUntilInterrupt"))
+            elif kind == "error":
+                logger.warning(f"[Roleplay] relay error for {sid}: {msg.get('description')}")
+    except WebSocketDisconnect:
+        pass
+    except Exception as e:
+        logger.warning(f"[Roleplay] relay websocket ended for {sid}: {e}")
+    finally:
+        asyncio.create_task(svc.finalize_session(db, sid, "websocket_closed"))

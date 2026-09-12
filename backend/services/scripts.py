@@ -17,7 +17,6 @@ from utils.text_sanitize import no_em_dash
 logger = logging.getLogger(__name__)
 
 MODEL = ("openai", "gpt-5.2")
-TTS_VOICES = {"female": "nova", "male": "onyx", "young": "shimmer", "older": "echo"}
 MERGE_FIELDS = ["first_name", "vehicle", "store", "rep_name", "appointment_time", "trade"]
 MAX_TURNS = 14
 
@@ -320,23 +319,188 @@ def _pdf_safe(s: str) -> str:
 
 
 # ---------------------------------------------------------------- roleplay (mystery shop)
-async def tts_url(text: str, voice_key: str, session_id: str, turn: int) -> Optional[str]:
+RELAY_VOICES = {"female": "en-US-Journey-F", "male": "en-US-Journey-D", "young": "en-US-Journey-O", "older": "en-US-Journey-F"}
+FAIL_REASONS = {"busy": "Your phone was busy", "no-answer": "No answer, we let it ring for 25 seconds", "failed": "The call could not be placed", "canceled": "The call was cancelled"}
+
+
+def _app_url() -> str:
+    return os.environ.get("PUBLIC_FACING_URL", os.environ.get("APP_URL", "https://app.imonsocial.com")).rstrip("/")
+
+
+def _xml(v: str) -> str:
+    return (v or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
+
+def relay_twiml(session: dict) -> str:
+    """TwiML that hands the answered call to ConversationRelay, which streams the rep's speech to our websocket and speaks Jessi's customer lines."""
+    sid, token = str(session["_id"]), session["token"]
+    base = _app_url()
+    persona = session.get("persona") or {}
+    ws = base.replace("https://", "wss://").replace("http://", "ws://") + f"/api/scripts/roleplay/relay/{sid}/{token}"
+    opening = persona.get("opening_line") or "Hi, I'm calling about a car I saw online."
+    hints = ",".join(h for h in [session.get("store_name"), persona.get("name")] if h)
+    return (f'<?xml version="1.0" encoding="UTF-8"?><Response><Connect action="{_xml(base)}/api/scripts/roleplay/after/{sid}?t={token}">'
+            f'<ConversationRelay url="{_xml(ws)}" welcomeGreeting="{_xml(opening)}" ttsProvider="Google" voice="{RELAY_VOICES.get(persona.get("voice"), "en-US-Journey-F")}" '
+            f'transcriptionProvider="Deepgram" interruptible="any" interruptSensitivity="medium" ignoreBackchannel="true" hints="{_xml(hints)}" />'
+            f'</Connect></Response>')
+
+
+def hangup_twiml(text: str) -> str:
+    return f'<?xml version="1.0" encoding="UTF-8"?><Response><Say voice="Google.en-US-Journey-F">{_xml(text)}</Say><Hangup/></Response>'
+
+
+async def start_phone_session(db, me: dict, script: dict, assignment: Optional[dict] = None) -> dict:
+    """Create the session and ring the rep's cell; Twilio then fetches relay_twiml when they answer."""
+    from routers.twilio_webhooks import normalize_phone
+    from services.lead_call_engine import _twilio_client
+    rep_phone = normalize_phone(me.get("phone") or "")
+    if not rep_phone or len(rep_phone) < 11:
+        raise ValueError("Add your cell number to your profile first, that is the phone we call")
+    client = _twilio_client()
+    if client is None:
+        raise RuntimeError("Calling is not set up on this account yet")
+    from_number = me.get("twilio_number") or me.get("mvpline_number") or os.environ.get("TWILIO_PHONE_NUMBER", "")
+    if not from_number:
+        raise RuntimeError("No number to call you from yet, ask your admin to assign one")
+    store = await db.stores.find_one({"_id": ObjectId(me["store_id"])}, {"name": 1}) if ObjectId.is_valid(str(me.get("store_id") or "")) else None
+    persona = (assignment or {}).get("persona") or script.get("persona") or {"name": "Customer", "voice": "female", "summary": "A shopper calling about a vehicle.", "goals": "Learn more", "objections": [], "opening_line": "Hi, I'm calling about a car I saw online."}
+    now = _now()
+    token = uuid.uuid4().hex
+    doc = {"user_id": str(me["_id"]), "rep_name": me.get("name") or "", "rep_phone": rep_phone, "store_id": me.get("store_id"), "store_name": (store or {}).get("name") or "the dealership",
+           "script_id": str(script["_id"]), "script_title": script.get("title"), "script_slug": script.get("slug"), "persona": persona, "curveballs": (assignment or {}).get("curveballs") or [],
+           "assignment_id": str(assignment["_id"]) if assignment else None, "mode": "phone", "status": "dialing", "token": token, "turns": [], "started_at": now, "updated_at": now}
+    res = await db.roleplay_sessions.insert_one(doc)
+    sid = str(res.inserted_id)
+    base = f"{_app_url()}/api/scripts/roleplay"
     try:
-        from emergentintegrations.llm.openai import OpenAITextToSpeech
-        from utils.image_storage import put_object
-        tts = OpenAITextToSpeech(api_key=os.environ["EMERGENT_LLM_KEY"])
-        audio = await asyncio.wait_for(tts.generate_speech(text=text[:900], model="tts-1", voice=TTS_VOICES.get(voice_key, "nova"), speed=1.0, response_format="mp3"), timeout=40)
-        path = f"roleplay/{session_id}/turn_{turn}.mp3"
-        stored = (await asyncio.to_thread(put_object, path, audio, "audio/mpeg")).get("path") or path
-        return f"/api/images/{stored}"
+        call = await asyncio.to_thread(
+            client.calls.create, to=rep_phone, from_=from_number, url=f"{base}/twiml/{sid}?t={token}", method="POST",
+            status_callback=f"{base}/status/{sid}?t={token}", status_callback_event=["answered", "completed"], status_callback_method="POST",
+            record=True, recording_status_callback=f"{base}/recording/{sid}?t={token}", recording_status_callback_event=["completed"], timeout=25)
     except Exception as e:
-        logger.warning(f"[Roleplay] TTS failed: {e}")
+        logger.warning(f"[Roleplay] could not place practice call: {e}")
+        await db.roleplay_sessions.update_one({"_id": res.inserted_id}, {"$set": {"status": "failed", "fail_reason": "The call could not be placed", "updated_at": _now()}})
+        raise RuntimeError("The call could not be placed, try again in a minute")
+    await db.roleplay_sessions.update_one({"_id": res.inserted_id}, {"$set": {"call_sid": call.sid, "call_status": "queued"}})
+    return {"session_id": sid, "status": "dialing", "persona": {k: persona.get(k) for k in ("name", "summary", "voice")}, "script_title": script.get("title"), "rep_phone": rep_phone}
+
+
+async def reconcile_dialing(db, s: dict) -> dict:
+    """Status callbacks can be lost; after 30s of dialing ask Twilio directly so the app never spins forever."""
+    started = s.get("started_at")
+    if started and started.tzinfo is None:
+        started = started.replace(tzinfo=timezone.utc)
+    if s.get("mode") != "phone" or s.get("status") != "dialing" or not s.get("call_sid") or not started or (_now() - started).total_seconds() < 30:
+        return s
+    from services.lead_call_engine import _twilio_client
+    client = _twilio_client()
+    if client is None:
+        return s
+    try:
+        call = await asyncio.to_thread(client.calls(s["call_sid"]).fetch)
+    except Exception as e:
+        logger.debug(f"[Roleplay] reconcile fetch failed: {e}")
+        return s
+    sets = {"call_status": call.status, "updated_at": _now()}
+    if call.status in FAIL_REASONS:
+        sets.update(status="failed", fail_reason=FAIL_REASONS[call.status])
+    elif call.status == "in-progress":
+        sets["status"] = "live"
+    elif call.status == "completed":
+        await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": sets})
+        await finalize_session(db, str(s["_id"]), "reconciled_completed")
+        return await db.roleplay_sessions.find_one({"_id": s["_id"]})
+    await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": sets})
+    return {**s, **sets}
+
+
+async def relay_setup(db, sid: str, msg: dict):
+    """ConversationRelay connected: the greeting is about to play, so the clock starts here."""
+    s = await db.roleplay_sessions.find_one({"_id": ObjectId(sid)}, {"persona": 1, "turns": 1})
+    if not s:
+        return
+    now = _now()
+    sets = {"status": "live", "call_status": "in-progress", "started_at": now, "updated_at": now}
+    if msg.get("callSid"):
+        sets["call_sid"] = msg["callSid"]
+    update = {"$set": sets}
+    if not s.get("turns"):
+        opening = (s.get("persona") or {}).get("opening_line") or "Hi, I'm calling about a car I saw online."
+        update["$push"] = {"turns": {"role": "customer", "text": opening, "audio_url": None, "at": now, "mood": "neutral"}}
+    await db.roleplay_sessions.update_one({"_id": s["_id"]}, update)
+
+
+async def relay_turn(db, sid: str, heard: str) -> dict:
+    s = await db.roleplay_sessions.find_one({"_id": ObjectId(sid)})
+    if not s or s.get("status") not in ("live", "ending", "dialing"):
+        return {"say": "", "ended": True}
+    out = await customer_turn(db, s, heard[:1200])
+    return {"say": out["customer"]["text"], "ended": out["ended"]}
+
+
+async def relay_interrupt(db, sid: str, spoken: Optional[str]):
+    """Rep talked over the customer: keep only what was actually heard so grading matches the real call."""
+    s = await db.roleplay_sessions.find_one({"_id": ObjectId(sid)}, {"turns": 1})
+    turns = (s or {}).get("turns") or []
+    if not turns or turns[-1].get("role") != "customer":
+        return
+    idx = len(turns) - 1
+    sets = {f"turns.{idx}.interrupted": True}
+    if spoken and spoken.strip():
+        sets[f"turns.{idx}.text"] = spoken.strip()
+    await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": sets})
+
+
+async def finalize_session(db, sid: str, reason: str) -> Optional[dict]:
+    """Call over (hang-up, customer ended, websocket closed): grade once, whoever gets here first."""
+    claimed = await db.roleplay_sessions.find_one_and_update(
+        {"_id": ObjectId(sid), "mode": "phone", "status": {"$in": ["live", "ending", "dialing"]}},
+        {"$set": {"status": "grading", "ended_at": _now(), "end_reason": reason, "updated_at": _now()}})
+    if not claimed:
+        return None
+    s = await db.roleplay_sessions.find_one({"_id": ObjectId(sid)})
+    if not any(t.get("role") == "rep" for t in s.get("turns", [])):
+        await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"status": "abandoned", "fail_reason": "The call ended before you said anything", "updated_at": _now()}})
+        return None
+    try:
+        return await grade_session(db, s)
+    except Exception as e:
+        logger.warning(f"[Roleplay] grading after phone call failed: {e}")
+        await db.roleplay_sessions.update_one({"_id": s["_id"]}, {"$set": {"status": "failed", "fail_reason": "Grading failed, the call is saved", "updated_at": _now()}})
         return None
 
 
-def _customer_system(script: dict, persona: dict, store_name: str, rep_first: str, curveballs: list) -> str:
+async def save_recording(db, sid: str, recording_url: str, duration: Optional[str]):
+    """Pull the mp3 from Twilio into our storage so playback needs no Twilio auth."""
+    import httpx
+    from utils.image_storage import put_object
+    tw_sid, tw_tok = os.environ.get("TWILIO_ACCOUNT_SID", ""), os.environ.get("TWILIO_AUTH_TOKEN", "")
+    mp3 = recording_url if recording_url.endswith(".mp3") else f"{recording_url}.mp3"
+    for attempt in range(3):
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(mp3, auth=(tw_sid, tw_tok), follow_redirects=True, timeout=60.0)
+        if resp.status_code == 200 and resp.content:
+            break
+        await asyncio.sleep(2 + attempt * 2)
+    else:
+        logger.warning(f"[Roleplay] recording fetch failed for {sid}: HTTP {resp.status_code}")
+        return
+    path = f"roleplay/{sid}/call.mp3"
+    stored = (await asyncio.to_thread(put_object, path, resp.content, "audio/mpeg")).get("path") or path
+    sets = {"recording_url": f"/api/images/{stored}", "recording_twilio_url": recording_url, "updated_at": _now()}
+    try:
+        sets["recording_seconds"] = int(float(duration)) if duration else None
+    except ValueError:
+        pass
+    await db.roleplay_sessions.update_one({"_id": ObjectId(sid)}, {"$set": sets})
+    await db.call_evaluations.update_one({"roleplay_session_id": sid}, {"$set": {"recording_url": sets["recording_url"]}})
+
+
+def _customer_system(script: dict, persona: dict, store_name: str, rep_first: str, curveballs: list, live: bool = False) -> str:
     return (f"You are {persona.get('name', 'a customer')}, a real car shopper on a phone call with {rep_first}, a salesperson at {store_name}. "
-            f"WHO YOU ARE: {persona.get('summary', '')} WHAT YOU WANT: {persona.get('goals', '')} "
+            + ("This is a LIVE voice call: your words are read aloud the moment you answer, so keep every reply to 1 or 2 short spoken sentences, no lists, spell nothing out. "
+               "The transcript of what the rep said may contain speech-to-text mistakes; interpret generously. " if live else "")
+            + f"WHO YOU ARE: {persona.get('summary', '')} WHAT YOU WANT: {persona.get('goals', '')} "
             f"OBJECTIONS YOU RAISE (one at a time, only when it fits): {'; '.join(persona.get('objections') or [])}. "
             + (f"CURVEBALLS TO WORK IN: {'; '.join(curveballs)}. " if curveballs else "")
             + "RULES: Speak like a real person on the phone: short, 1 to 3 sentences, contractions, occasional hesitation. Never narrate, never break character, never coach. "
@@ -353,12 +517,11 @@ async def start_session(db, me: dict, script: dict, assignment: Optional[dict] =
     now = _now()
     doc = {"user_id": str(me["_id"]), "rep_name": me.get("name") or "", "store_id": me.get("store_id"), "store_name": (store or {}).get("name") or "the dealership",
            "script_id": str(script["_id"]), "script_title": script.get("title"), "script_slug": script.get("slug"), "persona": persona, "curveballs": curveballs,
-           "assignment_id": str(assignment["_id"]) if assignment else None, "status": "active", "turns": [], "started_at": now, "updated_at": now}
+           "assignment_id": str(assignment["_id"]) if assignment else None, "mode": "text", "status": "active", "turns": [], "started_at": now, "updated_at": now}
     res = await db.roleplay_sessions.insert_one(doc)
     sid = str(res.inserted_id)
     opening = persona.get("opening_line") or "Hi, I'm calling about a car I saw online."
-    audio = await tts_url(opening, persona.get("voice", "female"), sid, 0)
-    turn = {"role": "customer", "text": opening, "audio_url": audio, "at": now, "mood": "neutral"}
+    turn = {"role": "customer", "text": opening, "audio_url": None, "at": now, "mood": "neutral"}
     await db.roleplay_sessions.update_one({"_id": res.inserted_id}, {"$push": {"turns": turn}})
     return {"session_id": sid, "persona": {k: persona.get(k) for k in ("name", "summary", "voice")}, "script_title": script.get("title"), "customer": _turn_out(turn), "ended": False}
 
@@ -375,8 +538,9 @@ async def customer_turn(db, session: dict, rep_text: str) -> dict:
     history = "\n".join(f"{'CUSTOMER' if t['role'] == 'customer' else 'REP'}: {t['text']}" for t in session.get("turns", []))
     exchanges = sum(1 for t in session.get("turns", []) if t["role"] == "rep") + 1
     user = f"CALL SO FAR:\n{history}\nREP: {rep_text}\n\n(This is exchange {exchanges}. Reply as the customer.)"
+    live = session.get("mode") == "phone"
     try:
-        data = await _llm_json(_customer_system(script, persona, session.get("store_name") or "the dealership", rep_first, session.get("curveballs") or []), user, timeout=45)
+        data = await _llm_json(_customer_system(script, persona, session.get("store_name") or "the dealership", rep_first, session.get("curveballs") or [], live), user, timeout=45)
     except Exception as e:
         logger.warning(f"[Roleplay] customer turn failed: {e}")
         data = {}
@@ -384,9 +548,7 @@ async def customer_turn(db, session: dict, rep_text: str) -> dict:
     ended = bool(data.get("ended")) or exchanges >= MAX_TURNS
     now = _now()
     rep_turn = {"role": "rep", "text": rep_text, "at": now}
-    idx = len(session.get("turns", [])) + 1
-    audio = await tts_url(say, persona.get("voice", "female"), str(session["_id"]), idx)
-    cust_turn = {"role": "customer", "text": say, "audio_url": audio, "at": now, "mood": data.get("mood") or "neutral"}
+    cust_turn = {"role": "customer", "text": say, "audio_url": None, "at": now, "mood": data.get("mood") or "neutral"}
     await db.roleplay_sessions.update_one({"_id": session["_id"]}, {"$push": {"turns": {"$each": [rep_turn, cust_turn]}}, "$set": {"updated_at": now, **({"status": "ending"} if ended else {})}})
     return {"rep": _turn_out(rep_turn), "customer": _turn_out(cust_turn), "ended": ended}
 

@@ -12,8 +12,10 @@ import { CriteriaChecklist } from '../../components/scorecards/CriteriaChecklist
 import { fmtDur } from '../../components/scorecards/shared';
 import { GOLD, GREEN, RED, tid, type RoleplayResult, type Turn } from '../../components/scripts/shared';
 import { SuccessPoints } from '../../components/scripts/ScriptParts';
+import { CallRecordingPlayer } from '../../components/CallRecordingPlayer';
+import { resolvePhotoUrl } from '../../utils/photoUrl';
 
-type SessionOut = { session_id: string; status: string; script_title: string; script_id: string; persona: { name: string }; rep_name: string; turns: Turn[]; result: RoleplayResult | null };
+type SessionOut = { session_id: string; status: string; mode?: string; recording_url?: string | null; script_title: string; script_id: string; persona: { name: string }; rep_name: string; turns: Turn[]; result: RoleplayResult | null };
 
 export default function PracticeResult() {
   const router = useRouter();
@@ -57,7 +59,7 @@ export default function PracticeResult() {
               <ScoreRing pct={r.adherence?.score_pct} size={84} stroke={8} colors={colors} label="SCRIPT" testID="practice-adherence-ring" />
               <View style={{ flex: 1, gap: 6 }}>
                 <Text style={{ fontSize: 17, fontWeight: '800', color: colors.text }} {...tid('practice-result-headline')}>{headline}</Text>
-                <Text style={{ fontSize: 12, color: colors.textSecondary }}>With {data.persona?.name || 'the customer'} · {fmtDur(r.duration_s || 0)}{r.scorecard_name ? ` · ${r.scorecard_name}` : ''}</Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary }}>{data.mode === 'phone' ? 'Phone call with' : 'Typed with'} {data.persona?.name || 'the customer'} · {fmtDur(r.duration_s || 0)}{r.scorecard_name ? ` · ${r.scorecard_name}` : ''}</Text>
                 {r.critical_misses.length > 0 ? (
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}><Ionicons name="alert-circle" size={15} color={RED} /><Text style={{ fontSize: 13, fontWeight: '700', color: RED }} {...tid('practice-critical-count')}>{r.critical_misses.length} critical miss{r.critical_misses.length === 1 ? '' : 'es'}</Text></View>
                 ) : r.scorecard_name ? (
@@ -68,6 +70,12 @@ export default function PracticeResult() {
             {!!(r.summary || r.adherence?.summary) && <Text style={{ fontSize: 14.5, color: colors.text, lineHeight: 21 }} {...tid('practice-summary')}>{r.summary || r.adherence?.summary}</Text>}
           </View>
 
+          {!!data.recording_url && (
+            <View style={{ backgroundColor: colors.card, borderRadius: 14, padding: 12, borderWidth: 1, borderColor: colors.border, gap: 6 }} {...tid('practice-recording')}>
+              <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 1 }}>LISTEN BACK</Text>
+              <CallRecordingPlayer url={resolvePhotoUrl(data.recording_url)!} tint={GOLD} textColor={colors.text} subColor={colors.textSecondary} trackColor={colors.border} />
+            </View>
+          )}
           {r.coaching.length > 0 && (
             <View style={{ backgroundColor: GOLD + '14', borderLeftWidth: 3, borderLeftColor: GOLD, borderRadius: 12, padding: 12, gap: 8 }} {...tid('practice-coaching')}>
               <Text style={{ fontSize: 11, fontWeight: '800', color: GOLD, letterSpacing: 1 }}>COACHING</Text>

@@ -721,6 +721,7 @@ from routers import contact_ask as contact_ask_router
 api_router.include_router(contact_ask_router.router)
 from routers import scripts as scripts_router
 api_router.include_router(scripts_router.router)
+api_router.include_router(scripts_router.relay_router)
 from routers import resend_webhooks as resend_webhooks_router
 api_router.include_router(resend_webhooks_router.router)
 api_router.include_router(wallet_pass.router)

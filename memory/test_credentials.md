@@ -43,5 +43,5 @@
 
 ## Scripts & Practice (June 2026)
 - Screens: `/scripts` (everyone), `/scripts/{id}`, `/scripts/practice?script=`, `/scripts/result?session=`, `/scripts/editor?id=`, `/scripts/assign` (managers), `/scripts/training` (super_admin only). Rep = activation-tester, manager = qa-manager, super admin = forest.
-- On web the practice mic cannot record headlessly: use the keyboard button (`practice-use-keyboard`) and type turns. LLM turns take 3-15s, grading 15-40s.
-- Backend smoke: `cd /app/backend && python tests/scripts_practice_smoke.py` (creates + cancels an assignment, leaves one completed roleplay_session). Extra pytest: `tests/test_scripts_practice_extra.py`.
+- Practice chooser: `practice-mode-phone` (rings the rep's cell via Twilio; on preview the activation-tester's 500-555 number comes back "Your phone was busy" after ~30s, which exercises the `practice-failed` / `practice-retry` state) or `practice-mode-text` (type turns via `practice-text-input` + `practice-text-send`). LLM turns take 3-15s, grading 15-40s.
+- Backend smoke: `cd /app/backend && python tests/scripts_practice_smoke.py` (creates + cancels an assignment, leaves one completed roleplay_session) and `python tests/relay_roleplay_sim.py` (simulates the Twilio ConversationRelay websocket end to end). Extra pytest: `tests/test_scripts_practice_extra.py`.
