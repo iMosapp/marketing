@@ -28,13 +28,23 @@ async def main():
     res = await db.roleplay_sessions.insert_one({
         "user_id": str(rep["_id"]), "rep_name": rep.get("name") or "Activation Tester", "rep_phone": "+15005550006", "store_id": str(rep.get("store_id")), "store_name": "QA Motors",
         "script_id": str(script["_id"]), "script_title": script["title"], "script_slug": script["slug"], "persona": script["persona"], "curveballs": ["She already has a quote from the store across town"],
-        "assignment_id": None, "mode": "phone", "status": "dialing", "token": token, "turns": [], "started_at": now, "updated_at": now, "qa_relay_sim": True})
+        "assignment_id": None, "mode": "phone", "status": "dialing", "token": token, "turns": [], "started_at": now, "updated_at": now, "qa_relay_sim": True, "direction": "inbound"})
     sid = str(res.inserted_id)
     print("session", sid)
 
     r = requests.post(f"{API}/api/scripts/roleplay/twiml/{sid}?t={token}", timeout=30)
-    assert r.status_code == 200 and "<ConversationRelay" in r.text and f"/relay/{sid}/{token}" in r.text and "welcomeGreeting" in r.text, (r.status_code, r.text[:300])
-    print("twiml ok:", r.text[:160], "...")
+    assert r.status_code == 200 and "<ConversationRelay" in r.text and f"/relay/{sid}/{token}" in r.text and "welcomeGreeting" not in r.text, (r.status_code, r.text[:300])
+    print("twiml ok (inbound = no welcomeGreeting, customer waits for the rep):", r.text[:120], "...")
+    # outbound scripts still greet the rep the moment they pick up
+    out_tpl = await db.scripts.find_one({"slug": "appointment_confirmation", "store_id": None})
+    out_tok = uuid.uuid4().hex
+    out_res = await db.roleplay_sessions.insert_one({"user_id": str(rep["_id"]), "rep_name": "Activation Tester", "rep_phone": "+15005550006", "store_name": "QA Motors", "script_id": str(out_tpl["_id"]),
+                                                     "script_title": out_tpl["title"], "script_slug": out_tpl["slug"], "persona": out_tpl["persona"], "curveballs": [], "mode": "phone", "status": "dialing",
+                                                     "token": out_tok, "turns": [], "started_at": now, "updated_at": now, "qa_relay_sim": True, "direction": "outbound"})
+    r = requests.post(f"{API}/api/scripts/roleplay/twiml/{out_res.inserted_id}?t={out_tok}", timeout=30)
+    assert r.status_code == 200 and 'welcomeGreeting="' in r.text, r.text[:300]
+    await db.roleplay_sessions.delete_one({"_id": out_res.inserted_id})
+    print("twiml ok (outbound keeps welcomeGreeting)")
     assert requests.post(f"{API}/api/scripts/roleplay/twiml/{sid}?t=bad", timeout=30).status_code == 404
 
     r = requests.post(f"{API}/api/scripts/roleplay/status/{sid}?t={token}", data={"CallStatus": "in-progress", "CallSid": "CA_sim"}, timeout=30)
@@ -44,11 +54,16 @@ async def main():
         await ws.send(json.dumps({"type": "setup", "sessionId": "VX_sim", "callSid": "CA_sim", "from": "+15005550100", "to": "+15005550006"}))
         await asyncio.sleep(0.5)
         s = await db.roleplay_sessions.find_one({"_id": res.inserted_id})
-        assert s["status"] == "live" and s["call_sid"] == "CA_sim" and s["turns"][0]["role"] == "customer", (s["status"], s.get("turns"))
-        print("setup ok: greeting turn recorded ->", s["turns"][0]["text"])
+        assert s["status"] == "live" and s["call_sid"] == "CA_sim" and not s["turns"], (s["status"], s.get("turns"))
+        print("setup ok: inbound call, no customer line until the rep answers")
 
-        lines = ["Thanks for calling QA Motors, this is Alex. Who do I have the pleasure of speaking with?",
-                 "Great to meet you Maria. The white Tahoe Z71 is here on the lot. What made you reach out about that one?",
+        t0 = time.time()
+        await ws.send(json.dumps({"type": "prompt", "voicePrompt": "Thanks for calling QA Motors, this is Alex. Who do I have the pleasure of speaking with?", "lang": "en-US", "last": True}))
+        reply = json.loads(await asyncio.wait_for(ws.recv(), timeout=60))
+        assert reply["type"] == "text" and reply["token"] == script["persona"]["opening_line"] and time.time() - t0 < 3, reply
+        print(f"rep answered -> customer opens with the scripted line in {time.time()-t0:.2f}s: {reply['token'][:80]}")
+
+        lines = ["Great to meet you Maria. The white Tahoe Z71 is here on the lot. What made you reach out about that one?",
                  "I hear you on the drive. I won't guess a payment over the phone because I'd rather be right with your money. I can have it washed and up front at 4:30 today or 10 tomorrow, which is better?"]
         for ln in lines:
             t0 = time.time()
@@ -84,7 +99,7 @@ async def main():
 
     tok = requests.post(f"{API}/api/auth/login", json={"email": "activation-tester@invalid.imonsocial.test", "password": "NewPass123!"}, timeout=30).json()["token"]
     g = requests.get(f"{API}/api/scripts/roleplay/{sid}", headers={"Authorization": f"Bearer {tok}"}, timeout=30).json()
-    assert g["mode"] == "phone" and g["status"] == "completed" and g["result"] and len(g["turns"]) >= 9, (g["mode"], g["status"], len(g["turns"]))
+    assert g["mode"] == "phone" and g["status"] == "completed" and g["result"] and len(g["turns"]) >= 8, (g["mode"], g["status"], len(g["turns"]))
     print("GET session ok:", g["mode"], g["status"], g["call_status"], "turns", len(g["turns"]))
 
     # a no-answer call fails cleanly

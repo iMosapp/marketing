@@ -52,7 +52,7 @@ export default function ScriptDetail() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
-      <ScreenHeader title={script?.title || 'Script'} subtitle={script ? [script.category, script.runtime].filter(Boolean).join(' · ') : undefined} testID="script-detail-header"
+      <ScreenHeader title={script?.title || 'Script'} subtitle={script ? [script.kind === 'phone' ? (script.direction === 'inbound' ? 'Customer calls in' : 'You call them') : '', script.category, script.runtime].filter(Boolean).join(' · ') : undefined} testID="script-detail-header"
         right={script && (isTraining || canEdit) ? <HeaderIconButton icon="create-outline" onPress={() => router.push(`/scripts/editor?id=${script.id}` as any)} testID="script-edit" /> : undefined} />
       {loading || !script ? <ActivityIndicator style={{ marginTop: 60 }} color={GOLD} /> : (
         <>

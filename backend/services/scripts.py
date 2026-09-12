@@ -24,7 +24,7 @@ PHONE_MAX_TURNS = 60
 
 # ---------------------------------------------------------------- starter phone scripts (global library, stores override by copying)
 STARTER_SCRIPTS = [
-    {"slug": "inbound_sales_call", "category": "Sales calls", "title": "Inbound sales call", "runtime": "3 to 5 min",
+    {"slug": "inbound_sales_call", "category": "Sales calls", "title": "Inbound sales call", "runtime": "3 to 5 min", "direction": "inbound",
      "purpose": "A customer calls in about a vehicle they saw online. Goal: build rapport, confirm the car, set a firm appointment.",
      "body": "Thanks for calling {store}, this is {rep_name}. Who do I have the pleasure of speaking with?\n\n"
              "Great to meet you, {first_name}. Which vehicle caught your eye? ... The {vehicle}, good choice. Let me pull it up while we talk.\n\n"
@@ -199,8 +199,8 @@ async def import_script_text(text: str) -> dict:
               "appointment times with {appointment_time} and trade-in mentions with {trade}, but only where the pasted text clearly refers to those things and ONLY inside body; write success_points and persona in plain words (no curly braces). "
               f"Pick category from {IMPORT_CATEGORIES}. success_points = 4 to 8 short graded behaviours the script asks the rep to do (start with a verb). "
               "persona = the customer this script is talking to, so a rep can practice against it: name (first and last), voice one of female/male/young/older, summary (age, situation, what they saw), goals as ONE sentence string, 2 to 4 objections they would raise, and an opening_line they would say to start the call. "
-              "runtime like '2 to 4 min'. purpose = one line on when to use it. Never use em dashes. "
-              "Return JSON: {title, category, runtime, purpose, body, success_points:[...], persona:{name, voice, summary, goals, objections:[...], opening_line}}.")
+              "runtime like '2 to 4 min'. purpose = one line on when to use it. direction = inbound when the customer is calling the store (the rep answers the phone), outbound when the rep places the call. Never use em dashes. "
+              "Return JSON: {title, category, direction, runtime, purpose, body, success_points:[...], persona:{name, voice, summary, goals, objections:[...], opening_line}}.")
     data = await _llm_json(system, f"PASTED SCRIPT:\n\n{text[:12000]}", timeout=90)
     if not (data.get("body") or "").strip():
         raise ValueError("Jessi could not read a script in that text")
@@ -210,6 +210,7 @@ async def import_script_text(text: str) -> dict:
     return {
         "title": no_em_dash(str(data.get("title") or "Imported script"))[:120],
         "category": data.get("category") if data.get("category") in IMPORT_CATEGORIES else "Custom",
+        "direction": "inbound" if str(data.get("direction") or "").lower() == "inbound" else "outbound",
         "runtime": no_em_dash(str(data.get("runtime") or ""))[:40],
         "purpose": no_em_dash(str(data.get("purpose") or ""))[:400],
         "body": no_em_dash(str(data.get("body")))[:8000],
@@ -223,7 +224,7 @@ async def import_script_text(text: str) -> dict:
 # ---------------------------------------------------------------- library
 def serialize_script(s: dict, store_id: Optional[str] = None) -> dict:
     return {
-        "id": str(s["_id"]), "slug": s.get("slug"), "kind": s.get("kind", "phone"), "category": s.get("category", ""), "title": s.get("title", ""),
+        "id": str(s["_id"]), "slug": s.get("slug"), "kind": s.get("kind", "phone"), "category": s.get("category", ""), "title": s.get("title", ""), "direction": script_direction(s),
         "runtime": s.get("runtime", ""), "purpose": s.get("purpose", ""), "body": s.get("body", ""), "success_points": s.get("success_points") or [],
         "persona": s.get("persona") or None, "store_id": s.get("store_id"), "is_store_copy": bool(s.get("store_id")),
         "customized": bool(s.get("store_id")) and s.get("store_id") == store_id, "scorecard_id": s.get("scorecard_id"),
@@ -238,9 +239,19 @@ async def ensure_starters(db) -> int:
     for tpl in STARTER_SCRIPTS:
         res = await db.scripts.update_one(
             {"slug": tpl["slug"], "store_id": None, "kind": "phone"},
-            {"$setOnInsert": {**tpl, "kind": "phone", "store_id": None, "active": True, "created_at": _now(), "updated_at": _now()}}, upsert=True)
+            {"$setOnInsert": {**{k: v for k, v in tpl.items() if k != "direction"}, "kind": "phone", "store_id": None, "active": True, "created_at": _now(), "updated_at": _now()},
+             "$set": {"direction": tpl.get("direction", "outbound")}}, upsert=True)
         n += 1 if res.upserted_id else 0
     return n
+
+
+STARTER_DIRECTIONS = {t["slug"]: t.get("direction", "outbound") for t in STARTER_SCRIPTS}
+
+
+def script_direction(s: dict) -> str:
+    """inbound = the customer is calling the store, so the rep answers first; outbound = the rep places the call and the customer picks up."""
+    d = (s or {}).get("direction")
+    return d if d in ("inbound", "outbound") else STARTER_DIRECTIONS.get((s or {}).get("slug") or "", "outbound")
 
 
 async def phone_library(db, store_id: Optional[str]) -> list:
@@ -261,7 +272,9 @@ async def save_store_copy(db, script_id: str, store_id: str, me: dict, patch: di
     src = await db.scripts.find_one({"_id": ObjectId(script_id)})
     if not src:
         raise LookupError("Script not found")
-    fields = {k: patch[k] for k in ("title", "category", "runtime", "purpose", "body", "success_points", "persona", "scorecard_id") if k in patch and patch[k] is not None}
+    fields = {k: patch[k] for k in ("title", "category", "runtime", "purpose", "body", "success_points", "persona", "scorecard_id", "direction") if k in patch and patch[k] is not None}
+    if fields.get("direction") not in (None, "inbound", "outbound"):
+        fields.pop("direction")
     if "body" in fields:
         fields["body"] = no_em_dash(str(fields["body"]))[:8000]
     if "title" in fields:
@@ -373,8 +386,10 @@ def relay_twiml(session: dict) -> str:
     ws = base.replace("https://", "wss://").replace("http://", "ws://") + f"/api/scripts/roleplay/relay/{sid}/{token}"
     opening = persona.get("opening_line") or "Hi, I'm calling about a car I saw online."
     hints = ",".join(h for h in [session.get("store_name"), persona.get("name")] if h)
+    # inbound = the customer is calling in, so the AI stays quiet until the rep answers the phone
+    greeting = "" if session.get("direction") == "inbound" else f'welcomeGreeting="{_xml(opening)}" '
     return (f'<?xml version="1.0" encoding="UTF-8"?><Response><Connect action="{_xml(base)}/api/scripts/roleplay/after/{sid}?t={token}">'
-            f'<ConversationRelay url="{_xml(ws)}" welcomeGreeting="{_xml(opening)}" ttsProvider="Google" voice="{RELAY_VOICES.get(persona.get("voice"), "en-US-Journey-F")}" '
+            f'<ConversationRelay url="{_xml(ws)}" {greeting}ttsProvider="Google" voice="{RELAY_VOICES.get(persona.get("voice"), "en-US-Journey-F")}" '
             f'transcriptionProvider="Deepgram" interruptible="any" interruptSensitivity="medium" ignoreBackchannel="true" hints="{_xml(hints)}" />'
             f'</Connect></Response>')
 
@@ -401,7 +416,7 @@ async def start_phone_session(db, me: dict, script: dict, assignment: Optional[d
     now = _now()
     token = uuid.uuid4().hex
     doc = {"user_id": str(me["_id"]), "rep_name": me.get("name") or "", "rep_phone": rep_phone, "store_id": me.get("store_id"), "store_name": (store or {}).get("name") or "the dealership",
-           "script_id": str(script["_id"]), "script_title": script.get("title"), "script_slug": script.get("slug"), "persona": persona, "curveballs": (assignment or {}).get("curveballs") or [],
+           "script_id": str(script["_id"]), "script_title": script.get("title"), "script_slug": script.get("slug"), "direction": script_direction(script), "persona": persona, "curveballs": (assignment or {}).get("curveballs") or [],
            "assignment_id": str(assignment["_id"]) if assignment else None, "mode": "phone", "status": "dialing", "token": token, "turns": [], "started_at": now, "updated_at": now}
     res = await db.roleplay_sessions.insert_one(doc)
     sid = str(res.inserted_id)
@@ -416,7 +431,7 @@ async def start_phone_session(db, me: dict, script: dict, assignment: Optional[d
         await db.roleplay_sessions.update_one({"_id": res.inserted_id}, {"$set": {"status": "failed", "fail_reason": "The call could not be placed", "updated_at": _now()}})
         raise RuntimeError("The call could not be placed, try again in a minute")
     await db.roleplay_sessions.update_one({"_id": res.inserted_id}, {"$set": {"call_sid": call.sid, "call_status": "queued"}})
-    return {"session_id": sid, "status": "dialing", "persona": {k: persona.get(k) for k in ("name", "summary", "voice")}, "script_title": script.get("title"), "rep_phone": rep_phone}
+    return {"session_id": sid, "status": "dialing", "direction": script_direction(script), "persona": {k: persona.get(k) for k in ("name", "summary", "voice")}, "script_title": script.get("title"), "rep_phone": rep_phone}
 
 
 async def reconcile_dialing(db, s: dict) -> dict:
@@ -450,7 +465,7 @@ async def reconcile_dialing(db, s: dict) -> dict:
 
 async def relay_setup(db, sid: str, msg: dict):
     """ConversationRelay connected: the greeting is about to play, so the clock starts here."""
-    s = await db.roleplay_sessions.find_one({"_id": ObjectId(sid)}, {"persona": 1, "turns": 1})
+    s = await db.roleplay_sessions.find_one({"_id": ObjectId(sid)}, {"persona": 1, "turns": 1, "direction": 1})
     if not s:
         return
     now = _now()
@@ -458,7 +473,7 @@ async def relay_setup(db, sid: str, msg: dict):
     if msg.get("callSid"):
         sets["call_sid"] = msg["callSid"]
     update = {"$set": sets}
-    if not s.get("turns"):
+    if not s.get("turns") and s.get("direction") != "inbound":
         opening = (s.get("persona") or {}).get("opening_line") or "Hi, I'm calling about a car I saw online."
         update["$push"] = {"turns": {"role": "customer", "text": opening, "audio_url": None, "at": now, "mood": "neutral"}}
     await db.roleplay_sessions.update_one({"_id": s["_id"]}, update)
@@ -530,8 +545,9 @@ async def save_recording(db, sid: str, recording_url: str, duration: Optional[st
     await db.call_evaluations.update_one({"roleplay_session_id": sid}, {"$set": {"recording_url": sets["recording_url"]}})
 
 
-def _customer_system(script: dict, persona: dict, store_name: str, rep_first: str, curveballs: list, live: bool = False) -> str:
+def _customer_system(script: dict, persona: dict, store_name: str, rep_first: str, curveballs: list, live: bool = False, direction: str = "outbound") -> str:
     return (f"You are {persona.get('name', 'a customer')}, a real car shopper on a phone call with {rep_first}, a salesperson at {store_name}. "
+            + ("YOU placed this call to the store, so you drive the reason for calling. " if direction == "inbound" else "The salesperson called YOU, so they drive the conversation and you react. ")
             + ("This is a LIVE voice call: your words are read aloud the moment you answer, so keep every reply to 1 or 2 short spoken sentences, no lists, spell nothing out. "
                "The transcript of what the rep said may contain speech-to-text mistakes; interpret generously. " if live else "")
             + f"WHO YOU ARE: {persona.get('summary', '')} WHAT YOU WANT: {persona.get('goals', '')} "
@@ -551,15 +567,19 @@ async def start_session(db, me: dict, script: dict, assignment: Optional[dict] =
     persona = (assignment or {}).get("persona") or script.get("persona") or {"name": "Customer", "voice": "female", "summary": "A shopper calling about a vehicle.", "goals": "Learn more", "objections": [], "opening_line": "Hi, I'm calling about a car I saw online."}
     curveballs = (assignment or {}).get("curveballs") or []
     now = _now()
+    direction = script_direction(script)
     doc = {"user_id": str(me["_id"]), "rep_name": me.get("name") or "", "store_id": me.get("store_id"), "store_name": (store or {}).get("name") or "the dealership",
-           "script_id": str(script["_id"]), "script_title": script.get("title"), "script_slug": script.get("slug"), "persona": persona, "curveballs": curveballs,
+           "script_id": str(script["_id"]), "script_title": script.get("title"), "script_slug": script.get("slug"), "direction": direction, "persona": persona, "curveballs": curveballs,
            "assignment_id": str(assignment["_id"]) if assignment else None, "mode": "text", "status": "active", "turns": [], "started_at": now, "updated_at": now}
     res = await db.roleplay_sessions.insert_one(doc)
     sid = str(res.inserted_id)
+    out = {"session_id": sid, "direction": direction, "persona": {k: persona.get(k) for k in ("name", "summary", "voice")}, "script_title": script.get("title"), "customer": None, "ended": False}
+    if direction == "inbound":
+        return out  # the customer is calling in: the rep answers first, the opening line comes back after their greeting
     opening = persona.get("opening_line") or "Hi, I'm calling about a car I saw online."
     turn = {"role": "customer", "text": opening, "audio_url": None, "at": now, "mood": "neutral"}
     await db.roleplay_sessions.update_one({"_id": res.inserted_id}, {"$push": {"turns": turn}})
-    return {"session_id": sid, "persona": {k: persona.get(k) for k in ("name", "summary", "voice")}, "script_title": script.get("title"), "customer": _turn_out(turn), "ended": False}
+    return {**out, "customer": _turn_out(turn)}
 
 
 def _turn_out(t: dict) -> dict:
@@ -568,6 +588,14 @@ def _turn_out(t: dict) -> dict:
 
 async def customer_turn(db, session: dict, rep_text: str) -> dict:
     """Rep spoke -> the AI customer answers (text + audio)."""
+    now = _now()
+    if session.get("direction") == "inbound" and not any(t["role"] == "customer" for t in session.get("turns", [])):
+        # the rep just answered the phone: the customer opens with their scripted line, no model call needed
+        persona = session.get("persona") or {}
+        rep_turn = {"role": "rep", "text": rep_text, "at": now}
+        cust_turn = {"role": "customer", "text": persona.get("opening_line") or "Hi, I'm calling about a car I saw online.", "audio_url": None, "at": now, "mood": "neutral"}
+        await db.roleplay_sessions.update_one({"_id": session["_id"]}, {"$push": {"turns": {"$each": [rep_turn, cust_turn]}}, "$set": {"updated_at": now}})
+        return {"rep": _turn_out(rep_turn), "customer": _turn_out(cust_turn), "ended": False}
     script = await db.scripts.find_one({"_id": ObjectId(session["script_id"])}) or {}
     persona = session.get("persona") or {}
     rep_first = (session.get("rep_name") or "the salesperson").split(" ")[0]
@@ -579,13 +607,12 @@ async def customer_turn(db, session: dict, rep_text: str) -> dict:
     out_of_time = live and (minutes >= PHONE_MAX_MINUTES or exchanges >= PHONE_MAX_TURNS)
     user = f"CALL SO FAR:\n{history}\nREP: {rep_text}\n\n(This is exchange {exchanges}. Reply as the customer." + (" You are out of time: wrap up in one sentence, say goodbye and set ended to true.)" if out_of_time else ")")
     try:
-        data = await _llm_json(_customer_system(script, persona, session.get("store_name") or "the dealership", rep_first, session.get("curveballs") or [], live), user, timeout=45)
+        data = await _llm_json(_customer_system(script, persona, session.get("store_name") or "the dealership", rep_first, session.get("curveballs") or [], live, session.get("direction") or "outbound"), user, timeout=45)
     except Exception as e:
         logger.warning(f"[Roleplay] customer turn failed: {e}")
         data = {}
     say = no_em_dash(str(data.get("say") or "Sorry, could you say that again?")).strip()[:600]
     ended = bool(data.get("ended")) or out_of_time or (not live and exchanges >= MAX_TURNS)
-    now = _now()
     rep_turn = {"role": "rep", "text": rep_text, "at": now}
     cust_turn = {"role": "customer", "text": say, "audio_url": None, "at": now, "mood": data.get("mood") or "neutral"}
     await db.roleplay_sessions.update_one({"_id": session["_id"]}, {"$push": {"turns": {"$each": [rep_turn, cust_turn]}}, "$set": {"updated_at": now, **({"status": "ending"} if ended else {})}})

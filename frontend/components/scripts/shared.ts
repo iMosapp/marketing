@@ -12,7 +12,7 @@ export type Persona = { name: string; voice: string; summary: string; goals?: st
 export type Scene = { on_screen: string; voice_over: string; seconds: number };
 export type Training = { title: string; runtime_seconds: number; hook: string; scenes: Scene[]; cta: string; notes?: string };
 export type Script = {
-  id: string; slug?: string; kind: 'phone' | 'training'; category: string; title: string; runtime: string; purpose: string; body: string;
+  id: string; slug?: string; kind: 'phone' | 'training'; category: string; title: string; runtime: string; purpose: string; body: string; direction?: 'inbound' | 'outbound';
   success_points: string[]; persona: Persona | null; store_id?: string | null; is_store_copy: boolean; customized: boolean; scorecard_id?: string | null;
   training?: Training | null; feature_id?: string; format?: string; created_by_name?: string; updated_at?: string; preview?: string;
 };

@@ -49,6 +49,7 @@ export default function ScriptEditor() {
   const [kind, setKind] = useState<'phone' | 'training'>('phone');
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Sales calls');
+  const [direction, setDirection] = useState<'inbound' | 'outbound'>('outbound');
   const [runtime, setRuntime] = useState('');
   const [purpose, setPurpose] = useState('');
   const [body, setBody] = useState('');
@@ -61,7 +62,7 @@ export default function ScriptEditor() {
   const [imported, setImported] = useState(false);
 
   const applyImport = (d: ImportedScript) => {
-    setTitle(d.title || ''); setCategory(d.category || 'Custom'); setRuntime(d.runtime || ''); setPurpose(d.purpose || ''); setBody(d.body || '');
+    setTitle(d.title || ''); setCategory(d.category || 'Custom'); setDirection(d.direction === 'inbound' ? 'inbound' : 'outbound'); setRuntime(d.runtime || ''); setPurpose(d.purpose || ''); setBody(d.body || '');
     setPoints(d.success_points || []); setPersona({ ...emptyPersona, ...(d.persona || {}) });
     setImportOpen(false); setImported(true);
   };
@@ -72,7 +73,7 @@ export default function ScriptEditor() {
       setCards((c?.data?.scorecards || []).map((x: any) => ({ id: x.id, name: x.name })));
       if (s) {
         const sc: Script = s.data;
-        setKind(sc.kind); setTitle(sc.title); setCategory(sc.category || 'Custom'); setRuntime(sc.runtime || ''); setPurpose(sc.purpose || ''); setBody(sc.body || '');
+        setKind(sc.kind); setTitle(sc.title); setCategory(sc.category || 'Custom'); setDirection(sc.direction === 'inbound' ? 'inbound' : 'outbound'); setRuntime(sc.runtime || ''); setPurpose(sc.purpose || ''); setBody(sc.body || '');
         setPoints(sc.success_points || []); setPersona({ ...emptyPersona, ...(sc.persona || {}) }); setScorecardId(sc.scorecard_id || null); setTraining(sc.training || null);
       }
     } catch (e: any) { showToast(e?.response?.data?.detail || 'Could not load', 'error'); router.back(); }
@@ -86,7 +87,7 @@ export default function ScriptEditor() {
     setSaving(true);
     try {
       const payload: any = kind === 'training' ? { title: title.trim(), purpose, training } : {
-        title: title.trim(), category, runtime, purpose, body, success_points: points.filter(p => p.trim()), scorecard_id: scorecardId,
+        title: title.trim(), category, direction, runtime, purpose, body, success_points: points.filter(p => p.trim()), scorecard_id: scorecardId,
         persona: persona.name.trim() ? { ...persona, objections: (persona.objections || []).filter(o => o.trim()) } : null,
       };
       const res = id ? await api.put(`/scripts/${id}`, payload) : await api.post('/scripts', payload);
@@ -136,6 +137,17 @@ export default function ScriptEditor() {
                     {Array.from(new Set([...CATS, category])).map(c => (
                       <TouchableOpacity key={c} onPress={() => setCategory(c)} style={{ paddingHorizontal: 12, height: 32, borderRadius: 16, backgroundColor: category === c ? GOLD : colors.card, borderWidth: 1, borderColor: category === c ? GOLD : colors.border, justifyContent: 'center' }} {...tid(`script-editor-cat-${c.toLowerCase().replace(/\s+/g, '-')}`)}>
                         <Text style={{ fontSize: 12.5, fontWeight: '800', color: category === c ? '#111' : colors.text }}>{c}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+                <View style={{ gap: 6 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSecondary, letterSpacing: 1 }}>WHO CALLS WHO</Text>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {([['inbound', 'call-outline', 'Customer calls in', 'You answer, they talk after your greeting'], ['outbound', 'call', 'You call them', 'They pick up and speak first']] as const).map(([k, icon, label, hint]) => (
+                      <TouchableOpacity key={k} onPress={() => setDirection(k)} style={{ flex: 1, borderRadius: 14, padding: 12, gap: 4, backgroundColor: direction === k ? GOLD : colors.card, borderWidth: 1, borderColor: direction === k ? GOLD : colors.border }} {...tid(`script-editor-direction-${k}`)}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><Ionicons name={icon} size={15} color={direction === k ? '#111' : GOLD} /><Text style={{ fontSize: 13.5, fontWeight: '800', color: direction === k ? '#111' : colors.text }}>{label}</Text></View>
+                        <Text style={{ fontSize: 11.5, lineHeight: 15, color: direction === k ? '#111' : colors.textSecondary, opacity: direction === k ? 0.8 : 1 }}>{hint}</Text>
                       </TouchableOpacity>
                     ))}
                   </View>

@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import api from '../../services/api';
 import { GOLD, tid, type Persona } from './shared';
 
-export type ImportedScript = { title: string; category: string; runtime: string; purpose: string; body: string; success_points: string[]; persona: Persona };
+export type ImportedScript = { title: string; category: string; direction?: 'inbound' | 'outbound'; runtime: string; purpose: string; body: string; success_points: string[]; persona: Persona };
 type Props = { visible: boolean; colors: any; onClose: () => void; onImported: (draft: ImportedScript) => void };
 
 // Paste a script you already use (Word, email, notes): Jessi shapes it into the editor fields, nothing is saved until you tap Save.

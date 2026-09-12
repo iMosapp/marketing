@@ -70,6 +70,7 @@ class ScriptBody(BaseModel):
     persona: Optional[dict] = None
     scorecard_id: Optional[str] = None
     training: Optional[dict] = None
+    direction: Optional[str] = None
 
 
 class GenerateBody(BaseModel):
@@ -181,7 +182,7 @@ async def create_script(body: ScriptBody, request: Request):
     doc = {"kind": "phone", "store_id": me["store_id"], "slug": f"custom_{ObjectId()}", "category": (body.category or "Custom").strip()[:60], "title": body.title.strip()[:120],
            "runtime": (body.runtime or "").strip()[:40], "purpose": (body.purpose or "").strip()[:400], "body": svc.no_em_dash(body.body)[:8000],
            "success_points": [str(p).strip()[:160] for p in (body.success_points or []) if str(p).strip()][:12], "persona": body.persona, "scorecard_id": body.scorecard_id,
-           "created_by": str(me["_id"]), "created_by_name": me.get("name"), "active": True, "created_at": now, "updated_at": now}
+           "direction": body.direction if body.direction in ("inbound", "outbound") else "outbound", "created_by": str(me["_id"]), "created_by_name": me.get("name"), "active": True, "created_at": now, "updated_at": now}
     res = await get_db().scripts.insert_one(doc)
     return svc.serialize_script(await get_db().scripts.find_one({"_id": res.inserted_id}), me["store_id"])
 
@@ -371,7 +372,7 @@ async def roleplay_get(sid: str, request: Request):
     db = get_db()
     s = await svc.reconcile_dialing(db, await _session(db, sid, me))
     ev = await db.call_evaluations.find_one({"_id": ObjectId(s["evaluation_id"])}) if s.get("evaluation_id") and ObjectId.is_valid(str(s["evaluation_id"])) else None
-    return {"session_id": sid, "status": s["status"], "mode": s.get("mode", "text"), "call_status": s.get("call_status"), "fail_reason": s.get("fail_reason"),
+    return {"session_id": sid, "status": s["status"], "mode": s.get("mode", "text"), "direction": s.get("direction") or "outbound", "call_status": s.get("call_status"), "fail_reason": s.get("fail_reason"),
             "recording_url": s.get("recording_url"), "rep_phone": s.get("rep_phone"),
             "script_title": s.get("script_title"), "script_id": s.get("script_id"), "persona": {k: (s.get("persona") or {}).get(k) for k in ("name", "summary", "voice")},
             "rep_name": s.get("rep_name"), "turns": [svc._turn_out(t) for t in s.get("turns", [])], "started_at": s["started_at"].isoformat() if s.get("started_at") else None,

@@ -25,6 +25,7 @@ export default function PracticeCall() {
   const [phase, setPhase] = useState<Phase>('choose');
   const [sid, setSid] = useState<string | null>(null);
   const [persona, setPersona] = useState<Persona | null>(null);
+  const [inbound, setInbound] = useState(false);
   const [title, setTitle] = useState('');
   const [turns, setTurns] = useState<Turn[]>([]);
   const [status, setStatus] = useState('dialing');
@@ -57,7 +58,7 @@ export default function PracticeCall() {
     setMode('phone'); setPhase('connecting');
     try {
       const res = await api.post('/scripts/roleplay/call', { script_id: script, assignment_id: assignment || null });
-      setSid(res.data.session_id); setPersona(res.data.persona); setTitle(res.data.script_title || 'Practice call'); setStatus('dialing'); setPhase('live');
+      setSid(res.data.session_id); setPersona(res.data.persona); setInbound(res.data.direction === 'inbound'); setTitle(res.data.script_title || 'Practice call'); setStatus('dialing'); setPhase('live');
       pollRef.current = setInterval(async () => {
         try {
           const g = await api.get(`/scripts/roleplay/${res.data.session_id}`);
@@ -81,7 +82,7 @@ export default function PracticeCall() {
     setMode('text'); setPhase('connecting');
     try {
       const res = await api.post('/scripts/roleplay/start', { script_id: script, assignment_id: assignment || null });
-      setSid(res.data.session_id); setPersona(res.data.persona); setTitle(res.data.script_title || 'Practice call'); setTurns([res.data.customer]); setStatus('live'); setPhase('live');
+      setSid(res.data.session_id); setPersona(res.data.persona); setInbound(res.data.direction === 'inbound'); setTitle(res.data.script_title || 'Practice call'); setTurns(res.data.customer ? [res.data.customer] : []); setStatus('live'); setPhase('live');
     } catch (e: any) { setFailReason(e?.response?.data?.detail || 'Could not start'); setPhase('failed'); }
   };
   const finishText = useCallback(async () => {
@@ -176,7 +177,7 @@ export default function PracticeCall() {
             <Text style={{ fontSize: 18, fontWeight: '800', color: colors.text }}>{persona.name}</Text>
             <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
               <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: moodTone(mood) + '22' }}><Text style={{ fontSize: 11, fontWeight: '800', color: moodTone(mood) }} {...tid('practice-mood')}>{(mood || 'neutral').toUpperCase()}</Text></View>
-              <Text style={{ fontSize: 12, color: colors.textSecondary }} numberOfLines={1}>{mode === 'phone' ? (status === 'live' ? 'Talking on your phone' : PHONE_LABEL[status] || 'Calling…') : thinking ? 'Thinking…' : 'Waiting on you'}</Text>
+              <Text style={{ fontSize: 12, color: colors.textSecondary }} numberOfLines={1}>{mode === 'phone' ? (status === 'live' ? (inbound && turns.length === 0 ? 'Waiting for you to answer' : 'Talking on your phone') : PHONE_LABEL[status] || 'Calling…') : thinking ? 'Thinking…' : inbound && turns.length === 0 ? 'Calling you…' : 'Waiting on you'}</Text>
             </View>
           </View>
 
@@ -184,7 +185,15 @@ export default function PracticeCall() {
             {mode === 'phone' && turns.length === 0 && (
               <View style={{ alignItems: 'center', padding: 24, gap: 8 }} {...tid('practice-phone-waiting')}>
                 <Ionicons name="call" size={28} color={GOLD} />
-                <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 20 }}>Pick up when your phone rings. {persona.name.split(' ')[0]} starts talking right away and this screen follows along.</Text>
+                <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 20 }}>{inbound
+                  ? `Pick up when your phone rings and answer it like a real inbound call: "Thanks for calling, this is ${(user?.name || '').split(' ')[0] || 'your name'}." ${persona.name.split(' ')[0]} waits for you to speak first.`
+                  : `Pick up when your phone rings. ${persona.name.split(' ')[0]} starts talking right away and this screen follows along.`}</Text>
+              </View>
+            )}
+            {mode === 'text' && inbound && turns.length === 0 && (
+              <View style={{ alignItems: 'center', padding: 24, gap: 8 }} {...tid('practice-inbound-waiting')}>
+                <Ionicons name="call-outline" size={28} color={GOLD} />
+                <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 20 }}>{persona.name.split(' ')[0]} is calling in. Type how you'd answer the phone, they'll talk after your greeting.</Text>
               </View>
             )}
             {turns.map((t, i) => (
@@ -201,7 +210,7 @@ export default function PracticeCall() {
           <View style={{ padding: 16, paddingBottom: 26, borderTopWidth: 1, borderTopColor: colors.border, gap: 12 }}>
             {mode === 'text' ? (
               <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
-                <TextInput value={text} onChangeText={setText} placeholder="Type what you'd say…" placeholderTextColor={colors.textSecondary} multiline editable={!thinking && !ended}
+                <TextInput value={text} onChangeText={setText} placeholder={inbound && turns.length === 0 ? 'Thanks for calling, this is…' : "Type what you'd say…"} placeholderTextColor={colors.textSecondary} multiline editable={!thinking && !ended}
                   style={{ flex: 1, minHeight: 44, maxHeight: 110, backgroundColor: colors.card, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 10, color: colors.text, fontSize: 15, borderWidth: 1, borderColor: colors.border }} {...tid('practice-text-input')} />
                 <TouchableOpacity onPress={sendText} disabled={!text.trim() || thinking || ended} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: text.trim() && !thinking ? GOLD : colors.surface, alignItems: 'center', justifyContent: 'center' }} {...tid('practice-text-send')}><Ionicons name="arrow-up" size={20} color={text.trim() && !thinking ? '#111' : colors.textSecondary} /></TouchableOpacity>
                 <TouchableOpacity onPress={leave} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: RED, alignItems: 'center', justifyContent: 'center' }} {...tid('practice-end-btn')}>
