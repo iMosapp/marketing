@@ -686,10 +686,16 @@ async def _touched_today(user_id: str, db, start_utc) -> set:
         ).limit(300).to_list(300)
         touched.update(str(e["contact_id"]) for e in evs if e.get("contact_id"))
         msgs = await db.messages.find(
-            {"user_id": user_id, "direction": "outbound", "contact_id": {"$ne": None}, "timestamp": {"$gte": start_utc}},
-            {"contact_id": 1},
+            {"user_id": user_id, "$or": [{"direction": "outbound"}, {"sender": "user"}], "timestamp": {"$gte": start_utc}},
+            {"contact_id": 1, "conversation_id": 1},
         ).limit(300).to_list(300)
         touched.update(str(m["contact_id"]) for m in msgs if m.get("contact_id"))
+        # older thread sends carry no contact_id: resolve through the conversation
+        conv_oids = [ObjectId(str(m["conversation_id"])) for m in msgs if not m.get("contact_id") and ObjectId.is_valid(str(m.get("conversation_id") or ""))]
+        if conv_oids:
+            async for c in db.conversations.find({"_id": {"$in": conv_oids}}, {"contact_id": 1}):
+                if c.get("contact_id"):
+                    touched.add(str(c["contact_id"]))
     except Exception as e:
         logger.debug(f"[Home] touched_today lookup failed: {e}")
     return touched

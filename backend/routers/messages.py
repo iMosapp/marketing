@@ -434,10 +434,12 @@ async def send_message(user_id: str, conversation_id: str, message_data: Message
     # Create message record
     message = {
         "conversation_id": conversation_id,
+        "contact_id": contact_id or None,
         "content": resolved_content,
         "sender": "user",
         "sender_id": user_id,
         "user_id": user_id,
+        "direction": "outbound",
         "timestamp": datetime.now(timezone.utc),
         "status": "sending",
         "media_urls": []

@@ -12,6 +12,7 @@ import {
   TextInput,
   Modal,
   FlatList,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -778,6 +779,12 @@ function HomeScreen() {
   const [draftSheet, setDraftSheet] = useState<any>(null);
   const openDraftSheet = (item: any) => setDraftSheet(item);
 
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshHome = async () => {
+    setRefreshing(true);
+    try { await Promise.all([loadAllData(true), loadHomeIntelligence(true)]); } finally { setRefreshing(false); }
+  };
+
   // Persisted "done" / "skip" for today's 3 and Do-This-Next (survives reloads, syncs across devices)
   const markMy3Done = async (contactId: string, source = 'manual') => {
     setCompletedToday(p => new Set([...p, contactId]));
@@ -793,7 +800,8 @@ function HomeScreen() {
 
   // ── ONE clear next action, picked by priority ──
   const nextMove = (() => {
-    const hot: any = hotOpps.find((c: any) => !dismissedKeys.has(`hot:${c._id}`));
+    // only while the customer is still waiting: once the rep or Jessi has answered, the hot thread is no longer the next move
+    const hot: any = hotOpps.find((c: any) => !dismissedKeys.has(`hot:${c._id}`) && c.last_message?.sender === 'contact');
     if (hot) {
       const c: any = hot;
       return {
@@ -910,7 +918,8 @@ function HomeScreen() {
         </View>
       </View>
 
-      <ScrollView ref={scrollRef} style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refreshHome} tintColor={colors.accent} colors={[colors.accent]} />}>
         {!initialLoaded && loadingTasks ? (
           <View style={{ flex: 1, paddingTop: 60, alignItems: 'center' }}>
             <ActivityIndicator size="large" color={colors.accent} />

@@ -19,7 +19,7 @@ const convoOptions = (Audio: any) => ({
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
-type TriggerState = { live: boolean; recording: boolean; seconds: number; label: string; onPress: () => void };
+type TriggerState = { live: boolean; recording: boolean; seconds: number; label: string; busy: boolean; onPress: () => void };
 type Props = {
   userId: string; contactId: string; contactFirst: string; colors: any; onSaved?: (note: any) => void; onRecordingChange?: (on: boolean) => void;
   memoRecording?: boolean; onStartMemo?: () => void; onStopMemo?: () => void; pillStyle?: any; labelStyle?: any;
@@ -39,12 +39,14 @@ export const ConversationRecorder = ({ userId, contactId, contactFirst, colors, 
 
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); keepAwakeRef.current?.(); }, []);
 
+  const flash = (msg: string, ms = 2500) => { setSaving(msg); setTimeout(() => setSaving(null), ms); };
+
   const start = async () => {
     setChooser(false);
     try {
       const { Audio } = await import('expo-av');
       const { status } = await Audio.requestPermissionsAsync();
-      if (status !== 'granted') { setSaving('Microphone access is needed to record'); setTimeout(() => setSaving(null), 2500); return; }
+      if (status !== 'granted') { flash('Mic access needed'); return; }
       await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true, staysActiveInBackground: true });
       const { recording: rec } = await Audio.Recording.createAsync(convoOptions(Audio));
       recRef.current = rec;
@@ -58,7 +60,7 @@ export const ConversationRecorder = ({ userId, contactId, contactFirst, colors, 
         if (s + 1 >= MAX_SECONDS) { stop(); }
         return s + 1;
       }), 1000);
-    } catch (e) { setSaving('Could not start recording'); setTimeout(() => setSaving(null), 2500); }
+    } catch (e) { flash('Could not start'); }
   };
 
   const stop = async () => {
@@ -73,8 +75,8 @@ export const ConversationRecorder = ({ userId, contactId, contactFirst, colors, 
       await rec.stopAndUnloadAsync();
       const uri = rec.getURI();
       if (!uri) return;
-      if (duration < 5) { setSaving('Too short to save'); setTimeout(() => setSaving(null), 2000); return; }
-      setSaving('Uploading recording…');
+      if (duration < 5) { flash('Too short to save'); return; }
+      setSaving('Uploading…');
       let b64: string;
       let contentType = 'audio/mp4';
       if (Platform.OS === 'web') {
@@ -90,8 +92,7 @@ export const ConversationRecorder = ({ userId, contactId, contactFirst, colors, 
       const uploadId = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
       let last: any = null;
       for (let i = 0; i < total; i++) {
-        setSaving(total > 1 ? `Uploading ${Math.round(((i + 1) / total) * 100)}%…` : 'Uploading recording…');
-        if (i === total - 1) setSaving('Transcribing and summarizing…');
+        setSaving(i === total - 1 ? 'Transcribing…' : `Uploading ${Math.round(((i + 1) / total) * 100)}%`);
         const res = await api.post(`/voice-notes/${userId}/${contactId}/chunk`, {
           upload_id: uploadId, index: i, total, data: b64.slice(i * PIECE, (i + 1) * PIECE), content_type: contentType, duration, kind: 'conversation',
         }, { timeout: 180000 });
@@ -101,21 +102,20 @@ export const ConversationRecorder = ({ userId, contactId, contactFirst, colors, 
       setResult(last);
       onSaved?.(last);
     } catch (e: any) {
-      setSaving(e?.response?.data?.detail || 'Could not save the recording');
-      setTimeout(() => setSaving(null), 3500);
+      flash(e?.response?.data?.detail || 'Could not save', 3500);
     }
   };
 
   const live = recording || !!memoRecording;
-  const onPillPress = () => { if (recording) stop(); else if (memoRecording) onStopMemo?.(); else setChooser(true); };
+  const busy = !!saving;
+  const onPillPress = () => { if (busy) return; if (recording) stop(); else if (memoRecording) onStopMemo?.(); else setChooser(true); };
   const textColor = colors.textPrimary || colors.text;
-  const label = recording ? `Stop ${fmt(seconds)}` : memoRecording ? 'Stop' : 'Record';
-  const overlay = inline ? {} : { position: 'absolute' as const, left: 0, right: 0, top: 0, zIndex: 50 };
-  const savingPos = inline ? { marginHorizontal: 16, marginBottom: 8 } : { position: 'absolute' as const, left: 16, right: 16, top: 8, zIndex: 60 };
+  const label = busy ? 'Saving…' : recording ? fmt(seconds) : memoRecording ? 'Stop' : 'Record';
   return (
     <>
-      {recording && (
-        <View style={[overlay, { backgroundColor: RED, paddingVertical: 8, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 10 }, inline && { marginHorizontal: 16, marginBottom: 10, borderRadius: 12 }]} {...tid('recording-banner')}>
+      {/* Contact page (inline): in-flow strips above the action row. Thread pill row: the pill itself carries the state, nothing floats over the other pills. */}
+      {inline && recording && (
+        <View style={{ marginHorizontal: 16, marginBottom: 10, borderRadius: 12, backgroundColor: RED, paddingVertical: 8, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 10 }} {...tid('recording-banner')}>
           <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#fff' }} />
           <Text style={{ flex: 1, color: '#fff', fontWeight: '800', fontSize: 13 }}>Recording conversation with {contactFirst} · {fmt(seconds)}</Text>
           <TouchableOpacity onPress={stop} style={{ backgroundColor: '#fff', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 5 }} {...tid('recording-stop-btn')}>
@@ -123,19 +123,18 @@ export const ConversationRecorder = ({ userId, contactId, contactFirst, colors, 
           </TouchableOpacity>
         </View>
       )}
-
-      {!!saving && (
-        <View style={[savingPos, { backgroundColor: colors.card, borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: GOLD }]} {...tid('recording-saving')}>
+      {inline && busy && (
+        <View style={{ marginHorizontal: 16, marginBottom: 8, backgroundColor: colors.card, borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: GOLD }} {...tid('recording-saving')}>
           <ActivityIndicator size="small" color={GOLD} /><Text style={{ flex: 1, color: textColor, fontSize: 13, fontWeight: '600' }}>{saving}</Text>
         </View>
       )}
 
-      {renderTrigger ? renderTrigger({ live, recording, seconds, label, onPress: onPillPress }) : (
-        <TouchableOpacity onPress={onPillPress} activeOpacity={0.8}
-          style={[pillStyle, { backgroundColor: live ? RED : colors.surface || colors.card }]}
+      {renderTrigger ? renderTrigger({ live, recording, seconds, label, busy, onPress: onPillPress }) : (
+        <TouchableOpacity onPress={onPillPress} activeOpacity={0.8} disabled={busy}
+          style={[pillStyle, { backgroundColor: live ? RED : busy ? GOLD + '22' : colors.surface || colors.card }, busy && { borderWidth: 1, borderColor: GOLD + '99' }]}
           {...tid('record-conversation-btn')}>
-          <Ionicons name={live ? 'stop' : 'mic'} size={15} color={live ? '#fff' : GOLD} />
-          <Text style={[labelStyle, { color: live ? '#fff' : textColor }]} numberOfLines={1}>{label}</Text>
+          {busy ? <ActivityIndicator size="small" color={GOLD} /> : <Ionicons name={live ? 'stop' : 'mic'} size={15} color={live ? '#fff' : GOLD} />}
+          <Text style={[labelStyle, { color: live ? '#fff' : busy ? GOLD : textColor }]} numberOfLines={1}>{label}</Text>
         </TouchableOpacity>
       )}
 
