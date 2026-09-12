@@ -199,6 +199,7 @@ function ThreadScreen() {
   const jumpHandledRef = useRef(false);
   const [isThreadRecording, setIsThreadRecording] = useState(false);
   const threadRecordingRef = useRef<any>(null);
+  const threadRecordingStartRef = useRef<number>(0);
 
   const startThreadVoiceNote = async () => {
     try {
@@ -208,6 +209,7 @@ function ThreadScreen() {
       await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
       const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
       threadRecordingRef.current = recording;
+      threadRecordingStartRef.current = Date.now();
       setIsThreadRecording(true);
     } catch (e) { showSimpleAlert('Error', 'Could not start recording'); }
   };
@@ -215,19 +217,32 @@ function ThreadScreen() {
   const stopThreadVoiceNote = async () => {
     setIsThreadRecording(false);
     const recording = threadRecordingRef.current;
+    threadRecordingRef.current = null;
     if (!recording) return;
+    const duration = Math.max(1, Math.round((Date.now() - threadRecordingStartRef.current) / 1000));
     try {
       await recording.stopAndUnloadAsync();
+      const { Audio } = await import('expo-av');
+      await Audio.setAudioModeAsync({ allowsRecordingIOS: false, playsInSilentModeIOS: true }).catch(() => {});
       const uri = recording.getURI();
       if (!uri || !user?._id) return;
       const cid = contactIdForNav || (id as string);
-      const formData = new FormData();
-      const blob = await fetch(uri).then(r => r.blob());
-      formData.append('audio', new File([blob], 'voice-note.m4a', { type: 'audio/m4a' }));
-      await api.post(`/voice-notes/${user._id}/${cid}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
-      showSimpleAlert('Voice note saved', 'Voice note saved to contact');
-    } catch { showSimpleAlert('Error', 'Failed to save voice note'); }
-    threadRecordingRef.current = null;
+      if (duration < 1) { showToast('Too short to save', 'error'); return; }
+      const fd = new FormData();
+      if (Platform.OS === 'web') {
+        const blob = await fetch(uri).then(r => r.blob());
+        fd.append('audio', blob, blob.type.includes('webm') ? 'voice_note.webm' : 'voice_note.m4a');
+      } else {
+        // React Native FormData: pass the file URI object, RN reads the file (browser File() does not exist here)
+        fd.append('audio', { uri, type: 'audio/m4a', name: 'voice_note.m4a' } as any);
+      }
+      fd.append('duration', String(duration));
+      await api.post(`/voice-notes/${user._id}/${cid}`, fd, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120000 });
+      showToast('Voice note saved & transcribing...');
+    } catch (e: any) {
+      console.error('[ThreadVoiceNote] upload failed:', e?.response?.data || e?.message);
+      showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to save voice note');
+    }
   };
   // Track scroll container and content heights to compute top padding for bottom-anchoring
   const [msgAreaHeight, setMsgAreaHeight] = useState(0);
