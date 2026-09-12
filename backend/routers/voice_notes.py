@@ -370,6 +370,24 @@ async def get_voice_notes(user_id: str, contact_id: str):
     ]
 
 
+@router.get("/{user_id}/{contact_id}/{note_id}")
+async def get_voice_note(user_id: str, contact_id: str, note_id: str):
+    """One note with what Jessi learned from it (the app polls this right after a memo is saved)."""
+    if not ObjectId.is_valid(note_id):
+        raise HTTPException(status_code=404, detail="Voice note not found")
+    n = await get_db().voice_notes.find_one({"_id": ObjectId(note_id), "user_id": user_id, "contact_id": contact_id})
+    if not n:
+        raise HTTPException(status_code=404, detail="Voice note not found")
+    transcript = n.get("transcript") or ""
+    return {
+        "id": note_id, "audio_url": n.get("audio_url"), "transcript": transcript, "summary": n.get("summary", ""), "title": n.get("title") or "",
+        "kind": n.get("kind", "memo"), "duration": n.get("duration", 0),
+        "intelligence_done": bool(n.get("intelligence_done")) or len(transcript.strip()) < 10,
+        "extracted_details": n.get("extracted_details") or {}, "followup_task": n.get("followup_task"),
+        "created_at": n["created_at"].isoformat() if n.get("created_at") else "",
+    }
+
+
 @router.patch("/{user_id}/{contact_id}/{note_id}")
 async def rename_voice_note(user_id: str, contact_id: str, note_id: str, data: dict = None):
     """Give a recording a short name ("Tahoe walk-around"). Empty title falls back to the default label."""

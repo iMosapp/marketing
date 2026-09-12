@@ -267,22 +267,29 @@ async def process_voice_note_intelligence(user_id: str, contact_id: str, transcr
 
     logger.info(f"Extracting intelligence from voice note {voice_note_id} for contact {contact_id}")
 
-    # Extract details
-    details = await extract_personal_details(transcript)
+    db = get_db()
+    note_q = {"_id": ObjectId(voice_note_id)} if ObjectId.is_valid(str(voice_note_id)) else {"_id": voice_note_id}
+    try:
+        details = await extract_personal_details(transcript)
+    except Exception as e:
+        logger.warning(f"[VoiceIntel] extraction crashed for {voice_note_id}: {e}")
+        details = {}
     if not details:
         logger.info(f"No personal details extracted from voice note {voice_note_id}")
+        await db.voice_notes.update_one(note_q, {"$set": {"intelligence_done": True, "intelligence_extracted": False, "extracted_details": {}}})
         return
 
     # Merge into contact
     await merge_personal_details(contact_id, details)
 
-    # Update the voice note record with extraction status
-    db = get_db()
+    # Update the voice note record with extraction status (details kept so the app can show what was learned)
     await db.voice_notes.update_one(
-        {"_id": ObjectId(voice_note_id)},
+        note_q,
         {"$set": {
+            "intelligence_done": True,
             "intelligence_extracted": True,
             "extracted_fields": list(details.keys()),
+            "extracted_details": details,
             "extracted_at": datetime.now(timezone.utc),
         }}
     )
@@ -309,7 +316,9 @@ async def process_voice_note_intelligence(user_id: str, contact_id: str, transcr
 
     # Auto-set a follow-up so a captured memory always turns into a next action
     try:
-        await _ensure_followup_from_voice(db, user_id, contact_id, details)
+        task = await _ensure_followup_from_voice(db, user_id, contact_id, details)
+        if task:
+            await db.voice_notes.update_one(note_q, {"$set": {"followup_task": task}})
     except Exception as e:
         logger.warning(f"[VoiceIntel] follow-up creation failed: {e}")
 
@@ -325,7 +334,7 @@ async def _ensure_followup_from_voice(db, user_id: str, contact_id: str, details
         "status": {"$in": ["pending", "snoozed", None]},
     })
     if existing:
-        return
+        return None
 
     contact = await db.contacts.find_one({"_id": ObjectId(contact_id)}, {"first_name": 1, "last_name": 1, "phone": 1})
     first = (contact or {}).get("first_name") or "your customer"
@@ -341,19 +350,21 @@ async def _ensure_followup_from_voice(db, user_id: str, contact_id: str, details
         title = f"Follow up with {first}"
 
     now = datetime.now(timezone.utc)
-    await db.tasks.insert_one({
+    due = now + timedelta(days=3)
+    res = await db.tasks.insert_one({
         "user_id": user_id,
         "contact_id": contact_id,
         "contact_name": contact_name,
         "contact_phone": (contact or {}).get("phone", ""),
         "type": "follow_up",
         "title": title,
-        "due_date": now + timedelta(days=3),
+        "due_date": due,
         "status": "pending",
         "source": "voice_note",
         "created_at": now,
     })
     logger.info(f"[VoiceIntel] auto follow-up created for {contact_id}: {title}")
+    return {"id": str(res.inserted_id), "title": title, "due_date": due.isoformat()}
 
 
 def _ts(v):

@@ -31,6 +31,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import AISuggestion from '../../components/AISuggestion';
 import { AskJessiSheet } from '../../components/ask/AskJessiSheet';
 import { ConversationRecorder } from '../../components/thread/ConversationRecorder';
+import { VoiceMemoResultSheet, type MemoNote } from '../../components/thread/VoiceMemoResultSheet';
 import ChannelPicker, { useChannelPicker } from '../../components/ChannelPicker';
 import { CallLogCard } from '../../components/thread/CallLogCard';
 import { MessageBubble } from '../../components/thread/MessageBubble';
@@ -200,6 +201,7 @@ function ThreadScreen() {
   const [isThreadRecording, setIsThreadRecording] = useState(false);
   const threadRecordingRef = useRef<any>(null);
   const threadRecordingStartRef = useRef<number>(0);
+  const [memoResult, setMemoResult] = useState<MemoNote | null>(null);
 
   const startThreadVoiceNote = async () => {
     try {
@@ -237,8 +239,8 @@ function ThreadScreen() {
         fd.append('audio', { uri, type: 'audio/m4a', name: 'voice_note.m4a' } as any);
       }
       fd.append('duration', String(duration));
-      await api.post(`/voice-notes/${user._id}/${cid}`, fd, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120000 });
-      showToast('Voice note saved & transcribing...');
+      const res = await api.post(`/voice-notes/${user._id}/${cid}`, fd, { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120000 });
+      setMemoResult({ id: res.data?.id, transcript: res.data?.transcript || '', duration: res.data?.duration || duration, kind: 'memo' });
     } catch (e: any) {
       console.error('[ThreadVoiceNote] upload failed:', e?.response?.data || e?.message);
       showSimpleAlert('Error', e?.response?.data?.detail || 'Failed to save voice note');
@@ -3906,6 +3908,10 @@ function ThreadScreen() {
         aiModeLabel={aiModeLabel}
         onChangeAi={() => { setShowOwnership(false); setTimeout(() => setShowSettings(true), 150); }}
       />
+      {!!user?._id && (
+        <VoiceMemoResultSheet note={memoResult} userId={user._id} contactId={String(contactIdForNav || id)} contactFirst={(contactName || 'the customer').split(' ')[0]}
+          colors={colors} onClose={() => setMemoResult(null)} />
+      )}
     </SafeAreaView>
   );
 }
