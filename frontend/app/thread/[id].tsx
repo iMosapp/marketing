@@ -15,6 +15,7 @@ import {
   ScrollView,
   RefreshControl,
   Linking,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -337,6 +338,22 @@ function ThreadScreen() {
 
   // Custom card templates loaded from store
   const [customCardTemplates, setCustomCardTemplates] = useState<any[]>([]);
+
+  // Focus mode: while the keyboard is up, fold the header pills / intel / banners so the conversation stays visible
+  const [kbOpen, setKbOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
+  useEffect(() => {
+    if (IS_WEB) return;
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const s1 = Keyboard.addListener(showEvt, () => {
+      setKbOpen(true);
+      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 120);
+    });
+    const s2 = Keyboard.addListener(hideEvt, () => { setKbOpen(false); setToolsOpen(false); });
+    return () => { s1.remove(); s2.remove(); };
+  }, []);
+  const compactComposer = kbOpen && !IS_WEB;
 
   // Relationship Intel state
   const [intelData, setIntelData] = useState<any>(null);
@@ -2204,7 +2221,8 @@ function ThreadScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Quick actions live under the name so the header never crowds it out */}
+      {/* Quick actions live under the name so the header never crowds it out (folded away while typing) */}
+      {(!kbOpen || threadSearchOpen) && (
       <View style={styles.headerActions} data-testid="thread-header-actions">
         <TouchableOpacity
           onPress={() => {
@@ -2242,6 +2260,7 @@ function ThreadScreen() {
           <Text style={[styles.headerActionLabel, { color: isThreadRecording ? '#fff' : colors.textPrimary }]}>{isThreadRecording ? 'Stop' : 'Voice Memo'}</Text>
         </TouchableOpacity>
       </View>
+      )}
 
       {/* In-thread keyword search bar */}
       {threadSearchOpen && (
@@ -2258,7 +2277,7 @@ function ThreadScreen() {
       )}
       
       {/* Shared inbox: where this thread lives + who has it */}
-      {conversationStatus !== 'closed' && (
+      {conversationStatus !== 'closed' && !kbOpen && (
         <InboxThreadBanner info={inboxInfo} meId={user?._id} colors={colors} onOpen={() => setShowOwnership(true)} onClaim={claimThread} claiming={claimingThread} />
       )}
 
@@ -2268,7 +2287,7 @@ function ThreadScreen() {
       )}
 
       {/* Internet lead: how it was routed + every ring / pass / claim on the call ladder */}
-      {isInternetLead && actualConversationId ? (
+      {isInternetLead && actualConversationId && !kbOpen ? (
         <LeadCallTimeline conversationId={actualConversationId} colors={colors} />
       ) : null}
       
@@ -2325,7 +2344,8 @@ function ThreadScreen() {
         </View>
       )}
 
-      {/* Relationship Intel Bar */}
+      {/* Relationship Intel Bar (folded away while typing) */}
+      {!kbOpen && (
       <Pressable
         style={({ pressed }) => [styles.intelBar, showIntel && styles.intelBarExpanded, pressed && { opacity: 0.7 }, { cursor: 'pointer' } as any]}
         onPress={() => {
@@ -2347,8 +2367,9 @@ function ThreadScreen() {
         </View>
         <Ionicons name={showIntel ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textTertiary} />
       </Pressable>
+      )}
 
-      {showIntel && (
+      {showIntel && !kbOpen && (
         <ScrollView style={[styles.intelContent, { flex: 1 }]} nestedScrollEnabled data-testid="thread-intel-content">
           {intelGenerating ? (
             <View style={styles.intelLoadingRow}>
@@ -2637,16 +2658,16 @@ function ThreadScreen() {
               try { await messagesAPI.updateConversation(user._id, convId, { ai_mode: 'auto_reply', ai_enabled: true }); } catch {}
             }
           }}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#34C75912', borderTopWidth: 1, borderTopColor: '#34C75930', paddingHorizontal: 16, paddingVertical: 10 }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#34C75912', borderTopWidth: 1, borderTopColor: '#34C75930', paddingHorizontal: 16, paddingVertical: kbOpen ? 4 : 10 }}
           activeOpacity={0.75}
           data-testid="reenable-jessi-thread-btn"
         >
-          <Ionicons name="sparkles" size={15} color="#34C759" />
-          <Text style={{ fontSize: 13, color: '#34C759', fontWeight: '600', flex: 1 }}>
+          <Ionicons name="sparkles" size={kbOpen ? 13 : 15} color="#34C759" />
+          <Text style={{ fontSize: kbOpen ? 12 : 13, color: '#34C759', fontWeight: '600', flex: 1 }}>
             Jessi is off — re-enable AI
           </Text>
-          <View style={{ backgroundColor: '#34C759', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 }}>
-            <Text style={{ fontSize: 12, fontWeight: '800', color: '#000' }}>Turn On</Text>
+          <View style={{ backgroundColor: '#34C759', borderRadius: 8, paddingHorizontal: kbOpen ? 9 : 12, paddingVertical: kbOpen ? 3 : 5 }}>
+            <Text style={{ fontSize: kbOpen ? 11 : 12, fontWeight: '800', color: '#000' }}>Turn On</Text>
           </View>
         </TouchableOpacity>
       ) : (
@@ -2663,12 +2684,12 @@ function ThreadScreen() {
               }
             }
           }}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#C9A96212', borderTopWidth: 1, borderTopColor: '#C9A96230', paddingHorizontal: 16, paddingVertical: 10 }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#C9A96212', borderTopWidth: 1, borderTopColor: '#C9A96230', paddingHorizontal: 16, paddingVertical: kbOpen ? 4 : 10 }}
           activeOpacity={0.75}
           data-testid="takeover-jessi-thread-btn"
         >
-          <Ionicons name="sparkles" size={15} color="#C9A962" />
-          <Text style={{ fontSize: 13, color: '#C9A962', fontWeight: '600', flex: 1 }}>
+          <Ionicons name="sparkles" size={kbOpen ? 13 : 15} color="#C9A962" />
+          <Text style={{ fontSize: kbOpen ? 12 : 13, color: '#C9A962', fontWeight: '600', flex: 1 }}>
             {aiMode === 'auto_reply' ? 'Jessi is handling this' : 'AI in assist mode'}
           </Text>
           {needsAssistance && (
@@ -2690,8 +2711,8 @@ function ThreadScreen() {
               <Text style={{ fontSize: 12, fontWeight: '800', color: '#000' }}>All Good</Text>
             </TouchableOpacity>
           )}
-          <View style={{ backgroundColor: '#C9A962', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 5 }}>
-            <Text style={{ fontSize: 12, fontWeight: '800', color: '#000' }}>Take Over</Text>
+          <View style={{ backgroundColor: '#C9A962', borderRadius: 8, paddingHorizontal: kbOpen ? 9 : 12, paddingVertical: kbOpen ? 3 : 5 }}>
+            <Text style={{ fontSize: kbOpen ? 11 : 12, fontWeight: '800', color: '#000' }}>Take Over</Text>
           </View>
         </TouchableOpacity>
       )}
@@ -2705,7 +2726,7 @@ function ThreadScreen() {
       )}
       
       {/* Input Area */}
-      <View style={[styles.composerContainer, { backgroundColor: colors.background }]}>
+      <View style={[styles.composerContainer, { backgroundColor: colors.background }, compactComposer && { padding: 8, paddingBottom: 6 }]}>
           {/* Main composer box */}
           <View style={[styles.composerBox, { backgroundColor: colors.surface }]}>
             {/* Media Preview */}
@@ -2748,25 +2769,104 @@ function ThreadScreen() {
               </View>
             )}
             
-            {/* Text input area */}
-            <TextInput
-              style={[styles.composerInput, {
-                color: colors.textPrimary,
-                minHeight: 44,
-                maxHeight: 180,
-              }]}
-              placeholder={selectedMedia ? "Add a caption (optional)..." : "Type your message..."}
-              placeholderTextColor={colors.textSecondary}
-              value={message}
-              onChangeText={setMessage}
-              multiline
-              scrollEnabled
-              maxLength={1600}
-              returnKeyType="default"
-              blurOnSubmit={false}
-            />
+            {/* Text input area (+ compact single-row layout while the keyboard is up) */}
+            <View style={compactComposer ? { flexDirection: 'row', alignItems: 'flex-end', paddingLeft: 4, paddingRight: 6, paddingBottom: 4 } : undefined}>
+              {compactComposer && (
+                <TouchableOpacity onPress={() => setToolsOpen(o => !o)} style={{ width: 38, height: 44, alignItems: 'center', justifyContent: 'center' }} testID="composer-tools-toggle" dataSet={{ testid: 'composer-tools-toggle' } as any}>
+                  <Ionicons name={toolsOpen ? 'close-circle' : 'add-circle'} size={28} color={toolsOpen ? colors.textSecondary : '#C9A962'} />
+                </TouchableOpacity>
+              )}
+              <TextInput
+                style={[styles.composerInput, {
+                  color: colors.textPrimary,
+                  minHeight: 44,
+                  maxHeight: 180,
+                }, compactComposer && { flex: 1, paddingHorizontal: 6 }]}
+                placeholder={selectedMedia ? "Add a caption (optional)..." : "Type your message..."}
+                placeholderTextColor={colors.textSecondary}
+                value={message}
+                onChangeText={setMessage}
+                multiline
+                scrollEnabled
+                maxLength={1600}
+                returnKeyType="default"
+                blurOnSubmit={false}
+                inputAccessoryViewID={undefined}
+                testID="composer-input"
+                dataSet={{ testid: 'composer-input' } as any}
+              />
+              {compactComposer && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2, height: 44 }}>
+                  <TouchableOpacity onPress={() => Keyboard.dismiss()} style={{ width: 34, height: 44, alignItems: 'center', justifyContent: 'center' }} testID="composer-hide-keyboard" dataSet={{ testid: 'composer-hide-keyboard' } as any}>
+                    <Ionicons name="chevron-down-circle-outline" size={26} color={colors.textSecondary} />
+                  </TouchableOpacity>
+
+                    {IS_WEB ? (
+                      <button
+                        type="button"
+                        onClick={() => selectedMedia ? sendMMS() : handleSend()}
+                        disabled={(!message.trim() && !selectedMedia) || sending || sendingMedia}
+                        data-testid="send-message-btn"
+                        title={messageMode === 'sms' && !((user as any)?.mvpline_number || (user as any)?.twilio_number) ? 'Copy & open your messaging app' : 'Send message'}
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 18,
+                          backgroundColor: (message.trim() || selectedMedia) && !sending && !sendingMedia 
+                            ? (messageMode === 'sms' 
+                                ? (((user as any)?.mvpline_number || (user as any)?.twilio_number) ? '#C9A962' : '#FF9500') 
+                                : '#34C759') 
+                            : colors.borderLight,
+                          border: 'none',
+                          cursor: (!message.trim() && !selectedMedia) || sending || sendingMedia ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {sending || sendingMedia ? (
+                          <ActivityIndicator size="small" color={colors.text} />
+                        ) : (
+                          <Ionicons
+                            name={messageMode === 'sms' 
+                              ? (((user as any)?.mvpline_number || (user as any)?.twilio_number) ? 'send' : 'open-outline') 
+                              : 'mail'}
+                            size={18}
+                            color={(message.trim() || selectedMedia) ? '#000' : '#6E6E73'}
+                          />
+                        )}
+                      </button>
+                    ) : (
+                      <TouchableOpacity
+                        style={[
+                          styles.composerSendButton, 
+                          { backgroundColor: messageMode === 'sms' 
+                              ? (((user as any)?.mvpline_number || (user as any)?.twilio_number) ? '#C9A962' : '#FF9500') 
+                              : '#34C759' },
+                          ((!message.trim() && !selectedMedia) || sending || sendingMedia) && styles.composerSendButtonDisabled
+                        ]}
+                        onPress={() => selectedMedia ? sendMMS() : handleSend()}
+                        disabled={(!message.trim() && !selectedMedia) || sending || sendingMedia}
+                      >
+                        {sending || sendingMedia ? (
+                          <ActivityIndicator size="small" color={colors.text} />
+                        ) : (
+                          <Ionicons
+                            name={messageMode === 'sms' 
+                              ? (((user as any)?.mvpline_number || (user as any)?.twilio_number) ? 'send' : 'open-outline') 
+                              : 'mail'}
+                            size={18}
+                            color={(message.trim() || selectedMedia) ? '#000' : '#6E6E73'}
+                          />
+                        )}
+                      </TouchableOpacity>
+                    )}
+                </View>
+              )}
+            </View>
             
-            {/* Bottom toolbar inside the box */}
+            {/* Bottom toolbar inside the box (always when the keyboard is down; on demand via + while typing) */}
+            {(!compactComposer || toolsOpen) && (
             <View style={[styles.composerToolbar, { borderTopColor: colors.border }]}>
               {/* Left side tools */}
               <View style={styles.composerTools}>
@@ -2835,6 +2935,8 @@ function ThreadScreen() {
               </View>
               
               {/* Send button */}
+              {!compactComposer && (
+                <>
               {IS_WEB ? (
                 <button
                   type="button"
@@ -2895,7 +2997,10 @@ function ThreadScreen() {
                   )}
                 </TouchableOpacity>
               )}
+                </>
+              )}
             </View>
+            )}
           </View>
         </View>
 
