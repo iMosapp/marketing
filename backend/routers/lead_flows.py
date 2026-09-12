@@ -46,6 +46,8 @@ class FlowBody(BaseModel):
     tags_on_no_answer: Optional[list] = None
     exhausted_text_lead: Optional[bool] = None
     exhausted_push_manager: Optional[bool] = None
+    ring_delay_seconds: Optional[int] = None
+    returning_stale_days: Optional[int] = None
     template_key: Optional[str] = None
     store_id: Optional[str] = None
 

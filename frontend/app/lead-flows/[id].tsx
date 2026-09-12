@@ -112,7 +112,8 @@ export default function LeadFlowEditor() {
               <ContactModeToggle value={flow.contact_mode} onChange={v => patch({ contact_mode: v, call_attempts: v === 'text_and_call' && flow.call_attempts.length === 0 ? [{ user_ids: [], delay_seconds: 0, delivery: 'call' }] : flow.call_attempts })} colors={colors} />
               <View style={{ height: 14 }} />
               {flow.contact_mode === 'text_and_call' ? (
-                <LeadCallLadder attempts={flow.call_attempts} reps={visibleReps} onChange={a => patch({ call_attempts: a })} colors={colors} max={6} allowPush />
+                <LeadCallLadder attempts={flow.call_attempts} reps={visibleReps} onChange={a => patch({ call_attempts: a })} colors={colors} max={6} allowPush
+                  ringDelay={(flow as any).ring_delay_seconds || 0} onRingDelayChange={s => patch({ ring_delay_seconds: s } as any)} />
               ) : (
                 <View>
                   <Text style={label}>Who gets the push</Text>
@@ -149,6 +150,33 @@ export default function LeadFlowEditor() {
                     <View style={{ flex: 1 }}><Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>{t}</Text><Text style={{ fontSize: 12, color: colors.textSecondary }}>{s}</Text></View>
                   </TouchableOpacity>
                 ))}
+              </Section>
+              <Section>
+                <Text style={label}>Returning customers</Text>
+                <Text style={hint}>A lead whose number already belongs to one of your reps normally goes straight to that rep (text only, no ring).</Text>
+                {([[0, 'Always straight to their rep', 'Even if nothing has happened in months.'], [30, 'Back to the team when it has gone quiet', 'Runs this flow (ring everyone) when their rep has no sale on the customer and nothing has happened for the days below.']] as const).map(([v, t, sub]) => {
+                  const cur = (flow as any).returning_stale_days ?? 30;
+                  const on = v === 0 ? cur === 0 : cur > 0;
+                  return (
+                    <TouchableOpacity key={v} onPress={() => patch({ returning_stale_days: v } as any)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 12, marginBottom: 6, backgroundColor: on ? GOLD + '22' : colors.surface, borderWidth: 1, borderColor: on ? GOLD : 'transparent' }} {...tid(`lead-flow-returning-${v ? 'stale' : 'always'}`)}>
+                      <Ionicons name={on ? 'radio-button-on' : 'radio-button-off'} size={18} color={on ? GOLD : colors.textSecondary} />
+                      <View style={{ flex: 1 }}><Text style={{ fontSize: 14, fontWeight: '700', color: colors.text }}>{t}</Text><Text style={{ fontSize: 12, color: colors.textSecondary }}>{sub}</Text></View>
+                    </TouchableOpacity>
+                  );
+                })}
+                {((flow as any).returning_stale_days ?? 30) > 0 && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+                    <Text style={{ fontSize: 12, color: colors.textSecondary, marginRight: 4 }}>Quiet for</Text>
+                    {[14, 30, 60, 90].map(d => {
+                      const on = ((flow as any).returning_stale_days ?? 30) === d;
+                      return (
+                        <TouchableOpacity key={d} onPress={() => patch({ returning_stale_days: d } as any)} style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 14, backgroundColor: on ? GOLD : colors.card, borderWidth: 1, borderColor: on ? GOLD : colors.border }} {...tid(`lead-flow-stale-${d}`)}>
+                          <Text style={{ fontSize: 12, fontWeight: '700', color: on ? '#000' : colors.text }}>{d} days</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
               </Section>
               <Section>
                 <Toggle title="Claim = call me" sub="When a rep claims in the app, ring their cell and bridge to the customer on press 1." value={flow.auto_call_on_claim} onChange={v => patch({ auto_call_on_claim: v })} testID="lead-flow-autocall" />

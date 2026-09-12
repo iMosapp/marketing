@@ -40,3 +40,8 @@
 ## Recorded conversation demo (preview only, `cd /app/backend && python tests/seed_recorded_convo_demo.py` idempotent, `--wipe` removes)
 - Seeds one `kind: conversation` voice note (12s tone WAV in object storage + realistic Sarah Tester transcript) for Activation Tester on contact 6aa413008f0d53e3f2261853 and runs Recording Highlights (creates ~4 `auto_kind: recording_highlight` tasks). Visible on the contact's Calls tab as "Recorded conversation · 12s".
 - Backend tests: `python -m pytest tests/test_recording_highlights.py` (3 cases, live LLM).
+
+## Scripts & Practice (June 2026)
+- Screens: `/scripts` (everyone), `/scripts/{id}`, `/scripts/practice?script=`, `/scripts/result?session=`, `/scripts/editor?id=`, `/scripts/assign` (managers), `/scripts/training` (super_admin only). Rep = activation-tester, manager = qa-manager, super admin = forest.
+- On web the practice mic cannot record headlessly: use the keyboard button (`practice-use-keyboard`) and type turns. LLM turns take 3-15s, grading 15-40s.
+- Backend smoke: `cd /app/backend && python tests/scripts_practice_smoke.py` (creates + cancels an assignment, leaves one completed roleplay_session). Extra pytest: `tests/test_scripts_practice_extra.py`.

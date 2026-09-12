@@ -552,13 +552,22 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
     # Returning customer: an existing contact owned by an ACTIVE rep in this store goes straight to
     # that rep (skips the shared queue + ladder). Store-owned / orphaned contacts are treated as new.
     owner_id = None
+    returning_reopened = None
     if existing_contact:
         cand = str(existing_contact.get("user_id") or "")
         if cand and cand != store_id and ObjectId.is_valid(cand):
             owner = await db.users.find_one(
-                {"_id": ObjectId(cand), "active": {"$ne": False}, "status": {"$ne": "deactivated"}}, {"store_id": 1})
+                {"_id": ObjectId(cand), "active": {"$ne": False}, "status": {"$ne": "deactivated"}}, {"store_id": 1, "name": 1, "first_name": 1})
             if owner and (not store_id or str(owner.get("store_id") or "") == store_id):
                 owner_id = cand
+                # No sale and nothing happening for N days: the customer is fair game again, run the source's flow
+                stale_days = int(source.get("returning_stale_days", 30) or 0)
+                if stale_days > 0:
+                    verdict = await returning_owner_verdict(db, existing_contact, cand, stale_days, now)
+                    if verdict["reopen"]:
+                        returning_reopened = {**verdict, "prev_owner_id": cand, "prev_owner_name": owner.get("name") or owner.get("first_name") or "their rep", "stale_days": stale_days}
+                        owner_id = None
+                        logger.info(f"[LeadIntake] Returning contact {existing_contact['_id']} reopened to the team: quiet {verdict['quiet_days']}d, no sale (owner {cand})")
 
     if existing_contact:
         contact_id = str(existing_contact["_id"])
@@ -706,6 +715,7 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         "attribution":       normalized.get("attribution") or None,
         "assigned_to":       assigned_user_id,
         "routing_kind":      routing_kind,
+        "returning_reopened": returning_reopened,
         "flow_id":           source.get("flow_id"),
         "flow_name":         source.get("flow_name"),
         "draft_message":     first_message,
@@ -744,6 +754,7 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         "claimed_at":       now.isoformat() if assigned_user_id else None,
         "claim_source":     routing_kind if assigned_user_id else None,
         "routing_kind":     routing_kind,
+        "returning_reopened": returning_reopened,
         # Returning-customer safety net: manager alert, then auto-release to the shared queue
         "owner_alert_at":   now + timedelta(minutes=int(source.get("returning_alert_minutes") or 10)) if owner_id else None,
         "release_at":       now + timedelta(minutes=int(source.get("returning_release_minutes") or 30)) if owner_id else None,
@@ -793,6 +804,16 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
     else:
         conv_result = await db.conversations.insert_one(conversation)
         conv_id = str(conv_result.inserted_id)
+        if returning_reopened:
+            # quiet heads-up to the rep who used to have this customer (no push; they are usually on the ring list anyway)
+            qd = returning_reopened.get("quiet_days")
+            await db.notifications.insert_one({
+                "user_id": returning_reopened["prev_owner_id"], "type": "lead_reopened",
+                "title": f"{first or full_name} came back as a new {source.get('name', 'internet')} lead",
+                "message": (f"Quiet for {qd} days with no sale, so the team is working it" if qd is not None else "No sale on record, so the team is working it"),
+                "contact_id": contact_id, "contact_name": full_name, "conversation_id": conv_id, "link": f"/thread/{conv_id}",
+                "read": False, "dismissed": False, "created_at": now,
+            })
 
     # Update lead with conversation_id
     await db.inbound_leads.update_one(
@@ -859,6 +880,45 @@ async def process_inbound_lead(normalized: dict, source: dict, db,
         "assigned_to":      assigned_user_id,
         "plan":             plan,
     }
+
+
+VIEW_EVENT_RE = re.compile(r"view|click|open", re.I)
+
+
+async def returning_owner_verdict(db, contact: dict, owner_id: str, stale_days: int, now: datetime) -> dict:
+    """Should a returning customer stay with their rep? Yes if the rep sold them or anything happened in the last N days."""
+    tags = {str(t).strip().lower() for t in (contact.get("tags") or [])}
+    if "sold" in tags or contact.get("sold_at") or str(contact.get("status") or "").lower() == "sold":
+        return {"reopen": False, "reason": "sold", "quiet_days": None}
+    contact_id = str(contact["_id"])
+    stamps = [contact.get("created_at")]
+    convs = await db.conversations.find({"user_id": owner_id, "contact_id": contact_id}, {"last_message_at": 1, "created_at": 1}).to_list(20)
+    stamps += [c.get("last_message_at") or c.get("created_at") for c in convs]
+    conv_ids = [str(c["_id"]) for c in convs]
+    if conv_ids:
+        m = await db.messages.find_one({"conversation_id": {"$in": conv_ids}}, {"timestamp": 1}, sort=[("timestamp", -1)])
+        stamps.append((m or {}).get("timestamp"))
+    call = await db.call_logs.find_one({"user_id": owner_id, "contact_id": contact_id}, {"timestamp": 1, "created_at": 1}, sort=[("timestamp", -1)])
+    stamps.append((call or {}).get("timestamp") or (call or {}).get("created_at"))
+    ev = await db.contact_events.find_one({"contact_id": contact_id, "user_id": owner_id, "event_type": {"$not": VIEW_EVENT_RE}},
+                                          {"timestamp": 1, "created_at": 1}, sort=[("timestamp", -1)])
+    stamps.append((ev or {}).get("timestamp") or (ev or {}).get("created_at"))
+    task = await db.tasks.find_one({"user_id": owner_id, "contact_id": contact_id, "completed": True}, {"completed_at": 1}, sort=[("completed_at", -1)])
+    stamps.append((task or {}).get("completed_at"))
+    valid = []
+    for st in stamps:
+        if isinstance(st, str):
+            try:
+                st = datetime.fromisoformat(st.replace("Z", "+00:00"))
+            except Exception:
+                continue
+        if isinstance(st, datetime):
+            valid.append(st if st.tzinfo else st.replace(tzinfo=timezone.utc))
+    last = max(valid) if valid else None
+    quiet_days = (now - last).days if last else None
+    if last and last >= now - timedelta(days=stale_days):
+        return {"reopen": False, "reason": "engaged", "quiet_days": quiet_days, "last_activity_at": last.isoformat()}
+    return {"reopen": True, "reason": "quiet", "quiet_days": quiet_days, "last_activity_at": last.isoformat() if last else None}
 
 
 async def _resolve_assignment(db, source: dict) -> Optional[str]:

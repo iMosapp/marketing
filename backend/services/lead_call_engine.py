@@ -106,14 +106,21 @@ async def start_call_workflow(source: dict, conversation_id: str, contact_id: st
         "created_at": now,
         "updated_at": now,
     }
-    if not deferred:
+    ring_delay = max(0, min(300, int(source.get("ring_delay_seconds") or 0)))
+    fire_now = not deferred and ring_delay == 0
+    if fire_now:
         # Attempt 1 fires right now (below); the 30s guard keeps the scheduler tick from double-ringing.
         doc["next_attempt_at"] = now + timedelta(seconds=30)
+    elif not deferred:
+        # "Text first, ring later": the scheduler tick (15s) fires attempt 1 once the delay has passed
+        doc["next_attempt_at"] = now + timedelta(seconds=ring_delay)
+        doc["ring_delay_seconds"] = ring_delay
     res = await db[COLL].insert_one(doc)
     doc["_id"] = res.inserted_id
     logger.info(f"[LeadCall] Job {res.inserted_id} created for conv {conversation_id} with {len(attempts)} attempt(s)"
-                + (f", deferred until {not_before.isoformat()} ({deferred_reasons})" if deferred else ""))
-    if not deferred:
+                + (f", deferred until {not_before.isoformat()} ({deferred_reasons})" if deferred else "")
+                + (f", rings in {ring_delay}s" if ring_delay and not deferred else ""))
+    if fire_now:
         asyncio.create_task(_run_attempt(db, doc))
     return str(res.inserted_id)
 
@@ -275,11 +282,14 @@ async def process_lead_call_jobs():
         # Skip if the conversation got claimed in-app between ticks
         conv = await db.conversations.find_one({"_id": ObjectId(job["conversation_id"])}, {"claimed_by": 1, "claim_source": 1})
         first_rung = job["attempt_index"] == 0
-        if conv and conv.get("claimed_by") and (conv.get("claim_source") == "app" or (job.get("deferred") and first_rung)):
+        held_first_rung = first_rung and (job.get("deferred") or job.get("ring_delay_seconds"))
+        # routing kinds (assigned / returning_owner) are not a human claim: the assigned rep still gets rung
+        human_claim = conv and conv.get("claimed_by") and conv.get("claim_source") not in ("assigned", "returning_owner", "queue", None)
+        if human_claim and (conv.get("claim_source") == "app" or held_first_rung):
             await mark_claimed(job["conversation_id"], conv["claimed_by"], via=conv.get("claim_source") or "app")
             continue
         # An overnight lead a rep already texted/called by morning does not need the ladder
-        if job.get("deferred") and first_rung and await _rep_already_engaged(db, job["conversation_id"]):
+        if held_first_rung and await _rep_already_engaged(db, job["conversation_id"]):
             await db[COLL].update_one({"_id": job["_id"]}, {"$set": {"status": "handled", "handled_reason": "rep_replied", "updated_at": now}})
             logger.info(f"[LeadCall] Deferred job {job['_id']} skipped: rep already engaged the lead")
             continue
@@ -476,6 +486,10 @@ async def timeline_for_conversation(conversation_id: str) -> dict:
             ids.add(job["claimed_by"])
     if conv.get("claimed_by"):
         ids.add(conv["claimed_by"])
+    reopened = conv.get("returning_reopened") or {}
+    for extra in (conv.get("assigned_to"), reopened.get("prev_owner_id")):
+        if extra:
+            ids.add(str(extra))
     names = {}
     oids = [ObjectId(i) for i in ids if ObjectId.is_valid(i)]
     if oids:
@@ -502,6 +516,16 @@ async def timeline_for_conversation(conversation_id: str) -> dict:
         "plan": plan,
         "jessi_on": conv.get("ai_mode") == "auto_reply" and conv.get("ai_enabled") is not False,
         "sms_consent": conv.get("sms_consent"),
+        "routing": {
+            "kind": conv.get("routing_kind"),
+            "owner_name": names.get(str(conv.get("assigned_to") or "")) if conv.get("routing_kind") == "returning_owner" else None,
+            "ladder_skipped": conv.get("routing_kind") == "returning_owner" and not job,
+            "reopened": bool(reopened),
+            "prev_owner_name": names.get(str(reopened.get("prev_owner_id") or "")) or reopened.get("prev_owner_name"),
+            "quiet_days": reopened.get("quiet_days"),
+            "stale_days": reopened.get("stale_days"),
+            "ring_delay_seconds": (job or {}).get("ring_delay_seconds") or 0,
+        },
         "returning": {
             "is_returning": conv.get("routing_kind") == "returning_owner" or bool(conv.get("lead_merged")),
             "merged_thread": bool(conv.get("lead_merged")),

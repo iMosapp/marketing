@@ -36,7 +36,9 @@ export const ContactModeToggle = ({ value, onChange, colors }: { value: 'text_on
   </View>
 );
 
-export const LeadCallLadder = ({ attempts, reps, onChange, colors, max = MAX, allowPush = false }: { attempts: CallAttempt[]; reps: Rep[]; onChange: (a: CallAttempt[]) => void; colors: any; max?: number; allowPush?: boolean }) => {
+const RING_DELAYS = [0, 15, 30, 45, 60];
+
+export const LeadCallLadder = ({ attempts, reps, onChange, colors, max = MAX, allowPush = false, ringDelay, onRingDelayChange }: { attempts: CallAttempt[]; reps: Rep[]; onChange: (a: CallAttempt[]) => void; colors: any; max?: number; allowPush?: boolean; ringDelay?: number; onRingDelayChange?: (s: number) => void }) => {
   const update = (i: number, patch: Partial<CallAttempt>) => onChange(attempts.map((a, idx) => (idx === i ? { ...a, ...patch } : a)));
   const toggleRep = (i: number, uid: string) => {
     const cur = attempts[i].user_ids;
@@ -63,7 +65,7 @@ export const LeadCallLadder = ({ attempts, reps, onChange, colors, max = MAX, al
               <Text style={{ fontWeight: '800', color: '#000', fontSize: 13 }}>{i + 1}</Text>
             </View>
             <Text style={{ flex: 1, fontWeight: '700', color: colors.text }}>
-              {a.delivery === 'push' ? 'Pushes' : 'Rings'} {i === 0 ? 'immediately' : `${a.delay_seconds}s after attempt ${i}`}
+              {a.delivery === 'push' ? 'Pushes' : 'Rings'} {i === 0 ? (ringDelay ? `${ringDelay}s after the text` : 'the moment the lead lands') : `${a.delay_seconds}s after attempt ${i}`}
             </Text>
             {attempts.length > 1 && (
               <TouchableOpacity onPress={() => remove(i)} hitSlop={8} testID={`ladder-remove-${i}`} dataSet={{ testid: `ladder-remove-${i}` } as any}>
@@ -83,6 +85,19 @@ export const LeadCallLadder = ({ attempts, reps, onChange, colors, max = MAX, al
                   </TouchableOpacity>
                 );
               })}
+            </View>
+          )}
+          {i === 0 && !!onRingDelayChange && (
+            <View style={{ marginBottom: 10 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, marginRight: 4 }}>Text first, ring after</Text>
+                {RING_DELAYS.map(d => (
+                  <TouchableOpacity key={d} onPress={() => onRingDelayChange(d)} style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 14, backgroundColor: (ringDelay || 0) === d ? '#C9A962' : colors.card, borderWidth: 1, borderColor: (ringDelay || 0) === d ? '#C9A962' : colors.border }} testID={`ladder-ring-delay-${d}`} dataSet={{ testid: `ladder-ring-delay-${d}` } as any}>
+                    <Text style={{ fontSize: 12, fontWeight: '700', color: (ringDelay || 0) === d ? '#000' : colors.text }}>{d === 0 ? 'Same moment' : `${d}s`}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 4 }}>The customer sees your text before their phone rings. Skipped if a rep already claimed or texted in the meantime.</Text>
             </View>
           )}
           {i > 0 && (

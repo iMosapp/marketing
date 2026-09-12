@@ -398,6 +398,7 @@ export default function MoreScreen() {
       ...(isAdmin || (!repPreview && ['manager', 'admin'].includes(user?.role || '')) ? [{ icon: 'chatbubbles' as any, title: 'Inboxes', subtitle: 'Shared department numbers: who works them, routing, Jessi', onPress: () => router.push('/inboxes' as any), color: '#C9A962' }] : []),
       ...(isAdmin || (!repPreview && ['manager', 'admin'].includes(user?.role || '')) ? [{ icon: 'clipboard' as any, title: 'Scorecards', subtitle: 'What every recorded call gets graded on, per department', onPress: () => router.push('/scorecards' as any), color: '#C9A962' }] : []),
       ...(isAdmin || (!repPreview && ['manager', 'admin'].includes(user?.role || '')) ? [{ icon: 'sparkles' as any, title: 'Ask Jessi About The Team', subtitle: 'Ask across every rep: who is waiting, trades, missed calls', onPress: () => router.push('/ask-team' as any), color: '#C9A962' }] : []),
+      ...(isAdmin || (!repPreview && ['manager', 'admin'].includes(user?.role || '')) ? [{ icon: 'mic-circle' as any, title: 'Assign Practice Calls', subtitle: 'Mystery shop your team: pick a script, reps, curveballs', onPress: () => router.push('/scripts/assign' as any), color: '#C9A962' }] : []),
       { icon: 'star',       title: 'Review Center', subtitle: 'Approve, publish and track reviews', onPress: () => router.push('/settings/review-approvals'), color: '#FFD60A' },
       { icon: 'images',     title: 'Showcase',      subtitle: 'Approve showcase entries',          onPress: () => router.push('/settings/showcase-approvals'), color: '#34C759' },
     ];
@@ -445,6 +446,7 @@ export default function MoreScreen() {
     const items = filterItems('insights', [
       { permKey: 'my_performance', icon: 'stats-chart', title: 'My Stats', subtitle: 'Day / week / month performance', onPress: () => router.push('/touchpoints/performance' as any), color: '#34C759' },
       { permKey: 'my_performance', icon: 'clipboard-outline', title: 'My Call Scores', subtitle: 'How your recorded calls grade out, with coaching', onPress: () => router.push('/scorecards/my' as any), color: '#C9A962' },
+      { permKey: 'my_performance', icon: 'school', title: 'Scripts & Practice', subtitle: 'Phone scripts to print, plus practice calls against Jessi', onPress: () => router.push('/scripts' as any), color: '#C9A962' },
       ...((!repPreview && ['super_admin', 'admin', 'manager', 'store_manager', 'org_admin'].includes(user?.role || '')) ? [
         { permKey: 'my_performance', icon: 'sparkles', title: 'Ask Jessi About The Team', subtitle: 'Who is waiting, who mentioned a trade, what calls missed', onPress: () => router.push('/ask-team' as any), color: '#C9A962' },
         { permKey: 'my_performance', icon: 'podium-outline', title: 'Team Call Scores', subtitle: 'Leaderboard, who misses what, critical-miss alerts', onPress: () => router.push('/scorecards/team' as any), color: '#FF9500' },

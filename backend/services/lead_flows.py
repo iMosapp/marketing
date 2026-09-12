@@ -24,7 +24,7 @@ FLOW_FIELDS = [
     "intake_text", "after_hours_text", "intake_delay_seconds", "no_answer_text",
     "va_enabled", "inquiry_context", "after_hours_mode", "text_window_start", "text_window_end",
     "caller_id_mode", "auto_call_on_claim", "tags_on_claim", "tags_on_no_answer",
-    "exhausted_text_lead", "exhausted_push_manager",
+    "exhausted_text_lead", "exhausted_push_manager", "ring_delay_seconds", "returning_stale_days",
 ]
 
 DEFAULT_FLOW = {
@@ -44,6 +44,8 @@ DEFAULT_FLOW = {
     "text_window_end": "20:00",
     "caller_id_mode": "rep",            # rep = the ringing rep's own business line, store = the source's main line
     "auto_call_on_claim": True,
+    "ring_delay_seconds": 0,            # text lands first, phones ring this many seconds later (0 = same moment)
+    "returning_stale_days": 30,         # returning customer w/o a sale and quiet this long -> back to the team (0 = always their rep)
     "tags_on_claim": ["Working"],
     "tags_on_no_answer": ["Lost Contact"],
     "exhausted_text_lead": True,
@@ -148,6 +150,8 @@ def clean_flow(body: dict, existing: dict | None = None) -> dict:
         base[k] = (base.get(k) or "").strip()[:600]
     base["inquiry_context"] = (base.get("inquiry_context") or "").strip()[:300]
     base["intake_delay_seconds"] = max(0, min(3600, int(base.get("intake_delay_seconds") or 0)))
+    base["ring_delay_seconds"] = max(0, min(300, int(base.get("ring_delay_seconds") or 0)))
+    base["returning_stale_days"] = max(0, min(365, int(base.get("returning_stale_days") or 0)))
     for k in ("notify_all_on_intake", "va_enabled", "auto_call_on_claim", "exhausted_text_lead", "exhausted_push_manager"):
         base[k] = bool(base.get(k))
     base["name"] = (base.get("name") or "New flow").strip()[:80]
@@ -241,12 +245,16 @@ def summarize(flow: dict, names: dict | None = None) -> list:
             bits.append("alert managers")
         if flow.get("call_attempts"):
             rows.append({"icon": "alert-circle", "text": "Nobody answers: " + (", ".join(bits) if bits else "nothing else") + "; the lead stays in the queue"})
+        if flow.get("ring_delay_seconds"):
+            rows.append({"icon": "timer", "text": f"Text lands first, phones ring {flow['ring_delay_seconds']}s later"})
         if flow.get("after_hours_mode") == "text_and_ai":
             rows.append({"icon": "moon", "text": "Store closed: text + Jessi now, phones ring at opening"})
         else:
             rows.append({"icon": "moon", "text": "Store closed: ring anyway"})
     else:
         rows.append({"icon": "notifications", "text": "Text only: reps get a push, first to claim owns it"})
+    stale = int(flow.get("returning_stale_days") or 0)
+    rows.append({"icon": "refresh", "text": f"Returning customers: back to the team when their rep has no sale and it's been quiet {stale}+ days" if stale else "Returning customers: always straight to their rep"})
     if flow.get("tags_on_claim"):
         rows.append({"icon": "pricetag", "text": "On claim: tag " + ", ".join(flow["tags_on_claim"]) + (" and ring the rep to connect" if flow.get("auto_call_on_claim") else "")})
     return rows

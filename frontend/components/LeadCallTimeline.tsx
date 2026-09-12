@@ -99,9 +99,11 @@ export const LeadCallTimeline = ({ conversationId, colors }: { conversationId: s
   let title = 'Lead routing';
   let sub = '';
   let tone = GOLD;
+  const routing = data.routing || {};
   if (!job && ret.is_returning) {
-    title = ret.released_at && !data.claimed_by ? 'Returning customer · back in the shared queue' : ret.resolved ? 'Returning customer · yours' : minsLeft != null ? `Returning customer · releases to the queue in ${minsLeft} min` : 'Returning customer';
-    sub = ret.merged_thread ? `Lead #${ret.lead_count} landed in this thread${data.intake?.sent_at ? ` · intake text sent ${whenLabel(data.intake.sent_at)}` : ''}` : (ret.release_reason ? `Released: ${ret.release_reason}` : 'Routed straight to their rep, no jump ball');
+    const who = routing.owner_name ? `${routing.owner_name.split(' ')[0]}'s customer` : 'Returning customer';
+    title = ret.released_at && !data.claimed_by ? `${who} · back in the shared queue` : ret.resolved ? `${who} · theirs to work` : minsLeft != null ? `${who} · releases to the queue in ${minsLeft} min` : who;
+    sub = ret.merged_thread ? `Lead #${ret.lead_count} landed in this thread${data.intake?.sent_at ? ` · intake text sent ${whenLabel(data.intake.sent_at)}` : ''} · phones did not ring` : (ret.release_reason ? `Released: ${ret.release_reason}` : `Sent straight to ${routing.owner_name ? routing.owner_name.split(' ')[0] : 'their rep'}: text only, phones did not ring`);
     tone = ret.released_at && !data.claimed_by ? '#FF3B30' : ret.resolved ? '#34C759' : minsLeft != null && minsLeft <= 5 ? '#FF3B30' : '#FF9500';
   } else if (!job) {
     title = plan.jessi_on ? 'Text only · Jessi answering replies' : 'Text only · reps answer replies';
@@ -128,6 +130,13 @@ export const LeadCallTimeline = ({ conversationId, colors }: { conversationId: s
   }
 
   const rows: { at: string | null; icon: string; color: string; text: string }[] = [];
+  if (routing.reopened) {
+    rows.push({ at: data.received_at, icon: 'refresh', color: GOLD,
+      text: `Returning customer of ${routing.prev_owner_name || 'another rep'}, no sale and quiet ${routing.quiet_days != null ? `${routing.quiet_days} days` : `${routing.stale_days || 30}+ days`}: the team is working it` });
+  }
+  if (job && routing.ring_delay_seconds) {
+    rows.push({ at: data.received_at, icon: 'timer-outline', color: '#8E8E93', text: `Text first, phones ring ${routing.ring_delay_seconds}s later` });
+  }
   rows.push({ at: data.received_at, icon: 'download-outline', color: colors.textSecondary, text: `Lead received${data.is_test ? ' (test)' : ''}` });
   if (data.intake?.sent_at) rows.push({ at: data.intake.sent_at, icon: 'chatbubble-ellipses-outline', color: '#34C759', text: 'Intake text sent' });
   else if (data.intake?.scheduled_for) rows.push({ at: data.intake.scheduled_for, icon: 'chatbubble-ellipses-outline', color: '#FF9500', text: 'Intake text scheduled (texting window)' });

@@ -100,6 +100,8 @@ class WorkflowConfig(BaseModel):
     timer_amber_minutes: int = 15               # ...and red after this
     returning_alert_minutes: int = 10           # returning customer routed to owner: alert managers if no reply
     returning_release_minutes: int = 30         # ...then release back to the shared queue
+    returning_stale_days: int = 30              # returning customer w/o a sale and quiet this long -> treated as a new lead (0 = always their rep)
+    ring_delay_seconds: int = 0                 # text first, phones ring this many seconds later (0 = same moment)
     digest_hour: int = 18                       # managers' daily red-leads report (store local hour)
     just_tried_text: str = ""                   # one-tap "just tried you" SMS after voicemail ({first_name}, {sender_name}, {company}); blank = team default
     inquiry_context: str = ""                   # what leads from this source are asking about; keeps Jessi on topic (blank = auto)
@@ -196,6 +198,8 @@ def serialize_lead_source(source: dict) -> dict:
             "just_tried_text":         source.get("just_tried_text", ""),
             "inquiry_context":         source.get("inquiry_context", ""),
             "caller_id_mode":          source.get("caller_id_mode", "rep"),
+            "ring_delay_seconds":      source.get("ring_delay_seconds", 0),
+            "returning_stale_days":    source.get("returning_stale_days", 30),
             "tags_on_claim":           source.get("tags_on_claim", []),
             "tags_on_no_answer":       source.get("tags_on_no_answer", []),
             "exhausted_text_lead":     source.get("exhausted_text_lead", False),
@@ -903,7 +907,8 @@ async def save_workflow_config(source_id: str, config: WorkflowConfig, _m: dict 
             for a in updates["call_attempts"][:4]
         ]
     for k, lo, hi in (("timer_green_minutes", 1, 120), ("timer_amber_minutes", 2, 240),
-                      ("returning_alert_minutes", 1, 240), ("returning_release_minutes", 2, 720), ("digest_hour", 0, 23)):
+                      ("returning_alert_minutes", 1, 240), ("returning_release_minutes", 2, 720), ("digest_hour", 0, 23),
+                      ("returning_stale_days", 0, 365), ("ring_delay_seconds", 0, 300)):
         if k in updates:
             updates[k] = max(lo, min(hi, int(updates[k])))
     if "timer_green_minutes" in updates or "timer_amber_minutes" in updates:
