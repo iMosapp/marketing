@@ -42,7 +42,8 @@ def _prompt(contact_name: str, rep_first: str, now_local: datetime, tz: str, exi
         f"You review a recorded in-person dealership conversation between salesperson {rep_first} and customer {contact_name}. "
         f"Right now it is {now_local.strftime('%A, %B %-d %Y, %-I:%M %p')} in {tz}.\n\n"
         "Return ONLY valid JSON:\n"
-        "{\"summary\": \"3 or 4 plain sentences: what the customer wants, objections or concerns, what was agreed, next steps\",\n"
+        "{\"title\": \"2 to 5 word label for this conversation, like a rep would name it: vehicle or topic + setting (e.g. Tahoe walk-around, Trade talk on the Explorer, Delivery day)\",\n"
+        " \"summary\": \"3 or 4 plain sentences: what the customer wants, objections or concerns, what was agreed, next steps\",\n"
         " \"commitments\": [{\"title\": \"short action for the salesperson, imperative, under 60 characters\", "
         "\"detail\": \"one sentence with the exact promise or the customer's words\", "
         "\"due_at\": \"ISO 8601 datetime with timezone offset when a day or time was said or clearly implied, else null\", "
@@ -62,7 +63,7 @@ def _prompt(contact_name: str, rep_first: str, now_local: datetime, tz: str, exi
 async def analyze_conversation(transcript: str, contact_name: str, rep_first: str, tz: str, existing: list | None = None) -> dict:
     api_key = os.environ.get("EMERGENT_LLM_KEY")
     if not api_key or len((transcript or "").strip()) < 40:
-        return {"summary": "", "commitments": []}
+        return {"title": "", "summary": "", "commitments": []}
     from emergentintegrations.llm.chat import LlmChat, UserMessage
     now_local = datetime.now(ZoneInfo(tz))
     chat = LlmChat(api_key=api_key, session_id=f"convo-hl-{uuid.uuid4().hex[:8]}", system_message=_prompt(contact_name, rep_first, now_local, tz, existing or [])).with_model(*MODEL)
@@ -76,7 +77,8 @@ async def analyze_conversation(transcript: str, contact_name: str, rep_first: st
         out.append({"title": title, "detail": no_em_dash(str(c.get("detail") or "")).strip()[:300], "due_at": c.get("due_at") or None,
                     "has_time": bool(c.get("has_time")), "action": c.get("action") if c.get("action") in ACTION_TYPE else "task",
                     "existing_task_id": str(c.get("existing_task_id") or "") or None})
-    return {"summary": no_em_dash(str(data.get("summary") or "")).strip()[:1500], "commitments": out}
+    return {"title": no_em_dash(str(data.get("title") or "")).strip().strip('"').rstrip(".")[:40],
+            "summary": no_em_dash(str(data.get("summary") or "")).strip()[:1500], "commitments": out}
 
 
 def _due(raw, has_time: bool, tz: str) -> tuple[datetime, bool]:
@@ -109,7 +111,7 @@ async def process_recorded_conversation(db, user_id: str, contact_id: str, note_
         analysis = await analyze_conversation(transcript, contact_name, rep_first, tz, existing)
     except Exception as e:
         logger.warning(f"[RecordingHighlights] analysis failed for note {note_id}: {e}")
-        analysis = {"summary": "", "commitments": []}
+        analysis = {"title": "", "summary": "", "commitments": []}
 
     now = datetime.now(timezone.utc)
     when = now.astimezone(ZoneInfo(tz)).strftime("%b %-d")
@@ -133,6 +135,8 @@ async def process_recorded_conversation(db, user_id: str, contact_id: str, note_
         highlights.append(hl)
 
     await db.voice_notes.update_one({"_id": ObjectId(note_id)}, {"$set": {"summary": analysis["summary"], "highlights": highlights, "highlights_at": now}})
+    if analysis["title"]:
+        await db.voice_notes.update_one({"_id": ObjectId(note_id), "title": {"$in": [None, ""]}}, {"$set": {"title": analysis["title"]}})  # never overwrite a rep's own name
     if tasks:
         await db.contact_events.insert_one({
             "contact_id": contact_id, "user_id": user_id, "event_type": "recording_highlights", "channel": "system", "category": "task",
@@ -140,4 +144,4 @@ async def process_recorded_conversation(db, user_id: str, contact_id: str, note_
             "description": "; ".join(t["title"] for t in tasks)[:300], "icon": "checkbox", "color": "#C9A962",
             "metadata": {"voice_note_id": note_id, "task_ids": [t["id"] for t in tasks]}, "timestamp": now, "created_at": now})
     logger.info(f"[RecordingHighlights] note {note_id}: {len(highlights)} commitments, {len(tasks)} new tasks")
-    return {"summary": analysis["summary"], "highlights": [{**h, "due_date": h["due_date"].isoformat()} for h in highlights], "tasks": tasks}
+    return {"title": analysis["title"], "summary": analysis["summary"], "highlights": [{**h, "due_date": h["due_date"].isoformat()} for h in highlights], "tasks": tasks}

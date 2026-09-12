@@ -241,11 +241,11 @@ async def _process_voice_note(db, user_id: str, contact_id: str, audio_bytes: by
     note_id = str(result.inserted_id)
 
     # Recorded conversations: summary + every commitment becomes a task on the rep's list
-    summary, highlights, new_tasks = "", [], []
+    summary, title, highlights, new_tasks = "", "", [], []
     if is_convo and transcript and len(transcript.strip()) >= 40:
         from services.recording_highlights import process_recorded_conversation
         hl = await process_recorded_conversation(db, user_id, contact_id, note_id, transcript)
-        summary, highlights, new_tasks = hl["summary"], hl["highlights"], hl["tasks"]
+        summary, title, highlights, new_tasks = hl["summary"], hl["title"], hl["highlights"], hl["tasks"]
 
     try:
         user_doc = await db.users.find_one({"_id": ObjectId(user_id)}, {"_id": 0, "org_id": 1, "name": 1})
@@ -269,7 +269,7 @@ async def _process_voice_note(db, user_id: str, contact_id: str, audio_bytes: by
         except Exception as e:
             logger.warning(f"Voice intelligence extraction trigger failed: {e}")
 
-    return {"id": note_id, "audio_url": audio_url, "transcript": transcript, "summary": summary, "kind": kind,
+    return {"id": note_id, "audio_url": audio_url, "transcript": transcript, "summary": summary, "title": title, "kind": kind,
             "highlights": highlights, "tasks": new_tasks,
             "duration": round(duration, 1), "created_at": now.isoformat()}
 
@@ -345,7 +345,7 @@ async def get_voice_notes(user_id: str, contact_id: str):
     db = get_db()
     notes = await db.voice_notes.find(
         {"contact_id": contact_id, "user_id": user_id},
-        {"_id": 1, "audio_url": 1, "transcript": 1, "summary": 1, "kind": 1, "duration": 1, "created_at": 1, "contact_id": 1, "user_id": 1, "highlights": 1},
+        {"_id": 1, "audio_url": 1, "transcript": 1, "summary": 1, "title": 1, "kind": 1, "duration": 1, "created_at": 1, "contact_id": 1, "user_id": 1, "highlights": 1},
     ).sort("created_at", -1).to_list(100)
 
     def _hl(h: dict) -> dict:
@@ -360,6 +360,7 @@ async def get_voice_notes(user_id: str, contact_id: str):
             "audio_url": n["audio_url"],
             "transcript": n.get("transcript", ""),
             "summary": n.get("summary", ""),
+            "title": n.get("title") or "",
             "kind": n.get("kind", "memo"),
             "duration": n.get("duration", 0),
             "highlights": [_hl(h) for h in (n.get("highlights") or [])],
@@ -367,6 +368,19 @@ async def get_voice_notes(user_id: str, contact_id: str):
         }
         for n in notes
     ]
+
+
+@router.patch("/{user_id}/{contact_id}/{note_id}")
+async def rename_voice_note(user_id: str, contact_id: str, note_id: str, data: dict = None):
+    """Give a recording a short name ("Tahoe walk-around"). Empty title falls back to the default label."""
+    from utils.text_sanitize import no_em_dash
+    title = no_em_dash(str((data or {}).get("title") or "")).strip()[:60]
+    if not ObjectId.is_valid(note_id):
+        raise HTTPException(status_code=404, detail="Voice note not found")
+    result = await get_db().voice_notes.update_one({"_id": ObjectId(note_id), "user_id": user_id, "contact_id": contact_id}, {"$set": {"title": title}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Voice note not found")
+    return {"id": note_id, "title": title}
 
 
 @router.delete("/{user_id}/{contact_id}/{note_id}")

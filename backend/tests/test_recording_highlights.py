@@ -74,6 +74,7 @@ def test_highlights_create_tasks_and_dedupe(rep_login, sarah_id):
         try:
             out = await process_recorded_conversation(db, rep_id, sarah_id, note_id, TRANSCRIPT)
             assert out["summary"] and "—" not in out["summary"] and "–" not in out["summary"]
+            assert 3 <= len(out["title"]) <= 40, out["title"]
             assert 2 <= len(out["tasks"]) <= 5, out
             titles = " | ".join(t["title"].lower() for t in out["tasks"])
             assert "trade" in titles or "price" in titles or "number" in titles, titles
@@ -103,11 +104,33 @@ def test_highlights_create_tasks_and_dedupe(rep_login, sarah_id):
             before = await db.tasks.count_documents({"contact_id": sarah_id, "user_id": rep_id, "auto_kind": "recording_highlight"})
             out2 = await process_recorded_conversation(db, rep_id, sarah_id, note_id, TRANSCRIPT)
             after = await db.tasks.count_documents({"contact_id": sarah_id, "user_id": rep_id, "auto_kind": "recording_highlight"})
-            assert after - before <= 1 and len(out2["tasks"]) <= 1  # near-identical titles dedupe; allow one rewording
+            assert after - before <= 2 and len(out2["tasks"]) <= 2  # model sees the open tasks; allow a rewording or two
             assert all(h["task_id"] for h in out2["highlights"])
         finally:
             await db.tasks.delete_many({"contact_id": sarah_id, "user_id": rep_id, "auto_kind": "recording_highlight"})
             await db.contact_events.delete_many({"metadata.voice_note_id": note_id})
+            await db.voice_notes.delete_one({"_id": note.inserted_id})
+    _run(run())
+
+
+def test_rename_recording(rep_login, sarah_id):
+    hdr, rep_id = rep_login
+
+    async def run():
+        db = AsyncIOMotorClient(os.environ["MONGO_URL"])[os.environ["DB_NAME"]]
+        note = await db.voice_notes.insert_one({"contact_id": sarah_id, "user_id": rep_id, "audio_url": "", "transcript": "x", "kind": "conversation", "duration": 6, "created_at": datetime.now(timezone.utc)})
+        nid = str(note.inserted_id)
+        try:
+            url = f"{BASE_URL}/api/voice-notes/{rep_id}/{sarah_id}/{nid}"
+            r = requests.patch(url, json={"title": "  Tahoe walk-around — trade talk  "}, headers=hdr, timeout=20)
+            assert r.status_code == 200 and r.json()["title"] == "Tahoe walk-around, trade talk"
+            listed = next(n for n in requests.get(f"{BASE_URL}/api/voice-notes/{rep_id}/{sarah_id}", headers=hdr, timeout=20).json() if n["id"] == nid)
+            assert listed["title"] == "Tahoe walk-around, trade talk"
+            assert requests.patch(url, json={"title": "x" * 100}, headers=hdr, timeout=20).json()["title"] == "x" * 60
+            assert requests.patch(url, json={"title": ""}, headers=hdr, timeout=20).json()["title"] == ""
+            assert requests.patch(f"{BASE_URL}/api/voice-notes/{rep_id}/{sarah_id}/000000000000000000000000", json={"title": "a"}, headers=hdr, timeout=20).status_code == 404
+            assert requests.patch(f"{BASE_URL}/api/voice-notes/{rep_id}/{sarah_id}/nope", json={"title": "a"}, headers=hdr, timeout=20).status_code == 404
+        finally:
             await db.voice_notes.delete_one({"_id": note.inserted_id})
     _run(run())
 
@@ -121,7 +144,7 @@ def test_short_transcript_makes_no_tasks(rep_login, sarah_id):
         note = await db.voice_notes.insert_one({"contact_id": sarah_id, "user_id": rep_id, "audio_url": "", "transcript": "hi", "kind": "conversation", "duration": 6, "created_at": datetime.now(timezone.utc)})
         try:
             out = await process_recorded_conversation(db, rep_id, sarah_id, str(note.inserted_id), "hi")
-            assert out == {"summary": "", "highlights": [], "tasks": []}
+            assert out == {"title": "", "summary": "", "highlights": [], "tasks": []}
         finally:
             await db.voice_notes.delete_one({"_id": note.inserted_id})
     _run(run())

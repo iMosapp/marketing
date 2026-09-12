@@ -173,7 +173,7 @@ export const ConversationRecorder = ({ userId, contactId, contactFirst, colors, 
           <View style={{ backgroundColor: colors.background || colors.bg, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 18, paddingBottom: Platform.OS === 'ios' ? 30 : 18, gap: 10, maxHeight: '80%' }} {...tid('recording-result')}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <Ionicons name="checkmark-circle" size={22} color="#34C759" />
-              <Text style={{ flex: 1, fontSize: 17, fontWeight: '800', color: textColor }}>Conversation saved ({fmt(Math.round(result?.duration || 0))})</Text>
+              <Text style={{ flex: 1, fontSize: 17, fontWeight: '800', color: textColor }} numberOfLines={1}>{result?.title ? `${result.title} saved` : `Conversation saved (${fmt(Math.round(result?.duration || 0))})`}</Text>
               <TouchableOpacity onPress={() => setResult(null)} {...tid('recording-result-close')}><Ionicons name="close" size={24} color={textColor} /></TouchableOpacity>
             </View>
             <ScrollView style={{ flexGrow: 0 }} contentContainerStyle={{ gap: 10 }}>

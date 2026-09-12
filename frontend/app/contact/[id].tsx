@@ -2240,6 +2240,17 @@ function ContactDetailScreen() {
     setPlayingNoteId(noteId);
   };
 
+  const renameVoiceNote = async (noteId: string, title: string) => {
+    if (!user) return;
+    try {
+      await contactsAPI.renameVoiceNote(user._id, id as string, noteId, title);
+      setVoiceNotes((prev: any[]) => prev.map(n => (n.id === noteId ? { ...n, title } : n)));
+      showToast(title ? 'Recording renamed' : 'Name cleared');
+    } catch (e) {
+      showSimpleAlert('Error', 'Could not rename');
+    }
+  };
+
   const deleteVoiceNote = async (noteId: string) => {
     if (!user) return;
     const isConvo = voiceNotes.find((n: any) => n.id === noteId)?.kind === 'conversation';
@@ -2883,6 +2894,7 @@ function ContactDetailScreen() {
               callLogs={callLogs}
               voiceNotes={voiceNotes}
               onDeleteVoiceNote={deleteVoiceNote}
+              onRenameVoiceNote={renameVoiceNote}
               callLogsLoading={callLogsLoading}
               onRefresh={async () => {
                 setCallLogsLoading(true);

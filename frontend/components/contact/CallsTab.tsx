@@ -12,7 +12,7 @@ import { RecordedConversationCard } from './RecordedConversationCard';
 
 const when = (x: any) => { try { return new Date(x.timestamp || x.created_at || 0).getTime(); } catch { return 0; } };
 
-export default function CallsTab({ colors, callLogs, callLogsLoading, onRefresh, voiceNotes = [], onDeleteVoiceNote }: any) {
+export default function CallsTab({ colors, callLogs, callLogsLoading, onRefresh, voiceNotes = [], onDeleteVoiceNote, onRenameVoiceNote }: any) {
   const [openCall, setOpenCall] = useState<any | null>(null);
   const convos = (voiceNotes || []).filter((n: any) => n.kind === 'conversation');
   const items = [...callLogs.map((c: any) => ({ kind: 'call', data: c })), ...convos.map((n: any) => ({ kind: 'convo', data: n }))].sort((a, b) => when(b.data) - when(a.data));
@@ -46,7 +46,7 @@ export default function CallsTab({ colors, callLogs, callLogsLoading, onRefresh,
         </View>
       ) : (
         items.map((it, i: number) => {
-          if (it.kind === 'convo') return <RecordedConversationCard key={`convo-${it.data.id}`} note={it.data} colors={colors} onDelete={onDeleteVoiceNote} />;
+          if (it.kind === 'convo') return <RecordedConversationCard key={`convo-${it.data.id}`} note={it.data} colors={colors} onDelete={onDeleteVoiceNote} onRename={onRenameVoiceNote} />;
           const call = it.data;
           const ts = call.timestamp || call.created_at;
           const date = ts ? new Date(ts).toLocaleString() : '';

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { CallRecordingPlayer } from '../CallRecordingPlayer';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
@@ -19,11 +19,15 @@ export const fmtDue = (iso?: string | null, hasTime?: boolean) => {
 const fmtDur = (s: number) => (s >= 60 ? `${Math.floor(s / 60)}m ${Math.round(s % 60)}s` : `${Math.round(s)}s`);
 
 // A recorded in-person conversation on the Calls tab: summary, the follow-ups it created, play button, transcript.
-export const RecordedConversationCard = ({ note, colors, onDelete }: { note: any; colors: any; onDelete?: (id: string) => void }) => {
+export const RecordedConversationCard = ({ note, colors, onDelete, onRename }: { note: any; colors: any; onDelete?: (id: string) => void; onRename?: (id: string, title: string) => void }) => {
   const [showTranscript, setShowTranscript] = useState(false);
   const [showPlayer, setShowPlayer] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(note.title || '');
   const url = resolvePhotoUrl(note.audio_url) || note.audio_url;
   const highlights: any[] = note.highlights || [];
+  const heading = note.title || 'Recorded conversation';
+  const commit = () => { setEditing(false); const t = draft.trim().slice(0, 60); if (t !== (note.title || '')) onRename?.(note.id, t); };
   return (
     <View style={{ backgroundColor: colors.card, borderRadius: 14, padding: 14, marginBottom: 12, borderWidth: 1, borderColor: GOLD + '44' }} {...tid(`recorded-convo-${note.id}`)}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -31,8 +35,20 @@ export const RecordedConversationCard = ({ note, colors, onDelete }: { note: any
           <Ionicons name="people" size={17} color={GOLD} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ color: colors.text, fontWeight: '700', fontSize: 15 }}>Recorded conversation{note.duration ? ` · ${fmtDur(note.duration)}` : ''}</Text>
-          <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 1 }}>{note.created_at ? new Date(note.created_at).toLocaleString() : ''} · in person</Text>
+          {editing ? (
+            <TextInput value={draft} onChangeText={setDraft} autoFocus maxLength={60} placeholder="Tahoe walk-around" placeholderTextColor={colors.textSecondary}
+              onBlur={commit} onSubmitEditing={commit} returnKeyType="done"
+              style={{ color: colors.text, fontWeight: '700', fontSize: 15, paddingVertical: 2, borderBottomWidth: 1, borderBottomColor: GOLD }}
+              {...tid(`recorded-convo-title-input-${note.id}`)} />
+          ) : (
+            <TouchableOpacity onPress={() => onRename && (setDraft(note.title || ''), setEditing(true))} disabled={!onRename} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }} {...tid(`recorded-convo-title-${note.id}`)}>
+              <Text style={{ color: colors.text, fontWeight: '700', fontSize: 15, flexShrink: 1 }} numberOfLines={1}>{heading}</Text>
+              {!!onRename && <Ionicons name="pencil" size={12} color={colors.textSecondary} />}
+            </TouchableOpacity>
+          )}
+          <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 1 }}>
+            {note.title ? 'Recorded conversation · ' : ''}{note.duration ? `${fmtDur(note.duration)} · ` : ''}{note.created_at ? new Date(note.created_at).toLocaleString() : ''} · in person
+          </Text>
         </View>
         <TouchableOpacity onPress={() => setShowPlayer(p => !p)} style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: showPlayer ? GOLD : GOLD + '22', alignItems: 'center', justifyContent: 'center' }} {...tid(`recorded-convo-play-${note.id}`)}>
           <Ionicons name={showPlayer ? 'close' : 'play'} size={18} color={showPlayer ? '#111' : GOLD} />

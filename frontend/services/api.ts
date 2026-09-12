@@ -381,6 +381,11 @@ export const contactsAPI = {
     return response.data;
   },
 
+  renameVoiceNote: async (userId: string, contactId: string, noteId: string, title: string) => {
+    const response = await api.patch(`/voice-notes/${userId}/${contactId}/${noteId}`, { title });
+    return response.data;
+  },
+
   // Contact Intel (AI Summary)
   getContactIntel: async (userId: string, contactId: string) => {
     const response = await api.get(`/contact-intel/${userId}/${contactId}`);
