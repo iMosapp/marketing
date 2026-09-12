@@ -67,6 +67,7 @@ import IntelBriefingCard from '../../components/contact/IntelBriefingCard';
 import IntelTeaser from '../../components/contact/IntelTeaser';
 import { HealthBadge } from '../../components/contact/HealthBadge';
 import QuickActionsRow from '../../components/contact/QuickActionsRow';
+import { ConversationRecorder } from '../../components/thread/ConversationRecorder';
 import ContactTasksCard from '../../components/contact/ContactTasksCard';
 
 const IS_WEB = Platform.OS === 'web';
@@ -2591,22 +2592,36 @@ function ContactDetailScreen() {
             <HealthBadge userId={user?._id || ''} contactId={id as string} />
           )}
           {!isNewContact && !isEditing && (
-            <QuickActionsRow
-              colors={colors}
-              isRecording={isRecording}
-              onText={() => { setComposerMode('sms'); composerInputRef.current?.focus(); }}
-              onCall={() => {
-                if (contact.phone) {
-                  router.push({ pathname: '/call-screen', params: { phone: contact.phone, contact_name: fullName, contact_id: id as string } } as any);
-                } else {
-                  showSimpleAlert('No Phone', 'This contact has no phone number saved.');
-                }
-              }}
-              onEmail={() => { setComposerMode('email'); composerInputRef.current?.focus(); }}
-              onNote={() => (isRecording ? stopRecording() : startRecording())}
-              onTask={() => setShowAddTask(true)}
-              showSold={!contact.tags.includes('Sold')}
-              onSold={openSoldWizard}
+            <ConversationRecorder
+              userId={user?._id || ''}
+              contactId={id as string}
+              contactFirst={(contact.first_name || fullName || 'the customer').split(' ')[0]}
+              colors={{ ...colors, textPrimary: colors.text, surface: colors.card, background: colors.bg }}
+              inline
+              memoRecording={isRecording}
+              onStartMemo={startRecording}
+              onStopMemo={stopRecording}
+              onSaved={async () => { await loadVoiceNotes(); refreshIntel(); }}
+              renderTrigger={({ live, label, onPress }) => (
+                <QuickActionsRow
+                  colors={colors}
+                  isRecording={live}
+                  noteLabel={label}
+                  onText={() => { setComposerMode('sms'); composerInputRef.current?.focus(); }}
+                  onCall={() => {
+                    if (contact.phone) {
+                      router.push({ pathname: '/call-screen', params: { phone: contact.phone, contact_name: fullName, contact_id: id as string } } as any);
+                    } else {
+                      showSimpleAlert('No Phone', 'This contact has no phone number saved.');
+                    }
+                  }}
+                  onEmail={() => { setComposerMode('email'); composerInputRef.current?.focus(); }}
+                  onNote={onPress}
+                  onTask={() => setShowAddTask(true)}
+                  showSold={!contact.tags.includes('Sold')}
+                  onSold={openSoldWizard}
+                />
+              )}
             />
           )}
 

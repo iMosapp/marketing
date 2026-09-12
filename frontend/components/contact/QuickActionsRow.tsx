@@ -7,12 +7,12 @@ import { Ionicons } from '@expo/vector-icons';
 
 const GOLD = '#C9A962';
 
-export default function QuickActionsRow({ colors, isRecording, onText, onCall, onEmail, onNote, onTask, onSold, showSold = true }: any) {
+export default function QuickActionsRow({ colors, isRecording, noteLabel, onText, onCall, onEmail, onNote, onTask, onSold, showSold = true }: any) {
   const actions: any[] = [
     { key: 'text', label: 'Text', icon: 'chatbubble', onPress: onText },
     { key: 'call', label: 'Call', icon: 'call', onPress: onCall },
     { key: 'email', label: 'Email', icon: 'mail', onPress: onEmail },
-    { key: 'note', label: isRecording ? 'Stop' : 'Note', icon: isRecording ? 'stop' : 'mic', onPress: onNote, recording: isRecording },
+    { key: 'note', label: noteLabel || (isRecording ? 'Stop' : 'Note'), icon: isRecording ? 'stop' : 'mic', onPress: onNote, recording: isRecording },
     { key: 'task', label: 'Task', icon: 'checkbox', onPress: onTask },
   ];
   if (showSold && onSold) actions.push({ key: 'sold', label: 'Sold', icon: 'checkmark-circle', onPress: onSold, filled: true });

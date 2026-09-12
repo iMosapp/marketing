@@ -18,13 +18,15 @@ const convoOptions = (Audio: any) => ({
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
+type TriggerState = { live: boolean; recording: boolean; seconds: number; label: string; onPress: () => void };
 type Props = {
   userId: string; contactId: string; contactFirst: string; colors: any; onSaved?: (note: any) => void; onRecordingChange?: (on: boolean) => void;
   memoRecording?: boolean; onStartMemo?: () => void; onStopMemo?: () => void; pillStyle?: any; labelStyle?: any;
+  renderTrigger?: (s: TriggerState) => React.ReactNode; inline?: boolean;
 };
 
 // One "Record" pill for both a quick voice memo (3 min, just you) and a full in-person conversation (45 min, transcribed + summarized, Jessi can cite it).
-export const ConversationRecorder = ({ userId, contactId, contactFirst, colors, onSaved, onRecordingChange, memoRecording, onStartMemo, onStopMemo, pillStyle, labelStyle }: Props) => {
+export const ConversationRecorder = ({ userId, contactId, contactFirst, colors, onSaved, onRecordingChange, memoRecording, onStartMemo, onStopMemo, pillStyle, labelStyle, renderTrigger, inline }: Props) => {
   const [chooser, setChooser] = useState(false);
   const [recording, setRecording] = useState(false);
   const [seconds, setSeconds] = useState(0);
@@ -106,17 +108,13 @@ export const ConversationRecorder = ({ userId, contactId, contactFirst, colors, 
   const live = recording || !!memoRecording;
   const onPillPress = () => { if (recording) stop(); else if (memoRecording) onStopMemo?.(); else setChooser(true); };
   const textColor = colors.textPrimary || colors.text;
+  const label = recording ? `Stop ${fmt(seconds)}` : memoRecording ? 'Stop' : 'Record';
+  const overlay = inline ? {} : { position: 'absolute' as const, left: 0, right: 0, top: 0, zIndex: 50 };
+  const savingPos = inline ? { marginHorizontal: 16, marginBottom: 8 } : { position: 'absolute' as const, left: 16, right: 16, top: 8, zIndex: 60 };
   return (
     <>
-      <TouchableOpacity onPress={onPillPress} activeOpacity={0.8}
-        style={[pillStyle, { backgroundColor: live ? RED : colors.surface || colors.card }]}
-        {...tid('record-conversation-btn')}>
-        <Ionicons name={live ? 'stop' : 'mic'} size={15} color={live ? '#fff' : GOLD} />
-        <Text style={[labelStyle, { color: live ? '#fff' : textColor }]} numberOfLines={1}>{recording ? `Stop ${fmt(seconds)}` : memoRecording ? 'Stop' : 'Record'}</Text>
-      </TouchableOpacity>
-
       {recording && (
-        <View style={{ position: 'absolute', left: 0, right: 0, top: 0, zIndex: 50, backgroundColor: RED, paddingVertical: 8, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 10 }} {...tid('recording-banner')}>
+        <View style={[overlay, { backgroundColor: RED, paddingVertical: 8, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 10 }, inline && { marginHorizontal: 16, marginBottom: 10, borderRadius: 12 }]} {...tid('recording-banner')}>
           <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: '#fff' }} />
           <Text style={{ flex: 1, color: '#fff', fontWeight: '800', fontSize: 13 }}>Recording conversation with {contactFirst} · {fmt(seconds)}</Text>
           <TouchableOpacity onPress={stop} style={{ backgroundColor: '#fff', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 5 }} {...tid('recording-stop-btn')}>
@@ -126,9 +124,18 @@ export const ConversationRecorder = ({ userId, contactId, contactFirst, colors, 
       )}
 
       {!!saving && (
-        <View style={{ position: 'absolute', left: 16, right: 16, top: 8, zIndex: 60, backgroundColor: colors.card, borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: GOLD }} {...tid('recording-saving')}>
-          <ActivityIndicator size="small" color={GOLD} /><Text style={{ flex: 1, color: colors.textPrimary || colors.text, fontSize: 13, fontWeight: '600' }}>{saving}</Text>
+        <View style={[savingPos, { backgroundColor: colors.card, borderRadius: 12, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: GOLD }]} {...tid('recording-saving')}>
+          <ActivityIndicator size="small" color={GOLD} /><Text style={{ flex: 1, color: textColor, fontSize: 13, fontWeight: '600' }}>{saving}</Text>
         </View>
+      )}
+
+      {renderTrigger ? renderTrigger({ live, recording, seconds, label, onPress: onPillPress }) : (
+        <TouchableOpacity onPress={onPillPress} activeOpacity={0.8}
+          style={[pillStyle, { backgroundColor: live ? RED : colors.surface || colors.card }]}
+          {...tid('record-conversation-btn')}>
+          <Ionicons name={live ? 'stop' : 'mic'} size={15} color={live ? '#fff' : GOLD} />
+          <Text style={[labelStyle, { color: live ? '#fff' : textColor }]} numberOfLines={1}>{label}</Text>
+        </TouchableOpacity>
       )}
 
       <Modal visible={chooser} transparent animationType="fade" onRequestClose={() => setChooser(false)}>
