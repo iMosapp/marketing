@@ -1,0 +1,56 @@
+{
+  "summary": "Frontend testing of 'Ask Jessi about this customer'. Rep flow on /contact/6aa413008f0d53e3f2261853 (Sarah Tester) works well: sheet opens with correct title/stats, prior session loads, tapping starter/follow-up produces AI answer with citation chips, call citation with no recording shows info toast without crash, new-chat resets, history toggle + session reload works, close works, regression tabs (Details/Calls/Feed) still render. Two significant issues: (1) Follow-up chips contain raw '[C1@0:30] [C1@0:40]' markers inside the chip text, violating the spec which requires markers be stripped. (2) Manager thread Ask flow is broken: tapping thread-ask-jessi-btn on /thread/6aa3673e65d794ba9962f1d6 (shared inbox thread) triggers GET /api/contact-ask/{contactId} which returns 404 'Contact not found' — sheet opens with generic title 'Ask Jessi about this customer' and no stats/starters, so the Text citation navigation (jumpToMsg URL) could NOT be verified end-to-end. Also multiple React 'Encountered two children with the same key' warnings on the contact page (keys 6aa4d052fc92, 6aa4d198b7b2, 6aa4d2686702) — pre-existing on the contact profile, not the sheet itself.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "/api/contact-ask/{contactId}", "issue": "Returns 404 'Contact not found' when manager (qa-manager) opens Ask sheet from a shared-inbox thread (/thread/6aa3673e65d794ba9962f1d6). Blocks the entire thread->Ask->Text citation flow for managers/collaborators on contacts they don't personally own. Either the endpoint must allow access for users who can view the parent conversation, or the thread-ask pill should be hidden when the current user doesn't own the underlying contact.", "priority": "HIGH"}
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "AskJessiSheet (follow-ups)", "issue": "Follow-up chip labels still contain the raw citation markers like '[C1@0:30] [C1@0:40]' at the end of the suggestion text. Spec explicitly says follow-ups must NOT contain '[C1@..]' markers. Backend/service should strip citation tokens before returning follow_ups OR frontend should strip them before rendering.", "selector": "[data-testid=\"ask-follow-up\"]", "priority": "HIGH"},
+      {"component": "Contact profile / feed list (pre-existing)", "issue": "React key duplicate warnings on contact page: 'Encountered two children with the same key 6aa4d052fc92 / 6aa4d198b7b2 / 6aa4d2686702'. Non-blocking but should be fixed to avoid render bugs.", "selector": "n/a", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [
+      {"flow": "Thread -> Ask -> Text citation -> jumpToMsg navigation", "issue": "Could not verify. Sheet fails to load overview because GET /api/contact-ask/{contactId} returns 404 for manager on shared-inbox contact. The onCite handler code path for kind='text' looks correct (router.push('/thread/{cid}?jumpToMsg={mid}')), but no chips are produced because no answer can be generated.", "affected_selectors": ["[data-testid=\"thread-ask-jessi-btn\"]", "[data-testid=\"ask-cite-T1\"]"]}
+    ],
+    "design_issues": []
+  },
+  "verified_ok": [
+    "Login flow (rep + manager)",
+    "contact-ask-jessi-btn visible on contact profile card",
+    "ask-jessi-sheet opens with correct title 'Ask Jessi about Sarah'",
+    "ask-stats renders '0 texts · 1 call · 0 voice notes'",
+    "Prior session auto-loads messages (rep had existing session -> 0 starters shown, msgs loaded)",
+    "ask-starter tap -> ask-user-msg -> ask-thinking -> ask-ai-msg with citation chips (ask-cite-C1 labelled 'Call 0:59', etc.)",
+    "Tapping a follow-up chip sends it as next question (pronouns resolve, e.g. 'she')",
+    "Tapping ask-cite-C1 for a call without recording shows info toast and does NOT open ask-player (no crash)",
+    "ask-new-chat clears messages back to starters view",
+    "ask-history toggles ask-history-list; ask-session-{id} tap reloads that chat's messages",
+    "ask-close dismisses sheet",
+    "ask-input + ask-send works; send disabled when empty (visually gray)",
+    "Regression: Details / Calls / Feed tabs and composer still render",
+    "Thread page: header shows Search / Call / Voice Memo pills plus new 'Ask' pill; composer renders",
+    "Manager viewing rep's Sarah contact sees NO history icon (sessions per user)"
+  ],
+  "test_report_links": ["/app/backend/tests/test_contact_ask_api.py"],
+  "action_items": [
+    "Strip citation markers ([Txx], [Cxx@..], [Vxx], [Exx], [Kxx]) from follow_ups before returning/rendering — either in backend services/contact_ask.py (extract_citations pipeline) or defensively in AskJessiSheet.tsx before rendering the follow-up chip label.",
+    "Fix RBAC for /api/contact-ask/{contact_id}: allow managers or shared-inbox collaborators to access the overview/ask endpoints for contacts belonging to conversations they can view, OR conditionally hide the thread-ask-jessi-btn when the caller does not own the contact.",
+    "Investigate duplicate React keys on the contact profile page (keys 6aa4d052fc92, 6aa4d198b7b2, 6aa4d2686702)."
+  ],
+  "critical_code_review_comments": [
+    "AskJessiSheet.tsx line 152: follow-up TouchableOpacity renders raw {f} text — no marker stripping. Recommend a simple sanitize step like f.replace(/\\s*\\[[TCVEK]\\d+(?:@\\d+(?::\\d{2})?)?\\]/g, '').trim() before display, and preferably fix upstream so backend returns clean follow_ups.",
+    "AskJessiSheet.tsx line 79: player URL is constructed as `${api.defaults.baseURL}/calls/recording/${c.call_sid}` — depends on api.defaults.baseURL being set correctly at runtime; if baseURL is undefined for web, URL becomes 'undefined/calls/...'. Consider using an explicit env var or verifying baseURL.",
+    "AskJessiSheet.tsx line 117: message_count / 2 | 0 uses bitwise OR for floor — works but readability suffers; use Math.floor.",
+    "Endpoint access control: /api/contact-ask/{contact_id} likely enforces owner-only; but the thread-ask pill is shown to any user who can access the thread, causing a broken UX (see integration issue)."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only run)", "frontend": "~75% (rep flow fully passes; manager/thread flow blocked by 404)"},
+  "test_credentials": "activation-tester@invalid.imonsocial.test / NewPass123!  ;  qa-manager@invalid.imonsocial.test / Manager123!",
+  "seed_data_creation": "None. Two additional Ask sessions were created for Sarah as a side effect of testing (rep-owned).",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "LLM questions used ~3-4 total this run (well within budget). Key open verification: after fixing manager RBAC on /api/contact-ask, retest thread flow to confirm ask-cite-T{n} tap navigates to /thread/{conversation_id}?jumpToMsg={message_id}. The onCite text branch in AskJessiSheet.tsx (line 72-75) already implements the router.push, so once the sheet loads properly the navigation should just work. Sarah Tester has 1 graded demo call and no texts (all C citations will show 'No recording' toast). Prior sessions accumulate in DB per (user,contact); use new-chat if you want a clean starters view.",
+  "rca of the issue": "Follow-up marker leak: backend contact_ask service is generating follow-up suggestions that include the same [C1@...] tokens used in answer text (likely copied from LLM output without post-processing). The extract_citations flow only strips markers from the assistant message body, not from follow_ups list. Manager 404 on thread Ask: /api/contact-ask/{contact_id} is scoped to the caller as owner; a shared-inbox conversation is visible to the manager, but the underlying contact record is owned by the rep, so the ownership check rejects the manager. Fix by broadening the access rule to include users who have read access to any conversation associated with the contact (or org-level access for managers)."
+}

@@ -29,6 +29,7 @@ import { Image } from 'expo-image';
 import { resolvePhotoUrl } from '../../utils/photoUrl';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AISuggestion from '../../components/AISuggestion';
+import { AskJessiSheet } from '../../components/ask/AskJessiSheet';
 import ChannelPicker, { useChannelPicker } from '../../components/ChannelPicker';
 import { CallLogCard } from '../../components/thread/CallLogCard';
 import { MessageBubble } from '../../components/thread/MessageBubble';
@@ -338,6 +339,8 @@ function ThreadScreen() {
 
   // Custom card templates loaded from store
   const [customCardTemplates, setCustomCardTemplates] = useState<any[]>([]);
+
+  const [showAsk, setShowAsk] = useState(false);
 
   // Focus mode: while the keyboard is up, fold the header pills / intel / banners so the conversation stays visible
   const [kbOpen, setKbOpen] = useState(false);
@@ -2230,7 +2233,7 @@ function ThreadScreen() {
             else setThreadSearchOpen(true);
           }}
           style={[styles.headerActionPill, { backgroundColor: threadSearchOpen ? '#FFD60A' : colors.surface }]}
-          data-testid="thread-search-btn"
+          testID="thread-search-btn" dataSet={{ testid: 'thread-search-btn' } as any}
         >
           <Ionicons name="search" size={15} color={threadSearchOpen ? '#000' : '#C9A962'} />
           <Text style={[styles.headerActionLabel, { color: threadSearchOpen ? '#000' : colors.textPrimary }]}>Search</Text>
@@ -2246,7 +2249,7 @@ function ThreadScreen() {
             }
           }}
           style={[styles.headerActionPill, { backgroundColor: colors.surface }]}
-          data-testid="thread-call-btn"
+          testID="thread-call-btn" dataSet={{ testid: 'thread-call-btn' } as any}
         >
           <Ionicons name="call" size={15} color="#C9A962" />
           <Text style={[styles.headerActionLabel, { color: colors.textPrimary }]}>Call</Text>
@@ -2254,11 +2257,21 @@ function ThreadScreen() {
         <TouchableOpacity
           onPress={isThreadRecording ? stopThreadVoiceNote : startThreadVoiceNote}
           style={[styles.headerActionPill, { backgroundColor: isThreadRecording ? '#FF3B30' : colors.surface }]}
-          data-testid="thread-mic-btn"
+          testID="thread-mic-btn" dataSet={{ testid: 'thread-mic-btn' } as any}
         >
           <Ionicons name={isThreadRecording ? 'stop' : 'mic'} size={15} color={isThreadRecording ? '#fff' : '#C9A962'} />
           <Text style={[styles.headerActionLabel, { color: isThreadRecording ? '#fff' : colors.textPrimary }]}>{isThreadRecording ? 'Stop' : 'Voice Memo'}</Text>
         </TouchableOpacity>
+        {!!contactIdForNav && (
+          <TouchableOpacity
+            onPress={() => setShowAsk(true)}
+            style={[styles.headerActionPill, { flex: 0, paddingHorizontal: 12, backgroundColor: '#C9A96222', borderWidth: 1, borderColor: '#C9A96266' }]}
+            testID="thread-ask-jessi-btn" dataSet={{ testid: 'thread-ask-jessi-btn' } as any}
+          >
+            <Ionicons name="sparkles" size={15} color="#C9A962" />
+            <Text style={[styles.headerActionLabel, { color: '#C9A962' }]}>Ask</Text>
+          </TouchableOpacity>
+        )}
       </View>
       )}
 
@@ -3005,6 +3018,8 @@ function ThreadScreen() {
         </View>
 
       </KeyboardAvoidingView>
+
+      {!!contactIdForNav && <AskJessiSheet visible={showAsk} onClose={() => setShowAsk(false)} contactId={String(contactIdForNav)} />}
 
       {/* Review Links Action Sheet */}
       <Modal visible={showReviewLinks} animationType="slide" transparent={true}>

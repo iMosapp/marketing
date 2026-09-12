@@ -1,0 +1,45 @@
+{
+  "summary": "Retest of 'Ask Jessi about this customer' after the two fixes from iteration_309. Both fixes verified end-to-end. (1) Manager (qa-manager) opening /thread/6aa3673e65d794ba9962f1d6 (shared Service inbox, Lead 0033) can now tap thread-ask-jessi-btn -> ask-jessi-sheet loads with title 'Ask Jessi about Lead' and stats '4 texts \u00b7 0 calls \u00b7 0 voice notes \u00b7 2 events' (matches expected '4 texts'). Question 'What did the customer say about their car?' returned an AI answer containing 'check engine light' with a Text citation chip ask-cite-T2 labelled 'Text'. Follow-up chips (3) contain NO '[' markers. Tapping ask-cite-T2 closed the sheet and navigated to /thread/6aa3673e65d794ba9962f1d6?jumpToMsg=6aa3673e65d794ba9962f1d8, thread rendered without crash and composer visible. (2) Rep (activation-tester) opening /contact/6aa413008f0d53e3f2261853 loaded the existing session (3 AI msgs); all 9 ask-follow-up chips have zero '[' characters, confirming client-side stripping of stored older follow-ups with [C1@..] markers. Only 1 new LLM question was used (within budget).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Contact profile / feed (pre-existing carry-over from iter_309)", "issue": "Duplicate React key warnings still present on /contact/6aa413008f0d53e3f2261853 (keys 6aa4d052fc92, 6aa4d198b7b2, 6aa4d2686702) and also on the thread page (key 6aa4d36f18ab appears twice). Non-blocking to the Ask feature.", "selector": "n/a", "priority": "MEDIUM"},
+      {"component": "Historical ask-user-msg content", "issue": "Existing rep session still contains a user message text 'Are you and your husband both coming in at 5:30, or will it just be you? [C1@1:03]' \u2014 this is historical data from an earlier tap on an unstripped follow-up. New behaviour is correct; only legacy records still have the marker in the stored user prompt. No action likely needed unless the team wants a one-time DB sanitize.", "selector": "[data-testid=\"ask-user-msg\"]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Thread header pills", "issues": ["thread-search-btn / thread-call-btn / thread-voice-memo-btn use a bare `data-testid` prop on TouchableOpacity which does not forward to DOM in RN Web (only `dataSet={{ testid: '...' }}` forwards, as used correctly by thread-ask-jessi-btn). Pills render visually but automation cannot locate them by data-testid. Recommend switching those three to the same dataSet pattern used by the Ask pill (thread/[id].tsx around lines 2236, 2252, 2259)."]}
+    ]
+  },
+  "verified_ok": [
+    "Manager login via login-email-input / login-password-input / login-button",
+    "history.pushState + popstate navigation to /thread/{id} works",
+    "thread-ask-jessi-btn visible and clickable on shared-inbox thread for manager",
+    "ask-jessi-sheet loads with correct title 'Ask Jessi about Lead' (FIX #1 works)",
+    "ask-stats shows '4 texts \u00b7 0 calls \u00b7 0 voice notes \u00b7 2 events'",
+    "ask-input + ask-send flow returns AI answer within ~10s mentioning 'check engine light'",
+    "ask-cite-T2 chip rendered with label 'Text'",
+    "Follow-up chips contain no '[' characters (FIX #2 - manager thread flow)",
+    "Clicking ask-cite-T2 closes sheet and pushes URL /thread/{cid}?jumpToMsg=6aa3673e65d794ba9962f1d8; thread renders (composer visible)",
+    "Rep contact-ask-jessi-btn opens sheet with existing session pre-loaded",
+    "All 9 legacy stored follow-ups on rep's Sarah contact are stripped of '[' markers client-side (FIX #2 - contact flow)"
+  ],
+  "test_report_links": ["/app/backend/tests/test_contact_ask_api.py", "/app/test_reports/iteration_309.json"],
+  "action_items": [
+    "Optional: unify data-testid attribute on thread-search-btn, thread-call-btn, thread-voice-memo-btn to use dataSet.testid so automation can locate them consistently (matches thread-ask-jessi-btn pattern).",
+    "Optional cleanup: investigate duplicate React keys on contact profile and thread (6aa4d36f18ab, 6aa4d052fc92, 6aa4d198b7b2, 6aa4d2686702) \u2014 pre-existing, not related to Ask."
+  ],
+  "critical_code_review_comments": [
+    "AskJessiSheet.tsx follow-up marker stripping now correct \u2014 verified against 9 legacy stored follow-ups and 3 freshly-generated ones. All render clean.",
+    "contact_ask.py access rule broadened correctly: manager on a shared-inbox conversation can now access /api/contact-ask/{contact_id} overview + ask endpoints. Verified with qa-manager on Lead 0033.",
+    "Thread [id].tsx line 2236/2252/2259: three header action pills use `data-testid=...` directly on RN TouchableOpacity, which is a no-op in RN Web. Use `dataSet={{ testid: '...' }}` or `testID` with expo-router web bridge. Aesthetic only \u2014 pills render, just not queryable by testid."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only run)", "frontend": "100% for scoped Ask Jessi flow (rep + manager + jumpToMsg navigation + follow-up stripping)"},
+  "test_credentials": "qa-manager@invalid.imonsocial.test / Manager123!  ;  activation-tester@invalid.imonsocial.test / NewPass123!",
+  "seed_data_creation": "1 new Ask session created for Lead 0033 under qa-manager (side effect of the single LLM question).",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Both regressions from iteration_309 are fixed. Ask Jessi flow is stable across rep-owned contacts and manager-viewed shared-inbox threads. 1 LLM call used this run. If any further changes are made to citation-marker regex, re-run the same script; legacy stored user prompts still contain '[C1@1:03]' in their body (only follow-up chip render was scoped for stripping), which is per-spec.",
+  "rca of the issue": "Both fixes are effective. Fix #1 (contact_ask _contact access): the endpoint now grants access when the caller is a member/manager of an inbox that owns any conversation for the contact (or is assigned/collaborator). Fix #2 (follow-up stripping): AskJessiSheet renders follow-ups via a client-side sanitize that drops the `[TCVEK]n(@m:ss)?` tokens, so both new and stored-legacy follow-ups display clean text."
+}

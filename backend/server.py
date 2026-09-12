@@ -717,6 +717,8 @@ from routers import lead_flows as lead_flows_router
 api_router.include_router(lead_flows_router.router)
 from routers import scorecards as scorecards_router
 api_router.include_router(scorecards_router.router)
+from routers import contact_ask as contact_ask_router
+api_router.include_router(contact_ask_router.router)
 api_router.include_router(wallet_pass.router)
 
 # ============= WEBSOCKET ENDPOINT =============

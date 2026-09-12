@@ -56,6 +56,7 @@ import EditFormBottom from '../../components/contact/EditFormBottom';
 import FeedTab from '../../components/contact/FeedTab';
 import DetailsTab from '../../components/contact/DetailsTab';
 import CallsTab from '../../components/contact/CallsTab';
+import { AskJessiSheet } from '../../components/ask/AskJessiSheet';
 import ComposerBar from '../../components/contact/ComposerBar';
 import ShareModals from '../../components/contact/ShareModals';
 import PickerModals from '../../components/contact/PickerModals';
@@ -198,6 +199,8 @@ function ContactDetailScreen() {
   const recordingTimerRef = React.useRef<any>(null);
   const scrollRef = React.useRef<ScrollView>(null);
   const MAX_RECORDING_SECONDS = 300;
+
+  const [showAsk, setShowAsk] = useState(false);
 
   // AI Relationship Intel (auto-updating)
   const [intelData, setIntelData] = useState<any>(null);
@@ -2631,6 +2634,25 @@ function ContactDetailScreen() {
             />
           )}
 
+          {/* ===== ASK JESSI: grounded chat over every touchpoint ===== */}
+          {!isNewContact && !isEditing && (
+            <TouchableOpacity
+              onPress={() => setShowAsk(true)}
+              activeOpacity={0.8}
+              style={{ marginHorizontal: 16, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#C9A96214', borderWidth: 1, borderColor: '#C9A96266', borderRadius: 16, padding: 12 }}
+              testID="contact-ask-jessi-btn" dataSet={{ testid: 'contact-ask-jessi-btn' } as any}
+            >
+              <View style={{ width: 38, height: 38, borderRadius: 12, backgroundColor: '#C9A96226', alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="sparkles" size={19} color="#C9A962" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text }}>Ask Jessi about {contact.first_name || 'this customer'}</Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>Every text, call and voice note in one answer, with the exact moment cited</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#C9A962" />
+            </TouchableOpacity>
+          )}
+
           {/* ===== DETAILS / CALLS / FEED TAB BAR ===== */}
           {!isNewContact && !isEditing && (
             <View style={s.tabBar} data-testid="contact-tab-bar">
@@ -2858,6 +2880,8 @@ function ContactDetailScreen() {
 
           <View style={{ height: 140 }} />
         </ScrollView>
+
+        {!isNewContact && <AskJessiSheet visible={showAsk} onClose={() => setShowAsk(false)} contactId={id as string} />}
 
         {/* ===== INLINE COMPOSER (Inbox-Style) ===== */}
         {!isNewContact && !isEditing && (
