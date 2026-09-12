@@ -178,6 +178,7 @@ export default function NDADetailPage() {
 }
 
 function TimelineItem({ label, date, icon, done }: { label: string; date?: string; icon: string; done: boolean }) {
+  const { colors } = useThemeStore();
   const fmt = (d: string) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
