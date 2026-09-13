@@ -14,6 +14,7 @@ from pydantic import BaseModel
 from routers.database import get_db
 from routers.scripts import require_user, _resolve
 from services import mystery_shops as ms
+from services import scorecards as sc
 from services import scripts as scr
 from utils.text_sanitize import no_em_dash
 
@@ -544,7 +545,7 @@ async def get_call(sid: str, request: Request):
     ev = await db.call_evaluations.find_one({"_id": ObjectId(s["evaluation_id"])}) if s.get("evaluation_id") and ObjectId.is_valid(str(s["evaluation_id"])) else None
     out = ms.serialize_call(s)
     out.update({"persona": s.get("persona"), "transcript_turns": [scr._turn_out(t) for t in s.get("turns", [])], "attempt_history": [{**h, "at": h["at"].isoformat()} for h in s.get("attempt_history", []) if h.get("at")],
-                "evaluation": {"id": str(ev["_id"]), "score_pct": ev.get("score_pct"), "scorecard_name": ev.get("scorecard_name"), "critical_misses": ev.get("critical_misses") or [], "summary": ev.get("summary"),
+                "evaluation": {"id": str(ev["_id"]), "score_pct": ev.get("score_pct"), "scorecard_name": ev.get("scorecard_name"), "critical_misses": sc.miss_labels(ev), "summary": ev.get("summary"),
                                "wins": ev.get("wins") or [], "coaching": ev.get("coaching") or [], "results": ev.get("results") or [], "adherence": ev.get("adherence") or {}, "customer_sentiment": ev.get("customer_sentiment")} if ev else None})
     return out
 

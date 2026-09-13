@@ -223,6 +223,11 @@ async def ensure_single_default(db, store_id: Optional[str], keep_id: ObjectId):
 
 
 # ---------------------------------------------------------------- grading
+def miss_labels(ev: dict) -> list:
+    ids = set(ev.get("critical_misses") or [])
+    return [r.get("text") or r["criterion_id"] for r in ev.get("results") or [] if r.get("criterion_id") in ids]
+
+
 def compute_score(results: list, criteria: list) -> tuple:
     weights = {c["id"]: int(c.get("weight") or 1) for c in criteria}
     crit = {c["id"]: bool(c.get("critical")) for c in criteria}

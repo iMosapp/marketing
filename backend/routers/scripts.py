@@ -12,6 +12,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel
 
 from routers.database import get_db
+from services import scorecards as sc
 from services import scripts as svc
 from services.lead_flows import MANAGER_ROLES, user_store_id
 
@@ -375,7 +376,7 @@ async def roleplay_end(sid: str, request: Request):
 
 
 def _result_out(ev: dict, s: dict) -> dict:
-    return {"evaluation_id": str(ev["_id"]), "score_pct": ev.get("score_pct"), "scorecard_name": ev.get("scorecard_name"), "critical_misses": ev.get("critical_misses") or [],
+    return {"evaluation_id": str(ev["_id"]), "score_pct": ev.get("score_pct"), "scorecard_name": ev.get("scorecard_name"), "critical_misses": sc.miss_labels(ev),
             "adherence": ev.get("adherence") or {}, "summary": ev.get("summary"), "wins": ev.get("wins") or [], "coaching": ev.get("coaching") or [],
             "customer_sentiment": ev.get("customer_sentiment"), "duration_s": ev.get("duration_s"), "results": ev.get("results") or []}
 

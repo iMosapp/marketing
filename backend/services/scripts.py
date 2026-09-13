@@ -709,7 +709,7 @@ async def grade_session(db, session: dict) -> dict:
             logger.warning(f"[Roleplay] mystery shop follow-up failed: {e}")
     if not shop and session.get("assignment_id") and ObjectId.is_valid(str(session["assignment_id"])):
         await db.mystery_shops.update_one({"_id": ObjectId(session["assignment_id"])}, {"$set": {f"completed.{session['user_id']}": {"session_id": str(session["_id"]), "evaluation_id": ev_id, "score_pct": pct, "adherence_pct": adherence.get("score_pct"), "at": now}}})
-    return {"evaluation_id": ev_id, "score_pct": pct, "scorecard_name": ev["scorecard_name"], "critical_misses": misses, "adherence": adherence,
+    return {"evaluation_id": ev_id, "score_pct": pct, "scorecard_name": ev["scorecard_name"], "critical_misses": sc.miss_labels(ev), "adherence": adherence,
             "summary": ev["summary"], "wins": ev["wins"], "coaching": ev["coaching"], "customer_sentiment": ev["customer_sentiment"], "duration_s": duration_s, "results": ev["results"]}
 
 

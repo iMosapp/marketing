@@ -525,7 +525,7 @@ async def build_report(db, client: dict, month: Optional[str] = None) -> dict:
     call_rows = []
     for c in sorted(calls, key=lambda x: x.get("ended_at") or x.get("scheduled_for") or _now(), reverse=True):
         ev = evals.get(str(c.get("evaluation_id"))) if c.get("evaluation_id") else None
-        call_rows.append({**serialize_call(c), "summary": (ev or {}).get("summary"), "critical_misses": (ev or {}).get("critical_misses") or [], "coaching": (ev or {}).get("coaching") or [],
+        call_rows.append({**serialize_call(c), "summary": (ev or {}).get("summary"), "critical_misses": sc.miss_labels(ev or {}), "coaching": (ev or {}).get("coaching") or [],
                           "wins": (ev or {}).get("wins") or [], "adherence": (ev or {}).get("adherence") or {}, "results": (ev or {}).get("results") or [], "transcript": (ev or {}).get("transcript") or scr.transcript_text(c),
                           "customer_sentiment": (ev or {}).get("customer_sentiment")})
     themes = {}
